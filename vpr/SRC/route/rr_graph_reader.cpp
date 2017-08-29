@@ -85,11 +85,11 @@ void load_rr_file(const t_graph_type graph_type,
         Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(NULL);
         if (Prop != NULL) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
-                cout << endl;
+                vtr::printf("\n");
                 vtr::printf_warning(__FILE__, __LINE__,
                         "This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
                         vtr::VERSION, Prop);
-                cout << endl;
+                vtr::printf("\n");
             }
         }
         Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(NULL);
@@ -97,11 +97,11 @@ void load_rr_file(const t_graph_type graph_type,
         correct_string += get_arch_file_name();
         if (Prop != NULL) {
             if (Prop != correct_string) {
-                cout << endl;
+                vtr::printf("\n");
                 vtr::printf_warning(__FILE__, __LINE__,
                         "This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n"
                         , get_arch_file_name(), Prop);
-                cout << endl;
+                vtr::printf("\n");
             }
         }
 
@@ -206,6 +206,11 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
             rr_switch.Cin = get_attribute(SwitchSubnode, "Cin", loc_data).as_float();
             rr_switch.Cout = get_attribute(SwitchSubnode, "Cout", loc_data).as_float();
             rr_switch.Tdel = get_attribute(SwitchSubnode, "Tdel", loc_data).as_float();
+        }else{
+            rr_switch.R = 0;
+            rr_switch.Cin = 0;
+            rr_switch.Cout = 0;
+            rr_switch.Tdel = 0;
         }
         SwitchSubnode = get_single_child(Switch, "sizing", loc_data);
         rr_switch.mux_trans_size = get_attribute(SwitchSubnode, "mux_trans_size", loc_data).as_float();
@@ -254,31 +259,23 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
     rr_node = get_first_child(parent, "node", loc_data);
 
-    e_direction direction;
     while (rr_node) {
         int i = get_attribute(rr_node, "id", loc_data).as_int();
         auto& node = device_ctx.rr_nodes[i];
 
         const char* node_type = get_attribute(rr_node, "type", loc_data).as_string();
-        t_rr_type newType;
         if (strcmp(node_type, "CHANX") == 0) {
-            newType = CHANX;
-            node.set_type(newType);
+            node.set_type(CHANX);
         } else if (strcmp(node_type, "CHANY") == 0) {
-            newType = CHANY;
-            node.set_type(newType);
+            node.set_type(CHANY);
         } else if (strcmp(node_type, "SOURCE") == 0) {
-            newType = SOURCE;
-            node.set_type(newType);
+            node.set_type(SOURCE);
         } else if (strcmp(node_type, "SINK") == 0) {
-            newType = SINK;
-            node.set_type(newType);
+            node.set_type(SINK);
         } else if (strcmp(node_type, "OPIN") == 0) {
-            newType = OPIN;
-            node.set_type(newType);
+            node.set_type(OPIN);
         } else if (strcmp(node_type, "IPIN") == 0) {
-            newType = IPIN;
-            node.set_type(newType);
+            node.set_type(IPIN);
         } else {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
@@ -286,17 +283,13 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
         const char* correct_direction = get_attribute(rr_node, "direction", loc_data).as_string(0);
         if (strcmp(correct_direction, "INC") == 0) {
-            direction = INC_DIRECTION;
-            node.set_direction(direction);
+            node.set_direction(INC_DIRECTION);
         } else if (strcmp(correct_direction, "DEC") == 0) {
-            direction = DEC_DIRECTION;
-            node.set_direction(direction);
+            node.set_direction(DEC_DIRECTION);
         } else if (strcmp(correct_direction, "BI") == 0) {
-            direction = BI_DIRECTION;
-            node.set_direction(direction);
+            node.set_direction(BI_DIRECTION);
         } else {
-            direction = NONE;
-            node.set_direction(direction);
+            node.set_direction(NONE);
         }
 
         node.set_capacity(get_attribute(rr_node, "capacity", loc_data).as_float());
@@ -311,7 +304,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         y2 = get_attribute(locSubnode, "yhigh", loc_data).as_float();
 
         node.set_coordinates(x1, y1, x2, y2);
-        node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_float());
+        node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_int());
 
         //-------
         timingSubnode = get_single_child(rr_node, "timing", loc_data, OPTIONAL);
@@ -319,6 +312,9 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         if (timingSubnode) {
             node.set_R(get_attribute(timingSubnode, "R", loc_data).as_float());
             node.set_C(get_attribute(timingSubnode, "C", loc_data).as_float());
+        }else{
+            node.set_R(0);
+            node.set_C(0);
         }
         //clear each node edge
         node.set_num_edges(0);
@@ -329,6 +325,8 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         int *wire_to_rr_ipin_switch, const int num_rr_switches) {
+    /*Loads the edges information from file into vpr. Nodes and switches must be loaded
+     before calling this function*/
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node edges;
 
@@ -407,11 +405,11 @@ void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data
 
     channel = get_first_child(parent, "channel", loc_data);
 
-    device_ctx.chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_float();
-    device_ctx.chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_float();
-    device_ctx.chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_float();
-    device_ctx.chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_float();
-    device_ctx.chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_float();
+    device_ctx.chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_uint();
+    device_ctx.chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_uint();
+    device_ctx.chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
+    device_ctx.chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
+    device_ctx.chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
@@ -514,7 +512,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             }
 
             //Go through each pin of the pin list
-            string temp = vtr::strdup(pin_class.child_value());
+            string temp = pin_class.child_value();
             stringstream longString(temp);
 
             int eachInt;
