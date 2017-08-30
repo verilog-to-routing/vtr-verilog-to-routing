@@ -397,11 +397,6 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 
 	/* Turns the congestion display on and off.   */
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-	char msg[vtr::bufsize];
-	int inode, num_congested;
 
 	e_draw_congestion new_state = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
 														  % ((int)DRAW_CONGEST_MAX));
@@ -410,16 +405,6 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 
 	if (draw_state->show_congestion == DRAW_NO_CONGEST) {
 		update_message(draw_state->default_message);
-	} else {
-		num_congested = 0;
-		for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-			if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
-				num_congested++;
-			}
-		}
-
-		sprintf(msg, "%d routing resources are overused.", num_congested);
-		update_message(msg);
 	}
 
 	drawscreen_ptr();
@@ -741,7 +726,7 @@ static void draw_congestion(void) {
     }
 
     char msg[vtr::bufsize];
-    sprintf(msg, "Overuse ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
+    sprintf(msg, "Overuse RR Node ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
     update_message(msg);
 
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
