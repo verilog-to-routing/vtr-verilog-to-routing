@@ -598,7 +598,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_grp.add_argument<e_router_algorithm,ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
             .help("Specifies the router algorithm to use.\n"
                   " * breadth_first: focuses solely on routability\n"
-                  " * timing driven: focuses on routability and circuit speed\n")
+                  " * timing_driven: focuses on routability and circuit speed\n")
             .default_value("timing_driven")
             .choices({"breadth_first", "timing_driven"})
             .show_in(argparse::ShowIn::HELP_ONLY);
