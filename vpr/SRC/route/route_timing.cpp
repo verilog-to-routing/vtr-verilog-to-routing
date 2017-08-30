@@ -156,7 +156,7 @@ static WirelengthInfo calculate_wirelength_info();
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
-static void print_route_status(int itry, double elapsed_sec,
+static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
@@ -265,6 +265,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
             route_timing_info = make_constant_timing_info(0.);
         }
 
+        size_t connections_routed = 0;
+
         /*
          * Route each net
          */
@@ -275,6 +277,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     pres_fac,
                     router_opts,
                     connections_inf,
+                    connections_routed,
                     route_structs.pin_criticality,
                     route_structs.rt_node_of_sink,
                     net_delay,
@@ -328,7 +331,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, time, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, time, connections_routed, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         //Update graphics
         if (itry == 1) {
@@ -449,6 +452,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         t_router_opts router_opts,
         CBRR& connections_inf,
+        size_t& connections_routed,
         float* pin_criticality,
         t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
@@ -474,6 +478,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 router_opts.max_criticality, router_opts.criticality_exp,
                 router_opts.astar_fac, router_opts.bend_cost,
                 connections_inf,
+                connections_routed,
                 pin_criticality, router_opts.min_incremental_reroute_fanout,
                 rt_node_of_sink,
                 net_delay[net_id],
@@ -598,6 +603,7 @@ struct Criticality_comp {
 bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
         float criticality_exp, float astar_fac, float bend_cost,
         CBRR& connections_inf,
+        size_t& connections_routed,
         float *pin_criticality, int min_incremental_reroute_fanout,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
@@ -682,6 +688,8 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
         // do this by resetting all the path_costs that have been touched while routing to the current sink
         reset_path_costs();
+
+        ++connections_routed;
     } // finished all sinks
 
     /* For later timing analysis. */
@@ -1758,21 +1766,24 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- ----------------\n");
-    vtr::printf_info("Iter. Time (sec)   Overused RR Nodes       Wirelength  CPD (ns)  sTNS (ns)  sWNS (ns)  hTNS (ns)  hWNS (ns) Est. Succ. Iter.\n");
-    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- ----------------\n");
+    vtr::printf_info("---- ---------- --------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------------\n");
+    vtr::printf_info("Iter Time (sec) Rtd Conns   Overused RR Nodes       Wirelength  CPD (ns)  sTNS (ns)  sWNS (ns)  hTNS (ns)  hWNS (ns) Est Succ Iter\n");
+    vtr::printf_info("---- ---------- --------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec,
+static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
 
     //Iteration
-    vtr::printf("%5d", itry);
+    vtr::printf("%4d", itry);
 
     //Elapsed Time
     vtr::printf(" %10.1f", elapsed_sec);
+
+    //Rerouted connections
+    vtr::printf(" %9.3g", float(connections_routed));
 
     //Overused RR nodes
     vtr::printf(" %8.3g (%7.4f%)", float(overuse_info.overused_nodes()), overuse_info.overused_node_ratio()*100);
@@ -1822,9 +1833,9 @@ static void print_route_status(int itry, double elapsed_sec,
 
     //Estimated success iteration
     if (std::isnan(est_success_iteration)) {
-        vtr::printf(" %16s", "N/A");
+        vtr::printf(" %13s", "N/A");
     } else {
-        vtr::printf(" %16.0f", est_success_iteration);
+        vtr::printf(" %13.0f", est_success_iteration);
     }
 
     vtr::printf("\n");
