@@ -434,6 +434,9 @@ static void toggle_routing_congestion_cost(void (*drawscreen_ptr)(void)) {
 	draw_state->reset_nets_congestion_and_rr();
 	draw_state->show_routing_costs = new_state;
 
+	if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
+		update_message(draw_state->default_message);
+    }
     drawscreen_ptr();
 }
 
