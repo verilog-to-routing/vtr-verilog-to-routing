@@ -338,10 +338,11 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     }
 }
 
+/*Loads the edges information from file into vpr. Nodes and switches must be loaded
+ before calling this function*/
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         int *wire_to_rr_ipin_switch, const int num_rr_switches) {
-    /*Loads the edges information from file into vpr. Nodes and switches must be loaded
-     before calling this function*/
+
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node edges;
 
@@ -429,7 +430,7 @@ void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data
 
 }
 
-/* grid was initialized from the architecture file. This function checks 
+/* Grid was initialized from the architecture file. This function checks 
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const DeviceGrid& grid) {
     pugi::xml_node grid_node;
