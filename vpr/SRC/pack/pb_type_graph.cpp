@@ -1389,6 +1389,10 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 	int side_index = 0;
 	int count = 0;
 
+    type->pin_width_offset.resize(type->num_pins, 0);
+    type->pin_height_offset.resize(type->num_pins, 0);
+
+    std::vector<int> physical_pin_counts(type->num_pins, 0);
 	if (type->pin_location_distribution == E_SPREAD_PIN_DISTR) {
 		/* evenly distribute pins starting at bottom left corner */
         for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
@@ -1398,8 +1402,9 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 						int pin_num = side_index + pin_offset * num_sides;
 						if (pin_num < type->num_pins) {
 							type->pinloc[width][height][side][pin_num] = true;
-							type->pin_width[pin_num] = width;
-							type->pin_height[pin_num] = height;
+							type->pin_width_offset[pin_num] += width;
+							type->pin_height_offset[pin_num] += height;
+                            physical_pin_counts[pin_num] += 1;
 							count++;
 						}
 					}
@@ -1424,7 +1429,9 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
                             && ipin < type->num_pins) {
                             //On a side, with pins still to allocate
 
-                            type->pinloc[width][height][side][ipin] = true;
+							type->pin_width_offset[ipin] += width;
+							type->pin_height_offset[ipin] += height;
+                            physical_pin_counts[ipin] += 1;
                             ++ipin;
                         }
                     }
@@ -1459,8 +1466,9 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 							VTR_ASSERT(pin_num < type->num_pins / type->capacity);
 							for (int capacity = 0; capacity < type->capacity; ++capacity) {
 								type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = true;
-								type->pin_width[pin_num] = width;
-								type->pin_height[pin_num] = height;
+                                type->pin_width_offset[pin_num + capacity * type->num_pins / type->capacity] += width;
+                                type->pin_height_offset[pin_num + capacity * type->num_pins / type->capacity] += height;
+                                physical_pin_counts[pin_num + capacity * type->num_pins / type->capacity] += 1;
 								VTR_ASSERT(count < type->num_pins);
 							}
 						}
@@ -1472,6 +1480,16 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 			}
 		}
 	}
+
+    for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+        VTR_ASSERT(physical_pin_counts[ipin] >= 1);
+
+        type->pin_width_offset[ipin] /= physical_pin_counts[ipin];
+        type->pin_height_offset[ipin] /= physical_pin_counts[ipin];
+
+        VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
+        VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
+    }
 }
 
 static void echo_pb_rec(const t_pb_graph_node *pb_graph_node, const int level,

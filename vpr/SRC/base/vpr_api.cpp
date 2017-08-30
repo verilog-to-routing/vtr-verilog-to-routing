@@ -636,9 +636,6 @@ static void free_complex_block_types(void) {
         vtr::free(device_ctx.block_types[i].pin_loc_assignments);
         vtr::free(device_ctx.block_types[i].num_pin_loc_assignments);
 
-        vtr::free(device_ctx.block_types[i].pin_width);
-        vtr::free(device_ctx.block_types[i].pin_height);
-
         for (int j = 0; j < device_ctx.block_types[i].num_class; ++j) {
             vtr::free(device_ctx.block_types[i].class_inf[j].pinlist);
         }

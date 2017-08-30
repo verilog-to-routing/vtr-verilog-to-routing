@@ -1434,10 +1434,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				} else {
 					update_bb(net_id, &ts_bb_coord_new[net_id],
 							&ts_bb_edge_new[net_id], 
-							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[iblk_pin]);
+							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[iblk_pin],
+							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[iblk_pin],
+							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[iblk_pin],
+							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[iblk_pin]);
 				}
 			}
 		}
@@ -2215,8 +2215,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	pnum = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 	x = max(min<int>(x, grid.width() - 2), 1);
 	y = max(min<int>(y, grid.width() - 2), 1);
@@ -2233,8 +2233,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
 		pnum = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 		/* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
 		 * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -2242,7 +2242,6 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 		 * that bounding box.  Hence, this "movement" of IO blocks does not affect *
 		 * the which channels are included within the bounding box, and it         *
 		 * simplifies the code a lot.                                              */
-        //TODO: when we channels are added around the perimeter, the above assumptions will no longer hold
 
 		x = max(min<int>(x, grid.width() - 2), 1); //-2 for no perim channels
 		y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
@@ -2369,6 +2368,8 @@ static float get_net_cost(ClusterNetId net_id, t_bb *bbptr) {
 * edges of the bounding box can be used.  Essentially, I am assuming *
 * the pins always lie on the outside of the bounding box.            */
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
+    //TODO: account for multiple physical pin instances per logical pin
+
 	int xmax, ymax, xmin, ymin, x, y;
 	int pnum;
 
@@ -2378,8 +2379,8 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	pnum = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 	
 	xmin = x;
 	ymin = y;
@@ -2389,8 +2390,8 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
 		pnum = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2406,12 +2407,12 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 	}
 
 	/* Now I've found the coordinates of the bounding box.  There are no *
-	 * channels beyond device_ctx.grid.width()-2 and device_ctx.grid.height() - 2, so I want to clip to that.  As well,   *
+	 * channels beyond device_ctx.grid.width()-2 and                     *
+     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
 	 * since I'll always include the channel immediately below and the   *
 	 * channel immediately to the left of the bounding box, I want to    *
 	 * clip to 1 in both directions as well (since minimum channel index *
 	 * is 0).  See route_common.cpp for a channel diagram.               */
-    //TODO: when we channels are added around the perimeter, the above assumptions will no longer hold
 
 	bb_coord_new->xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
 	bb_coord_new->ymin = max(min<int>(ymin, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
@@ -2434,6 +2435,7 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 	 * the pins always lie on the outside of the bounding box.            *
 	 * The x and y coordinates are the pin's x and y coordinates.         */
 	/* IO blocks are considered to be one cell in for simplicity.         */
+    //TODO: account for multiple physical pin instances per logical pin
 	
 	t_bb *curr_bb_edge, *curr_bb_coord;
 
@@ -2445,18 +2447,16 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 	yold = max(min<int>(yold, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
 
 	/* Check if the net had been updated before. */
-	if (bb_updated_before[net_id] == GOT_FROM_SCRATCH)
-	{	/* The net had been updated from scratch, DO NOT update again! */
+	if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
+        /* The net had been updated from scratch, DO NOT update again! */
 		return;
-	}
-	else if (bb_updated_before[net_id] == NOT_UPDATED_YET)
-	{	/* The net had NOT been updated before, could use the old values */
+	} else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
+        /* The net had NOT been updated before, could use the old values */
 		curr_bb_coord = &bb_coords[net_id];
 		curr_bb_edge = &bb_num_on_edges[net_id];
 		bb_updated_before[net_id] = UPDATED_ONCE;
-	}
-	else
-	{	/* The net had been updated before, must use the new values */
+	} else {
+        /* The net had been updated before, must use the new values */
 		curr_bb_coord = bb_coord_new;
 		curr_bb_edge = bb_edge_new;
 	}
@@ -2476,9 +2476,7 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 				bb_edge_new->xmax = curr_bb_edge->xmax - 1;
 				bb_coord_new->xmax = curr_bb_coord->xmax;
 			}
-		}
-
-		else { /* Move to left, old postion was not at xmax. */
+		} else { /* Move to left, old postion was not at xmax. */
 			bb_coord_new->xmax = curr_bb_coord->xmax;
 			bb_edge_new->xmax = curr_bb_edge->xmax;
 		}
@@ -2488,21 +2486,16 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		if (xnew < curr_bb_coord->xmin) { /* Moved past xmin */
 			bb_coord_new->xmin = xnew;
 			bb_edge_new->xmin = 1;
-		}
-
-		else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
+		} else if (xnew == curr_bb_coord->xmin) { /* Moved to xmin */
 			bb_coord_new->xmin = xnew;
 			bb_edge_new->xmin = curr_bb_edge->xmin + 1;
-		}
-
-		else { /* Xmin unchanged. */
+		} else { /* Xmin unchanged. */
 			bb_coord_new->xmin = curr_bb_coord->xmin;
 			bb_edge_new->xmin = curr_bb_edge->xmin;
 		}
-	}
+        /* End of move to left case. */
 
-	/* End of move to left case. */
-	else if (xnew > xold) { /* Move to right. */
+	} else if (xnew > xold) { /* Move to right. */
 
 		/* Update the xmin fields for coordinates and number of edges first. */
 
@@ -2515,9 +2508,7 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 				bb_edge_new->xmin = curr_bb_edge->xmin - 1;
 				bb_coord_new->xmin = curr_bb_coord->xmin;
 			}
-		}
-
-		else { /* Move to right, old position was not at xmin. */
+		} else { /* Move to right, old position was not at xmin. */
 			bb_coord_new->xmin = curr_bb_coord->xmin;
 			bb_edge_new->xmin = curr_bb_edge->xmin;
 		}
@@ -2527,20 +2518,16 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		if (xnew > curr_bb_coord->xmax) { /* Moved past xmax. */
 			bb_coord_new->xmax = xnew;
 			bb_edge_new->xmax = 1;
-		}
-
-		else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
+		} else if (xnew == curr_bb_coord->xmax) { /* Moved to xmax */
 			bb_coord_new->xmax = xnew;
 			bb_edge_new->xmax = curr_bb_edge->xmax + 1;
-		}
-
-		else { /* Xmax unchanged. */
+		} else { /* Xmax unchanged. */
 			bb_coord_new->xmax = curr_bb_coord->xmax;
 			bb_edge_new->xmax = curr_bb_edge->xmax;
 		}
-	}
-	/* End of move to right case. */
-	else { /* xnew == xold -- no x motion. */
+        /* End of move to right case. */
+
+	} else { /* xnew == xold -- no x motion. */
 		bb_coord_new->xmin = curr_bb_coord->xmin;
 		bb_coord_new->xmax = curr_bb_coord->xmax;
 		bb_edge_new->xmin = curr_bb_edge->xmin;
@@ -2562,9 +2549,7 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 				bb_edge_new->ymax = curr_bb_edge->ymax - 1;
 				bb_coord_new->ymax = curr_bb_coord->ymax;
 			}
-		}
-
-		else { /* Move down, old postion was not at ymax. */
+		} else { /* Move down, old postion was not at ymax. */
 			bb_coord_new->ymax = curr_bb_coord->ymax;
 			bb_edge_new->ymax = curr_bb_edge->ymax;
 		}
@@ -2574,20 +2559,16 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		if (ynew < curr_bb_coord->ymin) { /* Moved past ymin */
 			bb_coord_new->ymin = ynew;
 			bb_edge_new->ymin = 1;
-		}
-
-		else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
+		} else if (ynew == curr_bb_coord->ymin) { /* Moved to ymin */
 			bb_coord_new->ymin = ynew;
 			bb_edge_new->ymin = curr_bb_edge->ymin + 1;
-		}
-
-		else { /* ymin unchanged. */
+		} else { /* ymin unchanged. */
 			bb_coord_new->ymin = curr_bb_coord->ymin;
 			bb_edge_new->ymin = curr_bb_edge->ymin;
 		}
-	}
-	/* End of move down case. */
-	else if (ynew > yold) { /* Moved up. */
+        /* End of move down case. */
+
+	} else if (ynew > yold) { /* Moved up. */
 
 		/* Update the ymin fields for coordinates and number of edges first. */
 
@@ -2600,9 +2581,7 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 				bb_edge_new->ymin = curr_bb_edge->ymin - 1;
 				bb_coord_new->ymin = curr_bb_coord->ymin;
 			}
-		}
-
-		else { /* Moved up, old position was not at ymin. */
+		} else { /* Moved up, old position was not at ymin. */
 			bb_coord_new->ymin = curr_bb_coord->ymin;
 			bb_edge_new->ymin = curr_bb_edge->ymin;
 		}
@@ -2612,28 +2591,25 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		if (ynew > curr_bb_coord->ymax) { /* Moved past ymax. */
 			bb_coord_new->ymax = ynew;
 			bb_edge_new->ymax = 1;
-		}
-
-		else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
+		} else if (ynew == curr_bb_coord->ymax) { /* Moved to ymax */
 			bb_coord_new->ymax = ynew;
 			bb_edge_new->ymax = curr_bb_edge->ymax + 1;
-		}
-
-		else { /* ymax unchanged. */
+		} else { /* ymax unchanged. */
 			bb_coord_new->ymax = curr_bb_coord->ymax;
 			bb_edge_new->ymax = curr_bb_edge->ymax;
 		}
-	}
-	/* End of move up case. */
-	else { /* ynew == yold -- no y motion. */
+        /* End of move up case. */
+
+	} else { /* ynew == yold -- no y motion. */
 		bb_coord_new->ymin = curr_bb_coord->ymin;
 		bb_coord_new->ymax = curr_bb_coord->ymax;
 		bb_edge_new->ymin = curr_bb_edge->ymin;
 		bb_edge_new->ymax = curr_bb_edge->ymax;
 	}
 
-	if (bb_updated_before[net_id] == NOT_UPDATED_YET)
+	if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
 		bb_updated_before[net_id] = UPDATED_ONCE;
+    }
 }
 
 static void alloc_legal_placements() {

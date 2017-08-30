@@ -419,8 +419,8 @@ enum class e_sb_type {
  * num_class: Number of logically-equivalent pin classes
  * class_inf: Information of each logically-equivalent class
  *
- * pin_width: Width offset to specified pin
- * pin_height: Height offset to specified pin
+ * pin_avg_width_offset: Average width offset to specified pin (exact if only a single physical pin instance)
+ * pin_avg_height_offset: Average height offset to specified pin (exact if only a single physical pin instance)
  * pin_class: The class a pin belongs to
  * is_global_pin: Whether or not a pin is global (hence not routed)
  *
@@ -460,8 +460,8 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int num_class;
 	t_class *class_inf; /* [0..num_class-1] */
 
-	int *pin_width; /* [0..num_pins-1] */
-	int *pin_height; /* [0..num_pins-1] */
+    std::vector<int> pin_width_offset; //[0..num_pins-1]
+    std::vector<int> pin_height_offset; //[0..num_pins-1]
 	int *pin_class; /* [0..num_pins-1] */
 	bool *is_global_pin; /* [0..num_pins-1] */
 
