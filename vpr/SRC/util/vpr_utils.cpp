@@ -734,7 +734,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         const t_model_ports* pb_model_port = pb_port->model_port;
 
         //Find the matching port on the atom
-        auto port_id = atom_ctx.nlist.find_port(blk_id, pb_model_port);
+        auto port_id = atom_ctx.nlist.find_atom_port(blk_id, pb_model_port);
 
         if(port_id) { //Port is used by the atom
              
@@ -1999,8 +1999,8 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
             //Update the net to block references
 			size_t k = 0;
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.pin_index(pin_id) == j) {
-					cluster_ctx.clb_nlist.set_pin_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
+				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.physical_pin_index(pin_id) == j) {
+					cluster_ctx.clb_nlist.set_physical_pin_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
 					break;
 				}
 				k++;

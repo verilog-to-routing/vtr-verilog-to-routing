@@ -987,7 +987,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		while (cur_pack_pattern_connection != NULL && success == true) {
 			if (cur_pack_pattern_connection->from_block == current_pattern_block) {
 				/* find net corresponding to pattern */
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port);
                 if(!port_id) {
                     //No matching port, we may be at the end
                     success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
@@ -1013,7 +1013,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 				VTR_ASSERT(cur_pack_pattern_connection->to_block == current_pattern_block);
 				/* find net corresponding to pattern */
 
-                auto port_id = atom_ctx.nlist.find_port(blk_id, cur_pack_pattern_connection->to_pin->port->model_port);
+                auto port_id = atom_ctx.nlist.find_atom_port(blk_id, cur_pack_pattern_connection->to_pin->port->model_port);
                 VTR_ASSERT(port_id);
 				ipin = cur_pack_pattern_connection->to_pin->pin_number;
 
@@ -1217,7 +1217,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
 	model_port = root_ipin->port->model_port;
 
-    AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+    AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
     if(!port_id) {
         //There is no port with the chain connection on this block, it must be the furthest
         //up the chain, so return it as root

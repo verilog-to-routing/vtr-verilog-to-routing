@@ -902,7 +902,7 @@ static void load_route_bb(int bb_factor) {
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		ClusterBlockId driver_blk = cluster_ctx.clb_nlist.net_driver_block(net_id);
-		int driver_blk_pin = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+		int driver_blk_pin = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
 		x = place_ctx.block_locs[driver_blk].x + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_width[driver_blk_pin];
 		y = place_ctx.block_locs[driver_blk].y + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_height[driver_blk_pin];
 
@@ -913,7 +913,7 @@ static void load_route_bb(int bb_factor) {
 
 		for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			ClusterBlockId sink_blk = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
-			int sink_blk_pin = cluster_ctx.clb_nlist.pin_index(sink_pin_id);
+			int sink_blk_pin = cluster_ctx.clb_nlist.physical_pin_index(sink_pin_id);
 			x = place_ctx.block_locs[sink_blk].x + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_width[sink_blk_pin];
 			y = place_ctx.block_locs[sink_blk].y + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_height[sink_blk_pin];
 
@@ -1248,7 +1248,7 @@ void print_route(const char* placement_file, const char* route_file) {
 	fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "\nRouting:");
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (!cluster_ctx.clb_nlist.net_global(net_id)) {
+		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
 			fprintf(fp, "\n\nNet %lu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
@@ -1329,7 +1329,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 				ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-				int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+				int pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 				iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
 
 				fprintf(fp, "Block %s (#%lu) at (%d,%d), Pin class %d.\n",

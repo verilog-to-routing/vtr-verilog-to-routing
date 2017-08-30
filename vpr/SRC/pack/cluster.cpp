@@ -299,6 +299,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name
+#ifdef USE_HMETIS
+		, std::vector<vector<ClusterBlockId>>& partitions
+#endif
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf
 #endif
@@ -1005,8 +1008,8 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
             //driving the output net
 
             //Get the ports from each primitive
-            auto blk_port_id = atom_ctx.nlist.find_port(blk_id, port);
-            auto sib_port_id = atom_ctx.nlist.find_port(sibling_blk_id, port);
+            auto blk_port_id = atom_ctx.nlist.find_atom_port(blk_id, port);
+            auto sib_port_id = atom_ctx.nlist.find_atom_port(sibling_blk_id, port);
 
             //Check that all nets (including unconnected nets) match
             for(int ipin = 0; ipin < port->size; ++ipin) {
@@ -1426,7 +1429,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {
 			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
             t_model_ports *root_port = chain_root_pin->port->model_port;
-            auto port_id = atom_ctx.nlist.find_port(blk_id, root_port);
+            auto port_id = atom_ctx.nlist.find_atom_port(blk_id, root_port);
             if(port_id) {
                 auto chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pin->pin_number);
 

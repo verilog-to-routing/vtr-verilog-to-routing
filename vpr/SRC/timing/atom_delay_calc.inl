@@ -10,8 +10,8 @@ inline AtomDelayCalc::AtomDelayCalc(const AtomNetlist& netlist, const AtomLookup
 inline float AtomDelayCalc::atom_combinational_delay(const AtomPinId src_pin, const AtomPinId sink_pin, const DelayType delay_type) const {
     VTR_ASSERT_MSG(netlist_.pin_block(src_pin) == netlist_.pin_block(sink_pin), "Combinational primitive delay must be between pins on the same block");
 
-    VTR_ASSERT_MSG(   netlist_.port_type(netlist_.pin_port(src_pin)) == AtomPortType::INPUT 
-                   && netlist_.port_type(netlist_.pin_port(sink_pin)) == AtomPortType::OUTPUT,
+    VTR_ASSERT_MSG(   netlist_.port_type(netlist_.pin_port(src_pin)) == PortType::INPUT 
+                   && netlist_.port_type(netlist_.pin_port(sink_pin)) == PortType::OUTPUT,
                    "Combinational connections must go from primitive input to output");
 
     //Determine the combinational delay from the pb_graph_pin.
@@ -43,7 +43,7 @@ inline float AtomDelayCalc::atom_combinational_delay(const AtomPinId src_pin, co
 
 inline float AtomDelayCalc::atom_setup_time(const AtomPinId /*clock_pin*/, const AtomPinId pin) const {
     auto port_type = netlist_.port_type(netlist_.pin_port(pin));
-    VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);
+    VTR_ASSERT(port_type == PortType::OUTPUT || port_type == PortType::INPUT);
 
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pin);
     VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
@@ -53,7 +53,7 @@ inline float AtomDelayCalc::atom_setup_time(const AtomPinId /*clock_pin*/, const
 
 inline float AtomDelayCalc::atom_hold_time(const AtomPinId /*clock_pin*/, const AtomPinId pin) const {
     auto port_type = netlist_.port_type(netlist_.pin_port(pin));
-    VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);
+    VTR_ASSERT(port_type == PortType::OUTPUT || port_type == PortType::INPUT);
 
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pin);
     VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
@@ -63,7 +63,7 @@ inline float AtomDelayCalc::atom_hold_time(const AtomPinId /*clock_pin*/, const 
 
 inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/, const AtomPinId pin, const DelayType delay_type) const {
     auto port_type = netlist_.port_type(netlist_.pin_port(pin));
-    VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);
+    VTR_ASSERT(port_type == PortType::OUTPUT || port_type == PortType::INPUT);
 
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pin);
     VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);

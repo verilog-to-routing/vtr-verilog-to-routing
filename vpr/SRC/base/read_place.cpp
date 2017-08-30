@@ -18,8 +18,7 @@
 void read_place(const char* net_file, 
                 const char* place_file,
                 bool verify_file_digests,
-                const DeviceGrid& grid,
-		        const size_t L_num_blocks) {
+                const DeviceGrid& grid) {
     std::ifstream fstream(place_file); 
     if (!fstream) {
         vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
@@ -118,9 +117,9 @@ void read_place(const char* net_file,
 
 			ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-            if (place_ctx.block_locs.size() != L_num_blocks) {
+            if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
                 //Resize if needed
-                place_ctx.block_locs.resize(L_num_blocks);
+                place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
             }			
 
             //Set the location

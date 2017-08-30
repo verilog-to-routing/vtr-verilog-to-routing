@@ -676,7 +676,7 @@ static void drawnets(void) {
 	 * blocks (or sub blocks in the case of IOs).                                */
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_global(net_id))
 			continue; /* Don't draw global nets. */
 
 		setcolor(draw_state->net_color[net_id]);
@@ -1628,7 +1628,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	/* Now draw each net, one by one.      */
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id)) /* Don't draw global nets. */
+		if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Don't draw global nets. */
 			continue;
 
 		if (route_ctx.trace_head[net_id] == NULL) /* No routing.  Skip.  (Allows me to draw */

@@ -423,8 +423,9 @@ class Netlist {
 
 	public:
 		Netlist(std::string name="", std::string id="");
+		virtual ~Netlist();
 
-	public: //Public Mutators
+	protected: //Protected Mutators
 		//Create or return an existing block in the netlist
         //  name        : The unique name of the block
         BlockId create_block(const std::string name);
@@ -454,13 +455,6 @@ class Netlist {
         //  sinks   : The net's sink pins
         NetId   add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
 
-		//Mark a pin as being a constant generator.
-		// There are some cases where a pin can not be identified as a is constant until after
-		// the full netlist has been built; so we expose a way to mark existing pins as constants.
-		//  pin_id  : The pin to be marked
-		//  value   : The boolean value to set the pin_is_constant attribute
-		void set_pin_is_constant(const PinId pin_id, const bool value);
-
 		//Add the specified pin to the specified net as pin_type. Automatically removes
 		//any previous net connection for this pin.
 		//  pin      : The pin to add
@@ -468,11 +462,25 @@ class Netlist {
 		//  net      : The net to add the pin to
 		void set_pin_net(const PinId pin, PinType pin_type, const NetId net);
 
+	public: //Public Mutators
+		//Mark a pin as being a constant generator.
+		// There are some cases where a pin can not be identified as a is constant until after
+		// the full netlist has been built; so we expose a way to mark existing pins as constants.
+		//  pin_id  : The pin to be marked
+		//  value   : The boolean value to set the pin_is_constant attribute
+		void set_pin_is_constant(const PinId pin_id, const bool value);
+
 		/*
 		* Note: all remove_*() will mark the associated items as invalid, but the items
 		* will not be removed until compress() is called.
 		*/
+		//Wrapper for remove_unused() & compress()
+		// This function should be used in the case where a netlist is fully modified
+		void remove_and_compress();
 
+		//This should be called after completing a series of netlist modifications 
+		//(e.g. removing blocks/ports/pins/nets).
+		//
 		//Marks netlist components which have become redundant due to other removals
 		//(e.g. ports with only invalid pins) as invalid so they will be destroyed during
 		//compress()
@@ -481,14 +489,11 @@ class Netlist {
 		//Compresses the netlist, removing any invalid and/or unreferenced
 		//blocks/ports/pins/nets.
 		//
-		//This should be called after completing a series of netlist modifications 
-		//(e.g. removing blocks/ports/pins/nets).
+		//This is currently used by just the ClusteredNetlist, as it requires compression
+		//if a selected CLB fails to pack.
 		//
 		//NOTE: this invalidates all existing IDs!
-		void compress(	vtr::vector_map<BlockId, BlockId>& block_id_map,
-						vtr::vector_map<PortId, PortId>& port_id_map,
-						vtr::vector_map<PinId, PinId>& pin_id_map,
-						vtr::vector_map<NetId, NetId>& net_id_map);
+		void compress();
 
 	public: //Public Accessors
 		/*
@@ -796,6 +801,20 @@ class Netlist {
 		bool valid_pin_id(PinId id) const;
 		bool valid_net_id(NetId id) const;
 		bool valid_string_id(StringId id) const;
+
+	protected: //Protected virtual functions implemented in derived classes
+		//The functions follow the Non-Virtual Interface (NVI) idiom, and 
+		//are called from this class in their respective non-impl() functions.
+		virtual void shrink_to_fit_impl() = 0;
+		virtual bool validate_block_sizes_impl() const = 0;
+		virtual bool validate_port_sizes_impl() const = 0;
+		virtual bool validate_pin_sizes_impl() const = 0;
+		virtual bool validate_net_sizes_impl() const = 0;
+
+		virtual void clean_blocks_impl(const vtr::vector_map<BlockId, BlockId>& block_id_map) = 0;
+		virtual void clean_ports_impl(const vtr::vector_map<PortId, PortId>& port_id_map) = 0;
+		virtual void clean_pins_impl(const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
+		virtual void clean_nets_impl(const vtr::vector_map<NetId, NetId>& net_id_map) = 0;
 
 	protected: //Protected Data
 		std::string netlist_name_;	//Name of the top-level netlist

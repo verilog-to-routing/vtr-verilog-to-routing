@@ -134,7 +134,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 				*/
 				VTR_ASSERT(pb_type->ports[i].is_clock == false);
 
-                AtomPortId port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, pb_type->ports[i].name);
+                AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
                 if(port_id) {
                     for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
                         AtomPinId pin_id = atom_ctx.nlist.port_pin(port_id, j);
@@ -171,7 +171,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, pb_type->ports[i].name);
+                auto port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
                 auto pin_id = atom_ctx.nlist.port_pin(port_id, 0);
                 VTR_ASSERT(pin_id);
                 VTR_ASSERT(atom_ctx.nlist.pin_net(pin_id) == pb_route[node_index].atom_net_id);
@@ -207,7 +207,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, pb_type->ports[i].name);
+                auto port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
                 auto pin_id = atom_ctx.nlist.port_pin(port_id, 0);
                 VTR_ASSERT(pin_id);
                 VTR_ASSERT(atom_ctx.nlist.pin_net(pin_id) == pb_route[node_index].atom_net_id);
@@ -260,7 +260,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 			if (pb_type->ports[i].type == OUT_PORT) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-                AtomPortId port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, pb_type->ports[i].name);
+                AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
                 auto net_id = atom_ctx.nlist.port_net(port_id, 0);
 				VTR_ASSERT(net_id == pb_route[node_index].atom_net_id);
 				fprintf(fpout, "\n.names %s clb_%lu_rr_node_%d\n", atom_ctx.nlist.net_name(net_id).c_str(), size_t(clb_index), node_index);
@@ -275,7 +275,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 		t_model_ports *port = cur->inputs;
 		
 		while (port != NULL) {
-            AtomPortId port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, port->name);
+            AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
                 fprintf(fpout, "%s[%d]=", port->name, i);
 
@@ -283,7 +283,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 					VTR_ASSERT(port->index == 0);
 					VTR_ASSERT(port->size == 1);
 
-                    VTR_ASSERT(atom_ctx.nlist.port_type(port_id) == AtomPortType::CLOCK);
+                    VTR_ASSERT(atom_ctx.nlist.port_type(port_id) == PortType::CLOCK);
                 }
 
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, i);
@@ -309,7 +309,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 		/* Print output ports */
 		port = cur->outputs;
 		while (port != NULL) {
-            AtomPortId port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, port->name);
+            AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, i);
 
@@ -337,7 +337,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
         /* Print output buffers */
         port = cur->outputs;
         while (port != NULL) {
-            AtomPortId port_id = atom_ctx.nlist.Netlist::find_port(atom_blk, port->name);
+            AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
             for (int ipin = 0; ipin < port->size; ipin++) {
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, ipin);
                 if (net_id) {

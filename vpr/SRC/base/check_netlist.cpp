@@ -108,7 +108,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
     auto& device_ctx = g_vpr_ctx.device();
 	
 	unsigned int error = 0;
-	bool is_global_net = cluster_ctx.clb_nlist.net_global(net_id);
+	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
 	 * although a CLB output generates a warning.  I could make a global CLB      *
@@ -116,7 +116,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
 	 * this warning.                                                              */
 	for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 		ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-		int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+		int pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 
 		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
 			&& cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.IO_TYPE) {

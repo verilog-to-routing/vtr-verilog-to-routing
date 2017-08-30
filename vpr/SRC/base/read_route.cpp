@@ -133,7 +133,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
             && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
-        if (!cluster_ctx.clb_nlist.net_global(inet)) {
+        if (!cluster_ctx.clb_nlist.net_is_global(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net %lu should be a global net", size_t(inet));
         }
@@ -150,7 +150,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         process_global_blocks(fp, inet);
     } else {
         /* Not a global net */
-        if (cluster_ctx.clb_nlist.net_global(inet)) {
+        if (cluster_ctx.clb_nlist.net_is_global(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net %lu is not a global net", size_t(inet));
         }
@@ -368,7 +368,7 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
                         x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
             }
 
-			int pin_index = cluster_ctx.clb_nlist.pin_index(inet, pin_counter);
+			int pin_index = cluster_ctx.clb_nlist.physical_pin_index(inet, pin_counter);
             if (cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "The pin class %d of %lu net does not match given ",

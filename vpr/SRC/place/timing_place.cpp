@@ -82,7 +82,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_global(net_id))
 			continue;
 		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
             float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, net_id, ipin);

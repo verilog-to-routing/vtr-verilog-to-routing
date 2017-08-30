@@ -200,7 +200,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 if (cmd.type == sdcparse::IoDelayType::INPUT) {
 
 
-                    if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
+                    if(netlist_.pin_type(pin) == PinType::DRIVER) {
                         if (is_max) {
                             tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
                         }
@@ -208,7 +208,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                             tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
                         }
                     } else {
-                        VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::SINK);
+                        VTR_ASSERT(netlist_.pin_type(pin) == PinType::SINK);
 
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
@@ -220,7 +220,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 } else {
                     VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
-                    if(netlist_.pin_type(pin) == AtomPinType::SINK) {
+                    if(netlist_.pin_type(pin) == PinType::SINK) {
                         if (is_max) {
                             tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
                         }
@@ -229,7 +229,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         }
 
                     } else {
-                        VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::DRIVER);
+                        VTR_ASSERT(netlist_.pin_type(pin) == PinType::DRIVER);
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 

@@ -1235,7 +1235,7 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
 			/* In the routing graph, each (x, y) location has unique pins on it
 			* so when there is capacity, blocks are packed and their pin numbers
 			* are offset to get their actual rr_node */
-			pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+			pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 
 			iclass = type->pin_class[pin_index];
 

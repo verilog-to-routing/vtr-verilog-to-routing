@@ -25,11 +25,11 @@
 *	
 * Differences between block_nets_ & block_net_count_
 * --------------------------------------------------
-*			+-----------+
-*		0-->|			|-->3
-*		1-->|   Block	|-->4
-*		2-->|			|-->5
-*			+-----------+
+*           +-----------+
+*       0-->|           |-->3
+*       1-->|   Block   |-->4
+*       2-->|           |-->5
+*           +-----------+
 *
 * block_nets_ tracks all pins, and has the ClusterNetId to which a pin is connected to.
 * If the pin is unused/open, ClusterNetId::INVALID() is stored.
@@ -42,17 +42,17 @@
 * The net is connected to multiple blocks. Each block_net_count_ has a unique number in that net.
 *
 * E.g.
-*			+-----------+					+-----------+
-*		0-->|			|-->3  Net A	0-->|			|-->3
-*		1-->|  Block 1	|---4---------->1-->|  Block 2	|-->4
-*		2-->|			|-->5			2-->|			|-->5
-*			+-----------+				|	+-----------+
-*										|
-*										|	+-----------+
-*										|	|			|-->1
-*										0-->|  Block 3	|
-*											|			|-->2
-*											+-----------+
+*           +-----------+                   +-----------+
+*       0-->|           |-->3   Net A   0-->|           |-->3
+*       1-->|  Block 1  |---4---------->1-->|  Block 2  |-->4
+*       2-->|           |-->5           2-->|           |-->5
+*           +-----------+               |   +-----------+
+*                                       |
+*                                       |   +-----------+
+*                                       |   |           |-->1
+*                                       0-->|  Block 3  |
+*                                           |           |-->2
+*                                           +-----------+
 *
 * In the example, Net A is driven by Block 1, and received by Blocks 2 & 3.
 * For Block 1, block_net_count_ of pin 4 would then return 0, as it is the driver.
@@ -63,21 +63,21 @@
 * Pin
 * ---
 * The only piece of unique pin information is:
-*		pin_index_
+*		physical_pin_index_
 *
-* Example of pin_index_
+* Example of physical_pin_index_
 * ---------------------
-* Given a ClusterPinId, pin_index_ will return the index of the pin within it's block. 
+* Given a ClusterPinId, physical_pin_index_ will return the index of the pin within it's block. 
 * 
-*			+-----------+
-*		0-->|X		   X|-->3
-*		1-->|O  Block  O|-->4
-*		2-->|O		   O|-->5 (e.g. ClusterPinId = 92)
-*			+-----------+
+*           +-----------+
+*       0-->|X         X|-->3
+*       1-->|O  Block  O|-->4
+*       2-->|O         O|-->5 (e.g. ClusterPinId = 92)
+*           +-----------+
 * 
 * The index skips over unused pins, e.g. CLB has 6 pins (3 in, 3 out, numbered [0...5]), where
 * the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5] 
-* represent the outs. Indices [2,3] are unused. Therefore, pin_index_[92] = 5.
+* represent the outs. Indices [2,3] are unused. Therefore, physical_pin_index_[92] = 5.
 *
 * Nets
 * ----
@@ -140,17 +140,17 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
 		ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, const PortType port_type, int _pin_index, bool is_const=false);
 
-		//Sets the pin's index in a block
+		//Sets the mapping of a ClusterPinId to the block's type descriptor's pin index 
 		//  pin_id   : The pin to be set
 		//  index    : The new index to set the pin to
-		void	set_pin_index(const ClusterPinId pin_id, const int index);
+		void	set_physical_pin_index(const ClusterPinId pin_id, const int index);
 
 		//Create an empty, or return an existing net in the netlist
 		//  name     : The unique name of the net
 		ClusterNetId	create_net(const std::string name);
 
 		//Sets the netlist id based on a file digest's string
-		void set_netlist_id(std::string id);
+		void set_netlist_id(std::string netlist_id);
 		
 		//Sets the flag in net_global_ = state
 		void set_global(ClusterNetId net_id, bool state);
@@ -165,15 +165,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//  blk_id  : The block to be removed
 		void remove_block(const ClusterBlockId blk_id);
 
-		//TODO: May want to add remove_net/remove_pin, although this isn't currently used
-
-		//Compresses the netlist, removing any invalid and/or unreferenced
-		//blocks/ports/pins/nets.
-		//
-		//NOTE: this invalidates all existing IDs!
-		//		This also does NOT call the Netlist implementation of compress
-		void compress();
-
+		//TODO: May want to add remove_net/remove_pin, although it wouldn't be currently used
 
 	public: //Public Accessors
 		/*
@@ -195,13 +187,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		* Pins
 		*/
 		//Returns the index of the block which the pin belongs to
-		int pin_index(const ClusterPinId id) const;
+		int physical_pin_index(const ClusterPinId id) const;
 
 		//Finds the count'th net_pins (e.g. the 6th pin of the net) and
 		//returns the index of the block which that pin belongs to
 		//  net_id     : The net to iterate through
 		//  count      : The index of the pin in the net
-		int pin_index(ClusterNetId net_id, int count) const;
+		int physical_pin_index(ClusterNetId net_id, int count) const;
 
 		/*
 		* Nets
@@ -215,33 +207,34 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		int net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const;
 
 		//Returns whether the net is global or fixed
-		bool net_global(const ClusterNetId id) const;
-		bool net_routed(const ClusterNetId id) const;
-		bool net_fixed(const ClusterNetId id) const;
+		bool net_is_global(const ClusterNetId id) const;
+		bool net_is_routed(const ClusterNetId id) const;
+		bool net_is_fixed(const ClusterNetId id) const;
 
 	private: //Private Members
 		/*
          * Netlist compression/optimization
          */
         //Removes invalid and reorders blocks
-        void clean_blocks(const vtr::vector_map<ClusterBlockId,ClusterBlockId>& block_id_map);
-
+        void clean_blocks_impl(const vtr::vector_map<ClusterBlockId,ClusterBlockId>& block_id_map);
+		//Unused function, declared as they are virtual functions in the base Netlist class 
+		void clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map);
 		//Removes invalid and reorders pins
-		void clean_pins(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map);
-
+		void clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map);
 		//Removes invalid and reorders nets
-		void clean_nets(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map);
+		void clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map);
 
         //Shrinks internal data structures to required size to reduce memory consumption
-        void shrink_to_fit();
+        void shrink_to_fit_impl();
 
 		/*
 		* Sanity Checks
 		*/
 		//Verify the internal data structure sizes match
-		bool validate_block_sizes() const;
-		bool validate_pin_sizes() const;
-		bool validate_net_sizes() const;
+		bool validate_block_sizes_impl() const;
+		bool validate_port_sizes_impl() const; //Unused function, declared as they are virtual functions in the base Netlist class 
+		bool validate_pin_sizes_impl() const;
+		bool validate_net_sizes_impl() const;
 
 	private: //Private Data
 		
@@ -252,12 +245,12 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_net_count_;	//The count of the nets related to the block
 
 		//Pins
-		vtr::vector_map<ClusterPinId, int>								pin_index_;			//The index of the pins relative to its block
+		vtr::vector_map<ClusterPinId, int>								physical_pin_index_;//The indices of pins on a block from its type descriptor, numbered sequentially from [0 .. num_pins - 1]
 			
 		//Nets	
-		vtr::vector_map<ClusterNetId, bool>							net_global_;		//Boolean mapping indicating if the net is
-		vtr::vector_map<ClusterNetId, bool>							net_routed_;		//Global, routed, or fixed (mutually exclusive).
-		vtr::vector_map<ClusterNetId, bool>							net_fixed_;			//TODO: transfer net routing state to RoutingContext
+		vtr::vector_map<ClusterNetId, bool>							net_is_global_;		//Boolean mapping indicating if the net is
+		vtr::vector_map<ClusterNetId, bool>							net_is_routed_;		//Global, routed, or fixed (mutually exclusive).
+		vtr::vector_map<ClusterNetId, bool>							net_is_fixed_;			//TODO: transfer net routing state to RoutingContext
 };
 
 #endif

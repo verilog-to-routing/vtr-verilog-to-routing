@@ -801,14 +801,13 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
 
 void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (!vpr_setup.RouterOpts.doRouting) {
         //Load up netlist and other device parameters
         vpr_init_pre_place_and_route(vpr_setup, Arch);
 
         read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(),
-                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.grid, cluster_ctx.clb_nlist.blocks().size());
+                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.grid);
         sync_grid_to_blocks();
 
         post_place_sync();

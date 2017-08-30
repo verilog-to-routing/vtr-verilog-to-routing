@@ -96,10 +96,10 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	if (cluster_ctx.clb_nlist.net_fixed(net_id)) { /* Skip pre-routed nets. */
+	if (cluster_ctx.clb_nlist.net_is_fixed(net_id)) { /* Skip pre-routed nets. */
 		is_routed = true;
 
-	} else if (cluster_ctx.clb_nlist.net_global(net_id)) { /* Skip global nets. */
+	} else if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Skip global nets. */
 		is_routed = true;
 
 	} else {

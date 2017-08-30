@@ -377,7 +377,7 @@ sub run_single_task {
 
 
             #Build the command to run
-            my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params" ;
+            my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params --hhmetis_input_file hypergraph.hgr" ;
 
             #Determine the SDC file name
             my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";

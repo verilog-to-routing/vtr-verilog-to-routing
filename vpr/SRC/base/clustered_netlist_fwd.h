@@ -7,6 +7,9 @@
 * StrongId's for the ClusteredNetlist class
 */
 
+//Forward declaration
+class ClusteredNetlist;
+
 //Type tags for Ids
 struct cluster_block_id_tag;
 struct cluster_net_id_tag;

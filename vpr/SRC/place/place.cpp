@@ -1007,7 +1007,7 @@ static int count_connections() {
 
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_global(net_id))
 			continue;
 
 		count += cluster_ctx.clb_nlist.net_sinks(net_id).size();
@@ -1424,7 +1424,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				net_id = cluster_ctx.clb_nlist.block_net(bnum, iblk_pin);
 				if (net_id == ClusterNetId::INVALID())
 					continue;
-				if (cluster_ctx.clb_nlist.net_global(net_id))
+				if (cluster_ctx.clb_nlist.net_is_global(net_id))
 					continue;
 			
 				if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
@@ -1588,7 +1588,7 @@ static int find_affected_nets() {
 			net_id = cluster_ctx.clb_nlist.block_net(bnum, iblk_pin);
 			if (net_id == ClusterNetId::INVALID())
 				continue;
-			if (cluster_ctx.clb_nlist.net_global(net_id))
+			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 			
 			if (temp_net_cost[net_id] < 0.) { 
@@ -1763,7 +1763,7 @@ static float recompute_bb_cost(void) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-		if (!cluster_ctx.clb_nlist.net_global(net_id)) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
 			/* Bounding boxes don't have to be recomputed; they're correct. */
 			cost += net_cost[net_id];
 		}
@@ -1779,7 +1779,7 @@ static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin) {
 
 	float delay_source_to_sink = 0.;
 
-	if (!cluster_ctx.clb_nlist.net_global(net_id)) {
+	if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
 		//Only estimate delay for signals routed through the inter-block
 		//routing network. Global signals are assumed to have zero delay.
 		ClusterBlockId source_block, sink_block;
@@ -1841,10 +1841,10 @@ static void update_td_cost(void) {
 		for (auto pin_id : cluster_ctx.clb_nlist.block_pins(bnum)) {
 			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-			if (cluster_ctx.clb_nlist.net_global(net_id))
+			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
-			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.pin_index(pin_id)];
+			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.physical_pin_index(pin_id)];
 
 			if (net_pin != 0) {
 				driven_by_moved_block = false;
@@ -1898,7 +1898,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 
 			if (net_id == ClusterNetId::INVALID())
 				continue;
-			if (cluster_ctx.clb_nlist.net_global(net_id))
+			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
 			net_pin = net_pin_index[bnum][iblk_pin];
@@ -1956,7 +1956,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_connection_delay_sum = 0.;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
-		if (!cluster_ctx.clb_nlist.net_global(net_id)) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
 			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 				temp_delay_cost = comp_td_point_to_point_delay(net_id, ipin);
 				temp_timing_cost = temp_delay_cost * get_timing_place_crit(net_id, ipin);
@@ -1993,7 +1993,7 @@ static float comp_bb_cost(enum cost_methods method) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-		if (!cluster_ctx.clb_nlist.net_global(net_id)) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */
 			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == NORMAL) {
@@ -2168,11 +2168,11 @@ static void alloc_and_load_net_pin_index() {
 
 	/* Load the values */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_global(net_id))
 			continue;
 		netpin = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-			int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+			int pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 			ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 			net_pin_index[block_id][pin_index] = netpin;
 			netpin++;
@@ -2214,7 +2214,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 	auto& grid = device_ctx.grid;
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-	pnum = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+	pnum = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 
@@ -2232,7 +2232,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-		pnum = cluster_ctx.clb_nlist.pin_index(pin_id);
+		pnum = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
 		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 
@@ -2377,7 +2377,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-	pnum = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+	pnum = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 	
@@ -2388,7 +2388,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-		pnum = cluster_ctx.clb_nlist.pin_index(pin_id);
+		pnum = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
 		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 

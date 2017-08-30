@@ -439,13 +439,8 @@ static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node
 		}
 	} else {
 		for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-			for (j = 0;
-					j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-					j++) {
-				for (k = 0;
-						k
-								< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
+			for (j = 0;	j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				for (k = 0;	k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					update_primitive_cost_or_status(
 							&pb_graph_node->child_pb_graph_nodes[i][j][k],
 							incremental_cost, valid);
@@ -793,7 +788,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 
 				model_port = root->output_pins[i][j].port->model_port;
 
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
                 if(port_id) {
                     AtomNetId net_id = atom_ctx.nlist.port_net(port_id, j);
     

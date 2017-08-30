@@ -22,6 +22,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		enum e_packer_algorithm packer_algorithm,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name
+#ifdef USE_HMETIS
+		, std::vector<vector<ClusterBlockId>>& partitions
+#endif
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf
 #endif

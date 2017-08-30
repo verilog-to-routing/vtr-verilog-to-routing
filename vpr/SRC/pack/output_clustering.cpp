@@ -353,7 +353,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
                 AtomBlockId atom_blk = atom_ctx.nlist.find_block(pb->name);
                 VTR_ASSERT(atom_blk);
 
-                AtomPortId atom_port = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].model_port);
+                AtomPortId atom_port = atom_ctx.nlist.find_atom_port(atom_blk, pb_type->ports[i].model_port);
 
                 if(atom_port) { //Port exists (some LUTs may have no input and hence no port in the atom netlist)
 

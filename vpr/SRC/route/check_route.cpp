@@ -74,7 +74,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	/* Now check that all nets are indeed connected. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_is_global(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip global nets. */
 			continue;
 
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
@@ -179,11 +179,11 @@ static void check_sink(int inode, ClusterNetId net_id, bool * pin_done) {
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
-		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
+		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
 		ipin = 1;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
-				pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+				pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 				iclass = type->pin_class[pin_index];
 				if (iclass == ptc_num) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *
@@ -241,7 +241,7 @@ static void check_source(int inode, ClusterNetId net_id) {
 	}
 
 	//Get the driver pin's index in the block
-	node_block_pin = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+	node_block_pin = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
 	iclass = type->pin_class[node_block_pin];
             
 	if (ptc_num != iclass) {		
@@ -530,7 +530,7 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 	/* Now go through each net and count the tracks and pins used everywhere */
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id)) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Skip global nets. */
 			continue;
 
 		tptr = route_ctx.trace_head[net_id];

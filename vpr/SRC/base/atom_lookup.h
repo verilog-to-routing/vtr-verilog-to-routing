@@ -29,7 +29,7 @@ class AtomLookup {
         //  Note: this is the lowest level pb which corresponds directly to the atom block
         const t_pb* atom_pb(const AtomBlockId blk_id) const;
 
-        //Returns the atom block id assoicated with pb
+        //Returns the atom block id associated with pb
         AtomBlockId pb_atom(const t_pb* pb) const;
 
         //Conveneince wrapper around atom_pb to access the associated graph node
@@ -101,10 +101,6 @@ class AtomLookup {
         //Sets the bi-directional mapping between an atom netlist pin and timing graph node
         void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type=BlockTnode::EXTERNAL);
     private: //Types
-        //A vtr::linear_map using OPEN as the sentinel key
-//       template<class K, class V>
-//       using linear_map_clb_net = vtr::linear_map<K,V,vtr::CustomSentinel<K,OPEN>>;
-
         //A vtr::linear_map using -1 as the sentinel key
         template<class K, class V>
         using linear_map_classic_tnode = vtr::linear_map<K,V,vtr::MinusOneSentinel<K>>;

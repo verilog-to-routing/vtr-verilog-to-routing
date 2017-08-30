@@ -40,19 +40,6 @@ typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
 //A signal index in a port
 typedef unsigned BitIndex;
 
-//The type of a port in the AtomNetlist
-enum class AtomPortType : char {
-    INPUT,  //The port is a data-input
-    OUTPUT, //The port is an output (usually data, but potentially a clock)
-    CLOCK   //The port is an input clock
-};
-
-//The type of a pin in the AtomNetlist
-enum class AtomPinType : char {
-    DRIVER, //The pin drives a net
-    SINK    //The pin is a net sink
-};
-
 //The type of a block in the AtomNetlist
 enum class AtomBlockType : char {
     INPAD,          //A primary input

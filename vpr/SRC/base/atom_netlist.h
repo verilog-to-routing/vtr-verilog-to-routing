@@ -8,15 +8,61 @@
 * Overview
 * ========
 * The AtomNetlist is derived from the Netlist class, and contains information on the primitives.
+* This includes basic components (Blocks, Ports, Pins, & Nets), and physical descriptions (t_model)
+* of the primitives.
+* 
+* Most of the functionality relevant to components and their accessors/cross-accessors
+* is implemented in the Netlist class. Refer to netlist.(h|tpp) for more information.
+*
+*
+* Components
+* ==========
+* There are 4 components in the Netlist: Blocks, Ports, Pins, and Nets.
+* Each component has a unique ID in the netlist, as well as various associations to their
+* related components (e.g. A pin knows which port it belongs to, and what net it connects to)
+*
+*
+* Blocks
+* ------
+* Blocks refer to the atoms (AKA primitives) that are in the the netlist. Each block contains
+* input/output/clock ports. Blocks have names, and various functionalities (LUTs, FFs, RAMs, ...)
+* Each block has an associated t_model, describing the physical properties.
+*
+* Ports
+* -----
+* Ports are composed of a set of pins that have specific directionality (INPUT, OUTPUT, or CLOCK).
+* The ports in the AtomNetlist are respective to the atoms. (i.e. the AtomNetlist does not contain
+* ports of a Clustered Logic Block). Each port has an associated t_model_port, describing the 
+* physical properties.
+*
+* Pins
+* ----
+* Pins are single-wire input/outputs. They are part of a port, and are connected to a single net.
+* 
+* Nets
+* ----
+* Nets in the AtomNetlist track the wiring connections between the atoms.
 *
 * Models
 * ------
 * There are two main models, the primitive itself (t_model) and the ports of that primitive (t_model_ports).
-* The models are created from the architecture file.
+* The models are created from the architecture file, and describe the physical properties of the atom.
 *
-* The AtomNetlist also contains a TruthTable for each block, which indicates what the LUTs map to.
+* Truth Table
+* -----------
+* The AtomNetlist also contains a TruthTable for each block, which indicates what the LUTs contain.
+*
+* Implementation
+* ==============
+* For all create_* functions, the AtomNetlist will wrap and call the Netlist's version as it contains 
+* additional information that the Netlist does not know about.
+* 
+* All functions with suffix *_impl() follow the Non-Virtual Interface (NVI) idiom. 
+* They are called from the base Netlist class to simplify pre/post condition checks and 
+* prevent Fragile Base Class (FBC) problems.
 *
 */
+
 #include <vector>
 #include <unordered_map>
 
@@ -45,7 +91,7 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Blocks
          */
         //Returns the type of the specified block
-        AtomBlockType       block_type          (const AtomBlockId id) const;
+        AtomBlockType       block_type(const AtomBlockId id) const;
 
 		//Returns the model associated with the block
 		const t_model*      block_model(const AtomBlockId id) const;
@@ -63,7 +109,7 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Ports
          */
         //Returns the type of the specified port
-        AtomPortType			port_type(const AtomPortId id) const; 
+        PortType			port_type(const AtomPortId id) const; 
 
 		//Returns the model port of the specified port or nullptr if not
 		//  id: The ID of the port to look for
@@ -73,10 +119,10 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Pins
          */
         //Returns the pin type of the specified pin
-        AtomPinType			pin_type(const AtomPinId id) const; 
+        PinType				pin_type(const AtomPinId id) const; 
 
         //Returns the port type associated with the specified pin
-        AtomPortType		pin_port_type(const AtomPinId id) const;
+        PortType		pin_port_type(const AtomPinId id) const;
 
 		/*
 		* Lookups
@@ -85,7 +131,7 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
 		//Note that this method is typically more efficient than searching by name
 		//  blk_id: The ID of the block who's ports will be checked
 		//  model_port: The port model to look for
-		AtomPortId  find_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
+		AtomPortId  find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
         /*
          * Utility
@@ -118,7 +164,7 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         //  pin_type   : The type of the pin (driver/sink)
 		//  port_type  : The type of the port (input/output/clock)
         //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType pin_type, const AtomPortType port_type, bool is_const=false);
+        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type, const PortType port_type, bool is_const=false);
 
         //Create an empty, or return an existing net in the netlist
         //  name    : The unique name of the net
@@ -130,28 +176,12 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         //  sinks   : The net's sink pins
         AtomNetId   add_net     (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
-        //Mark a pin as being a constant generator.
-        // There are some cases where a pin can not be identified as a is constant until after
-        // the full netlist has been built; so we expose a way to mark existing pins as constants.
-        //  pin_id  : The pin to be marked
-        //  value   : The boolean value to set the pin_is_constant attribute
-        void set_pin_is_constant(const AtomPinId pin_id, const bool value);
-
         //Add the specified pin to the specified net as pin_type. Automatically removes
         //any previous net connection for this pin.
         //  pin      : The pin to add
         //  pin_type : The type of the pin (i.e. driver or sink)
         //  net      : The net to add the pin to
-        void set_pin_net(const AtomPinId pin, AtomPinType pin_type, const AtomNetId net);
-
-        //Compresses the netlist, removing any invalid and/or unreferenced
-        //blocks/ports/pins/nets.
-        //
-        //This should be called after completing a series of netlist modifications 
-        //(e.g. removing blocks/ports/pins/nets).
-        //
-        //NOTE: this invalidates all existing IDs!
-        void compress();
+        void set_pin_net(const AtomPinId pin, PinType pin_type, const AtomNetId net);
 
     private: //Private types
         //A unique identifier for a string in the atom netlist
@@ -162,21 +192,26 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Netlist compression/optimization
          */
         //Removes invalid and reorders blocks
-        void clean_blocks(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map);
-
+        void clean_blocks_impl(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map);
         //Removes invalid and reorders ports
-        void clean_ports(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
+        void clean_ports_impl(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
+		//Unused functions, declared as they are virtual functions in the base Netlist class 
+		void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map);
+		void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map);
 
         //Shrinks internal data structures to required size to reduce memory consumption
-        void shrink_to_fit();
+        void shrink_to_fit_impl();
 
         /*
          * Sanity Checks
          */
         //Verify the internal data structure sizes match
         bool verify_sizes() const; //All data structures
-        bool validate_block_sizes() const;
-		bool validate_port_sizes() const;
+        bool validate_block_sizes_impl() const;
+		bool validate_port_sizes_impl() const;
+		//Unused functions, declared as they are virtual functions in the base Netlist class 
+		bool validate_pin_sizes_impl() const;
+		bool validate_net_sizes_impl() const;
 
 		//Verify that internal data structure cross-references are consistent
 		bool verify_refs() const; //All cross-references

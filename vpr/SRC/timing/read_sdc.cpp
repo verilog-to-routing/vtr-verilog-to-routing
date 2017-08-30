@@ -824,7 +824,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 
                 //Check all the clock generating ports
                 for(const t_model_ports* model_port : clock_gen_ports[model]) {
-                    AtomPortId clk_gen_port = atom_ctx.nlist.find_port(blk_id, model_port);
+                    AtomPortId clk_gen_port = atom_ctx.nlist.find_atom_port(blk_id, model_port);
 
                     for(AtomPinId pin_id : atom_ctx.nlist.port_pins(clk_gen_port)) {
                         AtomNetId clk_net_id = atom_ctx.nlist.pin_net(pin_id);

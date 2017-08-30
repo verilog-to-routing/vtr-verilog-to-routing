@@ -198,7 +198,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
        update_net_delays_from_route_tree() inside timing_driven_route_net(), 
        which is only called for non-global nets. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_global(net_id)) {
+        if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
             for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
                 net_delay[net_id][ipin] = 0.;
             }
@@ -438,9 +438,9 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
 
     connections_inf.prepare_routing_for_net(net_id);
 
-    if (cluster_ctx.clb_nlist.net_fixed(net_id)) { /* Skip pre-routed nets. */
+    if (cluster_ctx.clb_nlist.net_is_fixed(net_id)) { /* Skip pre-routed nets. */
         is_routed = true;
-    } else if (cluster_ctx.clb_nlist.net_global(net_id)) { /* Skip global nets. */
+    } else if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Skip global nets. */
         is_routed = true;
     } else if (should_route_net(net_id, connections_inf) == false) {
         is_routed = true;
@@ -535,7 +535,7 @@ int get_max_pins_per_net(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_global(net_id))
+        if (!cluster_ctx.clb_nlist.net_is_global(net_id))
             max_pins_per_net = max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 
@@ -627,7 +627,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
     update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id);
 
-    if (!cluster_ctx.clb_nlist.net_global(net_id)) {
+    if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
                 VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
@@ -1600,7 +1600,7 @@ static WirelengthInfo calculate_wirelength_info() {
     }
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_global(net_id)
+        if (!cluster_ctx.clb_nlist.net_is_global(net_id)
                 && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
             get_num_bends_and_length(net_id, &bends, &wirelength, &segments);

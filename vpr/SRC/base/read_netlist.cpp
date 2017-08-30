@@ -888,8 +888,8 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					//Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
 					VTR_ASSERT(blk_id == clb_nlist->pin_block(*(clb_nlist->net_pins(clb_net_id).begin() + count[clb_net_id])));
 					//Asserts the block's pin index is the same
-					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[clb_net_id])));
-					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, count[clb_net_id]));
+					VTR_ASSERT(j == clb_nlist->physical_pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[clb_net_id])));
+					VTR_ASSERT(j == clb_nlist->physical_pin_index(clb_net_id, count[clb_net_id]));
 
 					if (clb_nlist->block_type(blk_id)->is_global_pin[j])
 						clb_nlist->set_global(clb_net_id, true);
@@ -900,8 +900,8 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
-					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin())));
-					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, 0));
+					VTR_ASSERT(j == clb_nlist->physical_pin_index(*(clb_nlist->net_pins(clb_net_id).begin())));
+					VTR_ASSERT(j == clb_nlist->physical_pin_index(clb_net_id, 0));
 
                     //Mark the net pin numbers on the block
 					clb_nlist->set_block_net_count(blk_id, j, 0); //Driver
@@ -914,8 +914,8 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
     VTR_ASSERT(ext_ncount == static_cast<int>(clb_nlist->nets().size()));
 	for (auto net_id : clb_nlist->nets()) {
 		for (auto pin_id : clb_nlist->net_sinks(net_id)) {
-			bool is_global_net = clb_nlist->net_global(net_id);
-			if (clb_nlist->block_type(clb_nlist->pin_block(pin_id))->is_global_pin[clb_nlist->pin_index(pin_id)] != is_global_net) {
+			bool is_global_net = clb_nlist->net_is_global(net_id);
+			if (clb_nlist->block_type(clb_nlist->pin_block(pin_id))->is_global_pin[clb_nlist->physical_pin_index(pin_id)] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					"Netlist attempts to connect net %s to both global and non-global pins.\n",
 					clb_nlist->net_name(net_id).c_str());
@@ -923,7 +923,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 		}
 		for (j = 0; j < num_tokens; j++) {
 			if (0 == clb_nlist->net_name(net_id).compare(circuit_clocks[j].c_str())) {
-				VTR_ASSERT(clb_nlist->net_global(net_id));
+				VTR_ASSERT(clb_nlist->net_is_global(net_id));
 			}
 		}
 	}
@@ -1042,7 +1042,7 @@ static void load_atom_pin_mapping() {
         for(int iport = 0; iport < gnode->num_input_ports; ++iport) {
             if (gnode->num_input_pins[iport] <= 0) continue;
 
-            const AtomPortId port = atom_ctx.nlist.find_port(blk, gnode->input_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, gnode->input_pins[iport][0].port->model_port);
             if(!port) continue;
 
             for(int ipin = 0; ipin < gnode->num_input_pins[iport]; ++ipin) {
@@ -1056,7 +1056,7 @@ static void load_atom_pin_mapping() {
         for(int iport = 0; iport < gnode->num_output_ports; ++iport) {
             if (gnode->num_output_pins[iport] <= 0) continue;
 
-            const AtomPortId port = atom_ctx.nlist.find_port(blk, gnode->output_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, gnode->output_pins[iport][0].port->model_port);
             if(!port) continue;
 
             for(int ipin = 0; ipin < gnode->num_output_pins[iport]; ++ipin) {
@@ -1070,7 +1070,7 @@ static void load_atom_pin_mapping() {
         for(int iport = 0; iport < gnode->num_clock_ports; ++iport) {
             if (gnode->num_clock_pins[iport] <= 0) continue;
 
-            const AtomPortId port = atom_ctx.nlist.find_port(blk, gnode->clock_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, gnode->clock_pins[iport][0].port->model_port);
             if(!port) continue;
 
             for(int ipin = 0; ipin < gnode->num_clock_pins[iport]; ++ipin) {
