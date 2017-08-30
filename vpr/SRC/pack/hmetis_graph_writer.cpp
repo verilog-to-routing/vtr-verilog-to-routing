@@ -44,7 +44,7 @@
 
 #include <fstream>
 #include <iostream>
-#include <string.h>
+#include <string>
 #include "vpr_error.h"
 #include "globals.h"
 #include "hmetis_graph_writer.h"

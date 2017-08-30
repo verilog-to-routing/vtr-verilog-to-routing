@@ -2,11 +2,8 @@
 #include <cstring>
 #include <unordered_set>
 #include <unordered_map>
-<<<<<<< Updated upstream
-=======
 #include <fstream>
 #include <stdlib.h>
->>>>>>> Stashed changes
 using namespace std;
 
 #include "vtr_assert.h"
@@ -25,8 +22,6 @@ using namespace std;
 #include "read_blif.h"
 #include "cluster.h"
 
-<<<<<<< Updated upstream
-=======
 /* #define USE_HMETIS 1 */
 #ifdef USE_HMETIS
 #include "hmetis_graph_writer.h"
@@ -35,7 +30,6 @@ static vector<vector<ClusterBlockId>> read_hmetis_graph(string &hmetis_output_fi
 static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe "); 
 #endif
 
->>>>>>> Stashed changes
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
