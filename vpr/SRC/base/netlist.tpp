@@ -439,7 +439,10 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, Bit
 * Validation
 *
 */
-/*bool Netlist::verify() const {
+//Top-level verification method, checks that the sizes
+//references, and lookups are all consistent.
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::verify() const {
 	bool valid = true;
 
 	//Verify data structure consistency
@@ -451,7 +454,20 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, Bit
 	valid &= verify_block_invariants();
 
 	return valid;
-}*/
+}
+
+//Checks that the sizes of internal data structures
+//are consistent. Should take constant time.
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::verify_sizes() const {
+	bool valid = true;
+	valid &= validate_block_sizes();
+	valid &= validate_port_sizes();
+	valid &= validate_pin_sizes();
+	valid &= validate_net_sizes();
+	valid &= validate_string_sizes();
+	return valid;
+}
 
 //Checks that all cross-references are consistent.
 //Should take linear time.
@@ -459,8 +475,11 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::verify_refs() const {
 	bool valid = true;
 	valid &= validate_block_port_refs();
+	valid &= validate_port_pin_refs(); 
+	valid &= validate_block_pin_refs();
 	valid &= validate_net_pin_refs();
 	valid &= validate_string_refs();
+	
 	return valid;
 }
 
@@ -1340,6 +1359,99 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_pin_refs() const {
+	//Verify that block pin refs are consistent 
+	//(e.g. inputs are inputs, outputs are outputs etc.)
+	for (auto blk_id : blocks()) {
+
+		//Check that only input pins are found when iterating through inputs
+		for (auto pin_id : block_input_pins(blk_id)) {
+			auto port_id = pin_port(pin_id);
+
+			auto type = port_type(port_id);
+			if (type != PortType::INPUT) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Non-input pin in block input pins");
+			}
+		}
+
+		//Check that only output pins are found when iterating through outputs
+		for (auto pin_id : block_output_pins(blk_id)) {
+			auto port_id = pin_port(pin_id);
+
+			auto type = port_type(port_id);
+			if (type != PortType::OUTPUT) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Non-output pin in block output pins");
+			}
+		}
+
+		//Check that only clock pins are found when iterating through clocks
+		for (auto pin_id : block_clock_pins(blk_id)) {
+			auto port_id = pin_port(pin_id);
+
+			auto type = port_type(port_id);
+			if (type != PortType::CLOCK) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Non-clock pin in block clock pins");
+			}
+		}
+	}
+	return true;
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_port_pin_refs() const {
+	//Check that port <-> pin references are consistent
+
+	//Track how many times we've seen each pin from the ports
+	vtr::vector_map<PinId, unsigned> seen_pin_ids(pin_ids_.size());
+
+	for (auto port_id : port_ids_) {
+		bool first_bit = true;
+		BitIndex prev_bit_index = 0;
+		for (auto pin_id : port_pins(port_id)) {
+			if (pin_port(pin_id) != port_id) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Port-pin cross-reference does not match");
+			}
+			if (pin_port_bit(pin_id) >= port_width(port_id)) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Out-of-range port bit index");
+			}
+			++seen_pin_ids[pin_id];
+
+			BitIndex port_bit_index = pin_port_bit(pin_id);
+
+			//Verify that the port bit index is legal
+			if (!valid_port_bit(port_id, port_bit_index)) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Invalid pin bit index in port");
+			}
+
+			//Verify that the pins are listed in increasing order of port bit index,
+			//we rely on this property to perform fast binary searches for pins with specific bit
+			//indicies
+			if (first_bit) {
+				prev_bit_index = port_bit_index;
+				first_bit = false;
+			}
+			else if (prev_bit_index >= port_bit_index) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Port pin indicies are not in ascending order");
+			}
+		}
+	}
+
+	//Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
+	//nor shared pins (i.e. referenced by multiple ports)
+	if (!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),[](unsigned val) {
+		return val == 1;
+	})) {
+		VPR_THROW(VPR_ERROR_NETLIST, "Pins referenced by zero or multiple ports");
+	}
+
+	if (std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) != pin_ids_.size()) {
+		VPR_THROW(VPR_ERROR_NETLIST, "Found orphaned pins (not referenced by a port)");
+	}
+
+	return true;
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
 	//Check that net <-> pin references are consistent
 
@@ -1406,6 +1518,55 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_string_refs() const {
 	}
 	return true;
 }
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+bool Netlist<BlockId, PortId, PinId, NetId>::verify_block_invariants() const {
+	for (auto blk_id : blocks()) {
+		//Check block type
+		//Find any connected clock
+		NetId clk_net_id;
+		for (auto pin_id : block_clock_pins(blk_id)) {
+			if (pin_id) {
+				clk_net_id = pin_net(pin_id);
+				break;
+			}
+		}
+
+		if (block_is_combinational(blk_id)) {
+			//Non-sequential types must not have a clock
+			if (clk_net_id) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Block '%s' is a non-sequential type but has a clock '%s'",
+					block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
+			}
+
+		}
+		else {
+			//Sequential types must have a clock
+			if (!clk_net_id) {
+				VPR_THROW(VPR_ERROR_NETLIST, "Block '%s' is sequential type but has no clock",
+					block_name(blk_id).c_str());
+			}
+
+		}
+
+		//Check that block pins and ports are consistent (i.e. same number of pins)
+		size_t num_block_pins = block_pins(blk_id).size();
+
+		size_t total_block_port_pins = 0;
+		for (auto port_id : block_ports(blk_id)) {
+			total_block_port_pins += port_pins(port_id).size();
+		}
+
+		if (num_block_pins != total_block_port_pins) {
+			VPR_THROW(VPR_ERROR_NETLIST, "Block pins and port pins do not match on block '%s'",
+				block_name(blk_id).c_str());
+		}
+	}
+
+	return true;
+}
+
+
 
 /*
 *

@@ -228,13 +228,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		/*
          * Netlist compression/optimization
          */
-        //Removes invalid and reorders blocks
+        //Removes invalid components and reorders them
         void clean_blocks_impl(const vtr::vector_map<ClusterBlockId,ClusterBlockId>& block_id_map);
-		//Unused function, declared as they are virtual functions in the base Netlist class 
-		void clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map);
-		//Removes invalid and reorders pins
+		void clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map); //Unused function, declared as they are virtual functions in the base Netlist class 
 		void clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map);
-		//Removes invalid and reorders nets
 		void clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map);
 
         //Shrinks internal data structures to required size to reduce memory consumption

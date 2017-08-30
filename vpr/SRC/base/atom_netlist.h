@@ -93,10 +93,10 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Blocks
          */
         //Returns the type of the specified block
-        AtomBlockType       block_type(const AtomBlockId id) const;
+        AtomBlockType block_type(const AtomBlockId id) const;
 
 		//Returns the model associated with the block
-		const t_model*      block_model(const AtomBlockId id) const;
+		const t_model* block_model(const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -105,20 +105,20 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         // logic function.
         //
         // For FF/Latches there is only a single entry representing the initial state
-        const TruthTable&   block_truth_table(const AtomBlockId id) const; 
+        const TruthTable& block_truth_table(const AtomBlockId id) const; 
 
         /*
          * Ports
          */
 		//Returns the model port of the specified port or nullptr if not
 		//  id: The ID of the port to look for
-		const t_model_ports*    port_model(const AtomPortId id) const;
+		const t_model_ports* port_model(const AtomPortId id) const;
 
         /*
          * Pins
          */
         //Returns the pin type of the specified pin
-        PinType				pin_type(const AtomPinId id) const; 
+        PinType	pin_type(const AtomPinId id) const; 
 
 		/*
 		* Lookups
@@ -128,12 +128,6 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
 		//  blk_id: The ID of the block who's ports will be checked
 		//  model_port: The port model to look for
 		AtomPortId  find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
-
-        /*
-         * Utility
-         */
-        //Sanity check for internal consistency (throws an exception on failure)
-        bool verify() const;
 
     public: //Public Mutators
         /*
@@ -151,7 +145,7 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         //Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
-        AtomPortId  create_port (const AtomBlockId blk_id, const t_model_ports* model_port);
+        AtomPortId  create_port(const AtomBlockId blk_id, const t_model_ports* model_port);
 
         //Create or return an existing pin in the netlist
         //  port_id    : The port this pin is associated with
@@ -159,21 +153,17 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         //  net_id     : The net the pin drives/sinks
         //  pin_type   : The type of the pin (driver/sink)
         //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type, bool is_const=false);
+        AtomPinId   create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type, bool is_const=false);
 
         //Create an empty, or return an existing net in the netlist
         //  name    : The unique name of the net
-        AtomNetId   create_net  (const std::string name); //An empty or existing net
+        AtomNetId   create_net(const std::string name); //An empty or existing net
 
         //Create a completely specified net from specified driver and sinks
         //  name    : The name of the net (Note: must not already exist)
         //  driver  : The net's driver pin
         //  sinks   : The net's sink pins
-        AtomNetId   add_net     (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
-
-    private: //Private types
-        //A unique identifier for a string in the atom netlist
-        typedef vtr::StrongId<Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>::string_id_tag> AtomStringId;
+        AtomNetId   add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
     private: //Private members
 		/*
@@ -188,12 +178,9 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         /*
          * Netlist compression/optimization
          */
-        //Removes invalid and reorders blocks
+		//Removes invalid components and reorders them
         void clean_blocks_impl(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map);
-
-        //Removes invalid and reorders ports
         void clean_ports_impl(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
-
 		//Unused functions, declared as they are virtual functions in the base Netlist class 
 		void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map);
 		void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map);
@@ -205,21 +192,11 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Sanity checks
          */
         //Verify the internal data structure sizes match
-        bool verify_sizes() const; //All data structures
         bool validate_block_sizes_impl() const;
 		bool validate_port_sizes_impl() const;
-
 		//Unused functions, declared as they are virtual functions in the base Netlist class 
 		bool validate_pin_sizes_impl() const;
 		bool validate_net_sizes_impl() const;
-
-		//Verify that internal data structure cross-references are consistent
-		bool verify_refs() const; //All cross-references
-		bool validate_block_pin_refs() const;
-		bool validate_port_pin_refs() const;
-
-        //Verify that block invariants hold (i.e. logical consistency)
-        bool verify_block_invariants() const;
 
     private: //Private data
         //Block data

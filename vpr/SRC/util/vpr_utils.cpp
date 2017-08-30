@@ -406,7 +406,18 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
     return AtomPinId::INVALID();
 }
 
-//Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
+/* Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
+*   clb: Block in which the the sink pin is located on
+*   sink_pb_pin_id: The physical pin index of the sink pin on the block
+*
+*  Returns a tuple containing
+*   ClusterNetId: Corresponds to the net connected to the sink pin 
+*                 INVALID if not an external CLB pin, or if it's an output (driver pin)
+*   clb_pin: Physical pin index, same as sink_pb_pin_id but potentially with an offset (if z is defined)
+*            -1 if not an external CLB pin, or if it's an output (driver pin)
+*   clb_net_pin: Index of the pin relative to the net, (i.e. 0 = driver, +1 = sink)
+*                -1 if not an external CLB pin, or if it's an output (driver pin)
+*/
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_pin_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 

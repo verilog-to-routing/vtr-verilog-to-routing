@@ -806,6 +806,7 @@ class Netlist {
 		* Sanity Checks
 		*/
 		//Verify the internal data structure sizes match
+		bool verify_sizes() const;
 		bool validate_block_sizes() const;
 		bool validate_port_sizes() const;
 		bool validate_pin_sizes() const;
@@ -815,8 +816,13 @@ class Netlist {
 		//Verify that internal data structure cross-references are consistent
 		bool verify_refs() const; //All cross-references
 		bool validate_block_port_refs() const;
+		bool validate_block_pin_refs() const;
+		bool validate_port_pin_refs() const;
 		bool validate_net_pin_refs() const;
 		bool validate_string_refs() const;
+
+		//Verify that block invariants hold (i.e. logical consistency)
+		bool verify_block_invariants() const;
 
 		//Verify that fast-lookups are consistent with internal data structures
 		bool verify_lookups() const;

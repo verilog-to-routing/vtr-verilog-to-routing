@@ -100,7 +100,6 @@ int ClusteredNetlist::net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) co
 
 	//Ensure that a pin is found
 	VTR_ASSERT(count < (int)net_pins(net_id).size());
-
 	return count;
 }
 

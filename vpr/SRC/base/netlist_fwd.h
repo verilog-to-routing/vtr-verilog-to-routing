@@ -1,11 +1,10 @@
 #ifndef NETLIST_FWD_H
 #define NETLIST_FWD_H
-
 #include "vtr_strong_id.h"
 
 /*
 * Ids
-*
+* ---
 * The Netlist uses unique IDs passed in by derived classes to identify any component of the netlist.
 * To avoid type-conversion errors (e.g. passing a PinId where a NetId was expected),
 * we use vtr::StrongId's to disallow such conversions. See vtr_strong_id.h for details.
