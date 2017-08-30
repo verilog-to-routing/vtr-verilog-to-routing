@@ -127,6 +127,7 @@ void route_budgets::load_route_budgets(float ** net_delay,
     /*go to the associated function depending on user input/default settings*/
     if (router_opts.routing_budgets_algorithm == MINIMAX) {
         allocate_slack_using_weights(net_delay, pb_gpin_lookup);
+        calculate_delay_targets();
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, pb_gpin_lookup, router_opts);
     }
