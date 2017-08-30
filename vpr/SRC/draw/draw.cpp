@@ -134,7 +134,7 @@ static bool draw_if_net_highlighted (ClusterNetId inet);
 static void draw_highlight_fan_in_fan_out(int hit_node);
 static void highlight_nets(char *message, int hit_node);
 static int draw_check_rr_node_hit (float click_x, float click_y);
-static void highlight_rr_nodes(float x, float y);
+static bool highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_color(ClusterBlockId blk_id);
 
@@ -2142,7 +2142,7 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
  * this routine to determine which wire (if any) was clicked on.  If a wire was
  * clicked upon, we highlight it in Magenta, and its fanout in red. 
  */
-static void highlight_rr_nodes(float x, float y) {
+static bool highlight_rr_nodes(float x, float y) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2154,7 +2154,7 @@ static void highlight_rr_nodes(float x, float y) {
 	if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
 		update_message(draw_state->default_message);
 		drawscreen();
-		return;
+		return false; //No rr shown
 	}
 
 	// Check which rr_node (if any) was clicked on.
@@ -2218,7 +2218,7 @@ static void highlight_rr_nodes(float x, float y) {
 		update_message(draw_state->default_message);
         rr_highlight_message = "";
 		drawscreen();
-		return;
+		return false; //No hit
 	}
 
 	if (draw_state->show_nets) {
@@ -2227,6 +2227,7 @@ static void highlight_rr_nodes(float x, float y) {
 		update_message(message);
 
 	drawscreen();
+    return true; //Hit
 }
 
 
@@ -2252,6 +2253,14 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	/* Control + mouse click to select multiple nets. */
 	if (!button_info.ctrl_pressed)
 		deselect_all();
+
+
+    //Check if we hit an rr node
+    // Note that we check this before checking for a block, since pins and routing may appear overtop of a multi-width/height block
+    if (highlight_rr_nodes(abs_x, abs_y)) {
+        return; //Selected an rr node
+    }
+
 
 	/// determine block ///
 	t_bound_box clb_bbox(0,0,0,0);
