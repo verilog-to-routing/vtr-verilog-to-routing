@@ -848,7 +848,6 @@ void reset_rr_node_route_structs(void) {
 	}
 }
 
-/* RESEARCH TODO: Bounding box heuristic needs to be redone for heterogeneous blocks */
 static void load_route_bb(int bb_factor) {
 
 	/* This routine loads the bounding box arrays used to limit the space  *
@@ -863,41 +862,36 @@ static void load_route_bb(int bb_factor) {
 	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1) rather than (1,1) and   *
 	 * (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            */
 
-	int xmax, ymax, xmin, ymin, x, y;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		ClusterBlockId driver_blk = cluster_ctx.clb_nlist.net_driver_block(net_id);
-		int driver_blk_pin = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
-		x = place_ctx.block_locs[driver_blk].x + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_width[driver_blk_pin];
-		y = place_ctx.block_locs[driver_blk].y + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_height[driver_blk_pin];
+        int driver_rr = route_ctx.net_rr_terminals[net_id][0];
+        const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
+        VTR_ASSERT(source_node.type() == SOURCE);
 
-		xmin = x;
-		ymin = y;
-		xmax = x;
-		ymax = y;
+        VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
+        VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
 
-		for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-			ClusterBlockId sink_blk = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
-			int sink_blk_pin = cluster_ctx.clb_nlist.physical_pin_index(sink_pin_id);
-			x = place_ctx.block_locs[sink_blk].x + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_width[sink_blk_pin];
-			y = place_ctx.block_locs[sink_blk].y + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_height[sink_blk_pin];
+		int xmin = source_node.xlow();
+		int ymin = source_node.ylow();
+		int xmax = source_node.xhigh();
+		int ymax = source_node.yhigh();
 
-			if (x < xmin) {
-				xmin = x;
-			} else if (x > xmax) {
-				xmax = x;
-			}
+        auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+		for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
+            int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+            const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
+            VTR_ASSERT(sink_node.type() == SINK);
 
-			if (y < ymin) {
-				ymin = y;
-			} else if (y > ymax) {
-				ymax = y;
-			}
+            VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
+            VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
+
+            xmin = std::min<int>(xmin, sink_node.xlow());
+            xmax = std::max<int>(xmax, sink_node.xhigh());
+            ymin = std::min<int>(ymin, sink_node.ylow());
+            ymax = std::max<int>(ymax, sink_node.yhigh());
 		}
 
 		/* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
