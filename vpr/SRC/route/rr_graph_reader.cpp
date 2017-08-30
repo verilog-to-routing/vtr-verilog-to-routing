@@ -10,7 +10,8 @@
  * as blocks, grids, and segments are verified with the architecture
  * to ensure it matches. An error will through if any feature does not match.
  * Other elements such as edges, nodes, and switches
- * are overwritten by the rr graph file if one is specified.*/
+ * are overwritten by the rr graph file if one is specified. If an optional
+ * identifier such as capacitance is not specified, it is set to 0*/
 
 #include <string.h>
 #include <algorithm>
@@ -345,30 +346,25 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
     pugi::xml_node edges;
 
     edges = get_first_child(parent, "edge", loc_data);
-    int counter = 0;
     int source_node;
-    int previous_source = -1;
+    //count the number of edges and store it in a vector
+    vector<int> num_edges_for_node;
+    num_edges_for_node.resize(device_ctx.num_rr_nodes, 0);
 
-    //count the number of edges
     while (edges) {
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
-        if (source_node != previous_source) {
-            if (previous_source != -1) {
-                device_ctx.rr_nodes[previous_source].set_num_edges(counter);
-            }
-            counter = 1;
-        } else {
-            counter++;
-        }
-        previous_source = source_node;
+        num_edges_for_node[source_node]++;
+        device_ctx.rr_nodes[source_node].set_num_edges(num_edges_for_node[source_node]);
         edges = edges.next_sibling(edges.name());
     }
-    device_ctx.rr_nodes[previous_source].set_num_edges(counter);
+
+    //reset this vector in order to start count for num edges again
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+        num_edges_for_node[inode] = 0;
+    }
 
     int sink_node, switch_id;
     edges = get_first_child(parent, "edge", loc_data);
-    previous_source = -1;
-    counter = 0;
     /*initialize a vector that keeps track of the number of wire to ipin switches
     There should be only one wire to ipin switch. In case there are more, make sure to
     store the most frequent switch */
@@ -393,22 +389,14 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
                 }
             }
         }
-
-        //Keep track of the number of edges per node
-        if (previous_source != source_node) {
-            counter = 0;
-        } else {
-            counter++;
-        }
-
         //set edge in correct rr_node data structure
-        device_ctx.rr_nodes[source_node].set_edge_sink_node(counter, sink_node);
-        device_ctx.rr_nodes[source_node].set_edge_switch(counter, switch_id);
+        device_ctx.rr_nodes[source_node].set_edge_sink_node(num_edges_for_node[source_node], sink_node);
+        device_ctx.rr_nodes[source_node].set_edge_switch(num_edges_for_node[source_node], switch_id);
         edges = edges.next_sibling(edges.name());
-        previous_source = source_node;
+        num_edges_for_node[source_node]++;
     }
     *wire_to_rr_ipin_switch = most_frequent_switch.first;
-
+    num_edges_for_node.clear();
     count_for_wire_to_ipin_switches.clear();
 }
 
