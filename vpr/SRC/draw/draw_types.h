@@ -56,7 +56,7 @@ enum e_draw_rr_toggle {
 enum e_draw_congestion {
 	DRAW_NO_CONGEST = 0,
 	DRAW_CONGESTED,
-	DRAW_CONGESTED_AND_USED,
+	DRAW_CONGESTED_WITH_NETS,
 	DRAW_CONGEST_MAX
 };
 

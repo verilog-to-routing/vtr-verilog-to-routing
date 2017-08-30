@@ -155,6 +155,7 @@ static short find_switch(int prev_inode, int inode);
 
 t_color to_t_color(vtr::Color<float> color);
 static void draw_color_map_legend(const vtr::ColorMap& cmap);
+std::vector<ClusterNetId> find_rr_node_nets(int rr_node);
 
 /********************** Subroutine definitions ******************************/
 
@@ -708,14 +709,19 @@ static void draw_congestion(void) {
 
 	/* Draws all the overused routing resources (i.e. congestion) in RED.   */
 	t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->show_congestion == DRAW_NO_CONGEST) {
+        return;
+    }
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	setlinewidth(2);
 
-
+    //Record min/max congestion
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
+    std::vector<int> congested_rr_nodes;
 	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
@@ -723,18 +729,25 @@ static void draw_congestion(void) {
         float congestion_ratio = float(occ) / capacity;
 
         max_congestion_ratio = std::max(max_congestion_ratio, congestion_ratio);
+
+        if (congestion_ratio > 1.) {
+            congested_rr_nodes.push_back(inode);
+        }
     }
 
     char msg[vtr::bufsize];
-    sprintf(msg, "Overuse RR Node ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
+    if (draw_state->show_congestion == DRAW_CONGESTED) {
+        sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
+    } else {
+        VTR_ASSERT(draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS);
+        sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f] (and congested nets)", min_congestion_ratio, max_congestion_ratio);
+    }
     update_message(msg);
 
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
-    //Draw the nodes in ascending order of value, this ensures high valued nodes
-    //are not overdrawn by lower value ones (e.g. when zoomed-out far)
-    std::vector<int> nodes(device_ctx.num_rr_nodes);
-    std::iota(nodes.begin(), nodes.end(), 0);
+    //Sort the nodes in ascending order of value for drawing, this ensures high 
+    //valued nodes re not overdrawn by lower value ones (e.g. when zoomed-out far)
     auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
 		short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
         short lhs_capacity = device_ctx.rr_nodes[lhs_node].capacity();
@@ -747,62 +760,56 @@ static void draw_congestion(void) {
 
         return lhs_cong_ratio < rhs_cong_ratio;
     };
-    std::sort(nodes.begin(), nodes.end(), cmp_ascending_acc_cost);
+    std::sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
 
-    for(int inode : nodes) {
+    if (draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS) {
+
+        for (int inode : congested_rr_nodes) {
+            auto nets = find_rr_node_nets(inode);
+            for (ClusterNetId net : nets) {
+                t_color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
+                draw_state->net_color[net] = color;
+            }
+        }
+        setlinewidth(0);
+        drawroute(HIGHLIGHTED);
+
+        //Reset colors
+        for (int inode : congested_rr_nodes) {
+            auto nets = find_rr_node_nets(inode);
+            for (ClusterNetId net : nets) {
+                draw_state->net_color[net] = DEFAULT_RR_NODE_COLOR;
+            }
+        }
+    } else {
+        setlinewidth(2);
+    }
+
+    //Draw each congested node
+    for(int inode : congested_rr_nodes) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
-		if (congestion_ratio > 1.) {
 
+        bool node_congested = (occ > capacity);
+        VTR_ASSERT(node_congested);
 
-            t_color congested_color = to_t_color(cmap.color(congestion_ratio));
+        t_color color = to_t_color(cmap.color(congestion_ratio));
 
-			switch (device_ctx.rr_nodes[inode].type()) {
-			case CHANX:
-				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					occ > device_ctx.rr_nodes[inode].capacity()) {
-					draw_rr_chan(inode, congested_color);
-				}
-				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (occ > device_ctx.rr_nodes[inode].capacity())
-						draw_rr_chan(inode, congested_color);
-					else
-						draw_rr_chan(inode, BLUE);
-				}
-				break;
+        switch (device_ctx.rr_nodes[inode].type()) {
+            case CHANX: //fallthrough
+            case CHANY:
+                draw_rr_chan(inode, color);
+                break;
 
-			case CHANY:
-				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					occ > device_ctx.rr_nodes[inode].capacity()) {
-					draw_rr_chan(inode, congested_color);
-				}
-				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (occ > device_ctx.rr_nodes[inode].capacity())
-						draw_rr_chan(inode, congested_color);
-					else
-						draw_rr_chan(inode, BLUE);
-				}
-				break;
-
-			case IPIN:
-			case OPIN:
-				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					occ > device_ctx.rr_nodes[inode].capacity()) {
-					draw_rr_pin(inode, congested_color);
-				}
-				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (occ > device_ctx.rr_nodes[inode].capacity())
-						draw_rr_pin(inode, congested_color);
-					else
-						draw_rr_pin(inode, BLUE);
-				}
-				break;
-			default:
-				break;
-			}
-		}
+            case IPIN: //fallthrough
+            case OPIN:
+                draw_rr_pin(inode, color);
+                break;
+            default:
+                break;
+        }
 	}
     draw_color_map_legend(cmap);
 }
@@ -1125,7 +1132,7 @@ static void draw_rr_chan(int inode, const t_color color) {
             }
         }
     }
-	setcolor(color); //Ensure color is set correctly if we drow any arrows/text
+	setcolor(color); //Ensure color is still set correctly if we drew any arrows/text
 }
 
 static void draw_rr_edges(int inode) {
@@ -1780,8 +1787,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				 * the same color.											 */
 				draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
 				draw_state->draw_rr_node[inode].node_highlighted = true;
-			}
-			else {
+			} else {
 				/* If not highlighted, draw the node in default color. */
 				draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
 			}
@@ -1974,18 +1980,13 @@ static int get_track_num(int inode, const vtr::Matrix<int>& chanx_track, const v
  * fan-in/fan-out of a highlighted node.									
  */
 static bool draw_if_net_highlighted (ClusterNetId inet) {
-	bool highlighted = false;
-
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	if (draw_state->net_color[inet] == MAGENTA
-		|| draw_state->net_color[inet] == DRIVES_IT_COLOR
-		|| draw_state->net_color[inet] == DRIVEN_BY_IT_COLOR) {
-
-		highlighted = true;
+	if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
+        return true;
 	}
 
-	return highlighted;
+    return false;
 }
 
 
@@ -2298,9 +2299,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	}
 
 	if (clb_index == EMPTY_BLOCK_ID) {
-		highlight_rr_nodes(abs_x, abs_y);
-		/* update_message(draw_state->default_message);
-		 drawscreen(); */
+        //Nothing found
 		return;
 	} 
 
@@ -3065,5 +3064,24 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap) {
     drawrect(legend);
 
     set_coordinate_system(GL_WORLD);
+}
+
+std::vector<ClusterNetId> find_rr_node_nets(int rr_node) {
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::vector<ClusterNetId> nets;
+    for (auto net : cluster_ctx.clb_nlist.nets()) {
+        t_trace* trace_elem = route_ctx.trace_head[net];
+        while (trace_elem) {
+            if (trace_elem->index == rr_node) {
+                nets.push_back(net);
+                break;
+            }
+            
+            trace_elem = trace_elem->next;
+        }
+    }
+    return nets;
 }
 
