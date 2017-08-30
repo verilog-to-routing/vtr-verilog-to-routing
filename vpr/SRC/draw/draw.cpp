@@ -1125,6 +1125,7 @@ static void draw_rr_chan(int inode, const t_color color) {
             }
         }
     }
+	setcolor(color); //Ensure color is set correctly if we drow any arrows/text
 }
 
 static void draw_rr_edges(int inode) {
