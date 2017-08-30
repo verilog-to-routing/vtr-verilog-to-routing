@@ -211,13 +211,15 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     float bottom_range = -1e-9;
     while (iteration < 3 && max_budget_change > 800e-12) {
         /*budgets must be in bounds before timing analysis*/
-        keep_budget_in_bounds(delay_min_budget);
+        if (iteration != 0) {
+            keep_budget_in_bounds(delay_min_budget);
+        }
         timing_info = perform_sta(delay_min_budget);
         max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, false);
-        /*budgets may go below minimum delay*/
-        keep_budget_above_value(delay_min_budget, bottom_range);
         iteration++;
     }
+    /*budgets may go below minimum delay bound*/
+    keep_budget_above_value(delay_min_budget, bottom_range);
 }
 
 void route_budgets::keep_budget_above_value(float ** temp_budgets, float bottom_range) {
