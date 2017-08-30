@@ -154,6 +154,7 @@ static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, in
 static short find_switch(int prev_inode, int inode);
 
 t_color to_t_color(vtr::Color<float> color);
+static void draw_color_map_legend(const vtr::ColorMap& cmap);
 
 /********************** Subroutine definitions ******************************/
 
@@ -197,11 +198,11 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-			create_button("Congestion", "Cong. Costs", toggle_routing_congestion_cost);
+			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
-			destroy_button("Cong. Costs");
+			destroy_button("Cong. Cost");
             if(setup_timing_info) {
                 destroy_button("Crit. Path");
             }
@@ -211,9 +212,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-			create_button("Congestion", "Cong. Costs", toggle_routing_congestion_cost);
+			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
             if(setup_timing_info) {
-                create_button("Cong. Costs", "Crit. Path", toggle_crit_path);
+                create_button("Cong. Cost", "Crit. Path", toggle_crit_path);
             }
 		}
 	}
@@ -815,6 +816,7 @@ static void draw_congestion(void) {
 			}
 		}
 	}
+    draw_color_map_legend(cmap);
 }
 
 static void draw_routing_costs() {
@@ -921,6 +923,7 @@ static void draw_routing_costs() {
                 break;
         }
 	}
+    draw_color_map_legend(cmap);
 }
 
 void draw_rr(void) {
@@ -3011,6 +3014,58 @@ static short find_switch(int prev_inode, int inode) {
 }
 
 t_color to_t_color(vtr::Color<float> color) {
-    return t_color(color.r*256, color.g*256, color.b*256); 
+    return t_color(color.r*255, color.g*255, color.b*255); 
+}
+
+static void draw_color_map_legend(const vtr::ColorMap& cmap) {
+    constexpr float LEGEND_WIDTH_FAC = 0.075;
+    constexpr float LEGEND_VERT_OFFSET_FAC = 0.05;
+    constexpr float TEXT_OFFSET = 10;
+    constexpr size_t NUM_COLOR_POINTS = 1000;
+
+    set_coordinate_system(GL_SCREEN);
+    t_bound_box visible_screen = get_visible_screen();
+
+
+    float width = visible_screen.get_width();
+    float vert_offset = visible_screen.get_height() * LEGEND_VERT_OFFSET_FAC;
+
+    t_bound_box legend (visible_screen.left(), visible_screen.bottom() + vert_offset, visible_screen.left() + width * LEGEND_WIDTH_FAC, visible_screen.top() - vert_offset);
+
+    float range = cmap.max() - cmap.min();
+    float height_incr = legend.get_height() / float(NUM_COLOR_POINTS);
+    for (size_t i = 0; i < NUM_COLOR_POINTS; ++i) {
+
+        float val = cmap.min() + (float(i) / NUM_COLOR_POINTS) * range;
+        t_color color = to_t_color(cmap.color(val));
+
+
+        t_bound_box cbox = {legend.left(), legend.bottom() + i * height_incr, 
+                            legend.right(), legend.bottom() + (i+1) * height_incr};
+        setcolor(color);
+        fillrect(cbox);
+
+
+    }
+
+    setcolor(BLACK);
+
+    //Min mark
+    std::string str = vtr::string_fmt("%.3g", cmap.min());
+    drawtext(legend.get_xcenter(), legend.bottom() + TEXT_OFFSET, str.c_str());
+
+    //Mid marker
+    str = vtr::string_fmt("%.3g", cmap.min() + (cmap.range() / 2.));
+    drawtext(legend.get_xcenter(), legend.get_ycenter(), str.c_str());
+
+    //Max marker
+    str = vtr::string_fmt("%.3g", cmap.max());
+    drawtext(legend.get_xcenter(), legend.top() - TEXT_OFFSET, str.c_str());
+
+
+    setcolor(BLACK);
+    drawrect(legend);
+
+    set_coordinate_system(GL_WORLD);
 }
 

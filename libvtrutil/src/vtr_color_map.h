@@ -16,7 +16,10 @@ class ColorMap {
     public:
         ColorMap(float min, float max, const std::vector<Color<float>>& color_data);
         virtual ~ColorMap() = default;
-        Color<float> color(float value);
+        Color<float> color(float value) const;
+        float min() const;
+        float max() const;
+        float range() const;
     private:
         float min_;
         float max_;

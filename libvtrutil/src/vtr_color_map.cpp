@@ -781,24 +781,22 @@ static std::vector<Color<float>> viridis_data = {
        {0.98386829f, 0.90486726f, 0.13689671f},
        {0.99324789f, 0.90615657f, 0.1439362f }};
 
-ColorMap::ColorMap(float min, float max, const std::vector<Color<float>>& color_data) 
-    : min_(min)
-    , max_(max)
+ColorMap::ColorMap(float min_val, float max_val, const std::vector<Color<float>>& color_data) 
+    : min_(min_val)
+    , max_(max_val)
     , color_data_(color_data) {
     VTR_ASSERT(max_ >= min_);
 }
 
-Color<float> ColorMap::color(float value) {
+Color<float> ColorMap::color(float value) const {
     VTR_ASSERT(value >= min_);
     VTR_ASSERT(value <= max_);
 
-    float range = max_ - min_;
-
     float norm_value;
-    if (range == 0) {
+    if (range() == 0) {
         norm_value = 0;    
     } else {
-        norm_value = (value - min_) / range;
+        norm_value = (value - min_) / range();
     }
 
     size_t color_idx = std::round(norm_value * (color_data_.size() - 1));
@@ -808,13 +806,25 @@ Color<float> ColorMap::color(float value) {
     return color_data_[color_idx];
 }
 
-InfernoColorMap::InfernoColorMap(float min, float max)
-    : ColorMap(min, max, inferno_data) {}
+float ColorMap::min() const {
+    return min_;
+}
 
-PlasmaColorMap::PlasmaColorMap(float min, float max)
-    : ColorMap(min, max, plasma_data) {}
+float ColorMap::max() const {
+    return max_;
+}
 
-ViridisColorMap::ViridisColorMap(float min, float max)
-    : ColorMap(min, max, viridis_data) {}
+float ColorMap::range() const {
+    return max() - min();
+}
+
+InfernoColorMap::InfernoColorMap(float min_val, float max_val)
+    : ColorMap(min_val, max_val, inferno_data) {}
+
+PlasmaColorMap::PlasmaColorMap(float min_val, float max_val)
+    : ColorMap(min_val, max_val, plasma_data) {}
+
+ViridisColorMap::ViridisColorMap(float min_val, float max_val)
+    : ColorMap(min_val, max_val, viridis_data) {}
 
 } //namespace
