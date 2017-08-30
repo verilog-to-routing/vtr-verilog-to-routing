@@ -127,21 +127,24 @@ void route_budgets::load_route_budgets(float ** net_delay,
     /*go to the associated function depending on user input/default settings*/
     if (router_opts.routing_budgets_algorithm == MINIMAX) {
         allocate_slack_using_weights(net_delay, pb_gpin_lookup);
-        calculate_delay_tagets();
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, pb_gpin_lookup, router_opts);
     }
     set = true;
 }
 
-void route_budgets::calculate_delay_tagets() {
+void route_budgets::calculate_delay_targets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     /*Delay target values are calculated based on the function outlined in the RCV algorithm*/
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
+            calculate_delay_targets(inet, ipin);
         }
     }
+}
+
+void route_budgets::calculate_delay_targets(int inet, int ipin) {
+    delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
 }
 
 void route_budgets::allocate_slack_using_weights(float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup) {
@@ -154,21 +157,21 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     unsigned iteration;
     float max_budget_change;
 
-    iteration = 0;
-    max_budget_change = 900e-12;
-    float second_max_budget_change = 900e-12;
-
-    /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets*/
-    while (iteration < 7 && max_budget_change > 5e-12) {
-        timing_info = perform_sta(delay_max_budget);
-        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, true, NEGATIVE);
-
-        timing_info = perform_sta(delay_max_budget);
-        second_max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, true, NEGATIVE);
-        max_budget_change = max(max_budget_change, second_max_budget_change);
-
-        iteration++;
-    }
+    //    iteration = 0;
+    //    max_budget_change = 900e-12;
+    //    float second_max_budget_change = 900e-12;
+    //
+    //    /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets*/
+    //    while (iteration < 7 && max_budget_change > 5e-12) {
+    //        timing_info = perform_sta(delay_max_budget);
+    //        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, true, NEGATIVE);
+    //
+    //        timing_info = perform_sta(delay_max_budget);
+    //        second_max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, true, NEGATIVE);
+    //        max_budget_change = max(max_budget_change, second_max_budget_change);
+    //
+    //        iteration++;
+    //    }
 
     iteration = 0;
     max_budget_change = 900e-12;
@@ -288,9 +291,10 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
             tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
             total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, timing_node);
             if (total_path_delay == -1) {
-                /*Delay node is not valid, leave the budgets*/
+                /*Delay node is not valid, leave the budgets as is*/
                 continue;
             }
+
             if ((slack_type == NEGATIVE && path_slack < 0) ||
                     (slack_type == POSITIVE && path_slack > 0) ||
                     slack_type == BOTH) {
@@ -299,11 +303,13 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
                 } else {
                     temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
                 }
+                max_budget_change = max(max_budget_change, abs(net_delay[inet][ipin] * path_slack / total_path_delay));
             }
+
             if (keep_in_bounds) {
                 keep_budget_in_bounds(temp_budgets, inet, ipin);
             }
-            max_budget_change = max(max_budget_change, abs(net_delay[inet][ipin] * path_slack / total_path_delay));
+
         }
     }
     return max_budget_change;
@@ -417,7 +423,6 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 
         return past_path_delay + future_path_delay;
     } else {
-
         return -1;
     }
 }

@@ -86,7 +86,8 @@ private:
             analysis_type analysis_type, tatum::NodeId timing_node);
     void set_min_max_budgets_equal();
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
-    void calculate_delay_tagets();
+    void calculate_delay_targets();
+    void calculate_delay_targets(int inet, int ipin);
     tatum::EdgeId get_edge_from_nets(int inet, int ipin);
 
     /*debugging tools*/
