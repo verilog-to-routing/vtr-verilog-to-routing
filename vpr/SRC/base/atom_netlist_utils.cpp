@@ -652,7 +652,7 @@ AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
 
     //Connect the clock
     AtomPortId clock_port = netlist.create_port(blk, model_clock_port);
-    netlist.create_pin(clock_port, clock_port_bit, clock_net, PinType::SINK, PortType::CLOCK);
+    netlist.create_pin(clock_port, clock_port_bit, clock_net, PinType::SINK);
 
     //Make the data port
     AtomPortId data_port = netlist.create_port(blk, model_data_port);
@@ -663,7 +663,7 @@ AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
     VTR_ASSERT(clock_data_net);
 
     //Create the driver pin
-    netlist.create_pin(data_port, data_port_bit, clock_data_net, PinType::DRIVER, PortType::OUTPUT);
+    netlist.create_pin(data_port, data_port_bit, clock_data_net, PinType::DRIVER);
 
     //Update all the data pins to connect to clock_data_net instead of the original clock net
     for(AtomPinId sink_pin : data_pins) {

@@ -58,30 +58,6 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
  * Ports
  *
  */
-PortType AtomNetlist::port_type(const AtomPortId id) const {
-	VTR_ASSERT(valid_port_id(id));
-
-	const t_model_ports* model_port = port_model(id);
-
-	PortType type = PortType::INPUT;
-	if (model_port->dir == IN_PORT) {
-		if (model_port->is_clock) {
-			type = PortType::CLOCK;
-		}
-		else {
-			type = PortType::INPUT;
-		}
-	}
-	else if (model_port->dir == OUT_PORT) {
-		type = PortType::OUTPUT;
-	}
-	else {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
-	}
-	return type;
-}
-
-
 const t_model_ports* AtomNetlist::port_model(const AtomPortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
@@ -106,12 +82,6 @@ PinType AtomNetlist::pin_type(const AtomPinId id) const {
 		default: VTR_ASSERT_MSG(false, "Valid atom port type");
 	}
 	return type;
-}
-
-PortType AtomNetlist::pin_port_type(const AtomPinId id) const {
-	AtomPortId port = pin_port(id);
-
-	return port_type(port);
 }
 
 
@@ -243,8 +213,26 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
 
 AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_ports* model_port) {
 	AtomPortId port_id = find_port(blk_id, model_port->name);
+
+	PortType type = PortType::INPUT;
+	//Determine the PortType
+	if (model_port->dir == IN_PORT) {
+		if (model_port->is_clock) {
+			type = PortType::CLOCK;
+		}
+		else {
+			type = PortType::INPUT;
+		}
+	}
+	else if (model_port->dir == OUT_PORT) {
+		type = PortType::OUTPUT;
+	}
+	else {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
+	}
+
 	if (!port_id) {
-		port_id = Netlist::create_port(blk_id, model_port->name, model_port->size);
+		port_id = Netlist::create_port(blk_id, model_port->name, model_port->size, type);
 
 		port_models_.push_back(model_port);
 		associate_port_with_block(port_id, port_type(port_id), blk_id);
@@ -257,27 +245,27 @@ AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_port
 	VTR_ASSERT(port_name(port_id) == model_port->name);
 	VTR_ASSERT(port_width(port_id) == (unsigned)model_port->size);
 	VTR_ASSERT(port_model(port_id) == model_port);
+	VTR_ASSERT(port_type(port_id) == type);
 	VTR_ASSERT_SAFE(find_port(blk_id, model_port->name) == port_id);
 	VTR_ASSERT_SAFE(find_atom_port(blk_id, model_port) == port_id);
 
 	return port_id;
 }
 
-AtomPinId AtomNetlist::create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type_, const PortType port_type_, bool is_const) {
-	AtomPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, port_type_, is_const);
+AtomPinId AtomNetlist::create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type_, bool is_const) {
+	AtomPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 	
 	//Check post-conditions: size
 	VTR_ASSERT(validate_pin_sizes());
 
 	VTR_ASSERT(pin_type(pin_id) == pin_type_);
 	VTR_ASSERT(pin_port(pin_id) == port_id);
-	VTR_ASSERT(port_type(port_id) == port_type_);
-	VTR_ASSERT(pin_port_type(pin_id) == port_type_);
+	VTR_ASSERT(pin_port_type(pin_id) == port_type(port_id));
 
 	return pin_id;
 }
 
-AtomNetId AtomNetlist::create_net (const std::string name) {
+AtomNetId AtomNetlist::create_net(const std::string name) {
 	AtomNetId net_id = Netlist::create_net(name);
 
 	//Check post-conditions: size
@@ -286,15 +274,24 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
 	return net_id;
 }
 
-AtomNetId AtomNetlist::add_net (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks) {
+AtomNetId AtomNetlist::add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks) {
 	return Netlist::add_net(name, driver, sinks);
 }
 
-void AtomNetlist::set_pin_net (const AtomPinId pin, PinType type, const AtomNetId net) {
-	VTR_ASSERT((type == PinType::DRIVER && pin_port_type(pin) == PortType::OUTPUT)
-		|| (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT || pin_port_type(pin) == PortType::CLOCK)));
-	
-	Netlist::set_pin_net(pin, type, net);
+void AtomNetlist::remove_block_impl(const AtomBlockId blk_id) {
+	VTR_ASSERT(blk_id);
+}
+
+void AtomNetlist::remove_port_impl(const AtomPortId port_id) {
+	VTR_ASSERT(port_id);
+}
+
+void AtomNetlist::remove_pin_impl(const AtomPinId pin_id) {
+	VTR_ASSERT(pin_id);
+}
+
+void AtomNetlist::remove_net_impl(const AtomNetId net_id) {
+	VTR_ASSERT(net_id);
 }
 
 /*
@@ -450,12 +447,6 @@ bool AtomNetlist::validate_port_pin_refs() const {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found orphaned pins (not referenced by a port)");
 	}
 
-	return true;
-}
-
-bool AtomNetlist::valid_port_bit(AtomPortId id, BitIndex port_bit) const {
-	VTR_ASSERT(valid_port_id(id));
-	if (port_bit >= port_width(id)) return false;
 	return true;
 }
 

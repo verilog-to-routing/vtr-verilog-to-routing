@@ -819,7 +819,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 				if (atom_net_id) {
 					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::INPUT, ipin);
+					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
 				}
 				ipin++;
 			}
@@ -836,7 +836,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 				if (atom_net_id) {
 					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, PortType::OUTPUT, ipin);
+					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin);
 				}
 				ipin++;
 			}
@@ -853,7 +853,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 				if (atom_net_id) {
 					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::CLOCK, ipin);
+					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
 				}
 				ipin++;
 			}
@@ -896,7 +896,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
-					clb_nlist->set_block_net_count(blk_id, j, count[clb_net_id]); //A sink
+					clb_nlist->set_block_pin_net(blk_id, j, count[clb_net_id]); //A sink
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
@@ -904,7 +904,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					VTR_ASSERT(j == clb_nlist->physical_pin_index(clb_net_id, 0));
 
                     //Mark the net pin numbers on the block
-					clb_nlist->set_block_net_count(blk_id, j, 0); //Driver
+					clb_nlist->set_block_pin_net(blk_id, j, 0); //Driver
 				}
 			}
 		}

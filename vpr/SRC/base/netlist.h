@@ -390,6 +390,27 @@
  *
  * The netlist state should be immutable (i.e. read-only) for most of the CAD flow.
  *
+ * Interactions with other netlists
+ * --------------------------------
+ * Currently, the AtomNetlist and ClusteredNetlist are both derived from Netlist. The AtomNetlist has primitive
+ * specific details (t_model, TruthTable), and handles all operations with the atoms. The ClusteredNetlist 
+ * contains information on the CLB (Clustered Logic Block) level, which includes the physical description of the
+ * blocks (t_type_descriptor), as well as the internal hierarchy and wiring (t_pb/t_pb_route).
+ *
+ * The calling-conventions of the functions in the AtomNetlist and ClusteredNetlist is as follows:
+ *    
+ *    Functions where the derived class (Atom/Clustered) calls the base class (Netlist)
+ *       create_*()
+ *       
+ *    Functions where the base class calls the derived class (Non-Virtual Interface idiom as described
+ *    https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Non-Virtual_Interface)
+ *       remove_*()
+ *       clean_*()
+ *       validate_*_sizes()
+ *       shrink_to_fit()
+ *    The derived functions based off of the virtual functions have suffix *_impl()
+ *
+ *
  */
 #include <string>
 #include <vector>
@@ -434,16 +455,16 @@ class Netlist {
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
 		//  width		: The width (number of bits) of the port
-        PortId  create_port(const BlockId blk_id, const std::string name, BitIndex width);
+		//  type		: The type of the port (INPUT, OUTPUT, CLOCK)
+        PortId  create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType type);
 
 		//Create or return an existing pin in the netlist
         //  port_id    : The port this pin is associated with
         //  port_bit   : The bit index of the pin in the port
         //  net_id     : The net the pin drives/sinks
         //  pin_type   : The type of the pin (driver/sink)
-		//  port_type  : The type of the port (input/output/clock)
         //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, bool is_const=false);
+        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, bool is_const=false);
 
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
@@ -455,6 +476,7 @@ class Netlist {
         //  sinks   : The net's sink pins
         NetId   add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
 
+	public: //Public Mutators
 		//Add the specified pin to the specified net as pin_type. Automatically removes
 		//any previous net connection for this pin.
 		//  pin      : The pin to add
@@ -462,7 +484,6 @@ class Netlist {
 		//  net      : The net to add the pin to
 		void set_pin_net(const PinId pin, PinType pin_type, const NetId net);
 
-	public: //Public Mutators
 		//Mark a pin as being a constant generator.
 		// There are some cases where a pin can not be identified as a is constant until after
 		// the full netlist has been built; so we expose a way to mark existing pins as constants.
@@ -526,39 +547,39 @@ class Netlist {
 		* Blocks
 		*/
 		//Returns the name of the specified block
-		const std::string&  block_name(const BlockId id) const;
+		const std::string&  block_name(const BlockId blk_id) const;
 
 		//Returns true if the block is purely combinational (i.e. no input clocks
 		//and not a primary input
-		bool                block_is_combinational(const BlockId id) const;
+		bool                block_is_combinational(const BlockId blk_id) const;
 
 		//Returns a range of all pins associated with the specified block
-		pin_range           block_pins(const BlockId id) const;
+		pin_range           block_pins(const BlockId blk_id) const;
 
 		//Returns a range of all input pins associated with the specified block
-		pin_range           block_input_pins(const BlockId id) const;
+		pin_range           block_input_pins(const BlockId blk_id) const;
 
 		//Returns a range of all output pins associated with the specified block
 		// Note this is typically only data pins, but some blocks (e.g. PLLs) can produce outputs
 		// which are clocks.
-		pin_range           block_output_pins(const BlockId id) const;
+		pin_range           block_output_pins(const BlockId blk_id) const;
 
 		//Returns a range of all clock pins associated with the specified block
-		pin_range           block_clock_pins(const BlockId id) const;
+		pin_range           block_clock_pins(const BlockId blk_id) const;
 		
 		//Returns a range of all ports associated with the specified block
-		port_range          block_ports(const BlockId id) const;
+		port_range          block_ports(const BlockId blk_id) const;
 
 		//Returns a range consisting of the input ports associated with the specified block
-		port_range          block_input_ports(const BlockId id) const;
+		port_range          block_input_ports(const BlockId blk_id) const;
 
 		//Returns a range consisting of the output ports associated with the specified block
 		// Note this is typically only data ports, but some blocks (e.g. PLLs) can produce outputs
 		// which are clocks.
-		port_range          block_output_ports(const BlockId id) const;
+		port_range          block_output_ports(const BlockId blk_id) const;
 
 		//Returns a range consisting of the input clock ports associated with the specified block
-		port_range          block_clock_ports(const BlockId id) const;
+		port_range          block_clock_ports(const BlockId blk_id) const;
 
 		//Removes a block from the netlist. This will also remove the associated ports and pins.
 		//  blk_id  : The block to be removed
@@ -568,13 +589,13 @@ class Netlist {
 		* Ports
 		*/
 		//Returns the name of the specified port
-		const std::string&      port_name(const PortId id) const;
+		const std::string&      port_name(const PortId port_id) const;
 
 		//Returns the block associated with the specified port
-		BlockId					port_block(const PortId id) const;
+		BlockId					port_block(const PortId port_id) const;
 
 		//Returns the set of valid pins associated with the port
-		pin_range               port_pins(const PortId id) const;
+		pin_range               port_pins(const PortId port_id) const;
 
 		//Returns the pin (potentially invalid) associated with the specified port and port bit index
 		//  port_id : The ID of the associated port
@@ -588,7 +609,10 @@ class Netlist {
 		NetId					port_net(const PortId port_id, const BitIndex port_bit) const;
 
 		//Returns the width (number of bits) in the specified port
-		BitIndex                port_width(const PortId id) const;
+		BitIndex                port_width(const PortId port_id) const;
+
+		//Returns the type of the specified port
+		PortType			port_type(const PortId port_id) const;
 
 		//Removes a port from the netlist.
 		//The port's pins are also marked invalid and removed from any associated nets
@@ -599,50 +623,53 @@ class Netlist {
 		* Pins
 		*/
 		//Returns the constructed name (derived from block and port) for the specified pin
-		std::string pin_name(const PinId id) const;
+		std::string pin_name(const PinId pin_id) const;
 
 		//Returns the net associated with the specified pin
-		NetId		pin_net(const PinId id) const;
+		NetId		pin_net(const PinId pin_id) const;
 
 		//Returns the port associated with the specified pin
-		PortId		pin_port(const PinId id) const;
+		PortId		pin_port(const PinId pin_id) const;
 
 		//Returns the port bit index associated with the specified pin
-		BitIndex    pin_port_bit(const PinId id) const;
+		BitIndex    pin_port_bit(const PinId pin_id) const;
 
 		//Returns the block associated with the specified pin
-		BlockId		pin_block(const PinId id) const;
+		BlockId		pin_block(const PinId pin_id) const;
+
+		//Returns the port type associated with the specified pin
+		PortType		pin_port_type(const PinId pin_id) const;
 
 		//Returns true if the pin is a constant (i.e. its value never changes)
-		bool		pin_is_constant(const PinId id) const;
+		bool		pin_is_constant(const PinId pin_id) const;
 
 		//Removes a pin from the netlist.
 		//The pin is marked invalid, and removed from any assoicated nets
-		//  pin_id: The ID of the pin to be removed
+		//  pin_id: The pin_id of the pin to be removed
 		void remove_pin(const PinId pin_id);
 
 		/*
 		* Nets
 		*/
 		//Returns the name of the specified net
-		const std::string&  net_name(const NetId id) const;
+		const std::string&  net_name(const NetId net_id) const;
 
 		//Returns a range consisting of all the pins in the net (driver and sinks)
 		//The first element in the range is the driver (and may be invalid)
 		//The remaining elements (potentially none) are the sinks
-		pin_range           net_pins(const NetId id) const;
+		pin_range           net_pins(const NetId net_id) const;
 
 		//Returns the (potentially invalid) net driver pin
-		PinId				net_driver(const NetId id) const;
+		PinId				net_driver(const NetId net_id) const;
 
 		//Returns the (potentially invalid) net driver block
-		BlockId				net_driver_block(const NetId id) const;
+		BlockId				net_driver_block(const NetId net_id) const;
 
 		//Returns a (potentially empty) range consisting of net's sink pins
-		pin_range           net_sinks(const NetId id) const;
+		pin_range           net_sinks(const NetId net_id) const;
 
 		//Returns true if the net is driven by a constant pin (i.e. its value never changes)
-		bool                net_is_constant(const NetId id) const;
+		bool                net_is_constant(const NetId net_id) const;
 
 		//Removes a net from the netlist. 
 		//This will mark the net's pins as having no associated.
@@ -653,7 +680,7 @@ class Netlist {
 		//will be marked as having no associated net
 		//  net_id  : The net from which the pin is to be removed
 		//  pin_id  : The pin to be removed from the net
-		void				remove_net_pin(const NetId net_id, const PinId pin_id);
+		void remove_net_pin(const NetId net_id, const PinId pin_id);
 
 		/* 
 		* Aggregates
@@ -795,17 +822,18 @@ class Netlist {
 		bool verify_lookups() const;
 
 		//Validates that the specified ID is valid in the current netlist state
-		bool valid_block_id(BlockId id) const;
-		bool valid_port_id(PortId id) const;
-		bool valid_port_bit(PortId id, BitIndex port_bit) const;
-		bool valid_pin_id(PinId id) const;
-		bool valid_net_id(NetId id) const;
-		bool valid_string_id(StringId id) const;
+		bool valid_block_id(BlockId block_id) const;
+		bool valid_port_id(PortId port_id) const;
+		bool valid_port_bit(PortId port_id, BitIndex port_bit) const;
+		bool valid_pin_id(PinId pin_id) const;
+		bool valid_net_id(NetId net_id) const;
+		bool valid_string_id(StringId string_id) const;
 
 	protected: //Protected virtual functions implemented in derived classes
 		//The functions follow the Non-Virtual Interface (NVI) idiom, and 
 		//are called from this class in their respective non-impl() functions.
 		virtual void shrink_to_fit_impl() = 0;
+
 		virtual bool validate_block_sizes_impl() const = 0;
 		virtual bool validate_port_sizes_impl() const = 0;
 		virtual bool validate_pin_sizes_impl() const = 0;
@@ -815,6 +843,11 @@ class Netlist {
 		virtual void clean_ports_impl(const vtr::vector_map<PortId, PortId>& port_id_map) = 0;
 		virtual void clean_pins_impl(const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
 		virtual void clean_nets_impl(const vtr::vector_map<NetId, NetId>& net_id_map) = 0;
+
+		virtual void remove_block_impl(const BlockId blk_id) = 0;
+		virtual void remove_port_impl(const PortId port_id) = 0;
+		virtual void remove_pin_impl(const PinId pin_id) = 0;
+		virtual void remove_net_impl(const NetId net_id) = 0;
 
 	protected: //Protected Data
 		std::string netlist_name_;	//Name of the top-level netlist
@@ -841,6 +874,7 @@ class Netlist {
 		vtr::vector_map<PortId, BlockId>				port_blocks_;   //Block associated with each port
 		vtr::vector_map<PortId, std::vector<PinId>>		port_pins_;     //Pins associated with each port
 		vtr::vector_map<PortId, BitIndex>				port_widths_;	//Width (in bits) of each port
+		vtr::vector_map<PortId, PortType>				port_types_;	//Type of the port (INPUT, OUTPUT, CLOCK)
 
 		//Pin data
 		vtr::vector_map<PinId, PinId>		pin_ids_;           //Valid pin ids

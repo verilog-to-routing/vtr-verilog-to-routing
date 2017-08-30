@@ -20,10 +20,10 @@
 *							block, RAM, DSP (Can be user-defined types)
 *		block_nets_:		Based on the block's pins (indexed from [0...num_pins - 1]),
 *							lists which pins are used/unused with the net using it
-*		block_net_count_:	Counter for the used pins/nets blocks, indicating the "index"
+*		block_pin_nets_:	Counter for the used pins/nets blocks, indicating the "index"
 *							Differs from block_nets_
 *	
-* Differences between block_nets_ & block_net_count_
+* Differences between block_nets_ & block_pin_nets_
 * --------------------------------------------------
 *           +-----------+
 *       0-->|           |-->3
@@ -34,12 +34,12 @@
 * block_nets_ tracks all pins, and has the ClusterNetId to which a pin is connected to.
 * If the pin is unused/open, ClusterNetId::INVALID() is stored.
 *
-* block_net_count_ tracks whether the nets connected to the block are drivers/receivers of that net.
+* block_pin_nets_ tracks whether the nets connected to the block are drivers/receivers of that net.
 * Driver/receiver nets are determined by the pin_class of the block's pin.
 * A net connected to a driver pin in the block has a 0 is stored. A net connected to a receiver
 * has a counter (from [1...num_sinks - 1]).
 *
-* The net is connected to multiple blocks. Each block_net_count_ has a unique number in that net.
+* The net is connected to multiple blocks. Each block_pin_nets_ has a unique number in that net.
 *
 * E.g.
 *           +-----------+                   +-----------+
@@ -55,10 +55,9 @@
 *                                           +-----------+
 *
 * In the example, Net A is driven by Block 1, and received by Blocks 2 & 3.
-* For Block 1, block_net_count_ of pin 4 would then return 0, as it is the driver.
-* For Block 2, block_net_count_ of pin 1 returns 1 (or 2), non-zero as it is a receiver.
-* For Block 3, block_net_count_ of pin 0 returns 2 (or 1), non-zero as it is also a receiver.
-*
+* For Block 1, block_pin_nets_ of pin 4 would then return 0, as it is the driver.
+* For Block 2, block_pin_nets_ of pin 1 returns 1 (or 2), non-zero as it is a receiver.
+* For Block 3, block_pin_nets_ of pin 0 returns 2 (or 1), non-zero as it is also a receiver.
 *
 * Pin
 * ---
@@ -85,7 +84,16 @@
 *		net_global_:	Boolean mapping whether the net is global
 *		net_fixed_:		Boolean mapping whether the net is fixed (i.e. constant)
 *
-*  
+* Implementation
+* ==============
+* For all create_* functions, the ClusteredNetlist will wrap and call the Netlist's version as it contains
+* additional information that the base Netlist does not know about.
+*
+* All functions with suffix *_impl() follow the Non-Virtual Interface (NVI) idiom.
+* They are called from the base Netlist class to simplify pre/post condition checks and
+* prevent Fragile Base Class (FBC) problems.
+*
+* Refer to netlist.h for more information.
 *
 */
 #include "vpr_types.h"
@@ -121,24 +129,23 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//  blk_id		: The block the net is associated with
 		//	pin_index	: The pin of the block to be changed
 		//  net_count	: The net's counter
-		void set_block_net_count(const ClusterBlockId blk_id, const int pin_index, const int count);
+		void set_block_pin_net(const ClusterBlockId blk_id, const int pin_index, const int count);
 
 		//Create or return an existing port in the netlist
 		//  blk_id      : The block the port is associated with
 		//  name        : The name of the port (must match the name of a port in the block's model)
 		//  width		: The width (number of bits) of the port
 		//  type		: The type of the port (INPUT, OUTPUT, or CLOCK)
-		ClusterPortId create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType port_type);
+		ClusterPortId create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type);
 
 		//Create or return an existing pin in the netlist
 		//  port_id    : The port this pin is associated with
 		//  port_bit   : The bit index of the pin in the port
 		//  net_id     : The net the pin drives/sinks
 		//  pin_type   : The type of the pin (driver/sink)
-		//  port_type  : The type of the port (input/output/clock)
 		//  pin_index  : The index of the pin relative to its block, excluding OPEN pins)
 		//  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-		ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, const PortType port_type, int pin_index, bool is_const=false);
+		ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, int pin_index, bool is_const=false);
 
 		//Sets the mapping of a ClusterPinId to the block's type descriptor's pin index 
 		//  pin_id   : The pin to be set
@@ -161,11 +168,17 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//Sets the flag in net_fixed_ = state
 		void set_fixed(ClusterNetId net_id, bool state);
 
+		/*
+		* Component removal
+		*/
 		//Removes a block from the netlist. This will also remove the associated ports and pins.
 		//  blk_id  : The block to be removed
-		void remove_block(const ClusterBlockId blk_id);
+		void remove_block_impl(const ClusterBlockId blk_id);
 
-		//TODO: May want to add remove_net/remove_pin, although it wouldn't be currently used
+		//Unused functions, declared as they are virtual functions in the base Netlist class
+		void remove_port_impl(const ClusterPortId port_id);
+		void remove_pin_impl(const ClusterPinId pin_id);
+		void remove_net_impl(const ClusterNetId net_id);
 
 	public: //Public Accessors
 		/*
@@ -181,7 +194,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
 		//Returns the count on the net of the block attached
-		int block_net_count(const ClusterBlockId blk_id, const int pin_index) const;
+		int block_pin_net(const ClusterBlockId blk_id, const int pin_index) const;
 
 		/*
 		* Pins
@@ -242,7 +255,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		vtr::vector_map<ClusterBlockId, t_pb*>							block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
 		vtr::vector_map<ClusterBlockId, t_type_ptr>						block_types_;		//The type of physical block this user circuit block is mapped to
 		vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>		block_nets_;		//Stores which pins are used/unused on the block with the net using it
-		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_net_count_;	//The count of the nets related to the block
+		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_pin_nets_;	//The count of the nets related to the block
 
 		//Pins
 		vtr::vector_map<ClusterPinId, int>								physical_pin_index_;//The indices of pins on a block from its type descriptor, numbered sequentially from [0 .. num_pins - 1]
