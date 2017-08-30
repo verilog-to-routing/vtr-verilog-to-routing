@@ -95,7 +95,7 @@ std::string rr_highlight_message;
 static void toggle_nets(void (*drawscreen)(void));
 static void toggle_rr(void (*drawscreen)(void));
 static void toggle_congestion(void (*drawscreen)(void));
-static void toggle_historical_congestion(void (*drawscreen)(void));
+static void toggle_routing_congestion_cost(void (*drawscreen)(void));
 static void toggle_crit_path(void (*drawscreen_ptr)(void));
 
 static void drawscreen(void);
@@ -104,7 +104,7 @@ static void drawplace(void);
 static void drawnets(void);
 static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
-static void draw_historical_congestion(void);
+static void draw_routing_costs();
 static void draw_crit_path();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
@@ -197,11 +197,11 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-			create_button("Congestion", "Hist. Cong.", toggle_historical_congestion);
+			create_button("Congestion", "Cong. Costs", toggle_routing_congestion_cost);
 		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
-			destroy_button("Hist. Cong.");
+			destroy_button("Cong. Costs");
             if(setup_timing_info) {
                 destroy_button("Crit. Path");
             }
@@ -211,9 +211,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-			create_button("Congestion", "Hist. Cong.", toggle_historical_congestion);
+			create_button("Congestion", "Cong. Costs", toggle_routing_congestion_cost);
             if(setup_timing_info) {
-                create_button("Hist. Cong.", "Crit. Path", toggle_crit_path);
+                create_button("Cong. Costs", "Crit. Path", toggle_crit_path);
             }
 		}
 	}
@@ -335,8 +335,8 @@ static void redraw_screen() {
 			draw_congestion();
 		}
 
-        if (draw_state->show_historical_congestion != DRAW_NO_HISTORICAL_CONGESTION) {
-            draw_historical_congestion(); 
+        if (draw_state->show_routing_costs != DRAW_NO_ROUTING_COSTS) {
+            draw_routing_costs(); 
         }
 	}
 
@@ -424,14 +424,14 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void toggle_historical_congestion(void (*drawscreen_ptr)(void)) {
-    //Turns historical congestion on and off
+static void toggle_routing_congestion_cost(void (*drawscreen_ptr)(void)) {
+    //Turns routing congestion costs on and off
 	t_draw_state* draw_state = get_draw_state_vars();
-	e_draw_historical_congestion new_state = (enum e_draw_historical_congestion) (((int)draw_state->show_historical_congestion + 1) 
-														  % ((int)DRAW_HISTORICAL_CONGESTION_MAX));
+	e_draw_routing_costs new_state = (enum e_draw_routing_costs) (((int)draw_state->show_routing_costs + 1) 
+														  % ((int)DRAW_ROUTING_COST_MAX));
 
 	draw_state->reset_nets_congestion_and_rr();
-	draw_state->show_historical_congestion = new_state;
+	draw_state->show_routing_costs = new_state;
 
     drawscreen_ptr();
 }
@@ -817,13 +817,13 @@ static void draw_congestion(void) {
 	}
 }
 
-static void draw_historical_congestion(void) {
+static void draw_routing_costs() {
 
-	/* Draws all historical (accumulated) routing costs */
+	/* Draws routing costs */
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->show_historical_congestion == DRAW_NO_HISTORICAL_CONGESTION) {
+    if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
         return;
     }
 
@@ -834,60 +834,88 @@ static void draw_historical_congestion(void) {
 
     VTR_ASSERT(!route_ctx.rr_node_route_inf.empty());
 
-    float min_acc_cost = std::numeric_limits<float>::infinity();
-    float max_acc_cost = -min_acc_cost;
+    float min_cost = std::numeric_limits<float>::infinity();
+    float max_cost = -min_cost;
+    std::vector<float> rr_node_costs(device_ctx.num_rr_nodes, 0.);
 	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        float acc_cost = route_ctx.rr_node_route_inf[inode].acc_cost;
+        float cost = 0.;
+        if (   draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS 
+            || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
+            int cost_index = device_ctx.rr_nodes[inode].cost_index();
+            cost =  device_ctx.rr_indexed_data[cost_index].base_cost
+                  + route_ctx.rr_node_route_inf[inode].acc_cost
+                  + route_ctx.rr_node_route_inf[inode].pres_cost;
 
-        if (draw_state->show_historical_congestion == DRAW_HISTORICAL_CONGESTION_LOG) {
-            acc_cost = std::log(acc_cost);
+        } else if (   draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
+            int cost_index = device_ctx.rr_nodes[inode].cost_index();
+            cost =  device_ctx.rr_indexed_data[cost_index].base_cost;
+
+        } else if (   draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS 
+                   || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
+            cost = route_ctx.rr_node_route_inf[inode].acc_cost;
+
+        } else {
+            VTR_ASSERT(   draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS 
+                       || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS);
+            cost = route_ctx.rr_node_route_inf[inode].pres_cost;
         }
-        min_acc_cost = std::min(min_acc_cost, acc_cost);
-        max_acc_cost = std::max(max_acc_cost, acc_cost);
+
+        if (   draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS
+            || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS
+            || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS) {
+            cost = std::log(cost);
+        }
+        rr_node_costs[inode] = cost;
+        min_cost = std::min(min_cost, cost);
+        max_cost = std::max(max_cost, cost);
     }
 
     char msg[vtr::bufsize];
-    if (draw_state->show_historical_congestion == DRAW_HISTORICAL_CONGESTION_LOG) {
-        sprintf(msg, "Log Accumulated Cost Range [%g, %g]", min_acc_cost, max_acc_cost);
+    if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS) {
+        sprintf(msg, "Total Congestion Cost Range [%g, %g]", min_cost, max_cost);
+    } else if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
+        sprintf(msg, "Log Total Congestion Cost Range [%g, %g]", min_cost, max_cost);
+    } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
+        sprintf(msg, "Base Congestion Cost Range [%g, %g]", min_cost, max_cost);
+    } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS) {
+        sprintf(msg, "Accumulated (Historical) Congestion Cost Range [%g, %g]", min_cost, max_cost);
+    } else if (draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
+        sprintf(msg, "Log Accumulated (Historical) Congestion Cost Range [%g, %g]", min_cost, max_cost);
+    } else if (draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS) {
+        sprintf(msg, "Present Congestion Cost Range [%g, %g]", min_cost, max_cost);
+    } else if (draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS) {
+        sprintf(msg, "Log Present Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else {
-        sprintf(msg, "Accumulated Cost Range [%g, %g]", min_acc_cost, max_acc_cost);
+        sprintf(msg, "Cost Range [%g, %g]", min_cost, max_cost);
     }
     update_message(msg);
 
-    vtr::PlasmaColorMap cmap(min_acc_cost, max_acc_cost);
+    vtr::PlasmaColorMap cmap(min_cost, max_cost);
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
     //are not overdrawn by lower value ones (e.g. when zoomed-out far)
     std::vector<int> nodes(device_ctx.num_rr_nodes);
     std::iota(nodes.begin(), nodes.end(), 0);
-    auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
-        float lhs_acc = route_ctx.rr_node_route_inf[lhs_node].acc_cost;
-        float rhs_acc = route_ctx.rr_node_route_inf[rhs_node].acc_cost;
-
-        return lhs_acc < rhs_acc;
+    auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
+        return rr_node_costs[lhs_node] < rr_node_costs[rhs_node];
     };
-    std::sort(nodes.begin(), nodes.end(), cmp_ascending_acc_cost);
+    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
 
     for (int inode : nodes) {
-        float acc_cost = route_ctx.rr_node_route_inf[inode].acc_cost;
+        float cost = rr_node_costs[inode];
+        if (cost == min_cost) continue; //Hide minimum cost resources
 
-        if (acc_cost == min_acc_cost) continue; //Hide minimum cost resources
-
-        if (draw_state->show_historical_congestion == DRAW_HISTORICAL_CONGESTION_LOG) {
-            acc_cost = std::log(acc_cost);
-        }
-
-        t_color congested_color = to_t_color(cmap.color(acc_cost));
+        t_color color = to_t_color(cmap.color(cost));
 
         switch (device_ctx.rr_nodes[inode].type()) {
-            case CHANX:
+            case CHANX: //fallthrough
             case CHANY:
-                draw_rr_chan(inode, congested_color);
+                draw_rr_chan(inode, color);
                 break;
 
-            case IPIN:
+            case IPIN: //fallthrough
             case OPIN:
-                draw_rr_pin(inode, congested_color);
+                draw_rr_pin(inode, color);
                 break;
             default:
                 break;

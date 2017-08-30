@@ -60,11 +60,16 @@ enum e_draw_congestion {
 	DRAW_CONGEST_MAX
 };
 
-enum e_draw_historical_congestion {
-    DRAW_NO_HISTORICAL_CONGESTION = 0,
-    DRAW_HISTORICAL_CONGESTION,
-    DRAW_HISTORICAL_CONGESTION_LOG,
-    DRAW_HISTORICAL_CONGESTION_MAX
+enum e_draw_routing_costs {
+    DRAW_NO_ROUTING_COSTS = 0,
+    DRAW_TOTAL_ROUTING_COSTS,
+    DRAW_LOG_TOTAL_ROUTING_COSTS,
+    DRAW_ACC_ROUTING_COSTS,
+    DRAW_LOG_ACC_ROUTING_COSTS,
+    DRAW_PRES_ROUTING_COSTS,
+    DRAW_LOG_PRES_ROUTING_COSTS,
+    DRAW_BASE_ROUTING_COSTS,
+    DRAW_ROUTING_COST_MAX
 };
 
 enum e_draw_net_type {
@@ -94,8 +99,8 @@ typedef struct {
  * show_nets: Whether to show nets at placement and routing.
  * show_congestion: Controls if congestion is shown, when ROUTING is
  *					on screen.
- * show_historical congestion: Controls if historicalcongestion is shown,
- *                             when ROUTING is on screen.
+ * show_routing_costs: Controls if routing congestion costs are shown,
+ *                     when ROUTING is on screen.
  * draw_rr_toggle: Controls drawing of routing resources on screen,
  *				   if pic_on_screen is ROUTING.
  * show_blk_internal: If 0, no internal drawing is shown. Otherwise,
@@ -121,7 +126,7 @@ struct t_draw_state {
 	e_draw_nets show_nets;
     e_draw_crit_path show_crit_path;
 	e_draw_congestion show_congestion;
-	e_draw_historical_congestion show_historical_congestion;
+	e_draw_routing_costs show_routing_costs;
 	e_draw_rr_toggle draw_rr_toggle;
 	int max_sub_blk_lvl;
 	int show_blk_internal;
