@@ -122,6 +122,7 @@ my $verify_rr_graph         = 0;
 my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
+my $routing_budgets_algorithm = "disable";
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -227,6 +228,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-check_place" ){
             $check_place = 1;
+    }
+    elsif ( $token eq "-routing_budgets_algorithm"){
+            $routing_budgets_algorithm = shift(@ARGV);
     }
     # else forward the argument
 	else {
@@ -584,6 +588,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "--fix_pins" );				  
 			push( @vpr_args, "$pad_file_path");
 		}
+                push( @vpr_args, "--routing_budgets_algorithm" );
+                push( @vpr_args, "$routing_budgets_algorithm");
 		push( @vpr_args, "--seed");			 		  
 		push( @vpr_args, "$seed");
 		push( @vpr_args, "$congestion_analysis");
@@ -644,6 +650,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					push( @vpr_args, "--sdc_file");			 
 					push( @vpr_args, "$sdc_file_path");
 				}
+                                push( @vpr_args, "--routing_budgets_algorithm" );
+                                push( @vpr_args, "$routing_budgets_algorithm");
 				push( @vpr_args, @forwarded_vpr_args);
 				push( @vpr_args, "$congestion_analysis");
 				push( @vpr_args, "$switch_usage_analysis");
@@ -693,6 +701,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		}        
 		push( @vpr_args, "--seed");			 		  
 		push( @vpr_args, "$seed");
+                push( @vpr_args, "--routing_budgets_algorithm" );
+                push( @vpr_args, "$routing_budgets_algorithm");
 		if ($verify_rr_graph || $rr_graph_error_check){
 			push( @vpr_args, "--write_rr_graph" );				  
 			push( @vpr_args, 'RR_graph_result.xml');
@@ -768,6 +778,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                             push( @vpr_args, "--read_rr_graph" );				  
                             push( @vpr_args, 'RR_graph_result.xml');
                         }
+                        push( @vpr_args, "--routing_budgets_algorithm" );
+                        push( @vpr_args, "$routing_budgets_algorithm");
                         if ($check_route){
 				push( @vpr_args, "--analysis");
                         }elsif ($check_place or $rr_graph_error_check){
