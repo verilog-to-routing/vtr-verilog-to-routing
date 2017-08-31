@@ -1170,12 +1170,12 @@ static void load_block_rr_indices(
                 VTR_ASSERT(indices[SINK][x][y][0].size() == size_t(type->num_class));
 
                 //Assign indicies for IPINs and OPINs at all offsets from root
-                for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                    int x_tile = x + width_offset;
-                    for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                        int y_tile = y + height_offset;
-                        for (e_side side : SIDES) {
-                            for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+                for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+                    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                        int x_tile = x + width_offset;
+                        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                            int y_tile = y + height_offset;
+                            for (e_side side : SIDES) {
                                 if (type->pinloc[width_offset][height_offset][side][ipin]) {
 
                                     int iclass = type->pin_class[ipin];
@@ -1195,6 +1195,17 @@ static void load_block_rr_indices(
                                     indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
                                 }
                             }
+                        }
+                    }
+                }
+
+
+                //Sanity check
+                for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                    int x_tile = x + width_offset;
+                    for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                        int y_tile = y + height_offset;
+                        for (e_side side : SIDES) {
                             VTR_ASSERT(indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
                             VTR_ASSERT(indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
                         }
