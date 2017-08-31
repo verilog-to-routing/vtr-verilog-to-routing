@@ -1,10 +1,6 @@
-/* 
- * File:   route_budgets.h
- * Author: jiamin wang
- *
- * Created on July 14, 2017, 11:34 AM
- */
-
+/*Defines the route_budgets class that contains the minimum, maximum,
+ * target, upper bound, and lower bound budgets. These information are
+ * used by the router to optimize for hold time. */
 #ifndef ROUTE_BUDGETS_H
 #define ROUTE_BUDGETS_H
 
@@ -57,15 +53,18 @@ private:
     void free_budgets();
     void alloc_budget_memory();
     void load_initial_budgets();
-    
-    /*/different ways to set route budgets*/
+
+    /*different ways to set route budgets*/
     void allocate_slack_using_delays_and_criticalities(float ** net_delay,
             std::shared_ptr<SetupTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts);
     void allocate_slack_using_weights(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
+    /*Sometimes want to allocate only positive or negative slack.
+     By default, allocate both*/
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
             float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
             bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
+    void process_negative_slack_using_minimax(float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
 
     /*Perform static timing analysis*/
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(float ** temp_budgets);
@@ -93,23 +92,24 @@ private:
     /*debugging tools*/
     void print_temporary_budgets_to_file(float ** temp_budgets);
 
+    /*Budget variables*/
     float ** delay_min_budget; //[0..num_nets][0..clb_net[inet].pins]
     float ** delay_max_budget; //[0..num_nets][0..clb_net[inet].pins]
     float ** delay_target; //[0..num_nets][0..clb_net[inet].pins]
     float ** delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
     float ** delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
 
-    //used to keep count the number of continuous time this node was congested
+    /*used to keep count the number of continuous time this node was congested*/
     vector <int> num_times_congested; //[0..num_nets]
 
-    //memory management for the budgets
+    /*memory management for the budgets*/
     vtr::t_chunk min_budget_delay_ch;
     vtr::t_chunk max_budget_delay_ch;
     vtr::t_chunk target_budget_delay_ch;
     vtr::t_chunk lower_bound_delay_ch;
     vtr::t_chunk upper_bound_delay_ch;
 
-    //budgets only valid when set
+    /*budgets only valid when loaded*/
     bool set;
 };
 

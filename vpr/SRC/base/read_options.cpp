@@ -646,7 +646,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " * slack: Sets the budgets depending on the amount slack between connections and the current delay values.\n"
                   " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality)\n"
                   " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
-            .default_value("minimax")
+            .default_value("disable")
             .choices({"minimax", "scale_delay", "disable"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -1,12 +1,14 @@
-/* 
- * File:   route_budgets.cpp
- * Author: Jia Min (Jasmine) Wang
- * 
- * Created on July 14, 2017, 11:34 AM
- * 
- * This loads and manipulates the routing budgets. The budgets can be set
- * using different algorithms. The default which is the minimax algorithm.
- * This is implemented in order to consider hold time during routing
+/* This loads and manipulates the routing budgets. The budgets can be set
+ * using different algorithms. The user chooses which algorithm to use using
+ * the --routing_budgets_algorithm option. The minimax-PERT algorithm uses weights
+ * and slacks to calculate how much slack to allocate each connection. Slack
+ * allocated = slack * weight / max_weight_of_all_paths_through_the_connection.
+ * The weight here is the delay of the connection. The other method of slack allocating
+ * is to set the max budgets as a scale of the delays by the pin criticality, and setting
+ * the min budgets to zero. 
+ * This is implemented in order to consider hold time during routing.
+ * With these minimum and maximum budgets, a target budget is found
+ * wherein the routing cost function tries to get the delay closest to the target.
  */
 
 #include <algorithm>
@@ -152,27 +154,16 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     /*The minimax PERT algorithm uses a weight based approach to allocate slack for each connection
      * The formula used where c is a connection is 
      * slack_allocated(c) = (slack(c)*weight(c)/max_weight_of_all_path_through(c)).
+     * Weights here are defined as the delay for the connections
      * Values for conditions in the while loops are pulled from the RCV paper*/
     std::shared_ptr<SetupHoldTimingInfo> timing_info = NULL;
 
     unsigned iteration;
     float max_budget_change;
 
-    //    iteration = 0;
-    //    max_budget_change = 900e-12;
-    //    float second_max_budget_change = 900e-12;
-    //
-    //    /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets*/
-    //    while (iteration < 7 && max_budget_change > 5e-12) {
-    //        timing_info = perform_sta(delay_max_budget);
-    //        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, true, NEGATIVE);
-    //
-    //        timing_info = perform_sta(delay_max_budget);
-    //        second_max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, true, NEGATIVE);
-    //        max_budget_change = max(max_budget_change, second_max_budget_change);
-    //
-    //        iteration++;
-    //    }
+    /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
+     Not necessary unless budgets are really hard to meet*/
+    //process_negative_slack_using_minimax();
 
     iteration = 0;
     max_budget_change = 900e-12;
@@ -220,6 +211,31 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     }
     /*budgets may go below minimum delay bound*/
     keep_budget_above_value(delay_min_budget, bottom_range);
+}
+
+void route_budgets::process_negative_slack_using_minimax(float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup) {
+    /*This function is an optional pre-processing for the maximum budgets.
+     This ensures that the short path slacks are also taken into account for the maximum budgets.
+     Ensures that maximum budgets will always be above minimum budgets.
+     Can be unnecessary for not so strict budgets*/
+    unsigned iteration;
+    float max_budget_change;
+    std::shared_ptr<SetupHoldTimingInfo> timing_info = NULL;
+
+    iteration = 0;
+    max_budget_change = 900e-12;
+    float second_max_budget_change = 900e-12;
+
+    while (iteration < 7 && max_budget_change > 5e-12) {
+        timing_info = perform_sta(delay_max_budget);
+        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, true, NEGATIVE);
+
+        timing_info = perform_sta(delay_max_budget);
+        second_max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, true, NEGATIVE);
+        max_budget_change = max(max_budget_change, second_max_budget_change);
+
+        iteration++;
+    }
 }
 
 void route_budgets::keep_budget_above_value(float ** temp_budgets, float bottom_range) {
@@ -284,7 +300,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             AtomPinId atom_pin;
 
-            //calculate slack, save the pin that has min slack to calculate total path delay
+            /*calculate slack, save the pin that has min slack to calculate total path delay*/
             if (analysis_type == HOLD) {
                 path_slack = calculate_clb_pin_slack(inet, ipin, timing_info, pb_gpin_lookup, HOLD, atom_pin);
             } else {
@@ -309,6 +325,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
                 max_budget_change = max(max_budget_change, abs(net_delay[inet][ipin] * path_slack / total_path_delay));
             }
 
+            /*Budgets need to be between maximum and minimum budgets*/
             if (keep_in_bounds) {
                 keep_budget_in_bounds(temp_budgets, inet, ipin);
             }
@@ -510,12 +527,15 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(float ** temp_bu
 }
 
 void route_budgets::update_congestion_times(int inet) {
-
+    /*Calling this function indicates this net is congested in 
+     this routing iteration. This vector keeps the number of
+     consecutive times this net is congested */
     num_times_congested[inet]++;
 }
 
 void route_budgets::not_congested_this_iteration(int inet) {
-
+    /*Any time the net is not congested, clear this counter to only
+     count the /consecutive/ congested times*/
     num_times_congested[inet] = 0;
 }
 
@@ -612,11 +632,10 @@ void route_budgets::print_route_budget() {
         }
     }
 
-    fp << endl << endl << "Target Delay Budgets:" << endl;
+    fp << endl << endl << "Delay upper_bound:" << endl;
     for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
         for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-
             fp << delay_upper_bound[inet][ipin] << " ";
         }
     }
@@ -645,5 +664,6 @@ void route_budgets::print_temporary_budgets_to_file(float ** temp_budgets) {
 }
 
 bool route_budgets::if_set() {
+    /*Returns if the budgets have been loaded yet*/
     return set;
 }
