@@ -9,6 +9,8 @@
 #include "vpr_types.h"
 #include "atom_netlist_fwd.h"
 
+//#define USE_HMETIS 1
+
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
         const std::unordered_set<AtomNetId>& is_clock,
@@ -24,7 +26,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name
 #ifdef USE_HMETIS
-		, std::vector<vector<ClusterBlockId>>& partitions
+		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf

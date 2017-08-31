@@ -22,10 +22,9 @@ using namespace std;
 #include "read_blif.h"
 #include "cluster.h"
 
-/* #define USE_HMETIS 1 */
 #ifdef USE_HMETIS
 #include "hmetis_graph_writer.h"
-static vtr::vector_map<ClusterBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
+static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
 //TODO: CHANGE THIS HARDCODING
 static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe "); 
 #endif
@@ -54,7 +53,7 @@ void try_pack(t_packer_opts *packer_opts,
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 #ifdef USE_HMETIS
-	vtr::vector_map<ClusterBlockId, int> partitions;
+	vtr::vector_map<AtomBlockId,int> partitions;
 #endif
 	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
@@ -152,8 +151,16 @@ void try_pack(t_packer_opts *packer_opts,
 
 		// Print each block's partition
 		vtr::printf_info("Partitioning complete\n");
-		for (auto blk_id : partitions) {
-			vtr::printf_info("\tBlock %zu is in partition %zu\n", size_t(blk_id), partitions[blk_id]);
+		
+		vector<vector<AtomBlockId>> print_partitions(num_parts);
+		for (auto blk_id : atom_ctx.nlist.blocks()) {
+			print_partitions[partitions[blk_id]].push_back(blk_id);
+		}
+		for (int i = 0; i < (int)print_partitions.size(); i++) {
+			vtr::printf_info("Blocks in partition %zu:\n\t", i);
+			for (int j = 0; j < (int)print_partitions[i].size(); j++)
+				vtr::printf_info("%zu ", size_t(print_partitions[i][j]));
+			vtr::printf_info("\n");
 		}
 	}
 #endif
@@ -257,9 +264,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 /* Reads in the output of the hMetis partitioner and returns
 *  A 2-D vector that contains all the blocks in each partition
 */
-static vtr::vector_map<ClusterBlockId, int> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
+static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
 	ifstream fp(hmetis_output_file.c_str());
-	vtr::vector_map<ClusterBlockId, int> partitions;
+	vtr::vector_map<AtomBlockId, int> partitions;
 	string line;
 	int block_num = 0; //Indexing for CLB's start at 0
 
@@ -279,7 +286,7 @@ static vtr::vector_map<ClusterBlockId, int> read_hmetis_graph(string &hmetis_out
 				"Partition for line '%s' exceeds the set number of partitions %d" , line, num_parts);
 		}
 
-		partitions[ClusterBlockId(block_num)].push_back(stoi(line));
+		partitions[AtomBlockId(block_num)] = stoi(line);
 		block_num++;
 	}
 
