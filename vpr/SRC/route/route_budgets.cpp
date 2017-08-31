@@ -10,8 +10,11 @@
  * is to set the max budgets as a scale of the delays by the pin criticality, and setting
  * the min budgets to zero. 
  * This is implemented in order to consider hold time during routing.
- * With these minimum and maximum budgets, a target budget is found
- * wherein the routing cost function tries to get the delay closest to the target.
+ * With these minimum and maximum budgets, a target budget is found using RCV 
+ * (R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve 
+ * FPGA Timing While Repairing Short-Path Violations," in IEEE Transactions 
+ * on Computer-Aided Design of Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.)
+ * The routing cost function tries to get the delay closest to the target.
  */
 
 #include <algorithm>
@@ -83,6 +86,7 @@ void route_budgets::load_memory_chunks() {
 }
 
 void route_budgets::alloc_budget_memory() {
+    /*All the budgets are allocated similar to the net delay in order to pass into the delay calculator*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     delay_min_budget = alloc_net_delay(&min_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
@@ -150,6 +154,7 @@ void route_budgets::calculate_delay_targets() {
 }
 
 void route_budgets::calculate_delay_targets(int inet, int ipin) {
+    /*Target delay is calculated using equation in the RCV algorithm*/
     delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
 }
 
@@ -212,7 +217,7 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
         max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, false);
         iteration++;
     }
-    /*budgets may go below minimum delay bound*/
+    /*budgets may go below minimum delay bound to optimize for setup time*/
     keep_budget_above_value(delay_min_budget, bottom_range);
 }
 
@@ -292,6 +297,9 @@ void route_budgets::set_min_max_budgets_equal() {
 float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
         float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
         bool keep_in_bounds, slack_allocated_type slack_type) {
+    /*This function uses weights to calculate how much slack to allocate to a connection.
+     The weights are deteremined by how much delay of the whole path is present in this connection*/
+    
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -317,6 +325,8 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
                 continue;
             }
 
+            /*During hold analysis, increase the budgets when there is negative slack.
+             During setup analysis, decrease the budgets when there is negative slack*/
             if ((slack_type == NEGATIVE && path_slack < 0) ||
                     (slack_type == POSITIVE && path_slack > 0) ||
                     slack_type == BOTH) {
@@ -340,7 +350,8 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
 
 float route_budgets::calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info,
         const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type, AtomPinId &atom_pin) {
-    /*Calculates the slack for the specific clb pin. Takes the minimum slack*/
+    /*Calculates the slack for the specific clb pin. Takes the minimum slack. Keeps track of the pin
+     used in this calculation so it can be used again for getting the total path delay*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const t_net_pin& net_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin];
@@ -409,6 +420,9 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
         return -1;
     }
 
+    /*To get the maximum path delay, we need
+     * maximum arrival tag + (maximum sink required time - minimum current required time)*/
+    
     auto max_arrival_tag_iter = find_maximum_tag(arrival_tags);
     auto min_required_tag_iter = find_minimum_tag(required_tags);
 
@@ -487,7 +501,6 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(float ** net_d
                 //prevent invalid division
                 delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
             } else {
-
                 delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
             }
             check_if_budgets_in_bounds(inet, ipin);
@@ -499,6 +512,7 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(float ** net_d
 }
 
 void route_budgets::check_if_budgets_in_bounds(int inet, int ipin) {
+    /*All budgets need to be between the minimum and maximum bound*/
     VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
             && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
             && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
