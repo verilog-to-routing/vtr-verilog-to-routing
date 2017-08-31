@@ -225,9 +225,9 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 	return net_id;
 }
 
-void ClusteredNetlist::set_netlist_id(std::string netlist_id) {
+void ClusteredNetlist::set_netlist_id(std::string netlist_id__) {
 	//TODO: Add asserts?
-	netlist_id_ = netlist_id;
+	netlist_id_ = netlist_id__;
 }
 
 void ClusteredNetlist::set_global(ClusterNetId net_id, bool state) {
