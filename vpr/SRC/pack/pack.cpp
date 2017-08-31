@@ -25,7 +25,7 @@ using namespace std;
 /* #define USE_HMETIS 1 */
 #ifdef USE_HMETIS
 #include "hmetis_graph_writer.h"
-static vector<vector<ClusterBlockId>> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
+static vtr::vector_map<ClusterBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
 //TODO: CHANGE THIS HARDCODING
 static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe "); 
 #endif
@@ -53,9 +53,9 @@ void try_pack(t_packer_opts *packer_opts,
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
-
-	vector<vector<ClusterBlockId>> partitions;
-
+#ifdef USE_HMETIS
+	vtr::vector_map<ClusterBlockId, int> partitions;
+#endif
 	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
 	/* determine number of models in the architecture */
@@ -133,6 +133,7 @@ void try_pack(t_packer_opts *packer_opts,
 		// 1. Partition tree would result in the size of subcircuits ~= 4 (Elias Vansteenkiste, et al.)
 		// 2. Partition depth = 5, i.e. num_parts = 32 (Doris Chen, et al.)
 		//int num_parts = atom_ctx.nlist.blocks().size() / 4; // Method 1.
+		//TODO: Find an appropriate value (may be from packer_opts) for num_parts
 		int num_parts = 32; //Method 2.
 
 		string run_hmetis = hmetis + packer_opts->hmetis_input_file + " " + to_string(num_parts) + " 5";
@@ -142,26 +143,17 @@ void try_pack(t_packer_opts *packer_opts,
 		//Using shmetis (standard hmetis) to simplify
 		system(run_hmetis.c_str());
 
-		/* Parse the output file from hMetis
-		*  Contains |V| lines, with ith line = partition of V_i
-		*  Store the results into a vector, where vector.size() == # of partitions
-		*  And partitions[i] == CLBs in that partition
+		/* Parse the output file from hMetis, contains |V| lines, ith line = partition of V_i.
+		*  Store the results into a vector_map.
 		*/
-
-		//TODO: Find an appropriate value (may be from packer_opts) for num_parts
-		//		4 was used as N_stop in Elias' paper
 		string hmetis_output_file(packer_opts->hmetis_input_file + ".part." + to_string(num_parts));
 
 		partitions = read_hmetis_graph(hmetis_output_file, num_parts);
 
-		// Print blocks in each partition
+		// Print each block's partition
 		vtr::printf_info("Partitioning complete\n");
-		for (unsigned int i = 0; i < partitions.size(); i++) {
-			vtr::printf_info("\tPartition %zu:\n\t\t",i);
-			for (auto block : partitions[i]) {
-				vtr::printf_info("%zu ", size_t(block));
-			}
-			vtr::printf_info("\n");
+		for (auto blk_id : partitions) {
+			vtr::printf_info("\tBlock %zu is in partition %zu\n", size_t(blk_id), partitions[blk_id]);
 		}
 	}
 #endif
@@ -265,9 +257,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 /* Reads in the output of the hMetis partitioner and returns
 *  A 2-D vector that contains all the blocks in each partition
 */
-static vector<vector<ClusterBlockId>> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
+static vtr::vector_map<ClusterBlockId, int> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
 	ifstream fp(hmetis_output_file.c_str());
-	vector<vector<ClusterBlockId>> partitions;
+	vtr::vector_map<ClusterBlockId, int> partitions;
 	string line;
 	int block_num = 0; //Indexing for CLB's start at 0
 
@@ -275,7 +267,7 @@ static vector<vector<ClusterBlockId>> read_hmetis_graph(string &hmetis_output_fi
 	auto& atom_ctx = g_vpr_ctx.atom();
 	VTR_ASSERT((int)atom_ctx.nlist.blocks().size() == count(istreambuf_iterator<char>(fp), istreambuf_iterator<char>(), '\n'));
 	
-	partitions.resize(num_parts);
+	partitions.resize(atom_ctx.nlist.blocks().size());
 
 	// Reset the filestream to the beginning and reread
 	fp.clear();
@@ -287,7 +279,7 @@ static vector<vector<ClusterBlockId>> read_hmetis_graph(string &hmetis_output_fi
 				"Partition for line '%s' exceeds the set number of partitions %d" , line, num_parts);
 		}
 
-		partitions[stoi(line)].push_back(ClusterBlockId(block_num));
+		partitions[ClusterBlockId(block_num)].push_back(stoi(line));
 		block_num++;
 	}
 

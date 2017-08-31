@@ -459,7 +459,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         //Calculate criticality of each block
         for(AtomBlockId blk : atom_ctx.nlist.blocks()) {
             for(AtomPinId in_pin : atom_ctx.nlist.block_input_pins(blk)) {
-                //Max criticality over incomming nets
+                //Max criticality over incoming nets
                 float crit = timing_info->setup_pin_criticality(in_pin);
                 block_criticality[blk] = std::max(block_criticality[blk], crit);
             }
