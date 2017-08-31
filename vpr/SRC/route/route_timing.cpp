@@ -159,7 +159,7 @@ static void print_route_status_header();
 static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
-        float est_success_iteration);
+        float est_success_iteration, float overuse_slope);
 static int round_up(float x);
 
 /************************ Subroutine definitions *****************************/
@@ -300,6 +300,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
          */
         bool routing_is_feasible = feasible_routing();
         float est_success_iteration = routing_success_predictor.estimate_success_iteration();
+        float est_overuse_slope = routing_success_predictor.estimate_overuse_slope();
 
         overuse_info = calculate_overuse_info();
         wirelength_info = calculate_wirelength_info();
@@ -331,7 +332,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, time, connections_routed, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, time, connections_routed, overuse_info, wirelength_info, timing_info, est_success_iteration, est_overuse_slope);
 
         //Update graphics
         if (itry == 1) {
@@ -1766,24 +1767,25 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf_info("---- ---------- --------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------------\n");
-    vtr::printf_info("Iter Time (sec) Rtd Conns   Overused RR Nodes       Wirelength  CPD (ns)  sTNS (ns)  sWNS (ns)  hTNS (ns)  hWNS (ns) Est Succ Iter\n");
-    vtr::printf_info("---- ---------- --------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------------\n");
+    vtr::printf_info("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ---------------\n");
+    vtr::printf_info("Iter   Time  Re-Rtd   Overused RR Nodes        Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ  Est Congestion\n");
+    vtr::printf_info("      (sec)   Conns                                           (ns)       (ns)       (ns)       (ns)       (ns)     Iter           Slope\n");
+    vtr::printf_info("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ---------------\n");
 }
 
 static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
-        float est_success_iteration) {
+        float est_success_iteration, float overuse_slope) {
 
     //Iteration
     vtr::printf("%4d", itry);
 
     //Elapsed Time
-    vtr::printf(" %10.1f", elapsed_sec);
+    vtr::printf(" %6.1f", elapsed_sec);
 
     //Rerouted connections
-    vtr::printf(" %9.3g", float(connections_routed));
+    vtr::printf(" %7.2g", float(connections_routed));
 
     //Overused RR nodes
     vtr::printf(" %8.3g (%7.4f%)", float(overuse_info.overused_nodes()), overuse_info.overused_node_ratio()*100);
@@ -1833,9 +1835,17 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
 
     //Estimated success iteration
     if (std::isnan(est_success_iteration)) {
-        vtr::printf(" %13s", "N/A");
+        vtr::printf(" %8s", "N/A");
     } else {
-        vtr::printf(" %13.0f", est_success_iteration);
+        vtr::printf(" %8.0f", est_success_iteration);
+    }
+
+    //Overuse Slope
+    float overuse_slope_fraction = overuse_slope / overuse_info.overused_nodes();
+    if (std::isnan(overuse_slope)) {
+        vtr::printf(" %7s", "N/A");
+    } else {
+        vtr::printf(" % 8.2g (% 5.1f%)", overuse_slope, overuse_slope_fraction*100);
     }
 
     vtr::printf("\n");

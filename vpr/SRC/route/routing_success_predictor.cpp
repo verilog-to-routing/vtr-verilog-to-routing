@@ -183,13 +183,16 @@ float RoutingSuccessPredictor::estimate_success_iteration() {
 }
 
 float RoutingSuccessPredictor::estimate_overuse_slope() {
+    //We use a fixed size sliding window of history to estimate the slope
+    //This makes the slope estimate more 'recent' than the values used to estimate
+    //the success iteration (although at the risk of being noisier).
     constexpr float FIXED_HISTORY_SIZE = 5; //# of previous iterations to consider
 
     float slope = std::numeric_limits<float>::quiet_NaN();
 
     float history_factor = FIXED_HISTORY_SIZE / iterations_.size(); //Fixed history size
 
-    if (iterations_.size() > min_history_) {
+    if (iterations_.size() >= FIXED_HISTORY_SIZE) {
         auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor);
 
         float log_curr_usage = model.find_y_for_x_value(*(--iterations_.end()));
