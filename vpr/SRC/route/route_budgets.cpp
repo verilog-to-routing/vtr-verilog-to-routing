@@ -1,6 +1,9 @@
 /* This loads and manipulates the routing budgets. The budgets can be set
  * using different algorithms. The user chooses which algorithm to use using
- * the --routing_budgets_algorithm option. The minimax-PERT algorithm uses weights
+ * the --routing_budgets_algorithm option. The minimax-PERT algorithm [H. Youssef, 
+ * R. B. Lin and E. Shragowitz, "Bounds on net delays for VLSI circuits," 
+ * in IEEE Transactions on Circuits and Systems II: Analog and Digital Signal 
+ * Processing, vol. 39, no. 11, pp. 815-824, Nov 1992.] uses weights
  * and slacks to calculate how much slack to allocate each connection. Slack
  * allocated = slack * weight / max_weight_of_all_paths_through_the_connection.
  * The weight here is the delay of the connection. The other method of slack allocating

@@ -988,6 +988,9 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 
         float zero = 0.0;
         //after budgets are loaded, calculate delay cost as described by RCV paper
+        /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
+         * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
+         * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
         if (budgeting_inf.if_set()) {
             tot_cost += (short_path_crit + target_criticality) * max(zero, target_delay - tot_cost);
             tot_cost += pow(max(zero, tot_cost - max_delay), 2) / 100e-12;
@@ -1095,7 +1098,10 @@ static void timing_driven_expand_neighbours(t_heap *current,
         float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
 
         float zero = 0.0;
-        //after budgets are loaded, calculate delay cost as described by RCV paper
+        //after budgets are loaded, calculate delay cost as described by RCV paper        
+        /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
+         * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
+         * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
         if (budgeting_inf.if_set()) {
             new_tot_cost += (short_path_crit + criticality_fac) * max(zero, target_delay - new_tot_cost);
             new_tot_cost += pow(max(zero, new_tot_cost - max_delay), 2) / 100e-12;

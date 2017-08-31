@@ -552,17 +552,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
     
-.. option:: --routing_budgets_algorithm { minimax | scale_delay | disable }
+.. option:: --routing_budgets_algorithm { disable | minimax | scale_delay }
 
-    Controls how the routing budgets are created.
+    Controls how the routing budgets are created. Routing budgets are used to guid VPR's routing algorithm to consider both short path and long path timing constraints :cite:`RCV_algorithm`. 
     
-    ``minimax`` sets the minimum and maximum budgets depending on the amount slack between connections and the current delay values. This uses the routing cost valleys (RCV) and Minimax-PERT algorithm.
+    ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
+    
+    ``minimax`` sets the minimum and maximum budgets depending on the amount slack between connections and the current delay values. This uses the routing cost valleys (RCV) and Minimax-PERT algorithm. :cite:`minimax_pert,RCV_algorithm`.
     
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets as scaling the delay by the pin criticality (net delay/ pin criticality).
     
-    ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
-        
-    **Default:** ``slack``
+    **Default:** ``disable``
 
 .. _timing_driven_router_options:
 
