@@ -206,8 +206,6 @@ void alloc_and_load_edges_and_switches(
 static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(const t_direct_inf *directs, const int num_directs,
         const int delayless_switch);
 
-void watch_edges(int inode, t_linked_edge * edge_list_head);
-
 static void free_type_track_to_pin_map(
         t_track_to_pin_lookup& track_to_pin_map,
         t_type_ptr types, int max_chan_width);
@@ -1603,24 +1601,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         L_rr_node[node].set_ptc_num(track);
         L_rr_node[node].set_type(chan_type);
         L_rr_node[node].set_direction(seg_details[track].direction);
-    }
-}
-
-void watch_edges(int inode, t_linked_edge * edge_list_head) {
-    t_linked_edge *list_ptr;
-    int i, to_node;
-
-    auto& device_ctx = g_vpr_ctx.device();
-
-    list_ptr = edge_list_head;
-    i = 0;
-
-    print_rr_node(stdout, device_ctx.rr_nodes, inode);
-    while (list_ptr != NULL) {
-        to_node = list_ptr->edge;
-        print_rr_node(stdout, device_ctx.rr_nodes, to_node);
-        list_ptr = list_ptr->next;
-        i++;
     }
 }
 
