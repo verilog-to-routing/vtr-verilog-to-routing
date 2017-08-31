@@ -46,7 +46,8 @@ void sdc_set_min_max_delay_add_to_from_group(Callback& callback, const Lexer& le
 void add_sdc_set_min_max_delay(Callback& callback, const Lexer& lexer, SetMinMaxDelay& sdc_set_max_delay);
 
 //set_multicycle_path
-void sdc_set_multicycle_path_set_type(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, SetupHoldType type);
+void sdc_set_multicycle_path_set_setup(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path);
+void sdc_set_multicycle_path_set_hold(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path);
 void sdc_set_multicycle_path_set_mcp_value(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, int mcp_value);
 void sdc_set_multicycle_path_add_to_from_group(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, StringGroup group, FromToType to_from_dir);
 void add_sdc_set_multicycle_path(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path);

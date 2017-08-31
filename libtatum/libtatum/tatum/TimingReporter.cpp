@@ -136,28 +136,44 @@ void TimingReporter::report_timing_hold(std::ostream& os,
     report_timing(os, paths, npaths);
 }
 
-void TimingReporter::report_unconstrained_endpoints_setup(std::string filename, 
+void TimingReporter::report_unconstrained_setup(std::string filename, 
                                                           const tatum::SetupTimingAnalyzer& setup_analyzer) const {
     std::ofstream os(filename);
-    report_unconstrained_endpoints_setup(os, setup_analyzer);
+    report_unconstrained_setup(os, setup_analyzer);
 }
 
-void TimingReporter::report_unconstrained_endpoints_setup(std::ostream& os, 
+void TimingReporter::report_unconstrained_setup(std::ostream& os, 
                                                           const tatum::SetupTimingAnalyzer& setup_analyzer) const {
     detail::SetupTagRetriever tag_retriever(setup_analyzer);
-    report_unconstrained_endpoints(os, tag_retriever);
+
+    os << "#Unconstrained setup timing startpoint/endpoint\n";
+    os << "\n";
+    os << "timing_node_id node_type node_name\n";
+    os << "-------------- --------- ---------\n";
+    report_unconstrained(os, NodeType::SOURCE, tag_retriever);
+    report_unconstrained(os, NodeType::SINK, tag_retriever);
+    os << "\n";
+    os << "#End of unconstrained setup startpoint/endpoint report\n";
 }
 
-void TimingReporter::report_unconstrained_endpoints_hold(std::string filename, 
+void TimingReporter::report_unconstrained_hold(std::string filename, 
                                                          const tatum::HoldTimingAnalyzer& hold_analyzer) const {
     std::ofstream os(filename);
-    report_unconstrained_endpoints_hold(os, hold_analyzer);
+    report_unconstrained_hold(os, hold_analyzer);
 }
 
-void TimingReporter::report_unconstrained_endpoints_hold(std::ostream& os, 
+void TimingReporter::report_unconstrained_hold(std::ostream& os, 
                                                          const tatum::HoldTimingAnalyzer& hold_analyzer) const {
     detail::HoldTagRetriever tag_retriever(hold_analyzer);
-    report_unconstrained_endpoints(os, tag_retriever);
+
+    os << "#Unconstrained hold timing startpoint/endpoint\n";
+    os << "\n";
+    os << "timing_node_id node_type node_name\n";
+    os << "-------------- --------- ---------\n";
+    report_unconstrained(os, NodeType::SOURCE, tag_retriever);
+    report_unconstrained(os, NodeType::SINK, tag_retriever);
+    os << "\n";
+    os << "#End of unconstrained hold startpoint/endpoint report\n";
 }
 
 /*
@@ -459,17 +475,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
     }
 }
 
-void TimingReporter::report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const {
-    os << "#Unconstrained timing endpoints\n";
-    os << "\n";
-
-    os << "timing_node_id node_type node_name\n";
-    os << "-------------- --------- ---------\n";
-
+void TimingReporter::report_unconstrained(std::ostream& os, const NodeType type, const detail::TagRetriever& tag_retriever) const {
     for(NodeId node : timing_graph_.nodes()) {
         NodeType node_type = timing_graph_.node_type(node);
-        if(node_type == NodeType::SINK) {
-            //An endpoint
+        if(node_type == type) {
             auto tags = tag_retriever.tags(node);
             if(!is_constrained(node_type, tags)) {
                 os << size_t(node)
@@ -479,9 +488,6 @@ void TimingReporter::report_unconstrained_endpoints(std::ostream& os, const deta
             }
         }
     }
-
-    os << "\n";
-    os << "#End of unconstrained endpoints report\n";
 }
 
 bool TimingReporter::nearly_equal(const Time& lhs, const Time& rhs) const {

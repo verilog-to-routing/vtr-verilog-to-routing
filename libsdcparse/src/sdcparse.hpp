@@ -168,12 +168,6 @@ enum class FromToType {
     TO
 };
 
-enum class SetupHoldType {
-    SETUP,
-    HOLD,
-    NONE
-};
-
 enum class ClockLatencyType {
     SOURCE,
     NONE
@@ -257,7 +251,13 @@ struct SetMinMaxDelay {
 };
 
 struct SetMulticyclePath {
-    SetupHoldType type = SetupHoldType::NONE;   //The type of the mcp
+    bool is_setup = false;                      //Does mcp_value apply for setup?
+    bool is_hold = false;                       //Does mcp_value apply for hold?
+                                                // Note: is_setup/is_hold correspond to whether the option was 
+                                                // provided, it is up to the application to handle the case 
+                                                // where both are left unspecified (which SDC treats as
+                                                // applying mcp_value for the setup mcp, and 0 for the hold 
+                                                // mcp)
     int mcp_value = UNINITIALIZED_INT;          //The number of cycles specifed
     StringGroup from;                           //The source list of startpoints or clocks
     StringGroup to;                             //The target list of endpoints or clocks

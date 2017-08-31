@@ -29,17 +29,17 @@ class TimingReporter {
         void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
-        void report_unconstrained_endpoints_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
-        void report_unconstrained_endpoints_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
+        void report_unconstrained_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
+        void report_unconstrained_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
 
-        void report_unconstrained_endpoints_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
-        void report_unconstrained_endpoints_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
+        void report_unconstrained_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
+        void report_unconstrained_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
 
     private:
         void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, size_t npaths) const;
         void report_path(std::ostream& os, const TimingPath& path) const;
 
-        void report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const;
+        void report_unconstrained(std::ostream& os, const NodeType type, const detail::TagRetriever& tag_retriever) const;
 
         bool nearly_equal(const tatum::Time& lhs, const tatum::Time& rhs) const;
 

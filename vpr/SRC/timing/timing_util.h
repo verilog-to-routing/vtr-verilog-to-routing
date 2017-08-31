@@ -49,6 +49,9 @@ float find_hold_total_negative_slack(const tatum::HoldTimingAnalyzer& hold_analy
 //Returns the worst negative slack (hold) across all timing end-points and clock domain pairs
 float find_hold_worst_negative_slack(const tatum::HoldTimingAnalyzer& hold_analyzer);
 
+//Returns the worst slack (hold) between the specified launch and capture clock domains
+float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, const tatum::DomainId launch, const tatum::DomainId capture);
+
 //Returns a setup slack histogram
 std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins = 10);
 

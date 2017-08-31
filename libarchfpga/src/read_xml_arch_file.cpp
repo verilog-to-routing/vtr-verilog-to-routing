@@ -1952,10 +1952,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
         grid_def.grid_type = GridDefType::AUTO;
 
-        auto aspect_ratio_attr = get_attribute(layout_type_tag, "aspect_ratio", loc_data);
-        if (aspect_ratio_attr) {
-            grid_def.aspect_ratio = aspect_ratio_attr.as_float();
-        }
+        grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data, OPTIONAL).as_float(1.);
         grid_def.name = "auto";
 
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {
@@ -2068,8 +2065,8 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             t_grid_loc_def single(type_name, priority);
             single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
             single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
-            single.x.end_expr = single.x.start_expr + "+ w - 1";
-            single.y.end_expr = single.y.start_expr + "+ h - 1";
+            single.x.end_expr = single.x.start_expr + " + w - 1";
+            single.y.end_expr = single.y.start_expr + " + h - 1";
 
             grid_def.loc_defs.push_back(single);
 

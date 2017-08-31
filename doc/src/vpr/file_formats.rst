@@ -436,11 +436,10 @@ Each of these sections are separated into separate tags as described below.
 Top Level Tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The first tag in all rr graph files is the ``<rr_graph>`` tag.
-This tag contains all other tags in the rr graph file.
-Each tag has their subsequent subtags. For example, ``<segments>`` includes all the segments in the graph. Each ``<segment>`` tag outlines one type of segment.
+The first tag in all rr graph files is the ``<rr_graph>`` tag that contains detailed subtags for each catagory in the rr graph.
+Each tag has their subsequent subtags that describes one entity. For example, ``<segments>`` includes all the segments in the graph where each ``<segment>`` tag outlines one type of segment.
 
-The rr_graph tag contains the following tags:
+The ``rr_graph`` tag contains the following tags:
 
 * ``<channels>``
 	* <channel>content</channel>
@@ -507,7 +506,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
   	This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
   	
-    :opt_param R Cin Cout:
+    :opt_param R, Cin, Cout:
         The resistance, input capacitance and output capacitance of the switch.
         
     :opt_param Tdel:
@@ -539,26 +538,24 @@ The ``segments`` tag contains all the segments and its information. Note again t
 
 	This optional tag defines the timing information of this segment.
 	
-    :opt_param R_per_meter C_per_meter:
+    :opt_param R_per_meter, C_per_meter:
         The resistance and capacitance of a routing track, per unit logic block length.
 
 **Blocks**
 
-The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. It contains the following subtags:
+The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. Information here is checked to make sure it corresponds with the architecture. It contains the following subtags:
   
 .. arch:tag:: <block_type id="int" name="unique_identifier" width="int" height="int">
 
-  This describes generation information about the block using the following attributes:
+	This describes generation information about the block using the following attributes:
 
     :req_param id:
         The index of the type of the descriptor in the array. This is used for index referencing
         
     :req_param name:
-        A unique identifier for this type of block. 
-        Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. 
-        Input and output blocks must be named "io". Other blocks can have any name.
+        A unique identifier for this type of block. Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
         
-    :req_param width height:
+    :req_param width, height:
         The width and height of a large block in grid tiles.
 
 .. arch:tag:: <pin_class type="unique_type">content</pin_class>
@@ -573,17 +570,17 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
         
 **Grid**
 
-The ``grid`` tag contains information about the grid of the FPGA. Each grid tag has one subtag as outlined below:
+The ``grid`` tag contains information about the grid of the FPGA. Information here is checked to make sure it corresponds with the architecture. Each grid tag has one subtag as outlined below:
  
 .. arch:tag:: <grid_loc x="int" y="int" block_type_id="int" width_offset="int" height_offset="int">
 
-    :req_param x y:
+    :req_param x, y:
         The x and y  coordinate location of this grid tile.
         
     :req_param block_type_id:
         The index of the type of logic block that resides here.
         
-    :req_param width_offset height_offset:
+    :req_param width_offset, height_offset:
         The number of grid tiles reserved based on the width and height of a block.
         
 **Nodes**
@@ -613,7 +610,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
 
     Contains location information for this node. For pins or segments of length one, xlow = xhigh and ylow = yhigh.
 
-    :req_param xlow xhigh ylow yhigh:
+    :req_param xlow, xhigh, ylow, yhigh:
         Integer coordinates of the ends of this routing source.
         
     :req_param ptc:
@@ -644,7 +641,7 @@ The final subtag is the ``rr_edges`` tag that encloses information about all the
 
     This subtag repeats every edge that connects nodes together in the graph.
     
-    :req_param src_node sink_node:
+    :req_param src_node, sink_node:
         The index for the source and sink node that this edge connects to.
         
     :req_param switch_id:

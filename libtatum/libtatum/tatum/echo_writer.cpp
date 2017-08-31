@@ -201,7 +201,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     for(auto kv : tc.source_latencies(ArrivalType::EARLY)) {
         auto domain = kv.first;
         auto latency = kv.second;
-        os << " type: SOURCE_LATENCY_EARLY";
+        os << " type: EARLY_SOURCE_LATENCY";
         os << " domain: " << size_t(domain);
         os << " latency: " << latency;
         os << "\n";
@@ -209,7 +209,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     for(auto kv : tc.source_latencies(ArrivalType::LATE)) {
         auto domain = kv.first;
         auto latency = kv.second;
-        os << " type: SOURCE_LATENCY_LATE";
+        os << " type: LATE_SOURCE_LATENCY";
         os << " domain: " << size_t(domain);
         os << " latency: " << latency;
         os << "\n";
