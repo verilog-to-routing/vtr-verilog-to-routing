@@ -341,7 +341,8 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
 	RouterOpts->doRouting = Options.do_routing;
 	RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
 	RouterOpts->write_rr_graph_name = Options.write_rr_graph_file;
-    RouterOpts->read_rr_graph_name = Options.read_rr_graph_file;
+        RouterOpts->read_rr_graph_name = Options.read_rr_graph_file;
+        RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
 }
 
 static void SetupAnnealSched(const t_options& Options,

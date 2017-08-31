@@ -57,11 +57,17 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
 
 //Print a useful summary of timing information
 void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer);
+
+float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyzer& hold_analyzer);
+
+tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range arrival_tags,
+        const tatum::TimingTags::tag_range required_tags, float slack);
+
 /*
  * General utilities
  */
 
-//Returns the a map of domain's and thier clock fanout (i.e. logical outputs at which the clock captures)
+//Returns the a map of domain's and their clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
 /*

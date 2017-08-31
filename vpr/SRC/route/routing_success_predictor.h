@@ -15,12 +15,13 @@ constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
 
 class RoutingSuccessPredictor {
 public:
-    RoutingSuccessPredictor(size_t min_history=8, float history_factor=0.5);
+    RoutingSuccessPredictor(size_t min_history = 8, float history_factor = 0.5);
 
     float estimate_success_iteration();
 
     void add_iteration_overuse(size_t iteration, size_t overused_rr_node_count);
 
+    float get_slope();
 private:
     size_t min_history_;
     float history_factor_;

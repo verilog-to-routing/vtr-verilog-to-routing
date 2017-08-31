@@ -678,7 +678,7 @@ sub check_two_files {
 		# Ensure item is in new results
 		if ( !grep { $_ eq $name } @first_test_params ) {
 		    if ($is_golden){
-                        print "[ERROR] $name is not in the generated results file.\n";
+                        print "[ERROR] $name is not in the results file.\n";
                     }else{
                         print "[ERROR] $name is not in the first parse file.\n";
                     }
@@ -733,7 +733,7 @@ sub check_two_files {
 				if ( $second_file_value == 0 ) {
 					if ( $first_file_value != 0 ) {
 						if ($is_golden){
-                            print "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                            print "[Fail] \n $circuitarch $value: golden = $second_file_value result = $first_file_value\n";
                         }else{
                             print "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
                         }
@@ -759,7 +759,7 @@ sub check_two_files {
                             #Either no absolute threshold specified, or beyond it
                             if ($is_golden){
                                 print
-                                    "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                                    "[Fail] \n $circuitarch $value: golden = $second_file_value result = $first_file_value\n";
                             }else{
                                 print
                                     "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
@@ -771,7 +771,7 @@ sub check_two_files {
 			} elsif ($type{$value} eq "Equal") {
 				if ( $first_file_value ne $second_file_value ) {
                     if ($is_golden) {
-                        print "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                        print "[Fail] \n $circuitarch $value: golden = $second_file_value result = $first_file_value\n";
                     } else {
                         print "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
                     }

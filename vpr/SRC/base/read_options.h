@@ -101,6 +101,7 @@ struct t_options {
 	argparse::ArgValue<float> max_criticality;
 	argparse::ArgValue<float> criticality_exp;
 	argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
+        argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
 
     argparse::ArgValue<bool> full_stats;
 	argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
