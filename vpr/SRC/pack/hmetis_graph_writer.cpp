@@ -68,7 +68,7 @@ void write_hmetis_graph(std::string &file_name) {
 	/* Prints out general info for easy error checking*/
 	if (!fp.is_open() || !fp.good()) { 
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-			"couldn't open file \"%s\" for generating hypergraph file\n", file_name);
+			"couldn't open file \"%s\" for generating hypergraph file\n", file_name.c_str());
 	}
 	cout << "Writing hMetis hypergraph to " << file_name << endl;
 
@@ -104,7 +104,7 @@ void write_hmetis_graph(std::string &file_name) {
 	else {
 		if (fmt != "11") {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"fmt %s is not (empty, 1, 10, 11)", fmt);
+				"fmt %s is not (empty, 1, 10, 11)", fmt.c_str());
 		}
 		write_weighted_edges(fp);
 		write_weighted_vertices(fp);

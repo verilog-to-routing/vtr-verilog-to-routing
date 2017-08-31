@@ -127,7 +127,11 @@ struct t_pb {
 	t_pb *parent_pb = nullptr; /* pointer to parent node */
 
 	t_pb_stats *pb_stats = nullptr; /* statistics for current pb */
-	t_pb_route *pb_route = nullptr; /* Representation of intra-logic block routing */
+
+	/* Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
+	*  t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
+	*  Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
+	t_pb_route *pb_route = nullptr; 
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
