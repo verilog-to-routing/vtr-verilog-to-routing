@@ -443,7 +443,8 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
 void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer) {
     vtr::printf("Hold Worst Negative Slack (hWNS): %g ns\n", sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
     vtr::printf("Hold Total Negative Slack (hTNS): %g ns\n", sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
-    vtr::printf("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
+    /*For testing*/
+    //vtr::printf("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
     vtr::printf("\n");
 
     vtr::printf_info("Hold slack histogram:\n");
