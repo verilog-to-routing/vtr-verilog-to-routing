@@ -17,7 +17,11 @@ class RoutingSuccessPredictor {
 public:
     RoutingSuccessPredictor(size_t min_history = 8, float history_factor = 0.5);
 
+    //Returns the estimated iteration when routing will succeed
     float estimate_success_iteration();
+
+    //Returns the current estimated slope (RR nodes per iteration)
+    float estimate_overuse_slope();
 
     void add_iteration_overuse(size_t iteration, size_t overused_rr_node_count);
 
