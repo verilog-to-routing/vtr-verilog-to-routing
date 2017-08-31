@@ -155,7 +155,7 @@ static short find_switch(int prev_inode, int inode);
 
 t_color to_t_color(vtr::Color<float> color);
 static void draw_color_map_legend(const vtr::ColorMap& cmap);
-std::vector<ClusterNetId> find_rr_node_nets(int rr_node);
+std::vector<std::set<ClusterNetId>> collect_rr_node_nets();
 
 /********************** Subroutine definitions ******************************/
 
@@ -772,9 +772,10 @@ static void draw_congestion(void) {
 
     if (draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS) {
 
+        auto rr_node_nets = collect_rr_node_nets();
+
         for (int inode : congested_rr_nodes) {
-            auto nets = find_rr_node_nets(inode);
-            for (ClusterNetId net : nets) {
+            for (ClusterNetId net : rr_node_nets[inode]) {
                 t_color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
                 draw_state->net_color[net] = color;
             }
@@ -784,8 +785,7 @@ static void draw_congestion(void) {
 
         //Reset colors
         for (int inode : congested_rr_nodes) {
-            auto nets = find_rr_node_nets(inode);
-            for (ClusterNetId net : nets) {
+            for (ClusterNetId net : rr_node_nets[inode]) {
                 draw_state->net_color[net] = DEFAULT_RR_NODE_COLOR;
             }
         }
@@ -3074,22 +3074,22 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap) {
     set_coordinate_system(GL_WORLD);
 }
 
-std::vector<ClusterNetId> find_rr_node_nets(int rr_node) {
+std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
+    auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    std::vector<ClusterNetId> nets;
-    for (auto net : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace_elem = route_ctx.trace_head[net];
+    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.num_rr_nodes);
+    for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
+        t_trace* trace_elem = route_ctx.trace_head[inet];
         while (trace_elem) {
-            if (trace_elem->index == rr_node) {
-                nets.push_back(net);
-                break;
-            }
+            int rr_node = trace_elem->index;
+
+            rr_node_nets[rr_node].insert(inet);
             
             trace_elem = trace_elem->next;
         }
     }
-    return nets;
+    return rr_node_nets;
 }
 
