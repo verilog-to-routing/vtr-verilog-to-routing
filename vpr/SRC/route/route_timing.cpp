@@ -390,6 +390,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
 
+                //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, pb_gpin_lookup, router_opts);
                 /*for debugging purposes*/
                 //                if (budgeting_inf.if_set()) {
@@ -673,6 +674,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
             min_delay = budgeting_inf.get_min_delay_budget(inet, target_pin);
             short_path_crit = budgeting_inf.get_crit_short_path(inet, target_pin);
         } else {
+            /*No budgets so do not add/subtract any value to the cost function*/
             max_delay = 0;
             target_delay = 0;
             min_delay = 0;
