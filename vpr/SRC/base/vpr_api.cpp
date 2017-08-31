@@ -82,7 +82,6 @@ static void free_circuit(void);
 
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
         int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
-
 /* Local subroutines end */
 
 /* Display general VPR information */
@@ -1031,6 +1030,9 @@ void vpr_print_error(const VprError& vpr_error){
                 break;
             case VPR_ERROR_OTHER:
                 error_type = vtr::strdup("Other");
+                break;
+            case VPR_ERROR_INTERRUPTED:
+                error_type = vtr::strdup("Interrupted");
                 break;
             default:
                 error_type = vtr::strdup("Unrecognized Error");

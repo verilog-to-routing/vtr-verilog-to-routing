@@ -228,7 +228,15 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 	draw_state->pic_on_screen = pic_on_screen_val;
 	update_message(msg);
 	drawscreen();
-	if (int(priority) >= draw_state->gr_automode) {
+
+    //Has the user asked us to pause at the next screen updated?
+    bool forced_pause = g_vpr_ctx.forced_pause();
+
+	if (int(priority) >= draw_state->gr_automode || forced_pause) {
+        if (forced_pause) {
+            vtr::printf("Starting interactive graphics (due to user interrupt)\n");
+            g_vpr_ctx.set_forced_pause(false); //Reset pause flag
+        }
         set_mouse_move_input(true); //Enable act_on_mouse_over callback
 		event_loop(highlight_blocks, act_on_mouse_over, NULL, drawscreen);
 	} else {

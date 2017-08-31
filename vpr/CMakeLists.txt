@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("vpr")
 
+include(CheckCXXSymbolExists)
+
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES SRC/main.cpp)
 file(GLOB_RECURSE LIB_SOURCES SRC/*/*.cpp)
@@ -29,5 +31,11 @@ target_link_libraries(libvpr
 add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr 
                         libvpr)
+
+#Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
+CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
+if (HAVE_SIGACTION)
+    target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)    
+endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)

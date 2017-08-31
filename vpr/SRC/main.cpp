@@ -23,6 +23,8 @@ using namespace std;
 
 #include "vpr_error.h"
 #include "vpr_api.h"
+#include "vpr_signal_handler.h"
+
 #include "globals.h"
 
 /*
@@ -32,6 +34,7 @@ using namespace std;
 constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
 constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unroutable)
+constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
 /**
  * VPR program
@@ -54,6 +57,8 @@ int main(int argc, const char **argv) {
     entire_flow_begin = clock();
 
     try {
+        vpr_install_signal_handler();
+
         /* Read options, architecture, and circuit netlist */
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
@@ -114,7 +119,11 @@ int main(int argc, const char **argv) {
     } catch (const VprError& vpr_error) {
         vpr_print_error(vpr_error);
 
-        return ERROR_EXIT_CODE;
+        if (vpr_error.type() == VPR_ERROR_INTERRUPTED) {
+            return INTERRUPTED_EXIT_CODE;
+        } else {
+            return ERROR_EXIT_CODE;
+        }
 
     } catch (const vtr::VtrError& vtr_error) {
         vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());

@@ -290,6 +290,10 @@ class VprContext : public Context {
 
         const RoutingContext& routing() const { return routing_; }
         RoutingContext& mutable_routing() { return routing_; }
+
+        //Should the program pause at the next convenient time?
+        bool forced_pause() const { return force_pause_; }
+        void set_forced_pause(bool val) { force_pause_ = val; }
     private:
         DeviceContext device_;
 
@@ -301,6 +305,8 @@ class VprContext : public Context {
         ClusteringContext clustering_;
         PlacementContext placement_;
         RoutingContext routing_;
+
+        bool force_pause_ = false;
 };
 
 #endif
