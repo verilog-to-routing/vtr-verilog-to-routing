@@ -387,19 +387,19 @@ An example routing for one net is listed below:
 
     Net 5 (xor5)
 
-    SOURCE (1,2)  Class: 1        # Source for pins of class 1.
-     OPIN (1,2)  Pin: 4
-     CHANX (1,1)  Track: 1
-     CHANX (2,1)  Track: 1
-     IPIN (2,2)  Pin: 0
-     SINK (2,2)  Class: 0        # Sink for pins of class 0 on a clb.
-     CHANX (1,1)  Track: 1        # Note:  Connection to existing routing!
-     CHANY (1,2)  Track: 1
-     CHANX (2,2)  Track: 1
-     CHANX (1,2)  Track: 1
-     IPIN (1,3)  Pad: 1
-     SINK (1,3)  Pad: 1      # This sink is an output pad at (1,3), subblock 1.
-
+    Node:  1   SOURCE (1,2)  Class: 1  Switch: 1       # Source for pins of class 1.
+    Node:  2   OPIN (1,2)    Pin: 4    clb.O[12]  Switch:0   #Output pin the O port of clb block, pin number 12
+    Node:  4   CHANX (1,1) to (4,1)  Track: 1  Switch: 1
+    Node:  6   CHANX (4,1) to (7,1)  Track: 1  Switch: 1
+    Node:  8   IPIN (7,1)  Pin: 0  clb.I[0]  Switch: 2
+    Node:  9   SINK (7,1)  Class: 0  Switch: -1      # Sink for pins of class 0 on a clb.
+    Node:  4   CHANX (7,1) to (10,1)  Track: 1  Switch: 1      # Note:  Connection to existing routing!
+    Node:  5   CHANY (10,1) to (10,4)  Track: 1  Switch: 0
+    Node:  4   CHANX (10,4) to (13,4)  Track: 1  Switch: 1
+    Node:  10  CHANX (13,4) to (16,4)  Track: 1  Switch: 1
+    Node:  11  IPIN (16,4)  Pad: 1  clb.I[1]  Switch: 2
+    Node:  12  SINK (16,4)  Pad: 1  Switch: -1      # This sink is an output pad at (16,4), subblock 1.
+ 
 
 Nets which are specified to be global in the netlist file (generally clocks) are not routed.
 Instead, a list of the blocks (name and internal index) which this net must connect is printed out.
@@ -413,10 +413,10 @@ An example listing for a global net is given below.
     :linenos:
 
     Net 146 (pclk): global net connecting:
-    Block pclk (#146) at (1, 0), pinclass -1.
-    Block pksi_17_ (#431) at (3, 26), pinclass 2.
-    Block pksi_185_ (#432) at (5, 48), pinclass 2.
-    Block n_n2879 (#433) at (49, 23), pinclass 2.
+    Block pclk (#146) at (1,0), pinclass -1
+    Block pksi_17_ (#431) at (3,26), pinclass 2
+    Block pksi_185_ (#432) at (5,48), pinclass 2
+    Block n_n2879 (#433) at (49,23), pinclass 2
     
 .. _vpr_route_resource_file:
 
@@ -442,21 +442,21 @@ Each tag has their subsequent subtags that describes one entity. For example, ``
 The ``rr_graph`` tag contains the following tags:
 
 * ``<channels>``
-	* <channel>content</channel>
+	* ``<channel>``content``</channel>``
 * ``<switches>``
-	* <switch>content</switch>
+	* ``<switch>``content``</switch>``
 * ``<segments>``
-	* <segment>content</segment>
+	* ``<segment>``content``</segment>``
 * ``<block_types>``
-	* <block_type>content</block_type>
+	* ``<block_type>``content``</block_type>``
 * ``<grid>``
-	* <grid_loc>content</grid_loc>
+	* ``<grid_loc>``content``</grid_loc>``
 * ``<rr_nodes>``
-	* <node>content</node>
+	* ``<node>``content``</node>``
 * ``<rr_edges>``
-	* <edge>content</edge>
+	* ``<edge>``content``</edge>``
 	
-.. note:: The rr graph is based on the architecture, so more detailed description of each section of the parts in the rr graph can be found at :ref:`FPGA architecture description <fpga_architecture_description>`
+.. note:: The rr graph is based on the architecture, so more detailed description of each section of the rr graph can be found at :ref:`FPGA architecture description <fpga_architecture_description>`
 
 Detailed Tag Information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
