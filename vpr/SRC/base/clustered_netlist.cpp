@@ -53,7 +53,7 @@ int ClusteredNetlist::physical_pin_index(const ClusterPinId id) const {
 	return physical_pin_index_[id];
 }
 
-int ClusteredNetlist::physical_pin_index(ClusterNetId net_id, int count) const {
+int ClusteredNetlist::physical_pin_index(const ClusterNetId net_id, int count) const {
 
 	for (auto pin_id : net_pins(net_id)) {
 		if (count == 0) {
@@ -133,7 +133,6 @@ ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type
 		blk_id = Netlist::create_block(name);
 
 		block_pbs_.insert(blk_id, pb);
-		block_pbs_[blk_id]->name = vtr::strdup(name);
 		block_types_.insert(blk_id, type);
 
 		//Allocate and initialize every potential net of the block

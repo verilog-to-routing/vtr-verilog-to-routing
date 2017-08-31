@@ -234,8 +234,6 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
             //We trace the delay backward from the atom sink pin to the source 
             //Either the atom source pin (in the same cluster), or a cluster input pin
-
-			//TODO: HACK! Use pointer to pass into find_pb_route_clb_input_net_pin, avoids returning std::pair
 			std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
 
             if(net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {

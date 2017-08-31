@@ -274,7 +274,9 @@ static void processComplexBlock(pugi::xml_node clb_block,
 	found = false;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (strcmp(device_ctx.block_types[i].name, tokens[0].data) == 0) {
-			clb_nlist->create_block(block_name.value(), new t_pb, &device_ctx.block_types[i]);
+			t_pb *pb = new t_pb;
+			pb->name = vtr::strdup(block_name.value());
+			clb_nlist->create_block(block_name.value(), pb, &device_ctx.block_types[i]);
 			pb_type = clb_nlist->block_type(index)->pb_type;
 			found = true;
 			break;
@@ -868,7 +870,6 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 	/* complete load of external nets so that each net points back to the blocks,
      * and blocks point back to net pins */
 	for (auto blk_id : clb_nlist->blocks()) {
-		ipin = 0;
 		for (j = 0; j < clb_nlist->block_type(blk_id)->num_pins; j++) {
 			//Iterate through each pin of the block, and see if there is a net allocated/used for it
 			clb_net_id = clb_nlist->block_net(blk_id, j);
@@ -897,7 +898,6 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 
                     //Mark the net pin numbers on the block
 					clb_nlist->set_block_pin_net(blk_id, j, count[clb_net_id]); //A sink
-
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
 					VTR_ASSERT(j == clb_nlist->physical_pin_index(*(clb_nlist->net_pins(clb_net_id).begin())));

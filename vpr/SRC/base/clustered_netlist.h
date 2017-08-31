@@ -11,17 +11,18 @@
 * The ClusteredNetlist is derived from the Netlist class, and contains some 
 * separate information on Blocks, Pins, and Nets. It does not make use of Ports.
 *
-* Block
-* -----
+* Blocks
+* ------
 * The pieces of unique block information are:
 *		block_pbs_:			Physical block describing the clustering and internal hierarchy
-*							structure of each CLB
+*							structure of each CLB.
 *		block_types_:		The type of physical block the block is mapped to, e.g. logic
-*							block, RAM, DSP (Can be user-defined types)
+*							block, RAM, DSP (Can be user-defined types).
 *		block_nets_:		Based on the block's pins (indexed from [0...num_pins - 1]),
-*							lists which pins are used/unused with the net using it
-*		block_pin_nets_:	Counter for the used pins/nets blocks, indicating the "index"
-*							Differs from block_nets_
+*							lists which pins are used/unused with the net using it.
+*		block_pin_nets_:	Returns the index of a pin relative to the net, when given a block and a pin's
+*							index on that block (from the type descriptor).
+*							Differs from block_nets_.
 *	
 * Differences between block_nets_ & block_pin_nets_
 * --------------------------------------------------
@@ -31,7 +32,7 @@
 *       2-->|           |-->5
 *           +-----------+
 *
-* block_nets_ tracks all pins, and has the ClusterNetId to which a pin is connected to.
+* block_nets_ tracks all pins on a block, and returns the ClusterNetId to which a pin is connected to.
 * If the pin is unused/open, ClusterNetId::INVALID() is stored.
 *
 * block_pin_nets_ tracks whether the nets connected to the block are drivers/receivers of that net.
@@ -55,18 +56,24 @@
 *                                           +-----------+
 *
 * In the example, Net A is driven by Block 1, and received by Blocks 2 & 3.
-* For Block 1, block_pin_nets_ of pin 4 would then return 0, as it is the driver.
+* For Block 1, block_pin_nets_ of pin 4 returns 0, as it is the driver.
 * For Block 2, block_pin_nets_ of pin 1 returns 1 (or 2), non-zero as it is a receiver.
 * For Block 3, block_pin_nets_ of pin 0 returns 2 (or 1), non-zero as it is also a receiver.
 *
-* Pin
-* ---
+* The block_pin_nets_ data structure exists for quick indexing, rather than using a linear search
+* with the available functions from the base Netlist, into the net_delay_ structure in the
+* PostClusterDelayCalculator of inter_cluster_delay(). net_delay_ is a 2D array, where the indexing
+* scheme is [net_id] followed by [pin_index on net].
+*
+* Pins
+* ----
 * The only piece of unique pin information is:
 *		physical_pin_index_
 *
 * Example of physical_pin_index_
 * ---------------------
-* Given a ClusterPinId, physical_pin_index_ will return the index of the pin within it's block. 
+* Given a ClusterPinId, physical_pin_index_ will return the index of the pin within its block
+* relative to the t_type_descriptor (physical description of the block).
 * 
 *           +-----------+
 *       0-->|X         X|-->3
@@ -206,7 +213,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//returns the index of the block which that pin belongs to
 		//  net_id     : The net to iterate through
 		//  count      : The index of the pin in the net
-		int physical_pin_index(ClusterNetId net_id, int count) const;
+		int physical_pin_index(const ClusterNetId net_id, int count) const;
 
 		/*
 		* Nets
@@ -252,7 +259,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		vtr::vector_map<ClusterBlockId, t_pb*>							block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
 		vtr::vector_map<ClusterBlockId, t_type_ptr>						block_types_;		//The type of physical block this user circuit block is mapped to
 		vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>		block_nets_;		//Stores which pins are used/unused on the block with the net using it
-		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_pin_nets_;	//The count of the nets related to the block
+		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_pin_nets_;	//Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
 
 		//Pins
 		vtr::vector_map<ClusterPinId, int>								physical_pin_index_;//The indices of pins on a block from its type descriptor, numbered sequentially from [0 .. num_pins - 1]

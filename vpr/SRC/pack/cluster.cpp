@@ -1943,6 +1943,7 @@ static void start_new_cluster(
 			if (success) {
 				/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 				//Once clustering succeeds, add it to the clb netlist
+				pb->name = vtr::strdup(root_atom_name.c_str());
 				clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, &device_ctx.block_types[i]);
 				break;
 			} else {
