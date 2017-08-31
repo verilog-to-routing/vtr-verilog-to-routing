@@ -98,13 +98,13 @@ static void build_bidir_rr_opins(
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         bool * L_rr_edge_done, const t_seg_details * seg_details,
-        const DeviceGrid& L_grid,
+        const DeviceGrid& grid,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types);
 
 static void build_unidir_rr_opins(
         const int i, const int j, const e_side side,
-        const DeviceGrid& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out,
+        const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>&Fc_out,
         const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
@@ -170,7 +170,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(
 static void build_rr_sinks_sources(
         const int i, const int j,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
-        const int delayless_switch, const DeviceGrid& L_grid);
+        const int delayless_switch, const DeviceGrid& grid);
 
 static void build_rr_chan(
         const int i, const int j, const t_rr_type chan_type,
@@ -1115,13 +1115,13 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         bool * L_rr_edge_done, const t_seg_details * seg_details,
-        const DeviceGrid& L_grid,
+        const DeviceGrid& grid,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
-    t_type_ptr type = L_grid[i][j].type;
-    int width_offset = L_grid[i][j].width_offset;
-    int height_offset = L_grid[i][j].height_offset;
+    t_type_ptr type = grid[i][j].type;
+    int width_offset = grid[i][j].width_offset;
+    int height_offset = grid[i][j].height_offset;
 
     const vtr::Matrix<int>& Fc = Fc_out[type->index];
 
@@ -2355,7 +2355,7 @@ void print_rr_indexed_data(FILE * fp, int index) {
 }
 
 static void build_unidir_rr_opins(const int i, const int j, const e_side side,
-        const DeviceGrid& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out, const int max_chan_width,
+        const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>&Fc_out, const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         bool * L_rr_edge_done,
@@ -2371,10 +2371,10 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
 
     *Fc_clipped = false;
 
-    t_type_ptr type = L_grid[i][j].type;
+    t_type_ptr type = grid[i][j].type;
 
-    int width_offset = L_grid[i][j].width_offset;
-    int height_offset = L_grid[i][j].height_offset;
+    int width_offset = grid[i][j].width_offset;
+    int height_offset = grid[i][j].height_offset;
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
@@ -2411,7 +2411,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
             t_rr_type chan_type = (vert ? CHANX : CHANY);
             int chan = (vert ? (j) : (i));
             int seg = (vert ? (i) : (j));
-            int max_len = (vert ? device_ctx.grid.width() : device_ctx.grid.height());
+            int max_len = (vert ? grid.width() : grid.height());
             vtr::NdMatrix<int, 3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
             if (false == pos_dir) {
                 --chan;
@@ -2424,10 +2424,10 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
             if (seg < 1) {
                 continue;
             }
-            if (seg > int(vert ? device_ctx.grid.width() : device_ctx.grid.height()) - 2) { //-2 since no channels around perim
+            if (seg > int(vert ? grid.width() : grid.height()) - 2) { //-2 since no channels around perim
                 continue;
             }
-            if (chan > int(vert ? device_ctx.grid.height() : device_ctx.grid.width()) - 2) { //-2 since no channels around perim
+            if (chan > int(vert ? grid.height() : grid.width()) - 2) { //-2 since no channels around perim
                 continue;
             }
 
