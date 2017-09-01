@@ -144,7 +144,7 @@
  * y_offset: The y_offset of the previous block to this cluster_ctx.blocks. 
  */
 struct t_pl_macro_member{
-	int blk_index;
+	ClusterBlockId blk_index;
 	int x_offset;
 	int y_offset;	 
 	int z_offset;
@@ -161,7 +161,7 @@ struct t_pl_macro {
 
 /* These are the function declarations. */
 int alloc_and_load_placement_macros(t_direct_inf* directs, int num_segments, t_pl_macro ** chains);
-void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_macros);
+void get_imacro_from_iblk(int * imacro, ClusterBlockId iblk, t_pl_macro * macros, int num_macros);
 void free_placement_macros_structs(void);
 
 #endif

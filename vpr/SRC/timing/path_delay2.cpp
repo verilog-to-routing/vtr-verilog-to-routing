@@ -3,7 +3,6 @@
 #include <vector>
 #include <algorithm>
 
-
 #include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_log.h"
@@ -236,11 +235,13 @@ void check_timing_graph() {
 	}
 }
 
-float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, t_pb*** pin_id_to_pb_mapping) {
+float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 
 	/* Prints one tnode on the critical path out to fp. Returns the delay to the next node. */
 
-	int inode, iblk, inet, downstream_node;
+	int inode, downstream_node;
+	ClusterBlockId iblk;
+	ClusterNetId inet;
 	t_pb_graph_pin * pb_graph_pin;
 	e_tnode_type type;
 	static const char *tnode_type_names[] = { "TN_INPAD_SOURCE", "TN_INPAD_OPIN",
@@ -260,8 +261,8 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	iblk = timing_ctx.tnodes[inode].block;
 	pb_graph_pin = timing_ctx.tnodes[inode].pb_graph_pin;
 
-	fprintf(fp, "Node: %d  %s Block #%d (%s)\n", inode, tnode_type_names[type],
-		iblk, cluster_ctx.blocks[iblk].name);
+	fprintf(fp, "Node: %d  %s Block #%lu (%s)\n", inode, tnode_type_names[type],
+		size_t(iblk), cluster_ctx.clb_nlist.block_name(iblk).c_str());
 
 	if (pb_graph_pin == NULL) {
 		VTR_ASSERT(
@@ -291,16 +292,15 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
+	AtomNetId atom_net_id = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 	if (type == TN_CB_OPIN) {
-		AtomNetId atom_net_id = cluster_ctx.blocks[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 		inet = atom_ctx.lookup.clb_net(atom_net_id);
-        VTR_ASSERT(inet != OPEN);
-		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
-			inet, cluster_ctx.clbs_nlist.net[inet].name, (int) cluster_ctx.clbs_nlist.net[inet].pins.size());
+        VTR_ASSERT(inet != ClusterNetId::INVALID());
+		fprintf(fp, "External-to-Block Net: #%lu (%s).  Pins on net: %lu.\n",
+			size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str(), cluster_ctx.clb_nlist.net_pins(inet).size());
 	} else if (pb_graph_pin != NULL) {
-		AtomNetId net_id = cluster_ctx.blocks[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 		fprintf(fp, "Internal Net: %s.  Pins on net: %zu.\n",
-			atom_ctx.nlist.net_name(net_id).c_str(), atom_ctx.nlist.net_pins(net_id).size());
+			atom_ctx.nlist.net_name(atom_net_id).c_str(), atom_ctx.nlist.net_pins(atom_net_id).size());
 	}
 
 	fprintf(fp, "\n");
@@ -488,7 +488,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 
             //We are connected to to_node, so our lowest link should be either ourselves, or
             //to_node's lowest link
-            tnode_lowlinks[inode] = min(tnode_lowlinks[inode], tnode_lowlinks[to_node_index]);
+            tnode_lowlinks[inode] = std::min(tnode_lowlinks[inode], tnode_lowlinks[to_node_index]);
         } else if (tnode_instack[to_node_index]) {
             //to_node was in the stack, and so is part of the current SCC 
             VTR_ASSERT(tnode_lowlinks[inode] >= 0);
@@ -496,7 +496,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 
             //to_node was on the stack, since we connect to it our lowest link is either ourselves
             //or the index of to_node (since it may have been traversed earlier)
-            tnode_lowlinks[inode] = min(tnode_lowlinks[inode], tnode_indexes[to_node_index]);
+            tnode_lowlinks[inode] = std::min(tnode_lowlinks[inode], tnode_indexes[to_node_index]);
         }
     }
 

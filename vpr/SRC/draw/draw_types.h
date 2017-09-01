@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <memory>
+#include "clustered_netlist.h"
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "graphics.h"
@@ -98,9 +99,9 @@ typedef struct {
  * draw_route_type: GLOBAL or DETAILED
  * default_message: default screen message on screen
  * net_color: color in which each net should be drawn. 
- *			  [0..cluster_ctx.clbs_nlist.net.size()-1]
+ *			  [0..cluster_ctx.clb_nlist.nets().size()-1]
  * block_color: color in which each blocks should be drawn.
- *			    [0..cluster_ctx.num_blocks-1]
+ *			    [0..cluster_ctx.clb_nlist.blocks().size()-1]
  * draw_rr_node: stores the state information of each routing resource.  
  *				 Used to control drawing each routing resource when 
  *				 ROUTING is on screen.
@@ -118,7 +119,8 @@ struct t_draw_state {
 	int gr_automode;
 	e_route_type draw_route_type;
 	char default_message[vtr::bufsize];
-	t_color *net_color, *block_color;
+	vtr::vector_map<ClusterNetId, t_color> net_color;
+	vtr::vector_map<ClusterBlockId, t_color> block_color;
 	t_draw_rr_node *draw_rr_node;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info;
@@ -155,7 +157,7 @@ struct t_draw_pb_type_info {
  *			 Set when init_draw_coords is called.
  * blk_info: a list of drawing information for each type of
  *           block, one for each type. Access it with
- *           cluster_ctx.blocks[block_id].type->index
+ *           cluster_ctx.clb_nlist.block_type(block_id)->index
  */
 struct t_draw_coords {
 	float *tile_x, *tile_y;
@@ -172,22 +174,20 @@ struct t_draw_coords {
 	 * Retrieve the bounding box for the given pb in the given
 	 * clb, from this data structure
 	 */
-	t_bound_box get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode);
-	t_bound_box get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode);
+	t_bound_box get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
 	t_bound_box get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
 
 	/**
 	 * Return a bounding box for the given pb in the given
 	 * clb with absolute coordinates, that can be directtly drawn.
 	 */
-	t_bound_box get_absolute_pb_bbox(const t_block& clb, const t_pb_graph_node* pb_gnode);
-	t_bound_box get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode);
+	t_bound_box get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
 
 	/**
 	 * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
 	 * even if it is empty.
 	 */
-	t_bound_box get_absolute_clb_bbox(const t_block& clb);
+	t_bound_box get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type);
 	t_bound_box get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
 
 private:

@@ -94,11 +94,11 @@
 std::ostream& operator<<(std::ostream& os, vtr::LogicValue val);
 
 
-enum class PortType {
+/*enum class PortType {
     IN,
     OUT,
     CLOCK
-};
+};*/
 
 //
 // File local function delcarations
@@ -266,9 +266,9 @@ class LutInst : public Instance {
             VTR_ASSERT(port_conns_.count("out"));
             VTR_ASSERT(port_conns_.size() == 2);
 
-            print_verilog_port(os, "in", port_conns_["in"], PortType::IN, depth+1);
+            print_verilog_port(os, "in", port_conns_["in"], PortType::INPUT, depth+1);
             os << "," << "\n";
-            print_verilog_port(os, "out", port_conns_["out"], PortType::OUT, depth+1);
+            print_verilog_port(os, "out", port_conns_["out"], PortType::OUTPUT, depth+1);
             os << "\n";
 
             os << indent(depth) << ");\n\n";
@@ -625,7 +625,7 @@ class BlackBoxInst : public Instance {
             for(auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
                 auto& port_name = iter->first;
                 auto& nets = iter->second;
-                print_verilog_port(os, port_name, nets, PortType::IN, depth+1);
+                print_verilog_port(os, port_name, nets, PortType::INPUT, depth+1);
                 if(!(iter == --input_port_conns_.end() && output_port_conns_.empty())) {
                     os << ",";
                 }
@@ -636,7 +636,7 @@ class BlackBoxInst : public Instance {
             for(auto iter = output_port_conns_.begin(); iter != output_port_conns_.end(); ++iter) {
                 auto& port_name = iter->first;
                 auto& nets = iter->second;
-                print_verilog_port(os, port_name, nets, PortType::OUT, depth+1);
+                print_verilog_port(os, port_name, nets, PortType::OUTPUT, depth+1);
                 if(!(iter == --output_port_conns_.end())) {
                     os << ",";
                 }
@@ -790,7 +790,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Initialize the pin to tnode look-up
             for(AtomPinId pin : atom_ctx.nlist.pins()) {
                 AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-                int clb_idx = atom_ctx.lookup.atom_clb(blk);
+                ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
 
                 const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
                 VTR_ASSERT(gpin);
@@ -824,9 +824,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
 
             if(model->name == std::string("input")) {
-                inputs_.emplace_back(make_io(atom, PortType::IN));
+                inputs_.emplace_back(make_io(atom, PortType::INPUT));
             } else if(model->name == std::string("output")) {
-                outputs_.emplace_back(make_io(atom, PortType::OUT));
+                outputs_.emplace_back(make_io(atom, PortType::OUTPUT));
             } else if(model->name == std::string("names")) {
                 cell_instances_.push_back(make_lut_instance(atom));
             } else if(model->name == std::string("latch")) {
@@ -1039,12 +1039,12 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                    int pin_idx) { //The instance pin index
 
             std::string wire_name = inst_name;
-            if(port_type == PortType::IN) {
+            if(port_type == PortType::INPUT) {
                 wire_name = join_identifier(wire_name, "input");
             } else if(port_type == PortType::CLOCK) {
                 wire_name = join_identifier(wire_name, "clock");
             } else {
-                VTR_ASSERT(port_type == PortType::OUT);
+                VTR_ASSERT(port_type == PortType::OUTPUT);
                 wire_name = join_identifier(wire_name, "output");
             }
 
@@ -1052,13 +1052,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
             wire_name = join_identifier(wire_name, std::to_string(pin_idx));
 
             auto value = std::make_pair(wire_name, tnode_id);
-            if(port_type == PortType::IN || port_type == PortType::CLOCK) {
+            if(port_type == PortType::INPUT || port_type == PortType::CLOCK) {
                 //Add the sink
                 logical_net_sinks_[atom_net_id].push_back(value);
 
             } else {
                 //Add the driver
-                VTR_ASSERT(port_type == PortType::OUT);
+                VTR_ASSERT(port_type == PortType::OUTPUT);
 
                 auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_id, value));
                 VTR_ASSERT(ret.second); //Was inserted, drivers are unique
@@ -1077,7 +1077,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             std::string io_name;
             int cluster_pin_idx = -1;
-            if(dir == PortType::IN) {
+            if(dir == PortType::INPUT) {
                 VTR_ASSERT(pb_graph_node->num_output_ports == 1); //One output port
                 VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //One output pin
                 cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -1094,15 +1094,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 io_name = atom->name + 4;  
             }
 
-            const t_block* top_block = find_top_block(atom);
-
-            auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+			const t_pb_route* top_pb_route = find_top_pb_route(atom);
+            auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
             if(atom_net_id) {
                 //Net exists
 
                 //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
-                PortType wire_dir = (dir == PortType::IN) ? PortType::OUT : PortType::IN;
+                PortType wire_dir = (dir == PortType::INPUT) ? PortType::OUTPUT : PortType::INPUT;
 
                 //Look up the tnode associated with this pin (used for delay calculation)
                 tatum::NodeId tnode_id = find_tnode(atom, cluster_pin_idx);
@@ -1110,7 +1109,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 auto wire_name = make_inst_wire(atom_net_id, tnode_id, io_name, wire_dir, 0, 0);
 
                 //Connect the wires to to I/Os with assign statements
-                if(wire_dir == PortType::IN) {
+                if(wire_dir == PortType::INPUT) {
                     assignments_.emplace_back(io_name, wire_name);
                 } else {
                     assignments_.emplace_back(wire_name, io_name);
@@ -1137,7 +1136,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             VTR_ASSERT(pb_graph_node->num_input_ports == 1); //LUT has one input port
 
-            const t_block* top_block = find_top_block(atom);
+			const t_pb_route* top_pb_route = find_top_pb_route(atom);
 
             VTR_ASSERT(pb_graph_node->num_output_ports == 1); //LUT has one output port
             VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
@@ -1147,7 +1146,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::vector<Arc> timing_arcs;
             for(int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
                 int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
-                auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+                auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
                 std::string net;
                 if(!atom_net_id) {
@@ -1160,7 +1159,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     tatum::NodeId src_tnode_id = find_tnode(atom, cluster_pin_idx);
                     tatum::NodeId sink_tnode_id = find_tnode(atom, sink_cluster_pin_idx);
 
-                    net = make_inst_wire(atom_net_id, src_tnode_id, inst_name, PortType::IN, 0, pin_idx);
+                    net = make_inst_wire(atom_net_id, src_tnode_id, inst_name, PortType::INPUT, 0, pin_idx);
 
                     //Record the timing arc
                     float delay = get_delay_ps(src_tnode_id, sink_tnode_id);
@@ -1174,7 +1173,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Add the single output connection
             {
-                auto atom_net_id = top_block->pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+                auto atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
                 std::string net;
                 if(!atom_net_id) {
@@ -1186,7 +1185,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Look up the tnode associated with this pin (used for delay calculation)
                     tatum::NodeId tnode_id = find_tnode(atom, sink_cluster_pin_idx);
 
-                    net = make_inst_wire(atom_net_id, tnode_id, inst_name, PortType::OUT, 0, 0);
+                    net = make_inst_wire(atom_net_id, tnode_id, inst_name, PortType::OUTPUT, 0, 0);
                 }
                 port_conns["out"].push_back(net);
             }
@@ -1200,7 +1199,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_latch_instance(const t_pb* atom)  {
             std::string inst_name = join_identifier("latch", atom->name);
 
-            const t_block* top_block = find_top_block(atom);
+			const t_pb_route* top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
              
             //We expect a single input, output and clock ports
@@ -1216,23 +1215,23 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Input (D)
             int input_cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-            auto input_atom_net_id = top_block->pb_route[input_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
-            std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::IN, 0, 0);
+            auto input_atom_net_id = top_pb_route[input_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::INPUT, 0, 0);
             port_conns["D"] = input_net;
 
             double tsu = pb_graph_node->input_pins[0][0].tsu;
 
             //Output (Q)
             int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-            auto output_atom_net_id = top_block->pb_route[output_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
-            std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUT, 0, 0);
+            auto output_atom_net_id = top_pb_route[output_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUTPUT, 0, 0);
             port_conns["Q"] = output_net;
 
             double tcq = pb_graph_node->output_pins[0][0].tco_max;
 
             //Clock (control)
             int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-            auto control_atom_net_id = top_block->pb_route[control_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            auto control_atom_net_id = top_pb_route[control_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
             std::string control_net = make_inst_wire(control_atom_net_id, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
             port_conns["clock"] = control_net;
 
@@ -1248,7 +1247,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         // Note that the primtive interface to dual and single port rams is nearly identical,
         // so we using a single function to handle both
         std::shared_ptr<Instance> make_ram_instance(const t_pb* atom)  {
-            const t_block* top_block = find_top_block(atom);
+			const t_pb_route* top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
@@ -1275,7 +1274,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
                     if(!atom_net_id) {
@@ -1283,7 +1282,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         net = "";
                     } else {
                         //Connected
-                        net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::INPUT, iport, ipin);
                     }
 
 
@@ -1332,14 +1331,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
                     if(!atom_net_id) {
                         //Disconnected
                         net = "";
                     } else {
-                        net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
+                        net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUTPUT, iport, ipin);
                     }
 
                     std::string port_name;
@@ -1368,7 +1367,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     VTR_ASSERT(atom_net_id); //Must have a clock
 
@@ -1391,7 +1390,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_multiply_instance(const t_pb* atom)  {
             auto& timing_ctx = g_vpr_ctx.timing();
 
-            const t_block* top_block = find_top_block(atom);
+			const t_pb_route* top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
@@ -1417,7 +1416,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     params["WIDTH"] = std::to_string(port->num_pins); //Assume same width on all ports
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
                     if(!atom_net_id) {
@@ -1426,7 +1425,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     } else {
                         //Connected
                         auto src_tnode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::INPUT, iport, ipin);
 
                         //Delays
                         //
@@ -1452,7 +1451,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     const t_port* port = pin->port; 
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
                     if(!atom_net_id) {
@@ -1462,13 +1461,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         //Connected
 
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUT, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUTPUT, iport, ipin);
 
                         //Record the timing arcs
                         for(auto& data_tuple : tnode_delay_matrix[inode]) {
-                            auto src_name = get<0>(data_tuple);
-                            auto src_ipin = get<1>(data_tuple);
-                            auto delay = get<2>(data_tuple);
+                            auto src_name = std::get<0>(data_tuple);
+                            auto src_ipin = std::get<1>(data_tuple);
+                            auto delay = std::get<2>(data_tuple);
                             timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
                         }
                     }
@@ -1487,7 +1486,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::shared_ptr<Instance> make_adder_instance(const t_pb* atom)  {
             auto& timing_ctx = g_vpr_ctx.timing();
 
-            const t_block* top_block = find_top_block(atom);
+			const t_pb_route* top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
@@ -1516,7 +1515,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     }
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
                     if(!atom_net_id) {
@@ -1526,7 +1525,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         //Connected
 #if 0
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::INPUT, iport, ipin);
 
                         //Delays
                         //
@@ -1540,7 +1539,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 #else
                         //Connected
                         auto src_tnode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::INPUT, iport, ipin);
 
                         //Delays
                         //
@@ -1567,7 +1566,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     const t_port* port = pin->port; 
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
                     if(!atom_net_id) {
@@ -1576,13 +1575,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     } else {
                         //Connected
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUT, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUTPUT, iport, ipin);
 
                         //Record the timing arcs
                         for(auto& data_tuple : tnode_delay_matrix[inode]) {
-                            auto src_name = get<0>(data_tuple);
-                            auto src_ipin = get<1>(data_tuple);
-                            auto delay = get<2>(data_tuple);
+                            auto src_name = std::get<0>(data_tuple);
+                            auto src_ipin = std::get<1>(data_tuple);
+                            auto delay = std::get<2>(data_tuple);
                             timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
                         }
                     }
@@ -1594,22 +1593,23 @@ class NetlistWriterVisitor : public NetlistVisitor {
             return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
-        //Returns the netlist block associated with the given pb
-        const t_block* find_top_block(const t_pb* curr) {
+        //Returns the top level pb_route associated with the given pb
+        const t_pb_route* find_top_pb_route(const t_pb* curr) {
             auto& cluster_ctx = g_vpr_ctx.clustering();
 
             const t_pb* top_pb = find_top_cb(curr); 
 
-            const t_block* top_block = nullptr;
-            for(int i = 0; i < cluster_ctx.num_blocks; i++) {
-                if(cluster_ctx.blocks[i].pb == top_pb) {
-                    top_block = &cluster_ctx.blocks[i];
+            const t_pb_route* top_pb_route = nullptr;
+            for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+                if(cluster_ctx.clb_nlist.block_pb(blk_id) == top_pb) {
+                    top_pb_route = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route;
                     break;
                 }
             }
-            VTR_ASSERT(top_block);
-            return top_block;
+            VTR_ASSERT(top_pb_route);
+            return top_pb_route;
         }
+
 
         //Returns the top complex block which contains the given pb
         const t_pb* find_top_cb(const t_pb* curr) {
@@ -1628,7 +1628,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto& atom_ctx = g_vpr_ctx.atom();
 
             AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
-            int clb_index = atom_ctx.lookup.atom_clb(blk_id);
+            ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk_id);
 
             auto key = std::make_pair(clb_index, cluster_pin_idx);
             auto iter = pin_id_to_tnode_lookup_.find(key);
@@ -1861,8 +1861,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_graph_node* pb_node = atom->pb_graph_node;
 
             int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
-            const t_block* top_clb = find_top_block(atom);
-            AtomNetId atom_net_id = top_clb->pb_route[cluster_pin_idx].atom_net_id;
+            const t_pb_route* top_pb_route = find_top_pb_route(atom);
+            AtomNetId atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
             return atom_net_id;
         }
 
@@ -1911,7 +1911,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::ostream& sdf_os_;
 
         //Look-up from pins to tnodes
-        std::map<std::pair<int,int>,tatum::NodeId> pin_id_to_tnode_lookup_;
+        std::map<std::pair<ClusterBlockId,int>,tatum::NodeId> pin_id_to_tnode_lookup_;
 
         std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
 };
@@ -1926,9 +1926,9 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
 
-    vtr::printf("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
-    vtr::printf("Writting Implementation Netlist: %s\n", blif_filename.c_str());
-    vtr::printf("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
+    vtr::printf("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
+    vtr::printf("Writing Implementation Netlist: %s\n", blif_filename.c_str());
+    vtr::printf("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
 
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);
@@ -2019,10 +2019,10 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
         //Single-bit port
         if(nets[0].empty()) {
             //Disconnected
-            if(type == PortType::IN || type == PortType::CLOCK) {
+            if(type == PortType::INPUT || type == PortType::CLOCK) {
                 os << "1'b0";
             } else {
-                VTR_ASSERT(type == PortType::OUT);
+                VTR_ASSERT(type == PortType::OUTPUT);
                 os << "";
             }
         } else {
@@ -2037,10 +2037,10 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
             os << indent(depth+1);
             if(nets[ipin].empty()) {
                 //Disconnected
-                if(type == PortType::IN || type == PortType::CLOCK) {
+                if(type == PortType::INPUT || type == PortType::CLOCK) {
                     os << "1'b0";
                 } else {
-                    VTR_ASSERT(type == PortType::OUT);
+                    VTR_ASSERT(type == PortType::OUTPUT);
                     os << "";
                 }
             } else {

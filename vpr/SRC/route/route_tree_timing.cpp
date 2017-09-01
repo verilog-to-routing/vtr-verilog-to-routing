@@ -171,20 +171,15 @@ alloc_linked_rt_edge(void) {
 	return (linked_rt_edge);
 }
 
+/* Adds the rt_edge to the rt_edge free list.                       */
 static void free_linked_rt_edge(t_linked_rt_edge * rt_edge) {
-
-	/* Adds the rt_edge to the rt_edge free list.                       */
-
 	rt_edge->next = rt_edge_free_list;
 	rt_edge_free_list = rt_edge;
 }
 
-t_rt_node*
-init_route_tree_to_source(int inet) {
-
-	/* Initializes the routing tree to just the net source, and returns the root
-	 * node of the rt_tree (which is just the net source).                       */
-
+/* Initializes the routing tree to just the net source, and returns the root
+* node of the rt_tree (which is just the net source).                       */
+t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 	t_rt_node *rt_root;
 	int inode;
 
@@ -208,14 +203,11 @@ init_route_tree_to_source(int inet) {
 	return (rt_root);
 }
 
-t_rt_node*
-update_route_tree(t_heap * hptr) {
-
-	/* Adds the most recently finished wire segment to the routing tree, and
-	 * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
-	 * is the heap pointer of the SINK that was reached.  This routine returns
-	 * a pointer to the rt_node of the SINK that it adds to the routing.        */
-
+/* Adds the most recently finished wire segment to the routing tree, and
+* updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
+* is the heap pointer of the SINK that was reached.  This routine returns
+* a pointer to the rt_node of the SINK that it adds to the routing.        */
+t_rt_node* update_route_tree(t_heap * hptr) {
 	t_rt_node *start_of_new_path_rt_node, *sink_rt_node;
 	t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
 	float Tdel_start;
@@ -551,13 +543,13 @@ void free_route_tree(t_rt_node * rt_node) {
 }
 
 void update_net_delays_from_route_tree(float *net_delay,
-		const t_rt_node* const * rt_node_of_sink, int inet) {
+		const t_rt_node* const * rt_node_of_sink, ClusterNetId inet) {
 
 	/* Goes through all the sinks of this net and copies their delay values from
 	 * the route_tree to the net_delay array.                                    */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (unsigned int isink = 1; isink < cluster_ctx.clbs_nlist.net[inet].pins.size(); isink++) {
+	for (unsigned int isink = 1; isink < cluster_ctx.clb_nlist.net_pins(inet).size(); isink++) {
 		net_delay[isink] = rt_node_of_sink[isink]->Tdel;
 	}
 }
@@ -574,7 +566,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 
 
 /***************  Conversion between traceback and route tree *******************/
-t_rt_node* traceback_to_route_tree(int inet) {
+t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
 
 	/* Builds a skeleton route tree from a traceback
 	 * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
@@ -722,13 +714,13 @@ static t_trace* traceback_branch_from_route_tree(t_trace* head, const t_rt_node*
 
 	}
 }
-t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_routed_sinks) {
+t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_routed_sinks) {
 
 	/* Creates the traceback for net inet from the route tree rooted at root
 	 * properly sets route_ctx.trace_head and route_ctx.trace_tail for this net
 	 * returns the trace head for inet 					 					 */
 
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	t_trace* head {alloc_trace_data()};
 	head->index = root->inode;

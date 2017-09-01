@@ -2,11 +2,13 @@
 #define VPR_CONTEXT_H
 #include <unordered_map>
 #include <memory>
+#include <vector>
 
+#include "vpr_types.h"
 #include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
-#include "netlist.h"
 #include "atom_netlist.h"
+#include "clustered_netlist.h"
 #include "rr_node.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
@@ -40,7 +42,7 @@ struct AtomContext : public Context {
     /* Atom netlist */
     AtomNetlist nlist;
 
-    /* Mappings to/from the Atom Netlist */
+    /* Mappings to/from the Atom Netlist to physically described .blif models*/
     AtomLookup lookup;
 };
 
@@ -144,7 +146,7 @@ struct DeviceContext : public Context {
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    map<int, int> *switch_fanin_remap; 
+    std::map<int, int> *switch_fanin_remap; 
 
     /*******************************************************************
      Clock Network
@@ -172,7 +174,7 @@ struct PowerContext : public Context {
     t_power_commonly_used* commonly_used;
     t_power_tech* tech;
     t_power_arch* arch;
-    t_net_power * clb_net_power;
+    vtr::vector_map<ClusterNetId, t_net_power> clb_net_power;
 
 
     /* Atom net power info */
@@ -188,14 +190,9 @@ struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
-    /* blocks in the clustered netlist */
-    int num_blocks;
-    t_block *blocks; //[0..num_blocks-1]
-
-    /* External-to-complex blocks, post-packed netlist [NETS ONLY]*/
-    t_netlist clbs_nlist;
+	/* New netlist class derived from Netlist */
+	ClusteredNetlist clb_nlist;
 };
-
 
 //State relating to placement
 //
@@ -203,7 +200,7 @@ struct ClusteringContext : public Context {
 //or related placer algorithm state.
 struct PlacementContext : public Context {
     //Clustered block placement locations
-    std::vector<t_block_loc> block_locs; //[0..cluster_ctx.num_blocks-1]
+    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
@@ -218,18 +215,18 @@ struct PlacementContext : public Context {
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    t_trace **trace_head, **trace_tail;
+    vtr::vector_map<ClusterNetId, t_trace *> trace_head, trace_tail;
 
     t_rr_node_state* rr_node_state; /* [0..num_rr_nodes-1] */
 
-    int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
-    int **rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     //Limits area in which each net must be routed.
-    t_bb* route_bb = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1]*/
+    vtr::vector_map<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;

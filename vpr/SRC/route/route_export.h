@@ -12,7 +12,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 
 bool try_route(int width_fac, t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		float **net_delay,
+		vtr::vector_map<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf& timing_inf,
@@ -28,15 +28,15 @@ t_clb_opins_used alloc_route_structs(void);
 
 void free_route_structs();
 
-t_trace **alloc_saved_routing();
+vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing();
 
-void free_saved_routing(t_trace **best_routing);
+void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing);
 
-void save_routing(t_trace **best_routing,
+void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		const t_clb_opins_used& clb_opins_used_locally,
 		t_clb_opins_used& saved_clb_opins_used_locally);
 
-void restore_routing(t_trace **best_routing,
+void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used& clb_opins_used_locally,
 		const t_clb_opins_used& saved_clb_opins_used_locally);
 

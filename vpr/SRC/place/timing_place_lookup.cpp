@@ -22,7 +22,6 @@ using namespace std;
 #include "rr_graph.h"
 #include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
-#include "netlist.h"
 #include "echo_files.h"
 #include "atom_netlist.h"
 #include "rr_graph2.h"

@@ -1,7 +1,6 @@
 #ifndef RR_GRAPH_H
 #define RR_GRAPH_H
 
-
 /* Include track buffers or not. Track buffers isolate the tracks from the
    input connection block. However, they are difficult to lay out in practice,
    and so are not currently used in commercial architectures. */
@@ -32,7 +31,7 @@ void create_rr_graph(
         const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
-        const vector<t_switchblock_inf> switchblocks,
+        const std::vector<t_switchblock_inf> switchblocks,
         const int num_seg_types, const int num_arch_switches,
         const t_segment_inf * segment_inf,
         const int global_route_switch, const int delayless_switch,

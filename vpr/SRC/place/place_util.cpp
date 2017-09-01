@@ -8,7 +8,7 @@ void init_placement_context() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
+    place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
 
     place_ctx.grid_blocks = init_grid_blocks();
 }
@@ -23,7 +23,7 @@ static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
 
             int capacity = type->capacity;
 
-            grid_blocks[x][y].blocks.resize(capacity, EMPTY_BLOCK);
+            grid_blocks[x][y].blocks.resize(capacity, EMPTY_BLOCK_ID);
         }
     }
 

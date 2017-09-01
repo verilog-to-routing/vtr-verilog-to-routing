@@ -1169,8 +1169,6 @@ static void build_bidir_rr_opins(const int i, const int j,
 }
 
 void free_rr_graph(void) {
-    int i;
-
     /* Frees all the routing graph data structures, if they have been       *
      * allocated.  I use rr_mem_chunk_list_head as a flag to indicate       *
      * whether or not the graph has been allocated -- if it is not NULL,    *
@@ -1186,24 +1184,11 @@ void free_rr_graph(void) {
      * allocated, as ALL the chunk allocated data is already free!           */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    if (route_ctx.net_rr_terminals != NULL) {
-        free(route_ctx.net_rr_terminals);
-    }
 
     VTR_ASSERT(!device_ctx.rr_node_indices.empty());
     device_ctx.rr_node_indices.resize(0);
     free(device_ctx.rr_indexed_data);
 
-    for (i = 0; i < cluster_ctx.num_blocks; i++) {
-        free(route_ctx.rr_blk_source[i]);
-    }
-    if (route_ctx.rr_blk_source != NULL) {
-        free(route_ctx.rr_blk_source);
-        route_ctx.rr_blk_source = NULL;
-    }
-    route_ctx.net_rr_terminals = NULL;
     device_ctx.rr_indexed_data = NULL;
     device_ctx.num_rr_nodes = 0;
 
@@ -1218,64 +1203,58 @@ void free_rr_graph(void) {
 }
 
 void alloc_net_rr_terminals(void) {
-    unsigned int inet;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    route_ctx.net_rr_terminals = (int **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof (int *));
+    route_ctx.net_rr_terminals.resize(cluster_ctx.clb_nlist.nets().size());
 
-    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        route_ctx.net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
-                cluster_ctx.clbs_nlist.net[inet].pins.size() * sizeof (int),
-                &rr_mem_ch);
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        route_ctx.net_rr_terminals[net_id].resize(cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 }
 
+/* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
+* index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    * 
+* Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pin.         */
 void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+	int i, j, pin_index, iclass, inode, pin_count;
+	t_type_ptr type;
 
-    /* Allocates and loads the route_ctx.net_rr_terminals data structure.  For each net   *
-     * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-     * of the net.  [0..cluster_ctx.clbs_nlist.net.size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
-     * the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pnum.  */
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& place_ctx = g_vpr_ctx.placement();
+	auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    int inode, iblk, i, j, node_block_pin, iclass;
-    unsigned int ipin, inet;
-    t_type_ptr type;
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		pin_count = 0;
+		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+			i = place_ctx.block_locs[block_id].x;
+			j = place_ctx.block_locs[block_id].y;
+			type = cluster_ctx.clb_nlist.block_type(block_id);
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+			/* In the routing graph, each (x, y) location has unique pins on it
+			* so when there is capacity, blocks are packed and their pin numbers
+			* are offset to get their actual rr_node */
+			pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 
-    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-            i = place_ctx.block_locs[iblk].x;
-            j = place_ctx.block_locs[iblk].y;
-            type = cluster_ctx.blocks[iblk].type;
+			iclass = type->pin_class[pin_index];
 
-            /* In the routing graph, each (x, y) location has unique pins on it
-             * so when there is capacity, blocks are packed and their pin numbers
-             * are offset to get their actual rr_node */
-            node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-
-            iclass = type->pin_class[node_block_pin];
-
-            inode = get_rr_node_index(i, j, (ipin == 0 ? SOURCE : SINK), /* First pin is driver */
-                    iclass, L_rr_node_indices);
-            route_ctx.net_rr_terminals[inet][ipin] = inode;
-        }
-    }
+			inode = get_rr_node_index(i, j, 
+				(pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+				iclass, L_rr_node_indices);
+			route_ctx.net_rr_terminals[net_id][pin_count] = inode;
+			pin_count++;
+		}
+	}
 }
 
+/* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
+* in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
+* they are used only to reserve pins for locally used OPINs in the router. *
+* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
+* The values for blocks that are padsare NOT valid.                        */
 void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
-
-    /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
-     * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
-     * they are used only to reserve pins for locally used OPINs in the router. *
-     * [0..cluster_ctx.num_blocks-1][0..num_class-1].  The values for blocks that are pads  *
-     * are NOT valid.                                                           */
-
-    int iblk, i, j, iclass, inode;
+	int i, j, iclass, inode;
     int class_low, class_high;
     t_rr_type rr_type;
     t_type_ptr type;
@@ -1284,16 +1263,16 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.num_blocks * sizeof (int *));
+    route_ctx.rr_blk_source.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-        type = cluster_ctx.blocks[iblk].type;
-        get_class_range_for_block(iblk, &class_low, &class_high);
-        route_ctx.rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof (int));
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        get_class_range_for_block(blk_id, &class_low, &class_high);
+		route_ctx.rr_blk_source[blk_id].resize(type->num_class);
         for (iclass = 0; iclass < type->num_class; iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
-                i = place_ctx.block_locs[iblk].x;
-                j = place_ctx.block_locs[iblk].y;
+                i = place_ctx.block_locs[blk_id].x;
+                j = place_ctx.block_locs[blk_id].y;
 
                 if (type->class_inf[iclass].type == DRIVER)
                     rr_type = SOURCE;
@@ -1302,9 +1281,9 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
 
                 inode = get_rr_node_index(i, j, rr_type, iclass,
                         L_rr_node_indices);
-                route_ctx.rr_blk_source[iblk][iclass] = inode;
+                route_ctx.rr_blk_source[blk_id][iclass] = inode;
             } else {
-                route_ctx.rr_blk_source[iblk][iclass] = OPEN;
+                route_ctx.rr_blk_source[blk_id][iclass] = OPEN;
             }
         }
     }

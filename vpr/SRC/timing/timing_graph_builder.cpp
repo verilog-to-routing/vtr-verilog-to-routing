@@ -287,7 +287,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             const t_model_ports* model_port = netlist_.port_model(src_port);
 
             for(std::string sink_port_name : model_port->combinational_sink_ports) {
-                AtomPortId sink_port = netlist_.find_port(blk, sink_port_name); 
+                AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
                 if(!sink_port) continue; //Port may not be connected
 
                 //We now need to create edges between the source pin, and all the pins in the

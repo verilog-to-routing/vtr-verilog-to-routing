@@ -56,7 +56,7 @@ struct t_linked_rc_ptr {
 
 /*********************** Subroutines local to this module ********************/
 
-static t_rc_node *alloc_and_load_rc_tree(int inet,
+static t_rc_node *alloc_and_load_rc_tree(ClusterNetId net_id,
 		t_rc_node ** rc_node_free_list_ptr,
 		t_linked_rc_edge ** rc_edge_free_list_ptr,
 		t_linked_rc_ptr * rr_node_to_rc_node);
@@ -79,18 +79,16 @@ static float load_rc_tree_C(t_rc_node * rc_node);
 
 static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival);
 
-static void load_one_net_delay(float **net_delay, unsigned int inet, const vector<t_vnet>& nets,
-		t_linked_rc_ptr * rr_node_to_rc_node);
+static void load_one_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, t_linked_rc_ptr * rr_node_to_rc_node);
 
-static void load_one_constant_net_delay(float **net_delay, unsigned int inet,
-		const vector<t_vnet>& nets, float delay_value);
+static void load_one_constant_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, float delay_value);
 
 static void free_rc_tree(t_rc_node * rc_root,
 		t_rc_node ** rc_node_free_list_ptr,
 		t_linked_rc_edge ** rc_edge_free_list_ptr);
 
 static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node,
-		int inet);
+		ClusterNetId net_id);
 
 static void free_rc_node_free_list(t_rc_node * rc_node_free_list);
 
@@ -98,45 +96,40 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 
 /*************************** Subroutine definitions **************************/
 
-float **
-alloc_net_delay(vtr::t_chunk *chunk_list_ptr, const vector<t_vnet> & nets,
-		unsigned int n_nets){
-
-	/* Allocates space for the net_delay data structure                          *
-	 * [0..nets.size()-1][1..num_pins-1].  I chunk the data to save space on large  *
-	 * problems.                                                                 */
-
-	float **net_delay; /* [0..nets.size()-1][1..num_pins-1] */
+/* Allocates space for the net_delay data structure   *
+* [0..nets.size()-1][1..num_pins-1]. I chunk the data *
+* to save space on large problems.                    */
+vtr::vector_map<ClusterNetId, float *> alloc_net_delay(vtr::t_chunk *chunk_list_ptr){
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	vtr::vector_map<ClusterNetId, float *> net_delay; /* [0..nets.size()-1][1..num_pins-1] */
 	float *tmp_ptr;
-	unsigned int inet;
 
-	net_delay = (float **) vtr::malloc(n_nets * sizeof(float *));
+	net_delay.resize(cluster_ctx.clb_nlist.nets().size());
 
-	for (inet = 0; inet < n_nets; inet++) {
-		tmp_ptr = (float *) vtr::chunk_malloc(nets[inet].num_sinks() * sizeof(float), chunk_list_ptr);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		tmp_ptr = (float *) vtr::chunk_malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float), chunk_list_ptr);
 
-		net_delay[inet] = tmp_ptr - 1; /* [1..num_pins-1] */
+		net_delay[net_id] = tmp_ptr - 1; /* [1..num_pins-1] */
 
         //Ensure the net delays are initialized with non-garbage values
-        for(size_t ipin = 1; ipin < nets[inet].pins.size(); ++ipin) {
-            net_delay[inet][ipin] = std::numeric_limits<float>::quiet_NaN();
+		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+            net_delay[net_id][ipin] = std::numeric_limits<float>::quiet_NaN();
         }
 	}
 
 	return (net_delay);
 }
 
-void free_net_delay(float **net_delay,
+void free_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay,
 		vtr::t_chunk *chunk_list_ptr){
 
 	/* Frees the net_delay structure.  Assumes it was chunk allocated.          */
 
-	free(net_delay);
+	net_delay.clear();
     vtr::free_chunk_memory(chunk_list_ptr);
 }
 
-void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
-		unsigned int n_nets) {
+void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_delay) {
 
 	/* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
 	 * is the Elmore delay from the net source to the appropriate sink.  Both    *
@@ -144,10 +137,10 @@ void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
 	 * before this routine is called, and the net_delay array must have been     *
 	 * allocated.                                                                */
     auto& device_ctx = g_vpr_ctx.device();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	t_rc_node *rc_node_free_list, *rc_root;
 	t_linked_rc_edge *rc_edge_free_list;
-	unsigned int inet;
 	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..device_ctx.num_rr_nodes-1]  */
 
 	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(device_ctx.num_rr_nodes,
@@ -156,17 +149,17 @@ void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
 	rc_node_free_list = NULL;
 	rc_edge_free_list = NULL;
 
-	for (inet = 0; inet < n_nets; inet++) {
-		if (nets[inet].is_global) {
-			load_one_constant_net_delay(net_delay, inet, nets, 0.);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
+			load_one_constant_net_delay(net_delay, net_id, 0.);
 		} else {
-			rc_root = alloc_and_load_rc_tree(inet, &rc_node_free_list,
+			rc_root = alloc_and_load_rc_tree(net_id, &rc_node_free_list,
 					&rc_edge_free_list, rr_node_to_rc_node);
 			load_rc_tree_C(rc_root);
 			load_rc_tree_T(rc_root, 0.);
-			load_one_net_delay(net_delay, inet, nets, rr_node_to_rc_node);
+			load_one_net_delay(net_delay, net_id, rr_node_to_rc_node);
 			free_rc_tree(rc_root, &rc_node_free_list, &rc_edge_free_list);
-			reset_rr_node_to_rc_node(rr_node_to_rc_node, inet);
+			reset_rr_node_to_rc_node(rr_node_to_rc_node, net_id);
 		}
 	}
 
@@ -175,27 +168,8 @@ void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
 	free(rr_node_to_rc_node);
 }
 
-void load_constant_net_delay(float **net_delay, float delay_value,
-		vector<t_vnet> & nets, unsigned int n_nets) {
-
-	/* Loads the net_delay array with delay_value for every source - sink        *
-	 * connection that is not on a global resource, and with 0. for every source *
-	 * - sink connection on a global net.  (This can be used to allow timing     *
-	 * analysis before routing is done with a constant net delay model).         */
-
-	unsigned int inet;
-
-	for (inet = 0; inet < n_nets; inet++) {
-		if (nets[inet].is_global) {
-			load_one_constant_net_delay(net_delay, inet, nets, 0.);
-		} else {
-			load_one_constant_net_delay(net_delay, inet, nets, delay_value);
-		}
-	}
-}
-
 static t_rc_node *
-alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
+alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 		t_linked_rc_edge ** rc_edge_free_list_ptr,
 		t_linked_rc_ptr * rr_node_to_rc_node) {
 
@@ -212,11 +186,11 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
     auto& route_ctx = g_vpr_ctx.routing();
 
 	root_rc = alloc_rc_node(rc_node_free_list_ptr);
-	tptr = route_ctx.trace_head[inet];
+	tptr = route_ctx.trace_head[net_id];
 
 	if (tptr == NULL) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-				"in alloc_and_load_rc_tree: Traceback for net %d does not exist.\n", inet);
+				"in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", size_t(net_id));
 	}
 
 	inode = tptr->index;
@@ -247,7 +221,7 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 			if (device_ctx.rr_nodes[prev_node].type() != SINK) {
 				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, device_ctx.rr_nodes[prev_node].type());
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-						"in alloc_and_load_rc_tree: Routing of net %d is not a tree.\n", inet);
+						"in alloc_and_load_rc_tree: Routing of net %lu is not a tree.\n", size_t(net_id));
 			}
 
 			prev_rc = rr_node_to_rc_node[inode].rc_node;
@@ -441,23 +415,19 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 	}
 }
 
-static void load_one_net_delay(float **net_delay, unsigned int inet, const vector<t_vnet>& nets,
-		t_linked_rc_ptr * rr_node_to_rc_node) {
-
-	/* Loads the net delay array for net inet.  The rc tree for that net must  *
-	 * have already been completely built and loaded.                          */
-
+/* Loads the net delay array for net inet.  The rc tree for that net must  *
+* have already been completely built and loaded.                           */
+static void load_one_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, t_linked_rc_ptr * rr_node_to_rc_node) {
 	unsigned int ipin, inode;
 	float Tmax;
 	t_rc_node *rc_node;
 	t_linked_rc_ptr *linked_rc_ptr, *next_ptr;
 
+	auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++) {
-
-		inode = route_ctx.net_rr_terminals[inet][ipin];
-
+	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+		inode = route_ctx.net_rr_terminals[net_id][ipin];
 		linked_rc_ptr = rr_node_to_rc_node[inode].next;
 		rc_node = rr_node_to_rc_node[inode].rc_node;
 		Tmax = rc_node->Tdel;
@@ -491,19 +461,18 @@ static void load_one_net_delay(float **net_delay, unsigned int inet, const vecto
 			rr_node_to_rc_node[inode].next = NULL;
 		}
 		/* End of if multiply-used SINK */
-		net_delay[inet][ipin] = Tmax;
+		net_delay[net_id][ipin] = Tmax;
 	}
 }
 
-static void load_one_constant_net_delay(float **net_delay, unsigned int inet,
-		const vector<t_vnet>& nets, float delay_value) {
+static void load_one_constant_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, float delay_value) {
 
 	/* Sets each entry of the net_delay array for net inet to delay_value.     */
-
 	unsigned int ipin;
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++)
-		net_delay[inet][ipin] = delay_value;
+	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
+		net_delay[net_id][ipin] = delay_value;
 }
 
 static void free_rc_tree(t_rc_node * rc_root,
@@ -530,8 +499,7 @@ static void free_rc_tree(t_rc_node * rc_root,
 	free_rc_node(rc_node, rc_node_free_list_ptr);
 }
 
-static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node,
-		int inet) {
+static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node, ClusterNetId net_id) {
 
 	/* Resets the rr_node_to_rc_node mapping entries that were set during       *
 	 * construction of the RC tree for net inet.  Any extra linked list entries *
@@ -543,7 +511,7 @@ static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node,
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-	tptr = route_ctx.trace_head[inet];
+	tptr = route_ctx.trace_head[net_id];
 
 	while (tptr != NULL) {
 		inode = tptr->index;

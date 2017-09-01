@@ -1,6 +1,7 @@
 /*
  Data types describing the logic (technology-mapped) models that the architecture can implement.
- Logic models include LUT (.names), flipflop (.latch), inpad, outpad, memory slice, etc
+ Logic models include LUT (.names), flipflop (.latch), inpad, outpad, memory slice, etc.
+ Logic models are from the internal VPR library, or can be user-defined (both defined in .blif)
 
  Date: February 19, 2009
  Authors: Jason Luu and Kenneth Kent

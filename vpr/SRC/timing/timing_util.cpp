@@ -329,18 +329,20 @@ float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyze
             AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(origin_pin);
             AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(pin);
 
-            int clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
-            VTR_ASSERT(clb_src_block >= 0);
-            int clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
-            VTR_ASSERT(clb_sink_block >= 0);
+            ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
+            VTR_ASSERT(clb_src_block);
+			ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
+            VTR_ASSERT(clb_sink_block);
 
             const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
             VTR_ASSERT(sink_gpin);
 
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
-            const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
+			ClusterNetId net_id;
+			int sink_block_pin_index, sink_net_pin_index;
+            std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
 
-            if (sink_clb_net_pin == nullptr) {
+            if(net_id == ClusterNetId::INVALID() && sink_block_pin_index == -1 && sink_net_pin_index == -1) {
                 /*Does not go out of the cluster*/
                 if (clb_sink_block == clb_src_block) {
                     if (slack < 0.) {
@@ -514,14 +516,14 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
  */
 
 //Return the criticality of a net's pin in the CLB netlist
-
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, ClusterNetId inet, int ipin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    const t_net_pin& net_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin];
+	ClusterBlockId block_id = cluster_ctx.clb_nlist.net_pin_block(inet, ipin);
+	int pin_index = cluster_ctx.clb_nlist.physical_pin_index(inet, ipin);
 
     //There may be multiple atom netlist pins connected to this CLB pin
-    std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
+    std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(block_id, pin_index, pb_gpin_lookup);
 
     //Take the maximum of the atom pin criticality as the CLB pin criticality
     float clb_pin_crit = 0.;

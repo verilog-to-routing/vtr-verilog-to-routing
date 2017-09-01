@@ -72,13 +72,13 @@ static void power_usage_routing(t_power_usage * power_usage,
 /* Tiles */
 static void power_usage_blocks(t_power_usage * power_usage);
 static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_node, int iblk);
+		t_pb_graph_node * pb_node, ClusterBlockId iblk);
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
-	t_pb_graph_node * pb_graph_node, int iblk);
+	t_pb_graph_node * pb_graph_node, ClusterBlockId iblk);
 static void power_reset_tile_usage(void);
 static void power_reset_pb_type(t_pb_type * pb_type);
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_node * pb_node, int iblk);
+		t_pb * pb, t_pb_graph_node * pb_node, ClusterBlockId iblk);
 
 /* Clock */
 static void power_usage_clock(t_power_usage * power_usage,
@@ -107,9 +107,9 @@ static const char * power_estimation_method_name(
 		e_power_estimation_method power_method);
 
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
-	t_pb_graph_pin * pin, int iblk);
+	t_pb_graph_pin * pin, ClusterBlockId iblk);
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
-	t_pb * pb, t_pb_graph_pin * pin, int iblk);
+	t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk);
 void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin);
 void power_init_pb_pins_rec(t_pb_graph_node * pb_node);
 void power_pb_pins_init();
@@ -126,7 +126,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch);
  *  - calc_static: Calculate static power? Otherwise ignore
  */
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_graph_node, int iblk) {
+		t_pb_graph_node * pb_graph_node, ClusterBlockId iblk) {
 	t_power_usage sub_power_usage;
 
 	power_zero_usage(power_usage);
@@ -212,7 +212,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 }
 
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
-	t_pb_graph_pin * pin, int iblk) {
+	t_pb_graph_pin * pin, ClusterBlockId iblk) {
 	float scale_factor;
     auto& power_ctx = g_vpr_ctx.power();
 
@@ -234,7 +234,7 @@ void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 }
 
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
-	t_pb * pb, t_pb_graph_pin * pin, int iblk) {
+	t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk) {
 	t_power_usage sub_power_usage;
 	float buffer_size = 0.;
 	double C_wire;
@@ -258,7 +258,7 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 }
 
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_node * pb_node, int iblk) {
+		t_pb * pb, t_pb_graph_node * pb_node, ClusterBlockId iblk) {
 	int port_idx;
 	int pin_idx;
 	t_power_usage pin_power;
@@ -303,7 +303,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
  * - If no children, must be a primitive.  Call primitive hander.
  */
 static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_node, int iblk) {
+		t_pb_graph_node * pb_node, ClusterBlockId iblk) {
 
 	t_power_usage power_usage_bufs_wires;
 	t_power_usage power_usage_local_muxes;
@@ -628,11 +628,10 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 
-                int iblk = place_ctx.grid_blocks[x][y].blocks[z];
+                ClusterBlockId iblk = place_ctx.grid_blocks[x][y].blocks[z];
 
-				if (iblk != EMPTY_BLOCK && iblk != INVALID_BLOCK) {
-					pb = cluster_ctx.blocks[iblk].pb;
-				}
+				if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID)
+					pb = cluster_ctx.clb_nlist.block_pb(iblk);
 
 				/* Calculate power of this CLB */
 				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, iblk);
@@ -804,26 +803,26 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 	/* Reset rr graph net indices */
 	for (rr_node_idx = 0; rr_node_idx < device_ctx.num_rr_nodes; rr_node_idx++) {
-		rr_node_power[rr_node_idx].net_num = OPEN;
+		rr_node_power[rr_node_idx].net_num = ClusterNetId::INVALID();
 		rr_node_power[rr_node_idx].num_inputs = 0;
 		rr_node_power[rr_node_idx].selected_input = 0;
 	}
 
 	/* Populate net indices into rr graph */
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		t_trace * trace;
 
-		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
+		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
-			rr_node_power[trace->index].net_num = net_idx;
+			rr_node_power[trace->index].net_num = net_id;
 		}
 	}
 
 	/* Populate net indices into rr graph */
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		t_trace * trace;
 
-		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
+		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
 			t_rr_node * node = &device_ctx.rr_nodes[trace->index];
 			t_rr_node_power * node_power = &rr_node_power[trace->index];
 
@@ -1173,12 +1172,12 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	/* Copy probability/density values to new netlist */
-	if (!power_ctx.clb_net_power) {
-		power_ctx.clb_net_power = (t_net_power*) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(t_net_power));
+	if (power_ctx.clb_net_power.size() == 0) {
+		power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size());
 	}
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
-		power_ctx.clb_net_power[net_idx].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_idx)].probability;
-		power_ctx.clb_net_power[net_idx].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_idx)].density;
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		power_ctx.clb_net_power[net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
+		power_ctx.clb_net_power[net_id].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].density;
 	}
 
 	/* Initialize RR Graph Structures */

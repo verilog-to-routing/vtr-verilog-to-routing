@@ -9,13 +9,12 @@ void NetlistWalker::walk() {
 
     visitor_.visit_top(atom_ctx.nlist.netlist_name().c_str());
 
-    for(int i = 0; i < cluster_ctx.num_blocks; i++) {
-
+    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         //Visit the top-level block
-        visitor_.visit_clb(cluster_ctx.blocks[i].pb); 
+		visitor_.visit_clb(cluster_ctx.clb_nlist.block_pb(blk_id));
 
         //Visit all the block's primitives
-        walk_atoms(cluster_ctx.blocks[i].pb);
+        walk_atoms(cluster_ctx.clb_nlist.block_pb(blk_id));
     }
 
     visitor_.finish();
@@ -30,13 +29,11 @@ void NetlistWalker::walk_atoms(const t_pb* pb) {
         return;
     }
 
-
     if(pb->child_pbs == NULL) {
         //Primitive pb
         visitor_.visit_atom(pb);
         return;
     }
-
 
     //Recurse
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;

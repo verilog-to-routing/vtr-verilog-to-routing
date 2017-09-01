@@ -17,37 +17,30 @@ using namespace std;
 
 #include "timing_info.h"
 
-static float **f_timing_place_crit;
+static vtr::vector_map<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
 static vtr::t_chunk f_timing_place_crit_ch = {NULL, 0, NULL};
 
 /******** prototypes ******************/
-static float **alloc_crit(vtr::t_chunk *chunk_list_ptr);
+static void alloc_crit(vtr::t_chunk *chunk_list_ptr);
 
 static void free_crit(vtr::t_chunk *chunk_list_ptr);
 
 /**************************************/
 
-static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
-
-	/* Allocates space for the f_timing_place_crit data structure *
-	 * [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
-	 * problems.                                                                   */
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-	float **local_crit; /* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1] */
+/* Allocates space for the f_timing_place_crit data structure *
+* I chunk the data to save space on large problems.           */
+static void alloc_crit(vtr::t_chunk *chunk_list_ptr) {
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 	float *tmp_ptr;
-	unsigned int inet;
 
-	local_crit = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
+	f_timing_place_crit.resize(cluster_ctx.clb_nlist.nets().size());
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		tmp_ptr = (float *) vtr::chunk_malloc(
-				(cluster_ctx.clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
-		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
+				(cluster_ctx.clb_nlist.net_sinks(net_id).size()) * sizeof(float), chunk_list_ptr);
+		f_timing_place_crit[net_id] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
-
-	return (local_crit);
 }
 
 /**************************************/
@@ -88,28 +81,27 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 	  in that pin), f_timing_place_crit = criticality^(criticality exponent) */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global)
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_is_global(net_id))
 			continue;
-		for (size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-
-            float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
+		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, net_id, ipin);
 
             /* The placer likes a great deal of contrast between criticalities. 
             Since path criticality varies much more than timing, we "sharpen" timing 
             criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-            f_timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
+            f_timing_place_crit[net_id][ipin] = pow(clb_pin_crit, crit_exponent);
 		}
 	}
 }
 
 
-float get_timing_place_crit(int inet, int ipin) {
-    return f_timing_place_crit[inet][ipin];
+float get_timing_place_crit(ClusterNetId net_id, int ipin) {
+    return f_timing_place_crit[net_id][ipin];
 }
 
-void set_timing_place_crit(int inet, int ipin, float val) {
-    f_timing_place_crit[inet][ipin] = val;
+void set_timing_place_crit(ClusterNetId net_id, int ipin, float val) {
+    f_timing_place_crit[net_id][ipin] = val;
 }
 
 /**************************************/
@@ -122,13 +114,12 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			chan_width_dist, directs, num_directs);
 	
-	f_timing_place_crit = alloc_crit(&f_timing_place_crit_ch);
+	alloc_crit(&f_timing_place_crit_ch);
 }
 
 /**************************************/
 void free_lookups_and_criticalities() {
-
-	free(f_timing_place_crit);
+	//TODO: May need to free f_timing_place_crit ?
 	free_crit(&f_timing_place_crit_ch);
 
 	free_place_lookup_structs();

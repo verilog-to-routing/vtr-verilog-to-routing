@@ -2,6 +2,8 @@
 #include <cstring>
 #include <unordered_set>
 #include <unordered_map>
+#include <fstream>
+#include <stdlib.h>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -19,6 +21,13 @@ using namespace std;
 #include "pack.h"
 #include "read_blif.h"
 #include "cluster.h"
+
+#ifdef USE_HMETIS
+#include "hmetis_graph_writer.h"
+static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
+//TODO: CHANGE THIS HARDCODING
+static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe "); 
+#endif
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
@@ -38,12 +47,14 @@ void try_pack(t_packer_opts *packer_opts,
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
     std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
+	const t_model *cur_model; 
 	int num_models;
-	const t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
-
+#ifdef USE_HMETIS
+	vtr::vector_map<AtomBlockId,int> partitions;
+#endif
 	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
 	/* determine number of models in the architecture */
@@ -93,6 +104,67 @@ void try_pack(t_packer_opts *packer_opts,
 		vtr::printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
 	}
 
+#ifdef USE_HMETIS
+	if (!packer_opts->hmetis_input_file.empty()) {
+		/*	hmetis.exe <GraphFile>			 <Nparts> <UBfactor> <Nruns> <Ctype> <RType> <VCycle> <Reconst> <dbglvl>
+			  or
+			hmetis.exe <GraphFile> <FixFile> <Nparts> <UBfactor> <Nruns> <Ctype> <RType> <VCycle> <Reconst> <dbglvl>
+			 GraphFile: name of the hypergraph file
+			 FixFile  : name of the file containing pre-assignment of vertices to partitions
+			 Nparts   : number of partitions desired
+			 UBfactor : balance between the partitions (e.g., use 5 for a 45-55 bisection balance)
+			 Nruns    : Number of Iterations (shmetis defaults to 10)
+			 CType    : HFC(1), FC(2), GFC(3), HEDGE(4), EDGE(5)
+			 RType    : FM(1), 1WayFM(2), EEFM(3)
+			 VCycle   : No(0), @End(1), ForMin(2), All(3)
+			 Reconst  : NoReconstruct_HE(0), Reconstruct_HE (1)
+			 dbglvl   : debug level*/
+
+		vtr::printf_info("Writing hmetis hypergraph to %s\n", packer_opts->hmetis_input_file);
+
+		// Write AtomNetlist into hGraph format
+		write_hmetis_graph(packer_opts->hmetis_input_file);
+
+		// Set the rest of the arguments
+		// For a reference to what the string arguments mean, refer to the manual
+
+		// The number of partitions is determined in one of two methods:
+		// 1. Partition tree would result in the size of subcircuits ~= 4 (Elias Vansteenkiste, et al.)
+		// 2. Partition depth = 5, i.e. num_parts = 32 (Doris Chen, et al.)
+		//int num_parts = atom_ctx.nlist.blocks().size() / 4; // Method 1.
+		//TODO: Find an appropriate value (may be from packer_opts) for num_parts
+		int num_parts = 32; //Method 2.
+
+		string run_hmetis = hmetis + packer_opts->hmetis_input_file + " " + to_string(num_parts) + " 5";
+
+		// Check if OS is Windows or Linux and run hMetis accordingly
+		//TODO: USE HMETIS WITH ALL ARGUMENTS INSTEAD FOR FURTHER REFINEMENT
+		//Using shmetis (standard hmetis) to simplify
+		system(run_hmetis.c_str());
+
+		/* Parse the output file from hMetis, contains |V| lines, ith line = partition of V_i.
+		*  Store the results into a vector_map.
+		*/
+		string hmetis_output_file(packer_opts->hmetis_input_file + ".part." + to_string(num_parts));
+
+		partitions = read_hmetis_graph(hmetis_output_file, num_parts);
+
+		// Print each block's partition
+		vtr::printf_info("Partitioning complete\n");
+		
+		vector<vector<AtomBlockId>> print_partitions(num_parts);
+		for (auto blk_id : atom_ctx.nlist.blocks()) {
+			print_partitions[partitions[blk_id]].push_back(blk_id);
+		}
+		for (int i = 0; i < (int)print_partitions.size(); i++) {
+			vtr::printf_info("Blocks in partition %zu:\n\t", i);
+			for (int j = 0; j < (int)print_partitions[i].size(); j++)
+				vtr::printf_info("%zu ", size_t(print_partitions[i][j]));
+			vtr::printf_info("\n");
+		}
+	}
+#endif
+
     do_clustering(arch, list_of_pack_molecules, num_models,
             packer_opts->global_clocks, is_clock, 
             atom_molecules,
@@ -107,6 +179,9 @@ void try_pack(t_packer_opts *packer_opts,
             packer_opts->packer_algorithm,
             lb_type_rr_graphs,
             packer_opts->device_layout
+#ifdef USE_HMETIS
+			, partitions
+#endif
 #ifdef ENABLE_CLASSIC_VPR_STA
             , timing_inf
 #endif
@@ -185,4 +260,38 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 	return (is_clock);
 }
 
+#ifdef USE_HMETIS
+/* Reads in the output of the hMetis partitioner and returns
+*  A 2-D vector that contains all the blocks in each partition
+*/
+static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file, const int num_parts) {
+	ifstream fp(hmetis_output_file.c_str());
+	vtr::vector_map<AtomBlockId, int> partitions;
+	string line;
+	int block_num = 0; //Indexing for CLB's start at 0
 
+	// Check that # of lines in output file matches # of blocks/vertices
+	auto& atom_ctx = g_vpr_ctx.atom();
+	VTR_ASSERT((int)atom_ctx.nlist.blocks().size() == count(istreambuf_iterator<char>(fp), istreambuf_iterator<char>(), '\n'));
+	
+	partitions.resize(atom_ctx.nlist.blocks().size());
+
+	// Reset the filestream to the beginning and reread
+	fp.clear();
+	fp.seekg(0, fp.beg);
+
+	while (getline(fp, line)) {
+		if (stoi(line) >= num_parts) {
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"Partition for line '%s' exceeds the set number of partitions %d" , line, num_parts);
+		}
+
+		partitions[AtomBlockId(block_num)] = stoi(line);
+		block_num++;
+	}
+
+	fp.close();
+
+	return partitions;
+}
+#endif

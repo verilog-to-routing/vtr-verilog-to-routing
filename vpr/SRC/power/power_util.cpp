@@ -84,14 +84,14 @@ const char * transistor_type_name(e_tx_type type) {
 	}
 }
 
-float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
+float pin_dens(t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk) {
 	float density = 0.;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& power_ctx = g_vpr_ctx.mutable_power();
 
 	if (pb) {
-		AtomNetId net_id = cluster_ctx.blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[pin->pin_count_in_cluster].atom_net_id;
 		if (net_id) {
 			density = power_ctx.atom_net_power[net_id].density;
 		}
@@ -100,7 +100,7 @@ float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	return density;
 }
 
-float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
+float pin_prob(t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk) {
 	/* Assumed pull-up on unused interconnect */
 	float prob = 1.;
 
@@ -108,7 +108,7 @@ float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
     auto& power_ctx = g_vpr_ctx.mutable_power();
 
 	if (pb) {
-		AtomNetId net_id = cluster_ctx.blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[pin->pin_count_in_cluster].atom_net_id;
 		if (net_id) {
 			prob = power_ctx.atom_net_power[net_id].probability;
 		}
@@ -259,7 +259,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
     auto expanded_truth_table = expand_truth_table(truth_table, LUT_size);
     std::vector<vtr::LogicValue> lut_mask = truth_table_to_lut_mask(expanded_truth_table, LUT_size);
 
-    VTR_ASSERT(lut_mask.size() == (size_t) num_SRAM_bits);
+    VTR_ASSERT(lut_mask.size() == (size_t)num_SRAM_bits);
 
     //Convert to string
     for(size_t i = 0; i < lut_mask.size(); ++i) {
@@ -281,8 +281,8 @@ void mux_arch_fix_levels(t_mux_arch * mux_arch) {
 	}
 }
 
-float clb_net_density(int net_idx) {
-	if (net_idx == OPEN) {
+float clb_net_density(ClusterNetId net_idx) {
+	if (net_idx == ClusterNetId::INVALID()) {
 		return 0.;
 	} else {
         auto& power_ctx = g_vpr_ctx.power();
@@ -290,8 +290,8 @@ float clb_net_density(int net_idx) {
 	}
 }
 
-float clb_net_prob(int net_idx) {
-	if (net_idx == OPEN) {
+float clb_net_prob(ClusterNetId net_idx) {
+	if (net_idx == ClusterNetId::INVALID()) {
 		return 0.;
 	} else {
         auto& power_ctx = g_vpr_ctx.power();

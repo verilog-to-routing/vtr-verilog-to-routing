@@ -101,7 +101,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 AtomBlockId blk_id = curr_model().create_block(input, blk_model);
                 AtomPortId port_id = curr_model().create_port(blk_id, blk_model->outputs);
                 AtomNetId net_id = curr_model().create_net(input);
-                curr_model().create_pin(port_id, 0, net_id, AtomPinType::DRIVER);
+                curr_model().create_pin(port_id, 0, net_id, PinType::DRIVER);
             }
         }
 
@@ -115,12 +115,12 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             std::string pin_name = blk_model->inputs->name;
             for(const auto& output : output_names) {
-                //Since we name blocks based on thier drivers we need to uniquify outpad names,
+                //Since we name blocks based on their drivers we need to uniquify outpad names,
                 //which we do with a prefix
                 AtomBlockId blk_id = curr_model().create_block(OUTPAD_NAME_PREFIX + output, blk_model);
                 AtomPortId port_id = curr_model().create_port(blk_id, blk_model->inputs);
                 AtomNetId net_id = curr_model().create_net(output);
-                curr_model().create_pin(port_id, 0, net_id, AtomPinType::SINK);
+                curr_model().create_pin(port_id, 0, net_id, PinType::SINK);
             }
         }
 
@@ -156,7 +156,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             for(size_t i = 0; i < nets.size() - 1; ++i) {
                 AtomNetId net_id = curr_model().create_net(nets[i]);
 
-                curr_model().create_pin(input_port_id, i, net_id, AtomPinType::SINK);
+                curr_model().create_pin(input_port_id, i, net_id, PinType::SINK);
             }
 
             //Figure out if the output is a constant generator
@@ -193,7 +193,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             //Create output
             AtomNetId net_id = curr_model().create_net(nets[nets.size()-1]);
             AtomPortId output_port_id = curr_model().create_port(blk_id, blk_model->outputs);
-            curr_model().create_pin(output_port_id, 0, net_id, AtomPinType::DRIVER, output_is_const);
+            curr_model().create_pin(output_port_id, 0, net_id, PinType::DRIVER, output_is_const);
         }
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
@@ -236,17 +236,17 @@ struct BlifAllocCallback : public blifparse::Callback {
             //The input
             AtomPortId d_port_id = curr_model().create_port(blk_id, d_model_port);
             AtomNetId d_net_id = curr_model().create_net(input);
-            curr_model().create_pin(d_port_id, 0, d_net_id, AtomPinType::SINK);
+            curr_model().create_pin(d_port_id, 0, d_net_id, PinType::SINK);
 
             //The output
             AtomPortId q_port_id = curr_model().create_port(blk_id, q_model_port);
             AtomNetId q_net_id = curr_model().create_net(output);
-            curr_model().create_pin(q_port_id, 0, q_net_id, AtomPinType::DRIVER);
+            curr_model().create_pin(q_port_id, 0, q_net_id, PinType::DRIVER);
 
             //The clock
             AtomPortId clk_port_id = curr_model().create_port(blk_id, clk_model_port);
             AtomNetId clk_net_id = curr_model().create_net(control);
-            curr_model().create_pin(clk_port_id, 0, clk_net_id, AtomPinType::SINK);
+            curr_model().create_pin(clk_port_id, 0, clk_net_id, PinType::SINK);
         }
 
         void subckt(std::string subckt_model, std::vector<std::string> ports, std::vector<std::string> nets) override {
@@ -295,10 +295,10 @@ struct BlifAllocCallback : public blifparse::Callback {
                 VTR_ASSERT(model_port);
 
                 //Determine the pin type
-                AtomPinType pin_type = AtomPinType::SINK;
+                PinType pin_type = PinType::SINK;
                 if(model_port->dir == OUT_PORT) {
-                    pin_type = AtomPinType::DRIVER;
-                } else {
+                    pin_type = PinType::DRIVER;
+				} else {
                     VTR_ASSERT_MSG(model_port->dir == IN_PORT, "Unexpected port type");
                 }
 
@@ -745,7 +745,7 @@ static void process_blif(AtomNetlist& netlist,
         vtr::ScopedPrintTimer t("Compress BLIF");
 
         //Compress the netlist to clean-out invalid entries
-        netlist.compress();
+        netlist.remove_and_compress();
     }
     {
         vtr::ScopedPrintTimer t("Verify BLIF");

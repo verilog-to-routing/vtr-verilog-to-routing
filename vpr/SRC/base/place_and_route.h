@@ -25,4 +25,4 @@ bool place_and_route(
 
 void init_chan(int cfactor, t_chan_width_dist chan_width_dist);
 
-void post_place_sync(const int L_num_blocks);
+void post_place_sync();

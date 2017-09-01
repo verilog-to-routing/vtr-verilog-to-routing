@@ -47,7 +47,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		bool timing_analysis_enabled,
-		float **net_delay 
+		vtr::vector_map<ClusterNetId, float *> &net_delay 
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_slack * slacks, const t_timing_inf &timing_inf
 #endif
@@ -87,12 +87,12 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
 	used_area = 0;
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
-		if (cluster_ctx.blocks[i].type != device_ctx.IO_TYPE) {
-			if (cluster_ctx.blocks[i].type->area == UNDEFINED) {
-				used_area += grid_logic_tile_area * cluster_ctx.blocks[i].type->width * cluster_ctx.blocks[i].type->height;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.IO_TYPE) {
+			if (cluster_ctx.clb_nlist.block_type(blk_id)->area == UNDEFINED) {
+				used_area += grid_logic_tile_area * cluster_ctx.clb_nlist.block_type(blk_id)->width * cluster_ctx.clb_nlist.block_type(blk_id)->height;
 			} else {
-				used_area += cluster_ctx.blocks[i].type->area;
+				used_area += cluster_ctx.clb_nlist.block_type(blk_id)->area;
 			}
 		}
 	}
@@ -106,7 +106,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	}
 
     if (timing_analysis_enabled) {
-        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+        load_net_delay_from_routing(net_delay);
 
         auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
@@ -142,12 +142,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		print_wirelen_prob_dist();
 }
 
+/* Figures out maximum, minimum and average number of bends and net length   *
+* in the routing.                                                           */
 void length_and_bends_stats(void) {
-
-	/* Figures out maximum, minimum and average number of bends and net length   *
-	 * in the routing.                                                           */
-
-	unsigned int inet, l;
 	int bends, total_bends, max_bends;
 	int length, total_length, max_length;
 	int segments, total_segments, max_segments;
@@ -165,9 +162,9 @@ void length_and_bends_stats(void) {
 	num_global_nets = 0;
 	num_clb_opins_reserved = 0;
 
-	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
-			get_num_bends_and_length(inet, &bends, &length, &segments);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (!cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			total_bends += bends;
 			max_bends = max(bends, max_bends);
@@ -177,26 +174,26 @@ void length_and_bends_stats(void) {
 
 			total_segments += segments;
 			max_segments = max(segments, max_segments);
-		} else if (cluster_ctx.clbs_nlist.net[inet].is_global) {
+		} else if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
 			num_global_nets++;
 		} else {
 			num_clb_opins_reserved++;
 		}
 	}
 
-	av_bends = (float) total_bends / (float) ((int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
+	av_bends = (float) total_bends / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("\n");
 	vtr::printf_info("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
 	vtr::printf_info("\n");
 
-	av_length = (float) total_length / (float) ((int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
-	vtr::printf_info("Number of routed nets (nonglobal): %d\n", (int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
+	av_length = (float) total_length / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+	vtr::printf_info("Number of routed nets (nonglobal): %d\n", (int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("Wire length results (in units of 1 clb segments)...\n");
 	vtr::printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
 	vtr::printf_info("\tMaximum net length: %d\n", max_length);
 	vtr::printf_info("\n");
 
-	av_segments = (float) total_segments / (float) ((int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
+	av_segments = (float) total_segments / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("Wire length results in terms of physical segments...\n");
 	vtr::printf_info("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
 	vtr::printf_info("\tMaximum segments used by a net: %d\n", max_segments);
@@ -261,13 +258,10 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("\n");
 }
 
+/* Loads the two arrays passed in with the total occupancy at each of the  *
+* channel segments in the FPGA.                                           */
 static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ) {
-
-	/* Loads the two arrays passed in with the total occupancy at each of the  *
-	 * channel segments in the FPGA.                                           */
-
 	int i, j, inode;
-	unsigned int inet, l;
 	t_trace *tptr;
 	t_rr_type rr_type;
 
@@ -280,13 +274,12 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
     chany_occ.fill(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
-
-	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
-
-		if (cluster_ctx.clbs_nlist.net[inet].is_global && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) /* Skip global and empty nets. */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		/* Skip global and empty nets. */
+		if (cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
 			continue;
 
-		tptr = route_ctx.trace_head[inet];
+		tptr = route_ctx.trace_head[net_id];
 		while (tptr != NULL) {
 			inode = tptr->index;
 			rr_type = device_ctx.rr_nodes[inode].type();
@@ -314,7 +307,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 	}
 }
 
-void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
+void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 		int *segments_ptr) {
 
 	/* Counts and returns the number of bends, wirelength, and number of routing *
@@ -334,7 +327,7 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 	prevptr = route_ctx.trace_head[inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);
+				"in get_num_bends_and_length: net #%lu has no traceback.\n", size_t(inet));
 	}
 	inode = prevptr->index;
 	prev_type = device_ctx.rr_nodes[inode].type();
@@ -381,7 +374,6 @@ void print_wirelen_prob_dist(void) {
 
 	float *prob_dist;
 	float norm_fac, two_point_length;
-	unsigned int inet; 
 	int bends, length, segments, index;
 	float av_length;
 	int prob_dist_size, i, incr;
@@ -390,15 +382,15 @@ void print_wirelen_prob_dist(void) {
 	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) {
-			get_num_bends_and_length(inet, &bends, &length, &segments);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (!cluster_ctx.clb_nlist.net_is_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
+			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
 			 *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *
 			 *  only 0.1 to prob_dist[1].                                          */
 
-            int num_sinks = cluster_ctx.clbs_nlist.net[inet].num_sinks();
+            int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
             VTR_ASSERT(num_sinks > 0);
 
 			two_point_length = (float) length / (float) (num_sinks);
@@ -466,37 +458,35 @@ void print_lambda(void) {
 	 * count inputs which are hooked to global nets (i.e. the clock     *
 	 * when it is marked global).                                       */
 
-	int bnum, ipin;
+	int ipin, iclass;
 	int num_inputs_used = 0;
-	int iclass, inet;
 	float lambda;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (bnum = 0; bnum < cluster_ctx.num_blocks; bnum++) {
-		type = cluster_ctx.blocks[bnum].type;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		type = cluster_ctx.clb_nlist.block_type(blk_id);
 		VTR_ASSERT(type != NULL);
 		if (type != device_ctx.IO_TYPE) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
 				if (type->class_inf[iclass].type == RECEIVER) {
-					inet = cluster_ctx.blocks[bnum].nets[ipin];
-					if (inet != OPEN) /* Pin is connected? */
-						if (cluster_ctx.clbs_nlist.net[inet].is_global == false) /* Not a global clock */
+					ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+					if (net_id != ClusterNetId::INVALID()) /* Pin is connected? */
+						if (!cluster_ctx.clb_nlist.net_is_global(net_id)) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}
 		}
 	}
 
-	lambda = (float) num_inputs_used / (float) cluster_ctx.num_blocks;
+	lambda = (float) num_inputs_used / (float) cluster_ctx.clb_nlist.blocks().size();
 	vtr::printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
 int count_netlist_clocks(void) {
-
 	/* Count how many clocks are in the netlist. */
 
     auto& atom_ctx = g_vpr_ctx.atom();

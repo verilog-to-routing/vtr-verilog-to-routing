@@ -68,7 +68,6 @@ using namespace std;
 #include "tatum/echo_writer.hpp"
 
 #include "read_route.h"
-#include "read_netlist.h"
 #include "read_blif.h"
 #include "read_place.h"
 
@@ -250,24 +249,23 @@ void vpr_init(const int argc, const char **argv,
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
-
-    /* Read in netlist file for placement and routing */
+	/* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (!vpr_setup.FileNameOpts.NetFile.empty()) {
-        read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
+	if (!vpr_setup.FileNameOpts.NetFile.empty()) {
+		read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.clb_nlist);
 
         /* This is done so that all blocks have subblocks and can be treated the same */
         check_netlist();
 
-        if (vpr_setup.gen_netlist_as_blif) {
-            char *name = (char*) vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof (char));
-            sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
-            output_blif(&Arch, cluster_ctx.blocks, cluster_ctx.num_blocks, name);
-            free(name);
-        }
-    }
+		if(vpr_setup.gen_netlist_as_blif) {
+			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
+			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
+			output_blif(&Arch, name);
+			free(name);
+		}
+	}
 
     /* Output the current settings to console. */
     printClusteredNetlistStats();
@@ -278,8 +276,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
     //Record the resource requirement
     std::map<t_type_ptr,size_t> num_type_instances;
-    for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-        num_type_instances[cluster_ctx.blocks[i].type]++;
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        num_type_instances[cluster_ctx.clb_nlist.block_type(blk_id)]++;
     }
 
     //Build the device
@@ -605,8 +603,7 @@ void free_arch(t_arch* Arch) {
 }
 
 static void free_complex_block_types(void) {
-
-    free_all_pb_graph_nodes();
+	free_all_pb_graph_nodes();
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -656,10 +653,9 @@ static void free_complex_block_types(void) {
 }
 
 static void free_pb_type(t_pb_type *pb_type) {
-
-    vtr::free(pb_type->name);
-    if (pb_type->blif_model)
-        vtr::free(pb_type->blif_model);
+	vtr::free(pb_type->name);
+	if (pb_type->blif_model)
+		vtr::free(pb_type->blif_model);
 
     for (int i = 0; i < pb_type->num_modes; ++i) {
         for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
@@ -736,26 +732,12 @@ static void free_pb_type(t_pb_type *pb_type) {
 }
 
 void free_circuit() {
+	//Free new net structures
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+		cluster_ctx.clb_nlist.remove_block(blk_id);
 
-    //Free new net structures
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
-    free_global_nlist_net(&cluster_ctx.clbs_nlist);
-
-    if (cluster_ctx.blocks != NULL) {
-        for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-            if (cluster_ctx.blocks[i].pb != NULL) {
-                free_pb(cluster_ctx.blocks[i].pb);
-                delete cluster_ctx.blocks[i].pb;
-            }
-            vtr::free(cluster_ctx.blocks[i].nets);
-            vtr::free(cluster_ctx.blocks[i].net_pins);
-            vtr::free(cluster_ctx.blocks[i].name);
-            delete [] cluster_ctx.blocks[i].pb_route;
-        }
-    }
-    vtr::free(cluster_ctx.blocks);
-    cluster_ctx.blocks = NULL;
+	cluster_ctx.clb_nlist = ClusteredNetlist();
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
@@ -835,18 +817,16 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
 
 void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (!vpr_setup.RouterOpts.doRouting) {
-
         //Load up netlist and other device parameters
         vpr_init_pre_place_and_route(vpr_setup, Arch);
 
         read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(),
-                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.grid, cluster_ctx.num_blocks, cluster_ctx.blocks);
+                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.grid);
         sync_grid_to_blocks();
 
-        post_place_sync(cluster_ctx.num_blocks);
+        post_place_sync();
 
         int width_fac = vpr_setup.RouterOpts.fixed_channel_width;
         if (width_fac != NO_FIXED_CHANNEL_WIDTH) {
@@ -865,31 +845,30 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (!vpr_setup.AnalysisOpts.doAnalysis) return;
 
     auto& route_ctx = g_vpr_ctx.routing();
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-
-    if (route_ctx.trace_head == nullptr) {
+	//Check the first index to see if a pointer exists
+	//TODO: Implement a better error check
+    if (route_ctx.trace_head.size() == 0) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
 
-    float** net_delay = nullptr;
+	vtr::vector_map<ClusterNetId, float *> net_delay;
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks = nullptr;
 #endif
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+        net_delay = alloc_net_delay(&net_delay_ch);
+        load_net_delay_from_routing(net_delay);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
 #endif
     }
-
 
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
             device_ctx.num_rr_switches, vpr_setup.Segments,
@@ -944,12 +923,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 /* This function performs power estimation, and must be called
  * after packing, placement AND routing. Currently, this
- * will not work when running a partial flow (ex. only routing).
- */
+ * will not work when running a partial flow (ex. only routing). */
 void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info) {
-
-    /* Ensure we are only using 1 clock */
-    if (timing_info.critical_paths().size() != 1) {
+	/* Ensure we are only using 1 clock */
+	if(timing_info.critical_paths().size() != 1) {
         VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
     }
 
@@ -1008,9 +985,8 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
     vtr::printf_info("\n");
 }
 
-void vpr_print_error(const VprError& vpr_error) {
-
-    /* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
+void vpr_print_error(const VprError& vpr_error){
+	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
     char* error_type = NULL;
     try {
         switch (vpr_error.type()) {

@@ -143,7 +143,7 @@ struct Congested_node_types {
 
 void congestion_analysis() {
 	// each type indexes into array which holds the congestion for that type
-	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
+	std::vector<int> congestion_per_type((size_t)NUM_RR_TYPES, 0);
 	// print out specific node information if congestion for type is low enough
 
 	int total_congestion = 0;

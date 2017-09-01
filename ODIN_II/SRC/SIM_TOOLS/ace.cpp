@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "cudd.h"
 #include "ace.h"
 #include "st.h"

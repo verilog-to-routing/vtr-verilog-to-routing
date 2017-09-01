@@ -147,7 +147,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 				printf("Error: Arch file specified in config file AND command line\n");
 				exit(-1);
 			}
-            global_args.arch_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
+			global_args.arch_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
 		}
 	}
 	return;

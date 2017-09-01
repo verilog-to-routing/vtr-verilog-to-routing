@@ -4,7 +4,6 @@
 #include "connection_based_routing.h"
 #include "route_common.h"
 
-
 /**************** Subroutines exported by route_tree_timing.c ***************/
 
 //Returns true if allocated
@@ -12,14 +11,14 @@ bool alloc_route_tree_timing_structs(bool exists_ok = false);
 
 void free_route_tree_timing_structs(void);
 
-t_rt_node *init_route_tree_to_source(int inet);
+t_rt_node *init_route_tree_to_source(ClusterNetId inet);
 
 void free_route_tree(t_rt_node * rt_node);
 
 t_rt_node *update_route_tree(t_heap *hptr);
 
 void update_net_delays_from_route_tree(float *net_delay,
-		const t_rt_node* const * rt_node_of_sink, int inet);
+		const t_rt_node* const * rt_node_of_sink, ClusterNetId inet);
 void update_remaining_net_delays_from_route_tree(float* net_delay, 
 		const t_rt_node* const * rt_node_of_sink, const std::vector<int>& remaining_sinks);
 
@@ -37,8 +36,8 @@ void print_route_tree(const t_rt_node* rt_root);
 void print_route_tree_inf(const t_rt_node* rt_root);
 void print_route_tree_congestion(const t_rt_node* rt_root);
 
-t_rt_node* traceback_to_route_tree(int inet);
-t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_remaining_sinks);
+t_rt_node* traceback_to_route_tree(ClusterNetId inet);
+t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks);
 
 bool prune_route_tree(t_rt_node* rt_root, float pres_fac, CBRR& connections_inf); 	// 0 R_upstream for SOURCE
 

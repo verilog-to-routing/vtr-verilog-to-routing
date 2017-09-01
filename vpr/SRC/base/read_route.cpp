@@ -44,10 +44,10 @@ using namespace std;
 
 /*************Functions local to this module*************/
 static void process_route(ifstream &fp);
-static void process_nodes(ifstream &fp, int inet);
-static void process_nets(ifstream &fp, int inet, string name, std::vector<std::string> input_tokens);
-static void process_global_blocks(ifstream &fp, int inet);
-static void format_coordinates(int &x, int &y, string coord, int net);
+static void process_nodes(ifstream &fp, ClusterNetId inet);
+static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vector<std::string> input_tokens);
+static void process_global_blocks(ifstream &fp, ClusterNetId inet);
+static void format_coordinates(int &x, int &y, string coord, ClusterNetId net);
 static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input);
 static string format_name(string name);
 
@@ -122,7 +122,6 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
 static void process_route(ifstream &fp) {
     /*Walks through every net and add the routing appropriately*/
     string input;
-    unsigned inet;
     std::vector<std::string> tokens;
     while (getline(fp, input)) {
         tokens.clear();
@@ -132,7 +131,7 @@ static void process_route(ifstream &fp) {
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
-            inet = atoi(tokens[1].c_str());
+            ClusterNetId inet(atoi(tokens[1].c_str()));
             process_nets(fp, inet, tokens[2], tokens);
         }
     }
@@ -140,43 +139,41 @@ static void process_route(ifstream &fp) {
     tokens.clear();
 }
 
-static void process_nets(ifstream &fp, int inet, string name, std::vector<std::string> input_tokens) {
+static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vector<std::string> input_tokens) {
     /* Check if the net is global or not, and process appropriately */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
             && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
-        if (cluster_ctx.clbs_nlist.net[inet].is_global != true) {
+        if (!cluster_ctx.clb_nlist.net_is_global(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net %d should be a global net",
-                    inet);
+                    "Net %lu should be a global net", size_t(inet));
         }
         /*erase an extra colon for global nets*/
         name.erase(name.end() - 1);
         name = format_name(name);
 
-        if (cluster_ctx.clbs_nlist.net[inet].name != name) {
+        if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net name %s for net number %d specified in the routing file does not match given %s",
-                    name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
+                    "Net name %s for net number %lu specified in the routing file does not match given %s",
+                    name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         process_global_blocks(fp, inet);
     } else {
         /* Not a global net */
-        if (cluster_ctx.clbs_nlist.net[inet].is_global != false) {
+        if (cluster_ctx.clb_nlist.net_is_global(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net %d is not a global net",
-                    inet);
+                    "Net %lu is not a global net", size_t(inet));
         }
 
         name = format_name(name);
 
-        if (cluster_ctx.clbs_nlist.net[inet].name != name) {
+        if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net name %s for net number %d specified in the routing file does not match given %s",
-                    name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
+                    "Net name %s for net number %lu specified in the routing file does not match given %s",
+                    name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         process_nodes(fp, inet);
@@ -185,7 +182,7 @@ static void process_nets(ifstream &fp, int inet, string name, std::vector<std::s
     return;
 }
 
-static void process_nodes(ifstream & fp, int inet) {
+static void process_nodes(ifstream & fp, ClusterNetId inet) {
     /* Not a global net. Goes through every node and add it into trace_head*/
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -222,7 +219,7 @@ static void process_nodes(ifstream & fp, int inet) {
             }
             return;
         } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
-            if (cluster_ctx.clbs_nlist.net[inet].num_sinks() != false) {
+            if (cluster_ctx.clb_nlist.net_sinks(inet).size() != 0) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "Net %d should be used in local cluster only, reserved one CLB pin");
             }
@@ -293,8 +290,7 @@ static void process_nodes(ifstream & fp, int inet) {
                 if (device_ctx.grid[x][y].type != device_ctx.IO_TYPE && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
                     int height_offset = device_ctx.grid[x][y].height_offset;
-                    int iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
-                    VTR_ASSERT(iblock != OPEN);
+                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
                     t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 
@@ -339,15 +335,14 @@ static void process_nodes(ifstream & fp, int inet) {
     }
 }
 
-static void process_global_blocks(ifstream &fp, int inet) {
-    /*This function goes through all the blocks in a global net and verify it with the
-     *clustered netlist and the placement*/
-
+/*This function goes through all the blocks in a global net and verify it with the
+* clustered netlist and the placement */
+static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     string block, bnum_str;
-    int x, y, bnum;
+    int x, y;
     std::vector<std::string> tokens;
     int pin_counter = 0;
 
@@ -372,24 +367,25 @@ static void process_global_blocks(ifstream &fp, int inet) {
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            bnum = atoi(bnum_str.c_str());
+			ClusterBlockId bnum(atoi(bnum_str.c_str()));
 
             /*Check for name, coordinate, and pins*/
-            if (cluster_ctx.blocks[bnum].name != tokens[1]) {
+            if (0 != cluster_ctx.clb_nlist.block_name(bnum).compare(tokens[1])) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Block %s for block number %d specified in the routing file does not match given %s",
-                        tokens[1].c_str(), bnum, cluster_ctx.blocks[bnum].name);
+                        "Block %s for block number %lu specified in the routing file does not match given %s",
+                        tokens[1].c_str(), size_t(bnum), cluster_ctx.clb_nlist.block_name(bnum).c_str());
             }
             if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
                         x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
             }
-            int node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[pin_counter].block_pin;
-            if (cluster_ctx.blocks[bnum].type->pin_class[node_block_pin] != atoi(tokens[7].c_str())) {
+
+			int pin_index = cluster_ctx.clb_nlist.physical_pin_index(inet, pin_counter);
+            if (cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "The pin class %d of %d net does not match given ",
-                        atoi(tokens[7].c_str()), inet, cluster_ctx.blocks[bnum].type->pin_class[node_block_pin]);
+                        "The pin class %d of %lu net does not match given ",
+                        atoi(tokens[7].c_str()), size_t(inet), cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index]);
             }
             pin_counter++;
         }
@@ -397,21 +393,20 @@ static void process_global_blocks(ifstream &fp, int inet) {
     }
 }
 
-static void format_coordinates(int &x, int &y, string coord, int net) {
-    /*Parse coordinates in the form of (x,y) into correct x and y values.
-     Display error messages if it formatting is incorrect.*/
+static void format_coordinates(int &x, int &y, string coord, ClusterNetId net) {
+    /*Parse coordinates in the form of (x,y) into correct x and y values*/
     coord = format_name(coord);
     stringstream coord_stream(coord);
     if (!(coord_stream >> x)) {
 
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "Net %d has coordinates that is not in the form (x,y)", net);
+                "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
     }
     coord_stream.ignore(1, ' ');
     if (!(coord_stream >> y)) {
 
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "Net %d has coordinates that is not in the form (x,y)", net);
+                "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
     }
 }
 
@@ -429,9 +424,8 @@ static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_nu
     }
 }
 
+/*Return actual name by extracting it out of the form of (name)*/
 static string format_name(string name) {
-
-    /*Return actual name by extracting it out of the form of (name)*/
     if (name.length() > 2) {
         name.erase(name.begin());
         name.erase(name.end() - 1);

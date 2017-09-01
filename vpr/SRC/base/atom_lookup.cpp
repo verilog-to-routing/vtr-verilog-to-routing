@@ -62,26 +62,26 @@ void AtomLookup::set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_
 /*
  * Blocks
  */
-int AtomLookup::atom_clb(const AtomBlockId blk_id) const {
+ClusterBlockId AtomLookup::atom_clb(const AtomBlockId blk_id) const {
     VTR_ASSERT(blk_id);
     auto iter = atom_to_clb_.find(blk_id);
     if(iter == atom_to_clb_.end()) {
-        return NO_CLUSTER;
+        return ClusterBlockId::INVALID();
     }
 
     return *iter;
 }
 
-void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const int clb_index) {
+void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const ClusterBlockId clb) {
     VTR_ASSERT(blk_id);
 
-    atom_to_clb_.update(blk_id, clb_index);
+    atom_to_clb_.update(blk_id, clb);
 }
 
 /*
  * Nets
  */
-AtomNetId AtomLookup::atom_net(const int clb_net_index) const {
+AtomNetId AtomLookup::atom_net(const ClusterNetId clb_net_index) const {
     auto iter = atom_net_to_clb_net_.find(clb_net_index);
     if(iter == atom_net_to_clb_net_.inverse_end()) {
         //Not found
@@ -90,27 +90,27 @@ AtomNetId AtomLookup::atom_net(const int clb_net_index) const {
     return iter->second;
 }
 
-int AtomLookup::clb_net(const AtomNetId net_id) const {
+ClusterNetId AtomLookup::clb_net(const AtomNetId net_id) const {
     auto iter = atom_net_to_clb_net_.find(net_id);
     if(iter == atom_net_to_clb_net_.end()) {
         //Not found
-        return OPEN;
+        return ClusterNetId::INVALID();
     }
     return iter->second;
 
 }
 
 
-void AtomLookup::set_atom_clb_net(const AtomNetId net_id, const int clb_net_index) {
+void AtomLookup::set_atom_clb_net(const AtomNetId net_id, const ClusterNetId clb_net_index) {
     VTR_ASSERT(net_id);
     //If either are invalid remove any mapping
-    if(!net_id && clb_net_index != OPEN) {
+    if(!net_id && clb_net_index != ClusterNetId::INVALID()) {
         //Remove
         atom_net_to_clb_net_.erase(clb_net_index);
-    } else if(net_id && clb_net_index == OPEN) {
+    } else if(net_id && clb_net_index == ClusterNetId::INVALID()) {
         //Remove
         atom_net_to_clb_net_.erase(net_id);
-    } else if (net_id && clb_net_index != OPEN) {
+    } else if (net_id && clb_net_index != ClusterNetId::INVALID()) {
         //Store
         atom_net_to_clb_net_.update(net_id, clb_net_index);
     }

@@ -30,7 +30,7 @@ bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk);
 void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk);
 
-std::string make_unconn(size_t& unconn_count, AtomPinType type);
+std::string make_unconn(size_t& unconn_count, PinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
 
 void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist) {
@@ -159,15 +159,15 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             }
 
             if(d_net.empty()) {
-                d_net = make_unconn(unconn_count, AtomPinType::SINK);
+                d_net = make_unconn(unconn_count, PinType::SINK);
             }
 
             if(q_net.empty()) {
-                q_net = make_unconn(unconn_count, AtomPinType::DRIVER);
+                q_net = make_unconn(unconn_count, PinType::DRIVER);
             }
 
             if(clk_net.empty()) {
-                clk_net = make_unconn(unconn_count, AtomPinType::SINK);
+                clk_net = make_unconn(unconn_count, PinType::SINK);
             }
 
             //Latch type: VPR always assumes rising edge
@@ -291,13 +291,13 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                 if(net_id) {
                     fprintf(f, "%s", netlist.net_name(net_id).c_str());
                 } else {
-                    AtomPortType port_type = netlist.port_type(ports[i]);
+                    PortType port_type = netlist.port_type(ports[i]);
 
-                    AtomPinType pin_type;
+                    PinType pin_type;
                     switch(port_type) {
-                        case AtomPortType::INPUT: //fallthrough
-                        case AtomPortType::CLOCK: pin_type = AtomPinType::SINK; break;
-                        case AtomPortType::OUTPUT: pin_type = AtomPinType::DRIVER; break;
+                        case PortType::INPUT: //fallthrough
+                        case PortType::CLOCK: pin_type = PinType::SINK; break;
+                        case PortType::OUTPUT: pin_type = PinType::DRIVER; break;
                         default: VTR_ASSERT(false);
                     }
                     fprintf(f, "%s", make_unconn(unconn_count, pin_type).c_str());
@@ -317,7 +317,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     fprintf(f, ".end\n"); //Main model
     fprintf(f, "\n");
 
-    //The subkct models
+    //The subckt models
     for(const t_model* model : subckt_models) {
         fprintf(f, ".model %s\n", model->name);
 
@@ -507,7 +507,7 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
 
     //Collect the new driver and sink pins
     AtomPinId new_driver = netlist.net_driver(input_net);
-    VTR_ASSERT(netlist.pin_type(new_driver) == AtomPinType::DRIVER);
+    VTR_ASSERT(netlist.pin_type(new_driver) == PinType::DRIVER);
 
     std::vector<AtomPinId> new_sinks;
     auto input_sinks = netlist.net_sinks(input_net); 
@@ -535,7 +535,7 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
     bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(), 
         [&](AtomPinId pin_id) {
-            VTR_ASSERT(netlist.pin_type(pin_id) == AtomPinType::SINK);
+            VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
             AtomBlockId blk_id = netlist.pin_block(pin_id);
             return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
         }
@@ -578,7 +578,6 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
 
     //Create the new merged net
     netlist.add_net(new_net_name, new_driver, new_sinks);
-
 
 }
 
@@ -624,14 +623,11 @@ std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const At
 
     auto netlist_clocks = find_netlist_clocks(netlist);
 
-
     for(AtomNetId clock_net : netlist_clocks) {
         for(AtomPinId clock_sink : netlist.net_sinks(clock_net)) {
 
             auto port_type = netlist.pin_port_type(clock_sink);
-
-            if(port_type != AtomPortType::CLOCK) {
-
+            if(port_type != PortType::CLOCK) {
                 clock_data_pins[clock_net].push_back(clock_sink); 
             }
         }
@@ -656,7 +652,7 @@ AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
 
     //Connect the clock
     AtomPortId clock_port = netlist.create_port(blk, model_clock_port);
-    netlist.create_pin(clock_port, clock_port_bit, clock_net, AtomPinType::SINK);
+    netlist.create_pin(clock_port, clock_port_bit, clock_net, PinType::SINK);
 
     //Make the data port
     AtomPortId data_port = netlist.create_port(blk, model_data_port);
@@ -667,12 +663,12 @@ AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
     VTR_ASSERT(clock_data_net);
 
     //Create the driver pin
-    netlist.create_pin(data_port, data_port_bit, clock_data_net, AtomPinType::DRIVER);
+    netlist.create_pin(data_port, data_port_bit, clock_data_net, PinType::DRIVER);
 
     //Update all the data pins to connect to clock_data_net instead of the original clock net
     for(AtomPinId sink_pin : data_pins) {
 
-        netlist.set_pin_net(sink_pin, AtomPinType::SINK, clock_data_net);
+        netlist.set_pin_net(sink_pin, PinType::SINK, clock_data_net);
     }
 
     return blk;
@@ -920,9 +916,9 @@ size_t sweep_nets(AtomNetlist& netlist) {
     return nets_to_remove.size();
 }
 
-std::string make_unconn(size_t& unconn_count, AtomPinType /*pin_type*/) {
+std::string make_unconn(size_t& unconn_count, PinType /*pin_type*/) {
 #if 0
-    if(pin_type == AtomPinType::DRIVER) {
+    if(pin_type == PinType::DRIVER) {
         return std::string("unconn") + std::to_string(unconn_count++);
     } else {
         return std::string("unconn");
@@ -1133,7 +1129,7 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
 
             //Check all the clock generating ports
             for(const t_model_ports* model_port : clock_gen_ports[model]) {
-                AtomPortId clk_gen_port = netlist.find_port(blk_id, model_port);
+                AtomPortId clk_gen_port = netlist.find_atom_port(blk_id, model_port);
 
                 for(AtomPinId pin_id : netlist.port_pins(clk_gen_port)) {
                     if(!pin_id) continue;

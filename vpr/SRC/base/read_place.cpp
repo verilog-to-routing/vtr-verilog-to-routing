@@ -15,13 +15,10 @@
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 
-t_block* find_block(t_block* blocks, int num_blocks, std::string name);
-
 void read_place(const char* net_file, 
                 const char* place_file,
                 bool verify_file_digests,
-                const DeviceGrid& grid,
-		        const int L_num_blocks, t_block block_list[]) {
+                const DeviceGrid& grid) {
     std::ifstream fstream(place_file); 
     if (!fstream) {
         vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
@@ -64,11 +61,11 @@ void read_place(const char* net_file,
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
 
-            if (place_netlist_id != cluster_ctx.clbs_nlist.netlist_id) {
+            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
                 auto msg = vtr::string_fmt("The packed netlist file that generated placement (File: '%s' ID: '%s')"
                                            " does not match current netlist (File: '%s' ID: '%s')", 
                                            place_netlist_file.c_str(), place_netlist_id.c_str(), 
-                                           net_file, cluster_ctx.clbs_nlist.netlist_id.c_str());
+                                           net_file, cluster_ctx.clb_nlist.netlist_id().c_str());
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
                 } else {
@@ -118,26 +115,17 @@ void read_place(const char* net_file,
             int block_y = vtr::atoi(tokens[2]);
             int block_z = vtr::atoi(tokens[3]);
 
-            t_block* blk = find_block(block_list, L_num_blocks, block_name);
+			ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-            if (!blk) {
-                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
-                          "Block '%s' in placement file does not exist in netlist.",
-                          block_name.c_str());
-            }
-
-            if (place_ctx.block_locs.size() != static_cast<size_t>(L_num_blocks)) {
+            if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
                 //Resize if needed
-                place_ctx.block_locs.resize(L_num_blocks);
-            }
-
-            int iblk = blk - block_list;
-            VTR_ASSERT(iblk >= 0 && iblk < L_num_blocks);
+                place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
+            }			
 
             //Set the location
-            place_ctx.block_locs[iblk].x = block_x;
-            place_ctx.block_locs[iblk].y = block_y;
-            place_ctx.block_locs[iblk].z = block_z;
+            place_ctx.block_locs[blk_id].x = block_x;
+            place_ctx.block_locs[blk_id].y = block_y;
+            place_ctx.block_locs[blk_id].z = block_z;
 
         } else {
             //Unrecognized
@@ -155,7 +143,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	/* Reads in the locations of the IO pads from a file. */
 
 	t_hash **hash_table, *h_ptr;
-	int iblk, xtmp, ytmp;
+	int xtmp, ytmp;
 	FILE *fp;
 	char buf[vtr::bufsize], bname[vtr::bufsize], *ptr;
 
@@ -171,10 +159,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 				pad_loc_file);
 		
 	hash_table = alloc_hash_table();
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE) {
-			insert_in_hash_table(hash_table, cluster_ctx.blocks[iblk].name, iblk);
-			place_ctx.block_locs[iblk].x = OPEN; /* Mark as not seen yet. */
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
+			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
+			place_ctx.block_locs[blk_id].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
 
@@ -182,8 +170,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
 				for (int k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
-					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
-						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
+					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
+						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID; /* Flag for err. check */
 					}
 				}
 			}
@@ -241,7 +229,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue;
 		}
-		int bnum = h_ptr->index;
+		ClusterBlockId bnum(h_ptr->index);
 		int i = xtmp;
 		int j = ytmp;
 
@@ -252,7 +240,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 		if (i < 0 || i > int(device_ctx.grid.width() - 1) || j < 0 || j > int(device_ctx.grid.height() - 1)) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
+					"Block #%lu (%s) location, (%d,%d) is out of range.\n", size_t(bnum), bname, i, j);
 		}
 
         place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
@@ -275,10 +263,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		ptr = vtr::fgets(buf, vtr::bufsize, fp);
 	}
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && place_ctx.block_locs[iblk].x == OPEN) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && place_ctx.block_locs[blk_id].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO block %s location was not specified in the pad file.\n", cluster_ctx.blocks[iblk].name);
+					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 		}
 	}
 
@@ -288,17 +276,14 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	vtr::printf_info("\n");
 }
 
+/* Prints out the placement of the circuit. The architecture and    *
+* netlist files used to generate this placement are recorded in the *
+* file to avoid loading a placement with the wrong support files    *
+* later.                                                            */
 void print_place(const char* net_file, 
                  const char* net_id, 
                  const char* place_file) {
-
-	/* Prints out the placement of the circuit. The architecture and     *
-	 * netlist files used to generate this placement are recorded in the *
-	 * file to avoid loading a placement with the wrong support files    *
-	 * later.                                                            */
-
 	FILE *fp;
-	int i;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -313,27 +298,16 @@ void print_place(const char* net_file,
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
-		fprintf(fp, "%s\t", cluster_ctx.blocks[i].name);
-		if (strlen(cluster_ctx.blocks[i].name) < 8)
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+		if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
 			fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
-		fprintf(fp, "\t#%d\n", i);
+		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y, place_ctx.block_locs[blk_id].z);
+		fprintf(fp, "\t#%lu\n", size_t(blk_id));
 	}
 	fclose(fp);
 
     //Calculate the ID of the placement
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
-}
-
-t_block* find_block(t_block* blocks, int nblocks, std::string name) {
-    t_block* blk = NULL;
-    for (int i = 0; i < nblocks; ++i) {
-        if (blocks[i].name == name) {
-            blk = (blocks + i);
-            break;
-        }
-    }
-    return blk;
 }

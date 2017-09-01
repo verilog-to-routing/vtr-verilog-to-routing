@@ -187,15 +187,15 @@ static void alloc_timing_stats(void);
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
-    long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
+    long * max_critical_output_paths_ptr, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
 
 #ifdef PATH_COUNTING
 static void do_path_counting(float criticality_denom);
 #endif
 
-static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping);
+static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
-static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
+static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock,
 		int *inode);
 
 #ifndef PATH_COUNTING
@@ -205,11 +205,11 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
 
 //static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
 
-static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping);
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
-static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping);
+static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
-static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id);
+static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id);
 
 static inline bool has_valid_T_arr(int inode);
 
@@ -258,8 +258,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	t_slack * slacks = NULL;
 	bool do_process_constraints = false;
-	int ** lookup_tnode_from_pin_id;
-	t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
@@ -318,8 +318,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 	
 	t_slack * slacks = NULL;
 	bool do_process_constraints = false;
-	int **lookup_tnode_from_pin_id;
-	t_pb***pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
@@ -388,7 +388,7 @@ static t_slack * alloc_slacks(void) {
 	return slacks;
 }
 
-void load_timing_graph_net_delays(float **net_delay) {
+void load_timing_graph_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
 
 	/* Sets the delays of the inter-CLB nets to the values specified by          *
 	 * net_delay[0..net.size()-1][1..num_pins-1].  These net delays should have    *
@@ -397,7 +397,7 @@ void load_timing_graph_net_delays(float **net_delay) {
 
     clock_t begin = clock();
 
-    VTR_ASSERT(net_delay);
+    VTR_ASSERT(net_delay.size());
 
 	int inode;
 	unsigned ipin;
@@ -413,7 +413,7 @@ void load_timing_graph_net_delays(float **net_delay) {
 		 * be in the same order as the pins of the net driven by the tnode.          */
 
 		for (ipin = 1; ipin < num_timing_net_pins(inet); ipin++)
-			tedge[ipin - 1].Tdel = net_delay[inet][ipin];
+			tedge[ipin - 1].Tdel = net_delay[(ClusterNetId)inet][ipin];
 	}
 
     clock_t end = clock();
@@ -703,7 +703,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	fprintf(fp, "\n\n");
 }
 
-void print_net_delay(float **net_delay, const char *fname) {
+void print_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, const char *fname) {
 
 	/* Prints the net delays into a file. */
 
@@ -721,9 +721,9 @@ void print_net_delay(float **net_delay, const char *fname) {
 		driver_tnode = f_net_to_driver_tnode[inet];
 		num_edges = timing_ctx.tnodes[driver_tnode].num_edges;
 		tedge = timing_ctx.tnodes[driver_tnode].out_edges;
-		fprintf(fp, "%5zu\t%5d\t\t%5d\t%g\n", inet, driver_tnode, tedge[0].to_node, net_delay[inet][1]);
+		fprintf(fp, "%5zu\t%5d\t\t%5d\t%g\n", inet, driver_tnode, tedge[0].to_node, net_delay[(ClusterNetId)inet][1]);
 		for (iedge = 1; iedge < num_edges; iedge++) { /* newline and indent subsequent edges after the first */
-			fprintf(fp, "\t\t\t%5d\t%g\n", tedge[iedge].to_node, net_delay[inet][iedge+1]);
+			fprintf(fp, "\t\t\t%5d\t%g\n", tedge[iedge].to_node, net_delay[(ClusterNetId)inet][iedge+1]);
 		}
 	}
 
@@ -769,17 +769,17 @@ void print_clustering_timing_info(const char *fname) {
 /* Count # of tnodes, allocates space, and loads the tnodes and its associated edges */
 static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	int j, k;
-	int inode;
-	int num_nodes_in_block;
-	int count;
-	int iblock, i_pin_id;
-	int inet, dport, dpin, dblock, dnode;
+	int inode, num_nodes_in_block;
+	int count, i_pin_id;
+	int dport, dpin, dnode;
+	ClusterBlockId iblock, dblock;
+	ClusterNetId net_id;
 	int normalized_pin, normalization;
 	t_pb_graph_pin *ipb_graph_pin;
 	t_pb_route *intra_lb_route, *d_intra_lb_route;
 	int num_dangling_pins;
 	t_pb_graph_pin*** intra_lb_pb_pin_lookup; 
-	int **lookup_tnode_from_pin_id;
+	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -799,11 +799,11 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 	/* allocate space for tnodes */
 	timing_ctx.num_tnodes = 0;
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		num_nodes_in_block = 0;
-		int itype = cluster_ctx.blocks[i].type->index;
-		for (j = 0; j < cluster_ctx.blocks[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (cluster_ctx.blocks[i].pb_route[j].atom_net_id) {
+		int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
+		for (j = 0; j < cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->total_pb_pins; j++) {
+			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[j].atom_net_id) {
 				if (intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_INPAD
 					|| intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_OUTPAD
 					|| intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_SEQUENTIAL) {
@@ -820,12 +820,12 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	/* load tnodes with all info except edge info */
 	/* populate tnode lookups for edge info */
 	inode = 0;
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
-		int itype = cluster_ctx.blocks[i].type->index;
-		for (j = 0; j < cluster_ctx.blocks[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (cluster_ctx.blocks[i].pb_route[j].atom_net_id) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
+		for (j = 0; j < cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->total_pb_pins; j++) {
+			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[j].atom_net_id) {
 				VTR_ASSERT(timing_ctx.tnodes[inode].pb_graph_pin == NULL);
-				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode);
+				load_tnode(intra_lb_pb_pin_lookup[itype][j], blk_id, &inode);
 			}
 		}
 	}
@@ -848,7 +848,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		 */
 		count = 0;
 		iblock = timing_ctx.tnodes[i].block;
-		int itype = cluster_ctx.blocks[iblock].type->index;
+		int itype = cluster_ctx.clb_nlist.block_type(iblock)->index;
 		switch (timing_ctx.tnodes[i].type) {
 		case TN_INPAD_OPIN:
 		case TN_INTERMEDIATE_NODE:
@@ -859,7 +859,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
 			i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = cluster_ctx.blocks[iblock].pb_route;
+			intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
@@ -897,8 +897,8 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					timing_ctx.tnodes[i].out_edges[count].to_node = lookup_tnode_from_pin_id[iblock][dnode];
 					VTR_ASSERT(timing_ctx.tnodes[i].out_edges[count].to_node != OPEN);
 
-                    AtomNetId net_id = intra_lb_route[i_pin_id].atom_net_id;
-					if (atom_ctx.nlist.net_is_constant(net_id) && timing_ctx.tnodes[i].type == TN_PRIMITIVE_OPIN) {
+                    AtomNetId atom_net_id = intra_lb_route[i_pin_id].atom_net_id;
+					if (atom_ctx.nlist.net_is_constant(atom_net_id) && timing_ctx.tnodes[i].type == TN_PRIMITIVE_OPIN) {
 						timing_ctx.tnodes[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						timing_ctx.tnodes[i].type = TN_CONSTANT_GEN_SOURCE;
                         const_gen_tnodes.insert(i);
@@ -917,7 +917,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			if (timing_inf.timing_analysis_enabled)
 			{
 				i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-				intra_lb_route = cluster_ctx.blocks[iblock].pb_route;
+				intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 				ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 				timing_ctx.tnodes[i].num_edges = ipb_graph_pin->num_pin_timing;
 				timing_ctx.tnodes[i].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -945,72 +945,71 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		case TN_CB_OPIN:
 			/* load up net info */
 			i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = cluster_ctx.blocks[iblock].pb_route;
+			intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			VTR_ASSERT(intra_lb_route[i_pin_id].atom_net_id);
-			inet = atom_ctx.lookup.clb_net(intra_lb_route[i_pin_id].atom_net_id);
-			VTR_ASSERT(inet != OPEN);
-			f_net_to_driver_tnode[inet] = i;
-			timing_ctx.tnodes[i].num_edges = cluster_ctx.clbs_nlist.net[inet].num_sinks();
+			net_id = atom_ctx.lookup.clb_net(intra_lb_route[i_pin_id].atom_net_id);
+			VTR_ASSERT(net_id != ClusterNetId::INVALID());
+			f_net_to_driver_tnode[(size_t)net_id] = i;
+			timing_ctx.tnodes[i].num_edges = cluster_ctx.clb_nlist.net_sinks(net_id).size();
 			timing_ctx.tnodes[i].out_edges = (t_tedge *) vtr::chunk_malloc(
-					cluster_ctx.clbs_nlist.net[inet].num_sinks()* sizeof(t_tedge),
+					timing_ctx.tnodes[i].num_edges * sizeof(t_tedge),
 					&tedge_ch);
-			for (j = 1; j < (int) cluster_ctx.clbs_nlist.net[inet].pins.size(); j++) {
-				dblock = cluster_ctx.clbs_nlist.net[inet].pins[j].block;
-				normalization = cluster_ctx.blocks[dblock].type->num_pins
-						/ cluster_ctx.blocks[dblock].type->capacity;
-				normalized_pin = cluster_ctx.clbs_nlist.net[inet].pins[j].block_pin
-						% normalization;
-				d_intra_lb_route = cluster_ctx.blocks[dblock].pb_route;
+			for (j = 1; j < (int)cluster_ctx.clb_nlist.net_pins(net_id).size(); j++) {
+				dblock = cluster_ctx.clb_nlist.net_pin_block(net_id, j);
+				normalization = cluster_ctx.clb_nlist.block_type(dblock)->num_pins
+						/ cluster_ctx.clb_nlist.block_type(dblock)->capacity;
+				normalized_pin = cluster_ctx.clb_nlist.physical_pin_index(net_id, j) % normalization;
+				d_intra_lb_route = cluster_ctx.clb_nlist.block_pb(dblock)->pb_route;
 				dpin = OPEN;
 				dport = OPEN;
 				count = 0;
 
-				for (k = 0; k < cluster_ctx.blocks[dblock].pb->pb_graph_node->num_input_ports && dpin == OPEN; k++) {
+				for (k = 0; k < cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_input_ports && dpin == OPEN; k++) {
 					if (normalized_pin >= count 
-                        && (count + cluster_ctx.blocks[dblock].pb->pb_graph_node->num_input_pins[k] > normalized_pin)) {
+                        && (count + cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_input_pins[k] > normalized_pin)) {
 						dpin = normalized_pin - count;
 						dport = k;
 						break;
 					}
-					count += cluster_ctx.blocks[dblock].pb->pb_graph_node->num_input_pins[k];
+					count += cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_input_pins[k];
 				}
 				if (dpin == OPEN) {
-					for (k = 0; k < cluster_ctx.blocks[dblock].pb->pb_graph_node->num_output_ports && dpin == OPEN; k++) {
-						count += cluster_ctx.blocks[dblock].pb->pb_graph_node->num_output_pins[k];
+					for (k = 0; k < cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_output_ports && dpin == OPEN; k++) {
+						count += cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_output_pins[k];
 					}
-					for (k = 0; k < cluster_ctx.blocks[dblock].pb->pb_graph_node->num_clock_ports && dpin == OPEN; k++) {
+					for (k = 0; k < cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_clock_ports && dpin == OPEN; k++) {
 						if (normalized_pin >= count 
-                            && (count + cluster_ctx.blocks[dblock].pb->pb_graph_node->num_clock_pins[k] > normalized_pin)) {
+                            && (count + cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_clock_pins[k] > normalized_pin)) {
 							dpin = normalized_pin - count;
 							dport = k;
 						}
-						count += cluster_ctx.blocks[dblock].pb->pb_graph_node->num_clock_pins[k];
+						count += cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node->num_clock_pins[k];
 					}
 					VTR_ASSERT(dpin != OPEN);
 
-                    t_pb_graph_node* pb_gnode = cluster_ctx.blocks[dblock].pb->pb_graph_node;
+                    t_pb_graph_node* pb_gnode = cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node;
                     int pin_count_in_cluster = pb_gnode->clock_pins[dport][dpin].pin_count_in_cluster;
-                    int inet_check = atom_ctx.lookup.clb_net(d_intra_lb_route[pin_count_in_cluster].atom_net_id);
-					VTR_ASSERT(inet == inet_check);
+					ClusterNetId net_id_check = atom_ctx.lookup.clb_net(d_intra_lb_route[pin_count_in_cluster].atom_net_id);
+					VTR_ASSERT(net_id == net_id_check);
 
 					timing_ctx.tnodes[i].out_edges[j - 1].to_node = lookup_tnode_from_pin_id[dblock][pin_count_in_cluster];
 					VTR_ASSERT(timing_ctx.tnodes[i].out_edges[j - 1].to_node != OPEN);
 				} else {
 					VTR_ASSERT(dpin != OPEN);
 
-                    t_pb_graph_node* pb_gnode = cluster_ctx.blocks[dblock].pb->pb_graph_node;
+                    t_pb_graph_node* pb_gnode = cluster_ctx.clb_nlist.block_pb(dblock)->pb_graph_node;
                     int pin_count_in_cluster = pb_gnode->input_pins[dport][dpin].pin_count_in_cluster;
-                    int inet_check = atom_ctx.lookup.clb_net(d_intra_lb_route[pin_count_in_cluster].atom_net_id);
-					VTR_ASSERT(inet == inet_check);
+					ClusterNetId net_id_check = atom_ctx.lookup.clb_net(d_intra_lb_route[pin_count_in_cluster].atom_net_id);
+					VTR_ASSERT(net_id == net_id_check);
 
 					/* delays are assigned post routing */
 					timing_ctx.tnodes[i].out_edges[j - 1].to_node = lookup_tnode_from_pin_id[dblock][pin_count_in_cluster];
 					VTR_ASSERT(timing_ctx.tnodes[i].out_edges[j - 1].to_node != OPEN);
 				}
 				timing_ctx.tnodes[i].out_edges[j - 1].Tdel = 0;
-				VTR_ASSERT(inet != OPEN);
+				VTR_ASSERT(net_id != ClusterNetId::INVALID());
 			}
 			break;
 		case TN_OUTPAD_IPIN:
@@ -1102,7 +1101,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			int j = 0;
 			const t_model_ports* model_port = model->inputs;
 			while (model_port) {
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
                 if(port_id) {
                     if (model_port->is_clock == false) {
                         //Non-clock port, so add tnodes for each used input pin
@@ -1124,7 +1123,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			j = 0;
 			model_port = model->outputs;
 			while (model_port) {
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
                 if (port_id) {
                     //Add tnodes for each output pin
                     for (int k = 0; k < model_port->size; k++) {
@@ -1170,7 +1169,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                 timing_ctx.tnodes[inode].prepacked_data->model_pin = 0;
                 timing_ctx.tnodes[inode].prepacked_data->model_port = 0;
                 timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model->outputs;
-                timing_ctx.tnodes[inode].block = OPEN;
+                timing_ctx.tnodes[inode].block = ClusterBlockId::INVALID();
                 timing_ctx.tnodes[inode].type = TN_INPAD_OPIN;
 
                 auto net_id = atom_ctx.nlist.pin_net(pin_id);
@@ -1181,7 +1180,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                 //The source
                 timing_ctx.tnodes[inode + 1].type = TN_INPAD_SOURCE;
-                timing_ctx.tnodes[inode + 1].block = OPEN;
+                timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
                 timing_ctx.tnodes[inode + 1].num_edges = 1;
                 timing_ctx.tnodes[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                 timing_ctx.tnodes[inode + 1].out_edges->Tdel = 0;
@@ -1210,7 +1209,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                 timing_ctx.tnodes[inode].prepacked_data->model_pin = 0;
                 timing_ctx.tnodes[inode].prepacked_data->model_port = 0;
                 timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model->inputs;
-                timing_ctx.tnodes[inode].block = OPEN;
+                timing_ctx.tnodes[inode].block = ClusterBlockId::INVALID();
                 timing_ctx.tnodes[inode].type = TN_OUTPAD_IPIN;
                 timing_ctx.tnodes[inode].num_edges = 1;
                 timing_ctx.tnodes[inode].out_edges = (t_tedge *) vtr::chunk_malloc(1 * sizeof(t_tedge), &tedge_ch);
@@ -1219,7 +1218,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                 //The sink
                 timing_ctx.tnodes[inode + 1].type = TN_OUTPAD_SINK;
-                timing_ctx.tnodes[inode + 1].block = OPEN;
+                timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
                 timing_ctx.tnodes[inode + 1].num_edges = 0;
                 timing_ctx.tnodes[inode + 1].out_edges = NULL;
 
@@ -1235,7 +1234,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			t_model_ports* model_port = model->outputs;
 			while (model_port) {
 
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
 
                 if(port_id) {
 
@@ -1254,7 +1253,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 timing_ctx.tnodes[inode].prepacked_data->model_pin = k;
                                 timing_ctx.tnodes[inode].prepacked_data->model_port = j;
                                 timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model_port;
-                                timing_ctx.tnodes[inode].block = OPEN;
+                                timing_ctx.tnodes[inode].block = ClusterBlockId::INVALID();
                                 timing_ctx.tnodes[inode].num_edges = atom_ctx.nlist.net_sinks(net_id).size();
                                 timing_ctx.tnodes[inode].out_edges = (t_tedge *) vtr::chunk_malloc( timing_ctx.tnodes[inode].num_edges * sizeof(t_tedge), &tedge_ch);
 
@@ -1270,7 +1269,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                                     //The second tnode is the FF_SOURCE
                                     timing_ctx.tnodes[inode + 1].type = TN_FF_SOURCE;
-                                    timing_ctx.tnodes[inode + 1].block = OPEN;
+                                    timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
 
                                     //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
                                     auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
@@ -1303,7 +1302,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 timing_ctx.tnodes[inode].prepacked_data->model_pin = k;
                                 timing_ctx.tnodes[inode].prepacked_data->model_port = j;
                                 timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model_port;
-                                timing_ctx.tnodes[inode].block = OPEN;
+                                timing_ctx.tnodes[inode].block = ClusterBlockId::INVALID();
 
                                 //Allocate space for the output edges
                                 auto net_id = atom_ctx.nlist.pin_net(pin_id);
@@ -1316,7 +1315,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
 
                                 timing_ctx.tnodes[inode + 1].type = TN_CLOCK_SOURCE;
-                                timing_ctx.tnodes[inode + 1].block = OPEN;
+                                timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
                                 timing_ctx.tnodes[inode + 1].num_edges = 1;
                                 timing_ctx.tnodes[inode + 1].prepacked_data->model_pin = k;
                                 timing_ctx.tnodes[inode + 1].prepacked_data->model_port = j;
@@ -1341,7 +1340,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			model_port = model->inputs;
 			while (model_port) {
 
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
                 if(port_id) {
 
                     if (model_port->is_clock == false) {
@@ -1359,7 +1358,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 timing_ctx.tnodes[inode].prepacked_data->model_pin = k;
                                 timing_ctx.tnodes[inode].prepacked_data->model_port = j;
                                 timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model_port;
-                                timing_ctx.tnodes[inode].block = OPEN;
+                                timing_ctx.tnodes[inode].block = ClusterBlockId::INVALID();
 
                                 auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
                                 VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
@@ -1382,7 +1381,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                                         //Find the tnode associated with the sink port & pin
                                         auto sink_blk_id = blk_id; //Within a single atom, so the source and sink blocks are the same
-                                        auto sink_port_id = atom_ctx.nlist.find_port(sink_blk_id, to_pb_graph_pin->port->model_port);
+                                        auto sink_port_id = atom_ctx.nlist.find_atom_port(sink_blk_id, to_pb_graph_pin->port->model_port);
                                         if(sink_port_id) {
                                             auto sink_pin_id = atom_ctx.nlist.port_pin(sink_port_id, to_pb_graph_pin->pin_number);
                                             if(sink_pin_id) {
@@ -1427,7 +1426,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     timing_ctx.tnodes[inode + 1].type = TN_FF_SINK;
                                     timing_ctx.tnodes[inode + 1].num_edges = 0;
                                     timing_ctx.tnodes[inode + 1].out_edges = NULL;
-                                    timing_ctx.tnodes[inode + 1].block = OPEN;
+                                    timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
 
                                     inode += 2;
                                 }
@@ -1447,7 +1446,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                             //Initialize the clock tnode
                             timing_ctx.tnodes[inode].type = TN_FF_CLOCK;
-                            timing_ctx.tnodes[inode].block = OPEN;
+                            timing_ctx.tnodes[inode].block = ClusterBlockId::INVALID();
                             timing_ctx.tnodes[inode].prepacked_data->model_pin = 0;
                             timing_ctx.tnodes[inode].prepacked_data->model_port = 0;
                             timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model_port;
@@ -1574,7 +1573,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 	}
 }
 
-static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
+static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock,
 		int *inode) {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     auto& timing_ctx = g_vpr_ctx.mutable_timing();
@@ -1733,11 +1732,11 @@ void print_timing_graph(const char *fname) {
 		fprintf(fp, "%-15.15s\t", tnode_type_names[itype]);
 
 		if (timing_ctx.tnodes[inode].pb_graph_pin != NULL) {
-			fprintf(fp, "%d\t%d\t",
+			fprintf(fp, "%d\t%lu\t",
 					timing_ctx.tnodes[inode].pb_graph_pin->pin_count_in_cluster,
-					timing_ctx.tnodes[inode].block);
+					size_t(timing_ctx.tnodes[inode].block));
 		} else {
-			fprintf(fp, "\t%d\t", timing_ctx.tnodes[inode].block);
+			fprintf(fp, "\t%lu\t", size_t(timing_ctx.tnodes[inode].block));
 		}
 
 		if (itype == TN_FF_CLOCK || itype == TN_FF_SOURCE || itype == TN_FF_SINK) {
@@ -1776,7 +1775,7 @@ void print_timing_graph(const char *fname) {
 	fprintf(fp, "\n");
 	fprintf(fp, "\n\nNet #\tNet_to_driver_tnode\n");
 
-	for (i = 0; i < (int)cluster_ctx.clbs_nlist.net.size(); i++)
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.nets().size(); i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
 	if (timing_ctx.sdc && timing_ctx.sdc->num_constrained_clocks == 1) {
@@ -2126,7 +2125,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 	}
 #endif
 
-    t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
     
     if (timing_inf.slack_definition == std::string("I")) {
         /* Find the smallest slack in the design, if negative. */
@@ -2251,7 +2250,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
     timing_ctx.stats.num_old_sta_full_updates  += 1;
 }
 
-static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
+static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 	/* Perform a simplified version of do_timing_analysis_for_constraint 
 	to compute only the smallest slack in the design. 
     USED ONLY WHEN slack_definition == 'I'! */
@@ -2381,7 +2380,7 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
-	long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
+	long * max_critical_output_paths_ptr, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
     
 	/* Performs a single forward and backward traversal for the domain pair 
 	source_clock_domain and sink_clock_domain. Returns the denominator that
@@ -2409,7 +2408,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
     /* If not passed in, alloc and load pin_id_to_pb_mapping (and make sure to free later). */
     bool must_free_mapping = false;
-    if (!pin_id_to_pb_mapping) {
+    if (pin_id_to_pb_mapping.size() == 0) {
         pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
         must_free_mapping = true;
     }
@@ -3019,14 +3018,13 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
 	vtr::t_linked_int *critical_path_head, *critical_path_node;
 	FILE *fp;
-	int nets_on_crit_path;
-	int tnodes_on_crit_path, inode, iblk, inet;
+	int nets_on_crit_path, tnodes_on_crit_path, inode;
 	e_tnode_type type;
 	float total_net_delay, total_logic_delay, Tdel;
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
 	critical_path_head = allocate_and_load_critical_path(timing_inf);
 	critical_path_node = critical_path_head;
@@ -3045,8 +3043,6 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 		tnodes_on_crit_path++;
 
 		if (type == TN_CB_OPIN) {
-			get_tnode_block_and_output_net(inode, &iblk, &inet);
-
             nets_on_crit_path++;
 
 			total_net_delay += Tdel;
@@ -3087,6 +3083,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	int source_clock_domain = UNDEFINED, sink_clock_domain = UNDEFINED;
 	float min_slack = HUGE_POSITIVE_FLOAT, slack;
 	t_tedge *tedge;
+	vtr::vector_map<ClusterBlockId, t_pb **> empty_pin_id_to_pb_mapping; //Empty vector_map for do_timing_analysis_for_constraint
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -3118,7 +3115,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 		Set is_prepacked to false since we don't care about the clusterer's normalized values. 
 		Set is_final_analysis to false to get actual, rather than relaxed, slacks.
 		Set max critical input/output paths to NULL since they aren't used unless is_prepacked is true. */
-		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, NULL, NULL, NULL, timing_inf);
+		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, NULL, NULL, empty_pin_id_to_pb_mapping, timing_inf);
 	}
 
 	/* Start at the source (level-0) tnode with the least slack (T_req-T_arr). 
@@ -3172,36 +3169,6 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	return (critical_path_head);
 }
 
-void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr) {
-
-	/* Returns the index of the block that this tnode is part of.  If the tnode *
-	 * is a TN_CB_OPIN or TN_INPAD_OPIN (i.e. if it drives a net), the net index is  *
-	 * returned via inet_ptr.  Otherwise inet_ptr points at OPEN.               */
-
-	int inet, ipin, iblk;
-	e_tnode_type tnode_type;
-
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-	iblk = timing_ctx.tnodes[inode].block;
-	tnode_type = timing_ctx.tnodes[inode].type;
-
-	if (tnode_type == TN_CB_OPIN) {
-		ipin = timing_ctx.tnodes[inode].pb_graph_pin->pin_count_in_cluster;
-		AtomNetId atom_net_id = cluster_ctx.blocks[iblk].pb_route[ipin].atom_net_id;
-		VTR_ASSERT(atom_net_id);
-		inet = atom_ctx.lookup.clb_net(atom_net_id);
-	} else {
-		inet = OPEN;
-	}
-
-	*iblk_ptr = iblk;
-	*inet_ptr = inet;
-}
-
 #ifndef PATH_COUNTING
 static void update_normalized_costs(float criticality_denom, long max_critical_input_paths,
     long max_critical_output_paths, const t_timing_inf &timing_inf) {
@@ -3237,7 +3204,7 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 #endif
 
 
-static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping) {
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 /* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
 The clock domain of each clock is its index in timing_ctx.sdc->constrained_clocks.
 We do this by matching each clock input pad (TN_INPAD_SOURCE), or internal clock 
@@ -3382,7 +3349,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 	}
 }
 
-static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping) {
+static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
 	t_pb_graph_pin * pb_graph_pin;
@@ -3424,7 +3391,7 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
 	} else {
         auto& cluster_ctx = g_vpr_ctx.clustering();
 
-        int iblock = timing_ctx.tnodes[inode].block;
+        ClusterBlockId iblock = timing_ctx.tnodes[inode].block;
         if(timing_ctx.tnodes[inode].type == TN_INPAD_SOURCE || timing_ctx.tnodes[inode].type == TN_INPAD_OPIN ||
            timing_ctx.tnodes[inode].type == TN_OUTPAD_SINK || timing_ctx.tnodes[inode].type == TN_OUTPAD_IPIN) {
             //For input/input pads the net name is the same as the block name
@@ -3445,15 +3412,14 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
             //Now that we have a complex block pin, we can look-up its connected net in the CLB netlist
             pb_graph_pin = timing_ctx.tnodes[inode_search].pb_graph_pin;
             int ipin = pb_graph_pin->pin_count_in_cluster; //Pin into the CLB
-            int inet = cluster_ctx.blocks[timing_ctx.tnodes[inode_search].block].nets[ipin]; //Net index into the clb netlist
-            VTR_ASSERT(inet != OPEN);
-
-            return cluster_ctx.clbs_nlist.net[inet].name;
+            
+			ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(timing_ctx.tnodes[inode_search].block, ipin); //Net index into the clb netlist
+            return cluster_ctx.clb_nlist.net_name(net_id).c_str();
         }
 	}
 }
 
-static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id) {
+static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id) {
 	/* Finds the TN_FF_CLOCK tnode on the same flipflop as an TN_FF_SOURCE or TN_FF_SINK tnode. */
 	
 	t_tnode * ff_clock_tnode;
@@ -3503,7 +3469,7 @@ static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_
         ff_clock_tnode = &timing_ctx.tnodes[i_ff_clock];
 
 	} else {
-        int iblock = timing_ctx.tnodes[inode].block;
+        ClusterBlockId iblock = timing_ctx.tnodes[inode].block;
 		ff_source_or_sink_pb_graph_pin = timing_ctx.tnodes[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
 		/* Make sure there's only one clock port and only one clock pin in that port */
@@ -3905,19 +3871,18 @@ static void print_spaces(FILE * fp, int num_spaces) {
 /*
  Create a lookup table that returns the tnode index for [iblock][pb_graph_pin_id]
 */
-int **alloc_and_load_tnode_lookup_from_pin_id() {
-	int **tnode_lookup;
-
+vtr::vector_map<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_from_pin_id() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	tnode_lookup = new int* [cluster_ctx.num_blocks];
+	vtr::vector_map<ClusterBlockId, std::vector<int>> tnode_lookup;
+	tnode_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
 
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
-		int num_pins = cluster_ctx.blocks[i].type->pb_graph_head->total_pb_pins;
-		tnode_lookup[i] = new int[num_pins];
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		int num_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins;
+		tnode_lookup[blk_id].resize(num_pins);
 		for (int j = 0; j < num_pins; j++) {
-			tnode_lookup[i][j] = OPEN;
+			tnode_lookup[blk_id][j] = OPEN;
 		}
 	}
 
@@ -3930,7 +3895,7 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
 				timing_ctx.tnodes[i].type != TN_OUTPAD_SINK
 				) {
 				int pb_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-				int iblk = timing_ctx.tnodes[i].block;
+				ClusterBlockId iblk = timing_ctx.tnodes[i].block;
 				VTR_ASSERT(tnode_lookup[iblk][pb_pin_id] == OPEN);				
 				tnode_lookup[iblk][pb_pin_id] = i;
 			}
@@ -3939,24 +3904,24 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
 	return tnode_lookup;
 }
 
-void free_tnode_lookup_from_pin_id(int **tnode_lookup) {
+void free_tnode_lookup_from_pin_id(vtr::vector_map<ClusterBlockId, std::vector<int>> &tnode_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
-		delete[] tnode_lookup[i];
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		tnode_lookup[blk_id].clear();
 	}
-	delete[] tnode_lookup;
+	tnode_lookup.clear();
 }
 
 std::vector<size_t> init_timing_net_pins() {
     std::vector<size_t> timing_net_pin_counts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for(size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        timing_net_pin_counts.push_back(cluster_ctx.clbs_nlist.net[inet].pins.size());
+    for(auto net_id : cluster_ctx.clb_nlist.nets()) {
+        timing_net_pin_counts.push_back(cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 
-    VTR_ASSERT(timing_net_pin_counts.size() == cluster_ctx.clbs_nlist.net.size());
+    VTR_ASSERT(timing_net_pin_counts.size() == cluster_ctx.clb_nlist.nets().size());
 
     return timing_net_pin_counts;
 }

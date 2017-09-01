@@ -39,7 +39,7 @@ static void requeue_primitive(
 static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node,
 		const float incremental_cost, const bool valid);
 static float try_place_molecule(const t_pack_molecule *molecule,
-		t_pb_graph_node *root, t_pb_graph_node **primitives_list, const int clb_index);
+		t_pb_graph_node *root, t_pb_graph_node **primitives_list, const ClusterBlockId clb_index);
 static bool expand_forced_pack_molecule_placement(
 		const t_pack_molecule *molecule,
 		const t_pack_pattern_block *pack_pattern_block,
@@ -48,7 +48,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 		const t_pb_graph_pin *cur_pin, const bool forward);
 static void flush_intermediate_queues(
 		t_cluster_placement_stats *cluster_placement_stats);
-static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const int clb_index);
+static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const ClusterBlockId clb_index);
 
 /****************************************/
 /*Function Definitions					*/
@@ -96,7 +96,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  */
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
-		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list, const int clb_index) {
+		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list, const ClusterBlockId clb_index) {
 	t_cluster_placement_primitive *cur, *next, *best, *before_best, *prev;
 	int i;
 	float cost, lowest_cost;
@@ -410,16 +410,9 @@ void set_mode_cluster_placement_stats(const t_pb_graph_node *pb_graph_node,
 	int i, j, k;
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 		if (i != mode) {
-			for (j = 0;
-					j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-					j++) {
-				for (k = 0;
-						k
-								< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
-					update_primitive_cost_or_status(
-							&pb_graph_node->child_pb_graph_nodes[i][j][k], 0,
-							false);
+			for (j = 0;	j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+					update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k], 0, false);
 				}
 			}
 		}
@@ -446,13 +439,8 @@ static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node
 		}
 	} else {
 		for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-			for (j = 0;
-					j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-					j++) {
-				for (k = 0;
-						k
-								< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
+			for (j = 0;	j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				for (k = 0;	k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					update_primitive_cost_or_status(
 							&pb_graph_node->child_pb_graph_nodes[i][j][k],
 							incremental_cost, valid);
@@ -466,7 +454,7 @@ static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node
  * Try place molecule at root location, populate primitives list with locations of placement if successful
  */
 static float try_place_molecule(const t_pack_molecule *molecule,
-		t_pb_graph_node *root, t_pb_graph_node **primitives_list, const int clb_index) {
+		t_pb_graph_node *root, t_pb_graph_node **primitives_list, const ClusterBlockId clb_index) {
 	int list_size, i;
 	float cost = HUGE_POSITIVE_FLOAT;
 	list_size = get_array_size_of_molecule(molecule);
@@ -783,7 +771,7 @@ void reset_tried_but_unused_cluster_placements(
  *          not always 100%.
  *      2.  I need to extend this so that molecules can be pulled in instead of just atoms.
  */
-static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const int clb_index) {
+static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const ClusterBlockId clb_index) {
 	int i, j;
 	bool feasible;
 	t_model_ports *model_port;
@@ -800,7 +788,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 
 				model_port = root->output_pins[i][j].port->model_port;
 
-                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
                 if(port_id) {
                     AtomNetId net_id = atom_ctx.nlist.port_net(port_id, j);
     

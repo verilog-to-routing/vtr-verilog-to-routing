@@ -498,7 +498,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
-	if(atom_ctx.nlist.port_type(port_id) == AtomPortType::OUTPUT) {
+	if(atom_ctx.nlist.port_type(port_id) == PortType::OUTPUT) {
 		/* Net driver pin takes 0th position in terminals */
 		int sink_terminal;
 		VTR_ASSERT(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type));
@@ -527,8 +527,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		}
 	} else {
         //This is an input to a primitive
-        VTR_ASSERT(atom_ctx.nlist.port_type(port_id) == AtomPortType::INPUT
-                   || atom_ctx.nlist.port_type(port_id) == AtomPortType::CLOCK);
+        VTR_ASSERT(atom_ctx.nlist.port_type(port_id) == PortType::INPUT
+                   || atom_ctx.nlist.port_type(port_id) == PortType::CLOCK);
 
         //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
@@ -597,7 +597,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
     auto port_type = atom_ctx.nlist.port_type(port_id);
-	if(port_type == AtomPortType::OUTPUT) {
+	if(port_type == PortType::OUTPUT) {
 		/* Net driver pin takes 0th position in terminals */
 		int sink_terminal;
 		VTR_ASSERT(lb_nets[ipos].terminals[0] == pb_graph_pin->pin_count_in_cluster);
@@ -613,7 +613,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
             lb_nets[ipos].atom_pins.pop_back();
 		}
 	} else {
-        VTR_ASSERT(port_type == AtomPortType::INPUT || port_type == AtomPortType::CLOCK);
+        VTR_ASSERT(port_type == PortType::INPUT || port_type == PortType::CLOCK);
 
 		/* Remove sink from list of terminals */
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
