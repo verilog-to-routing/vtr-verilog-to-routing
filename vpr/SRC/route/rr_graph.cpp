@@ -1119,6 +1119,14 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
+    //Don't connect pins which are not adjacent to channels around the perimeter
+    if (   (i == 0 && side != RIGHT)
+        || (i == int(grid.width() - 1) && side != LEFT)
+        || (j == 0 && side != TOP)
+        || (j == int(grid.width() - 1) && side != BOTTOM)) {
+        return;
+    }
+
     t_type_ptr type = grid[i][j].type;
     int width_offset = grid[i][j].width_offset;
     int height_offset = grid[i][j].height_offset;
@@ -1145,13 +1153,9 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         int num_edges = 0;
         t_linked_edge *edge_list = NULL;
         if (total_pin_Fc > 0) {
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    num_edges += get_bidir_opin_connections(i + width, j + height, pin_index,
-                            &edge_list, opin_to_track_map, total_pin_Fc, L_rr_edge_done,
-                            L_rr_node_indices, seg_details);
-                }
-            }
+                num_edges += get_bidir_opin_connections(i + width_offset, j + height_offset, pin_index,
+                        &edge_list, opin_to_track_map, total_pin_Fc, L_rr_edge_done,
+                        L_rr_node_indices, seg_details);
         }
 
         /* Add in direct connections */
