@@ -87,6 +87,8 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(
         const t_type_ptr Type, const bool perturb_switch_pattern,
         const e_directionality directionality);
 
+static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& height_offset, e_side& side);
+
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
         vtr::NdMatrix<int, 5> pin_to_track_map, const vtr::Matrix<int>& Fc,
         const int width, const int height,
@@ -1737,8 +1739,6 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pi
     return result;
 }
 
-#if 1
-//Derived from original VPR version
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
         const int num_seg_type_tracks, const int Fc,
         const t_type_ptr Type, const bool perturb_switch_pattern,
@@ -1764,47 +1764,56 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         size_t(Type->num_pins), //[0..num_pins-1]
         size_t(Type->width), //[0..width-1]
         size_t(Type->height), //[0..height-1]
-        4, //[0..sides-1]
+        NUM_SIDES, //[0..NUM_SIDES-1]
         size_t(Fc)
     }, //[0..Fc-1]
     OPEN); //Unconnected
+
     //Number of *physical* pins on each side.
+    //Note that his may be more than the logical number of pins (i.e.
+    //Type->num_pins) if a logical pin has multiple specified physical
+    //pinlocations (i.e. appears on multiple sides of the block)
     auto num_dir = vtr::NdMatrix<int, 3>({
         size_t(Type->width), //[0..width-1]
         size_t(Type->height), //[0..height-1]
-        4 //[0..3]
+        NUM_SIDES //[0..NUM_SIDES-1]
     },
     0);
 
-    //List of pins of correct type on each side. Max possible space alloced for simplicity
+    //List of *physical* pins of the correct type on each side of the current
+    //block type. For a specific width/height/side the valid enteries in the
+    //last dimension are [0 .. num_dir[width][height][side]-1]
+    //
+    //Max possible space alloced for simplicity
     auto dir_list = vtr::NdMatrix<int, 4>({
         size_t(Type->width), //[0..width-1]
         size_t(Type->height), //[0..height-1]
-        4, //[0..3]
+        NUM_SIDES, //[0..NUM_SIDES-1]
         size_t(Type->num_pins) //[0..num_pins-1]
     },
     -1); //Defensive coding: Initialize to invalid
 
+    //Number of currently assigned physical pins
     auto num_done_per_dir = vtr::NdMatrix<int, 3>({
         size_t(Type->width), //[0..width-1]
         size_t(Type->height), //[0..height-1]
-        4 //[0..3]
+        NUM_SIDES //[0..NUM_SIDES-1]
     },
     0);
 
+    //Record the physical pin locations and counts per side/offsets combination
     for (int pin = 0; pin < Type->num_pins; ++pin) {
         int pin_class = Type->pin_class[pin];
         if (Type->class_inf[pin_class].type != pin_type) /* Doing either ipins OR opins */
             continue;
 
         /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
-
         if (Type->is_global_pin[pin])
             continue;
 
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
-                for (int side = 0; side < 4; ++side) {
+                for (e_side side : SIDES) {
                     if (Type->pinloc[width][height][side][pin] == 1) {
                         dir_list[width][height][side][num_dir[width][height][side]] = pin;
                         num_dir[width][height][side]++;
@@ -1814,17 +1823,17 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         }
     }
 
+    //Total the number of physical pins
     int num_phys_pins = 0;
     for (int width = 0; width < Type->width; ++width) {
         for (int height = 0; height < Type->height; ++height) {
-            for (int side = 0; side < 4; ++side)
+            for (e_side side : SIDES) {
                 num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
+            }
         }
     }
-    int *pin_num_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
-    int *side_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
-    int *width_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
-    int *height_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
+
+    std::vector<t_pin_loc> pin_ordering;
 
     /* Connection block I use distributes pins evenly across the tracks      *
      * of ALL sides of the clb at once.  Ensures that each pin connects      *
@@ -1834,215 +1843,186 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * good low Fc block that leverages the fact that usually lots of pins   *
      * are logically equivalent.                                             */
 
-    int side = LEFT; //left is 3!!! top is 0
-    int width = 0;
-    int height = Type->height - 1;
+    const e_side init_side = LEFT;
+    const int init_width = 0;
+    const int init_height = 0;
+
+    e_side side = init_side;
+    int width = init_width;
+    int height = init_height;
     int pin = 0;
     int pin_index = -1;
 
-
-
+    //Determine the order in which physical pins will be considered while building
+    //the connection block. This generally tries to order the pins so they are 'spread'
+    //out (in hopes of yielding good connection diversity)
     while (pin < num_phys_pins) {
-        if (Type->height == 1) {
-            if (side == TOP) {
-                if (width >= Type->width - 1) {
-                    side = RIGHT;
-                } else {
-                    width++;
-                }
-            } else if (side == RIGHT) {
-                if (height <= 0) {
-                    side = BOTTOM;
-                } else {
-                    height--;
-                }
-            } else if (side == BOTTOM) {
-                if (width <= 0) {
-                    side = LEFT;
-                } else {
-                    width--;
-                }
-            } else if (side == LEFT) {
-                if (height >= Type->height - 1) {
-                    pin_index++;
-                    side = TOP;
-                } else {
-                    height++;
-                }
-            }
-        } else {// for blocks with height > 1
-            if (side == TOP) {
-
-                if (height == Type->height - 1) {
-                    side = RIGHT;
-                    height = 0;
-                } else height++;
-            } else if (side == RIGHT) {
-
-                if (height == Type->height - 1) {
-                    side = BOTTOM;
-                    height = 0;
-                } else height++;
-            } else if (side == BOTTOM) {
-
-
-                if (height == Type->height - 1) {
-                    side = LEFT;
-                    height = 0;
-                } else height++;
-            } else if (side == LEFT) {
-
-
-                if (height == Type->height - 1) {
-                    height = 0;
-                    pin_index++;
-                    side = TOP;
-                } else height++;
-
-            }
+        if (height == init_height && width == init_width && side == init_side) {
+            //Completed one loop through all the possible offsets/side combinations
+            pin_index++;
         }
 
+        advance_to_next_block_side(Type, width, height, side);
 
-        VTR_ASSERT(pin_index < num_phys_pins);
-        /* Number of physical pins bounds number of logical pins */
+        VTR_ASSERT_MSG(pin_index < num_phys_pins, "Physical block pins bound number of logical block pins");
 
         if (num_done_per_dir[width][height][side] >= num_dir[width][height][side]) {
-
             continue;
-
         }
-        pin_num_ordering[pin] = dir_list[width][height][side][pin_index]; //pin index says how many u have on that particular side, height,width
-        side_ordering[pin] = side;
-        width_ordering[pin] = width;
-        height_ordering[pin] = height;
-        VTR_ASSERT(Type->pinloc[width][height][side][dir_list[width][height][side][pin_index]]);
+
+        int pin_num = dir_list[width][height][side][pin_index];
+        VTR_ASSERT(pin_num >= 0);
+        VTR_ASSERT(Type->pinloc[width][height][side][pin_num]);
+
+        t_pin_loc pin_loc;
+        pin_loc.pin_index = pin_num;
+        pin_loc.width_offset = width;;
+        pin_loc.height_offset = height;
+        pin_loc.side = side;
+
+        pin_ordering.push_back(pin_loc);
+
         num_done_per_dir[width][height][side]++;
         pin++;
     }
 
     VTR_ASSERT(pin == num_phys_pins);
-
-    //Convert the orderings to pin locations
-    std::vector<t_pin_loc> pin_locations;
-    for (int ipin = 0; ipin < num_phys_pins; ++ipin) {
-        t_pin_loc pin_loc;
-        pin_loc.pin_index = pin_num_ordering[ipin];
-        pin_loc.width_offset = width_ordering[ipin];
-        pin_loc.height_offset = height_ordering[ipin];
-        pin_loc.side = (e_side) side_ordering[ipin];
-
-        pin_locations.push_back(pin_loc);
-    }
+    VTR_ASSERT(pin_ordering.size() == size_t(num_phys_pins));
 
     if (perturb_switch_pattern) {
         load_perturbed_connection_block_pattern(tracks_connected_to_pin,
-                pin_locations,
+                pin_ordering,
                 num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
     } else {
         load_uniform_connection_block_pattern(tracks_connected_to_pin,
-                pin_locations,
+                pin_ordering,
                 num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
     }
 
-# ifdef ENABLE_CHECK_ALL_TRACKS
+#ifdef ENABLE_CHECK_ALL_TRACKS
     check_all_tracks_reach_pins(Type, tracks_connected_to_pin, num_seg_type_tracks,
             Fc, pin_type);
-# endif
-
-    /* Free all temporary storage. */
-    free(pin_num_ordering);
-    free(side_ordering);
-    free(width_ordering);
-    free(height_ordering);
+#endif
 
     return tracks_connected_to_pin;
 }
-#else
 
-//Re-written version
-static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
-        const int num_seg_type_tracks, const int Fc,
-        const t_type_ptr Type, const bool perturb_switch_pattern,
-        const e_directionality directionality) {
-    //NOTE: At this point Fc is always an absolute value (the number of tracks to connect)
+static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& height_offset, e_side& side) {
+    //State-machine transitions for advancing around all sides of a block
 
-    /* 
-     * NB: If pin ipin on side iside does not exist or is of the wrong type,
-     * tracks_connected_to_pin[ipin][width_offset][height_offset][iside][iconn] = OPEN.
-     */
+    //This state-machine transitions in the following order:
+    //
+    //                           TOP
+    //                           --->
+    //
+    //            **********************************
+    //            *    10    |    11    |    12    *
+    //            * 3     25 | 6     22 | 9     19 *
+    //            *    36    |    35    |    34    *
+    //            *----------|----------|----------*
+    //       ^    *    13    |    14    |    15    *    |
+    //  LEFT |    * 2     26 | 5     23 | 8     20 *    | RIGHT
+    //       |    *    33    |    32    |    31    *    v
+    //            *----------|----------|----------*
+    //            *    16    |    17    |    18    *
+    //            * 1     27 | 4     24 | 7     21 *
+    //            *    30    |    29    |    28    *
+    //            **********************************
+    //
+    //                           <---
+    //                          BOTTOM
+    //
+    // where each 'square' in the above diagram corresponds to a grid tile of
+    // the block of width=3 and height=3. The numbers correspond to the visiting order starting
+    // from '1' (width_offset=0, height_offset=0, side=LEFT).
+    //
+    // Note that for blocks of width == 1 and height == 1 this iterates through the sides
+    // in clock-wise order:
+    //
+    //      ***********   
+    //      *    2    *
+    //      * 1     3 *
+    //      *    4    *
+    //      ***********
+    //
 
-    if (Type->num_pins < 1) {
-        //(e.g. EMPTY_TYPE)
-        return vtr::NdMatrix<int, 5>();
-    }
+    //Validate current state
+    VTR_ASSERT(width_offset >= 0 && width_offset < Type->width);
+    VTR_ASSERT(height_offset >= 0 && height_offset < Type->height);
+    VTR_ASSERT(side == LEFT || side == RIGHT || side == BOTTOM || side == TOP);
 
+    if (side == LEFT) {
+        if (height_offset == Type->height - 1 && width_offset == Type->width - 1) {
+            //Finished the last left edge column
+            side = TOP; //Turn clockwise
+            width_offset = 0;
+            height_offset = Type->height - 1;
+        } else if (height_offset == Type->height - 1) {
+            //Finished the current left edge column
+            VTR_ASSERT(width_offset != Type->width - 1);
 
-    auto tracks_connected_to_pin = vtr::NdMatrix<int, 5>({
-            size_t(Type->num_pins), //[0..num_pins-1]
-            size_t(Type->width), //[0..width-1]
-            size_t(Type->height), //[0..height-1]
-            4, //[0..sides-1]
-            size_t(Fc) //[0..Fc-1]
-        },
-        OPEN); //Unconnected
+            //Move right to the next left edge column
+            width_offset++;
+            height_offset = 0;
+        } else {
+            height_offset++; //Advance up current left edge column
+        }
+    } else if (side == TOP) {
+        if (height_offset == 0 && width_offset == Type->width - 1) {
+            //Finished the last top edge row
+            side = RIGHT; //Turn clockwise
+            width_offset = Type->width - 1;
+            height_offset = Type->height - 1;
+        } else if (width_offset == Type->width - 1) {
+            //Finished the current top edge row
+            VTR_ASSERT(height_offset != 0);
 
-    //Record all the pin locations on this pin type
-    std::vector<t_pin_loc> pin_locations;
-    for (int width = 0; width < Type->width; ++width) {
-        for (int height = 0; height < Type->height; ++height) {
-            for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                for(int ipin = 0; ipin < Type->num_pins; ++ipin) {
-                    if (Type->pinloc[width][height][side][ipin]) {
+            //Move down to the next top edge row
+            height_offset--;
+            width_offset = 0;
+        } else {
+            width_offset++; //Advance right along current top edge row
+        }
+    } else if (side == RIGHT) {
+        if (height_offset == 0 && width_offset == 0) {
+            //Finished the last right edge column
+            side = BOTTOM; //Turn clockwise
+            width_offset = Type->width - 1;
+            height_offset = 0;
+        } else if (height_offset == 0) {
+            //Finished the current right edge column
+            VTR_ASSERT(width_offset != 0);
 
-                        int pin_class = Type->pin_class[ipin];
-                        if (Type->class_inf[pin_class].type != pin_type) {
-                            //Not an IPIN or OPIN
-                            continue;
-                        }
+            //Move left to the next right edge column
+            width_offset--;
+            height_offset = Type->height - 1;
+        } else {
+            height_offset--; //Advance down current right edge column
+        }
+    } else {
+        VTR_ASSERT(side == BOTTOM);
+        if (height_offset == Type->height - 1 && width_offset == 0) {
+            //Finished the last bottom edge row
+            side = LEFT; //Turn clockwise
+            width_offset = 0;
+            height_offset = 0;
+        } else if (width_offset == 0) {
+            //Finished the current bottom edge row
+            VTR_ASSERT(height_offset != Type->height - 1);
 
-                        /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
-                        if (Type->is_global_pin[ipin]) {
-                            continue;
-                        }
-
-                        //This is a valid physical location for the logical pin ipin
-
-                        //Record it's location
-                        t_pin_loc pin_loc;
-                        pin_loc.pin_index = ipin;
-                        pin_loc.width_offset = width;
-                        pin_loc.height_offset = height;
-                        pin_loc.side = side;
-
-                        pin_locations.push_back(pin_loc);
-                    }
-                }
-            }
+            //Move up to the next bottom edge row
+            height_offset++;
+            width_offset = Type->width - 1;
+        } else {
+            width_offset--; //Advance left along current bottom edge row
         }
     }
 
-    //We now create the connection block pattern between the current subsets of pins and tracks
-    //NOTE: we use 'num_seg_type_tracks' to specify an effective channel width consisting of only 
-    //      the desired segment type. The resulting track indicies are later shifted to those of
-    //      the actual channel
-    if (perturb_switch_pattern) {
-        load_perturbed_connection_block_pattern(tracks_connected_to_pin,
-                pin_locations,
-                num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
-    } else {
-        load_uniform_connection_block_pattern(tracks_connected_to_pin,
-                pin_locations,
-                num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
-    }
-
-# ifdef ENABLE_CHECK_ALL_TRACKS
-    check_all_tracks_reach_pins(Type, tracks_connected_to_pin, num_seg_type_tracks,
-            Fc, pin_type);
-# endif
-
-    return tracks_connected_to_pin;
+    //Validate next state
+    VTR_ASSERT(width_offset >= 0 && width_offset < Type->width);
+    VTR_ASSERT(height_offset >= 0 && height_offset < Type->height);
+    VTR_ASSERT(side == LEFT || side == RIGHT || side == BOTTOM || side == TOP);
 }
-#endif
 
 static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, 
