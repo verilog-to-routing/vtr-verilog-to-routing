@@ -787,8 +787,11 @@ t_pack_molecule *alloc_and_load_pack_molecules(
                 //      in the equal_range
                 auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
                 bool range_empty = (rng.first == rng.second);
-                auto last_valid_iter = --rng.second; //Iterator to last element
-                bool cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
+                bool cur_was_last_inserted = false;
+                if (!range_empty) {
+                    auto last_valid_iter = --rng.second; //Iterator to last element (only valid if range is not empty)
+                    cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
+                }
                 if(range_empty || !cur_was_last_inserted) {
                     /* molecule did not cover current atom (possibly because molecule created is
                      * part of a long chain that extends past multiple logic blocks), try again */
