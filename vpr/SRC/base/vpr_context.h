@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
+#include <csignal> //for sig_atomic_t
 
 #include "vpr_types.h"
 #include "vtr_matrix.h"
@@ -306,7 +307,9 @@ class VprContext : public Context {
         PlacementContext placement_;
         RoutingContext routing_;
 
-        bool force_pause_ = false;
+        //We use a volatile sig_atomic_t to ensures signals
+        //set the value atomicly
+        volatile sig_atomic_t force_pause_ = false;
 };
 
 #endif
