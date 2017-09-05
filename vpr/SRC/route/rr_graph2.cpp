@@ -621,15 +621,15 @@ void free_chan_details(
         const DeviceGrid& grid) {
 
     /* Frees all the memory allocated to an array of chan_details structures. */
-    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
-        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+    for (size_t x = 0; x < grid.width(); ++x) {
+        for (size_t y = 0; y < grid.height(); ++y) {
 
             t_seg_details* p_seg_details = chan_details_x[x][y];
             free_seg_details(p_seg_details, max_chan_width);
         }
     }
-    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
-        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+    for (size_t x = 0; x < grid.width(); ++x) {
+        for (size_t y = 0; y < grid.height(); ++y) {
 
             t_seg_details* p_seg_details = chan_details_y[x][y];
             free_seg_details(p_seg_details, max_chan_width);
