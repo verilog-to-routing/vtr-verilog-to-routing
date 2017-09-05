@@ -22,7 +22,7 @@
 #include "stats.h"
 #include "echo_files.h"
 #include "draw.h"
-#include "routing_success_predictor.h"
+#include "routing_predictor.h"
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h" 
@@ -193,7 +193,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     /*
      * Configure the routing predictor
      */
-    RoutingSuccessPredictor routing_success_predictor;
+    RoutingPredictor routing_success_predictor;
     float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
     if (router_opts.routing_failure_predictor == SAFE) {
         abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
