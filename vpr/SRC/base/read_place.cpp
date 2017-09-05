@@ -240,7 +240,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 		if (i < 0 || i > int(device_ctx.grid.width() - 1) || j < 0 || j > int(device_ctx.grid.height() - 1)) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Block #%lu (%s) location, (%d,%d) is out of range.\n", size_t(bnum), bname, i, j);
+					"Block #%zu (%s) location, (%d,%d) is out of range.\n", size_t(bnum), bname, i, j);
 		}
 
         place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
@@ -304,7 +304,7 @@ void print_place(const char* net_file,
 			fprintf(fp, "\t");
 
 		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y, place_ctx.block_locs[blk_id].z);
-		fprintf(fp, "\t#%lu\n", size_t(blk_id));
+		fprintf(fp, "\t#%zu\n", size_t(blk_id));
 	}
 	fclose(fp);
 

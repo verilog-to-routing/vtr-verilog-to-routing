@@ -2013,7 +2013,7 @@ static void highlight_nets(char *message, int hit_node) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
-					sprintf(message, "%s  ||  Net: %lu (%s)", message, size_t(net_id),
+					sprintf(message, "%s  ||  Net: %zu (%s)", message, size_t(net_id),
 							cluster_ctx.clb_nlist.net_name(net_id).c_str());
 				}
 			}
@@ -2325,7 +2325,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
 		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-		sprintf(msg, "Block #%lu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);

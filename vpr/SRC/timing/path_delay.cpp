@@ -1732,11 +1732,11 @@ void print_timing_graph(const char *fname) {
 		fprintf(fp, "%-15.15s\t", tnode_type_names[itype]);
 
 		if (timing_ctx.tnodes[inode].pb_graph_pin != NULL) {
-			fprintf(fp, "%d\t%lu\t",
+			fprintf(fp, "%d\t%zu\t",
 					timing_ctx.tnodes[inode].pb_graph_pin->pin_count_in_cluster,
 					size_t(timing_ctx.tnodes[inode].block));
 		} else {
-			fprintf(fp, "\t%lu\t", size_t(timing_ctx.tnodes[inode].block));
+			fprintf(fp, "\t%zu\t", size_t(timing_ctx.tnodes[inode].block));
 		}
 
 		if (itype == TN_FF_CLOCK || itype == TN_FF_SOURCE || itype == TN_FF_SINK) {

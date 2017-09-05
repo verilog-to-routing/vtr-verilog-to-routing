@@ -320,7 +320,7 @@ static void write_place_macros(std::string filename, const t_pl_macro *macros, i
         fprintf(f, "------------------------------------------------------\n");
         for (int imember = 0; imember < macro->num_blocks; ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
-            fprintf(f, "Block_Id: %lu, x_offset: %d, y_offset: %d, z_offset: %d\n",
+            fprintf(f, "Block_Id: %zu, x_offset: %d, y_offset: %d, z_offset: %d\n",
                     size_t(macro_memb->blk_index),
                     macro_memb->x_offset,
                     macro_memb->y_offset,

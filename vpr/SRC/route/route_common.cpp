@@ -524,7 +524,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in update_traceback. Expected type = SINK (%d).\n"
-			"\tGot type = %d while tracing back net %lu.\n", SINK, rr_type, size_t(net_id));
+			"\tGot type = %d while tracing back net %zu.\n", SINK, rr_type, size_t(net_id));
 	}
 
 	tptr = alloc_trace_data(); /* SINK on the end of the connection */
@@ -1213,7 +1213,7 @@ void print_route(const char* placement_file, const char* route_file) {
 	fprintf(fp, "\nRouting:");
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
-			fprintf(fp, "\n\nNet %lu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
+			fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
@@ -1290,7 +1290,7 @@ void print_route(const char* placement_file, const char* route_file) {
 		}
 
 		else { /* Global net.  Never routed. */
-			fprintf(fp, "\n\nNet %lu (%s): global net connecting:\n\n", size_t(net_id),
+			fprintf(fp, "\n\nNet %zu (%s): global net connecting:\n\n", size_t(net_id),
 					cluster_ctx.clb_nlist.net_name(net_id).c_str());
 
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
@@ -1298,7 +1298,7 @@ void print_route(const char* placement_file, const char* route_file) {
 				int pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 				iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
 
-				fprintf(fp, "Block %s (#%lu) at (%d,%d), Pin class %d.\n",
+				fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
 					cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
 					place_ctx.block_locs[block_id].x, 
 					place_ctx.block_locs[block_id].y,
@@ -1423,7 +1423,7 @@ void print_traceback(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	vtr::printf_info("traceback %lu: ", size_t(net_id));
+	vtr::printf_info("traceback %zu: ", size_t(net_id));
 	t_trace* head = route_ctx.trace_head[net_id];
 	while (head) {
 		int inode {head->index};

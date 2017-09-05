@@ -4362,7 +4362,7 @@ win32_init_graphics(const char *window_name) {
     wndclass.lpszClassName = szAppName;
 
     if (!RegisterClassW(&wndclass)) {
-        printf("Error code: %u\n", GetLastError());
+        printf("Error code: %lu\n", GetLastError());
         MessageBoxW(NULL, L"Initialization of Windows graphics (init_graphics) failed.",
             szAppName, MB_ICONERROR);
         exit(-1);
