@@ -923,6 +923,38 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 	const char *Prop;
 	pugi::xml_node Cur;
 
+    bool is_root_pb_type = !(mode != NULL && mode->parent_pb_type != NULL);
+    bool is_leaf_pb_type = bool(get_attribute(Parent, "blif_model", loc_data, OPTIONAL));
+
+    std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power"};
+    if (!is_leaf_pb_type) {
+        //Non-leafs may have a model/pb_type children
+        children_to_expect.push_back("model");
+        children_to_expect.push_back("pb_type");
+        children_to_expect.push_back("interconnect");
+
+        if (is_root_pb_type) {
+            VTR_ASSERT(!is_leaf_pb_type);
+            //Top level pb_type's may also have the following tag types
+            children_to_expect.push_back("fc");
+            children_to_expect.push_back("pinlocations");
+            children_to_expect.push_back("switchblock_locations");
+        }
+    } else {
+        VTR_ASSERT(is_leaf_pb_type);
+        VTR_ASSERT(!is_root_pb_type);
+
+        //Leaf pb_type's may also have the following tag types
+        children_to_expect.push_back("T_setup");
+        children_to_expect.push_back("T_hold");
+        children_to_expect.push_back("T_clock_to_Q");
+        children_to_expect.push_back("delay_constant");
+        children_to_expect.push_back("delay_matrix");
+    }
+
+    //Sanity check contained tags
+    expect_only_children(Parent, children_to_expect, loc_data);
+
 	char* class_name;
 	/* STL maps for checking various duplicate names */
 	map<string, int> pb_port_names;
@@ -2505,7 +2537,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
         //Warn that gridlocations is no longer supported
-         //TODO: eventually remove
+        //TODO: eventually remove
         try {
             expect_child_node_count(CurType, "gridlocations", 0, loc_data);
         } catch (XmlError& e) {
