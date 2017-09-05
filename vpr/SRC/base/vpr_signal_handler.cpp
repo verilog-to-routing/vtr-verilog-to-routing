@@ -26,6 +26,7 @@ void vpr_signal_handler(int signal);
         struct sigaction sa;
         sa.sa_handler = vpr_signal_handler;
         sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0; //Make sure the flags are cleared
         sigaction(SIGINT, &sa, nullptr);
     }
 
