@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include "verilog_preprocessor.h"
 #include "types.h"
 #include "vtr_util.h"

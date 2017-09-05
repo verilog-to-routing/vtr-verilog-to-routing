@@ -44,6 +44,7 @@ char* standardize_number(const char* input);
 %option nounput
 %option noinput
 %option never-interactive
+%option nounistd
 
 %%
 
