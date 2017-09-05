@@ -1197,7 +1197,7 @@ void free_rr_graph(void) {
     device_ctx.rr_switch_inf = nullptr;
     device_ctx.num_rr_switches = 0;
 
-    delete device_ctx.switch_fanin_remap;
+    delete[] device_ctx.switch_fanin_remap;
     device_ctx.switch_fanin_remap = nullptr;
 }
 
