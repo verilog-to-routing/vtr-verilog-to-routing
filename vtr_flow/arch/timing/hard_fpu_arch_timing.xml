@@ -274,7 +274,6 @@
                     <delay_constant max="2.5983e-9" in_port="FM1.opa" out_port="FM1.control"/>
                     <delay_constant max="2.5983e-9" in_port="FM1.opb" out_port="FM1.out"/>
                     <delay_constant max="2.5983e-9" in_port="FM1.opb" out_port="FM1.control"/>
-                    <max_internal_delay value="2.985e-9"/> <!--legacy-->
 
                 </pb_type>
 
@@ -299,7 +298,6 @@
                     <delay_constant max="2.5983e-9" in_port="FM2.opa" out_port="FM2.control"/>
                     <delay_constant max="2.5983e-9" in_port="FM2.opb" out_port="FM2.out"/>
                     <delay_constant max="2.5983e-9" in_port="FM2.opb" out_port="FM2.control"/>
-                    <max_internal_delay value="2.985e-9"/> <!--legacy-->
                 </pb_type>
 
                 <pb_type name="FA1" blif_model=".subckt fpu_add" num_pb="1">
@@ -323,7 +321,6 @@
                     <delay_constant max="2.5983e-9" in_port="FA1.opa" out_port="FA1.control"/>
                     <delay_constant max="2.5983e-9" in_port="FA1.opb" out_port="FA1.out"/>
                     <delay_constant max="2.5983e-9" in_port="FA1.opb" out_port="FA1.control"/>
-                    <max_internal_delay value="2.985e-9"/> <!--legacy-->
                 </pb_type>
 
                 <pb_type name="FA2" blif_model=".subckt fpu_add" num_pb="1">

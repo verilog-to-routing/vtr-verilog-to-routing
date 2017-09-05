@@ -1086,12 +1086,16 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		}
 	}
 
-	/* set max_internal_delay if exist */
-	pb_type->max_internal_delay = UNDEFINED;
-	Cur = get_single_child(Parent, "max_internal_delay", loc_data, OPTIONAL);
-	if (Cur) {
-		pb_type->max_internal_delay = get_attribute(Cur, "value", loc_data).as_float(UNDEFINED);
-	}
+    //Warn that max_internal_delay is no longer supported
+    //TODO: eventually remove
+    try {
+        expect_child_node_count(Parent, "max_internal_delay", 0, loc_data);
+    } catch (XmlError& e) {
+        std::string msg = e.what();
+        msg += ". <max_internal_delay> has been replaced with <delay_constant>/<delay_matrix> between sequential primitive ports.";
+        msg += " Please upgrade your architecture file.";
+        archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
+    }
 
 	pb_type->annotations = NULL;
 	pb_type->num_annotations = 0;
@@ -2544,7 +2548,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
             std::string msg = e.what();
             msg += ". <gridlocations> has been replaced by the <auto_layout> and <device_layout> tags in the <layout> section.";
             msg += " Please upgrade your architecture file.";
-            throw XmlError(msg, e.filename(), e.line());
+            archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
         }
 
 		/* Load Fc */
