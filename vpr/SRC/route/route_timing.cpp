@@ -1767,10 +1767,10 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf_info("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ---------------\n");
-    vtr::printf_info("Iter   Time  Re-Rtd   Overused RR Nodes        Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ  Est Congestion\n");
-    vtr::printf_info("      (sec)   Conns                                           (ns)       (ns)       (ns)       (ns)       (ns)     Iter           Slope\n");
-    vtr::printf_info("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ---------------\n");
+    vtr::printf("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ------------------\n");
+    vtr::printf("Iter   Time  Re-Rtd   Overused RR Nodes        Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ    Est Overused RR\n");
+    vtr::printf("      (sec)   Conns                                           (ns)       (ns)       (ns)       (ns)       (ns)     Iter              Slope\n");
+    vtr::printf("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ------------------\n");
 }
 
 static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
@@ -1843,9 +1843,9 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
     //Overuse Slope
     float overuse_slope_fraction = overuse_slope / overuse_info.overused_nodes();
     if (std::isnan(overuse_slope)) {
-        vtr::printf(" %7s", "N/A");
+        vtr::printf(" %18s", "N/A");
     } else {
-        vtr::printf(" % 8.2g (% 5.1f%)", overuse_slope, overuse_slope_fraction*100);
+        vtr::printf(" % 8.2g (% 6.1f%)", overuse_slope, overuse_slope_fraction*100);
     }
 
     vtr::printf("\n");
