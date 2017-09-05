@@ -291,7 +291,7 @@ def upgrade_device_layout(arch):
         del layout.attrib['height']
         changed = True
 
-        device_auto = ET.SubElement(layout, 'device_layout')
+        device_auto = ET.SubElement(layout, 'fixed_layout')
         device_auto.attrib['name'] = "unnamed_device"
         device_auto.attrib['width'] = width
         device_auto.attrib['height'] = height
