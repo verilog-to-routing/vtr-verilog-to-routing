@@ -289,7 +289,9 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
     max_pins_per_clb = 0;
     for (i = 0; i < device_ctx.num_block_types; i++) {
-        max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[i].num_pins);
+        t_type_ptr type = &device_ctx.block_types[i];
+        //Use the maximum number of pins normalized by block area
+        max_pins_per_clb = max(max_pins_per_clb, type->num_pins) / (type->width * type->height);
     }
 
     clb_opins_used_locally = alloc_route_structs();
