@@ -5361,6 +5361,7 @@ bool LOD_screen_area_test(t_bound_box /*test*/, float /*screen_area_threshold*/)
 void setlinestyle(int /*linestyle*/, int /*capstyle*/) { }
 void set_drawing_buffer(t_draw_to /*draw_mode*/) { }
 void copy_off_screen_buffer_to_screen() { }
+void set_coordinate_system(t_coordinate_system /*coord*/) { }
 
 #ifdef WIN32
 
