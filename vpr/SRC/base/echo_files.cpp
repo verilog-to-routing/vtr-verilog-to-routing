@@ -69,6 +69,10 @@ void alloc_and_load_echo_file_info() {
 
     setAllEchoFileEnabled(getEchoEnabled());
 
+    //User input nelist
+    setEchoFileName(E_ECHO_ATOM_NETLIST_ORIG, "atom_netlist.orig.echo.blif");
+    setEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED, "atom_netlist.cleaned.echo.blif");
+
     //Timing Graphs
     setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
     setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
@@ -94,8 +98,6 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS, "placement_logic_sink_delays.echo");
     setEchoFileName(E_ECHO_ROUTING_SINK_DELAYS, "routing_sink_delays.echo");
     setEchoFileName(E_ECHO_POST_PACK_NETLIST, "post_pack_netlist.blif");
-    setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
-    setEchoFileName(E_ECHO_COMPRESSED_NETLIST, "compressed_netlist.echo");
     setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
     setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
     setEchoFileName(E_ECHO_PRE_PACKING_SLACK, "pre_packing_slack.echo");

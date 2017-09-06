@@ -676,7 +676,9 @@ AtomNetlist read_and_process_blif(const char *blif_file,
         netlist = read_blif(blif_file, user_models, library_models);
     }
 
-    print_netlist_as_blif("atom_netlist.orig.echo.blif", netlist);
+    if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
+        print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_ORIG), netlist);
+    }
 
     process_blif(netlist,
                  library_models,
@@ -686,7 +688,9 @@ AtomNetlist read_and_process_blif(const char *blif_file,
                  should_sweep_dangling_blocks,
                  should_sweep_constant_primary_outputs);
 
-    print_netlist_as_blif("atom_netlist.cleaned.echo.blif", netlist);
+    if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
+        print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
+    }
 
 
     show_blif_stats(netlist);
