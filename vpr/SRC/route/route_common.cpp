@@ -1295,7 +1295,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 				ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-				int pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
+				int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 				iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
 
 				fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",

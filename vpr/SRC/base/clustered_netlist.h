@@ -138,8 +138,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         /*
         * Pins
         */
-        //Returns the index of the block which the pin belongs to
-        int physical_pin_index(const ClusterPinId id) const;
+
+        //Returns the physical pin index (i.e. pin index on the
+        //t_type_descriptor) of the specified logical pin
+        int pin_physical_index(const ClusterPinId id) const;
 
         //Finds the count'th net_pins (e.g. the 6th pin of the net) and
         //returns the index of the block which that pin belongs to
@@ -201,7 +203,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //Sets the mapping of a ClusterPinId to the block's type descriptor's pin index 
         //  pin_id   : The pin to be set
         //  index    : The new index to set the pin to
-        void    set_physical_pin_index(const ClusterPinId pin_id, const int index);
+        void    set_pin_physical_index(const ClusterPinId pin_id, const int index);
 
         //Create an empty, or return an existing net in the netlist
         //  name     : The unique name of the net
@@ -258,7 +260,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         vtr::vector_map<ClusterBlockId, std::vector<int>>               block_pin_nets_;    //Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
 
         //Pins
-        vtr::vector_map<ClusterPinId, int>                              physical_pin_index_;//The indices of pins on a block from its type descriptor, numbered sequentially from [0 .. num_pins - 1]
+        vtr::vector_map<ClusterPinId, int>                              pin_physical_index_;//The indices of pins on a block from its type descriptor, numbered sequentially from [0 .. num_pins - 1]
             
         //Nets  
         vtr::vector_map<ClusterNetId, bool>                         net_is_global_;     //Boolean mapping indicating if the net is

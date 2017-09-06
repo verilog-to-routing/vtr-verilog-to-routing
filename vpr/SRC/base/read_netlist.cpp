@@ -890,7 +890,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					//Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
 					VTR_ASSERT(blk_id == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
 					//Asserts the block's pin index is the same
-					VTR_ASSERT(j == clb_nlist.physical_pin_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+					VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
 					VTR_ASSERT(j == clb_nlist.physical_pin_index(clb_net_id, count[clb_net_id]));
 
 					if (clb_nlist.block_type(blk_id)->is_global_pin[j])
@@ -901,7 +901,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					clb_nlist.set_block_pin_net(blk_id, j, count[clb_net_id]); //A sink
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist.block_type(blk_id)->class_inf[clb_nlist.block_type(blk_id)->pin_class[j]].type);
-					VTR_ASSERT(j == clb_nlist.physical_pin_index(*(clb_nlist.net_pins(clb_net_id).begin())));
+					VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
 					VTR_ASSERT(j == clb_nlist.physical_pin_index(clb_net_id, 0));
 
                     //Mark the net pin numbers on the block
@@ -916,7 +916,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 	for (auto net_id : clb_nlist.nets()) {
 		for (auto pin_id : clb_nlist.net_sinks(net_id)) {
 			bool is_global_net = clb_nlist.net_is_global(net_id);
-			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_global_pin[clb_nlist.physical_pin_index(pin_id)] != is_global_net) {
+			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_global_pin[clb_nlist.pin_physical_index(pin_id)] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					"Netlist attempts to connect net %s to both global and non-global pins.\n",
 					clb_nlist.net_name(net_id).c_str());

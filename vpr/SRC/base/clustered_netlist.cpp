@@ -47,17 +47,17 @@ int ClusteredNetlist::block_pin_net(const ClusterBlockId blk_id, const int pin_i
 * Pins
 *
 */
-int ClusteredNetlist::physical_pin_index(const ClusterPinId id) const {
+int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
     VTR_ASSERT(valid_pin_id(id));
 
-    return physical_pin_index_[id];
+    return pin_physical_index_[id];
 }
 
 int ClusteredNetlist::physical_pin_index(const ClusterNetId net_id, int count) const {
 
     for (auto pin_id : net_pins(net_id)) {
         if (count == 0) {
-            return physical_pin_index(pin_id);
+            return pin_physical_index(pin_id);
         }
         count--;
     }
@@ -188,7 +188,7 @@ ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const s
 ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type_, int pin_index, bool is_const) {
     ClusterPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
-    physical_pin_index_.push_back(pin_index);
+    pin_physical_index_.push_back(pin_index);
 
     ClusterBlockId block_id = port_block(port_id);
     
@@ -201,10 +201,10 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
     return pin_id;
 }
 
-void ClusteredNetlist::set_physical_pin_index(const ClusterPinId pin_id, const int index) {
+void ClusteredNetlist::set_pin_physical_index(const ClusterPinId pin_id, const int index) {
     VTR_ASSERT(valid_pin_id(pin_id));
 
-    physical_pin_index_[pin_id] = index;
+    pin_physical_index_[pin_id] = index;
 }
 
 
@@ -282,7 +282,7 @@ void ClusteredNetlist::clean_ports_impl(const vtr::vector_map<ClusterPortId, Clu
 
 void ClusteredNetlist::clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) {
     //Update all the pin values
-    physical_pin_index_ = clean_and_reorder_values(physical_pin_index_, pin_id_map);
+    pin_physical_index_ = clean_and_reorder_values(pin_physical_index_, pin_id_map);
 }
 
 void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) {
@@ -300,7 +300,7 @@ void ClusteredNetlist::shrink_to_fit_impl() {
     block_pin_nets_.shrink_to_fit();
 
     //Pin data
-    physical_pin_index_.shrink_to_fit();
+    pin_physical_index_.shrink_to_fit();
 
     //Net data
     net_is_global_.shrink_to_fit();
@@ -330,7 +330,7 @@ bool ClusteredNetlist::validate_port_sizes_impl(size_t /*num_ports*/) const {
 }
 
 bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
-    if (physical_pin_index_.size() != num_pins) {
+    if (pin_physical_index_.size() != num_pins) {
         return false;
     }
     return true;

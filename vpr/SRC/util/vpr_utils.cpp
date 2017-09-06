@@ -2041,8 +2041,8 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
             //Update the net to block references
 			size_t k = 0;
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.physical_pin_index(pin_id) == j) {
-					cluster_ctx.clb_nlist.set_physical_pin_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
+				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.pin_physical_index(pin_id) == j) {
+					cluster_ctx.clb_nlist.set_pin_physical_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
 					break;
 				}
 				k++;

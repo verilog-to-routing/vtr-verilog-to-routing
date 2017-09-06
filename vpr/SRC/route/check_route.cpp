@@ -183,7 +183,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool * pin_done) {
 		ipin = 1;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
-				pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
+				pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 				iclass = type->pin_class[pin_index];
 				if (iclass == ptc_num) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *

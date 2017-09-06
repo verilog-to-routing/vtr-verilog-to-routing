@@ -1844,7 +1844,7 @@ static void update_td_cost(void) {
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
-			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.physical_pin_index(pin_id)];
+			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.pin_physical_index(pin_id)];
 
 			if (net_pin != 0) {
 				driven_by_moved_block = false;
@@ -2172,7 +2172,7 @@ static void alloc_and_load_net_pin_index() {
 			continue;
 		netpin = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-			int pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
+			int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 			ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 			net_pin_index[block_id][pin_index] = netpin;
 			netpin++;
@@ -2232,7 +2232,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-		pnum = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
+		pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
 		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
@@ -2389,7 +2389,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-		pnum = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
+		pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
 		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
