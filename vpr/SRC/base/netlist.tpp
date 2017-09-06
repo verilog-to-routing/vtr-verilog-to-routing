@@ -632,7 +632,7 @@ PortId Netlist<BlockId, PortId, PinId, NetId>::create_port(const BlockId blk_id,
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PinId Netlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, bool is_const) {
+PinId Netlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const) {
     //Check pre-conditions (valid ids)
     VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
     VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
@@ -654,7 +654,7 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, B
         pin_is_constant_.push_back(is_const);
 
         //Add the pin to the net
-        int pins_net_index = associate_pin_with_net(pin_id, pin_type, net_id);
+        int pins_net_index = associate_pin_with_net(pin_id, type, net_id);
 
         //Save the net index of the pin
         pin_net_indices_.push_back(pins_net_index);
@@ -922,8 +922,6 @@ void Netlist<BlockId, PortId, PinId, NetId>::compress() {
     // e.g. block_id_map[old_id] == new_id
     build_id_maps(block_id_map, port_id_map, pin_id_map, net_id_map);
 
-    //The clean_*() functions return a vector which maps from old to new index
-    // e.g. block_id_map[old_id] == new_id
     clean_nets(net_id_map);
     clean_pins(pin_id_map);
     clean_ports(port_id_map);
@@ -932,10 +930,13 @@ void Netlist<BlockId, PortId, PinId, NetId>::compress() {
     //TODO: iterative cleaning?
 
     //Now we re-build all the cross references
+    // Note: net references must be rebuilt (to remove pins) before 
+    //       the pin references can be rebuilt (to account for index changes
+    //       due to pins being removed from the net)
     rebuild_block_refs(pin_id_map, port_id_map);
     rebuild_port_refs(block_id_map, pin_id_map);
+    rebuild_net_refs(pin_id_map); 
     rebuild_pin_refs(port_id_map, net_id_map);
-    rebuild_net_refs(pin_id_map);
 
     //Re-build the lookups
     rebuild_lookups();
@@ -1050,8 +1051,16 @@ void Netlist<BlockId, PortId, PinId, NetId>::clean_pins(const vtr::vector_map<Pi
     //Update all the pin values
     pin_ids_ = clean_and_reorder_ids(pin_id_map);
     pin_ports_ = clean_and_reorder_values(pin_ports_, pin_id_map);
+
+    //It is sufficient to merely clean and re-order the pin_port_bits_, since
+    //the size of a port (and hence the pin's bit index in the port) does not change
+    //during cleaning
     pin_port_bits_ = clean_and_reorder_values(pin_port_bits_, pin_id_map);
     pin_nets_ = clean_and_reorder_values(pin_nets_, pin_id_map);
+
+    //Note that clean and re-order serves only to resize pin_net_indices_, the
+    //actual net references are wrong (since net size may have changed during 
+    //cleaning). They will be updated in rebuild_pin_refs()
     pin_net_indices_ = clean_and_reorder_values(pin_net_indices_, pin_id_map);
     pin_is_constant_ = clean_and_reorder_values(pin_is_constant_, pin_id_map);
 
@@ -1068,7 +1077,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::clean_nets(const vtr::vector_map<Ne
     //Update all the net values
     net_ids_ = clean_and_reorder_ids(net_id_map);
     net_names_ = clean_and_reorder_values(net_names_, net_id_map);
-    net_pins_ = clean_and_reorder_values(net_pins_, net_id_map);
+    net_pins_ = clean_and_reorder_values(net_pins_, net_id_map); //Note: actual pin refs are updated in rebuild_net_refs()
 
     clean_nets_impl(net_id_map);
 
@@ -1170,8 +1179,24 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_
     pin_ports_ = update_all_refs(pin_ports_, port_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
 
+    //NOTE: we do not need to update pin_port_bits_ since a pin's index within it's
+    //port will not change (since the port width's don't change when cleaned)
+
     pin_nets_ = update_all_refs(pin_nets_, net_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_nets_), "All Ids should be valid");
+
+    //We must carefully re-build the pin net indices from scratch, since cleaning
+    //may have changed the index of the pin within the net (e.g. if invalid pins 
+    //were removed)
+    //
+    //Note that for this to work correctly, the net references must have already been re-built!
+    for (auto net : nets()) {
+        int i = 0;
+        for (auto pin : net_pins(net)) {
+            pin_net_indices_[pin] = i;
+            ++i;
+        }
+    }
 
     VTR_ASSERT(validate_pin_sizes());
 }
@@ -1506,12 +1531,24 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
         for (auto iter = pin_range.begin(); iter != pin_range.end(); ++iter) {
             int pin_index = std::distance(pin_range.begin(), iter);
             auto pin_id = *iter;
-            if (iter != pin_range.begin()) {
+
+            if (iter == pin_range.begin()) {
                 //The first net pin is the driver, which may be invalid
-                //if there is no driver. So we only check for a valid id
-                //on the other net pins (which are all sinks and must be valid)
+                //if there is no driver.
+                if (pin_id) {
+                    VTR_ASSERT(pin_index == NET_DRIVER_INDEX);
+                    if (pin_type(pin_id) != PinType::DRIVER) {
+                        VPR_THROW(VPR_ERROR_NETLIST, "Driver pin not found at expected index in net");
+                    }
+                }
+            } else {
+                //Any non-driver (i.e. sink) pins must be valid
                 if (!pin_id) {
                     VPR_THROW(VPR_ERROR_NETLIST, "Invalid pin found in net sinks");
+                }
+
+                if (pin_type(pin_id) != PinType::SINK) {
+                    VPR_THROW(VPR_ERROR_NETLIST, "Invalid pin type found in net sinks");
                 }
             }
 
