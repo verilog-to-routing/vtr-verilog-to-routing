@@ -675,7 +675,4 @@ void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra
 		free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type[itype]);
 	}
 	delete[] pb_graph_pin_lookup_from_index_by_type;
-
-    //Calculate the ID of the clustering
-    cluster_ctx.clb_nlist.set_netlist_id(vtr::secure_digest_file(out_fname));
 }

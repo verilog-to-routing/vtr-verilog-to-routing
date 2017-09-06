@@ -225,11 +225,6 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 	return net_id;
 }
 
-void ClusteredNetlist::set_netlist_id(std::string netlist_id__) {
-	//TODO: Add asserts?
-	netlist_id_ = netlist_id__;
-}
-
 void ClusteredNetlist::set_global(ClusterNetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
@@ -319,32 +314,33 @@ void ClusteredNetlist::shrink_to_fit_impl() {
 * Sanity Checks
 *
 */
-bool ClusteredNetlist::validate_block_sizes_impl() const {
-	if (block_pbs_.size() != block_ids_.size()
-		|| block_types_.size() != block_ids_.size()
-		|| block_nets_.size() != block_ids_.size()
-		|| block_pin_nets_.size() != block_ids_.size()) {
-		VPR_THROW(VPR_ERROR_CLB_NETLIST, "Inconsistent block data sizes");
+bool ClusteredNetlist::validate_block_sizes_impl(size_t num_blocks) const {
+	if (block_pbs_.size() != num_blocks
+		|| block_types_.size() != num_blocks
+		|| block_nets_.size() != num_blocks
+		|| block_pin_nets_.size() != num_blocks) {
+        return false;
 	}
 	return true;
 }
 
-bool ClusteredNetlist::validate_port_sizes_impl() const {
+bool ClusteredNetlist::validate_port_sizes_impl(size_t /*num_ports*/) const {
+    //No cluster specific port data to check
 	return true;
 }
 
-bool ClusteredNetlist::validate_pin_sizes_impl() const {
-	if (physical_pin_index_.size() != pin_ids_.size()) {
-		VPR_THROW(VPR_ERROR_CLB_NETLIST, "Inconsistent pin data sizes");
+bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
+	if (physical_pin_index_.size() != num_pins) {
+        return false;
 	}
 	return true;
 }
 
-bool ClusteredNetlist::validate_net_sizes_impl() const {
-	if (net_is_global_.size() != net_ids_.size()
-		|| net_is_fixed_.size() != net_ids_.size()
-		|| net_is_routed_.size() != net_ids_.size()) {
-		VPR_THROW(VPR_ERROR_CLB_NETLIST, "Inconsistent net data sizes");
+bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
+	if (net_is_global_.size() != num_nets
+		|| net_is_fixed_.size() != num_nets
+		|| net_is_routed_.size() != num_nets) {
+        return false;
 	}
 	return true;
 }

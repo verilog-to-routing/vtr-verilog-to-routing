@@ -190,10 +190,10 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          * Sanity checks
          */
         //Verify the internal data structure sizes match
-        bool validate_block_sizes_impl() const override;
-		bool validate_port_sizes_impl() const override;
-		bool validate_pin_sizes_impl() const override;
-		bool validate_net_sizes_impl() const override;
+        bool validate_block_sizes_impl(size_t num_blocks) const override;
+		bool validate_port_sizes_impl(size_t num_ports) const override;
+		bool validate_pin_sizes_impl(size_t num_pins) const override;
+		bool validate_net_sizes_impl(size_t num_nets) const override;
 
     private: //Private data
         //Block data

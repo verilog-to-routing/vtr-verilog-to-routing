@@ -357,6 +357,11 @@ typename Netlist<BlockId, PortId, PinId, NetId>::block_range Netlist<BlockId, Po
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
+typename Netlist<BlockId, PortId, PinId, NetId>::port_range Netlist<BlockId, PortId, PinId, NetId>::ports() const {
+	return vtr::make_range(port_ids_.begin(), port_ids_.end());
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::pins() const {
 	return vtr::make_range(pin_ids_.begin(), pin_ids_.end());
 }
@@ -1096,15 +1101,15 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
 		size_t num_output_ports = count_valid_refs(block_output_ports(blk_id), port_id_map);
 		size_t num_clock_ports = count_valid_refs(block_clock_ports(blk_id), port_id_map);
 
-		std::vector<PortId>& ports = block_ports_[blk_id];
+		std::vector<PortId>& blk_ports = block_ports_[blk_id];
 
-		ports = update_valid_refs(ports, port_id_map);
+		blk_ports = update_valid_refs(blk_ports, port_id_map);
 		block_num_input_ports_[blk_id] = num_input_ports;
 		block_num_output_ports_[blk_id] = num_output_ports;
 		block_num_clock_ports_[blk_id] = num_clock_ports;
 
 		VTR_ASSERT_SAFE_MSG(all_valid(ports), "All Ids should be valid");
-		VTR_ASSERT(ports.size() == size_t(block_num_input_ports_[blk_id]
+		VTR_ASSERT(blk_ports.size() == size_t(block_num_input_ports_[blk_id]
 			+ block_num_output_ports_[blk_id]
 			+ block_num_clock_ports_[blk_id]));
 	}
@@ -1167,8 +1172,8 @@ void Netlist<BlockId, PortId, PinId, NetId>::shrink_to_fit() {
 	block_num_clock_pins_.shrink_to_fit();
 
 	block_ports_.shrink_to_fit();
-	for (auto& ports : block_ports_) {
-		ports.shrink_to_fit();
+	for (auto& blk_ports : block_ports_) {
+		blk_ports.shrink_to_fit();
 	}
 	block_num_input_ports_.shrink_to_fit();
 	block_num_output_ports_.shrink_to_fit();
@@ -1262,48 +1267,56 @@ bool Netlist<BlockId, PortId, PinId, NetId>::valid_string_id(Netlist<BlockId, Po
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_sizes() const {
-	if (block_names_.size() != block_ids_.size()
-		|| block_pins_.size() != block_ids_.size()
-		|| block_num_input_pins_.size() != block_ids_.size()
-		|| block_num_output_pins_.size() != block_ids_.size()
-		|| block_num_clock_pins_.size() != block_ids_.size()
-		|| block_ports_.size() != block_ids_.size()
-		|| block_num_input_ports_.size() != block_ids_.size()
-		|| block_num_output_ports_.size() != block_ids_.size()
-		|| block_num_clock_ports_.size() != block_ids_.size()) {
+    size_t num_blocks = blocks().size(); 
+	if (block_names_.size() != num_blocks
+		|| block_pins_.size() != num_blocks
+		|| block_num_input_pins_.size() != num_blocks
+		|| block_num_output_pins_.size() != num_blocks
+		|| block_num_clock_pins_.size() != num_blocks
+		|| block_ports_.size() != num_blocks
+		|| block_num_input_ports_.size() != num_blocks
+		|| block_num_output_ports_.size() != num_blocks
+		|| block_num_clock_ports_.size() != num_blocks
+        || !validate_block_sizes_impl(num_blocks)) {
 		VPR_THROW(VPR_ERROR_NETLIST, "Inconsistent block data sizes");
 	}
-	return validate_block_sizes_impl();
+	return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_port_sizes() const {
-	if (port_names_.size() != port_ids_.size()
-		|| port_blocks_.size() != port_ids_.size()
-		|| port_pins_.size() != port_ids_.size()) {
+    size_t num_ports = ports().size();
+	if (port_names_.size() != num_ports
+		|| port_blocks_.size() != num_ports
+		|| port_pins_.size() != num_ports
+        || !validate_port_sizes_impl(num_ports)) {
 		VPR_THROW(VPR_ERROR_NETLIST, "Inconsistent port data sizes");
 	}
-	return validate_port_sizes_impl();
+	return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_pin_sizes() const {
-	if (pin_ports_.size() != pin_ids_.size()
-		|| pin_port_bits_.size() != pin_ids_.size()
-		|| pin_nets_.size() != pin_ids_.size()
-		|| pin_is_constant_.size() != pin_ids_.size()) {
+    size_t num_pins = pins().size();
+	if (pin_ports_.size() != num_pins
+		|| pin_port_bits_.size() != num_pins
+		|| pin_nets_.size() != num_pins
+		|| pin_is_constant_.size() != num_pins
+        || !validate_pin_sizes_impl(num_pins)) {
 		VPR_THROW(VPR_ERROR_NETLIST, "Inconsistent pin data sizes");
 	}
-	return validate_pin_sizes_impl();
+	return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_sizes() const {
-	if (net_names_.size() != net_ids_.size()
-		|| net_pins_.size() != net_ids_.size()) {
+    size_t num_nets = nets().size();
+	if (net_names_.size() != num_nets
+		|| net_pins_.size() != num_nets
+        || !validate_net_sizes_impl(num_nets)) {
 		VPR_THROW(VPR_ERROR_NETLIST, "Inconsistent net data sizes");
 	}
-	return validate_net_sizes_impl();
+	return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>

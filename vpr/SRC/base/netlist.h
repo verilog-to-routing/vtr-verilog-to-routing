@@ -618,6 +618,9 @@ class Netlist {
 		//Returns a range consisting of all blocks in the netlist
 		block_range blocks() const;
 
+		//Returns a range consisting of all ports in the netlist
+		port_range  ports() const;
+
 		//Returns a range consisting of all nets in the netlist
 		net_range   nets() const;
 		
@@ -839,10 +842,10 @@ class Netlist {
 		//are called from this class in their respective non-impl() functions.
 		virtual void shrink_to_fit_impl() = 0;
 
-		virtual bool validate_block_sizes_impl() const = 0;
-		virtual bool validate_port_sizes_impl() const = 0;
-		virtual bool validate_pin_sizes_impl() const = 0;
-		virtual bool validate_net_sizes_impl() const = 0;
+		virtual bool validate_block_sizes_impl(size_t num_blocks) const = 0;
+		virtual bool validate_port_sizes_impl(size_t num_ports) const = 0;
+		virtual bool validate_pin_sizes_impl(size_t num_pins) const = 0;
+		virtual bool validate_net_sizes_impl(size_t num_nets) const = 0;
 
 		virtual void clean_blocks_impl(const vtr::vector_map<BlockId, BlockId>& block_id_map) = 0;
 		virtual void clean_ports_impl(const vtr::vector_map<PortId, PortId>& port_id_map) = 0;
@@ -854,7 +857,7 @@ class Netlist {
 		virtual void remove_pin_impl(const PinId pin_id) = 0;
 		virtual void remove_net_impl(const NetId net_id) = 0;
 
-	protected: //Protected Data
+	private: //Data
 		std::string netlist_name_;	//Name of the top-level netlist
 		std::string netlist_id_;	//Unique identifier for the netlist
 		bool dirty_;				//Indicates the netlist has invalid entries from remove_*() functions
@@ -900,7 +903,7 @@ class Netlist {
         vtr::vector_map<StringId,StringId>		string_ids_;    //Valid string ids
         vtr::vector_map<StringId,std::string>	strings_;       //Strings
 
-	protected: //Fast lookups
+	private: //Fast lookups
         vtr::vector_map<StringId,BlockId>				block_name_to_block_id_;
         vtr::vector_map<StringId,NetId>					net_name_to_net_id_;
 		std::unordered_map<std::string, StringId>		string_to_string_id_;

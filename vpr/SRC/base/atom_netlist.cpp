@@ -249,26 +249,27 @@ void AtomNetlist::shrink_to_fit_impl() {
  * Sanity Checks
  *
  */
-bool AtomNetlist::validate_block_sizes_impl() const {
-	if (block_truth_tables_.size() != block_ids_.size()
-		|| block_models_.size() != block_ids_.size()) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
+bool AtomNetlist::validate_block_sizes_impl(size_t num_blocks) const {
+	if (block_truth_tables_.size() != num_blocks
+		|| block_models_.size() != num_blocks) {
+        return false;
     }
-
 	return true;
 }
 
-bool AtomNetlist::validate_port_sizes_impl() const {
-	if (port_models_.size() != port_ids_.size()) {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
+bool AtomNetlist::validate_port_sizes_impl(size_t num_ports) const {
+	if (port_models_.size() != num_ports) {
+        return false;
 	}
 	return true;
 }
 
-bool AtomNetlist::validate_pin_sizes_impl() const {
+bool AtomNetlist::validate_pin_sizes_impl(size_t /*num_pins*/) const {
+    //No atom specific pin data to check
 	return true;
 }
 
-bool AtomNetlist::validate_net_sizes_impl() const {
+bool AtomNetlist::validate_net_sizes_impl(size_t /*num_nets*/) const {
+    //No atom specific net data to check
 	return true;
 }

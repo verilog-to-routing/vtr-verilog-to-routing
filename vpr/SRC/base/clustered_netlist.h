@@ -162,9 +162,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//Create an empty, or return an existing net in the netlist
 		//  name     : The unique name of the net
 		ClusterNetId	create_net(const std::string name);
-
-		//Sets the netlist id based on a file digest's string
-		void set_netlist_id(std::string netlist_id);
 		
 		//Sets the flag in net_global_ = state
 		void set_global(ClusterNetId net_id, bool state);
@@ -247,10 +244,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		 * Sanity Checks
 		 */
 		//Verify the internal data structure sizes match
-		bool validate_block_sizes_impl() const override;
-		bool validate_port_sizes_impl() const override;
-		bool validate_pin_sizes_impl() const override;
-		bool validate_net_sizes_impl() const override;
+		bool validate_block_sizes_impl(size_t num_blocks) const override;
+		bool validate_port_sizes_impl(size_t num_ports) const override;
+		bool validate_pin_sizes_impl(size_t num_pins) const override;
+		bool validate_net_sizes_impl(size_t num_nets) const override;
 
 	private: //Private Data
 		
