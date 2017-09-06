@@ -169,34 +169,31 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
 		/*
 		* Component removal
 		*/
-		//Unused functions, declared as they are virtual functions in the base Netlist class
-		void remove_block_impl(const AtomBlockId blk_id);
-		void remove_port_impl(const AtomPortId port_id);
-		void remove_pin_impl(const AtomPinId pin_id);
-		void remove_net_impl(const AtomNetId net_id);
+		void remove_block_impl(const AtomBlockId blk_id) override;
+		void remove_port_impl(const AtomPortId port_id) override;
+		void remove_pin_impl(const AtomPinId pin_id) override;
+		void remove_net_impl(const AtomNetId net_id) override;
 
         /*
          * Netlist compression/optimization
          */
 		//Removes invalid components and reorders them
-        void clean_blocks_impl(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map);
-        void clean_ports_impl(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
-		//Unused functions, declared as they are virtual functions in the base Netlist class 
-		void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map);
-		void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map);
+        void clean_blocks_impl(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map) override;
+        void clean_ports_impl(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) override;
+		void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
+		void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
 
         //Shrinks internal data structures to required size to reduce memory consumption
-        void shrink_to_fit_impl();
+        void shrink_to_fit_impl() override;
 
         /*
          * Sanity checks
          */
         //Verify the internal data structure sizes match
-        bool validate_block_sizes_impl() const;
-		bool validate_port_sizes_impl() const;
-		//Unused functions, declared as they are virtual functions in the base Netlist class 
-		bool validate_pin_sizes_impl() const;
-		bool validate_net_sizes_impl() const;
+        bool validate_block_sizes_impl() const override;
+		bool validate_port_sizes_impl() const override;
+		bool validate_pin_sizes_impl() const override;
+		bool validate_net_sizes_impl() const override;
 
     private: //Private data
         //Block data

@@ -175,18 +175,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//Sets the flag in net_fixed_ = state
 		void set_fixed(ClusterNetId net_id, bool state);
 
-		/*
-		* Component removal
-		*/
-		//Removes a block from the netlist. This will also remove the associated ports and pins.
-		//  blk_id  : The block to be removed
-		void remove_block_impl(const ClusterBlockId blk_id);
-
-		//Unused functions, declared as they are virtual functions in the base Netlist class
-		void remove_port_impl(const ClusterPortId port_id);
-		void remove_pin_impl(const ClusterPinId pin_id);
-		void remove_net_impl(const ClusterNetId net_id);
-
 	public: //Public Accessors
 		/*
 		* Blocks
@@ -236,22 +224,33 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
          * Netlist compression/optimization
          */
         //Removes invalid components and reorders them
-        void clean_blocks_impl(const vtr::vector_map<ClusterBlockId,ClusterBlockId>& block_id_map);
-		void clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map); //Unused function, declared as they are virtual functions in the base Netlist class 
-		void clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map);
-		void clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map);
+        void clean_blocks_impl(const vtr::vector_map<ClusterBlockId,ClusterBlockId>& block_id_map) override;
+		void clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) override;
+		void clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) override;
+		void clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) override;
 
         //Shrinks internal data structures to required size to reduce memory consumption
-        void shrink_to_fit_impl();
+        void shrink_to_fit_impl() override;
+
 
 		/*
-		* Sanity Checks
-		*/
+		 * Component removal
+		 */
+		//Removes a block from the netlist. This will also remove the associated ports and pins.
+		//  blk_id  : The block to be removed
+		void remove_block_impl(const ClusterBlockId blk_id) override;
+		void remove_port_impl(const ClusterPortId port_id) override;
+		void remove_pin_impl(const ClusterPinId pin_id) override;
+		void remove_net_impl(const ClusterNetId net_id) override;
+
+		/*
+		 * Sanity Checks
+		 */
 		//Verify the internal data structure sizes match
-		bool validate_block_sizes_impl() const;
-		bool validate_port_sizes_impl() const; //Unused function, declared as they are virtual functions in the base Netlist class 
-		bool validate_pin_sizes_impl() const;
-		bool validate_net_sizes_impl() const;
+		bool validate_block_sizes_impl() const override;
+		bool validate_port_sizes_impl() const override;
+		bool validate_pin_sizes_impl() const override;
+		bool validate_net_sizes_impl() const override;
 
 	private: //Private Data
 		

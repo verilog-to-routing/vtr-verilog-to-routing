@@ -139,15 +139,12 @@ AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_port
 	if (model_port->dir == IN_PORT) {
 		if (model_port->is_clock) {
 			type = PortType::CLOCK;
-		}
-		else {
+		} else {
 			type = PortType::INPUT;
 		}
-	}
-	else if (model_port->dir == OUT_PORT) {
+	} else if (model_port->dir == OUT_PORT) {
 		type = PortType::OUTPUT;
-	}
-	else {
+	} else {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
 	}
 
@@ -198,20 +195,20 @@ AtomNetId AtomNetlist::add_net(const std::string name, AtomPinId driver, std::ve
 	return Netlist::add_net(name, driver, sinks);
 }
 
-void AtomNetlist::remove_block_impl(const AtomBlockId blk_id) {
-	VTR_ASSERT(blk_id);
+void AtomNetlist::remove_block_impl(const AtomBlockId /*blk_id*/) {
+    //Unused
 }
 
-void AtomNetlist::remove_port_impl(const AtomPortId port_id) {
-	VTR_ASSERT(port_id);
+void AtomNetlist::remove_port_impl(const AtomPortId /*port_id*/) {
+    //Unused
 }
 
-void AtomNetlist::remove_pin_impl(const AtomPinId pin_id) {
-	VTR_ASSERT(pin_id);
+void AtomNetlist::remove_pin_impl(const AtomPinId /*pin_id*/) {
+    //Unused
 }
 
-void AtomNetlist::remove_net_impl(const AtomNetId net_id) {
-	VTR_ASSERT(net_id);
+void AtomNetlist::remove_net_impl(const AtomNetId /*net_id*/) {
+    //Unused
 }
 
 /*
@@ -231,14 +228,12 @@ void AtomNetlist::clean_ports_impl(const vtr::vector_map<AtomPortId,AtomPortId>&
     port_models_ = clean_and_reorder_values(port_models_, port_id_map);
 }
 
-void AtomNetlist::clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) {
-	unsigned unused(pin_id_map.size()); //Remove unused parameter warning
-	unused = unused;
+void AtomNetlist::clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/) {
+    //Unused
 }
 
-void AtomNetlist::clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) {
-	unsigned unused(net_id_map.size()); //Remove unused parameter warning
-	unused = unused;
+void AtomNetlist::clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& /*net_id_map*/) {
+    //Unused
 }
 
 void AtomNetlist::shrink_to_fit_impl() {

@@ -446,76 +446,6 @@ class Netlist {
 		Netlist(std::string name="", std::string id="");
 		virtual ~Netlist();
 
-	protected: //Protected Mutators
-		//Create or return an existing block in the netlist
-        //  name        : The unique name of the block
-        BlockId create_block(const std::string name);
-
-		//Create or return an existing port in the netlist
-        //  blk_id      : The block the port is associated with
-        //  name        : The name of the port (must match the name of a port in the block's model)
-		//  width		: The width (number of bits) of the port
-		//  type		: The type of the port (INPUT, OUTPUT, CLOCK)
-        PortId  create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType type);
-
-		//Create or return an existing pin in the netlist
-        //  port_id    : The port this pin is associated with
-        //  port_bit   : The bit index of the pin in the port
-        //  net_id     : The net the pin drives/sinks
-        //  pin_type   : The type of the pin (driver/sink)
-        //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, bool is_const=false);
-
-		//Create an empty, or return an existing net in the netlist
-		//  name    : The unique name of the net
-		NetId   create_net(const std::string name); //An empty or existing net
-
-		//Create a completely specified net from specified driver and sinks
-        //  name    : The name of the net (Note: must not already exist)
-        //  driver  : The net's driver pin
-        //  sinks   : The net's sink pins
-        NetId   add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
-
-	public: //Public Mutators
-		//Add the specified pin to the specified net as pin_type. Automatically removes
-		//any previous net connection for this pin.
-		//  pin      : The pin to add
-		//  pin_type : The type of the pin (i.e. driver or sink)
-		//  net      : The net to add the pin to
-		void set_pin_net(const PinId pin, PinType pin_type, const NetId net);
-
-		//Mark a pin as being a constant generator.
-		// There are some cases where a pin can not be identified as a is constant until after
-		// the full netlist has been built; so we expose a way to mark existing pins as constants.
-		//  pin_id  : The pin to be marked
-		//  value   : The boolean value to set the pin_is_constant attribute
-		void set_pin_is_constant(const PinId pin_id, const bool value);
-
-		/*
-		* Note: all remove_*() will mark the associated items as invalid, but the items
-		* will not be removed until compress() is called.
-		*/
-		//Wrapper for remove_unused() & compress()
-		// This function should be used in the case where a netlist is fully modified
-		void remove_and_compress();
-
-		//This should be called after completing a series of netlist modifications 
-		//(e.g. removing blocks/ports/pins/nets).
-		//
-		//Marks netlist components which have become redundant due to other removals
-		//(e.g. ports with only invalid pins) as invalid so they will be destroyed during
-		//compress()
-		void remove_unused();
-
-		//Compresses the netlist, removing any invalid and/or unreferenced
-		//blocks/ports/pins/nets.
-		//
-		//This is currently used by just the ClusteredNetlist, as it requires compression
-		//if a selected CLB fails to pack.
-		//
-		//NOTE: this invalidates all existing IDs!
-		void compress();
-
 	public: //Public Accessors
 		/*
 		* Netlist
@@ -717,6 +647,75 @@ class Netlist {
 		//  port_bit: The bit index of the pin in the port
 		PinId   find_pin(const PortId port_id, BitIndex port_bit) const;
 
+	public: //Public Mutators
+		//Add the specified pin to the specified net as pin_type. Automatically removes
+		//any previous net connection for this pin.
+		//  pin      : The pin to add
+		//  pin_type : The type of the pin (i.e. driver or sink)
+		//  net      : The net to add the pin to
+		void set_pin_net(const PinId pin, PinType pin_type, const NetId net);
+
+		//Mark a pin as being a constant generator.
+		// There are some cases where a pin can not be identified as a is constant until after
+		// the full netlist has been built; so we expose a way to mark existing pins as constants.
+		//  pin_id  : The pin to be marked
+		//  value   : The boolean value to set the pin_is_constant attribute
+		void set_pin_is_constant(const PinId pin_id, const bool value);
+
+		/*
+		* Note: all remove_*() will mark the associated items as invalid, but the items
+		* will not be removed until compress() is called.
+		*/
+		//Wrapper for remove_unused() & compress()
+		// This function should be used in the case where a netlist is fully modified
+		void remove_and_compress();
+
+		//This should be called after completing a series of netlist modifications 
+		//(e.g. removing blocks/ports/pins/nets).
+		//
+		//Marks netlist components which have become redundant due to other removals
+		//(e.g. ports with only invalid pins) as invalid so they will be destroyed during
+		//compress()
+		void remove_unused();
+
+		//Compresses the netlist, removing any invalid and/or unreferenced
+		//blocks/ports/pins/nets.
+		//
+		//This is currently used by just the ClusteredNetlist, as it requires compression
+		//if a selected CLB fails to pack.
+		//
+		//NOTE: this invalidates all existing IDs!
+		void compress();
+
+	protected: //Protected Mutators
+		//Create or return an existing block in the netlist
+        //  name        : The unique name of the block
+        BlockId create_block(const std::string name);
+
+		//Create or return an existing port in the netlist
+        //  blk_id      : The block the port is associated with
+        //  name        : The name of the port (must match the name of a port in the block's model)
+		//  width		: The width (number of bits) of the port
+		//  type		: The type of the port (INPUT, OUTPUT, CLOCK)
+        PortId  create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType type);
+
+		//Create or return an existing pin in the netlist
+        //  port_id    : The port this pin is associated with
+        //  port_bit   : The bit index of the pin in the port
+        //  net_id     : The net the pin drives/sinks
+        //  pin_type   : The type of the pin (driver/sink)
+        //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, bool is_const=false);
+
+		//Create an empty, or return an existing net in the netlist
+		//  name    : The unique name of the net
+		NetId   create_net(const std::string name); //An empty or existing net
+
+		//Create a completely specified net from specified driver and sinks
+        //  name    : The name of the net (Note: must not already exist)
+        //  driver  : The net's driver pin
+        //  sinks   : The net's sink pins
+        NetId   add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
 
 	protected: //Protected Base Types
 		struct string_id_tag;

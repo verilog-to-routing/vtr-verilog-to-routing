@@ -64,7 +64,7 @@ int ClusteredNetlist::physical_pin_index(const ClusterNetId net_id, int count) c
 
 	VTR_ASSERT(count);
 
-	return -1;
+	return OPEN;
 }
 
 /*
