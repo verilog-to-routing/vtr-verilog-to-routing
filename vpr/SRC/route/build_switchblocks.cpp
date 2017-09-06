@@ -209,11 +209,6 @@ static void stampout_switchblocks_from_row( int sb_row_size,
 		e_directionality directionality, t_sb_connection_map *sb_row, 
 		t_sb_connection_map *sb_conns );
 
-/* compute greatest common denominator of x and y */
-static int gcd(int x, int y);
-
-/* compute least common multiple of x and y */
-static int lcm(int x, int y);
 #endif	//FAST_SB_COMPUTATION
 
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
@@ -392,7 +387,7 @@ static int get_max_lcm( vector<t_switchblock_inf> *switchblocks, t_wire_type_siz
                         // the condition can fail if freq of a seg is 0 (so it is in wc, but not in wire_type_size)
     					int length1 = wire_type_sizes->at(wc->from_type[ifrom]).length;
 	    				int length2 = wire_type_sizes->at(wc->to_type[ito]).length;
-		    			int current_lcm = lcm(length1, length2);
+		    			int current_lcm = vtr::lcm(length1, length2);
 			    		if (current_lcm > max_lcm){
 						    max_lcm = current_lcm;
 					    }
@@ -547,25 +542,6 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 	}
 }
 
-
-/* compute greatest common denominator of x and y */
-static int gcd(int x, int y){
-	int result;
-	if (y == 0){
-		result = x;
-	} else {
-		result = gcd(y, x % y);
-	}
-	return result;
-}
-
-
-/* compute least common multiple of x and y */
-static int lcm(int x, int y){
-	int result;
-	result = x / gcd(x,y) * y;
-	return result;
-}
 #endif	//FAST_SB_COMPUTATION
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */

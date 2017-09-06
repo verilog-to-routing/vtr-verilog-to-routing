@@ -39,18 +39,31 @@ namespace vtr {
         return std::exp( (1. / n) * log_sum );
     }
 
-    //Return the lowest common multiple of m and n
+    //Return the greatest common divisor of x and y
     // Note that T should be an integral type
     template<typename T>
-    T lcm(T m, T n) {
+    static T gcd(T x, T y){
+        static_assert(std::is_integral<T>::value, "T must be integral");
+        //Euclidean algorithm
+        if (y == 0){
+            return x;
+        }
+        return gcd(y, x % y);
+    }
+
+    //Return the least common multiple of x and y
+    // Note that T should be an integral type
+    template<typename T>
+    T lcm(T x, T y) {
         static_assert(std::is_integral<T>::value, "T must be integral");
 
-        T lcm_val;
-        for (lcm_val = 1; lcm_val % m != 0 || lcm_val % n != 0; ++lcm_val)
-            ;
-
-        return lcm_val;
+        if (x == 0 && y == 0) {
+            return 0;
+        } else {
+            return (x / gcd(x,y)) * y;
+        }
     }
+
 }
 
 #endif

@@ -10,6 +10,7 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -1093,8 +1094,7 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 
 	/* If we get here, we have to use edge counting.  Find the LCM of the two periods.		   *
 	* This determines how long it takes before the pattern of the two clocks starts repeating. */
-	for (lcm_period = 1; lcm_period % source_period != 0 || lcm_period % sink_period != 0; lcm_period++)
-		;
+    lcm_period = vtr::lcm(source_period, sink_period);
 
 	/* Create an array of positive edges for each clock over one LCM clock period. */
 
