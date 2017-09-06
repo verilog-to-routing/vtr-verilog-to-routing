@@ -27,14 +27,13 @@ using namespace std;
 
 static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float maximum_device_utilization);
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts, float maximum_utilization);
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height);
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range=true);
 
 static void CheckGrid(const DeviceGrid& grid);
 
 static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities);
 
-static bool is_integer(std::string val);
-
+//Create the device grid based on resource requirements
 DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float target_device_utilization) {
     if (layout_name == "auto") {
         //Auto-size the device
@@ -66,17 +65,16 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
     }
 }
 
+//Create the device grid based on dimensions
 DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, size_t width, size_t height) {
     if (layout_name == "auto") {
         VTR_ASSERT(grid_layouts.size() > 0);
         //Auto-size
         if (grid_layouts[0].grid_type == GridDefType::AUTO) {
-            //Auto layout
+            //Auto layout of the specified dimensions
             return build_device_grid(grid_layouts[0], width, height);
         } else {
-            //Find the fixed layout with close to the target size
-
-
+            //Find the fixed layout close to the target size
             auto sort_cmp = [](const t_grid_def& lhs, const t_grid_def& rhs) {
                 return lhs.width < rhs.width || lhs.height < rhs.width;
             };
@@ -87,9 +85,12 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
             };
             auto iter = std::find_if(grid_layouts.begin(), grid_layouts.end(), find_cmp);
 
-
             if (iter == grid_layouts.end()) {
-                //No device larger than specified width/height, so choose next smallest
+                //No device larger than specified width/height, so choose largest possible
+                vtr::printf_warning(__FILE__, __LINE__, 
+                        "Specified device dimensions (%zux%zu) exceed those of the largest fixed-size device."
+                        " Using the largest fixed-size device\n",
+                        width, height);
                 --iter;
             }
 
@@ -145,10 +146,16 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
 #endif
 
             //Build the device
-            auto grid = build_device_grid(grid_def, width, height);
+            // Don't warn about out-of-range specifications since these can
+            // occur (harmlessly) at small device dimensions
+            auto grid = build_device_grid(grid_def, width, height, false);
 
             //Check if it satisfies the block counts
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
+                //Re-build the grid at the final size with out-of-range
+                //warnings turned on (so users are aware of out-of-range issues
+                //at the final device sizes)
+                grid = build_device_grid(grid_def, width, height, true);
                 return grid;
             }
 
@@ -223,13 +230,13 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_ty
 }
 
 //Build the specified device grid 
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height) {
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range) {
     if (grid_def.grid_type == GridDefType::FIXED) {
 
-        if (grid_def.width != int(width) || grid_def.height != int(height)) {
+        if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_THROW(VPR_ERROR_OTHER, 
-                    "Requested grid size (%dx%d) does not match fixed device size (%dx%d)",
-                    width, height, grid_def.width, grid_def.height);
+                    "Requested grid size (%zu%zu) does not match fixed device size (%dx%d)",
+                    grid_width, grid_height, grid_def.width, grid_def.height);
         }
     }
 
@@ -238,15 +245,15 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
     //Track the current priority for each grid location
     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
     // any user-specified priority will override the default empty grid
-    auto grid_priorities = vtr::Matrix<int>({width, height}, std::numeric_limits<int>::lowest());
+    auto grid_priorities = vtr::Matrix<int>({grid_width, grid_height}, std::numeric_limits<int>::lowest());
 
-    auto grid = vtr::Matrix<t_grid_tile>({width, height});
+    auto grid = vtr::Matrix<t_grid_tile>({grid_width, grid_height});
 
     //Initialize the device to all empty blocks
     auto empty_type = find_block_type_by_name(EMPTY_BLOCK_NAME, device_ctx.block_types, device_ctx.num_block_types);
     VTR_ASSERT(empty_type != nullptr);
-    for (size_t x = 0; x < width; ++x) {
-        for (size_t y = 0; y < height; ++y) {
+    for (size_t x = 0; x < grid_width; ++x) {
+        for (size_t y = 0; y < grid_height; ++y) {
             set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
                     empty_type, x, y, grid, grid_priorities);
         }
@@ -254,8 +261,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
 
     auto grid_loc_defs = grid_def.loc_defs;
 
-    //Process the gird location specifications from lowest to highest priority,
-    //this ensure higher priority specifications override lower priority specifications
     std::set<t_type_descriptor*> seen_types;
     for (const auto& grid_loc_def : grid_loc_defs) {
         //Fill in the block types according to the specification
@@ -271,8 +276,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         seen_types.insert(type);
 
         t_formula_data vars;
-        vars.set_var_value("W", width);
-        vars.set_var_value("H", height);
+        vars.set_var_value("W", grid_width);
+        vars.set_var_value("H", grid_height);
         vars.set_var_value("w", type->width);
         vars.set_var_value("h", type->height);
 
@@ -302,33 +307,41 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         size_t incry = parse_formula(yspec.incr_expr, vars);
         size_t repeaty = parse_formula(yspec.repeat_expr, vars);
 
-        //Warn if start and end fall outside the device dimensions
-        // Unless it is explicitly specified as an integer, this avoids spurious warnings during the early 
-        // stages of packing when the device may be very small and some larger columns may not yet exist.
-        // Note that this suppress only warnings for explicit integers and will still warn about possibly 
-        // incorrect formula
-        if (startx > width - 1 && !is_integer(xspec.start_expr)) {
-            vtr::printf_warning(__FILE__, __LINE__,
-                    "Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                    type->name, xspec.start_expr.c_str(), startx, 0, width - 1);
+        //Check start against the device dimensions
+        // Start locations outside the device will never create block instances
+        if (startx > grid_width - 1) {
+            if (warn_out_of_range) {
+                vtr::printf_warning(__FILE__, __LINE__,
+                        "Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
+                        type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
+            }
+            continue; //No instances will be created
         }
 
-        if (endx > width - 1 && !is_integer(xspec.end_expr)) {
-            vtr::printf_warning(__FILE__, __LINE__,
-                    "Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                    type->name, xspec.end_expr.c_str(), endx, 0, width - 1);
+        if (starty > grid_height - 1) {
+            if (warn_out_of_range) {
+                vtr::printf_warning(__FILE__, __LINE__,
+                        "Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
+                        type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
+            }
+            continue; //No instances will be created
         }
 
-        if (starty > height - 1 && !is_integer(yspec.start_expr)) {
-            vtr::printf_warning(__FILE__, __LINE__,
-                    "Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
-                    type->name, yspec.start_expr.c_str(), starty, 0, height - 1);
+        //Check end against the device dimensions
+        if (endx > grid_width - 1) {
+            if (warn_out_of_range) {
+                vtr::printf_warning(__FILE__, __LINE__,
+                        "Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
+                        type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
+            }
         }
 
-        if (endy > height - 1 && !is_integer(yspec.end_expr)) {
-            vtr::printf_warning(__FILE__, __LINE__,
-                    "Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
-                    type->name, yspec.end_expr.c_str(), endy, 0, height - 1);
+        if (endy > grid_height - 1) {
+            if (warn_out_of_range) {
+                vtr::printf_warning(__FILE__, __LINE__,
+                        "Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
+                        type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
+            }
         }
 
         //The end must fall after (or equal) to the start
@@ -348,7 +361,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         VTR_ASSERT(type->width > 0);
         if (incrx < size_t(type->width)) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification x increment for block type '%s' must be at least"
+                    "Grid location specification incrx for block type '%s' must be at least"
                     " block width (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, type->width, xspec.incr_expr.c_str(), incrx);
         }
@@ -356,7 +369,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         VTR_ASSERT(type->height > 0);
         if (incry < size_t(type->height)) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification y increment for block type '%s' must be at least"
+                    "Grid location specification incry for block type '%s' must be at least"
                     " block height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, type->height, yspec.incr_expr.c_str(), incry);
         }
@@ -365,7 +378,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         size_t region_width = endx - startx + 1; //+1 since start/end are both inclusive
         if (repeatx < region_width) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification x repeat for block type '%s' must be at least "
+                    "Grid location specification repeatx for block type '%s' must be at least"
                     " the region width (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_width, xspec.repeat_expr.c_str(), repeatx);
         }
@@ -373,7 +386,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
         if (repeaty < region_height) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification y repeat for block type '%s' must be at least "
+                    "Grid location specification repeaty for block type '%s' must be at least"
                     " the region height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
         }
@@ -384,18 +397,18 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
 
         size_t x_end = 0;
-        for (size_t kx = 0; x_end < width; ++kx) { //Repeat in x direction
+        for (size_t kx = 0; x_end < grid_width; ++kx) { //Repeat in x direction
             size_t x_start = startx + kx * repeatx;
             x_end = endx + kx * repeatx;
 
             size_t y_end = 0;
-            for (size_t ky = 0; y_end < height; ++ky) { //Repeat in y direction
+            for (size_t ky = 0; y_end < grid_height; ++ky) { //Repeat in y direction
                 size_t y_start = starty + ky * repeaty;
                 y_end = endy + ky * repeaty;
 
 
-                size_t x_max = std::min(x_end, width-1);
-                size_t y_max = std::min(y_end, height-1);
+                size_t x_max = std::min(x_end, grid_width-1);
+                size_t y_max = std::min(y_end, grid_height-1);
 
                 //Fill in the region
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
@@ -609,12 +622,6 @@ static void CheckGrid(const DeviceGrid& grid) {
             }
 		}
 	}
-}
-
-static bool is_integer(std::string val) {
-    auto regex = std::regex("\\s*\\d+\\s*"); 
-    
-    return std::regex_match(val, regex);
 }
 
 float calculate_device_utilization(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts) {
