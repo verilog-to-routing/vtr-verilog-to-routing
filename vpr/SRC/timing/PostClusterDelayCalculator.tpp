@@ -241,7 +241,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 				ClusterBlockId driver_block_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
 				VTR_ASSERT(driver_block_id == clb_src_block);
 
-				src_block_pin_index = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
+				src_block_pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
 
                 tatum::Time driver_clb_delay = tatum::Time(clb_delay_calc_.internal_src_to_clb_output_delay(driver_block_id, 
 																												src_block_pin_index, 
@@ -295,7 +295,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 			VTR_ASSERT(src_net == cluster_ctx.clb_nlist.pin_net(sink_pin));
             tatum::Time net_delay = tatum::Time(inter_cluster_delay(src_net, 
 																	0, 
-																	cluster_ctx.clb_nlist.net_pin_index(src_net, sink_pin)));
+																	cluster_ctx.clb_nlist.pin_net_index(sink_pin)));
 
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG

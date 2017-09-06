@@ -353,7 +353,7 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
      used in this calculation so it can be used again for getting the total path delay*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	ClusterBlockId block_id = cluster_ctx.clb_nlist.net_pin_block(net_id, ipin);
-    const int pin_index = cluster_ctx.clb_nlist.physical_pin_index(net_id, ipin);
+    const int pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, ipin);
 
     /*There may be multiple atom netlist pins connected to this CLB pin. Iterate through them all*/
     std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(block_id, pin_index, pb_gpin_lookup);

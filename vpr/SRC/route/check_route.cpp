@@ -241,7 +241,7 @@ static void check_source(int inode, ClusterNetId net_id) {
 	}
 
 	//Get the driver pin's index in the block
-	node_block_pin = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
+	node_block_pin = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
 	iclass = type->pin_class[node_block_pin];
             
 	if (ptc_num != iclass) {		

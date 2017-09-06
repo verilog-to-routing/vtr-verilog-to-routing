@@ -53,19 +53,19 @@ int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
     return pin_physical_index_[id];
 }
 
-int ClusteredNetlist::physical_pin_index(const ClusterNetId net_id, int net_index) const {
+int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const {
+    auto nets_pins = net_pins(net_id);
 
-    int count = net_index;
-    for (auto pin_id : net_pins(net_id)) {
-        if (count == 0) {
-            return pin_physical_index(pin_id);
-        }
-        count--;
+    VTR_ASSERT_MSG(net_pin_index >= 0 && size_t(net_pin_index) < nets_pins.size(), "net pin index must be in range");
+
+    auto itr = nets_pins.begin() + net_pin_index; //Advance to the net_index'th pin
+    auto pin_id = *itr;
+
+    if (pin_id) {
+        return pin_physical_index(pin_id);
     }
 
-    VTR_ASSERT(count);
-
-    return OPEN;
+    return OPEN; //No valid pin found
 }
 
 /*
@@ -85,23 +85,6 @@ ClusterBlockId ClusteredNetlist::net_pin_block(const ClusterNetId net_id, int pi
     
     VTR_ASSERT(pin_index);
     return ClusterBlockId::INVALID();
-}
-
-int ClusteredNetlist::net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const {
-    VTR_ASSERT(valid_net_id(net_id));
-    VTR_ASSERT(valid_pin_id(pin_id));
-
-    int count = 0;
-    
-    for (ClusterPinId pin : net_pins(net_id)) {
-        if (pin == pin_id)
-            break;
-        count++;
-    }
-
-    //Ensure that a pin is found
-    VTR_ASSERT(count < (int)net_pins(net_id).size());
-    return count;
 }
 
 bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {

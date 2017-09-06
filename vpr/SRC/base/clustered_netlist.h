@@ -144,21 +144,17 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         int pin_physical_index(const ClusterPinId id) const;
 
         //Finds the net_index'th net pin (e.g. the 6th pin of the net) and
-        //returns the physical pin index on the block which the pin belongs
-        //  net_id     : The net to iterate through
-        //  net_index  : The index of the pin in the net
-        int physical_pin_index(const ClusterNetId net_id, int net_index) const;
+        //returns the physical pin index (i.e. pin index on the t_type_descriptor)
+        //of the block to which the pin belongs
+        //  net_id        : The net
+        //  net_pin_index : The index of the pin in the net
+        int net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const;
 
         /*
         * Nets
         */
         //Returns the block of the net & pin which it's attached to
         ClusterBlockId net_pin_block(const ClusterNetId net_id, int pin_index) const;
-
-        //Returns the pin's index in the net
-        //  net_id      : The net of which the pin belongs to
-        //  pin_id      : The matching pin the net connects to
-        int net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const;
 
         //Returns whether the net is global or fixed
         bool net_is_global(const ClusterNetId id) const;
@@ -260,12 +256,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         vtr::vector_map<ClusterBlockId, std::vector<int>>               block_pin_nets_;    //Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
 
         //Pins
-        vtr::vector_map<ClusterPinId, int>                              pin_physical_index_;//The indices of pins on a block from its type descriptor, numbered sequentially from [0 .. num_pins - 1]
+        vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index 
+                                                                //in t_type_descriptor) of logical pins
             
         //Nets  
-        vtr::vector_map<ClusterNetId, bool>                         net_is_global_;     //Boolean mapping indicating if the net is
-        vtr::vector_map<ClusterNetId, bool>                         net_is_routed_;     //Global, routed, or fixed (mutually exclusive).
-        vtr::vector_map<ClusterNetId, bool>                         net_is_fixed_;          //TODO: transfer net routing state to RoutingContext
+        vtr::vector_map<ClusterNetId, bool> net_is_global_;     //Boolean mapping indicating if the net is
+        vtr::vector_map<ClusterNetId, bool> net_is_routed_;     //Global, routed, or fixed (mutually exclusive).
+        vtr::vector_map<ClusterNetId, bool> net_is_fixed_;      //TODO: transfer net routing state to RoutingContext
 };
 
 #endif

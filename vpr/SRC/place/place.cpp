@@ -2214,7 +2214,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 	auto& grid = device_ctx.grid;
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-	pnum = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
+	pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
@@ -2378,7 +2378,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-	pnum = cluster_ctx.clb_nlist.physical_pin_index(net_id, 0);
+	pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 	

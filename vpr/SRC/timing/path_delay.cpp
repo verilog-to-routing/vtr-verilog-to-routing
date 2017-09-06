@@ -960,7 +960,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				dblock = cluster_ctx.clb_nlist.net_pin_block(net_id, j);
 				normalization = cluster_ctx.clb_nlist.block_type(dblock)->num_pins
 						/ cluster_ctx.clb_nlist.block_type(dblock)->capacity;
-				normalized_pin = cluster_ctx.clb_nlist.physical_pin_index(net_id, j) % normalization;
+				normalized_pin = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, j) % normalization;
 				d_intra_lb_route = cluster_ctx.clb_nlist.block_pb(dblock)->pb_route;
 				dpin = OPEN;
 				dport = OPEN;
