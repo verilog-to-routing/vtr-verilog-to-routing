@@ -64,27 +64,6 @@ const t_model_ports* AtomNetlist::port_model(const AtomPortId id) const {
     return port_models_[id];
 }
 
-
-/*
- *
- * Pins
- *
- */
-PinType AtomNetlist::pin_type(const AtomPinId id) const {
-    VTR_ASSERT(valid_pin_id(id));
-
-    AtomPortId port_id = pin_port(id);
-    PinType type;
-    switch (port_type(port_id)) {
-        case PortType::INPUT: /*fallthrough */;
-        case PortType::CLOCK: type = PinType::SINK; break;
-        case PortType::OUTPUT: type = PinType::DRIVER; break;
-        default: VTR_ASSERT_MSG(false, "Valid atom port type");
-    }
-    return type;
-}
-
-
 /*
 *
 * Lookups

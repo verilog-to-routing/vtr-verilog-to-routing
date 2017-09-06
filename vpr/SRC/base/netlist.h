@@ -555,6 +555,9 @@ class Netlist {
         //Returns the constructed name (derived from block and port) for the specified pin
         std::string pin_name(const PinId pin_id) const;
 
+        //Returns the type of the specified pin
+        PinType     pin_type(const PinId pin_id) const;
+
         //Returns the net associated with the specified pin
         NetId       pin_net(const PinId pin_id) const;
 
@@ -570,7 +573,7 @@ class Netlist {
         BlockId     pin_block(const PinId pin_id) const;
 
         //Returns the port type associated with the specified pin
-        PortType        pin_port_type(const PinId pin_id) const;
+        PortType    pin_port_type(const PinId pin_id) const;
 
         //Returns true if the pin is a constant (i.e. its value never changes)
         bool        pin_is_constant(const PinId pin_id) const;
@@ -862,7 +865,7 @@ class Netlist {
 
     protected:
         constexpr static int INVALID_INDEX = -1;
-        constexpr static int DRIVER_INDEX = 0;
+        constexpr static int NET_DRIVER_INDEX = 0;
 
     private: //Data
         std::string netlist_name_;  //Name of the top-level netlist

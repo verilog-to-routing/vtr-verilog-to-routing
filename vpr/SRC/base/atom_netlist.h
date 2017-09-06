@@ -115,12 +115,6 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         const t_model_ports* port_model(const AtomPortId id) const;
 
         /*
-         * Pins
-         */
-        //Returns the pin type of the specified pin
-        PinType pin_type(const AtomPinId id) const; 
-
-        /*
         * Lookups
         */
         //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
