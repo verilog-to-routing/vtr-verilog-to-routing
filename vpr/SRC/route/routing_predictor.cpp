@@ -5,7 +5,7 @@
 
 #include "vtr_assert.h"
 
-#include "routing_success_predictor.h"
+#include "routing_predictor.h"
 
 class LinearModel {
 public:
@@ -65,7 +65,7 @@ float covariance(std::vector<size_t> x_values, std::vector<float> y_values, floa
     return cov;
 }
 
-float RoutingSuccessPredictor::get_slope() {
+float RoutingPredictor::get_slope() {
 
     if (iterations_.size() > min_history_) {
         auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
@@ -159,13 +159,13 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
 
 
 
-RoutingSuccessPredictor::RoutingSuccessPredictor(size_t min_history, float history_factor)
+RoutingPredictor::RoutingPredictor(size_t min_history, float history_factor)
     : min_history_(min_history)
     , history_factor_(history_factor) {
     //nop
 }
 
-float RoutingSuccessPredictor::estimate_success_iteration() {
+float RoutingPredictor::estimate_success_iteration() {
     float success_iteration = std::numeric_limits<float>::quiet_NaN();
 
     if (iterations_.size() > min_history_) {
@@ -182,7 +182,7 @@ float RoutingSuccessPredictor::estimate_success_iteration() {
     return success_iteration;
 }
 
-float RoutingSuccessPredictor::estimate_overuse_slope() {
+float RoutingPredictor::estimate_overuse_slope() {
     //We use a fixed size sliding window of history to estimate the slope
     //This makes the slope estimate more 'recent' than the values used to estimate
     //the success iteration (although at the risk of being noisier).
@@ -207,7 +207,7 @@ float RoutingSuccessPredictor::estimate_overuse_slope() {
     return slope;
 }
 
-void RoutingSuccessPredictor::add_iteration_overuse(size_t iteration, size_t overused_rr_node_count) {
+void RoutingPredictor::add_iteration_overuse(size_t iteration, size_t overused_rr_node_count) {
     iterations_.push_back(iteration);
     iteration_overused_rr_node_counts_.push_back(overused_rr_node_count);
 }

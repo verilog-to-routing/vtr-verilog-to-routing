@@ -22,7 +22,7 @@
 #include "stats.h"
 #include "echo_files.h"
 #include "draw.h"
-#include "routing_success_predictor.h"
+#include "routing_predictor.h"
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h" 
@@ -193,7 +193,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     /*
      * Configure the routing predictor
      */
-    RoutingSuccessPredictor routing_success_predictor;
+    RoutingPredictor routing_predictor;
     float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
     if (router_opts.routing_failure_predictor == SAFE) {
         abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
@@ -299,12 +299,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
          * Calculate metrics for the current routing
          */
         bool routing_is_feasible = feasible_routing();
-        float est_success_iteration = routing_success_predictor.estimate_success_iteration();
-        float est_overuse_slope = routing_success_predictor.estimate_overuse_slope();
+        float est_success_iteration = routing_predictor.estimate_success_iteration();
+        float est_overuse_slope = routing_predictor.estimate_overuse_slope();
 
         overuse_info = calculate_overuse_info();
         wirelength_info = calculate_wirelength_info();
-        routing_success_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
+        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
 
         if (timing_info) {
             //Update timing based on the new routing
@@ -414,7 +414,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     connections_inf.set_stable_critical_path_delay(critical_path.delay());
 
                 /*Check if rate of convergence is high enough, if not lower the budgets of certain nets*/
-                //reduce_budgets_if_congested(budgeting_inf, connections_inf, routing_success_predictor.get_slope(), itry);
+                //reduce_budgets_if_congested(budgeting_inf, connections_inf, routing_predictor.get_slope(), itry);
             }
         } else {
             /* If timing analysis is not enabled, make sure that the criticalities and the

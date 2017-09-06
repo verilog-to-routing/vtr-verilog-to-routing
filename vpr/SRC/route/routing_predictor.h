@@ -1,5 +1,5 @@
-#ifndef VPR_ROUTING_SUCCESS_PREDICTOR_H
-#define VPR_ROUTING_SUCCESS_PREDICTOR_H
+#ifndef VPR_ROUTING_PREDICTOR_H
+#define VPR_ROUTING_PREDICTOR_H
 #include <vector>
 #include <cstddef>
 
@@ -13,9 +13,9 @@ constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
 // This avoids giving up when solutions are nearly legal, but converging slowly
 constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
 
-class RoutingSuccessPredictor {
+class RoutingPredictor {
 public:
-    RoutingSuccessPredictor(size_t min_history = 8, float history_factor = 0.5);
+    RoutingPredictor(size_t min_history = 8, float history_factor = 0.5);
 
     //Returns the estimated iteration when routing will succeed
     float estimate_success_iteration();

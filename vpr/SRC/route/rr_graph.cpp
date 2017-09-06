@@ -70,11 +70,6 @@ struct t_pin_loc {
 /******************* Variables local to this module. ***********************/
 
 
-/* Used to free "chunked" memory.  If NULL, no rr_graph exists right now.  */
-static vtr::t_chunk rr_mem_ch = {NULL, 0, NULL};
-
-/* Status of current chunk being dished out by calls to my_chunk_malloc.   */
-
 /********************* Subroutines local to this module. *******************/
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
         const vtr::Matrix<int>& Fc, const t_type_ptr Type, const std::vector<bool>& perturb_switch_pattern,
@@ -1183,27 +1178,27 @@ void free_rr_graph(void) {
      * a routing graph exists and can be freed.  Hence, you can call this   *
      * routine even if you're not sure of whether a rr_graph exists or not. */
 
-    if (rr_mem_ch.chunk_ptr_head == NULL) /* Nothing to free. */
-        return;
-
-    free_chunk_memory(&rr_mem_ch); /* Frees ALL "chunked" data */
-
     /* Before adding any more free calls here, be sure the data is NOT chunk *
      * allocated, as ALL the chunk allocated data is already free!           */
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    VTR_ASSERT(!device_ctx.rr_node_indices.empty());
-    device_ctx.rr_node_indices.resize(0);
-    free(device_ctx.rr_indexed_data);
-
-    device_ctx.rr_indexed_data = NULL;
-    device_ctx.num_rr_nodes = 0;
-
-    delete[] device_ctx.rr_switch_inf;
-    device_ctx.rr_switch_inf = NULL;
+    device_ctx.rr_node_indices.clear();
 
     delete[] device_ctx.rr_nodes;
-    device_ctx.rr_nodes = NULL;
+    device_ctx.rr_nodes = nullptr;
+    device_ctx.num_rr_nodes = 0;
+
+    device_ctx.rr_node_indices.clear();
+
+    free(device_ctx.rr_indexed_data);
+    device_ctx.rr_indexed_data = nullptr;
+
+    delete[] device_ctx.rr_switch_inf;
+    device_ctx.rr_switch_inf = nullptr;
+    device_ctx.num_rr_switches = 0;
+
+    delete[] device_ctx.switch_fanin_remap;
+    device_ctx.switch_fanin_remap = nullptr;
 }
 
 void alloc_net_rr_terminals(void) {
