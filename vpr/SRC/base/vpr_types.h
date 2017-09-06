@@ -865,7 +865,7 @@ enum e_direction : unsigned char {
     NUM_DIRECTIONS
 };
 
-constexpr std::array<const char*,NUM_DIRECTIONS> DIRECTIONS_STRING = {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"};
+constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *
@@ -940,12 +940,12 @@ typedef enum e_rr_type : unsigned char {
 	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES
 } t_rr_type;
 
-constexpr std::array<t_rr_type,NUM_RR_TYPES> RR_TYPES = {
+constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = { {
 	SOURCE, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE
-};
-constexpr std::array<const char*,NUM_RR_TYPES> rr_node_typename {
+} };
+constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename { {
 	"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE"
-};
+} };
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *

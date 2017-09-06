@@ -81,8 +81,8 @@ enum e_side : unsigned char {
     LEFT = 3, 
     NUM_SIDES
 };
-constexpr std::array<e_side,NUM_SIDES> SIDES = {TOP, RIGHT, BOTTOM, LEFT}; //Set of all side orientations
-constexpr std::array<const char*,NUM_SIDES> SIDE_STRING = {"TOP", "RIGHT", "BOTTOM", "LEFT"}; //String versions of side orientations
+constexpr std::array<e_side, NUM_SIDES> SIDES = { {TOP, RIGHT, BOTTOM, LEFT} }; //Set of all side orientations
+constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = { {"TOP", "RIGHT", "BOTTOM", "LEFT"} }; //String versions of side orientations
 
 /* pin location distributions */
 enum e_pin_location_distr {

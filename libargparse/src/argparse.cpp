@@ -366,7 +366,7 @@ namespace argparse {
 
     Argument& Argument::nargs(char nargs_type) {
         //TODO: nargs > 1 support: '?', '*', '+'
-        std::array<char,5> valid_nargs = {'0', '1'};
+		std::array<char, 5> valid_nargs = { {'0', '1'} };
 
         auto iter = std::find(valid_nargs.begin(), valid_nargs.end(), nargs_type);
         if (iter == valid_nargs.end()) {
