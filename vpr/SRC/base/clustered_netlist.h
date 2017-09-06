@@ -119,6 +119,50 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
         ClusteredNetlist(std::string name="", std::string id="");
 
+    public: //Public Accessors
+        /*
+        * Blocks
+        */
+        //Returns the physical block
+        t_pb* block_pb(const ClusterBlockId id) const;
+
+        //Returns the type of CLB (Logic block, RAM, DSP, etc.)
+        t_type_ptr block_type(const ClusterBlockId id) const;
+
+        //Returns the net of the block attached to the specific pin index
+        ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
+
+        //Returns the count on the net of the block attached
+        int block_pin_net(const ClusterBlockId blk_id, const int pin_index) const;
+
+        /*
+        * Pins
+        */
+        //Returns the index of the block which the pin belongs to
+        int physical_pin_index(const ClusterPinId id) const;
+
+        //Finds the count'th net_pins (e.g. the 6th pin of the net) and
+        //returns the index of the block which that pin belongs to
+        //  net_id     : The net to iterate through
+        //  count      : The index of the pin in the net
+        int physical_pin_index(const ClusterNetId net_id, int count) const;
+
+        /*
+        * Nets
+        */
+        //Returns the block of the net & pin which it's attached to
+        ClusterBlockId net_pin_block(const ClusterNetId net_id, int pin_index) const;
+
+        //Returns the pin's index in the net
+        //  net_id      : The net of which the pin belongs to
+        //  pin_id      : The matching pin the net connects to
+        int net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const;
+
+        //Returns whether the net is global or fixed
+        bool net_is_global(const ClusterNetId id) const;
+        bool net_is_routed(const ClusterNetId id) const;
+        bool net_is_fixed(const ClusterNetId id) const;
+
     public: //Public Mutators
         //Create or return an existing block in the netlist
         //  name        : The unique name of the block
@@ -171,50 +215,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
         //Sets the flag in net_fixed_ = state
         void set_fixed(ClusterNetId net_id, bool state);
-
-    public: //Public Accessors
-        /*
-        * Blocks
-        */
-        //Returns the physical block
-        t_pb* block_pb(const ClusterBlockId id) const;
-
-        //Returns the type of CLB (Logic block, RAM, DSP, etc.)
-        t_type_ptr block_type(const ClusterBlockId id) const;
-
-        //Returns the net of the block attached to the specific pin index
-        ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
-
-        //Returns the count on the net of the block attached
-        int block_pin_net(const ClusterBlockId blk_id, const int pin_index) const;
-
-        /*
-        * Pins
-        */
-        //Returns the index of the block which the pin belongs to
-        int physical_pin_index(const ClusterPinId id) const;
-
-        //Finds the count'th net_pins (e.g. the 6th pin of the net) and
-        //returns the index of the block which that pin belongs to
-        //  net_id     : The net to iterate through
-        //  count      : The index of the pin in the net
-        int physical_pin_index(const ClusterNetId net_id, int count) const;
-
-        /*
-        * Nets
-        */
-        //Returns the block of the net & pin which it's attached to
-        ClusterBlockId net_pin_block(const ClusterNetId net_id, int pin_index) const;
-
-        //Returns the pin's index in the net
-        //  net_id      : The net of which the pin belongs to
-        //  pin_id      : The matching pin the net connects to
-        int net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const;
-
-        //Returns whether the net is global or fixed
-        bool net_is_global(const ClusterNetId id) const;
-        bool net_is_routed(const ClusterNetId id) const;
-        bool net_is_fixed(const ClusterNetId id) const;
 
     private: //Private Members
         /*
