@@ -15,6 +15,7 @@ circuit_list_add=raygentop.v
 arch_list_add=fixed_grid.xml
 arch_list_add=column_io.xml
 arch_list_add=multiwidth_blocks.xml
+arch_list_add=non_column.xml
 arch_list_add=custom_sbloc.xml
 
 # Parse info and how to parse
