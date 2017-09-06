@@ -558,6 +558,8 @@ class Netlist {
 		//Returns the net associated with the specified pin
 		NetId		pin_net(const PinId pin_id) const;
 
+        int         pin_net_index(const PinId pin_id) const;
+
 		//Returns the port associated with the specified pin
 		PortId		pin_port(const PinId pin_id) const;
 
@@ -750,7 +752,8 @@ class Netlist {
         StringId create_string(const std::string& str);
 
 		//Updates net cross-references for the specified pin
-		void associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id);
+        //Returns the pin's index within the net
+		int associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id);
 
 		//Updates port cross-references for the specified pin
 		void associate_pin_with_port(const PinId pin_id, const PortId port_id);
@@ -857,6 +860,10 @@ class Netlist {
 		virtual void remove_pin_impl(const PinId pin_id) = 0;
 		virtual void remove_net_impl(const NetId net_id) = 0;
 
+    protected:
+        constexpr static int INVALID_INDEX = -1;
+        constexpr static int DRIVER_INDEX = 0;
+
 	private: //Data
 		std::string netlist_name_;	//Name of the top-level netlist
 		std::string netlist_id_;	//Unique identifier for the netlist
@@ -889,6 +896,7 @@ class Netlist {
 		vtr::vector_map<PinId, PortId>		pin_ports_;         //Type of each pin
 		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The pins bit position in the port
 		vtr::vector_map<PinId, NetId>		pin_nets_;          //Net associated with each pin
+		vtr::vector_map<PinId, int>	        pin_net_indices_;   //Index of the specified pin within it's associated net
 		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
 		//Net data
