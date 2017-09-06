@@ -79,11 +79,11 @@
 
 
 class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
-	public:
-		//Constructs a netlist
-		// name: the name of the netlist (e.g. top-level module)
-		// id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
-		AtomNetlist(std::string name = "", std::string id = "");
+    public:
+        //Constructs a netlist
+        // name: the name of the netlist (e.g. top-level module)
+        // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
+        AtomNetlist(std::string name = "", std::string id = "");
 
     public: //Public types
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
@@ -95,8 +95,8 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         //Returns the type of the specified block
         AtomBlockType block_type(const AtomBlockId id) const;
 
-		//Returns the model associated with the block
-		const t_model* block_model(const AtomBlockId id) const;
+        //Returns the model associated with the block
+        const t_model* block_model(const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -110,24 +110,24 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         /*
          * Ports
          */
-		//Returns the model port of the specified port or nullptr if not
-		//  id: The ID of the port to look for
-		const t_model_ports* port_model(const AtomPortId id) const;
+        //Returns the model port of the specified port or nullptr if not
+        //  id: The ID of the port to look for
+        const t_model_ports* port_model(const AtomPortId id) const;
 
         /*
          * Pins
          */
         //Returns the pin type of the specified pin
-        PinType	pin_type(const AtomPinId id) const; 
+        PinType pin_type(const AtomPinId id) const; 
 
-		/*
-		* Lookups
-		*/
-		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-		//Note that this method is typically more efficient than searching by name
-		//  blk_id: The ID of the block who's ports will be checked
-		//  model_port: The port model to look for
-		AtomPortId  find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
+        /*
+        * Lookups
+        */
+        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+        //Note that this method is typically more efficient than searching by name
+        //  blk_id: The ID of the block who's ports will be checked
+        //  model_port: The port model to look for
+        AtomPortId  find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
     public: //Public Mutators
         /*
@@ -166,22 +166,22 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         AtomNetId   add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
     private: //Private members
-		/*
-		* Component removal
-		*/
-		void remove_block_impl(const AtomBlockId blk_id) override;
-		void remove_port_impl(const AtomPortId port_id) override;
-		void remove_pin_impl(const AtomPinId pin_id) override;
-		void remove_net_impl(const AtomNetId net_id) override;
+        /*
+        * Component removal
+        */
+        void remove_block_impl(const AtomBlockId blk_id) override;
+        void remove_port_impl(const AtomPortId port_id) override;
+        void remove_pin_impl(const AtomPinId pin_id) override;
+        void remove_net_impl(const AtomNetId net_id) override;
 
         /*
          * Netlist compression/optimization
          */
-		//Removes invalid components and reorders them
+        //Removes invalid components and reorders them
         void clean_blocks_impl(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map) override;
         void clean_ports_impl(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) override;
-		void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
-		void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
+        void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
+        void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
 
         //Shrinks internal data structures to required size to reduce memory consumption
         void shrink_to_fit_impl() override;
@@ -191,17 +191,17 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
          */
         //Verify the internal data structure sizes match
         bool validate_block_sizes_impl(size_t num_blocks) const override;
-		bool validate_port_sizes_impl(size_t num_ports) const override;
-		bool validate_pin_sizes_impl(size_t num_pins) const override;
-		bool validate_net_sizes_impl(size_t num_nets) const override;
+        bool validate_port_sizes_impl(size_t num_ports) const override;
+        bool validate_pin_sizes_impl(size_t num_pins) const override;
+        bool validate_net_sizes_impl(size_t num_nets) const override;
 
     private: //Private data
         //Block data
-		vtr::vector_map<AtomBlockId, const t_model*>		block_models_;             //Architecture model of each block
-		vtr::vector_map<AtomBlockId,TruthTable>             block_truth_tables_;       //Truth tables of each block
+        vtr::vector_map<AtomBlockId, const t_model*>        block_models_;             //Architecture model of each block
+        vtr::vector_map<AtomBlockId,TruthTable>             block_truth_tables_;       //Truth tables of each block
 
-		//Port data
-		vtr::vector_map<AtomPortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
+        //Port data
+        vtr::vector_map<AtomPortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
 };
 
 #include "atom_lookup.h"
