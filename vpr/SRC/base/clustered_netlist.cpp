@@ -53,8 +53,9 @@ int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
     return pin_physical_index_[id];
 }
 
-int ClusteredNetlist::physical_pin_index(const ClusterNetId net_id, int count) const {
+int ClusteredNetlist::physical_pin_index(const ClusterNetId net_id, int net_index) const {
 
+    int count = net_index;
     for (auto pin_id : net_pins(net_id)) {
         if (count == 0) {
             return pin_physical_index(pin_id);

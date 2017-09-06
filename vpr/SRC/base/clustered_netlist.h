@@ -143,11 +143,11 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //t_type_descriptor) of the specified logical pin
         int pin_physical_index(const ClusterPinId id) const;
 
-        //Finds the count'th net_pins (e.g. the 6th pin of the net) and
-        //returns the index of the block which that pin belongs to
+        //Finds the net_index'th net pin (e.g. the 6th pin of the net) and
+        //returns the physical pin index on the block which the pin belongs
         //  net_id     : The net to iterate through
-        //  count      : The index of the pin in the net
-        int physical_pin_index(const ClusterNetId net_id, int count) const;
+        //  net_index  : The index of the pin in the net
+        int physical_pin_index(const ClusterNetId net_id, int net_index) const;
 
         /*
         * Nets
