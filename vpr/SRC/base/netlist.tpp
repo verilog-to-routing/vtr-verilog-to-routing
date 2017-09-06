@@ -323,6 +323,21 @@ typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, Port
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
+PinId Netlist<BlockId, PortId, PinId, NetId>::net_pin(const NetId net_id, int net_pin_index) const {
+    VTR_ASSERT(valid_net_id(net_id));
+    VTR_ASSERT_MSG(net_pin_index >= 0 && size_t(net_pin_index) < net_pins_[net_id].size(), "Pin index must be in range");
+
+    return net_pins_[net_id][net_pin_index];
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+BlockId Netlist<BlockId, PortId, PinId, NetId>::net_pin_block(const NetId net_id, int net_pin_index) const {
+    auto pin_id = net_pin(net_id, net_pin_index);
+
+    return pin_block(pin_id);
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 PinId Netlist<BlockId, PortId, PinId, NetId>::net_driver(const NetId net_id) const {
     VTR_ASSERT(valid_net_id(net_id));
 

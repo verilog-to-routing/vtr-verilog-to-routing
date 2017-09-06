@@ -121,8 +121,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
     public: //Public Accessors
         /*
-        * Blocks
-        */
+         * Blocks
+         */
         //Returns the physical block
         t_pb* block_pb(const ClusterBlockId id) const;
 
@@ -136,8 +136,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         int block_pin_net(const ClusterBlockId blk_id, const int pin_index) const;
 
         /*
-        * Pins
-        */
+         * Pins
+         */
 
         //Returns the physical pin index (i.e. pin index on the
         //t_type_descriptor) of the specified logical pin
@@ -151,11 +151,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         int net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const;
 
         /*
-        * Nets
-        */
-        //Returns the block of the net & pin which it's attached to
-        ClusterBlockId net_pin_block(const ClusterNetId net_id, int pin_index) const;
-
+         * Nets
+         */
         //Returns whether the net is global or fixed
         bool net_is_global(const ClusterNetId id) const;
         bool net_is_routed(const ClusterNetId id) const;

@@ -54,12 +54,7 @@ int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
 }
 
 int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const {
-    auto nets_pins = net_pins(net_id);
-
-    VTR_ASSERT_MSG(net_pin_index >= 0 && size_t(net_pin_index) < nets_pins.size(), "net pin index must be in range");
-
-    auto itr = nets_pins.begin() + net_pin_index; //Advance to the net_index'th pin
-    auto pin_id = *itr;
+    auto pin_id = net_pin(net_id, net_pin_index);
 
     if (pin_id) {
         return pin_physical_index(pin_id);
@@ -73,20 +68,6 @@ int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_
 * Nets
 *
 */
-ClusterBlockId ClusteredNetlist::net_pin_block(const ClusterNetId net_id, int pin_index) const {
-    VTR_ASSERT(valid_net_id(net_id));
-
-    for (auto pin_id : net_pins(net_id)) {
-        if (pin_index == 0) {
-            return pin_block(pin_id);
-        }
-        pin_index--;
-    }
-    
-    VTR_ASSERT(pin_index);
-    return ClusterBlockId::INVALID();
-}
-
 bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
     VTR_ASSERT(valid_net_id(id));
 

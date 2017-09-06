@@ -594,6 +594,12 @@ class Netlist {
         //The remaining elements (potentially none) are the sinks
         pin_range           net_pins(const NetId net_id) const;
 
+        //Returns the net_pin_index'th pin of the specified net
+        PinId               net_pin(const NetId net_id, int net_pin_index) const;
+
+        //Returns the block associated with the net_pin_index'th pin of the specified net
+        BlockId             net_pin_block(const NetId net_id, int net_pin_index) const;
+
         //Returns the (potentially invalid) net driver pin
         PinId               net_driver(const NetId net_id) const;
 
