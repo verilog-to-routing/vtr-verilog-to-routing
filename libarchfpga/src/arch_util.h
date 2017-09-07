@@ -5,6 +5,8 @@
 
 void free_arch(t_arch* arch);
 
+void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_descriptors);
+
 t_port * findPortByName(const char * name, t_pb_type * pb_type,
 		int * high_index, int * low_index);
 

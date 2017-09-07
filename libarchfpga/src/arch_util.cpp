@@ -13,6 +13,10 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 
+static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors);
+static void free_pb_graph(t_pb_graph_node *pb_graph_node);
+static void free_pb_type(t_pb_type *pb_type);
+
 void free_arch(t_arch* arch) {
     if (arch == nullptr) {
         return;
@@ -109,6 +113,248 @@ void free_arch(t_arch* arch) {
     }
 
     vtr::free(arch->ipin_cblock_switch_name);
+}
+
+void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_descriptors) {
+	free_all_pb_graph_nodes(type_descriptors, num_type_descriptors);
+
+    for (int i = 0; i < num_type_descriptors; ++i) {
+
+        vtr::free(type_descriptors[i].name);
+        if (i == EMPTY_TYPE_INDEX) {
+            continue;
+        }
+
+        for (int width = 0; width < type_descriptors[i].width; ++width) {
+            for (int height = 0; height < type_descriptors[i].height; ++height) {
+                for (int side = 0; side < 4; ++side) {
+                    for (int pin = 0; pin < type_descriptors[i].num_pin_loc_assignments[width][height][side]; ++pin) {
+                        if (type_descriptors[i].pin_loc_assignments[width][height][side][pin])
+                            vtr::free(type_descriptors[i].pin_loc_assignments[width][height][side][pin]);
+                    }
+                    vtr::free(type_descriptors[i].pinloc[width][height][side]);
+                    vtr::free(type_descriptors[i].pin_loc_assignments[width][height][side]);
+                }
+                vtr::free(type_descriptors[i].pinloc[width][height]);
+                vtr::free(type_descriptors[i].pin_loc_assignments[width][height]);
+                vtr::free(type_descriptors[i].num_pin_loc_assignments[width][height]);
+            }
+            vtr::free(type_descriptors[i].pinloc[width]);
+            vtr::free(type_descriptors[i].pin_loc_assignments[width]);
+            vtr::free(type_descriptors[i].num_pin_loc_assignments[width]);
+        }
+        vtr::free(type_descriptors[i].pinloc);
+        vtr::free(type_descriptors[i].pin_loc_assignments);
+        vtr::free(type_descriptors[i].num_pin_loc_assignments);
+
+        for (int j = 0; j < type_descriptors[i].num_class; ++j) {
+            vtr::free(type_descriptors[i].class_inf[j].pinlist);
+        }
+        vtr::free(type_descriptors[i].class_inf);
+        vtr::free(type_descriptors[i].is_global_pin);
+        vtr::free(type_descriptors[i].pin_class);
+
+        free_pb_type(type_descriptors[i].pb_type);
+        vtr::free(type_descriptors[i].pb_type);
+    }
+    delete[] type_descriptors;
+}
+
+static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors) {
+	for (int i = 0; i < num_type_descriptors; i++) {
+		if (type_descriptors[i].pb_type) {
+			if (type_descriptors[i].pb_graph_head) {
+				free_pb_graph(type_descriptors[i].pb_graph_head);
+				vtr::free(type_descriptors[i].pb_graph_head);
+			}
+		}
+	}
+}
+
+static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
+
+	int i, j, k;
+	const t_pb_type *pb_type;
+
+	pb_type = pb_graph_node->pb_type;
+
+	/*free all lists of connectable input pin pointer of pb_graph_node and it's children*/
+	/*free_list_of_connectable_input_pin_ptrs (pb_graph_node);*/
+
+	/* Free ports for pb graph node */
+	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+			if (pb_graph_node->input_pins[i][j].pin_timing)
+				vtr::free(pb_graph_node->input_pins[i][j].pin_timing);
+			if (pb_graph_node->input_pins[i][j].pin_timing_del_max)
+				vtr::free(pb_graph_node->input_pins[i][j].pin_timing_del_max);
+			if (pb_graph_node->input_pins[i][j].pin_timing_del_min)
+				vtr::free(pb_graph_node->input_pins[i][j].pin_timing_del_min);
+			if (pb_graph_node->input_pins[i][j].input_edges)
+				vtr::free(pb_graph_node->input_pins[i][j].input_edges);
+			if (pb_graph_node->input_pins[i][j].output_edges)
+				vtr::free(pb_graph_node->input_pins[i][j].output_edges);
+			if (pb_graph_node->input_pins[i][j].parent_pin_class)
+				vtr::free(pb_graph_node->input_pins[i][j].parent_pin_class);
+		}
+		delete[] pb_graph_node->input_pins[i];
+	}
+	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+			if (pb_graph_node->output_pins[i][j].pin_timing)
+				vtr::free(pb_graph_node->output_pins[i][j].pin_timing);
+			if (pb_graph_node->output_pins[i][j].pin_timing_del_max)
+				vtr::free(pb_graph_node->output_pins[i][j].pin_timing_del_max);
+			if (pb_graph_node->output_pins[i][j].pin_timing_del_min)
+				vtr::free(pb_graph_node->output_pins[i][j].pin_timing_del_min);
+			if (pb_graph_node->output_pins[i][j].input_edges)
+				vtr::free(pb_graph_node->output_pins[i][j].input_edges);
+			if (pb_graph_node->output_pins[i][j].output_edges)
+				vtr::free(pb_graph_node->output_pins[i][j].output_edges);
+			if (pb_graph_node->output_pins[i][j].parent_pin_class)
+				vtr::free(pb_graph_node->output_pins[i][j].parent_pin_class);
+
+			if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs) {
+				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
+					if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
+						vtr::free(
+								pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]);
+					}
+				}
+				vtr::free(
+						pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
+			}
+
+			if (pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins)
+				vtr::free(
+						pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins);
+		}
+		delete[] pb_graph_node->output_pins[i];
+	}
+	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
+		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+			if (pb_graph_node->clock_pins[i][j].pin_timing)
+				vtr::free(pb_graph_node->clock_pins[i][j].pin_timing);
+			if (pb_graph_node->clock_pins[i][j].pin_timing_del_max)
+				vtr::free(pb_graph_node->clock_pins[i][j].pin_timing_del_max);
+			if (pb_graph_node->clock_pins[i][j].pin_timing_del_min)
+				vtr::free(pb_graph_node->clock_pins[i][j].pin_timing_del_min);
+			if (pb_graph_node->clock_pins[i][j].input_edges)
+				vtr::free(pb_graph_node->clock_pins[i][j].input_edges);
+			if (pb_graph_node->clock_pins[i][j].output_edges)
+				vtr::free(pb_graph_node->clock_pins[i][j].output_edges);
+			if (pb_graph_node->clock_pins[i][j].parent_pin_class)
+				vtr::free(pb_graph_node->clock_pins[i][j].parent_pin_class);
+		}
+		delete[] pb_graph_node->clock_pins[i];
+	}
+
+
+	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+		vtr::free(pb_graph_node->interconnect_pins[i]);
+	}
+	vtr::free(pb_graph_node->interconnect_pins);
+	
+	vtr::free(pb_graph_node->input_pins);
+	vtr::free(pb_graph_node->output_pins);
+	vtr::free(pb_graph_node->clock_pins);
+
+	vtr::free(pb_graph_node->num_input_pins);
+	vtr::free(pb_graph_node->num_output_pins);
+	vtr::free(pb_graph_node->num_clock_pins);
+
+	vtr::free(pb_graph_node->input_pin_class_size);
+	vtr::free(pb_graph_node->output_pin_class_size);
+
+	for (i = 0; i < pb_type->num_modes; i++) {
+		for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+			for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+				free_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+			}
+			vtr::free(pb_graph_node->child_pb_graph_nodes[i][j]);
+		}
+		vtr::free(pb_graph_node->child_pb_graph_nodes[i]);
+	}
+	vtr::free(pb_graph_node->child_pb_graph_nodes);
+}
+
+static void free_pb_type(t_pb_type *pb_type) {
+	vtr::free(pb_type->name);
+	if (pb_type->blif_model)
+		vtr::free(pb_type->blif_model);
+
+    for (int i = 0; i < pb_type->num_modes; ++i) {
+        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
+            free_pb_type(&pb_type->modes[i].pb_type_children[j]);
+        }
+        vtr::free(pb_type->modes[i].pb_type_children);
+        vtr::free(pb_type->modes[i].name);
+        for (int j = 0; j < pb_type->modes[i].num_interconnect; ++j) {
+            vtr::free(pb_type->modes[i].interconnect[j].input_string);
+            vtr::free(pb_type->modes[i].interconnect[j].output_string);
+            vtr::free(pb_type->modes[i].interconnect[j].name);
+
+            for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
+                if (pb_type->modes[i].interconnect[j].annotations[k].clock)
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
+                if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
+                }
+                if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
+                }
+                for (int m = 0; m < pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs; ++m) {
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
+                }
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].prop);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value);
+            }
+            vtr::free(pb_type->modes[i].interconnect[j].annotations);
+            if (pb_type->modes[i].interconnect[j].interconnect_power)
+                vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
+        }
+        if (pb_type->modes[i].interconnect)
+            vtr::free(pb_type->modes[i].interconnect);
+        if (pb_type->modes[i].mode_power)
+            vtr::free(pb_type->modes[i].mode_power);
+    }
+    if (pb_type->modes)
+        vtr::free(pb_type->modes);
+
+    for (int i = 0; i < pb_type->num_annotations; ++i) {
+        for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
+            vtr::free(pb_type->annotations[i].value[j]);
+        }
+        vtr::free(pb_type->annotations[i].value);
+        vtr::free(pb_type->annotations[i].prop);
+        if (pb_type->annotations[i].input_pins) {
+            vtr::free(pb_type->annotations[i].input_pins);
+        }
+        if (pb_type->annotations[i].output_pins) {
+            vtr::free(pb_type->annotations[i].output_pins);
+        }
+        if (pb_type->annotations[i].clock) {
+            vtr::free(pb_type->annotations[i].clock);
+        }
+    }
+    if (pb_type->num_annotations > 0) {
+        vtr::free(pb_type->annotations);
+    }
+
+    if (pb_type->pb_type_power) {
+        vtr::free(pb_type->pb_type_power);
+    }
+
+    for (int i = 0; i < pb_type->num_ports; ++i) {
+        vtr::free(pb_type->ports[i].name);
+        if (pb_type->ports[i].port_class) {
+            vtr::free(pb_type->ports[i].port_class);
+        }
+        if (pb_type->ports[i].port_power) {
+            vtr::free(pb_type->ports[i].port_power);
+        }
+    }
+    vtr::free(pb_type->ports);
 }
 
 t_port * findPortByName(const char * name, t_pb_type * pb_type,

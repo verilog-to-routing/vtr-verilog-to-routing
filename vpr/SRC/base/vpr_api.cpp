@@ -76,7 +76,6 @@ using namespace std;
 #include "log.h"
 
 /* Local subroutines */
-static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
 
 static void free_device();
@@ -512,129 +511,11 @@ void free_device() {
 }
 
 static void free_complex_block_types(void) {
-	free_all_pb_graph_nodes();
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        vtr::free(device_ctx.block_types[i].name);
-
-        if (&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE) {
-            continue;
-        }
-
-        for (int width = 0; width < device_ctx.block_types[i].width; ++width) {
-            for (int height = 0; height < device_ctx.block_types[i].height; ++height) {
-                for (int side = 0; side < 4; ++side) {
-                    for (int pin = 0; pin < device_ctx.block_types[i].num_pin_loc_assignments[width][height][side]; ++pin) {
-                        if (device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin])
-                            vtr::free(device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin]);
-                    }
-                    vtr::free(device_ctx.block_types[i].pinloc[width][height][side]);
-                    vtr::free(device_ctx.block_types[i].pin_loc_assignments[width][height][side]);
-                }
-                vtr::free(device_ctx.block_types[i].pinloc[width][height]);
-                vtr::free(device_ctx.block_types[i].pin_loc_assignments[width][height]);
-                vtr::free(device_ctx.block_types[i].num_pin_loc_assignments[width][height]);
-            }
-            vtr::free(device_ctx.block_types[i].pinloc[width]);
-            vtr::free(device_ctx.block_types[i].pin_loc_assignments[width]);
-            vtr::free(device_ctx.block_types[i].num_pin_loc_assignments[width]);
-        }
-        vtr::free(device_ctx.block_types[i].pinloc);
-        vtr::free(device_ctx.block_types[i].pin_loc_assignments);
-        vtr::free(device_ctx.block_types[i].num_pin_loc_assignments);
-
-        for (int j = 0; j < device_ctx.block_types[i].num_class; ++j) {
-            vtr::free(device_ctx.block_types[i].class_inf[j].pinlist);
-        }
-        vtr::free(device_ctx.block_types[i].class_inf);
-        vtr::free(device_ctx.block_types[i].is_global_pin);
-        vtr::free(device_ctx.block_types[i].pin_class);
-
-        free_pb_type(device_ctx.block_types[i].pb_type);
-        vtr::free(device_ctx.block_types[i].pb_type);
-    }
-    delete[] device_ctx.block_types;
-}
-
-static void free_pb_type(t_pb_type *pb_type) {
-	vtr::free(pb_type->name);
-	if (pb_type->blif_model)
-		vtr::free(pb_type->blif_model);
-
-    for (int i = 0; i < pb_type->num_modes; ++i) {
-        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
-            free_pb_type(&pb_type->modes[i].pb_type_children[j]);
-        }
-        vtr::free(pb_type->modes[i].pb_type_children);
-        vtr::free(pb_type->modes[i].name);
-        for (int j = 0; j < pb_type->modes[i].num_interconnect; ++j) {
-            vtr::free(pb_type->modes[i].interconnect[j].input_string);
-            vtr::free(pb_type->modes[i].interconnect[j].output_string);
-            vtr::free(pb_type->modes[i].interconnect[j].name);
-
-            for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
-                if (pb_type->modes[i].interconnect[j].annotations[k].clock)
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
-                if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
-                }
-                if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
-                }
-                for (int m = 0; m < pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs; ++m) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
-                }
-                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].prop);
-                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value);
-            }
-            vtr::free(pb_type->modes[i].interconnect[j].annotations);
-            if (pb_type->modes[i].interconnect[j].interconnect_power)
-                vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
-        }
-        if (pb_type->modes[i].interconnect)
-            vtr::free(pb_type->modes[i].interconnect);
-        if (pb_type->modes[i].mode_power)
-            vtr::free(pb_type->modes[i].mode_power);
-    }
-    if (pb_type->modes)
-        vtr::free(pb_type->modes);
-
-    for (int i = 0; i < pb_type->num_annotations; ++i) {
-        for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
-            vtr::free(pb_type->annotations[i].value[j]);
-        }
-        vtr::free(pb_type->annotations[i].value);
-        vtr::free(pb_type->annotations[i].prop);
-        if (pb_type->annotations[i].input_pins) {
-            vtr::free(pb_type->annotations[i].input_pins);
-        }
-        if (pb_type->annotations[i].output_pins) {
-            vtr::free(pb_type->annotations[i].output_pins);
-        }
-        if (pb_type->annotations[i].clock) {
-            vtr::free(pb_type->annotations[i].clock);
-        }
-    }
-    if (pb_type->num_annotations > 0) {
-        vtr::free(pb_type->annotations);
-    }
-
-    if (pb_type->pb_type_power) {
-        vtr::free(pb_type->pb_type_power);
-    }
-
-    for (int i = 0; i < pb_type->num_ports; ++i) {
-        vtr::free(pb_type->ports[i].name);
-        if (pb_type->ports[i].port_class) {
-            vtr::free(pb_type->ports[i].port_class);
-        }
-        if (pb_type->ports[i].port_power) {
-            vtr::free(pb_type->ports[i].port_power);
-        }
-    }
-    vtr::free(pb_type->ports);
+    free_type_descriptors(device_ctx.block_types, device_ctx.num_block_types);
+    free_pb_graph_edges();
 }
 
 void free_circuit() {
