@@ -9,21 +9,21 @@
 inline ClbDelayCalc::ClbDelayCalc()
     : intra_lb_pb_pin_lookup_(g_vpr_ctx.device().block_types, g_vpr_ctx.device().num_block_types) {}
 
-inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const ClusterBlockId block_id, const int pin_index, int internal_sink_pin) const {
+inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const ClusterBlockId block_id, const int pin_index, int internal_sink_pin, DelayType delay_type) const {
     int pb_ipin = find_clb_pb_pin(block_id, pin_index);
-    return trace_max_delay(block_id, pb_ipin, internal_sink_pin);
+    return trace_delay(block_id, pb_ipin, internal_sink_pin, delay_type);
 }
 
-inline float ClbDelayCalc::internal_src_to_clb_output_delay(const ClusterBlockId block_id, const int pin_index, int internal_src_pin) const {
+inline float ClbDelayCalc::internal_src_to_clb_output_delay(const ClusterBlockId block_id, const int pin_index, int internal_src_pin, DelayType delay_type) const {
     int pb_opin = find_clb_pb_pin(block_id, pin_index);
-    return trace_max_delay(block_id, internal_src_pin, pb_opin);
+    return trace_delay(block_id, internal_src_pin, pb_opin, delay_type);
 }
 
-inline float ClbDelayCalc::internal_src_to_internal_sink_delay(const ClusterBlockId clb, int internal_src_pin, int internal_sink_pin) const {
-    return trace_max_delay(clb, internal_src_pin, internal_sink_pin);
+inline float ClbDelayCalc::internal_src_to_internal_sink_delay(const ClusterBlockId clb, int internal_src_pin, int internal_sink_pin, DelayType delay_type) const {
+    return trace_delay(clb, internal_src_pin, internal_sink_pin, delay_type);
 }
 
-inline float ClbDelayCalc::trace_max_delay(ClusterBlockId clb, int src_pb_route_id, int sink_pb_route_id) const {
+inline float ClbDelayCalc::trace_delay(ClusterBlockId clb, int src_pb_route_id, int sink_pb_route_id, DelayType delay_type) const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     VTR_ASSERT(src_pb_route_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
@@ -43,7 +43,7 @@ inline float ClbDelayCalc::trace_max_delay(ClusterBlockId clb, int src_pb_route_
     while(pb_routes[curr_pb_route_id].driver_pb_pin_id >= 0) {
         VTR_ASSERT_MSG(atom_net == pb_routes[curr_pb_route_id].atom_net_id, "Internal routing must connect the same net");
 
-        delay += pb_route_max_delay(clb, curr_pb_route_id);
+        delay += pb_route_delay(clb, curr_pb_route_id, delay_type);
 
         curr_pb_route_id = pb_routes[curr_pb_route_id].driver_pb_pin_id;
     }
@@ -53,11 +53,16 @@ inline float ClbDelayCalc::trace_max_delay(ClusterBlockId clb, int src_pb_route_
     return delay;
 }
 
-inline float ClbDelayCalc::pb_route_max_delay(ClusterBlockId clb, int pb_route_idx) const {
+inline float ClbDelayCalc::pb_route_delay(ClusterBlockId clb, int pb_route_idx, DelayType delay_type) const {
     const t_pb_graph_edge* pb_edge = find_pb_graph_edge(clb, pb_route_idx);
 
     if(pb_edge) {
-        return pb_edge->delay_max;
+        if (delay_type == DelayType::MAX) {
+            return pb_edge->delay_max;
+        } else {
+            VTR_ASSERT(delay_type == DelayType::MIN);
+            return pb_edge->delay_min;
+        }
     } else {
         return 0.;
     }

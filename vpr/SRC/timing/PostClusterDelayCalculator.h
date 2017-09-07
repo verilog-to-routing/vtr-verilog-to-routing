@@ -40,11 +40,20 @@ private:
     tatum::Time get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
     void set_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
 
+    tatum::Time get_driver_clb_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
+    void set_driver_clb_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
+
+    tatum::Time get_sink_clb_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
+    void set_sink_clb_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
+
     tatum::Time get_cached_setup_time(tatum::EdgeId edge) const;
     void set_cached_setup_time(tatum::EdgeId edge, tatum::Time setup) const;
 
     tatum::Time get_cached_hold_time(tatum::EdgeId edge) const;
     void set_cached_hold_time(tatum::EdgeId edge, tatum::Time hold) const;
+
+    std::pair<ClusterPinId,ClusterPinId> get_cached_pins(tatum::EdgeId edge, DelayType delay_type) const;
+    void set_cached_pins(tatum::EdgeId edge, DelayType delay_type, ClusterPinId src_pin, ClusterPinId sink_pin) const;
 private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
@@ -55,9 +64,12 @@ private:
 
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_min_delay_cache_;
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_delay_cache_;
-	mutable vtr::vector_map<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_min_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_max_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_min_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_max_delay_cache_;
+	mutable vtr::vector_map<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_min_;
+	mutable vtr::vector_map<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_max_;
 };
 
 #include "PostClusterDelayCalculator.tpp"
