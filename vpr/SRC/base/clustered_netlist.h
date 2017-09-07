@@ -168,12 +168,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //  t_type_ptr  : The type of the CLB
         ClusterBlockId create_block(const char *name, t_pb* pb, t_type_ptr type);
 
-        //Sets the block's net count
-        //  blk_id      : The block the net is associated with
-        //  pin_index   : The pin of the block to be changed
-        //  net_count   : The net's counter
-        void set_block_pin_net_index(const ClusterBlockId blk_id, const int pin_index, const int count);
-
         //Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
