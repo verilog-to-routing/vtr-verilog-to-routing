@@ -898,14 +898,14 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
-					clb_nlist.set_block_pin_net(blk_id, j, count[clb_net_id]); //A sink
+					clb_nlist.set_block_pin_net_index(blk_id, j, count[clb_net_id]); //A sink
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist.block_type(blk_id)->class_inf[clb_nlist.block_type(blk_id)->pin_class[j]].type);
 					VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
 					VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, 0));
 
                     //Mark the net pin numbers on the block
-					clb_nlist.set_block_pin_net(blk_id, j, 0); //Driver
+					clb_nlist.set_block_pin_net_index(blk_id, j, 0); //Driver
 				}
 			}
 		}

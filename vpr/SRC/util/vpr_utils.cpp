@@ -485,7 +485,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
 
     //clb_pin should be a top-level CLB input
 	ClusterNetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, clb_pin);
-    int clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net(clb, clb_pin);
+    int clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net_index(clb, clb_pin);
     VTR_ASSERT(clb_net_idx != ClusterNetId::INVALID());
     VTR_ASSERT(clb_net_pin_idx >= 0);
 
@@ -2032,10 +2032,10 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
 		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(iblk, j);
         if (net_id != ClusterNetId::INVALID() && place_ctx.block_locs[iblk].z > 0) {
 			VTR_ASSERT(cluster_ctx.clb_nlist.block_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == ClusterNetId::INVALID());
-            VTR_ASSERT(cluster_ctx.clb_nlist.block_pin_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == OPEN); 
+            VTR_ASSERT(cluster_ctx.clb_nlist.block_pin_net_index(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == OPEN); 
 
             //Update the block to net references
-			cluster_ctx.clb_nlist.set_block_pin_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, cluster_ctx.clb_nlist.block_pin_net(iblk, j));
+			cluster_ctx.clb_nlist.set_block_pin_net_index(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, cluster_ctx.clb_nlist.block_pin_net_index(iblk, j));
 			cluster_ctx.clb_nlist.set_block_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, net_id);
 
             //Update the net to block references

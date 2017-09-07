@@ -36,10 +36,10 @@ ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int 
     return block_nets_[blk_id][pin_index];
 }
 
-int ClusteredNetlist::block_pin_net(const ClusterBlockId blk_id, const int pin_index) const {
+int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int pin_index) const {
     VTR_ASSERT(valid_block_id(blk_id));
 
-    return block_pin_nets_[blk_id][pin_index];
+    return block_pin_net_indices_[blk_id][pin_index];
 }
 
 /*
@@ -102,11 +102,11 @@ ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type
 
         //Allocate and initialize every potential net of the block
         block_nets_.insert(blk_id, std::vector<ClusterNetId>());
-        block_pin_nets_.insert(blk_id, std::vector<int>());
+        block_pin_net_indices_.insert(blk_id, std::vector<int>());
 
         for (int i = 0; i < type->num_pins; i++) {
             block_nets_[blk_id].push_back(ClusterNetId::INVALID());
-            block_pin_nets_[blk_id].push_back(-1);
+            block_pin_net_indices_[blk_id].push_back(-1);
         }
     }
 
@@ -127,10 +127,10 @@ void ClusteredNetlist::set_block_net(const ClusterBlockId blk_id, const int pin_
     block_nets_[blk_id][pin_index] = net_id;
 }
 
-void ClusteredNetlist::set_block_pin_net(const ClusterBlockId blk_id, const int pin_index, const int count) {
+void ClusteredNetlist::set_block_pin_net_index(const ClusterBlockId blk_id, const int pin_index, const int count) {
     VTR_ASSERT(valid_block_id(blk_id));
 
-    block_pin_nets_[blk_id][pin_index] = count;
+    block_pin_net_indices_[blk_id][pin_index] = count;
 }
 
 ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type) {
@@ -216,7 +216,7 @@ void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
     block_nets_.insert(blk_id, std::vector<ClusterNetId>());
-    block_pin_nets_.insert(blk_id, std::vector<int>());
+    block_pin_net_indices_.insert(blk_id, std::vector<int>());
 }
 
 void ClusteredNetlist::remove_port_impl(const ClusterPortId port_id) {
@@ -237,7 +237,7 @@ void ClusteredNetlist::clean_blocks_impl(const vtr::vector_map<ClusterBlockId, C
     block_pbs_ = clean_and_reorder_values(block_pbs_, block_id_map);
     block_types_ = clean_and_reorder_values(block_types_, block_id_map);
     block_nets_ = clean_and_reorder_values(block_nets_, block_id_map);
-    block_pin_nets_ = clean_and_reorder_values(block_pin_nets_, block_id_map);
+    block_pin_net_indices_ = clean_and_reorder_values(block_pin_net_indices_, block_id_map);
 }
 
 void ClusteredNetlist::clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) {
@@ -262,7 +262,7 @@ void ClusteredNetlist::shrink_to_fit_impl() {
     block_pbs_.shrink_to_fit();
     block_types_.shrink_to_fit();
     block_nets_.shrink_to_fit();
-    block_pin_nets_.shrink_to_fit();
+    block_pin_net_indices_.shrink_to_fit();
 
     //Pin data
     pin_physical_index_.shrink_to_fit();
@@ -283,7 +283,7 @@ bool ClusteredNetlist::validate_block_sizes_impl(size_t num_blocks) const {
     if (block_pbs_.size() != num_blocks
         || block_types_.size() != num_blocks
         || block_nets_.size() != num_blocks
-        || block_pin_nets_.size() != num_blocks) {
+        || block_pin_net_indices_.size() != num_blocks) {
         return false;
     }
     return true;

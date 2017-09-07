@@ -133,7 +133,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
         //Returns the count on the net of the block attached
-        int block_pin_net(const ClusterBlockId blk_id, const int pin_index) const;
+        int block_pin_net_index(const ClusterBlockId blk_id, const int pin_index) const;
 
         /*
          * Pins
@@ -175,7 +175,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //  blk_id      : The block the net is associated with
         //  pin_index   : The pin of the block to be changed
         //  net_count   : The net's counter
-        void set_block_pin_net(const ClusterBlockId blk_id, const int pin_index, const int count);
+        void set_block_pin_net_index(const ClusterBlockId blk_id, const int pin_index, const int count);
 
         //Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
@@ -250,7 +250,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         vtr::vector_map<ClusterBlockId, t_pb*>                          block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
         vtr::vector_map<ClusterBlockId, t_type_ptr>                     block_types_;       //The type of physical block this user circuit block is mapped to
         vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>      block_nets_;        //Stores which pins are used/unused on the block with the net using it
-        vtr::vector_map<ClusterBlockId, std::vector<int>>               block_pin_nets_;    //Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
+        vtr::vector_map<ClusterBlockId, std::vector<int>>               block_pin_net_indices_;    //Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
 
         //Pins
         vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index 
