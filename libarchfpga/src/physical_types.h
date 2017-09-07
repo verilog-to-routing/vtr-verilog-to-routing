@@ -444,42 +444,42 @@ enum class e_sb_type {
  */
 struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or complex logic block or physical logic block*/
 {
-	char *name;
-	int num_pins;
-	int capacity;
+	char *name = nullptr;
+	int num_pins = 0;
+	int capacity = 0;
 
-	int width;
-	int height;
+	int width = 0;
+	int height = 0;
 
-	bool ****pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+	bool ****pinloc = nullptr; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
 
-	enum e_pin_location_distr pin_location_distribution;
-	int ***num_pin_loc_assignments; /* [0..width-1][0..height-1][0..3] */
-	char *****pin_loc_assignments; /* [0..width-1][0..height-1][0..3][0..num_tokens-1][0..string_name] */
+	enum e_pin_location_distr pin_location_distribution = E_SPREAD_PIN_DISTR;
+	int ***num_pin_loc_assignments = nullptr; /* [0..width-1][0..height-1][0..3] */
+	char *****pin_loc_assignments = nullptr; /* [0..width-1][0..height-1][0..3][0..num_tokens-1][0..string_name] */
 
-	int num_class;
-	t_class *class_inf; /* [0..num_class-1] */
+	int num_class = 0;
+	t_class *class_inf = nullptr; /* [0..num_class-1] */
 
     std::vector<int> pin_width_offset; //[0..num_pins-1]
     std::vector<int> pin_height_offset; //[0..num_pins-1]
-	int *pin_class; /* [0..num_pins-1] */
-	bool *is_global_pin; /* [0..num_pins-1] */
+	int *pin_class = nullptr; /* [0..num_pins-1] */
+	bool *is_global_pin = nullptr; /* [0..num_pins-1] */
 
     std::vector<t_fc_specification> fc_specs;
 
     vtr::Matrix<e_sb_type> switchblock_locations;
 
 	/* Clustering info */
-	t_pb_type *pb_type;
-	t_pb_graph_node *pb_graph_head;
+	t_pb_type *pb_type = nullptr;
+	t_pb_graph_node *pb_graph_head = nullptr;
 
-	float area;
+	float area = 0;
 
 	/* This info can be determined from class_inf and pin_class but stored for faster access */
-	int num_drivers;
-	int num_receivers;
+	int num_drivers = 0;
+	int num_receivers = 0;
 
-	int index; /* index of type descriptor in array (allows for index referencing) */
+	int index = -1; /* index of type descriptor in array (allows for index referencing) */
 };
 typedef const t_type_descriptor* t_type_ptr;
 
