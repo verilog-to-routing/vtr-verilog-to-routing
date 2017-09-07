@@ -18,7 +18,6 @@ void generate_setup_timing_stats(const SetupTimingInfo& timing_info) {
     vtr::printf("New Timing Stats\n");
     vtr::printf("================\n");
 #endif
-    vtr::printf("\n");
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
