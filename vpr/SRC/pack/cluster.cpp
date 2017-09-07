@@ -1371,9 +1371,9 @@ static enum e_block_pack_status try_place_atom_block_rec(
 
 	/* Create siblings if siblings are not allocated */
 	if (parent_pb->child_pbs == NULL) {
-		VTR_ASSERT(parent_pb->name == NULL);
         atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
 
+		VTR_ASSERT(parent_pb->name == NULL);
 		parent_pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
@@ -1418,6 +1418,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
                     && atom_ctx.lookup.atom_pb(blk_id) == NULL 
                     && atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID());
 		/* try pack to location */
+        VTR_ASSERT(pb->name == nullptr);
 		pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
 
         //Update the atom netlist mappings
@@ -1428,8 +1429,6 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		if (!primitive_feasible(blk_id, pb)) {
 			/* failed location feasibility check, revert pack */
 			block_pack_status = BLK_FAILED_FEASIBLE;
-			free(pb->name);
-			pb->name = NULL;
 		}
 
 		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {
@@ -1449,6 +1448,11 @@ static enum e_block_pack_status try_place_atom_block_rec(
             }
 		}
 	}
+
+    if (block_pack_status != BLK_PASSED) {
+        free(pb->name);
+        pb->name = NULL;
+    }
 
 	return block_pack_status;
 }
@@ -1943,6 +1947,9 @@ static void start_new_cluster(
 			if (success) {
 				/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 				//Once clustering succeeds, add it to the clb netlist
+                if (pb->name != nullptr) {
+                    free(pb->name);
+                }
 				pb->name = vtr::strdup(root_atom_name.c_str());
 				clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, &device_ctx.block_types[i]);
 				break;
