@@ -1232,7 +1232,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vector_
         VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
     }
 
-    rebuild_net_refs(pin_id_map);
+    rebuild_net_refs_impl(pin_id_map);
 
     VTR_ASSERT(validate_net_sizes());
 }
