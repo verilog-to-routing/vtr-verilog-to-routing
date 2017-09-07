@@ -4,20 +4,20 @@
 #include "vpr_error.h"
 
 /*
-*
-*
-* ClusteredNetlist Class Implementation
-*
-*
-*/
+ *
+ *
+ * ClusteredNetlist Class Implementation
+ *
+ *
+ */
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
     : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
 
 /*
-*
-* Blocks
-*
-*/
+ *
+ * Blocks
+ *
+ */
 t_pb* ClusteredNetlist::block_pb(const ClusterBlockId id) const {
     VTR_ASSERT(valid_block_id(id));
 
@@ -42,11 +42,18 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
     return block_pin_net_indices_[blk_id][pin_index];
 }
 
+ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phys_pin_index) const {
+    VTR_ASSERT(valid_block_id(blk));
+    VTR_ASSERT_MSG(phys_pin_index >= 0 && phys_pin_index < block_type(blk)->num_pins, "Physical pin index must be in range");
+
+    return block_logical_pins_[blk][phys_pin_index];
+}
+
 /*
-*
-* Pins
-*
-*/
+ *
+ * Pins
+ *
+ */
 int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
     VTR_ASSERT(valid_pin_id(id));
 
@@ -64,10 +71,10 @@ int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_
 }
 
 /*
-*
-* Nets
-*
-*/
+ *
+ * Nets
+ *
+ */
 bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
     VTR_ASSERT(valid_net_id(id));
 
@@ -88,10 +95,10 @@ bool ClusteredNetlist::net_is_fixed(const ClusterNetId id) const {
 
 
 /*
-*
-* Mutators
-*
-*/
+ *
+ * Mutators
+ *
+ */
 ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
     ClusterBlockId blk_id = find_block(name);
     if (blk_id == ClusterBlockId::INVALID()) {
@@ -242,6 +249,7 @@ void ClusteredNetlist::clean_blocks_impl(const vtr::vector_map<ClusterBlockId, C
     block_types_ = clean_and_reorder_values(block_types_, block_id_map);
     block_nets_ = clean_and_reorder_values(block_nets_, block_id_map);
     block_pin_net_indices_ = clean_and_reorder_values(block_pin_net_indices_, block_id_map);
+    block_logical_pins_ = clean_and_reorder_values(block_logical_pins_, block_id_map);
 }
 
 void ClusteredNetlist::clean_ports_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) {
@@ -263,6 +271,13 @@ void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, Clust
 
 void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/, 
                                                const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
+    for (auto blk : blocks()) {
+        block_logical_pins_[blk] = std::vector<ClusterPinId>(block_type(blk)->num_pins, ClusterPinId::INVALID()); //Reset
+        for (auto pin : block_pins(blk)) {
+            int phys_pin_index = pin_physical_index(pin);
+            block_logical_pins_[blk][phys_pin_index] = pin;
+        }
+    }
 }
 
 void ClusteredNetlist::rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& /*block_id_map*/, 
@@ -305,7 +320,8 @@ bool ClusteredNetlist::validate_block_sizes_impl(size_t num_blocks) const {
     if (block_pbs_.size() != num_blocks
         || block_types_.size() != num_blocks
         || block_nets_.size() != num_blocks
-        || block_pin_net_indices_.size() != num_blocks) {
+        || block_pin_net_indices_.size() != num_blocks
+        || block_logical_pins_.size() != num_blocks) {
         return false;
     }
     return true;
