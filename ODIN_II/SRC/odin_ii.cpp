@@ -29,6 +29,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "argparse.hpp"
 
+#include "arch_util.h"
+
 #include "globals.h"
 #include "types.h"
 #include "netlist_utils.h"
@@ -99,6 +101,7 @@ int main(int argc, char **argv)
             XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
         } catch(vtr::VtrError& vtr_error) {
             printf("Failed to load architecture file: %s\n", vtr_error.what());
+            free_arch(&Arch);
             return 1;
         }
 	}
@@ -212,6 +215,7 @@ int main(int argc, char **argv)
 	report_add_distribution();
 	report_sub_distribution();
 	deregister_hard_blocks();
+    free_arch(&Arch);
 
 	return 0;
 }

@@ -14,6 +14,10 @@
 #include "read_xml_util.h"
 
 void free_arch(t_arch* arch) {
+    if (arch == nullptr) {
+        return;
+    }
+
     for (int i = 0; i < arch->num_switches; ++i) {
         if (arch->Switches->name != NULL) {
             vtr::free(arch->Switches[i].name);
