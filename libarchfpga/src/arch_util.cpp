@@ -13,6 +13,100 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 
+void free_arch(t_arch* arch) {
+    for (int i = 0; i < arch->num_switches; ++i) {
+        if (arch->Switches->name != NULL) {
+            vtr::free(arch->Switches[i].name);
+        }
+    }
+    delete[] arch->Switches;
+    arch->Switches = NULL;
+    for (int i = 0; i < arch->num_segments; ++i) {
+        vtr::free(arch->Segments[i].cb);
+        arch->Segments[i].cb = NULL;
+        vtr::free(arch->Segments[i].sb);
+        arch->Segments[i].sb = NULL;
+        vtr::free(arch->Segments[i].name);
+        arch->Segments[i].name = NULL;
+    }
+    vtr::free(arch->Segments);
+    t_model *model = arch->models;
+    while (model) {
+        t_model_ports *input_port = model->inputs;
+        while (input_port) {
+            t_model_ports *prev_port = input_port;
+            input_port = input_port->next;
+            vtr::free(prev_port->name);
+            delete prev_port;
+        }
+        t_model_ports *output_port = model->outputs;
+        while (output_port) {
+            t_model_ports *prev_port = output_port;
+            output_port = output_port->next;
+            vtr::free(prev_port->name);
+            delete prev_port;
+        }
+        vtr::t_linked_vptr *vptr = model->pb_types;
+        while (vptr) {
+            vtr::t_linked_vptr *vptr_prev = vptr;
+            vptr = vptr->next;
+            vtr::free(vptr_prev);
+        }
+        t_model *prev_model = model;
+
+        model = model->next;
+        if (prev_model->instances)
+            vtr::free(prev_model->instances);
+        vtr::free(prev_model->name);
+        delete prev_model;
+    }
+
+    for (int i = 0; i < arch->num_directs; ++i) {
+        vtr::free(arch->Directs[i].name);
+        vtr::free(arch->Directs[i].from_pin);
+        vtr::free(arch->Directs[i].to_pin);
+    }
+    vtr::free(arch->Directs);
+
+    vtr::free(arch->architecture_id);
+
+    if (arch->model_library) {
+        for (int i = 0; i < 4; ++i) {
+            vtr::t_linked_vptr *vptr = arch->model_library[i].pb_types;
+            while (vptr) {
+                vtr::t_linked_vptr *vptr_prev = vptr;
+                vptr = vptr->next;
+                vtr::free(vptr_prev);
+            }
+        }
+
+        vtr::free(arch->model_library[0].name);
+        vtr::free(arch->model_library[0].outputs->name);
+        delete[] arch->model_library[0].outputs;
+        vtr::free(arch->model_library[1].inputs->name);
+        delete[] arch->model_library[1].inputs;
+        vtr::free(arch->model_library[1].name);
+        vtr::free(arch->model_library[2].name);
+        vtr::free(arch->model_library[2].inputs[0].name);
+        vtr::free(arch->model_library[2].inputs[1].name);
+        delete[] arch->model_library[2].inputs;
+        vtr::free(arch->model_library[2].outputs->name);
+        delete[] arch->model_library[2].outputs;
+        vtr::free(arch->model_library[3].name);
+        vtr::free(arch->model_library[3].inputs->name);
+        delete[] arch->model_library[3].inputs;
+        vtr::free(arch->model_library[3].outputs->name);
+        delete[] arch->model_library[3].outputs;
+        delete[] arch->model_library;
+    }
+
+    if (arch->clocks) {
+        vtr::free(arch->clocks->clock_inf);
+    }
+
+    vtr::free(arch->ipin_cblock_switch_name);
+}
+
 t_port * findPortByName(const char * name, t_pb_type * pb_type,
 		int * high_index, int * low_index) {
 	t_port * port;

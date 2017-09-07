@@ -71,13 +71,15 @@ using namespace std;
 #include "read_blif.h"
 #include "read_place.h"
 
+#include "arch_util.h"
+
 #include "log.h"
 
 /* Local subroutines */
 static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
 
-static void free_arch(t_arch* Arch);
+static void free_device();
 static void free_circuit(void);
 
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
@@ -494,7 +496,7 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 }
 
 /* Free architecture data structures */
-void free_arch(t_arch* Arch) {
+void free_device() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     vtr::free(device_ctx.chan_width.x_list);
@@ -503,102 +505,10 @@ void free_arch(t_arch* Arch) {
     device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = NULL;
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
-    for (int i = 0; i < Arch->num_switches; ++i) {
-        if (Arch->Switches->name != NULL) {
-            vtr::free(Arch->Switches[i].name);
-        }
-    }
-    delete[] Arch->Switches;
     delete[] device_ctx.arch_switch_inf;
-    Arch->Switches = NULL;
     device_ctx.arch_switch_inf = NULL;
-    for (int i = 0; i < Arch->num_segments; ++i) {
-        vtr::free(Arch->Segments[i].cb);
-        Arch->Segments[i].cb = NULL;
-        vtr::free(Arch->Segments[i].sb);
-        Arch->Segments[i].sb = NULL;
-        vtr::free(Arch->Segments[i].name);
-        Arch->Segments[i].name = NULL;
-    }
-    vtr::free(Arch->Segments);
-    t_model *model = Arch->models;
-    while (model) {
-        t_model_ports *input_port = model->inputs;
-        while (input_port) {
-            t_model_ports *prev_port = input_port;
-            input_port = input_port->next;
-            vtr::free(prev_port->name);
-            delete prev_port;
-        }
-        t_model_ports *output_port = model->outputs;
-        while (output_port) {
-            t_model_ports *prev_port = output_port;
-            output_port = output_port->next;
-            vtr::free(prev_port->name);
-            delete prev_port;
-        }
-        vtr::t_linked_vptr *vptr = model->pb_types;
-        while (vptr) {
-            vtr::t_linked_vptr *vptr_prev = vptr;
-            vptr = vptr->next;
-            vtr::free(vptr_prev);
-        }
-        t_model *prev_model = model;
-
-        model = model->next;
-        if (prev_model->instances)
-            vtr::free(prev_model->instances);
-        vtr::free(prev_model->name);
-        delete prev_model;
-    }
-
-    for (int i = 0; i < Arch->num_directs; ++i) {
-        vtr::free(Arch->Directs[i].name);
-        vtr::free(Arch->Directs[i].from_pin);
-        vtr::free(Arch->Directs[i].to_pin);
-    }
-    vtr::free(Arch->Directs);
-
-    vtr::free(Arch->architecture_id);
-
-    if (Arch->model_library) {
-        for (int i = 0; i < 4; ++i) {
-            vtr::t_linked_vptr *vptr = Arch->model_library[i].pb_types;
-            while (vptr) {
-                vtr::t_linked_vptr *vptr_prev = vptr;
-                vptr = vptr->next;
-                vtr::free(vptr_prev);
-            }
-        }
-
-        vtr::free(Arch->model_library[0].name);
-        vtr::free(Arch->model_library[0].outputs->name);
-        delete[] Arch->model_library[0].outputs;
-        vtr::free(Arch->model_library[1].inputs->name);
-        delete[] Arch->model_library[1].inputs;
-        vtr::free(Arch->model_library[1].name);
-        vtr::free(Arch->model_library[2].name);
-        vtr::free(Arch->model_library[2].inputs[0].name);
-        vtr::free(Arch->model_library[2].inputs[1].name);
-        delete[] Arch->model_library[2].inputs;
-        vtr::free(Arch->model_library[2].outputs->name);
-        delete[] Arch->model_library[2].outputs;
-        vtr::free(Arch->model_library[3].name);
-        vtr::free(Arch->model_library[3].inputs->name);
-        delete[] Arch->model_library[3].inputs;
-        vtr::free(Arch->model_library[3].outputs->name);
-        delete[] Arch->model_library[3].outputs;
-        delete[] Arch->model_library;
-    }
-
-    if (Arch->clocks) {
-        vtr::free(Arch->clocks->clock_inf);
-    }
-
     free_complex_block_types();
     free_chunk_memory_trace();
-
-    vtr::free(Arch->ipin_cblock_switch_name);
 }
 
 static void free_complex_block_types(void) {
@@ -742,6 +652,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
     free_circuit();
     free_arch(&Arch);
+    free_device();
     free_echo_file_info();
     free_timing_stats();
     free_sdc_related_structs();

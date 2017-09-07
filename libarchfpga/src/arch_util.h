@@ -3,6 +3,8 @@
 
 #include "physical_types.h"
 
+void free_arch(t_arch* arch);
+
 t_port * findPortByName(const char * name, t_pb_type * pb_type,
 		int * high_index, int * low_index);
 
