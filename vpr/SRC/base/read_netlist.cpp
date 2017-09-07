@@ -894,7 +894,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
 
 					if (clb_nlist.block_type(blk_id)->is_global_pin[j])
-						clb_nlist.set_global(clb_net_id, true);
+						clb_nlist.set_net_is_global(clb_net_id, true);
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
 				} else {

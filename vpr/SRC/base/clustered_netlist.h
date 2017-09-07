@@ -194,13 +194,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         ClusterNetId    create_net(const std::string name);
         
         //Sets the flag in net_global_ = state
-        void set_global(ClusterNetId net_id, bool state);
+        void set_net_is_global(ClusterNetId net_id, bool state);
 
         //Sets the flag in net_routed_ = state
-        void set_routed(ClusterNetId net_id, bool state);
+        void set_net_is_routed(ClusterNetId net_id, bool state);
 
         //Sets the flag in net_fixed_ = state
-        void set_fixed(ClusterNetId net_id, bool state);
+        void set_net_is_fixed(ClusterNetId net_id, bool state);
 
     private: //Private Members
         /*

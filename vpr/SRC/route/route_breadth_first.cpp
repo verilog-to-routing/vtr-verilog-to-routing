@@ -46,8 +46,8 @@ bool try_breadth_first_route(t_router_opts router_opts,
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-			cluster_ctx.clb_nlist.set_routed(net_id, false);
-			cluster_ctx.clb_nlist.set_fixed(net_id, false);
+			cluster_ctx.clb_nlist.set_net_is_routed(net_id, false);
+			cluster_ctx.clb_nlist.set_net_is_fixed(net_id, false);
 		}
 
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -108,7 +108,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			cluster_ctx.clb_nlist.set_routed(net_id, true);
+			cluster_ctx.clb_nlist.set_net_is_routed(net_id, true);
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}

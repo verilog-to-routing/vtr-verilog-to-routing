@@ -193,19 +193,19 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
     return net_id;
 }
 
-void ClusteredNetlist::set_global(ClusterNetId net_id, bool state) {
+void ClusteredNetlist::set_net_is_global(ClusterNetId net_id, bool state) {
     VTR_ASSERT(valid_net_id(net_id));
 
     net_is_global_[net_id] = state;
 }
 
-void ClusteredNetlist::set_routed(ClusterNetId net_id, bool state) {
+void ClusteredNetlist::set_net_is_routed(ClusterNetId net_id, bool state) {
     VTR_ASSERT(valid_net_id(net_id));
 
     net_is_routed_[net_id] = state;
 }
 
-void ClusteredNetlist::set_fixed(ClusterNetId net_id, bool state) {
+void ClusteredNetlist::set_net_is_fixed(ClusterNetId net_id, bool state) {
     VTR_ASSERT(valid_net_id(net_id));
 
     net_is_fixed_[net_id] = state;

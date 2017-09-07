@@ -95,7 +95,7 @@ void check_netlist() {
         if (atom_ctx.nlist.net_is_constant(atom_net)) {
             //Mark net as global, so that it is not routed
             vtr::printf_warning(__FILE__, __LINE__, "Treating constant net '%s' as global, so it will not be routed\n", atom_ctx.nlist.net_name(atom_net).c_str());
-            cluster_ctx.clb_nlist.set_global(net_id, true);
+            cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
         }
 	}
 }
