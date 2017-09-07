@@ -1213,6 +1213,16 @@ void free_pb(t_pb *pb) {
 
 	pb_type = pb->pb_graph_node->pb_type;
 
+    if (pb->pb_route) {
+        delete[] pb->pb_route;
+        pb->pb_route = nullptr;
+    }
+
+    if (pb->name) {
+        free(pb->name);
+        pb->name = NULL;
+    }
+
 	if (pb_type->blif_model == NULL) {
 		mode = pb->mode;
 		for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
@@ -1233,15 +1243,8 @@ void free_pb(t_pb *pb) {
 
 		pb->child_pbs = NULL;
 
-		if (pb->name)
-			free(pb->name);
-		pb->name = NULL;
 	} else {
 		/* Primitive */
-		if (pb->name)
-			free(pb->name);
-		pb->name = NULL;
-
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
         auto blk_id = atom_ctx.lookup.pb_atom(pb);
 		if (blk_id) {

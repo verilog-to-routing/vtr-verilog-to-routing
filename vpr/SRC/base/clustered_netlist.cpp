@@ -186,7 +186,6 @@ void ClusteredNetlist::set_net_is_global(ClusterNetId net_id, bool state) {
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     //Remove & invalidate pointers
-    delete []block_pbs_[blk_id]->pb_route;
     free_pb(block_pbs_[blk_id]);
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
