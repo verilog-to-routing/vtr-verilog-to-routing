@@ -28,7 +28,7 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (max) ===\n", size_t(edge));
+    vtr::printf("=== Edge %zu (max) ===\n", size_t(edge_id));
 #endif
     return calc_edge_delay(tg, edge_id, DelayType::MAX); 
 }
@@ -188,6 +188,10 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 	ClusterNetId net_id = ClusterNetId::INVALID();
 	int src_block_pin_index, sink_net_pin_index, sink_block_pin_index;
 
+    if (edge_id == tatum::EdgeId(0)) {
+        vtr::printf("Found!\n");
+    }
+
     tatum::Time edge_delay = get_cached_delay(edge_id, delay_type);
     if (std::isnan(edge_delay.value())) {
         //Miss
@@ -271,6 +275,14 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 				VTR_ASSERT(sink_pin != ClusterPinId::INVALID());
 				set_cached_pins(edge_id, delay_type, src_pin, sink_pin);
 
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
+                vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [UNcached]\n", 
+                            size_t(edge_id),
+                            edge_delay.value(),
+                            driver_clb_delay.value(),
+                            net_delay.value(),
+                            sink_clb_delay.value());
+#endif
             } else {
                 //Connection entirely within the CLB
                 VTR_ASSERT(clb_src_block == clb_sink_block);
@@ -280,6 +292,10 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 //Save the delay, since it won't change during placement or routing
                 // Note that we cache the full edge delay for edges completely contained within CLBs
                 set_cached_delay(edge_id, delay_type, edge_delay);
+
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
+                vtr::printf("  Edge %zu CLB Internal delay: %g [UNcached]\n", size_t(edge_id), edge_delay.value());
+#endif
             }
         } else {
             //Calculate the edge delay using cached clb delays and the latest net delay
@@ -304,7 +320,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-            vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink)\n", 
+            vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [Cached]\n", 
                         size_t(edge_id),
                         edge_delay.value(),
                         driver_clb_delay.value(),
@@ -314,7 +330,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
         }
     } else {
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-        vtr::printf("  Edge %zu CLB Internal delay: %g\n", size_t(edge_id), edge_delay.value());
+        vtr::printf("  Edge %zu CLB Internal delay: %g [Cached]\n", size_t(edge_id), edge_delay.value());
 #endif
     }
 
