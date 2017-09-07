@@ -1006,6 +1006,12 @@ struct t_rr_node_route_inf {
         short occ_ = 0;
 };
 
+//Information about the current status of a particular net as pertains to routing
+struct t_net_routing_status {
+    bool is_routed = false; //Whether the net has been legally routed
+    bool is_fixed = false; //Whether the net is fixed (i.e. not to be re-routed)
+};
+
 
 
 #define NO_PREVIOUS -1

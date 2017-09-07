@@ -472,14 +472,15 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	 * sets the list of rr_nodes touched to empty.                            */
 void init_route_structs(int bb_factor) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets())
 		free_traceback(net_id);
 
 	load_route_bb(bb_factor);
 
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    route_ctx.net_is_routed.resize(cluster_ctx.clb_nlist.nets().size(), false);
+    //Allocate the routing status for each net
+    route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
 
 	/* Check that things that should have been emptied after the last routing *
 	 * really were.                                                           */

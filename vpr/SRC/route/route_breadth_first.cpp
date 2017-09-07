@@ -34,7 +34,7 @@ bool try_breadth_first_route(t_router_opts router_opts,
 	bool success, is_routable, rip_up_local_opins;
 	int itry;
 
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
@@ -47,8 +47,8 @@ bool try_breadth_first_route(t_router_opts router_opts,
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-			route_ctx.net_is_routed[net_id] = false;
-			cluster_ctx.clb_nlist.set_net_is_fixed(net_id, false);
+			route_ctx.net_status[net_id].is_routed = false;
+			route_ctx.net_status[net_id].is_fixed = false;
 		}
 
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -97,7 +97,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	if (cluster_ctx.clb_nlist.net_is_fixed(net_id)) { /* Skip pre-routed nets. */
+	if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
 		is_routed = true;
 
 	} else if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Skip global nets. */
@@ -109,7 +109,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			route_ctx.net_is_routed[net_id] = false;
+			route_ctx.net_status[net_id].is_routed = false;
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}
