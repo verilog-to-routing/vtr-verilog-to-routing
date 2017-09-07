@@ -129,13 +129,6 @@ ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type
     return blk_id;
 }
 
-void ClusteredNetlist::set_block_net(const ClusterBlockId blk_id, const int pin_index, const ClusterNetId net_id) {
-    VTR_ASSERT(valid_block_id(blk_id));
-    VTR_ASSERT(valid_net_id(net_id));
-
-    VTR_ASSERT(block_net(blk_id, pin_index) == net_id);
-}
-
 void ClusteredNetlist::set_block_pin_net_index(const ClusterBlockId blk_id, const int pin_index, const int count) {
     VTR_ASSERT(valid_block_id(blk_id));
 
