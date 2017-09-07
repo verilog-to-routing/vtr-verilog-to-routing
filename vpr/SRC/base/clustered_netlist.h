@@ -255,11 +255,9 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     private: //Private Data
         
         //Blocks
-        vtr::vector_map<ClusterBlockId, t_pb*>                          block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
-        vtr::vector_map<ClusterBlockId, t_type_ptr>                     block_types_;       //The type of physical block this user circuit block is mapped to
-        vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>      block_nets_;        //Stores which pins are used/unused on the block with the net using it
-        vtr::vector_map<ClusterBlockId, std::vector<int>>               block_pin_net_indices_;    //Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
-        vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>>    block_logical_pins_; //The logical pins associated with each block physical pin
+        vtr::vector_map<ClusterBlockId, t_pb*>                     block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
+        vtr::vector_map<ClusterBlockId, t_type_ptr>                block_types_;       //The type of physical block this user circuit block is mapped to
+        vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical block pin
 
         //Pins
         vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index 

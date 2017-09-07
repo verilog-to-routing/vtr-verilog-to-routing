@@ -2027,29 +2027,11 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     int max_num_block_pins = type->num_pins / type->capacity;
     /* Logical location and physical location is offset by z * max_num_block_pins */
 
-    /* Sync external blocks and nets */
-    for (int j = 0; j < max_num_block_pins; j++) {
-		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(iblk, j);
-        if (net_id != ClusterNetId::INVALID() && place_ctx.block_locs[iblk].z > 0) {
-			VTR_ASSERT(cluster_ctx.clb_nlist.block_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == ClusterNetId::INVALID());
-            VTR_ASSERT(cluster_ctx.clb_nlist.block_pin_net_index(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == OPEN); 
-
-            //Update the block to net references
-			cluster_ctx.clb_nlist.set_block_pin_net_index(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, cluster_ctx.clb_nlist.block_pin_net_index(iblk, j));
-			cluster_ctx.clb_nlist.set_block_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, net_id);
-
-            //Update the net to block references
-			size_t k = 0;
-			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.pin_physical_index(pin_id) == j) {
-					cluster_ctx.clb_nlist.set_pin_physical_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
-					break;
-				}
-				k++;
-			}
-
-            VTR_ASSERT(k < cluster_ctx.clb_nlist.net_pins(net_id).size());
-        }
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+    for (auto pin : clb_nlist.block_pins(iblk)) {
+        int orig_phys_pin_index = clb_nlist.pin_physical_index(pin);
+        int new_phys_pin_index = orig_phys_pin_index + place_ctx.block_locs[iblk].z * max_num_block_pins;
+        clb_nlist.set_pin_physical_index(pin, new_phys_pin_index);
     }
 
     //Mark the block as synced
