@@ -478,6 +478,9 @@ void init_route_structs(int bb_factor) {
 
 	load_route_bb(bb_factor);
 
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    route_ctx.net_is_routed.resize(cluster_ctx.clb_nlist.nets().size(), false);
+
 	/* Check that things that should have been emptied after the last routing *
 	 * really were.                                                           */
 

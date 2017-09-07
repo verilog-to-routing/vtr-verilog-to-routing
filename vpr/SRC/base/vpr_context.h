@@ -224,6 +224,8 @@ struct RoutingContext : public Context {
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
+    vtr::vector_map<ClusterNetId, bool> net_is_routed; //[0..cluster_ctx.clb_nlist.nets().size()-1]
+
     //Limits area in which each net must be routed.
     vtr::vector_map<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 

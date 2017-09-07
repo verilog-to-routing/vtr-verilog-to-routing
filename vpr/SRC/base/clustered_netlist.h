@@ -196,9 +196,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //Sets the flag in net_global_ = state
         void set_net_is_global(ClusterNetId net_id, bool state);
 
-        //Sets the flag in net_routed_ = state
-        void set_net_is_routed(ClusterNetId net_id, bool state);
-
         //Sets the flag in net_fixed_ = state
         void set_net_is_fixed(ClusterNetId net_id, bool state);
 
@@ -253,8 +250,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
             
         //Nets  
         vtr::vector_map<ClusterNetId, bool> net_is_global_;     //Boolean mapping indicating if the net is
-        vtr::vector_map<ClusterNetId, bool> net_is_routed_;     //Global, routed, or fixed (mutually exclusive).
-        vtr::vector_map<ClusterNetId, bool> net_is_fixed_;      //TODO: transfer net routing state to RoutingContext
+        vtr::vector_map<ClusterNetId, bool> net_is_fixed_;      //Global, or fixed (mutually exclusive).
 };
 
 #endif

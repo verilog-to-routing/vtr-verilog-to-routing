@@ -35,6 +35,7 @@ bool try_breadth_first_route(t_router_opts router_opts,
 	int itry;
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
 	 * the shortest path and get a congestion map.  For fast compiles, I set  *
@@ -46,7 +47,7 @@ bool try_breadth_first_route(t_router_opts router_opts,
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-			cluster_ctx.clb_nlist.set_net_is_routed(net_id, false);
+			route_ctx.net_is_routed[net_id] = false;
 			cluster_ctx.clb_nlist.set_net_is_fixed(net_id, false);
 		}
 
@@ -93,8 +94,8 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 
 	bool is_routed = false;
 
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	if (cluster_ctx.clb_nlist.net_is_fixed(net_id)) { /* Skip pre-routed nets. */
 		is_routed = true;
@@ -108,7 +109,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			cluster_ctx.clb_nlist.set_net_is_routed(net_id, true);
+			route_ctx.net_is_routed[net_id] = false;
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}
