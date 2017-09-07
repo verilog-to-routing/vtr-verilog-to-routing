@@ -90,7 +90,7 @@ class HoldAnalysisOps : public CommonAnalysisOps {
                 //(instead of the data path).
                 return thld;
             } else {
-                Time tcq = dc.max_edge_delay(tg, edge_id);
+                Time tcq = dc.min_edge_delay(tg, edge_id);
                 TATUM_ASSERT_MSG(tcq.value() >= 0., "Clock-to-q delay (Tcq) expected to be positive");
 
                 return tcq; 
