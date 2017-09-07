@@ -101,7 +101,9 @@ int main(int argc, char **argv)
             XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
         } catch(vtr::VtrError& vtr_error) {
             printf("Failed to load architecture file: %s\n", vtr_error.what());
+            //Clean-up
             free_arch(&Arch);
+            free_type_descriptors(type_descriptors, num_types);
             return 1;
         }
 	}
@@ -215,7 +217,10 @@ int main(int argc, char **argv)
 	report_add_distribution();
 	report_sub_distribution();
 	deregister_hard_blocks();
+
+    //Clean-up
     free_arch(&Arch);
+    free_type_descriptors(type_descriptors, num_types);
 
 	return 0;
 }
