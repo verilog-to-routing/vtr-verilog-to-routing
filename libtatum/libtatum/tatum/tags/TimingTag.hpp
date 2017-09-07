@@ -136,7 +136,7 @@ class TimingTag {
          * Data
          */
         Time time_; //Required time
-        NodeId origin_node_; //Node which launched this arrival time
+        NodeId origin_node_; //Node which launched this arr/req time
         DomainId launch_clock_domain_; //Clock domain for arr/req times
         DomainId capture_clock_domain_; //Clock domain for arr/req times
         TagType type_;
