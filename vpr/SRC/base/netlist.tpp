@@ -1162,7 +1162,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
         block_num_output_ports_[blk_id] = num_output_ports;
         block_num_clock_ports_[blk_id] = num_clock_ports;
 
-        VTR_ASSERT_SAFE_MSG(all_valid(ports), "All Ids should be valid");
+        VTR_ASSERT_SAFE_MSG(all_valid(blk_ports), "All Ids should be valid");
         VTR_ASSERT(blk_ports.size() == size_t(block_num_input_ports_[blk_id]
             + block_num_output_ports_[blk_id]
             + block_num_clock_ports_[blk_id]));
