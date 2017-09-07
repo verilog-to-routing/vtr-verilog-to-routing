@@ -493,6 +493,8 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
 }
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
+// Given a clb_pin index on a this function will return the corresponding 
+// pin index on the pb_type (accounting for the possible z-coordinate offset).
 int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -519,6 +521,7 @@ int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
     return pb_pin;
 }
 
+//Inverse of find_clb_pb_pin()
 int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
