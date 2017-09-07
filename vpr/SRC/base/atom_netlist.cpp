@@ -190,6 +190,24 @@ void AtomNetlist::remove_net_impl(const AtomNetId /*net_id*/) {
     //Unused
 }
 
+void AtomNetlist::rebuild_block_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/, 
+                                          const vtr::vector_map<AtomPortId, AtomPortId>& /*port_id_map*/) {
+    //Unused
+}
+
+void AtomNetlist::rebuild_port_refs_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& /*block_id_map*/, 
+                                         const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/) {
+    //Unused
+}
+
+void AtomNetlist::rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& /*port_id_map*/, 
+                                        const vtr::vector_map<AtomNetId, AtomNetId>& /*net_id_map*/) {
+    //Unused
+}
+
+void AtomNetlist::rebuild_net_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/) {
+    //Unused
+}
 /*
 *
 * Internal utilities

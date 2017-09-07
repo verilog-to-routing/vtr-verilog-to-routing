@@ -1168,6 +1168,8 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
             + block_num_clock_ports_[blk_id]));
     }
 
+    rebuild_block_refs_impl(pin_id_map, port_id_map);
+
     VTR_ASSERT(validate_block_sizes());
 }
 
@@ -1184,6 +1186,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_port_refs(const vtr::vector
         pin_collection = update_valid_refs(pin_collection, pin_id_map);
         VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
     }
+
+    rebuild_port_refs_impl(block_id_map, pin_id_map);
+
     VTR_ASSERT(validate_port_sizes());
 }
 
@@ -1213,6 +1218,8 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_
         }
     }
 
+    rebuild_pin_refs_impl(port_id_map, net_id_map);
+
     VTR_ASSERT(validate_pin_sizes());
 }
 
@@ -1224,6 +1231,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vector_
 
         VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
     }
+
+    rebuild_net_refs(pin_id_map);
+
     VTR_ASSERT(validate_net_sizes());
 }
 

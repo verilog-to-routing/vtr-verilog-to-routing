@@ -869,6 +869,10 @@ class Netlist {
         virtual void remove_pin_impl(const PinId pin_id) = 0;
         virtual void remove_net_impl(const NetId net_id) = 0;
 
+        virtual void rebuild_block_refs_impl(const vtr::vector_map<PinId, PinId>& pin_id_map, const vtr::vector_map<PortId, PortId>& port_id_map) = 0;
+        virtual void rebuild_port_refs_impl(const vtr::vector_map<BlockId, BlockId>& block_id_map, const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
+        virtual void rebuild_pin_refs_impl(const vtr::vector_map<PortId, PortId>& port_id_map, const vtr::vector_map<NetId, NetId>& net_id_map) = 0;
+        virtual void rebuild_net_refs_impl(const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
     protected:
         constexpr static int INVALID_INDEX = -1;
         constexpr static int NET_DRIVER_INDEX = 0;

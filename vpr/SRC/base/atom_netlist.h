@@ -177,6 +177,11 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
         void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
 
+        void rebuild_block_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map, const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map) override;
+        void rebuild_port_refs_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& block_id_map, const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
+        void rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map, const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
+        void rebuild_net_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
+
         //Shrinks internal data structures to required size to reduce memory consumption
         void shrink_to_fit_impl() override;
 

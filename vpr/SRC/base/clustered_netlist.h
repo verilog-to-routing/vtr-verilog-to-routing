@@ -135,6 +135,9 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //Returns the count on the net of the block attached
         int block_pin_net_index(const ClusterBlockId blk_id, const int pin_index) const;
 
+        //Returns the logical pin Id associated with the specified block and physical pin index
+        ClusterPinId block_pin(const ClusterBlockId blk, const int phys_pin_index) const;
+
         /*
          * Pins
          */
@@ -235,6 +238,11 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         void remove_pin_impl(const ClusterPinId pin_id) override;
         void remove_net_impl(const ClusterNetId net_id) override;
 
+        void rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map, const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) override;
+        void rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& block_id_map, const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) override;
+        void rebuild_pin_refs_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map, const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) override;
+        void rebuild_net_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) override;
+
         /*
          * Sanity Checks
          */
@@ -251,6 +259,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         vtr::vector_map<ClusterBlockId, t_type_ptr>                     block_types_;       //The type of physical block this user circuit block is mapped to
         vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>      block_nets_;        //Stores which pins are used/unused on the block with the net using it
         vtr::vector_map<ClusterBlockId, std::vector<int>>               block_pin_net_indices_;    //Contains indices of pins on a net, given the block and the pin index relative to the physical type descriptor
+        vtr::vector_map<ClusterBlockId, std::vector<ClusterBlockId>>    block_logical_pins_; //Contains logical pins associated with each block physical pin
 
         //Pins
         vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index 

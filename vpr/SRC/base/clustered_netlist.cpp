@@ -104,6 +104,8 @@ ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type
         block_nets_.insert(blk_id, std::vector<ClusterNetId>());
         block_pin_net_indices_.insert(blk_id, std::vector<int>());
 
+        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(type->num_pins, ClusterPinId::INVALID()));
+
         for (int i = 0; i < type->num_pins; i++) {
             block_nets_[blk_id].push_back(ClusterNetId::INVALID());
             block_pin_net_indices_[blk_id].push_back(-1);
@@ -156,6 +158,7 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
     pin_physical_index_.push_back(pin_index);
 
     ClusterBlockId block_id = port_block(port_id);
+    block_logical_pins_[block_id][pin_index] = pin_id;
     
     VTR_ASSERT(pin_index < block_type(block_id)->num_pins);
     block_nets_[block_id][pin_index] = net_id;
@@ -217,6 +220,7 @@ void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     block_types_.insert(blk_id, NULL);
     block_nets_.insert(blk_id, std::vector<ClusterNetId>());
     block_pin_net_indices_.insert(blk_id, std::vector<int>());
+    block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>());
 }
 
 void ClusteredNetlist::remove_port_impl(const ClusterPortId port_id) {
@@ -255,6 +259,24 @@ void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, Clust
     net_is_global_ = clean_and_reorder_values(net_is_global_, net_id_map);
     net_is_routed_ = clean_and_reorder_values(net_is_routed_, net_id_map);
     net_is_fixed_ = clean_and_reorder_values(net_is_fixed_, net_id_map);
+}
+
+void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/, 
+                                               const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
+}
+
+void ClusteredNetlist::rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& /*block_id_map*/, 
+                                              const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/) {
+    //Unused
+}
+
+void ClusteredNetlist::rebuild_pin_refs_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/, 
+                                             const vtr::vector_map<ClusterNetId, ClusterNetId>& /*net_id_map*/) {
+    //Unused
+}
+
+void ClusteredNetlist::rebuild_net_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/) {
+    //Unused
 }
 
 void ClusteredNetlist::shrink_to_fit_impl() {
