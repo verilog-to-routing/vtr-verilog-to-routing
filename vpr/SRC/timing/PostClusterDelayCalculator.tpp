@@ -188,10 +188,6 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 	ClusterNetId net_id = ClusterNetId::INVALID();
 	int src_block_pin_index, sink_net_pin_index, sink_block_pin_index;
 
-    if (edge_id == tatum::EdgeId(0)) {
-        vtr::printf("Found!\n");
-    }
-
     tatum::Time edge_delay = get_cached_delay(edge_id, delay_type);
     if (std::isnan(edge_delay.value())) {
         //Miss
