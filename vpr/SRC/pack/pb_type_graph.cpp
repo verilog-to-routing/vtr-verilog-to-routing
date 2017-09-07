@@ -35,7 +35,6 @@ using namespace std;
 #include "read_xml_arch_file.h"
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
-static int pin_count_in_cluster;
 static vtr::t_linked_vptr *edges_head;
 static vtr::t_linked_vptr *num_edges_head;
 
@@ -46,7 +45,7 @@ static vtr::t_linked_vptr *num_edges_head;
 static int check_pb_graph(void);
 static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 		t_pb_graph_node *parent_pb_graph_node, t_pb_type *pb_type,
-		const int index, bool load_power_structures);
+		const int index, bool load_power_structures, int& pin_count_in_cluster);
 
 static void alloc_and_load_mode_interconnect(
 		t_pb_graph_node *pb_graph_parent_node,
@@ -116,13 +115,12 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (device_ctx.block_types[i].pb_type) {
-			pin_count_in_cluster = 0;
 			device_ctx.block_types[i].pb_graph_head = (t_pb_graph_node*) vtr::calloc(1,
 					sizeof(t_pb_graph_node));
-			alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, NULL,
-					device_ctx.block_types[i].pb_type, 0, load_power_structures);
-			device_ctx.block_types[i].pb_graph_head->total_pb_pins =
-					pin_count_in_cluster;
+			int pin_count_in_cluster = 0;
+            alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, NULL,
+					device_ctx.block_types[i].pb_type, 0, load_power_structures, pin_count_in_cluster);
+			device_ctx.block_types[i].pb_graph_head->total_pb_pins = pin_count_in_cluster;
 			alloc_and_load_pin_locations_from_pb_graph(&device_ctx.block_types[i]);
 			load_pin_classes_in_pb_graph_head(
 					device_ctx.block_types[i].pb_graph_head);
@@ -154,7 +152,6 @@ void free_all_pb_graph_nodes(void) {
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
 		if (device_ctx.block_types[i].pb_type) {
-			pin_count_in_cluster = 0;
 			if (device_ctx.block_types[i].pb_graph_head) {
 				free_pb_graph(device_ctx.block_types[i].pb_graph_head);
 				vtr::free(device_ctx.block_types[i].pb_graph_head);
@@ -210,7 +207,7 @@ static int check_pb_graph(void) {
 
 static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 		t_pb_graph_node *parent_pb_graph_node, t_pb_type *pb_type,
-		const int index, bool load_power_structures) {
+		const int index, bool load_power_structures, int& pin_count_in_cluster) {
 
 	int i, j, k, i_input, i_output, i_clockport;
 
@@ -338,7 +335,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				alloc_and_load_pb_graph(
 						&pb_graph_node->child_pb_graph_nodes[i][j][k],
 						pb_graph_node, &pb_type->modes[i].pb_type_children[j],
-						k, load_power_structures);
+						k, load_power_structures, pin_count_in_cluster);
 			}
 		}
 	}
