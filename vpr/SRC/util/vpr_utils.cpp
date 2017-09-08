@@ -620,6 +620,20 @@ void get_class_range_for_block(const ClusterBlockId blk_id,
 	*class_high = (place_ctx.block_locs[blk_id].z + 1) * (type->num_class / type->capacity) - 1;
 }
 
+void get_pin_range_for_block(const ClusterBlockId blk_id, 
+		int *pin_low,
+		int *pin_high) {
+
+	/* Assumes that the placement has been done so each block has a set of pins allocated to it */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+	t_type_ptr type = cluster_ctx.clb_nlist.block_type(blk_id);
+	VTR_ASSERT(type->num_pins % type->capacity == 0);
+	*pin_low = place_ctx.block_locs[blk_id].z * (type->num_pins / type->capacity);
+	*pin_high = (place_ctx.block_locs[blk_id].z + 1) * (type->num_pins / type->capacity) - 1;
+}
+
 t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types) {
 
     for (int itype = 0; itype < num_types; ++itype) {

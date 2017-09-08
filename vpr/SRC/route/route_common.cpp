@@ -743,7 +743,11 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 		get_class_range_for_block(blk_id, &class_low, &class_high);
 		clb_opins_used_locally[blk_id].resize(type->num_class);
 
-		for (clb_pin = 0; clb_pin < type->num_pins; clb_pin++) {
+        int pin_low = 0;
+        int pin_high = 0;
+        get_pin_range_for_block(blk_id, &pin_low, &pin_high);
+
+		for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
 			// another hack to avoid I/Os, whole function needs a rethink
 			if(type == device_ctx.IO_TYPE)
 				continue;
