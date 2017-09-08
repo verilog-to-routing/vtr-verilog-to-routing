@@ -263,6 +263,8 @@ def upgrade_device_layout(arch):
             continue
 
         for child in gridlocations:
+            if child.tag is ET.Comment:
+                continue
             assert child.tag == "loc"
             type_to_grid_specs[type_name].append(child)
 
