@@ -29,6 +29,7 @@ supported_upgrades = [
     "upgrade_device_layout",
     "remove_io_chan_distr",
     "upgrade_pinlocations",
+    "uniqify_interconnect_names",
 ]
 
 def parse_args():
@@ -83,6 +84,11 @@ def main():
 
     if "upgrade_pinlocations" in args.features:
         result = upgrade_pinlocations(arch)
+        if result:
+            modified = True
+
+    if "uniqify_interconnect_names" in args.features:
+        result = uniqify_interconnect_names(arch)
         if result:
             modified = True
 
@@ -512,6 +518,32 @@ def upgrade_pinlocations(arch):
 
         else:
             assert pinlocations.attrib['pattern'] == "spread"
+
+    return modified
+
+def uniqify_interconnect_names(arch):
+    modified = False
+
+    for interconnect_tag in arch.findall(".//interconnect"):
+        seen_names = set()
+        cnt = 0
+        for child_tag in interconnect_tag:
+            if child_tag.tag is ET.Comment:
+                continue
+
+            name = orig_name = child_tag.attrib['name']
+
+            if orig_name in seen_names:
+                #Generate a unique name
+                while name in seen_names:
+                    name = orig_name + "_{}".format(cnt)
+                    cnt += 1
+
+                assert name not in seen_names
+                child_tag.attrib['name'] = name
+                modified = True
+
+            seen_names.add(name)
 
     return modified
 
