@@ -172,11 +172,7 @@ int alloc_and_load_timing_graph_levels(void) {
 				&timing_ctx.tnodes_at_level[num_levels], &free_list_head);
 	}
 
-        for (i = 0; i < timing_ctx.tnodes_at_level.size(); i++){
-            timing_ctx.tnodes_at_level[i].clear();
-        }
-	timing_ctx.tnodes_at_level.clear();
-        timing_ctx.tnodes_at_level.resize(num_levels);
+    timing_ctx.tnodes_at_level.resize(num_levels);
 	timing_ctx.num_tnode_levels = num_levels;
 
 	free(tnode_fanin_left);
