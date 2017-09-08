@@ -276,7 +276,7 @@ Grid Location Tags
 
         <single> PCIE example
 
-.. arch:tag:: <col type="string" priority="int" startx="expr" repeatx="expr" starty="expr"/>
+.. arch:tag:: <col type="string" priority="int" startx="expr" repeatx="expr" starty="expr" incry="expr"/>
 
     :req_param type:
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
@@ -295,6 +295,11 @@ Grid Location Tags
         An expression specifying the vertical starting offset of the column.
 
         **Default:** ``0``
+
+    :opt_param incry:
+        An expression specifying the vertical increment between block instantiations within the region.
+
+        **Default:** ``h``
 
     Creates a column of the specified block type at ``startx``.
 
@@ -349,6 +354,11 @@ Grid Location Tags
         An expression specifying the horizontal starting offset of the row.
 
         **Default:** ``0``
+
+    :opt_param incry:
+        An expression specifying the horizontal increment between block instantiations within the region.
+
+        **Default:** ``w``
 
     Creates a row of the specified block type at ``starty``.
 

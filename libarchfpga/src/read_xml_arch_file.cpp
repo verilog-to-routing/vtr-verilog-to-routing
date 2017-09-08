@@ -2246,7 +2246,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             grid_def.loc_defs.push_back(single);
 
         } else if (loc_type == std::string("col")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty"}, loc_data);
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
 
             t_grid_loc_def col(type_name, priority);
 
@@ -2265,10 +2265,15 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
                 col.y.start_expr = starty_attr.value();
             }
 
+            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+            if (incry_attr) {
+                col.y.incr_expr = incry_attr.value();
+            }
+
             grid_def.loc_defs.push_back(col);
 
         } else if (loc_type == std::string("row")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx"}, loc_data);
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
 
             t_grid_loc_def row(type_name, priority);
 
@@ -2285,6 +2290,11 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
             if (startx_attr) {
                 row.x.start_expr = startx_attr.value();
+            }
+
+            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+            if (incrx_attr) {
+                row.x.incr_expr = incrx_attr.value();
             }
 
             grid_def.loc_defs.push_back(row);
