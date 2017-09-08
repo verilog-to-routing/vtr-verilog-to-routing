@@ -685,6 +685,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
                     *timing_ctx.graph, *timing_ctx.constraints, *analysis_delay_calc, timing_info->analyzer());
         }
 
+#ifdef ENABLE_CLASSIC_VPR_STA
+        do_timing_analysis(slacks, vpr_setup.Timing, false, true);
+#endif
+
         //Timing stats
         vtr::printf("\n");
         generate_hold_timing_stats(*timing_info);
