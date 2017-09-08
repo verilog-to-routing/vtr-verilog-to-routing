@@ -1338,7 +1338,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::valid_net_id(NetId net_id) const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool Netlist<BlockId, PortId, PinId, NetId>::valid_string_id(Netlist<BlockId, PortId, PinId, NetId>::StringId string_id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_string_id(typename Netlist<BlockId, PortId, PinId, NetId>::StringId string_id) const {
     if (string_id == StringId::INVALID()) return false;
     else if (!string_ids_.contains(string_id)) return false;
     else if (string_ids_[string_id] != string_id) return false;
@@ -1698,7 +1698,7 @@ typename Netlist<BlockId, PortId, PinId, NetId>::StringId Netlist<BlockId, PortI
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const Netlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const typename Netlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
     VTR_ASSERT(valid_string_id(name_id));
     auto iter = block_name_to_block_id_.find(name_id);
     if (iter != block_name_to_block_id_.end()) {
@@ -1840,7 +1840,7 @@ typename Netlist<BlockId, PortId, PinId, NetId>::StringId Netlist<BlockId, PortI
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId Netlist<BlockId, PortId, PinId, NetId>::find_net(const Netlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
+NetId Netlist<BlockId, PortId, PinId, NetId>::find_net(const typename Netlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
     VTR_ASSERT(valid_string_id(name_id));
     auto iter = net_name_to_net_id_.find(name_id);
     if (iter != net_name_to_net_id_.end()) {
