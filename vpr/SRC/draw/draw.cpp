@@ -611,7 +611,6 @@ static void drawplace(void) {
 
 	ClusterBlockId bnum;
 	int num_sub_tiles;
-	int height;
 
 	setlinewidth(0);
 
@@ -627,11 +626,9 @@ static void drawplace(void) {
 			if (num_sub_tiles == 0) {
 				continue;
 			}
-			height = device_ctx.grid[i][j].type->height;
 
 			for (int k = 0; k < num_sub_tiles; ++k) {
-				/* Graphics will look unusual for multiple height and capacity */
-				VTR_ASSERT(height == 1 || num_sub_tiles == 1);
+				/* TODO: Graphics may look unusual for multiple height and capacity */
 
 				/* Get coords of current sub_tile */
 				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
