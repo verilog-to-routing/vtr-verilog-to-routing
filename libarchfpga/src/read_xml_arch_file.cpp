@@ -74,9 +74,6 @@ struct t_fc_override {
  all architecture-parser functions       */
 static const char* arch_file_name = NULL;
 
-/* This identifies the t_type_ptr of an IO block */
-static t_type_ptr IO_TYPE = NULL;
-
 /* This identifies the t_type_ptr of an Empty block */
 static t_type_ptr EMPTY_TYPE = NULL;
 
@@ -2491,15 +2488,12 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 	cb_type_descriptors = *Types;
 
 	EMPTY_TYPE = &cb_type_descriptors[EMPTY_TYPE_INDEX];
-	IO_TYPE = &cb_type_descriptors[IO_TYPE_INDEX];
 	cb_type_descriptors[EMPTY_TYPE_INDEX].index = EMPTY_TYPE_INDEX;
-	cb_type_descriptors[IO_TYPE_INDEX].index = IO_TYPE_INDEX;
 	SetupEmptyType(cb_type_descriptors, EMPTY_TYPE);
 
 	/* Process the types */
 	/* TODO: I should make this more flexible but release is soon and I don't have time so assert values for empty and io types*/
 	VTR_ASSERT(EMPTY_TYPE_INDEX == 0);
-	VTR_ASSERT(IO_TYPE_INDEX == 1);
 	i = 1; /* Skip over 'empty' type */
 
 	CurType = Node.first_child();
@@ -2522,12 +2516,6 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		/* Load pb_type info */
 		Type->pb_type = (t_pb_type*) vtr::malloc(sizeof(t_pb_type));
 		Type->pb_type->name = vtr::strdup(Type->name);
-		if (i == IO_TYPE_INDEX) {
-			if (strcmp(Type->name, "io") != 0) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
-						"First complex block must be named \"io\" and define the inputs and outputs for the FPGA");
-			}
-		}
 		ProcessPb_Type(CurType, Type->pb_type, NULL, arch, loc_data);
 		Type->num_pins = Type->capacity
 				* (Type->pb_type->num_input_pins

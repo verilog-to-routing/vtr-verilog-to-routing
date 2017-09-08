@@ -12,7 +12,6 @@ extern "C" {
 
 #define NUM_MODELS_IN_LIBRARY 4
 #define EMPTY_TYPE_INDEX 0
-#define IO_TYPE_INDEX 1
 
 /* function declarations */
 void
