@@ -72,8 +72,8 @@ enum class ScreenUpdatePriority {
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
-#define EMPTY_BLOCK_ID ClusterBlockId(-1)
-#define INVALID_BLOCK_ID ClusterBlockId(-2)
+constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
+constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 

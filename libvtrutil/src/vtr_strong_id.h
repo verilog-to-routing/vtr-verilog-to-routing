@@ -177,7 +177,7 @@ class StrongId {
         constexpr StrongId() : id_(sentinel) {}
 
         //Only allow explict constructions from a raw Id (no automatic conversions)
-        explicit StrongId(T id): id_(id) {}
+        explicit constexpr StrongId(T id): id_(id) {}
 
         //Allow some explicit conversion to useful types
 

@@ -2251,7 +2251,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	char msg[vtr::bufsize];
-	ClusterBlockId clb_index = INVALID_BLOCK_ID;
+	ClusterBlockId clb_index = EMPTY_BLOCK_ID;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
