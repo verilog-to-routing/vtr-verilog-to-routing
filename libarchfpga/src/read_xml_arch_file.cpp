@@ -2409,24 +2409,18 @@ static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
 	arch->ipin_mux_trans_size = UNDEFINED;
 	arch->C_ipin_cblock = UNDEFINED;
 	arch->T_ipin_cblock = UNDEFINED;
-	ReqOpt TIMING_ENABLE_REQD;	
-	
-
-	TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
+	ReqOpt TIMING_REQD = BoolToReqOpt(timing_enabled);
 
 	Cur = get_single_child(Node, "sizing", loc_data);
-	arch->R_minW_nmos = get_attribute(Cur, "R_minW_nmos", loc_data, TIMING_ENABLE_REQD).as_float(0);
-	arch->R_minW_pmos = get_attribute(Cur, "R_minW_pmos", loc_data, TIMING_ENABLE_REQD).as_float(0);
-	arch->ipin_mux_trans_size = get_attribute(Cur, "ipin_mux_trans_size",
-			loc_data, OPTIONAL).as_float(0);
+	arch->R_minW_nmos = get_attribute(Cur, "R_minW_nmos", loc_data, TIMING_REQD).as_float(0);
+	arch->R_minW_pmos = get_attribute(Cur, "R_minW_pmos", loc_data, TIMING_REQD).as_float(0);
+	arch->ipin_mux_trans_size = get_attribute(Cur, "ipin_mux_trans_size", loc_data, OPTIONAL).as_float(0);
 
 	/* currently only ipin cblock info is specified in the timing node */
-	TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
-	Cur = get_single_child(Node, "timing", loc_data, TIMING_ENABLE_REQD);
+	Cur = get_single_child(Node, "timing", loc_data, TIMING_REQD);
 	if (Cur != NULL) {
 		arch->C_ipin_cblock = get_attribute(Cur, "C_ipin_cblock", loc_data, OPTIONAL).as_float(0);
 		arch->T_ipin_cblock = get_attribute(Cur, "T_ipin_cblock", loc_data, OPTIONAL).as_float(0);
-
 	}
 }
 
