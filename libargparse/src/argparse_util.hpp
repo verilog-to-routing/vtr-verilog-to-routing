@@ -2,8 +2,11 @@
 #define ARGPARSE_UTIL_HPP
 #include <array>
 #include <vector>
+#include <map>
+#include <memory>
 
 namespace argparse {
+    class Argument;
 
     //Splits off the leading dashes of a string, returning the dashes (index 0)
     //and the rest of the string (index 1)
@@ -17,7 +20,7 @@ namespace argparse {
 
     //Returns true if str represents a named argument starting with
     //'-' or '--' followed by one or more letters
-    bool is_argument(std::string str);
+    bool is_argument(std::string str, const std::map<std::string,std::shared_ptr<Argument>>& arg_map);
 
     //Returns 'str' interpreted as type T
     // Throws an exception if conversion fails

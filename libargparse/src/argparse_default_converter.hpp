@@ -19,7 +19,7 @@ arg_type() { return "integer"; }
 //Unsigned Integer
 template<typename T>
 typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, std::string>::type
-arg_type() { return "positive integer"; }
+arg_type() { return "non-negative integer"; }
 
 //Float
 template<typename T>

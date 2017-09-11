@@ -10,6 +10,7 @@
 
 namespace argparse {
 
+
     /*
      * ArgumentParser
      */
@@ -116,10 +117,22 @@ namespace argparse {
 
         //Process the arguments
         for (size_t i = 0; i < arg_strs.size(); i++) {
-            auto iter = str_to_option_arg.find(arg_strs[i]);
-            if (iter != str_to_option_arg.end()) {
+            ShortArgInfo short_arg_info = starts_with_short_arg(arg_strs[i], str_to_option_arg);
+
+            std::shared_ptr<Argument> arg;
+
+            if (short_arg_info.is_short_arg) {
+                //Short argument
+                arg = short_arg_info.arg;
+            } else { //Full argument
+                auto iter = str_to_option_arg.find(arg_strs[i]);
+                if (iter != str_to_option_arg.end()) {
+                    arg = iter->second;
+                }
+            }
+
+            if (arg) {
                 //Start of an argument
-                auto& arg = iter->second;
 
                 specified_arguments.insert(arg);
 
@@ -155,8 +168,15 @@ namespace argparse {
                     }
 
                     std::vector<std::string> values;
-                    size_t nargs_read;
-                    for (nargs_read = 0; nargs_read < max_values_to_read; ++nargs_read) {
+                    size_t nargs_read = 0;
+                    if (short_arg_info.is_short_arg) {
+                        //It is a short argument, we already have the first value
+                        if (!short_arg_info.value.empty()) {
+                            values.push_back(short_arg_info.value);
+                            ++nargs_read;
+                        }
+                    }
+                    for (; nargs_read < max_values_to_read; ++nargs_read) {
                         size_t next_idx = i + 1 + nargs_read;
                         if (next_idx >= arg_strs.size()) {
                             std::stringstream msg;
@@ -167,14 +187,14 @@ namespace argparse {
                         std::string str = arg_strs[next_idx];
 
 
-                        if (is_argument(str)) break;
+                        if (is_argument(str, str_to_option_arg)) break;
 
                         values.push_back(str);
                     }
 
                     if (nargs_read < min_values_to_read) {
                         std::stringstream msg;
-                        msg << "Expected at least " << min_values_to_read << " values for argument '" << arg_strs[i] << "'";
+                        msg << "Expected at least " << min_values_to_read << " value(s) for argument '" << arg_strs[i] << "'";
                         throw ArgParseError(msg.str());
                     }
                     assert (nargs_read <= max_values_to_read);
@@ -224,19 +244,19 @@ namespace argparse {
                     throw ArgParseError(ss.str());
                 } else {
                     //Positional argument
-                    auto arg = positional_args.front();
+                    auto pos_arg = positional_args.front();
                     positional_args.pop_front();
 
                     try {
-                        arg->set_dest_to_value(arg_strs[i]); 
+                        pos_arg->set_dest_to_value(arg_strs[i]); 
                     } catch (const ArgParseConversionError& e) {
                         std::stringstream msg;
-                        msg << e.what() << " for positional argument " << arg->long_option();
+                        msg << e.what() << " for positional argument " << pos_arg->long_option();
                         throw ArgParseConversionError(msg.str());
                     }
 
                     auto value = arg_strs[i];
-                    specified_arguments.insert(arg);
+                    specified_arguments.insert(pos_arg);
                 }
             }
         }
@@ -319,6 +339,35 @@ namespace argparse {
                 .help("Shows this help message")
                 .action(Action::HELP);
         }
+    }
+
+    ArgumentParser::ShortArgInfo ArgumentParser::starts_with_short_arg(std::string str, const std::map<std::string, std::shared_ptr<Argument>>& str_to_option_arg) const {
+
+        ShortArgInfo short_arg_info;
+        for(auto kv : str_to_option_arg) {
+            if (kv.first.size() == 2) {
+                //Is a short arg
+                
+                bool match = true;
+                for (size_t i = 0; i < kv.first.size(); ++i) {
+                    if (kv.first[i] != str[i]) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    short_arg_info.is_short_arg = true;
+                    short_arg_info.arg = kv.second;
+                    short_arg_info.value = std::string(str.begin() + kv.first.size(), str.end());
+
+                    return short_arg_info;
+                }
+            }
+        }
+
+        assert(!short_arg_info.is_short_arg);
+        return short_arg_info;
     }
 
     /*
@@ -469,5 +518,4 @@ namespace argparse {
         assert(long_option().size() > 1);
         return long_option()[0] != '-';
     }
-
 } //namespace

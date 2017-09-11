@@ -94,6 +94,13 @@ namespace argparse {
 
         private:
             void add_help_option_if_unspecified();
+
+            struct ShortArgInfo {
+                bool is_short_arg = false;
+                std::shared_ptr<argparse::Argument> arg;
+                std::string value;
+            };
+            ShortArgInfo starts_with_short_arg(std::string str, const std::map<std::string, std::shared_ptr<Argument>>& str_to_option_arg) const;
         private:
             std::string prog_;
             std::string description_;

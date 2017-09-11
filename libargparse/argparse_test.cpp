@@ -21,6 +21,7 @@ struct Args {
     ArgValue<const char*> slack_definition;
     ArgValue<bool> echo_files;
     ArgValue<bool> verify_file_digests;
+    ArgValue<unsigned> num_workers;
 
     ArgValue<std::string> blif_file;
     ArgValue<std::string> net_file;
@@ -180,6 +181,10 @@ int main(
             .help("Verify that files loaded by VPR (e.g. architecture, netlist,"
                   " previous packing/placement/routing) are consistent")
             .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+    gen_grp.add_argument(args.num_workers, "--num_workers", "-j")
+            .help("Number of parallel workers")
+            .default_value("1")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& file_grp = parser.add_argument_group("filename options");
@@ -467,6 +472,9 @@ int main(
         {"my_arch4.xml", "my_circuit4.blif", "--analysis", "--route_chan_width", "300"},
         {"my_arch5.xml", "my_circuit5.blif", "--analysis", "--criticality_exp", "2"}, //Float from integer
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--criticality_exp", "2.0"}, //Float
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j", "3"},
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j3"}, //No-space for single letter arg
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j 3"}, //Space in short arg (but one string)
     };
 
     int num_failed = 0;
@@ -492,6 +500,7 @@ int main(
         {"my_arch15.xml", "my_circuit15.blif", "--analysis", "--criticality_exp", "on"}, //Wrong value type for float
         {"my_arch16.xml", "my_circuit16.blif", "--analysis", "--slack_definition", "Z"}, //Valid type, but wrong choice
         {"my_arch17.xml", "my_circuit17.blif"}, //Missing required
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j", "3.4"}, //Float when expected unsigned
     };
 
     for(const auto& cmd_line : fail_cases) {
@@ -501,6 +510,11 @@ int main(
             std::cout << "Parsed successfully when expected failure: '" << argparse::join(cmd_line, " ") << "'" << std::endl;
             ++num_failed;
         }
+    }
+
+    if (num_failed != 0) {
+        std::cout << "\n";
+        std::cout << "FAILED: " << num_failed << " test(s)!" << "\n";
     }
 
     return num_failed;

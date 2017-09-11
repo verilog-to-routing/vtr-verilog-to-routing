@@ -16,11 +16,24 @@ namespace argparse {
         return array;
     }
 
-    bool is_argument(std::string str) {
-        if (str.size() == 2 && str[0] == '-' && str[1] != '-') {
-            return true; //Short option
-        } else if (str.size() > 2 && str[0] == '-' && str[1] == '-' && str[2] != '-') {
-            return true; //Long option
+    bool is_argument(std::string str, const std::map<std::string,std::shared_ptr<Argument>>& arg_map) {
+
+        for (const auto& kv : arg_map) {
+            auto iter = arg_map.find(str);
+
+            if (iter != arg_map.end()) {
+                //Exact match to short/long option
+                return true;
+            }
+
+            if (kv.first.size() == 2 && kv.first[0] == '-') {
+                //Check iff this is a short option with no spaces
+                if (str[0] == kv.first[0] && str[1] == kv.first[1]) {
+                    //Matches first two characters
+                    return true;
+                }
+            }
+
         }
         return false;
     }
