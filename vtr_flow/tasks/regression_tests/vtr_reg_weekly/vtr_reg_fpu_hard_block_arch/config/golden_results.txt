@@ -1,9 +1,0 @@
-arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_fpu	num_io	num_outputs	num_memories	num_mult	error	
-hard_fpu_arch_timing.xml	bfly.v	success	2.985 	1.39446	0.305484	0.567338	0.567338	833	649	353	0	3	193	64	-1	-1		
-hard_fpu_arch_timing.xml	bgm.v	success	2.985 	3.53791	0.791021	4.43263	4.43263	1281	693	1021	0	10	257	32	-1	-1		
-hard_fpu_arch_timing.xml	dscg.v	success	2.985 	2.76648	0.438812	2.077	2.077	769	585	513	0	5	129	64	-1	-1		
-hard_fpu_arch_timing.xml	fir.v	success	2.985 	23.5281	0.424463	1.10385	1.10385	993	808	543	35	4	161	32	-1	-1		
-hard_fpu_arch_timing.xml	mm3.v	success	2.985 	0.776786	0.214154	0.31675	0.31675	545	422	289	0	2	193	32	-1	-1		
-hard_fpu_arch_timing.xml	ode.v	success	2.985 	22.4272	0.362255	0.46955	0.46955	1194	1103	582	125	2	130	72	-1	-1		
-hard_fpu_arch_timing.xml	syn2.v	success	2.985 	0.802621	0.438043	0.903904	0.903904	641	490	479	0	4	161	128	-1	-1		
-hard_fpu_arch_timing.xml	syn7.v	success	2.985 	0.698069	1.7226	32.9025	32.9025	1921	499	1703	0	21	161	128	-1	-1		

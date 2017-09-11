@@ -1,104 +1,168 @@
-Introduction
-============
-The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development. 
-The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
-It then perfoms:
-  * Elaboration & Synthesis (ODIN II)
-  * Logic Optimization & Technology Mapping (ABC)
-  * Packing, Placement, Routing & Timing Analysis (VPR)
-
-to generate FPGA speed and area results.
-VTR also includes a set of benchmark designs known to work with the design flow.
-
-License
-=======
-
-Generally most code is under MIT license, with the exception of ABC which is distributed under its own (permissive) terms.
-Full license details can be found [here](LICENSE.md).
-
-Download
-========
-For most users of VTR (rather than active developers) you should download the latest packaged (and regression tested) version of VTR from [here](https://verilogtorouting.org/download).
-
-Building
-========
-On unix-like systems run `make` from the root VTR directory.
-
-For more details see [here](BUILDING.md).
-
-Docker Cloud9 Deployment
-========================
-We provide a Dockerfile that sets up all the necessary packages for VTR to run. Also, the Dockerfile sets up Cloud9, a workspace management system that runs on your browser and allows you to run (and modify) VTR remotely.
-
-For more details see [here](DOCKER_DEPLOY.md).
-
-Documentation
-=============
-VTR's full documentation is available [here](https://docs.verilogtorouting.org).
-
-Mailing Lists
-=============
-If you have questions, or want to keep up-to-date with VTR, consider joining our mailing lists:
-
-[VTR-Announce](https://groups.google.com/forum/#!forum/vtr-announce): VTR release announcements (low traffic)
-
-[VTR-Users](https://groups.google.com/forum/#!forum/vtr-users): Discussions about using VTR
-
-[VTR-Devel](https://groups.google.com/forum/#!forum/vtr-devel): Discussions about VTR development
-
-[VTR-Commits](https://groups.google.com/forum/#!forum/vtr-commits): VTR revision control commits
-
-How to Cite
+libargparse
 ===========
-The following paper may be used as a general citation for VTR:
+This is (yet another) simple command-line parser for C++ applications, inspired by Python's agparse module.
 
-J. Luu, J. Goeders, M. Wainberg, A. Somerville, T. Yu, K. Nasartschuk, M. Nasr, S. Wang, T. Liu, N. Ahmed, K. B. Kent, J. Anderson, J. Rose and V. Betz "VTR 7.0: Next Generation Architecture and CAD System for FPGAs," ACM TRETS, Vol. 7, No. 2, June 2014, pp. 6:1 - 6:30.
+It requires only a C++11 compiler, and has no external dependancies.
 
-Bibtex:
+One of the advantages of libargparse is that all conversions from command-line strings to program types (bool, int etc.) are performed when the command line is parsed (and not when the options are accessed).
+This avoids command-line related errors from showing up deep in the program execution, which can be problematic for long-running programs.
+
+Basic Usage
+===========
+
 ```
-@article{vtr2014,
-  title={{VTR 7.0: Next Generation Architecture and CAD System for FPGAs}},
-  author={Luu, Jason and Goeders, Jeff and Wainberg, Michael and Somerville, Andrew and Yu, Thien and Nasartschuk, Konstantin and Nasr, Miad and Wang, Sen and Liu, Tim and Ahmed, Norrudin and Kent, Kenneth B. and Anderson, Jason and Rose, Jonathan and Betz, Vaughn},
-  journal = {ACM Trans. Reconfigurable Technol. Syst.},
-  month={June},
-  volume={7}, 
-  number={2}, 
-  pages={6:1--6:30}, 
-  year={2014}
+#include "argparse.hpp"
+
+struct Args {
+    argparse::ArgValue<bool> do_foo;
+    argparse::ArgValue<bool> enable_bar;
+    argparse::ArgValue<std::string> filename;
+    argparse::ArgValue<size_t> verbosity;
+};
+
+int main(int argc, const char** argv) {
+    Args args;
+    auto parser = argparse::ArgumentParser(argv[0], "My application description");
+
+    parser.add_argument(args.filename, "filename")
+        .help("File to process");
+
+    parser.add_argument(args.do_foo, "--foo")
+        .help("Causes foo")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE);
+
+    parser.add_argument(args.enable_bar, "--bar")
+        .help("Control bar")
+        .default_value("false");
+
+    parser.add_argument(args.verbosity, "--verbosity", "-v")
+        .help("Sets the verbosity")
+        .default_value("1")
+        .choices({"0", "1", "2"});
+
+    parser.parse_args(argc, argv);
+
+    //Show the arguments
+    std::cout << "args.filename: " << args.filename << "\n";
+    std::cout << "args.do_foo: " << args.do_foo << "\n";
+    std::cout << "args.verbosity: " << args.verbosity << "\n";
+    std::cout << "\n";
+
+    //Do work
+    if (args.do_foo) {
+        if (args.verbosity > 0) {
+            std::cout << "Doing foo with " << args.filename << "\n";
+        }
+        if (args.verbosity > 1) {
+            std::cout << "Doing foo step 1" << "\n";
+            std::cout << "Doing foo step 2" << "\n";
+            std::cout << "Doing foo step 3" << "\n";
+        }
+    }
+
+    if (args.enable_bar) {
+        if (args.verbosity > 0) {
+            std::cout << "Bar is enabled" << "\n";
+        }
+    } else {
+        if (args.verbosity > 0) {
+            std::cout << "Bar is disabled" << "\n";
+        }
+    }
+
+    return 0;
 }
 ```
 
-Development
+and the resulting help:
+
+```
+$ ./argparse_example -h
+usage: argparse_example filename [--foo] [--bar {true, false}] 
+       [-v {0, 1, 2}] [-h]
+
+My application description
+
+arguments:
+  filename          File to process
+  --foo             Causes foo (Default: false)
+  --bar {true, false}
+                    Control whether bar is enabled (Default: false)
+  -v {0, 1, 2}, --verbosity {0, 1, 2}
+                    Sets the verbosity (Default: 1)
+  -h, --help        Shows this help message
+```
+By default the usage and help messages are line-wrapped to 80 characters.
+
+Custom Conversions
+==================
+By default libargparse performs string to program type conversions using ``<sstream>``, meaning any type supporting ``operator<<()`` and ``operator>>()`` should be automatically supported.
+
+However this does not always provide sufficient flexibility.
+As a result libargparse also supports custom conversions, allowing user-defined mappings between command-line strings to program types.
+
+If we wanted to modify the above example so the '--bar' argument accepted the strings 'on' and 'off' (instead of the default 'true' and 'false') we would define a custom class as follows:
+```
+struct OnOff {
+    bool from_str(std::string str) {
+        if      (str == "on")  return true;
+        else if (str == "off") return false;
+        throw argparse::ArgParseConversionError("Invalid argument value");
+    }
+
+    std::string to_str(bool val) {
+        if (val) return "on";
+        return "off";
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off"};
+    }
+};
+```
+
+Where the `from_str()` and `to_str()` define the conversions to and from a string, and `default_choices()` returns the set of valid choices. Note that default_choices() can return an empty vector to indicate there is no specified default set of choices.
+
+We then modify the ``add_argument()`` call to use our conversion object:
+```
+    parser.add_argument<bool,OnOff>(args.enable_bar, "--bar")
+        .help("Control whether bar is enabled")
+        .default_value("off");
+```
+
+with the resulting help:
+```
+usage: argparse_example filename [--foo] [--bar {on, off}] [-v {0, 1, 2}] 
+       [-h]
+
+My application description
+
+arguments:
+  filename          File to process
+  --foo             Causes foo (Default: false)
+  --bar {on, off}   Control whether bar is enabled (Default: off)
+  -v {0, 1, 2}, --verbosity {0, 1, 2}
+                    Sets the verbosity (Default: 1)
+  -h, --help        Shows this help message
+```
+
+Advanced Usage
+==============
+For more advanced usage such as argument groups see [argparse_test.cpp](argparse_test.cpp) and [src/argparse.hpp](argparse.hpp)
+
+Future Work
 ===========
-This is the development trunk for the Verilog-to-Routing project. 
-Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux. 
-You should expect that the tools are not always stable and that more work is needed to get the flow to run.
+libargparse is missing a variety of more advanced features found in Python's argparse, including (but not limited to):
+* nargs: '?', '*', '+', >1
+* action: append, count
+* subcommands
+* mutually exclusive options
+* prefix abbreviations
+* parsing only known args
+* concatenated short options (e.g. `-xvf`, for options `-x`, `-v`, `-f`)
+* equal concatenated option values (e.g. `--foo=VALUE`)
 
-For new developers, please do the tutorial in `tutorial/NewDeveloperTutorial.txt`. 
-You will be directed back here once you ramp up.
-
-VTR development follows a classic centralized repository (svn-like) workflow. 
-The 'master' branch is supposed to be the most current stable version of the project. 
-Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull`) to keep in sync with the GitHub master. 
-When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation.
-Unstable code should remain in the developer's local copy.
-
-We do automated testing of the trunk using BuildBot to verify functionality and Quality of Results (QoR).
-* [Trunk Status](http://builds.verilogtorouting.org:8080/waterfall)
-* [QoR Tracking](http://builds.verilogtorouting.org:8080/)
-
-*IMPORTANT*: A broken build must be fixed at top priority. You break the build if your commit breaks any of the automated regression tests.
-
-For additional information see the [developer README](README.developers.md).
-
-Contributors
-============
-*Please keep this up-to-date*
-
-Professors: Kenneth Kent, Vaughn Betz, Jonathan Rose, Jason Anderson, Peter Jamieson
-
-Graduate Students: Kevin Murray, Jason Luu, Oleg Petelin, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville, Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu, Charles Chiasson, Panagiotis (Panos) Patros
-
-Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg, Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu, Long Yu Wang, Matthew J.P. Walker, Amer Hesson, Sheng Zhong, Hanqing Zeng, Vidya Sankaranarayanan, Jia Min Wang, Eugene Sha, Jean-Philippe Legault
-
-Companies: Altera Corporation, Texas Instruments
+Acknowledgements
+================
+Python's [https://docs.python.org/2.7/library/argparse.html](argparse module)

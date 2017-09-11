@@ -1,4 +1,0 @@
-(\d+)(.*)sec (.*) ns  (.*) \(.*
-time (s);
-critpath (ns);
-congestion;log
