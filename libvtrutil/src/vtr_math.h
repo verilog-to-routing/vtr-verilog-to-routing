@@ -11,7 +11,7 @@ namespace vtr {
     int ipow(int base, int exp);
 
     template<typename X, typename Y> 
-    Y linear_interpolate_or_extrapolate(std::map<X,Y> *xy_map, X requested_x);
+    Y linear_interpolate_or_extrapolate(const std::map<X,Y> *xy_map, X requested_x);
 
     constexpr int nint(float val) { return static_cast<int>(val + 0.5); }
 

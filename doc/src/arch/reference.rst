@@ -522,7 +522,7 @@ FPGA Device Information
 -----------------------
 The tags within the ``<device>`` tag are:
 
-.. arch:tag:: <sizing R_minW_nmos="float" R_minW_pmos="float" ipin_mux_trans_size="int"/>
+.. arch:tag:: <sizing R_minW_nmos="float" R_minW_pmos="float"/>
 
     :req_param R_minW_nmos: 
         The resistance of minimum-width nmos transistor.  
@@ -532,36 +532,47 @@ The tags within the ``<device>`` tag are:
         The resistance of minimum-width pmos transistor.  
         This data is used only by the area model built into VPR.
 
-    :req_param ipin_mux_trans_size:
-        This specifies the size of each transistor in the ipin muxes.
-        Given in minimum transistor units.
-        The mux is implemented as a two-level mux.
-
     :required: Yes
 
     Specifies parameters used by the area model built into VPR.
 
 
-.. arch:tag:: <timing C_ipin_cblock="float" T_ipin_cblock="float"/>
+.. arch:tag:: <connection_block input_switch_name="string"/>
 
-    :req_param C_ipin_cblock: 
-        Input capacitance of the buffer isolating a routing track from the connection boxes (multiplexers) that select the signal to be connected to a logic block input pin.
+        .. figure:: ipin_diagram.*
+
+            Input Pin Diagram.
+
+
+    :req_param switch_name:
+        Specifies the name of the ``<switch>`` in the ``<switchlist>`` used to connect routing tracks to block input pins (i.e. the input connection block switch).
+
+        **Input Capacitance**
+
+        The ``<switch>``'s input capacitance (``Cin``) represents the capacitive load such connections put on their source routing track.
+
+        If the switch is *buffered* this represents the input capacitance of the buffers isolating the routing track from the connection boxes (multiplexers) that select the track to connect to a logic block input pin.
         One of these buffers is inserted in the FPGA for each track at each location at which it connects to a connection box.
         For example, a routing segment that spans three logic blocks, and connects to logic blocks at two of these three possible locations would have two isolation buffers attached to it.
         If a routing track connects to the logic blocks both above and below it at some point, only one isolation buffer is inserted at that point.
-        If your connection from routing track to connection block does not include a buffer, set this parameter to the capacitive loading a track would see at each point where it connects to a logic block or blocks.
 
-    :req_param T_ipin_cblock:
-        Delay to go from a routing track, through the isolation buffer (if your architecture contains these) and a connection block (typically a multiplexer) to a logic block input pin.
+        If the switch is *not buffered* this represents to the capacitive loading a track would see at each point where it connects to a logic block or blocks.
 
-    :required: Yes (for timing analysis), optional otherwise.
+        **Delay**
 
-    Attributes specifying timing information general to the device.
+        The ``<switch>``'s intrinsic delay (``Tdel``) represents the delay to go from a routing track through the isolation buffer (if applicable) and the connection block (typically a multiplexer) to a logic block input pin.
 
+        .. note:: The ``<switch>``'s resistance (``R``) and output capacitance (``Cout``) have no effect on delay when used for the input connection block, since VPR does not model the resistance/capacitance of block internal wires.
 
-    .. figure:: ipin_diagram.*
+        **Area**
 
-        Input Pin Diagram.
+        The ``<switch>``'s ``mux_trans_size`` specifies the size of transitors in the two-level mux used to implement the switch, given in minimum transitor units.
+
+        The ``<switch>``'s ``buf_size`` specifies the size of transitors in the isolation buffer (if applicable), given in minimum transitor units.
+        If ``buf_size`` is left unspecified or set to ``0`` the transistors will be automatically sized to 4x minimum drive strength.
+
+    :required: Yes
+
 
 .. arch:tag:: <area grid_logic_tile_area="float"/>
 

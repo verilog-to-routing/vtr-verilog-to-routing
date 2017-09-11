@@ -701,7 +701,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
             int switch_index = itr->first;
             int fanin = itr->second;
-            if (device_ctx.arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1) {
+            if (device_ctx.arch_switch_inf[switch_index].fixed_Tdel()) {
                 fanin = UNDEFINED;
             }
             if (switch_fanin[switch_index].count(fanin) == 0) {
@@ -742,17 +742,7 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int, int> *switc
 
             /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
                rr switch should be */
-            map<int, double> &Tdel_map = device_ctx.arch_switch_inf[i_arch_switch].Tdel_map;
-            double rr_switch_Tdel;
-            if (Tdel_map.count(UNDEFINED) == 1) {
-                /* the switch specified a single constant delay. i.e., it did not
-                   specify fanin/delay pairs */
-                rr_switch_Tdel = Tdel_map[UNDEFINED];
-            } else {
-                /* interpolate/extrapolate based on the available (fanin,delay) pairs in the 
-                   Tdel_map to get the rr_switch_Tdel at 'fanin' */
-                rr_switch_Tdel = vtr::linear_interpolate_or_extrapolate(&Tdel_map, fanin);
-            }
+            double rr_switch_Tdel = device_ctx.arch_switch_inf[i_arch_switch].Tdel(fanin);
 
             /* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */
             device_ctx.rr_switch_inf[i_rr_switch].buffered = device_ctx.arch_switch_inf[i_arch_switch].buffered;

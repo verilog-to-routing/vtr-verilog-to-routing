@@ -7,7 +7,7 @@
 
 #include "atom_netlist_fwd.h"
 #include "atom_lookup_fwd.h"
-#include "physical_types.h"
+#include "vpr_types.h"
 
 std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf, 
                                                    const AtomNetlist& netlist, 

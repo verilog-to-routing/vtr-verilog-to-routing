@@ -57,6 +57,7 @@ struct t_interconnect;
 struct t_pb_graph_pin;
 struct t_pb_graph_edge;
 struct t_cluster_placement_primitive;
+struct t_arch;
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -318,19 +319,6 @@ struct t_class {
 	enum e_pin_type type;
 	int num_pins;
 	int *pinlist; /* [0..num_pins - 1] */
-};
-
-/* Cluster timing delays:
- * C_ipin_cblock: Capacitance added to a routing track by the isolation     *
- *                buffer between a track and the Cblocks at an (i,j) loc.   *
- * T_ipin_cblock: Delay through an input pin connection box (from a         *
- *                   routing track to a logic block input pin).             */
-struct t_timing_inf {
-	bool timing_analysis_enabled;
-	float C_ipin_cblock;
-	float T_ipin_cblock;
-    std::string SDCFile; 
-    std::string slack_definition;
 };
 
 enum e_power_wire_type {
@@ -1025,28 +1013,30 @@ struct t_segment_inf {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 struct t_arch_switch_inf {
-	bool buffered;
-	float R;
-	float Cin;
-	float Cout;
-	std::map< int, double > Tdel_map;
-	float mux_trans_size;
-	float buf_size;
-	char *name;
-	e_power_buffer_type power_buffer_type;
-	float power_buffer_size;
+    public:
+        static constexpr int UNDEFINED_FANIN = -1;
 
-	t_arch_switch_inf(){
-		buffered = false;
-		R = 0;
-		Cin = 0;
-		Cout = 0;
-		mux_trans_size = 0;
-		buf_size = 0;
-		name = NULL;
-		power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
-		power_buffer_size = 0;
-	}
+        bool buffered;
+        float R;
+        float Cin;
+        float Cout;
+        float mux_trans_size;
+        float buf_size;
+        char *name;
+        e_power_buffer_type power_buffer_type;
+        float power_buffer_size;
+    public:
+        //Returns the intrinsic delay of this switch
+        float Tdel(int fanin=UNDEFINED_FANIN) const;
+
+        //Returns true if the Tdel value is independent of fanout
+        bool fixed_Tdel() const;
+    public:
+        void set_Tdel(int fanin, float delay);
+    private:
+        std::map<int, double> Tdel_map;
+
+        friend void PrintArchInfo(FILE*, const t_arch*);
 };
 
 /* Lists all the important information about an rr switch type.              *
@@ -1233,12 +1223,10 @@ struct t_arch {
 	t_power_arch * power;
 	t_clock_arch * clocks;
 	
-	/* Ipin cblock parameters may be set through a switch or through the timing/sizing nodes under <device>.
-	   The former sets the ipin_cblock_switch_name. The latter sets the other 3 fields. */
-	char *ipin_cblock_switch_name;
-	float C_ipin_cblock;
-	float T_ipin_cblock;
-	float ipin_mux_trans_size;
+    //The name of the switch used for the input connection block (i.e. to
+    //connect routing tracks to block pins).
+    //This should correspond to a switch in Switches
+    std::string ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 };

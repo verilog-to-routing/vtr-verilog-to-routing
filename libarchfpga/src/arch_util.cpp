@@ -111,8 +111,6 @@ void free_arch(t_arch* arch) {
     if (arch->clocks) {
         vtr::free(arch->clocks->clock_inf);
     }
-
-    vtr::free(arch->ipin_cblock_switch_name);
 }
 
 void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_descriptors) {

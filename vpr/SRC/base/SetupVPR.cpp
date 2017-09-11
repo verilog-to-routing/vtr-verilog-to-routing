@@ -41,6 +41,7 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch);
+static int find_ipin_cblock_switch_index(const t_arch& Arch);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
@@ -197,8 +198,10 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 		return;
 	}
 
-	Timing->C_ipin_cblock = Arch.C_ipin_cblock;
-	Timing->T_ipin_cblock = Arch.T_ipin_cblock;
+    int ipin_cblock_switch_index = find_ipin_cblock_switch_index(Arch);
+
+	Timing->C_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Cin;
+	Timing->T_ipin_cblock = Arch.Switches[ipin_cblock_switch_index].Tdel();
 	Timing->timing_analysis_enabled = TimingEnabled;
     Timing->SDCFile = Options.SDCFile;
     Timing->slack_definition = Options.SlackDefinition;
@@ -221,30 +224,7 @@ static void SetupSwitches(const t_arch& Arch,
 	int switches_to_copy = NumArchSwitches;
 	device_ctx.num_arch_switches = NumArchSwitches;
 
-	/* If ipin cblock info has not been read in from a switch, then we will
-	   create a new switch for it. Otherwise, the switch already exists */
-	if (NULL == Arch.ipin_cblock_switch_name){
-		/* Depends on device_ctx.num_arch_switches */
-		RoutingArch->wire_to_arch_ipin_switch = device_ctx.num_arch_switches;
-		++device_ctx.num_arch_switches;
-		++NumArchSwitches;
-	} else {
-		/* need to find the index of the input cblock switch */
-		int ipin_cblock_switch_index = -1;
-		char *ipin_cblock_switch_name = Arch.ipin_cblock_switch_name;
-		for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch++){
-			char *iswitch_name = ArchSwitches[iswitch].name;
-			if (0 == strcmp(ipin_cblock_switch_name, iswitch_name)){
-				ipin_cblock_switch_index = iswitch;
-				break;
-			}
-		}
-		if (ipin_cblock_switch_index == -1){
-			vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "Could not find arch switch matching name %s\n", ipin_cblock_switch_name);
-		}
-
-		RoutingArch->wire_to_arch_ipin_switch = ipin_cblock_switch_index;
-	}
+    RoutingArch->wire_to_arch_ipin_switch = find_ipin_cblock_switch_index(Arch);
 
 	/* Depends on device_ctx.num_arch_switches */
 	RoutingArch->delayless_switch = device_ctx.num_arch_switches;
@@ -262,30 +242,35 @@ static void SetupSwitches(const t_arch& Arch,
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Tdel_map[UNDEFINED] = 0.;
+	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 
-	/* If ipin cblock info has *not* been read in from a switch, then we have
-	   created a new switch for it, and now need to set its values */
-	if (NULL == Arch.ipin_cblock_switch_name){
+	/* If ipin cblock info has not specified a buf_size we auto-size it */
+	if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size == 0.){
 		/* The wire to ipin switch for all types. Curently all types
 		 * must share ipin switch. Some of the timing code would
 		 * need to be changed otherwise. */
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = true;
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Tdel_map[UNDEFINED] = Arch.T_ipin_cblock;
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].mux_trans_size = Arch.ipin_mux_trans_size;
 
 		/* Assume the ipin cblock output to lblock input buffer below is 4x     *
 		 * minimum drive strength (enough to drive a fanout of up to 16 pretty  * 
 		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
+        float buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
+        vtr::printf_warning(__FILE__, __LINE__, "Auto sizing unspecified connection block input buffer size to: %g\n", buf_size);
+		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = buf_size;
 	}
 
+
+    //Warn about non-zero R/Cout values for the ipin switch, since these values have no effect.
+    //VPR do not model the R/C's of block internal routing connectsion.
+    if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R != 0.) {
+        vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch resistance (%g) has no effect when switch '%s' is used for connection block inputs\n",
+                device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R, Arch.ipin_cblock_switch_name.c_str());
+    }
+    if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
+        vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
+                device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name.c_str());
+    }
 
 }
 
@@ -475,3 +460,22 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		device_ctx.clock_arch = NULL;
 	}
 }
+
+static int find_ipin_cblock_switch_index(const t_arch& Arch) {
+    int ipin_cblock_switch_index = UNDEFINED;
+    for (int i = 0; i < Arch.num_switches; ++i) {
+        if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name) {
+            if (ipin_cblock_switch_index != UNDEFINED) {
+                VPR_THROW(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+            } else {
+                ipin_cblock_switch_index = i;
+            }
+        }
+    }
+
+    if (ipin_cblock_switch_index == UNDEFINED) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+    }
+    return ipin_cblock_switch_index;
+}
+

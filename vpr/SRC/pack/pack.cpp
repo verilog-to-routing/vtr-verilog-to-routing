@@ -211,12 +211,7 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	   interpolate/extrapolate to get the delay at 'switch_fanin'. */
     auto& device_ctx = g_vpr_ctx.device();
 
-	std::map<int, double> *Tdel_map = &device_ctx.arch_switch_inf[switch_index].Tdel_map;
-	if (Tdel_map->size() == 1){
-		Tdel_switch = (Tdel_map->begin())->second;
-	} else {
-		Tdel_switch = vtr::linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
-	}
+    Tdel_switch = device_ctx.arch_switch_inf[switch_index].Tdel(switch_fanin);
 	R_switch = device_ctx.arch_switch_inf[switch_index].R;
 	Cout_switch = device_ctx.arch_switch_inf[switch_index].Cout;
 

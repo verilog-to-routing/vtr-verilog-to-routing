@@ -100,8 +100,6 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
-static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
-		t_arch *arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistr(pugi::xml_node Node,
 		t_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const pugiutil::loc_data& loc_data);
@@ -109,8 +107,7 @@ static void ProcessModels(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
-static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
-		const bool timing_enabled, const pugiutil::loc_data& loc_data);
+static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
 		t_arch& arch, const pugiutil::loc_data& loc_data);
@@ -213,7 +210,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
-        ProcessDevice(Next, arch, timing_enabled, loc_data);
+        ProcessDevice(Next, arch, loc_data);
 
         /* Process switches */
         Next = get_single_child(architecture, "switchlist", loc_data);
@@ -2360,24 +2357,53 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
-static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
-		const bool timing_enabled, const pugiutil::loc_data& loc_data) {
+static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data) {
 	const char *Prop;
 	pugi::xml_node Cur;
 	bool custom_switch_block = false;
 
-	ProcessSizingTimingIpinCblock(Node, arch, timing_enabled, loc_data);
+    //Warn that <timing> is no longer supported
+    //TODO: eventually remove
+    try {
+        expect_child_node_count(Node, "timing", 0, loc_data);
+    } catch (XmlError& e) {
+        std::string msg = e.what();
+        msg += ". <timing> has been replaced with the <switch_block> tag.";
+        msg += " Please upgrade your architecture file.";
+        archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
+    }
 
+    expect_only_children(Node, {"sizing", "area", 
+                                "chan_width_distr", "switch_block",
+                                "connection_block"}, loc_data);
+
+    //<sizing> tag
+	Cur = get_single_child(Node, "sizing", loc_data);
+    expect_only_attributes(Cur, {"R_minW_nmos", "R_minW_pmos"}, loc_data);
+	arch->R_minW_nmos = get_attribute(Cur, "R_minW_nmos", loc_data).as_float();
+	arch->R_minW_pmos = get_attribute(Cur, "R_minW_pmos", loc_data).as_float();
+
+    //<area> tag
 	Cur = get_single_child(Node, "area", loc_data);
+    expect_only_attributes(Cur, {"grid_logic_tile_area"}, loc_data);
 	arch->grid_logic_tile_area = get_attribute(Cur, "grid_logic_tile_area",
 			loc_data, OPTIONAL).as_float(0);
 
+    //<chan_width_distr> tag
 	Cur = get_single_child(Node, "chan_width_distr", loc_data, OPTIONAL);
+    expect_only_attributes(Cur, {}, loc_data);
 	if (Cur != NULL) {
 		ProcessChanWidthDistr(Cur, arch, loc_data);
 	}
 
+    //<connection_block> tag
+    Cur = get_single_child(Node, "connection_block", loc_data);
+    expect_only_attributes(Cur, {"input_switch_name"}, loc_data);
+    arch->ipin_cblock_switch_name = get_attribute(Cur, "input_switch_name", loc_data).as_string();
+
+    //<switch_block> tag
 	Cur = get_single_child(Node, "switch_block", loc_data);
+    expect_only_attributes(Cur, {"type", "fs"}, loc_data);
 	Prop = get_attribute(Cur, "type", loc_data).value();
 	if (strcmp(Prop, "wilton") == 0) {
 		arch->SBType = WILTON;
@@ -2396,32 +2422,6 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
 	ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
 	arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
 
-}
-
-/* Processes the sizing, timing, and ipin_cblock child objects of the 'device' node.
-   We can specify an ipin cblock's info through the sizing/timing nodes (legacy),
-   OR through the ipin_cblock node which specifies the info using the index of a switch. */
-static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
-		t_arch *arch, const bool timing_enabled, const pugiutil::loc_data& loc_data) {
-
-	pugi::xml_node Cur;
-
-	arch->ipin_mux_trans_size = UNDEFINED;
-	arch->C_ipin_cblock = UNDEFINED;
-	arch->T_ipin_cblock = UNDEFINED;
-	ReqOpt TIMING_REQD = BoolToReqOpt(timing_enabled);
-
-	Cur = get_single_child(Node, "sizing", loc_data);
-	arch->R_minW_nmos = get_attribute(Cur, "R_minW_nmos", loc_data, TIMING_REQD).as_float(0);
-	arch->R_minW_pmos = get_attribute(Cur, "R_minW_pmos", loc_data, TIMING_REQD).as_float(0);
-	arch->ipin_mux_trans_size = get_attribute(Cur, "ipin_mux_trans_size", loc_data, OPTIONAL).as_float(0);
-
-	/* currently only ipin cblock info is specified in the timing node */
-	Cur = get_single_child(Node, "timing", loc_data, TIMING_REQD);
-	if (Cur != NULL) {
-		arch->C_ipin_cblock = get_attribute(Cur, "C_ipin_cblock", loc_data, OPTIONAL).as_float(0);
-		arch->T_ipin_cblock = get_attribute(Cur, "T_ipin_cblock", loc_data, OPTIONAL).as_float(0);
-	}
 }
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
@@ -2910,17 +2910,11 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		if (0 == strcmp(type_name, "mux")) {
 			(*Switches)[i].buffered = true;
 			has_buf_size = REQUIRED;
-		}
-
-		else if (0 == strcmp(type_name, "pass_trans")) {
+		} else if (0 == strcmp(type_name, "pass_trans")) {
 			(*Switches)[i].buffered = false;
-		}
-
-		else if (0 == strcmp(type_name, "buffer")) {
+		} else if (0 == strcmp(type_name, "buffer")) {
 			(*Switches)[i].buffered = true;
-		}
-
-		else {
+		} else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", type_name);
 		}
@@ -2930,8 +2924,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		(*Switches)[i].Cin = get_attribute(Node, "Cin", loc_data, TIMING_ENABLE_REQD).as_float(0);
 		(*Switches)[i].Cout = get_attribute(Node, "Cout", loc_data, TIMING_ENABLE_REQD).as_float(0);
 		ProcessSwitchTdel(Node, timing_enabled, i, (*Switches), loc_data);
-		(*Switches)[i].buf_size = get_attribute(Node, "buf_size", loc_data,
-				has_buf_size).as_float(0);
+		(*Switches)[i].buf_size = get_attribute(Node, "buf_size", loc_data, has_buf_size).as_float(0);
 		(*Switches)[i].mux_trans_size = get_attribute(Node, "mux_trans_size", loc_data, OPTIONAL).as_float(1);
 				
 		buf_size = get_attribute(Node, "power_buf_size", loc_data, OPTIONAL).as_string(NULL);
@@ -2941,7 +2934,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
 		} else {
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
-			(*Switches)[i].power_buffer_size = (float) atof(buf_size);
+			(*Switches)[i].power_buffer_size = (float) vtr::atof(buf_size);
 		}
 
 		/* Get next switch element */
@@ -2986,32 +2979,28 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 	}
 
 	/* get pointer to the switch's Tdel map, then read-in delay data into this map */
-	std::map<int, double> *Tdel_map = &Switches[switch_index].Tdel_map;
 	if (has_Tdel_prop){
 		/* delay specified as a constant */
-		if (Tdel_map->count(UNDEFINED)){
-            VTR_ASSERT(false);
-		} else {
-			(*Tdel_map)[UNDEFINED] = Tdel_prop_value;
-		}
+        Switches[switch_index].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel_prop_value);
 	} else if (has_Tdel_children) {
 		/* Delay specified as a function of switch fan-in. 
 		   Go through each Tdel child, read-in num_inputs and the delay value.
 		   Insert this info into the switch delay map */
 		pugi::xml_node Tdel_child = get_first_child(Node, "Tdel", loc_data);
+        std::set<int> seen_fanins;
 		for (int ichild = 0; ichild < num_Tdel_children; ichild++){
 
 			int num_inputs = get_attribute(Tdel_child, "num_inputs", loc_data).as_int(0);
 			float Tdel_value = get_attribute(Tdel_child, "delay", loc_data).as_float(0.);
 
-			if (Tdel_map->count( num_inputs ) ){
+			if (seen_fanins.count(num_inputs) ){
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Tdel_child),
 					"Tdel node specified num_inputs (%d) that has already been specified by another Tdel node", num_inputs);
 			} else {
-				(*Tdel_map)[num_inputs] = Tdel_value;
+                Switches[switch_index].set_Tdel(num_inputs, Tdel_value);
+                seen_fanins.insert(num_inputs);
 			}
 			Tdel_child = Tdel_child.next_sibling(Tdel_child.name());
-
 		}
 	} else {
 		/* No delay info specified for switch */
@@ -3020,7 +3009,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 					"Switch should contain intrinsic delay information if timing is enabled");
 		} else {
 			/* set a default value */
-			(*Tdel_map)[UNDEFINED] = 0;
+            Switches[switch_index].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
 		}
 	}
 }

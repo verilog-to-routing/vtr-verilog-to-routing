@@ -470,6 +470,19 @@ struct t_timing_constraints { /* Container structure for all SDC timing constrai
 	t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
 };
 
+/* Cluster timing delays:
+ * C_ipin_cblock: Capacitance added to a routing track by the isolation     *
+ *                buffer between a track and the Cblocks at an (i,j) loc.   *
+ * T_ipin_cblock: Delay through an input pin connection box (from a         *
+ *                   routing track to a logic block input pin).             */
+struct t_timing_inf {
+	bool timing_analysis_enabled;
+	float C_ipin_cblock;
+	float T_ipin_cblock;
+    std::string SDCFile; 
+    std::string slack_definition;
+};
+
 /***************************************************************************
  * Placement and routing data types
  ****************************************************************************/

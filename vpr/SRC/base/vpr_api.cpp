@@ -128,8 +128,6 @@ void vpr_init(const int argc, const char **argv,
     /* Print title message */
     vpr_print_title();
 
-    memset(arch, 0, sizeof (t_arch));
-
     /* Read in user options */
     *options = read_options(argc, argv);
 

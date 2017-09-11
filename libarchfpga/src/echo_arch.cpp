@@ -10,7 +10,7 @@
 
 using vtr::t_linked_vptr;
 
-static void PrintArchInfo(FILE* Echo, const t_arch *arch);
+void PrintArchInfo(FILE* Echo, const t_arch *arch);
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type * pb_type,
 		int level);
 static void PrintPb_types_recPower(FILE* Echo,
@@ -106,7 +106,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 }
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML
-static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
+void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	int i, j;
 
 	fprintf(Echo, "Printing architecture... \n\n");
@@ -126,11 +126,8 @@ static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	fprintf(Echo, "Device Info:\n");
 
 	fprintf(Echo,
-			"\tSizing: R_minW_nmos %e R_minW_pmos %e ipin_mux_trans_size %e\n",
-			arch->R_minW_nmos, arch->R_minW_pmos, arch->ipin_mux_trans_size);
-
-	fprintf(Echo, "\tTiming: C_ipin_cblock %e T_ipin_cblock %e\n",
-			arch->C_ipin_cblock, arch->T_ipin_cblock);
+			"\tSizing: R_minW_nmos %e R_minW_pmos %e\n",
+			arch->R_minW_nmos, arch->R_minW_pmos);
 
 	fprintf(Echo, "\tArea: grid_logic_tile_area %e\n",
 			arch->grid_logic_tile_area);
@@ -210,6 +207,9 @@ static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	default:
 		break;
 	}
+
+    fprintf(Echo, "\tInput Connect Block Switch Name: %s\n", arch->ipin_cblock_switch_name.c_str());
+
 	fprintf(Echo, "*************************************************\n\n");
 	//Switch list
 	fprintf(Echo, "*************************************************\n");

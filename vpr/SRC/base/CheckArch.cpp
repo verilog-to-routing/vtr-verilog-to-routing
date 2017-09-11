@@ -50,11 +50,9 @@ static void CheckSwitches(const t_arch& Arch) {
 		}
 
 		/* find the ipin cblock switch index, if it exists */
-		if (Arch.ipin_cblock_switch_name){
-			if (strcmp(Arch.Switches[i].name, Arch.ipin_cblock_switch_name) == 0){
-				ipin_cblock_switch_index = i;
-			}
-		}
+        if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name){
+            ipin_cblock_switch_index = i;
+        }
 	}
 
 	/* Check that the ipin cblock switch doesn't specify multiple (#inputs,delay) pairs. This
@@ -64,9 +62,9 @@ static void CheckSwitches(const t_arch& Arch) {
 	   index to point to a switch with a routing resource switch with a representative Tdel value.
 	   See rr_graph.c:alloc_and_load_rr_switch_inf for more info */
 	if (ipin_cblock_switch_index != UNDEFINED){
-		if (Arch.Switches[ipin_cblock_switch_index].Tdel_map.size() > 1){
+		if (!Arch.Switches[ipin_cblock_switch_index].fixed_Tdel()) {
 			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, 
-				"Not currently allowing an ipin cblock switch to have multiple fan-ins");
+				"Not currently allowing an ipin cblock switch to have fanin dependent values");
 		}
 	}
 	
