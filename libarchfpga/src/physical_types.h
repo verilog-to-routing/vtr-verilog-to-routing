@@ -996,6 +996,12 @@ struct t_segment_inf {
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
+enum class SwitchType {
+    TRISTATE,
+    MUX,
+    PASS_GATE
+};
+
 /* Lists all the important information about a switch type read from the     *
  * architecture file.                                                        *
  * [0 .. Arch.num_switch]                                                    *
@@ -1016,7 +1022,6 @@ struct t_arch_switch_inf {
     public:
         static constexpr int UNDEFINED_FANIN = -1;
 
-        bool buffered;
         float R;
         float Cin;
         float Cout;
@@ -1026,6 +1031,12 @@ struct t_arch_switch_inf {
         e_power_buffer_type power_buffer_type;
         float power_buffer_size;
     public:
+        SwitchType type() const;
+
+        //Returns true if this switch type isolates its input and output into
+        //seperate DC-connected subcircuits
+        bool buffered() const;
+
         //Returns the intrinsic delay of this switch
         float Tdel(int fanin=UNDEFINED_FANIN) const;
 
@@ -1033,8 +1044,10 @@ struct t_arch_switch_inf {
         bool fixed_Tdel() const;
     public:
         void set_Tdel(int fanin, float delay);
+        void set_type(SwitchType type_val);
     private:
-        std::map<int, double> Tdel_map;
+        SwitchType type_;
+        std::map<int, double> Tdel_map_;
 
         friend void PrintArchInfo(FILE*, const t_arch*);
 };
@@ -1054,29 +1067,16 @@ struct t_arch_switch_inf {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 struct t_rr_switch_inf {
-	bool buffered;
-	float R;
-	float Cin;
-	float Cout;
-	float Tdel;
-	float mux_trans_size;
-	float buf_size;
-	const char *name;
-	e_power_buffer_type power_buffer_type;
-	float power_buffer_size;
-
-	t_rr_switch_inf(){
-		buffered = false;
-		R = 0;
-		Cin = 0;
-		Cout = 0;
-		Tdel = 0;
-		mux_trans_size = 0;
-		buf_size = 0;
-		name = NULL;
-		power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
-		power_buffer_size = 0;
-	}
+	bool buffered = false;
+	float R = 0.;
+	float Cin = 0.;
+	float Cout = 0.;
+	float Tdel = 0.;
+	float mux_trans_size = 0.;
+	float buf_size = 0.;
+	const char *name = nullptr;
+	e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
+	float power_buffer_size = 0.;
 };
 
 /* Lists all the important information about a direct chain connection.     *

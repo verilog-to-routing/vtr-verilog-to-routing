@@ -220,17 +220,18 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	//and a sign
 	for (i = 0; i < arch->num_switches; i++) {
 
-		if (arch->Switches[i].buffered) {
-			fprintf(Echo, "\tSwitch[%d]: name %s type mux/buffer\n", i + 1,
-					arch->Switches[i].name);
+		if (arch->Switches[i].type() == SwitchType::MUX) {
+			fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->Switches[i].name);
+        } else if (arch->Switches[i].type() == SwitchType::TRISTATE) {
+			fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->Switches[i].name);
 		} else {
-			fprintf(Echo, "\tSwitch[%d]: name %s type pass_trans\n", i + 1,
-					arch->Switches[i].name);
+            VTR_ASSERT(arch->Switches[i].type() == SwitchType::PASS_GATE);
+			fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->Switches[i].name);
 		}
 		fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->Switches[i].R,
 				arch->Switches[i].Cin, arch->Switches[i].Cout);
 		fprintf(Echo, "\t\t\t\t#Tdel values %d buf_size %e mux_trans_size %e\n",
-				(int)arch->Switches[i].Tdel_map.size(), arch->Switches[i].buf_size,
+				(int)arch->Switches[i].Tdel_map_.size(), arch->Switches[i].buf_size,
 				arch->Switches[i].mux_trans_size);
 		if (arch->Switches[i].power_buffer_type == POWER_BUFFER_TYPE_AUTO) {
 			fprintf(Echo, "\t\t\t\tpower_buffer_size auto\n");

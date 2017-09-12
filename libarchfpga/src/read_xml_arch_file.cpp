@@ -2908,12 +2908,12 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
 		/* Figure out the type of switch. */
 		if (0 == strcmp(type_name, "mux")) {
-			(*Switches)[i].buffered = true;
+			(*Switches)[i].set_type(SwitchType::MUX);
 			has_buf_size = REQUIRED;
-		} else if (0 == strcmp(type_name, "pass_trans")) {
-			(*Switches)[i].buffered = false;
-		} else if (0 == strcmp(type_name, "buffer")) {
-			(*Switches)[i].buffered = true;
+		} else if (0 == strcmp(type_name, "tristate")) {
+			(*Switches)[i].set_type(SwitchType::TRISTATE);
+		} else if (0 == strcmp(type_name, "pass_gate")) {
+			(*Switches)[i].set_type(SwitchType::PASS_GATE);
 		} else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", type_name);

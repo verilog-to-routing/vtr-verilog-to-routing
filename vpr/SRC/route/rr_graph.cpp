@@ -745,7 +745,7 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int, int> *switc
             double rr_switch_Tdel = device_ctx.arch_switch_inf[i_arch_switch].Tdel(fanin);
 
             /* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */
-            device_ctx.rr_switch_inf[i_rr_switch].buffered = device_ctx.arch_switch_inf[i_arch_switch].buffered;
+            device_ctx.rr_switch_inf[i_rr_switch].buffered = device_ctx.arch_switch_inf[i_arch_switch].buffered();
             device_ctx.rr_switch_inf[i_rr_switch].R = device_ctx.arch_switch_inf[i_arch_switch].R;
             device_ctx.rr_switch_inf[i_rr_switch].Cin = device_ctx.arch_switch_inf[i_arch_switch].Cin;
             device_ctx.rr_switch_inf[i_rr_switch].Cout = device_ctx.arch_switch_inf[i_arch_switch].Cout;

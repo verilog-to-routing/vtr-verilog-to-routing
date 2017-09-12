@@ -2006,7 +2006,7 @@ static void get_switch_type(
     /* Connect forward if we are a sblock */
     if (is_from_sblock) {
         switch_types[used] = to_node_switch;
-        if (false == device_ctx.arch_switch_inf[to_node_switch].buffered) {
+        if (false == device_ctx.arch_switch_inf[to_node_switch].buffered()) {
             forward_pass_trans = true;
         }
         ++used;
@@ -2014,7 +2014,7 @@ static void get_switch_type(
 
     /* Check for pass_trans coming backwards */
     if (is_to_sblock) {
-        if (false == device_ctx.arch_switch_inf[from_node_switch].buffered) {
+        if (false == device_ctx.arch_switch_inf[from_node_switch].buffered()) {
             switch_types[used] = from_node_switch;
             backward_pass_trans = true;
             ++used;

@@ -28,7 +28,7 @@ static void CheckSwitches(const t_arch& Arch) {
 	CurSwitch = Arch.Switches;
 	for (i = 0; i < Arch.num_switches; i++) {
 		/* This assumes all segments have the same directionality */
-		if (CurSwitch->buffered
+		if (CurSwitch->buffered()
 				&& Arch.Segments[0].directionality == BI_DIRECTIONAL) {
 			/* Largest resistance tri-state buffer would have a minimum 
 			 * width transistor in the buffer pull-down and a min-width 
