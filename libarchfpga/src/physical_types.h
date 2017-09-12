@@ -1002,6 +1002,11 @@ enum class SwitchType {
     PASS_GATE
 };
 
+enum class BufferSize {
+    AUTO,
+    ABSOLUTE
+};
+
 /* Lists all the important information about a switch type read from the     *
  * architecture file.                                                        *
  * [0 .. Arch.num_switch]                                                    *
@@ -1022,14 +1027,15 @@ struct t_arch_switch_inf {
     public:
         static constexpr int UNDEFINED_FANIN = -1;
 
-        float R;
-        float Cin;
-        float Cout;
-        float mux_trans_size;
-        float buf_size;
-        char *name;
-        e_power_buffer_type power_buffer_type;
-        float power_buffer_size;
+        char *name = nullptr;
+        float R = 0.;
+        float Cin = 0.;
+        float Cout = 0.;
+        float mux_trans_size = 1.;
+        BufferSize buf_size_type = BufferSize::AUTO;
+        float buf_size = 0.;
+        e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
+        float power_buffer_size = 0.;
     public:
         SwitchType type() const;
 
@@ -1046,7 +1052,7 @@ struct t_arch_switch_inf {
         void set_Tdel(int fanin, float delay);
         void set_type(SwitchType type_val);
     private:
-        SwitchType type_;
+        SwitchType type_ = SwitchType::MUX;
         std::map<int, double> Tdel_map_;
 
         friend void PrintArchInfo(FILE*, const t_arch*);

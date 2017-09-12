@@ -21,6 +21,7 @@ using namespace std;
 #include "globals.h"
 #include "rr_graph_util.h"
 #include "rr_graph.h"
+#include "rr_graph_area.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
@@ -183,11 +184,12 @@ static void build_rr_chan(
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
         const int wire_to_ipin_switch, const enum e_directionality directionality);
 
-static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch);
+static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
+                                        const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch);
 
 static void remap_rr_node_switch_indices(map<int, int> *switch_fanin);
 
-static void load_rr_switch_inf(const int num_arch_switches, map<int, int> *switch_fanin);
+static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, map<int, int> *switch_fanin);
 
 static int alloc_rr_switch_inf(map<int, int> *switch_fanin);
 
@@ -228,6 +230,8 @@ static void build_rr_graph(
         const t_segment_inf * segment_inf,
         const int global_route_switch, const int delayless_switch,
         const int wire_to_arch_ipin_switch,
+        const float R_minW_nmos,
+        const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -251,6 +255,8 @@ void create_rr_graph(
         const t_segment_inf * segment_inf,
         const int global_route_switch, const int delayless_switch,
         const int wire_to_arch_ipin_switch,
+        const float R_minW_nmos,
+        const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -271,7 +277,7 @@ void create_rr_graph(
     } else {
         build_rr_graph(graph_type, L_num_types, types, grid, nodes_per_chan, sb_type, Fs, switchblocks,
                 num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
-                base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
+                R_minW_nmos, R_minW_pmos, base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
                 dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings, for_placement);
     }
     //Write out rr graph file if needed
@@ -296,6 +302,8 @@ static void build_rr_graph(
         const int global_route_switch, 
         const int delayless_switch,
         const int wire_to_arch_ipin_switch,
+        const float R_minW_nmos,
+        const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -564,7 +572,7 @@ static void build_rr_graph(
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
        based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-    (*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    (*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     rr_graph_externals(segment_inf, num_seg_types, max_chan_width,
             *wire_to_rr_ipin_switch, base_cost_type, for_placement);
@@ -635,7 +643,8 @@ static void build_rr_graph(
    and count how many different fan-ins exist for each arch switch.
    Then we create these rr switches and update the switch indices
    of rr_nodes to index into the rr_switch_inf array. */
-static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch) {
+static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
+                                        const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
        each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
        with this expanded list of switches. 
@@ -650,7 +659,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
 
     /* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf 
        array each version of its fanin has been mapped to */
-    load_rr_switch_inf(num_arch_switches, switch_fanin);
+    load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, switch_fanin);
 
     /* next, walk through rr nodes again and remap their switch indices to rr_switch_inf */
     remap_rr_node_switch_indices(switch_fanin);
@@ -720,7 +729,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
 
 /* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what 
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
-static void load_rr_switch_inf(const int num_arch_switches, map<int, int> *switch_fanin) {
+static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, map<int, int> *switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int i_rr_switch = 0;
@@ -751,7 +760,14 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int, int> *switc
             device_ctx.rr_switch_inf[i_rr_switch].Cout = device_ctx.arch_switch_inf[i_arch_switch].Cout;
             device_ctx.rr_switch_inf[i_rr_switch].Tdel = rr_switch_Tdel;
             device_ctx.rr_switch_inf[i_rr_switch].mux_trans_size = device_ctx.arch_switch_inf[i_arch_switch].mux_trans_size;
-            device_ctx.rr_switch_inf[i_rr_switch].buf_size = device_ctx.arch_switch_inf[i_arch_switch].buf_size;
+            if (device_ctx.arch_switch_inf[i_arch_switch].buf_size_type == BufferSize::AUTO) {
+                //Size based on resistance
+                device_ctx.rr_switch_inf[i_rr_switch].buf_size = trans_per_buf(device_ctx.arch_switch_inf[i_arch_switch].R, R_minW_nmos, R_minW_pmos);
+            } else {
+                VTR_ASSERT(device_ctx.arch_switch_inf[i_arch_switch].buf_size_type == BufferSize::ABSOLUTE);
+                //Use the specified size
+                device_ctx.rr_switch_inf[i_rr_switch].buf_size = device_ctx.arch_switch_inf[i_arch_switch].buf_size;
+            }
             device_ctx.rr_switch_inf[i_rr_switch].name = device_ctx.arch_switch_inf[i_arch_switch].name;
             device_ctx.rr_switch_inf[i_rr_switch].power_buffer_type = device_ctx.arch_switch_inf[i_arch_switch].power_buffer_type;
             device_ctx.rr_switch_inf[i_rr_switch].power_buffer_size = device_ctx.arch_switch_inf[i_arch_switch].power_buffer_size;

@@ -36,6 +36,8 @@ void create_rr_graph(
         const t_segment_inf * segment_inf,
         const int global_route_switch, const int delayless_switch,
         const int wire_to_arch_ipin_switch,
+        const float R_minW_nmos,
+        const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,

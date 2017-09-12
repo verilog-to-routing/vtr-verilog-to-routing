@@ -2874,11 +2874,8 @@ static void ProcessSwitches(pugi::xml_node Parent,
 	int i, j;
 	const char *type_name;
 	const char *switch_name;
-	const char *buf_size;
 
-	ReqOpt has_buf_size;
 	pugi::xml_node Node;
-	has_buf_size = OPTIONAL;
 
 	/* Count the children and check they are switches */
 	*NumSwitches = count_children(Parent, "switch", loc_data);
@@ -2909,7 +2906,6 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		/* Figure out the type of switch. */
 		if (0 == strcmp(type_name, "mux")) {
 			(*Switches)[i].set_type(SwitchType::MUX);
-			has_buf_size = REQUIRED;
 		} else if (0 == strcmp(type_name, "tristate")) {
 			(*Switches)[i].set_type(SwitchType::TRISTATE);
 		} else if (0 == strcmp(type_name, "pass_gate")) {
@@ -2923,19 +2919,29 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		(*Switches)[i].R = get_attribute(Node, "R", loc_data,TIMING_ENABLE_REQD).as_float(0);
 		(*Switches)[i].Cin = get_attribute(Node, "Cin", loc_data, TIMING_ENABLE_REQD).as_float(0);
 		(*Switches)[i].Cout = get_attribute(Node, "Cout", loc_data, TIMING_ENABLE_REQD).as_float(0);
-		ProcessSwitchTdel(Node, timing_enabled, i, (*Switches), loc_data);
-		(*Switches)[i].buf_size = get_attribute(Node, "buf_size", loc_data, has_buf_size).as_float(0);
 		(*Switches)[i].mux_trans_size = get_attribute(Node, "mux_trans_size", loc_data, OPTIONAL).as_float(1);
+
+        auto buf_size_attrib = get_attribute(Node, "buf_size", loc_data, OPTIONAL);
+        if (!buf_size_attrib || buf_size_attrib.as_string() == std::string("auto")) {
+            (*Switches)[i].buf_size_type = BufferSize::AUTO;
+            (*Switches)[i].buf_size = 0.;
+        } else {
+            (*Switches)[i].buf_size_type = BufferSize::ABSOLUTE;
+            (*Switches)[i].buf_size = buf_size_attrib.as_float();
+        }
 				
-		buf_size = get_attribute(Node, "power_buf_size", loc_data, OPTIONAL).as_string(NULL);
-		if (buf_size == NULL) {
+		auto power_buf_size = get_attribute(Node, "power_buf_size", loc_data, OPTIONAL).as_string(NULL);
+		if (power_buf_size == NULL) {
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
-		} else if (strcmp(buf_size, "auto") == 0) {
+		} else if (strcmp(power_buf_size, "auto") == 0) {
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
 		} else {
 			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
-			(*Switches)[i].power_buffer_size = (float) vtr::atof(buf_size);
+			(*Switches)[i].power_buffer_size = (float) vtr::atof(power_buf_size);
 		}
+
+        //Load the Tdel (which may be specfied with sub-tags)
+		ProcessSwitchTdel(Node, timing_enabled, i, (*Switches), loc_data);
 
 		/* Get next switch element */
 		Node = Node.next_sibling(Node.name());
