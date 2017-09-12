@@ -245,28 +245,13 @@ static void SetupSwitches(const t_arch& Arch,
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
+	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
+	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size = 0.;
 
-	/* If ipin cblock info has not specified a buf_size we auto-size it */
-	if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size == 0.){
-		/* The wire to ipin switch for all types. Curently all types
-		 * must share ipin switch. Some of the timing code would
-		 * need to be changed otherwise. */
-
-		/* Assume the ipin cblock output to lblock input buffer below is 4x     *
-		 * minimum drive strength (enough to drive a fanout of up to 16 pretty  * 
-		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
-        float buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
-        vtr::printf_warning(__FILE__, __LINE__, "Auto sizing unspecified connection block input buffer size to: %g\n", buf_size);
-		device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = buf_size;
-	}
-
-
-    //Warn about non-zero R/Cout values for the ipin switch, since these values have no effect.
-    //VPR do not model the R/C's of block internal routing connectsion.
-    if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R != 0.) {
-        vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch resistance (%g) has no effect when switch '%s' is used for connection block inputs\n",
-                device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R, Arch.ipin_cblock_switch_name.c_str());
-    }
+    //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
+    //VPR do not model the R/C's of block internal routing connectsion. 
+    //
+    //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
         vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
                 device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name.c_str());
