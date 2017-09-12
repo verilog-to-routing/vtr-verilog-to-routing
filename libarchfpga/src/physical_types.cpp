@@ -20,7 +20,7 @@ float t_arch_switch_inf::Tdel(int fanin) const {
         VTR_ASSERT(itr != Tdel_map_.end());
         return itr->second;
     } else {
-        VTR_ASSERT(fanin > 0);
+        VTR_ASSERT(fanin >= 0);
         return vtr::linear_interpolate_or_extrapolate(&Tdel_map_, fanin); 
     }
 }
