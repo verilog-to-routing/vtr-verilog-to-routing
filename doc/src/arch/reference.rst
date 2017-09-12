@@ -1376,11 +1376,21 @@ The content within the ``<switchlist>`` tag consists of a group of ``<switch>`` 
 The ``<switch>`` tag and its contents are described below.
 
 .. arch:tag:: 
-    <switch type="{buffered|mux}" name="unique name" R="float" Cin="float" Cout="float" Tdel=" float" buf_size="float" mux_trans_size="float", power_buf_size="int"/>
+    <switch type="{mux|tristate|pass_gate}" name="unique name" R="float" Cin="float" Cout="float" Tdel=" float" buf_size="float" mux_trans_size="float", power_buf_size="int"/>
+
+    :req_param type:
+    
+        The type of switch:
+
+        * ``mux``: An isolating non-tristate-able multiplexer
+
+        * ``tristate``: An isolating tristate-able buffer
+
+        * ``pass_gate``: A *non-isolating* pass gate
+
+        Isolating switches partition their input and output into separate DC-connected sub-circuits.
 
     :req_param name: A unique alphanumeric string which needs to match the segment definition (see above)
-    :req_param buffered: Indicates if this switch is a tri-state buffer
-    :req_param mux: Indicates if this is a multiplexer
     :req_param R: Resistance of the switch.
     :req_param Cin:  Input capacitance of the switch.
     :req_param Cout:  Output capacitance of the switch.
@@ -1407,7 +1417,7 @@ The ``<switch>`` tag and its contents are described below.
     :opt_param power_buf_size: *Used for power estimation.* The size is the drive strength of the buffer, relative to a minimum-sized inverter.
 
     Describes a type of switch.
-    This statement defines what a certain type of switch is -- segment statements refer to a switch types by their number (the number right after the switch keyword).
+    This statement defines what a certain type of switch is -- segment statements refer to a switch types by their name.
 
     **Example:**
 
