@@ -569,7 +569,6 @@ The tags within the ``<device>`` tag are:
         The ``<switch>``'s ``mux_trans_size`` specifies the size of transitors in the two-level mux used to implement the switch, given in minimum transitor units.
 
         The ``<switch>``'s ``buf_size`` specifies the size of transitors in the isolation buffer (if applicable), given in minimum transitor units.
-        If ``buf_size`` is left unspecified or set to ``0`` the transistors will be automatically sized to 4x minimum drive strength.
 
     :required: Yes
 
@@ -1352,7 +1351,7 @@ The ``<segment>`` tag and its contents are described below.
 
     .. warning:: Option for BIDIRECTIONAL only.
     
-    Tag must be included and the name must be the same as the name you give in ``<switch type="tristate" name="...`` for the switch which represents the wire switch in your architecture.
+    Tag must be included and the name must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the wire switch in your architecture.
 
 .. arch:tag:: <opin_switch name="string"/>
 
@@ -1360,7 +1359,7 @@ The ``<segment>`` tag and its contents are described below.
 
     :req_param name: The index of the switch type used by clb and pad output pins to drive this type of segment.
 
-    Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate" name="...`` for the switch which represents the output pin switch in your architecture.
+    Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the output pin switch in your architecture.
 
     .. note:: 
         In unidirectional segment mode, there is only a single buffer on the segment.
@@ -1404,7 +1403,7 @@ The ``<switch>`` tag and its contents are described below.
     :opt_param buf_size:  
         *Only for unidirectional routing.*
         This is an optional parameter that specifies area of the buffer in minimum-width transistor area units.
-        If set to ``auto``, this value will be determined automatically from R values.
+        If set to ``auto``, this value will be determined automatically from the R value.
         This allows you to use timing models without R’s and C’s and still be able to measure area.
 
         **Default:** ``auto``
