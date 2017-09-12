@@ -174,8 +174,7 @@
 			     C_ipin_cblock: input capacitance of a track buffer, which VPR assumes is a single-stage
 			     4x minimum drive strength buffer. -->
    
-      <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="1.222260"/>
-      <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247000e-11"/>
+      <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
       <!-- The grid_logic_tile_area below will be used for all blocks that do not explicitly set their own (non-routing)
      	  area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
 	    -->
@@ -185,7 +184,8 @@
 				<y distr="uniform" peak="1.000000"/>
 			</chan_width_distr>
 			<switch_block type="wilton" fs="3"/>
-		</device>
+		<connection_block input_switch_name="ipin_cblock"/>
+        </device>
 		<switchlist>
       <!-- VB: the mux_trans_size and buf_size data below is in minimum width transistor *areas*, assuming the purple
            book area formula. This means the mux transistors are about 5x minimum drive strength.
@@ -201,7 +201,9 @@
            Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
            This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
       <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
-		</switchlist>
+		<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+        <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
+        </switchlist>
 		<segmentlist>
       <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
              With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems

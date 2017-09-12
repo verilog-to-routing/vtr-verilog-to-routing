@@ -3,8 +3,7 @@
      
      Note that the routing architecture described here does not
      reflect that of the real device. However the floorpland and block 
-     architectures should be reasonably accurate. -->
-<architecture>
+     architectures should be reasonably accurate. --><architecture>
 	<!-- ODIN II specific config -->
 	<models>
 		<model name="multiply">
@@ -141,15 +140,15 @@
     </fixed_layout>
   </layout>
 	<device>
-		<sizing R_minW_nmos="0" R_minW_pmos="0" ipin_mux_trans_size="0"/>
-		<timing C_ipin_cblock="0" T_ipin_cblock="0"/>
+		<sizing R_minW_nmos="0" R_minW_pmos="0"/>
 		<area grid_logic_tile_area="0"/> 
 		<chan_width_distr>
 			<x distr="uniform" peak="1.000000"/>
 			<y distr="uniform" peak="1.000000"/>
 		</chan_width_distr>
 		<switch_block type="wilton" fs="3"/>
-	</device>
+	<connection_block input_switch_name="ipin_cblock"/>
+        </device>
 	<switchlist>
 		<switch type="mux" name="default" R="0" Cin="0" Cout="0" Tdel="0" mux_trans_size="1" buf_size="0"/>
 		<switch type="mux" name="L1" R="0" Cin="0" Cout="0" Tdel="0.11e-9" mux_trans_size="1" buf_size="0"/>
@@ -188,7 +187,9 @@
 		<!-- iswitch = 24 -->
 		<switch type="mux" name="clk2gen" R="0" Cin="0" Cout="0" Tdel="0" mux_trans_size="1" buf_size="0"/>
 		<switch type="mux" name="gen2clk" R="0" Cin="0" Cout="0" Tdel="0" mux_trans_size="1" buf_size="0"/>
-	</switchlist>
+	<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+        <switch type="mux" name="ipin_cblock" R="0.0" Cout="0." Cin="0" Tdel="0" mux_trans_size="0" buf_size="auto"/>
+        </switchlist>
 	<segmentlist>
 		<!-- cost_index = CHANX_COST_INDEX_START = 4 -->
 		<segment freq="1" length="1" type="unidir" Rmetal="0" Cmetal="0">

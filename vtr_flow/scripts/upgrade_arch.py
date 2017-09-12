@@ -21,6 +21,8 @@ class ModelTiming:
         self.sequential_ports = set()
         self.comb_edges = {}
 
+INDENT = "    "
+
 #To add support for new upgrades/features add the identifier string here
 #and added a guarded call in main()
 supported_upgrades = [
@@ -30,6 +32,8 @@ supported_upgrades = [
     "remove_io_chan_distr",
     "upgrade_pinlocations",
     "uniqify_interconnect_names",
+    "upgrade_connection_block_input_switch",
+    "upgrade_switch_types",
 ]
 
 def parse_args():
@@ -89,6 +93,16 @@ def main():
 
     if "uniqify_interconnect_names" in args.features:
         result = uniqify_interconnect_names(arch)
+        if result:
+            modified = True
+
+    if "upgrade_connection_block_input_switch" in args.features:
+        result = upgrade_connection_block_input_switch(arch)
+        if result:
+            modified = True
+
+    if "upgrade_switch_types" in args.features:
+        result = upgrade_switch_types(arch)
         if result:
             modified = True
 
@@ -319,7 +333,6 @@ def upgrade_device_layout(arch):
             if loc.attrib['type'] == "perimeter":
                 have_perimeter = True
 
-    INDENT = "    "
 
     if changed:
         layout.text = "\n" + INDENT
@@ -493,35 +506,38 @@ def upgrade_pinlocations(arch):
         if 'height' in pb_type.attrib:
             height = int(pb_type.attrib['height'])
 
-        assert width == 1, "All legacy architecture files should have width 1 blocks"
+        if width == 1:
 
-        if pinlocations.attrib['pattern'] == "custom":
+            if pinlocations.attrib['pattern'] == "custom":
 
-            for loc in pinlocations:
-                if loc.tag is ET.Comment:
-                    continue
+                for loc in pinlocations:
+                    if loc.tag is ET.Comment:
+                        continue
 
-                assert loc.tag == "loc"
+                    assert loc.tag == "loc"
 
-                if 'offset' in loc.attrib:
-                    offset = int(loc.attrib['offset'])
+                    if 'offset' in loc.attrib:
+                        offset = int(loc.attrib['offset'])
 
-                    assert offset < height
+                        assert offset < height
 
-                    #Remove the old attribute
-                    del loc.attrib['offset']
+                        #Remove the old attribute
+                        del loc.attrib['offset']
 
-                    #Add the new attribute
-                    loc.attrib['yoffset'] = str(offset)
+                        #Add the new attribute
+                        loc.attrib['yoffset'] = str(offset)
 
-                    modified = True
+                        modified = True
 
-        else:
-            assert pinlocations.attrib['pattern'] == "spread"
+            else:
+                assert pinlocations.attrib['pattern'] == "spread"
 
     return modified
 
 def uniqify_interconnect_names(arch):
+    """
+    Ensure all interconnect tags have unique names
+    """
     modified = False
 
     for interconnect_tag in arch.findall(".//interconnect"):
@@ -544,6 +560,100 @@ def uniqify_interconnect_names(arch):
                 modified = True
 
             seen_names.add(name)
+
+    return modified
+
+def upgrade_connection_block_input_switch(arch):
+    """
+    Convert connection block input switch specification to use a switch named
+    in <switchlist>
+    """
+    modified = False
+
+    device_tag = arch.find("./device")
+    timing_tag = device_tag.find("./timing")
+    sizing_tag = device_tag.find("./sizing")
+    switchlist_tag = arch.find("./switchlist")
+    connection_block_tag = arch.find("./connection_block")
+
+    assert sizing_tag is not None
+
+    if timing_tag is not None:
+        assert sizing_tag is not None
+        assert 'ipin_mux_trans_size' in sizing_tag.attrib
+        assert 'C_ipin_cblock' in timing_tag.attrib
+        assert 'T_ipin_cblock' in timing_tag.attrib
+        assert not device_tag.find("./connection_block") is not None
+        assert switchlist_tag is not None
+
+        R_minW_nmos = sizing_tag.attrib['R_minW_nmos']
+        ipin_switch_mux_trans_size = sizing_tag.attrib['ipin_mux_trans_size']
+        ipin_switch_cin = timing_tag.attrib['C_ipin_cblock']
+        ipin_switch_tdel = timing_tag.attrib['T_ipin_cblock']
+
+        modified = True
+
+        #Remove the old attributes
+        del sizing_tag.attrib['ipin_mux_trans_size']
+        device_tag.remove(timing_tag)
+
+        #
+        #Create the switch
+        #
+        
+        switch_name = "ipin_cblock"
+
+        #Make sure the switch name doesn't already exist
+        for switch_tag in switchlist_tag.findall("./switch"):
+            assert switch_tag.attrib['name'] != switch_name
+
+        #Comment the switch
+        comment = ET.Comment("switch {} resistance set to yeild for 4x minimum drive strength buffer".format(switch_name))
+        comment.tail = "\n" + 2*INDENT
+        switchlist_tag.append(comment)
+        #Create the switch
+        switch_tag = ET.SubElement(switchlist_tag, "switch")
+        switch_tag.attrib['type'] = 'mux'
+        switch_tag.attrib['name'] = switch_name
+        switch_tag.attrib['R'] = str(float(R_minW_nmos) / 4.)
+        switch_tag.attrib['Cout'] = "0."
+        switch_tag.attrib['Cin'] = ipin_switch_cin
+        switch_tag.attrib['Tdel'] = ipin_switch_tdel
+        switch_tag.attrib['mux_trans_size'] = ipin_switch_mux_trans_size
+        switch_tag.attrib['buf_size'] = "auto"
+        switch_tag.tail = "\n" + 2*INDENT
+
+        #Create the connection_block tag
+        connection_block_tag = ET.SubElement(device_tag, "connection_block")
+        connection_block_tag.attrib['input_switch_name'] = switch_name
+        connection_block_tag.tail = "\n" + 2*INDENT
+
+    else:
+        assert 'ipin_switch_mux_trans_size' not in sizing_tag.attrib
+
+    return modified
+
+def upgrade_switch_types(arch):
+    """
+    Rename 'buffered' and 'pass_trans' <switch type=""/> to 'tristate' and 'pass_gate'
+    """
+    modified = False
+    switchlist_tag = arch.find("./switchlist")
+    assert switchlist_tag is not None
+
+    for switch_tag in switchlist_tag.findall("./switch"):
+        
+        switch_type = switch_tag.attrib['type']
+
+        if switch_type in ['buffer', 'pass_trans']:
+            if switch_type == 'buffer':
+                switch_type = "tristate"
+            else:
+                assert switch_type == 'pass_trans'
+                switch_type = "pass_gate"
+
+            switch_tag.attrib['type'] = switch_type
+            modified = True
 
     return modified
 

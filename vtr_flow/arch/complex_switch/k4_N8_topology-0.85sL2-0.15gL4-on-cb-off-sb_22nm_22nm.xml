@@ -74,15 +74,15 @@
         </auto_layout>
 </layout>
 		<device>
-			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.2"/>
-			<timing C_ipin_cblock="2e-15" T_ipin_cblock="7.562e-11"/>	
+			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111"/>
 			<area grid_logic_tile_area="0"/>
 			<chan_width_distr>
 				<x distr="uniform" peak="1.000000"/>
 				<y distr="uniform" peak="1.000000"/>
 			</chan_width_distr>
 			<switch_block type="custom"/>
-		</device>
+		<connection_block input_switch_name="ipin_cblock"/>
+        </device>
 		<switchlist>
 			<!-- l2s_mux drives length-2 wires on the semi-global metal layer -->
 			<switch type="mux" name="l2s_mux" R="878" Cin="2e-15" Cout="0.000000e+00" mux_trans_size="1.5" buf_size="14.2000000">
@@ -94,7 +94,9 @@
 				<Tdel num_inputs="12" delay="5.93e-11"/>
 				<Tdel num_inputs="25" delay="7.35e-11"/>
 			</switch>
-		</switchlist>
+		<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+        <switch type="mux" name="ipin_cblock" R="3272.5" Cout="0." Cin="2e-15" Tdel="7.562e-11" mux_trans_size="1.2" buf_size="auto"/>
+        </switchlist>
 		<segmentlist>
 			<!-- 85% length-2 wires on the semi-global metal layer -->
 			<segment freq="0.85" name="l2s" length="2" type="unidir" Rmetal="174" Cmetal="0.0">

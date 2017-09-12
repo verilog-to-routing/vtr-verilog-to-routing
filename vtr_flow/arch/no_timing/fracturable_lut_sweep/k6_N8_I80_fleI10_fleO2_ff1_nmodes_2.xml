@@ -60,18 +60,20 @@
         </auto_layout>
 </layout>
 		<device>
-			<sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609" ipin_mux_trans_size="1.299940"/>
-			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.582000e-11"/>
+			<sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609"/>
 			<area grid_logic_tile_area="0.0"/>
 			<chan_width_distr>
 				<x distr="uniform" peak="1.000000"/>
 				<y distr="uniform" peak="1.000000"/>
 			</chan_width_distr>
 			<switch_block type="wilton" fs="3"/>
-		</device>
+		<connection_block input_switch_name="ipin_cblock"/>
+        </device>
 		<switchlist>
 			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="8.972000e-11" mux_trans_size="2.183570" buf_size="32.753502"/>
-		</switchlist>
+		<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+        <switch type="mux" name="ipin_cblock" R="1055.232544" Cout="0." Cin="0.000000e+00" Tdel="8.582000e-11" mux_trans_size="1.299940" buf_size="auto"/>
+        </switchlist>
 		<segmentlist>
 			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
 			<mux name="0"/>
@@ -162,7 +164,7 @@
             <interconnect>
               <!-- Only one ff, make ff available to both luts -->
               <direct name="direct1" input="ble.in" output="soft_logic.in"/>
-              <direct name="direct1" input="ble.clk" output="ff.clk"/>
+              <direct name="direct1_0" input="ble.clk" output="ff.clk"/>
               <!-- jedit note: swapping LUT positions is free but my tool can't handle it, need this extra connection -->
               <mux name="mux1" input="soft_logic.out[0:0] soft_logic.out[1:1]" output="ble.out[1:1]"/>
               <mux name="mux2" input="soft_logic.out[0:0] soft_logic.out[1:1]" output="ff.D"/>

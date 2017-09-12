@@ -89,18 +89,20 @@ to isolate one chain from the next
 </layout>
 
 		<device>
-			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="2.000000"/>
-			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="1.030392e-10"/>
+			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111"/>
 			<area grid_logic_tile_area="14130.86202"/>
 			<chan_width_distr>
 				<x distr="uniform" peak="1.000000"/>
 				<y distr="uniform" peak="1.000000"/>
 			</chan_width_distr>
 			<switch_block type="wilton" fs="3"/>
-		</device>
+		<connection_block input_switch_name="ipin_cblock"/>
+        </device>
 		<switchlist>
 			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.571509e-10" mux_trans_size="2.000000" buf_size="19.000000"/>
-		</switchlist>
+		<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+        <switch type="mux" name="ipin_cblock" R="3272.5" Cout="0." Cin="0.000000e+00" Tdel="1.030392e-10" mux_trans_size="2.000000" buf_size="auto"/>
+        </switchlist>
 		<segmentlist>
 			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
 			<mux name="0"/>
