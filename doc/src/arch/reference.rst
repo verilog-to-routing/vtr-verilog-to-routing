@@ -1352,7 +1352,7 @@ The ``<segment>`` tag and its contents are described below.
 
     .. warning:: Option for BIDIRECTIONAL only.
     
-    Tag must be included and the name must be the same as the name you give in ``<switch type="buffer" name="...`` for the switch which represents the wire switch in your architecture.
+    Tag must be included and the name must be the same as the name you give in ``<switch type="tristate" name="...`` for the switch which represents the wire switch in your architecture.
 
 .. arch:tag:: <opin_switch name="string"/>
 
@@ -1360,7 +1360,7 @@ The ``<segment>`` tag and its contents are described below.
 
     :req_param name: The index of the switch type used by clb and pad output pins to drive this type of segment.
 
-    Tag must be included and ``name`` must be the same as the name you give in ``<switch type="buffer" name="...`` for the switch which represents the output pin switch in your architecture.
+    Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate" name="...`` for the switch which represents the output pin switch in your architecture.
 
     .. note:: 
         In unidirectional segment mode, there is only a single buffer on the segment.
@@ -1376,7 +1376,7 @@ The content within the ``<switchlist>`` tag consists of a group of ``<switch>`` 
 The ``<switch>`` tag and its contents are described below.
 
 .. arch:tag:: 
-    <switch type="{mux|tristate|pass_gate}" name="unique name" R="float" Cin="float" Cout="float" Tdel=" float" buf_size="float" mux_trans_size="float", power_buf_size="int"/>
+    <switch type="{mux|tristate|pass_gate}" name="unique name" R="float" Cin="float" Cout="float" Tdel=" float" buf_size="auto|float" mux_trans_size="float", power_buf_size="int"/>
 
     :req_param type:
     
@@ -1403,10 +1403,11 @@ The ``<switch>`` tag and its contents are described below.
 
     :opt_param buf_size:  
         *Only for unidirectional routing.*
-        May only be used in unidirectional mode.
         This is an optional parameter that specifies area of the buffer in minimum-width transistor area units.
-        If not given, this value will be determined automatically from R values.
+        If set to ``auto``, this value will be determined automatically from R values.
         This allows you to use timing models without R’s and C’s and still be able to measure area.
+
+        **Default:** ``auto``
 
     :opt_param mux_trans_size: 
         *Only for unidirectional routing.*
