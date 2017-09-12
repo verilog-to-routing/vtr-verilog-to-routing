@@ -672,28 +672,134 @@ This is specified in the content within the ``<chan_width_distr>`` tag.
 
 .. _arch_complex_blocks:
 
-Complex Logic Blocks
---------------------
+Complex Blocks
+--------------
 
 .. seealso:: For a step-by-step walkthrough on building a complex block see :ref:`arch_tutorial`.
 
-The content within the ``<complexblocklist>`` tag describes the complex logic blocks found within the FPGA.
-Each type of complex logic block is specified by a ``<pb_type name="string" height="int">`` tag within the ``<complexblocklist>`` tag.
-The name attribute is the name for the complex block.
-The height attribute specifies how many grid tiles the block takes up.
+The content within the ``<complexblocklist>`` describes the complex blocks found within the FPGA.
+Each type of complex block is specified with a top-level ``<pb_type>`` tag within the ``<complexblocklist>`` tag.
 
-The internals of a complex block is described using a hierarchy of ``<pb_type>`` tags.
-The top-level ``<pb_type>`` tag specifies the complex block.
-Children ``<pb_type>`` tags are either clusters (which contain other ``<pb_type>`` tags) or primitives (leaves that do not contain other ``<pb_type>`` tags).
-Clusters can contain other clusters and primitives so there is no restriction on the hierarchy that can be specified using this language.
-All children ``<pb_type>`` tags contain the attribute ``num_pb="int"`` which describes the number of instances of that particular type of cluster or leaf block in that section of the hierarchy.
-All children ``<pb_type>`` tags must have a ``name ="string"`` attribute where the name must be unique with respect to any parent, sibling, or child ``<pb_type>`` tag.
-Leaf ``<pb_type>`` tags may optionally have a ``blif_model="string"`` attribute.
-This attribute describes the type of block in the blif file that this particular leaf can implement.
-For example, a leaf that implements a LUT should have ``blif_model=".names"``.
-Similarly, a leaf that implements ``.subckt user_block_A`` should have attribute ``blif_model=".subckt user_block_A"``.
-The input, output, and/or clock, ports for these leaves must match the ports specified in the ``<models>`` section of the architecture file.
-There is a special attribute for leaf nodes called class that will be described in more detail later.
+PB Type
+~~~~~~~
+.. arch:tag:: <pb_type name="string" num_pb="int" blif_model="string" capacity="int" width="int" height="int" area="float" class="{lut|filpflop|memory}"/>
+
+    Specifies a top-level complex block, or a complex block's internal components (sub-blocks).
+    Which attributes are applicable depends on where the ``<pb_type>`` tag falls within the hierarchy:
+
+    * Top Level: A child of the ``<complexblocklist>``
+    * Intermediate: A child of another ``<pb_type>``
+    * Primitive/Leaf: Contains no ``<pb_type>`` children
+
+    For example:
+
+    .. code-block:: xml
+        
+        <complexblocklist>
+            <pb_type name="CLB"/> <!-- Top level -->
+                ...
+                <pb_type name="ble"/> <!-- Intermediate -->
+                    ...
+                    <pb_type name="lut"/> <!-- Primitive -->
+                        ...
+                    </pb_type>
+                    <pb_type name="ff"/> <!-- Primitive -->
+                        ...
+                    </pb_type>
+                    ...
+                </pb_type>
+                ...
+            </pb_type>
+            ...
+        </complexblocklist>
+
+    .. note: Intermediate pb_types can contain other intermediate or primitive pb_types so arbitrary hierarchies can be specified.
+
+    **General:**
+
+    :req_param name: The name of this pb_type. 
+    
+        The name must be unique with respect to any parent, sibling, or child ``<pb_type>``.
+
+    **Top Level Only:**
+
+    :opt_param capacity: The number of instances of this block type at each grid location
+
+        **Default:** ``1``
+
+        For example:
+
+        .. code-block:: xml
+
+            <pb_type name="IO" capacity="2"/>
+                ...
+            </pb_type>
+
+        specifies there are two instances of the block type ``IO`` at each of its grid locations.
+
+    :opt_param width: The width of the block type in grid tiles
+
+        **Default:** ``1``
+
+    :opt_param height: The height of the block type in grid tiles
+
+        **Default:** ``1``
+
+    :opt_param area: The logic area of the block type
+
+        **Default:** from the ``<area>`` tag
+
+    **Intermediate or Primitive:**
+
+    :opt_param num_pb: The number of instances of this pb_type at the current heirarchy level.
+
+        **Default:** ``1``
+
+        For example:
+        
+        .. code-block:: xml
+
+            <pb_type name="CLB">
+                ...
+                <pb_type name="ble" num_pb="10"/>
+                   ...
+                </pb_type>
+                ...
+            </pb_type>
+
+        would specify that the pb_type ``CLB`` contains 10 instances of the ``ble`` pb_type.
+
+    **Primitive Only:**
+
+    :req_param blif_model: Specifies the netlist primitive which can be implemented by this pb_type.
+
+        Accepted values:
+
+        * ``.input``: A BLIF netlist input
+
+        * ``.output``: A BLIF netlist output
+
+        * ``.names``: A BLIF .names (LUT) primitive
+
+        * ``.latch``: A BLIF .latch (DFF) primitive
+
+        * ``.subckt <custom_type>``: A user defined black-box primitive. 
+          
+        For example:
+        
+        .. code-block:: xml
+
+            <pb_type name="my_adder" blif_model=".subckt adder"/>
+               ...
+            </pb_type>
+
+        would specify that the pb_type ``my_adder`` can implement a black-box BLIF primitive named ``adder``.
+
+        .. note:: The input/output/clock ports for primitive pb_types must match the ports specified in the ``<models>`` section.
+
+    :opt_param class: Specifies that this primitive is of a specialized type which should be treated specially.
+        
+        .. seealso:: :ref:`arch_classes` for more details.
 
 The following tags are common to all <pb_type> tags:
 
@@ -743,11 +849,39 @@ The following tags are common to all <pb_type> tags:
         Name for this mode.
         Must be unique compared to other modes.
 
-    Specifies a mode of operation for the <pb_type>.
-    Each child mode tag denotes a different mode of operation for that <pb_type>.
-    A mode tag contains <pb_type> tags and <interconnect> tags.
-    If a ``<pb_type>`` has only one mode of operation, then this mode tag can be omitted.
-    More on interconnect later.
+    Specifies a mode of operation for the ``<pb_type>``.
+    Each child mode tag denotes a different mode of operation for the ``<pb_type>``.
+    Each mode tag may contains other ``<pb_type>`` and ``<interconnect>`` tags.
+
+    .. note:: Modes within the same parent ``<pb_type>`` are mutually exclusive.
+
+    .. note:: If a ``<pb_type>`` has only one mode of operation the mode tag can be omitted.
+
+    For example:
+
+    .. code-block:: xml
+
+        <!--A fracturable 6-input LUT-->
+        <pb_type name="lut">
+            ...
+            <mode name="lut6">
+                <!--Can be used as a single 6-LUT-->
+                <pb_type name="lut6" num_pb="1">
+                    ...
+                </pb_type>
+                ...
+            </mode>
+            ...
+            <mode name="lut5x2">
+                <!--Or as two 5-LUTs-->
+                <pb_type name="lut5" num_pb="2">
+                    ...
+                </pb_type>
+                ...
+            </mode>
+        </pb_type>
+
+    specifies the ``lut`` pb_type can be used as either a single 6-input LUT, or as two 5-input LUTs (but not both).
 
 The following tags are unique to the top level <pb_type> of a complex logic block.
 They describe how a complex block interfaces with the inter-block world.
@@ -1050,6 +1184,7 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
 
         Pack Pattern Example.
 
+.. _arch_classes:
 
 Classes
 ~~~~~~~
