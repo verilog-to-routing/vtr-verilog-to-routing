@@ -395,13 +395,9 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 								device_ctx.rr_switch_inf[switch_index].mux_trans_size);			
 
 						/* Add up area of buffer */
-						/* If buffer size not specified, compute using R otherwise just add to ntrans */
-						if (device_ctx.rr_switch_inf[switch_index].buf_size == 0) {
-							ntrans += trans_per_buf(device_ctx.rr_switch_inf[switch_index].R, R_minW_nmos,
-									R_minW_pmos);
-						} else {
-							ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
-						}
+						/* The buffer size should already have been auto-sized (if required) when 
+                         * the rr switches were created from the arch switches */
+                        ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
 						chan_node_switch_done[to_node] = true;
 					}
 					
@@ -574,6 +570,10 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 	/* Returns the number of minimum width transistor area equivalents needed to *
 	 * implement this buffer.  Assumes a stage ratio of 4, and equal strength    *
 	 * pull-up and pull-down paths.                                              */
+
+    if (Rbuf == 0.) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Can not auto-size buffer with target zero resistance");
+    }
 
 	int num_stage, istage;
 	float trans_count, stage_ratio, Rstage;
