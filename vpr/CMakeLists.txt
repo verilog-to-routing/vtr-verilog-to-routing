@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("vpr")
 
+option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept signals (e.g. SIGINT)?" OFF)
+
 include(CheckCXXSymbolExists)
 
 #Collect the source files
@@ -32,10 +34,12 @@ add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr 
                         libvpr)
 
-#Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
-CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
-if (HAVE_SIGACTION)
-    target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)    
+if (VPR_USE_SIGNAL_HANDLER)
+    #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
+    CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
+    if(HAVE_SIGACTION)
+        target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)    
+    endif()
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
