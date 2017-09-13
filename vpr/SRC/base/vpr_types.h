@@ -893,7 +893,7 @@ constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DI
  *                   to the switches from the architecture file, not the    *
  *                   expanded list of switches that is built at the end of  *
  *                   build_rr_graph.                                        *
- * arch_wire_switch: Index of the switch type that connects output pins     *
+ * arch_opin_switch: Index of the switch type that connects output pins     *
  *                   (OPINs) *to* this segment. Note that this index is in  *
  *                   relation to the switches from the architecture file,   *
  *                   not the expanded list of switches that is is built     *
