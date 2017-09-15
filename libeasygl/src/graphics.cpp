@@ -207,6 +207,7 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <cmath>
+#include <cassert>
 #include <string>
 #include <iostream>
 #include <algorithm>
@@ -541,6 +542,14 @@ static bool is_droppable_event(
     );
 
 #ifdef X11
+
+
+//Returns 'orig_value' merged with 'new_value' based on 'new_mask'.
+//Note that 'new_value' will be shifted (according to 'new_mask') before being merged
+static unsigned long shift_merge_based_on_mask(unsigned long orig_value, unsigned long new_value, unsigned long new_mask);
+
+//Returns the index of the first set bit in 'mask'
+static unsigned long find_first_set(unsigned long mask);
 
 /****************************************************
  *     X-Windows Specific Subroutine Declarations    *
@@ -3554,45 +3563,6 @@ static void x11_init_graphics(const char *window_name) {
         &x11_state.visual_info) == 0) {
         fprintf(stderr, "Warning failed to find 24-bit TrueColor visual\n");
         fprintf(stderr, "  Graphics may not draw correctly\n");
-
-    }
-
-    if(x11_state.visual_info.bits_per_rgb != 8) {
-        fprintf(stderr, "Warning found strange 24-bit TrueColor visual with %d-bit channels (expected 8)\n", x11_state.visual_info.bits_per_rgb);
-        fprintf(stderr, "  Searching for any TrueColor visual with 8-bit channels\n");
-
-        //Try manually searching for a TrueColor mode with 8-bit pixels
-        XVisualInfo visual_template;
-        visual_template.c_class = TrueColor; //In c++ the XVisualInfo.class member is renamed c_class to avoid a name conflict with the class keyword
-        visual_template.bits_per_rgb = 8;
-        int num_matches = 0;
-
-        XVisualInfo* matching_visual_info = XGetVisualInfo(x11_state.display, 
-                                                           VisualClassMask | VisualBitsPerRGBMask,
-                                                           &visual_template,
-                                                           &num_matches);
-        if(matching_visual_info == nullptr || num_matches == 0) {
-            fprintf(stderr, "  Warning failed to find any TrueColor visual with 8-bits per channel\n");
-            fprintf(stderr, "  Graphics may not draw correctly\n");
-        } else {
-            x11_state.visual_info = matching_visual_info[0];
-            fprintf(stderr, "  Found %d-bit TrueColor visual with 8-bits per channel\n", x11_state.visual_info.depth);
-        }
-
-        XFree(matching_visual_info);
-    }
-
-    if (x11_state.visual_info.bits_per_rgb != 8) {
-        fprintf(stderr, "Warning found strange 24-bit TrueColor visual: \n");
-        fprintf(stderr,
-            "  bit per color = %d, rmask = %lX, gmask = %lX, bmask = %lX\n",
-            x11_state.visual_info.bits_per_rgb,
-            x11_state.visual_info.red_mask,
-            x11_state.visual_info.green_mask,
-            x11_state.visual_info.blue_mask
-            );
-        fprintf(stderr, "  Graphics may not draw correctly\n");
-
     }
 
     Window root_window = XDefaultRootWindow(x11_state.display);
@@ -4286,13 +4256,35 @@ static unsigned long x11_convert_to_xcolor (t_color rgb_color) {
     uint_fast8_t red = rgb_color.red;
     uint_fast8_t green = rgb_color.green;
     uint_fast8_t blue = rgb_color.blue;
-    unsigned cmp_bits = x11_state.visual_info.bits_per_rgb;
-    
-    xcolor |= (red << 2u * cmp_bits | red << cmp_bits | red) & x11_state.visual_info.red_mask;
-    xcolor |= (green << 2u * cmp_bits | green << cmp_bits | green) & x11_state.visual_info.green_mask;
-    xcolor |= (blue << 2u * cmp_bits | blue << cmp_bits | blue) & x11_state.visual_info.blue_mask;
+    //Some x11 machines return incorrect x11_state.visual_info.bits_per_rgb
+    //(e.g. return 11 bits, but use 8 bit masks), so do all the conversions
+    //based on the actual masks
+    xcolor = shift_merge_based_on_mask(xcolor, red, x11_state.visual_info.red_mask);
+    xcolor = shift_merge_based_on_mask(xcolor, green, x11_state.visual_info.green_mask);
+    xcolor = shift_merge_based_on_mask(xcolor, blue, x11_state.visual_info.blue_mask);
     
     return (xcolor);
+}
+
+static unsigned long shift_merge_based_on_mask(unsigned long orig_value, unsigned long new_value, unsigned long new_mask) {
+    //Shift the new value so it is aligned with the mask
+    unsigned long new_shifted_value = new_value << find_first_set(new_mask);
+
+    //Merge the shifted value in based on the mask
+    return (orig_value & ~new_mask) | (new_shifted_value & new_mask);
+}
+
+static unsigned long find_first_set(unsigned long mask) {
+    assert(mask != 0);
+
+    //Naive algorithm, linear in the number of unset least significant bits
+    //There are more efficient algorithms...
+    unsigned long pos = 0;
+    while (!(mask & 1)) { //bit is zero
+        mask >>= 1;
+        ++pos;
+    }
+    return pos;
 }
 
 #endif /* X-Windows Specific Definitions */
