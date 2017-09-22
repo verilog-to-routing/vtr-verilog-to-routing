@@ -38,7 +38,7 @@ Next we'll copy over the ``stereovision3`` benchmark netlist in BLIF format and 
 .. note:: Replace :term:`$VTR_ROOT` with the root directory of the VTR source tree
 
 Now we can run VPR to implement the circuit onto the ``k6_N10_40nm`` architecture.
-We also need to provide the :option:`vpr -gen_postsynthesis_netlist` option to generate the post-implementation netlist and dump the timing information in Standard Delay Format (SDF)::
+We also need to provide the :option:`vpr --gen_postsynthesis_netlist` option to generate the post-implementation netlist and dump the timing information in Standard Delay Format (SDF)::
 
     $ vpr k6_N10_40nm.xml stereovision3.blif -gen_postsynthesis_netlist on
 

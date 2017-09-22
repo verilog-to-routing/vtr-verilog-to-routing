@@ -3,7 +3,7 @@
 VPR
 ===
 
-VPR (Versatile Place and Route) is an open source academic CAD tool designed for the exploration of new FPGA architectures and CAD algorithms, at the packing, placement and routing phases of the CAD flow.
+VPR (Versatile Place and Route) is an open source academic CAD tool designed for the exploration of new FPGA architectures and CAD algorithms, at the packing, placement and routing phases of the CAD flow :cite:`betz_vpr,luu_vpr_5`.
 Since its public introduction, VPR has been used extensively in many academic projects partly because it is robust, well documented, easy-to-use, and can flexibly target a range of architectures.
 
 VPR takes, as input, a description of an FPGA architecture along with a technology-mapped user circuit.

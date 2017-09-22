@@ -16,7 +16,7 @@ First, :ref:`odin_II` converts a Verilog Hardware Destription Language (HDL) des
 Next, the :ref:`abc`  synthesis package is used to perform technology-independent logic optimization of each circuit, and then each circuit is technology-mapped into LUTs and flip flops :cite:`abc_cite,pistorius_benchmarking_method_fpga_synthesis,cho_priority_cuts`.
 The output of ABC is a .blif format netlist of LUTs, flip flops, and blackboxes.
 
-:ref:`vpr` then packs this netlist into more coarse-grained logic blocks, places the circuit, and routes it :cite:`betz_arch_cad,betz_phd,betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,marquardt_timing_driven_placement,betz_automatic_generation_of_fpga_routing`.
+:ref:`vpr` then packs this netlist into more coarse-grained logic blocks, places the circuit, and routes it :cite:`betz_arch_cad,betz_phd,betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,betz_cluster_based_logic_blocks,marquardt_timing_driven_packing,marquardt_timing_driven_placement,betz_automatic_generation_of_fpga_routing`.
 Generating :ref:`output files <vpr_file_formats>` for each stage.
 VPR will produce various statistics such as the minimum number of tracks per channel required to successfully route, the total wirelength, circuit speed, area and power.
 

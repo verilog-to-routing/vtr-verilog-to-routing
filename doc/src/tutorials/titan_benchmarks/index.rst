@@ -68,7 +68,7 @@ Running benchmarks manually
 
 Once the benchmarks have been integrated into VTR they can be run manually.
 
-For example, the follow uses :ref:`VPR` to implement the ``neuron`` benchmark onto the ``startixiv_arch.timing.xml`` architecture at a :option:`channel width <vpr -route_chan_width>` of 300 tracks:
+For example, the follow uses :ref:`VPR` to implement the ``neuron`` benchmark onto the ``startixiv_arch.timing.xml`` architecture at a :option:`channel width <vpr --route_chan_width>` of 300 tracks:
 
 .. code-block:: console
     
