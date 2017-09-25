@@ -571,10 +571,6 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 	 * implement this buffer.  Assumes a stage ratio of 4, and equal strength    *
 	 * pull-up and pull-down paths.                                              */
 
-    if (Rbuf == 0.) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Can not auto-size buffer with target zero resistance");
-    }
-
 	int num_stage, istage;
 	float trans_count, stage_ratio, Rstage;
 
@@ -652,11 +648,15 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
 
 	float trans_area;
 
-	if (Rtrans <= 0.) /* Assume resistances are nonsense -- use min. width */
+	if (Rtrans <= 0.) {
+        /* Assume resistances are nonsense -- use min. width */
+        vtr::printf_warning(__FILE__, __LINE__, "Sized nonsensical R=%g transistor to minimum width\n", Rtrans);
 		return (1.);
+    }
 
-	if (Rtrans >= R_minW_trans)
+	if (Rtrans >= R_minW_trans) {
 		return (1.);
+    }
 
 	/* Old area model (developed with 0.35um process rules) */
 	/* Area = minimum width area (1) + 0.5 for each additional unit of width.  *
