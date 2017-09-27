@@ -2440,7 +2440,7 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
             current_font,
             // more magic offsets
             xworld_to_scrn(text_bbox.left()) + extents.x,
-            yworld_to_scrn(text_bbox.top()) + extents.y - extents.height,
+            yworld_to_scrn(text_bbox.bottom()) + extents.y - extents.height,
             reinterpret_cast<const FcChar8*>(text),
             text_byte_length
             );
