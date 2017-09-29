@@ -137,21 +137,40 @@ void vpr_init(const int argc, const char **argv,
     vpr_print_args(argc, argv);
 
     //Set the number of parallel workers
+    // We determine the number of workers in the following order:
+    //  1. An explicitly specified command-line argument
+    //  2. An environment variable
+    //  3. The default value
+    size_t num_workers;
+    if (options->num_workers.provenance() == argparse::Provenance::SPECIFIED) {
+        //Explicit command-line
+        num_workers = options->num_workers.value();
+    } else {
+        const char* env_value = std::getenv("VPR_NUM_WORKERS");
+        if (env_value != nullptr) {
+            //VPR specific environment variable
+            num_workers = vtr::atou(env_value);
+        } else {
+            //Command-line default value
+            VTR_ASSERT(options->num_workers.provenance() == argparse::Provenance::DEFAULT);
+            num_workers = options->num_workers.value();
+        }
+    }
 #ifdef __cilk
     //Using cilk set the number off workers for the run-time
-    if (options->num_workers.value() == 0) {
+    if (num_workers == 0) {
         VPR_THROW(VPR_ERROR_OTHER, "Number of workers must be > 0");
     }
     std::string num_workers_str = std::to_string(options->num_workers.value());
-    vtr::printf_info("Using up to %zu parallel worker(s)\n", options->num_workers.value());
+    vtr::printf("Using up to %zu parallel worker(s)\n", num_workers);
     if (__cilkrts_set_param("nworkers", num_workers_str.c_str()) != 0) {
         VPR_THROW(VPR_ERROR_OTHER, "Failed to set the number of workers for cilkrts");
     }
 #else
     //No parallel execution support
-    if (options->num_workers.value() != 1) {
+    if (num_workers != 1) {
         vtr::printf_warning(__FILE__, __LINE__, 
-            "VPR was compiled without parallel execution support, ignoring the specified number of workers (%d)",
+            "VPR was compiled without parallel execution support, ignoring the specified number of workers (%zu)",
             options->num_workers.value());
     }
 #endif
