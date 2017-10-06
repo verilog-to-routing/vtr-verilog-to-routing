@@ -95,6 +95,9 @@ else()
         "-Woverloaded-virtual"          #Warn when a function declaration overrides a virtual method
         "-Wctor-dtor-privacy"           #Warn about inaccessible constructors/destructors
         "-Wnon-virtual-dtor"            #Warn about missing virtual destructors
+        "-Wduplicated-cond"             #Warn about identical conditions in if-else chains
+        "-Wduplicated-branches"         #Warn when different branches of an if-else chain are equivalent
+        "-Wnull-dereference"            #Warn about null pointer dereference execution paths
         #GCC-like optional
         #"-Wold-style-cast"              #Warn about using c-style casts
         #"-Wconversion"                  #Warn when type conversions may change value
@@ -105,6 +108,8 @@ else()
         #"-Wunsafe-loop-optimizations"   #Warn when loops can't be optimized
         #"-Wswitch-enum"                 #Warn about uncovered enumeration values in a switch (even if there is a default)
         #"-Wsign-promo"                  #Warn when overload resolution converts an unsigned type to signed when an unsigned overload exists
+        #"-Wdouble-promotion"            #Warn when float is implicitly propted to double
+        #"-Wuseless-cast"                #Warn about casts to the same type
         )
 endif()
 
@@ -127,6 +132,7 @@ set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode
     "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     "-Wno-sign-compare" #Flex generates code which performs some signed/unsigned comparison
+    "-Wno-null-dereference" #Bison produces some cases wiwth potenetial null derefs
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})

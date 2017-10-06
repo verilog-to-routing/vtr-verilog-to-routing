@@ -14,4 +14,9 @@ add_library(libpugixml STATIC
 target_include_directories(libpugixml PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libpugixml PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
+
+#We don't worry about errors in pugixml, since it is developed externally
+set(PUGIXML_SUPPRESS_FLAGS -w)
+target_compile_options(libpugixml PRIVATE ${PUGIXML_SUPPRESS_FLAGS})
+
 install(TARGETS libpugixml DESTINATION bin)
