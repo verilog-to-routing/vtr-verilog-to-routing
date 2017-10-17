@@ -29,8 +29,11 @@ std::string secure_digest_stream(std::istream& is) {
     }
     hasher.finish();
 
-    //Return the digest as a hex string
-    return picosha2::get_hash_hex_string(hasher);
+    //Return the digest as a hex string, prefixed with the hash type
+    //
+    //Prefixing with the hash type should allow us to differentiate if the
+    //hash type is ever changed in the future
+    return "SHA256:" + picosha2::get_hash_hex_string(hasher);
 }
 
 } //namespace
