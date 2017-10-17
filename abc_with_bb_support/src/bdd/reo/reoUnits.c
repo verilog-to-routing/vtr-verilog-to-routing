@@ -18,6 +18,9 @@
 
 #include "reo.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -84,7 +87,7 @@ void reoUnitsRecycleUnit( reo_man * p, reo_unit * pUnit )
 void reoUnitsRecycleUnitList( reo_man * p, reo_plane * pPlane )
 {
 	reo_unit * pUnit;
-	reo_unit * pTail;
+	reo_unit * pTail = NULL; // Suppress "might be used uninitialized"
 
 	if ( pPlane->pHead == NULL )
 		return;
@@ -95,6 +98,7 @@ void reoUnitsRecycleUnitList( reo_man * p, reo_plane * pPlane )
 	pTail->Next = p->pUnitFreeList;
 	p->pUnitFreeList    = pPlane->pHead;
 	memset( pPlane, 0, sizeof(reo_plane) );
+//    pPlane->pHead = NULL;
 }
 
 /**Function*************************************************************
@@ -112,7 +116,7 @@ void reoUnitsStopDispenser( reo_man * p )
 {
 	int i;
 	for ( i = 0; i < p->nMemChunks; i++ )
-		free( p->pMemChunks[i] );
+		ABC_FREE( p->pMemChunks[i] );
 //	printf("\nThe number of chunks used is %d, each of them %d units\n", p->nMemChunks, REO_CHUNK_SIZE );
 	p->nMemChunks = 0;
 }
@@ -167,7 +171,7 @@ void reoUnitsAddToFreeUnitList( reo_man * p )
 	}
 	// allocate the next chunk
 	assert( p->pUnitFreeList == NULL );
-	p->pUnitFreeList = ALLOC( reo_unit, REO_CHUNK_SIZE );
+	p->pUnitFreeList = ABC_ALLOC( reo_unit, REO_CHUNK_SIZE );
 	// split chunks into list-connected units
 	for ( c = 0; c < REO_CHUNK_SIZE-1; c++ )
 		(p->pUnitFreeList + c)->Next = p->pUnitFreeList + c + 1;
@@ -181,4 +185,6 @@ void reoUnitsAddToFreeUnitList( reo_man * p )
 ////////////////////////////////////////////////////////////////////////
 ///                         END OF FILE                              ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

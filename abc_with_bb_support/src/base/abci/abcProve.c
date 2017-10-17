@@ -18,19 +18,27 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "fraig.h"
-#include "math.h"
+#include <math.h>
+
+#include "base/abc/abc.h"
+#include "proof/fraig/fraig.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, bool fUpdateLevel, bool fUseZeros, bool fUseDcs, bool fVerbose );
+extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose );
 extern Abc_Ntk_t * Abc_NtkFromFraig( Fraig_Man_t * pMan, Abc_Ntk_t * pNtk );
 
-static Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, sint64 nInspLimit, int * pRetValue, int * pNumFails, sint64 * pNumConfs, sint64 * pNumInspects );
-static void Abc_NtkMiterPrint( Abc_Ntk_t * pNtk, char * pString, int clk, int fVerbose );
+static Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, ABC_INT64_T nInspLimit, int * pRetValue, int * pNumFails, ABC_INT64_T * pNumConfs, ABC_INT64_T * pNumInspects );
+static void Abc_NtkMiterPrint( Abc_Ntk_t * pNtk, char * pString, abctime clk, int fVerbose );
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -53,10 +61,11 @@ static void Abc_NtkMiterPrint( Abc_Ntk_t * pNtk, char * pString, int clk, int fV
 ***********************************************************************/
 int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
 {
-    Prove_Params_t * pParams = pPars;
+    Prove_Params_t * pParams = (Prove_Params_t *)pPars;
     Abc_Ntk_t * pNtk, * pNtkTemp;
-    int RetValue, nIter, nSatFails, Counter, clk, timeStart = clock();
-    sint64 nSatConfs, nSatInspects, nInspectLimit;
+    int RetValue = -1, nIter, nSatFails, Counter;
+    abctime clk; //, timeStart = Abc_Clock();
+    ABC_INT64_T nSatConfs, nSatInspects, nInspectLimit;
 
     // get the starting network
     pNtk = *ppNtk;
@@ -67,19 +76,17 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
     {
         printf( "RESOURCE LIMITS: Iterations = %d. Rewriting = %s. Fraiging = %s.\n",
             pParams->nItersMax, pParams->fUseRewriting? "yes":"no", pParams->fUseFraiging? "yes":"no" );
-        printf( "Mitering = %d (%3.1f).  Rewriting = %d (%3.1f).  Fraiging = %d (%3.1f).\n", 
+        printf( "Miter = %d (%3.1f).  Rwr = %d (%3.1f).  Fraig = %d (%3.1f).  Last = %d.\n", 
             pParams->nMiteringLimitStart,  pParams->nMiteringLimitMulti, 
             pParams->nRewritingLimitStart, pParams->nRewritingLimitMulti,
-            pParams->nFraigingLimitStart,  pParams->nFraigingLimitMulti );
-        printf( "Mitering last = %d.\n", 
-            pParams->nMiteringLimitLast );
+            pParams->nFraigingLimitStart,  pParams->nFraigingLimitMulti, pParams->nMiteringLimitLast );
     }
 
     // if SAT only, solve without iteration
     if ( !pParams->fUseRewriting && !pParams->fUseFraiging )
     {
-        clk = clock();
-        RetValue = Abc_NtkMiterSat( pNtk, (sint64)pParams->nMiteringLimitLast, (sint64)0, 0, NULL, NULL );
+        clk = Abc_Clock();
+        RetValue = Abc_NtkMiterSat( pNtk, (ABC_INT64_T)pParams->nMiteringLimitLast, (ABC_INT64_T)0, 0, NULL, NULL );
         Abc_NtkMiterPrint( pNtk, "SAT solving", clk, pParams->fVerbose );
         *ppNtk = pNtk;
         return RetValue;
@@ -97,9 +104,9 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
         }
 
         // try brute-force SAT
-        clk = clock();
+        clk = Abc_Clock();
         nInspectLimit = pParams->nTotalInspectLimit? pParams->nTotalInspectLimit - pParams->nTotalInspectsMade : 0;
-        RetValue = Abc_NtkMiterSat( pNtk, (sint64)(pParams->nMiteringLimitStart * pow(pParams->nMiteringLimitMulti,nIter)), (sint64)nInspectLimit, 0, &nSatConfs, &nSatInspects );
+        RetValue = Abc_NtkMiterSat( pNtk, (ABC_INT64_T)(pParams->nMiteringLimitStart * pow(pParams->nMiteringLimitMulti,nIter)), (ABC_INT64_T)nInspectLimit, 0, &nSatConfs, &nSatInspects );
         Abc_NtkMiterPrint( pNtk, "SAT solving", clk, pParams->fVerbose );
         if ( RetValue >= 0 )
             break;
@@ -119,7 +126,7 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
         // try rewriting
         if ( pParams->fUseRewriting )
         {
-            clk = clock();
+            clk = Abc_Clock();
             Counter = (int)(pParams->nRewritingLimitStart * pow(pParams->nRewritingLimitMulti,nIter));
 //            Counter = 1;
             while ( 1 )
@@ -161,7 +168,7 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
         if ( pParams->fUseFraiging )
         {
             // try FRAIGing
-            clk = clock();
+            clk = Abc_Clock();
             nInspectLimit = pParams->nTotalInspectLimit? pParams->nTotalInspectLimit - pParams->nTotalInspectsMade : 0;
             pNtk = Abc_NtkMiterFraig( pNtkTemp = pNtk, (int)(pParams->nFraigingLimitStart * pow(pParams->nFraigingLimitMulti,nIter)), nInspectLimit, &RetValue, &nSatFails, &nSatConfs, &nSatInspects );  Abc_NtkDelete( pNtkTemp );
             Abc_NtkMiterPrint( pNtk, "FRAIGing   ", clk, pParams->fVerbose );
@@ -185,6 +192,7 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
     }    
 
     // try to prove it using brute force SAT
+#ifdef ABC_USE_CUDD
     if ( RetValue < 0 && pParams->fUseBdds )
     {
         if ( pParams->fVerbose )
@@ -192,17 +200,18 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
             printf( "Attempting BDDs with node limit %d ...\n", pParams->nBddSizeLimit );
             fflush( stdout );
         }
-        clk = clock();
+        clk = Abc_Clock();
         pNtk = Abc_NtkCollapse( pNtkTemp = pNtk, pParams->nBddSizeLimit, 0, pParams->fBddReorder, 0 );
         if ( pNtk )   
         {
             Abc_NtkDelete( pNtkTemp );
-            RetValue = ( (Abc_NtkNodeNum(pNtk) == 1) && (Abc_ObjFanin0(Abc_NtkPo(pNtk,0))->pData == Cudd_ReadLogicZero(pNtk->pManFunc)) );
+            RetValue = ( (Abc_NtkNodeNum(pNtk) == 1) && (Abc_ObjFanin0(Abc_NtkPo(pNtk,0))->pData == Cudd_ReadLogicZero((DdManager *)pNtk->pManFunc)) );
         }
         else 
             pNtk = pNtkTemp;
         Abc_NtkMiterPrint( pNtk, "BDD building", clk, pParams->fVerbose );
     }
+#endif
 
     if ( RetValue < 0 )
     {
@@ -211,16 +220,16 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
             printf( "Attempting SAT with conflict limit %d ...\n", pParams->nMiteringLimitLast );
             fflush( stdout );
         }
-        clk = clock();
+        clk = Abc_Clock();
         nInspectLimit = pParams->nTotalInspectLimit? pParams->nTotalInspectLimit - pParams->nTotalInspectsMade : 0;
-        RetValue = Abc_NtkMiterSat( pNtk, (sint64)pParams->nMiteringLimitLast, (sint64)nInspectLimit, 0, NULL, NULL );
+        RetValue = Abc_NtkMiterSat( pNtk, (ABC_INT64_T)pParams->nMiteringLimitLast, (ABC_INT64_T)nInspectLimit, 0, NULL, NULL );
         Abc_NtkMiterPrint( pNtk, "SAT solving", clk, pParams->fVerbose );
     }
 
     // assign the model if it was proved by rewriting (const 1 miter)
     if ( RetValue == 0 && pNtk->pModel == NULL )
     {
-        pNtk->pModel = ALLOC( int, Abc_NtkCiNum(pNtk) );
+        pNtk->pModel = ABC_ALLOC( int, Abc_NtkCiNum(pNtk) );
         memset( pNtk->pModel, 0, sizeof(int) * Abc_NtkCiNum(pNtk) );
     }
     *ppNtk = pNtk;
@@ -238,7 +247,7 @@ int Abc_NtkMiterProve( Abc_Ntk_t ** ppNtk, void * pPars )
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, sint64 nInspLimit, int * pRetValue, int * pNumFails, sint64 * pNumConfs, sint64 * pNumInspects )
+Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, ABC_INT64_T nInspLimit, int * pRetValue, int * pNumFails, ABC_INT64_T * pNumConfs, ABC_INT64_T * pNumInspects )
 {
     Abc_Ntk_t * pNtkNew;
     Fraig_Params_t Params, * pParams = &Params;
@@ -252,7 +261,7 @@ Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, sint64 nInspLimit
     // no more than 256M for one circuit (128M + 128M)
     nWords1 = 32;
     nWords2 = (1<<27) / (Abc_NtkNodeNum(pNtk) + Abc_NtkCiNum(pNtk));
-    nWordsMin = ABC_MIN( nWords1, nWords2 );
+    nWordsMin = Abc_MinInt( nWords1, nWords2 );
 
     // set the FRAIGing parameters
     Fraig_ParamsSetDefault( pParams );
@@ -266,7 +275,7 @@ Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, sint64 nInspLimit
     pParams->nInspLimit = nInspLimit;
 
     // transform the target into a fraig
-    pMan = Abc_NtkToFraig( pNtk, pParams, 0, 0 ); 
+    pMan = (Fraig_Man_t *)Abc_NtkToFraig( pNtk, pParams, 0, 0 ); 
     Fraig_ManProveMiter( pMan );
     RetValue = Fraig_ManCheckMiter( pMan );
 
@@ -277,8 +286,8 @@ Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, sint64 nInspLimit
     if ( RetValue == 0 )
     {
         pModel = Fraig_ManReadModel( pMan );
-        FREE( pNtkNew->pModel );
-        pNtkNew->pModel = ALLOC( int, Abc_NtkCiNum(pNtkNew) );
+        ABC_FREE( pNtkNew->pModel );
+        pNtkNew->pModel = ABC_ALLOC( int, Abc_NtkCiNum(pNtkNew) );
         memcpy( pNtkNew->pModel, pModel, sizeof(int) * Abc_NtkCiNum(pNtkNew) );
     }
 
@@ -304,13 +313,13 @@ Abc_Ntk_t * Abc_NtkMiterFraig( Abc_Ntk_t * pNtk, int nBTLimit, sint64 nInspLimit
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkMiterPrint( Abc_Ntk_t * pNtk, char * pString, int clk, int fVerbose )
+void Abc_NtkMiterPrint( Abc_Ntk_t * pNtk, char * pString, abctime clk, int fVerbose )
 {
     if ( !fVerbose )
         return;
     printf( "Nodes = %7d.  Levels = %4d.  ", Abc_NtkNodeNum(pNtk), 
         Abc_NtkIsStrash(pNtk)? Abc_AigLevel(pNtk) : Abc_NtkLevel(pNtk) );
-    PRT( pString, clock() - clk );
+    ABC_PRT( pString, Abc_Clock() - clk );
 }
 
   
@@ -340,4 +349,6 @@ Abc_Ntk_t * Abc_NtkMiterRwsat( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

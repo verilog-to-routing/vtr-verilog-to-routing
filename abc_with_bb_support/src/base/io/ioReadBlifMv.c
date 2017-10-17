@@ -18,20 +18,26 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "extra.h"
-#include "vecPtr.h"
-#include "io.h"
+#include "misc/zlib/zlib.h"
+#include "misc/bzlib/bzlib.h"
+#include "base/abc/abc.h"
+#include "misc/vec/vecPtr.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
 #define IO_BLIFMV_MAXVALUES 256
+//#define IO_VERBOSE_OUTPUT
 
 typedef struct Io_MvVar_t_ Io_MvVar_t; // parsing var
 typedef struct Io_MvMod_t_ Io_MvMod_t; // parsing model
 typedef struct Io_MvMan_t_ Io_MvMan_t; // parsing manager
+
+Vec_Ptr_t *vGlobalLtlArray;
 
 struct Io_MvVar_t_
 {
@@ -46,11 +52,15 @@ struct Io_MvMod_t_
     Vec_Ptr_t *          vInputs;      // .inputs lines
     Vec_Ptr_t *          vOutputs;     // .outputs lines
     Vec_Ptr_t *          vLatches;     // .latch lines
-	Vec_Ptr_t *          vFlops;       // .flop lines
+    Vec_Ptr_t *          vFlops;       // .flop lines
     Vec_Ptr_t *          vResets;      // .reset lines
     Vec_Ptr_t *          vNames;       // .names lines
     Vec_Ptr_t *          vSubckts;     // .subckt lines
+    Vec_Ptr_t *          vShorts;      // .short lines
+    Vec_Ptr_t *          vOnehots;     // .onehot lines
     Vec_Ptr_t *          vMvs;         // .mv lines
+    Vec_Ptr_t *          vConstrs;     // .constraint lines
+	Vec_Ptr_t *			 vLtlProperties;
     int                  fBlackBox;    // indicates blackbox model
     // the resulting network
     Abc_Ntk_t *          pNtk;   
@@ -68,7 +78,7 @@ struct Io_MvMan_t_
     char *               pBuffer;      // the contents of the file
     Vec_Ptr_t *          vLines;       // the line beginnings
     // the results of reading
-    Abc_Lib_t *          pDesign;      // the design under construction
+    Abc_Des_t *          pDesign;      // the design under construction
     int                  nNDnodes;     // the counter of ND nodes
     // intermediate storage for models
     Vec_Ptr_t *          vModels;      // vector of models
@@ -91,16 +101,21 @@ static Io_MvMod_t *      Io_MvModAlloc();
 static void              Io_MvModFree( Io_MvMod_t * p );
 static char *            Io_MvLoadFile( char * pFileName );
 static void              Io_MvReadPreparse( Io_MvMan_t * p );
-static void              Io_MvReadInterfaces( Io_MvMan_t * p );
-static Abc_Lib_t *       Io_MvParse( Io_MvMan_t * p );
+static int               Io_MvReadInterfaces( Io_MvMan_t * p );
+static Abc_Des_t *       Io_MvParse( Io_MvMan_t * p );
 static int               Io_MvParseLineModel( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineInputs( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineOutputs( Io_MvMod_t * p, char * pLine );
+static int               Io_MvParseLineConstrs( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineLatch( Io_MvMod_t * p, char * pLine );
+static int               Io_MvParseLineFlop( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineSubckt( Io_MvMod_t * p, char * pLine );
+static Vec_Int_t *       Io_MvParseLineOnehot( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineMv( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineNamesMv( Io_MvMod_t * p, char * pLine, int fReset );
 static int               Io_MvParseLineNamesBlif( Io_MvMod_t * p, char * pLine );
+static int               Io_MvParseLineShortBlif( Io_MvMod_t * p, char * pLine );
+static int				 Io_MvParseLineLtlProperty( Io_MvMod_t * p, char * pLine );
 static int               Io_MvParseLineGateBlif( Io_MvMod_t * p, Vec_Ptr_t * vTokens );
 static Io_MvVar_t *      Abc_NtkMvVarDup( Abc_Ntk_t * pNtk, Io_MvVar_t * pVar );
 
@@ -128,10 +143,11 @@ Abc_Ntk_t * Io_ReadBlifMv( char * pFileName, int fBlifMv, int fCheck )
 {
     FILE * pFile;
     Io_MvMan_t * p;
-    Abc_Ntk_t * pNtk;
-    Abc_Lib_t * pDesign;
+    Abc_Ntk_t * pNtk, * pExdc;
+    Abc_Des_t * pDesign = NULL; 
     char * pDesignName;
     int RetValue, i;
+	char * pLtlProp;
 
     // check that the file is available
     pFile = fopen( pFileName, "rb" );
@@ -145,7 +161,7 @@ Abc_Ntk_t * Io_ReadBlifMv( char * pFileName, int fBlifMv, int fCheck )
     // start the file reader
     p = Io_MvAlloc();
     p->fBlifMv   = fBlifMv;
-    p->fUseReset = 0;
+    p->fUseReset = 1;
     p->pFileName = pFileName;
     p->pBuffer   = Io_MvLoadFile( pFileName );
     if ( p->pBuffer == NULL )
@@ -155,46 +171,62 @@ Abc_Ntk_t * Io_ReadBlifMv( char * pFileName, int fBlifMv, int fCheck )
     }
     // set the design name
     pDesignName  = Extra_FileNameGeneric( pFileName );
-    p->pDesign   = Abc_LibCreate( pDesignName );
-    free( pDesignName );
+    p->pDesign   = Abc_DesCreate( pDesignName );
+    ABC_FREE( pDesignName );
     // free the HOP manager
-    Hop_ManStop( p->pDesign->pManFunc );
+    Hop_ManStop( (Hop_Man_t *)p->pDesign->pManFunc );
     p->pDesign->pManFunc = NULL;
     // prepare the file for parsing
     Io_MvReadPreparse( p );
-    // parse interfaces of each network
-    Io_MvReadInterfaces( p );
-    // construct the network
-    pDesign = Io_MvParse( p );
+    // parse interfaces of each network and construct the network
+    if ( Io_MvReadInterfaces( p ) )
+        pDesign = Io_MvParse( p );
     if ( p->sError[0] )
         fprintf( stdout, "%s\n", p->sError );
+    Io_MvFree( p );
     if ( pDesign == NULL )
         return NULL;
-    Io_MvFree( p );
 // pDesign should be linked to all models of the design
 
     // make sure that everything is okay with the network structure
     if ( fCheck )
     {
-        Vec_PtrForEachEntry( pDesign->vModules, pNtk, i )
+        Vec_PtrForEachEntry( Abc_Ntk_t *, pDesign->vModules, pNtk, i )
         {
             if ( !Abc_NtkCheckRead( pNtk ) )
             {
-                printf( "Io_ReadBlifMv: The network check has failed for network %s.\n", pNtk->pName );
-                Abc_LibFree( pDesign, NULL );
+                printf( "Io_ReadBlifMv: The network check has failed for model %s.\n", pNtk->pName );
+                Abc_DesFree( pDesign, NULL );
                 return NULL;
             }
         }
     }
 
-//Abc_LibPrint( pDesign );
+//Abc_DesPrint( pDesign );
+
+    // check if there is an EXDC network
+    if ( Vec_PtrSize(pDesign->vModules) > 1 )
+    {
+        pNtk = (Abc_Ntk_t *)Vec_PtrEntry(pDesign->vModules, 0);
+        Vec_PtrForEachEntryStart( Abc_Ntk_t *, pDesign->vModules, pExdc, i, 1 )
+            if ( !strcmp(pExdc->pName, "EXDC") )
+            {
+                assert( pNtk->pExdc == NULL );
+                pNtk->pExdc = pExdc;
+                Vec_PtrRemove(pDesign->vModules, pExdc);
+                pExdc->pDesign = NULL;
+                i--;
+            }
+            else
+                pNtk = pExdc;
+    }
 
     // detect top-level model
-    RetValue = Abc_LibFindTopLevelModels( pDesign );
-    pNtk = Vec_PtrEntry( pDesign->vTops, 0 );
+    RetValue = Abc_DesFindTopLevelModels( pDesign );
+    pNtk = (Abc_Ntk_t *)Vec_PtrEntry( pDesign->vTops, 0 );
     if ( RetValue > 1 )
-        printf( "Warning: The design has %d root-level modules. The first one (%s) will be used. Ignored (%s)\n",
-            Vec_PtrSize(pDesign->vTops), pNtk->pName, ((Abc_Ntk_t * )Vec_PtrEntry( pDesign->vTops, 1 ))->pName );
+        printf( "Warning: The design has %d root-level modules. The first one (%s) will be used.\n",
+            Vec_PtrSize(pDesign->vTops), pNtk->pName );
 
     // extract the master network
     pNtk->pDesign = pDesign;
@@ -205,7 +237,7 @@ Abc_Ntk_t * Io_ReadBlifMv( char * pFileName, int fBlifMv, int fCheck )
     if ( Vec_PtrSize(pDesign->vModules) == 1 )
     {
 //        printf( "Warning: The design is not hierarchical.\n" );
-        Abc_LibFree( pDesign, pNtk );
+        Abc_DesFree( pDesign, pNtk );
         pNtk->pDesign = NULL;
         pNtk->pSpec = Extra_UtilStrsav( pFileName );
     }
@@ -215,6 +247,11 @@ Abc_Ntk_t * Io_ReadBlifMv( char * pFileName, int fBlifMv, int fCheck )
 //Io_WriteBlifMv( pNtk, "_temp_.mv" );
     if ( pNtk->pSpec == NULL )
         pNtk->pSpec = Extra_UtilStrsav( pFileName );
+
+	vGlobalLtlArray = Vec_PtrAlloc( 100 );
+	Vec_PtrForEachEntry( char *, vGlobalLtlArray, pLtlProp, i )
+		Vec_PtrPush( pNtk->vLtlProperties, pLtlProp );
+    Vec_PtrFreeP( &vGlobalLtlArray );
     return pNtk;
 }
 
@@ -232,7 +269,7 @@ Abc_Ntk_t * Io_ReadBlifMv( char * pFileName, int fBlifMv, int fCheck )
 static Io_MvMan_t * Io_MvAlloc()
 {
     Io_MvMan_t * p;
-    p = ALLOC( Io_MvMan_t, 1 );
+    p = ABC_ALLOC( Io_MvMan_t, 1 );
     memset( p, 0, sizeof(Io_MvMan_t) );
     p->vLines   = Vec_PtrAlloc( 512 );
     p->vModels  = Vec_PtrAlloc( 512 );
@@ -258,21 +295,21 @@ static void Io_MvFree( Io_MvMan_t * p )
     Io_MvMod_t * pMod;
     int i;
     if ( p->pDesign )
-        Abc_LibFree( p->pDesign, NULL );
+        Abc_DesFree( p->pDesign, NULL );
     if ( p->pBuffer )  
-        free( p->pBuffer );
+        ABC_FREE( p->pBuffer );
     if ( p->vLines )
         Vec_PtrFree( p->vLines  );
     if ( p->vModels )
     {
-        Vec_PtrForEachEntry( p->vModels, pMod, i )
+        Vec_PtrForEachEntry( Io_MvMod_t *, p->vModels, pMod, i )
             Io_MvModFree( pMod );
         Vec_PtrFree( p->vModels );
     }
     Vec_PtrFree( p->vTokens );
     Vec_PtrFree( p->vTokens2 );
     Vec_StrFree( p->vFunc );
-    free( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -289,16 +326,20 @@ static void Io_MvFree( Io_MvMan_t * p )
 static Io_MvMod_t * Io_MvModAlloc()
 {
     Io_MvMod_t * p;
-    p = ALLOC( Io_MvMod_t, 1 );
+    p = ABC_ALLOC( Io_MvMod_t, 1 );
     memset( p, 0, sizeof(Io_MvMod_t) );
     p->vInputs  = Vec_PtrAlloc( 512 );
     p->vOutputs = Vec_PtrAlloc( 512 );
     p->vLatches = Vec_PtrAlloc( 512 );
-	p->vFlops   = Vec_PtrAlloc( 512 );
+    p->vFlops   = Vec_PtrAlloc( 512 );
     p->vResets  = Vec_PtrAlloc( 512 );
     p->vNames   = Vec_PtrAlloc( 512 );
     p->vSubckts = Vec_PtrAlloc( 512 );
+    p->vShorts  = Vec_PtrAlloc( 512 );
+    p->vOnehots = Vec_PtrAlloc( 512 );
     p->vMvs     = Vec_PtrAlloc( 512 );
+    p->vConstrs = Vec_PtrAlloc( 512 );
+	p->vLtlProperties = Vec_PtrAlloc( 512 );
     return p;
 }
 
@@ -317,15 +358,19 @@ static void Io_MvModFree( Io_MvMod_t * p )
 {
 //    if ( p->pNtk )
 //        Abc_NtkDelete( p->pNtk );
+    Vec_PtrFree( p->vLtlProperties );
     Vec_PtrFree( p->vInputs );
     Vec_PtrFree( p->vOutputs );
     Vec_PtrFree( p->vLatches );
-	Vec_PtrFree( p->vFlops );
+    Vec_PtrFree( p->vFlops );
     Vec_PtrFree( p->vResets );
     Vec_PtrFree( p->vNames );
     Vec_PtrFree( p->vSubckts );
+    Vec_PtrFree( p->vShorts );
+    Vec_PtrFree( p->vOnehots );
     Vec_PtrFree( p->vMvs );
-    free( p );
+    Vec_PtrFree( p->vConstrs );
+    ABC_FREE( p );
 }
 
 
@@ -480,10 +525,130 @@ static int Io_MvGetLine( Io_MvMan_t * p, char * pToken )
 {
     char * pLine;
     int i;
-    Vec_PtrForEachEntry( p->vLines, pLine, i )
+    Vec_PtrForEachEntry( char *, p->vLines, pLine, i )
         if ( pToken < pLine )
             return i;
     return -1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the file into a character buffer.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+typedef struct buflist {
+  char buf[1<<20];
+  int nBuf;
+  struct buflist * next;
+} buflist;
+
+char * Io_MvLoadFileBz2( char * pFileName, int * pnFileSize )
+{
+    FILE    * pFile;
+    int       nFileSize = 0;
+    char    * pContents;
+    BZFILE  * b;
+    int       bzError, RetValue;
+    struct buflist * pNext;
+    buflist * bufHead = NULL, * buf = NULL;
+
+    pFile = fopen( pFileName, "rb" );
+    if ( pFile == NULL )
+    {
+        Abc_Print( -1, "Io_MvLoadFileBz2(): The file is unavailable (absent or open).\n" );
+        return NULL;
+    }
+    b = BZ2_bzReadOpen(&bzError,pFile,0,0,NULL,0);
+    if (bzError != BZ_OK) {
+        Abc_Print( -1, "Io_MvLoadFileBz2(): BZ2_bzReadOpen() failed with error %d.\n",bzError );
+        return NULL;
+    }
+    do {
+        if (!bufHead)
+            buf = bufHead = ABC_ALLOC( buflist, 1 );
+        else
+            buf = buf->next = ABC_ALLOC( buflist, 1 );
+        nFileSize += buf->nBuf = BZ2_bzRead(&bzError,b,buf->buf,1<<20);
+        buf->next = NULL;
+    } while (bzError == BZ_OK);
+    if (bzError == BZ_STREAM_END) {
+        // we're okay
+        char * p;
+        int nBytes = 0;
+        BZ2_bzReadClose(&bzError,b);
+        p = pContents = ABC_ALLOC( char, nFileSize + 10 );
+        buf = bufHead;
+        do {
+            memcpy(p+nBytes,buf->buf,buf->nBuf);
+            nBytes += buf->nBuf;
+//        } while((buf = buf->next));
+            pNext = buf->next;
+            ABC_FREE( buf );
+        } while((buf = pNext));
+    } else if (bzError == BZ_DATA_ERROR_MAGIC) {
+        // not a BZIP2 file
+        BZ2_bzReadClose(&bzError,b);
+        fseek( pFile, 0, SEEK_END );
+        nFileSize = ftell( pFile );
+        if ( nFileSize == 0 )
+        {
+            Abc_Print( -1, "Io_MvLoadFileBz2(): The file is empty.\n" );
+            return NULL;
+        }
+        pContents = ABC_ALLOC( char, nFileSize + 10 );
+        rewind( pFile );
+        RetValue = fread( pContents, nFileSize, 1, pFile );
+    } else { 
+        // Some other error.
+        Abc_Print( -1, "Io_MvLoadFileBz2(): Unable to read the compressed BLIF.\n" );
+        return NULL;
+    }
+    fclose( pFile );
+    // finish off the file with the spare .end line
+    // some benchmarks suddenly break off without this line
+    strcpy( pContents + nFileSize, "\n.end\n" );
+    *pnFileSize = nFileSize;
+    return pContents;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the file into a character buffer.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static char * Io_MvLoadFileGz( char * pFileName, int * pnFileSize )
+{
+    const int READ_BLOCK_SIZE = 100000;
+    gzFile pFile;
+    char * pContents;
+    int amtRead, readBlock, nFileSize = READ_BLOCK_SIZE;
+    pFile = gzopen( pFileName, "rb" ); // if pFileName doesn't end in ".gz" then this acts as a passthrough to fopen
+    pContents = ABC_ALLOC( char, nFileSize );        
+    readBlock = 0;
+    while ((amtRead = gzread(pFile, pContents + readBlock * READ_BLOCK_SIZE, READ_BLOCK_SIZE)) == READ_BLOCK_SIZE) {
+        //Abc_Print( 1,"%d: read %d bytes\n", readBlock, amtRead);
+        nFileSize += READ_BLOCK_SIZE;
+        pContents = ABC_REALLOC(char, pContents, nFileSize);
+        ++readBlock;
+    }
+    //Abc_Print( 1,"%d: read %d bytes\n", readBlock, amtRead);
+    assert( amtRead != -1 ); // indicates a zlib error
+    nFileSize -= (READ_BLOCK_SIZE - amtRead);
+    gzclose(pFile);
+    *pnFileSize = nFileSize;
+    return pContents;
 }
 
 /**Function*************************************************************
@@ -502,6 +667,11 @@ static char * Io_MvLoadFile( char * pFileName )
     FILE * pFile;
     int nFileSize;
     char * pContents;
+    int RetValue;
+    if ( !strncmp(pFileName+strlen(pFileName)-4,".bz2",4) )
+        return Io_MvLoadFileBz2( pFileName, &nFileSize );
+	if ( !strncmp(pFileName+strlen(pFileName)-3,".gz",3) )
+        return Io_MvLoadFileGz( pFileName, &nFileSize );
     pFile = fopen( pFileName, "rb" );
     if ( pFile == NULL )
     {
@@ -512,12 +682,13 @@ static char * Io_MvLoadFile( char * pFileName )
     nFileSize = ftell( pFile ); 
     if ( nFileSize == 0 )
     {
+        fclose( pFile );
         printf( "Io_MvLoadFile(): The file is empty.\n" );
         return NULL;
     }
-    pContents = ALLOC( char, nFileSize + 10 );
+    pContents = ABC_ALLOC( char, nFileSize + 10 );
     rewind( pFile );
-    fread( pContents, nFileSize, 1, pFile );
+    RetValue = fread( pContents, nFileSize, 1, pFile );
     fclose( pFile );
     // finish off the file with the spare .end line
     // some benchmarks suddenly break off without this line
@@ -566,7 +737,7 @@ static void Io_MvReadPreparse( Io_MvMan_t * p )
     }
 
     // unfold the line extensions and sort lines by directive
-    Vec_PtrForEachEntry( p->vLines, pCur, i )
+    Vec_PtrForEachEntry( char *, p->vLines, pCur, i )
     {
         if ( *pCur == 0 )
             continue;
@@ -575,7 +746,7 @@ static void Io_MvReadPreparse( Io_MvMan_t * p )
             if ( !Io_MvCharIsSpace(*pPrev) )
                 break;
         // if it is the line extender, overwrite it with spaces
-        if ( *pPrev == '\\' )
+        if ( pPrev >= p->pBuffer && *pPrev == '\\' )
         {
             for ( ; *pPrev; pPrev++ )
                 *pPrev = ' ';
@@ -591,8 +762,12 @@ static void Io_MvReadPreparse( Io_MvMan_t * p )
             Vec_PtrPush( p->pLatest->vNames, pCur );
         else if ( p->fBlifMv && (!strncmp(pCur, "def ", 4) || !strncmp(pCur, "default ", 8)) )
             continue;
+		else if ( !strncmp( pCur, "ltlformula", 10 ) )
+            Vec_PtrPush( p->pLatest->vLtlProperties, pCur );
         else if ( !strncmp(pCur, "latch", 5) )
             Vec_PtrPush( p->pLatest->vLatches, pCur );
+        else if ( !strncmp(pCur, "flop", 4) )
+            Vec_PtrPush( p->pLatest->vFlops, pCur );
         else if ( !strncmp(pCur, "r ", 2) || !strncmp(pCur, "reset ", 6) )
             Vec_PtrPush( p->pLatest->vResets, pCur );
         else if ( !strncmp(pCur, "inputs", 6) )
@@ -601,8 +776,14 @@ static void Io_MvReadPreparse( Io_MvMan_t * p )
             Vec_PtrPush( p->pLatest->vOutputs, pCur );
         else if ( !strncmp(pCur, "subckt", 6) )
             Vec_PtrPush( p->pLatest->vSubckts, pCur );
+        else if ( !strncmp(pCur, "short", 5) )
+            Vec_PtrPush( p->pLatest->vShorts, pCur );
+        else if ( !strncmp(pCur, "onehot", 6) )
+            Vec_PtrPush( p->pLatest->vOnehots, pCur );
         else if ( p->fBlifMv && !strncmp(pCur, "mv", 2) )
             Vec_PtrPush( p->pLatest->vMvs, pCur );
+        else if ( !strncmp(pCur, "constraint", 10) )
+            Vec_PtrPush( p->pLatest->vConstrs, pCur );
         else if ( !strncmp(pCur, "blackbox", 8) )
             p->pLatest->fBlackBox = 1;
         else if ( !strncmp(pCur, "model", 5) ) 
@@ -619,9 +800,28 @@ static void Io_MvReadPreparse( Io_MvMan_t * p )
         }
         else if ( !strncmp(pCur, "exdc", 4) )
         {
-            fprintf( stdout, "Line %d: Skipping EXDC network.\n", Io_MvGetLine(p, pCur) );
-            break;
+//            fprintf( stdout, "Line %d: The design contains EXDC network (warning only).\n", Io_MvGetLine(p, pCur) );
+            fprintf( stdout, "Warning: The design contains EXDC network.\n" );
+            if ( p->pLatest )
+                Vec_PtrPush( p->vModels, p->pLatest );
+            p->pLatest = Io_MvModAlloc();
+            p->pLatest->pName = NULL;
+            p->pLatest->pMan = p;
         }
+        else if ( !strncmp(pCur, "attrib", 6) )
+        {}
+        else if ( !strncmp(pCur, "delay", 5) )
+        {}
+        else if ( !strncmp(pCur, "input_", 6) )
+        {}
+        else if ( !strncmp(pCur, "output_", 7) )
+        {}
+        else if ( !strncmp(pCur, "no_merge", 8) )
+        {}
+        else if ( !strncmp(pCur, "wd", 2) )
+        {}
+//        else if ( !strncmp(pCur, "inouts", 6) )
+//        {}
         else
         {
             pCur--;
@@ -643,32 +843,49 @@ static void Io_MvReadPreparse( Io_MvMan_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-static void Io_MvReadInterfaces( Io_MvMan_t * p )
+static int Io_MvReadInterfaces( Io_MvMan_t * p )
 {
     Io_MvMod_t * pMod;
     char * pLine;
-    int i, k;
+    int i, k, nOutsOld;
     // iterate through the models
-    Vec_PtrForEachEntry( p->vModels, pMod, i )
+    Vec_PtrForEachEntry( Io_MvMod_t *, p->vModels, pMod, i )
     {
         // parse the model
         if ( !Io_MvParseLineModel( pMod, pMod->pName ) )
-            return;
+            return 0;
         // add model to the design
-        if ( !Abc_LibAddModel( p->pDesign, pMod->pNtk ) )
+        if ( !Abc_DesAddModel( p->pDesign, pMod->pNtk ) )
         {
             sprintf( p->sError, "Line %d: Model %s is defined twice.", Io_MvGetLine(p, pMod->pName), pMod->pName );
-            return;
+            return 0;
         }
         // parse the inputs
-        Vec_PtrForEachEntry( pMod->vInputs, pLine, k )
+        Vec_PtrForEachEntry( char *, pMod->vInputs, pLine, k )
             if ( !Io_MvParseLineInputs( pMod, pLine ) )
-                return;
+                return 0;
         // parse the outputs
-        Vec_PtrForEachEntry( pMod->vOutputs, pLine, k )
+        Vec_PtrForEachEntry( char *, pMod->vOutputs, pLine, k )
             if ( !Io_MvParseLineOutputs( pMod, pLine ) )
-                return;
+                return 0;
+        // parse the constraints
+        nOutsOld = Abc_NtkPoNum(pMod->pNtk);
+        Vec_PtrForEachEntry( char *, pMod->vConstrs, pLine, k )
+            if ( !Io_MvParseLineConstrs( pMod, pLine ) )
+                return 0;
+        pMod->pNtk->nConstrs = Abc_NtkPoNum(pMod->pNtk) - nOutsOld;
+		Vec_PtrForEachEntry( char *, pMod->vLtlProperties, pLine, k )
+			if ( !Io_MvParseLineLtlProperty( pMod, pLine ) )
+                return 0;
+        // report the results
+#ifdef IO_VERBOSE_OUTPUT
+        if ( Vec_PtrSize(p->vModels) > 1 )
+		    printf( "Parsed %-32s: PI =%6d  PO =%6d  ND =%8d  FF =%6d  B =%6d\n", 
+			    pMod->pNtk->pName, Abc_NtkPiNum(pMod->pNtk), Abc_NtkPoNum(pMod->pNtk),
+			    Vec_PtrSize(pMod->vNames), Vec_PtrSize(pMod->vLatches), Vec_PtrSize(pMod->vSubckts) );
+#endif
     }
+    return 1;
 }
 
 
@@ -683,20 +900,25 @@ static void Io_MvReadInterfaces( Io_MvMan_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-static Abc_Lib_t * Io_MvParse( Io_MvMan_t * p )
+static Abc_Des_t * Io_MvParse( Io_MvMan_t * p )
 {
-    Abc_Lib_t * pDesign;
+    Abc_Des_t * pDesign;
     Io_MvMod_t * pMod;
     char * pLine;
     int i, k;
     // iterate through the models
-    Vec_PtrForEachEntry( p->vModels, pMod, i )
-    {
+    Vec_PtrForEachEntry( Io_MvMod_t *, p->vModels, pMod, i )
+    { 
+#ifdef IO_VERBOSE_OUTPUT
+        if ( Vec_PtrSize(p->vModels) > 1 )
+            printf( "Parsing model %s...\n", pMod->pNtk->pName );
+#endif
+
         // check if there any MV lines
         if ( Vec_PtrSize(pMod->vMvs) > 0 )
             Abc_NtkStartMvVars( pMod->pNtk );
         // parse the mv lines
-        Vec_PtrForEachEntry( pMod->vMvs, pLine, k )
+        Vec_PtrForEachEntry( char *, pMod->vMvs, pLine, k )
             if ( !Io_MvParseLineMv( pMod, pLine ) )
                 return NULL;
         // if reset lines are used there should be the same number of them as latches
@@ -712,34 +934,95 @@ static Abc_Lib_t * Io_MvParse( Io_MvMan_t * p )
             if ( p->fUseReset ) 
                 pMod->pResetLatch = Io_ReadCreateResetLatch( pMod->pNtk, p->fBlifMv );
         }
+        // parse the flops
+        Vec_PtrForEachEntry( char *, pMod->vFlops, pLine, k )
+            if ( !Io_MvParseLineFlop( pMod, pLine ) )
+                return NULL;
         // parse the latches
-        Vec_PtrForEachEntry( pMod->vLatches, pLine, k )
+        Vec_PtrForEachEntry( char *, pMod->vLatches, pLine, k )
             if ( !Io_MvParseLineLatch( pMod, pLine ) )
                 return NULL;
         // parse the reset lines
         if ( p->fUseReset )
-            Vec_PtrForEachEntry( pMod->vResets, pLine, k )
+            Vec_PtrForEachEntry( char *, pMod->vResets, pLine, k )
                 if ( !Io_MvParseLineNamesMv( pMod, pLine, 1 ) )
                     return NULL;
         // parse the nodes
         if ( p->fBlifMv )
         {
-            Vec_PtrForEachEntry( pMod->vNames, pLine, k )
+            Vec_PtrForEachEntry( char *, pMod->vNames, pLine, k )
                 if ( !Io_MvParseLineNamesMv( pMod, pLine, 0 ) )
                     return NULL;
         }
         else
         {
-            Vec_PtrForEachEntry( pMod->vNames, pLine, k )
+            Vec_PtrForEachEntry( char *, pMod->vNames, pLine, k )
                 if ( !Io_MvParseLineNamesBlif( pMod, pLine ) )
+                    return NULL;
+            Vec_PtrForEachEntry( char *, pMod->vShorts, pLine, k )
+                if ( !Io_MvParseLineShortBlif( pMod, pLine ) )
                     return NULL;
         }
         // parse the subcircuits
-        Vec_PtrForEachEntry( pMod->vSubckts, pLine, k )
+        Vec_PtrForEachEntry( char *, pMod->vSubckts, pLine, k )
             if ( !Io_MvParseLineSubckt( pMod, pLine ) )
                 return NULL;
+
+        // allow for blackboxes without .blackbox line
+        if ( Abc_NtkLatchNum(pMod->pNtk) == 0 && Abc_NtkNodeNum(pMod->pNtk) == 0 && Abc_NtkBoxNum(pMod->pNtk) == 0 )
+        {
+            if ( pMod->pNtk->ntkFunc == ABC_FUNC_SOP )
+            {
+                Mem_FlexStop( (Mem_Flex_t *)pMod->pNtk->pManFunc, 0 );
+                pMod->pNtk->pManFunc = NULL;
+                pMod->pNtk->ntkFunc = ABC_FUNC_BLACKBOX;
+            }
+        }
+
         // finalize the network
         Abc_NtkFinalizeRead( pMod->pNtk );
+        // read the one-hotness lines
+        if ( Vec_PtrSize(pMod->vOnehots) > 0 )
+        {
+            Vec_Int_t * vLine; 
+            Abc_Obj_t * pObj;
+            // set register numbers
+            Abc_NtkForEachLatch( pMod->pNtk, pObj, k )
+                pObj->pNext = (Abc_Obj_t *)(ABC_PTRINT_T)k;
+            // derive register
+            pMod->pNtk->vOnehots = Vec_PtrAlloc( Vec_PtrSize(pMod->vOnehots) );
+            Vec_PtrForEachEntry( char *, pMod->vOnehots, pLine, k )
+            {
+                vLine = Io_MvParseLineOnehot( pMod, pLine );
+                if ( vLine == NULL )
+                    return NULL;
+                Vec_PtrPush( pMod->pNtk->vOnehots, vLine );
+//                printf( "Parsed %d one-hot registers.\n", Vec_IntSize(vLine) );
+            }
+            // reset register numbers
+            Abc_NtkForEachLatch( pMod->pNtk, pObj, k )
+                pObj->pNext = NULL;
+            // print the result
+            printf( "Parsed %d groups of 1-hot registers: { ", Vec_PtrSize(pMod->pNtk->vOnehots) );
+            Vec_PtrForEachEntry( Vec_Int_t *, pMod->pNtk->vOnehots, vLine, k )
+                printf( "%d ", Vec_IntSize(vLine) );
+            printf( "}\n" );
+            printf( "The total number of 1-hot registers = %d. (%.2f %%)\n", 
+                Vec_VecSizeSize( (Vec_Vec_t *)pMod->pNtk->vOnehots ), 
+                100.0 * Vec_VecSizeSize( (Vec_Vec_t *)pMod->pNtk->vOnehots ) / Abc_NtkLatchNum(pMod->pNtk) );
+            {
+                extern void Abc_GenOneHotIntervals( char * pFileName, int nPis, int nRegs, Vec_Ptr_t * vOnehots );
+                char * pFileName = Extra_FileNameGenericAppend( pMod->pMan->pFileName, "_1h.blif" );
+                Abc_GenOneHotIntervals( pFileName, Abc_NtkPiNum(pMod->pNtk), Abc_NtkLatchNum(pMod->pNtk), pMod->pNtk->vOnehots );
+                printf( "One-hotness condition is written into file \"%s\".\n", pFileName );
+            }
+        }
+        if ( Vec_PtrSize(pMod->vFlops) )
+        {
+            printf( "Warning: The parser converted %d .flop lines into .latch lines\n", Vec_PtrSize(pMod->vFlops) );
+            printf( "(information about set, reset, enable of the flops may be lost).\n" );
+        }
+
     }
     if ( p->nNDnodes )
 //        printf( "Warning: The parser added %d PIs to replace non-deterministic nodes.\n", p->nNDnodes );
@@ -764,9 +1047,15 @@ static Abc_Lib_t * Io_MvParse( Io_MvMan_t * p )
 static int Io_MvParseLineModel( Io_MvMod_t * p, char * pLine )
 {
     Vec_Ptr_t * vTokens = p->pMan->vTokens;
-    char * pToken;
+    char * pToken, * pPivot;
+    if ( pLine == NULL )
+    {
+        p->pNtk = Abc_NtkAlloc( ABC_NTK_NETLIST, ABC_FUNC_SOP, 1 );
+        p->pNtk->pName = Extra_UtilStrsav( "EXDC" );
+        return 1;
+    }
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
-    pToken = Vec_PtrEntry( vTokens, 0 );
+    pToken = (char *)Vec_PtrEntry( vTokens, 0 );
     assert( !strcmp(pToken, "model") );
     if ( Vec_PtrSize(vTokens) != 2 )
     {
@@ -779,7 +1068,11 @@ static int Io_MvParseLineModel( Io_MvMod_t * p, char * pLine )
         p->pNtk = Abc_NtkAlloc( ABC_NTK_NETLIST, ABC_FUNC_BLIFMV, 1 );
     else 
         p->pNtk = Abc_NtkAlloc( ABC_NTK_NETLIST, ABC_FUNC_SOP, 1 );
-    p->pNtk->pName = Extra_UtilStrsav( Vec_PtrEntry(vTokens, 1) );
+//    for ( pPivot = pToken = Vec_PtrEntry(vTokens, 1); *pToken; pToken++ )
+//        if ( *pToken == '/' || *pToken == '\\' )
+//            pPivot = pToken+1;
+    pPivot = pToken = (char *)Vec_PtrEntry(vTokens, 1);
+    p->pNtk->pName = Extra_UtilStrsav( pPivot );
     return 1;
 }
 
@@ -800,9 +1093,9 @@ static int Io_MvParseLineInputs( Io_MvMod_t * p, char * pLine )
     char * pToken;
     int i;
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
-    pToken = Vec_PtrEntry(vTokens, 0);
+    pToken = (char *)Vec_PtrEntry(vTokens, 0);
     assert( !strcmp(pToken, "inputs") );
-    Vec_PtrForEachEntryStart( vTokens, pToken, i, 1 )
+    Vec_PtrForEachEntryStart( char *, vTokens, pToken, i, 1 )
         Io_ReadCreatePi( p->pNtk, pToken );
     return 1;
 }
@@ -824,12 +1117,79 @@ static int Io_MvParseLineOutputs( Io_MvMod_t * p, char * pLine )
     char * pToken;
     int i;
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
-    pToken = Vec_PtrEntry(vTokens, 0);
+    pToken = (char *)Vec_PtrEntry(vTokens, 0);
     assert( !strcmp(pToken, "outputs") );
-    Vec_PtrForEachEntryStart( vTokens, pToken, i, 1 )
+    Vec_PtrForEachEntryStart( char *, vTokens, pToken, i, 1 )
         Io_ReadCreatePo( p->pNtk, pToken );
     return 1;
 }
+
+/**Function*************************************************************
+
+  Synopsis    [Parses the outputs line.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static int Io_MvParseLineConstrs( Io_MvMod_t * p, char * pLine )
+{
+    Vec_Ptr_t * vTokens = p->pMan->vTokens;
+    char * pToken;
+    int i;
+    Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
+    pToken = (char *)Vec_PtrEntry(vTokens, 0);
+    assert( !strcmp(pToken, "constraint") );
+    Vec_PtrForEachEntryStart( char *, vTokens, pToken, i, 1 )
+        Io_ReadCreatePo( p->pNtk, pToken );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Parses the LTL property line.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static int Io_MvParseLineLtlProperty( Io_MvMod_t * p, char * pLine )
+{
+	int i, j;
+	int quoteBegin, quoteEnd;
+	char keyWordLtlFormula[11];
+	char *actualLtlFormula;
+
+	//checking if the line begins with the keyword "ltlformula" and
+	//progressing the pointer forword
+	for( i=0; i<10; i++ )
+		keyWordLtlFormula[i] = pLine[i];
+	quoteBegin = i;
+	keyWordLtlFormula[10] = '\0';
+	assert( strcmp( "ltlformula", keyWordLtlFormula ) == 0 );
+	while( pLine[i] != '"' )
+		i++;
+	quoteBegin = i;
+	i = strlen( pLine );
+	while( pLine[i] != '"' )
+		i--;
+	quoteEnd = i;
+	actualLtlFormula = (char *)malloc( sizeof(char) * (quoteEnd - quoteBegin) );
+	//printf("\nThe input ltl formula = ");
+	for( i = quoteBegin + 1, j = 0; i<quoteEnd; i++, j++ )
+		//printf("%c", pLine[i] );
+		actualLtlFormula[j] = pLine[i];
+	actualLtlFormula[j] = '\0';
+	Vec_PtrPush( vGlobalLtlArray, actualLtlFormula );
+	return 1;
+}
+
 
 /**Function*************************************************************
 
@@ -847,11 +1207,9 @@ static int Io_MvParseLineLatch( Io_MvMod_t * p, char * pLine )
     Vec_Ptr_t * vTokens = p->pMan->vTokens;
     Abc_Obj_t * pObj, * pNet;
     char * pToken;
-	char * pLatchType;
-    Abc_LatchInfo_t* pLatchInfo;
     int Init;
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
-    pToken = Vec_PtrEntry(vTokens,0);
+    pToken = (char *)Vec_PtrEntry(vTokens,0);
     assert( !strcmp(pToken, "latch") );
     if ( Vec_PtrSize(vTokens) < 3 )
     {
@@ -861,39 +1219,22 @@ static int Io_MvParseLineLatch( Io_MvMod_t * p, char * pLine )
     // create latch
     if ( p->pResetLatch == NULL )
     {
-        pObj = Io_ReadCreateLatch( p->pNtk, Vec_PtrEntry(vTokens,1), Vec_PtrEntry(vTokens,2) );
-
-		pLatchInfo = ((Abc_LatchInfo_t *)pObj->pData);
-		pLatchInfo->pClkName = strdup((char *)Vec_PtrEntry(vTokens,4));
-	
-		pLatchType = (char *)Vec_PtrEntry(vTokens,3);
-		
-		if (!strcmp(pLatchType, "re"))
-			pLatchInfo->LatchType = ABC_RISING_EDGE;
-		else if (!strcmp(pLatchType, "fe"))
-			pLatchInfo->LatchType = ABC_FALLING_EDGE;
-		else if (!strcmp(pLatchType, "ah"))
-			pLatchInfo->LatchType = ABC_ACTIVE_HIGH;
-		else if (!strcmp(pLatchType, "al"))
-			pLatchInfo->LatchType = ABC_ACTIVE_LOW;
-		else
-			pLatchInfo->LatchType = ABC_ASYNC; // god knows when it is used...
-
+        pObj = Io_ReadCreateLatch( p->pNtk, (char *)Vec_PtrEntry(vTokens,1), (char *)Vec_PtrEntry(vTokens,2) );
         // get initial value
         if ( p->pMan->fBlifMv )
             Abc_LatchSetInit0( pObj );
         else
         {
-			if ( Vec_PtrSize(vTokens) > 6 )
+            if ( Vec_PtrSize(vTokens) > 6 )
                 printf( "Warning: Line %d has .latch directive with unrecognized entries (the total of %d entries).\n", 
                     Io_MvGetLine(p->pMan, pToken), Vec_PtrSize(vTokens) ); 
             if ( Vec_PtrSize(vTokens) > 3 )
-                Init = atoi( Vec_PtrEntry(vTokens,3) );
+                Init = atoi( (char *)Vec_PtrEntryLast(vTokens) );
             else
                 Init = 2;
-            if ( Init < 0 || Init > 2 )
+            if ( Init < 0 || Init > 3 )
             {
-                sprintf( p->pMan->sError, "Line %d: Initial state of the latch is incorrect \"%s\".", Io_MvGetLine(p->pMan, pToken), Vec_PtrEntry(vTokens,3) );
+                sprintf( p->pMan->sError, "Line %d: Initial state of the latch is incorrect \"%s\".", Io_MvGetLine(p->pMan, pToken), (char*)Vec_PtrEntry(vTokens,3) );
                 return 0;
             }
             if ( Init == 0 )
@@ -907,13 +1248,89 @@ static int Io_MvParseLineLatch( Io_MvMod_t * p, char * pLine )
     else
     {
         // get the net corresponding to the output of the latch
-        pNet = Abc_NtkFindOrCreateNet( p->pNtk, Vec_PtrEntry(vTokens,2) );
+        pNet = Abc_NtkFindOrCreateNet( p->pNtk, (char *)Vec_PtrEntry(vTokens,2) );
         // get the net corresponding to the latch output (feeding into reset MUX)
         pNet = Abc_NtkFindOrCreateNet( p->pNtk, Abc_ObjNameSuffix(pNet, "_out") );
         // create latch
-        pObj = Io_ReadCreateLatch( p->pNtk, Vec_PtrEntry(vTokens,1), Abc_ObjName(pNet) );
+        pObj = Io_ReadCreateLatch( p->pNtk, (char *)Vec_PtrEntry(vTokens,1), Abc_ObjName(pNet) );
+//        Abc_LatchSetInit0( pObj );
         Abc_LatchSetInit0( pObj );
     }
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Parses the latches line.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static int Io_MvParseLineFlop( Io_MvMod_t * p, char * pLine )
+{
+    Vec_Ptr_t * vTokens = p->pMan->vTokens;
+    Abc_Obj_t * pObj;
+    char * pToken, * pOutput, * pInput;
+    int i, Init = 2;
+    assert( !p->pMan->fBlifMv );
+    Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
+    pToken = (char *)Vec_PtrEntry(vTokens,0);
+    assert( !strcmp(pToken, "flop") );
+    // get flop output
+    Vec_PtrForEachEntry( char *, vTokens, pToken, i )
+        if ( pToken[0] == 'Q' && pToken[1] == '=' )
+            break;
+    if ( i == Vec_PtrSize(vTokens) )
+    {
+        sprintf( p->pMan->sError, "Line %d: Cannot find flop output.", Io_MvGetLine(p->pMan, (char *)Vec_PtrEntry(vTokens,0)) );
+        return 0;
+    }
+    pOutput = pToken+2;
+    // get flop input
+    Vec_PtrForEachEntry( char *, vTokens, pToken, i )
+        if ( pToken[0] == 'D' && pToken[1] == '=' )
+            break;
+    if ( i == Vec_PtrSize(vTokens) )
+    {
+        sprintf( p->pMan->sError, "Line %d: Cannot find flop input.", Io_MvGetLine(p->pMan, (char *)Vec_PtrEntry(vTokens,0)) );
+        return 0;
+    }
+    pInput = pToken+2;
+    // create latch
+    pObj = Io_ReadCreateLatch( p->pNtk, pInput, pOutput );
+    // get the init value
+    Vec_PtrForEachEntry( char *, vTokens, pToken, i )
+    {
+        if ( !strncmp( pToken, "init=", 5 ) )
+        {
+            Init = 0;
+            if ( pToken[5] == '1' )
+                Init = 1;
+            else if ( pToken[5] == '2' )
+                Init = 2;
+            else if ( pToken[5] != '0' )
+            {
+                sprintf( p->pMan->sError, "Line %d: Cannot read flop init value %s.", Io_MvGetLine(p->pMan, pToken), pToken );
+                return 0;
+            }
+            break;
+        }
+    }
+    if ( Init < 0 || Init > 2 )
+    {
+        sprintf( p->pMan->sError, "Line %d: Initial state of the flop is incorrect \"%s\".", Io_MvGetLine(p->pMan, pToken), (char*)Vec_PtrEntry(vTokens,3) );
+        return 0;
+    }
+    if ( Init == 0 )
+        Abc_LatchSetInit0( pObj );
+    else if ( Init == 1 )
+        Abc_LatchSetInit1( pObj );
+    else // if ( Init == 2 )
+        Abc_LatchSetInitDc( pObj );
     return 1;
 }
 
@@ -933,24 +1350,33 @@ static int Io_MvParseLineSubckt( Io_MvMod_t * p, char * pLine )
     Vec_Ptr_t * vTokens = p->pMan->vTokens;
     Abc_Ntk_t * pModel;
     Abc_Obj_t * pBox, * pNet, * pTerm;
-    char * pToken, * pName, ** ppNames;
-    int nEquals, i, k;
+    char * pToken, * pName, * pName2, ** ppNames;
+    int nEquals, Last, i, k;
 
     // split the line into tokens
     nEquals = Io_MvCountChars( pLine, '=' );
     Io_MvSplitIntoTokensAndClear( vTokens, pLine, '\0', '=' );
-    pToken = Vec_PtrEntry(vTokens,0);
+    pToken = (char *)Vec_PtrEntry(vTokens,0);
     assert( !strcmp(pToken, "subckt") );
+//printf( "%d ", nEquals );
 
     // get the model for this box
-    pName = Vec_PtrEntry(vTokens,1);
-    pModel = Abc_LibFindModelByName( p->pMan->pDesign, pName );
+    pName = (char *)Vec_PtrEntry(vTokens,1);
+    // skip instance name for now
+    for ( pToken = pName; *pToken; pToken++ )
+        if ( *pToken == '|' )
+        {
+            *pToken = 0;
+            break;
+        }
+    // find the model
+    pModel = Abc_DesFindModelByName( p->pMan->pDesign, pName );
     if ( pModel == NULL )
     {
         sprintf( p->pMan->sError, "Line %d: Cannot find the model for subcircuit %s.", Io_MvGetLine(p->pMan, pToken), pName );
         return 0;
     }
-
+/*
     // check if the number of tokens is correct
     if ( nEquals != Abc_NtkPiNum(pModel) + Abc_NtkPoNum(pModel) )
     {
@@ -958,7 +1384,7 @@ static int Io_MvParseLineSubckt( Io_MvMod_t * p, char * pLine )
             Io_MvGetLine(p->pMan, pToken), nEquals, Abc_NtkPiNum(pModel) + Abc_NtkPoNum(pModel) );
         return 0;
     }
-
+*/
     // get the names
     ppNames = (char **)Vec_PtrArray(vTokens) + 2 + p->pMan->fBlifMv;
 
@@ -969,46 +1395,135 @@ static int Io_MvParseLineSubckt( Io_MvMod_t * p, char * pLine )
         pBox = Abc_NtkCreateWhitebox( p->pNtk );
     pBox->pData = pModel;
     if ( p->pMan->fBlifMv )
-        Abc_ObjAssignName( pBox, Vec_PtrEntry(vTokens,2), NULL );
+        Abc_ObjAssignName( pBox, (char *)Vec_PtrEntry(vTokens,2), NULL );
+    // go through formal inputs
+    Last = 0;
     Abc_NtkForEachPi( pModel, pTerm, i )
-    {
-        // find this terminal among the formal inputs of the subcircuit
+    { 
+        // find this terminal among the actual inputs of the subcircuit
+        pName2 = NULL;
         pName = Abc_ObjName(Abc_ObjFanout0(pTerm));
         for ( k = 0; k < nEquals; k++ )
-            if ( !strcmp( ppNames[2*k], pName ) )
+            if ( !strcmp( ppNames[2*((k+Last)%nEquals)], pName ) )
+            {
+                pName2 = ppNames[2*((k+Last)%nEquals)+1];
+                Last = k+Last+1;
                 break;
+            }
+/*
         if ( k == nEquals )
         {
             sprintf( p->pMan->sError, "Line %d: Cannot find PI \"%s\" of the model \"%s\" as a formal input of the subcircuit.", 
                 Io_MvGetLine(p->pMan, pToken), pName, Abc_NtkName(pModel) );
             return 0;
         }
+*/
+        if ( pName2 == NULL )
+        {
+            Abc_Obj_t * pNode = Abc_NtkCreateNode( p->pNtk );
+            pNode->pData = Abc_SopRegister( (Mem_Flex_t *)p->pNtk->pManFunc, " 0\n" );
+            pNet = Abc_NtkFindOrCreateNet( p->pNtk, Abc_ObjNameSuffix(pNode, "abc") );
+            Abc_ObjAddFanin( pNet, pNode );
+            pTerm = Abc_NtkCreateBi( p->pNtk );
+            Abc_ObjAddFanin( pBox, pTerm );
+            Abc_ObjAddFanin( pTerm, pNet );
+            continue;
+        }
+        assert( pName2 != NULL );
+  
         // create the BI with the actual name
-        pNet = Abc_NtkFindOrCreateNet( p->pNtk, ppNames[2*k+1] );
+        pNet = Abc_NtkFindOrCreateNet( p->pNtk, pName2 );
         pTerm = Abc_NtkCreateBi( p->pNtk );
         Abc_ObjAddFanin( pBox, pTerm );
         Abc_ObjAddFanin( pTerm, pNet );
     }
+    // go through formal outputs
+    Last = 0;
     Abc_NtkForEachPo( pModel, pTerm, i )
     {
-        // find this terminal among the formal outputs of the subcircuit
+        // find this terminal among the actual outputs of the subcircuit
+        pName2 = NULL;
         pName = Abc_ObjName(Abc_ObjFanin0(pTerm));
         for ( k = 0; k < nEquals; k++ )
-            if ( !strcmp( ppNames[2*k], pName ) )
+            if ( !strcmp( ppNames[2*((k+Last)%nEquals)], pName ) )
+            {
+                pName2 = ppNames[2*((k+Last)%nEquals)+1];
+                Last = k+Last+1;
                 break;
+            }
+/*
         if ( k == nEquals )
         {
             sprintf( p->pMan->sError, "Line %d: Cannot find PO \"%s\" of the modell \"%s\" as a formal output of the subcircuit.", 
                 Io_MvGetLine(p->pMan, pToken), pName, Abc_NtkName(pModel) );
             return 0;
         }
+*/
+
         // create the BI with the actual name
-        pNet = Abc_NtkFindOrCreateNet( p->pNtk, ppNames[2*k+1] );
         pTerm = Abc_NtkCreateBo( p->pNtk );
+        pNet = Abc_NtkFindOrCreateNet( p->pNtk, pName2 == NULL  ? Abc_ObjNameSuffix(pTerm, "abc") : pName2 );
         Abc_ObjAddFanin( pNet, pTerm );
         Abc_ObjAddFanin( pTerm, pBox );
     }
     return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Parses the subckt line.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static Vec_Int_t * Io_MvParseLineOnehot( Io_MvMod_t * p, char * pLine )
+{
+    Vec_Ptr_t * vTokens = p->pMan->vTokens;
+//    Vec_Ptr_t * vResult;
+    Vec_Int_t * vResult;
+    Abc_Obj_t * pNet, * pTerm;
+    char * pToken;
+    int nEquals, i;
+
+    // split the line into tokens
+    nEquals = Io_MvCountChars( pLine, '=' );
+    Io_MvSplitIntoTokensAndClear( vTokens, pLine, '\0', '=' );
+    pToken = (char *)Vec_PtrEntry(vTokens,0);
+    assert( !strcmp(pToken, "onehot") );
+
+    // iterate through the register names
+//    vResult = Vec_PtrAlloc( Vec_PtrSize(vTokens) );
+    vResult = Vec_IntAlloc( Vec_PtrSize(vTokens) );
+    Vec_PtrForEachEntryStart( char *, vTokens, pToken, i, 1 )
+    {
+        // check if this register exists
+        pNet = Abc_NtkFindNet( p->pNtk, pToken );
+        if ( pNet == NULL )
+        {
+            sprintf( p->pMan->sError, "Line %d: Signal with name \"%s\" does not exist in the model \"%s\".", 
+                Io_MvGetLine(p->pMan, pToken), pToken, Abc_NtkName(p->pNtk) );
+            return NULL;
+        }
+        // check if this is register output net
+        pTerm = Abc_ObjFanin0( pNet );
+        if ( pTerm == NULL || Abc_ObjFanin0(pTerm) == NULL || !Abc_ObjIsLatch(Abc_ObjFanin0(pTerm)) )
+        {
+            sprintf( p->pMan->sError, "Line %d: Signal with name \"%s\" is not a register in the model \"%s\".", 
+                Io_MvGetLine(p->pMan, pToken), pToken, Abc_NtkName(p->pNtk) );
+            return NULL;
+        }
+        // save register name
+//        Vec_PtrPush( vResult, Abc_ObjName(pNet) );
+        Vec_IntPush( vResult, (int)(ABC_PTRINT_T)Abc_ObjFanin0(pTerm)->pNext );
+//        printf( "%d(%d) ", (int)Abc_ObjFanin0(pTerm)->pNext, ((int)Abc_ObjFanin0(pTerm)->pData) -1 );
+        printf( "%d", ((int)(ABC_PTRINT_T)Abc_ObjFanin0(pTerm)->pData)-1 );
+    }
+    printf( "\n" );
+    return vResult;
 }
 
 
@@ -1027,22 +1542,22 @@ static int Io_MvParseLineMv( Io_MvMod_t * p, char * pLine )
 {
     Vec_Ptr_t * vTokens = p->pMan->vTokens;
     Abc_Obj_t * pObj;
-    Io_MvVar_t * pVar;
-    Extra_MmFlex_t * pFlex;
+    Io_MvVar_t * pVar = NULL;
+    Mem_Flex_t * pFlex;
     char * pName;
     int nCommas, nValues, i, k;
     // count commas and get the tokens
     nCommas = Io_MvCountChars( pLine, ',' );
     Io_MvSplitIntoTokensAndClear( vTokens, pLine, '\0', ',' );
-    pName = Vec_PtrEntry(vTokens,0);
+    pName = (char *)Vec_PtrEntry(vTokens,0);
     assert( !strcmp(pName, "mv") );
     // get the number of values
     if ( Vec_PtrSize(vTokens) <= nCommas + 2 )
     {
-        sprintf( p->pMan->sError, "Line %d: The number of values in not specified in .mv line.", Io_MvGetLine(p->pMan, pName), pName );
+        sprintf( p->pMan->sError, "Line %d: The number of values in not specified in .mv line.", Io_MvGetLine(p->pMan, pName) );
         return 0;
     }
-    nValues = atoi( Vec_PtrEntry(vTokens,nCommas+2) );
+    nValues = atoi( (char *)Vec_PtrEntry(vTokens,nCommas+2) );
     if ( nValues < 2 || nValues > IO_BLIFMV_MAXVALUES )
     {
         sprintf( p->pMan->sError, "Line %d: The number of values (%d) is incorrect (should be >= 2 and <= %d).", 
@@ -1059,22 +1574,22 @@ static int Io_MvParseLineMv( Io_MvMod_t * p, char * pLine )
         return 0;
     }
     // go through variables
-    pFlex = Abc_NtkMvVarMan( p->pNtk );
+    pFlex = (Mem_Flex_t *)Abc_NtkMvVarMan( p->pNtk );
     for ( i = 0; i <= nCommas; i++ )
     {
-        pName = Vec_PtrEntry( vTokens, i+1 );
+        pName = (char *)Vec_PtrEntry( vTokens, i+1 );
         pObj = Abc_NtkFindOrCreateNet( p->pNtk, pName );
         // allocate variable
-        pVar = (Io_MvVar_t *)Extra_MmFlexEntryFetch( pFlex, sizeof(Io_MvVar_t) );
+        pVar = (Io_MvVar_t *)Mem_FlexEntryFetch( pFlex, sizeof(Io_MvVar_t) );
         pVar->nValues = nValues;
         pVar->pNames = NULL;
         // create names
         if ( Vec_PtrSize(vTokens) > nCommas + 3 )
         {
-            pVar->pNames = (char **)Extra_MmFlexEntryFetch( pFlex, sizeof(char *) * nValues );
-            Vec_PtrForEachEntryStart( vTokens, pName, k, nCommas + 3 )
+            pVar->pNames = (char **)Mem_FlexEntryFetch( pFlex, sizeof(char *) * nValues );
+            Vec_PtrForEachEntryStart( char *, vTokens, pName, k, nCommas + 3 )
             {
-                pVar->pNames[k-(nCommas + 3)] = (char *)Extra_MmFlexEntryFetch( pFlex, strlen(pName) + 1 );
+                pVar->pNames[k-(nCommas + 3)] = (char *)Mem_FlexEntryFetch( pFlex, strlen(pName) + 1 );
                 strcpy( pVar->pNames[k-(nCommas + 3)], pName );
             }
         }
@@ -1082,13 +1597,14 @@ static int Io_MvParseLineMv( Io_MvMod_t * p, char * pLine )
         Abc_ObjSetMvVar( pObj, pVar );
     }
     // make sure the names are unique
+    assert(pVar);
     if ( pVar->pNames )
     {
         for ( i = 0; i < nValues; i++ )
         for ( k = i+1; k < nValues; k++ )
             if ( !strcmp(pVar->pNames[i], pVar->pNames[k]) )
             {
-                pName = Vec_PtrEntry(vTokens,0);
+                pName = (char *)Vec_PtrEntry(vTokens,0);
                 sprintf( p->pMan->sError, "Line %d: Symbolic value name \"%s\" is repeated in .mv line.", 
                     Io_MvGetLine(p->pMan, pName), pVar->pNames[i] );
                 return 0;
@@ -1117,12 +1633,12 @@ static int Io_MvWriteValues( Abc_Obj_t * pNode, Vec_Str_t * vFunc )
     Abc_ObjForEachFanin( pNode, pFanin, i )
     {
         sprintf( Buffer, "%d", Abc_ObjMvVarNum(pFanin) );
-        Vec_StrAppend( vFunc, Buffer );
+        Vec_StrPrintStr( vFunc, Buffer );
         Vec_StrPush( vFunc, ' ' );
     }
     // add the node number of values
     sprintf( Buffer, "%d", Abc_ObjMvVarNum(Abc_ObjFanout0(pNode)) );
-    Vec_StrAppend( vFunc, Buffer );
+    Vec_StrPrintStr( vFunc, Buffer );
     Vec_StrPush( vFunc, '\n' );
     return 1;
 }
@@ -1160,18 +1676,18 @@ static int Io_MvParseLiteralMv( Io_MvMod_t * p, Abc_Obj_t * pNode, char * pToken
         }
         Vec_StrPush( vFunc, '=' );
         sprintf( Buffer, "%d", i );
-        Vec_StrAppend( vFunc, Buffer );
+        Vec_StrPrintStr( vFunc, Buffer );
         Vec_StrPush( vFunc, (char)((iLit == -1)? '\n' : ' ') );
         return 1;
     }
     // consider regular literal
     assert( iLit < Abc_ObjFaninNum(pNode) );
     pNet = iLit >= 0 ? Abc_ObjFanin(pNode, iLit) : Abc_ObjFanout0(pNode);
-    pVar = Abc_ObjMvVar( pNet );
+    pVar = (Io_MvVar_t *)Abc_ObjMvVar( pNet );
     // if the var is absent or has no symbolic values quit
     if ( pVar == NULL || pVar->pNames == NULL )
     {
-        Vec_StrAppend( vFunc, pToken );
+        Vec_StrPrintStr( vFunc, pToken );
         Vec_StrPush( vFunc, (char)((iLit == -1)? '\n' : ' ') );
         return 1;
     }
@@ -1200,7 +1716,7 @@ static int Io_MvParseLiteralMv( Io_MvMod_t * p, Abc_Obj_t * pNode, char * pToken
         }
         // value name is found
         sprintf( Buffer, "%d", i );
-        Vec_StrAppend( vFunc, Buffer );
+        Vec_StrPrintStr( vFunc, Buffer );
         // update the pointer
         pCur = pNext - 1;
     }
@@ -1229,12 +1745,12 @@ static char * Io_MvParseTableMv( Io_MvMod_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * 
     // write the number of values
 //    Io_MvWriteValues( pNode, vFunc );
     // get the first token
-    pFirst = Vec_PtrEntry( vTokens2, 0 );
+    pFirst = (char *)Vec_PtrEntry( vTokens2, 0 );
     if ( pFirst[0] == '.' )
     {
         // write the default literal
         Vec_StrPush( vFunc, 'd' );
-        pToken = Vec_PtrEntry(vTokens2, 1 + iOut);
+        pToken = (char *)Vec_PtrEntry(vTokens2, 1 + iOut);
         if ( !Io_MvParseLiteralMv( p, pNode, pToken, vFunc, -1 ) )
             return NULL;
         iStart = 1 + nOutputs;
@@ -1247,12 +1763,12 @@ static char * Io_MvParseTableMv( Io_MvMod_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * 
         // input literals
         for ( i = 0; i < nInputs; i++ )
         {
-            pToken = Vec_PtrEntry( vTokens2, iStart + i );
+            pToken = (char *)Vec_PtrEntry( vTokens2, iStart + i );
             if ( !Io_MvParseLiteralMv( p, pNode, pToken, vFunc, i ) )
                 return NULL;
         }
         // output literal
-        pToken = Vec_PtrEntry( vTokens2, iStart + nInputs + iOut );
+        pToken = (char *)Vec_PtrEntry( vTokens2, iStart + nInputs + iOut );
         if ( !Io_MvParseLiteralMv( p, pNode, pToken, vFunc, -1 ) )
             return NULL;
         // update the counter
@@ -1290,7 +1806,7 @@ static Abc_Obj_t * Io_MvParseAddResetCircuit( Io_MvMod_t * p, char * pName )
     // duplicate MV variables
     if ( Abc_NtkMvVar(p->pNtk) )
     {
-        pVar = Abc_ObjMvVar( pOutNet );
+        pVar = (Io_MvVar_t *)Abc_ObjMvVar( pOutNet );
         Abc_ObjSetMvVar( pData0Net, Abc_NtkMvVarDup(p->pNtk, pVar) );
         Abc_ObjSetMvVar( pData1Net, Abc_NtkMvVarDup(p->pNtk, pVar) );
     }
@@ -1302,13 +1818,13 @@ static Abc_Obj_t * Io_MvParseAddResetCircuit( Io_MvMod_t * p, char * pName )
     if ( p->pMan->fBlifMv )
     {
 //        Vec_Att_t * p = Abc_NtkMvVar( pNtk );
-        int nValues = Abc_ObjMvVarNum(pOutNet);
+//        int nValues = Abc_ObjMvVarNum(pOutNet);
 //        sprintf( Buffer, "2 %d %d %d\n1 - - =1\n0 - - =2\n", nValues, nValues, nValues );
         sprintf( Buffer, "1 - - =1\n0 - - =2\n" );
-        pNode->pData = Abc_SopRegister( p->pNtk->pManFunc, Buffer );
+        pNode->pData = Abc_SopRegister( (Mem_Flex_t *)p->pNtk->pManFunc, Buffer );
     }
     else
-        pNode->pData = Abc_SopCreateMux( p->pNtk->pManFunc );
+        pNode->pData = Abc_SopCreateMux( (Mem_Flex_t *)p->pNtk->pManFunc );
     // add nets
     Abc_ObjAddFanin( pNode, pResetLONet );
     Abc_ObjAddFanin( pNode, pData1Net );
@@ -1332,7 +1848,7 @@ static int Io_MvParseLineNamesMvOne( Io_MvMod_t * p, Vec_Ptr_t * vTokens, Vec_Pt
     Abc_Obj_t * pNet, * pNode;
     char * pName;
     // get the output name
-    pName = Vec_PtrEntry( vTokens, Vec_PtrSize(vTokens) - nOutputs + iOut );
+    pName = (char *)Vec_PtrEntry( vTokens, Vec_PtrSize(vTokens) - nOutputs + iOut );
     // create the node
     if ( fReset )
     {
@@ -1369,7 +1885,7 @@ static int Io_MvParseLineNamesMvOne( Io_MvMod_t * p, Vec_Ptr_t * vTokens, Vec_Pt
     pNode->pData = Io_MvParseTableMv( p, pNode, vTokens2, nInputs, nOutputs, iOut );
     if ( pNode->pData == NULL )
         return 0;
-    pNode->pData = Abc_SopRegister( p->pNtk->pManFunc, pNode->pData );
+    pNode->pData = Abc_SopRegister( (Mem_Flex_t *)p->pNtk->pManFunc, (char *)pNode->pData );
 //printf( "Finished parsing node \"%s\" with table:\n%s\n", pName, pNode->pData );
     return 1;
 }
@@ -1403,9 +1919,9 @@ static int Io_MvParseLineNamesMv( Io_MvMod_t * p, char * pLine, int fReset )
     // split names line into tokens
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
     if ( fReset )
-        assert( !strcmp(Vec_PtrEntry(vTokens,0), "r") || !strcmp(Vec_PtrEntry(vTokens,0), "reset") );
+        assert( !strcmp((char *)Vec_PtrEntry(vTokens,0), "r") || !strcmp((char *)Vec_PtrEntry(vTokens,0), "reset") );
     else
-        assert( !strcmp(Vec_PtrEntry(vTokens,0), "names") || !strcmp(Vec_PtrEntry(vTokens,0), "table") );
+        assert( !strcmp((char *)Vec_PtrEntry(vTokens,0), "names") || !strcmp((char *)Vec_PtrEntry(vTokens,0), "table") );
     // find the number of inputs and outputs
     nInputs  = Vec_PtrSize(vTokens) - 2;
     nOutputs = 1;
@@ -1419,9 +1935,9 @@ static int Io_MvParseLineNamesMv( Io_MvMod_t * p, char * pLine, int fReset )
             }
     }
     // split table into tokens
-    pName = Vec_PtrEntryLast( vTokens );
+    pName = (char *)Vec_PtrEntryLast( vTokens );
     Io_MvSplitIntoTokensMv( vTokens2, pName + strlen(pName) );
-    pFirst = Vec_PtrEntry( vTokens2, 0 );
+    pFirst = (char *)Vec_PtrEntry( vTokens2, 0 );
     if ( pFirst[0] == '.' )
     {
         assert( pFirst[1] == 'd' );
@@ -1442,7 +1958,7 @@ static int Io_MvParseLineNamesMv( Io_MvMod_t * p, char * pLine, int fReset )
         // add the outputs to the PIs
         for ( i = 0; i < nOutputs; i++ )
         {
-            pName = Vec_PtrEntry( vTokens, Vec_PtrSize(vTokens) - nOutputs + i );
+            pName = (char *)Vec_PtrEntry( vTokens, Vec_PtrSize(vTokens) - nOutputs + i );
             // get the net corresponding to this node
             pNet = Abc_NtkFindOrCreateNet(p->pNtk, pName);
             if ( fReset )
@@ -1484,25 +2000,26 @@ static char * Io_MvParseTableBlif( Io_MvMod_t * p, char * pTable, int nFanins )
 {
     Vec_Ptr_t * vTokens = p->pMan->vTokens;
     Vec_Str_t * vFunc = p->pMan->vFunc;
-    char * pProduct, * pOutput;
+    char * pProduct, * pOutput, c;
     int i, Polarity = -1;
 
     p->pMan->nTablesRead++;
     // get the tokens
     Io_MvSplitIntoTokens( vTokens, pTable, '.' );
     if ( Vec_PtrSize(vTokens) == 0 )
-        return Abc_SopCreateConst0( p->pNtk->pManFunc );
+        return Abc_SopCreateConst0( (Mem_Flex_t *)p->pNtk->pManFunc );
     if ( Vec_PtrSize(vTokens) == 1 )
     {
-        pOutput = Vec_PtrEntry( vTokens, 0 );
-        if ( ((pOutput[0] - '0') & 0x8E) || pOutput[1] )
+        pOutput = (char *)Vec_PtrEntry( vTokens, 0 );
+        c = pOutput[0];
+        if ( (c!='0'&&c!='1'&&c!='x'&&c!='n') || pOutput[1] )
         {
             sprintf( p->pMan->sError, "Line %d: Constant table has wrong output value \"%s\".", Io_MvGetLine(p->pMan, pOutput), pOutput );
             return NULL;
         }
-        return pOutput[0] == '0' ? Abc_SopCreateConst0(p->pNtk->pManFunc) : Abc_SopCreateConst1(p->pNtk->pManFunc);
+        return pOutput[0] == '0' ? Abc_SopCreateConst0((Mem_Flex_t *)p->pNtk->pManFunc) : Abc_SopCreateConst1((Mem_Flex_t *)p->pNtk->pManFunc);
     }
-    pProduct = Vec_PtrEntry( vTokens, 0 );
+    pProduct = (char *)Vec_PtrEntry( vTokens, 0 );
     if ( Vec_PtrSize(vTokens) % 2 == 1 )
     {
         sprintf( p->pMan->sError, "Line %d: Table has odd number of tokens (%d).", Io_MvGetLine(p->pMan, pProduct), Vec_PtrSize(vTokens) );
@@ -1512,27 +2029,28 @@ static char * Io_MvParseTableBlif( Io_MvMod_t * p, char * pTable, int nFanins )
     Vec_StrClear( vFunc );
     for ( i = 0; i < Vec_PtrSize(vTokens)/2; i++ )
     {
-        pProduct = Vec_PtrEntry( vTokens, 2*i + 0 );
-        pOutput  = Vec_PtrEntry( vTokens, 2*i + 1 );
+        pProduct = (char *)Vec_PtrEntry( vTokens, 2*i + 0 );
+        pOutput  = (char *)Vec_PtrEntry( vTokens, 2*i + 1 );
         if ( strlen(pProduct) != (unsigned)nFanins )
         {
             sprintf( p->pMan->sError, "Line %d: Cube \"%s\" has size different from the fanin count (%d).", Io_MvGetLine(p->pMan, pProduct), pProduct, nFanins );
             return NULL;
         }
-        if ( ((pOutput[0] - '0') & 0x8E) || pOutput[1] )
+        c = pOutput[0];
+        if ( (c!='0'&&c!='1'&&c!='x'&&c!='n') || pOutput[1] )
         {
             sprintf( p->pMan->sError, "Line %d: Output value \"%s\" is incorrect.", Io_MvGetLine(p->pMan, pProduct), pOutput );
             return NULL;
         }
         if ( Polarity == -1 )
-            Polarity = pOutput[0] - '0';
-        else if ( Polarity != pOutput[0] - '0' )
+            Polarity = (c=='1' || c=='x');
+        else if ( Polarity != (c=='1' || c=='x') )
         {
             sprintf( p->pMan->sError, "Line %d: Output value \"%s\" differs from the value in the first line of the table (%d).", Io_MvGetLine(p->pMan, pProduct), pOutput, Polarity );
             return NULL;
         }
         // parse one product 
-        Vec_StrAppend( vFunc, pProduct );
+        Vec_StrPrintStr( vFunc, pProduct );
         Vec_StrPush( vFunc, ' ' );
         Vec_StrPush( vFunc, pOutput[0] );
         Vec_StrPush( vFunc, '\n' );
@@ -1560,11 +2078,11 @@ static int Io_MvParseLineNamesBlif( Io_MvMod_t * p, char * pLine )
     assert( !p->pMan->fBlifMv );
     Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
     // parse the mapped node
-    if ( !strcmp(Vec_PtrEntry(vTokens,0), "gate") )
+    if ( !strcmp((char *)Vec_PtrEntry(vTokens,0), "gate") )
         return Io_MvParseLineGateBlif( p, vTokens );
     // parse the regular name line
-    assert( !strcmp(Vec_PtrEntry(vTokens,0), "names") );
-    pName = Vec_PtrEntryLast( vTokens );
+    assert( !strcmp((char *)Vec_PtrEntry(vTokens,0), "names") );
+    pName = (char *)Vec_PtrEntryLast( vTokens );
     pNet = Abc_NtkFindOrCreateNet( p->pNtk, pName );
     if ( Abc_ObjFaninNum(pNet) > 0 )
     {
@@ -1577,7 +2095,75 @@ static int Io_MvParseLineNamesBlif( Io_MvMod_t * p, char * pLine )
     pNode->pData = Io_MvParseTableBlif( p, pName + strlen(pName), Abc_ObjFaninNum(pNode) );
     if ( pNode->pData == NULL )
         return 0;
-    pNode->pData = Abc_SopRegister( p->pNtk->pManFunc, pNode->pData );
+    pNode->pData = Abc_SopRegister( (Mem_Flex_t *)p->pNtk->pManFunc, (char *)pNode->pData );
+    return 1;
+}
+
+ABC_NAMESPACE_IMPL_END
+
+#include "map/mio/mio.h"
+#include "base/main/main.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
+/**Function*************************************************************
+
+  Synopsis    [Parses the nodes line.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static int Io_MvParseLineShortBlif( Io_MvMod_t * p, char * pLine )
+{
+    Vec_Ptr_t * vTokens = p->pMan->vTokens;
+    Abc_Obj_t * pNet, * pNode;
+    char * pName;
+    assert( !p->pMan->fBlifMv );
+    Io_MvSplitIntoTokens( vTokens, pLine, '\0' );
+    if ( Vec_PtrSize(vTokens) != 3 )
+    {
+        sprintf( p->pMan->sError, "Line %d: Expecting three entries in the .short line.", Io_MvGetLine(p->pMan, (char *)Vec_PtrEntry(vTokens,0)) );
+        return 0;
+    }
+    // parse the regular name line
+    assert( !strcmp((char *)Vec_PtrEntry(vTokens,0), "short") );
+    pName = (char *)Vec_PtrEntryLast( vTokens );
+    pNet = Abc_NtkFindOrCreateNet( p->pNtk, pName );
+    if ( Abc_ObjFaninNum(pNet) > 0 )
+    {
+        sprintf( p->pMan->sError, "Line %d: Signal \"%s\" is defined more than once.", Io_MvGetLine(p->pMan, pName), pName );
+        return 0;
+    }
+    // create fanins
+    pNode = Io_ReadCreateNode( p->pNtk, pName, (char **)(vTokens->pArray + 1), 1 );
+    // parse the table of this node
+    if ( p->pNtk->ntkFunc == ABC_FUNC_MAP )
+    {
+        Mio_Library_t * pGenlib; 
+        Mio_Gate_t * pGate;
+        // check that the library is available
+        pGenlib = (Mio_Library_t *)Abc_FrameReadLibGen();
+        if ( pGenlib == NULL )
+        {
+            sprintf( p->pMan->sError, "Line %d: The current library is not available.", Io_MvGetLine(p->pMan, pName) );
+            return 0;
+        }
+        // get the gate
+        pGate = Mio_LibraryReadBuf( pGenlib );
+        if ( pGate == NULL )
+        {
+            sprintf( p->pMan->sError, "Line %d: Cannot find buffer gate in the library.", Io_MvGetLine(p->pMan, pName) );
+            return 0;
+        }
+        Abc_ObjSetData( pNode, pGate );
+    }
+    else
+        pNode->pData = Abc_SopRegister( (Mem_Flex_t *)p->pNtk->pManFunc, "1 1\n" );
     return 1;
 }
 
@@ -1594,30 +2180,26 @@ static int Io_MvParseLineNamesBlif( Io_MvMod_t * p, char * pLine )
 ***********************************************************************/
 Io_MvVar_t * Abc_NtkMvVarDup( Abc_Ntk_t * pNtk, Io_MvVar_t * pVar )
 {
-    Extra_MmFlex_t * pFlex;
+    Mem_Flex_t * pFlex;
     Io_MvVar_t * pVarDup;
     int i;
     if ( pVar == NULL )
         return NULL;
-    pFlex = Abc_NtkMvVarMan( pNtk );
+    pFlex = (Mem_Flex_t *)Abc_NtkMvVarMan( pNtk );
     assert( pFlex != NULL );
-    pVarDup = (Io_MvVar_t *)Extra_MmFlexEntryFetch( pFlex, sizeof(Io_MvVar_t) );
+    pVarDup = (Io_MvVar_t *)Mem_FlexEntryFetch( pFlex, sizeof(Io_MvVar_t) );
     pVarDup->nValues = pVar->nValues;
     pVarDup->pNames = NULL;
     if ( pVar->pNames == NULL )
         return pVarDup;
-    pVarDup->pNames = (char **)Extra_MmFlexEntryFetch( pFlex, sizeof(char *) * pVar->nValues );
+    pVarDup->pNames = (char **)Mem_FlexEntryFetch( pFlex, sizeof(char *) * pVar->nValues );
     for ( i = 0; i < pVar->nValues; i++ )
     {
-        pVarDup->pNames[i] = (char *)Extra_MmFlexEntryFetch( pFlex, strlen(pVar->pNames[i]) + 1 );
+        pVarDup->pNames[i] = (char *)Mem_FlexEntryFetch( pFlex, strlen(pVar->pNames[i]) + 1 );
         strcpy( pVarDup->pNames[i], pVar->pNames[i] );
     }
     return pVarDup;
 }
-
-
-#include "mio.h"
-#include "main.h"
 
 /**Function*************************************************************
 
@@ -1653,16 +2235,17 @@ static char * Io_ReadBlifCleanName( char * pName )
 ***********************************************************************/
 static int Io_MvParseLineGateBlif( Io_MvMod_t * p, Vec_Ptr_t * vTokens )
 {
+    extern int Io_ReadBlifReorderFormalNames( Vec_Ptr_t * vTokens, Mio_Gate_t * pGate, Mio_Gate_t * pTwin );
     Mio_Library_t * pGenlib; 
     Mio_Gate_t * pGate;
     Abc_Obj_t * pNode;
     char ** ppNames, * pName;
     int i, nNames;
 
-    pName = vTokens->pArray[0];
+    pName = (char *)vTokens->pArray[0];
 
     // check that the library is available
-    pGenlib = Abc_FrameReadLibGen();
+    pGenlib = (Mio_Library_t *)Abc_FrameReadLibGen();
     if ( pGenlib == NULL )
     {
         sprintf( p->pMan->sError, "Line %d: The current library is not available.", Io_MvGetLine(p->pMan, pName) );
@@ -1677,10 +2260,10 @@ static int Io_MvParseLineGateBlif( Io_MvMod_t * p, Vec_Ptr_t * vTokens )
     }
 
     // get the gate
-    pGate = Mio_LibraryReadGateByName( pGenlib, vTokens->pArray[1] );
+    pGate = Mio_LibraryReadGateByName( pGenlib, (char *)vTokens->pArray[1], NULL );
     if ( pGate == NULL )
     {
-        sprintf( p->pMan->sError, "Line %d: Cannot find gate \"%s\" in the library.", Io_MvGetLine(p->pMan, pName), vTokens->pArray[1] );
+        sprintf( p->pMan->sError, "Line %d: Cannot find gate \"%s\" in the library.", Io_MvGetLine(p->pMan, pName), (char*)vTokens->pArray[1] );
         return 0;
     }
 
@@ -1689,14 +2272,23 @@ static int Io_MvParseLineGateBlif( Io_MvMod_t * p, Vec_Ptr_t * vTokens )
     {
         assert( p->pNtk->ntkFunc == ABC_FUNC_SOP );
         p->pNtk->ntkFunc = ABC_FUNC_MAP;
-        Extra_MmFlexStop( p->pNtk->pManFunc );
+        Mem_FlexStop( (Mem_Flex_t *)p->pNtk->pManFunc, 0 );
         p->pNtk->pManFunc = pGenlib;
+    }
+
+    // reorder the formal inputs to be in the same order as in the gate
+    if ( !Io_ReadBlifReorderFormalNames( vTokens, pGate, Mio_GateReadTwin(pGate) ) )
+    {
+        sprintf( p->pMan->sError, "Line %d: Mismatch in the fanins of gate \"%s\".", Io_MvGetLine(p->pMan, pName), (char*)vTokens->pArray[1] );
+        return 0;
     }
 
     // remove the formal parameter names
     for ( i = 2; i < vTokens->nSize; i++ )
     {
-        vTokens->pArray[i] = Io_ReadBlifCleanName( vTokens->pArray[i] );
+        if ( vTokens->pArray[i] == NULL )
+            continue;
+        vTokens->pArray[i] = Io_ReadBlifCleanName( (char *)vTokens->pArray[i] );
         if ( vTokens->pArray[i] == NULL )
         {
             sprintf( p->pMan->sError, "Line %d: Invalid gate input assignment.", Io_MvGetLine(p->pMan, pName) );
@@ -1705,17 +2297,67 @@ static int Io_MvParseLineGateBlif( Io_MvMod_t * p, Vec_Ptr_t * vTokens )
     }
 
     // create the node
-    ppNames = (char **)vTokens->pArray + 2;
-    nNames  = vTokens->nSize - 3;
-    pNode   = Io_ReadCreateNode( p->pNtk, ppNames[nNames], ppNames, nNames );
+    if ( Mio_GateReadTwin(pGate) == NULL )
+    {
+        nNames  = vTokens->nSize - 3;
+        ppNames = (char **)vTokens->pArray + 2;
+        pNode   = Io_ReadCreateNode( p->pNtk, ppNames[nNames], ppNames, nNames );
+        Abc_ObjSetData( pNode, pGate );
+    }
+    else
+    {
+        nNames  = vTokens->nSize - 4;
+        ppNames = (char **)vTokens->pArray + 2;
+        assert( ppNames[nNames] != NULL || ppNames[nNames+1] != NULL );
+        if ( ppNames[nNames] )
+        {
+            pNode   = Io_ReadCreateNode( p->pNtk, ppNames[nNames], ppNames, nNames );
+            Abc_ObjSetData( pNode, pGate );
+        }
+        if ( ppNames[nNames+1] )
+        {
+            pNode   = Io_ReadCreateNode( p->pNtk, ppNames[nNames+1], ppNames, nNames );
+            Abc_ObjSetData( pNode, Mio_GateReadTwin(pGate) );
+        }
+    }
 
-    // set the pointer to the functionality of the node
-    Abc_ObjSetData( pNode, pGate );
     return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Box mapping procedures.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline void Abc_MapBoxSetPrevNext( Vec_Ptr_t * vDrivers, Vec_Int_t * vMapIn, Vec_Int_t * vMapOut, int Id )
+{
+    Abc_Obj_t * pNode;
+    pNode = (Abc_Obj_t *)Vec_PtrEntry(vDrivers, Id+2);
+    Vec_IntWriteEntry( vMapIn, Abc_ObjId(Abc_ObjFanin0(Abc_ObjFanin0(pNode))), Id );
+    pNode = (Abc_Obj_t *)Vec_PtrEntry(vDrivers, Id+4);
+    Vec_IntWriteEntry( vMapOut, Abc_ObjId(Abc_ObjFanin0(Abc_ObjFanin0(pNode))), Id );
+}
+static inline int Abc_MapBox2Next( Vec_Ptr_t * vDrivers, Vec_Int_t * vMapIn, Vec_Int_t * vMapOut, int Id )
+{
+    Abc_Obj_t * pNode = (Abc_Obj_t *)Vec_PtrEntry(vDrivers, Id+4);
+    return Vec_IntEntry( vMapIn, Abc_ObjId(Abc_ObjFanin0(Abc_ObjFanin0(pNode))) );
+}
+static inline int Abc_MapBox2Prev( Vec_Ptr_t * vDrivers, Vec_Int_t * vMapIn, Vec_Int_t * vMapOut, int Id )
+{
+    Abc_Obj_t * pNode = (Abc_Obj_t *)Vec_PtrEntry(vDrivers, Id+2);
+    return Vec_IntEntry( vMapOut, Abc_ObjId(Abc_ObjFanin0(Abc_ObjFanin0(pNode))) );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

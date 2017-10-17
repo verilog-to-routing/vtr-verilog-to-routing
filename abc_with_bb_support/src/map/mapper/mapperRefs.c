@@ -18,14 +18,12 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
-
-static int   Map_NodeIncRefPhaseAct( Map_Node_t * pNode, int fPhase );
-static int   Map_NodeDecRefPhaseAct( Map_Node_t * pNode, int fPhase );
-static float Map_CutRefDeref( Map_Cut_t * pCut, int fPhase, int fReference );
-static void  Map_MappingSetRefs_rec( Map_Man_t * pMan, Map_Node_t * pNode, Map_Node_t ** ppStore );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -129,9 +127,9 @@ void Map_MappingEstimateRefsInit( Map_Man_t * p )
 {
     Map_Node_t * pNode;
     int i;
-    for ( i = 0; i < p->vAnds->nSize; i++ )
+    for ( i = 0; i < p->vMapObjs->nSize; i++ )
     {
-        pNode = p->vAnds->pArray[i];
+        pNode = p->vMapObjs->pArray[i];
 //        pNode->nRefEst[0] = pNode->nRefEst[1] = ((float)pNode->nRefs)*(float)2.0;
         pNode->nRefEst[0] = pNode->nRefEst[1] = pNode->nRefEst[2] = ((float)pNode->nRefs);
     }
@@ -154,9 +152,9 @@ void Map_MappingEstimateRefs( Map_Man_t * p )
 {
     Map_Node_t * pNode;
     int i;
-    for ( i = 0; i < p->vAnds->nSize; i++ )
+    for ( i = 0; i < p->vMapObjs->nSize; i++ )
     {
-        pNode = p->vAnds->pArray[i];
+        pNode = p->vMapObjs->pArray[i];
 //        pNode->nRefEst[0] = (float)((2.0 * pNode->nRefEst[0] + 1.0 * pNode->nRefAct[0]) / 3.0);
 //        pNode->nRefEst[1] = (float)((2.0 * pNode->nRefEst[1] + 1.0 * pNode->nRefAct[1]) / 3.0);
 //        pNode->nRefEst[2] = (float)((2.0 * pNode->nRefEst[2] + 1.0 * pNode->nRefAct[2]) / 3.0);
@@ -165,10 +163,6 @@ void Map_MappingEstimateRefs( Map_Man_t * p )
         pNode->nRefEst[2] = (float)((3.0 * pNode->nRefEst[2] + 1.0 * pNode->nRefAct[2]) / 4.0);
     }
 }
-
-
-
-
 
 /**function*************************************************************
 
@@ -220,79 +214,6 @@ float Map_CutGetAreaFlow( Map_Cut_t * pCut, int fPhase )
 }
 
 
-
-/**function*************************************************************
-
-  synopsis    [Computes the exact area associated with the cut.]
-
-  description [Assumes that the cut is referenced.]
-               
-  sideeffects []
-
-  seealso     []
-
-***********************************************************************/
-float Map_CutGetAreaRefed( Map_Cut_t * pCut, int fPhase )
-{
-    float aResult, aResult2;
-    aResult2 = Map_CutRefDeref( pCut, fPhase, 0 ); // dereference
-    aResult  = Map_CutRefDeref( pCut, fPhase, 1 ); // reference
-//    assert( aResult == aResult2 );
-    return aResult;
-}
-
-/**function*************************************************************
-
-  synopsis    [Computes the exact area associated with the cut.]
-
-  description []
-               
-  sideeffects []
-
-  seealso     []
-
-***********************************************************************/
-float Map_CutGetAreaDerefed( Map_Cut_t * pCut, int fPhase )
-{
-    float aResult, aResult2;
-    aResult2 = Map_CutRefDeref( pCut, fPhase, 1 ); // reference
-    aResult  = Map_CutRefDeref( pCut, fPhase, 0 ); // dereference
-//    assert( aResult == aResult2 );
-    return aResult;
-}
-
-/**function*************************************************************
-
-  synopsis    [References the cut.]
-
-  description []
-               
-  sideeffects []
-
-  seealso     []
-
-***********************************************************************/
-float Map_CutRef( Map_Cut_t * pCut, int fPhase )
-{
-    return Map_CutRefDeref( pCut, fPhase, 1 ); // reference
-}
-
-/**function*************************************************************
-
-  synopsis    [Dereferences the cut.]
-
-  description []
-               
-  sideeffects []
-
-  seealso     []
-
-***********************************************************************/
-float Map_CutDeref( Map_Cut_t * pCut, int fPhase )
-{
-    return Map_CutRefDeref( pCut, fPhase, 0 ); // dereference
-}
-
 /**function*************************************************************
 
   synopsis    [References or dereferences the cut.]
@@ -305,7 +226,7 @@ float Map_CutDeref( Map_Cut_t * pCut, int fPhase )
   seealso     []
 
 ***********************************************************************/
-float Map_CutRefDeref( Map_Cut_t * pCut, int fPhase, int fReference )
+float Map_CutRefDeref( Map_Cut_t * pCut, int fPhase, int fReference, int fUpdateProf )
 {
     Map_Node_t * pNodeChild;
     Map_Cut_t * pCutChild;
@@ -318,6 +239,13 @@ float Map_CutRefDeref( Map_Cut_t * pCut, int fPhase, int fReference )
         return 0;
     // start the area of this cut
     aArea = Map_CutGetRootArea( pCut, fPhase );
+    if ( fUpdateProf )
+    {
+        if ( fReference )
+            Mio_GateIncProfile2( pCut->M[fPhase].pSuperBest->pRoot );
+        else
+            Mio_GateDecProfile2( pCut->M[fPhase].pSuperBest->pRoot );
+    }
     // go through the children
     for ( i = 0; i < pCut->nLeaves; i++ )
     {
@@ -388,12 +316,82 @@ float Map_CutRefDeref( Map_Cut_t * pCut, int fPhase, int fReference )
             pCutChild   = pNodeChild->pCutBest[fPhaseChild];
         }
         // reference and compute area recursively
-        aArea += Map_CutRefDeref( pCutChild, fPhaseChild, fReference );
+        aArea += Map_CutRefDeref( pCutChild, fPhaseChild, fReference, fUpdateProf );
     }
     return aArea;
 }
 
+/**function*************************************************************
 
+  synopsis    [Computes the exact area associated with the cut.]
+
+  description [Assumes that the cut is referenced.]
+               
+  sideeffects []
+
+  seealso     []
+
+***********************************************************************/
+float Map_CutGetAreaRefed( Map_Cut_t * pCut, int fPhase )
+{
+    float aResult, aResult2;
+    aResult2 = Map_CutRefDeref( pCut, fPhase, 0, 0 ); // dereference
+    aResult  = Map_CutRefDeref( pCut, fPhase, 1, 0 ); // reference
+//    assert( aResult == aResult2 );
+    return aResult;
+}
+
+/**function*************************************************************
+
+  synopsis    [Computes the exact area associated with the cut.]
+
+  description []
+               
+  sideeffects []
+
+  seealso     []
+
+***********************************************************************/
+float Map_CutGetAreaDerefed( Map_Cut_t * pCut, int fPhase )
+{
+    float aResult, aResult2;
+    aResult2 = Map_CutRefDeref( pCut, fPhase, 1, 0 ); // reference
+    aResult  = Map_CutRefDeref( pCut, fPhase, 0, 0 ); // dereference
+//    assert( aResult == aResult2 );
+    return aResult;
+}
+
+/**function*************************************************************
+
+  synopsis    [References the cut.]
+
+  description []
+               
+  sideeffects []
+
+  seealso     []
+
+***********************************************************************/
+float Map_CutRef( Map_Cut_t * pCut, int fPhase, int fProfile )
+{
+    return Map_CutRefDeref( pCut, fPhase, 1, fProfile ); // reference
+}
+
+/**function*************************************************************
+
+  synopsis    [Dereferences the cut.]
+
+  description []
+               
+  sideeffects []
+
+  seealso     []
+
+***********************************************************************/
+float Map_CutDeref( Map_Cut_t * pCut, int fPhase, int fProfile )
+{
+    return Map_CutRefDeref( pCut, fPhase, 0, fProfile ); // dereference
+}
 
 
 /**Function*************************************************************
@@ -409,82 +407,29 @@ float Map_CutRefDeref( Map_Cut_t * pCut, int fPhase, int fReference )
   SeeAlso     []
 
 ***********************************************************************/
-void Map_MappingSetRefs( Map_Man_t * pMan )
-{
-    Map_Node_t * pNode, ** ppStore;
-    int i, fPhase, LevelMax;
-
-    // clean all references
-    for ( i = 0; i < pMan->vNodesAll->nSize; i++ )
-    {
-        pNode = pMan->vNodesAll->pArray[i];
-        pNode->nRefAct[0] = 0;
-        pNode->nRefAct[1] = 0;
-        pNode->nRefAct[2] = 0;
-    }
-
-    // find the largest level of a node
-    LevelMax = 0;
-    for ( i = 0; i < pMan->nOutputs; i++ )
-        if ( LevelMax < (int)Map_Regular(pMan->pOutputs[i])->Level )
-            LevelMax = Map_Regular(pMan->pOutputs[i])->Level;
-
-    // allocate place to store the nodes
-    ppStore = ALLOC( Map_Node_t *, LevelMax + 1 );
-    memset( ppStore, 0, sizeof(Map_Node_t *) * (LevelMax + 1) );
-
-    // visit nodes reachable from POs in the DFS order through the best cuts
-    for ( i = 0; i < pMan->nOutputs; i++ )
-    {
-        pNode  = pMan->pOutputs[i];
-        fPhase = !Map_IsComplement(pNode);
-        if ( !Map_NodeIsConst(pNode) )
-            Map_MappingSetRefs_rec( pMan, pNode, ppStore );
-    }
-
-    // reconnect the nodes in reverse topological order
-    pMan->vMapping->nSize = 0;
-    for ( i = LevelMax; i >= 0; i-- )
-        for ( pNode = ppStore[i]; pNode; pNode = (Map_Node_t *)pNode->pData0 )
-            Map_NodeVecPush( pMan->vMapping, pNode );
-    free( ppStore );
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Recursively computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_MappingSetRefs_rec( Map_Man_t * pMan, Map_Node_t * pNode, Map_Node_t ** ppStore )
+void Map_MappingSetRefs_rec( Map_Man_t * pMan, Map_Node_t * pNode )
 {
     Map_Cut_t * pCut;
     Map_Node_t * pNodeR;
     unsigned uPhase;
     int i, fPhase, fInvPin;
-
     // get the regular node and its phase
     pNodeR = Map_Regular(pNode);
     fPhase = !Map_IsComplement(pNode);
-
-    // add the node to the list of all visited nodes
-    if ( pNodeR->nRefAct[2]++ == 0 )
-//        Map_NodeVecPush( pMan->vMapping, pNodeR );
-        pNodeR->pData0 = (char *)ppStore[pNodeR->Level], ppStore[pNodeR->Level] = pNodeR;
-
+    pNodeR->nRefAct[2]++;
     // quit if the node was already visited in this phase
     if ( pNodeR->nRefAct[fPhase]++ )
         return;
-
     // quit if this is a PI node
     if ( Map_NodeIsVar(pNodeR) )
         return;
-
+    // propagate through buffer
+    if ( Map_NodeIsBuf(pNodeR) )
+    {
+        Map_MappingSetRefs_rec( pMan, Map_NotCond(pNodeR->p1, Map_IsComplement(pNode)) );
+        return;
+    }
+    assert( Map_NodeIsAnd(pNode) );
     // get the cut implementing this or opposite polarity
     pCut = pNodeR->pCutBest[fPhase];
     if ( pCut == NULL )
@@ -492,13 +437,36 @@ void Map_MappingSetRefs_rec( Map_Man_t * pMan, Map_Node_t * pNode, Map_Node_t **
         fPhase = !fPhase;
         pCut   = pNodeR->pCutBest[fPhase];
     }
-
+    if ( pMan->fUseProfile )
+        Mio_GateIncProfile2( pCut->M[fPhase].pSuperBest->pRoot );
     // visit the transitive fanin
     uPhase = pCut->M[fPhase].uPhaseBest;
     for ( i = 0; i < pCut->nLeaves; i++ )
     {
         fInvPin = ((uPhase & (1 << i)) > 0);
-        Map_MappingSetRefs_rec( pMan, Map_NotCond(pCut->ppLeaves[i], fInvPin), ppStore );
+        Map_MappingSetRefs_rec( pMan, Map_NotCond(pCut->ppLeaves[i], fInvPin) );
+    }
+}
+void Map_MappingSetRefs( Map_Man_t * pMan )
+{
+    Map_Node_t * pNode;
+    int i;
+    if ( pMan->fUseProfile )
+        Mio_LibraryCleanProfile2( pMan->pSuperLib->pGenlib );
+    // clean all references
+    for ( i = 0; i < pMan->vMapObjs->nSize; i++ )
+    {
+        pNode = pMan->vMapObjs->pArray[i];
+        pNode->nRefAct[0] = 0;
+        pNode->nRefAct[1] = 0;
+        pNode->nRefAct[2] = 0;
+    }
+    // visit nodes reachable from POs in the DFS order through the best cuts
+    for ( i = 0; i < pMan->nOutputs; i++ )
+    {
+        pNode = pMan->pOutputs[i];
+        if ( !Map_NodeIsConst(pNode) )
+            Map_MappingSetRefs_rec( pMan, pNode );
     }
 }
 
@@ -514,15 +482,20 @@ void Map_MappingSetRefs_rec( Map_Man_t * pMan, Map_Node_t * pNode, Map_Node_t **
   SeeAlso     []
 
 ***********************************************************************/
-float Map_MappingGetArea( Map_Man_t * pMan, Map_NodeVec_t * vMapping )
+float Map_MappingGetArea( Map_Man_t * pMan )
 {
     Map_Node_t * pNode;
-    float Area;
+    float Area = 0.0;
     int i;
-    Area = 0.0;
-    for ( i = 0; i < vMapping->nSize; i++ )
+    if ( pMan->fUseProfile )
+        Mio_LibraryCleanProfile2( pMan->pSuperLib->pGenlib );
+    for ( i = 0; i < pMan->vMapObjs->nSize; i++ )
     {
-        pNode = vMapping->pArray[i];
+        pNode = pMan->vMapObjs->pArray[i];
+        if ( pNode->nRefAct[2] == 0 )
+            continue;
+        if ( Map_NodeIsBuf(pNode) )
+            continue;
         // at least one phase has the best cut assigned
         assert( pNode->pCutBest[0] != NULL || pNode->pCutBest[1] != NULL );
         // at least one phase is used in the mapping
@@ -532,10 +505,18 @@ float Map_MappingGetArea( Map_Man_t * pMan, Map_NodeVec_t * vMapping )
         {
             // count area of the negative phase
             if ( pNode->pCutBest[0] && (pNode->nRefAct[0] > 0 || pNode->pCutBest[1] == NULL) )
+            {
                 Area += pNode->pCutBest[0]->M[0].pSuperBest->Area;
+                if ( pMan->fUseProfile )
+                    Mio_GateIncProfile2( pNode->pCutBest[0]->M[0].pSuperBest->pRoot );
+            }
             // count area of the positive phase
             if ( pNode->pCutBest[1] && (pNode->nRefAct[1] > 0 || pNode->pCutBest[0] == NULL) )
+            {
                 Area += pNode->pCutBest[1]->M[1].pSuperBest->Area;
+                if ( pMan->fUseProfile )
+                    Mio_GateIncProfile2( pNode->pCutBest[1]->M[1].pSuperBest->pRoot );
+            }
         }
         // count area of the interver if we need to implement one phase with another phase
         if ( (pNode->pCutBest[0] == NULL && pNode->nRefAct[0] > 0) || 
@@ -554,4 +535,6 @@ float Map_MappingGetArea( Map_Man_t * pMan, Map_NodeVec_t * vMapping )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

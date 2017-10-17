@@ -18,6 +18,9 @@
 
 #include "fxuInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -292,7 +295,7 @@ void Fxu_UpdateDoublePairs( Fxu_Matrix * p, Fxu_Double * pDouble, Fxu_Var * pVar
     {
         // get the pair
 //        pPair = p->pPairsTemp[i];
-        pPair = p->vPairs->pArray[i];
+        pPair = (Fxu_Pair *)p->vPairs->pArray[i];
 	    // out of the two cubes, select the one which comes earlier
 	    pCubeUse = Fxu_PairMinCube( pPair );
 	    pCubeRem = Fxu_PairMaxCube( pPair );
@@ -736,7 +739,7 @@ void Fxu_UpdateAddNewDoubles( Fxu_Matrix * p, Fxu_Cube * pCube )
             continue;
         // to prevent adding duplicated pairs of the new cubes
         // do not add the pair, if the current cube is marked 
-        if ( pTemp->pOrder && pTemp >= pCube )
+        if ( pTemp->pOrder && pTemp->iCube >= pCube->iCube )
             continue;
 		Fxu_MatrixAddDivisor( p, pTemp, pCube );
     }
@@ -757,12 +760,14 @@ void Fxu_UpdateCleanOldSingles( Fxu_Matrix * p )
 { 
     Fxu_Single * pSingle, * pSingle2;
     int WeightNew;
+    int Counter = 0;
 
     Fxu_MatrixForEachSingleSafe( p, pSingle, pSingle2 )
     {
         // if at least one of the variables is marked, recalculate
         if ( pSingle->pVar1->pOrder || pSingle->pVar2->pOrder )
         {
+            Counter++;
             // get the new weight
             WeightNew = -2 + Fxu_SingleCountCoincidence( p, pSingle->pVar1, pSingle->pVar2 );
             if ( WeightNew >= 0 )
@@ -778,6 +783,7 @@ void Fxu_UpdateCleanOldSingles( Fxu_Matrix * p )
             }
         }
     }
+//    printf( "Called procedure %d times.\n", Counter );
 }
 
 /**Function*************************************************************
@@ -800,4 +806,6 @@ void Fxu_UpdateAddNewSingles( Fxu_Matrix * p, Fxu_Var * pVar )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

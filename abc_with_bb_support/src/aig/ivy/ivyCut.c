@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -300,7 +303,8 @@ int Ivy_ManFindBoolCutCost( Ivy_Obj_t * pObj )
 ***********************************************************************/
 int Ivy_ManFindBoolCut( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vVolume, Vec_Ptr_t * vLeaves )
 {
-    Ivy_Obj_t * pObj, * pFaninC, * pFanin0, * pFanin1, * pPivot;
+    Ivy_Obj_t * pObj = NULL; // Suppress "might be used uninitialized"
+    Ivy_Obj_t * pFaninC, * pFanin0, * pFanin1, * pPivot;
     int RetValue, LevelLimit, Lev, k;
     assert( !Ivy_IsComplement(pRoot) );
     // clear the frontier and collect the nodes
@@ -331,7 +335,7 @@ int Ivy_ManFindBoolCut( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Ve
         while ( 1 )
         {
             // find the next node to expand on this level
-            Vec_PtrForEachEntry( vFront, pObj, k )
+            Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pObj, k )
                 if ( (int)pObj->Level == Lev )
                     break;
             if ( k == Vec_PtrSize(vFront) )
@@ -398,11 +402,11 @@ int Ivy_ManFindBoolCut( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Ve
     if ( pFaninC && !pFaninC->fMarkA && !pFaninC->fMarkB )
         Vec_PtrPush( vFront, pFaninC );
     // clean the markings
-    Vec_PtrForEachEntry( vVolume, pObj, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vVolume, pObj, k )
         pObj->fMarkA = pObj->fMarkB = 0;
 
     // mark the nodes on the frontier (including the pivot)
-    Vec_PtrForEachEntry( vFront, pObj, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pObj, k )
         pObj->fMarkA = 1;
     // cut exists, collect all the nodes on the shortest path to the pivot
     Vec_PtrClear( vLeaves );
@@ -410,16 +414,16 @@ int Ivy_ManFindBoolCut( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Ve
     RetValue = Ivy_ManFindBoolCut_rec( p, pRoot, vLeaves, vVolume, pPivot );
     assert( RetValue == 1 );
     // unmark the nodes on the frontier (including the pivot)
-    Vec_PtrForEachEntry( vFront, pObj, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pObj, k )
         pObj->fMarkA = 0;
 
     // mark the nodes in the volume
-    Vec_PtrForEachEntry( vVolume, pObj, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vVolume, pObj, k )
         pObj->fMarkA = 1;
     // expand the cut without increasing its size
     while ( 1 )
     {
-        Vec_PtrForEachEntry( vLeaves, pObj, k )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, vLeaves, pObj, k )
             if ( Ivy_ManFindBoolCutCost(pObj) < 2 )
                 break;
         if ( k == Vec_PtrSize(vLeaves) )
@@ -447,7 +451,7 @@ int Ivy_ManFindBoolCut( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Ve
         }        
     }
     // unmark the nodes in the volume
-    Vec_PtrForEachEntry( vVolume, pObj, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vVolume, pObj, k )
         pObj->fMarkA = 0;
     return 1;
 }
@@ -490,7 +494,7 @@ void Ivy_ManTestCutsBool( Ivy_Man_t * p )
             printf( "%d ", Vec_PtrSize(vLeaves) );
 /*        
         printf( "( " );
-        Vec_PtrForEachEntry( vFront, pTemp, k )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, k )
             printf( "%d ", Ivy_ObjRefs(Ivy_Regular(pTemp)) );
         printf( ")\n" );
 */
@@ -965,7 +969,7 @@ void Ivy_ManTestCutsAll( Ivy_Man_t * p )
 {
     Ivy_Obj_t * pObj;
     int i, nCutsCut, nCutsTotal, nNodeTotal, nNodeOver;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     nNodeTotal = nNodeOver = 0;
     nCutsTotal = -Ivy_ManNodeNum(p);
     Ivy_ManForEachObj( p, pObj, i )
@@ -979,11 +983,13 @@ void Ivy_ManTestCutsAll( Ivy_Man_t * p )
     }
     printf( "Total cuts = %6d. Trivial = %6d.   Nodes = %6d. Satur = %6d.  ", 
         nCutsTotal, Ivy_ManPiNum(p) + Ivy_ManNodeNum(p), nNodeTotal, nNodeOver );
-    PRT( "Time", clock() - clk );
+    ABC_PRT( "Time", Abc_Clock() - clk );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

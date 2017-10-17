@@ -7,33 +7,64 @@
   Synopsis    [Functions that translate BDDs to ZDDs.]
 
   Description [External procedures included in this module:
-		    <ul>
-		    <li> Cudd_zddPortFromBdd()
-		    <li> Cudd_zddPortToBdd()
-		    </ul>
-	       Internal procedures included in this module:
-		    <ul>
-		    </ul>
-	       Static procedures included in this module:
-		    <ul>
-		    <li> zddPortFromBddStep()
-		    <li> zddPortToBddStep()
-		    </ul>
-	      ]
+                    <ul>
+                    <li> Cudd_zddPortFromBdd()
+                    <li> Cudd_zddPortToBdd()
+                    </ul>
+               Internal procedures included in this module:
+                    <ul>
+                    </ul>
+               Static procedures included in this module:
+                    <ul>
+                    <li> zddPortFromBddStep()
+                    <li> zddPortToBddStep()
+                    </ul>
+              ]
 
   SeeAlso     []
 
   Author      [Hyong-kyoon Shin, In-Ho Moon]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
-#include    "cuddInt.h"
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -55,7 +86,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddZddPort.c,v 1.1.1.1 2003/02/24 22:23:54 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddZddPort.c,v 1.13 2004/08/13 18:04:53 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -69,8 +100,8 @@ static char rcsid[] DD_UNUSED = "$Id: cuddZddPort.c,v 1.1.1.1 2003/02/24 22:23:5
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static DdNode * zddPortFromBddStep ARGS((DdManager *dd, DdNode *B, int expected));
-static DdNode * zddPortToBddStep ARGS((DdManager *dd, DdNode *f, int depth));
+static DdNode * zddPortFromBddStep (DdManager *dd, DdNode *B, int expected);
+static DdNode * zddPortToBddStep (DdManager *dd, DdNode *f, int depth);
 
 /**AutomaticEnd***************************************************************/
 
@@ -104,8 +135,8 @@ Cudd_zddPortFromBdd(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = zddPortFromBddStep(dd,B,0);
+        dd->reordered = 0;
+        res = zddPortFromBddStep(dd,B,0);
     } while (dd->reordered == 1);
 
     return(res);
@@ -133,8 +164,8 @@ Cudd_zddPortToBdd(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = zddPortToBddStep(dd,f,0);
+        dd->reordered = 0;
+        res = zddPortToBddStep(dd,f,0);
     } while (dd->reordered == 1);
 
     return(res);
@@ -168,20 +199,20 @@ zddPortFromBddStep(
   DdNode * B,
   int  expected)
 {
-    DdNode	*res, *prevZdd, *t, *e;
-    DdNode	*Breg, *Bt, *Be;
-    int		id, level;
+    DdNode      *res, *prevZdd, *t, *e;
+    DdNode      *Breg, *Bt, *Be;
+    int         id, level;
 
     statLine(dd);
     /* Terminal cases. */
     if (B == Cudd_Not(DD_ONE(dd)))
-	return(DD_ZERO(dd));
+        return(DD_ZERO(dd));
     if (B == DD_ONE(dd)) {
-	if (expected >= dd->sizeZ) {
-	    return(DD_ONE(dd));
-	} else {
-	    return(dd->univ[expected]);
-	}
+        if (expected >= dd->sizeZ) {
+            return(DD_ONE(dd));
+        } else {
+            return(dd->univ[expected]);
+        }
     }
 
     Breg = Cudd_Regular(B);
@@ -189,33 +220,33 @@ zddPortFromBddStep(
     /* Computed table look-up. */
     res = cuddCacheLookup1Zdd(dd,Cudd_zddPortFromBdd,B);
     if (res != NULL) {
-	level = cuddI(dd,Breg->index);
-	/* Adding DC vars. */
-	if (expected < level) {
-	    /* Add suppressed variables. */
-	    cuddRef(res);
-	    for (level--; level >= expected; level--) {
-		prevZdd = res;
-		id = dd->invperm[level];
-		res = cuddZddGetNode(dd, id, prevZdd, prevZdd);
-		if (res == NULL) {
-		    Cudd_RecursiveDerefZdd(dd, prevZdd);
-		    return(NULL);
-		}
-		cuddRef(res);
-		Cudd_RecursiveDerefZdd(dd, prevZdd);
-	    }
-	    cuddDeref(res);
-	}
-	return(res);
-    }	/* end of cache look-up */
+        level = cuddI(dd,Breg->index);
+        /* Adding DC vars. */
+        if (expected < level) {
+            /* Add suppressed variables. */
+            cuddRef(res);
+            for (level--; level >= expected; level--) {
+                prevZdd = res;
+                id = dd->invperm[level];
+                res = cuddZddGetNode(dd, id, prevZdd, prevZdd);
+                if (res == NULL) {
+                    Cudd_RecursiveDerefZdd(dd, prevZdd);
+                    return(NULL);
+                }
+                cuddRef(res);
+                Cudd_RecursiveDerefZdd(dd, prevZdd);
+            }
+            cuddDeref(res);
+        }
+        return(res);
+    }   /* end of cache look-up */
 
     if (Cudd_IsComplement(B)) {
-	Bt = Cudd_Not(cuddT(Breg));
-	Be = Cudd_Not(cuddE(Breg));
+        Bt = Cudd_Not(cuddT(Breg));
+        Be = Cudd_Not(cuddE(Breg));
     } else {
-	Bt = cuddT(Breg);
-	Be = cuddE(Breg);
+        Bt = cuddT(Breg);
+        Be = cuddE(Breg);
     }
 
     id = Breg->index;
@@ -225,15 +256,15 @@ zddPortFromBddStep(
     cuddRef(t);
     e = zddPortFromBddStep(dd, Be, level+1);
     if (e == NULL) {
-	Cudd_RecursiveDerefZdd(dd, t);
-	return(NULL);
+        Cudd_RecursiveDerefZdd(dd, t);
+        return(NULL);
     }
     cuddRef(e);
     res = cuddZddGetNode(dd, id, t, e);
     if (res == NULL) {
-	Cudd_RecursiveDerefZdd(dd, t);
-	Cudd_RecursiveDerefZdd(dd, e);
-	return(NULL);
+        Cudd_RecursiveDerefZdd(dd, t);
+        Cudd_RecursiveDerefZdd(dd, e);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDerefZdd(dd, t);
@@ -242,15 +273,15 @@ zddPortFromBddStep(
     cuddCacheInsert1(dd,Cudd_zddPortFromBdd,B,res);
 
     for (level--; level >= expected; level--) {
-	prevZdd = res;
-	id = dd->invperm[level];
-	res = cuddZddGetNode(dd, id, prevZdd, prevZdd);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(dd, prevZdd);
-	    return(NULL);
-	}
-	cuddRef(res);
-	Cudd_RecursiveDerefZdd(dd, prevZdd);
+        prevZdd = res;
+        id = dd->invperm[level];
+        res = cuddZddGetNode(dd, id, prevZdd, prevZdd);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(dd, prevZdd);
+            return(NULL);
+        }
+        cuddRef(res);
+        Cudd_RecursiveDerefZdd(dd, prevZdd);
     }
 
     cuddDeref(res);
@@ -294,51 +325,51 @@ zddPortToBddStep(
     cuddRef(var);
 
     if (level > (unsigned) depth) {
-	E = zddPortToBddStep(dd,f,depth+1);
-	if (E == NULL) {
-	    Cudd_RecursiveDeref(dd,var);
-	    return(NULL);
-	}
-	cuddRef(E);
-	res = cuddBddIteRecur(dd,var,Cudd_Not(one),E);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd,var);
-	    Cudd_RecursiveDeref(dd,E);
-	    return(NULL);
-	}
-	cuddRef(res);
-	Cudd_RecursiveDeref(dd,var);
-	Cudd_RecursiveDeref(dd,E);
-	cuddDeref(res);
-	return(res);
+        E = zddPortToBddStep(dd,f,depth+1);
+        if (E == NULL) {
+            Cudd_RecursiveDeref(dd,var);
+            return(NULL);
+        }
+        cuddRef(E);
+        res = cuddBddIteRecur(dd,var,Cudd_Not(one),E);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd,var);
+            Cudd_RecursiveDeref(dd,E);
+            return(NULL);
+        }
+        cuddRef(res);
+        Cudd_RecursiveDeref(dd,var);
+        Cudd_RecursiveDeref(dd,E);
+        cuddDeref(res);
+        return(res);
     }
 
     res = cuddCacheLookup1(dd,Cudd_zddPortToBdd,f);
     if (res != NULL) {
-	Cudd_RecursiveDeref(dd,var);
-	return(res);
+        Cudd_RecursiveDeref(dd,var);
+        return(res);
     }
 
     T = zddPortToBddStep(dd,cuddT(f),depth+1);
     if (T == NULL) {
-	Cudd_RecursiveDeref(dd,var);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,var);
+        return(NULL);
     }
     cuddRef(T);
     E = zddPortToBddStep(dd,cuddE(f),depth+1);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd,var);
-	Cudd_RecursiveDeref(dd,T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,var);
+        Cudd_RecursiveDeref(dd,T);
+        return(NULL);
     }
     cuddRef(E);
 
     res = cuddBddIteRecur(dd,var,T,E);
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd,var);
-	Cudd_RecursiveDeref(dd,T);
-	Cudd_RecursiveDeref(dd,E);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,var);
+        Cudd_RecursiveDeref(dd,T);
+        Cudd_RecursiveDeref(dd,E);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDeref(dd,var);
@@ -351,4 +382,8 @@ zddPortToBddStep(
     return(res);
 
 } /* end of zddPortToBddStep */
+
+
+ABC_NAMESPACE_IMPL_END
+
 

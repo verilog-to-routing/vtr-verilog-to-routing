@@ -20,6 +20,9 @@
 
 #include "cutInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -181,4 +184,6 @@ void Cut_TruthCompose( Cut_Cut_t * pCutF, int Node, Cut_Cut_t * pCutT, Cut_Cut_t
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

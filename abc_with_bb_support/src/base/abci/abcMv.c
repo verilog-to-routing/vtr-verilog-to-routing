@@ -18,11 +18,20 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
+
+#ifdef ABC_USE_CUDD
 
 typedef struct Mv_Man_t_ Mv_Man_t;
 struct Mv_Man_t_
@@ -60,7 +69,7 @@ void Abc_MvExperiment()
 {
     Mv_Man_t * p;
     // get the functions
-    p = ALLOC( Mv_Man_t, 1 );
+    p = ABC_ALLOC( Mv_Man_t, 1 );
     memset( p, 0, sizeof(Mv_Man_t) );
     p->dd = Cudd_Init( 32, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0 );
     p->nFuncs  = 15;
@@ -76,7 +85,7 @@ void Abc_MvExperiment()
     // remove the manager
     Abc_MvDeref( p );
     Extra_StopManager( p->dd );
-    free( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -361,9 +370,12 @@ void Abc_MvDecompose( Mv_Man_t * p )
 
     Cudd_RecursiveDeref( p->dd, bCube );
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

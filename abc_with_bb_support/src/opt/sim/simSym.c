@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "sim.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -45,7 +48,8 @@ int Sim_ComputeTwoVarSymms( Abc_Ntk_t * pNtk, int fVerbose )
     Sym_Man_t * p;
     Vec_Ptr_t * vResult;
     int Result;
-    int i, clk, clkTotal = clock();
+    int i;
+    abctime clk, clkTotal = Abc_Clock();
 
     srand( 0xABC );
 
@@ -57,9 +61,9 @@ int Sim_ComputeTwoVarSymms( Abc_Ntk_t * pNtk, int fVerbose )
                p->nPairsTotal, p->nPairsSymm, p->nPairsNonSymm, p->nPairsRem );
 
     // detect symmetries using circuit structure
-clk = clock();
+clk = Abc_Clock();
     Sim_SymmsStructCompute( pNtk, p->vMatrSymms, p->vSuppFun );
-p->timeStruct = clock() - clk;
+p->timeStruct = Abc_Clock() - clk;
 
     Sim_UtilCountPairsAll( p );
     p->nPairsSymmStr = p->nPairsSymm;
@@ -129,7 +133,7 @@ p->timeStruct = clock() - clk;
 
     Result = p->nPairsSymm;
     vResult = p->vMatrSymms;  
-p->timeTotal = clock() - clkTotal;
+p->timeTotal = Abc_Clock() - clkTotal;
     //  p->vMatrSymms = NULL;
     Sym_ManStop( p );
     return Result;
@@ -139,4 +143,6 @@ p->timeTotal = clock() - clkTotal;
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

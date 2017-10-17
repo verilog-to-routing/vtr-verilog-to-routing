@@ -20,6 +20,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 pcover make_sparse(F, D, R)
 pcover F, D, R;
 {
@@ -144,3 +147,5 @@ pcover F, D;
     }
     return F;
 }
+ABC_NAMESPACE_IMPL_END
+

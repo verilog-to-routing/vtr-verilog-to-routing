@@ -20,11 +20,14 @@
 
 #include "retInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static int Abc_NtkRetimeMinDelayTry( Abc_Ntk_t * pNtk, int fForward, int fInitial, int nIterLimit, int * pIterBest, int fVerbose );
+static int Abc_NtkRetimeMinDelayTry( Abc_Ntk_t * pNtk, int nDelayLim, int fForward, int fInitial, int nIterLimit, int * pIterBest, int fVerbose );
 static int Abc_NtkRetimeTiming( Abc_Ntk_t * pNtk, int fForward, Vec_Ptr_t * vCritical );
 static int Abc_NtkRetimeTiming_rec( Abc_Obj_t * pObj, int fForward );
 
@@ -44,16 +47,16 @@ static int Abc_NtkRetimeTiming_rec( Abc_Obj_t * pObj, int fForward );
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRetimeMinDelay( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkCopy, int nIterLimit, int fForward, int fVerbose )
+int Abc_NtkRetimeMinDelay( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkCopy, int nDelayLim, int nIterLimit, int fForward, int fVerbose )
 {
     int IterBest, DelayBest;
     int IterBest2, DelayBest2;
     // try to find the best delay iteration on a copy
-    DelayBest = Abc_NtkRetimeMinDelayTry( pNtkCopy, fForward, 0, nIterLimit, &IterBest, fVerbose );
+    DelayBest = Abc_NtkRetimeMinDelayTry( pNtkCopy, nDelayLim, fForward, 0, nIterLimit, &IterBest, fVerbose );
     if ( IterBest == 0 )
         return 1;
     // perform the given number of iterations on the original network
-    DelayBest2 = Abc_NtkRetimeMinDelayTry( pNtk, fForward, 1, IterBest, &IterBest2, fVerbose );
+    DelayBest2 = Abc_NtkRetimeMinDelayTry( pNtk, nDelayLim, fForward, 1, IterBest, &IterBest2, fVerbose );
     assert( DelayBest == DelayBest2 );
     assert( IterBest == IterBest2 );
     return 1;
@@ -63,20 +66,22 @@ int Abc_NtkRetimeMinDelay( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkCopy, int nIterLimi
 
   Synopsis    [Returns the best delay and the number of best iteration.]
 
-  Description []
+  Description [] 
                
   SideEffects []
 
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRetimeMinDelayTry( Abc_Ntk_t * pNtk, int fForward, int fInitial, int nIterLimit, int * pIterBest, int fVerbose )
+int Abc_NtkRetimeMinDelayTry( Abc_Ntk_t * pNtk, int nDelayLim, int fForward, int fInitial, int nIterLimit, int * pIterBest, int fVerbose )
 {
     Abc_Ntk_t * pNtkNew = NULL;
     Vec_Ptr_t * vCritical;
-    Vec_Int_t * vValues;
+    Vec_Int_t * vValues = NULL; // Suppress "might be used uninitialized"
     Abc_Obj_t * pObj;
-    int i, k, IterBest, DelayCur, DelayBest, DelayStart, LatchesBest;
+    int i, k, IterBest, DelayCur, DelayBest;
+    int DelayStart = -1; // Suppress "might be used uninitialized"
+    int LatchesBest;
     // transfer intitial values
     if ( fInitial )
     {
@@ -121,8 +126,11 @@ if ( fVerbose && !fInitial )
         // skip if 10 interations did not give improvement
         if ( i - IterBest > 20 )
             break;
+        // skip if delay limit is reached
+        if ( nDelayLim > 0 && DelayCur <= nDelayLim )
+            break;
         // try retiming to improve the delay
-        Vec_PtrForEachEntry( vCritical, pObj, k )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vCritical, pObj, k )
             if ( Abc_NtkRetimeNodeIsEnabled(pObj, fForward) )
                 Abc_NtkRetimeNode( pObj, fForward, fInitial );
         // share latches
@@ -145,7 +153,7 @@ if ( fVerbose && !fInitial )
 if ( fVerbose && !fInitial )
     printf( "%s : Starting delay = %3d.  Final delay = %3d.  IterBest = %2d (out of %2d).\n", 
         fForward? "Forward " : "Backward", DelayStart, DelayBest, IterBest, nIterLimit );
-    *pIterBest = IterBest;
+    *pIterBest = (nIterLimit == 1) ? 1 : IterBest;
     return DelayBest;
 }
 
@@ -181,7 +189,7 @@ int Abc_NtkRetimeTiming( Abc_Ntk_t * pNtk, int fForward, Vec_Ptr_t * vCritical )
     // perform analysis from CIs/COs
     if ( fForward )
     {
-        Vec_PtrForEachEntry( vLatches, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vLatches, pObj, i )
         {
             Abc_ObjForEachFanout( pObj, pNext, k )
             {
@@ -202,7 +210,7 @@ int Abc_NtkRetimeTiming( Abc_Ntk_t * pNtk, int fForward, Vec_Ptr_t * vCritical )
     }
     else
     {
-        Vec_PtrForEachEntry( vLatches, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vLatches, pObj, i )
         {
             LevelCur = Abc_NtkRetimeTiming_rec( Abc_ObjFanin0(pObj), fForward );
             if ( LevelMax < LevelCur )
@@ -220,7 +228,7 @@ int Abc_NtkRetimeTiming( Abc_Ntk_t * pNtk, int fForward, Vec_Ptr_t * vCritical )
     Abc_NtkIncrementTravId(pNtk);
     if ( fForward )
     {
-        Vec_PtrForEachEntry( vLatches, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vLatches, pObj, i )
         {
             Abc_ObjForEachFanout( pObj, pNext, k )
             {
@@ -236,7 +244,7 @@ int Abc_NtkRetimeTiming( Abc_Ntk_t * pNtk, int fForward, Vec_Ptr_t * vCritical )
     }
     else
     {
-        Vec_PtrForEachEntry( vLatches, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vLatches, pObj, i )
         {
             Abc_ObjForEachFanin( pObj, pNext, k )
             {
@@ -302,4 +310,6 @@ int Abc_NtkRetimeTiming_rec( Abc_Obj_t * pObj, int fForward )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

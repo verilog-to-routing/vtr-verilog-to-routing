@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+#include "aig/gia/gia.h"
+
+ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -28,8 +31,8 @@
 #define XVS1   ABC_INIT_ONE
 #define XVSX   ABC_INIT_DC
 
-static inline void Abc_ObjSetXsim( Abc_Obj_t * pObj, int Value )  { pObj->pCopy = (void *)Value;  }
-static inline int  Abc_ObjGetXsim( Abc_Obj_t * pObj )             { return (int)pObj->pCopy;      }
+static inline void Abc_ObjSetXsim( Abc_Obj_t * pObj, int Value )  { pObj->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)Value;  }
+static inline int  Abc_ObjGetXsim( Abc_Obj_t * pObj )             { return (int)(ABC_PTRINT_T)pObj->pCopy;           }
 static inline int  Abc_XsimInv( int Value )   
 { 
     if ( Value == XVS0 )
@@ -50,13 +53,15 @@ static inline int  Abc_XsimAnd( int Value0, int Value1 )
 }
 static inline int  Abc_XsimRand2()   
 {
-    return (rand() & 1) ? XVS1 : XVS0;
+//    return (rand() & 1) ? XVS1 : XVS0;
+    return (Gia_ManRandom(0) & 1) ? XVS1 : XVS0;
 }
 static inline int  Abc_XsimRand3()   
 {
     int RetValue;
     do { 
-        RetValue = rand() & 3; 
+//        RetValue = rand() & 3; 
+        RetValue = Gia_ManRandom(0) & 3; 
     } while ( RetValue == 0 );
     return RetValue;
 }
@@ -103,27 +108,34 @@ static inline void Abc_XsimPrint( FILE * pFile, int Value )
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkXValueSimulate( Abc_Ntk_t * pNtk, int nFrames, int fInputs, int fVerbose )
+void Abc_NtkXValueSimulate( Abc_Ntk_t * pNtk, int nFrames, int fXInputs, int fXState, int fVerbose )
 {
     Abc_Obj_t * pObj;
     int i, f;
     assert( Abc_NtkIsStrash(pNtk) );
-    srand( 0x12341234 );
+//    srand( 0x12341234 );
+    Gia_ManRandom( 1 );
     // start simulation
     Abc_ObjSetXsim( Abc_AigConst1(pNtk), XVS1 );
-    if ( fInputs )
+    if ( fXInputs )
     {
         Abc_NtkForEachPi( pNtk, pObj, i )
             Abc_ObjSetXsim( pObj, XVSX );
-        Abc_NtkForEachLatch( pNtk, pObj, i )
-            Abc_ObjSetXsim( Abc_ObjFanout0(pObj), Abc_LatchInit(pObj) );
     }
     else
     {
         Abc_NtkForEachPi( pNtk, pObj, i )
             Abc_ObjSetXsim( pObj, Abc_XsimRand2() );
+    }
+    if ( fXState )
+    {
         Abc_NtkForEachLatch( pNtk, pObj, i )
             Abc_ObjSetXsim( Abc_ObjFanout0(pObj), XVSX );
+    }
+    else
+    {
+        Abc_NtkForEachLatch( pNtk, pObj, i )
+            Abc_ObjSetXsim( Abc_ObjFanout0(pObj), Abc_LatchInit(pObj) );
     }
     // simulate and print the result
     fprintf( stdout, "Frame : Inputs : Latches : Outputs\n" );
@@ -139,18 +151,26 @@ void Abc_NtkXValueSimulate( Abc_Ntk_t * pNtk, int nFrames, int fInputs, int fVer
             Abc_XsimPrint( stdout, Abc_ObjGetXsim(pObj) );
         fprintf( stdout, " : " );
         Abc_NtkForEachLatch( pNtk, pObj, i )
+        {
+//            if ( Abc_ObjGetXsim(Abc_ObjFanout0(pObj)) != XVSX )
+//                printf( " %s=", Abc_ObjName(pObj) );
             Abc_XsimPrint( stdout, Abc_ObjGetXsim(Abc_ObjFanout0(pObj)) );
+        }
         fprintf( stdout, " : " );
         Abc_NtkForEachPo( pNtk, pObj, i )
             Abc_XsimPrint( stdout, Abc_ObjGetXsim(pObj) );
         fprintf( stdout, "\n" );
         // assign input values
-        if ( fInputs )
+        if ( fXInputs )
+        {
             Abc_NtkForEachPi( pNtk, pObj, i )
                 Abc_ObjSetXsim( pObj, XVSX );
+        }
         else
+        {
             Abc_NtkForEachPi( pNtk, pObj, i )
                 Abc_ObjSetXsim( pObj, Abc_XsimRand2() );
+        }
         // transfer the latch values
         Abc_NtkForEachLatch( pNtk, pObj, i )
             Abc_ObjSetXsim( Abc_ObjFanout0(pObj), Abc_ObjGetXsim(Abc_ObjFanin0(pObj)) );
@@ -161,47 +181,51 @@ void Abc_NtkXValueSimulate( Abc_Ntk_t * pNtk, int nFrames, int fInputs, int fVer
 
   Synopsis    [Cycles the circuit to create a new initial state.]
 
-  Description [Simulates the circuit with random input for the given 
-  number of timeframes to get a better initial state.]
+  Description [Simulates the circuit with random (or ternary) input 
+  for the given number of timeframes to get a better initial state.]
                
   SideEffects []
 
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkCycleInitState( Abc_Ntk_t * pNtk, int nFrames, int fVerbose )
-{
+void Abc_NtkCycleInitState( Abc_Ntk_t * pNtk, int nFrames, int fUseXval, int fVerbose )
+{ 
     Abc_Obj_t * pObj;
     int i, f;
     assert( Abc_NtkIsStrash(pNtk) );
-    srand( 0x12341234 );
+//    srand( 0x12341234 );
+    Gia_ManRandom( 1 );
     // initialize the values
     Abc_ObjSetXsim( Abc_AigConst1(pNtk), XVS1 );
-    Abc_NtkForEachPi( pNtk, pObj, i )
-        Abc_ObjSetXsim( pObj, Abc_XsimRand2() );
     Abc_NtkForEachLatch( pNtk, pObj, i )
-        Abc_ObjSetXsim( Abc_ObjFanout0(pObj), Abc_LatchIsInit1(pObj)? XVS1 : XVS0 );
+        Abc_ObjSetXsim( Abc_ObjFanout0(pObj), Abc_LatchInit(pObj) );
     // simulate for the given number of timeframes
     for ( f = 0; f < nFrames; f++ )
     {
+        Abc_NtkForEachPi( pNtk, pObj, i )
+            Abc_ObjSetXsim( pObj, fUseXval? ABC_INIT_DC : Abc_XsimRand2() );
+//            Abc_ObjSetXsim( pObj, ABC_INIT_ONE );
         Abc_AigForEachAnd( pNtk, pObj, i )
             Abc_ObjSetXsim( pObj, Abc_XsimAnd(Abc_ObjGetXsimFanin0(pObj), Abc_ObjGetXsimFanin1(pObj)) );
         Abc_NtkForEachCo( pNtk, pObj, i )
             Abc_ObjSetXsim( pObj, Abc_ObjGetXsimFanin0(pObj) );
-        // assign input values
-        Abc_NtkForEachPi( pNtk, pObj, i )
-            Abc_ObjSetXsim( pObj, Abc_XsimRand2() );
-        // transfer the latch values
         Abc_NtkForEachLatch( pNtk, pObj, i )
             Abc_ObjSetXsim( Abc_ObjFanout0(pObj), Abc_ObjGetXsim(Abc_ObjFanin0(pObj)) );
     }
     // set the final values
     Abc_NtkForEachLatch( pNtk, pObj, i )
-        pObj->pData = (void *)Abc_ObjGetXsim(Abc_ObjFanout0(pObj));
+    {
+        pObj->pData = (void *)(ABC_PTRINT_T)Abc_ObjGetXsim(Abc_ObjFanout0(pObj));
+//        printf( "%d", Abc_LatchIsInit1(pObj) );
+    }
+//    printf( "\n" );
 }
 
 ///////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

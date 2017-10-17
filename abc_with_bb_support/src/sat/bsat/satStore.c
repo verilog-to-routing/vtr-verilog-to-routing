@@ -22,8 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
+
 #include "satStore.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -49,7 +52,7 @@ char * Sto_ManMemoryFetch( Sto_Man_t * p, int nBytes )
     char * pMem;
     if ( p->pChunkLast == NULL || nBytes > p->nChunkSize - p->nChunkUsed )
     {
-        pMem = (char *)malloc( p->nChunkSize );
+        pMem = (char *)ABC_ALLOC( char, p->nChunkSize );
         *(char **)pMem = p->pChunkLast;
         p->pChunkLast = pMem;
         p->nChunkUsed = sizeof(char *);
@@ -75,9 +78,9 @@ void Sto_ManMemoryStop( Sto_Man_t * p )
     char * pMem, * pNext;
     if ( p->pChunkLast == NULL )
         return;
-    for ( pMem = p->pChunkLast; pNext = *(char **)pMem; pMem = pNext )
-        free( pMem );
-    free( pMem );
+    for ( pMem = p->pChunkLast; (pNext = *(char **)pMem); pMem = pNext )
+        ABC_FREE( pMem );
+    ABC_FREE( pMem );
 }
 
 /**Function*************************************************************
@@ -98,7 +101,7 @@ int Sto_ManMemoryReport( Sto_Man_t * p )
     if ( p->pChunkLast == NULL )
         return 0;
     Total = p->nChunkUsed; 
-    for ( pMem = p->pChunkLast; pNext = *(char **)pMem; pMem = pNext )
+    for ( pMem = p->pChunkLast; (pNext = *(char **)pMem); pMem = pNext )
         Total += p->nChunkSize;
     return Total;
 }
@@ -119,7 +122,7 @@ Sto_Man_t * Sto_ManAlloc()
 {
     Sto_Man_t * p;
     // allocate the manager
-    p = (Sto_Man_t *)malloc( sizeof(Sto_Man_t) );
+    p = (Sto_Man_t *)ABC_ALLOC( char, sizeof(Sto_Man_t) );
     memset( p, 0, sizeof(Sto_Man_t) );
     // memory management
     p->nChunkSize = (1<<16); // use 64K chunks
@@ -140,7 +143,7 @@ Sto_Man_t * Sto_ManAlloc()
 void Sto_ManFree( Sto_Man_t * p )
 {
     Sto_ManMemoryStop( p );
-    free( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -184,6 +187,7 @@ int Sto_ManAddClause( Sto_Man_t * p, lit * pBeg, lit * pEnd )
 
     // get memory for the clause
     nSize = sizeof(Sto_Cls_t) + sizeof(lit) * (pEnd - pBeg);
+    nSize = (nSize / sizeof(char*) + ((nSize % sizeof(char*)) > 0)) * sizeof(char*); // added by Saurabh on Sep 3, 2009
     pClause = (Sto_Cls_t *)Sto_ManMemoryFetch( p, nSize );
     memset( pClause, 0, sizeof(Sto_Cls_t) );
 
@@ -191,6 +195,7 @@ int Sto_ManAddClause( Sto_Man_t * p, lit * pBeg, lit * pEnd )
     pClause->Id = p->nClauses++;
     pClause->nLits = pEnd - pBeg;
     memcpy( pClause->pLits, pBeg, sizeof(lit) * (pEnd - pBeg) );
+//    assert( pClause->pLits[0] >= 0 );
 
     // add the clause to the list
     if ( p->pHead == NULL )
@@ -260,6 +265,31 @@ void Sto_ManMarkClausesA( Sto_Man_t * p )
     }
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Returns the literal of the last clause.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Sto_ManChangeLastClause( Sto_Man_t * p )
+{
+    Sto_Cls_t * pClause, * pPrev;
+    pPrev = NULL;
+    Sto_ManForEachClause( p, pClause )
+        pPrev = pClause;
+    assert( pPrev != NULL );
+    assert( pPrev->fA == 1 );
+    assert( pPrev->nLits == 1 );
+    p->nClausesA--;
+    pPrev->fA = 0;
+    return pPrev->pLits[0] >> 1;
+}
+
 
 /**Function*************************************************************
 
@@ -290,9 +320,9 @@ void Sto_ManDumpClauses( Sto_Man_t * p, char * pFileName )
     {
         for ( i = 0; i < (int)pClause->nLits; i++ )
             fprintf( pFile, " %d", lit_print(pClause->pLits[i]) );
-        fprintf( pFile, "\n" );
+        fprintf( pFile, " 0\n" );
     }
-    fprintf( pFile, " 0\n" );
+//    fprintf( pFile, " 0\n" );
     fclose( pFile );
 }
 
@@ -373,7 +403,7 @@ Sto_Man_t * Sto_ManLoadClauses( char * pFileName )
 
     // alloc the array of literals
     nLitsAlloc = 1024;
-    pLits = (lit *)malloc( sizeof(lit) * nLitsAlloc );
+    pLits = (lit *)ABC_ALLOC( char, sizeof(lit) * nLitsAlloc );
 
     // read file header
     p->nVars = p->nClauses = p->nRoots = p->nClausesA = 0;
@@ -383,7 +413,7 @@ Sto_Man_t * Sto_ManLoadClauses( char * pFileName )
             continue;
         if ( pBuffer[0] == 'p' )
         {
-            sscanf( pBuffer + 1, "%d %d %d %d", p->nVars, p->nClauses, p->nRoots, p->nClausesA );
+            sscanf( pBuffer + 1, "%d %d %d %d", &p->nVars, &p->nClauses, &p->nRoots, &p->nClausesA );
             break;
         }
         printf( "Warning: Skipping line: \"%s\"\n", pBuffer );
@@ -404,7 +434,7 @@ Sto_Man_t * Sto_ManLoadClauses( char * pFileName )
         if ( nLits == nLitsAlloc )
         {
             nLitsAlloc *= 2;
-            pLits = (lit *)realloc( pLits, sizeof(lit) * nLitsAlloc );
+            pLits = ABC_REALLOC( lit, pLits, nLitsAlloc );
         }
         pLits[ nLits++ ] = lit_read(Number);
     }
@@ -424,7 +454,7 @@ Sto_Man_t * Sto_ManLoadClauses( char * pFileName )
         return NULL;
     }
 
-    free( pLits );
+    ABC_FREE( pLits );
     fclose( pFile );
     return p;
 }
@@ -434,4 +464,6 @@ Sto_Man_t * Sto_ManLoadClauses( char * pFileName )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

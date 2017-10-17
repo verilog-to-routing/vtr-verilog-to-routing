@@ -18,12 +18,9 @@
 
 ***********************************************************************/
 
-#ifndef __MSAT_H__
-#define __MSAT_H__
+#ifndef ABC__sat__msat__msat_h
+#define ABC__sat__msat__msat_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -33,17 +30,14 @@ extern "C" {
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
 
+
+
+ABC_NAMESPACE_HEADER_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                    STRUCTURE DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
-
-#ifdef bool
-#undef bool
-#endif
-
-#ifndef __MVTYPES_H__
-typedef int  bool;
-#endif
 
 typedef struct Msat_Solver_t_      Msat_Solver_t;
 
@@ -77,13 +71,13 @@ typedef enum { MSAT_FALSE = -1, MSAT_UNKNOWN = 0, MSAT_TRUE = 1 } Msat_Type_t;
 ////////////////////////////////////////////////////////////////////////
 
 /*=== satRead.c ============================================================*/
-extern bool             Msat_SolverParseDimacs( FILE * pFile, Msat_Solver_t ** p, int fVerbose );
+extern int              Msat_SolverParseDimacs( FILE * pFile, Msat_Solver_t ** p, int fVerbose );
 /*=== satSolver.c ===========================================================*/
 // adding vars, clauses, simplifying the database, and solving
-extern bool             Msat_SolverAddVar( Msat_Solver_t * p, int Level );
-extern bool             Msat_SolverAddClause( Msat_Solver_t * p, Msat_IntVec_t * pLits );
-extern bool             Msat_SolverSimplifyDB( Msat_Solver_t * p );
-extern bool             Msat_SolverSolve( Msat_Solver_t * p, Msat_IntVec_t * pVecAssumps, int nBackTrackLimit, int nTimeLimit );
+extern int              Msat_SolverAddVar( Msat_Solver_t * p, int Level );
+extern int              Msat_SolverAddClause( Msat_Solver_t * p, Msat_IntVec_t * pLits );
+extern int              Msat_SolverSimplifyDB( Msat_Solver_t * p );
+extern int              Msat_SolverSolve( Msat_Solver_t * p, Msat_IntVec_t * pVecAssumps, int nBackTrackLimit, int nTimeLimit );
 // printing stats, assignments, and clauses
 extern void             Msat_SolverPrintStats( Msat_Solver_t * p );
 extern void             Msat_SolverPrintAssignment( Msat_Solver_t * p );
@@ -116,7 +110,7 @@ extern void             Msat_SolverRemoveLearned( Msat_Solver_t * p );
 extern void             Msat_SolverRemoveMarked( Msat_Solver_t * p );
 /*=== satSolverApi.c ===========================================================*/
 // allocation, cleaning, and freeing the solver
-extern Msat_Solver_t *  Msat_SolverAlloc( int nVars, double dClaInc, double dClaDecay, double dVarInc, double dVarDecay, bool fVerbose );
+extern Msat_Solver_t *  Msat_SolverAlloc( int nVars, double dClaInc, double dClaDecay, double dVarInc, double dVarDecay, int fVerbose );
 extern void             Msat_SolverResize( Msat_Solver_t * pMan, int nVarsAlloc );
 extern void             Msat_SolverClean( Msat_Solver_t * p, int nVars );
 extern void             Msat_SolverPrepare( Msat_Solver_t * pSat, Msat_IntVec_t * vVars );
@@ -161,9 +155,11 @@ extern int              Msat_VarHeapCountNodes( Msat_VarHeap_t * p, double Weigh
 extern int              Msat_VarHeapReadMax( Msat_VarHeap_t * p );  
 extern int              Msat_VarHeapGetMax( Msat_VarHeap_t * p );  
  
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

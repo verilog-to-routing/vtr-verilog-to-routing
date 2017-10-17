@@ -18,7 +18,11 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+#include "base/main/main.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -51,6 +55,8 @@ Io_FileType_t Io_ReadFileType( char * pFileName )
         return IO_FILE_AIGER;
     if ( !strcmp( pExt, "baf" ) )
         return IO_FILE_BAF;
+    if ( !strcmp( pExt, "bblif" ) )
+        return IO_FILE_BBLIF;
     if ( !strcmp( pExt, "blif" ) )
         return IO_FILE_BLIF;
     if ( !strcmp( pExt, "bench" ) )
@@ -71,6 +77,8 @@ Io_FileType_t Io_ReadFileType( char * pFileName )
         return IO_FILE_BLIFMV;
     if ( !strcmp( pExt, "pla" ) )
         return IO_FILE_PLA;
+    if ( !strcmp( pExt, "smv" ) )
+        return IO_FILE_SMV;
     if ( !strcmp( pExt, "v" ) )
         return IO_FILE_VERILOG;
     return IO_FILE_UNKNOWN;
@@ -93,7 +101,7 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
     Abc_Ntk_t * pNtk;
     if ( FileType == IO_FILE_NONE || FileType == IO_FILE_UNKNOWN )
     {
-        fprintf( stdout, "The generic file reader requires a known file extension.\n" );
+        fprintf( stdout, "Generic file reader requires a known file extension to open \"%s\".\n", pFileName );
         return NULL;
     }
     // check if the file exists
@@ -101,19 +109,21 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
     if ( pFile == NULL )
     {
         fprintf( stdout, "Cannot open input file \"%s\". ", pFileName );
-        if ( pFileName = Extra_FileGetSimilarName( pFileName, ".blif", ".bench", ".pla", ".baf", ".aig" ) )
+        if ( (pFileName = Extra_FileGetSimilarName( pFileName, ".blif", ".bench", ".pla", ".baf", ".aig" )) )
             fprintf( stdout, "Did you mean \"%s\"?", pFileName );
         fprintf( stdout, "\n" );
        return NULL;
     }
     fclose( pFile );
     // read the AIG
-    if ( FileType == IO_FILE_AIGER || FileType == IO_FILE_BAF )
+    if ( FileType == IO_FILE_AIGER || FileType == IO_FILE_BAF || FileType == IO_FILE_BBLIF )
     {
         if ( FileType == IO_FILE_AIGER )
             pNtk = Io_ReadAiger( pFileName, fCheck );
-        else // if ( FileType == IO_FILE_BAF )
+        else if ( FileType == IO_FILE_BAF )
             pNtk = Io_ReadBaf( pFileName, fCheck );
+        else // if ( FileType == IO_FILE_BBLIF )
+            pNtk = Io_ReadBblif( pFileName, fCheck );
         if ( pNtk == NULL )
         {
             fprintf( stdout, "Reading AIG from file has failed.\n" );
@@ -134,7 +144,7 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
     else if ( FileType == IO_FILE_EQN )
         pNtk = Io_ReadEqn( pFileName, fCheck );
     else if ( FileType == IO_FILE_PLA )
-        pNtk = Io_ReadPla( pFileName, fCheck );
+        pNtk = Io_ReadPla( pFileName, 0, 0, 0, 0, fCheck );
     else if ( FileType == IO_FILE_VERILOG )
         pNtk = Io_ReadVerilog( pFileName, fCheck );
     else 
@@ -147,12 +157,73 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
         fprintf( stdout, "Reading network from file has failed.\n" );
         return NULL;
     }
-    if ( Abc_NtkBlackboxNum(pNtk) || Abc_NtkWhiteboxNum(pNtk) )
-        fprintf( stdout, "Warning: The network contains hierarchy.\n" );
+    if ( fCheck && (Abc_NtkBlackboxNum(pNtk) || Abc_NtkWhiteboxNum(pNtk)) )
+    {
+        int i, fCycle = 0;
+        Abc_Ntk_t * pModel;
+//        fprintf( stdout, "Warning: The network contains hierarchy.\n" );
+        Vec_PtrForEachEntry( Abc_Ntk_t *, pNtk->pDesign->vModules, pModel, i )
+                if ( !Abc_NtkIsAcyclicWithBoxes( pModel ) )
+                    fCycle = 1;
+        if ( fCycle )
+        {
+            Abc_NtkDelete( pNtk );
+            return NULL;    
+        }
+    }
     return pNtk;
 }
 
- 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Ptr_t *temporaryLtlStore( Abc_Ntk_t *pNtk )
+{
+	Vec_Ptr_t *tempStore;
+	char *pFormula;
+	int i;
+
+	if( pNtk && Vec_PtrSize( pNtk->vLtlProperties ) > 0 )
+	{
+		tempStore = Vec_PtrAlloc( Vec_PtrSize( pNtk->vLtlProperties ) );
+		Vec_PtrForEachEntry( char *, pNtk->vLtlProperties, pFormula, i )
+			Vec_PtrPush( tempStore, pFormula );
+		assert( Vec_PtrSize( tempStore ) == Vec_PtrSize( pNtk->vLtlProperties ) );
+		return tempStore;
+	}
+	else
+		return NULL;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void updateLtlStoreOfNtk( Abc_Ntk_t *pNtk, Vec_Ptr_t *tempLtlStore )
+{
+	int i;
+	char *pFormula;
+
+	assert( tempLtlStore != NULL );
+	Vec_PtrForEachEntry( char *, tempLtlStore, pFormula, i )
+		Vec_PtrPush( pNtk->vLtlProperties, pFormula );
+}
+
 /**Function*************************************************************
 
   Synopsis    [Read the network from a file.]
@@ -164,15 +235,25 @@ Abc_Ntk_t * Io_ReadNetlist( char * pFileName, Io_FileType_t FileType, int fCheck
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Io_Read( char * pFileName, Io_FileType_t FileType, int fCheck )
+Abc_Ntk_t * Io_Read( char * pFileName, Io_FileType_t FileType, int fCheck, int fBarBufs )
 {
     Abc_Ntk_t * pNtk, * pTemp;
+	Vec_Ptr_t * vLtl;
     // get the netlist
     pNtk = Io_ReadNetlist( pFileName, FileType, fCheck );
     if ( pNtk == NULL )
         return NULL;
+	vLtl = temporaryLtlStore( pNtk );
     if ( !Abc_NtkIsNetlist(pNtk) )
         return pNtk;
+    // derive barbufs
+    if ( fBarBufs )
+    {
+        pNtk = Abc_NtkToBarBufs( pTemp = pNtk );
+        Abc_NtkDelete( pTemp );
+        assert( Abc_NtkIsLogic(pNtk) );
+        return pNtk;
+    }
     // flatten logic hierarchy
     assert( Abc_NtkIsNetlist(pNtk) );
     if ( Abc_NtkWhiteboxNum(pNtk) > 0 )
@@ -200,8 +281,6 @@ Abc_Ntk_t * Io_Read( char * pFileName, Io_FileType_t FileType, int fCheck )
     // consider the case of BLIF-MV
     if ( Io_ReadFileType(pFileName) == IO_FILE_BLIFMV )
     {
-//Abc_NtkPrintStats( stdout, pNtk, 0 );
-//    Io_WriteBlifMv( pNtk, "_temp_.mv" );
         pNtk = Abc_NtkStrashBlifMv( pTemp = pNtk );
         Abc_NtkDelete( pTemp );
         if ( pNtk == NULL )
@@ -213,6 +292,8 @@ Abc_Ntk_t * Io_Read( char * pFileName, Io_FileType_t FileType, int fCheck )
     }
     // convert the netlist into the logic network
     pNtk = Abc_NtkToLogic( pTemp = pNtk );
+	if( vLtl )
+		updateLtlStoreOfNtk( pNtk, vLtl );
     Abc_NtkDelete( pTemp );
     if ( pNtk == NULL )
     {
@@ -257,8 +338,8 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
             return;
         }
         if ( FileType == IO_FILE_AIGER )
-            Io_WriteAiger( pNtk, pFileName, 1 );
-        else // if ( FileType == IO_FILE_BAF )
+            Io_WriteAiger( pNtk, pFileName, 1, 0, 0 );
+        else //if ( FileType == IO_FILE_BAF )
             Io_WriteBaf( pNtk, pFileName );
         return;
     }
@@ -276,6 +357,18 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
     if ( FileType == IO_FILE_GML )
     {
         Io_WriteGml( pNtk, pFileName );
+        return;
+    }
+    if ( FileType == IO_FILE_BBLIF )
+    {
+        if ( !Abc_NtkIsLogic(pNtk) )
+        {
+            fprintf( stdout, "Writing Binary BLIF is only possible for logic networks.\n" );
+            return;
+        }
+        if ( !Abc_NtkHasSop(pNtk) )
+            Abc_NtkToSop( pNtk, -1, ABC_INFINITY );
+        Io_WriteBblif( pNtk, pFileName );
         return;
     }
 /*
@@ -299,18 +392,31 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
         {
             fprintf( stdout, "Latches are writen into the PLA file at PI/PO pairs.\n" );
             pNtkCopy = Abc_NtkDup( pNtk );
-            Abc_NtkMakeComb( pNtkCopy );
+            Abc_NtkMakeComb( pNtkCopy, 0 );
             pNtkTemp = Abc_NtkToNetlist( pNtk );
             Abc_NtkDelete( pNtkCopy );
         }
-        if ( !Abc_NtkToSop( pNtk, 1 ) )
+        if ( !Abc_NtkToSop( pNtkTemp, 1, ABC_INFINITY ) )
             return;
+    }
+    else if ( FileType == IO_FILE_MOPLA )
+    {
+        pNtkTemp = Abc_NtkStrash( pNtk, 0, 0, 0 );
     }
     else if ( FileType == IO_FILE_BENCH )
     {
         if ( !Abc_NtkIsStrash(pNtk) )
         {
             fprintf( stdout, "Writing traditional BENCH is available for AIGs only (use \"write_bench\").\n" );
+            return;
+        }
+        pNtkTemp = Abc_NtkToNetlistBench( pNtk );
+    }
+    else if ( FileType == IO_FILE_SMV )
+    {
+        if ( !Abc_NtkIsStrash(pNtk) )
+        {
+            fprintf( stdout, "Writing traditional SMV is available for AIGs only.\n" );
             return;
         }
         pNtkTemp = Abc_NtkToNetlistBench( pNtk );
@@ -327,8 +433,8 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
     if ( FileType == IO_FILE_BLIF )
     {
         if ( !Abc_NtkHasSop(pNtkTemp) && !Abc_NtkHasMapping(pNtkTemp) )
-            Abc_NtkToSop( pNtkTemp, 0 );
-        Io_WriteBlif( pNtkTemp, pFileName, 1 );
+            Abc_NtkToSop( pNtkTemp, -1, ABC_INFINITY );
+        Io_WriteBlif( pNtkTemp, pFileName, 1, 0, 0 );
     }
     else if ( FileType == IO_FILE_BLIFMV )
     {
@@ -338,14 +444,20 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
     }
     else if ( FileType == IO_FILE_BENCH )
         Io_WriteBench( pNtkTemp, pFileName );
+    else if ( FileType == IO_FILE_BOOK )
+        Io_WriteBook( pNtkTemp, pFileName );
     else if ( FileType == IO_FILE_PLA )
         Io_WritePla( pNtkTemp, pFileName );
+    else if ( FileType == IO_FILE_MOPLA )
+        Io_WriteMoPla( pNtkTemp, pFileName );
     else if ( FileType == IO_FILE_EQN )
     {
         if ( !Abc_NtkHasAig(pNtkTemp) )
             Abc_NtkToAig( pNtkTemp );
         Io_WriteEqn( pNtkTemp, pFileName );
     }
+    else if ( FileType == IO_FILE_SMV )
+        Io_WriteSmv( pNtkTemp, pFileName );
     else if ( FileType == IO_FILE_VERILOG )
     {
         if ( !Abc_NtkHasAig(pNtkTemp) && !Abc_NtkHasMapping(pNtkTemp) )
@@ -371,6 +483,7 @@ void Io_Write( Abc_Ntk_t * pNtk, char * pFileName, Io_FileType_t FileType )
 void Io_WriteHie( Abc_Ntk_t * pNtk, char * pBaseName, char * pFileName )
 {
     Abc_Ntk_t * pNtkTemp, * pNtkResult, * pNtkBase = NULL;
+    int i;
     // check if the current network is available
     if ( pNtk == NULL )
     {
@@ -392,16 +505,25 @@ void Io_WriteHie( Abc_Ntk_t * pNtk, char * pBaseName, char * pFileName )
         return;
 
     // flatten logic hierarchy if present
-    if ( Abc_NtkWhiteboxNum(pNtkBase) > 0 )
+    if ( Abc_NtkWhiteboxNum(pNtkBase) > 0 && pNtk->nBarBufs == 0 )
     {
         pNtkBase = Abc_NtkFlattenLogicHierarchy( pNtkTemp = pNtkBase );
+        Abc_NtkDelete( pNtkTemp );
         if ( pNtkBase == NULL )
             return;
-        Abc_NtkDelete( pNtkTemp );
     }
 
     // reintroduce the boxes into the netlist
-    if ( Io_ReadFileType(pBaseName) == IO_FILE_BLIFMV ) 
+    if ( pNtk->nBarBufs > 0 )
+    {
+        // derive the netlist
+        pNtkResult = Abc_NtkToNetlist( pNtk );
+        pNtkResult = Abc_NtkFromBarBufs( pNtkBase, pNtkTemp = pNtkResult );
+        Abc_NtkDelete( pNtkTemp );
+        if ( pNtkResult )
+            printf( "Hierarchy writer replaced %d barbufs by hierarchy boundaries.\n", pNtk->nBarBufs );
+    }
+    else if ( Io_ReadFileType(pBaseName) == IO_FILE_BLIFMV ) 
     {
         if ( Abc_NtkBlackboxNum(pNtkBase) > 0 )
         {
@@ -413,7 +535,10 @@ void Io_WriteHie( Abc_Ntk_t * pNtk, char * pBaseName, char * pFileName )
         assert( !Abc_NtkIsNetlist(pNtk) );
         pNtkResult = Abc_NtkToNetlist( pNtk );
         if ( !Abc_NtkConvertToBlifMv( pNtkResult ) )
+        {
+            Abc_NtkDelete( pNtkBase );
             return;
+        }
         // reintroduce the network
         pNtkResult = Abc_NtkInsertBlifMv( pNtkBase, pNtkTemp = pNtkResult );
         Abc_NtkDelete( pNtkTemp );
@@ -439,14 +564,32 @@ void Io_WriteHie( Abc_Ntk_t * pNtk, char * pBaseName, char * pFileName )
     // write the resulting network
     if ( Io_ReadFileType(pFileName) == IO_FILE_BLIF )
     {
-        if ( !Abc_NtkHasSop(pNtkResult) && !Abc_NtkHasMapping(pNtkResult) )
-            Abc_NtkToSop( pNtkResult, 0 );
-        Io_WriteBlif( pNtkResult, pFileName, 1 );
+        if ( pNtkResult->pDesign )
+        {
+            Vec_PtrForEachEntry( Abc_Ntk_t *, pNtkResult->pDesign->vModules, pNtkTemp, i )
+                if ( !Abc_NtkHasSop(pNtkTemp) && !Abc_NtkHasMapping(pNtkTemp) )
+                    Abc_NtkToSop( pNtkTemp, -1, ABC_INFINITY );
+        }
+        else
+        {
+            if ( !Abc_NtkHasSop(pNtkResult) && !Abc_NtkHasMapping(pNtkResult) )
+                Abc_NtkToSop( pNtkResult, -1, ABC_INFINITY );
+        }
+        Io_WriteBlif( pNtkResult, pFileName, 1, 0, 0 );
     }
     else if ( Io_ReadFileType(pFileName) == IO_FILE_VERILOG )
     {
-        if ( !Abc_NtkHasAig(pNtkResult) && !Abc_NtkHasMapping(pNtkResult) )
-            Abc_NtkToAig( pNtkResult );
+        if ( pNtkResult->pDesign )
+        {
+            Vec_PtrForEachEntry( Abc_Ntk_t *, pNtkResult->pDesign->vModules, pNtkTemp, i )
+                if ( !Abc_NtkHasAig(pNtkTemp) && !Abc_NtkHasMapping(pNtkTemp) )
+                    Abc_NtkToAig( pNtkTemp );
+        }
+        else
+        {
+            if ( !Abc_NtkHasAig(pNtkResult) && !Abc_NtkHasMapping(pNtkResult) )
+                Abc_NtkToAig( pNtkResult );
+        }
         Io_WriteVerilog( pNtkResult, pFileName );
     }
     else if ( Io_ReadFileType(pFileName) == IO_FILE_BLIFMV )
@@ -511,31 +654,6 @@ Abc_Obj_t * Io_ReadCreatePo( Abc_Ntk_t * pNtk, char * pName )
 
 /**Function*************************************************************
 
-  Synopsis    [Creates PO terminal and net.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Abc_Obj_t * Io_ReadCreateAssert( Abc_Ntk_t * pNtk, char * pName )
-{
-    Abc_Obj_t * pNet, * pTerm;
-    // get the PO net
-    pNet  = Abc_NtkFindNet( pNtk, pName );
-    if ( pNet && Abc_ObjFaninNum(pNet) == 0 )
-        printf( "Warning: Assert \"%s\" appears twice in the list.\n", pName );
-    pNet  = Abc_NtkFindOrCreateNet( pNtk, pName );
-    // add the PO node
-    pTerm = Abc_NtkCreateAssert( pNtk );
-    Abc_ObjAddFanin( pTerm, pNet );
-    return pTerm;
-}
-
-/**Function*************************************************************
-
   Synopsis    [Create a latch with the given input/output.]
 
   Description [By default, the latch value is unknown (ABC_INIT_NONE).]
@@ -593,7 +711,7 @@ Abc_Obj_t * Io_ReadCreateResetLatch( Abc_Ntk_t * pNtk, int fBlifMv )
     Abc_LatchSetInit0( pLatch );
     // feed the latch with constant1- node
 //    pNode = Abc_NtkCreateNode( pNtk );   
-//    pNode->pData = Abc_SopRegister( pNtk->pManFunc, "2\n1\n" );
+//    pNode->pData = Abc_SopRegister( (Extra_MmFlex_t *)pNtk->pManFunc, "2\n1\n" );
     pNode = Abc_NtkCreateNodeConst1( pNtk );
     Abc_ObjAddFanin( Abc_ObjFanin0(Abc_ObjFanin0(pLatch)), pNode );
     return pLatch;
@@ -639,7 +757,7 @@ Abc_Obj_t * Io_ReadCreateNode( Abc_Ntk_t * pNtk, char * pNameOut, char * pNamesI
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Obj_t * Io_ReadCreateConst( Abc_Ntk_t * pNtk, char * pName, bool fConst1 )
+Abc_Obj_t * Io_ReadCreateConst( Abc_Ntk_t * pNtk, char * pName, int fConst1 )
 {
     Abc_Obj_t * pNet, * pTerm;
     pTerm = fConst1? Abc_NtkCreateNodeConst1(pNtk) : Abc_NtkCreateNodeConst0(pNtk);
@@ -707,7 +825,6 @@ Abc_Obj_t * Io_ReadCreateBuf( Abc_Ntk_t * pNtk, char * pNameIn, char * pNameOut 
 FILE * Io_FileOpen( const char * FileName, const char * PathVar, const char * Mode, int fVerbose )
 {
     char * t = 0, * c = 0, * i;
-    extern char * Abc_FrameReadFlag( char * pFlag ); 
 
     if ( PathVar == 0 )
     {
@@ -715,7 +832,7 @@ FILE * Io_FileOpen( const char * FileName, const char * PathVar, const char * Mo
     }
     else
     {
-        if ( c = Abc_FrameReadFlag( (char*)PathVar ) )
+        if ( (c = Abc_FrameReadFlag( (char*)PathVar )) )
         {
             char ActualFileName[4096];
             FILE * fp = 0;
@@ -731,11 +848,11 @@ FILE * Io_FileOpen( const char * FileName, const char * PathVar, const char * Mo
                 {
                     if ( fVerbose )
                     fprintf ( stdout, "Using file %s\n", ActualFileName );
-                    free( t );
+                    ABC_FREE( t );
                     return fp;
                 }
             }
-            free( t );
+            ABC_FREE( t );
             return 0;
         }
         else
@@ -749,4 +866,6 @@ FILE * Io_FileOpen( const char * FileName, const char * PathVar, const char * Mo
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

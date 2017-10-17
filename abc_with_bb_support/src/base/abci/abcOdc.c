@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -39,7 +42,6 @@ struct Odc_Obj_t_
     unsigned                uMask;       // the variable mask 
 };
 
-typedef struct Odc_Man_t_ Odc_Man_t;
 struct Odc_Man_t_
 {
     // dont'-care parameters
@@ -84,14 +86,14 @@ struct Odc_Man_t_
     int                     nTotalDcs;   // total percentage of DCs
 
     // runtime
-    int                     timeClean;   // windowing
-    int                     timeWin;     // windowing
-    int                     timeMiter;   // computing the miter
-    int                     timeSim;     // simulation
-    int                     timeQuant;   // quantification
-    int                     timeTruth;   // truth table
-    int                     timeTotal;   // useful runtime
-    int                     timeAbort;   // aborted runtime
+    abctime                 timeClean;   // windowing
+    abctime                 timeWin;     // windowing
+    abctime                 timeMiter;   // computing the miter
+    abctime                 timeSim;     // simulation
+    abctime                 timeQuant;   // quantification
+    abctime                 timeTruth;   // truth table
+    abctime                 timeTotal;   // useful runtime
+    abctime                 timeAbort;   // aborted runtime
 };
 
 
@@ -132,7 +134,7 @@ static inline void          Odc_ObjSetTravIdCurrent( Odc_Man_t * p, Odc_Obj_t * 
 static inline int           Odc_ObjIsTravIdCurrent( Odc_Man_t * p, Odc_Obj_t * pObj )       { return (int )((int)pObj->TravId == p->nTravIds);  }
 
 // truth tables
-static inline unsigned *    Odc_ObjTruth( Odc_Man_t * p, Odc_Lit_t Lit )   { assert( !(Lit & 1) ); return Vec_PtrEntry(p->vTruths, Lit >> 1);  }
+static inline unsigned *    Odc_ObjTruth( Odc_Man_t * p, Odc_Lit_t Lit )   { assert( !(Lit & 1) ); return (unsigned *) Vec_PtrEntry(p->vTruths, Lit >> 1);  }
 
 // iterators 
 #define Odc_ForEachPi( p, Lit, i )                                                 \
@@ -140,12 +142,6 @@ static inline unsigned *    Odc_ObjTruth( Odc_Man_t * p, Odc_Lit_t Lit )   { ass
 #define Odc_ForEachAnd( p, pObj, i )                                               \
     for ( i = 1 + Odc_CiNum(p); (i < Odc_ObjNum(p)) && ((pObj) = (p)->pObjs + i); i++ )
 
- 
-// exported functions
-extern Odc_Man_t * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int fVeryVerbose );
-extern void Abc_NtkDontCareClear( Odc_Man_t * p );
-extern void Abc_NtkDontCareFree( Odc_Man_t * p );
-extern int Abc_NtkDontCareCompute( Odc_Man_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, unsigned * puTruth );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -168,7 +164,7 @@ Odc_Man_t * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int f
     Odc_Man_t * p;
     unsigned * pData;
     int i, k;
-    p = ALLOC( Odc_Man_t, 1 );
+    p = ABC_ALLOC( Odc_Man_t, 1 );
     memset( p, 0, sizeof(Odc_Man_t) );
     assert( nVarsMax > 4 && nVarsMax < 16 );
     assert( nLevels > 0 && nLevels < 10 );
@@ -189,7 +185,7 @@ Odc_Man_t * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int f
     // internal AIG package
     // allocate room for objects
     p->nObjsAlloc = ABC_DC_MAX_NODES; 
-    p->pObjs = ALLOC( Odc_Obj_t, p->nObjsAlloc * sizeof(Odc_Obj_t) );
+    p->pObjs = ABC_ALLOC( Odc_Obj_t, p->nObjsAlloc * sizeof(Odc_Obj_t) );
     p->nPis  = nVarsMax + 32;
     p->nObjs = 1 + p->nPis;
     memset( p->pObjs, 0, p->nObjs * sizeof(Odc_Obj_t) );
@@ -198,7 +194,7 @@ Odc_Man_t * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int f
         p->pObjs[1 + p->nVarsMax + i].uMask = (1 << i);
     // allocate hash table
     p->nTableSize = p->nObjsAlloc/3 + 1;
-    p->pTable = ALLOC( Odc_Lit_t, p->nTableSize * sizeof(Odc_Lit_t) );
+    p->pTable = ABC_ALLOC( Odc_Lit_t, p->nTableSize * sizeof(Odc_Lit_t) );
     memset( p->pTable, 0, p->nTableSize * sizeof(Odc_Lit_t) );
     p->vUsedSpots = Vec_IntAlloc( 1000 );
 
@@ -209,11 +205,11 @@ Odc_Man_t * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int f
     p->vTruthsElem = Vec_PtrAllocSimInfo( p->nVarsMax, p->nWords );
 
     // set elementary truth tables
-    Abc_InfoFill( Vec_PtrEntry(p->vTruths, 0), p->nWords );
+    Abc_InfoFill( (unsigned *)Vec_PtrEntry(p->vTruths, 0), p->nWords );
     for ( k = 0; k < p->nVarsMax; k++ )
     {
 //        pData = Odc_ObjTruth( p, Odc_Var(p, k) );
-        pData = Vec_PtrEntry( p->vTruthsElem, k );
+        pData = (unsigned *)Vec_PtrEntry( p->vTruthsElem, k );
         Abc_InfoClear( pData, p->nWords );
         for ( i = 0; i < p->nBits; i++ )
             if ( i & (1 << k) )
@@ -245,7 +241,7 @@ Odc_Man_t * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int f
 ***********************************************************************/
 void Abc_NtkDontCareClear( Odc_Man_t * p )
 {
-    int clk = clock();
+    abctime clk = Abc_Clock();
     // clean the structural hashing table
     if ( Vec_IntSize(p->vUsedSpots) > p->nTableSize/3 ) // more than one third
         memset( p->pTable, 0, sizeof(Odc_Lit_t) * p->nTableSize );
@@ -261,7 +257,7 @@ void Abc_NtkDontCareClear( Odc_Man_t * p )
     // reset the root node
     p->iRoot = 0xffff;
 
-p->timeClean += clock() - clk;
+p->timeClean += Abc_Clock() - clk;
 }
 
 /**Function*************************************************************
@@ -284,23 +280,23 @@ void Abc_NtkDontCareFree( Odc_Man_t * p )
         printf( "Ave DCs per window = %6.2f %%. Ave DCs per finished window = %6.2f %%.\n", 
             1.0*p->nTotalDcs/p->nWins, 1.0*p->nTotalDcs/p->nWinsFinish );
         printf( "Runtime stats of the ODC manager:\n" );
-        PRT( "Cleaning    ", p->timeClean );
-        PRT( "Windowing   ", p->timeWin   );
-        PRT( "Miter       ", p->timeMiter );
-        PRT( "Simulation  ", p->timeSim   );
-        PRT( "Quantifying ", p->timeQuant );
-        PRT( "Truth table ", p->timeTruth );
-        PRT( "TOTAL       ", p->timeTotal );
-        PRT( "Aborted     ", p->timeAbort );
+        ABC_PRT( "Cleaning    ", p->timeClean );
+        ABC_PRT( "Windowing   ", p->timeWin   );
+        ABC_PRT( "Miter       ", p->timeMiter );
+        ABC_PRT( "Simulation  ", p->timeSim   );
+        ABC_PRT( "Quantifying ", p->timeQuant );
+        ABC_PRT( "Truth table ", p->timeTruth );
+        ABC_PRT( "TOTAL       ", p->timeTotal );
+        ABC_PRT( "Aborted     ", p->timeAbort );
     }
     Vec_PtrFree( p->vRoots );
     Vec_PtrFree( p->vBranches );
     Vec_PtrFree( p->vTruths );
     Vec_PtrFree( p->vTruthsElem );
     Vec_IntFree( p->vUsedSpots );
-    free( p->pObjs );
-    free( p->pTable );
-    free( p );
+    ABC_FREE( p->pObjs );
+    ABC_FREE( p->pTable );
+    ABC_FREE( p );
 }
 
 
@@ -350,7 +346,7 @@ void Abc_NtkDontCareWinSweepLeafTfo( Odc_Man_t * p )
     Abc_Obj_t * pObj;
     int i;
     Abc_NtkIncrementTravId( p->pNode->pNtk );
-    Vec_PtrForEachEntry( p->vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pObj, i )
         Abc_NtkDontCareWinSweepLeafTfo_rec( pObj, p->pNode->Level + p->nLevels, p->pNode );
 }
 
@@ -457,11 +453,11 @@ int Abc_NtkDontCareWinAddMissing( Odc_Man_t * p )
     int i;
     // set the leaves
     Abc_NtkIncrementTravId( p->pNode->pNtk );
-    Vec_PtrForEachEntry( p->vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pObj, i )
         Abc_NodeSetTravIdCurrent( pObj );        
     // explore from the roots
     Vec_PtrClear( p->vBranches );
-    Vec_PtrForEachEntry( p->vRoots, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vRoots, pObj, i )
         if ( !Abc_NtkDontCareWinAddMissing_rec( p, pObj ) )
             return 0;
     return 1;
@@ -662,10 +658,10 @@ void * Abc_NtkDontCareTransfer_rec( Odc_Man_t * p, Abc_Obj_t * pNode, Abc_Obj_t 
     assert( Abc_ObjIsNode(pNode) );
     // consider the case when the node is the pivot
     if ( pNode == pPivot )
-        return pNode->pCopy = (void *)((Odc_Const1() << 16) | Odc_Const0());
+        return pNode->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)((Odc_Const1() << 16) | Odc_Const0());
     // compute the cofactors
-    uData0 = (unsigned)Abc_NtkDontCareTransfer_rec( p, Abc_ObjFanin0(pNode), pPivot );
-    uData1 = (unsigned)Abc_NtkDontCareTransfer_rec( p, Abc_ObjFanin1(pNode), pPivot );
+    uData0 = (unsigned)(ABC_PTRUINT_T)Abc_NtkDontCareTransfer_rec( p, Abc_ObjFanin0(pNode), pPivot );
+    uData1 = (unsigned)(ABC_PTRUINT_T)Abc_NtkDontCareTransfer_rec( p, Abc_ObjFanin1(pNode), pPivot );
     // find the 0-cofactor
     uLit0 = Odc_NotCond( (Odc_Lit_t)(uData0 & 0xffff), Abc_ObjFaninC0(pNode) );
     uLit1 = Odc_NotCond( (Odc_Lit_t)(uData1 & 0xffff), Abc_ObjFaninC1(pNode) );
@@ -675,7 +671,7 @@ void * Abc_NtkDontCareTransfer_rec( Odc_Man_t * p, Abc_Obj_t * pNode, Abc_Obj_t 
     uLit1 = Odc_NotCond( (Odc_Lit_t)(uData1 >> 16), Abc_ObjFaninC1(pNode) );
     uRes1 = Odc_And( p, uLit0, uLit1 );
     // find the result
-    return pNode->pCopy = (void *)((uRes1 << 16) | uRes0);
+    return pNode->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)((uRes1 << 16) | uRes0);
 }
 
 /**Function*************************************************************
@@ -698,24 +694,24 @@ int Abc_NtkDontCareTransfer( Odc_Man_t * p )
     int i;
     Abc_NtkIncrementTravId( p->pNode->pNtk );
     // set elementary variables at the leaves 
-    Vec_PtrForEachEntry( p->vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pObj, i )
     {
         uLit = Odc_Var( p, i );
-        pObj->pCopy = (void *)((uLit << 16) | uLit);
+        pObj->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)((uLit << 16) | uLit);
         Abc_NodeSetTravIdCurrent(pObj);
     }
     // set elementary variables at the branched 
-    Vec_PtrForEachEntry( p->vBranches, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vBranches, pObj, i )
     {
         uLit = Odc_Var( p, i+p->nVarsMax );
-        pObj->pCopy = (void *)((uLit << 16) | uLit);
+        pObj->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)((uLit << 16) | uLit);
         Abc_NodeSetTravIdCurrent(pObj);
     }
     // compute the AIG for the window
     p->iRoot = Odc_Const0();
-    Vec_PtrForEachEntry( p->vRoots, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vRoots, pObj, i )
     {
-        uData = (unsigned)Abc_NtkDontCareTransfer_rec( p, pObj, p->pNode );
+        uData = (unsigned)(ABC_PTRUINT_T)Abc_NtkDontCareTransfer_rec( p, pObj, p->pNode );
         // get the cofactors
         uRes0 = uData & 0xffff;
         uRes1 = uData >> 16;
@@ -851,7 +847,7 @@ void Abc_NtkDontCareSimulateSetElem( Odc_Man_t * p )
     for ( k = 0; k < p->nVarsMax; k++ )
     {
         pData = Odc_ObjTruth( p, Odc_Var(p, k) );
-        pData2 = Vec_PtrEntry( p->vTruthsElem, k );
+        pData2 = (unsigned *)Vec_PtrEntry( p->vTruthsElem, k );
         Abc_InfoCopy( pData, pData2, p->nWords );
     }
 }
@@ -1037,7 +1033,7 @@ int Abc_NtkDontCareSimulateBefore( Odc_Man_t * p, unsigned * puTruth )
 int Abc_NtkDontCareCompute( Odc_Man_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, unsigned * puTruth )
 {
     int nMints, RetValue;
-    int clk, clkTotal = clock();
+    abctime clk, clkTotal = Abc_Clock();
 
     p->nWins++;
     
@@ -1049,12 +1045,12 @@ int Abc_NtkDontCareCompute( Odc_Man_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * vLeave
     p->pNode = pNode;
 
     // compute the window
-clk = clock();
+clk = Abc_Clock();
     RetValue = Abc_NtkDontCareWindow( p );
-p->timeWin += clock() - clk;
+p->timeWin += Abc_Clock() - clk;
     if ( !RetValue )
     {
-p->timeAbort += clock() - clkTotal;
+p->timeAbort += Abc_Clock() - clkTotal;
         Abc_InfoFill( puTruth, p->nWords );
         p->nWinsEmpty++;        
         return 0;
@@ -1070,14 +1066,14 @@ p->timeAbort += clock() - clkTotal;
     }
 
     // transfer the window into the AIG package
-clk = clock();
+clk = Abc_Clock();
     Abc_NtkDontCareTransfer( p );
-p->timeMiter += clock() - clk;
+p->timeMiter += Abc_Clock() - clk;
 
     // simulate to estimate the amount of don't-cares
-clk = clock();
+clk = Abc_Clock();
     nMints = Abc_NtkDontCareSimulateBefore( p, puTruth );
-p->timeSim += clock() - clk;
+p->timeSim += Abc_Clock() - clk;
     if ( p->fVeryVerbose )
     {
         printf( "AIG = %5d ", Odc_NodeNum(p) );
@@ -1087,7 +1083,7 @@ p->timeSim += clock() - clk;
     // if there is less then the given percentage of don't-cares, skip
     if ( 100.0 * (p->nBits - nMints) / p->nBits < 1.0 * p->nPercCutoff )
     {
-p->timeAbort += clock() - clkTotal;
+p->timeAbort += Abc_Clock() - clkTotal;
         if ( p->fVeryVerbose )
             printf( "Simulation cutoff.\n" );
         Abc_InfoFill( puTruth, p->nWords );
@@ -1096,12 +1092,12 @@ p->timeAbort += clock() - clkTotal;
     }
 
     // quantify external variables
-clk = clock();
+clk = Abc_Clock();
     RetValue = Abc_NtkDontCareQuantify( p );
-p->timeQuant += clock() - clk;
+p->timeQuant += Abc_Clock() - clk;
     if ( !RetValue )
     {
-p->timeAbort += clock() - clkTotal;
+p->timeAbort += Abc_Clock() - clkTotal;
         if ( p->fVeryVerbose )
             printf( "=== Overflow! ===\n" );
         Abc_InfoFill( puTruth, p->nWords );
@@ -1110,17 +1106,17 @@ p->timeAbort += clock() - clkTotal;
     }
 
     // get the truth table
-clk = clock();
+clk = Abc_Clock();
     Abc_NtkDontCareSimulateSetElem( p );
     nMints = Abc_NtkDontCareSimulate( p, puTruth );
-p->timeTruth += clock() - clk;
+p->timeTruth += Abc_Clock() - clk;
     if ( p->fVeryVerbose )
     {
         printf( "AIG = %5d ", Odc_NodeNum(p) );
         printf( "%6.2f %%  ", 100.0 * (p->nBits - nMints) / p->nBits );
         printf( "\n" );
     }
-p->timeTotal += clock() - clkTotal;
+p->timeTotal += Abc_Clock() - clkTotal;
     p->nWinsFinish++;
     p->nTotalDcs += (int)(100.0 * (p->nBits - nMints) / p->nBits);
     return nMints;
@@ -1131,4 +1127,6 @@ p->timeTotal += clock() - clkTotal;
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

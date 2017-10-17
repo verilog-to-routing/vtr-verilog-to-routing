@@ -10,6 +10,9 @@
 //#include "port.h"
 #include "sparse_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*
  *  allocate a new col vector 
@@ -312,3 +315,5 @@ sm_col *pcol;
 	(void) fprintf(fp, " %d", p->row_num);
     }
 }
+ABC_NAMESPACE_IMPL_END
+

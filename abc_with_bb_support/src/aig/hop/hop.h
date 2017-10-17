@@ -18,12 +18,9 @@
 
 ***********************************************************************/
 
-#ifndef __HOP_H__
-#define __HOP_H__
+#ifndef ABC__aig__hop__hop_h
+#define ABC__aig__hop__hop_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif 
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -33,14 +30,17 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
-#include <stdint.h>
 
-#include "vec.h"
+#include "misc/vec/vec.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+ 
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -64,15 +64,19 @@ typedef enum {
 // the AIG node
 struct Hop_Obj_t_  // 6 words
 {
-    void *           pData;          // misc
-    Hop_Obj_t *      pNext;          // strashing table
+    union { 
+        void *       pData;          // misc
+        int          iData; };       // misc
+    union { 
+        Hop_Obj_t *  pNext;          // strashing table
+        int          PioNum; };      // the number of PI/PO
     Hop_Obj_t *      pFanin0;        // fanin
     Hop_Obj_t *      pFanin1;        // fanin
-    unsigned long    Type    :  3;   // object type
-    unsigned long    fPhase  :  1;   // value under 000...0 pattern
-    unsigned long    fMarkA  :  1;   // multipurpose mask
-    unsigned long    fMarkB  :  1;   // multipurpose mask
-    unsigned long    nRefs   : 26;   // reference count (level)
+    unsigned int     Type    :  3;   // object type
+    unsigned int     fPhase  :  1;   // value under 000...0 pattern
+    unsigned int     fMarkA  :  1;   // multipurpose mask
+    unsigned int     fMarkB  :  1;   // multipurpose mask
+    unsigned int     nRefs   : 26;   // reference count (level)
     int              Id;             // unique ID of the node
 };
 
@@ -102,31 +106,27 @@ struct Hop_Man_t_
     Vec_Ptr_t *      vPages;         // memory pages used by nodes
     Hop_Obj_t *      pListFree;      // the list of free nodes 
     // timing statistics
-    int              time1;
-    int              time2;
+    abctime          time1;
+    abctime          time2;
 };
 
 ////////////////////////////////////////////////////////////////////////
 ///                      MACRO DEFINITIONS                           ///
 ////////////////////////////////////////////////////////////////////////
-
-#define AIG_MIN(a,b)       (((a) < (b))? (a) : (b))
-#define AIG_MAX(a,b)       (((a) > (b))? (a) : (b))
-
-#ifndef PRT
-#define PRT(a,t)  printf("%s = ", (a)); printf("%6.2f sec\n", (float)(t)/(float)(CLOCKS_PER_SEC))
-#endif
+extern void Hop_ManAddMemory( Hop_Man_t * p );
 
 static inline int          Hop_BitWordNum( int nBits )            { return (nBits>>5) + ((nBits&31) > 0);           }
 static inline int          Hop_TruthWordNum( int nVars )          { return nVars <= 5 ? 1 : (1 << (nVars - 5));     }
 static inline int          Hop_InfoHasBit( unsigned * p, int i )  { return (p[(i)>>5] & (1<<((i) & 31))) > 0;       }
 static inline void         Hop_InfoSetBit( unsigned * p, int i )  { p[(i)>>5] |= (1<<((i) & 31));                   }
 static inline void         Hop_InfoXorBit( unsigned * p, int i )  { p[(i)>>5] ^= (1<<((i) & 31));                   }
+static inline int          Hop_Base2Log( unsigned n )             { int r; if ( n < 2 ) return n; for ( r = 0, n--; n; n >>= 1, r++ ) {}; return r; }
+static inline int          Hop_Base10Log( unsigned n )            { int r; if ( n < 2 ) return n; for ( r = 0, n--; n; n /= 10, r++ ) {}; return r; }
 
-static inline Hop_Obj_t *  Hop_Regular( Hop_Obj_t * p )           { return (Hop_Obj_t *)((uintptr_t)(p) & ~01);      }
-static inline Hop_Obj_t *  Hop_Not( Hop_Obj_t * p )               { return (Hop_Obj_t *)((uintptr_t)(p) ^  01);      }
-static inline Hop_Obj_t *  Hop_NotCond( Hop_Obj_t * p, int c )    { return (Hop_Obj_t *)((uintptr_t)(p) ^ (c));      }
-static inline int          Hop_IsComplement( Hop_Obj_t * p )      { return (int )(((uintptr_t)p) & 01);              }
+static inline Hop_Obj_t *  Hop_Regular( Hop_Obj_t * p )           { return (Hop_Obj_t *)((ABC_PTRUINT_T)(p) & ~01); }
+static inline Hop_Obj_t *  Hop_Not( Hop_Obj_t * p )               { return (Hop_Obj_t *)((ABC_PTRUINT_T)(p) ^  01); }
+static inline Hop_Obj_t *  Hop_NotCond( Hop_Obj_t * p, int c )    { return (Hop_Obj_t *)((ABC_PTRUINT_T)(p) ^ (c)); }
+static inline int          Hop_IsComplement( Hop_Obj_t * p )      { return (int)((ABC_PTRUINT_T)(p) & 01);          }
 
 static inline Hop_Obj_t *  Hop_ManConst0( Hop_Man_t * p )         { return Hop_Not(p->pConst1);                     }
 static inline Hop_Obj_t *  Hop_ManConst1( Hop_Man_t * p )         { return p->pConst1;                              }
@@ -165,13 +165,13 @@ static inline int          Hop_ObjIsMarkA( Hop_Obj_t * pObj )     { return pObj-
 static inline void         Hop_ObjSetMarkA( Hop_Obj_t * pObj )    { pObj->fMarkA = 1;     }
 static inline void         Hop_ObjClearMarkA( Hop_Obj_t * pObj )  { pObj->fMarkA = 0;     }
  
-static inline void         Hop_ObjSetTravId( Hop_Obj_t * pObj, int TravId )                { pObj->pData = (void *)TravId;                       }
-static inline void         Hop_ObjSetTravIdCurrent( Hop_Man_t * p, Hop_Obj_t * pObj )      { pObj->pData = (void *)p->nTravIds;                  }
-static inline void         Hop_ObjSetTravIdPrevious( Hop_Man_t * p, Hop_Obj_t * pObj )     { pObj->pData = (void *)(p->nTravIds - 1);            }
-static inline int          Hop_ObjIsTravIdCurrent( Hop_Man_t * p, Hop_Obj_t * pObj )       { return (int )((int)pObj->pData == p->nTravIds);     }
-static inline int          Hop_ObjIsTravIdPrevious( Hop_Man_t * p, Hop_Obj_t * pObj )      { return (int )((int)pObj->pData == p->nTravIds - 1); }
+static inline void         Hop_ObjSetTravId( Hop_Obj_t * pObj, int TravId )                { pObj->pData = (void *)(ABC_PTRINT_T)TravId;                      }
+static inline void         Hop_ObjSetTravIdCurrent( Hop_Man_t * p, Hop_Obj_t * pObj )      { pObj->pData = (void *)(ABC_PTRINT_T)p->nTravIds;                 }
+static inline void         Hop_ObjSetTravIdPrevious( Hop_Man_t * p, Hop_Obj_t * pObj )     { pObj->pData = (void *)(ABC_PTRINT_T)(p->nTravIds - 1);           }
+static inline int          Hop_ObjIsTravIdCurrent( Hop_Man_t * p, Hop_Obj_t * pObj )       { return (int)((int)(ABC_PTRINT_T)pObj->pData == p->nTravIds);     }
+static inline int          Hop_ObjIsTravIdPrevious( Hop_Man_t * p, Hop_Obj_t * pObj )      { return (int)((int)(ABC_PTRINT_T)pObj->pData == p->nTravIds - 1); }
 
-static inline int          Hop_ObjTravId( Hop_Obj_t * pObj )      { return (int)pObj->pData;                       }
+static inline int          Hop_ObjTravId( Hop_Obj_t * pObj )      { return (int)(ABC_PTRINT_T)pObj->pData;        }
 static inline int          Hop_ObjPhase( Hop_Obj_t * pObj )       { return pObj->fPhase;                           }
 static inline int          Hop_ObjRefs( Hop_Obj_t * pObj )        { return pObj->nRefs;                            }
 static inline void         Hop_ObjRef( Hop_Obj_t * pObj )         { pObj->nRefs++;                                 }
@@ -183,11 +183,13 @@ static inline Hop_Obj_t *  Hop_ObjFanin0( Hop_Obj_t * pObj )      { return Hop_R
 static inline Hop_Obj_t *  Hop_ObjFanin1( Hop_Obj_t * pObj )      { return Hop_Regular(pObj->pFanin1);             }
 static inline Hop_Obj_t *  Hop_ObjChild0( Hop_Obj_t * pObj )      { return pObj->pFanin0;                          }
 static inline Hop_Obj_t *  Hop_ObjChild1( Hop_Obj_t * pObj )      { return pObj->pFanin1;                          }
-static inline Hop_Obj_t *  Hop_ObjChild0Copy( Hop_Obj_t * pObj ) { assert( !Hop_IsComplement(pObj) ); return Hop_ObjFanin0(pObj)? Hop_NotCond((Hop_Obj_t *)Hop_ObjFanin0(pObj)->pData, Hop_ObjFaninC0(pObj)) : NULL;  }
-static inline Hop_Obj_t *  Hop_ObjChild1Copy( Hop_Obj_t * pObj ) { assert( !Hop_IsComplement(pObj) ); return Hop_ObjFanin1(pObj)? Hop_NotCond((Hop_Obj_t *)Hop_ObjFanin1(pObj)->pData, Hop_ObjFaninC1(pObj)) : NULL;  }
+static inline Hop_Obj_t *  Hop_ObjChild0Copy( Hop_Obj_t * pObj )  { assert( !Hop_IsComplement(pObj) ); return Hop_ObjFanin0(pObj)? Hop_NotCond((Hop_Obj_t *)Hop_ObjFanin0(pObj)->pData, Hop_ObjFaninC0(pObj)) : NULL;  }
+static inline Hop_Obj_t *  Hop_ObjChild1Copy( Hop_Obj_t * pObj )  { assert( !Hop_IsComplement(pObj) ); return Hop_ObjFanin1(pObj)? Hop_NotCond((Hop_Obj_t *)Hop_ObjFanin1(pObj)->pData, Hop_ObjFaninC1(pObj)) : NULL;  }
+static inline int          Hop_ObjChild0CopyI( Hop_Obj_t * pObj ) { assert( !Hop_IsComplement(pObj) ); return Hop_ObjFanin0(pObj)? Abc_LitNotCond(Hop_ObjFanin0(pObj)->iData, Hop_ObjFaninC0(pObj)) : -1;              }
+static inline int          Hop_ObjChild1CopyI( Hop_Obj_t * pObj ) { assert( !Hop_IsComplement(pObj) ); return Hop_ObjFanin1(pObj)? Abc_LitNotCond(Hop_ObjFanin1(pObj)->iData, Hop_ObjFaninC1(pObj)) : -1;              }
 static inline int          Hop_ObjLevel( Hop_Obj_t * pObj )       { return pObj->nRefs;                            }
-static inline int          Hop_ObjLevelNew( Hop_Obj_t * pObj )    { return 1 + Hop_ObjIsExor(pObj) + AIG_MAX(Hop_ObjFanin0(pObj)->nRefs, Hop_ObjFanin1(pObj)->nRefs);       }
-static inline int          Hop_ObjFaninPhase( Hop_Obj_t * pObj )  { return Hop_IsComplement(pObj)? !Hop_Regular(pObj)->fPhase : pObj->fPhase; }
+static inline int          Hop_ObjLevelNew( Hop_Obj_t * pObj )    { return 1 + Hop_ObjIsExor(pObj) + Abc_MaxInt(Hop_ObjFanin0(pObj)->nRefs, Hop_ObjFanin1(pObj)->nRefs);       }
+static inline int          Hop_ObjPhaseCompl( Hop_Obj_t * pObj )  { return Hop_IsComplement(pObj)? !Hop_Regular(pObj)->fPhase : pObj->fPhase; }
 static inline void         Hop_ObjClean( Hop_Obj_t * pObj )       { memset( pObj, 0, sizeof(Hop_Obj_t) ); }
 static inline int          Hop_ObjWhatFanin( Hop_Obj_t * pObj, Hop_Obj_t * pFanin )    
 { 
@@ -227,7 +229,6 @@ static inline Hop_Obj_t *  Hop_ObjCreateGhost( Hop_Man_t * p, Hop_Obj_t * p0, Ho
 // internal memory manager
 static inline Hop_Obj_t * Hop_ManFetchMemory( Hop_Man_t * p )  
 { 
-    extern void Hop_ManAddMemory( Hop_Man_t * p );
     Hop_Obj_t * pTemp;
     if ( p->pListFree == NULL )
         Hop_ManAddMemory( p );
@@ -256,10 +257,10 @@ static inline void Hop_ManRecycleMemory( Hop_Man_t * p, Hop_Obj_t * pEntry )
 
 // iterator over the primary inputs
 #define Hop_ManForEachPi( p, pObj, i )                                          \
-    Vec_PtrForEachEntry( p->vPis, pObj, i )
+    Vec_PtrForEachEntry( Hop_Obj_t *, p->vPis, pObj, i )
 // iterator over the primary outputs
 #define Hop_ManForEachPo( p, pObj, i )                                          \
-    Vec_PtrForEachEntry( p->vPos, pObj, i )
+    Vec_PtrForEachEntry( Hop_Obj_t *, p->vPos, pObj, i )
 // iterator over all objects, including those currently not used
 #define Hop_ManForEachNode( p, pObj, i )                                        \
     for ( i = 0; i < p->nTableSize; i++ )                                       \
@@ -269,30 +270,34 @@ static inline void Hop_ManRecycleMemory( Hop_Man_t * p, Hop_Obj_t * pEntry )
 ///                    FUNCTION DECLARATIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
-/*=== aigBalance.c ========================================================*/
+/*=== hopBalance.c ========================================================*/
 extern Hop_Man_t *     Hop_ManBalance( Hop_Man_t * p, int fUpdateLevel );
 extern Hop_Obj_t *     Hop_NodeBalanceBuildSuper( Hop_Man_t * p, Vec_Ptr_t * vSuper, Hop_Type_t Type, int fUpdateLevel );
-/*=== aigCheck.c ========================================================*/
+/*=== hopCheck.c ========================================================*/
 extern int             Hop_ManCheck( Hop_Man_t * p );
-/*=== aigDfs.c ==========================================================*/
+/*=== hopDfs.c ==========================================================*/
 extern Vec_Ptr_t *     Hop_ManDfs( Hop_Man_t * p );
 extern Vec_Ptr_t *     Hop_ManDfsNode( Hop_Man_t * p, Hop_Obj_t * pNode );
 extern int             Hop_ManCountLevels( Hop_Man_t * p );
 extern void            Hop_ManCreateRefs( Hop_Man_t * p );
 extern int             Hop_DagSize( Hop_Obj_t * pObj );
+extern int             Hop_ObjFanoutCount( Hop_Obj_t * pObj, Hop_Obj_t * pPivot );
 extern void            Hop_ConeUnmark_rec( Hop_Obj_t * pObj );
 extern Hop_Obj_t *     Hop_Transfer( Hop_Man_t * pSour, Hop_Man_t * pDest, Hop_Obj_t * pObj, int nVars );
 extern Hop_Obj_t *     Hop_Compose( Hop_Man_t * p, Hop_Obj_t * pRoot, Hop_Obj_t * pFunc, int iVar );
-/*=== aigMan.c ==========================================================*/
+extern Hop_Obj_t *     Hop_Complement( Hop_Man_t * p, Hop_Obj_t * pRoot, int iVar );
+extern Hop_Obj_t *     Hop_Remap( Hop_Man_t * p, Hop_Obj_t * pRoot, unsigned uSupp, int nVars );
+extern Hop_Obj_t *     Hop_Permute( Hop_Man_t * p, Hop_Obj_t * pRoot, int nRootVars, int * pPermute );
+/*=== hopMan.c ==========================================================*/
 extern Hop_Man_t *     Hop_ManStart();
 extern Hop_Man_t *     Hop_ManDup( Hop_Man_t * p );
 extern void            Hop_ManStop( Hop_Man_t * p );
 extern int             Hop_ManCleanup( Hop_Man_t * p );
 extern void            Hop_ManPrintStats( Hop_Man_t * p );
-/*=== aigMem.c ==========================================================*/
+/*=== hopMem.c ==========================================================*/
 extern void            Hop_ManStartMemory( Hop_Man_t * p );
 extern void            Hop_ManStopMemory( Hop_Man_t * p );
-/*=== aigObj.c ==========================================================*/
+/*=== hopObj.c ==========================================================*/
 extern Hop_Obj_t *     Hop_ObjCreatePi( Hop_Man_t * p );
 extern Hop_Obj_t *     Hop_ObjCreatePo( Hop_Man_t * p, Hop_Obj_t * pDriver );
 extern Hop_Obj_t *     Hop_ObjCreate( Hop_Man_t * p, Hop_Obj_t * pGhost );
@@ -302,7 +307,7 @@ extern void            Hop_ObjDelete( Hop_Man_t * p, Hop_Obj_t * pObj );
 extern void            Hop_ObjDelete_rec( Hop_Man_t * p, Hop_Obj_t * pObj );
 extern Hop_Obj_t *     Hop_ObjRepr( Hop_Obj_t * pObj );
 extern void            Hop_ObjCreateChoice( Hop_Obj_t * pOld, Hop_Obj_t * pNew );
-/*=== aigOper.c =========================================================*/
+/*=== hopOper.c =========================================================*/
 extern Hop_Obj_t *     Hop_IthVar( Hop_Man_t * p, int i );
 extern Hop_Obj_t *     Hop_Oper( Hop_Man_t * p, Hop_Obj_t * p0, Hop_Obj_t * p1, Hop_Type_t Type );
 extern Hop_Obj_t *     Hop_And( Hop_Man_t * p, Hop_Obj_t * p0, Hop_Obj_t * p1 );
@@ -314,13 +319,16 @@ extern Hop_Obj_t *     Hop_Miter( Hop_Man_t * p, Vec_Ptr_t * vPairs );
 extern Hop_Obj_t *     Hop_CreateAnd( Hop_Man_t * p, int nVars );
 extern Hop_Obj_t *     Hop_CreateOr( Hop_Man_t * p, int nVars );
 extern Hop_Obj_t *     Hop_CreateExor( Hop_Man_t * p, int nVars );
-/*=== aigTable.c ========================================================*/
+/*=== hopTable.c ========================================================*/
 extern Hop_Obj_t *     Hop_TableLookup( Hop_Man_t * p, Hop_Obj_t * pGhost );
 extern void            Hop_TableInsert( Hop_Man_t * p, Hop_Obj_t * pObj );
 extern void            Hop_TableDelete( Hop_Man_t * p, Hop_Obj_t * pObj );
 extern int             Hop_TableCountEntries( Hop_Man_t * p );
 extern void            Hop_TableProfile( Hop_Man_t * p );
-/*=== aigUtil.c =========================================================*/
+/*=== hopTruth.c ========================================================*/
+extern unsigned *      Hop_ManConvertAigToTruth( Hop_Man_t * p, Hop_Obj_t * pRoot, int nVars, Vec_Int_t * vTruth, int fMsbFirst );
+extern word            Hop_ManComputeTruth6( Hop_Man_t * p, Hop_Obj_t * pObj, int nVars );
+/*=== hopUtil.c =========================================================*/
 extern void            Hop_ManIncrementTravId( Hop_Man_t * p );
 extern void            Hop_ManCleanData( Hop_Man_t * p );
 extern void            Hop_ObjCleanData_rec( Hop_Obj_t * pObj );
@@ -334,9 +342,11 @@ extern void            Hop_ObjPrintVerbose( Hop_Obj_t * pObj, int fHaig );
 extern void            Hop_ManPrintVerbose( Hop_Man_t * p, int fHaig );
 extern void            Hop_ManDumpBlif( Hop_Man_t * p, char * pFileName );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

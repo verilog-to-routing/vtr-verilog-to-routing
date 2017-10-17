@@ -9,6 +9,9 @@
  */
 #include "mincov_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 static sm_matrix *build_intersection_matrix();
 
 
@@ -132,3 +135,5 @@ sm_matrix *A;
 
     return B;
 }
+ABC_NAMESPACE_IMPL_END
+

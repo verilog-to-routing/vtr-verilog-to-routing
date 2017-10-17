@@ -12,6 +12,9 @@
 
 #include "place_base.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 // --------------------------------------------------------------------
 // legalize()
@@ -20,4 +23,6 @@
 void legalize() {
   // UNIMPLEMENTED
 }
+
+ABC_NAMESPACE_IMPL_END
 

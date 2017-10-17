@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -158,7 +161,7 @@ void Ivy_ManHaigStop( Ivy_Man_t * p )
     Ivy_Obj_t * pObj;
     int i;
     assert( p->pHaig != NULL );
-    Vec_IntFree( p->pHaig->pData );
+    Vec_IntFree( (Vec_Int_t *)p->pHaig->pData );
     Ivy_ManStop( p->pHaig );
     p->pHaig = NULL;
     // remove dangling pointers to the HAIG objects
@@ -189,7 +192,7 @@ void Ivy_ManHaigCreateObj( Ivy_Man_t * p, Ivy_Obj_t * pObj )
 //        pObj->pEquiv = Ivy_Latch( p->pHaig, Ivy_ObjChild0Equiv(pObj), pObj->Init );
         pEquiv0 = Ivy_ObjChild0Equiv(pObj);
         pEquiv0 = Ivy_NotCond( Ivy_HaigObjRepr(Ivy_Regular(pEquiv0)), Ivy_IsComplement(pEquiv0) );
-        pObj->pEquiv = Ivy_Latch( p->pHaig, pEquiv0, pObj->Init );
+        pObj->pEquiv = Ivy_Latch( p->pHaig, pEquiv0, (Ivy_Init_t)pObj->Init );
     }
     else if ( Ivy_ObjType(pObj) == IVY_AND )
     {
@@ -469,7 +472,7 @@ printf( "Collected node %d with fanins %d and %d\n", pObj->Id, Ivy_ObjFanin0(pOb
     Ivy_ManForEachNodeVec( p, vLatches, pObj, i )
         pObj->Init = IVY_INIT_DC;
     // set the latches of D to be determinate
-    vLatchesD = p->pData;
+    vLatchesD = (Vec_Int_t *)p->pData;
     Ivy_ManForEachNodeVec( p, vLatchesD, pObj, i )
         pObj->Init = IVY_INIT_0;
 
@@ -487,21 +490,21 @@ printf( "Collected node %d with fanins %d and %d\n", pObj->Id, Ivy_ObjFanin0(pOb
         {
 if ( fVerbose )
 printf( "Processing node %d with fanins %d and %d\n", pObj->Id, Ivy_ObjFanin0(pObj)->Id, Ivy_ObjFanin1(pObj)->Id );
-            In0 = Ivy_InitNotCond( Ivy_ObjFanin0(pObj)->Init, Ivy_ObjFaninC0(pObj) );
-            In1 = Ivy_InitNotCond( Ivy_ObjFanin1(pObj)->Init, Ivy_ObjFaninC1(pObj) );
+            In0 = Ivy_InitNotCond( (Ivy_Init_t)Ivy_ObjFanin0(pObj)->Init, Ivy_ObjFaninC0(pObj) );
+            In1 = Ivy_InitNotCond( (Ivy_Init_t)Ivy_ObjFanin1(pObj)->Init, Ivy_ObjFaninC1(pObj) );
             pObj->Init = Ivy_ManHaigSimulateAnd( In0, In1 );
             // simulate the equivalence class if the node is a representative
             if ( pObj->pEquiv && Ivy_ObjRefs(pObj) > 0 )
             {
 if ( fVerbose )
 printf( "Processing choice node %d\n", pObj->Id );
-                In0 = pObj->Init;
+                In0 = (Ivy_Init_t)pObj->Init;
                 assert( !Ivy_IsComplement(pObj->pEquiv) );
                 for ( pTemp = pObj->pEquiv; pTemp != pObj; pTemp = Ivy_Regular(pTemp->pEquiv) )
                 {
 if ( fVerbose )
 printf( "Processing secondary node %d\n", pTemp->Id );
-                    In1 = Ivy_InitNotCond( pTemp->Init, Ivy_IsComplement(pTemp->pEquiv) );
+                    In1 = Ivy_InitNotCond( (Ivy_Init_t)pTemp->Init, Ivy_IsComplement(pTemp->pEquiv) );
                     In0 = Ivy_ManHaigSimulateChoice( In0, In1 );
                 }
                 pObj->Init = In0;
@@ -527,4 +530,6 @@ printf( "Using latch %d with fanin %d\n", pObj->Id, Ivy_ObjFanin0(pObj)->Id );
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

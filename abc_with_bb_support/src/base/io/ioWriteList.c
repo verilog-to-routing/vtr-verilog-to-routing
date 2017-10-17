@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 /*
 -------- Original Message --------
@@ -35,7 +38,7 @@ used it in order to reason on relatively small weighed direct graphs. I
 simply list all vertices, one per line and for each vertex "V_source" I
 list all vertices that are "sinks" with respect to it, i.e. such that
 there is a distinct arc between "V_source" and each of them (in
-paranthesis I list the name of the edge and its weight (number of latency
+parenthesis I list the name of the edge and its weight (number of latency
 on that path). For instance, if you look at the following graph, you have
 that vertex "v_5" is connected to vertex "v_6" through a directed arc
 called "v_5_to_v_6" whose latency is equal to 3, i.e. there are three
@@ -285,4 +288,6 @@ void Io_WriteCellNet( Abc_Ntk_t * pNtk, char * pFileName )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

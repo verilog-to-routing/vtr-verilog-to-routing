@@ -19,7 +19,11 @@
 ***********************************************************************/
 
 #include "rwr.h"
-#include "dec.h"
+#include "bool/dec/dec.h"
+#include "aig/ivy/ivy.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -58,21 +62,24 @@ int Rwr_NodeRewrite( Rwr_Man_t * p, Cut_Man_t * pManCut, Abc_Obj_t * pNode, int 
     Dec_Graph_t * pGraph;
     Cut_Cut_t * pCut;//, * pTemp;
     Abc_Obj_t * pFanin;
-    unsigned uPhase, uTruthBest, uTruth;
+    unsigned uPhase;
+    unsigned uTruthBest = 0; // Suppress "might be used uninitialized"
+    unsigned uTruth;
     char * pPerm;
-    int Required, nNodesSaved, nNodesSaveCur;
-    int i, GainCur, GainBest = -1;
-    int clk, clk2;//, Counter;
+    int Required, nNodesSaved;
+    int nNodesSaveCur = -1; // Suppress "might be used uninitialized"
+    int i, GainCur = -1, GainBest = -1;
+    abctime clk, clk2;//, Counter;
 
     p->nNodesConsidered++;
     // get the required times
     Required = fUpdateLevel? Abc_ObjRequiredLevel(pNode) : ABC_INFINITY;
 
     // get the node's cuts
-clk = clock();
+clk = Abc_Clock();
     pCut = (Cut_Cut_t *)Abc_NodeGetCutsRecursive( pManCut, pNode, 0, 0 );
     assert( pCut != NULL );
-p->timeCut += clock() - clk;
+p->timeCut += Abc_Clock() - clk;
 
 //printf( " %d", Rwr_CutCountNumNodes(pNode, pCut) );
 /*
@@ -82,7 +89,7 @@ p->timeCut += clock() - clk;
     printf( "%d ", Counter );
 */
     // go through the cuts
-clk = clock();
+clk = Abc_Clock();
     for ( pCut = pCut->pNext; pCut; pCut = pCut->pNext )
     {
         // consider only 4-input cuts
@@ -92,14 +99,14 @@ clk = clock();
 
         // get the fanin permutation
         uTruth = 0xFFFF & *Cut_CutReadTruth(pCut);
-        pPerm = p->pPerms4[ p->pPerms[uTruth] ];
+        pPerm = p->pPerms4[ (int)p->pPerms[uTruth] ];
         uPhase = p->pPhases[uTruth];
         // collect fanins with the corresponding permutation/phase
         Vec_PtrClear( p->vFaninsCur );
         Vec_PtrFill( p->vFaninsCur, (int)pCut->nLeaves, 0 );
         for ( i = 0; i < (int)pCut->nLeaves; i++ )
         {
-            pFanin = Abc_NtkObj( pNode->pNtk, pCut->pLeaves[pPerm[i]] );
+            pFanin = Abc_NtkObj( pNode->pNtk, pCut->pLeaves[(int)pPerm[i]] );
             if ( pFanin == NULL )
                 break;
             pFanin = Abc_ObjNotCond(pFanin, ((uPhase & (1<<i)) > 0) );
@@ -114,36 +121,36 @@ clk = clock();
 
         {
             int Counter = 0;
-            Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+            Vec_PtrForEachEntry( Abc_Obj_t *, p->vFaninsCur, pFanin, i )
                 if ( Abc_ObjFanoutNum(Abc_ObjRegular(pFanin)) == 1 )
                     Counter++;
             if ( Counter > 2 )
                 continue;
         }
 
-clk2 = clock();
+clk2 = Abc_Clock();
 /*
         printf( "Considering: (" );
-        Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vFaninsCur, pFanin, i )
             printf( "%d ", Abc_ObjFanoutNum(Abc_ObjRegular(pFanin)) );
         printf( ")\n" );
 */
         // mark the fanin boundary 
-        Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vFaninsCur, pFanin, i )
             Abc_ObjRegular(pFanin)->vFanouts.nSize++;
 
         // label MFFC with current ID
         Abc_NtkIncrementTravId( pNode->pNtk );
         nNodesSaved = Abc_NodeMffcLabelAig( pNode );
         // unmark the fanin boundary
-        Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vFaninsCur, pFanin, i )
             Abc_ObjRegular(pFanin)->vFanouts.nSize--;
-p->timeMffc += clock() - clk2;
+p->timeMffc += Abc_Clock() - clk2;
 
         // evaluate the cut
-clk2 = clock();
+clk2 = Abc_Clock();
         pGraph = Rwr_CutEvaluate( p, pNode, pCut, p->vFaninsCur, nNodesSaved, Required, &GainCur, fPlaceEnable );
-p->timeEval += clock() - clk2;
+p->timeEval += Abc_Clock() - clk2;
 
         // check if the cut is better than the current best one
         if ( pGraph != NULL && GainBest < GainCur )
@@ -156,11 +163,11 @@ p->timeEval += clock() - clk2;
             uTruthBest = 0xFFFF & *Cut_CutReadTruth(pCut);
             // collect fanins in the
             Vec_PtrClear( p->vFanins );
-            Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+            Vec_PtrForEachEntry( Abc_Obj_t *, p->vFaninsCur, pFanin, i )
                 Vec_PtrPush( p->vFanins, pFanin );
         }
     }
-p->timeRes += clock() - clk;
+p->timeRes += Abc_Clock() - clk;
 
     if ( GainBest == -1 )
         return -1;
@@ -169,7 +176,7 @@ p->timeRes += clock() - clk;
     {
         printf( "Class %d  ", p->pMap[uTruthBest] );
         printf( "Gain = %d. Node %d : ", GainBest, pNode->Id );
-        Vec_PtrForEachEntry( p->vFanins, pFanin, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vFanins, pFanin, i )
             printf( "%d ", Abc_ObjRegular(pFanin)->Id );
         Dec_GraphPrint( stdout, p->pGraph, NULL, NULL );
         printf( "\n" );
@@ -185,7 +192,7 @@ p->timeRes += clock() - clk;
         else
         {
             printf( "Node %d : ", pNode->Id );
-            Vec_PtrForEachEntry( p->vFanins, pFanin, i )
+            Vec_PtrForEachEntry( Abc_Obj_t *, p->vFanins, pFanin, i )
                 printf( "%d ", Abc_ObjRegular(pFanin)->Id );
             printf( "a" );
         }
@@ -200,11 +207,11 @@ p->timeRes += clock() - clk;
 */
 
     // copy the leaves
-    Vec_PtrForEachEntry( p->vFanins, pFanin, i )
-        Dec_GraphNode(p->pGraph, i)->pFunc = pFanin;
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vFanins, pFanin, i )
+        Dec_GraphNode((Dec_Graph_t *)p->pGraph, i)->pFunc = pFanin;
 /*
     printf( "(" );
-    Vec_PtrForEachEntry( p->vFanins, pFanin, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vFanins, pFanin, i )
         printf( " %d", Abc_ObjRegular(pFanin)->vFanouts.nSize - 1 );
     printf( " )  " );
 */
@@ -225,7 +232,7 @@ p->timeRes += clock() - clk;
         printf( "Save = %d.  ", nNodesSaveCur );
         printf( "Add = %d.  ",  nNodesSaveCur-GainBest );
         printf( "GAIN = %d.  ", GainBest );
-        printf( "Cone = %d.  ", p->pGraph? Dec_GraphNodeNum(p->pGraph) : 0 );
+        printf( "Cone = %d.  ", p->pGraph? Dec_GraphNodeNum((Dec_Graph_t *)p->pGraph) : 0 );
         printf( "Class = %d.  ", p->pMap[uTruthBest] );
         printf( "\n" );
     }
@@ -245,12 +252,14 @@ p->timeRes += clock() - clk;
 ***********************************************************************/
 Dec_Graph_t * Rwr_CutEvaluate( Rwr_Man_t * p, Abc_Obj_t * pRoot, Cut_Cut_t * pCut, Vec_Ptr_t * vFaninsCur, int nNodesSaved, int LevelMax, int * pGainBest, int fPlaceEnable )
 {
+    extern int            Dec_GraphToNetworkCount( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int NodeMax, int LevelMax );
     Vec_Ptr_t * vSubgraphs;
-    Dec_Graph_t * pGraphBest, * pGraphCur;
+    Dec_Graph_t * pGraphBest = NULL; // Suppress "might be used uninitialized"
+    Dec_Graph_t * pGraphCur;
     Rwr_Node_t * pNode, * pFanin;
     int nNodesAdded, GainBest, i, k;
     unsigned uTruth;
-    float CostBest, CostCur;
+    float CostBest;//, CostCur;
     // find the matching class of subgraphs
     uTruth = 0xFFFF & *Cut_CutReadTruth(pCut);
     vSubgraphs = Vec_VecEntry( p->vClasses, p->pMap[uTruth] );
@@ -258,19 +267,19 @@ Dec_Graph_t * Rwr_CutEvaluate( Rwr_Man_t * p, Abc_Obj_t * pRoot, Cut_Cut_t * pCu
     // determine the best subgraph
     GainBest = -1;
     CostBest = ABC_INFINITY;
-    Vec_PtrForEachEntry( vSubgraphs, pNode, i )
+    Vec_PtrForEachEntry( Rwr_Node_t *, vSubgraphs, pNode, i )
     {
         // get the current graph
         pGraphCur = (Dec_Graph_t *)pNode->pNext;
         // copy the leaves
-        Vec_PtrForEachEntry( vFaninsCur, pFanin, k )
+        Vec_PtrForEachEntry( Rwr_Node_t *, vFaninsCur, pFanin, k )
             Dec_GraphNode(pGraphCur, k)->pFunc = pFanin;
         // detect how many unlabeled nodes will be reused
         nNodesAdded = Dec_GraphToNetworkCount( pRoot, pGraphCur, nNodesSaved, LevelMax );
         if ( nNodesAdded == -1 )
             continue;
         assert( nNodesSaved >= nNodesAdded );
-
+/*
         // evaluate the cut
         if ( fPlaceEnable )
         {
@@ -306,6 +315,7 @@ Dec_Graph_t * Rwr_CutEvaluate( Rwr_Man_t * p, Abc_Obj_t * pRoot, Cut_Cut_t * pCu
             }
         }
         else
+*/
         {
             // count the gain at this node
             if ( GainBest < nNodesSaved - nNodesAdded )
@@ -370,7 +380,7 @@ int Rwr_CutIsBoolean( Abc_Obj_t * pObj, Vec_Ptr_t * vLeaves )
 {
     Abc_Obj_t * pTemp;
     int i, RetValue;
-    Vec_PtrForEachEntry( vLeaves, pTemp, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pTemp, i )
     {
         pTemp = Abc_ObjRegular(pTemp);
         assert( !pTemp->fMarkA && !pTemp->fMarkB );
@@ -378,7 +388,7 @@ int Rwr_CutIsBoolean( Abc_Obj_t * pObj, Vec_Ptr_t * vLeaves )
     Rwr_CutIsBoolean_rec( Abc_ObjFanin0(pObj), vLeaves, 1 );
     Rwr_CutIsBoolean_rec( Abc_ObjFanin1(pObj), vLeaves, 0 );
     RetValue = 0;
-    Vec_PtrForEachEntry( vLeaves, pTemp, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pTemp, i )
     {
         pTemp = Abc_ObjRegular(pTemp);
         RetValue |= pTemp->fMarkA && pTemp->fMarkB;
@@ -445,7 +455,7 @@ int Rwr_CutCountNumNodes( Abc_Obj_t * pObj, Cut_Cut_t * pCut )
     for ( pCut = pCut->pNext; pCut; pCut = pCut->pNext )
         Rwr_CutCountNumNodes_rec( pObj, pCut, vNodes );
     // clean all nodes
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
         pObj->fMarkC = 0;
     // delete and return
     Counter = Vec_PtrSize(vNodes);
@@ -471,12 +481,12 @@ int Rwr_NodeGetDepth_rec( Abc_Obj_t * pObj, Vec_Ptr_t * vLeaves )
     int i, Depth0, Depth1;
     if ( Abc_ObjIsCi(pObj) )
         return 0;
-    Vec_PtrForEachEntry( vLeaves, pLeaf, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pLeaf, i )
         if ( pObj == Abc_ObjRegular(pLeaf) )
             return 0;
     Depth0 = Rwr_NodeGetDepth_rec( Abc_ObjFanin0(pObj), vLeaves );
     Depth1 = Rwr_NodeGetDepth_rec( Abc_ObjFanin1(pObj), vLeaves );
-    return 1 + ABC_MAX( Depth0, Depth1 );
+    return 1 + Abc_MaxInt( Depth0, Depth1 );
 }
 
 
@@ -499,7 +509,7 @@ void Rwr_ScoresClean( Rwr_Man_t * p )
     for ( i = 0; i < p->vClasses->nSize; i++ )
     {
         vSubgraphs = Vec_VecEntry( p->vClasses, i );
-        Vec_PtrForEachEntry( vSubgraphs, pNode, k )
+        Vec_PtrForEachEntry( Rwr_Node_t *, vSubgraphs, pNode, k )
             pNode->nScore = pNode->nGain = pNode->nAdded = 0;
     }
 }
@@ -552,7 +562,7 @@ void Rwr_ScoresReport( Rwr_Man_t * p )
         Perm[i] = i;
         Gains[i] = 0;
         vSubgraphs = Vec_VecEntry( p->vClasses, i );
-        Vec_PtrForEachEntry( vSubgraphs, pNode, k )
+        Vec_PtrForEachEntry( Rwr_Node_t *, vSubgraphs, pNode, k )
             Gains[i] += pNode->nGain;
     }
     // sort the gains
@@ -570,7 +580,7 @@ void Rwr_ScoresReport( Rwr_Man_t * p )
         Extra_PrintBinary( stdout, &uTruth, 16 );
         printf( "  " );
         Ivy_TruthDsdComputePrint( (unsigned)p->pMapInv[iNew] | ((unsigned)p->pMapInv[iNew] << 16) );
-        Vec_PtrForEachEntry( vSubgraphs, pNode, k )
+        Vec_PtrForEachEntry( Rwr_Node_t *, vSubgraphs, pNode, k )
         {
             if ( pNode->nScore == 0 )
                 continue;
@@ -584,4 +594,6 @@ void Rwr_ScoresReport( Rwr_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

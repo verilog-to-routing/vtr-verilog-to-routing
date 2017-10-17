@@ -49,6 +49,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /* see if the cube has a full row of 1's (with respect to cof) */
 bool full_row(p, cof)
 IN register pcube p, cof;
@@ -114,14 +117,14 @@ register pset a, b;
 
 	/* Check the partial word of binary variables */
 	x = a[last] & b[last];
-	if (x = ~ (x | x >> 1) & cube.inmask)
+	if ((x = ~ (x | x >> 1) & cube.inmask))
 	    if ((dist = count_ones(x)) > 1)
 		return 2;
 
 	/* Check the full words of binary variables */
 	for(w = 1; w < last; w++) {
 	    x = a[w] & b[w];
-	    if (x = ~ (x | x >> 1) & DISJOINT)
+	    if ((x = ~ (x | x >> 1) & DISJOINT))
 		if (dist == 1 || (dist += count_ones(x)) > 1)
 		    return 2;
 	}
@@ -159,13 +162,13 @@ register pset a, b;
 
 	/* Check the partial word of binary variables */
 	x = a[last] & b[last];
-	if (x = ~ (x | x >> 1) & cube.inmask)
+	if ((x = ~ (x | x >> 1) & cube.inmask))
 	    dist = count_ones(x);
 
 	/* Check the full words of binary variables */
 	for(w = 1; w < last; w++) {
 	    x = a[w] & b[w];
-	    if (x = ~ (x | x >> 1) & DISJOINT)
+	    if ((x = ~ (x | x >> 1) & DISJOINT))
 		dist += count_ones(x);
 	}
     }
@@ -200,13 +203,13 @@ IN register pset a, b;
 
 	/* Check the partial word of binary variables */
 	x = a[last] & b[last];
-	if (x = ~(x | x >> 1) & cube.inmask)
+	if ((x = ~(x | x >> 1) & cube.inmask))
 	    xlower[last] |= (x | (x << 1)) & a[last];
 
 	/* Check the full words of binary variables */
 	for(w = 1; w < last; w++) {
 	    x = a[w] & b[w];
-	    if (x = ~(x | x >> 1) & DISJOINT)
+	    if ((x = ~(x | x >> 1) & DISJOINT))
 		xlower[w] |= (x | (x << 1)) & a[w];
 	}
     }
@@ -252,13 +255,13 @@ IN register pcube a, b;
 
 	/* Check the partial word of binary variables */
 	r[last] = x = a[last] & b[last];
-	if (x = ~(x | x >> 1) & cube.inmask)
+	if ((x = ~(x | x >> 1) & cube.inmask))
 	    r[last] |= (x | (x << 1)) & (a[last] | b[last]);
 
 	/* Check the full words of binary variables */
 	for(w = 1; w < last; w++) {
 	    r[w] = x = a[w] & b[w];
-	    if (x = ~(x | x >> 1) & DISJOINT)
+	    if ((x = ~(x | x >> 1) & DISJOINT))
 		r[w] |= (x | (x << 1)) & (a[w] | b[w]);
 	}
     }
@@ -273,7 +276,7 @@ IN register pcube a, b;
 	last = cube.last_word[var];
 	empty = TRUE;
 	for(w = cube.first_word[var]; w <= last; w++)
-	    if (x = a[w] & b[w] & mask[w])
+	    if ((x = a[w] & b[w] & mask[w]))
 		empty = FALSE, r[w] |= x;
 	if (empty)
 	    for(w = cube.first_word[var]; w <= last; w++)
@@ -299,7 +302,7 @@ register pcube a;
 
 	/* Check the partial word of binary variables */
 	x = a[last];
-	if (x = ~ (x & x >> 1) & cube.inmask) {
+	if ((x = ~ (x & x >> 1) & cube.inmask)) {
 	    if ((dist = count_ones(x)) > 1)
 		return -1;		/* more than 2 active variables */
 	    active = (last-1)*(BPI/2) + bit_index(x) / 2;
@@ -308,7 +311,7 @@ register pcube a;
 	/* Check the full words of binary variables */
 	for(w = 1; w < last; w++) {
 	    x = a[w];
-	    if (x = ~ (x & x >> 1) & DISJOINT) {
+	    if ((x = ~ (x & x >> 1) & DISJOINT)) {
 		if ((dist += count_ones(x)) > 1)
 		    return -1;		/* more than 2 active variables */
 		active = (w-1)*(BPI/2) + bit_index(x) / 2;
@@ -481,3 +484,5 @@ register pset a, b;
     }
     return 0;
 }
+ABC_NAMESPACE_IMPL_END
+

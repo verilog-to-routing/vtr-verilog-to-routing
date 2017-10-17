@@ -18,8 +18,12 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "cut.h"
+#include "base/abc/abc.h"
+#include "opt/cut/cut.h"
+
+ABC_NAMESPACE_IMPL_START
+
+#define LARGE_LEVEL 1000000
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -170,7 +174,7 @@ int Abc_NtkSuperChoiceLut( Abc_Ntk_t * pNtk, int nLutSize, int nCutSizeMax, int 
         if ( Abc_ObjFaninNum(pFanin) == 1 )
             pFanin = Abc_ObjFanin0( pFanin );
         // get the new level
-        LevelMax = ABC_MAX( LevelMax, (int)pFanin->Level );
+        LevelMax = Abc_MaxInt( LevelMax, (int)pFanin->Level );
     }
 
     if ( fVerbose )
@@ -212,7 +216,7 @@ void Abc_NodeLutMap( Cut_Man_t * pManCuts, Abc_Obj_t * pObj )
     assert( pCut != NULL );
     assert( pObj->Level == 0 );
     // go through the cuts
-    pObj->Level = ABC_INFINITY;
+    pObj->Level = LARGE_LEVEL;
     for ( pCut = pCut->pNext; pCut; pCut = pCut->pNext )
     {
         DelayMax = 0;
@@ -226,7 +230,7 @@ void Abc_NodeLutMap( Cut_Man_t * pManCuts, Abc_Obj_t * pObj )
         if ( (int)pObj->Level > DelayMax )
             pObj->Level = DelayMax;
     }
-    assert( pObj->Level < ABC_INFINITY );
+    assert( pObj->Level < LARGE_LEVEL );
     pObj->Level++;
 //    printf( "%d(%d) ", pObj->Id, pObj->Level );
 }
@@ -284,7 +288,7 @@ Abc_ManScl_t * Abc_ManSclStart( int nLutSize, int nCutSizeMax, int nNodesMax )
     Abc_ManScl_t * p;
     int i, k;
     assert( sizeof(unsigned) == 4 );
-    p = ALLOC( Abc_ManScl_t, 1 );
+    p = ABC_ALLOC( Abc_ManScl_t, 1 );
     memset( p, 0, sizeof(Abc_ManScl_t) );
     p->nLutSize    = nLutSize;
     p->nCutSizeMax = nCutSizeMax;
@@ -319,10 +323,10 @@ Abc_ManScl_t * Abc_ManSclStart( int nLutSize, int nCutSizeMax, int nNodesMax )
 void Abc_ManSclStop( Abc_ManScl_t * p )
 {
 //    Vec_IntFree( p->vBound );
-    free( p->uVars );
-    free( p->uSims );
-    free( p->uCofs );
-    free( p );
+    ABC_FREE( p->uVars );
+    ABC_FREE( p->uSims );
+    ABC_FREE( p->uCofs );
+    ABC_FREE( p );
 }
 
 
@@ -340,14 +344,14 @@ void Abc_ManSclStop( Abc_ManScl_t * p )
 unsigned * Abc_NodeSuperChoiceTruth( Abc_ManScl_t * pManScl )
 {
     Abc_Obj_t * pObj;
-    unsigned * puData0, * puData1, * puData;
+    unsigned * puData0, * puData1, * puData = NULL;
     char * pSop;
     int i, k;
     // set elementary truth tables
-    Vec_PtrForEachEntry( pManScl->vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, pManScl->vLeaves, pObj, i )
         pObj->pNext = (Abc_Obj_t *)pManScl->uVars[i];
     // compute truth tables for internal nodes
-    Vec_PtrForEachEntry( pManScl->vVolume, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, pManScl->vVolume, pObj, i )
     {
         // set storage for the node's simulation info
         pObj->pNext = (Abc_Obj_t *)pManScl->uSims[i];
@@ -356,7 +360,7 @@ unsigned * Abc_NodeSuperChoiceTruth( Abc_ManScl_t * pManScl )
         puData0 = (unsigned *)Abc_ObjFanin0(pObj)->pNext;
         puData1 = (unsigned *)Abc_ObjFanin1(pObj)->pNext;
         // simulate
-        pSop = pObj->pData;
+        pSop = (char *)pObj->pData;
         if ( pSop[0] == '0' && pSop[1] == '0' )
             for ( k = 0; k < pManScl->nWords; k++ )
                 puData[k] = ~puData0[k] & ~puData1[k];
@@ -410,13 +414,13 @@ void Abc_NodeSuperChoiceCollect2( Abc_Obj_t * pRoot, Vec_Ptr_t * vLeaves, Vec_Pt
 {
     Abc_Obj_t * pObj;
     int i;
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->fMarkC = 1;
     Vec_PtrClear( vVolume );
     Abc_NodeSuperChoiceCollect2_rec( pRoot, vVolume );
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->fMarkC = 0;
-    Vec_PtrForEachEntry( vVolume, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vVolume, pObj, i )
         pObj->fMarkC = 0;
 }
 
@@ -463,15 +467,15 @@ void Abc_NodeSuperChoiceCollect( Abc_Obj_t * pRoot, Vec_Ptr_t * vLeaves, Vec_Ptr
     Abc_Obj_t * pObj;
     int i, nLeaves;
     nLeaves = Vec_PtrSize(vLeaves);
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->fMarkB = pObj->fMarkC = 1;
     Vec_PtrClear( vVolume );
     Vec_PtrClear( vLeaves );
     Abc_NodeSuperChoiceCollect_rec( pRoot, vLeaves, vVolume );
     assert( Vec_PtrSize(vLeaves) == nLeaves );
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->fMarkC = 0;
-    Vec_PtrForEachEntry( vVolume, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vVolume, pObj, i )
         pObj->fMarkC = 0;
 }
 
@@ -511,7 +515,7 @@ int Abc_NodeGetLevel( Abc_Obj_t * pObj )
     int i, Level;
     Level = 0;
     Abc_ObjForEachFanin( pObj, pFanin, i )
-        Level = ABC_MAX( Level, (int)pFanin->Level );
+        Level = Abc_MaxInt( Level, (int)pFanin->Level );
     return Level + 1;
 }
 
@@ -552,7 +556,7 @@ Abc_Obj_t * Abc_NodeSuperChoiceLut( Abc_ManScl_t * p, Abc_Obj_t * pObj )
             if ( uSupport & (1 << i) )
                 break;
         assert( i < nVars );
-        pFanin = Vec_PtrEntry( p->vLeaves, i );
+        pFanin = (Abc_Obj_t *)Vec_PtrEntry( p->vLeaves, i );
         pObj->Level = pFanin->Level;
         return NULL;
     }
@@ -568,17 +572,17 @@ Abc_Obj_t * Abc_NodeSuperChoiceLut( Abc_ManScl_t * p, Abc_Obj_t * pObj )
     while ( Vec_PtrSize(p->vLeaves) > p->nLutSize )
         if ( !Abc_NodeDecomposeStep( p ) )
         {
-            Vec_PtrForEachEntry( p->vLeaves, pFanin, i )
+            Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pFanin, i )
                 if ( Abc_ObjIsNode(pFanin) && Abc_ObjFanoutNum(pFanin) == 0 )
                     Abc_NtkDeleteObj_rec( pFanin, 1 );
             return NULL;
         }
     // create the topmost node
     pObjNew = Abc_NtkCreateNode( pObj->pNtk );
-    Vec_PtrForEachEntry( p->vLeaves, pFanin, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pFanin, i )
         Abc_ObjAddFanin( pObjNew, pFanin );
     // create the function
-    pObjNew->pData = Abc_SopCreateFromTruth( pObj->pNtk->pManFunc, Vec_PtrSize(p->vLeaves), p->uTruth ); // need ISOP
+    pObjNew->pData = Abc_SopCreateFromTruth( (Mem_Flex_t *)pObj->pNtk->pManFunc, Vec_PtrSize(p->vLeaves), p->uTruth ); // need ISOP
     pObjNew->Level = Abc_NodeGetLevel( pObjNew );
     return pObjNew;
 }
@@ -597,8 +601,8 @@ Abc_Obj_t * Abc_NodeSuperChoiceLut( Abc_ManScl_t * p, Abc_Obj_t * pObj )
 int Abc_NodeCompareLevelsInc( int * pp1, int * pp2 )
 {
     Abc_Obj_t * pNode1, * pNode2;
-    pNode1 = Vec_PtrEntry(s_pLeaves, *pp1);
-    pNode2 = Vec_PtrEntry(s_pLeaves, *pp2);
+    pNode1 = (Abc_Obj_t *)Vec_PtrEntry(s_pLeaves, *pp1);
+    pNode2 = (Abc_Obj_t *)Vec_PtrEntry(s_pLeaves, *pp2);
     if ( pNode1->Level < pNode2->Level )
         return -1;
     if ( pNode1->Level > pNode2->Level ) 
@@ -635,7 +639,7 @@ void Abc_NodeDecomposeSort( Abc_Obj_t ** pLeaves, int nVars, int * pBSet, int nL
     for ( i = 0; i < nLutSize; i++ )
     {
         kBest = -1;
-        LevelMin = ABC_INFINITY;
+        LevelMin = LARGE_LEVEL;
         for ( k = 0; k < nVars; k++ )
             if ( pTemp[k] && LevelMin > (int)pTemp[k]->Level )
             {
@@ -704,7 +708,7 @@ int Abc_NodeDecomposeStep( Abc_ManScl_t * p )
             pTruthClass = p->uCofs[ nCofs + pCofClasses[k][0] ];
             if ( Extra_TruthIsEqual( pTruthCof, pTruthClass, nVars ) )
             {
-                pCofClasses[k][ nCofClasses[k]++ ] = i;
+                pCofClasses[k][(int)nCofClasses[k]++ ] = i;
                 break;
             }
         }
@@ -718,7 +722,7 @@ int Abc_NodeDecomposeStep( Abc_ManScl_t * p )
             return 0;
     }
     // the number of cofactors is acceptable
-    nVarsNew = Extra_Base2Log( nClasses );
+    nVarsNew = Abc_Base2Log( nClasses );
     assert( nVarsNew < p->nLutSize );
     // create the remainder truth table
     // for each class of cofactors, multiply cofactor truth table by its code
@@ -755,11 +759,11 @@ int Abc_NodeDecomposeStep( Abc_ManScl_t * p )
         pObjNew = Abc_NtkCreateNode( pNtk );
         for ( i = 0; i < p->nLutSize; i++ )
         {
-            pFanin = Vec_PtrEntry( p->vLeaves, p->pBSet[i] );
+            pFanin = (Abc_Obj_t *)Vec_PtrEntry( p->vLeaves, p->pBSet[i] );
             Abc_ObjAddFanin( pObjNew, pFanin );
         }
         // create the function
-        pObjNew->pData = Abc_SopCreateFromTruth( pNtk->pManFunc, p->nLutSize, pTruth ); // need ISOP
+        pObjNew->pData = Abc_SopCreateFromTruth( (Mem_Flex_t *)pNtk->pManFunc, p->nLutSize, pTruth ); // need ISOP
         pObjNew->Level = Abc_NodeGetLevel( pObjNew );
         pNodesNew[v] = pObjNew;
     }
@@ -782,5 +786,8 @@ int Abc_NodeDecomposeStep( Abc_ManScl_t * p )
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
+
 
 

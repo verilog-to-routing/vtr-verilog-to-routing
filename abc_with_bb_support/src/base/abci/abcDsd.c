@@ -18,20 +18,29 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "dsd.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#include "bdd/dsd/dsd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
  
-static Abc_Ntk_t *     Abc_NtkDsdInternal( Abc_Ntk_t * pNtk, bool fVerbose, bool fPrint, bool fShort );
+#ifdef ABC_USE_CUDD
+
+static Abc_Ntk_t *     Abc_NtkDsdInternal( Abc_Ntk_t * pNtk, int fVerbose, int fPrint, int fShort );
 static void            Abc_NtkDsdConstruct( Dsd_Manager_t * pManDsd, Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew );
 static Abc_Obj_t *     Abc_NtkDsdConstructNode( Dsd_Manager_t * pManDsd, Dsd_Node_t * pNodeDsd, Abc_Ntk_t * pNtkNew, int * pCounters );
 
 static Vec_Ptr_t *     Abc_NtkCollectNodesForDsd( Abc_Ntk_t * pNtk );
-static void            Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager_t * pManDsd, bool fRecursive, int * pCounters );
-static bool            Abc_NodeIsForDsd( Abc_Obj_t * pNode );
+static void            Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager_t * pManDsd, int fRecursive, int * pCounters );
+static int            Abc_NodeIsForDsd( Abc_Obj_t * pNode );
 static int             Abc_NodeFindMuxVar( DdManager * dd, DdNode * bFunc, int nVars );
 
 ////////////////////////////////////////////////////////////////////////
@@ -53,12 +62,12 @@ static int             Abc_NodeFindMuxVar( DdManager * dd, DdNode * bFunc, int n
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkDsdGlobal( Abc_Ntk_t * pNtk, bool fVerbose, bool fPrint, bool fShort )
+Abc_Ntk_t * Abc_NtkDsdGlobal( Abc_Ntk_t * pNtk, int fVerbose, int fPrint, int fShort )
 {
     DdManager * dd;
     Abc_Ntk_t * pNtkNew;
     assert( Abc_NtkIsStrash(pNtk) );
-    dd = Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, fVerbose );
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, fVerbose );
     if ( dd == NULL )
         return NULL;
     if ( fVerbose )
@@ -91,7 +100,7 @@ Abc_Ntk_t * Abc_NtkDsdGlobal( Abc_Ntk_t * pNtk, bool fVerbose, bool fPrint, bool
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkDsdInternal( Abc_Ntk_t * pNtk, bool fVerbose, bool fPrint, bool fShort )
+Abc_Ntk_t * Abc_NtkDsdInternal( Abc_Ntk_t * pNtk, int fVerbose, int fPrint, int fShort )
 {
     char ** ppNamesCi, ** ppNamesCo;
     Vec_Ptr_t * vFuncsGlob;
@@ -107,21 +116,22 @@ Abc_Ntk_t * Abc_NtkDsdInternal( Abc_Ntk_t * pNtk, bool fVerbose, bool fPrint, bo
         Vec_PtrPush( vFuncsGlob, Cudd_NotCond(Abc_ObjGlobalBdd(pObj), Abc_ObjFaninC0(pObj)) );
 
     // perform the decomposition
-    dd = Abc_NtkGlobalBddMan(pNtk);
+    dd = (DdManager *)Abc_NtkGlobalBddMan(pNtk);
     pManDsd = Dsd_ManagerStart( dd, Abc_NtkCiNum(pNtk), fVerbose );
-    Dsd_Decompose( pManDsd, (DdNode **)vFuncsGlob->pArray, Abc_NtkCoNum(pNtk) );
-    Vec_PtrFree( vFuncsGlob );
-    Abc_NtkFreeGlobalBdds( pNtk, 0 );
     if ( pManDsd == NULL )
     {
+        Vec_PtrFree( vFuncsGlob );
         Cudd_Quit( dd );
         return NULL;
     }
+    Dsd_Decompose( pManDsd, (DdNode **)vFuncsGlob->pArray, Abc_NtkCoNum(pNtk) );
+    Vec_PtrFree( vFuncsGlob );
+    Abc_NtkFreeGlobalBdds( pNtk, 0 );
 
     // start the new network
     pNtkNew = Abc_NtkStartFrom( pNtk, ABC_NTK_LOGIC, ABC_FUNC_BDD );
     // make sure the new manager has enough inputs
-    Cudd_bddIthVar( pNtkNew->pManFunc, dd->size-1 );
+    Cudd_bddIthVar( (DdManager *)pNtkNew->pManFunc, dd->size-1 );
     // put the results into the new network (save new CO drivers in old CO drivers)
     Abc_NtkDsdConstruct( pManDsd, pNtk, pNtkNew );
     // finalize the new network
@@ -132,9 +142,12 @@ Abc_Ntk_t * Abc_NtkDsdInternal( Abc_Ntk_t * pNtk, bool fVerbose, bool fPrint, bo
     {
         ppNamesCi = Abc_NtkCollectCioNames( pNtk, 0 );
         ppNamesCo = Abc_NtkCollectCioNames( pNtk, 1 );
-        Dsd_TreePrint( stdout, pManDsd, ppNamesCi, ppNamesCo, fShort, -1 );
-        free( ppNamesCi );
-        free( ppNamesCo );
+        if ( fVerbose )
+            Dsd_TreePrint( stdout, pManDsd, ppNamesCi, ppNamesCo, fShort, -1 );
+        else
+            Dsd_TreePrint2( stdout, pManDsd, ppNamesCi, ppNamesCo, -1 );
+        ABC_FREE( ppNamesCi );
+        ABC_FREE( ppNamesCo );
     }
 
     // stop the DSD manager
@@ -161,18 +174,19 @@ void Abc_NtkDsdConstruct( Dsd_Manager_t * pManDsd, Abc_Ntk_t * pNtk, Abc_Ntk_t *
     int i, nNodesDsd;
 
     // save the CI nodes in the DSD nodes
-    Dsd_NodeSetMark( Dsd_ManagerReadConst1(pManDsd), (int)Abc_NtkCreateNodeConst1(pNtkNew) );
+    Abc_AigConst1(pNtk)->pCopy = pNodeNew = Abc_NtkCreateNodeConst1(pNtkNew);
+    Dsd_NodeSetMark( Dsd_ManagerReadConst1(pManDsd), (int)(ABC_PTRINT_T)pNodeNew );
     Abc_NtkForEachCi( pNtk, pNode, i )
     {
         pNodeDsd = Dsd_ManagerReadInput( pManDsd, i );
-        Dsd_NodeSetMark( pNodeDsd, (int)pNode->pCopy );
+        Dsd_NodeSetMark( pNodeDsd, (int)(ABC_PTRINT_T)pNode->pCopy );
     }
 
     // collect DSD nodes in DFS order (leaves and const1 are not collected)
     ppNodesDsd = Dsd_TreeCollectNodesDfs( pManDsd, &nNodesDsd );
     for ( i = 0; i < nNodesDsd; i++ )
         Abc_NtkDsdConstructNode( pManDsd, ppNodesDsd[i], pNtkNew, NULL );
-    free( ppNodesDsd );
+    ABC_FREE( ppNodesDsd );
 
     // set the pointers to the CO drivers
     Abc_NtkForEachCo( pNtk, pNode, i )
@@ -183,7 +197,7 @@ void Abc_NtkDsdConstruct( Dsd_Manager_t * pManDsd, Abc_Ntk_t * pNtk, Abc_Ntk_t *
         if ( !Abc_AigNodeIsAnd(pDriver) )
             continue;
         pNodeDsd = Dsd_ManagerReadRoot( pManDsd, i );
-        pNodeNew = (Abc_Obj_t *)Dsd_NodeReadMark( Dsd_Regular(pNodeDsd) );
+        pNodeNew = (Abc_Obj_t *)(ABC_PTRINT_T)Dsd_NodeReadMark( Dsd_Regular(pNodeDsd) );
         assert( !Abc_ObjIsComplement(pNodeNew) );
         pDriver->pCopy = Abc_ObjNotCond( pNodeNew, Dsd_IsComplement(pNodeDsd) );
     }
@@ -203,10 +217,10 @@ void Abc_NtkDsdConstruct( Dsd_Manager_t * pManDsd, Abc_Ntk_t * pNtk, Abc_Ntk_t *
 Abc_Obj_t * Abc_NtkDsdConstructNode( Dsd_Manager_t * pManDsd, Dsd_Node_t * pNodeDsd, Abc_Ntk_t * pNtkNew, int * pCounters )
 {
     DdManager * ddDsd = Dsd_ManagerReadDd( pManDsd );
-    DdManager * ddNew = pNtkNew->pManFunc;
+    DdManager * ddNew = (DdManager *)pNtkNew->pManFunc;
     Dsd_Node_t * pFaninDsd;
     Abc_Obj_t * pNodeNew, * pFanin;
-    DdNode * bLocal, * bTemp, * bVar;
+    DdNode * bLocal = NULL, * bTemp, * bVar;
     Dsd_Type_t Type;
     int i, nDecs;
 
@@ -219,13 +233,13 @@ Abc_Obj_t * Abc_NtkDsdConstructNode( Dsd_Manager_t * pManDsd, Dsd_Node_t * pNode
     for ( i = 0; i < nDecs; i++ )
     {
         pFaninDsd  = Dsd_NodeReadDec( pNodeDsd, i );
-        pFanin     = (Abc_Obj_t *)Dsd_NodeReadMark(Dsd_Regular(pFaninDsd));
+        pFanin     = (Abc_Obj_t *)(ABC_PTRINT_T)Dsd_NodeReadMark(Dsd_Regular(pFaninDsd));
         Abc_ObjAddFanin( pNodeNew, pFanin );
         assert( Type == DSD_NODE_OR || !Dsd_IsComplement(pFaninDsd) );
     }
 
     // create the local function depending on the type of the node
-    ddNew = pNtkNew->pManFunc;
+    ddNew = (DdManager *)pNtkNew->pManFunc;
     switch ( Type )
     {
         case DSD_NODE_CONST1:
@@ -284,7 +298,7 @@ printf( "\n" );
         }
     }
     pNodeNew->pData = bLocal;
-    Dsd_NodeSetMark( pNodeDsd, (int)pNodeNew );
+    Dsd_NodeSetMark( pNodeDsd, (int)(ABC_PTRINT_T)pNodeNew );
     return pNodeNew;
 }
 
@@ -304,10 +318,10 @@ printf( "\n" );
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkDsdLocal( Abc_Ntk_t * pNtk, bool fVerbose, bool fRecursive )
+int Abc_NtkDsdLocal( Abc_Ntk_t * pNtk, int fVerbose, int fRecursive )
 {
     Dsd_Manager_t * pManDsd;
-    DdManager * dd = pNtk->pManFunc;
+    DdManager * dd = (DdManager *)pNtk->pManFunc;
     Vec_Ptr_t * vNodes;
     int i;
     int pCounters[11] = {0};
@@ -323,13 +337,16 @@ int Abc_NtkDsdLocal( Abc_Ntk_t * pNtk, bool fVerbose, bool fRecursive )
     // collect nodes for decomposition
     vNodes = Abc_NtkCollectNodesForDsd( pNtk );
     for ( i = 0; i < vNodes->nSize; i++ )
-        Abc_NodeDecompDsdAndMux( vNodes->pArray[i], vNodes, pManDsd, fRecursive, pCounters );
+        Abc_NodeDecompDsdAndMux( (Abc_Obj_t *)vNodes->pArray[i], vNodes, pManDsd, fRecursive, pCounters );
     Vec_PtrFree( vNodes );
 
-    printf( "Number of non-decomposable functions:\n" );
-    for ( i = 3; i < 10; i++ )
-        printf( "Inputs = %d.  Functions = %6d.\n", i, pCounters[i] );
-    printf( "Inputs > %d.  Functions = %6d.\n", 9, pCounters[10] );
+    if ( fVerbose )
+    {
+        printf( "Number of non-decomposable functions:\n" );
+        for ( i = 3; i < 10; i++ )
+            printf( "Inputs = %d.  Functions = %6d.\n", i, pCounters[i] );
+        printf( "Inputs > %d.  Functions = %6d.\n", 9, pCounters[10] );
+    }
 
     // stop the DSD manager
     Dsd_ManagerStop( pManDsd );
@@ -380,15 +397,15 @@ Vec_Ptr_t * Abc_NtkCollectNodesForDsd( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager_t * pManDsd, bool fRecursive, int * pCounters )
+void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager_t * pManDsd, int fRecursive, int * pCounters )
 {
-    DdManager * dd = pNode->pNtk->pManFunc;
-    Abc_Obj_t * pRoot, * pFanin, * pNode1, * pNode2, * pNodeC;
+    DdManager * dd = (DdManager *)pNode->pNtk->pManFunc;
+    Abc_Obj_t * pRoot = NULL, * pFanin, * pNode1, * pNode2, * pNodeC;
     Dsd_Node_t ** ppNodesDsd, * pNodeDsd, * pFaninDsd;
     int i, nNodesDsd, iVar, fCompl;
 
     // try disjoint support decomposition
-    pNodeDsd = Dsd_DecomposeOne( pManDsd, pNode->pData );
+    pNodeDsd = Dsd_DecomposeOne( pManDsd, (DdNode *)pNode->pData );
     fCompl   = Dsd_IsComplement( pNodeDsd );
     pNodeDsd = Dsd_Regular( pNodeDsd );
 
@@ -400,7 +417,7 @@ void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager
         Abc_ObjForEachFanin( pNode, pFanin, i )
         {
             pFaninDsd = Dsd_ManagerReadInput( pManDsd, i );
-            Dsd_NodeSetMark( pFaninDsd, (int)pFanin );
+            Dsd_NodeSetMark( pFaninDsd, (int)(ABC_PTRINT_T)pFanin );
         }
 
         // construct the intermediate nodes
@@ -411,32 +428,33 @@ void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager
             if ( Abc_NodeIsForDsd(pRoot) && fRecursive )
                 Vec_PtrPush( vNodes, pRoot );
         }
-        free( ppNodesDsd );
+        ABC_FREE( ppNodesDsd );
+        assert(pRoot);
 
         // remove the current fanins
         Abc_ObjRemoveFanins( pNode );
         // add fanin to the root
         Abc_ObjAddFanin( pNode, pRoot );
         // update the function to be that of buffer
-        Cudd_RecursiveDeref( dd, pNode->pData );
-        pNode->pData = Cudd_NotCond( dd->vars[0], fCompl ); Cudd_Ref( pNode->pData );
+        Cudd_RecursiveDeref( dd, (DdNode *)pNode->pData );
+        pNode->pData = Cudd_NotCond( (DdNode *)dd->vars[0], fCompl ); Cudd_Ref( (DdNode *)pNode->pData );
     }
     else // perform MUX-decomposition
     {
         // get the cofactoring variable
-        iVar = Abc_NodeFindMuxVar( dd, pNode->pData, Abc_ObjFaninNum(pNode) );
+        iVar = Abc_NodeFindMuxVar( dd, (DdNode *)pNode->pData, Abc_ObjFaninNum(pNode) );
         pNodeC = Abc_ObjFanin( pNode, iVar );
 
         // get the negative cofactor
         pNode1 = Abc_NtkCloneObj( pNode );
-        pNode1->pData = Cudd_Cofactor( dd, pNode->pData, Cudd_Not(dd->vars[iVar]) );  Cudd_Ref( pNode1->pData );
+        pNode1->pData = Cudd_Cofactor( dd, (DdNode *)pNode->pData, Cudd_Not(dd->vars[iVar]) );  Cudd_Ref( (DdNode *)pNode1->pData );
         Abc_NodeMinimumBase( pNode1 );
         if ( Abc_NodeIsForDsd(pNode1) )
             Vec_PtrPush( vNodes, pNode1 );
 
         // get the positive cofactor
         pNode2 = Abc_NtkCloneObj( pNode );
-        pNode2->pData = Cudd_Cofactor( dd, pNode->pData, dd->vars[iVar] );            Cudd_Ref( pNode2->pData );
+        pNode2->pData = Cudd_Cofactor( dd, (DdNode *)pNode->pData, dd->vars[iVar] );            Cudd_Ref( (DdNode *)pNode2->pData );
         Abc_NodeMinimumBase( pNode2 );
         if ( Abc_NodeIsForDsd(pNode2) )
             Vec_PtrPush( vNodes, pNode2 );
@@ -448,8 +466,8 @@ void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager
         Abc_ObjAddFanin( pNode, pNode2 );
         Abc_ObjAddFanin( pNode, pNode1 );
         // update the function to be that of MUX
-        Cudd_RecursiveDeref( dd, pNode->pData );
-        pNode->pData = Cudd_bddIte( dd, dd->vars[0], dd->vars[1], dd->vars[2] );    Cudd_Ref( pNode->pData );
+        Cudd_RecursiveDeref( dd, (DdNode *)pNode->pData );
+        pNode->pData = Cudd_bddIte( dd, dd->vars[0], dd->vars[1], dd->vars[2] );    Cudd_Ref( (DdNode *)pNode->pData );
     }
 }
 
@@ -464,9 +482,9 @@ void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NodeIsForDsd( Abc_Obj_t * pNode )
+int Abc_NodeIsForDsd( Abc_Obj_t * pNode )
 {
-    DdManager * dd = pNode->pNtk->pManFunc;
+//    DdManager * dd = pNode->pNtk->pManFunc;
 //    DdNode * bFunc, * bFunc0, * bFunc1;
     assert( Abc_ObjIsNode(pNode) );
 //    if ( Cudd_DagSize(pNode->pData)-1 > Abc_ObjFaninNum(pNode) )
@@ -544,8 +562,149 @@ int Abc_NodeFindMuxVar( DdManager * dd, DdNode * bFunc, int nVars )
 }
 
 
+/**Function********************************************************************
+
+  Synopsis    [Computes the positive polarty cube composed of the first vars in the array.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+DdNode * Extra_bddComputeSum( DdManager * dd, DdNode ** pbCubes, int nCubes )
+{
+    DdNode * bRes, * bTemp;
+    int i;
+    bRes = b0; Cudd_Ref( bRes );
+    for ( i = 0; i < nCubes; i++ )
+    {
+        bRes = Cudd_bddOr( dd, bTemp = bRes, pbCubes[i] );  Cudd_Ref( bRes );
+        Cudd_RecursiveDeref( dd, bTemp );
+    }
+    Cudd_Deref( bRes );
+    return bRes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Derives network with the given percentage of on-set and off-set minterms.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+DdNode * Abc_NtkSparsifyInternalOne( DdManager * ddNew, DdNode * bFunc, int nFanins, int nPerc )
+{
+    int nSpace = (int)Cudd_CountMinterm( ddNew, bFunc, nFanins );
+    int i, nMints = Abc_MaxInt( 1, (int)(0.01 * nPerc * nSpace) );
+    DdNode ** pbMints = Cudd_bddPickArbitraryMinterms( ddNew, bFunc, ddNew->vars, nFanins, nMints );
+    DdNode * bRes;
+    for ( i = 0; i < nMints; i++ )
+        Cudd_Ref( pbMints[i] );
+    bRes = Extra_bddComputeSum( ddNew, pbMints, nMints ); Cudd_Ref( bRes );
+    for ( i = 0; i < nMints; i++ )
+        Cudd_RecursiveDeref( ddNew, pbMints[i] );
+    Cudd_Deref( bRes );
+    ABC_FREE( pbMints );
+    return bRes;
+}
+Abc_Ntk_t * Abc_NtkSparsifyInternal( Abc_Ntk_t * pNtk, int nPerc, int fVerbose )
+{
+    Abc_Ntk_t * pNtkNew;
+    Abc_Obj_t * pObj, * pDriver, * pFanin;
+    DdNode * bFunc, * bFuncOld;
+    DdManager * ddNew;
+    int i, k, c;
+    // start the new network
+    pNtkNew = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_BDD, 1 );
+    Abc_NtkForEachCi( pNtk, pObj, i )
+        Abc_NtkDupObj( pNtkNew, pObj, 1 );
+    // duplicate the name and the spec
+    pNtkNew->pName = Extra_UtilStrsav(pNtk->pName);
+    pNtkNew->pSpec = Extra_UtilStrsav(pNtk->pSpec);
+    // make sure the new manager has enough inputs
+    ddNew = (DdManager *)pNtkNew->pManFunc;
+    Cudd_bddIthVar( ddNew, Abc_NtkCiNum(pNtk)-1 );
+    // go through the outputs
+    Abc_NtkForEachCo( pNtk, pObj, i )
+    {
+        pDriver = Abc_ObjFanin0( pObj );
+        if ( Abc_ObjIsCi(pDriver) )
+        {
+            Abc_NtkDupObj( pNtkNew, pObj, 0 );
+            Abc_ObjAddFanin( pObj->pCopy, Abc_ObjNotCond(pDriver->pCopy, Abc_ObjFaninC0(pObj)) );
+            Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), "_on" );
+
+            Abc_NtkDupObj( pNtkNew, pObj, 0 );
+            Abc_ObjAddFanin( pObj->pCopy, Abc_ObjNotCond(pDriver->pCopy, !Abc_ObjFaninC0(pObj)) );
+            Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), "_off" );
+            continue;
+        }
+        if ( Abc_ObjFaninNum(pDriver) == 0 )
+        {
+            Abc_NtkDupObj( pNtkNew, pObj, 0 );
+            Abc_ObjAddFanin( pObj->pCopy, Abc_ObjFaninC0(pObj) ? Abc_NtkCreateNodeConst0(pNtkNew) : Abc_NtkCreateNodeConst1(pNtkNew) );
+            Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), "_on" );
+
+            Abc_NtkDupObj( pNtkNew, pObj, 0 );
+            Abc_ObjAddFanin( pObj->pCopy, Abc_ObjFaninC0(pObj) ? Abc_NtkCreateNodeConst1(pNtkNew) : Abc_NtkCreateNodeConst0(pNtkNew) );
+            Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), "_off" );
+            continue;
+        }
+        assert( Abc_ObjFaninNum(pObj) > 0 );
+        // onset/offset
+        for ( c = 0; c < 2; c++ )
+        {
+            Cudd_Srandom( 0 );
+            Abc_NtkDupObj( pNtkNew, pDriver, 0 );
+            Abc_ObjForEachFanin( pDriver, pFanin, k )
+                Abc_ObjAddFanin( pDriver->pCopy, pFanin->pCopy );
+            bFuncOld = Cudd_NotCond( (DdNode *)pDriver->pCopy->pData, c );
+            bFunc = Abc_NtkSparsifyInternalOne( ddNew, bFuncOld, Abc_ObjFaninNum(pDriver), nPerc );  Cudd_Ref( bFunc );
+            Cudd_RecursiveDeref( ddNew, bFuncOld );
+            pDriver->pCopy->pData = bFunc;
+            Abc_NtkDupObj( pNtkNew, pObj, 0 );
+            Abc_ObjAddFanin( pObj->pCopy, pDriver->pCopy );
+            Abc_ObjAssignName( pObj->pCopy, Abc_ObjName(pObj), (char*)(c ? "_off" : "_on") );
+        }
+    }
+    Abc_NtkLogicMakeSimpleCos( pNtkNew, 0 );
+    return pNtkNew;
+}
+Abc_Ntk_t * Abc_NtkSparsify( Abc_Ntk_t * pNtk, int nPerc, int fVerbose )
+{
+    Abc_Ntk_t * pNtkNew;
+    assert( Abc_NtkIsComb(pNtk) );
+    assert( Abc_NtkIsBddLogic(pNtk) );
+    pNtkNew = Abc_NtkSparsifyInternal( pNtk, nPerc, fVerbose );
+    if ( pNtkNew == NULL )
+        return NULL;
+    if ( !Abc_NtkCheck( pNtkNew ) )
+    {
+        printf( "Abc_NtkSparsify: The network check has failed.\n" );
+        Abc_NtkDelete( pNtkNew );
+        return NULL;
+    }
+    return pNtkNew;
+}
+
+#else
+
+Abc_Ntk_t * Abc_NtkSparsify( Abc_Ntk_t * pNtk, int nPerc, int fVerbose )                { return NULL; }
+Abc_Ntk_t * Abc_NtkDsdGlobal( Abc_Ntk_t * pNtk, int fVerbose, int fPrint, int fShort )  { return NULL; }
+int         Abc_NtkDsdLocal( Abc_Ntk_t * pNtk, int fVerbose, int fRecursive )           { return 0;    }
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

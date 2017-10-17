@@ -9,6 +9,9 @@
  */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 static void dump_irredundant();
 static pcover do_minimize();
@@ -179,3 +182,5 @@ sm_matrix *table;
 	(void) fclose(fp_pi_table);
     }
 }
+ABC_NAMESPACE_IMPL_END
+

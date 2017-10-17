@@ -20,6 +20,9 @@
 //#include "vm.h"
 //#include "vmInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -217,4 +220,6 @@ void Mvc_CubePrintMv( Mvc_Data_t * pData, Mvc_Cover_t * pCover, Mvc_Cube_t * pCu
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,6 +18,9 @@
  
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -130,7 +133,7 @@ void Fpga_MappingCuts( Fpga_Man_t * p )
     Fpga_CutTable_t * pTable;
     Fpga_Node_t * pNode;
     int nCuts, nNodes, i;
-    int clk = clock();
+    clock_t clk = clock();
 
     // set the elementary cuts for the PI variables
     assert( p->nVarsMax > 1 && p->nVarsMax < 11 );
@@ -157,7 +160,7 @@ void Fpga_MappingCuts( Fpga_Man_t * p )
         nCuts = Fpga_CutCountAll(p);
         printf( "Nodes = %6d. Total %d-cuts = %d. Cuts per node = %.1f. ", 
                p->nNodes, p->nVarsMax, nCuts, ((float)nCuts)/p->nNodes );
-        PRT( "Time", clock() - clk );
+        ABC_PRT( "Time", clock() - clk );
     }
 
     // print the cuts for the first primary output
@@ -418,8 +421,8 @@ Fpga_Cut_t * Fpga_CutMergeLists( Fpga_Man_t * p, Fpga_CutTable_t * pTable,
             // create the signature
             pCut->uSign = pTemp1->uSign | pTemp2->uSign;
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == FPGA_CUTS_MAX_COMPUTE )
@@ -453,8 +456,8 @@ Fpga_Cut_t * Fpga_CutMergeLists( Fpga_Man_t * p, Fpga_CutTable_t * pTable,
             // create the signature
             pCut->uSign = pTemp1->uSign | pTemp2->uSign;
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == FPGA_CUTS_MAX_COMPUTE )
@@ -493,8 +496,8 @@ Fpga_Cut_t * Fpga_CutMergeLists( Fpga_Man_t * p, Fpga_CutTable_t * pTable,
             // create the signature
             pCut->uSign = pTemp1->uSign | pTemp2->uSign;
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == FPGA_CUTS_MAX_COMPUTE )
@@ -560,8 +563,8 @@ Fpga_Cut_t * Fpga_CutMergeLists2( Fpga_Man_t * p, Fpga_CutTable_t * pTable,
             pCut->pOne = Fpga_CutNotCond( pTemp1, fComp1 );
             pCut->pTwo = Fpga_CutNotCond( pTemp2, fComp2 );
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == FPGA_CUTS_MAX_COMPUTE )
@@ -802,6 +805,28 @@ void Fpga_CutsCleanSign( Fpga_Man_t * pMan )
                 pCut->uSign = 0;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Clean the signatures.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Fpga_CutsCleanRoot( Fpga_Man_t * pMan )
+{
+    Fpga_Node_t * pNode;
+    Fpga_Cut_t * pCut;
+    int i;
+    for ( i = 0; i < pMan->nBins; i++ )
+        for ( pNode = pMan->pBins[i]; pNode; pNode = pNode->pNext )
+            for ( pCut = pNode->pCuts; pCut; pCut = pCut->pNext )
+                pCut->pRoot = NULL;
+}
+
 
 
 /**Function*************************************************************
@@ -891,15 +916,15 @@ Fpga_CutTable_t * Fpga_CutTableStart( Fpga_Man_t * pMan )
 {
     Fpga_CutTable_t * p;
     // allocate the table
-    p = ALLOC( Fpga_CutTable_t, 1 );
+    p = ABC_ALLOC( Fpga_CutTable_t, 1 );
     memset( p, 0, sizeof(Fpga_CutTable_t) );
-    p->nBins = Cudd_Prime( 10 * FPGA_CUTS_MAX_COMPUTE );
-    p->pBins = ALLOC( Fpga_Cut_t *, p->nBins );
+    p->nBins = Abc_PrimeCudd( 10 * FPGA_CUTS_MAX_COMPUTE );
+    p->pBins = ABC_ALLOC( Fpga_Cut_t *, p->nBins );
     memset( p->pBins, 0, sizeof(Fpga_Cut_t *) * p->nBins );
-    p->pCuts = ALLOC( int, 2 * FPGA_CUTS_MAX_COMPUTE );
-    p->pArray = ALLOC( Fpga_Cut_t *, 2 * FPGA_CUTS_MAX_COMPUTE );
-    p->pCuts1 = ALLOC( Fpga_Cut_t *, 2 * FPGA_CUTS_MAX_COMPUTE );
-    p->pCuts2 = ALLOC( Fpga_Cut_t *, 2 * FPGA_CUTS_MAX_COMPUTE );
+    p->pCuts = ABC_ALLOC( int, 2 * FPGA_CUTS_MAX_COMPUTE );
+    p->pArray = ABC_ALLOC( Fpga_Cut_t *, 2 * FPGA_CUTS_MAX_COMPUTE );
+    p->pCuts1 = ABC_ALLOC( Fpga_Cut_t *, 2 * FPGA_CUTS_MAX_COMPUTE );
+    p->pCuts2 = ABC_ALLOC( Fpga_Cut_t *, 2 * FPGA_CUTS_MAX_COMPUTE );
     return p;
 }
 
@@ -916,12 +941,12 @@ Fpga_CutTable_t * Fpga_CutTableStart( Fpga_Man_t * pMan )
 ***********************************************************************/
 void Fpga_CutTableStop( Fpga_CutTable_t * p )
 {
-    free( p->pCuts1 );
-    free( p->pCuts2 );
-    free( p->pArray );
-    free( p->pBins );
-    free( p->pCuts );
-    free( p );
+    ABC_FREE( p->pCuts1 );
+    ABC_FREE( p->pCuts2 );
+    ABC_FREE( p->pArray );
+    ABC_FREE( p->pBins );
+    ABC_FREE( p->pCuts );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -1156,4 +1181,6 @@ Fpga_Cut_t * Fpga_CutArray2List( Fpga_Cut_t ** pArray, int nCuts )
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

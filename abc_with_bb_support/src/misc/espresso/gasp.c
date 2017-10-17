@@ -26,6 +26,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*
  *  reduce_gasp -- compute the maximal reduction of each cube of F
@@ -226,3 +229,5 @@ cost_t *cost;
     EXECUTE(F = irredundant(G, D), IRRED_TIME, F, *cost);
     return F;
 }
+ABC_NAMESPACE_IMPL_END
+

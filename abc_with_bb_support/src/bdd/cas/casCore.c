@@ -21,10 +21,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-#include "extra.h"
+#include "base/main/main.h"
+#include "base/cmd/cmd.h"
+#include "bdd/extrab/extraBdd.h"
 #include "cas.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                      static functions                            ///
@@ -52,7 +56,7 @@ DdNode * Cudd_bddTransferPermute( DdManager * ddSource, DdManager * ddDestinatio
 ////////////////////////////////////////////////////////////////////////
 
 #define PRD(p)       printf( "\nDECOMPOSITION TREE:\n\n" ); PrintDecEntry( (p), 0 ) 
-#define PRB(f)       printf( #f " = " ); Cudd_bddPrint(dd,f); printf( "\n" )
+#define PRB_(f)       printf( #f " = " ); Cudd_bddPrint(dd,f); printf( "\n" )
 #define PRK(f,n)     Cudd_PrintKMap(stdout,dd,(f),Cudd_Not(f),(n),NULL,0); printf( "K-map for function" #f "\n\n" )
 #define PRK2(f,g,n)  Cudd_PrintKMap(stdout,dd,(f),(g),(n),NULL,0); printf( "K-map for function <" #f ", " #g ">\n\n" ) 
 
@@ -77,7 +81,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
     int i;
     int nVars = nInputs;
     int nOuts = nOutputs;
-    long clk1;
+    abctime clk1;
 
     int      nVarsEnc;              // the number of additional variables to encode outputs
     DdNode * pbVarsEnc[MAXOUTPUTS]; // the BDDs of the encoding vars
@@ -107,7 +111,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
 
 
     // create the variables to encode the outputs
-    nVarsEnc = Extra_Base2Log( nOuts );
+    nVarsEnc = Abc_Base2Log( nOuts );
     for ( i = 0; i < nVarsEnc; i++ )
         pbVarsEnc[i] = Cudd_bddNewVarAtLevel( dd, i );
 
@@ -136,11 +140,11 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
 //  printf( "\n" );
 
     // derive the single-output function
-    clk1 = clock();
+    clk1 = Abc_Clock();
     aFunc = GetSingleOutputFunction( dd, pOutputs, nOuts, pbVarsEnc, nVarsEnc, fVerbose );  Cudd_Ref( aFunc );
 //  aFunc = GetSingleOutputFunctionRemapped( dd, pOutputs, nOuts, pbVarsEnc, nVarsEnc );  Cudd_Ref( aFunc );
 //  if ( fVerbose )
-//  printf( "Single-output function computation time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+//  printf( "Single-output function computation time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
  
 //fprintf( pTable, "%d ", Cudd_SharingSize( pOutputs, nOutputs ) );
 //fprintf( pTable, "%d ", Extra_ProfileWidthSharingMax(dd, pOutputs, nOutputs) );
@@ -151,7 +155,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
     // reorder the single output function
 //    if ( fVerbose )
 //  printf( "Reordering variables...\n");
-    clk1 = clock();
+    clk1 = Abc_Clock();
 //  if ( fVerbose )
 //  printf( "Node count before = %6d\n", Cudd_DagSize( aFunc ) );
 //  Cudd_ReduceHeap(dd, CUDD_REORDER_SIFT,1);
@@ -164,7 +168,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
     if ( fVerbose )
     printf( "MTBDD reordered = %6d nodes\n", Cudd_DagSize( aFunc ) );
     if ( fVerbose )
-    printf( "Variable reordering time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Variable reordering time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
 //  printf( "\n" );
 //  printf( "Variable order is: " );
 //  for ( i = 0; i < dd->size; i++ )
@@ -174,16 +178,16 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
 //fprintf( pTable, "%d ", Extra_ProfileWidthMax(dd, aFunc) );
 
     // write the single-output function into BLIF for verification
-    clk1 = clock();
+    clk1 = Abc_Clock();
     if ( fCheck )
     WriteSingleOutputFunctionBlif( dd, aFunc, pNames, nNames, FileNameIni );
 //    if ( fVerbose )
-//  printf( "Single-output function writing time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+//  printf( "Single-output function writing time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
 
 /*
     ///////////////////////////////////////////////////////////////////
     // verification of single output function
-    clk1 = clock();
+    clk1 = Abc_Clock();
     {
         BFunc g_Func;
         DdNode * aRes;
@@ -210,7 +214,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
         // delocate
         Extra_Dissolve( &g_Func );
     }
-    printf( "Preliminary verification time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Preliminary verification time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
     ///////////////////////////////////////////////////////////////////
 */
 
@@ -220,7 +224,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
 /*
     ///////////////////////////////////////////////////////////////////
     // verification of the decomposed LUT network
-    clk1 = clock();
+    clk1 = Abc_Clock();
     {
         BFunc g_Func;
         DdNode * aRes;
@@ -247,15 +251,13 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
         // delocate 
         Extra_Dissolve( &g_Func );
     }
-    printf( "Final verification time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Final verification time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
     ///////////////////////////////////////////////////////////////////
 */
  
     // verify the results
     if ( fCheck )
     {
-        extern int Cmd_CommandExecute( void * pAbc, char * sCommand );
-        extern void * Abc_FrameGetGlobalFrame();
         char Command[200];
         sprintf( Command, "cec %s %s", FileNameIni, FileNameFin );
         Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), Command );
@@ -265,7 +267,7 @@ int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutpu
 
     // release the names
     for ( i = 0; i < nNames; i++ )
-        free( pNames[i] );
+        ABC_FREE( pNames[i] );
 
 
 //fprintf( pTable, "\n" );
@@ -323,24 +325,24 @@ void Experiment2( BFunc * pFunc )
     strcat( FileNameFin, "_LUT.blif" );
 
     // derive the single-output function IN THE NEW MANAGER
-    clk1 = clock();
+    clk1 = Abc_Clock();
 //  aFunc = GetSingleOutputFunction( dd, pFunc->pOutputs, nOuts, pbVarsEnc, nVarsEnc );  Cudd_Ref( aFunc );
     aFunc = GetSingleOutputFunctionRemappedNewDD( dd, pFunc->pOutputs, nOuts, &DdNew );  Cudd_Ref( aFunc );
-    printf( "Single-output function derivation time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
-//  s_RemappingTime = clock() - clk1;
+    printf( "Single-output function derivation time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+//  s_RemappingTime = Abc_Clock() - clk1;
 
     // dispose of the multiple-output function
     Extra_Dissolve( pFunc );
 
     // reorder the single output function
     printf( "\nReordering variables in the new manager...\n");
-    clk1 = clock();
+    clk1 = Abc_Clock();
     printf( "Node count before = %d\n", Cudd_DagSize( aFunc ) );
 //  Cudd_ReduceHeap(DdNew, CUDD_REORDER_SIFT,1);
     Cudd_ReduceHeap(DdNew, CUDD_REORDER_SYMM_SIFT,1);
 //  Cudd_ReduceHeap(DdNew, CUDD_REORDER_SYMM_SIFT,1);
     printf( "Node count after  = %d\n", Cudd_DagSize( aFunc ) );
-    printf( "Variable reordering time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Variable reordering time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
     printf( "\n" );
 
 //fprintf( pTable, "%d ", Cudd_DagSize( aFunc ) );
@@ -358,14 +360,14 @@ void Experiment2( BFunc * pFunc )
 
 
     // write the single-output function into BLIF for verification
-    clk1 = clock();
+    clk1 = Abc_Clock();
     WriteSingleOutputFunctionBlif( DdNew, aFunc, pNames, nNames, FileNameIni );
-    printf( "Single-output function writing time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Single-output function writing time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
 
 
     ///////////////////////////////////////////////////////////////////
     // verification of single output function
-    clk1 = clock();
+    clk1 = Abc_Clock();
     {
         BFunc g_Func;
         DdNode * aRes;
@@ -392,7 +394,7 @@ void Experiment2( BFunc * pFunc )
         // delocate
         Extra_Dissolve( &g_Func );
     }
-    printf( "Preliminary verification time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Preliminary verification time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
     ///////////////////////////////////////////////////////////////////
 
 
@@ -401,7 +403,7 @@ void Experiment2( BFunc * pFunc )
 /*
     ///////////////////////////////////////////////////////////////////
     // verification of the decomposed LUT network
-    clk1 = clock();
+    clk1 = Abc_Clock();
     {
         BFunc g_Func;
         DdNode * aRes;
@@ -428,7 +430,7 @@ void Experiment2( BFunc * pFunc )
         // delocate
         Extra_Dissolve( &g_Func );
     }
-    printf( "Final verification time = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+    printf( "Final verification time = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
     ///////////////////////////////////////////////////////////////////
 */
 
@@ -437,7 +439,7 @@ void Experiment2( BFunc * pFunc )
 
     // release the names
     for ( i = 0; i < nNames; i++ )
-        free( pNames[i] );
+        ABC_FREE( pNames[i] );
 
 
     
@@ -459,16 +461,16 @@ void Experiment2( BFunc * pFunc )
 ////////////////////////////////////////////////////////////////////////
 
 // the bit count for the first 256 integer numbers
-static unsigned char BitCount8[256] = {
-    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
-    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
-};
+//static unsigned char BitCount8[256] = {
+//    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+//    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+//    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+//    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+//    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+//    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+//    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+//    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
+//};
 
 /////////////////////////////////////////////////////////////
 static int s_SuppSize[MAXOUTPUTS];
@@ -605,7 +607,6 @@ DdNode * GetSingleOutputFunctionRemapped( DdManager * dd, DdNode ** pOutputs, in
 
     DdNode * bSupp, * bTemp;
     int i, Counter;
-    int nSuppPrev = -1;
     DdNode * bFunc;
     DdNode * aFunc;
 
@@ -669,7 +670,6 @@ DdNode * GetSingleOutputFunctionRemappedNewDD( DdManager * dd, DdNode ** pOutput
 
     DdNode * bSupp, * bTemp;
     int i, v, Counter;
-    int nSuppPrev = -1;
     DdNode * bFunc;
 
     // these are in the new manager
@@ -703,7 +703,7 @@ DdNode * GetSingleOutputFunctionRemappedNewDD( DdManager * dd, DdNode ** pOutput
     }
     
     // select the encoding variables to follow immediately after the original variables
-    nVarsEnc = Extra_Base2Log(nOuts);
+    nVarsEnc = Abc_Base2Log(nOuts);
 /*
     for ( v = 0; v < nVarsEnc; v++ )
         if ( nVarsMax + v < dd->size )
@@ -821,13 +821,13 @@ void WriteDDintoBLIFfile( FILE * pFile, DdNode * Func, char * OutputName, char *
 // (some part of the code is borrowed from Cudd_DumpDot())
 {
     int i;
-    st_table * visited;
-    st_generator * gen = NULL;
+    st__table * visited;
+    st__generator * gen = NULL;
     long refAddr, diff, mask;
     DdNode * Node, * Else, * ElseR, * Then;
 
     /* Initialize symbol table for visited nodes. */
-    visited = st_init_table( st_ptrcmp, st_ptrhash );
+    visited = st__init_table( st__ptrcmp, st__ptrhash );
 
     /* Collect all the nodes of this DD in the symbol table. */
     cuddCollectNodes( Cudd_Regular(Func), visited );
@@ -846,12 +846,12 @@ void WriteDDintoBLIFfile( FILE * pFile, DdNode * Func, char * OutputName, char *
     /* Find the bits that are different. */
     refAddr = ( long )Cudd_Regular(Func);
     diff = 0;
-    gen = st_init_gen( visited );
-    while ( st_gen( gen, ( char ** ) &Node, NULL ) )
+    gen = st__init_gen( visited );
+    while ( st__gen( gen, ( const char ** ) &Node, NULL ) )
     {
         diff |= refAddr ^ ( long ) Node;
     }
-    st_free_gen( gen );
+    st__free_gen( gen );
     gen = NULL;
 
     /* Choose the mask. */
@@ -868,8 +868,8 @@ void WriteDDintoBLIFfile( FILE * pFile, DdNode * Func, char * OutputName, char *
     fprintf( pFile, "%s 1\n", (Cudd_IsComplement(Func))? "0": "1" );
 
 
-    gen = st_init_gen( visited );
-    while ( st_gen( gen, ( char ** ) &Node, NULL ) )
+    gen = st__init_gen( visited );
+    while ( st__gen( gen, ( const char ** ) &Node, NULL ) )
     {
         if ( Node->index == CUDD_MAXINDEX )
         {
@@ -904,7 +904,7 @@ void WriteDDintoBLIFfile( FILE * pFile, DdNode * Func, char * OutputName, char *
             fprintf( pFile, "1-1 1\n" );
 
             // if the inverter is written, skip
-            if ( !st_find( visited, (char *)ElseR, (char ***)&pSlot ) )
+            if ( ! st__find( visited, (char *)ElseR, (char ***)&pSlot ) )
                 assert( 0 );
             if ( *pSlot )
                 continue;
@@ -916,9 +916,9 @@ void WriteDDintoBLIFfile( FILE * pFile, DdNode * Func, char * OutputName, char *
             fprintf( pFile, "0 1\n" );
         }
     }
-    st_free_gen( gen );
+    st__free_gen( gen );
     gen = NULL;
-    st_free_table( visited );
+    st__free_table( visited );
 }
 
 
@@ -946,20 +946,20 @@ void WriteDDintoBLIFfileReorder( DdManager * dd, FILE * pFile, DdNode * Func, ch
 // (some part of the code is borrowed from Cudd_DumpDot())
 {
     int i;
-    st_table * visited;
-    st_generator * gen = NULL;
+    st__table * visited;
+    st__generator * gen = NULL;
     long refAddr, diff, mask;
     DdNode * Node, * Else, * ElseR, * Then;
 
 
     ///////////////////////////////////////////////////////////////
     DdNode * bFmin;
-    int clk1;
+    abctime clk1;
 
     if ( s_ddmin == NULL )
         s_ddmin = Cudd_Init( dd->size, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0);
 
-    clk1 = clock();
+    clk1 = Abc_Clock();
     bFmin = Cudd_bddTransfer( dd, s_ddmin, Func );  Cudd_Ref( bFmin );
 
     // reorder
@@ -972,7 +972,7 @@ void WriteDDintoBLIFfileReorder( DdManager * dd, FILE * pFile, DdNode * Func, ch
 
 
     /* Initialize symbol table for visited nodes. */
-    visited = st_init_table( st_ptrcmp, st_ptrhash );
+    visited = st__init_table( st__ptrcmp, st__ptrhash );
 
     /* Collect all the nodes of this DD in the symbol table. */
     cuddCollectNodes( Cudd_Regular(bFmin), visited );
@@ -991,12 +991,12 @@ void WriteDDintoBLIFfileReorder( DdManager * dd, FILE * pFile, DdNode * Func, ch
     /* Find the bits that are different. */
     refAddr = ( long )Cudd_Regular(bFmin);
     diff = 0;
-    gen = st_init_gen( visited );
-    while ( st_gen( gen, ( char ** ) &Node, NULL ) )
+    gen = st__init_gen( visited );
+    while ( st__gen( gen, ( const char ** ) &Node, NULL ) )
     {
         diff |= refAddr ^ ( long ) Node;
     }
-    st_free_gen( gen );
+    st__free_gen( gen );
     gen = NULL;
 
     /* Choose the mask. */
@@ -1013,8 +1013,8 @@ void WriteDDintoBLIFfileReorder( DdManager * dd, FILE * pFile, DdNode * Func, ch
     fprintf( pFile, "%s 1\n", (Cudd_IsComplement(bFmin))? "0": "1" );
 
 
-    gen = st_init_gen( visited );
-    while ( st_gen( gen, ( char ** ) &Node, NULL ) )
+    gen = st__init_gen( visited );
+    while ( st__gen( gen, ( const char ** ) &Node, NULL ) )
     {
         if ( Node->index == CUDD_MAXINDEX )
         {
@@ -1053,9 +1053,9 @@ void WriteDDintoBLIFfileReorder( DdManager * dd, FILE * pFile, DdNode * Func, ch
             fprintf( pFile, "0 1\n" );
         }
     }
-    st_free_gen( gen );
+    st__free_gen( gen );
     gen = NULL;
-    st_free_table( visited );
+    st__free_table( visited );
 
 
     //////////////////////////////////////////////////
@@ -1070,7 +1070,7 @@ void WriteDDintoBLIFfileReorder( DdManager * dd, FILE * pFile, DdNode * Func, ch
 ///                    TRANSFER WITH MAPPING                         ///
 ////////////////////////////////////////////////////////////////////////
 static DdNode * cuddBddTransferPermuteRecur
-ARGS((DdManager * ddS, DdManager * ddD, DdNode * f, st_table * table, int * Permute ));
+ARGS((DdManager * ddS, DdManager * ddD, DdNode * f, st__table * table, int * Permute ));
 
 static DdNode * cuddBddTransferPermute
 ARGS((DdManager * ddS, DdManager * ddD, DdNode * f, int * Permute));
@@ -1128,11 +1128,11 @@ DdNode *
 cuddBddTransferPermute( DdManager * ddS, DdManager * ddD, DdNode * f, int * Permute )
 {
     DdNode *res;
-    st_table *table = NULL;
-    st_generator *gen = NULL;
+    st__table *table = NULL;
+    st__generator *gen = NULL;
     DdNode *key, *value;
 
-    table = st_init_table( st_ptrcmp, st_ptrhash );
+    table = st__init_table( st__ptrcmp, st__ptrhash );
     if ( table == NULL )
         goto failure;
     res = cuddBddTransferPermuteRecur( ddS, ddD, f, table, Permute );
@@ -1142,16 +1142,16 @@ cuddBddTransferPermute( DdManager * ddS, DdManager * ddD, DdNode * f, int * Perm
     /* Dereference all elements in the table and dispose of the table.
        ** This must be done also if res is NULL to avoid leaks in case of
        ** reordering. */
-    gen = st_init_gen( table );
+    gen = st__init_gen( table );
     if ( gen == NULL )
         goto failure;
-    while ( st_gen( gen, ( char ** ) &key, ( char ** ) &value ) )
+    while ( st__gen( gen, ( const char ** ) &key, ( char ** ) &value ) )
     {
         Cudd_RecursiveDeref( ddD, value );
     }
-    st_free_gen( gen );
+    st__free_gen( gen );
     gen = NULL;
-    st_free_table( table );
+    st__free_table( table );
     table = NULL;
 
     if ( res != NULL )
@@ -1160,9 +1160,9 @@ cuddBddTransferPermute( DdManager * ddS, DdManager * ddD, DdNode * f, int * Perm
 
   failure:
     if ( table != NULL )
-        st_free_table( table );
+        st__free_table( table );
     if ( gen != NULL )
-        st_free_gen( gen );
+        st__free_gen( gen );
     return ( NULL );
 
 }                               /* end of cuddBddTransferPermute */
@@ -1182,7 +1182,7 @@ cuddBddTransferPermute( DdManager * ddS, DdManager * ddD, DdNode * f, int * Perm
 ******************************************************************************/
 static DdNode *
 cuddBddTransferPermuteRecur( DdManager * ddS,
-                      DdManager * ddD, DdNode * f, st_table * table, int * Permute )
+                      DdManager * ddD, DdNode * f, st__table * table, int * Permute )
 {
     DdNode *ft, *fe, *t, *e, *var, *res;
     DdNode *one, *zero;
@@ -1202,7 +1202,7 @@ cuddBddTransferPermuteRecur( DdManager * ddS,
     /* Now f is a regular pointer to a non-constant node. */
 
     /* Check the cache. */
-    if ( st_lookup( table, ( char * ) f, ( char ** ) &res ) )
+    if ( st__lookup( table, ( char * ) f, ( char ** ) &res ) )
         return ( Cudd_NotCond( res, comple ) );
 
     /* Recursive step. */
@@ -1244,8 +1244,8 @@ cuddBddTransferPermuteRecur( DdManager * ddS,
     Cudd_RecursiveDeref( ddD, t );
     Cudd_RecursiveDeref( ddD, e );
 
-    if ( st_add_direct( table, ( char * ) f, ( char * ) res ) ==
-         ST_OUT_OF_MEM )
+    if ( st__add_direct( table, ( char * ) f, ( char * ) res ) ==
+         st__OUT_OF_MEM )
     {
         Cudd_RecursiveDeref( ddD, res );
         return ( NULL );
@@ -1260,4 +1260,6 @@ cuddBddTransferPermuteRecur( DdManager * ddS,
 
 
 
+
+ABC_NAMESPACE_IMPL_END
 

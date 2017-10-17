@@ -12,6 +12,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
  *  verify -- check that all minterms of F are contained in (Fold u Dold)
  *  and that all minterms of Fold are contained in (F u Dold).
@@ -83,7 +86,7 @@ pPLA PLA1, PLA2;
  *  Discard any columns of PLA1 which are not in PLA2
  *  Association is strictly by the names of the columns of the cover.
  */
-PLA_permute(PLA1, PLA2)
+void PLA_permute(PLA1, PLA2)
 pPLA PLA1, PLA2;
 {
     register int i, j, *permute, npermute;
@@ -191,3 +194,5 @@ pPLA PLA;
     (void) fflush(stdout);
     return verify_error;
 }
+ABC_NAMESPACE_IMPL_END
+

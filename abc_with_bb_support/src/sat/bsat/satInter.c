@@ -22,8 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
+
 #include "satStore.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -37,6 +40,8 @@ struct Int_Man_t_
 {
     // clauses of the problems
     Sto_Man_t *     pCnf;         // the set of CNF clauses for A and B
+    int             pGloVars[16]; // global variables
+    int             nGloVars;     // the number of global variables
     // various parameters
     int             fVerbose;     // verbosiness flag
     int             fProofVerif;  // verifies the proof
@@ -53,7 +58,7 @@ struct Int_Man_t_
     Sto_Cls_t **    pWatches;     // watched clauses for each literal (size 2*nVars)          
     // interpolation data
     int             nVarsAB;      // the number of global variables
-    char *          pVarTypes;    // variable type (size nVars) [1=A, 0=B, <0=AB]
+    int *           pVarTypes;    // variable type (size nVars) [1=A, 0=B, <0=AB]
     unsigned *      pInters;      // storage for interpolants as truth tables (size nClauses)
     int             nIntersAlloc; // the allocated size of truth table array
     int             nWords;       // the number of words in the truth table
@@ -66,9 +71,9 @@ struct Int_Man_t_
     int             nResLits;     // the number of literals of the resolvent
     int             nResLitsAlloc;// the number of literals of the resolvent
     // runtime stats
-    int             timeBcp;      // the runtime for BCP
-    int             timeTrace;    // the runtime of trace construction
-    int             timeTotal;    // the total runtime of interpolation
+    abctime         timeBcp;      // the runtime for BCP
+    abctime         timeTrace;    // the runtime of trace construction
+    abctime         timeTotal;    // the total runtime of interpolation
 };
 
 // procedure to get hold of the clauses' truth table 
@@ -99,19 +104,36 @@ static inline void       Int_ManProofSet( Int_Man_t * p, Sto_Cls_t * pCls, int n
   SeeAlso     []
 
 ***********************************************************************/
-Int_Man_t * Int_ManAlloc( int nVarsAlloc )
+Int_Man_t * Int_ManAlloc()
 {
     Int_Man_t * p;
     // allocate the manager
-    p = (Int_Man_t *)malloc( sizeof(Int_Man_t) );
+    p = (Int_Man_t *)ABC_ALLOC( char, sizeof(Int_Man_t) );
     memset( p, 0, sizeof(Int_Man_t) );
     // verification
     p->nResLitsAlloc = (1<<16);
-    p->pResLits = malloc( sizeof(lit) * p->nResLitsAlloc );
+    p->pResLits = ABC_ALLOC( lit, p->nResLitsAlloc );
     // parameters
     p->fProofWrite = 0;
     p->fProofVerif = 1;
     return p;    
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Allocate proof manager.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int * Int_ManSetGlobalVars( Int_Man_t * p, int nGloVars )
+{
+    p->nGloVars = nGloVars;
+    return p->pGloVars;
 }
 
 /**Function*************************************************************
@@ -137,6 +159,13 @@ int Int_ManGlobalVars( Int_Man_t * p )
             break;
         for ( v = 0; v < (int)pClause->nLits; v++ )
             p->pVarTypes[lit_var(pClause->pLits[v])] = 1;
+    }
+
+    if ( p->nGloVars )
+    {
+        for ( v = 0; v < p->nGloVars; v++ )
+            p->pVarTypes[ p->pGloVars[v] ] = - v - 1;
+        return p->nGloVars;
     }
 
     // check variables that appear in clauses of B
@@ -188,18 +217,18 @@ void Int_ManResize( Int_Man_t * p )
         while ( p->nVarsAlloc < p->pCnf->nVars ) 
             p->nVarsAlloc *= 2;
         // resize the arrays
-        p->pTrail    = (lit *)       realloc( p->pTrail,    sizeof(lit) * p->nVarsAlloc );
-        p->pAssigns  = (lit *)       realloc( p->pAssigns,  sizeof(lit) * p->nVarsAlloc );
-        p->pSeens    = (char *)      realloc( p->pSeens,    sizeof(char) * p->nVarsAlloc );
-        p->pVarTypes = (char *)      realloc( p->pVarTypes, sizeof(char) * p->nVarsAlloc );
-        p->pReasons  = (Sto_Cls_t **)realloc( p->pReasons,  sizeof(Sto_Cls_t *) * p->nVarsAlloc );
-        p->pWatches  = (Sto_Cls_t **)realloc( p->pWatches,  sizeof(Sto_Cls_t *) * p->nVarsAlloc*2 );
+        p->pTrail    = ABC_REALLOC(lit,         p->pTrail,    p->nVarsAlloc );
+        p->pAssigns  = ABC_REALLOC(lit,         p->pAssigns,  p->nVarsAlloc );
+        p->pSeens    = ABC_REALLOC(char,        p->pSeens,    p->nVarsAlloc );
+        p->pVarTypes = ABC_REALLOC(int,         p->pVarTypes, p->nVarsAlloc );
+        p->pReasons  = ABC_REALLOC(Sto_Cls_t *, p->pReasons,  p->nVarsAlloc );
+        p->pWatches  = ABC_REALLOC(Sto_Cls_t *, p->pWatches,  p->nVarsAlloc*2 );
     }
 
     // clean the free space
     memset( p->pAssigns , 0xff, sizeof(lit) * p->pCnf->nVars );
     memset( p->pSeens   , 0,    sizeof(char) * p->pCnf->nVars );
-    memset( p->pVarTypes, 0,    sizeof(char) * p->pCnf->nVars );
+    memset( p->pVarTypes, 0,    sizeof(int) * p->pCnf->nVars );
     memset( p->pReasons , 0,    sizeof(Sto_Cls_t *) * p->pCnf->nVars );
     memset( p->pWatches , 0,    sizeof(Sto_Cls_t *) * p->pCnf->nVars*2 );
 
@@ -217,7 +246,7 @@ void Int_ManResize( Int_Man_t * p )
         while ( p->nClosAlloc < p->pCnf->nClauses ) 
             p->nClosAlloc *= 2;
         // resize the arrays
-        p->pProofNums = (int *) realloc( p->pProofNums,  sizeof(int) * p->nClosAlloc );
+        p->pProofNums = ABC_REALLOC(int, p->pProofNums,  p->nClosAlloc );
     }
     memset( p->pProofNums, 0, sizeof(int) * p->pCnf->nClauses );
 
@@ -225,7 +254,7 @@ void Int_ManResize( Int_Man_t * p )
     if ( p->nIntersAlloc < p->nWords * p->pCnf->nClauses )
     {
         p->nIntersAlloc = p->nWords * p->pCnf->nClauses;
-        p->pInters = (unsigned *) realloc( p->pInters, sizeof(unsigned) * p->nIntersAlloc );
+        p->pInters = ABC_REALLOC(unsigned, p->pInters, p->nIntersAlloc );
     }
 //    memset( p->pInters, 0, sizeof(unsigned) * p->nWords * p->pCnf->nClauses );
 }
@@ -245,20 +274,20 @@ void Int_ManFree( Int_Man_t * p )
 {
 /*
     printf( "Runtime stats:\n" );
-PRT( "BCP     ", p->timeBcp   );
-PRT( "Trace   ", p->timeTrace );
-PRT( "TOTAL   ", p->timeTotal );
+ABC_PRT( "BCP     ", p->timeBcp   );
+ABC_PRT( "Trace   ", p->timeTrace );
+ABC_PRT( "TOTAL   ", p->timeTotal );
 */
-    free( p->pInters );
-    free( p->pProofNums );
-    free( p->pTrail );
-    free( p->pAssigns );
-    free( p->pSeens );
-    free( p->pVarTypes );
-    free( p->pReasons );
-    free( p->pWatches );
-    free( p->pResLits );
-    free( p );
+    ABC_FREE( p->pInters );
+    ABC_FREE( p->pProofNums );
+    ABC_FREE( p->pTrail );
+    ABC_FREE( p->pAssigns );
+    ABC_FREE( p->pSeens );
+    ABC_FREE( p->pVarTypes );
+    ABC_FREE( p->pReasons );
+    ABC_FREE( p->pWatches );
+    ABC_FREE( p->pResLits );
+    ABC_FREE( p );
 }
 
 
@@ -506,17 +535,17 @@ Sto_Cls_t * Int_ManPropagate( Int_Man_t * p, int Start )
 {
     Sto_Cls_t * pClause;
     int i;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     for ( i = Start; i < p->nTrailSize; i++ )
     {
         pClause = Int_ManPropagateOne( p, p->pTrail[i] );
         if ( pClause )
         {
-p->timeBcp += clock() - clk;
+p->timeBcp += Abc_Clock() - clk;
             return pClause;
         }
     }
-p->timeBcp += clock() - clk;
+p->timeBcp += Abc_Clock() - clk;
     return NULL;
 }
 
@@ -562,7 +591,7 @@ int Int_ManProofTraceOne( Int_Man_t * p, Sto_Cls_t * pConflict, Sto_Cls_t * pFin
     Sto_Cls_t * pReason;
     int i, v, Var, PrevId;
     int fPrint = 0;
-    int clk = clock();
+    abctime clk = Abc_Clock();
 
     // collect resolvent literals
     if ( p->fProofVerif )
@@ -648,7 +677,7 @@ int Int_ManProofTraceOne( Int_Man_t * p, Sto_Cls_t * pConflict, Sto_Cls_t * pFin
                 if ( v1 == p->nResLits ) 
                 {
                     if ( p->nResLits == p->nResLitsAlloc )
-                        printf( "Recording clause %d: Ran out of space for intermediate resolvent.\n, pFinal->Id" );
+                        printf( "Recording clause %d: Ran out of space for intermediate resolvent.\n", pFinal->Id );
                     p->pResLits[ p->nResLits++ ] = pReason->pLits[v2];
                     continue;
                 }
@@ -692,8 +721,29 @@ int Int_ManProofTraceOne( Int_Man_t * p, Sto_Cls_t * pConflict, Sto_Cls_t * pFin
             Int_ManPrintResolvent( p->pResLits, p->nResLits );
             Int_ManPrintClause( p, pFinal );
         }
+
+        // if there are literals in the clause that are not in the resolvent
+        // it means that the derived resolvent is stronger than the clause
+        // we can replace the clause with the resolvent by removing these literals
+        if ( p->nResLits != (int)pFinal->nLits )
+        {
+            for ( v1 = 0; v1 < (int)pFinal->nLits; v1++ )
+            {
+                for ( v2 = 0; v2 < p->nResLits; v2++ )
+                    if ( pFinal->pLits[v1] == p->pResLits[v2] )
+                        break;
+                if ( v2 < p->nResLits )
+                    continue;
+                // remove literal v1 from the final clause
+                pFinal->nLits--;
+                for ( v2 = v1; v2 < (int)pFinal->nLits; v2++ )
+                    pFinal->pLits[v2] = pFinal->pLits[v2+1];
+                v1--;
+            }
+            assert( p->nResLits == (int)pFinal->nLits );
+        }
     }
-p->timeTrace += clock() - clk;
+p->timeTrace += Abc_Clock() - clk;
 
     // return the proof pointer 
     if ( p->pCnf->nClausesA )
@@ -701,6 +751,8 @@ p->timeTrace += clock() - clk;
 //        Int_ManPrintInterOne( p, pFinal );
     }
     Int_ManProofSet( p, pFinal, p->Counter );
+    // make sure the same proof ID is not asssigned to two consecutive clauses
+    assert( p->pProofNums[pFinal->Id-1] != p->Counter );
     return p->Counter;
 }
 
@@ -728,6 +780,13 @@ int Int_ManProofRecordOne( Int_Man_t * p, Sto_Cls_t * pClause )
     // add assumptions to the trail
     assert( !pClause->fRoot );
     assert( p->nTrailSize == p->nRootSize );
+
+    // if any of the clause literals are already assumed
+    // it means that the clause is redundant and can be skipped
+    for ( i = 0; i < (int)pClause->nLits; i++ )
+        if ( p->pAssigns[lit_var(pClause->pLits[i])] == pClause->pLits[i] )
+            return 1;
+
     for ( i = 0; i < (int)pClause->nLits; i++ )
         if ( !Int_ManEnqueue( p, lit_neg(pClause->pLits[i]), NULL ) )
         {
@@ -741,6 +800,27 @@ int Int_ManProofRecordOne( Int_Man_t * p, Sto_Cls_t * pClause )
     {
         assert( 0 ); // cannot prove
         return 0;
+    }
+
+    // skip the clause if it is weaker or the same as the conflict clause
+    if ( pClause->nLits >= pConflict->nLits )
+    {
+        // check if every literal of conflict clause can be found in the given clause
+        int j;
+        for ( i = 0; i < (int)pConflict->nLits; i++ )
+        {
+            for ( j = 0; j < (int)pClause->nLits; j++ )
+                if ( pConflict->pLits[i] == pClause->pLits[j] )
+                    break;
+            if ( j == (int)pClause->nLits ) // literal pConflict->pLits[i] is not found
+                break;
+        }
+        if ( i == (int)pConflict->nLits ) // all lits are found
+        {
+            // undo to the root level
+            Int_ManCancelUntil( p, p->nRootSize );
+            return 1;
+        }
     }
 
     // construct the proof
@@ -828,8 +908,12 @@ int Int_ManProcessRoots( Int_Man_t * p )
         if ( !Int_ManEnqueue( p, pClause->pLits[0], pClause ) )
         {
             // detected root level conflict
-            printf( "Error in Int_ManProcessRoots(): Detected a root-level conflict too early!\n" );
-            assert( 0 );
+//            printf( "Error in Int_ManProcessRoots(): Detected a root-level conflict too early!\n" );
+//            assert( 0 );
+            // detected root level conflict
+            Int_ManProofTraceOne( p, pClause, p->pCnf->pEmpty );
+            if ( p->fVerbose )
+                printf( "Found root level conflict!\n" );
             return 0;
         }
     }
@@ -922,7 +1006,7 @@ int Int_ManInterpolate( Int_Man_t * p, Sto_Man_t * pCnf, int fVerbose, unsigned 
 {
     Sto_Cls_t * pClause;
     int RetValue = 1;
-    int clkTotal = clock();
+    abctime clkTotal = Abc_Clock();
 
     // check that the CNF makes sense
     assert( pCnf->nVars > 0 && pCnf->nClauses > 0 );
@@ -973,11 +1057,11 @@ int Int_ManInterpolate( Int_Man_t * p, Sto_Man_t * pCnf, int fVerbose, unsigned 
 
     if ( fVerbose )
     {
-    printf( "Vars = %d. Roots = %d. Learned = %d. Resol steps = %d.  Ave = %.2f.  Mem = %.2f Mb\n", 
+    printf( "Vars = %d. Roots = %d. Learned = %d. Resol steps = %d.  Ave = %.2f.  Mem = %.2f MB\n", 
         p->pCnf->nVars, p->pCnf->nRoots, p->pCnf->nClauses-p->pCnf->nRoots, p->Counter,  
         1.0*(p->Counter-p->pCnf->nRoots)/(p->pCnf->nClauses-p->pCnf->nRoots), 
         1.0*Sto_ManMemoryReport(p->pCnf)/(1<<20) );
-p->timeTotal += clock() - clkTotal;
+p->timeTotal += Abc_Clock() - clkTotal;
     }
 
     *ppResult = Int_ManTruthRead( p, p->pCnf->pTail );
@@ -988,4 +1072,6 @@ p->timeTotal += clock() - clkTotal;
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

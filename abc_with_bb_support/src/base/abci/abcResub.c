@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "dec.h"
+#include "base/abc/abc.h"
+#include "bool/dec/dec.h"
+
+ABC_NAMESPACE_IMPL_START
+
  
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -59,18 +62,18 @@ struct Abc_ManRes_t_
     // other data
     Vec_Ptr_t        * vTemp;      // temporary array of nodes
     // runtime statistics
-    int                timeCut;
-    int                timeTruth;
-    int                timeRes;
-    int                timeDiv;
-    int                timeMffc;
-    int                timeSim;
-    int                timeRes1;
-    int                timeResD;
-    int                timeRes2;
-    int                timeRes3;
-    int                timeNtk;
-    int                timeTotal;
+    abctime            timeCut;
+    abctime            timeTruth;
+    abctime            timeRes;
+    abctime            timeDiv;
+    abctime            timeMffc;
+    abctime            timeSim;
+    abctime            timeRes1;
+    abctime            timeResD;
+    abctime            timeRes2;
+    abctime            timeRes3;
+    abctime            timeNtk;
+    abctime            timeTotal;
     // improvement statistics
     int                nUsedNodeC;
     int                nUsedNode0;
@@ -93,7 +96,7 @@ struct Abc_ManRes_t_
 // external procedures
 static Abc_ManRes_t* Abc_ManResubStart( int nLeavesMax, int nDivsMax );
 static void          Abc_ManResubStop( Abc_ManRes_t * p );
-static Dec_Graph_t * Abc_ManResubEval( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLeaves, int nSteps, bool fUpdateLevel, int fVerbose );
+static Dec_Graph_t * Abc_ManResubEval( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLeaves, int nSteps, int fUpdateLevel, int fVerbose );
 static void          Abc_ManResubCleanup( Abc_ManRes_t * p );
 static void          Abc_ManResubPrint( Abc_ManRes_t * p );
 
@@ -114,13 +117,7 @@ static Dec_Graph_t * Abc_ManResubDivs3( Abc_ManRes_t * p, int Required );
 static Vec_Ptr_t *   Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax );
 static int           Abc_CutVolumeCheck( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves );
 
-// don't-care manager
-extern void * Abc_NtkDontCareAlloc( int nVarsMax, int nLevels, int fVerbose, int fVeryVerbose );
-extern void Abc_NtkDontCareClear( void * p );
-extern void Abc_NtkDontCareFree( void * p );
-extern int Abc_NtkDontCareCompute( void * p, Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, unsigned * puTruth );
-
-extern int s_ResubTime;
+extern abctime s_ResubTime;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -137,22 +134,23 @@ extern int s_ResubTime;
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkResubstitute( Abc_Ntk_t * pNtk, int nCutMax, int nStepsMax, int nLevelsOdc, bool fUpdateLevel, bool fVerbose, bool fVeryVerbose )
+int Abc_NtkResubstitute( Abc_Ntk_t * pNtk, int nCutMax, int nStepsMax, int nLevelsOdc, int fUpdateLevel, int fVerbose, int fVeryVerbose )
 {
+    extern void           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
     ProgressBar * pProgress;
     Abc_ManRes_t * pManRes;
     Abc_ManCut_t * pManCut;
-    void * pManOdc = NULL;
+    Odc_Man_t * pManOdc = NULL;
     Dec_Graph_t * pFForm;
     Vec_Ptr_t * vLeaves;
     Abc_Obj_t * pNode;
-    int clk, clkStart = clock();
+    abctime clk, clkStart = Abc_Clock();
     int i, nNodes;
 
     assert( Abc_NtkIsStrash(pNtk) );
 
     // cleanup the AIG
-    Abc_AigCleanup(pNtk->pManFunc);
+    Abc_AigCleanup((Abc_Aig_t *)pNtk->pManFunc);
     // start the managers
     pManCut = Abc_NtkManCutStart( nCutMax, 100000, 100000, 100000 );
     pManRes = Abc_ManResubStart( nCutMax, ABC_RS_DIV1_MAX );
@@ -163,9 +161,10 @@ int Abc_NtkResubstitute( Abc_Ntk_t * pNtk, int nCutMax, int nStepsMax, int nLeve
     if ( fUpdateLevel )
         Abc_NtkStartReverseLevels( pNtk, 0 );
 
-    if ( Abc_NtkLatchNum(pNtk) )
+    if ( Abc_NtkLatchNum(pNtk) ) {
         Abc_NtkForEachLatch(pNtk, pNode, i)
-            pNode->pNext = pNode->pData;
+            pNode->pNext = (Abc_Obj_t *)pNode->pData;
+    }
 
     // resynthesize each node once
     pManRes->nNodesBeg = Abc_NtkNodeNum(pNtk);
@@ -188,10 +187,10 @@ int Abc_NtkResubstitute( Abc_Ntk_t * pNtk, int nCutMax, int nStepsMax, int nLeve
             break;
 
         // compute a reconvergence-driven cut
-clk = clock();
+clk = Abc_Clock();
         vLeaves = Abc_NodeFindCut( pManCut, pNode, 0 );
 //        vLeaves = Abc_CutFactorLarge( pNode, nCutMax );
-pManRes->timeCut += clock() - clk;
+pManRes->timeCut += Abc_Clock() - clk;
 /*
         if ( fVerbose && vLeaves )
         printf( "Node %6d : Leaves = %3d. Volume = %3d.\n", pNode->Id, Vec_PtrSize(vLeaves), Abc_CutVolumeCheck(pNode, vLeaves) );
@@ -201,18 +200,18 @@ pManRes->timeCut += clock() - clk;
         // get the don't-cares
         if ( pManOdc )
         {
-clk = clock();
+clk = Abc_Clock();
             Abc_NtkDontCareClear( pManOdc );
             Abc_NtkDontCareCompute( pManOdc, pNode, vLeaves, pManRes->pCareSet );
-pManRes->timeTruth += clock() - clk;
+pManRes->timeTruth += Abc_Clock() - clk;
         }
 
         // evaluate this cut
-clk = clock();
+clk = Abc_Clock();
         pFForm = Abc_ManResubEval( pManRes, pNode, vLeaves, nStepsMax, fUpdateLevel, fVerbose );
 //        Vec_PtrFree( vLeaves );
 //        Abc_ManResubCleanup( pManRes );
-pManRes->timeRes += clock() - clk;
+pManRes->timeRes += Abc_Clock() - clk;
         if ( pFForm == NULL )
             continue;
         pManRes->nTotalGain += pManRes->nLastGain;
@@ -226,13 +225,13 @@ pManRes->timeRes += clock() - clk;
         }
 */
         // acceptable replacement found, update the graph
-clk = clock();
+clk = Abc_Clock();
         Dec_GraphUpdateNetwork( pNode, pFForm, fUpdateLevel, pManRes->nLastGain );
-pManRes->timeNtk += clock() - clk;
+pManRes->timeNtk += Abc_Clock() - clk;
         Dec_GraphFree( pFForm );
     }
     Extra_ProgressBarStop( pProgress );
-pManRes->timeTotal = clock() - clkStart;
+pManRes->timeTotal = Abc_Clock() - clkStart;
     pManRes->nNodesEnd = Abc_NtkNodeNum(pNtk);
 
     // print statistics
@@ -248,9 +247,10 @@ pManRes->timeTotal = clock() - clkStart;
     Abc_NtkForEachObj( pNtk, pNode, i )
         pNode->pData = NULL;
 
-    if ( Abc_NtkLatchNum(pNtk) )
+    if ( Abc_NtkLatchNum(pNtk) ) {
         Abc_NtkForEachLatch(pNtk, pNode, i)
             pNode->pData = pNode->pNext, pNode->pNext = NULL;
+    }
 
     // put the nodes into the DFS order and reassign their IDs
     Abc_NtkReassignIds( pNtk );
@@ -266,7 +266,7 @@ pManRes->timeTotal = clock() - clkStart;
         printf( "Abc_NtkRefactor: The network check has failed.\n" );
         return 0;
     }
-s_ResubTime = clock() - clkStart;
+s_ResubTime = Abc_Clock() - clkStart;
     return 1;
 }
 
@@ -290,7 +290,7 @@ Abc_ManRes_t * Abc_ManResubStart( int nLeavesMax, int nDivsMax )
     unsigned * pData;
     int i, k;
     assert( sizeof(unsigned) == 4 );
-    p = ALLOC( Abc_ManRes_t, 1 );
+    p = ABC_ALLOC( Abc_ManRes_t, 1 );
     memset( p, 0, sizeof(Abc_ManRes_t) );
     p->nLeavesMax = nLeavesMax;
     p->nDivsMax   = nDivsMax;
@@ -298,7 +298,7 @@ Abc_ManRes_t * Abc_ManResubStart( int nLeavesMax, int nDivsMax )
     // allocate simulation info
     p->nBits      = (1 << p->nLeavesMax);
     p->nWords     = (p->nBits <= 32)? 1 : (p->nBits / 32);
-    p->pInfo      = ALLOC( unsigned, p->nWords * (p->nDivsMax + 1) );
+    p->pInfo      = ABC_ALLOC( unsigned, p->nWords * (p->nDivsMax + 1) );
     memset( p->pInfo, 0, sizeof(unsigned) * p->nWords * p->nLeavesMax );
     p->vSims      = Vec_PtrAlloc( p->nDivsMax );
     for ( i = 0; i < p->nDivsMax; i++ )
@@ -309,7 +309,7 @@ Abc_ManRes_t * Abc_ManResubStart( int nLeavesMax, int nDivsMax )
     // set elementary truth tables
     for ( k = 0; k < p->nLeavesMax; k++ )
     {
-        pData = p->vSims->pArray[k];
+        pData = (unsigned *)p->vSims->pArray[k];
         for ( i = 0; i < p->nBits; i++ )
             if ( i & (1 << k) )
                 pData[i>>5] |= (1 << (i&31));
@@ -349,8 +349,8 @@ void Abc_ManResubStop( Abc_ManRes_t * p )
     Vec_PtrFree( p->vDivs2UN0 );
     Vec_PtrFree( p->vDivs2UN1 );
     Vec_PtrFree( p->vTemp );
-    free( p->pInfo );
-    free( p );
+    ABC_FREE( p->pInfo );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -366,16 +366,16 @@ void Abc_ManResubStop( Abc_ManRes_t * p )
 ***********************************************************************/
 void Abc_ManResubPrint( Abc_ManRes_t * p )
 {
-    printf( "Used constants    = %6d.             ", p->nUsedNodeC );          PRT( "Cuts  ", p->timeCut );
-    printf( "Used replacements = %6d.             ", p->nUsedNode0 );          PRT( "Resub ", p->timeRes );
-    printf( "Used single ORs   = %6d.             ", p->nUsedNode1Or );        PRT( " Div  ", p->timeDiv );
-    printf( "Used single ANDs  = %6d.             ", p->nUsedNode1And );       PRT( " Mffc ", p->timeMffc );
-    printf( "Used double ORs   = %6d.             ", p->nUsedNode2Or );        PRT( " Sim  ", p->timeSim );
-    printf( "Used double ANDs  = %6d.             ", p->nUsedNode2And );       PRT( " 1    ", p->timeRes1 );
-    printf( "Used OR-AND       = %6d.             ", p->nUsedNode2OrAnd );     PRT( " D    ", p->timeResD );
-    printf( "Used AND-OR       = %6d.             ", p->nUsedNode2AndOr );     PRT( " 2    ", p->timeRes2 );
-    printf( "Used OR-2ANDs     = %6d.             ", p->nUsedNode3OrAnd );     PRT( "Truth ", p->timeTruth ); //PRT( " 3    ", p->timeRes3 );
-    printf( "Used AND-2ORs     = %6d.             ", p->nUsedNode3AndOr );     PRT( "AIG   ", p->timeNtk );
+    printf( "Used constants    = %6d.             ", p->nUsedNodeC );          ABC_PRT( "Cuts  ", p->timeCut );
+    printf( "Used replacements = %6d.             ", p->nUsedNode0 );          ABC_PRT( "Resub ", p->timeRes );
+    printf( "Used single ORs   = %6d.             ", p->nUsedNode1Or );        ABC_PRT( " Div  ", p->timeDiv );
+    printf( "Used single ANDs  = %6d.             ", p->nUsedNode1And );       ABC_PRT( " Mffc ", p->timeMffc );
+    printf( "Used double ORs   = %6d.             ", p->nUsedNode2Or );        ABC_PRT( " Sim  ", p->timeSim );
+    printf( "Used double ANDs  = %6d.             ", p->nUsedNode2And );       ABC_PRT( " 1    ", p->timeRes1 );
+    printf( "Used OR-AND       = %6d.             ", p->nUsedNode2OrAnd );     ABC_PRT( " D    ", p->timeResD );
+    printf( "Used AND-OR       = %6d.             ", p->nUsedNode2AndOr );     ABC_PRT( " 2    ", p->timeRes2 );
+    printf( "Used OR-2ANDs     = %6d.             ", p->nUsedNode3OrAnd );     ABC_PRT( "Truth ", p->timeTruth ); //ABC_PRT( " 3    ", p->timeRes3 );
+    printf( "Used AND-2ORs     = %6d.             ", p->nUsedNode3AndOr );     ABC_PRT( "AIG   ", p->timeNtk );
     printf( "TOTAL             = %6d.             ", p->nUsedNodeC +
                                                      p->nUsedNode0 +
                                                      p->nUsedNode1Or +
@@ -386,7 +386,7 @@ void Abc_ManResubPrint( Abc_ManRes_t * p )
                                                      p->nUsedNode2AndOr +
                                                      p->nUsedNode3OrAnd +
                                                      p->nUsedNode3AndOr
-                                                   );                          PRT( "TOTAL ", p->timeTotal );
+                                                   );                          ABC_PRT( "TOTAL ", p->timeTotal );
     printf( "Total leaves   = %8d.\n", p->nTotalLeaves );
     printf( "Total divisors = %8d.\n", p->nTotalDivs );
 //    printf( "Total gain     = %8d.\n", p->nTotalGain );
@@ -442,19 +442,19 @@ int Abc_ManResubCollectDivs( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vL
     // add the leaves of the cuts to the divisors
     Vec_PtrClear( p->vDivs );
     Abc_NtkIncrementTravId( pRoot->pNtk );
-    Vec_PtrForEachEntry( vLeaves, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pNode, i )
     {
         Vec_PtrPush( p->vDivs, pNode );
         Abc_NodeSetTravIdCurrent( pNode );        
     }
 
     // mark nodes in the MFFC
-    Vec_PtrForEachEntry( p->vTemp, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vTemp, pNode, i )
         pNode->fMarkA = 1;
     // collect the cone (without MFFC)
     Abc_ManResubCollectDivs_rec( pRoot, p->vDivs );
     // unmark the current MFFC
-    Vec_PtrForEachEntry( p->vTemp, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vTemp, pNode, i )
         pNode->fMarkA = 0;
 
     // check if the number of divisors is not exceeded
@@ -466,7 +466,7 @@ int Abc_ManResubCollectDivs( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vL
 
     // explore the fanouts, which are not in the MFFC
     Counter = 0;
-    Vec_PtrForEachEntry( p->vDivs, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pNode, i )
     {
         if ( Abc_ObjFanoutNum(pNode) > 100 )
         {
@@ -496,7 +496,7 @@ Quits :
     p->nDivs = Vec_PtrSize(p->vDivs);
 
     // add the nodes in the MFFC
-    Vec_PtrForEachEntry( p->vTemp, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vTemp, pNode, i )
         Vec_PtrPush( p->vDivs, pNode );
     assert( pRoot == Vec_PtrEntryLast(p->vDivs) );
 
@@ -520,7 +520,7 @@ void Abc_ManResubPrintDivs( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLe
     Abc_Obj_t * pFanin, * pNode;
     int i, k;
     // print the nodes
-    Vec_PtrForEachEntry( p->vDivs, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pNode, i )
     {
         if ( i < Vec_PtrSize(vLeaves) )
         {
@@ -529,7 +529,7 @@ void Abc_ManResubPrintDivs( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLe
         }
         printf( "%6d : %2d = ", pNode->Id, i );
         // find the first fanin
-        Vec_PtrForEachEntry( p->vDivs, pFanin, k )
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pFanin, k )
             if ( Abc_ObjFanin0(pNode) == pFanin )
                 break;
         if ( k < Vec_PtrSize(vLeaves) )
@@ -538,7 +538,7 @@ void Abc_ManResubPrintDivs( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLe
             printf( "%d", k );
         printf( "%s ", Abc_ObjFaninC0(pNode)? "\'" : "" );
         // find the second fanin
-        Vec_PtrForEachEntry( p->vDivs, pFanin, k )
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pFanin, k )
             if ( Abc_ObjFanin1(pNode) == pFanin )
                 break;
         if ( k < Vec_PtrSize(vLeaves) )
@@ -572,7 +572,7 @@ void Abc_ManResubSimulate( Vec_Ptr_t * vDivs, int nLeaves, Vec_Ptr_t * vSims, in
     int i, k;
     assert( Vec_PtrSize(vDivs) - nLeaves <= Vec_PtrSize(vSims) - nLeavesMax );
     // simulate
-    Vec_PtrForEachEntry( vDivs, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vDivs, pObj, i )
     {
         if ( i < nLeaves )
         { // initialize the leaf
@@ -582,9 +582,9 @@ void Abc_ManResubSimulate( Vec_Ptr_t * vDivs, int nLeaves, Vec_Ptr_t * vSims, in
         // set storage for the node's simulation info
         pObj->pData = Vec_PtrEntry( vSims, i - nLeaves + nLeavesMax );
         // get pointer to the simulation info
-        puData  = pObj->pData;
-        puData0 = Abc_ObjFanin0(pObj)->pData;
-        puData1 = Abc_ObjFanin1(pObj)->pData;
+        puData  = (unsigned *)pObj->pData;
+        puData0 = (unsigned *)Abc_ObjFanin0(pObj)->pData;
+        puData1 = (unsigned *)Abc_ObjFanin1(pObj)->pData;
         // simulate
         if ( Abc_ObjFaninC0(pObj) && Abc_ObjFaninC1(pObj) )
             for ( k = 0; k < nWords; k++ )
@@ -600,9 +600,9 @@ void Abc_ManResubSimulate( Vec_Ptr_t * vDivs, int nLeaves, Vec_Ptr_t * vSims, in
                 puData[k] = puData0[k] & puData1[k];
     }
     // normalize
-    Vec_PtrForEachEntry( vDivs, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vDivs, pObj, i )
     {
-        puData = pObj->pData;
+        puData = (unsigned *)pObj->pData;
         pObj->fPhase = (puData[0] & 1);
         if ( pObj->fPhase )
             for ( k = 0; k < nWords; k++ )
@@ -846,13 +846,13 @@ void Abc_ManResubDivsS( Abc_ManRes_t * p, int Required )
     Vec_PtrClear( p->vDivs1UP );
     Vec_PtrClear( p->vDivs1UN );
     Vec_PtrClear( p->vDivs1B );
-    puDataR = p->pRoot->pData;
-    Vec_PtrForEachEntryStop( p->vDivs, pObj, i, p->nDivs )
+    puDataR = (unsigned *)p->pRoot->pData;
+    Vec_PtrForEachEntryStop( Abc_Obj_t *, p->vDivs, pObj, i, p->nDivs )
     {
         if ( (int)pObj->Level > Required - 1 )
             continue;
 
-        puData = pObj->pData;
+        puData = (unsigned *)pObj->pData;
         // check positive containment
         for ( w = 0; w < p->nWords; w++ )
 //            if ( puData[w] & ~puDataR[w] )
@@ -898,19 +898,19 @@ void Abc_ManResubDivsD( Abc_ManRes_t * p, int Required )
     Vec_PtrClear( p->vDivs2UP1 );
     Vec_PtrClear( p->vDivs2UN0 );
     Vec_PtrClear( p->vDivs2UN1 );
-    puDataR = p->pRoot->pData;
-    Vec_PtrForEachEntry( p->vDivs1B, pObj0, i )
+    puDataR = (unsigned *)p->pRoot->pData;
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1B, pObj0, i )
     {
         if ( (int)pObj0->Level > Required - 2 )
             continue;
 
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntryStart( p->vDivs1B, pObj1, k, i + 1 )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1B, pObj1, k, i + 1 )
         {
             if ( (int)pObj1->Level > Required - 2 )
                 continue;
 
-            puData1 = pObj1->pData;
+            puData1 = (unsigned *)pObj1->pData;
 
             if ( Vec_PtrSize(p->vDivs2UP0) < ABC_RS_DIV2_MAX )
             {
@@ -1016,7 +1016,7 @@ Dec_Graph_t * Abc_ManResubQuit( Abc_ManRes_t * p )
     Dec_Graph_t * pGraph;
     unsigned * upData;
     int w;
-    upData = p->pRoot->pData;
+    upData = (unsigned *)p->pRoot->pData;
     for ( w = 0; w < p->nWords; w++ )
 //        if ( upData[w] )
         if ( upData[w] & p->pCareSet[w] ) // care set
@@ -1047,10 +1047,10 @@ Dec_Graph_t * Abc_ManResubDivs0( Abc_ManRes_t * p )
     Abc_Obj_t * pObj;
     unsigned * puData, * puDataR;
     int i, w;
-    puDataR = p->pRoot->pData;
-    Vec_PtrForEachEntryStop( p->vDivs, pObj, i, p->nDivs )
+    puDataR = (unsigned *)p->pRoot->pData;
+    Vec_PtrForEachEntryStop( Abc_Obj_t *, p->vDivs, pObj, i, p->nDivs )
     {
-        puData = pObj->pData;
+        puData = (unsigned *)pObj->pData;
         for ( w = 0; w < p->nWords; w++ )
 //            if ( puData[w] != puDataR[w] )
             if ( (puData[w] ^ puDataR[w]) & p->pCareSet[w] ) // care set
@@ -1077,14 +1077,14 @@ Dec_Graph_t * Abc_ManResubDivs1( Abc_ManRes_t * p, int Required )
     Abc_Obj_t * pObj0, * pObj1;
     unsigned * puData0, * puData1, * puDataR;
     int i, k, w;
-    puDataR = p->pRoot->pData;
+    puDataR = (unsigned *)p->pRoot->pData;
     // check positive unate divisors
-    Vec_PtrForEachEntry( p->vDivs1UP, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UP, pObj0, i )
     {
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntryStart( p->vDivs1UP, pObj1, k, i + 1 )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UP, pObj1, k, i + 1 )
         {
-            puData1 = pObj1->pData;
+            puData1 = (unsigned *)pObj1->pData;
             for ( w = 0; w < p->nWords; w++ )
 //                if ( (puData0[w] | puData1[w]) != puDataR[w] )
                 if ( ((puData0[w] | puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
@@ -1097,12 +1097,12 @@ Dec_Graph_t * Abc_ManResubDivs1( Abc_ManRes_t * p, int Required )
         }
     }
     // check negative unate divisors
-    Vec_PtrForEachEntry( p->vDivs1UN, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UN, pObj0, i )
     {
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntryStart( p->vDivs1UN, pObj1, k, i + 1 )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UN, pObj1, k, i + 1 )
         {
-            puData1 = pObj1->pData;
+            puData1 = (unsigned *)pObj1->pData;
             for ( w = 0; w < p->nWords; w++ )
 //                if ( (puData0[w] & puData1[w]) != puDataR[w] )
                 if ( ((puData0[w] & puData1[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
@@ -1130,27 +1130,27 @@ Dec_Graph_t * Abc_ManResubDivs1( Abc_ManRes_t * p, int Required )
 ***********************************************************************/
 Dec_Graph_t * Abc_ManResubDivs12( Abc_ManRes_t * p, int Required )
 {
-    Abc_Obj_t * pObj0, * pObj1, * pObj2, * pObjMax, * pObjMin0, * pObjMin1;
+    Abc_Obj_t * pObj0, * pObj1, * pObj2, * pObjMax, * pObjMin0 = NULL, * pObjMin1 = NULL;
     unsigned * puData0, * puData1, * puData2, * puDataR;
     int i, k, j, w, LevelMax;
-    puDataR = p->pRoot->pData;
+    puDataR = (unsigned *)p->pRoot->pData;
     // check positive unate divisors
-    Vec_PtrForEachEntry( p->vDivs1UP, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UP, pObj0, i )
     {
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntryStart( p->vDivs1UP, pObj1, k, i + 1 )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UP, pObj1, k, i + 1 )
         {
-            puData1 = pObj1->pData;
-            Vec_PtrForEachEntryStart( p->vDivs1UP, pObj2, j, k + 1 )
+            puData1 = (unsigned *)pObj1->pData;
+            Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UP, pObj2, j, k + 1 )
             {
-                puData2 = pObj2->pData;
+                puData2 = (unsigned *)pObj2->pData;
                 for ( w = 0; w < p->nWords; w++ )
 //                    if ( (puData0[w] | puData1[w] | puData2[w]) != puDataR[w] )
                     if ( ((puData0[w] | puData1[w] | puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
                         break;
                 if ( w == p->nWords )
                 {
-                    LevelMax = ABC_MAX( pObj0->Level, ABC_MAX(pObj1->Level, pObj2->Level) );
+                    LevelMax = Abc_MaxInt( pObj0->Level, Abc_MaxInt(pObj1->Level, pObj2->Level) );
                     assert( LevelMax <= Required - 1 );
 
                     pObjMax = NULL;
@@ -1168,28 +1168,30 @@ Dec_Graph_t * Abc_ManResubDivs12( Abc_ManRes_t * p, int Required )
                     }
 
                     p->nUsedNode2Or++;
+                    assert(pObjMin0);
+                    assert(pObjMin1);
                     return Abc_ManResubQuit21( p->pRoot, pObjMin0, pObjMin1, pObjMax, 1 );
                 }
             }
         }
     }
     // check negative unate divisors
-    Vec_PtrForEachEntry( p->vDivs1UN, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UN, pObj0, i )
     {
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntryStart( p->vDivs1UN, pObj1, k, i + 1 )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UN, pObj1, k, i + 1 )
         {
-            puData1 = pObj1->pData;
-            Vec_PtrForEachEntryStart( p->vDivs1UN, pObj2, j, k + 1 )
+            puData1 = (unsigned *)pObj1->pData;
+            Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs1UN, pObj2, j, k + 1 )
             {
-                puData2 = pObj2->pData;
+                puData2 = (unsigned *)pObj2->pData;
                 for ( w = 0; w < p->nWords; w++ )
 //                    if ( (puData0[w] & puData1[w] & puData2[w]) != puDataR[w] )
                     if ( ((puData0[w] & puData1[w] & puData2[w]) ^ puDataR[w]) & p->pCareSet[w] ) // care set
                         break;
                 if ( w == p->nWords )
                 {
-                    LevelMax = ABC_MAX( pObj0->Level, ABC_MAX(pObj1->Level, pObj2->Level) );
+                    LevelMax = Abc_MaxInt( pObj0->Level, Abc_MaxInt(pObj1->Level, pObj2->Level) );
                     assert( LevelMax <= Required - 1 );
 
                     pObjMax = NULL;
@@ -1207,6 +1209,8 @@ Dec_Graph_t * Abc_ManResubDivs12( Abc_ManRes_t * p, int Required )
                     }
 
                     p->nUsedNode2And++;
+                    assert(pObjMin0);
+                    assert(pObjMin1);
                     return Abc_ManResubQuit21( p->pRoot, pObjMin0, pObjMin1, pObjMax, 0 );
                 }
             }
@@ -1231,17 +1235,17 @@ Dec_Graph_t * Abc_ManResubDivs2( Abc_ManRes_t * p, int Required )
     Abc_Obj_t * pObj0, * pObj1, * pObj2;
     unsigned * puData0, * puData1, * puData2, * puDataR;
     int i, k, w;
-    puDataR = p->pRoot->pData;
+    puDataR = (unsigned *)p->pRoot->pData;
     // check positive unate divisors
-    Vec_PtrForEachEntry( p->vDivs1UP, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UP, pObj0, i )
     {
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntry( p->vDivs2UP0, pObj1, k )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UP0, pObj1, k )
         {
-            pObj2 = Vec_PtrEntry( p->vDivs2UP1, k );
+            pObj2 = (Abc_Obj_t *)Vec_PtrEntry( p->vDivs2UP1, k );
 
-            puData1 = Abc_ObjRegular(pObj1)->pData;
-            puData2 = Abc_ObjRegular(pObj2)->pData;
+            puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
+            puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
             if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
             {
                 for ( w = 0; w < p->nWords; w++ )
@@ -1278,15 +1282,15 @@ Dec_Graph_t * Abc_ManResubDivs2( Abc_ManRes_t * p, int Required )
         }
     }
     // check negative unate divisors
-    Vec_PtrForEachEntry( p->vDivs1UN, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs1UN, pObj0, i )
     {
-        puData0 = pObj0->pData;
-        Vec_PtrForEachEntry( p->vDivs2UN0, pObj1, k )
+        puData0 = (unsigned *)pObj0->pData;
+        Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UN0, pObj1, k )
         {
-            pObj2 = Vec_PtrEntry( p->vDivs2UN1, k );
+            pObj2 = (Abc_Obj_t *)Vec_PtrEntry( p->vDivs2UN1, k );
 
-            puData1 = Abc_ObjRegular(pObj1)->pData;
-            puData2 = Abc_ObjRegular(pObj2)->pData;
+            puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
+            puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
             if ( Abc_ObjIsComplement(pObj1) && Abc_ObjIsComplement(pObj2) )
             {
                 for ( w = 0; w < p->nWords; w++ )
@@ -1340,23 +1344,23 @@ Dec_Graph_t * Abc_ManResubDivs3( Abc_ManRes_t * p, int Required )
 {
     Abc_Obj_t * pObj0, * pObj1, * pObj2, * pObj3;
     unsigned * puData0, * puData1, * puData2, * puData3, * puDataR;
-    int i, k, w, Flag;
-    puDataR = p->pRoot->pData;
+    int i, k, w = 0, Flag;
+    puDataR = (unsigned *)p->pRoot->pData;
     // check positive unate divisors
-    Vec_PtrForEachEntry( p->vDivs2UP0, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UP0, pObj0, i )
     {
-        pObj1 = Vec_PtrEntry( p->vDivs2UP1, i );
-        puData0 = Abc_ObjRegular(pObj0)->pData;
-        puData1 = Abc_ObjRegular(pObj1)->pData;
+        pObj1 = (Abc_Obj_t *)Vec_PtrEntry( p->vDivs2UP1, i );
+        puData0 = (unsigned *)Abc_ObjRegular(pObj0)->pData;
+        puData1 = (unsigned *)Abc_ObjRegular(pObj1)->pData;
         Flag = (Abc_ObjIsComplement(pObj0) << 3) | (Abc_ObjIsComplement(pObj1) << 2);
 
-        Vec_PtrForEachEntryStart( p->vDivs2UP0, pObj2, k, i + 1 )
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs2UP0, pObj2, k, i + 1 )
         {
-            pObj3 = Vec_PtrEntry( p->vDivs2UP1, k );
-            puData2 = Abc_ObjRegular(pObj2)->pData;
-            puData3 = Abc_ObjRegular(pObj3)->pData;
+            pObj3 = (Abc_Obj_t *)Vec_PtrEntry( p->vDivs2UP1, k );
+            puData2 = (unsigned *)Abc_ObjRegular(pObj2)->pData;
+            puData3 = (unsigned *)Abc_ObjRegular(pObj3)->pData;
 
-            Flag = (Flag & 12) | (Abc_ObjIsComplement(pObj2) << 1) | Abc_ObjIsComplement(pObj3);
+            Flag = (Flag & 12) | ((int)Abc_ObjIsComplement(pObj2) << 1) | (int)Abc_ObjIsComplement(pObj3);
             assert( Flag < 16 );
             switch( Flag )
             {
@@ -1470,14 +1474,14 @@ Dec_Graph_t * Abc_ManResubDivs3( Abc_ManRes_t * p, int Required )
     }
 /*
     // check negative unate divisors
-    Vec_PtrForEachEntry( p->vDivs2UN0, pObj0, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs2UN0, pObj0, i )
     {
         pObj1 = Vec_PtrEntry( p->vDivs2UN1, i );
         puData0 = Abc_ObjRegular(pObj0)->pData;
         puData1 = Abc_ObjRegular(pObj1)->pData;
         Flag = (Abc_ObjIsComplement(pObj0) << 3) | (Abc_ObjIsComplement(pObj1) << 2);
 
-        Vec_PtrForEachEntryStart( p->vDivs2UN0, pObj2, k, i + 1 )
+        Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs2UN0, pObj2, k, i + 1 )
         {
             pObj3 = Vec_PtrEntry( p->vDivs2UN1, k );
             puData2 = Abc_ObjRegular(pObj2)->pData;
@@ -1598,7 +1602,7 @@ void Abc_ManResubCleanup( Abc_ManRes_t * p )
 {
     Abc_Obj_t * pObj;
     int i;
-    Vec_PtrForEachEntry( p->vDivs, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pObj, i )
         pObj->pData = NULL;
     Vec_PtrClear( p->vDivs );
     p->pRoot = NULL;
@@ -1615,12 +1619,12 @@ void Abc_ManResubCleanup( Abc_ManRes_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-Dec_Graph_t * Abc_ManResubEval( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLeaves, int nSteps, bool fUpdateLevel, bool fVerbose )
+Dec_Graph_t * Abc_ManResubEval( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t * vLeaves, int nSteps, int fUpdateLevel, int fVerbose )
 {
-    extern int Abc_NodeMffsInside( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vInside );
+    extern int Abc_NodeMffcInside( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vInside );
     Dec_Graph_t * pGraph;
     int Required;
-    int clk;
+    abctime clk;
 
     Required = fUpdateLevel? Abc_ObjRequiredLevel(pRoot) : ABC_INFINITY;
 
@@ -1631,28 +1635,28 @@ Dec_Graph_t * Abc_ManResubEval( Abc_ManRes_t * p, Abc_Obj_t * pRoot, Vec_Ptr_t *
     p->nLastGain = -1;
 
     // collect the MFFC
-clk = clock();
-    p->nMffc = Abc_NodeMffsInside( pRoot, vLeaves, p->vTemp );
-p->timeMffc += clock() - clk;
+clk = Abc_Clock();
+    p->nMffc = Abc_NodeMffcInside( pRoot, vLeaves, p->vTemp );
+p->timeMffc += Abc_Clock() - clk;
     assert( p->nMffc > 0 );
 
     // collect the divisor nodes
-clk = clock();
+clk = Abc_Clock();
     if ( !Abc_ManResubCollectDivs( p, pRoot, vLeaves, Required ) )
         return NULL;
-    p->timeDiv += clock() - clk;
+    p->timeDiv += Abc_Clock() - clk;
 
     p->nTotalDivs   += p->nDivs;
     p->nTotalLeaves += p->nLeaves;
 
     // simulate the nodes
-clk = clock();
+clk = Abc_Clock();
     Abc_ManResubSimulate( p->vDivs, p->nLeaves, p->vSims, p->nLeavesMax, p->nWords );
-p->timeSim += clock() - clk;
+p->timeSim += Abc_Clock() - clk;
 
-clk = clock();
+clk = Abc_Clock();
     // consider constants
-    if ( pGraph = Abc_ManResubQuit( p ) )
+    if ( (pGraph = Abc_ManResubQuit( p )) )
     {
         p->nUsedNodeC++;
         p->nLastGain = p->nMffc;
@@ -1660,16 +1664,16 @@ clk = clock();
     }
 
     // consider equal nodes
-    if ( pGraph = Abc_ManResubDivs0( p ) )
+    if ( (pGraph = Abc_ManResubDivs0( p )) )
     {
-p->timeRes1 += clock() - clk;
+p->timeRes1 += Abc_Clock() - clk;
         p->nUsedNode0++;
         p->nLastGain = p->nMffc;
         return pGraph;
     }
     if ( nSteps == 0 || p->nMffc == 1 )
     {
-p->timeRes1 += clock() - clk;
+p->timeRes1 += Abc_Clock() - clk;
         return NULL;
     }
 
@@ -1677,52 +1681,52 @@ p->timeRes1 += clock() - clk;
     Abc_ManResubDivsS( p, Required );
 
     // consider one node
-    if ( pGraph = Abc_ManResubDivs1( p, Required ) )
+    if ( (pGraph = Abc_ManResubDivs1( p, Required )) )
     {
-p->timeRes1 += clock() - clk;
+p->timeRes1 += Abc_Clock() - clk;
         p->nLastGain = p->nMffc - 1;
         return pGraph;
     }
-p->timeRes1 += clock() - clk;
+p->timeRes1 += Abc_Clock() - clk;
     if ( nSteps == 1 || p->nMffc == 2 )
         return NULL;
 
-clk = clock();
+clk = Abc_Clock();
     // consider triples
-    if ( pGraph = Abc_ManResubDivs12( p, Required ) )
+    if ( (pGraph = Abc_ManResubDivs12( p, Required )) )
     {
-p->timeRes2 += clock() - clk;
+p->timeRes2 += Abc_Clock() - clk;
         p->nLastGain = p->nMffc - 2;
         return pGraph;
     }
-p->timeRes2 += clock() - clk;
+p->timeRes2 += Abc_Clock() - clk;
 
     // get the two level divisors
-clk = clock();
+clk = Abc_Clock();
     Abc_ManResubDivsD( p, Required );
-p->timeResD += clock() - clk;
+p->timeResD += Abc_Clock() - clk;
 
     // consider two nodes
-clk = clock();
-    if ( pGraph = Abc_ManResubDivs2( p, Required ) )
+clk = Abc_Clock();
+    if ( (pGraph = Abc_ManResubDivs2( p, Required )) )
     {
-p->timeRes2 += clock() - clk;
+p->timeRes2 += Abc_Clock() - clk;
         p->nLastGain = p->nMffc - 2;
         return pGraph;
     }
-p->timeRes2 += clock() - clk;
+p->timeRes2 += Abc_Clock() - clk;
     if ( nSteps == 2 || p->nMffc == 3 )
         return NULL;
 
     // consider two nodes
-clk = clock();
-    if ( pGraph = Abc_ManResubDivs3( p, Required ) )
+clk = Abc_Clock();
+    if ( (pGraph = Abc_ManResubDivs3( p, Required )) )
     {
-p->timeRes3 += clock() - clk;
+p->timeRes3 += Abc_Clock() - clk;
         p->nLastGain = p->nMffc - 3;
         return pGraph;
     }
-p->timeRes3 += clock() - clk;
+p->timeRes3 += Abc_Clock() - clk;
     if ( nSteps == 3 || p->nLeavesMax == 4 )
         return NULL;
     return NULL;
@@ -1773,7 +1777,7 @@ int Abc_CutVolumeCheck( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves )
     int i;
     // mark the leaves
     Abc_NtkIncrementTravId( pNode->pNtk );
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         Abc_NodeSetTravIdCurrent( pObj ); 
     // traverse the nodes starting from the given one and count them
     return Abc_CutVolumeCheck_rec( pNode );
@@ -1826,7 +1830,7 @@ Vec_Ptr_t * Abc_CutFactor( Abc_Obj_t * pNode )
     vLeaves  = Vec_PtrAlloc( 10 );
     Abc_CutFactor_rec( Abc_ObjFanin0(pNode), vLeaves );
     Abc_CutFactor_rec( Abc_ObjFanin1(pNode), vLeaves );
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->fMarkA = 0;
     return vLeaves;
 }
@@ -1867,7 +1871,7 @@ Vec_Ptr_t * Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax )
     // initialize the factor cuts for the leaves
     vFactors = Vec_PtrAlloc( nLeavesMax );
     Abc_NtkIncrementTravId( pNode->pNtk );
-    Vec_PtrForEachEntry( vLeaves, pLeaf, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pLeaf, i )
     {
         Abc_NodeSetTravIdCurrent( pLeaf ); 
         if ( Abc_ObjIsCi(pLeaf) )
@@ -1879,16 +1883,16 @@ Vec_Ptr_t * Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax )
     vFeasible = Vec_IntAlloc( nLeavesMax );
     while ( 1 )
     {
-        BestCut = -1;
+        BestCut = -1, BestShare = -1;
         // find the next feasible cut to add
         Vec_IntClear( vFeasible );
-        Vec_PtrForEachEntry( vFactors, vFact, i )
+        Vec_PtrForEachEntry( Vec_Ptr_t *, vFactors, vFact, i )
         {
             if ( vFact == NULL )
                 continue;
             // count the number of unmarked leaves of this factor cut
             Counter = 0;
-            Vec_PtrForEachEntry( vFact, pTemp, k )
+            Vec_PtrForEachEntry( Abc_Obj_t *, vFact, pTemp, k )
                 Counter += !Abc_NodeIsTravIdCurrent(pTemp);
             // if the number of new leaves is smaller than the diff, it is feasible
             if ( Counter <= nLeavesMax - Vec_PtrSize(vLeaves) + 1 )
@@ -1906,8 +1910,8 @@ Vec_Ptr_t * Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax )
         // choose the cut that has most sharing with the other cuts
         RandLeaf = BestCut;
 
-        pLeaf = Vec_PtrEntry( vLeaves, RandLeaf );
-        vNext = Vec_PtrEntry( vFactors, RandLeaf );
+        pLeaf = (Abc_Obj_t *)Vec_PtrEntry( vLeaves, RandLeaf );
+        vNext = (Vec_Ptr_t *)Vec_PtrEntry( vFactors, RandLeaf );
         // unmark this leaf
         Abc_NodeSetTravIdPrevious( pLeaf ); 
         // remove this cut from the leaves and factor cuts
@@ -1919,7 +1923,7 @@ Vec_Ptr_t * Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax )
         Vec_PtrShrink( vLeaves,  Vec_PtrSize(vLeaves) -1 );
         Vec_PtrShrink( vFactors, Vec_PtrSize(vFactors)-1 );
         // add new leaves, compute their factor cuts
-        Vec_PtrForEachEntry( vNext, pLeaf, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vNext, pLeaf, i )
         {
             if ( Abc_NodeIsTravIdCurrent(pLeaf) )
                 continue;
@@ -1937,7 +1941,7 @@ Vec_Ptr_t * Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax )
     }
 
     // remove temporary storage
-    Vec_PtrForEachEntry( vFactors, vFact, i )
+    Vec_PtrForEachEntry( Vec_Ptr_t *, vFactors, vFact, i )
         if ( vFact ) Vec_PtrFree( vFact );
     Vec_PtrFree( vFactors );
     Vec_IntFree( vFeasible );
@@ -1948,4 +1952,6 @@ Vec_Ptr_t * Abc_CutFactorLarge( Abc_Obj_t * pNode, int nLeavesMax )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

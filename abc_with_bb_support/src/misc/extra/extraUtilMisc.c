@@ -18,7 +18,12 @@
 
 ***********************************************************************/
 
+#include <math.h>
+
 #include "extra.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -55,28 +60,6 @@ static void Extra_Permutations_rec( char ** pRes, int nFact, int n, char Array[]
 /* Definition of exported functions                                          */
 /*---------------------------------------------------------------------------*/
 
-
-/**Function********************************************************************
-
-  Synopsis    [Finds the smallest integer larger of equal than the logarithm.]
-
-  Description [Returns [Log2(Num)].]
-
-  SideEffects []
-
-  SeeAlso     []
-
-******************************************************************************/
-int Extra_Base2Log( unsigned Num )
-{
-    int Res;
-    assert( Num >= 0 );
-    if ( Num == 0 ) return 0;
-    if ( Num == 1 ) return 1;
-    for ( Res = 0, Num--; Num; Num >>= 1, Res++ );
-    return Res;
-} /* end of Extra_Base2Log */
-
 /**Function********************************************************************
 
   Synopsis    [Finds the smallest integer larger of equal than the logarithm.]
@@ -100,27 +83,6 @@ int Extra_Base2LogDouble( double Num )
     else 
         return ResInt+1;
 }
-
-/**Function********************************************************************
-
-  Synopsis    [Finds the smallest integer larger of equal than the logarithm.]
-
-  Description [Returns [Log10(Num)].]
-
-  SideEffects []
-
-  SeeAlso     []
-
-******************************************************************************/
-int Extra_Base10Log( unsigned Num )
-{
-    int Res;
-    assert( Num >= 0 );
-    if ( Num == 0 ) return 0;
-    if ( Num == 1 ) return 1;
-	for ( Res = 0, Num--;  Num;  Num /= 10,  Res++ );
-    return Res;
-} /* end of Extra_Base2Log */
 
 /**Function********************************************************************
 
@@ -266,7 +228,7 @@ int Extra_Factorial( int n )
   Description [The number of permutations in the array is n!. The number of
   entries in each permutation is n. Therefore, the resulting array is a 
   two-dimentional array of the size: n! x n. To free the resulting array,
-  call free() on the pointer returned by this procedure.]
+  call ABC_FREE() on the pointer returned by this procedure.]
 
   SideEffects []
 
@@ -397,8 +359,8 @@ unsigned Extra_TruthPermute( unsigned Truth, char * pPerms, int nVars, int fReve
 
     assert( nVars < 6 );
     nMints  = (1 << nVars);
-    pMints  = ALLOC( int, nMints );
-    pMintsP = ALLOC( int, nMints );
+    pMints  = ABC_ALLOC( int, nMints );
+    pMintsP = ABC_ALLOC( int, nMints );
     for ( i = 0; i < nMints; i++ )
         pMints[i] = i;
 
@@ -418,8 +380,8 @@ unsigned Extra_TruthPermute( unsigned Truth, char * pPerms, int nVars, int fReve
                 Result |= (1 << pMintsP[m]);
     }
 
-    free( pMints );
-    free( pMintsP );
+    ABC_FREE( pMints );
+    ABC_FREE( pMintsP );
 
     return Result;
 }
@@ -546,7 +508,7 @@ unsigned Extra_TruthCanonP( unsigned uTruth, int nVars )
     }
     else if ( nVarsOld != nVars )
     {
-        free( pPerms );
+        ABC_FREE( pPerms );
         nPerms = Extra_Factorial( nVars );   
         pPerms = Extra_Permutations( nVars );
         nVarsOld = nVars;
@@ -589,7 +551,7 @@ unsigned Extra_TruthCanonNP( unsigned uTruth, int nVars )
     }
     else if ( nVarsOld != nVars )
     {
-        free( pPerms );
+        ABC_FREE( pPerms );
         nPerms = Extra_Factorial( nVars );   
         pPerms = Extra_Permutations( nVars );
         nVarsOld = nVars;
@@ -637,7 +599,7 @@ unsigned Extra_TruthCanonNPN( unsigned uTruth, int nVars )
     }
     else if ( nVarsOld != nVars )
     {
-        free( pPerms );
+        ABC_FREE( pPerms );
         nPerms = Extra_Factorial( nVars );   
         pPerms = Extra_Permutations( nVars );
         nVarsOld = nVars;
@@ -687,10 +649,10 @@ void Extra_Truth4VarNPN( unsigned short ** puCanons, char ** puPhases, char ** p
     int i, k;
 
     nFuncs  = (1 << 16);
-    uCanons = ALLOC( unsigned short, nFuncs );
-    uPhases = ALLOC( char, nFuncs );
-    uPerms  = ALLOC( char, nFuncs );
-    uMap    = ALLOC( unsigned char, nFuncs );
+    uCanons = ABC_ALLOC( unsigned short, nFuncs );
+    uPhases = ABC_ALLOC( char, nFuncs );
+    uPerms  = ABC_ALLOC( char, nFuncs );
+    uMap    = ABC_ALLOC( unsigned char, nFuncs );
     memset( uCanons, 0, sizeof(unsigned short) * nFuncs );
     memset( uPhases, 0, sizeof(char) * nFuncs );
     memset( uPerms,  0, sizeof(char) * nFuncs );
@@ -751,23 +713,23 @@ void Extra_Truth4VarNPN( unsigned short ** puCanons, char ** puPhases, char ** p
     }
     uPhases[(1<<16)-1] = 16;
     assert( nClasses == 222 );
-    free( pPerms4 );
+    ABC_FREE( pPerms4 );
     if ( puCanons ) 
         *puCanons = uCanons;
     else
-        free( uCanons );
+        ABC_FREE( uCanons );
     if ( puPhases ) 
         *puPhases = uPhases;
     else
-        free( uPhases );
+        ABC_FREE( uPhases );
     if ( puPerms ) 
         *puPerms = uPerms;
     else
-        free( uPerms );
+        ABC_FREE( uPerms );
     if ( puMap ) 
         *puMap = uMap;
     else
-        free( uMap );
+        ABC_FREE( uMap );
 }
 
 /**Function*************************************************************
@@ -790,9 +752,9 @@ void Extra_Truth3VarN( unsigned ** puCanons, char *** puPhases, char ** ppCounte
     int nFuncs, nClasses, i;
 
     nFuncs  = (1 << 8);
-    uCanons = ALLOC( unsigned, nFuncs );
+    uCanons = ABC_ALLOC( unsigned, nFuncs );
     memset( uCanons, 0, sizeof(unsigned) * nFuncs );
-    pCounters = ALLOC( char, nFuncs );
+    pCounters = ABC_ALLOC( char, nFuncs );
     memset( pCounters, 0, sizeof(char) * nFuncs );
     uPhases = (char **)Extra_ArrayAlloc( nFuncs, nPhasesMax, sizeof(char) );
     nClasses = 0;
@@ -819,22 +781,22 @@ void Extra_Truth3VarN( unsigned ** puCanons, char *** puPhases, char ** ppCounte
             {
                 assert( uCanons[uPhase] == uTruth32 );
                 if ( pCounters[uPhase] < nPhasesMax )
-                    uPhases[uPhase][ pCounters[uPhase]++ ] = i;
+                    uPhases[uPhase][ (int)pCounters[uPhase]++ ] = i;
             }
         }
     }
     if ( puCanons ) 
         *puCanons = uCanons;
     else
-        free( uCanons );
+        ABC_FREE( uCanons );
     if ( puPhases ) 
         *puPhases = uPhases;
     else
-        free( uPhases );
+        ABC_FREE( uPhases );
     if ( ppCounters ) 
         *ppCounters = pCounters;
     else
-        free( pCounters );
+        ABC_FREE( pCounters );
 //    printf( "The number of 3N-classes = %d.\n", nClasses );
 }
 
@@ -857,9 +819,9 @@ void Extra_Truth4VarN( unsigned short ** puCanons, char *** puPhases, char ** pp
     int nFuncs, nClasses, i;
 
     nFuncs  = (1 << 16);
-    uCanons = ALLOC( unsigned short, nFuncs );
+    uCanons = ABC_ALLOC( unsigned short, nFuncs );
     memset( uCanons, 0, sizeof(unsigned short) * nFuncs );
-    pCounters = ALLOC( char, nFuncs );
+    pCounters = ABC_ALLOC( char, nFuncs );
     memset( pCounters, 0, sizeof(char) * nFuncs );
     uPhases = (char **)Extra_ArrayAlloc( nFuncs, nPhasesMax, sizeof(char) );
     nClasses = 0;
@@ -885,22 +847,22 @@ void Extra_Truth4VarN( unsigned short ** puCanons, char *** puPhases, char ** pp
             {
                 assert( uCanons[uPhase] == uTruth );
                 if ( pCounters[uPhase] < nPhasesMax )
-                    uPhases[uPhase][ pCounters[uPhase]++ ] = i;
+                    uPhases[uPhase][ (int)pCounters[uPhase]++ ] = i;
             }
         }
     }
     if ( puCanons ) 
         *puCanons = uCanons;
     else
-        free( uCanons );
+        ABC_FREE( uCanons );
     if ( puPhases ) 
         *puPhases = uPhases;
     else
-        free( uPhases );
+        ABC_FREE( uPhases );
     if ( ppCounters ) 
         *ppCounters = pCounters;
     else
-        free( pCounters );
+        ABC_FREE( pCounters );
 //    printf( "The number of 4N-classes = %d.\n", nClasses );
 }
 
@@ -917,15 +879,15 @@ void Extra_Truth4VarN( unsigned short ** puCanons, char *** puPhases, char ** pp
 ***********************************************************************/
 void ** Extra_ArrayAlloc( int nCols, int nRows, int Size )
 {
-    char ** pRes;
+    void ** pRes;
     char * pBuffer;
     int i;
     assert( nCols > 0 && nRows > 0 && Size > 0 );
-    pBuffer = ALLOC( char, nCols * (sizeof(void *) + nRows * Size) );
-    pRes = (char **)pBuffer;
+    pBuffer = ABC_ALLOC( char, nCols * (sizeof(void *) + nRows * Size) );
+    pRes = (void **)pBuffer;
     pRes[0] = pBuffer + nCols * sizeof(void *);
     for ( i = 1; i < nCols; i++ )
-        pRes[i] = pRes[0] + i * nRows * Size;
+        pRes[i] = (void *)((char *)pRes[0] + i * nRows * Size);
     return pRes;
 }
 
@@ -1860,7 +1822,7 @@ void Extra_TruthExpand( int nVars, int nWords, unsigned * puTruth, unsigned uPha
     {
         int i;
         for ( i = 0; i < nWords; i++ )
-            puTruthR[i] = uTruths[Cases[uPhase]][i];
+            puTruthR[i] = uTruths[(int)Cases[uPhase]][i];
         return;
     }
 
@@ -2117,41 +2079,6 @@ void Extra_BubbleSort( int Order[], int Costs[], int nSize, int fIncreasing )
     }
 }
 
-/**Function*************************************************************
-
-  Synopsis    [Returns the smallest prime larger than the number.]
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-unsigned int Cudd_PrimeCopy( unsigned int  p)
-{
-    int i,pn;
-
-    p--;
-    do {
-        p++;
-        if (p&1) {
-	    pn = 1;
-	    i = 3;
-	    while ((unsigned) (i * i) <= p) {
-		if (p % i == 0) {
-		    pn = 0;
-		    break;
-		}
-		i += 2;
-	    }
-	} else {
-	    pn = 0;
-	}
-    } while (!pn);
-    return(p);
-
-} /* end of Cudd_Prime */
 
 /*---------------------------------------------------------------------------*/
 /* Definition of internal functions                                          */
@@ -2228,8 +2155,426 @@ void Extra_TruthExpandGeneratePermTable()
     printf( "};\n" );
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Computes complementation schedule for 2^n Grey codes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int * Extra_GreyCodeSchedule( int n )
+{
+    int * pRes = ABC_ALLOC( int, (1<<n) );
+    int i, k, b = 0;
+//    pRes[b++] = -1;
+    for ( k = 0; k < n; k++ )
+        for ( pRes[b++] = k, i = 1; i < (1<<k); i++ )
+            pRes[b++] = pRes[i-1]; // pRes[i];
+    pRes[b++] = n-1;
+    assert( b == (1<<n) );
+
+    if ( 0 )
+    {
+        unsigned uSign = 0;
+        for ( b = 0; b < (1<<n); b++ )
+        {
+            uSign ^= (1 << pRes[b]);
+            printf( "%3d %3d  ", b, pRes[b] );
+            Extra_PrintBinary( stdout, &uSign, n );
+            printf( "\n" );
+        }
+    }
+    return pRes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Computes permutation schedule for n! permutations.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int * Extra_PermSchedule( int n )
+{
+    int nFact   = Extra_Factorial(n);
+    int nGroups = nFact / n / 2;
+    int * pRes = ABC_ALLOC( int, nFact );
+    int * pRes0, i, k, b = 0;
+    assert( n > 0 );
+    if ( n == 1 )
+    {
+        pRes[0] = 0;
+        return pRes;
+    }
+    if ( n == 2 )
+    {
+        pRes[0] = pRes[1] = 0;
+        return pRes;
+    }
+    pRes0 = Extra_PermSchedule( n-1 );
+    for ( k = 0; k < nGroups; k++ )
+    {
+        for ( i = n-1; i > 0; i-- )
+            pRes[b++] = i-1;
+        pRes[b++] = pRes0[2*k]+1;
+        for ( i = 0; i < n-1; i++ )
+            pRes[b++] = i;
+        pRes[b++] = pRes0[2*k+1];
+    }
+    ABC_FREE( pRes0 );
+    assert( b == nFact );
+
+    if ( 0 )
+    {
+        int Perm[16];
+        for ( i = 0; i < n; i++ )
+            Perm[i] = i;
+        for ( b = 0; b < nFact; b++ )
+        {
+            ABC_SWAP( int, Perm[pRes[b]], Perm[pRes[b]+1] );
+            printf( "%3d %3d    ", b, pRes[b] );
+            for ( i = 0; i < n; i++ )
+                printf( "%d", Perm[i] );
+            printf( "\n" );
+        }
+    }
+    return pRes;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Finds minimum form of a 6-input function.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline word Extra_Truth6SwapAdjacent( word t, int v )
+{
+    // variable swapping code
+    static word PMasks[5][3] = {
+        { ABC_CONST(0x9999999999999999), ABC_CONST(0x2222222222222222), ABC_CONST(0x4444444444444444) },
+        { ABC_CONST(0xC3C3C3C3C3C3C3C3), ABC_CONST(0x0C0C0C0C0C0C0C0C), ABC_CONST(0x3030303030303030) },
+        { ABC_CONST(0xF00FF00FF00FF00F), ABC_CONST(0x00F000F000F000F0), ABC_CONST(0x0F000F000F000F00) },
+        { ABC_CONST(0xFF0000FFFF0000FF), ABC_CONST(0x0000FF000000FF00), ABC_CONST(0x00FF000000FF0000) },
+        { ABC_CONST(0xFFFF00000000FFFF), ABC_CONST(0x00000000FFFF0000), ABC_CONST(0x0000FFFF00000000) }
+    };
+    assert( v < 5 );
+    return (t & PMasks[v][0]) | ((t & PMasks[v][1]) << (1 << v)) | ((t & PMasks[v][2]) >> (1 << v));
+}
+static inline word Extra_Truth6ChangePhase( word t, int v )
+{
+    // elementary truth tables
+    static word Truth6[6] = {
+        ABC_CONST(0xAAAAAAAAAAAAAAAA),
+        ABC_CONST(0xCCCCCCCCCCCCCCCC),
+        ABC_CONST(0xF0F0F0F0F0F0F0F0),
+        ABC_CONST(0xFF00FF00FF00FF00),
+        ABC_CONST(0xFFFF0000FFFF0000),
+        ABC_CONST(0xFFFFFFFF00000000)
+    };
+    assert( v < 6 );
+    return ((t & ~Truth6[v]) << (1 << v)) | ((t & Truth6[v]) >> (1 << v));
+}
+word Extra_Truth6MinimumExact( word t, int * pComp, int * pPerm )
+{
+    word tMin = ~(word)0;
+    word tCur, tTemp1, tTemp2;
+    int i, p, c;
+    for ( i = 0; i < 2; i++ )
+    {
+        tCur = i ? ~t : t;
+        tTemp1 = tCur;
+        for ( p = 0; p < 720; p++ )
+        {
+//            printf( "Trying perm %d:\n", p );
+//            Kit_DsdPrintFromTruth( &tCur, 6 ), printf( "\n" );;
+            tTemp2 = tCur;
+            for ( c = 0; c < 64; c++ )
+            {
+                tMin = Abc_MinWord( tMin, tCur );
+                tCur = Extra_Truth6ChangePhase( tCur, pComp[c] );
+            }
+            assert( tTemp2 == tCur );
+            tCur = Extra_Truth6SwapAdjacent( tCur, pPerm[p] );
+        }
+        assert( tTemp1 == tCur );
+    }
+    return tMin;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Perform heuristic TT minimization.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline int Extra_Truth6Ones( word t )
+{
+    t =    (t & ABC_CONST(0x5555555555555555)) + ((t>> 1) & ABC_CONST(0x5555555555555555));
+    t =    (t & ABC_CONST(0x3333333333333333)) + ((t>> 2) & ABC_CONST(0x3333333333333333));
+    t =    (t & ABC_CONST(0x0F0F0F0F0F0F0F0F)) + ((t>> 4) & ABC_CONST(0x0F0F0F0F0F0F0F0F));
+    t =    (t & ABC_CONST(0x00FF00FF00FF00FF)) + ((t>> 8) & ABC_CONST(0x00FF00FF00FF00FF));
+    t =    (t & ABC_CONST(0x0000FFFF0000FFFF)) + ((t>>16) & ABC_CONST(0x0000FFFF0000FFFF));
+    return (t & ABC_CONST(0x00000000FFFFFFFF)) +  (t>>32);
+}
+static inline word Extra_Truth6MinimumRoundOne( word t, int v )
+{
+    word tCur, tMin = t; // ab 
+    assert( v >= 0 && v < 5 );
+
+    tCur = Extra_Truth6ChangePhase( t, v );    // !ab
+    tMin = Abc_MinWord( tMin, tCur );
+    tCur = Extra_Truth6ChangePhase( t, v+1 );  // a!b
+    tMin = Abc_MinWord( tMin, tCur );
+    tCur = Extra_Truth6ChangePhase( tCur, v ); // !a!b
+    tMin = Abc_MinWord( tMin, tCur );
+
+    t    = Extra_Truth6SwapAdjacent( t, v );   // ba
+    tMin = Abc_MinWord( tMin, t );
+
+    tCur = Extra_Truth6ChangePhase( t, v );    // !ba
+    tMin = Abc_MinWord( tMin, tCur );
+    tCur = Extra_Truth6ChangePhase( t, v+1 );  // b!a
+    tMin = Abc_MinWord( tMin, tCur );
+    tCur = Extra_Truth6ChangePhase( tCur, v ); // !b!a
+    tMin = Abc_MinWord( tMin, tCur );
+
+    return tMin;
+}
+static inline word Extra_Truth6MinimumRoundMany( word t )
+{
+    int i, k, Limit = 10;
+    word tCur, tMin = t;
+    for ( i = 0; i < Limit; i++ )
+    {
+        word tMin0 = tMin;
+        for ( k = 4; k >= 0; k-- )
+        {
+            tCur = Extra_Truth6MinimumRoundOne( tMin, k );
+            tMin = Abc_MinWord( tMin, tCur );
+        }
+        if ( tMin0 == tMin )
+            break;
+    }
+    return tMin;
+}
+word Extra_Truth6MinimumHeuristic( word t )
+{
+    word tMin1, tMin2;
+    int nOnes = Extra_Truth6Ones( t );
+    if ( nOnes < 32 )
+        return Extra_Truth6MinimumRoundMany( t );
+    if ( nOnes > 32 )
+        return Extra_Truth6MinimumRoundMany( ~t );
+    tMin1 = Extra_Truth6MinimumRoundMany(  t );
+    tMin2 = Extra_Truth6MinimumRoundMany( ~t );
+    return Abc_MinWord( tMin1, tMin2 );
+}
+void Extra_Truth6MinimumHeuristicTest()
+{
+    word t = ABC_CONST(0x5555555555555555) & ~(ABC_CONST(0x3333333333333333) & ABC_CONST(0x0F0F0F0F0F0F0F0F));
+    Extra_Truth6MinimumRoundMany( t );
+    t = 0;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Reads functions from file.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+word * Extra_NpnRead( char * pFileName, int nFuncs )
+{
+    FILE * pFile;
+    word * pFuncs;
+    char pBuffer[100];
+    int i = 0;
+    pFuncs = ABC_CALLOC( word, nFuncs );
+    pFile = fopen( pFileName, "rb" );
+    while ( fgets( pBuffer, 100, pFile ) )
+        Extra_ReadHex( (unsigned *)(pFuncs + i++), (pBuffer[1] == 'x' ? pBuffer+2 : pBuffer), 16 );
+    fclose( pFile );
+    assert( i == nFuncs );
+    for ( i = 0; i < Abc_MinInt(nFuncs, 10); i++ )
+    {
+        printf( "Line %d : ", i );
+        Extra_PrintHex( stdout, (unsigned *)(pFuncs + i), 6 ), printf( "\n" );
+    }
+    return pFuncs;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Comparison for words.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int CompareWords( void * p1, void * p2 )
+{
+    word Word1 = *(word *)p1;
+    word Word2 = *(word *)p2;
+    if ( Word1 < Word2 )
+        return -1;
+    if ( Word1 > Word2 )
+        return 1;
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Computes the permutation table for 8 variables.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Extra_NpnTest1()
+{
+    int * pComp;
+    pComp = Extra_PermSchedule( 5 );
+//    pComp = Extra_GreyCodeSchedule( 5 );
+    ABC_FREE( pComp );
+}
+void Extra_NpnTest2()
+{
+    int * pComp, * pPerm;
+    word tMin, t = ABC_CONST(0xa2222aaa08888000);
+    pComp = Extra_GreyCodeSchedule( 6 );
+    pPerm = Extra_PermSchedule( 6 );
+    tMin  = Extra_Truth6MinimumExact( t, pComp, pPerm );
+    ABC_FREE( pPerm );
+    ABC_FREE( pComp );
+
+    Extra_PrintHex( stdout, (unsigned *)&t,    6 ), printf( "\n" );
+    Extra_PrintHex( stdout, (unsigned *)&tMin, 6 ), printf( "\n" );
+}
+void Extra_NpnTest()
+{
+//    int nFuncs = 5687661; 
+//    int nFuncs = 400777;
+    int nFuncs = 10;
+    abctime clk = Abc_Clock();
+    word * pFuncs;
+    int * pComp, * pPerm;
+    int i;//, k, nUnique = 0;
+/*
+    // read functions
+    pFuncs = Extra_NpnRead( "C:\\_projects\\abc\\_TEST\\allan\\lib6var5M.txt", nFuncs );
+//    pFuncs = Extra_NpnRead( "C:\\_projects\\abc\\_TEST\\allan\\lib6var5M_out_Total_minimal.txt", nFuncs );
+    qsort( (void *)pFuncs, nFuncs, sizeof(word), (int(*)(const void *,const void *))CompareWords );
+
+    // count unique
+    k = 1;
+    for ( i = 1; i < nFuncs; i++ )
+        if ( pFuncs[i] != pFuncs[i-1] )
+            pFuncs[k++] = pFuncs[i];
+    nFuncs = k;
+    printf( "Total number of unique functions = %d\n", nFuncs );
+*/
+//    pFuncs = Extra_NpnRead( "C:\\_projects\\abc\\_TEST\\allan\\lib6var5M_out_Total_minimal.txt", nFuncs );
+    pFuncs = Extra_NpnRead( "C:\\_projects\\abc\\_TEST\\allan\\test.txt", nFuncs );
+    pComp = Extra_GreyCodeSchedule( 6 );
+    pPerm = Extra_PermSchedule( 6 );
+    // compute minimum forms
+    for ( i = 0; i < nFuncs; i++ )
+    {
+        pFuncs[i] = Extra_Truth6MinimumExact( pFuncs[i], pComp, pPerm );
+        if ( i % 10000 == 0 )
+            printf( "%d\n", i );
+    }
+    printf( "Finished deriving minimum form\n" );
+/*
+    // sort them by value
+    qsort( (void *)pFuncs, nFuncs, sizeof(word), (int(*)(const void *,const void *))CompareWords );
+    // count unique
+    nUnique = nFuncs;
+    for ( i = 1; i < nFuncs; i++ )
+        if ( pFuncs[i] == pFuncs[i-1] )
+            nUnique--;
+    printf( "Total number of unique ones = %d\n", nUnique );
+*/
+    for ( i = 0; i < Abc_MinInt(nFuncs, 10); i++ )
+    {
+        printf( "Line %d : ", i );
+        Extra_PrintHex( stdout, (unsigned *)(pFuncs + i), 6 ), printf( "\n" );
+    }
+    ABC_FREE( pPerm );
+    ABC_FREE( pComp );
+    ABC_FREE( pFuncs );
+    Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Extra_NtkPrintBin( word * pT, int nBits )
+{
+    int i;
+    for ( i = nBits - 1; i >= 0; i-- )
+        printf( "%d", (int)((*pT >> i) & 1) );
+}
+void Extra_NtkPowerTest()
+{
+    int i, j, k, n = 4;
+    for ( i = 0; i < (1<<n); i++ )
+    for ( j = 0; j < (1<<n); j++ )
+    {
+        word t = (word)i;
+        for ( k = 1; k < j; k++ )
+            t *= (word)i;
+        Extra_NtkPrintBin( (word *)&i, n );
+        Extra_NtkPrintBin( (word *)&j, n );
+        printf( " " );
+        Extra_NtkPrintBin( (word *)&t, 64 );
+        printf( "\n" );
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

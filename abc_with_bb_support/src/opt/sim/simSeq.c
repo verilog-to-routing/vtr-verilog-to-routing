@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "sim.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -168,4 +171,6 @@ void Sim_SimulateSeqFrame( Vec_Ptr_t * vInfo, Abc_Ntk_t * pNtk, int iFrames, int
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

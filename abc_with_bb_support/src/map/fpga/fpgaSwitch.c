@@ -18,6 +18,9 @@
 
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -139,8 +142,8 @@ float Fpga_MappingGetSwitching( Fpga_Man_t * pMan, Fpga_NodeVec_t * vMapping )
     }
     // add buffer for each CO driven by a CI
     for ( i = 0; i < pMan->nOutputs; i++ )
-        if ( Fpga_NodeIsVar(pMan->pOutputs[i]) && !Fpga_IsComplement(pMan->pOutputs[i]) )
-            Switch += pMan->pOutputs[i]->Switching;
+        if ( Fpga_NodeIsVar(Fpga_Regular(pMan->pOutputs[i])) && !Fpga_IsComplement(pMan->pOutputs[i]) )
+            Switch += Fpga_Regular(pMan->pOutputs[i])->Switching;
     return Switch;
 }
 
@@ -148,4 +151,6 @@ float Fpga_MappingGetSwitching( Fpga_Man_t * pMan, Fpga_NodeVec_t * vMapping )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

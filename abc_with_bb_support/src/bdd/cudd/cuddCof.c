@@ -7,30 +7,61 @@
   Synopsis    [Cofactoring functions.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_Cofactor()
-		</ul>
-	       Internal procedures included in this module:
-		<ul>
-		<li> cuddGetBranches()
-		<li> cuddCheckCube()
-		<li> cuddCofactorRecur()
-		</ul>
-	      ]
+                <ul>
+                <li> Cudd_Cofactor()
+                </ul>
+               Internal procedures included in this module:
+                <ul>
+                <li> cuddGetBranches()
+                <li> cuddCheckCube()
+                <li> cuddCofactorRecur()
+                </ul>
+              ]
 
   SeeAlso     []
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
-#include    "cuddInt.h"
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -52,7 +83,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddCof.c,v 1.1.1.1 2003/02/24 22:23:51 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddCof.c,v 1.9 2004/08/13 18:04:47 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -98,13 +129,13 @@ Cudd_Cofactor(
 
     zero = Cudd_Not(DD_ONE(dd));
     if (g == zero || g == DD_ZERO(dd)) {
-	(void) fprintf(dd->err,"Cudd_Cofactor: Invalid restriction 1\n");
-	dd->errorCode = CUDD_INVALID_ARG;
-	return(NULL);
+        (void) fprintf(dd->err,"Cudd_Cofactor: Invalid restriction 1\n");
+        dd->errorCode = CUDD_INVALID_ARG;
+        return(NULL);
     }
     do {
-	dd->reordered = 0;
-	res = cuddCofactorRecur(dd,f,g);
+        dd->reordered = 0;
+        res = cuddCofactorRecur(dd,f,g);
     } while (dd->reordered == 1);
     return(res);
 
@@ -133,13 +164,13 @@ cuddGetBranches(
   DdNode ** g1,
   DdNode ** g0)
 {
-    DdNode	*G = Cudd_Regular(g);
+    DdNode      *G = Cudd_Regular(g);
 
     *g1 = cuddT(G);
     *g0 = cuddE(G);
     if (Cudd_IsComplement(g)) {
-	*g1 = Cudd_Not(*g1);
-	*g0 = Cudd_Not(*g0);
+        *g1 = Cudd_Not(*g1);
+        *g0 = Cudd_Not(*g0);
     }
 
 } /* end of cuddGetBranches */
@@ -221,7 +252,7 @@ cuddCofactorRecur(
     comple = f != F;
     r = cuddCacheLookup2(dd,Cudd_Cofactor,F,g);
     if (r != NULL) {
-	return(Cudd_NotCond(r,comple));
+        return(Cudd_NotCond(r,comple));
     }
 
     topf = dd->perm[F->index];
@@ -234,57 +265,57 @@ cuddCofactorRecur(
     ** remembers whether we have to complement the result or not.
     */
     if (topf <= topg) {
-	f1 = cuddT(F); f0 = cuddE(F);
+        f1 = cuddT(F); f0 = cuddE(F);
     } else {
-	f1 = f0 = F;
+        f1 = f0 = F;
     }
     if (topg <= topf) {
-	g1 = cuddT(G); g0 = cuddE(G);
-	if (g != G) { g1 = Cudd_Not(g1); g0 = Cudd_Not(g0); }
+        g1 = cuddT(G); g0 = cuddE(G);
+        if (g != G) { g1 = Cudd_Not(g1); g0 = Cudd_Not(g0); }
     } else {
-	g1 = g0 = g;
+        g1 = g0 = g;
     }
 
     zero = Cudd_Not(one);
     if (topf >= topg) {
-	if (g0 == zero || g0 == DD_ZERO(dd)) {
-	    r = cuddCofactorRecur(dd, f1, g1);
-	} else if (g1 == zero || g1 == DD_ZERO(dd)) {
-	    r = cuddCofactorRecur(dd, f0, g0);
-	} else {
-	    (void) fprintf(dd->out,
-			   "Cudd_Cofactor: Invalid restriction 2\n");
-	    dd->errorCode = CUDD_INVALID_ARG;
-	    return(NULL);
-	}
-	if (r == NULL) return(NULL);
+        if (g0 == zero || g0 == DD_ZERO(dd)) {
+            r = cuddCofactorRecur(dd, f1, g1);
+        } else if (g1 == zero || g1 == DD_ZERO(dd)) {
+            r = cuddCofactorRecur(dd, f0, g0);
+        } else {
+            (void) fprintf(dd->out,
+                           "Cudd_Cofactor: Invalid restriction 2\n");
+            dd->errorCode = CUDD_INVALID_ARG;
+            return(NULL);
+        }
+        if (r == NULL) return(NULL);
     } else /* if (topf < topg) */ {
-	t = cuddCofactorRecur(dd, f1, g);
-	if (t == NULL) return(NULL);
-    	cuddRef(t);
-    	e = cuddCofactorRecur(dd, f0, g);
-	if (e == NULL) {
-	    Cudd_RecursiveDeref(dd, t);
-	    return(NULL);
-	}
-	cuddRef(e);
+        t = cuddCofactorRecur(dd, f1, g);
+        if (t == NULL) return(NULL);
+        cuddRef(t);
+        e = cuddCofactorRecur(dd, f0, g);
+        if (e == NULL) {
+            Cudd_RecursiveDeref(dd, t);
+            return(NULL);
+        }
+        cuddRef(e);
 
-	if (t == e) {
-	    r = t;
-	} else if (Cudd_IsComplement(t)) {
-	    r = cuddUniqueInter(dd,(int)F->index,Cudd_Not(t),Cudd_Not(e));
-	    if (r != NULL)
-		r = Cudd_Not(r);
-	} else {
-	    r = cuddUniqueInter(dd,(int)F->index,t,e);
-	}
-	if (r == NULL) {
-	    Cudd_RecursiveDeref(dd ,e);
-	    Cudd_RecursiveDeref(dd ,t);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        if (t == e) {
+            r = t;
+        } else if (Cudd_IsComplement(t)) {
+            r = cuddUniqueInter(dd,(int)F->index,Cudd_Not(t),Cudd_Not(e));
+            if (r != NULL)
+                r = Cudd_Not(r);
+        } else {
+            r = cuddUniqueInter(dd,(int)F->index,t,e);
+        }
+        if (r == NULL) {
+            Cudd_RecursiveDeref(dd ,e);
+            Cudd_RecursiveDeref(dd ,t);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(dd,Cudd_Cofactor,F,g,r);
@@ -297,4 +328,8 @@ cuddCofactorRecur(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+
 

@@ -19,7 +19,25 @@
 
 ***********************************************************************/
 
-#include "io.h"
+// The code in this file is developed in collaboration with Mark Jarvin of Toronto.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+#include "misc/bzlib/bzlib.h"
+#include "misc/zlib/zlib.h"
+#include "ioAbc.h"
+
+
+
+ABC_NAMESPACE_IMPL_START
+
+
+#ifdef _WIN32
+#define vsnprintf _vsnprintf
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -125,15 +143,117 @@ Binary Format Definition
 
 */
 
-static unsigned Io_ObjMakeLit( int Var, int fCompl )                 { return (Var << 1) | fCompl;    }
-static unsigned Io_ObjAigerNum( Abc_Obj_t * pObj )                   { return (unsigned)pObj->pCopy;  }
-static void     Io_ObjSetAigerNum( Abc_Obj_t * pObj, unsigned Num )  { pObj->pCopy = (void *)Num;     }
-
-int      Io_WriteAigerEncode( char * pBuffer, int Pos, unsigned x );
+static unsigned Io_ObjMakeLit( int Var, int fCompl )                 { return (Var << 1) | fCompl;                   }
+static unsigned Io_ObjAigerNum( Abc_Obj_t * pObj )                   { return (unsigned)(ABC_PTRINT_T)pObj->pCopy;  }
+static void     Io_ObjSetAigerNum( Abc_Obj_t * pObj, unsigned Num )  { pObj->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)Num;     }
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
+
+/**Function*************************************************************
+
+  Synopsis    [Adds one unsigned AIG edge to the output buffer.]
+
+  Description [This procedure is a slightly modified version of Armin Biere's
+  procedure "void encode (FILE * file, unsigned x)" ]
+  
+  SideEffects [Returns the current writing position.]
+
+  SeeAlso     []
+
+***********************************************************************/
+int Io_WriteAigerEncode( unsigned char * pBuffer, int Pos, unsigned x )
+{
+    unsigned char ch;
+    while (x & ~0x7f)
+    {
+        ch = (x & 0x7f) | 0x80;
+//        putc (ch, file);
+        pBuffer[Pos++] = ch;
+        x >>= 7;
+    }
+    ch = x;
+//    putc (ch, file);
+    pBuffer[Pos++] = ch;
+    return Pos;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Create the array of literals to be written.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Int_t * Io_WriteAigerLiterals( Abc_Ntk_t * pNtk )
+{
+    Vec_Int_t * vLits;
+    Abc_Obj_t * pObj, * pDriver;
+    int i;
+    vLits = Vec_IntAlloc( Abc_NtkCoNum(pNtk) );
+    Abc_NtkForEachLatchInput( pNtk, pObj, i )
+    {
+        pDriver = Abc_ObjFanin0(pObj);
+        Vec_IntPush( vLits, Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+    }
+    Abc_NtkForEachPo( pNtk, pObj, i )
+    {
+        pDriver = Abc_ObjFanin0(pObj);
+        Vec_IntPush( vLits, Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+    }
+    return vLits;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the binary encoded array of literals.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Str_t * Io_WriteEncodeLiterals( Vec_Int_t * vLits )
+{
+    Vec_Str_t * vBinary;
+    int Pos = 0, Lit, LitPrev, Diff, i;
+    vBinary = Vec_StrAlloc( 2 * Vec_IntSize(vLits) );
+    LitPrev = Vec_IntEntry( vLits, 0 );
+    Pos = Io_WriteAigerEncode( (unsigned char *)Vec_StrArray(vBinary), Pos, LitPrev ); 
+    Vec_IntForEachEntryStart( vLits, Lit, i, 1 )
+    {
+        Diff = Lit - LitPrev;
+        Diff = (Lit < LitPrev)? -Diff : Diff;
+        Diff = (Diff << 1) | (int)(Lit < LitPrev);
+        Pos = Io_WriteAigerEncode( (unsigned char *)Vec_StrArray(vBinary), Pos, Diff );
+        LitPrev = Lit;
+        if ( Pos + 10 > vBinary->nCap )
+            Vec_StrGrow( vBinary, vBinary->nCap+1 );
+    }
+    vBinary->nSize = Pos;
+/*
+    // verify
+    {
+        extern Vec_Int_t * Io_WriteDecodeLiterals( char ** ppPos, int nEntries );
+        char * pPos = Vec_StrArray( vBinary );
+        Vec_Int_t * vTemp = Io_WriteDecodeLiterals( &pPos, Vec_IntSize(vLits) );
+        for ( i = 0; i < Vec_IntSize(vLits); i++ )
+        {
+            int Entry1 = Vec_IntEntry(vLits,i);
+            int Entry2 = Vec_IntEntry(vTemp,i);
+            assert( Entry1 == Entry2 );
+        }
+    }
+*/
+    return vBinary;
+}
 
 /**Function*************************************************************
 
@@ -146,16 +266,30 @@ int      Io_WriteAigerEncode( char * pBuffer, int Pos, unsigned x );
   SeeAlso     []
 
 ***********************************************************************/
-void Io_WriteAiger( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols )
+void Io_WriteAiger_old( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols, int fCompact )
 {
     ProgressBar * pProgress;
     FILE * pFile;
-    Abc_Obj_t * pObj, * pDriver;
-    int i, nNodes, Pos, nBufferSize;
+    Abc_Obj_t * pObj, * pDriver, * pLatch;
+    int i, nNodes, nBufferSize, Pos, fExtended;
     unsigned char * pBuffer;
     unsigned uLit0, uLit1, uLit;
 
+    fExtended = Abc_NtkConstrNum(pNtk);
+
     assert( Abc_NtkIsStrash(pNtk) );
+    Abc_NtkForEachLatch( pNtk, pObj, i )
+        if ( !Abc_LatchIsInit0(pObj) )
+        {
+            if ( !fCompact )
+            {
+                fExtended = 1;
+                break;
+            }
+            fprintf( stdout, "Io_WriteAiger(): Cannot write AIGER format with non-0 latch init values. Run \"zero\".\n" );
+            return;
+        }
+
     // start the output stream
     pFile = fopen( pFileName, "wb" );
     if ( pFile == NULL )
@@ -173,35 +307,63 @@ void Io_WriteAiger( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols )
         Io_ObjSetAigerNum( pObj, nNodes++ );
 
     // write the header "M I L O A" where M = I + L + A
-    fprintf( pFile, "aig %u %u %u %u %u\n", 
+    fprintf( pFile, "aig%s %u %u %u %u %u", 
+        fCompact? "2" : "",
         Abc_NtkPiNum(pNtk) + Abc_NtkLatchNum(pNtk) + Abc_NtkNodeNum(pNtk), 
         Abc_NtkPiNum(pNtk),
         Abc_NtkLatchNum(pNtk),
-        Abc_NtkPoNum(pNtk),
+        fExtended ? 0 : Abc_NtkPoNum(pNtk),
         Abc_NtkNodeNum(pNtk) );
+    // write the extended header "B C J F"
+    if ( fExtended )
+        fprintf( pFile, " %u %u", Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk), Abc_NtkConstrNum(pNtk) );
+    fprintf( pFile, "\n" );
 
     // if the driver node is a constant, we need to complement the literal below
     // because, in the AIGER format, literal 0/1 is represented as number 0/1
     // while, in ABC, constant 1 node has number 0 and so literal 0/1 will be 1/0
 
-    // write latch drivers
-    Abc_NtkForEachLatchInput( pNtk, pObj, i )
+    Abc_NtkInvertConstraints( pNtk );
+    if ( !fCompact ) 
     {
-        pDriver = Abc_ObjFanin0(pObj);
-        fprintf( pFile, "%u\n", Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+        // write latch drivers
+        Abc_NtkForEachLatch( pNtk, pLatch, i )
+        {
+            pObj = Abc_ObjFanin0(pLatch);
+            pDriver = Abc_ObjFanin0(pObj);
+            uLit = Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) );
+            if ( Abc_LatchIsInit0(pLatch) )
+                fprintf( pFile, "%u\n", uLit );
+            else if ( Abc_LatchIsInit1(pLatch) )
+                fprintf( pFile, "%u 1\n", uLit );
+            else
+            {
+                // Both None and DC are written as 'uninitialized' e.g. a free boolean value
+                assert( Abc_LatchIsInitNone(pLatch) || Abc_LatchIsInitDc(pLatch) );
+                fprintf( pFile, "%u %u\n", uLit, Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanout0(pLatch)), 0 ) );
+            }
+        }
+        // write PO drivers
+        Abc_NtkForEachPo( pNtk, pObj, i )
+        {
+            pDriver = Abc_ObjFanin0(pObj);
+            fprintf( pFile, "%u\n", Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+        }
     }
-
-    // write PO drivers
-    Abc_NtkForEachPo( pNtk, pObj, i )
+    else
     {
-        pDriver = Abc_ObjFanin0(pObj);
-        fprintf( pFile, "%u\n", Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+        Vec_Int_t * vLits = Io_WriteAigerLiterals( pNtk );
+        Vec_Str_t * vBinary = Io_WriteEncodeLiterals( vLits );
+        fwrite( Vec_StrArray(vBinary), 1, Vec_StrSize(vBinary), pFile );
+        Vec_StrFree( vBinary );
+        Vec_IntFree( vLits );
     }
+    Abc_NtkInvertConstraints( pNtk );
 
     // write the nodes into the buffer
     Pos = 0;
     nBufferSize = 6 * Abc_NtkNodeNum(pNtk) + 100; // skeptically assuming 3 chars per one AIG edge
-    pBuffer = ALLOC( char, nBufferSize );
+    pBuffer = ABC_ALLOC( unsigned char, nBufferSize );
     pProgress = Extra_ProgressBarStart( stdout, Abc_NtkObjNumMax(pNtk) );
     Abc_AigForEachAnd( pNtk, pObj, i )
     {
@@ -209,9 +371,15 @@ void Io_WriteAiger( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols )
         uLit  = Io_ObjMakeLit( Io_ObjAigerNum(pObj), 0 );
         uLit0 = Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanin0(pObj)), Abc_ObjFaninC0(pObj) );
         uLit1 = Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanin1(pObj)), Abc_ObjFaninC1(pObj) );
-        assert( uLit0 < uLit1 );
-        Pos = Io_WriteAigerEncode( pBuffer, Pos, uLit  - uLit1 );
-        Pos = Io_WriteAigerEncode( pBuffer, Pos, uLit1 - uLit0 );
+        if ( uLit0 > uLit1 )
+        {
+            unsigned Temp = uLit0;
+            uLit0 = uLit1;
+            uLit1 = Temp;
+        }
+        assert( uLit1 < uLit );
+        Pos = Io_WriteAigerEncode( pBuffer, Pos, (unsigned)(uLit  - uLit1) );
+        Pos = Io_WriteAigerEncode( pBuffer, Pos, (unsigned)(uLit1 - uLit0) );
         if ( Pos > nBufferSize - 10 )
         {
             printf( "Io_WriteAiger(): AIGER generation has failed because the allocated buffer is too small.\n" );
@@ -224,7 +392,7 @@ void Io_WriteAiger( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols )
 
     // write the buffer
     fwrite( pBuffer, 1, Pos, pFile );
-    free( pBuffer );
+    ABC_FREE( pBuffer );
 
     // write the symbol table
     if ( fWriteSymbols )
@@ -237,48 +405,552 @@ void Io_WriteAiger( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols )
             fprintf( pFile, "l%d %s\n", i, Abc_ObjName(Abc_ObjFanout0(pObj)) );
         // write POs
         Abc_NtkForEachPo( pNtk, pObj, i )
-            fprintf( pFile, "o%d %s\n", i, Abc_ObjName(pObj) );
+            if ( !fExtended )
+                fprintf( pFile, "o%d %s\n", i, Abc_ObjName(pObj) );
+            else if ( i < Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk) )
+                fprintf( pFile, "b%d %s\n", i, Abc_ObjName(pObj) );
+            else
+                fprintf( pFile, "c%d %s\n", i - (Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk)), Abc_ObjName(pObj) );
     }
 
     // write the comment
     fprintf( pFile, "c\n" );
-    fprintf( pFile, "%s\n", pNtk->pName );
-    fprintf( pFile, "This file in the AIGER format was written by ABC on %s\n", Extra_TimeStamp() );
-    fprintf( pFile, "For information about the format, refer to %s\n", "http://fmv.jku.at/aiger" );
+    if ( pNtk->pName && strlen(pNtk->pName) > 0 )
+        fprintf( pFile, ".model %s\n", pNtk->pName );
+    fprintf( pFile, "This file was produced by ABC on %s\n", Extra_TimeStamp() );
+    fprintf( pFile, "For information about AIGER format, refer to %s\n", "http://fmv.jku.at/aiger" );
 	fclose( pFile );
 }
 
 /**Function*************************************************************
 
-  Synopsis    [Adds one unsigned AIG edge to the output buffer.]
+  Synopsis    [Writes the AIG in the binary AIGER format.]
 
-  Description [This procedure is a slightly modified version of Armin Biere's
-  procedure "void encode (FILE * file, unsigned x)" ]
+  Description []
   
-  SideEffects [Returns the current writing position.]
+  SideEffects []
 
   SeeAlso     []
 
 ***********************************************************************/
-int Io_WriteAigerEncode( char * pBuffer, int Pos, unsigned x )
+void Io_WriteAigerGz( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols )
 {
-    unsigned char ch;
-    while (x & ~0x7f)
+    ProgressBar * pProgress;
+    gzFile pFile;
+    Abc_Obj_t * pObj, * pDriver, * pLatch;
+    int i, nNodes, Pos, nBufferSize, fExtended;
+    unsigned char * pBuffer;
+    unsigned uLit0, uLit1, uLit;
+
+    assert( Abc_NtkIsStrash(pNtk) );
+    // start the output stream
+    pFile = gzopen( pFileName, "wb" ); // if pFileName doesn't end in ".gz" then this acts as a passthrough to fopen
+    if ( pFile == NULL )
     {
-        ch = (x & 0x7f) | 0x80;
-//        putc (ch, file);
-        pBuffer[Pos++] = ch;
-        x >>= 7;
+        fprintf( stdout, "Io_WriteAigerGz(): Cannot open the output file \"%s\".\n", pFileName );
+        return;
     }
-    ch = x;
-//    putc (ch, file);
-    pBuffer[Pos++] = ch;
-    return Pos;
+
+    fExtended = Abc_NtkConstrNum(pNtk);
+
+    // set the node numbers to be used in the output file
+    nNodes = 0;
+    Io_ObjSetAigerNum( Abc_AigConst1(pNtk), nNodes++ );
+    Abc_NtkForEachCi( pNtk, pObj, i )
+        Io_ObjSetAigerNum( pObj, nNodes++ );
+    Abc_AigForEachAnd( pNtk, pObj, i )
+        Io_ObjSetAigerNum( pObj, nNodes++ );
+
+    // write the header "M I L O A" where M = I + L + A
+    gzprintf( pFile, "aig %u %u %u %u %u", 
+              Abc_NtkPiNum(pNtk) + Abc_NtkLatchNum(pNtk) + Abc_NtkNodeNum(pNtk), 
+              Abc_NtkPiNum(pNtk),
+              Abc_NtkLatchNum(pNtk),
+              fExtended ? 0 : Abc_NtkPoNum(pNtk),
+              Abc_NtkNodeNum(pNtk) );
+    // write the extended header "B C J F"
+    if ( fExtended )
+        gzprintf( pFile, " %u %u", Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk), Abc_NtkConstrNum(pNtk) );
+    gzprintf( pFile, "\n" ); 
+
+    // if the driver node is a constant, we need to complement the literal below
+    // because, in the AIGER format, literal 0/1 is represented as number 0/1
+    // while, in ABC, constant 1 node has number 0 and so literal 0/1 will be 1/0
+
+    // write latch drivers
+    Abc_NtkInvertConstraints( pNtk );
+    Abc_NtkForEachLatch( pNtk, pLatch, i )
+    {
+        pObj = Abc_ObjFanin0(pLatch);
+        pDriver = Abc_ObjFanin0(pObj);
+        uLit = Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) );
+        if ( Abc_LatchIsInit0(pLatch) )
+            gzprintf( pFile, "%u\n", uLit );
+        else if ( Abc_LatchIsInit1(pLatch) )
+            gzprintf( pFile, "%u 1\n", uLit );
+        else
+        {
+            // Both None and DC are written as 'uninitialized' e.g. a free boolean value
+            assert( Abc_LatchIsInitNone(pLatch) || Abc_LatchIsInitDc(pLatch) );
+            gzprintf( pFile, "%u %u\n", uLit, Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanout0(pLatch)), 0 ) );
+        }
+    }
+    // write PO drivers
+    Abc_NtkForEachPo( pNtk, pObj, i )
+    {
+        pDriver = Abc_ObjFanin0(pObj);
+        gzprintf( pFile, "%u\n", Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+    }
+    Abc_NtkInvertConstraints( pNtk );
+
+    // write the nodes into the buffer
+    Pos = 0;
+    nBufferSize = 6 * Abc_NtkNodeNum(pNtk) + 100; // skeptically assuming 3 chars per one AIG edge
+    pBuffer = ABC_ALLOC( unsigned char, nBufferSize );
+    pProgress = Extra_ProgressBarStart( stdout, Abc_NtkObjNumMax(pNtk) );
+    Abc_AigForEachAnd( pNtk, pObj, i )
+    {
+        Extra_ProgressBarUpdate( pProgress, i, NULL );
+        uLit  = Io_ObjMakeLit( Io_ObjAigerNum(pObj), 0 );
+        uLit0 = Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanin0(pObj)), Abc_ObjFaninC0(pObj) );
+        uLit1 = Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanin1(pObj)), Abc_ObjFaninC1(pObj) );
+        if ( uLit0 > uLit1 )
+        {
+            unsigned Temp = uLit0;
+            uLit0 = uLit1;
+            uLit1 = Temp;
+        }
+        assert( uLit1 < uLit );
+        Pos = Io_WriteAigerEncode( pBuffer, Pos, uLit  - uLit1 );
+        Pos = Io_WriteAigerEncode( pBuffer, Pos, uLit1 - uLit0 );
+        if ( Pos > nBufferSize - 10 )
+        {
+            printf( "Io_WriteAiger(): AIGER generation has failed because the allocated buffer is too small.\n" );
+	        gzclose( pFile );
+            return;
+        }
+    }
+    assert( Pos < nBufferSize );
+    Extra_ProgressBarStop( pProgress );
+
+    // write the buffer
+    gzwrite(pFile, pBuffer, Pos);
+    ABC_FREE( pBuffer );
+
+    // write the symbol table
+    if ( fWriteSymbols )
+    {
+        // write PIs
+        Abc_NtkForEachPi( pNtk, pObj, i )
+            gzprintf( pFile, "i%d %s\n", i, Abc_ObjName(pObj) );
+        // write latches
+        Abc_NtkForEachLatch( pNtk, pObj, i )
+            gzprintf( pFile, "l%d %s\n", i, Abc_ObjName(Abc_ObjFanout0(pObj)) );
+        // write POs
+        Abc_NtkForEachPo( pNtk, pObj, i )
+            if ( !fExtended )
+                gzprintf( pFile, "o%d %s\n", i, Abc_ObjName(pObj) );
+            else if ( i < Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk) )
+                gzprintf( pFile, "b%d %s\n", i, Abc_ObjName(pObj) );
+            else
+                gzprintf( pFile, "c%d %s\n", i - (Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk)), Abc_ObjName(pObj) );
+    }
+
+    // write the comment
+    gzprintf( pFile, "c\n" );
+    if ( pNtk->pName && strlen(pNtk->pName) > 0 )
+        gzprintf( pFile, ".model %s\n", pNtk->pName );
+    gzprintf( pFile, "This file was produced by ABC on %s\n", Extra_TimeStamp() );
+    gzprintf( pFile, "For information about AIGER format, refer to %s\n", "http://fmv.jku.at/aiger" );
+	gzclose( pFile );
 }
 
+ 
+/**Function*************************************************************
+
+  Synopsis    [Procedure to write data into BZ2 file.]
+
+  Description [Based on the vsnprintf() man page.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+typedef struct bz2file {
+  FILE   * f;
+  BZFILE * b;
+  char   * buf;
+  int      nBytes;
+  int      nBytesMax;
+} bz2file;
+
+int fprintfBz2Aig( bz2file * b, char * fmt, ... ) {
+    if (b->b) {
+        char * newBuf;
+        int bzError;
+        va_list ap;
+        while (1) {
+            va_start(ap,fmt);
+            b->nBytes = vsnprintf(b->buf,b->nBytesMax,fmt,ap);
+            va_end(ap);
+            if (b->nBytes > -1 && b->nBytes < b->nBytesMax)
+                break;
+            if (b->nBytes > -1)
+                b->nBytesMax = b->nBytes + 1;
+            else
+                b->nBytesMax *= 2;
+            if ((newBuf = ABC_REALLOC( char,b->buf,b->nBytesMax )) == NULL)
+                return -1;
+            else
+                b->buf = newBuf;
+        }
+        BZ2_bzWrite( &bzError, b->b, b->buf, b->nBytes );
+        if (bzError == BZ_IO_ERROR) {
+            fprintf( stdout, "Ioa_WriteBlif(): I/O error writing to compressed stream.\n" );
+            return -1;
+        }
+        return b->nBytes;
+    } else {
+        int n;
+        va_list ap;
+        va_start(ap,fmt);
+        n = vfprintf( b->f, fmt, ap);
+        va_end(ap);
+        return n;
+    }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Writes the AIG in the binary AIGER format.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Io_WriteAiger( Abc_Ntk_t * pNtk, char * pFileName, int fWriteSymbols, int fCompact, int fUnique )
+{
+    ProgressBar * pProgress;
+//    FILE * pFile;
+    Abc_Obj_t * pObj, * pDriver, * pLatch;
+    int i, nNodes, nBufferSize, bzError, Pos, fExtended;
+    unsigned char * pBuffer;
+    unsigned uLit0, uLit1, uLit;
+    bz2file b;
+
+    // define unique writing
+    if ( fUnique )
+    {
+        fWriteSymbols = 0;
+        fCompact = 0;
+    }
+
+    fExtended = Abc_NtkConstrNum(pNtk);
+
+    // check that the network is valid
+    assert( Abc_NtkIsStrash(pNtk) );
+    Abc_NtkForEachLatch( pNtk, pObj, i )
+        if ( !Abc_LatchIsInit0(pObj) )
+        {
+            if ( !fCompact )
+            {
+                fExtended = 1;
+                break;
+            }
+            fprintf( stdout, "Io_WriteAiger(): Cannot write AIGER format with non-0 latch init values. Run \"zero\".\n" );
+            return;
+        }
+
+    // write the GZ file
+    if (!strncmp(pFileName+strlen(pFileName)-3,".gz",3)) 
+    {
+        Io_WriteAigerGz( pNtk, pFileName, fWriteSymbols );
+        return;
+    }
+
+    memset(&b,0,sizeof(b));
+    b.nBytesMax = (1<<12);
+    b.buf = ABC_ALLOC( char,b.nBytesMax );
+
+    // start the output stream
+    b.f = fopen( pFileName, "wb" ); 
+    if ( b.f == NULL )
+    {
+        fprintf( stdout, "Ioa_WriteBlif(): Cannot open the output file \"%s\".\n", pFileName );
+        ABC_FREE(b.buf);
+        return;
+    }
+    if (!strncmp(pFileName+strlen(pFileName)-4,".bz2",4)) {
+        b.b = BZ2_bzWriteOpen( &bzError, b.f, 9, 0, 0 );
+        if ( bzError != BZ_OK ) {
+            BZ2_bzWriteClose( &bzError, b.b, 0, NULL, NULL );
+            fprintf( stdout, "Ioa_WriteBlif(): Cannot start compressed stream.\n" );
+            fclose( b.f );
+            ABC_FREE(b.buf);
+            return;
+        }
+    }
+
+    // set the node numbers to be used in the output file
+    nNodes = 0;
+    Io_ObjSetAigerNum( Abc_AigConst1(pNtk), nNodes++ );
+    Abc_NtkForEachCi( pNtk, pObj, i )
+        Io_ObjSetAigerNum( pObj, nNodes++ );
+    Abc_AigForEachAnd( pNtk, pObj, i )
+        Io_ObjSetAigerNum( pObj, nNodes++ );
+
+    // write the header "M I L O A" where M = I + L + A
+    fprintfBz2Aig( &b, "aig%s %u %u %u %u %u", 
+        fCompact? "2" : "",
+        Abc_NtkPiNum(pNtk) + Abc_NtkLatchNum(pNtk) + Abc_NtkNodeNum(pNtk), 
+        Abc_NtkPiNum(pNtk),
+        Abc_NtkLatchNum(pNtk),
+        fExtended ? 0 : Abc_NtkPoNum(pNtk),
+        Abc_NtkNodeNum(pNtk) );
+    // write the extended header "B C J F"
+    if ( fExtended )
+        fprintfBz2Aig( &b, " %u %u", Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk), Abc_NtkConstrNum(pNtk) );
+    fprintfBz2Aig( &b, "\n" );
+
+    // if the driver node is a constant, we need to complement the literal below
+    // because, in the AIGER format, literal 0/1 is represented as number 0/1
+    // while, in ABC, constant 1 node has number 0 and so literal 0/1 will be 1/0
+
+    Abc_NtkInvertConstraints( pNtk );
+    if ( !fCompact ) 
+    {
+        // write latch drivers
+        Abc_NtkForEachLatch( pNtk, pLatch, i )
+        {
+            pObj = Abc_ObjFanin0(pLatch);
+            pDriver = Abc_ObjFanin0(pObj);
+            uLit = Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) );
+            if ( Abc_LatchIsInit0(pLatch) )
+                fprintfBz2Aig( &b, "%u\n", uLit );
+            else if ( Abc_LatchIsInit1(pLatch) )
+                fprintfBz2Aig( &b, "%u 1\n", uLit );
+            else
+            {
+                // Both None and DC are written as 'uninitialized' e.g. a free boolean value
+                assert( Abc_LatchIsInitNone(pLatch) || Abc_LatchIsInitDc(pLatch) );
+                fprintfBz2Aig( &b, "%u %u\n", uLit, Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanout0(pLatch)), 0 ) );
+            }
+        }
+        // write PO drivers
+        Abc_NtkForEachPo( pNtk, pObj, i )
+        {
+            pDriver = Abc_ObjFanin0(pObj);
+            fprintfBz2Aig( &b, "%u\n", Io_ObjMakeLit( Io_ObjAigerNum(pDriver), Abc_ObjFaninC0(pObj) ^ (Io_ObjAigerNum(pDriver) == 0) ) );
+        }
+    }
+    else
+    {
+        Vec_Int_t * vLits = Io_WriteAigerLiterals( pNtk );
+        Vec_Str_t * vBinary = Io_WriteEncodeLiterals( vLits );
+        if ( !b.b )
+            fwrite( Vec_StrArray(vBinary), 1, Vec_StrSize(vBinary), b.f );
+        else
+        {
+            BZ2_bzWrite( &bzError, b.b, Vec_StrArray(vBinary), Vec_StrSize(vBinary) );
+            if (bzError == BZ_IO_ERROR) {
+                fprintf( stdout, "Io_WriteAiger(): I/O error writing to compressed stream.\n" );
+                fclose( b.f );
+                ABC_FREE(b.buf);
+                Vec_StrFree( vBinary );
+                return;
+            }
+        }
+        Vec_StrFree( vBinary );
+        Vec_IntFree( vLits );
+    }
+    Abc_NtkInvertConstraints( pNtk );
+
+    // write the nodes into the buffer
+    Pos = 0;
+    nBufferSize = 6 * Abc_NtkNodeNum(pNtk) + 100; // skeptically assuming 3 chars per one AIG edge
+    pBuffer = ABC_ALLOC( unsigned char, nBufferSize );
+    pProgress = Extra_ProgressBarStart( stdout, Abc_NtkObjNumMax(pNtk) );
+    Abc_AigForEachAnd( pNtk, pObj, i )
+    {
+        Extra_ProgressBarUpdate( pProgress, i, NULL );
+        uLit  = Io_ObjMakeLit( Io_ObjAigerNum(pObj), 0 );
+        uLit0 = Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanin0(pObj)), Abc_ObjFaninC0(pObj) );
+        uLit1 = Io_ObjMakeLit( Io_ObjAigerNum(Abc_ObjFanin1(pObj)), Abc_ObjFaninC1(pObj) );
+        if ( uLit0 > uLit1 )
+        {
+            unsigned Temp = uLit0;
+            uLit0 = uLit1;
+            uLit1 = Temp;
+        }
+        assert( uLit1 < uLit );
+        Pos = Io_WriteAigerEncode( pBuffer, Pos, (unsigned)(uLit  - uLit1) );
+        Pos = Io_WriteAigerEncode( pBuffer, Pos, (unsigned)(uLit1 - uLit0) );
+        if ( Pos > nBufferSize - 10 )
+        {
+            printf( "Io_WriteAiger(): AIGER generation has failed because the allocated buffer is too small.\n" );
+            fclose( b.f );
+            ABC_FREE(b.buf);
+            Extra_ProgressBarStop( pProgress );
+            return;
+        }
+    }
+    assert( Pos < nBufferSize );
+    Extra_ProgressBarStop( pProgress );
+
+    // write the buffer
+    if ( !b.b )
+        fwrite( pBuffer, 1, Pos, b.f );
+    else
+    {
+        BZ2_bzWrite( &bzError, b.b, pBuffer, Pos );
+        if (bzError == BZ_IO_ERROR) {
+            fprintf( stdout, "Io_WriteAiger(): I/O error writing to compressed stream.\n" );
+            fclose( b.f );
+            ABC_FREE(b.buf);
+            return;
+        }
+    }
+    ABC_FREE( pBuffer );
+
+    // write the symbol table
+    if ( fWriteSymbols )
+    {
+        // write PIs
+        Abc_NtkForEachPi( pNtk, pObj, i )
+            fprintfBz2Aig( &b, "i%d %s\n", i, Abc_ObjName(pObj) );
+        // write latches
+        Abc_NtkForEachLatch( pNtk, pObj, i )
+            fprintfBz2Aig( &b, "l%d %s\n", i, Abc_ObjName(Abc_ObjFanout0(pObj)) );
+        // write POs
+        Abc_NtkForEachPo( pNtk, pObj, i )
+            if ( !fExtended )
+                fprintfBz2Aig( &b, "o%d %s\n", i, Abc_ObjName(pObj) );
+            else if ( i < Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk) )
+                fprintfBz2Aig( &b, "b%d %s\n", i, Abc_ObjName(pObj) );
+            else
+                fprintfBz2Aig( &b, "c%d %s\n", i - (Abc_NtkPoNum(pNtk) - Abc_NtkConstrNum(pNtk)), Abc_ObjName(pObj) );
+    }
+
+    // write the comment
+    fprintfBz2Aig( &b, "c" );
+    if ( !fUnique )
+    {
+        if ( pNtk->pName && strlen(pNtk->pName) > 0 )
+            fprintfBz2Aig( &b, "\n%s%c", pNtk->pName, '\0' );
+        fprintfBz2Aig( &b, "\nThis file was written by ABC on %s\n", Extra_TimeStamp() );
+        fprintfBz2Aig( &b, "For information about AIGER format, refer to %s\n", "http://fmv.jku.at/aiger" );
+    }
+
+    // close the file
+    if (b.b) {
+        BZ2_bzWriteClose( &bzError, b.b, 0, NULL, NULL );
+        if (bzError == BZ_IO_ERROR) {
+            fprintf( stdout, "Io_WriteAiger(): I/O error closing compressed stream.\n" );
+            fclose( b.f );
+            ABC_FREE(b.buf);
+            return;
+        }
+    }
+    fclose( b.f );
+    ABC_FREE(b.buf);
+}
+
+ABC_NAMESPACE_IMPL_END
+
+#include "aig/gia/giaAig.h"
+#include "aig/saig/saig.h"
+
+ABC_NAMESPACE_IMPL_START
+
+/**Function*************************************************************
+
+  Synopsis    [Writes the AIG in the binary AIGER format.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Io_WriteAigerCex( Abc_Cex_t * pCex, Abc_Ntk_t * pNtk, void * pG, char * pFileName )
+{
+    extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
+    FILE * pFile;
+    Aig_Man_t * pAig;
+    Aig_Obj_t * pObj, * pObj2;
+    Gia_Man_t * pGia = (Gia_Man_t *)pG;
+    int k, f, b;
+    assert( pCex != NULL );
+
+    // derive AIG
+    if ( pNtk != NULL && 
+         Abc_NtkPiNum(pNtk)    == pCex->nPis && 
+         Abc_NtkLatchNum(pNtk) == pCex->nRegs )
+    {
+        pAig = Abc_NtkToDar( pNtk, 0, 1 );
+    }
+    else if ( pGia != NULL && 
+         Gia_ManPiNum(pGia)  == pCex->nPis && 
+         Gia_ManRegNum(pGia) == pCex->nRegs )
+    {
+        pAig = Gia_ManToAigSimple( pGia );
+    }
+    else
+    {
+        printf( "AIG parameters do not match those of the CEX.\n" );
+        return;
+    }
+
+    // create output file
+    pFile = fopen( pFileName, "wb" );
+    fprintf( pFile, "1\n" );
+    b = pCex->nRegs;
+    for ( k = 0; k < pCex->nRegs; k++ )
+        fprintf( pFile, "0" );
+    fprintf( pFile, " " );
+    Aig_ManCleanMarkA( pAig );
+    for ( f = 0; f <= pCex->iFrame; f++ )
+    {
+        for ( k = 0; k < pCex->nPis; k++ )
+        {
+            fprintf( pFile, "%d", Abc_InfoHasBit(pCex->pData, b) );
+            Aig_ManCi( pAig, k )->fMarkA = Abc_InfoHasBit(pCex->pData, b++);
+        }
+        fprintf( pFile, " " );
+        Aig_ManForEachNode( pAig, pObj, k )
+            pObj->fMarkA = (Aig_ObjFanin0(pObj)->fMarkA ^ Aig_ObjFaninC0(pObj)) &
+                           (Aig_ObjFanin1(pObj)->fMarkA ^ Aig_ObjFaninC1(pObj));
+        Aig_ManForEachCo( pAig, pObj, k )
+            pObj->fMarkA = (Aig_ObjFanin0(pObj)->fMarkA ^ Aig_ObjFaninC0(pObj));
+        Saig_ManForEachPo( pAig, pObj, k )
+            fprintf( pFile, "%d", pObj->fMarkA );
+        fprintf( pFile, " " );
+        Saig_ManForEachLi( pAig, pObj, k )
+            fprintf( pFile, "%d", pObj->fMarkA );
+        fprintf( pFile, "\n" );
+        if ( f == pCex->iFrame )
+            break;
+        Saig_ManForEachLi( pAig, pObj, k )
+            fprintf( pFile, "%d", pObj->fMarkA );
+        fprintf( pFile, " " );
+        Saig_ManForEachLiLo( pAig, pObj, pObj2, k )
+            pObj2->fMarkA = pObj->fMarkA;
+    }  
+    assert( b == pCex->nBits );
+    fclose( pFile );
+    Aig_ManCleanMarkA( pAig );
+    Aig_ManStop( pAig );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

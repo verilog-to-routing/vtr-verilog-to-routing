@@ -9,6 +9,9 @@
  */
 #include "mincov_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 static int visit_col();
 
 static void
@@ -120,3 +123,5 @@ sm_matrix **L, **R;
 	return 1;
     }
 }
+ABC_NAMESPACE_IMPL_END
+

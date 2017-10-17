@@ -20,6 +20,9 @@
 
 #include "aig.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -60,10 +63,10 @@ static inline int Aig_ObjIsExorType( Aig_Obj_t * p0, Aig_Obj_t * p1, Aig_Obj_t *
 Aig_Obj_t * Aig_IthVar( Aig_Man_t * p, int i )
 {
     int v;
-    for ( v = Aig_ManPiNum(p); v <= i; v++ )
-        Aig_ObjCreatePi( p );
-    assert( i < Vec_PtrSize(p->vPis) );
-    return Aig_ManPi( p, i );
+    for ( v = Aig_ManCiNum(p); v <= i; v++ )
+        Aig_ObjCreateCi( p );
+    assert( i < Vec_PtrSize(p->vCis) );
+    return Aig_ManCi( p, i );
 }
 
 /**Function*************************************************************
@@ -89,43 +92,6 @@ Aig_Obj_t * Aig_Oper( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1, Aig_Type_t 
 
 /**Function*************************************************************
 
-  Synopsis    [Creates the canonical form of the node.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Aig_Obj_t * Aig_CanonPair_rec( Aig_Man_t * p, Aig_Obj_t * pGhost )
-{
-    Aig_Obj_t * pResult, * pLat0, * pLat1;
-    int fCompl0, fCompl1;
-    Aig_Type_t Type;
-    assert( Aig_ObjIsNode(pGhost) );
-    // consider the case when the pair is canonical
-    if ( !Aig_ObjIsLatch(Aig_ObjFanin0(pGhost)) || !Aig_ObjIsLatch(Aig_ObjFanin1(pGhost)) )
-    {
-        if ( pResult = Aig_TableLookup( p, pGhost ) )
-            return pResult;
-        return Aig_ObjCreate( p, pGhost );
-    }
-    /// remember the latches
-    pLat0 = Aig_ObjFanin0(pGhost);
-    pLat1 = Aig_ObjFanin1(pGhost);
-    // remember type and compls
-    Type = Aig_ObjType(pGhost);
-    fCompl0 = Aig_ObjFaninC0(pGhost);
-    fCompl1 = Aig_ObjFaninC1(pGhost);
-    // call recursively
-    pResult = Aig_Oper( p, Aig_NotCond(Aig_ObjChild0(pLat0), fCompl0), Aig_NotCond(Aig_ObjChild0(pLat1), fCompl1), Type );
-    // build latch on top of this
-    return Aig_Latch( p, pResult, (Type == AIG_OBJ_AND)? fCompl0 & fCompl1 : fCompl0 ^ fCompl1 );
-}
-
-/**Function*************************************************************
-
   Synopsis    [Performs canonicization step.]
 
   Description [The argument nodes can be complemented.]
@@ -138,7 +104,7 @@ Aig_Obj_t * Aig_CanonPair_rec( Aig_Man_t * p, Aig_Obj_t * pGhost )
 Aig_Obj_t * Aig_And( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
 {
     Aig_Obj_t * pGhost, * pResult;
-//    Aig_Obj_t * pFan0, * pFan1;
+    Aig_Obj_t * pFan0, * pFan1;
     // check trivial cases
     if ( p0 == p1 )
         return p0;
@@ -148,33 +114,96 @@ Aig_Obj_t * Aig_And( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
         return p0 == p->pConst1 ? p1 : Aig_Not(p->pConst1);
     if ( Aig_Regular(p1) == p->pConst1 )
         return p1 == p->pConst1 ? p0 : Aig_Not(p->pConst1);
+    // check not so trivial cases
+    if ( p->fAddStrash && (Aig_ObjIsNode(Aig_Regular(p0)) || Aig_ObjIsNode(Aig_Regular(p1))) )
+    { // http://fmv.jku.at/papers/BrummayerBiere-MEMICS06.pdf
+        Aig_Obj_t * pFanA, * pFanB, * pFanC, * pFanD;
+        pFanA = Aig_ObjChild0(Aig_Regular(p0));
+        pFanB = Aig_ObjChild1(Aig_Regular(p0));
+        pFanC = Aig_ObjChild0(Aig_Regular(p1));
+        pFanD = Aig_ObjChild1(Aig_Regular(p1));
+        if ( Aig_IsComplement(p0) )
+        {
+            if ( pFanA == Aig_Not(p1) || pFanB == Aig_Not(p1) )
+                return p1;
+            if ( pFanB == p1 )
+                return Aig_And( p, Aig_Not(pFanA), pFanB );
+            if ( pFanA == p1 )
+                return Aig_And( p, Aig_Not(pFanB), pFanA );
+        }
+        else
+        {
+            if ( pFanA == Aig_Not(p1) || pFanB == Aig_Not(p1) )
+                return Aig_Not(p->pConst1);
+            if ( pFanA == p1 || pFanB == p1 )
+                return p0;
+        }
+        if ( Aig_IsComplement(p1) )
+        {
+            if ( pFanC == Aig_Not(p0) || pFanD == Aig_Not(p0) )
+                return p0;
+            if ( pFanD == p0 )
+                return Aig_And( p, Aig_Not(pFanC), pFanD );
+            if ( pFanC == p0 )
+                return Aig_And( p, Aig_Not(pFanD), pFanC );
+        }
+        else
+        {
+            if ( pFanC == Aig_Not(p0) || pFanD == Aig_Not(p0) )
+                return Aig_Not(p->pConst1);
+            if ( pFanC == p0 || pFanD == p0 )
+                return p1;
+        }
+        if ( !Aig_IsComplement(p0) && !Aig_IsComplement(p1) ) 
+        {
+            if ( pFanA == Aig_Not(pFanC) || pFanA == Aig_Not(pFanD) || pFanB == Aig_Not(pFanC) || pFanB == Aig_Not(pFanD) )
+                return Aig_Not(p->pConst1);
+            if ( pFanA == pFanC || pFanB == pFanC )
+                return Aig_And( p, p0, pFanD );
+            if ( pFanB == pFanC || pFanB == pFanD )
+                return Aig_And( p, pFanA, p1 );
+            if ( pFanA == pFanD || pFanB == pFanD )
+                return Aig_And( p, p0, pFanC );
+            if ( pFanA == pFanC || pFanA == pFanD )
+                return Aig_And( p, pFanB, p1 );
+        }
+        else if ( Aig_IsComplement(p0) && !Aig_IsComplement(p1) )
+        {
+            if ( pFanA == Aig_Not(pFanC) || pFanA == Aig_Not(pFanD) || pFanB == Aig_Not(pFanC) || pFanB == Aig_Not(pFanD) )
+                return p1;
+            if ( pFanB == pFanC || pFanB == pFanD )
+                return Aig_And( p, Aig_Not(pFanA), p1 );
+            if ( pFanA == pFanC || pFanA == pFanD )
+                return Aig_And( p, Aig_Not(pFanB), p1 );
+        }
+        else if ( !Aig_IsComplement(p0) && Aig_IsComplement(p1) )
+        {
+            if ( pFanC == Aig_Not(pFanA) || pFanC == Aig_Not(pFanB) || pFanD == Aig_Not(pFanA) || pFanD == Aig_Not(pFanB) )
+                return p0;
+            if ( pFanD == pFanA || pFanD == pFanB )
+                return Aig_And( p, Aig_Not(pFanC), p0 );
+            if ( pFanC == pFanA || pFanC == pFanB )
+                return Aig_And( p, Aig_Not(pFanD), p0 );
+        }
+        else // if ( Aig_IsComplement(p0) && Aig_IsComplement(p1) )
+        {
+            if ( pFanA == pFanD && pFanB == Aig_Not(pFanC) )
+                return Aig_Not(pFanA);
+            if ( pFanB == pFanC && pFanA == Aig_Not(pFanD) )
+                return Aig_Not(pFanB);
+            if ( pFanA == pFanC && pFanB == Aig_Not(pFanD) )
+                return Aig_Not(pFanA);
+            if ( pFanB == pFanD && pFanA == Aig_Not(pFanC) )
+                return Aig_Not(pFanB);
+        }
+    }
     // check if it can be an EXOR gate
-//    if ( Aig_ObjIsExorType( p0, p1, &pFan0, &pFan1 ) )
-//        return Aig_Exor( p, pFan0, pFan1 );
+    if ( p->fCatchExor && Aig_ObjIsExorType( p0, p1, &pFan0, &pFan1 ) )
+        return Aig_Exor( p, pFan0, pFan1 );
     pGhost = Aig_ObjCreateGhost( p, p0, p1, AIG_OBJ_AND );
-    pResult = Aig_CanonPair_rec( p, pGhost );
-    return pResult;
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Creates the canonical form of the node.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Aig_Obj_t * Aig_Latch( Aig_Man_t * p, Aig_Obj_t * pObj, int fInitOne )
-{
-    Aig_Obj_t * pGhost, * pResult;
-    pGhost = Aig_ObjCreateGhost( p, Aig_NotCond(pObj, fInitOne), NULL, AIG_OBJ_LATCH );
-    pResult = Aig_TableLookup( p, pGhost );
-    if ( pResult == NULL )
-        pResult = Aig_ObjCreate( p, pGhost );
-    return Aig_NotCond( pResult, fInitOne );
+    if ( (pResult = Aig_TableLookup( p, pGhost )) )
+        return pResult;
+    return Aig_ObjCreate( p, pGhost );
 }
 
 /**Function*************************************************************
@@ -190,8 +219,8 @@ Aig_Obj_t * Aig_Latch( Aig_Man_t * p, Aig_Obj_t * pObj, int fInitOne )
 ***********************************************************************/
 Aig_Obj_t * Aig_Exor( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
 {
-/*
     Aig_Obj_t * pGhost, * pResult;
+    int fCompl;
     // check trivial cases
     if ( p0 == p1 )
         return Aig_Not(p->pConst1);
@@ -201,13 +230,19 @@ Aig_Obj_t * Aig_Exor( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
         return Aig_NotCond( p1, p0 == p->pConst1 );
     if ( Aig_Regular(p1) == p->pConst1 )
         return Aig_NotCond( p0, p1 == p->pConst1 );
-    // check the table
+    // when there is no special XOR gates
+    if ( !p->fCatchExor )
+        return Aig_Or( p, Aig_And(p, p0, Aig_Not(p1)), Aig_And(p, Aig_Not(p0), p1) );
+    // canonicize
+    fCompl = Aig_IsComplement(p0) ^ Aig_IsComplement(p1);
+    p0 = Aig_Regular(p0);
+    p1 = Aig_Regular(p1);
     pGhost = Aig_ObjCreateGhost( p, p0, p1, AIG_OBJ_EXOR );
-    if ( pResult = Aig_TableLookup( p, pGhost ) )
-        return pResult;
-    return Aig_ObjCreate( p, pGhost );
-*/
-    return Aig_Or( p, Aig_And(p, p0, Aig_Not(p1)), Aig_And(p, Aig_Not(p0), p1) );
+    // check the table
+    if ( (pResult = Aig_TableLookup( p, pGhost )) )
+        return Aig_NotCond( pResult, fCompl );
+    pResult = Aig_ObjCreate( p, pGhost );
+    return Aig_NotCond( pResult, fCompl );
 }
 
 /**Function*************************************************************
@@ -230,6 +265,48 @@ Aig_Obj_t * Aig_Or( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
 
   Synopsis    [Implements ITE operation.]
 
+  Description [] 
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Aig_Obj_t * Aig_TableLookupInt( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
+{
+    if ( p0 == p1 )
+        return p0;
+    if ( p0 == Aig_ManConst0(p) || p1 == Aig_ManConst0(p) || p0 == Aig_Not(p1) )
+        return Aig_ManConst0(p);
+    if ( p0 == Aig_ManConst1(p) )
+        return p1;
+    if ( p1 == Aig_ManConst1(p) )
+        return p0;
+    if ( Aig_Regular(p0)->Id < Aig_Regular(p1)->Id )
+        return Aig_TableLookup( p, Aig_ObjCreateGhost(p, p0, p1, AIG_OBJ_AND) );
+    return Aig_TableLookup( p, Aig_ObjCreateGhost(p, p1, p0, AIG_OBJ_AND) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Implements ITE operation.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Aig_Obj_t * Aig_Mux2( Aig_Man_t * p, Aig_Obj_t * pC, Aig_Obj_t * p1, Aig_Obj_t * p0 )
+{
+    return Aig_Or( p, Aig_And(p, pC, p1), Aig_And(p, Aig_Not(pC), p0) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Implements ITE operation.]
+
   Description []
                
   SideEffects []
@@ -239,46 +316,50 @@ Aig_Obj_t * Aig_Or( Aig_Man_t * p, Aig_Obj_t * p0, Aig_Obj_t * p1 )
 ***********************************************************************/
 Aig_Obj_t * Aig_Mux( Aig_Man_t * p, Aig_Obj_t * pC, Aig_Obj_t * p1, Aig_Obj_t * p0 )
 {
-/*    
+    int fUseMuxCanon = 0;
     Aig_Obj_t * pTempA1, * pTempA2, * pTempB1, * pTempB2, * pTemp;
     int Count0, Count1;
-    // consider trivial cases
-    if ( p0 == Aig_Not(p1) )
+    if ( !fUseMuxCanon )
+        return Aig_Mux2( p, pC, p1, p0 );
+    if ( p0 == p1 )
+        return p0;
+    if ( p1 == Aig_Not(p0) )
         return Aig_Exor( p, pC, p0 );
-    // other cases can be added
+    if ( pC == Aig_ManConst0(p) )
+        return p0;
+    if ( pC == Aig_ManConst1(p) )
+        return p1;
+    if ( p0 == Aig_ManConst0(p) )
+        return Aig_And( p, pC, p1 );
+    if ( p0 == Aig_ManConst1(p) )
+        return Aig_Or( p, Aig_Not(pC), p1 );
+    if ( p1 == Aig_ManConst0(p) )
+        return Aig_And( p, Aig_Not(pC), p0 );
+    if ( p1 == Aig_ManConst1(p) )
+        return Aig_Or( p, pC, p0 );
     // implement the first MUX (F = C * x1 + C' * x0)
-
-    // check for constants here!!!
-
-    pTempA1 = Aig_TableLookup( p, Aig_ObjCreateGhost(p, pC,          p1, AIG_OBJ_AND) );
-    pTempA2 = Aig_TableLookup( p, Aig_ObjCreateGhost(p, Aig_Not(pC), p0, AIG_OBJ_AND) );
+    pTempA1 = Aig_TableLookupInt( p, pC,          p1 );
+    pTempA2 = Aig_TableLookupInt( p, Aig_Not(pC), p0 );
     if ( pTempA1 && pTempA2 )
     {
-        pTemp = Aig_TableLookup( p, Aig_ObjCreateGhost(p, Aig_Not(pTempA1), Aig_Not(pTempA2), AIG_OBJ_AND) );
+        pTemp = Aig_TableLookupInt( p, Aig_Not(pTempA1), Aig_Not(pTempA2) );
         if ( pTemp ) return Aig_Not(pTemp);
     }
     Count0 = (pTempA1 != NULL) + (pTempA2 != NULL);
     // implement the second MUX (F' = C * x1' + C' * x0')
-    pTempB1 = Aig_TableLookup( p, Aig_ObjCreateGhost(p, pC,          Aig_Not(p1), AIG_OBJ_AND) );
-    pTempB2 = Aig_TableLookup( p, Aig_ObjCreateGhost(p, Aig_Not(pC), Aig_Not(p0), AIG_OBJ_AND) );
+    pTempB1 = Aig_TableLookupInt( p, pC,          Aig_Not(p1) );
+    pTempB2 = Aig_TableLookupInt( p, Aig_Not(pC), Aig_Not(p0) );
     if ( pTempB1 && pTempB2 )
     {
-        pTemp = Aig_TableLookup( p, Aig_ObjCreateGhost(p, Aig_Not(pTempB1), Aig_Not(pTempB2), AIG_OBJ_AND) );
+        pTemp = Aig_TableLookupInt( p, Aig_Not(pTempB1), Aig_Not(pTempB2) );
         if ( pTemp ) return pTemp;
     }
     Count1 = (pTempB1 != NULL) + (pTempB2 != NULL);
     // compare and decide which one to implement
     if ( Count0 >= Count1 )
-    {
-        pTempA1 = pTempA1? pTempA1 : Aig_And(p, pC,          p1);
-        pTempA2 = pTempA2? pTempA2 : Aig_And(p, Aig_Not(pC), p0);
-        return Aig_Or( p, pTempA1, pTempA2 );
-    }
-    pTempB1 = pTempB1? pTempB1 : Aig_And(p, pC,          Aig_Not(p1));
-    pTempB2 = pTempB2? pTempB2 : Aig_And(p, Aig_Not(pC), Aig_Not(p0));
-    return Aig_Not( Aig_Or( p, pTempB1, pTempB2 ) );
-*/
-    return Aig_Or( p, Aig_And(p, pC, p1), Aig_And(p, Aig_Not(pC), p0) );
+        return Aig_Or( p, Aig_And(p, pC, p1), Aig_And(p, Aig_Not(pC), p0) );
+    return Aig_Not( Aig_Or( p, Aig_And(p, pC, Aig_Not(p1)), Aig_And(p, Aig_Not(pC), Aig_Not(p0)) ) );
+//    return Aig_Or( p, Aig_And(p, pC, p1), Aig_And(p, Aig_Not(pC), p0) );
 }
 
 /**Function*************************************************************
@@ -353,7 +434,7 @@ Aig_Obj_t * Aig_Miter( Aig_Man_t * p, Vec_Ptr_t * vPairs )
     assert( vPairs->nSize > 0 );
     assert( vPairs->nSize % 2 == 0 );
     for ( i = 0; i < vPairs->nSize; i += 2 )
-        vPairs->pArray[i/2] = Aig_Not( Aig_Exor( p, vPairs->pArray[i], vPairs->pArray[i+1] ) );
+        vPairs->pArray[i/2] = Aig_Not( Aig_Exor( p, (Aig_Obj_t *)vPairs->pArray[i], (Aig_Obj_t *)vPairs->pArray[i+1] ) );
     vPairs->nSize = vPairs->nSize/2;
     return Aig_Not( Aig_Multi_rec( p, (Aig_Obj_t **)vPairs->pArray, vPairs->nSize, AIG_OBJ_AND ) );
 }
@@ -375,7 +456,7 @@ Aig_Obj_t * Aig_MiterTwo( Aig_Man_t * p, Vec_Ptr_t * vNodes1, Vec_Ptr_t * vNodes
     assert( vNodes1->nSize > 0 && vNodes1->nSize > 0 );
     assert( vNodes1->nSize == vNodes2->nSize );
     for ( i = 0; i < vNodes1->nSize; i++ )
-        vNodes1->pArray[i] = Aig_Not( Aig_Exor( p, vNodes1->pArray[i], vNodes2->pArray[i] ) );
+        vNodes1->pArray[i] = Aig_Not( Aig_Exor( p, (Aig_Obj_t *)vNodes1->pArray[i], (Aig_Obj_t *)vNodes2->pArray[i] ) );
     return Aig_Not( Aig_Multi_rec( p, (Aig_Obj_t **)vNodes1->pArray, vNodes1->nSize, AIG_OBJ_AND ) );
 }
 
@@ -442,8 +523,84 @@ Aig_Obj_t * Aig_CreateExor( Aig_Man_t * p, int nVars )
     return pFunc;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Implements ITE operation.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Aig_MuxTest()
+{
+    Vec_Ptr_t * vNodes;
+    Aig_Man_t * p;
+    Aig_Obj_t * pObj, * pFanin0, * pFanin1, * pCtrl;    
+    int nNodes  = 2000;
+    int i,nPIs  =   20;
+//    srand( time(NULL) );
+    srand( 321 );
+    vNodes = Vec_PtrAlloc( 100 );
+    // create a bunch of random MUXes
+    p = Aig_ManStart( 10000 );
+    for ( i = 0; i < nPIs; i++ )
+        Aig_IthVar(p,i);
+    for ( i = 0; i < nNodes; i++ )
+    {
+        if ( rand() % 10 == 0 )
+            pCtrl = Aig_ManConst0(p);
+        else if ( rand() % 10 == 0 )
+            pCtrl = Aig_ManConst1(p);
+        else if ( rand() % 3 == 0 || i < nPIs )
+            pCtrl = Aig_IthVar( p, rand() % nPIs );
+        else
+            pCtrl = (Aig_Obj_t *)Vec_PtrEntry(vNodes, rand() % i);
+        if ( rand() % 2 == 0 )
+            pCtrl = Aig_Not( pCtrl );
+
+        if ( rand() % 10 == 0 )
+            pFanin1 = Aig_ManConst0(p);
+        else if ( rand() % 10 == 0 )
+            pFanin1 = Aig_ManConst1(p);
+        else if ( rand() % 3 == 0 || i < nPIs )
+            pFanin1 = Aig_IthVar( p, rand() % nPIs );
+        else
+            pFanin1 = (Aig_Obj_t *)Vec_PtrEntry(vNodes, rand() % i);
+        if ( rand() % 2 == 0 )
+            pFanin1 = Aig_Not( pFanin1 );
+
+        if ( rand() % 10 == 0 )
+            pFanin0 = Aig_ManConst0(p);
+        else if ( rand() % 10 == 0 )
+            pFanin0 = Aig_ManConst1(p);
+        else if ( rand() % 3 == 0 || i < nPIs )
+            pFanin0 = Aig_IthVar( p, rand() % nPIs );
+        else
+            pFanin0 = (Aig_Obj_t *)Vec_PtrEntry(vNodes, rand() % i);
+        if ( rand() % 2 == 0 )
+            pFanin0 = Aig_Not( pFanin0 );
+
+        pObj = Aig_Mux( p, pCtrl, pFanin1, pFanin0 );
+        Vec_PtrPush( vNodes, pObj );
+    }
+    Vec_PtrForEachEntry( Aig_Obj_t *, vNodes, pObj, i )
+        Aig_ObjCreateCo( p, pObj );
+    Vec_PtrFree( vNodes );
+
+    printf( "Number of nodes = %6d.\n", Aig_ManObjNum(p) );
+    Aig_ManCleanup( p );
+    printf( "Number of nodes = %6d.\n", Aig_ManObjNum(p) );
+    Aig_ManDumpBlif( p, "test1.blif", NULL, NULL );
+    Aig_ManStop( p );
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

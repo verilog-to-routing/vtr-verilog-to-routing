@@ -1,5 +1,4 @@
-SRC +=  src/misc/mvc/mvc.c \
-	src/misc/mvc/mvcApi.c \
+SRC +=  src/misc/mvc/mvcApi.c \
 	src/misc/mvc/mvcCompare.c \
 	src/misc/mvc/mvcContain.c \
 	src/misc/mvc/mvcCover.c \

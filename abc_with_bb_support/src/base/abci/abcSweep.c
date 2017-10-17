@@ -18,8 +18,15 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "fraig.h"
+#include "base/abc/abc.h"
+#include "base/main/main.h"
+#include "proof/fraig/fraig.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -27,15 +34,13 @@
 
 static void           Abc_NtkFraigSweepUsingExdc( Fraig_Man_t * pMan, Abc_Ntk_t * pNtk );
 static stmm_table *   Abc_NtkFraigEquiv( Abc_Ntk_t * pNtk, int fUseInv, int fVerbose, int fVeryVerbose );
-static void           Abc_NtkFraigTransform( Abc_Ntk_t * pNtk, stmm_table * tEquiv, int fUseInv, bool fVerbose );
+static void           Abc_NtkFraigTransform( Abc_Ntk_t * pNtk, stmm_table * tEquiv, int fUseInv, int fVerbose );
 static void           Abc_NtkFraigMergeClassMapped( Abc_Ntk_t * pNtk, Abc_Obj_t * pChain, int fUseInv, int fVerbose );
 static void           Abc_NtkFraigMergeClass( Abc_Ntk_t * pNtk, Abc_Obj_t * pChain, int fUseInv, int fVerbose );
 static int            Abc_NodeDroppingCost( Abc_Obj_t * pNode );
 
 static int            Abc_NtkReduceNodes( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes );
 static void           Abc_NodeSweep( Abc_Obj_t * pNode, int fVerbose );
-static void           Abc_NodeConstantInput( Abc_Obj_t * pNode, Abc_Obj_t * pFanin, bool fConst0 );
-static void           Abc_NodeComplementInput( Abc_Obj_t * pNode, Abc_Obj_t * pFanin );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -54,7 +59,7 @@ static void           Abc_NodeComplementInput( Abc_Obj_t * pNode, Abc_Obj_t * pF
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkFraigSweep( Abc_Ntk_t * pNtk, int fUseInv, int fExdc, int fVerbose, int fVeryVerbose )
+int Abc_NtkFraigSweep( Abc_Ntk_t * pNtk, int fUseInv, int fExdc, int fVerbose, int fVeryVerbose )
 {
     Fraig_Params_t Params;
     Abc_Ntk_t * pNtkAig;
@@ -71,15 +76,15 @@ bool Abc_NtkFraigSweep( Abc_Ntk_t * pNtk, int fUseInv, int fExdc, int fVerbose, 
     {
         fUseTrick = 1;
         Abc_NtkForEachNode( pNtk, pObj, i )
-            pObj->pNext = pObj->pData;
+            pObj->pNext = (Abc_Obj_t *)pObj->pData;
     }
     // derive the AIG
     pNtkAig = Abc_NtkStrash( pNtk, 0, 1, 0 );
     // reconstruct gate assignments
     if ( fUseTrick )
     {
-        extern void * Abc_FrameReadLibGen(); 
-        Hop_ManStop( pNtk->pManFunc );
+//        extern void * Abc_FrameReadLibGen(); 
+        Hop_ManStop( (Hop_Man_t *)pNtk->pManFunc );
         pNtk->pManFunc = Abc_FrameReadLibGen();
         pNtk->ntkFunc = ABC_FUNC_MAP;
         Abc_NtkForEachNode( pNtk, pObj, i )
@@ -88,7 +93,8 @@ bool Abc_NtkFraigSweep( Abc_Ntk_t * pNtk, int fUseInv, int fExdc, int fVerbose, 
 
     // perform fraiging of the AIG
     Fraig_ParamsSetDefault( &Params );
-    pMan = Abc_NtkToFraig( pNtkAig, &Params, 0, 0 );   
+    Params.fInternal = 1;
+    pMan = (Fraig_Man_t *)Abc_NtkToFraig( pNtkAig, &Params, 0, 0 );   
     // cannot use EXDC with FRAIG because it can create classes of equivalent FRAIG nodes
     // with representative nodes that do not correspond to the nodes with the current network
 
@@ -162,17 +168,17 @@ void Abc_NtkFraigSweepUsingExdc( Fraig_Man_t * pMan, Abc_Ntk_t * pNtk )
         if ( pNodeAig == NULL )
             continue;
         // get the FRAIG node
-        gNode = Fraig_NotCond( Abc_ObjRegular(pNodeAig)->pCopy, Abc_ObjIsComplement(pNodeAig) );
+        gNode = Fraig_NotCond( Abc_ObjRegular(pNodeAig)->pCopy, (int)Abc_ObjIsComplement(pNodeAig) );
         // perform ANDing with EXDC
         gNodeRes = Fraig_NodeAnd( pMan, gNode, Fraig_Not(gNodeExdc) );
         // write the node back
-        Abc_ObjRegular(pNodeAig)->pCopy = (Abc_Obj_t *)Fraig_NotCond( gNodeRes, Abc_ObjIsComplement(pNodeAig) );
+        Abc_ObjRegular(pNodeAig)->pCopy = (Abc_Obj_t *)Fraig_NotCond( gNodeRes, (int)Abc_ObjIsComplement(pNodeAig) );
     }
 }
 
 /**Function*************************************************************
 
-  Synopsis    [Collects equivalence classses of node in the network.]
+  Synopsis    [Collects equivalence classes of node in the network.]
 
   Description []
                
@@ -207,7 +213,7 @@ stmm_table * Abc_NtkFraigEquiv( Abc_Ntk_t * pNtk, int fUseInv, int fVerbose, int
         if ( Abc_NodeFindCoFanout(pNode) )
             continue;
         // get the FRAIG node
-        gNode = Fraig_NotCond( Abc_ObjRegular(pNodeAig)->pCopy, Abc_ObjIsComplement(pNodeAig) );
+        gNode = Fraig_NotCond( Abc_ObjRegular(pNodeAig)->pCopy, (int)Abc_ObjIsComplement(pNodeAig) );
         if ( !stmm_find_or_add( tStrash2Net, (char *)Fraig_Regular(gNode), (char ***)&ppSlot ) )
             *ppSlot = NULL;
         // add the node to the list
@@ -268,7 +274,7 @@ stmm_table * Abc_NtkFraigEquiv( Abc_Ntk_t * pNtk, int fUseInv, int fVerbose, int
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkFraigTransform( Abc_Ntk_t * pNtk, stmm_table * tEquiv, int fUseInv, bool fVerbose )
+void Abc_NtkFraigTransform( Abc_Ntk_t * pNtk, stmm_table * tEquiv, int fUseInv, int fVerbose )
 {
     stmm_generator * gen;
     Abc_Obj_t * pList;
@@ -277,7 +283,7 @@ void Abc_NtkFraigTransform( Abc_Ntk_t * pNtk, stmm_table * tEquiv, int fUseInv, 
     // merge nodes in the classes
     if ( Abc_NtkHasMapping( pNtk ) )
     {
-        Abc_NtkDelayTrace( pNtk );
+        Abc_NtkDelayTrace( pNtk, NULL, NULL, 0 );
         stmm_foreach_item( tEquiv, gen, (char **)&pList, NULL )
             Abc_NtkFraigMergeClassMapped( pNtk, pList, fUseInv, fVerbose );
     }
@@ -333,14 +339,14 @@ void Abc_NtkFraigMergeClassMapped( Abc_Ntk_t * pNtk, Abc_Obj_t * pChain, int fUs
     pNodeMin = pListDir;
     for ( pNode = pListDir; pNode; pNode = pNode->pNext )
     {
-        Arrival1 = Abc_NodeReadArrival(pNodeMin)->Worst;
-        Arrival2 = Abc_NodeReadArrival(pNode   )->Worst;
-        assert( Abc_ObjIsCi(pNodeMin) || Arrival1 > 0 );
-        assert( Abc_ObjIsCi(pNode)    || Arrival2 > 0 );
+        Arrival1 = Abc_NodeReadArrivalWorst(pNodeMin);
+        Arrival2 = Abc_NodeReadArrivalWorst(pNode   );
+//        assert( Abc_ObjIsCi(pNodeMin) || Arrival1 > 0 );
+//        assert( Abc_ObjIsCi(pNode)    || Arrival2 > 0 );
         if (  Arrival1 > Arrival2 ||
-              Arrival1 == Arrival2 && pNodeMin->Level >  pNode->Level || 
-              Arrival1 == Arrival2 && pNodeMin->Level == pNode->Level && 
-              Abc_NodeDroppingCost(pNodeMin) < Abc_NodeDroppingCost(pNode)  )
+              (Arrival1 == Arrival2 && pNodeMin->Level >  pNode->Level) ||
+              (Arrival1 == Arrival2 && pNodeMin->Level == pNode->Level &&
+              Abc_NodeDroppingCost(pNodeMin) < Abc_NodeDroppingCost(pNode))  )
             pNodeMin = pNode;
     }
 
@@ -353,14 +359,14 @@ void Abc_NtkFraigMergeClassMapped( Abc_Ntk_t * pNtk, Abc_Obj_t * pChain, int fUs
     pNodeMin = pListInv;
     for ( pNode = pListInv; pNode; pNode = pNode->pNext )
     {
-        Arrival1 = Abc_NodeReadArrival(pNodeMin)->Worst;
-        Arrival2 = Abc_NodeReadArrival(pNode   )->Worst;
-        assert( Abc_ObjIsCi(pNodeMin) || Arrival1 > 0 );
-        assert( Abc_ObjIsCi(pNode)    || Arrival2 > 0 );
+        Arrival1 = Abc_NodeReadArrivalWorst(pNodeMin);
+        Arrival2 = Abc_NodeReadArrivalWorst(pNode   );
+//        assert( Abc_ObjIsCi(pNodeMin) || Arrival1 > 0 );
+//        assert( Abc_ObjIsCi(pNode)    || Arrival2 > 0 );
         if (  Arrival1 > Arrival2 ||
-              Arrival1 == Arrival2 && pNodeMin->Level >  pNode->Level || 
-              Arrival1 == Arrival2 && pNodeMin->Level == pNode->Level && 
-              Abc_NodeDroppingCost(pNodeMin) < Abc_NodeDroppingCost(pNode)  )
+              (Arrival1 == Arrival2 && pNodeMin->Level >  pNode->Level) ||
+              (Arrival1 == Arrival2 && pNodeMin->Level == pNode->Level &&
+              Abc_NodeDroppingCost(pNodeMin) < Abc_NodeDroppingCost(pNode))  )
             pNodeMin = pNode;
     }
 
@@ -485,6 +491,40 @@ int Abc_NtkCleanup( Abc_Ntk_t * pNtk, int fVerbose )
 
 /**Function*************************************************************
 
+  Synopsis    [Removes dangling nodes.]
+
+  Description [Returns the number of nodes removed.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_NtkCleanupNodes( Abc_Ntk_t * pNtk, Vec_Ptr_t * vRoots, int fVerbose )
+{
+    Vec_Ptr_t * vNodes, * vStarts;
+    Abc_Obj_t * pObj;
+    int i, Counter;
+    assert( Abc_NtkIsLogic(pNtk) );
+    // collect starting nodes into one array
+    vStarts = Vec_PtrAlloc( 1000 );
+    Abc_NtkForEachCo( pNtk, pObj, i )
+        Vec_PtrPush( vStarts, pObj );
+    Vec_PtrForEachEntry( Abc_Obj_t *, vRoots, pObj, i )
+        if ( pObj )
+            Vec_PtrPush( vStarts, pObj );
+    // mark the nodes reachable from the POs
+    vNodes = Abc_NtkDfsNodes( pNtk, (Abc_Obj_t **)Vec_PtrArray(vStarts), Vec_PtrSize(vStarts) );
+    Vec_PtrFree( vStarts );
+    Counter = Abc_NtkReduceNodes( pNtk, vNodes );
+    if ( fVerbose )
+        printf( "Cleanup removed %d dangling nodes.\n", Counter );
+    Vec_PtrFree( vNodes );
+    return Counter;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Preserves the nodes collected in the array.]
 
   Description [Returns the number of nodes removed.]
@@ -500,7 +540,7 @@ int Abc_NtkReduceNodes( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes )
     int i, Counter;
     assert( Abc_NtkIsLogic(pNtk) );
     // mark the nodes reachable from the POs
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
         pNode->fMarkA = 1;
     // remove the non-marked nodes
     Counter = 0;
@@ -511,7 +551,7 @@ int Abc_NtkReduceNodes( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes )
             Counter++;
         }
     // unmark the remaining nodes
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
         pNode->fMarkA = 0;
     // check
     if ( !Abc_NtkCheck( pNtk ) )
@@ -521,6 +561,36 @@ int Abc_NtkReduceNodes( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes )
 
 
 
+
+#ifdef ABC_USE_CUDD
+
+/**Function*************************************************************
+
+  Synopsis    [Replaces the local function by its cofactor.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NodeConstantInput( Abc_Obj_t * pNode, Abc_Obj_t * pFanin, int fConst0 )
+{
+    DdManager * dd = (DdManager *)pNode->pNtk->pManFunc;
+    DdNode * bVar, * bTemp;
+    int iFanin;
+    assert( Abc_NtkIsBddLogic(pNode->pNtk) ); 
+    if ( (iFanin = Vec_IntFind( &pNode->vFanins, pFanin->Id )) == -1 )
+    {
+        printf( "Node %s should be among", Abc_ObjName(pFanin) );
+        printf( " the fanins of node %s...\n", Abc_ObjName(pNode) );
+        return;
+    }
+    bVar = Cudd_NotCond( Cudd_bddIthVar(dd, iFanin), fConst0 );
+    pNode->pData = Cudd_Cofactor( dd, bTemp = (DdNode *)pNode->pData, bVar );   Cudd_Ref( (DdNode *)pNode->pData );
+    Cudd_RecursiveDeref( dd, bTemp );
+}
 
 /**Function*************************************************************
 
@@ -560,7 +630,7 @@ int Abc_NtkSweep( Abc_Ntk_t * pNtk, int fVerbose )
     while ( Vec_PtrSize(vNodes) > 0 )
     {
         // get any sweepable node
-        pNode = Vec_PtrPop(vNodes);
+        pNode = (Abc_Obj_t *)Vec_PtrPop(vNodes);
         if ( !Abc_ObjIsNode(pNode) )
             continue;
         // get any non-CO fanout of this node
@@ -617,66 +687,11 @@ int Abc_NtkSweep( Abc_Ntk_t * pNtk, int fVerbose )
 }
 
 
-/**Function*************************************************************
+#else
 
-  Synopsis    [Replaces the local function by its cofactor.]
+int Abc_NtkSweep( Abc_Ntk_t * pNtk, int fVerbose ) { return 1; }
 
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Abc_NodeConstantInput( Abc_Obj_t * pNode, Abc_Obj_t * pFanin, bool fConst0 )
-{
-    DdManager * dd = pNode->pNtk->pManFunc;
-    DdNode * bVar, * bTemp;
-    int iFanin;
-    assert( Abc_NtkIsBddLogic(pNode->pNtk) ); 
-    if ( (iFanin = Vec_IntFind( &pNode->vFanins, pFanin->Id )) == -1 )
-    {
-        printf( "Node %s should be among", Abc_ObjName(pFanin) );
-        printf( " the fanins of node %s...\n", Abc_ObjName(pNode) );
-        return;
-    }
-    bVar = Cudd_NotCond( Cudd_bddIthVar(dd, iFanin), fConst0 );
-    pNode->pData = Cudd_Cofactor( dd, bTemp = pNode->pData, bVar );   Cudd_Ref( pNode->pData );
-    Cudd_RecursiveDeref( dd, bTemp );
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Changes the polarity of one fanin.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Abc_NodeComplementInput( Abc_Obj_t * pNode, Abc_Obj_t * pFanin )
-{
-    DdManager * dd = pNode->pNtk->pManFunc;
-    DdNode * bVar, * bCof0, * bCof1;
-    int iFanin;
-    assert( Abc_NtkIsBddLogic(pNode->pNtk) ); 
-    if ( (iFanin = Vec_IntFind( &pNode->vFanins, pFanin->Id )) == -1 )
-    {
-        printf( "Node %s should be among", Abc_ObjName(pFanin) );
-        printf( " the fanins of node %s...\n", Abc_ObjName(pNode) );
-        return;
-    }
-    bVar = Cudd_bddIthVar( dd, iFanin );
-    bCof0 = Cudd_Cofactor( dd, pNode->pData, Cudd_Not(bVar) );   Cudd_Ref( bCof0 );
-    bCof1 = Cudd_Cofactor( dd, pNode->pData, bVar );             Cudd_Ref( bCof1 );
-    Cudd_RecursiveDeref( dd, pNode->pData );
-    pNode->pData = Cudd_bddIte( dd, bVar, bCof0, bCof1 );        Cudd_Ref( pNode->pData );
-    Cudd_RecursiveDeref( dd, bCof0 );
-    Cudd_RecursiveDeref( dd, bCof1 );
-}
-
+#endif
 
 
 /**Function*************************************************************
@@ -873,9 +888,9 @@ int Abc_NtkReplaceAutonomousLogic( Abc_Ntk_t * pNtk )
             Vec_PtrPush( vNodes, pFanin );
         }
     }
-    Vec_PtrUniqify( vNodes, Abc_ObjPointerCompare );
+    Vec_PtrUniqify( vNodes, (int (*)(void))Abc_ObjPointerCompare );
     // replace these nodes by the PIs
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
         pFanin = Abc_NtkCreatePi(pNtk);
         Abc_ObjAssignName( pFanin, Abc_ObjName(pFanin), NULL );
@@ -940,9 +955,76 @@ int Abc_NtkCleanupSeq( Abc_Ntk_t * pNtk, int fLatchSweep, int fAutoSweep, int fV
     return 1;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Sweep to remove buffers and inverters.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_NtkSweepBufsInvs( Abc_Ntk_t * pNtk, int fVerbose )
+{
+    Hop_Man_t * pMan;
+    Abc_Obj_t * pObj, * pFanin;
+    int i, k, fChanges = 1, Counter = 0;
+    assert( Abc_NtkIsLogic(pNtk) ); 
+    // convert network to BDD representation
+    if ( !Abc_NtkToAig(pNtk) )
+    {
+        fprintf( stdout, "Converting to SOP has failed.\n" );
+        return 1;
+    }
+    // get AIG manager
+    pMan = (Hop_Man_t *)pNtk->pManFunc;
+    // label selected nodes
+    Abc_NtkIncrementTravId( pNtk );
+    // iterate till no improvement
+    while ( fChanges )
+    {
+        fChanges = 0;
+        Abc_NtkForEachObj( pNtk, pObj, i )
+        {
+            Abc_ObjForEachFanin( pObj, pFanin, k )
+            {
+                // do not eliminate marked fanins
+                if ( Abc_NodeIsTravIdCurrent(pFanin) )
+                    continue;
+                // do not eliminate constant nodes
+                if ( !Abc_ObjIsNode(pFanin) || Abc_ObjFaninNum(pFanin) != 1 )
+                    continue;
+                // do not eliminate inverters into COs
+                if ( Abc_ObjIsCo(pObj) && Abc_NodeIsInv(pFanin) )
+                    continue;
+                // do not eliminate buffers connecting PIs and POs 
+//                if ( Abc_ObjIsCo(pObj) && Abc_ObjIsCi(Abc_ObjFanin0(pFanin)) )
+//                    continue;
+                fChanges = 1;
+                Counter++;
+                // update function of the node
+                if ( Abc_NodeIsInv(pFanin) )
+                    pObj->pData = Hop_Compose( pMan, (Hop_Obj_t *)pObj->pData, Hop_Not(Hop_IthVar(pMan, k)), k );
+                // update the fanin
+                Abc_ObjPatchFanin( pObj, pFanin, Abc_ObjFanin0(pFanin) );
+                if ( Abc_ObjFanoutNum(pFanin) == 0 )
+                    Abc_NtkDeleteObj(pFanin);            
+            }
+        }
+    }
+    if ( fVerbose )
+        printf( "Removed %d single input nodes.\n", Counter );
+    return Counter;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

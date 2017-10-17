@@ -20,6 +20,9 @@
 
 #include "rwr.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -77,7 +80,7 @@ void Rwr_Temp()
     pFile = fopen( "nnclass_stats5.txt", "r" );
     for ( i = 0; i < 13719; i++ )
     {
-        fscanf( pFile, "%s%d", Buffer, &pFreqs[i] );
+        int RetValue = fscanf( pFile, "%s%d", Buffer, &pFreqs[i] );
         Extra_ReadHexadecimal( &uTruth, Buffer+2, 5 );
         pTruths[i] = uTruth;
     }
@@ -106,7 +109,7 @@ void Rwr_Temp()
         for ( k = 0; k < 32; k++ )
             if ( uTruth & (1 << k) )
             {
-                Extra_PrintBinary( pFile, &k, 5 );
+                Extra_PrintBinary( pFile, (unsigned *)&k, 5 );
                 fprintf( pFile, " 1\n" );
             }
     }
@@ -118,4 +121,6 @@ void Rwr_Temp()
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

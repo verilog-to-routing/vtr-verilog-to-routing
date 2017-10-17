@@ -52,4 +52,4 @@ extern solution_t *sm_mincov();
 extern int gimpel_reduce();
 
 
-#define WEIGHT(weight, col)	(weight == NIL(int) ? 1 : weight[col])
+#define ABC__misc__espresso__mincov_int_h

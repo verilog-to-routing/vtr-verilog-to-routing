@@ -24,6 +24,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*
     sf_contain -- perform containment on a set family (delete sets which
@@ -211,7 +214,9 @@ IN int (*compare)();
 int rm_contain(A1)
 INOUT pset *A1;                 /* updated in place */
 {
-    register pset *pa, *pb, *pcheck, a, b;
+    register pset *pa, *pb;
+    register pset *pcheck = NULL; // Suppress "might be used uninitialized"
+    register pset a, b;
     pset *pdest = A1;
     int last_size = -1;
 
@@ -239,7 +244,9 @@ INOUT pset *A1;                 /* updated in place */
 int rm_rev_contain(A1)
 INOUT pset *A1;                 /* updated in place */
 {
-    register pset *pa, *pb, *pcheck, a, b;
+    register pset *pa, *pb;
+    register pset *pcheck = NULL; // Suppress "might be used uninitialized"
+    register pset a, b;
     pset *pdest = A1;
     int last_size = -1;
 
@@ -439,3 +446,5 @@ IN int totcnt, size;
     FREE(E1);
     return R;
 }
+ABC_NAMESPACE_IMPL_END
+

@@ -20,6 +20,9 @@
 
 #include "rwr.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -64,14 +67,14 @@ static Rwr_Man5_t * s_pManRwrExp5 = NULL;
 void Rwt_Man4ExploreStart()
 {
     Rwr_Man4_t * p;
-    p = ALLOC( Rwr_Man4_t, 1 );
+    p = ABC_ALLOC( Rwr_Man4_t, 1 );
     memset( p, 0, sizeof(Rwr_Man4_t) );
     // canonical forms
     p->nFuncs    = (1<<16);
     // canonical forms, phases, perms
     Extra_Truth4VarNPN( &p->puCanons, NULL, NULL, NULL );
     // counters
-    p->pnCounts  = ALLOC( int, p->nFuncs );
+    p->pnCounts  = ABC_ALLOC( int, p->nFuncs );
     memset( p->pnCounts, 0, sizeof(int) * p->nFuncs );
     s_pManRwrExp4 = p;
 }
@@ -124,8 +127,8 @@ void Rwt_Man4ExplorePrint()
     printf( "Number of cuts considered       = %8d.\n", nCuts );
     printf( "Classes occurring at least once = %8d.\n", nClasses );
     // print the distribution of classes
-    pDistrib = ALLOC( int, CountMax + 1 );
-    pReprs   = ALLOC( int, CountMax + 1 );
+    pDistrib = ABC_ALLOC( int, CountMax + 1 );
+    pReprs   = ABC_ALLOC( int, CountMax + 1 );
     memset( pDistrib, 0, sizeof(int)*(CountMax + 1) );
     for ( i = 0; i < s_pManRwrExp4->nFuncs; i++ )
     {
@@ -141,15 +144,15 @@ void Rwt_Man4ExplorePrint()
             Extra_PrintBinary( stdout, (unsigned*)&(pReprs[i]), 16 ); 
             printf( "\n" );
         }
-    free( pDistrib );
-    free( pReprs );
+    ABC_FREE( pDistrib );
+    ABC_FREE( pReprs );
     // write into a file all classes above limit (5)
     CountWrite = 0;
     pFile = fopen( "npnclass_stats4.txt", "w" );
     for ( i = 0; i < s_pManRwrExp4->nFuncs; i++ )
         if ( s_pManRwrExp4->pnCounts[i] > 0 )
         {
-            Extra_PrintHex( pFile, i, 4 );
+            Extra_PrintHex( pFile, (unsigned *)&i, 4 );
             fprintf( pFile, " %10d\n", s_pManRwrExp4->pnCounts[i] );
 //            fprintf( pFile, "%d ", i );
             CountWrite++;
@@ -175,10 +178,10 @@ void Rwt_Man4ExplorePrint()
 void Rwt_Man5ExploreStart()
 {
     Rwr_Man5_t * p;
-    p = ALLOC( Rwr_Man5_t, 1 );
+    p = ABC_ALLOC( Rwr_Man5_t, 1 );
     memset( p, 0, sizeof(Rwr_Man5_t) );
-    p->tTableNN  = stmm_init_table( st_numcmp, st_numhash );
-    p->tTableNPN = stmm_init_table( st_numcmp, st_numhash );
+    p->tTableNN  = stmm_init_table( st__numcmp, st__numhash );
+    p->tTableNPN = stmm_init_table( st__numcmp, st__numhash );
     s_pManRwrExp5 = p;
 
 //Extra_PrintHex( stdout, Extra_TruthCanonNPN( 0x0000FFFF, 5 ), 5 );
@@ -199,7 +202,7 @@ void Rwt_Man5ExploreStart()
 void Rwt_Man5ExploreCount( unsigned uTruth )
 {
     int * pCounter;
-    if ( !stmm_find_or_add( s_pManRwrExp5->tTableNN, (char *)uTruth, (char***)&pCounter ) )
+    if ( !stmm_find_or_add( s_pManRwrExp5->tTableNN, (char *)(ABC_PTRUINT_T)uTruth, (char***)&pCounter ) )
         *pCounter = 0;
     (*pCounter)++;
 }
@@ -223,7 +226,7 @@ void Rwt_Man5ExplorePrint()
     int * pDistrib;
     unsigned * pReprs;
     unsigned uTruth, uTruthC;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     Vec_Int_t * vClassesNN, * vClassesNPN;
 
     // find the max number of occurences
@@ -240,8 +243,8 @@ void Rwt_Man5ExplorePrint()
     printf( "The largest number of occurence = %8d.\n", CountMax );
 
     // print the distribution of classes
-    pDistrib = ALLOC( int, CountMax + 1 );
-    pReprs   = ALLOC( unsigned, CountMax + 1 );
+    pDistrib = ABC_ALLOC( int, CountMax + 1 );
+    pReprs   = ABC_ALLOC( unsigned, CountMax + 1 );
     memset( pDistrib, 0, sizeof(int)*(CountMax + 1) );
     stmm_foreach_item( s_pManRwrExp5->tTableNN, gen, (char **)&uTruth, (char **)&Counter )
     {
@@ -257,8 +260,8 @@ void Rwt_Man5ExplorePrint()
             Extra_PrintBinary( stdout, pReprs + i, 32 ); 
             printf( "\n" );
         }
-    free( pDistrib );
-    free( pReprs );
+    ABC_FREE( pDistrib );
+    ABC_FREE( pReprs );
 
 
     // put them into an array
@@ -271,33 +274,33 @@ void Rwt_Man5ExplorePrint()
     pFile = fopen( "nnclass_stats5.txt", "w" );
     Vec_IntForEachEntry( vClassesNN, uTruth, i )
     {
-        if ( !stmm_lookup( s_pManRwrExp5->tTableNN, (char *)uTruth, (char **)&Counter ) )
+        if ( !stmm_lookup( s_pManRwrExp5->tTableNN, (char *)(ABC_PTRUINT_T)uTruth, (char **)&Counter ) )
         {
             assert( 0 );
         }
-        Extra_PrintHex( pFile, uTruth, 5 );
+        Extra_PrintHex( pFile, &uTruth, 5 );
         fprintf( pFile, " %10d\n", Counter );
     }
     fclose( pFile );
     printf( "%d classes written into file \"%s\".\n", vClassesNN->nSize, "nnclass_stats5.txt" );
 
 
-clk = clock();
+clk = Abc_Clock();
     // how many NPN classes exist?
     Vec_IntForEachEntry( vClassesNN, uTruth, i )
     {
         int * pCounter;
         uTruthC = Extra_TruthCanonNPN( uTruth, 5 );
-        if ( !stmm_find_or_add( s_pManRwrExp5->tTableNPN, (char *)uTruthC, (char***)&pCounter ) )
+        if ( !stmm_find_or_add( s_pManRwrExp5->tTableNPN, (char *)(ABC_PTRUINT_T)uTruthC, (char***)&pCounter ) )
             *pCounter = 0;
-        if ( !stmm_lookup( s_pManRwrExp5->tTableNN, (char *)uTruth, (char **)&Counter ) )
+        if ( !stmm_lookup( s_pManRwrExp5->tTableNN, (char *)(ABC_PTRUINT_T)uTruth, (char **)&Counter ) )
         {
             assert( 0 );
         }
         (*pCounter) += Counter;
     }
     printf( "The numbe of NPN classes = %d.\n", stmm_count(s_pManRwrExp5->tTableNPN) );
-PRT( "Computing NPN classes", clock() - clk );
+ABC_PRT( "Computing NPN classes", Abc_Clock() - clk );
 
     // put them into an array
     vClassesNPN = Vec_IntAlloc( stmm_count(s_pManRwrExp5->tTableNPN) );
@@ -309,11 +312,11 @@ PRT( "Computing NPN classes", clock() - clk );
     pFile = fopen( "npnclass_stats5.txt", "w" );
     Vec_IntForEachEntry( vClassesNPN, uTruth, i )
     {
-        if ( !stmm_lookup( s_pManRwrExp5->tTableNPN, (char *)uTruth, (char **)&Counter ) )
+        if ( !stmm_lookup( s_pManRwrExp5->tTableNPN, (char *)(ABC_PTRUINT_T)uTruth, (char **)&Counter ) )
         {
             assert( 0 );
         }
-        Extra_PrintHex( pFile, uTruth, 5 );
+        Extra_PrintHex( pFile, &uTruth, 5 );
         fprintf( pFile, " %10d\n", Counter );
     }
     fclose( pFile );
@@ -324,10 +327,10 @@ PRT( "Computing NPN classes", clock() - clk );
 
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

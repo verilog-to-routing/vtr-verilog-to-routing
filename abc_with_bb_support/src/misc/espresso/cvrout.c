@@ -14,6 +14,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 void fprint_pla(fp, PLA, output_type)
 INOUT FILE *fp;
 IN pPLA PLA;
@@ -428,7 +431,7 @@ pcover T;
 }
 
 
-int makeup_labels(PLA)
+void makeup_labels(PLA)
 pPLA PLA;
 {
     int var, i, ind;
@@ -453,7 +456,7 @@ pPLA PLA;
 }
 
 
-kiss_output(fp, PLA)
+void kiss_output(fp, PLA)
 FILE *fp;
 pPLA PLA;
 {
@@ -468,7 +471,7 @@ pPLA PLA;
 }
 
 
-kiss_print_cube(fp, PLA, p, out_string)
+void kiss_print_cube(fp, PLA, p, out_string)
 FILE *fp;
 pPLA PLA;
 pcube p;
@@ -571,7 +574,7 @@ int output_symbolic;
 	}
 
 
-	/* Print out the contraints */
+	/* Print out the constraints */
 	if (! output_symbolic) {
 	    (void) fprintf(fp,
 	    "# Symbolic constraints for variable %d (Numeric form)\n", var);
@@ -607,3 +610,5 @@ int output_symbolic;
 	}
     }
 }
+ABC_NAMESPACE_IMPL_END
+

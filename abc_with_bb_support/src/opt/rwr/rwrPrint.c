@@ -20,6 +20,9 @@
 
 #include "rwr.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -206,9 +209,9 @@ void Rwr_NodePrint( FILE * pFile, Rwr_Man_t * p, Rwr_Node_t * pNode )
 {
     unsigned uTruth;
     fprintf( pFile, "%5d : ", pNode->Id );
-    Extra_PrintHex( pFile, pNode->uTruth, 4 );
-    fprintf( pFile, " tt=" );
     uTruth = pNode->uTruth;
+    Extra_PrintHex( pFile, &uTruth, 4 );
+    fprintf( pFile, " tt=" );
     Extra_PrintBinary( pFile, &uTruth, 16 );
 //    fprintf( pFile, " cn=", pNode->Id );
 //    uTruth = p->puCanons[pNode->uTruth];
@@ -263,4 +266,6 @@ void Rwr_ManPrint( Rwr_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

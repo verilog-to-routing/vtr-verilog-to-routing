@@ -16,16 +16,19 @@
 
 ***********************************************************************/
 
-#ifndef __MVC_H__
-#define __MVC_H__
+#ifndef ABC__misc__mvc__mvc_h
+#define ABC__misc__mvc__mvc_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include "extra.h"
-#include "extra.h"
+#include "misc/extra/extra.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
@@ -60,11 +63,11 @@ typedef struct MvcManagerStruct    Mvc_Manager_t;
 struct MvcCubeStruct
 {
     Mvc_Cube_t *    pNext;        // the next cube in the linked list
-    unsigned        iLast   :  8; // the index of the last word
+    unsigned        iLast   : 24; // the index of the last word
     unsigned        nUnused :  6; // the number of unused bits in the last word
     unsigned        fPrime  :  1; // marks the prime cube
     unsigned        fEssen  :  1; // marks the essential cube
-    unsigned        nOnes   : 16; // the number of 1's in the bit data
+    unsigned        nOnes;        // the number of 1's in the bit data
     Mvc_CubeWord_t  pData[1];     // the first Mvc_CubeWord_t filled with bit data
 };
 
@@ -79,9 +82,9 @@ struct MvcListStruct
 // the cover data structure
 struct MvcCoverStruct
 {
-    char            nWords;       // the number of machine words
-    char            nUnused;      // the number of unused bits in the last word
-    short           nBits;        // the number of used data bits in the cube
+    int             nWords;       // the number of machine words
+    int             nUnused;      // the number of unused bits in the last word
+    int             nBits;        // the number of used data bits in the cube
     Mvc_List_t      lCubes;       // the single-linked list of cubes
     Mvc_Cube_t **   pCubes;       // the array of cubes (for sorting)
     int             nCubesAlloc;  // the size of allocated storage
@@ -549,7 +552,7 @@ struct MvcManagerStruct
 // iterator through literals of the cube
 #define Mvc_CubeForEachBit( Cover, Cube, iBit, Value )\
     for ( iBit = 0;\
-          iBit < Cover->nBits && ((Value = Mvc_CubeBitValue(Cube,iBit))>=0);\
+          iBit < Cover->nBits && ((Value = Mvc_CubeBitValue(Cube,iBit)), 1);\
           iBit++ )
 // iterator through values of binary variables
 #define Mvc_CubeForEachVarValue( Cover, Cube, iVar, Value )\
@@ -561,8 +564,8 @@ struct MvcManagerStruct
 // macros which work with memory
 // MEM_ALLOC: allocate the given number (Size) of items of type (Type)
 // MEM_FREE:  deallocate the pointer (Pointer) to the given number (Size) of items of type (Type)
-#define MEM_ALLOC( Manager, Type, Size )          ((Type *)malloc( (Size) * sizeof(Type) ))
-#define MEM_FREE( Manager, Type, Size, Pointer )  if ( Pointer ) { free(Pointer); Pointer = NULL; }
+#define MEM_ALLOC( Manager, Type, Size )          ((Type *)ABC_ALLOC( char, (Size) * sizeof(Type) ))
+#define MEM_FREE( Manager, Type, Size, Pointer )  if ( Pointer ) { ABC_FREE(Pointer); Pointer = NULL; }
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -723,6 +726,10 @@ extern Mvc_Manager_t *  Mvc_ManagerAllocCover();
 extern Mvc_Manager_t *  Mvc_ManagerAllocCube( int nWords );
 extern Mvc_Manager_t *  Mvc_ManagerFreeCover( Mvc_Cover_t * pCover );
 extern Mvc_Manager_t *  Mvc_ManagerFreeCube( Mvc_Cover_t * pCube, int nWords );
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

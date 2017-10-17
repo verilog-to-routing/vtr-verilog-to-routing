@@ -20,6 +20,9 @@
 
 #include "retInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -142,7 +145,7 @@ Vec_Ptr_t * Abc_NtkMaxFlow( Abc_Ntk_t * pNtk, int fForward, int fVerbose )
     Vec_Ptr_t * vMinCut;
     Abc_Obj_t * pLatch;
     int Flow, FlowCur, RetValue, i;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     int fUseDirectedFlow = 1;
 
     // find the max-flow
@@ -228,7 +231,7 @@ Vec_Ptr_t * Abc_NtkMaxFlow( Abc_Ntk_t * pNtk, int fForward, int fVerbose )
     {
     printf( "L = %6d. %s max-flow = %6d.  Min-cut = %6d.  ", 
         Abc_NtkLatchNum(pNtk), fForward? "Forward " : "Backward", Flow, Vec_PtrSize(vMinCut) );
-PRT( "Time", clock() - clk );
+ABC_PRT( "Time", Abc_Clock() - clk );
     }
 
 //    Abc_NtkMaxFlowPrintCut( pNtk, vMinCut );
@@ -261,7 +264,7 @@ int Abc_NtkMaxFlowBwdPath_rec( Abc_Obj_t * pObj )
     {
         // start the path if we reached a terminal node
         if ( pObj->fMarkA )
-            return Abc_ObjSetPath( pObj, (void *)1 );
+            return Abc_ObjSetPath( pObj, (Abc_Obj_t *)1 );
         // explore the fanins
         Abc_ObjForEachFanin( pObj, pNext, i )
             if ( pNext != pPred && !Abc_ObjIsLatch(pNext) && Abc_NtkMaxFlowBwdPath_rec(pNext) )
@@ -313,7 +316,7 @@ int Abc_NtkMaxFlowFwdPath_rec( Abc_Obj_t * pObj )
     {
         // start the path if we reached a terminal node
         if ( pObj->fMarkA )
-            return Abc_ObjSetPath( pObj, (void *)1 );
+            return Abc_ObjSetPath( pObj, (Abc_Obj_t *)1 );
         // explore the fanins
         Abc_ObjForEachFanout( pObj, pNext, i )
             if ( pNext != pPred && !Abc_ObjIsLatch(pNext) && Abc_NtkMaxFlowFwdPath_rec(pNext) )
@@ -367,7 +370,7 @@ int Abc_NtkMaxFlowFwdPath3_rec( Abc_Obj_t * pObj, Abc_Obj_t * pPrev, int fFanin 
     {
         // start the path if we reached a terminal node
         if ( pObj->fMarkA )
-            return Abc_ObjSetPath( pObj, (void *)1 );
+            return Abc_ObjSetPath( pObj, (Abc_Obj_t *)1 );
         // try to push flow through the fanouts
         Abc_ObjForEachFanout( pObj, pFanout, i )
             if ( Abc_NtkMaxFlowFwdPath3_rec(pFanout, pObj, 1) )
@@ -404,7 +407,7 @@ int Abc_NtkMaxFlowBwdPath2_rec( Abc_Obj_t * pObj )
     {
         // start the path if we reached a terminal node
         if ( pObj->fMarkA )
-            return Abc_ObjSetPath( pObj, (void *)1 );
+            return Abc_ObjSetPath( pObj, (Abc_Obj_t *)1 );
         // explore the fanins
         Abc_ObjForEachFanin( pObj, pFanin, i )
             if ( Abc_NtkMaxFlowBwdPath2_rec(pFanin) )
@@ -449,7 +452,7 @@ int Abc_NtkMaxFlowFwdPath2_rec( Abc_Obj_t * pObj )
     { 
         // start the path if we reached a terminal node
         if ( pObj->fMarkA )
-            return Abc_ObjSetPath( pObj, (void *)1 );
+            return Abc_ObjSetPath( pObj, (Abc_Obj_t *)1 );
         // explore the fanins
         Abc_ObjForEachFanout( pObj, pFanout, i )
             if ( Abc_NtkMaxFlowFwdPath2_rec(pFanout) )
@@ -575,7 +578,7 @@ void Abc_NtkMaxFlowMinCutUpdate( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMinCut, int fFor
     Abc_NtkForEachLatch( pNtk, pObj, i )
         Abc_ObjFanout0(pObj)->fMarkA = 1;
     // traverse from cut nodes
-    Vec_PtrForEachEntry( vMinCut, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vMinCut, pObj, i )
         Abc_NtkMaxFlowMarkCut_rec( pObj );
     if ( fForward )
     {
@@ -605,7 +608,7 @@ void Abc_NtkMaxFlowMinCutUpdate( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMinCut, int fFor
         Abc_NtkForEachObj( pNtk, pObj, i )
             pObj->fMarkA = Abc_NodeIsTravIdCurrent(pObj);
         // unmark the cut nodes
-        Vec_PtrForEachEntry( vMinCut, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vMinCut, pObj, i )
             pObj->fMarkA = 0;
     }
 }
@@ -668,7 +671,7 @@ int Abc_NtkMaxFlowVerifyCut( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMinCut, int fForward
     int i;
     // mark the cut with the current traversal ID
     Abc_NtkIncrementTravId(pNtk);
-    Vec_PtrForEachEntry( vMinCut, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vMinCut, pObj, i )
         Abc_NodeSetTravIdCurrent( pObj );
     // search from the latches for a path to the COs/CIs
     Abc_NtkForEachLatch( pNtk, pObj, i )
@@ -709,11 +712,12 @@ int Abc_NtkMaxFlowVerifyCut( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMinCut, int fForward
 ***********************************************************************/
 void Abc_NtkMaxFlowPrintFlow( Abc_Ntk_t * pNtk, int fForward )
 {
-    Abc_Obj_t * pLatch, * pNext, * pPrev;
+    Abc_Obj_t * pLatch, * pNext;
+    Abc_Obj_t * pPrev = NULL; // Suppress "might be used uninitialized"
     int i;
     if ( fForward )
     {
-        Vec_PtrForEachEntry( pNtk->vBoxes, pLatch, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, pNtk->vBoxes, pLatch, i )
         {
             assert( !Abc_ObjFanout0(pLatch)->fMarkA );
             if ( Abc_ObjGetPath(Abc_ObjFanout0(pLatch)) == NULL ) // no flow through this latch
@@ -731,7 +735,7 @@ void Abc_NtkMaxFlowPrintFlow( Abc_Ntk_t * pNtk, int fForward )
     }
     else
     {
-        Vec_PtrForEachEntry( pNtk->vBoxes, pLatch, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, pNtk->vBoxes, pLatch, i )
         {
             assert( !Abc_ObjFanin0(pLatch)->fMarkA );
             if ( Abc_ObjGetPath(Abc_ObjFanin0(pLatch)) == NULL ) // no flow through this latch
@@ -765,7 +769,7 @@ void Abc_NtkMaxFlowPrintCut( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMinCut )
     Abc_Obj_t * pObj;
     int i;
     printf( "Min-cut: " );
-    Vec_PtrForEachEntry( vMinCut, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vMinCut, pObj, i )
         printf( "%s(%d) ", Abc_ObjName(pObj), pObj->Id );
     printf( "\n" );
     printf( "Marked nodes: " );
@@ -780,4 +784,6 @@ void Abc_NtkMaxFlowPrintCut( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMinCut )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

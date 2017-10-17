@@ -18,12 +18,9 @@
 
 ***********************************************************************/
  
-#ifndef __LPK_H__
-#define __LPK_H__
+#ifndef ABC__opt__lpk__lpk_h
+#define ABC__opt__lpk__lpk_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif 
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -32,6 +29,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+ 
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -48,6 +50,7 @@ struct Lpk_Par_t_
     int               fSatur;        // iterate till saturation
     int               fZeroCost;     // accept zero-cost replacements
     int               fFirst;        // use root node and first cut only
+    int               fOldAlgo;      // use old algorithm
     int               fVerbose;      // the verbosiness flag
     int               fVeryVerbose;  // additional verbose info printout
     // internal parameters
@@ -71,9 +74,11 @@ struct Lpk_Par_t_
 extern int     Lpk_Resynthesize( Abc_Ntk_t * pNtk, Lpk_Par_t * pPars );
 
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

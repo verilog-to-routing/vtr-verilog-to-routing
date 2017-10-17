@@ -5,39 +5,66 @@
   PackageName [cudd]
 
   Synopsis    [Procedure to subset the given BDD by choosing the heavier
-		branches]
+               branches.]
 
 
   Description [External procedures provided by this module:
                 <ul>
-		<li> Cudd_SubsetHeavyBranch()
-		<li> Cudd_SupersetHeavyBranch()
-		</ul>
-	       Internal procedures included in this module:
-		<ul>
-		<li> cuddSubsetHeavyBranch()
-		</ul>
-	       Static procedures included in this module:
-		<ul>
-		<li> ResizeCountMintermPages();
-		<li> ResizeNodeDataPages()
-		<li> ResizeCountNodePages()
-		<li> SubsetCountMintermAux()
-		<li> SubsetCountMinterm()
-		<li> SubsetCountNodesAux()
-		<li> SubsetCountNodes()
-		<li> BuildSubsetBdd()
-		</ul>
-		]
+                <li> Cudd_SubsetHeavyBranch()
+                <li> Cudd_SupersetHeavyBranch()
+                </ul>
+               Internal procedures included in this module:
+                <ul>
+                <li> cuddSubsetHeavyBranch()
+                </ul>
+               Static procedures included in this module:
+                <ul>
+                <li> ResizeCountMintermPages();
+                <li> ResizeNodeDataPages()
+                <li> ResizeCountNodePages()
+                <li> SubsetCountMintermAux()
+                <li> SubsetCountMinterm()
+                <li> SubsetCountNodesAux()
+                <li> SubsetCountNodes()
+                <li> BuildSubsetBdd()
+                </ul>
+                ]
 
   SeeAlso     [cuddSubsetSP.c]
 
   Author      [Kavita Ravi]
 
-  Copyright   [This file was created at the University of Colorado at
-               Boulder.  The University of Colorado at Boulder makes no
-	       warranty about the suitability of this software for any
-	       purpose.  It is presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
@@ -46,15 +73,19 @@
 #else
 #define DBL_MAX_EXP 1024
 #endif
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
 /*---------------------------------------------------------------------------*/
 
-#define	DEFAULT_PAGE_SIZE 2048
-#define	DEFAULT_NODE_DATA_PAGE_SIZE 1024
+#define DEFAULT_PAGE_SIZE 2048
+#define DEFAULT_NODE_DATA_PAGE_SIZE 1024
 #define INITIAL_PAGES 128
 
 
@@ -86,38 +117,38 @@ typedef struct NodeData NodeData_t;
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddSubsetHB.c,v 1.1.1.1 2003/02/24 22:23:53 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddSubsetHB.c,v 1.37 2009/02/20 02:14:58 fabio Exp $";
 #endif
 
 static int memOut;
 #ifdef DEBUG
-static	int		num_calls;
+static  int             num_calls;
 #endif
 
-static	DdNode	        *zero, *one; /* constant functions */
-static	double		**mintermPages;	/* pointers to the pages */
-static	int		**nodePages; /* pointers to the pages */
-static	int		**lightNodePages; /* pointers to the pages */
-static	double		*currentMintermPage; /* pointer to the current
-						   page */
-static  double 		max; /* to store the 2^n value of the number
-			      * of variables */
+static  DdNode          *zero, *one; /* constant functions */
+static  double          **mintermPages; /* pointers to the pages */
+static  int             **nodePages; /* pointers to the pages */
+static  int             **lightNodePages; /* pointers to the pages */
+static  double          *currentMintermPage; /* pointer to the current
+                                                   page */
+static  double          max; /* to store the 2^n value of the number
+                              * of variables */
 
-static	int		*currentNodePage; /* pointer to the current
-						   page */
-static	int		*currentLightNodePage; /* pointer to the
-						*  current page */
-static	int		pageIndex; /* index to next element */
-static	int		page; /* index to current page */
-static	int		pageSize = DEFAULT_PAGE_SIZE; /* page size */
+static  int             *currentNodePage; /* pointer to the current
+                                                   page */
+static  int             *currentLightNodePage; /* pointer to the
+                                                *  current page */
+static  int             pageIndex; /* index to next element */
+static  int             page; /* index to current page */
+static  int             pageSize = DEFAULT_PAGE_SIZE; /* page size */
 static  int             maxPages; /* number of page pointers */
 
-static	NodeData_t	*currentNodeDataPage; /* pointer to the current
-						 page */
-static	int		nodeDataPage; /* index to next element */
-static	int		nodeDataPageIndex; /* index to next element */
-static	NodeData_t	**nodeDataPages; /* index to current page */
-static	int		nodeDataPageSize = DEFAULT_NODE_DATA_PAGE_SIZE;
+static  NodeData_t      *currentNodeDataPage; /* pointer to the current
+                                                 page */
+static  int             nodeDataPage; /* index to next element */
+static  int             nodeDataPageIndex; /* index to next element */
+static  NodeData_t      **nodeDataPages; /* index to current page */
+static  int             nodeDataPageSize = DEFAULT_NODE_DATA_PAGE_SIZE;
                                                      /* page size */
 static  int             maxNodeDataPages; /* number of page pointers */
 
@@ -132,15 +163,15 @@ static  int             maxNodeDataPages; /* number of page pointers */
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static void ResizeNodeDataPages ARGS(());
-static void ResizeCountMintermPages ARGS(());
-static void ResizeCountNodePages ARGS(());
-static double SubsetCountMintermAux ARGS((DdNode *node, double max, st_table *table));
-static st_table * SubsetCountMinterm ARGS((DdNode *node, int nvars));
-static int SubsetCountNodesAux ARGS((DdNode *node, st_table *table, double max));
-static int SubsetCountNodes ARGS((DdNode *node, st_table *table, int nvars));
-static void StoreNodes ARGS((st_table *storeTable, DdManager *dd, DdNode *node));
-static DdNode * BuildSubsetBdd ARGS((DdManager *dd, DdNode *node, int *size, st_table *visitedTable, int threshold, st_table *storeTable, st_table *approxTable));
+static void ResizeNodeDataPages (void);
+static void ResizeCountMintermPages (void);
+static void ResizeCountNodePages (void);
+static double SubsetCountMintermAux (DdNode *node, double max, st__table *table);
+static st__table * SubsetCountMinterm (DdNode *node, int nvars);
+static int SubsetCountNodesAux (DdNode *node, st__table *table, double max);
+static int SubsetCountNodes (DdNode *node, st__table *table, int nvars);
+static void StoreNodes ( st__table *storeTable, DdManager *dd, DdNode *node);
+static DdNode * BuildSubsetBdd (DdManager *dd, DdNode *node, int *size, st__table *visitedTable, int threshold, st__table *storeTable, st__table *approxTable);
 
 /**AutomaticEnd***************************************************************/
 
@@ -185,8 +216,8 @@ Cudd_SubsetHeavyBranch(
 
     memOut = 0;
     do {
-	dd->reordered = 0;
-	subset = cuddSubsetHeavyBranch(dd, f, numVars, threshold);
+        dd->reordered = 0;
+        subset = cuddSubsetHeavyBranch(dd, f, numVars, threshold);
     } while ((dd->reordered == 1) && (!memOut));
 
     return(subset);
@@ -233,15 +264,15 @@ Cudd_SupersetHeavyBranch(
 {
     DdNode *subset, *g;
 
-    g = Cudd_Not(f);    
+    g = Cudd_Not(f);
     memOut = 0;
     do {
-	dd->reordered = 0;
-	subset = cuddSubsetHeavyBranch(dd, g, numVars, threshold);
+        dd->reordered = 0;
+        subset = cuddSubsetHeavyBranch(dd, g, numVars, threshold);
     } while ((dd->reordered == 1) && (!memOut));
-    
+
     return(Cudd_NotCond(subset, (subset != NULL)));
-    
+
 } /* end of Cudd_SupersetHeavyBranch */
 
 
@@ -279,22 +310,21 @@ cuddSubsetHeavyBranch(
 {
 
     int i, *size;
-    st_table *visitedTable;
+    st__table *visitedTable;
     int numNodes;
     NodeData_t *currNodeQual;
     DdNode *subset;
-    double minN;
-    st_table *storeTable, *approxTable;
+    st__table *storeTable, *approxTable;
     char *key, *value;
-    st_generator *stGen;
-    
+    st__generator *stGen;
+
     if (f == NULL) {
-	fprintf(dd->err, "Cannot subset, nil object\n");
-	dd->errorCode = CUDD_INVALID_ARG;
-	return(NULL);
+        fprintf(dd->err, "Cannot subset, nil object\n");
+        dd->errorCode = CUDD_INVALID_ARG;
+        return(NULL);
     }
 
-    one	 = Cudd_ReadOne(dd);
+    one  = Cudd_ReadOne(dd);
     zero = Cudd_Not(one);
 
     /* If user does not know numVars value, set it to the maximum
@@ -303,43 +333,41 @@ cuddSubsetHeavyBranch(
      * log gives.
      */
     if (numVars == 0) {
-	/* set default value */
-	numVars = DBL_MAX_EXP - 1;
+        /* set default value */
+        numVars = DBL_MAX_EXP - 1;
     }
 
     if (Cudd_IsConstant(f)) {
-	return(f);
+        return(f);
     }
 
     max = pow(2.0, (double)numVars);
 
     /* Create visited table where structures for node data are allocated and
-       stored in a st_table */
+       stored in a st__table */
     visitedTable = SubsetCountMinterm(f, numVars);
     if ((visitedTable == NULL) || memOut) {
-	(void) fprintf(dd->err, "Out-of-memory; Cannot subset\n");
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        (void) fprintf(dd->err, "Out-of-memory; Cannot subset\n");
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
     numNodes = SubsetCountNodes(f, visitedTable, numVars);
     if (memOut) {
-	(void) fprintf(dd->err, "Out-of-memory; Cannot subset\n");
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        (void) fprintf(dd->err, "Out-of-memory; Cannot subset\n");
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
 
-    if (st_lookup(visitedTable, (char *)f, (char **)&currNodeQual)) {
-	minN = *(((NodeData_t *)currNodeQual)->mintermPointer);
-    } else {
-	fprintf(dd->err,
-		"Something is wrong, ought to be node quality table\n");
-	dd->errorCode = CUDD_INTERNAL_ERROR;
+    if ( st__lookup(visitedTable, (const char *)f, (char **)&currNodeQual) == 0) {
+        fprintf(dd->err,
+                "Something is wrong, ought to be node quality table\n");
+        dd->errorCode = CUDD_INTERNAL_ERROR;
     }
 
-    size = ALLOC(int, 1);
+    size = ABC_ALLOC(int, 1);
     if (size == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     *size = numNodes;
 
@@ -347,61 +375,61 @@ cuddSubsetHeavyBranch(
     num_calls = 0;
 #endif
     /* table to store nodes being created. */
-    storeTable = st_init_table(st_ptrcmp, st_ptrhash);
+    storeTable = st__init_table( st__ptrcmp, st__ptrhash);
     /* insert the constant */
     cuddRef(one);
-    if (st_insert(storeTable, (char *)Cudd_ReadOne(dd), NIL(char)) ==
-	ST_OUT_OF_MEM) {
-	fprintf(dd->out, "Something wrong, st_table insert failed\n");
+    if ( st__insert(storeTable, (char *)Cudd_ReadOne(dd), NIL(char)) ==
+        st__OUT_OF_MEM) {
+        fprintf(dd->out, "Something wrong, st__table insert failed\n");
     }
     /* table to store approximations of nodes */
-    approxTable = st_init_table(st_ptrcmp, st_ptrhash);
+    approxTable = st__init_table( st__ptrcmp, st__ptrhash);
     subset = (DdNode *)BuildSubsetBdd(dd, f, size, visitedTable, threshold,
-				      storeTable, approxTable);
+                                      storeTable, approxTable);
     if (subset != NULL) {
-	cuddRef(subset);
+        cuddRef(subset);
     }
 
-    stGen = st_init_gen(approxTable);
+    stGen = st__init_gen(approxTable);
     if (stGen == NULL) {
-	st_free_table(approxTable);
-	return(NULL);
+        st__free_table(approxTable);
+        return(NULL);
     }
-    while(st_gen(stGen, (char **)&key, (char **)&value)) {
-	Cudd_RecursiveDeref(dd, (DdNode *)value);
+    while( st__gen(stGen, (const char **)&key, (char **)&value)) {
+        Cudd_RecursiveDeref(dd, (DdNode *)value);
     }
-    st_free_gen(stGen); stGen = NULL;
-    st_free_table(approxTable);
+    st__free_gen(stGen); stGen = NULL;
+    st__free_table(approxTable);
 
-    stGen = st_init_gen(storeTable);
+    stGen = st__init_gen(storeTable);
     if (stGen == NULL) {
-	st_free_table(storeTable);
-	return(NULL);
+        st__free_table(storeTable);
+        return(NULL);
     }
-    while(st_gen(stGen, (char **)&key, (char **)&value)) {
-	Cudd_RecursiveDeref(dd, (DdNode *)key);
+    while( st__gen(stGen, (const char **)&key, (char **)&value)) {
+        Cudd_RecursiveDeref(dd, (DdNode *)key);
     }
-    st_free_gen(stGen); stGen = NULL;
-    st_free_table(storeTable);
+    st__free_gen(stGen); stGen = NULL;
+    st__free_table(storeTable);
 
     for (i = 0; i <= page; i++) {
-	FREE(mintermPages[i]);
+        ABC_FREE(mintermPages[i]);
     }
-    FREE(mintermPages);
+    ABC_FREE(mintermPages);
     for (i = 0; i <= page; i++) {
-	FREE(nodePages[i]);
+        ABC_FREE(nodePages[i]);
     }
-    FREE(nodePages);
+    ABC_FREE(nodePages);
     for (i = 0; i <= page; i++) {
-	FREE(lightNodePages[i]);
+        ABC_FREE(lightNodePages[i]);
     }
-    FREE(lightNodePages);
+    ABC_FREE(lightNodePages);
     for (i = 0; i <= nodeDataPage; i++) {
-	FREE(nodeDataPages[i]);
+        ABC_FREE(nodeDataPages[i]);
     }
-    FREE(nodeDataPages);
-    st_free_table(visitedTable);
-    FREE(size);
+    ABC_FREE(nodeDataPages);
+    st__free_table(visitedTable);
+    ABC_FREE(size);
 #if 0
     (void) Cudd_DebugCheck(dd);
     (void) Cudd_CheckKeys(dd);
@@ -410,9 +438,9 @@ cuddSubsetHeavyBranch(
     if (subset != NULL) {
 #ifdef DD_DEBUG
       if (!Cudd_bddLeq(dd, subset, f)) {
-	    fprintf(dd->err, "Wrong subset\n");
-	    dd->errorCode = CUDD_INTERNAL_ERROR;
-	    return(NULL);
+            fprintf(dd->err, "Wrong subset\n");
+            dd->errorCode = CUDD_INTERNAL_ERROR;
+            return(NULL);
       }
 #endif
         cuddDeref(subset);
@@ -443,8 +471,7 @@ cuddSubsetHeavyBranch(
 
 ******************************************************************************/
 static void
-ResizeNodeDataPages(
-   )
+ResizeNodeDataPages(void)
 {
     int i;
     NodeData_t **newNodeDataPages;
@@ -455,30 +482,30 @@ ResizeNodeDataPages(
      * INITIAL_PAGES
      */
     if (nodeDataPage == maxNodeDataPages) {
-	newNodeDataPages = ALLOC(NodeData_t *,maxNodeDataPages + INITIAL_PAGES);
-	if (newNodeDataPages == NULL) {
-	    for (i = 0; i < nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    memOut = 1;
-	    return;
-	} else {
-	    for (i = 0; i < maxNodeDataPages; i++) {
-		newNodeDataPages[i] = nodeDataPages[i];
-	    }
-	    /* Increase total page count */
-	    maxNodeDataPages += INITIAL_PAGES;
-	    FREE(nodeDataPages);
-	    nodeDataPages = newNodeDataPages;
-	}
+        newNodeDataPages = ABC_ALLOC(NodeData_t *,maxNodeDataPages + INITIAL_PAGES);
+        if (newNodeDataPages == NULL) {
+            for (i = 0; i < nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            memOut = 1;
+            return;
+        } else {
+            for (i = 0; i < maxNodeDataPages; i++) {
+                newNodeDataPages[i] = nodeDataPages[i];
+            }
+            /* Increase total page count */
+            maxNodeDataPages += INITIAL_PAGES;
+            ABC_FREE(nodeDataPages);
+            nodeDataPages = newNodeDataPages;
+        }
     }
     /* Allocate a new page */
     currentNodeDataPage = nodeDataPages[nodeDataPage] =
-	ALLOC(NodeData_t ,nodeDataPageSize);
+        ABC_ALLOC(NodeData_t ,nodeDataPageSize);
     if (currentNodeDataPage == NULL) {
-	for (i = 0; i < nodeDataPage; i++) FREE(nodeDataPages[i]);
-	FREE(nodeDataPages);
-	memOut = 1;
-	return;
+        for (i = 0; i < nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+        ABC_FREE(nodeDataPages);
+        memOut = 1;
+        return;
     }
     /* reset page index */
     nodeDataPageIndex = 0;
@@ -496,15 +523,14 @@ ResizeNodeDataPages(
   counts.  The procedure  moves the counter to the next page when the
   end of the page is reached and allocates new pages when necessary.]
 
-  SideEffects [Changes the size of minterm pages, page, page index, maximum 
+  SideEffects [Changes the size of minterm pages, page, page index, maximum
   number of pages freeing stuff in case of memory out. ]
 
   SeeAlso     []
 
 ******************************************************************************/
 static void
-ResizeCountMintermPages(
-   )
+ResizeCountMintermPages(void)
 {
     int i;
     double **newMintermPages;
@@ -515,29 +541,29 @@ ResizeCountMintermPages(
      * INITIAL_PAGES
      */
     if (page == maxPages) {
-	newMintermPages = ALLOC(double *,maxPages + INITIAL_PAGES);
-	if (newMintermPages == NULL) {
-	    for (i = 0; i < page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    memOut = 1;
-	    return;
-	} else {
-	    for (i = 0; i < maxPages; i++) {
-		newMintermPages[i] = mintermPages[i];
-	    }
-	    /* Increase total page count */
-	    maxPages += INITIAL_PAGES;
-	    FREE(mintermPages);
-	    mintermPages = newMintermPages;
-	}
+        newMintermPages = ABC_ALLOC(double *,maxPages + INITIAL_PAGES);
+        if (newMintermPages == NULL) {
+            for (i = 0; i < page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            memOut = 1;
+            return;
+        } else {
+            for (i = 0; i < maxPages; i++) {
+                newMintermPages[i] = mintermPages[i];
+            }
+            /* Increase total page count */
+            maxPages += INITIAL_PAGES;
+            ABC_FREE(mintermPages);
+            mintermPages = newMintermPages;
+        }
     }
     /* Allocate a new page */
-    currentMintermPage = mintermPages[page] = ALLOC(double,pageSize);
+    currentMintermPage = mintermPages[page] = ABC_ALLOC(double,pageSize);
     if (currentMintermPage == NULL) {
-	for (i = 0; i < page; i++) FREE(mintermPages[i]);
-	FREE(mintermPages);
-	memOut = 1;
-	return;
+        for (i = 0; i < page; i++) ABC_FREE(mintermPages[i]);
+        ABC_FREE(mintermPages);
+        memOut = 1;
+        return;
     }
     /* reset page index */
     pageIndex = 0;
@@ -561,8 +587,7 @@ ResizeCountMintermPages(
 
 ******************************************************************************/
 static void
-ResizeCountNodePages(
-   )
+ResizeCountNodePages(void)
 {
     int i;
     int **newNodePages;
@@ -574,59 +599,59 @@ ResizeCountNodePages(
      * by INITIAL_PAGES.
      */
     if (page == maxPages) {
-	newNodePages = ALLOC(int *,maxPages + INITIAL_PAGES);
-	if (newNodePages == NULL) {
-	    for (i = 0; i < page; i++) FREE(nodePages[i]);
-	    FREE(nodePages);
-	    for (i = 0; i < page; i++) FREE(lightNodePages[i]);
-	    FREE(lightNodePages);
-	    memOut = 1;
-	    return;
-	} else {
-	    for (i = 0; i < maxPages; i++) {
-		newNodePages[i] = nodePages[i];
-	    }
-	    FREE(nodePages);
-	    nodePages = newNodePages;
-	}
+        newNodePages = ABC_ALLOC(int *,maxPages + INITIAL_PAGES);
+        if (newNodePages == NULL) {
+            for (i = 0; i < page; i++) ABC_FREE(nodePages[i]);
+            ABC_FREE(nodePages);
+            for (i = 0; i < page; i++) ABC_FREE(lightNodePages[i]);
+            ABC_FREE(lightNodePages);
+            memOut = 1;
+            return;
+        } else {
+            for (i = 0; i < maxPages; i++) {
+                newNodePages[i] = nodePages[i];
+            }
+            ABC_FREE(nodePages);
+            nodePages = newNodePages;
+        }
 
-	newNodePages = ALLOC(int *,maxPages + INITIAL_PAGES);
-	if (newNodePages == NULL) {
-	    for (i = 0; i < page; i++) FREE(nodePages[i]);
-	    FREE(nodePages);
-	    for (i = 0; i < page; i++) FREE(lightNodePages[i]);
-	    FREE(lightNodePages);
-	    memOut = 1;
-	    return;
-	} else {
-	    for (i = 0; i < maxPages; i++) {
-		newNodePages[i] = lightNodePages[i];
-	    }
-	    FREE(lightNodePages);
-	    lightNodePages = newNodePages;
-	}
-	/* Increase total page count */
-	maxPages += INITIAL_PAGES;
+        newNodePages = ABC_ALLOC(int *,maxPages + INITIAL_PAGES);
+        if (newNodePages == NULL) {
+            for (i = 0; i < page; i++) ABC_FREE(nodePages[i]);
+            ABC_FREE(nodePages);
+            for (i = 0; i < page; i++) ABC_FREE(lightNodePages[i]);
+            ABC_FREE(lightNodePages);
+            memOut = 1;
+            return;
+        } else {
+            for (i = 0; i < maxPages; i++) {
+                newNodePages[i] = lightNodePages[i];
+            }
+            ABC_FREE(lightNodePages);
+            lightNodePages = newNodePages;
+        }
+        /* Increase total page count */
+        maxPages += INITIAL_PAGES;
     }
     /* Allocate a new page */
-    currentNodePage = nodePages[page] = ALLOC(int,pageSize);
+    currentNodePage = nodePages[page] = ABC_ALLOC(int,pageSize);
     if (currentNodePage == NULL) {
-	for (i = 0; i < page; i++) FREE(nodePages[i]);
-	FREE(nodePages);
-	for (i = 0; i < page; i++) FREE(lightNodePages[i]);
-	FREE(lightNodePages);
-	memOut = 1;
-	return;
+        for (i = 0; i < page; i++) ABC_FREE(nodePages[i]);
+        ABC_FREE(nodePages);
+        for (i = 0; i < page; i++) ABC_FREE(lightNodePages[i]);
+        ABC_FREE(lightNodePages);
+        memOut = 1;
+        return;
     }
     /* Allocate a new page */
-    currentLightNodePage = lightNodePages[page] = ALLOC(int,pageSize);
+    currentLightNodePage = lightNodePages[page] = ABC_ALLOC(int,pageSize);
     if (currentLightNodePage == NULL) {
-	for (i = 0; i <= page; i++) FREE(nodePages[i]);
-	FREE(nodePages);
-	for (i = 0; i < page; i++) FREE(lightNodePages[i]);
-	FREE(lightNodePages);
-	memOut = 1;
-	return;
+        for (i = 0; i <= page; i++) ABC_FREE(nodePages[i]);
+        ABC_FREE(nodePages);
+        for (i = 0; i < page; i++) ABC_FREE(lightNodePages[i]);
+        ABC_FREE(lightNodePages);
+        memOut = 1;
+        return;
     }
     /* reset page index */
     pageIndex = 0;
@@ -646,7 +671,7 @@ ResizeCountNodePages(
   data structure and stores the minterm count as part of the node
   data structure. ]
 
-  SideEffects [Creates structures of type node quality and fills the st_table]
+  SideEffects [Creates structures of type node quality and fills the st__table]
 
   SeeAlso     [SubsetCountMinterm]
 
@@ -655,12 +680,12 @@ static double
 SubsetCountMintermAux(
   DdNode * node /* function to analyze */,
   double  max /* number of minterms of constant 1 */,
-  st_table * table /* visitedTable table */)
+  st__table * table /* visitedTable table */)
 {
 
-    DdNode	*N,*Nv,*Nnv; /* nodes to store cofactors  */
-    double	min,*pmin; /* minterm count */
-    double	min1, min2; /* minterm count */
+    DdNode      *N,*Nv,*Nnv; /* nodes to store cofactors  */
+    double      min,*pmin; /* minterm count */
+    double      min1, min2; /* minterm count */
     NodeData_t *dummy;
     NodeData_t *newEntry;
     int i;
@@ -671,79 +696,79 @@ SubsetCountMintermAux(
 
     /* Constant case */
     if (Cudd_IsConstant(node)) {
-	if (node == zero) {
-	    return(0.0);
-	} else {
-	    return(max);
-	}
+        if (node == zero) {
+            return(0.0);
+        } else {
+            return(max);
+        }
     } else {
 
-	/* check if entry for this node exists */
-	if (st_lookup(table,(char *)node, (char **)&dummy)) {
-	    min = *(dummy->mintermPointer);
-	    return(min);
-	}
+        /* check if entry for this node exists */
+        if ( st__lookup(table, (const char *)node, (char **)&dummy)) {
+            min = *(dummy->mintermPointer);
+            return(min);
+        }
 
-	/* Make the node regular to extract cofactors */
-	N = Cudd_Regular(node);
+        /* Make the node regular to extract cofactors */
+        N = Cudd_Regular(node);
 
-	/* store the cofactors */
-	Nv = Cudd_T(N);
-	Nnv = Cudd_E(N);
-	
-	Nv = Cudd_NotCond(Nv, Cudd_IsComplement(node));
-	Nnv = Cudd_NotCond(Nnv, Cudd_IsComplement(node));
+        /* store the cofactors */
+        Nv = Cudd_T(N);
+        Nnv = Cudd_E(N);
 
-	min1 =  SubsetCountMintermAux(Nv, max,table)/2.0;
-	if (memOut) return(0.0);
-	min2 =  SubsetCountMintermAux(Nnv,max,table)/2.0;
-	if (memOut) return(0.0);
-	min = (min1+min2);
+        Nv = Cudd_NotCond(Nv, Cudd_IsComplement(node));
+        Nnv = Cudd_NotCond(Nnv, Cudd_IsComplement(node));
 
-	/* if page index is at the bottom, then create a new page */
-	if (pageIndex == pageSize) ResizeCountMintermPages();
-	if (memOut) {
-	    for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    st_free_table(table);
-	    return(0.0);
-	}
+        min1 =  SubsetCountMintermAux(Nv, max,table)/2.0;
+        if (memOut) return(0.0);
+        min2 =  SubsetCountMintermAux(Nnv,max,table)/2.0;
+        if (memOut) return(0.0);
+        min = (min1+min2);
 
-	/* point to the correct location in the page */
-	pmin = currentMintermPage+pageIndex;
-	pageIndex++;
+        /* if page index is at the bottom, then create a new page */
+        if (pageIndex == pageSize) ResizeCountMintermPages();
+        if (memOut) {
+            for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            st__free_table(table);
+            return(0.0);
+        }
 
-	/* store the minterm count of this node in the page */
-	*pmin = min;
+        /* point to the correct location in the page */
+        pmin = currentMintermPage+pageIndex;
+        pageIndex++;
 
-	/* Note I allocate the struct here. Freeing taken care of later */
-	if (nodeDataPageIndex == nodeDataPageSize) ResizeNodeDataPages();
-	if (memOut) {
-	    for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    st_free_table(table);
-	    return(0.0);
-	}
+        /* store the minterm count of this node in the page */
+        *pmin = min;
 
-	newEntry = currentNodeDataPage + nodeDataPageIndex;
-	nodeDataPageIndex++;
+        /* Note I allocate the struct here. Freeing taken care of later */
+        if (nodeDataPageIndex == nodeDataPageSize) ResizeNodeDataPages();
+        if (memOut) {
+            for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            st__free_table(table);
+            return(0.0);
+        }
 
-	/* points to the correct location in the page */
-	newEntry->mintermPointer = pmin;
-	/* initialize this field of the Node Quality structure */
-	newEntry->nodesPointer = NULL;
+        newEntry = currentNodeDataPage + nodeDataPageIndex;
+        nodeDataPageIndex++;
 
-	/* insert entry for the node in the table */
-	if (st_insert(table,(char *)node, (char *)newEntry) == ST_OUT_OF_MEM) {
-	    memOut = 1;
-	    for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    st_free_table(table);
-	    return(0.0);
-	}
-	return(min);
+        /* points to the correct location in the page */
+        newEntry->mintermPointer = pmin;
+        /* initialize this field of the Node Quality structure */
+        newEntry->nodesPointer = NULL;
+
+        /* insert entry for the node in the table */
+        if ( st__insert(table,(char *)node, (char *)newEntry) == st__OUT_OF_MEM) {
+            memOut = 1;
+            for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            st__free_table(table);
+            return(0.0);
+        }
+        return(min);
     }
 
 } /* end of SubsetCountMintermAux */
@@ -755,20 +780,19 @@ SubsetCountMintermAux(
 
   Description [Counts minterms of each node in the DAG. Similar to the
   Cudd_CountMinterm procedure except this returns the minterm count for
-  all the nodes in the bdd in an st_table.]
+  all the nodes in the bdd in an st__table.]
 
   SideEffects [none]
 
   SeeAlso     [SubsetCountMintermAux]
 
 ******************************************************************************/
-static st_table *
+static st__table *
 SubsetCountMinterm(
   DdNode * node /* function to be analyzed */,
   int nvars /* number of variables node depends on */)
 {
-    st_table	*table;
-    double	num;
+    st__table    *table;
     int i;
 
 
@@ -777,44 +801,44 @@ SubsetCountMinterm(
 #endif
 
     max = pow(2.0,(double) nvars);
-    table = st_init_table(st_ptrcmp,st_ptrhash);
+    table = st__init_table( st__ptrcmp, st__ptrhash);
     if (table == NULL) goto OUT_OF_MEM;
     maxPages = INITIAL_PAGES;
-    mintermPages = ALLOC(double *,maxPages);
+    mintermPages = ABC_ALLOC(double *,maxPages);
     if (mintermPages == NULL) {
-	st_free_table(table);
-	goto OUT_OF_MEM;
+        st__free_table(table);
+        goto OUT_OF_MEM;
     }
     page = 0;
-    currentMintermPage = ALLOC(double,pageSize);
+    currentMintermPage = ABC_ALLOC(double,pageSize);
     mintermPages[page] = currentMintermPage;
     if (currentMintermPage == NULL) {
-	FREE(mintermPages);
-	st_free_table(table);
-	goto OUT_OF_MEM;
+        ABC_FREE(mintermPages);
+        st__free_table(table);
+        goto OUT_OF_MEM;
     }
     pageIndex = 0;
     maxNodeDataPages = INITIAL_PAGES;
-    nodeDataPages = ALLOC(NodeData_t *, maxNodeDataPages);
+    nodeDataPages = ABC_ALLOC(NodeData_t *, maxNodeDataPages);
     if (nodeDataPages == NULL) {
-	for (i = 0; i <= page ; i++) FREE(mintermPages[i]);
-	FREE(mintermPages);
-	st_free_table(table);
-	goto OUT_OF_MEM;
+        for (i = 0; i <= page ; i++) ABC_FREE(mintermPages[i]);
+        ABC_FREE(mintermPages);
+        st__free_table(table);
+        goto OUT_OF_MEM;
     }
     nodeDataPage = 0;
-    currentNodeDataPage = ALLOC(NodeData_t ,nodeDataPageSize);
+    currentNodeDataPage = ABC_ALLOC(NodeData_t ,nodeDataPageSize);
     nodeDataPages[nodeDataPage] = currentNodeDataPage;
     if (currentNodeDataPage == NULL) {
-	for (i = 0; i <= page ; i++) FREE(mintermPages[i]);
-	FREE(mintermPages);
-	FREE(nodeDataPages);
-	st_free_table(table);
-	goto OUT_OF_MEM;
+        for (i = 0; i <= page ; i++) ABC_FREE(mintermPages[i]);
+        ABC_FREE(mintermPages);
+        ABC_FREE(nodeDataPages);
+        st__free_table(table);
+        goto OUT_OF_MEM;
     }
     nodeDataPageIndex = 0;
 
-    num = SubsetCountMintermAux(node,max,table);
+    (void) SubsetCountMintermAux(node,max,table);
     if (memOut) goto OUT_OF_MEM;
     return(table);
 
@@ -836,7 +860,7 @@ OUT_OF_MEM:
   this node. . Note that the same dag may be the lighter child of two
   different nodes and have different counts. As with the minterm counts,
   the node counts are stored in pages to be space efficient and the
-  address for these node counts are stored in an st_table associated
+  address for these node counts are stored in an st__table associated
   to each node. ]
 
   SideEffects [Updates the node data table with node counts]
@@ -847,7 +871,7 @@ OUT_OF_MEM:
 static int
 SubsetCountNodesAux(
   DdNode * node /* current node */,
-  st_table * table /* table to update node count, also serves as visited table. */,
+  st__table * table /* table to update node count, also serves as visited table. */,
   double  max /* maximum number of variables */)
 {
     int tval, eval, i;
@@ -857,94 +881,94 @@ SubsetCountNodesAux(
     int *pmin, *pminBar, *val;
 
     if ((node == NULL) || Cudd_IsConstant(node))
-	return(0);
+        return(0);
 
     /* if this node has been processed do nothing */
-    if (st_lookup(table, (char *)node, (char **)&dummyN) == 1) {
-	val = dummyN->nodesPointer;
-	if (val != NULL)
-	    return(0);
+    if ( st__lookup(table, (const char *)node, (char **)&dummyN) == 1) {
+        val = dummyN->nodesPointer;
+        if (val != NULL)
+            return(0);
     } else {
-	return(0);
+        return(0);
     }
 
     N  = Cudd_Regular(node);
     Nv = Cudd_T(N);
     Nnv = Cudd_E(N);
-    
+
     Nv = Cudd_NotCond(Nv, Cudd_IsComplement(node));
     Nnv = Cudd_NotCond(Nnv, Cudd_IsComplement(node));
 
     /* find the minterm counts for the THEN and ELSE branches */
     if (Cudd_IsConstant(Nv)) {
-	if (Nv == zero) {
-	    minNv = 0.0;
-	} else {
-	    minNv = max;
-	}
+        if (Nv == zero) {
+            minNv = 0.0;
+        } else {
+            minNv = max;
+        }
     } else {
-	if (st_lookup(table, (char *)Nv, (char **)&dummyNv) == 1)
-	    minNv = *(dummyNv->mintermPointer);
-	else {
-	    return(0);
-	}
+        if ( st__lookup(table, (const char *)Nv, (char **)&dummyNv) == 1)
+            minNv = *(dummyNv->mintermPointer);
+        else {
+            return(0);
+        }
     }
     if (Cudd_IsConstant(Nnv)) {
-	if (Nnv == zero) {
-	    minNnv = 0.0;
-	} else {
-	    minNnv = max;
-	}
+        if (Nnv == zero) {
+            minNnv = 0.0;
+        } else {
+            minNnv = max;
+        }
     } else {
-	if (st_lookup(table, (char *)Nnv, (char **)&dummyNnv) == 1) {
-	    minNnv = *(dummyNnv->mintermPointer);
-	}
-	else {
-	    return(0);
-	}
+        if ( st__lookup(table, (const char *)Nnv, (char **)&dummyNnv) == 1) {
+            minNnv = *(dummyNnv->mintermPointer);
+        }
+        else {
+            return(0);
+        }
     }
 
 
     /* recur based on which has larger minterm, */
     if (minNv >= minNnv) {
-	tval = SubsetCountNodesAux(Nv, table, max);
-	if (memOut) return(0);
-	eval = SubsetCountNodesAux(Nnv, table, max);
-	if (memOut) return(0);
+        tval = SubsetCountNodesAux(Nv, table, max);
+        if (memOut) return(0);
+        eval = SubsetCountNodesAux(Nnv, table, max);
+        if (memOut) return(0);
 
-	/* store the node count of the lighter child. */
-	if (pageIndex == pageSize) ResizeCountNodePages();
-	if (memOut) {
-	    for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    st_free_table(table);
-	    return(0);
-	}
-	pmin = currentLightNodePage + pageIndex;
-	*pmin = eval; /* Here the ELSE child is lighter */
-	dummyN->lightChildNodesPointer = pmin;
+        /* store the node count of the lighter child. */
+        if (pageIndex == pageSize) ResizeCountNodePages();
+        if (memOut) {
+            for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            st__free_table(table);
+            return(0);
+        }
+        pmin = currentLightNodePage + pageIndex;
+        *pmin = eval; /* Here the ELSE child is lighter */
+        dummyN->lightChildNodesPointer = pmin;
 
     } else {
-	eval = SubsetCountNodesAux(Nnv, table, max);
-	if (memOut) return(0);
-	tval = SubsetCountNodesAux(Nv, table, max);
-	if (memOut) return(0);
+        eval = SubsetCountNodesAux(Nnv, table, max);
+        if (memOut) return(0);
+        tval = SubsetCountNodesAux(Nv, table, max);
+        if (memOut) return(0);
 
-	/* store the node count of the lighter child. */
-	if (pageIndex == pageSize) ResizeCountNodePages();
-	if (memOut) {
-	    for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    st_free_table(table);
-	    return(0);
-	}
-	pmin = currentLightNodePage + pageIndex;
-	*pmin = tval; /* Here the THEN child is lighter */
-	dummyN->lightChildNodesPointer = pmin;
+        /* store the node count of the lighter child. */
+        if (pageIndex == pageSize) ResizeCountNodePages();
+        if (memOut) {
+            for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            st__free_table(table);
+            return(0);
+        }
+        pmin = currentLightNodePage + pageIndex;
+        *pmin = tval; /* Here the THEN child is lighter */
+        dummyN->lightChildNodesPointer = pmin;
 
     }
     /* updating the page index for node count storage. */
@@ -959,36 +983,36 @@ SubsetCountNodesAux(
        branch. Its complement will be reached later on a lighter branch.
        Hence the complement has zero node count. */
 
-    if (st_lookup(table, (char *)Cudd_Not(node), (char **)&dummyNBar) == 1)  {
-	if (pageIndex == pageSize) ResizeCountNodePages();
-	if (memOut) {
-	    for (i = 0; i < page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    for (i = 0; i < nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    st_free_table(table);
-	    return(0);
-	}
-	pminBar = currentLightNodePage + pageIndex;
-	*pminBar = 0;
-	dummyNBar->lightChildNodesPointer = pminBar;
-	/* The lighter child has less nodes than the parent.
-	 * So if parent 0 then lighter child zero
-	 */
-	if (pageIndex == pageSize) ResizeCountNodePages();
-	if (memOut) {
-	    for (i = 0; i < page; i++) FREE(mintermPages[i]);
-	    FREE(mintermPages);
-	    for (i = 0; i < nodeDataPage; i++) FREE(nodeDataPages[i]);
-	    FREE(nodeDataPages);
-	    st_free_table(table);
-	    return(0);
-	}
-	pminBar = currentNodePage + pageIndex;
-	*pminBar = 0;
-	dummyNBar->nodesPointer = pminBar ; /* maybe should point to zero */
+    if ( st__lookup(table, (const char *)Cudd_Not(node), (char **)&dummyNBar) == 1)  {
+        if (pageIndex == pageSize) ResizeCountNodePages();
+        if (memOut) {
+            for (i = 0; i < page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            for (i = 0; i < nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            st__free_table(table);
+            return(0);
+        }
+        pminBar = currentLightNodePage + pageIndex;
+        *pminBar = 0;
+        dummyNBar->lightChildNodesPointer = pminBar;
+        /* The lighter child has less nodes than the parent.
+         * So if parent 0 then lighter child zero
+         */
+        if (pageIndex == pageSize) ResizeCountNodePages();
+        if (memOut) {
+            for (i = 0; i < page; i++) ABC_FREE(mintermPages[i]);
+            ABC_FREE(mintermPages);
+            for (i = 0; i < nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+            ABC_FREE(nodeDataPages);
+            st__free_table(table);
+            return(0);
+        }
+        pminBar = currentNodePage + pageIndex;
+        *pminBar = 0;
+        dummyNBar->nodesPointer = pminBar ; /* maybe should point to zero */
 
-	pageIndex++;
+        pageIndex++;
     }
     return(*pmin);
 } /*end of SubsetCountNodesAux */
@@ -1011,10 +1035,10 @@ SubsetCountNodesAux(
 static int
 SubsetCountNodes(
   DdNode * node /* function to be analyzed */,
-  st_table * table /* node quality table */,
+  st__table * table /* node quality table */,
   int  nvars /* number of variables node depends on */)
 {
-    int	num;
+    int num;
     int i;
 
 #ifdef DEBUG
@@ -1023,43 +1047,43 @@ SubsetCountNodes(
 
     max = pow(2.0,(double) nvars);
     maxPages = INITIAL_PAGES;
-    nodePages = ALLOC(int *,maxPages);
+    nodePages = ABC_ALLOC(int *,maxPages);
     if (nodePages == NULL)  {
-	goto OUT_OF_MEM;
+        goto OUT_OF_MEM;
     }
 
-    lightNodePages = ALLOC(int *,maxPages);
+    lightNodePages = ABC_ALLOC(int *,maxPages);
     if (lightNodePages == NULL) {
-	for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	FREE(mintermPages);
-	for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	FREE(nodeDataPages);
-	FREE(nodePages);
-	goto OUT_OF_MEM;
+        for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+        ABC_FREE(mintermPages);
+        for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+        ABC_FREE(nodeDataPages);
+        ABC_FREE(nodePages);
+        goto OUT_OF_MEM;
     }
 
     page = 0;
-    currentNodePage = nodePages[page] = ALLOC(int,pageSize);
+    currentNodePage = nodePages[page] = ABC_ALLOC(int,pageSize);
     if (currentNodePage == NULL) {
-	for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	FREE(mintermPages);
-	for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	FREE(nodeDataPages);
-	FREE(lightNodePages);
-	FREE(nodePages);
-	goto OUT_OF_MEM;
+        for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+        ABC_FREE(mintermPages);
+        for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+        ABC_FREE(nodeDataPages);
+        ABC_FREE(lightNodePages);
+        ABC_FREE(nodePages);
+        goto OUT_OF_MEM;
     }
 
-    currentLightNodePage = lightNodePages[page] = ALLOC(int,pageSize);
+    currentLightNodePage = lightNodePages[page] = ABC_ALLOC(int,pageSize);
     if (currentLightNodePage == NULL) {
-	for (i = 0; i <= page; i++) FREE(mintermPages[i]);
-	FREE(mintermPages);
-	for (i = 0; i <= nodeDataPage; i++) FREE(nodeDataPages[i]);
-	FREE(nodeDataPages);
-	FREE(currentNodePage);
-	FREE(lightNodePages);
-	FREE(nodePages);
-	goto OUT_OF_MEM;
+        for (i = 0; i <= page; i++) ABC_FREE(mintermPages[i]);
+        ABC_FREE(mintermPages);
+        for (i = 0; i <= nodeDataPage; i++) ABC_FREE(nodeDataPages[i]);
+        ABC_FREE(nodeDataPages);
+        ABC_FREE(currentNodePage);
+        ABC_FREE(lightNodePages);
+        ABC_FREE(nodePages);
+        goto OUT_OF_MEM;
     }
 
     pageIndex = 0;
@@ -1087,22 +1111,21 @@ OUT_OF_MEM:
 ******************************************************************************/
 static void
 StoreNodes(
-  st_table * storeTable,
+  st__table * storeTable,
   DdManager * dd,
   DdNode * node)
 {
-    char *dummy;
     DdNode *N, *Nt, *Ne;
     if (Cudd_IsConstant(dd)) {
-	return;
+        return;
     }
     N = Cudd_Regular(node);
-    if (st_lookup(storeTable, (char *)N, (char **)&dummy)) {
-	return;
+    if ( st__lookup(storeTable, (char *)N, NIL(char *))) {
+        return;
     }
     cuddRef(N);
-    if (st_insert(storeTable, (char *)N, NIL(char)) == ST_OUT_OF_MEM) {
-	fprintf(dd->err,"Something wrong, st_table insert failed\n");
+    if ( st__insert(storeTable, (char *)N, NIL(char)) == st__OUT_OF_MEM) {
+        fprintf(dd->err,"Something wrong, st__table insert failed\n");
     }
 
     Nt = Cudd_T(N);
@@ -1117,7 +1140,7 @@ StoreNodes(
 
 /**Function********************************************************************
 
-  Synopsis    [Builds the subset BDD using the heavy branch method.] 
+  Synopsis    [Builds the subset BDD using the heavy branch method.]
 
   Description [The procedure carries out the building of the subset BDD
   starting at the root. Using the three different counts labelling each node,
@@ -1136,10 +1159,10 @@ BuildSubsetBdd(
   DdManager * dd /* DD manager */,
   DdNode * node /* current node */,
   int * size /* current size of the subset */,
-  st_table * visitedTable /* visited table storing all node data */,
+  st__table * visitedTable /* visited table storing all node data */,
   int  threshold,
-  st_table * storeTable,
-  st_table * approxTable)
+  st__table * storeTable,
+  st__table * approxTable)
 {
 
     DdNode *Nv, *Nnv, *N, *topv, *neW;
@@ -1163,12 +1186,12 @@ BuildSubsetBdd(
     }
 
     if (Cudd_IsConstant(node))
-	return(node);
+        return(node);
 
     /* Look up minterm count for this node. */
-    if (!st_lookup(visitedTable, (char *)node, (char **)&currNodeQual)) {
-	fprintf(dd->err,
-		"Something is wrong, ought to be in node quality table\n");
+    if (! st__lookup(visitedTable, (const char *)node, (char **)&currNodeQual)) {
+        fprintf(dd->err,
+                "Something is wrong, ought to be in node quality table\n");
     }
 
     /* Get children. */
@@ -1182,37 +1205,36 @@ BuildSubsetBdd(
 
     if (!Cudd_IsConstant(Nv)) {
         /* find out minterms and nodes contributed by then child */
-        if (!st_lookup(visitedTable, (char *)Nv,
-		       (char **)&currNodeQualT)) {
-		fprintf(dd->out,"Something wrong, couldnt find nodes in node quality table\n");
-		dd->errorCode = CUDD_INTERNAL_ERROR;
-		return(NULL);
-	    }
-	else {
-	    minNv = *(((NodeData_t *)currNodeQualT)->mintermPointer);
-	}
+        if (! st__lookup(visitedTable, (const char *)Nv, (char **)&currNodeQualT)) {
+                fprintf(dd->out,"Something wrong, couldnt find nodes in node quality table\n");
+                dd->errorCode = CUDD_INTERNAL_ERROR;
+                return(NULL);
+            }
+        else {
+            minNv = *(((NodeData_t *)currNodeQualT)->mintermPointer);
+        }
     } else {
-	if (Nv == zero) {
-	    minNv = 0;
-	} else  {
-	    minNv = max;
-	}
+        if (Nv == zero) {
+            minNv = 0;
+        } else  {
+            minNv = max;
+        }
     }
     if (!Cudd_IsConstant(Nnv)) {
         /* find out minterms and nodes contributed by else child */
-	if (!st_lookup(visitedTable, (char *)Nnv, (char **)&currNodeQualE)) {
-	    fprintf(dd->out,"Something wrong, couldnt find nodes in node quality table\n");
-	    dd->errorCode = CUDD_INTERNAL_ERROR;
-	    return(NULL);
-	} else {
-	    minNnv = *(((NodeData_t *)currNodeQualE)->mintermPointer);
-	}
+        if (! st__lookup(visitedTable, (const char *)Nnv, (char **)&currNodeQualE)) {
+            fprintf(dd->out,"Something wrong, couldnt find nodes in node quality table\n");
+            dd->errorCode = CUDD_INTERNAL_ERROR;
+            return(NULL);
+        } else {
+            minNnv = *(((NodeData_t *)currNodeQualE)->mintermPointer);
+        }
     } else {
-	if (Nnv == zero) {
-	    minNnv = 0;
-	} else {
-	    minNnv = max;
-	}
+        if (Nnv == zero) {
+            minNnv = 0;
+        } else {
+            minNnv = max;
+        }
     }
 
     /* keep track of size of subset by subtracting the number of
@@ -1220,57 +1242,57 @@ BuildSubsetBdd(
      */
     *size = (*(size)) - (int)*(currNodeQual->lightChildNodesPointer);
     if (minNv >= minNnv) { /*SubsetCountNodesAux procedure takes
-			     the Then branch in case of a tie */
+                             the Then branch in case of a tie */
 
         /* recur with the Then branch */
-	ThenBranch = (DdNode *)BuildSubsetBdd(dd, Nv, size,
-	      visitedTable, threshold, storeTable, approxTable);
-	if (ThenBranch == NULL) {
-	    return(NULL);
-	}
-	cuddRef(ThenBranch);
-	/* The Else branch is either a node that already exists in the
-	 * subset, or one whose approximation has been computed, or
-	 * Zero.
-	 */
-	if (st_lookup(storeTable, (char *)Cudd_Regular(Nnv), (char **)&dummy)) {
-	  ElseBranch = Nnv;
-	  cuddRef(ElseBranch);
-	} else {
-	  if (st_lookup(approxTable, (char *)Nnv, (char **)&dummy)) {
-	    ElseBranch = (DdNode *)dummy;
-	    cuddRef(ElseBranch);
-	  } else {
-	    ElseBranch = zero;
-	    cuddRef(ElseBranch);
-	  }
-	}
-	
+        ThenBranch = (DdNode *)BuildSubsetBdd(dd, Nv, size,
+              visitedTable, threshold, storeTable, approxTable);
+        if (ThenBranch == NULL) {
+            return(NULL);
+        }
+        cuddRef(ThenBranch);
+        /* The Else branch is either a node that already exists in the
+         * subset, or one whose approximation has been computed, or
+         * Zero.
+         */
+        if ( st__lookup(storeTable, (char *)Cudd_Regular(Nnv), &dummy)) {
+          ElseBranch = Nnv;
+          cuddRef(ElseBranch);
+        } else {
+          if ( st__lookup(approxTable, (char *)Nnv, &dummy)) {
+            ElseBranch = (DdNode *)dummy;
+            cuddRef(ElseBranch);
+          } else {
+            ElseBranch = zero;
+            cuddRef(ElseBranch);
+          }
+        }
+
     }
     else {
         /* recur with the Else branch */
         ElseBranch = (DdNode *)BuildSubsetBdd(dd, Nnv, size,
-		      visitedTable, threshold, storeTable, approxTable);
-	if (ElseBranch == NULL) {
-	    return(NULL);
-	}
-	cuddRef(ElseBranch);
-	/* The Then branch is either a node that already exists in the
-	 * subset, or one whose approximation has been computed, or
-	 * Zero.
-	 */
-	if (st_lookup(storeTable, (char *)Cudd_Regular(Nv), (char **)&dummy)) {
-	  ThenBranch = Nv;
-	  cuddRef(ThenBranch);
-	} else {
-	  if (st_lookup(approxTable, (char *)Nv, (char **)&dummy)) {
-	    ThenBranch = (DdNode *)dummy;
-	    cuddRef(ThenBranch);
-	  } else {
-	    ThenBranch = zero;
-	    cuddRef(ThenBranch);
-	  }
-	}
+                      visitedTable, threshold, storeTable, approxTable);
+        if (ElseBranch == NULL) {
+            return(NULL);
+        }
+        cuddRef(ElseBranch);
+        /* The Then branch is either a node that already exists in the
+         * subset, or one whose approximation has been computed, or
+         * Zero.
+         */
+        if ( st__lookup(storeTable, (char *)Cudd_Regular(Nv), &dummy)) {
+          ThenBranch = Nv;
+          cuddRef(ThenBranch);
+        } else {
+          if ( st__lookup(approxTable, (char *)Nv, &dummy)) {
+            ThenBranch = (DdNode *)dummy;
+            cuddRef(ThenBranch);
+          } else {
+            ThenBranch = zero;
+            cuddRef(ThenBranch);
+          }
+        }
     }
 
     /* construct the Bdd with the top variable and the two children */
@@ -1285,27 +1307,31 @@ BuildSubsetBdd(
     Cudd_RecursiveDeref(dd, ThenBranch);
     Cudd_RecursiveDeref(dd, ElseBranch);
 
-      
+
     if (neW == NULL)
-	return(NULL);
+        return(NULL);
     else {
         /* store this node in the store table */
-        if (!st_lookup(storeTable, (char *)Cudd_Regular(neW), (char **)&dummy)) {
-	  cuddRef(neW);
-	  st_insert(storeTable, (char *)Cudd_Regular(neW), (char *)NIL(char));
-	  
+        if (! st__lookup(storeTable, (char *)Cudd_Regular(neW), &dummy)) {
+          cuddRef(neW);
+          if (! st__insert(storeTable, (char *)Cudd_Regular(neW), NIL(char)))
+              return (NULL);
         }
-	/* store the approximation for this node */
-	if (N !=  Cudd_Regular(neW)) {
-  	    if (st_lookup(approxTable, (char *)node, (char **)&dummy)) {
-	        fprintf(dd->err, "This node should not be in the approximated table\n");
-	    } else {
-	        cuddRef(neW);
-	        st_insert(approxTable, (char *)node, (char *)neW);
-	    }
-	}
+        /* store the approximation for this node */
+        if (N !=  Cudd_Regular(neW)) {
+            if ( st__lookup(approxTable, (char *)node, &dummy)) {
+                fprintf(dd->err, "This node should not be in the approximated table\n");
+            } else {
+                cuddRef(neW);
+                if (! st__insert(approxTable, (char *)node, (char *)neW))
+                    return(NULL);
+            }
+        }
         cuddDeref(neW);
         return(neW);
     }
 } /* end of BuildSubsetBdd */
+
+
+ABC_NAMESPACE_IMPL_END
 

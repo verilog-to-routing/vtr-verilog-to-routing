@@ -20,6 +20,9 @@
 
 #include "aig.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -46,7 +49,7 @@ static inline int Aig_NodeGetLeafCostOne( Aig_Obj_t * pNode, int nFanoutLimit )
     // make sure the node is in the construction zone
     assert( pNode->fMarkA );  
     // cannot expand over the PI node
-    if ( Aig_ObjIsPi(pNode) )
+    if ( Aig_ObjIsCi(pNode) )
         return 999;
     // get the cost of the cone
     Cost = (!Aig_ObjFanin0(pNode)->fMarkA) + (!Aig_ObjFanin1(pNode)->fMarkA);
@@ -82,7 +85,7 @@ int Aig_ManFindCut_int( Vec_Ptr_t * vFront, Vec_Ptr_t * vVisited, int nSizeLimit
     CostBest   = 100;
     pFaninBest = NULL;
 //printf( "Evaluating fanins of the cut:\n" );
-    Vec_PtrForEachEntry( vFront, pNode, i )
+    Vec_PtrForEachEntry( Aig_Obj_t *, vFront, pNode, i )
     {
         CostCur = Aig_NodeGetLeafCostOne( pNode, nFanoutLimit );
 //printf( "    Fanin %s has cost %d.\n", Aig_ObjName(pNode), CostCur );
@@ -173,7 +176,7 @@ void Aig_ManFindCut( Aig_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vVisited
     assert( Vec_PtrSize(vFront) <= nSizeLimit );
 
     // clean the visit markings
-    Vec_PtrForEachEntry( vVisited, pNode, i )
+    Vec_PtrForEachEntry( Aig_Obj_t *, vVisited, pNode, i )
         pNode->fMarkA = 0;
 }
 
@@ -181,4 +184,6 @@ void Aig_ManFindCut( Aig_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vVisited
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

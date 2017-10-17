@@ -21,6 +21,9 @@
 
 #if !defined(NO_HMETIS)
 #include "libhmetis.h"
+
+ABC_NAMESPACE_IMPL_START
+
 #endif
 
 // --------------------------------------------------------------------
@@ -1133,3 +1136,5 @@ void incrementalPartition() {
   free(allCells);
   free(newCells);
 }
+ABC_NAMESPACE_IMPL_END
+

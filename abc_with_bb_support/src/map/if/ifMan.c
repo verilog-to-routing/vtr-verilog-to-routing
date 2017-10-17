@@ -20,6 +20,9 @@
 
 #include "if.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -46,38 +49,123 @@ static If_Set_t * If_ManCutSetFetch( If_Man_t * p )                    { If_Set_
 ***********************************************************************/
 If_Man_t * If_ManStart( If_Par_t * pPars )
 {
-    If_Man_t * p;
+    If_Man_t * p; int v;
+    assert( !pPars->fUseDsd || !pPars->fUseTtPerm );
     // start the manager
-    p = ALLOC( If_Man_t, 1 );
+    p = ABC_ALLOC( If_Man_t, 1 );
     memset( p, 0, sizeof(If_Man_t) );
-    p->pPars = pPars;
-    p->fEpsilon = (float)0.001;
+    p->pPars    = pPars;
+    p->fEpsilon = pPars->Epsilon;
     // allocate arrays for nodes
-    p->vCis    = Vec_PtrAlloc( 100 );
-    p->vCos    = Vec_PtrAlloc( 100 );
-    p->vObjs   = Vec_PtrAlloc( 100 );
-    p->vMapped = Vec_PtrAlloc( 100 );
-    p->vTemp   = Vec_PtrAlloc( 100 );
+    p->vCis     = Vec_PtrAlloc( 100 );
+    p->vCos     = Vec_PtrAlloc( 100 );
+    p->vObjs    = Vec_PtrAlloc( 100 );
+    p->vTemp    = Vec_PtrAlloc( 100 );
+    p->vVisited = Vec_PtrAlloc( 100 );
     // prepare the memory manager
-    p->nTruthWords = p->pPars->fTruth? If_CutTruthWords( p->pPars->nLutSize ) : 0;
+    if ( p->pPars->fTruth )
+    {
+        for ( v = 0; v <= p->pPars->nLutSize; v++ )
+            p->nTruth6Words[v] = Abc_Truth6WordNum( v );
+        for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+            p->vTtMem[v] = Vec_MemAllocForTT( v, pPars->fUseTtPerm );
+        for ( v = 0; v < 6; v++ )
+            p->vTtMem[v] = p->vTtMem[6];
+        if ( p->pPars->fDelayOpt || pPars->nGateSize > 0 )
+        {
+            for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+                p->vTtIsops[v] = Vec_WecAlloc( 1000 );
+            for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+                Vec_WecInit( p->vTtIsops[v], 2 );
+            for ( v = 0; v < 6; v++ )
+                p->vTtIsops[v] = p->vTtIsops[6];
+        }
+        if ( pPars->fDelayOpt || pPars->nGateSize > 0 || pPars->fDsdBalance )
+        {
+            p->vCover = Vec_IntAlloc( 0 );
+            p->vArray = Vec_IntAlloc( 1000 );
+        }
+    }
     p->nPermWords  = p->pPars->fUsePerm? If_CutPermWords( p->pPars->nLutSize ) : 0;
-    p->nObjBytes   = sizeof(If_Obj_t) + sizeof(int) * (p->pPars->nLutSize + p->nPermWords + p->nTruthWords);
-    p->nCutBytes   = sizeof(If_Cut_t) + sizeof(int) * (p->pPars->nLutSize + p->nPermWords + p->nTruthWords);
+    p->nObjBytes   = sizeof(If_Obj_t) + sizeof(int) * (p->pPars->nLutSize + p->nPermWords);
+    p->nCutBytes   = sizeof(If_Cut_t) + sizeof(int) * (p->pPars->nLutSize + p->nPermWords);
     p->nSetBytes   = sizeof(If_Set_t) + (sizeof(If_Cut_t *) + p->nCutBytes) * (p->pPars->nCutsMax + 1);
     p->pMemObj     = Mem_FixedStart( p->nObjBytes );
-//    p->pMemSet     = Mem_FixedStart( p->nSetBytes );
     // report expected memory usage
     if ( p->pPars->fVerbose )
-        printf( "Memory (bytes): Truth = %4d. Cut = %4d. Obj = %4d. Set = %4d.\n", 
-            4 * p->nTruthWords, p->nCutBytes, p->nObjBytes, p->nSetBytes );
+        Abc_Print( 1, "K = %d. Memory (bytes): Truth = %4d. Cut = %4d. Obj = %4d. Set = %4d. CutMin = %s\n", 
+            p->pPars->nLutSize, 8 * p->nTruth6Words[p->pPars->nLutSize], p->nCutBytes, p->nObjBytes, p->nSetBytes, p->pPars->fCutMin? "yes":"no" );
     // room for temporary truth tables
-    p->puTemp[0] = p->pPars->fTruth? ALLOC( unsigned, 4 * p->nTruthWords ) : NULL;
-    p->puTemp[1] = p->puTemp[0] + p->nTruthWords;
-    p->puTemp[2] = p->puTemp[1] + p->nTruthWords;
-    p->puTemp[3] = p->puTemp[2] + p->nTruthWords;
+    p->puTemp[0] = p->pPars->fTruth? ABC_ALLOC( unsigned, 8 * p->nTruth6Words[p->pPars->nLutSize] ) : NULL;
+    p->puTemp[1] = p->puTemp[0] + p->nTruth6Words[p->pPars->nLutSize]*2;
+    p->puTemp[2] = p->puTemp[1] + p->nTruth6Words[p->pPars->nLutSize]*2;
+    p->puTemp[3] = p->puTemp[2] + p->nTruth6Words[p->pPars->nLutSize]*2;
+    p->puTempW   = p->pPars->fTruth? ABC_ALLOC( word, p->nTruth6Words[p->pPars->nLutSize] ) : NULL;
+    if ( pPars->fUseDsd )
+    {
+        for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+        {
+            p->vTtDsds[v] = Vec_IntAlloc( 1000 );
+            Vec_IntPush( p->vTtDsds[v], 0 );
+            Vec_IntPush( p->vTtDsds[v], 2 );
+            p->vTtPerms[v] = Vec_StrAlloc( 10000 );
+            Vec_StrFill( p->vTtPerms[v], 2 * v, IF_BIG_CHAR );
+            Vec_StrWriteEntry( p->vTtPerms[v], v, 0 );
+        }
+        for ( v = 0; v < 6; v++ )
+        {
+            p->vTtDsds[v]  = p->vTtDsds[6];
+            p->vTtPerms[v] = p->vTtPerms[6];
+        }
+    }
+    if ( pPars->fUseTtPerm )
+    {
+        p->vPairHash = Hash_IntManStart( 10000 );
+        p->vPairPerms = Vec_StrAlloc( 10000 );
+        Vec_StrFill( p->vPairPerms, p->pPars->nLutSize, 0 );
+        p->vPairRes = Vec_IntAlloc( 1000 );
+        Vec_IntPush( p->vPairRes, -1 );
+        for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+            p->vTtOccurs[v] = Vec_IntAlloc( 1000 );
+        for ( v = 0; v < 6; v++ )
+            p->vTtOccurs[v] = p->vTtOccurs[6];
+        for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+            Vec_IntPushTwo( p->vTtOccurs[v], 0, 0 );
+    }
+    if ( pPars->fUseCofVars )
+    {
+        for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+        {
+            p->vTtVars[v] = Vec_StrAlloc( 1000 );
+            Vec_StrPush( p->vTtVars[v], 0 );
+            Vec_StrPush( p->vTtVars[v], 0 );
+        }
+        for ( v = 0; v < 6; v++ )
+            p->vTtVars[v]  = p->vTtVars[6];
+    }
+    if ( pPars->fUseAndVars )
+    {
+        for ( v = 6; v <= Abc_MaxInt(6,p->pPars->nLutSize); v++ )
+        {
+            p->vTtDecs[v] = Vec_IntAlloc( 1000 );
+            Vec_IntPush( p->vTtDecs[v], 0 );
+            Vec_IntPush( p->vTtDecs[v], 0 );
+        }
+        for ( v = 0; v < 6; v++ )
+            p->vTtDecs[v]  = p->vTtDecs[6];
+    }
+    if ( pPars->fUseBat )
+    {
+//        abctime clk = Abc_Clock();
+        extern int Bat_ManCellFuncLookup( void * pMan, unsigned * pTruth, int nVars, int nLeaves, char * pStr );
+        extern void Bat_ManFuncSetupTable();
+        pPars->pFuncCell = (int (*)  (If_Man_t *, unsigned *, int, int, char *))Bat_ManCellFuncLookup;
+        Bat_ManFuncSetupTable();
+//        Abc_PrintTime( 1, "Setup time", Abc_Clock() - clk );
+    }
     // create the constant node
-    p->pConst1 = If_ManSetupObj( p );
-    p->pConst1->Type = IF_CONST1;
+    p->pConst1   = If_ManSetupObj( p );
+    p->pConst1->Type   = IF_CONST1;
     p->pConst1->fPhase = 1;
     p->nObjs[IF_CONST1]++;
     return p;
@@ -96,11 +184,10 @@ If_Man_t * If_ManStart( If_Par_t * pPars )
 ***********************************************************************/
 void If_ManRestart( If_Man_t * p )
 {
-    FREE( p->pMemCi );
+    ABC_FREE( p->pMemCi );
     Vec_PtrClear( p->vCis );
     Vec_PtrClear( p->vCos );
     Vec_PtrClear( p->vObjs );
-    Vec_PtrClear( p->vMapped );
     Vec_PtrClear( p->vTemp );
     Mem_FixedRestart( p->pMemObj );
     // create the constant node
@@ -124,23 +211,105 @@ void If_ManRestart( If_Man_t * p )
 ***********************************************************************/
 void If_ManStop( If_Man_t * p )
 {
+    extern void If_ManCacheAnalize( If_Man_t * p );
+    int i;
+    if ( p->pPars->fVerbose && p->vCutData )
+        If_ManCacheAnalize( p );
+    if ( p->pPars->fVerbose && p->pPars->fTruth )
+    {
+        int nUnique = 0, nMemTotal = 0;
+        for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+            nUnique += Vec_MemEntryNum(p->vTtMem[i]);
+        for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+            nMemTotal += (int)Vec_MemMemory(p->vTtMem[i]);
+        printf( "Unique truth tables = %d   Memory = %.2f MB   ", nUnique, 1.0 * nMemTotal / (1<<20) ); 
+        Abc_PrintTime( 1, "Time", p->timeCache[4] );
+        if ( p->nCacheMisses )
+        {
+            printf( "Cache hits = %d. Cache misses = %d  (%.2f %%)\n", p->nCacheHits, p->nCacheMisses, 100.0 * p->nCacheMisses / (p->nCacheHits + p->nCacheMisses) ); 
+            Abc_PrintTime( 1, "Non-DSD   ", p->timeCache[0] );
+            Abc_PrintTime( 1, "DSD hits  ", p->timeCache[1] );
+            Abc_PrintTime( 1, "DSD misses", p->timeCache[2] );
+            Abc_PrintTime( 1, "TOTAL     ", p->timeCache[0] + p->timeCache[1] + p->timeCache[2] );
+            Abc_PrintTime( 1, "Canon     ", p->timeCache[3] );
+        }
+    }
+    if ( p->pPars->fVerbose && p->nCutsUselessAll )
+    {
+        for ( i = 0; i <= 16; i++ )
+            if ( p->nCutsUseless[i] )
+                Abc_Print( 1, "Useless cuts %2d  = %9d  (out of %9d)  (%6.2f %%)\n", i, p->nCutsUseless[i], p->nCutsCount[i], 100.0*p->nCutsUseless[i]/Abc_MaxInt(p->nCutsCount[i],1) );
+        Abc_Print( 1, "Useless cuts all = %9d  (out of %9d)  (%6.2f %%)\n", p->nCutsUselessAll, p->nCutsCountAll, 100.0*p->nCutsUselessAll/Abc_MaxInt(p->nCutsCountAll,1) );
+    }
+//    if ( p->pPars->fVerbose && p->nCuts5 )
+//        Abc_Print( 1, "Statistics about 5-cuts: Total = %d  Non-decomposable = %d (%.2f %%)\n", p->nCuts5, p->nCuts5-p->nCuts5a, 100.0*(p->nCuts5-p->nCuts5a)/p->nCuts5 );
+    if ( p->pIfDsdMan )
+        p->pIfDsdMan = NULL;
+    if ( p->pPars->fUseDsd && (p->nCountNonDec[0] || p->nCountNonDec[1]) )
+        printf( "NonDec0 = %d.  NonDec1 = %d.\n", p->nCountNonDec[0], p->nCountNonDec[1] );
+    Vec_IntFreeP( &p->vCoAttrs );
     Vec_PtrFree( p->vCis );
     Vec_PtrFree( p->vCos );
     Vec_PtrFree( p->vObjs );
-    Vec_PtrFree( p->vMapped );
     Vec_PtrFree( p->vTemp );
-    if ( p->vLatchOrder ) Vec_PtrFree( p->vLatchOrder );
-    if ( p->vLags ) Vec_IntFree( p->vLags );
+    Vec_IntFreeP( &p->vCover );
+    Vec_IntFreeP( &p->vArray );
+    Vec_WrdFreeP( &p->vAnds );
+    Vec_WrdFreeP( &p->vAndGate );
+    Vec_WrdFreeP( &p->vOrGate );
+    Vec_PtrFreeP( &p->vObjsRev );
+    Vec_PtrFreeP( &p->vLatchOrder );
+    Vec_IntFreeP( &p->vLags );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_IntFreeP( &p->vTtDsds[i] );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_StrFreeP( &p->vTtPerms[i] );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_StrFreeP( &p->vTtVars[i] );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_IntFreeP( &p->vTtDecs[i] );
+    Vec_IntFreeP( &p->vCutData );
+    Vec_IntFreeP( &p->vPairRes );
+    Vec_StrFreeP( &p->vPairPerms );
+    Vec_PtrFreeP( &p->vVisited );
+    if ( p->vPairHash )
+        Hash_IntManStop( p->vPairHash );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_MemHashFree( p->vTtMem[i] );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_MemFreeP( &p->vTtMem[i] );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_WecFreeP( &p->vTtIsops[i] );
+    for ( i = 6; i <= Abc_MaxInt(6,p->pPars->nLutSize); i++ )
+        Vec_IntFreeP( &p->vTtOccurs[i] );
     Mem_FixedStop( p->pMemObj, 0 );
-    FREE( p->pMemCi );
-    FREE( p->pMemAnd );
-    FREE( p->puTemp[0] );
+    ABC_FREE( p->pMemCi );
+    ABC_FREE( p->pMemAnd );
+    ABC_FREE( p->puTemp[0] );
+    ABC_FREE( p->puTempW );
     // free pars memory
-    if ( p->pPars->pTimesArr )
-        FREE( p->pPars->pTimesArr );
-    if ( p->pPars->pTimesReq )
-        FREE( p->pPars->pTimesReq );
-    free( p );
+    ABC_FREE( p->pPars->pTimesArr );
+    ABC_FREE( p->pPars->pTimesReq );
+    if ( p->pManTim )
+        Tim_ManStop( p->pManTim );
+    if ( p->vSwitching )
+        Vec_IntFree( p->vSwitching );
+    if ( p->pPars->fUseBat )
+    {
+        extern void Bat_ManFuncSetdownTable();
+        Bat_ManFuncSetdownTable();
+    }
+    // hash table
+//    if ( p->pPars->fVerbose && p->nTableEntries[0] )
+//        printf( "Hash table 2:  Entries = %7d.  Size = %7d.\n", p->nTableEntries[0], p->nTableSize[0] );
+//    if ( p->pPars->fVerbose && p->nTableEntries[1] )
+//        printf( "Hash table 3:  Entries = %7d.  Size = %7d.\n", p->nTableEntries[1], p->nTableSize[1] );
+    ABC_FREE( p->pHashTable[0] );
+    ABC_FREE( p->pHashTable[1] );
+    if ( p->pMemEntries )
+        Mem_FixedStop( p->pMemEntries, 0 );
+    ABC_FREE( p->pName );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -159,6 +328,7 @@ If_Obj_t * If_ManCreateCi( If_Man_t * p )
     If_Obj_t * pObj;
     pObj = If_ManSetupObj( p );
     pObj->Type = IF_CI;
+    pObj->IdPio = Vec_PtrSize( p->vCis );
     Vec_PtrPush( p->vCis, pObj );
     p->nObjs[IF_CI]++;
     return pObj;
@@ -179,10 +349,15 @@ If_Obj_t * If_ManCreateCo( If_Man_t * p, If_Obj_t * pDriver )
 {
     If_Obj_t * pObj;
     pObj = If_ManSetupObj( p );
+    pObj->IdPio = Vec_PtrSize( p->vCos );
     Vec_PtrPush( p->vCos, pObj );
     pObj->Type = IF_CO;
     pObj->fCompl0 = If_IsComplement(pDriver); pDriver = If_Regular(pDriver);
     pObj->pFanin0 = pDriver; pDriver->nRefs++; 
+    pObj->fPhase  = (pObj->fCompl0 ^ pDriver->fPhase);
+    pObj->Level   = pDriver->Level;
+    if ( p->nLevelMax < (int)pObj->Level )
+        p->nLevelMax = (int)pObj->Level;
     p->nObjs[IF_CO]++;
     return pObj;
 }
@@ -289,28 +464,7 @@ void If_ManCreateChoice( If_Man_t * p, If_Obj_t * pObj )
     // mark the largest level
     if ( p->nLevelMax < (int)pObj->Level )
         p->nLevelMax = (int)pObj->Level;
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Prepares memory for one cut.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void If_ManSetupCut( If_Man_t * p, If_Cut_t * pCut )
-{
-    memset( pCut, 0, sizeof(If_Cut_t) );
-    pCut->nLimit  = p->pPars->nLutSize;
-    pCut->pLeaves = (int *)(pCut + 1);
-    if ( p->pPars->fUsePerm )
-        pCut->pPerm  = (char *)(pCut->pLeaves + p->pPars->nLutSize);
-    if ( p->pPars->fTruth )
-        pCut->pTruth = pCut->pLeaves + p->pPars->nLutSize + p->nPermWords;
+    p->nChoices++;
 }
 
 /**Function*************************************************************
@@ -335,7 +489,7 @@ void If_ManSetupSet( If_Man_t * p, If_Set_t * pSet )
     for ( i = 0; i <= pSet->nCutsMax; i++ )
     {
         pSet->ppCuts[i] = (If_Cut_t *)(pArray + i * p->nCutBytes); 
-        If_ManSetupCut( p, pSet->ppCuts[i] );
+        If_CutSetup( p, pSet->ppCuts[i] );
     }
 //    pArray += (pSet->nCutsMax + 1) * p->nCutBytes;
 //    assert( ((char *)pArray) - ((char *)pSet) == p->nSetBytes );
@@ -359,14 +513,9 @@ void If_ManSetupCutTriv( If_Man_t * p, If_Cut_t * pCut, int ObjId )
     pCut->nLeaves    = 1;
     pCut->pLeaves[0] = p->pPars->fLiftLeaves? (ObjId << 8) : ObjId;
     pCut->uSign      = If_ObjCutSign( pCut->pLeaves[0] );
-    // set up elementary truth table of the unit cut
-    if ( p->pPars->fTruth )
-    {
-        int i, nTruthWords;
-        nTruthWords = Extra_TruthWordNum( pCut->nLimit );
-        for ( i = 0; i < nTruthWords; i++ )
-            If_CutTruth(pCut)[i] = 0xAAAAAAAA;
-    }
+    pCut->iCutFunc   = p->pPars->fUseTtPerm ? 3 : (p->pPars->fTruth ? 2: -1);
+    pCut->uMaskFunc  = 0;
+    assert( pCut->pLeaves[0] < p->vObjs->nSize );
 }
 
 /**Function*************************************************************
@@ -386,7 +535,7 @@ If_Obj_t * If_ManSetupObj( If_Man_t * p )
     // get memory for the object
     pObj = (If_Obj_t *)Mem_FixedEntryFetch( p->pMemObj );
     memset( pObj, 0, sizeof(If_Obj_t) );
-    If_ManSetupCut( p, &pObj->CutBest );
+    If_CutSetup( p, &pObj->CutBest );
     // assign ID and save 
     pObj->Id = Vec_PtrSize(p->vObjs);
     Vec_PtrPush( p->vObjs, pObj );
@@ -415,7 +564,7 @@ void If_ManSetupCiCutSets( If_Man_t * p )
     If_ManForEachCi( p, pObj, i )
         If_ManSetupCutTriv( p, &pObj->CutBest, pObj->Id );
     // create elementary cutsets for the CIs
-    p->pMemCi = (If_Set_t *)malloc( If_ManCiNum(p) * (sizeof(If_Set_t) + sizeof(void *)) );
+    p->pMemCi = (If_Set_t *)ABC_ALLOC( char, If_ManCiNum(p) * (sizeof(If_Set_t) + sizeof(void *)) );
     If_ManForEachCi( p, pObj, i )
     {
         pObj->pCutSet = (If_Set_t *)((char *)p->pMemCi + i * (sizeof(If_Set_t) + sizeof(void *)));
@@ -443,11 +592,9 @@ If_Set_t * If_ManSetupNodeCutSet( If_Man_t * p, If_Obj_t * pObj )
     assert( pObj->pCutSet == NULL );
 //    pObj->pCutSet = (If_Set_t *)Mem_FixedEntryFetch( p->pMemSet );
 //    If_ManSetupSet( p, pObj->pCutSet );
-
     pObj->pCutSet = If_ManCutSetFetch( p );
     pObj->pCutSet->nCuts = 0;
     pObj->pCutSet->nCutsMax = p->pPars->nCutsMax;
-
     return pObj->pCutSet;
 }
 
@@ -514,7 +661,7 @@ void If_ManDerefChoiceCutSet( If_Man_t * p, If_Obj_t * pObj )
     // consider the nodes in the choice class
     for ( pTemp = pObj; pTemp; pTemp = pTemp->pEquiv )
     {
-        assert( pTemp == pObj || pTemp->nVisits == 1 );
+//        assert( pTemp == pObj || pTemp->nVisits == 1 );
         if ( --pTemp->nVisits == 0 )
         {
 //            Mem_FixedEntryRecycle( p->pMemSet, (char *)pTemp->pCutSet );
@@ -540,7 +687,7 @@ void If_ManSetupSetAll( If_Man_t * p, int nCrossCut )
     If_Set_t * pCutSet;
     int i, nCutSets;
     nCutSets = 128 + nCrossCut;
-    p->pFreeList = p->pMemAnd = pCutSet = (If_Set_t *)malloc( nCutSets * p->nSetBytes );
+    p->pFreeList = p->pMemAnd = pCutSet = (If_Set_t *)ABC_ALLOC( char, nCutSets * p->nSetBytes );
     for ( i = 0; i < nCutSets; i++ )
     {
         If_ManSetupSet( p, pCutSet );
@@ -554,12 +701,12 @@ void If_ManSetupSetAll( If_Man_t * p, int nCrossCut )
 
     if ( p->pPars->fVerbose )
     {
-        printf( "Node = %7d.  Ch = %5d.  Total mem = %7.2f Mb. Peak cut mem = %7.2f Mb.\n", 
+        Abc_Print( 1, "Node = %7d.  Ch = %5d.  Total mem = %7.2f MB. Peak cut mem = %7.2f MB.\n", 
             If_ManAndNum(p), p->nChoices,
             1.0 * (p->nObjBytes + 2*sizeof(void *)) * If_ManObjNum(p) / (1<<20), 
             1.0 * p->nSetBytes * nCrossCut / (1<<20) );
     }
-//    printf( "Cross cut = %d.\n", nCrossCut );
+//    Abc_Print( 1, "Cross cut = %d.\n", nCrossCut );
 
 }
 
@@ -567,4 +714,6 @@ void If_ManSetupSetAll( If_Man_t * p, int nCrossCut )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

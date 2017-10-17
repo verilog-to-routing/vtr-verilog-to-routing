@@ -18,16 +18,19 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static Abc_Ntk_t * Abc_NtkMiterInt( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int nPartSize );
-static void        Abc_NtkMiterPrepare( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize );
+static Abc_Ntk_t * Abc_NtkMiterInt( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int nPartSize, int fImplic, int fMulti );
+static void        Abc_NtkMiterPrepare( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize, int fMulti );
 static void        Abc_NtkMiterAddOne( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkMiter );
-static void        Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize );
+static void        Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize, int fImplic, int fMulti );
 static void        Abc_NtkAddFrame( Abc_Ntk_t * pNetNew, Abc_Ntk_t * pNet, int iFrame );
 
 // to be exported 
@@ -50,20 +53,20 @@ static void        Abc_NtkAddFrame2( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, i
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkMiter( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int nPartSize )
+Abc_Ntk_t * Abc_NtkMiter( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int nPartSize, int fImplic, int fMulti )
 {
     Abc_Ntk_t * pTemp = NULL;
     int fRemove1, fRemove2;
     assert( Abc_NtkHasOnlyLatchBoxes(pNtk1) );
     assert( Abc_NtkHasOnlyLatchBoxes(pNtk2) );
     // check that the networks have the same PIs/POs/latches
-    if ( !Abc_NtkCompareSignals( pNtk1, pNtk2, 0, fComb ) )
+    if ( !Abc_NtkCompareSignals( pNtk1, pNtk2, fImplic, fComb ) )
         return NULL;
     // make sure the circuits are strashed 
-    fRemove1 = (!Abc_NtkIsStrash(pNtk1)) && (pNtk1 = Abc_NtkStrash(pNtk1, 0, 0, 0));
-    fRemove2 = (!Abc_NtkIsStrash(pNtk2)) && (pNtk2 = Abc_NtkStrash(pNtk2, 0, 0, 0));
+    fRemove1 = (!Abc_NtkIsStrash(pNtk1) || Abc_NtkGetChoiceNum(pNtk1)) && (pNtk1 = Abc_NtkStrash(pNtk1, 0, 0, 0));
+    fRemove2 = (!Abc_NtkIsStrash(pNtk2) || Abc_NtkGetChoiceNum(pNtk2)) && (pNtk2 = Abc_NtkStrash(pNtk2, 0, 0, 0));
     if ( pNtk1 && pNtk2 )
-        pTemp = Abc_NtkMiterInt( pNtk1, pNtk2, fComb, nPartSize );
+        pTemp = Abc_NtkMiterInt( pNtk1, pNtk2, fComb, nPartSize, fImplic, fMulti );
     if ( fRemove1 )  Abc_NtkDelete( pNtk1 );
     if ( fRemove2 )  Abc_NtkDelete( pNtk2 );
     return pTemp;
@@ -80,7 +83,7 @@ Abc_Ntk_t * Abc_NtkMiter( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int n
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkMiterInt( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int nPartSize )
+Abc_Ntk_t * Abc_NtkMiterInt( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, int nPartSize, int fImplic, int fMulti )
 {
     char Buffer[1000];
     Abc_Ntk_t * pNtkMiter;
@@ -94,11 +97,11 @@ Abc_Ntk_t * Abc_NtkMiterInt( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, in
     pNtkMiter->pName = Extra_UtilStrsav(Buffer);
 
     // perform strashing
-    Abc_NtkMiterPrepare( pNtk1, pNtk2, pNtkMiter, fComb, nPartSize );
+    Abc_NtkMiterPrepare( pNtk1, pNtk2, pNtkMiter, fComb, nPartSize, fMulti );
     Abc_NtkMiterAddOne( pNtk1, pNtkMiter );
     Abc_NtkMiterAddOne( pNtk2, pNtkMiter );
-    Abc_NtkMiterFinalize( pNtk1, pNtk2, pNtkMiter, fComb, nPartSize );
-    Abc_AigCleanup(pNtkMiter->pManFunc);
+    Abc_NtkMiterFinalize( pNtk1, pNtk2, pNtkMiter, fComb, nPartSize, fImplic, fMulti );
+    Abc_AigCleanup((Abc_Aig_t *)pNtkMiter->pManFunc);
 
     // make sure that everything is okay
     if ( !Abc_NtkCheck( pNtkMiter ) )
@@ -121,7 +124,7 @@ Abc_Ntk_t * Abc_NtkMiterInt( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb, in
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkMiterPrepare( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize )
+void Abc_NtkMiterPrepare( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize, int fMulti )
 {
     Abc_Obj_t * pObj, * pObjNew;
     int i;
@@ -146,10 +149,21 @@ void Abc_NtkMiterPrepare( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtk
         }
         if ( nPartSize <= 0 )
         {
-            // create the only PO
-            pObjNew = Abc_NtkCreatePo( pNtkMiter );
-            // add the PO name
-            Abc_ObjAssignName( pObjNew, "miter", NULL );
+            // create POs
+            if ( fMulti )
+            {
+                Abc_NtkForEachCo( pNtk1, pObj, i )
+                {
+                    pObjNew = Abc_NtkCreatePo( pNtkMiter );
+                    Abc_ObjAssignName( pObjNew, "miter", Abc_ObjName(pObjNew) );
+                }
+
+            }
+            else
+            {
+                pObjNew = Abc_NtkCreatePo( pNtkMiter );
+                Abc_ObjAssignName( pObjNew, "miter", NULL );
+            }
         }
     }
     else
@@ -167,10 +181,21 @@ void Abc_NtkMiterPrepare( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtk
         }
         if ( nPartSize <= 0 )
         {
-            // create the only PO
-            pObjNew = Abc_NtkCreatePo( pNtkMiter );
-            // add the PO name
-            Abc_ObjAssignName( pObjNew, "miter", NULL );
+            // create POs
+            if ( fMulti )
+            {
+                Abc_NtkForEachPo( pNtk1, pObj, i )
+                {
+                    pObjNew = Abc_NtkCreatePo( pNtkMiter );
+                    Abc_ObjAssignName( pObjNew, "miter", Abc_ObjName(pObjNew) );
+                }
+
+            }
+            else
+            {
+                pObjNew = Abc_NtkCreatePo( pNtkMiter );
+                Abc_ObjAssignName( pObjNew, "miter", NULL );
+            }
         }
         // create the latches
         Abc_NtkForEachLatch( pNtk1, pObj, i )
@@ -209,7 +234,7 @@ void Abc_NtkMiterAddOne( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkMiter )
     int i;
     assert( Abc_NtkIsDfsOrdered(pNtk) );
     Abc_AigForEachAnd( pNtk, pNode, i )
-        pNode->pCopy = Abc_AigAnd( pNtkMiter->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
+        pNode->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtkMiter->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
 }
 
 /**Function*************************************************************
@@ -232,9 +257,9 @@ void Abc_NtkMiterAddCone( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkMiter, Abc_Obj_t * p
     Abc_AigConst1(pNtk)->pCopy = Abc_AigConst1(pNtkMiter);
     // perform strashing
     vNodes = Abc_NtkDfsNodes( pNtk, &pRoot, 1 );
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
         if ( Abc_AigNodeIsAnd(pNode) )
-            pNode->pCopy = Abc_AigAnd( pNtkMiter->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
+            pNode->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtkMiter->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
     Vec_PtrFree( vNodes );
 }
 
@@ -250,11 +275,12 @@ void Abc_NtkMiterAddCone( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkMiter, Abc_Obj_t * p
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize )
+void Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNtkMiter, int fComb, int nPartSize, int fImplic, int fMulti )
 {
     Vec_Ptr_t * vPairs;
     Abc_Obj_t * pMiter, * pNode;
     int i;
+    assert( nPartSize == 0 || fMulti == 0 );
     // collect the PO pairs from both networks
     vPairs = Vec_PtrAlloc( 100 );
     if ( fComb )
@@ -262,9 +288,17 @@ void Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNt
         // collect the CO nodes for the miter
         Abc_NtkForEachCo( pNtk1, pNode, i )
         {
-            Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
-            pNode = Abc_NtkCo( pNtk2, i );
-            Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
+            if ( fMulti )
+            {
+                pMiter = Abc_AigXor( (Abc_Aig_t *)pNtkMiter->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild0Copy(Abc_NtkCo(pNtk2, i)) );
+                Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,i), pMiter );
+            }
+            else
+            {
+                Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
+                pNode = Abc_NtkCo( pNtk2, i );
+                Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
+            }
         }
     }
     else
@@ -272,9 +306,17 @@ void Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNt
         // collect the PO nodes for the miter
         Abc_NtkForEachPo( pNtk1, pNode, i )
         {
-            Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
-            pNode = Abc_NtkPo( pNtk2, i );
-            Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
+            if ( fMulti )
+            {
+                pMiter = Abc_AigXor( (Abc_Aig_t *)pNtkMiter->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild0Copy(Abc_NtkCo(pNtk2, i)) );
+                Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,i), pMiter );
+            }
+            else
+            {
+                Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
+                pNode = Abc_NtkPo( pNtk2, i );
+                Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pNode) );
+            }
         }
         // connect new latches
         Abc_NtkForEachLatch( pNtk1, pNode, i )
@@ -285,9 +327,11 @@ void Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNt
     // add the miter
     if ( nPartSize <= 0 )
     {
-        pMiter = Abc_AigMiter( pNtkMiter->pManFunc, vPairs );
-        Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,0), pMiter );
-        Vec_PtrFree( vPairs );
+        if ( !fMulti )
+        {
+            pMiter = Abc_AigMiter( (Abc_Aig_t *)pNtkMiter->pManFunc, vPairs, fImplic );
+            Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,0), pMiter );
+        }
     }
     else
     {
@@ -309,19 +353,19 @@ void Abc_NtkMiterFinalize( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Abc_Ntk_t * pNt
                 Vec_PtrPush( vPairsPart, Vec_PtrEntry(vPairs, 2*iCur  ) );
                 Vec_PtrPush( vPairsPart, Vec_PtrEntry(vPairs, 2*iCur+1) );
             }
-            pMiter = Abc_AigMiter( pNtkMiter->pManFunc, vPairsPart );
+            pMiter = Abc_AigMiter( (Abc_Aig_t *)pNtkMiter->pManFunc, vPairsPart, fImplic );
             pNode = Abc_NtkCreatePo( pNtkMiter );
             Abc_ObjAddFanin( pNode, pMiter );
             // assign the name to the node
             if ( nPartSize == 1 )
-                sprintf( Buffer, "%s", Abc_ObjName(Abc_NtkPo(pNtk1,i)) );
+                sprintf( Buffer, "%s", Abc_ObjName(Abc_NtkCo(pNtk1,i)) );
             else
                 sprintf( Buffer, "%d", i );
             Abc_ObjAssignName( pNode, "miter_", Buffer );
         }
         Vec_PtrFree( vPairsPart );
-        Vec_PtrFree( vPairs );
     }
+    Vec_PtrFree( vPairs );
 }
 
 
@@ -361,20 +405,20 @@ Abc_Ntk_t * Abc_NtkMiterAnd( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fOr, int 
     pNtkMiter->pName = Extra_UtilStrsav(Buffer);
 
     // perform strashing
-    Abc_NtkMiterPrepare( pNtk1, pNtk2, pNtkMiter, 1, -1 );
+    Abc_NtkMiterPrepare( pNtk1, pNtk2, pNtkMiter, 1, -1, 0 );
     Abc_NtkMiterAddOne( pNtk1, pNtkMiter );
     Abc_NtkMiterAddOne( pNtk2, pNtkMiter );
 //    Abc_NtkMiterFinalize( pNtk1, pNtk2, pNtkMiter, 1 );
     pRoot1 = Abc_NtkPo(pNtk1,0);
     pRoot2 = Abc_NtkPo(pNtk2,0);
     pOutput1 = Abc_ObjNotCond( Abc_ObjFanin0(pRoot1)->pCopy, Abc_ObjFaninC0(pRoot1) );
-    pOutput2 = Abc_ObjNotCond( Abc_ObjFanin0(pRoot2)->pCopy, Abc_ObjFaninC0(pRoot2) ^ fCompl2 );
+    pOutput2 = Abc_ObjNotCond( Abc_ObjFanin0(pRoot2)->pCopy, (int)Abc_ObjFaninC0(pRoot2) ^ fCompl2 );
     
     // create the miter of the two outputs
     if ( fOr )
-        pMiter = Abc_AigOr( pNtkMiter->pManFunc, pOutput1, pOutput2 );
+        pMiter = Abc_AigOr( (Abc_Aig_t *)pNtkMiter->pManFunc, pOutput1, pOutput2 );
     else
-        pMiter = Abc_AigAnd( pNtkMiter->pManFunc, pOutput1, pOutput2 );
+        pMiter = Abc_AigAnd( (Abc_Aig_t *)pNtkMiter->pManFunc, pOutput1, pOutput2 );
     Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,0), pMiter );
 
     // make sure that everything is okay
@@ -420,7 +464,7 @@ Abc_Ntk_t * Abc_NtkMiterCofactor( Abc_Ntk_t * pNtk, Vec_Int_t * vPiValues )
     pRoot = Abc_NtkCo( pNtk, 0 );
 
     // perform strashing
-    Abc_NtkMiterPrepare( pNtk, pNtk, pNtkMiter, 1, -1 );
+    Abc_NtkMiterPrepare( pNtk, pNtk, pNtkMiter, 1, -1, 0 );
     // set the first cofactor
     Vec_IntForEachEntry( vPiValues, Value, i )
     {
@@ -488,7 +532,7 @@ Abc_Ntk_t * Abc_NtkMiterForCofactors( Abc_Ntk_t * pNtk, int Out, int In1, int In
     pRoot = Abc_NtkCo( pNtk, Out );
 
     // perform strashing
-    Abc_NtkMiterPrepare( pNtk, pNtk, pNtkMiter, 1, -1 );
+    Abc_NtkMiterPrepare( pNtk, pNtk, pNtkMiter, 1, -1, 0 );
     // set the first cofactor
     Abc_NtkCi(pNtk, In1)->pCopy = Abc_ObjNot( Abc_AigConst1(pNtkMiter) );
     if ( In2 >= 0 )
@@ -510,7 +554,7 @@ Abc_Ntk_t * Abc_NtkMiterForCofactors( Abc_Ntk_t * pNtk, int Out, int In1, int In
     pOutput2 = Abc_ObjFanin0(pRoot)->pCopy;
 
     // create the miter of the two outputs
-    pMiter = Abc_AigXor( pNtkMiter->pManFunc, pOutput1, pOutput2 );
+    pMiter = Abc_AigXor( (Abc_Aig_t *)pNtkMiter->pManFunc, pOutput1, pOutput2 );
     Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,0), pMiter );
 
     // make sure that everything is okay
@@ -553,7 +597,7 @@ Abc_Ntk_t * Abc_NtkMiterQuantify( Abc_Ntk_t * pNtk, int In, int fExist )
     pRoot = Abc_NtkCo( pNtk, 0 );
 
     // perform strashing
-    Abc_NtkMiterPrepare( pNtk, pNtk, pNtkMiter, 1, -1 );
+    Abc_NtkMiterPrepare( pNtk, pNtk, pNtkMiter, 1, -1, 0 );
     // set the first cofactor
     Abc_NtkCi(pNtk, In)->pCopy = Abc_ObjNot( Abc_AigConst1(pNtkMiter) );
     // add the first cofactor
@@ -572,9 +616,9 @@ Abc_Ntk_t * Abc_NtkMiterQuantify( Abc_Ntk_t * pNtk, int In, int fExist )
 
     // create the miter of the two outputs
     if ( fExist ) 
-        pMiter = Abc_AigOr( pNtkMiter->pManFunc, pOutput1, pOutput2 );
+        pMiter = Abc_AigOr( (Abc_Aig_t *)pNtkMiter->pManFunc, pOutput1, pOutput2 );
     else
-        pMiter = Abc_AigAnd( pNtkMiter->pManFunc, pOutput1, pOutput2 );
+        pMiter = Abc_AigAnd( (Abc_Aig_t *)pNtkMiter->pManFunc, pOutput1, pOutput2 );
     Abc_ObjAddFanin( Abc_NtkPo(pNtkMiter,0), pMiter );
 
     // make sure that everything is okay
@@ -640,6 +684,7 @@ int Abc_NtkMiterIsConstant( Abc_Ntk_t * pMiter )
     Abc_NtkForEachPo( pMiter, pNodePo, i )
     {
         pChild = Abc_ObjChild0( pNodePo );
+        // check if the output is constant 1
         if ( Abc_AigNodeIsConst(pChild) )
         {
             assert( Abc_ObjRegular(pChild) == Abc_AigConst1(pMiter) );
@@ -650,6 +695,13 @@ int Abc_NtkMiterIsConstant( Abc_Ntk_t * pMiter )
                 return 0;
             }
         }
+/*
+        // check if the output is not constant 0
+        else if ( Abc_ObjRegular(pChild)->fPhase != (unsigned)Abc_ObjIsComplement(pChild) )
+        {
+            return 0;
+        }
+*/
         // if the miter is undecided (or satisfiable), return immediately
         else 
             return -1;
@@ -717,7 +769,7 @@ void Abc_NtkMiterReport( Abc_Ntk_t * pMiter )
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkFrames( Abc_Ntk_t * pNtk, int nFrames, int fInitial )
+Abc_Ntk_t * Abc_NtkFrames( Abc_Ntk_t * pNtk, int nFrames, int fInitial, int fVerbose )
 {
     char Buffer[1000];
     ProgressBar * pProgress;
@@ -777,7 +829,7 @@ Abc_Ntk_t * Abc_NtkFrames( Abc_Ntk_t * pNtk, int nFrames, int fInitial )
     }
 
     // remove dangling nodes
-    Abc_AigCleanup( pNtkFrames->pManFunc );
+    Abc_AigCleanup( (Abc_Aig_t *)pNtkFrames->pManFunc );
     // reorder the latches
     Abc_NtkOrderCisCos( pNtkFrames );
     // make sure that everything is okay
@@ -806,6 +858,8 @@ Abc_Ntk_t * Abc_NtkFrames( Abc_Ntk_t * pNtk, int nFrames, int fInitial )
 ***********************************************************************/
 void Abc_NtkAddFrame( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, int iFrame )
 {
+    int fVerbose = 0;
+    int NodeBef = Abc_NtkNodeNum(pNtkFrames);
     char Buffer[10];
     Abc_Obj_t * pNode, * pLatch;
     int i;
@@ -816,15 +870,9 @@ void Abc_NtkAddFrame( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, int iFrame )
         Abc_ObjAssignName( Abc_NtkDupObj(pNtkFrames, pNode, 0), Abc_ObjName(pNode), Buffer );
     // add the internal nodes
     Abc_AigForEachAnd( pNtk, pNode, i )
-        pNode->pCopy = Abc_AigAnd( pNtkFrames->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
+        pNode->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtkFrames->pManFunc, Abc_ObjChild0Copy(pNode), Abc_ObjChild1Copy(pNode) );
     // add the new POs
     Abc_NtkForEachPo( pNtk, pNode, i )
-    {
-        Abc_ObjAssignName( Abc_NtkDupObj(pNtkFrames, pNode, 0), Abc_ObjName(pNode), Buffer );
-        Abc_ObjAddFanin( pNode->pCopy, Abc_ObjChild0Copy(pNode) );
-    }
-    // add the new asserts
-    Abc_NtkForEachAssert( pNtk, pNode, i )
     {
         Abc_ObjAssignName( Abc_NtkDupObj(pNtkFrames, pNode, 0), Abc_ObjName(pNode), Buffer );
         Abc_ObjAddFanin( pNode->pCopy, Abc_ObjChild0Copy(pNode) );
@@ -834,6 +882,11 @@ void Abc_NtkAddFrame( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, int iFrame )
         pLatch->pCopy = Abc_ObjChild0Copy(Abc_ObjFanin0(pLatch));
     Abc_NtkForEachLatch( pNtk, pLatch, i )
         Abc_ObjFanout0(pLatch)->pCopy = pLatch->pCopy;
+    // nodes after
+    if ( fVerbose )
+    printf( "F = %4d : Total = %6d. Nodes = %6d. Prop = %s.\n", 
+        iFrame, Abc_NtkNodeNum(pNtk), Abc_NtkNodeNum(pNtkFrames)-NodeBef, 
+        Abc_AigNodeIsConst( Abc_ObjFanin0(Abc_NtkPo(pNtk,0))->pCopy ) ? "proof" : "unknown" );
 }
 
 
@@ -969,7 +1022,7 @@ void Abc_NtkAddFrame2( Abc_Ntk_t * pNtkFrames, Abc_Ntk_t * pNtk, int iFrame, Vec
         if (addFrameMapping) addFrameMapping(pNodeNew, pNode, iFrame, arg);
     }
     // add the internal nodes
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
         if ( pNode == pConst1 )
             pNodeNew = pConst1New;
@@ -1064,12 +1117,12 @@ int Abc_NtkDemiter( Abc_Ntk_t * pNtk )
     vNodes1 = Abc_NtkDfsNodes( pNtk, &pNodeC, 1 );
     vNodes2 = Abc_NtkDfsNodes( pNtk, &pNodeB, 1 );
 
-    Vec_PtrForEachEntry( vNodes1, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes1, pNode, i )
         pNode->fMarkA = 1;
     nCommon = 0;
-    Vec_PtrForEachEntry( vNodes2, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes2, pNode, i )
         nCommon += pNode->fMarkA;
-    Vec_PtrForEachEntry( vNodes1, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes1, pNode, i )
         pNode->fMarkA = 0;
 
     printf( "First cone = %6d.  Second cone = %6d.  Common = %6d.\n", vNodes1->nSize, vNodes2->nSize, nCommon );
@@ -1095,7 +1148,7 @@ int Abc_NtkDemiter( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd )
+int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd, int fXor )
 {
     Abc_Obj_t * pNode, * pMiter;
     int i;
@@ -1111,9 +1164,11 @@ int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd )
     // perform operations on the POs
     Abc_NtkForEachPo( pNtk, pNode, i )
         if ( fAnd )
-            pMiter = Abc_AigAnd( pNtk->pManFunc, pMiter, Abc_ObjChild0(pNode) );
+            pMiter = Abc_AigAnd( (Abc_Aig_t *)pNtk->pManFunc, pMiter, Abc_ObjChild0(pNode) );
+        else if ( fXor )
+            pMiter = Abc_AigXor( (Abc_Aig_t *)pNtk->pManFunc, pMiter, Abc_ObjChild0(pNode) );
         else
-            pMiter = Abc_AigOr( pNtk->pManFunc, pMiter, Abc_ObjChild0(pNode) );
+            pMiter = Abc_AigOr( (Abc_Aig_t *)pNtk->pManFunc, pMiter, Abc_ObjChild0(pNode) );
     // remove the POs and their names
     for ( i = Abc_NtkPoNum(pNtk) - 1; i >= 0; i-- )
         Abc_NtkDeleteObj( Abc_NtkPo(pNtk, i) );
@@ -1122,6 +1177,7 @@ int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd )
     pNode = Abc_NtkCreatePo( pNtk );
     Abc_ObjAddFanin( pNode, pMiter );
     Abc_ObjAssignName( pNode, "miter", NULL );
+    Abc_NtkOrderCisCos( pNtk );
     // make sure that everything is okay
     if ( !Abc_NtkCheck( pNtk ) )
     {
@@ -1135,4 +1191,6 @@ int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

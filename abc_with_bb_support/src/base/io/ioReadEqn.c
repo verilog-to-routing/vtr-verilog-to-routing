@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -100,13 +103,13 @@ Abc_Ntk_t * Io_ReadEqnNetwork( Extra_FileReader_t * p )
     // go through the lines of the file
     vVars  = Vec_PtrAlloc( 100 );
     pProgress = Extra_ProgressBarStart( stdout, Extra_FileReaderGetFileSize(p) );
-    for ( iLine = 0; vTokens = Extra_FileReaderGetTokens(p); iLine++ )
+    for ( iLine = 0; (vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p)); iLine++ )
     {
         Extra_ProgressBarUpdate( pProgress, Extra_FileReaderGetCurPosition(p), NULL );
 
         // check if the first token contains anything
-        Io_ReadEqnStrCompact( vTokens->pArray[0] );
-        if ( strlen(vTokens->pArray[0]) == 0 )
+        Io_ReadEqnStrCompact( (char *)vTokens->pArray[0] );
+        if ( strlen((char *)vTokens->pArray[0]) == 0 )
             break;
 
         // if the number of tokens is different from two, error
@@ -118,16 +121,16 @@ Abc_Ntk_t * Io_ReadEqnNetwork( Extra_FileReader_t * p )
         }
 
         // get the type of the line
-        if ( strncmp( vTokens->pArray[0], "INORDER", 7 ) == 0 )
+        if ( strncmp( (char *)vTokens->pArray[0], "INORDER", 7 ) == 0 )
         {
-            Io_ReadEqnStrCutAt( vTokens->pArray[1], " \n\r\t", 0, vVars );
-            Vec_PtrForEachEntry( vVars, pVarName, i )
+            Io_ReadEqnStrCutAt( (char *)vTokens->pArray[1], " \n\r\t", 0, vVars );
+            Vec_PtrForEachEntry( char *, vVars, pVarName, i )
                 Io_ReadCreatePi( pNtk, pVarName );
         }
-        else if ( strncmp( vTokens->pArray[0], "OUTORDER", 8 ) == 0 )
+        else if ( strncmp( (char *)vTokens->pArray[0], "OUTORDER", 8 ) == 0 )
         {
-            Io_ReadEqnStrCutAt( vTokens->pArray[1], " \n\r\t", 0, vVars );
-            Vec_PtrForEachEntry( vVars, pVarName, i )
+            Io_ReadEqnStrCutAt( (char *)vTokens->pArray[1], " \n\r\t", 0, vVars );
+            Vec_PtrForEachEntry( char *, vVars, pVarName, i )
                 Io_ReadCreatePo( pNtk, pVarName );
         }
         else 
@@ -135,8 +138,8 @@ Abc_Ntk_t * Io_ReadEqnNetwork( Extra_FileReader_t * p )
             extern Hop_Obj_t * Parse_FormulaParserEqn( FILE * pOutput, char * pFormInit, Vec_Ptr_t * vVarNames, Hop_Man_t * pMan );
 
             // get hold of the node name and its formula
-            pNodeName = vTokens->pArray[0];
-            pFormula  = vTokens->pArray[1];
+            pNodeName = (char *)vTokens->pArray[0];
+            pFormula  = (char *)vTokens->pArray[1];
             // compact the formula 
             Io_ReadEqnStrCompact( pFormula );
 
@@ -156,9 +159,9 @@ Abc_Ntk_t * Io_ReadEqnNetwork( Extra_FileReader_t * p )
             // create the node
             pNode = Io_ReadCreateNode( pNtk, pNodeName, (char **)Vec_PtrArray(vVars), Vec_PtrSize(vVars) );
             // derive the function
-            pNode->pData = Parse_FormulaParserEqn( stdout, pFormula, vVars, pNtk->pManFunc );
+            pNode->pData = Parse_FormulaParserEqn( stdout, pFormula, vVars, (Hop_Man_t *)pNtk->pManFunc );
             // remove the cubes
-            FREE( pFormulaCopy );
+            ABC_FREE( pFormulaCopy );
         }
     }
     Extra_ProgressBarStop( pProgress );
@@ -204,7 +207,7 @@ int Io_ReadEqnStrFind( Vec_Ptr_t * vTokens, char * pName )
 {
     char * pToken;
     int i;
-    Vec_PtrForEachEntry( vTokens, pToken, i )
+    Vec_PtrForEachEntry( char *, vTokens, pToken, i )
         if ( strcmp( pToken, pName ) == 0 )
             return i;
     return -1;
@@ -236,4 +239,6 @@ void Io_ReadEqnStrCutAt( char * pStr, char * pStop, int fUniqueOnly, Vec_Ptr_t *
 ////////////////////////////////////////////////////////////////////////
 
 
+
+ABC_NAMESPACE_IMPL_END
 

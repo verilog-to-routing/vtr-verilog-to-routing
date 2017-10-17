@@ -18,6 +18,9 @@
 
 #include "mvc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -366,4 +369,6 @@ int Mvc_CubeCompareIntOutsideAndUnderMask( Mvc_Cube_t * pC1, Mvc_Cube_t * pC2, M
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

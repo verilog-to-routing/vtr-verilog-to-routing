@@ -18,6 +18,9 @@
 
 #include "reo.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -47,11 +50,12 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 	// the new nodes on lev0
 	reo_unit * pLoop, * pUnit;
 	// the new nodes on lev1
-	reo_unit * pNewPlane20, * pNewPlane21, * pNewPlane20R;
+	reo_unit * pNewPlane20 = NULL, * pNewPlane21 = NULL; // Suppress "might be used uninitialized"
+        reo_unit * pNewPlane20R;
 	reo_unit * pUnitE, * pUnitER, * pUnitT;
 	// the nodes below lev1
-	reo_unit * pNew1E, * pNew1T, * pNew2E, * pNew2T;
-	reo_unit * pNew1ER, * pNew2ER;
+	reo_unit * pNew1E = NULL, * pNew1T = NULL, * pNew2E = NULL, * pNew2T = NULL;
+	reo_unit * pNew1ER = NULL, * pNew2ER = NULL;
 	// the old linked lists
 	reo_unit * pListOld0 = p->pPlanes[lev0].pHead;
 	reo_unit * pListOld1 = p->pPlanes[lev1].pHead;
@@ -60,18 +64,19 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 	reo_unit * pListNew1 = NULL, ** ppListNew1 = &pListNew1; 
 	reo_unit * pListTemp = NULL, ** ppListTemp = &pListTemp; 
 	// various integer variables
-	int fComp, fCompT, fFound, nWidthCofs, HKey, fInteract, temp, c;
+	int fComp, fCompT, fFound, HKey, fInteract, temp, c;
+        int nWidthCofs = -1; // Suppress "might be used uninitialized"
 	// statistical variables
 	int nNodesUpMovedDown  = 0;
 	int nNodesDownMovedUp  = 0;
 	int nNodesUnrefRemoved = 0;
 	int nNodesUnrefAdded   = 0;
 	int nWidthReduction    = 0;
-	double AplWeightTotalLev0;
-	double AplWeightTotalLev1;
-	double AplWeightHalf;
-	double AplWeightPrev;
-	double AplWeightAfter;
+	double AplWeightTotalLev0 = 0.0; // Suppress "might be used uninitialized"
+	double AplWeightTotalLev1 = 0.0; // Suppress "might be used uninitialized"
+	double AplWeightHalf      = 0.0; // Suppress "might be used uninitialized"
+	double AplWeightPrev      = 0.0; // Suppress "might be used uninitialized"
+	double AplWeightAfter     = 0.0; // Suppress "might be used uninitialized"
 	double nCostGain;     
 
 	// set the old lists
@@ -248,14 +253,14 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 		{
 			//                before                        after
 			//
-			//                 <p1>           
-			//              0 /    \ 1         
-			//               /      \          
-			//              /        \         
-			//             /          \                     <p2n>   
-			//            /            \                  0 /  \ 1 
-			//           /              \                  /    \  
-			//          /                \                /      \ 
+			//                 <p1>                                 .
+			//              0 /    \ 1                              .
+			//               /      \                               .
+			//              /        \                              .
+			//             /          \                     <p2n>   .
+			//            /            \                  0 /  \ 1  .
+			//           /              \                  /    \   .
+			//          /                \                /      \  .
 			//         F0                F1              F0      F1
 
 			// move to plane-2-new
@@ -333,15 +338,15 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 			{
 				//                before                        after
 				//
-				//                 <p1>                          <p1n>
-				//              0 /    \ 1                    0 /    \ 1            
-				//               /      \                      /      \           
-				//              /        \                    /        \         
-				//           <p2>        <p2>              <p2n>       <p2n>          
-				//        0 /   \ 1    0 /  \ 1          0 /  \ 1    0 /   \ 1    
-				//         /     \      /    \            /    \      /     \   
-				//        /       \    /      \          /      \    /       \   
-				//       F0       F1  F2      F3        F0      F2  F1       F3  
+				//                 <p1>                          <p1n>              .
+				//              0 /    \ 1                    0 /    \ 1            .
+				//               /      \                      /      \             .
+				//              /        \                    /        \            .
+				//           <p2>        <p2>              <p2n>       <p2n>        .
+				//        0 /   \ 1    0 /  \ 1          0 /  \ 1    0 /   \ 1      .
+				//         /     \      /    \            /    \      /     \       .
+				//        /       \    /      \          /      \    /       \      .
+				//       F0       F1  F2      F3        F0      F2  F1       F3     .
 				//                                 pNew1E   pNew1T  pNew2E   pNew2T
 				//
 				pNew1E = pUnitE->pE;   // F0
@@ -354,15 +359,15 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 			{
 				//                before                        after
 				//
-				//                 <p1>                          <p1n>
-				//              0 .    \ 1                    0 /    \ 1            
-				//               .      \                      /      \           
-				//              .        \                    /        \         
-				//           <p2>        <p2>              <p2n>       <p2n>          
-				//        0 /   \ 1    0 /  \ 1          0 .  \ 1    0 .   \ 1    
-				//         /     \      /    \            .    \      .     \   
-				//        /       \    /      \          .      \    .       \   
-				//       F0       F1  F2      F3        F0      F2  F1       F3  
+				//                 <p1>                          <p1n>           .
+				//              0 .    \ 1                    0 /    \ 1         .
+				//               .      \                      /      \          .
+				//              .        \                    /        \         .
+				//           <p2>        <p2>              <p2n>       <p2n>     .
+				//        0 /   \ 1    0 /  \ 1          0 .  \ 1    0 .   \ 1   .
+				//         /     \      /    \            .    \      .     \    .
+				//        /       \    /      \          .      \    .       \   .
+				//       F0       F1  F2      F3        F0      F2  F1       F3  .
 				//                                 pNew1E   pNew1T  pNew2E   pNew2T
 				//
 				pNew1E = Unit_Not(pUnitER->pE);  // F0
@@ -389,15 +394,15 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 			{
 				//                before                        after
 				//
-				//                 <p1>                          <p1n>
-				//              0 /    \ 1                    0 /    \ 1            
-				//               /      \                      /      \           
-				//              /        \                    /        \         
-				//           <p2>         \               <p2n>       <p2n>           
-				//        0 /   \ 1        \            0 /  \ 1    0 /   \ 1    
-				//         /     \          \            /    \      /     \   
-				//        /       \          \          /      \    /       \   
-				//       F0       F1         F3        F0      F3  F1       F3  
+				//                 <p1>                          <p1n>          .
+				//              0 /    \ 1                    0 /    \ 1        .
+				//               /      \                      /      \         .
+				//              /        \                    /        \        .
+				//           <p2>         \               <p2n>       <p2n>     .
+				//        0 /   \ 1        \            0 /  \ 1    0 /   \ 1   .
+				//         /     \          \            /    \      /     \    .
+				//        /       \          \          /      \    /       \   .
+				//       F0       F1         F3        F0      F3  F1       F3  .
 				//                                 pNew1E   pNew1T  pNew2E   pNew2T
 				//
 				pNew1E = pUnitER->pE;	  // F0
@@ -410,15 +415,15 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 			{
 				//                before                        after
 				//
-				//                 <p1>                          <p1n>
-				//              0 .    \ 1                    0 /    \ 1            
-				//               .      \                      /      \           
-				//              .        \                    /        \         
-				//           <p2>         \                <p2n>       <p2n>          
-				//        0 /   \ 1        \            0 .  \ 1    0 .   \ 1    
-				//         /     \          \            .    \      .     \   
-				//        /       \          \          .      \    .       \   
-				//       F0       F1         F3        F0      F3  F1       F3  
+				//                 <p1>                          <p1n>          .
+				//              0 .    \ 1                    0 /    \ 1        .
+				//               .      \                      /      \         .
+				//              .        \                    /        \        .
+				//           <p2>         \                <p2n>       <p2n>    .
+				//        0 /   \ 1        \            0 .  \ 1    0 .   \ 1   .
+				//         /     \          \            .    \      .     \    .
+				//        /       \          \          .      \    .       \   .
+				//       F0       F1         F3        F0      F3  F1       F3  .
 				//                                 pNew1E   pNew1T  pNew2E   pNew2T
 				//
 				pNew1E = Unit_Not(pUnitER->pE);  // F0
@@ -443,15 +448,15 @@ double reoReorderSwapAdjacentVars( reo_man * p, int lev0, int fMovingUp )
 		{
 			//                before                        after
 			//
-			//                 <p1>                          <p1n>
-			//              0 /    \ 1                    0 /    \ 1            
-			//               /      \                      /      \           
-			//              /        \                    /        \         
-			//             /         <p2>              <p2n>       <p2n>            
-			//            /       0 /   \ 1          0 /  \ 1    0 /   \ 1    
-			//           /         /     \            /    \      /     \   
-			//          /         /       \          /      \    /       \   
-			//         F0        F2       F3        F0      F2  F0       F3  
+			//                 <p1>                          <p1n>           .
+			//              0 /    \ 1                    0 /    \ 1         .
+			//               /      \                      /      \          .
+			//              /        \                    /        \         .
+			//             /         <p2>              <p2n>       <p2n>     .
+			//            /       0 /   \ 1          0 /  \ 1    0 /   \ 1   .
+			//           /         /     \            /    \      /     \    .
+			//          /         /       \          /      \    /       \   .
+			//         F0        F2       F3        F0      F2  F0       F3  .
 			//                                 pNew1E   pNew1T  pNew2E   pNew2T
 			//
 			pNew1E =     pUnitE;    // F0
@@ -895,4 +900,6 @@ finish:
 ////////////////////////////////////////////////////////////////////////
 ///                         END OF FILE                              ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

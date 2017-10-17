@@ -9,6 +9,9 @@
  */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 static bool primes_consensus_special_cases();
 static pcover primes_consensus_merge();
 static pcover and_with_cofactor(); 
@@ -168,3 +171,5 @@ register pset cof;
     }
     return sf_inactive(A);
 }
+ABC_NAMESPACE_IMPL_END
+

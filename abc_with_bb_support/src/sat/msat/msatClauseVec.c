@@ -20,6 +20,9 @@
 
 #include "msatInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -42,12 +45,12 @@
 Msat_ClauseVec_t * Msat_ClauseVecAlloc( int nCap )
 {
     Msat_ClauseVec_t * p;
-    p = ALLOC( Msat_ClauseVec_t, 1 );
+    p = ABC_ALLOC( Msat_ClauseVec_t, 1 );
     if ( nCap > 0 && nCap < 16 )
         nCap = 16;
     p->nSize  = 0;
     p->nCap   = nCap;
-    p->pArray = p->nCap? ALLOC( Msat_Clause_t *, p->nCap ) : NULL;
+    p->pArray = p->nCap? ABC_ALLOC( Msat_Clause_t *, p->nCap ) : NULL;
     return p;
 }
 
@@ -64,8 +67,8 @@ Msat_ClauseVec_t * Msat_ClauseVecAlloc( int nCap )
 ***********************************************************************/
 void Msat_ClauseVecFree( Msat_ClauseVec_t * p )
 {
-    FREE( p->pArray );
-    FREE( p );
+    ABC_FREE( p->pArray );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -115,7 +118,7 @@ void Msat_ClauseVecGrow( Msat_ClauseVec_t * p, int nCapMin )
 {
     if ( p->nCap >= nCapMin )
         return;
-    p->pArray = REALLOC( Msat_Clause_t *, p->pArray, nCapMin ); 
+    p->pArray = ABC_REALLOC( Msat_Clause_t *, p->pArray, nCapMin ); 
     p->nCap   = nCapMin;
 }
 
@@ -229,4 +232,6 @@ Msat_Clause_t * Msat_ClauseVecReadEntry( Msat_ClauseVec_t * p, int i )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

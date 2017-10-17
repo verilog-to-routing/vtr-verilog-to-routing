@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -43,7 +46,7 @@ Ivy_Man_t * Ivy_ManStart()
 {
     Ivy_Man_t * p;
     // start the manager
-    p = ALLOC( Ivy_Man_t, 1 );
+    p = ABC_ALLOC( Ivy_Man_t, 1 );
     memset( p, 0, sizeof(Ivy_Man_t) );
     // perform initializations
     p->Ghost.Id   = -1;
@@ -63,7 +66,7 @@ Ivy_Man_t * Ivy_ManStart()
     p->nCreated = 1;
     // start the table
     p->nTableSize = 10007;
-    p->pTable = ALLOC( int, p->nTableSize );
+    p->pTable = ABC_ALLOC( int, p->nTableSize );
     memset( p->pTable, 0, sizeof(int) * p->nTableSize );
     return p;
 }
@@ -234,8 +237,8 @@ Ivy_Man_t * Ivy_ManFrames( Ivy_Man_t * pMan, int nLatches, int nFrames, int fIni
 ***********************************************************************/
 void Ivy_ManStop( Ivy_Man_t * p )
 {
-    if ( p->time1 ) { PRT( "Update lev  ", p->time1 ); }
-    if ( p->time2 ) { PRT( "Update levR ", p->time2 ); }
+    if ( p->time1 ) { ABC_PRT( "Update lev  ", p->time1 ); }
+    if ( p->time2 ) { ABC_PRT( "Update levR ", p->time2 ); }
 //    Ivy_TableProfile( p );
 //    if ( p->vFanouts )  Ivy_ManStopFanout( p );
     if ( p->vChunks )   Ivy_ManStopMemory( p );
@@ -244,8 +247,8 @@ void Ivy_ManStop( Ivy_Man_t * p )
     if ( p->vPos )      Vec_PtrFree( p->vPos );
     if ( p->vBufs )     Vec_PtrFree( p->vBufs );
     if ( p->vObjs )     Vec_PtrFree( p->vObjs );
-    free( p->pTable );
-    free( p );
+    ABC_FREE( p->pTable );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -333,10 +336,10 @@ int Ivy_ManCleanupSeq( Ivy_Man_t * p )
         return 0;
     }
     // disconnect the marked objects
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pObj, i )
         Ivy_ObjDisconnect( p, pObj );
     // remove the dangling objects
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pObj, i )
     {
         assert( Ivy_ObjIsNode(pObj) || Ivy_ObjIsLatch(pObj) || Ivy_ObjIsBuf(pObj) );
         assert( Ivy_ObjRefs(pObj) == 0 );
@@ -411,12 +414,12 @@ int Ivy_ManLatchIsSelfFeed( Ivy_Obj_t * pLatch )
 int Ivy_ManPropagateBuffers( Ivy_Man_t * p, int fUpdateLevel )
 {
     Ivy_Obj_t * pNode;
-    int LimitFactor = 10;
+    int LimitFactor = 100;
     int NodeBeg = Ivy_ManNodeNum(p);
     int nSteps;
     for ( nSteps = 0; Vec_PtrSize(p->vBufs) > 0; nSteps++ )
     {
-        pNode = Vec_PtrEntryLast(p->vBufs);
+        pNode = (Ivy_Obj_t *)Vec_PtrEntryLast(p->vBufs);
         while ( Ivy_ObjIsBuf(pNode) )
             pNode = Ivy_ObjReadFirstFanout( p, pNode );
         // check if this buffer should remain
@@ -462,6 +465,7 @@ void Ivy_ManPrintStats( Ivy_Man_t * p )
 //    printf( "Del = %d. ",     p->nDeleted );
     printf( "Lev = %3d. ",     Ivy_ManLatchNum(p)? -1 : Ivy_ManLevels(p) );
     printf( "\n" );
+    fflush( stdout );
 }
 
 /**Function*************************************************************
@@ -493,7 +497,7 @@ void Ivy_ManMakeSeq( Ivy_Man_t * p, int nLatches, int * pInits )
     for ( i = 0; i < nLatches; i++ )
     {
         // get the latch value
-        Init = pInits? pInits[i] : IVY_INIT_0;
+        Init = pInits? (Ivy_Init_t)pInits[i] : IVY_INIT_0;
         // create latch
         pObj = Ivy_ManPo( p, Ivy_ManPoNum(p) - nLatches + i );
         pLatch = Ivy_Latch( p, Ivy_ObjChild0(pObj), Init );
@@ -543,4 +547,6 @@ void Ivy_ManMakeSeq( Ivy_Man_t * p, int nLatches, int * pInits )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

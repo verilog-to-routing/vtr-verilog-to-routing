@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "resInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -70,7 +73,7 @@ void Res_WinDivisors( Res_Win_t * p, int nLevDivMax )
 
     // start collecting the divisors
     Vec_PtrClear( p->vDivs );
-    Vec_PtrForEachEntry( p->vLeaves, pObj, k )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pObj, k )
     {
         assert( (int)pObj->Level >= p->nLevLeafMin ); 
         if ( !Abc_NodeIsTravIdPrevious(pObj) )
@@ -80,7 +83,7 @@ void Res_WinDivisors( Res_Win_t * p, int nLevDivMax )
         Vec_PtrPush( p->vDivs, pObj );
     }
     // add the internal nodes to the data structure
-    Vec_PtrForEachEntry( p->vNodes, pObj, k )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vNodes, pObj, k )
     {
         if ( !Abc_NodeIsTravIdPrevious(pObj) )
             continue;
@@ -91,7 +94,7 @@ void Res_WinDivisors( Res_Win_t * p, int nLevDivMax )
 
     // explore the fanouts of already collected divisors
     p->nDivsPlus = 0;
-    Vec_PtrForEachEntry( p->vDivs, pObj, k )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pObj, k )
     {
         // consider fanouts of this node
         Abc_ObjForEachFanout( pObj, pFanout, f )
@@ -109,7 +112,7 @@ void Res_WinDivisors( Res_Win_t * p, int nLevDivMax )
             if ( !Abc_ObjIsNode(pFanout) ) 
                 continue;
             // skip nodes with large level
-            if ( (int)pFanout->Level >= p->nLevDivMax )
+            if ( (int)pFanout->Level > p->nLevDivMax )
                 continue;
             // skip nodes whose fanins are not divisors
             Abc_ObjForEachFanin( pFanout, pFanin, m )
@@ -126,7 +129,7 @@ void Res_WinDivisors( Res_Win_t * p, int nLevDivMax )
     }
 /*
     printf( "Node level = %d.  ", Abc_ObjLevel(p->pNode) );
-    Vec_PtrForEachEntryStart( p->vDivs, pObj, k, Vec_PtrSize(p->vDivs)-p->nDivsPlus )
+    Vec_PtrForEachEntryStart( Abc_Obj_t *, p->vDivs, pObj, k, Vec_PtrSize(p->vDivs)-p->nDivsPlus )
         printf( "%d ", Abc_ObjLevel(pObj) );
     printf( "\n" );
 */
@@ -173,7 +176,7 @@ void Res_WinMarkTfi( Res_Win_t * p )
     Abc_Obj_t * pObj;
     int i;
     // mark the leaves
-    Vec_PtrForEachEntry( p->vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pObj, i )
         Abc_NodeSetTravIdCurrent( pObj );
     // start from the node
     Res_WinMarkTfi_rec( p, p->pNode );
@@ -282,4 +285,6 @@ int Res_WinVisitMffc( Abc_Obj_t * pNode )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

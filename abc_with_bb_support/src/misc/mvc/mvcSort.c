@@ -18,6 +18,9 @@
 
 #include "mvc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -138,4 +141,6 @@ Mvc_Cube_t * Mvc_CoverSortMerge( Mvc_Cube_t * pList1, Mvc_Cube_t * pList2, Mvc_C
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

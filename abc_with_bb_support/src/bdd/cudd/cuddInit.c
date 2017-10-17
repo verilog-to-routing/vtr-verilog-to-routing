@@ -7,32 +7,61 @@
   Synopsis    [Functions to initialize and shut down the DD manager.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_Init()
-		<li> Cudd_Quit()
-		</ul>
-	       Internal procedures included in this module:
-		<ul>
-		<li> cuddZddInitUniv()
-		<li> cuddZddFreeUniv()
-		</ul>
-	      ]
+                <ul>
+                <li> Cudd_Init()
+                <li> Cudd_Quit()
+                </ul>
+               Internal procedures included in this module:
+                <ul>
+                <li> cuddZddInitUniv()
+                <li> cuddZddFreeUniv()
+                </ul>
+              ]
 
   SeeAlso     []
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
-#define CUDD_MAIN
-#include    "cuddInt.h"
-#undef CUDD_MAIN
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -54,7 +83,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddInit.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddInit.c,v 1.33 2007/07/01 05:10:50 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -105,28 +134,28 @@ Cudd_Init(
     DdNode *one, *zero;
     unsigned int maxCacheSize;
     unsigned int looseUpTo;
-    extern void (*MMoutOfMemory)(long);
-    void (*saveHandler)(long);
+    extern DD_OOMFP MMoutOfMemory;
+    DD_OOMFP saveHandler;
 
     if (maxMemory == 0) {
-	maxMemory = getSoftDataLimit();
+        maxMemory = getSoftDataLimit();
     }
     looseUpTo = (unsigned int) ((maxMemory / sizeof(DdNode)) /
-				DD_MAX_LOOSE_FRACTION);
+                                DD_MAX_LOOSE_FRACTION);
     unique = cuddInitTable(numVars,numVarsZ,numSlots,looseUpTo);
-    unique->maxmem = (unsigned) maxMemory / 10 * 9;
     if (unique == NULL) return(NULL);
+    unique->maxmem = (unsigned long) maxMemory / 10 * 9;
     maxCacheSize = (unsigned int) ((maxMemory / sizeof(DdCache)) /
-				   DD_MAX_CACHE_FRACTION);
+                                   DD_MAX_CACHE_FRACTION);
     result = cuddInitCache(unique,cacheSize,maxCacheSize);
     if (result == 0) return(NULL);
 
     saveHandler = MMoutOfMemory;
     MMoutOfMemory = Cudd_OutOfMem;
-    unique->stash = ALLOC(char,(maxMemory / DD_STASH_FRACTION) + 4);
+    unique->stash = ABC_ALLOC(char,(maxMemory / DD_STASH_FRACTION) + 4);
     MMoutOfMemory = saveHandler;
     if (unique->stash == NULL) {
-	(void) fprintf(unique->err,"Unable to set aside memory\n");
+        (void) fprintf(unique->err,"Unable to set aside memory\n");
     }
 
     /* Initialize constants. */
@@ -138,9 +167,9 @@ Cudd_Init(
     cuddRef(unique->zero);
 #ifdef HAVE_IEEE_754
     if (DD_PLUS_INF_VAL != DD_PLUS_INF_VAL * 3 ||
-	DD_PLUS_INF_VAL != DD_PLUS_INF_VAL / 3) {
-	(void) fprintf(unique->err,"Warning: Crippled infinite values\n");
-	(void) fprintf(unique->err,"Recompile without -DHAVE_IEEE_754\n");
+        DD_PLUS_INF_VAL != DD_PLUS_INF_VAL / 3) {
+        (void) fprintf(unique->err,"Warning: Crippled infinite values\n");
+        (void) fprintf(unique->err,"Recompile without -DHAVE_IEEE_754\n");
     }
 #endif
     unique->plusinfinity = cuddUniqueConst(unique,DD_PLUS_INF_VAL);
@@ -155,22 +184,25 @@ Cudd_Init(
     one = unique->one;
     zero = Cudd_Not(one);
     /* Create the projection functions. */
-    unique->vars = ALLOC(DdNodePtr,unique->maxSize);
+    unique->vars = ABC_ALLOC(DdNodePtr,unique->maxSize);
     if (unique->vars == NULL) {
-	unique->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        unique->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < unique->size; i++) {
-	unique->vars[i] = cuddUniqueInter(unique,i,one,zero);
-	if (unique->vars[i] == NULL) return(0);
-	cuddRef(unique->vars[i]);
+        unique->vars[i] = cuddUniqueInter(unique,i,one,zero);
+        if (unique->vars[i] == NULL) return(0);
+        cuddRef(unique->vars[i]);
     }
 
     if (unique->sizeZ)
-	cuddZddInitUniv(unique);
+        cuddZddInitUniv(unique);
 
     unique->memused += sizeof(DdNode *) * unique->maxSize;
 
+    unique->bFunc = NULL;
+    unique->bFunc2 = NULL;
+    unique->TimeStop = 0;
     return(unique);
 
 } /* end of Cudd_Init */
@@ -193,7 +225,7 @@ void
 Cudd_Quit(
   DdManager * unique)
 {
-    if (unique->stash != NULL) FREE(unique->stash);
+    if (unique->stash != NULL) ABC_FREE(unique->stash);
     cuddFreeTable(unique);
 
 } /* end of Cudd_Quit */
@@ -220,29 +252,29 @@ int
 cuddZddInitUniv(
   DdManager * zdd)
 {
-    DdNode	*p, *res;
-    int		i;
+    DdNode      *p, *res;
+    int         i;
 
-    zdd->univ = ALLOC(DdNodePtr, zdd->sizeZ);
+    zdd->univ = ABC_ALLOC(DdNodePtr, zdd->sizeZ);
     if (zdd->univ == NULL) {
-	zdd->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        zdd->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
 
     res = DD_ONE(zdd);
     cuddRef(res);
     for (i = zdd->sizeZ - 1; i >= 0; i--) {
-	unsigned int index = zdd->invpermZ[i];
-	p = res;
-	res = cuddUniqueInterZdd(zdd, index, p, p);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd,p);
-	    FREE(zdd->univ);
-	    return(0);
-	}
-	cuddRef(res);
-	cuddDeref(p);
-	zdd->univ[i] = res;
+        unsigned int index = zdd->invpermZ[i];
+        p = res;
+        res = cuddUniqueInterZdd(zdd, index, p, p);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(zdd,p);
+            ABC_FREE(zdd->univ);
+            return(0);
+        }
+        cuddRef(res);
+        cuddDeref(p);
+        zdd->univ[i] = res;
     }
 
 #ifdef DD_VERBOSE
@@ -270,8 +302,8 @@ cuddZddFreeUniv(
   DdManager * zdd)
 {
     if (zdd->univ) {
-	Cudd_RecursiveDerefZdd(zdd, zdd->univ[0]);
-	FREE(zdd->univ);
+        Cudd_RecursiveDerefZdd(zdd, zdd->univ[0]);
+        ABC_FREE(zdd->univ);
     }
 
 } /* end of cuddZddFreeUniv */
@@ -280,4 +312,8 @@ cuddZddFreeUniv(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+
 

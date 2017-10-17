@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "espresso.h"
+#include "base/abc/abc.h"
+#include "misc/espresso/espresso.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -55,7 +58,7 @@ void Abc_NtkEspresso( Abc_Ntk_t * pNtk, int fVerbose )
         Abc_NtkMapToSop(pNtk);
     else if ( Abc_NtkHasBdd(pNtk) )
     {
-        if ( !Abc_NtkBddToSop(pNtk, 0) )
+        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY) )
         {
             printf( "Abc_NtkEspresso(): Converting to SOPs has failed.\n" );
             return;
@@ -247,4 +250,6 @@ pset_family Abc_EspressoMinimize( pset_family pOnset, pset_family pDcset )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,8 +18,12 @@
 
 ***********************************************************************/
  
-#ifndef __CUT_LIST_H__
-#define __CUT_LIST_H__
+#ifndef ABC__opt__cut__cutList_h
+#define ABC__opt__cut__cutList_h
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -198,6 +202,10 @@ static inline Cut_Cut_t * Cut_ListFinish( Cut_List_t * p )
     *ppTail = NULL;
     return pHead;
 }
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

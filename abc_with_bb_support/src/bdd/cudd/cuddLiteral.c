@@ -8,25 +8,56 @@
   BDDs.]
 
   Description [External procedures included in this file:
-		<ul>
-		<li> Cudd_bddLiteralSetIntersection()
-		</ul>
-	    Internal procedures included in this file:
-		<ul>
-		<li> cuddBddLiteralSetIntersectionRecur()
-		</ul>]
+                <ul>
+                <li> Cudd_bddLiteralSetIntersection()
+                </ul>
+            Internal procedures included in this file:
+                <ul>
+                <li> cuddBddLiteralSetIntersectionRecur()
+                </ul>]
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -46,7 +77,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddLiteral.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddLiteral.c,v 1.8 2004/08/13 18:04:50 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -92,8 +123,8 @@ Cudd_bddLiteralSetIntersection(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddBddLiteralSetIntersectionRecur(dd,f,g);
+        dd->reordered = 0;
+        res = cuddBddLiteralSetIntersectionRecur(dd,f,g);
     } while (dd->reordered == 1);
     return(res);
 
@@ -152,27 +183,27 @@ cuddBddLiteralSetIntersectionRecur(
     ** loop will stop when the constant node is reached in both cubes.
     */
     while (topf != topg) {
-	if (topf < topg) {	/* move down on f */
-	    comple = f != F;
-	    f = cuddT(F);
-	    if (comple) f = Cudd_Not(f);
-	    if (f == zero) {
-		f = cuddE(F);
-		if (comple) f = Cudd_Not(f);
-	    }
-	    F = Cudd_Regular(f);
-	    topf = cuddI(dd,F->index);
-	} else if (topg < topf) {
-	    comple = g != G;
-	    g = cuddT(G);
-	    if (comple) g = Cudd_Not(g);
-	    if (g == zero) {
-		g = cuddE(G);
-		if (comple) g = Cudd_Not(g);
-	    }
-	    G = Cudd_Regular(g);
-	    topg = cuddI(dd,G->index);
-	}
+        if (topf < topg) {      /* move down on f */
+            comple = f != F;
+            f = cuddT(F);
+            if (comple) f = Cudd_Not(f);
+            if (f == zero) {
+                f = cuddE(F);
+                if (comple) f = Cudd_Not(f);
+            }
+            F = Cudd_Regular(f);
+            topf = cuddI(dd,F->index);
+        } else if (topg < topf) {
+            comple = g != G;
+            g = cuddT(G);
+            if (comple) g = Cudd_Not(g);
+            if (g == zero) {
+                g = cuddE(G);
+                if (comple) g = Cudd_Not(g);
+            }
+            G = Cudd_Regular(g);
+            topg = cuddI(dd,G->index);
+        }
     }
 
     /* At this point, f == one <=> g == 1. It suffices to test one of them. */
@@ -180,7 +211,7 @@ cuddBddLiteralSetIntersectionRecur(
 
     res = cuddCacheLookup2(dd,Cudd_bddLiteralSetIntersection,f,g);
     if (res != NULL) {
-	return(res);
+        return(res);
     }
 
     /* Here f and g are both non constant and have the same top variable. */
@@ -189,39 +220,39 @@ cuddBddLiteralSetIntersectionRecur(
     phasef = 1;
     if (comple) fc = Cudd_Not(fc);
     if (fc == zero) {
-	fc = cuddE(F);
-	phasef = 0;
-	if (comple) fc = Cudd_Not(fc);
+        fc = cuddE(F);
+        phasef = 0;
+        if (comple) fc = Cudd_Not(fc);
     }
     comple = g != G;
     gc = cuddT(G);
     phaseg = 1;
     if (comple) gc = Cudd_Not(gc);
     if (gc == zero) {
-	gc = cuddE(G);
-	phaseg = 0;
-	if (comple) gc = Cudd_Not(gc);
+        gc = cuddE(G);
+        phaseg = 0;
+        if (comple) gc = Cudd_Not(gc);
     }
 
     tmp = cuddBddLiteralSetIntersectionRecur(dd,fc,gc);
     if (tmp == NULL) {
-	return(NULL);
+        return(NULL);
     }
 
     if (phasef != phaseg) {
-	res = tmp;
+        res = tmp;
     } else {
-	cuddRef(tmp);
-	if (phasef == 0) {
-	    res = cuddBddAndRecur(dd,Cudd_Not(dd->vars[F->index]),tmp);
-	} else {
-	    res = cuddBddAndRecur(dd,dd->vars[F->index],tmp);
-	}
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd,tmp);
-	    return(NULL);
-	}
-	cuddDeref(tmp); /* Just cuddDeref, because it is included in result */
+        cuddRef(tmp);
+        if (phasef == 0) {
+            res = cuddBddAndRecur(dd,Cudd_Not(dd->vars[F->index]),tmp);
+        } else {
+            res = cuddBddAndRecur(dd,dd->vars[F->index],tmp);
+        }
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd,tmp);
+            return(NULL);
+        }
+        cuddDeref(tmp); /* Just cuddDeref, because it is included in result */
     }
 
     cuddCacheInsert2(dd,Cudd_bddLiteralSetIntersection,f,g,res);
@@ -234,4 +265,8 @@ cuddBddLiteralSetIntersectionRecur(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+
 

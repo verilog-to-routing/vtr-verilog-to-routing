@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "sim.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -47,21 +50,21 @@ void Sim_SymmsSimulate( Sym_Man_t * p, unsigned * pPat, Vec_Ptr_t * vMatrsNonSym
 {
     Abc_Obj_t * pNode;
     int i, nPairsTotal, nPairsSym, nPairsNonSym;
-    int clk;
+    abctime clk;
 
     // create the simulation matrix
     Sim_SymmsCreateSquare( p, pPat );
     // simulate each node in the DFS order
-clk = clock();
-    Vec_PtrForEachEntry( p->vNodes, pNode, i )
+clk = Abc_Clock();
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vNodes, pNode, i )
     {
 //        if ( Abc_NodeIsConst(pNode) )
 //            continue;
         Sim_UtilSimulateNodeOne( pNode, p->vSim, p->nSimWords, 0 );
     }
-p->timeSim += clock() - clk;
+p->timeSim += Abc_Clock() - clk;
     // collect info into the CO matrices
-clk = clock();
+clk = Abc_Clock();
     Abc_NtkForEachCo( p->pNtk, pNode, i )
     {
         pNode = Abc_ObjFanin0(pNode);
@@ -75,7 +78,7 @@ clk = clock();
             continue;
         Sim_SymmsDeriveInfo( p, pPat, pNode, vMatrsNonSym, i );
     }
-p->timeMatr += clock() - clk;
+p->timeMatr += Abc_Clock() - clk;
 }
 
 /**Function*************************************************************
@@ -97,7 +100,7 @@ void Sim_SymmsCreateSquare( Sym_Man_t * p, unsigned * pPat )
     // for each PI var copy the pattern
     Abc_NtkForEachCi( p->pNtk, pNode, i )
     {
-        pSimInfo = Vec_PtrEntry( p->vSim, pNode->Id );
+        pSimInfo = (unsigned *)Vec_PtrEntry( p->vSim, pNode->Id );
         if ( Sim_HasBit(pPat, i) )
         {
             for ( w = 0; w < p->nSimWords; w++ )
@@ -132,10 +135,10 @@ void Sim_SymmsDeriveInfo( Sym_Man_t * p, unsigned * pPat, Abc_Obj_t * pNode, Vec
     unsigned * pSimInfo;
     int i, w, Index;
     // get the matrix, the support, and the simulation info
-    pMat = Vec_PtrEntry( vMatrsNonSym, Output );
-    vSupport = Vec_VecEntry( p->vSupports, Output );
-    pSupport = Vec_PtrEntry( p->vSuppFun, Output );
-    pSimInfo = Vec_PtrEntry( p->vSim, pNode->Id );
+    pMat = (Extra_BitMat_t *)Vec_PtrEntry( vMatrsNonSym, Output );
+    vSupport = Vec_VecEntryInt( p->vSupports, Output );
+    pSupport = (unsigned *)Vec_PtrEntry( p->vSuppFun, Output );
+    pSimInfo = (unsigned *)Vec_PtrEntry( p->vSim, pNode->Id );
     // generate vectors A1 and A2
     for ( w = 0; w < p->nSimWords; w++ )
     {
@@ -170,4 +173,6 @@ void Sim_SymmsDeriveInfo( Sym_Man_t * p, unsigned * pPat, Abc_Obj_t * pNode, Vec
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

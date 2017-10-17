@@ -18,6 +18,9 @@
 
 #include "fxuInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -55,11 +58,11 @@ static void Fxu_HeapDoubleMoveDn( Fxu_HeapDouble * p, Fxu_Double * pDiv );
 Fxu_HeapDouble * Fxu_HeapDoubleStart()
 {
 	Fxu_HeapDouble * p;
-	p = ALLOC( Fxu_HeapDouble, 1 );
+	p = ABC_ALLOC( Fxu_HeapDouble, 1 );
 	memset( p, 0, sizeof(Fxu_HeapDouble) );
 	p->nItems      = 0;
 	p->nItemsAlloc = 10000;
-	p->pTree       = ALLOC( Fxu_Double *, p->nItemsAlloc + 1 );
+	p->pTree       = ABC_ALLOC( Fxu_Double *, p->nItemsAlloc + 1 );
 	p->pTree[0]    = NULL;
 	return p;
 }
@@ -79,7 +82,7 @@ Fxu_HeapDouble * Fxu_HeapDoubleStart()
 void Fxu_HeapDoubleResize( Fxu_HeapDouble * p )
 {
 	p->nItemsAlloc *= 2;
-	p->pTree = REALLOC( Fxu_Double *, p->pTree, p->nItemsAlloc + 1 );
+	p->pTree = ABC_REALLOC( Fxu_Double *, p->pTree, p->nItemsAlloc + 1 );
 }
 
 /**Function*************************************************************
@@ -95,8 +98,8 @@ void Fxu_HeapDoubleResize( Fxu_HeapDouble * p )
 ***********************************************************************/
 void Fxu_HeapDoubleStop( Fxu_HeapDouble * p )
 {
-	free( p->pTree );
-	free( p );
+	ABC_FREE( p->pTree );
+	ABC_FREE( p );
 }
 
 
@@ -442,4 +445,6 @@ void Fxu_HeapDoubleMoveDn( Fxu_HeapDouble * p, Fxu_Double * pDiv )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

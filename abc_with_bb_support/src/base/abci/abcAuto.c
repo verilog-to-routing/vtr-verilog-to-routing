@@ -18,11 +18,20 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
+
+#ifdef ABC_USE_CUDD
 
 static void Abc_NtkAutoPrintAll( DdManager * dd, int nInputs, DdNode * pbOutputs[], int nOutputs, char * pInputNames[], char * pOutputNames[], int fNaive );
 static void Abc_NtkAutoPrintOne( DdManager * dd, int nInputs, DdNode * pbOutputs[], int Output, char * pInputNames[], char * pOutputNames[], int fNaive );
@@ -60,7 +69,7 @@ void Abc_NtkAutoPrint( Abc_Ntk_t * pNtk, int Output, int fNaive, int fVerbose )
     nInputs  = Abc_NtkCiNum(pNtk);
     nOutputs = Abc_NtkCoNum(pNtk);
 //    dd       = pNtk->pManGlob;
-    dd = Abc_NtkGlobalBddMan( pNtk );
+    dd = (DdManager *)Abc_NtkGlobalBddMan( pNtk );
 
     // complement the global functions
     vFuncsGlob = Vec_PtrAlloc( Abc_NtkCoNum(pNtk) );
@@ -96,8 +105,8 @@ void Abc_NtkAutoPrint( Abc_Ntk_t * pNtk, int Output, int fNaive, int fVerbose )
 //    Extra_StopManager( pNtk->pManGlob );
 //    pNtk->pManGlob = NULL;
     Abc_NtkFreeGlobalBdds( pNtk, 1 );
-    free( pInputNames );
-    free( pOutputNames );
+    ABC_FREE( pInputNames );
+    ABC_FREE( pOutputNames );
     Vec_PtrFree( vFuncsGlob );
 }
 
@@ -124,14 +133,14 @@ void Abc_NtkAutoPrintAll( DdManager * dd, int nInputs, DdNode * pbOutputs[], int
 	int nAutoSymsMaxSupp;
 	int nAutoSymOuts;
 	int nSuppSizeMax;
-	int clk;
+	abctime clk;
 	
 	nAutoSymOuts = 0;
 	nAutoSyms    = 0;
 	nAutoSymsMax = 0;
 	nAutoSymsMaxSupp = 0;
 	nSuppSizeMax = 0;
-	clk = clock();
+	clk = Abc_Clock();
 
 	SigCounter = 0;
 	for ( o = 0; o < nOutputs; o++ )
@@ -161,8 +170,8 @@ void Abc_NtkAutoPrintAll( DdManager * dd, int nInputs, DdNode * pbOutputs[], int
 			nSuppSizeMax = nSupp;
 
 
-//PRB( dd, bCanVars );
-//PRB( dd, bReduced );
+//ABC_PRB( dd, bCanVars );
+//ABC_PRB( dd, bReduced );
 //Cudd_PrintMinterm( dd, bReduced );
 //printf( "The equations are:\n" );
 //Cudd_zddPrintCover( dd, zEquations );
@@ -170,8 +179,8 @@ void Abc_NtkAutoPrintAll( DdManager * dd, int nInputs, DdNode * pbOutputs[], int
 //fflush( stdout );
 
 		bSpace2 = Extra_bddSpaceFromMatrixPos( dd, zEquations );   Cudd_Ref( bSpace2 );
-//PRB( dd, bSpace1 );
-//PRB( dd, bSpace2 );
+//ABC_PRB( dd, bSpace1 );
+//ABC_PRB( dd, bSpace2 );
 		if ( bSpace1 != bSpace2 )
 			printf( "Spaces are NOT EQUAL!\n" );
 //		else
@@ -192,7 +201,7 @@ void Abc_NtkAutoPrintAll( DdManager * dd, int nInputs, DdNode * pbOutputs[], int
 	printf( "SumK=%3d ",     nAutoSyms );
 	printf( "KMax=%2d ",     nAutoSymsMax );
 	printf( "Supp=%3d   ",   nAutoSymsMaxSupp );
-	printf( "Time=%4.2f ", (float)(clock() - clk)/(float)(CLOCKS_PER_SEC) );
+	printf( "Time=%4.2f ", (float)(Abc_Clock() - clk)/(float)(CLOCKS_PER_SEC) );
 	printf( "\n" );
 }
 
@@ -232,8 +241,16 @@ void Abc_NtkAutoPrintOne( DdManager * dd, int nInputs, DdNode * pbOutputs[], int
 	Cudd_RecursiveDerefZdd( dd, zEquations );
 }
 
+#else
+
+void Abc_NtkAutoPrint( Abc_Ntk_t * pNtk, int Output, int fNaive, int fVerbose ) {}
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

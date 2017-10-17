@@ -13,6 +13,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 long start_time;
 
 
@@ -245,3 +248,5 @@ pcover A, B;
 	Tsave = sf_union(Tsave, sf_contain(T));
     return Tsave;
 }
+ABC_NAMESPACE_IMPL_END
+

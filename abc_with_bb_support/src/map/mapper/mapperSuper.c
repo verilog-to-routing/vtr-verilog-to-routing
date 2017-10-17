@@ -18,6 +18,9 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -77,15 +80,17 @@ int Map_LibraryRead( Map_SuperLib_t * pLib, char * pFileName )
 int Map_LibraryReadFile( Map_SuperLib_t * pLib, FILE * pFile )
 {
     ProgressBar * pProgress;
-    char pBuffer[2000];
+    char pBuffer[5000];
     FILE * pFileGen;
     Map_Super_t * pGate;
-    char * pTemp, * pLibName;
+    char * pTemp = NULL; // Suppress "might be used uninitialized"
+    char * pLibName;
     int nCounter, nGatesTotal;
     unsigned uCanon[2];
+    int RetValue;
 
     // skip empty and comment lines
-    while ( fgets( pBuffer, 5000, pFile ) != NULL )
+    while ( fgets( pBuffer, 2000, pFile ) != NULL )
     {
         // skip leading spaces
         for ( pTemp = pBuffer; *pTemp == ' ' || *pTemp == '\r' || *pTemp == '\n'; pTemp++ );
@@ -98,27 +103,27 @@ int Map_LibraryReadFile( Map_SuperLib_t * pLib, FILE * pFile )
     pLibName = strtok( pTemp, " \t\r\n" );
     if ( strcmp( pLibName, "GATE" ) == 0 )
     {
-        printf( "The input file \"%s\" looks like a GENLIB file and not a supergate library file.\n", pLib->pName );
+        printf( "The input file \"%s\" looks like a genlib file and not a supergate library file.\n", pLib->pName );
         return 0;
     }
     pFileGen = fopen( pLibName, "r" );
     if ( pFileGen == NULL )
     {
-        printf( "Cannot open the GENLIB file \"%s\".\n", pLibName );
+        printf( "Cannot open the genlib file \"%s\".\n", pLibName );
         return 0;
     }
     fclose( pFileGen );
 
     // read the genlib library
-    pLib->pGenlib = Mio_LibraryRead( Abc_FrameGetGlobalFrame(), pLibName, 0, 0 );
+    pLib->pGenlib = Mio_LibraryRead( pLibName, NULL, 0, 0 );
     if ( pLib->pGenlib == NULL )
     {
-        printf( "Cannot read GENLIB file \"%s\".\n", pLibName );
+        printf( "Cannot read genlib file \"%s\".\n", pLibName );
         return 0;
     }
 
     // read the number of variables
-    fscanf( pFile, "%d\n", &pLib->nVarsMax );
+    RetValue = fscanf( pFile, "%d\n", &pLib->nVarsMax );
     if ( pLib->nVarsMax < 2 || pLib->nVarsMax > 10 )
     {
         printf( "Suspicious number of variables (%d).\n", pLib->nVarsMax );
@@ -126,7 +131,7 @@ int Map_LibraryReadFile( Map_SuperLib_t * pLib, FILE * pFile )
     }
 
     // read the number of gates
-    fscanf( pFile, "%d\n", &nGatesTotal );
+    RetValue = fscanf( pFile, "%d\n", &nGatesTotal );
     if ( nGatesTotal < 1 || nGatesTotal > 10000000 )
     {
         printf( "Suspicious number of gates (%d).\n", nGatesTotal );
@@ -144,7 +149,7 @@ int Map_LibraryReadFile( Map_SuperLib_t * pLib, FILE * pFile )
         // get the gate
         pGate = Map_LibraryReadGate( pLib, pTemp, pLib->nVarsMax );
         assert( pGate->Num == nCounter + 1 );
-        // count the number of parantheses in the formula - this is the number of gates
+        // count the number of parentheses in the formula - this is the number of gates
         for ( pTemp = pGate->pFormula; *pTemp; pTemp++ )
             pGate->nGates += (*pTemp == '(');
         // verify the truth table
@@ -256,7 +261,7 @@ char * Map_LibraryReadFormulaStep( char * pFormula, char * pStrings[], int * pnS
     // skip leading spaces
     for ( pName = pFormula; *pName && *pName == ' '; pName++ );
     assert( *pName );
-    // find the first opening paranthesis
+    // find the first opening parenthesis
     for ( pPar1 = pName; *pPar1 && *pPar1 != '('; pPar1++ );
     if ( *pPar1 == 0 )
     {
@@ -266,7 +271,7 @@ char * Map_LibraryReadFormulaStep( char * pFormula, char * pStrings[], int * pnS
     // overwrite it with space
     assert( *pPar1 == '(' );
     *pPar1 = 0;
-    // find the corresponding closing paranthesis
+    // find the corresponding closing parenthesis
     for ( CountPars = 1, pPar2 = pPar1 + 1; *pPar2 && CountPars; pPar2++ )
         if ( *pPar2 == '(' )
             CountPars++;
@@ -377,7 +382,7 @@ void Map_LibraryComputeTruth_rec( Map_SuperLib_t * pLib, char * pFormula, unsign
     for ( i = 0; i < nStrings; i++ )
         Map_LibraryComputeTruth_rec( pLib, pStrings[i], uTruthsIn, uTruthsFanins[i] );
     // get the root supergate
-    pMioGate = Mio_LibraryReadGateByName( pLib->pGenlib, pGateName );
+    pMioGate = Mio_LibraryReadGateByName( pLib->pGenlib, pGateName, NULL );
     if ( pMioGate == NULL )
         printf( "A supergate contains gate \"%s\" that is not in \"%s\".\n", pGateName, Mio_LibraryReadName(pLib->pGenlib) ); 
     // derive the functionality of the output of the supergate
@@ -400,7 +405,7 @@ void Map_LibraryPrintSupergate( Map_Super_t * pGate )
     printf( "%5d : ",  pGate->nUsed );
     printf( "%5d   ",  pGate->Num );
     printf( "A = %5.2f   ",  pGate->Area );
-    printf( "D = %5.2f   ",  pGate->tDelayMax );
+    printf( "D = %5.2f/%5.2f/%5.2f   ", pGate->tDelayMax.Rise, pGate->tDelayMax.Fall, pGate->tDelayMax.Worst );
     printf( "%s",    pGate->pFormula );
     printf( "\n" );
 }
@@ -420,12 +425,12 @@ void Map_LibraryPrintSupergate( Map_Super_t * pGate )
 void Map_LibraryPrintClasses( Map_SuperLib_t * p )
 {
 /*
-    st_generator * gen;
+    st__generator * gen;
     Map_Super_t * pSuper, * pSuper2;
     unsigned Key, uTruth;
     int Counter = 0;
     // copy all the supergates into one array
-    st_foreach_item( p->tSuplib, gen, (char **)&Key, (char **)&pSuper )
+    st__foreach_item( p->tSuplib, gen, (char **)&Key, (char **)&pSuper )
     {
         for ( pSuper2 = pSuper; pSuper2; pSuper2 = pSuper2->pNext )
         {
@@ -446,4 +451,6 @@ void Map_LibraryPrintClasses( Map_SuperLib_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

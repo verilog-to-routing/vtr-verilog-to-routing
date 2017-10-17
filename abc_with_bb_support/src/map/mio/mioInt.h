@@ -16,24 +16,32 @@
 
 ***********************************************************************/
 
-#ifndef __MIO_INT_H__
-#define __MIO_INT_H__
+#ifndef ABC__map__mio__mioInt_h
+#define ABC__map__mio__mioInt_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "abc.h"
-#include "mvc.h"
-#include "main.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include "misc/vec/vec.h"
+#include "misc/mem/mem.h"
+#include "misc/st/st.h"
 #include "mio.h"
-#include "extra.h"
+ 
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
 
 #define    MIO_STRING_GATE       "GATE"
+#define    MIO_STRING_LATCH      "LATCH"
 #define    MIO_STRING_PIN        "PIN"
 #define    MIO_STRING_NONINV     "NONINV"
 #define    MIO_STRING_INV        "INV"
@@ -54,6 +62,8 @@ struct  Mio_LibraryStruct_t_
 {
     char *             pName;       // the name of the library
     int                nGates;      // the number of the gates
+    Mio_Gate_t **      ppGates0;    // the array of gates in the original order
+    Mio_Gate_t **      ppGatesName; // the array of gates sorted by name
     Mio_Gate_t *       pGates;      // the linked list of all gates in no particular order
     Mio_Gate_t *       pGate0;      // the constant zero gate
     Mio_Gate_t *       pGate1;      // the constant one gate
@@ -61,10 +71,25 @@ struct  Mio_LibraryStruct_t_
     Mio_Gate_t *       pGateInv;    // the inverter
     Mio_Gate_t *       pGateNand2;  // the NAND2 gate
     Mio_Gate_t *       pGateAnd2;   // the AND2 gate
-    st_table *         tName2Gate;  // the mapping of gate names into their pointer
-    DdManager *        dd;          // the nanager storing functions of gates
-    Extra_MmFlex_t *   pMmFlex;     // the memory manaqer for SOPs
+    Mio_Gate_t *       pGateNor2;   // the NOR2 gate
+    Mio_Gate_t *       pGateOr2;    // the OR2 gate
+    st__table *         tName2Gate;  // the mapping of gate names into their pointer
+    Mem_Flex_t *       pMmFlex;     // the memory manaqer for SOPs
     Vec_Str_t *        vCube;       // temporary cube
+    // matching
+    int                fPinFilter;  // pin filtering
+    int                fPinPerm;    // pin permutation
+    int                fPinQuick;   // pin permutation
+    Vec_Mem_t *        vTtMem;      // truth tables
+    Vec_Wec_t *        vTt2Match;   // matches for truth tables
+    Mio_Cell2_t *      pCells;      // library gates
+    int                nCells;      // library gate count
+    Vec_Ptr_t *        vNames;
+    Vec_Wrd_t *        vTruths; 
+    Vec_Int_t *        vTt2Match4;
+    Vec_Int_t *        vConfigs;
+    Vec_Mem_t *        vTtMem2[3]; 
+    Vec_Int_t *        vTt2Match2[3];
 }; 
 
 struct  Mio_GateStruct_t_
@@ -79,12 +104,19 @@ struct  Mio_GateStruct_t_
     Mio_Library_t *    pLib; 
     // the next gate in the list
     Mio_Gate_t *       pNext;    
+    Mio_Gate_t *       pTwin;    
 
     // the derived information
+    int                Cell;        // cell id
     int                nInputs;     // the number of inputs
+    int                Profile;     // the number of occurrences
+    int                Profile2;    // the number of occurrences
     double             dDelayMax;   // the maximum delay
-    DdNode *           bFunc;       // the functionality
-    char *             pSop;
+    char *             pSop;        // sum-of-products
+    Vec_Int_t *        vExpr;       // boolean expression
+    union { word       uTruth;      // truth table
+    word *             pTruth; };   // pointer to the truth table
+    int                Value;       // user's information
 };
 
 struct  Mio_PinStruct_t_
@@ -117,6 +149,9 @@ struct  Mio_PinStruct_t_
 /*=== mio.c =============================================================*/
 /*=== mioRead.c =============================================================*/
 /*=== mioUtils.c =============================================================*/
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

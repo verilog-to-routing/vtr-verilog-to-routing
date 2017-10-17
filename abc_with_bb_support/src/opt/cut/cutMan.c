@@ -20,6 +20,9 @@
 
 #include "cutInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -44,11 +47,10 @@ extern void Npn_StartTruth8( uint8 uTruths[][32] );
 Cut_Man_t * Cut_ManStart( Cut_Params_t * pParams )
 {
     Cut_Man_t * p;
-    int clk = clock();
 //    extern int nTruthDsd;
 //    nTruthDsd = 0;
     assert( pParams->nVarsMax >= 3 && pParams->nVarsMax <= CUT_SIZE_MAX );
-    p = ALLOC( Cut_Man_t, 1 );
+    p = ABC_ALLOC( Cut_Man_t, 1 );
     memset( p, 0, sizeof(Cut_Man_t) );
     // set and correct parameters
     p->pParams = pParams;
@@ -83,7 +85,7 @@ Cut_Man_t * Cut_ManStart( Cut_Params_t * pParams )
             p->nTruthWords = Cut_TruthWords( pParams->nVarsMax );
             p->EntrySize += p->nTruthWords * sizeof(unsigned);
         }
-        p->puTemp[0] = ALLOC( unsigned, 4 * p->nTruthWords );
+        p->puTemp[0] = ABC_ALLOC( unsigned, 4 * p->nTruthWords );
         p->puTemp[1] = p->puTemp[0] + p->nTruthWords;
         p->puTemp[2] = p->puTemp[1] + p->nTruthWords;
         p->puTemp[3] = p->puTemp[2] + p->nTruthWords;
@@ -121,16 +123,6 @@ Cut_Man_t * Cut_ManStart( Cut_Params_t * pParams )
 ***********************************************************************/
 void Cut_ManStop( Cut_Man_t * p )
 {
-    Cut_Cut_t * pCut;
-    int i;
-//    extern int nTruthDsd;
-//    printf( "Decomposable cuts = %d.\n", nTruthDsd );
-
-    Vec_PtrForEachEntry( p->vCutsNew, pCut, i )
-        if ( pCut != NULL )
-        {
-            int k = 0;
-        }
     if ( p->vCutsNew )    Vec_PtrFree( p->vCutsNew );
     if ( p->vCutsOld )    Vec_PtrFree( p->vCutsOld );
     if ( p->vCutsTemp )   Vec_PtrFree( p->vCutsTemp );
@@ -143,10 +135,10 @@ void Cut_ManStop( Cut_Man_t * p )
     if ( p->vNodeCuts )   Vec_IntFree( p->vNodeCuts );
     if ( p->vNodeStarts ) Vec_IntFree( p->vNodeStarts );
     if ( p->vCutPairs )   Vec_IntFree( p->vCutPairs );
-    if ( p->puTemp[0] )   free( p->puTemp[0] );
+    if ( p->puTemp[0] )   ABC_FREE( p->puTemp[0] );
 
     Extra_MmFixedStop( p->pMmCuts );
-    free( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -176,7 +168,7 @@ void Cut_ManPrintStats( Cut_Man_t * p )
     printf( "Nodes saturated   = %8d. (Max cuts = %d.)\n", p->nCutsLimit, p->pParams->nKeepMax );
     printf( "Cuts per node     = %8.1f\n", ((float)(p->nCutsCur-p->nCutsTriv))/p->nNodes );
     printf( "The cut size      = %8d bytes.\n", p->EntrySize );
-    printf( "Peak memory       = %8.2f Mb.\n", (float)p->nCutsPeak * p->EntrySize / (1<<20) );
+    printf( "Peak memory       = %8.2f MB.\n", (float)p->nCutsPeak * p->EntrySize / (1<<20) );
     printf( "Total nodes       = %8d.\n", p->nNodes );
     if ( p->pParams->fDag || p->pParams->fTree )
     {
@@ -187,11 +179,11 @@ void Cut_ManPrintStats( Cut_Man_t * p )
     if ( p->pParams->fMap && !p->pParams->fSeq )
     printf( "Mapping delay     = %8d.\n", p->nDelayMin );
 
-    PRT( "Merge ", p->timeMerge );
-    PRT( "Union ", p->timeUnion );
-    PRT( "Filter", p->timeFilter );
-    PRT( "Truth ", p->timeTruth );
-    PRT( "Map   ", p->timeMap );
+    ABC_PRT( "Merge ", p->timeMerge );
+    ABC_PRT( "Union ", p->timeUnion );
+    ABC_PRT( "Filter", p->timeFilter );
+    ABC_PRT( "Truth ", p->timeTruth );
+    ABC_PRT( "Map   ", p->timeMap );
 //    printf( "Nodes = %d. Multi = %d.  Cuts = %d. Multi = %d.\n", 
 //        p->nNodes, p->nNodesMulti, p->nCutsCur-p->nCutsTriv, p->nCutsMulti );
 //    printf( "Count0 = %d. Count1 = %d. Count2 = %d.\n\n", p->Count0, p->Count1, p->Count2 );
@@ -209,7 +201,7 @@ void Cut_ManPrintStats( Cut_Man_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-void Cut_ManPrintStatsToFile( Cut_Man_t * p, char * pFileName, int TimeTotal )
+void Cut_ManPrintStatsToFile( Cut_Man_t * p, char * pFileName, abctime TimeTotal )
 {
     FILE * pTable;
     pTable = fopen( "cut_stats.txt", "a+" );
@@ -323,4 +315,6 @@ void Cut_ManIncrementDagNodes( Cut_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

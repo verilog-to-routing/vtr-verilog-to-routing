@@ -7,43 +7,74 @@
   Synopsis    [Apply functions for ADDs and their operators.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_addApply()
-		<li> Cudd_addMonadicApply()
-		<li> Cudd_addPlus()
-		<li> Cudd_addTimes()
-		<li> Cudd_addThreshold()
-		<li> Cudd_addSetNZ()
-		<li> Cudd_addDivide()
-		<li> Cudd_addMinus()
-		<li> Cudd_addMinimum()
-		<li> Cudd_addMaximum()
-		<li> Cudd_addOneZeroMaximum()
-		<li> Cudd_addDiff()
-		<li> Cudd_addAgreement()
-		<li> Cudd_addOr()
-		<li> Cudd_addNand()
-		<li> Cudd_addNor()
-		<li> Cudd_addXor()
-		<li> Cudd_addXnor()
-		</ul>
-	    Internal procedures included in this module:
-		<ul>
-		<li> cuddAddApplyRecur()
-		<li> cuddAddMonadicApplyRecur()
-		</ul>]
+                <ul>
+                <li> Cudd_addApply()
+                <li> Cudd_addMonadicApply()
+                <li> Cudd_addPlus()
+                <li> Cudd_addTimes()
+                <li> Cudd_addThreshold()
+                <li> Cudd_addSetNZ()
+                <li> Cudd_addDivide()
+                <li> Cudd_addMinus()
+                <li> Cudd_addMinimum()
+                <li> Cudd_addMaximum()
+                <li> Cudd_addOneZeroMaximum()
+                <li> Cudd_addDiff()
+                <li> Cudd_addAgreement()
+                <li> Cudd_addOr()
+                <li> Cudd_addNand()
+                <li> Cudd_addNor()
+                <li> Cudd_addXor()
+                <li> Cudd_addXnor()
+                </ul>
+            Internal procedures included in this module:
+                <ul>
+                <li> cuddAddApplyRecur()
+                <li> cuddAddMonadicApplyRecur()
+                </ul>]
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at Boulder.
-  The University of Colorado at Boulder makes no warranty about the
-  suitability of this software for any purpose.  It is presented on an
-  AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
-#include    "cuddInt.h"
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -65,7 +96,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddAddApply.c,v 1.1.1.1 2003/02/24 22:23:50 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddAddApply.c,v 1.18 2009/02/19 16:15:26 fabio Exp $";
 #endif
 
 
@@ -106,15 +137,15 @@ static char rcsid[] DD_UNUSED = "$Id: cuddAddApply.c,v 1.1.1.1 2003/02/24 22:23:
 DdNode *
 Cudd_addApply(
   DdManager * dd,
-  DdNode * (*op)(DdManager *, DdNode **, DdNode **),
+  DD_AOP op,
   DdNode * f,
   DdNode * g)
 {
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddAddApplyRecur(dd,op,f,g);
+        dd->reordered = 0;
+        res = cuddAddApplyRecur(dd,op,f,g);
     } while (dd->reordered == 1);
     return(res);
 
@@ -147,13 +178,13 @@ Cudd_addPlus(
     if (F == DD_ZERO(dd)) return(G);
     if (G == DD_ZERO(dd)) return(F);
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	value = cuddV(F)+cuddV(G);
-	res = cuddUniqueConst(dd,value);
-	return(res);
+        value = cuddV(F)+cuddV(G);
+        res = cuddUniqueConst(dd,value);
+        return(res);
     }
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -188,13 +219,13 @@ Cudd_addTimes(
     if (F == DD_ONE(dd)) return(G);
     if (G == DD_ONE(dd)) return(F);
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	value = cuddV(F)*cuddV(G);
-	res = cuddUniqueConst(dd,value);
-	return(res);
+        value = cuddV(F)*cuddV(G);
+        res = cuddUniqueConst(dd,value);
+        return(res);
     }
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -224,11 +255,11 @@ Cudd_addThreshold(
     F = *f; G = *g;
     if (F == G || F == DD_PLUS_INFINITY(dd)) return(F);
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	if (cuddV(F) >= cuddV(G)) {
-	    return(F);
-	} else {
-	    return(DD_ZERO(dd));
-	}
+        if (cuddV(F) >= cuddV(G)) {
+            return(F);
+        } else {
+            return(DD_ZERO(dd));
+        }
     }
     return(NULL);
 
@@ -293,9 +324,9 @@ Cudd_addDivide(
     if (F == DD_ZERO(dd)) return(DD_ZERO(dd));
     if (G == DD_ONE(dd)) return(F);
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	value = cuddV(F)/cuddV(G);
-	res = cuddUniqueConst(dd,value);
-	return(res);
+        value = cuddV(F)/cuddV(G);
+        res = cuddUniqueConst(dd,value);
+        return(res);
     }
     return(NULL);
 
@@ -329,9 +360,9 @@ Cudd_addMinus(
     if (F == DD_ZERO(dd)) return(cuddAddNegateRecur(dd,G));
     if (G == DD_ZERO(dd)) return(F);
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	value = cuddV(F)-cuddV(G);
-	res = cuddUniqueConst(dd,value);
-	return(res);
+        value = cuddV(F)-cuddV(G);
+        res = cuddUniqueConst(dd,value);
+        return(res);
     }
     return(NULL);
 
@@ -368,15 +399,15 @@ Cudd_addMinimum(
     if (G == DD_MINUS_INFINITY(dd)) return(G);
 #endif
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	if (cuddV(F) <= cuddV(G)) {
-	    return(F);
-	} else {
-	    return(G);
-	}
+        if (cuddV(F) <= cuddV(G)) {
+            return(F);
+        } else {
+            return(G);
+        }
     }
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -413,15 +444,15 @@ Cudd_addMaximum(
     if (G == DD_PLUS_INFINITY(dd)) return(G);
 #endif
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	if (cuddV(F) >= cuddV(G)) {
-	    return(F);
-	} else {
-	    return(G);
-	}
+        if (cuddV(F) >= cuddV(G)) {
+            return(F);
+        } else {
+            return(G);
+        }
     }
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -450,13 +481,13 @@ Cudd_addOneZeroMaximum(
 
     if (*f == *g) return(DD_ZERO(dd));
     if (*g == DD_PLUS_INFINITY(dd))
-	return DD_ZERO(dd);
+        return DD_ZERO(dd);
     if (cuddIsConstant(*f) && cuddIsConstant(*g)) {
-	if (cuddV(*f) > cuddV(*g)) {
-	    return(DD_ONE(dd));
-	} else {
-	    return(DD_ZERO(dd));
-	}
+        if (cuddV(*f) > cuddV(*g)) {
+            return(DD_ONE(dd));
+        } else {
+            return(DD_ZERO(dd));
+        }
     }
 
     return(NULL);
@@ -489,15 +520,15 @@ Cudd_addDiff(
     if (F == DD_PLUS_INFINITY(dd)) return(G);
     if (G == DD_PLUS_INFINITY(dd)) return(F);
     if (cuddIsConstant(F) && cuddIsConstant(G)) {
-	if (cuddV(F) != cuddV(G)) {
+        if (cuddV(F) != cuddV(G)) {
             if (cuddV(F) < cuddV(G)) {
                 return(F);
             } else {
                 return(G);
             }
-	} else {
-	    return(DD_PLUS_INFINITY(dd));
-	}
+        } else {
+            return(DD_PLUS_INFINITY(dd));
+        }
     }
     return(NULL);
 
@@ -560,8 +591,8 @@ Cudd_addOr(
     if (cuddIsConstant(G)) return(F);
     if (F == G) return(F);
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -592,8 +623,8 @@ Cudd_addNand(
     if (F == DD_ZERO(dd) || G == DD_ZERO(dd)) return(DD_ONE(dd));
     if (cuddIsConstant(F) && cuddIsConstant(G)) return(DD_ZERO(dd));
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -624,8 +655,8 @@ Cudd_addNor(
     if (F == DD_ONE(dd) || G == DD_ONE(dd)) return(DD_ZERO(dd));
     if (cuddIsConstant(F) && cuddIsConstant(G)) return(DD_ONE(dd));
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -658,8 +689,8 @@ Cudd_addXor(
     if (G == DD_ONE(dd) && F == DD_ZERO(dd)) return(DD_ONE(dd));
     if (cuddIsConstant(F) && cuddIsConstant(G)) return(DD_ZERO(dd));
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -692,8 +723,8 @@ Cudd_addXnor(
     if (G == DD_ZERO(dd) && F == DD_ZERO(dd)) return(DD_ONE(dd));
     if (cuddIsConstant(F) && cuddIsConstant(G)) return(DD_ZERO(dd));
     if (F > G) { /* swap f and g */
-	*f = G;
-	*g = F;
+        *f = G;
+        *g = F;
     }
     return(NULL);
 
@@ -715,14 +746,14 @@ Cudd_addXnor(
 DdNode *
 Cudd_addMonadicApply(
   DdManager * dd,
-  DdNode * (*op)(DdManager *, DdNode *),
+  DD_MAOP op,
   DdNode * f)
 {
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddAddMonadicApplyRecur(dd,op,f);
+        dd->reordered = 0;
+        res = cuddAddMonadicApplyRecur(dd,op,f);
     } while (dd->reordered == 1);
     return(res);
 
@@ -748,9 +779,9 @@ Cudd_addLog(
   DdNode * f)
 {
     if (cuddIsConstant(f)) {
-	CUDD_VALUE_TYPE value = log(cuddV(f));
-	DdNode *res = cuddUniqueConst(dd,value);
-	return(res);
+        CUDD_VALUE_TYPE value = log(cuddV(f));
+        DdNode *res = cuddUniqueConst(dd,value);
+        return(res);
     }
     return(NULL);
 
@@ -777,16 +808,16 @@ Cudd_addLog(
 DdNode *
 cuddAddApplyRecur(
   DdManager * dd,
-  DdNode * (*op)(DdManager *, DdNode **, DdNode **),
+  DD_AOP op,
   DdNode * f,
   DdNode * g)
 {
     DdNode *res,
-	   *fv, *fvn, *gv, *gvn,
-	   *T, *E;
+           *fv, *fvn, *gv, *gvn,
+           *T, *E;
     unsigned int ford, gord;
     unsigned int index;
-    DdNode *(*cacheOp)(DdManager *, DdNode *, DdNode *);
+    DD_CTFP cacheOp;
 
     /* Check terminal cases. Op may swap f and g to increase the
      * cache hit rate.
@@ -796,7 +827,7 @@ cuddAddApplyRecur(
     if (res != NULL) return(res);
 
     /* Check cache. */
-    cacheOp = (DdNode *(*)(DdManager *, DdNode *, DdNode *)) op;
+    cacheOp = (DD_CTFP) op;
     res = cuddCacheLookup2(dd,cacheOp,f,g);
     if (res != NULL) return(res);
 
@@ -804,18 +835,18 @@ cuddAddApplyRecur(
     ford = cuddI(dd,f->index);
     gord = cuddI(dd,g->index);
     if (ford <= gord) {
-	index = f->index;
-	fv = cuddT(f);
-	fvn = cuddE(f);
+        index = f->index;
+        fv = cuddT(f);
+        fvn = cuddE(f);
     } else {
-	index = g->index;
-	fv = fvn = f;
+        index = g->index;
+        fv = fvn = f;
     }
     if (gord <= ford) {
-	gv = cuddT(g);
-	gvn = cuddE(g);
+        gv = cuddT(g);
+        gvn = cuddE(g);
     } else {
-	gv = gvn = g;
+        gv = gvn = g;
     }
 
     T = cuddAddApplyRecur(dd,op,fv,gv);
@@ -824,16 +855,16 @@ cuddAddApplyRecur(
 
     E = cuddAddApplyRecur(dd,op,fvn,gvn);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd,T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,T);
+        return(NULL);
     }
     cuddRef(E);
 
     res = (T == E) ? T : cuddUniqueInter(dd,(int)index,T,E);
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	Cudd_RecursiveDeref(dd, E);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        Cudd_RecursiveDeref(dd, E);
+        return(NULL);
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -861,11 +892,10 @@ cuddAddApplyRecur(
 DdNode *
 cuddAddMonadicApplyRecur(
   DdManager * dd,
-  DdNode * (*op)(DdManager *, DdNode *),
+  DD_MAOP op,
   DdNode * f)
 {
     DdNode *res, *ft, *fe, *T, *E;
-    unsigned int ford;
     unsigned int index;
 
     /* Check terminal cases. */
@@ -878,7 +908,6 @@ cuddAddMonadicApplyRecur(
     if (res != NULL) return(res);
 
     /* Recursive step. */
-    ford = cuddI(dd,f->index);
     index = f->index;
     ft = cuddT(f);
     fe = cuddE(f);
@@ -889,16 +918,16 @@ cuddAddMonadicApplyRecur(
 
     E = cuddAddMonadicApplyRecur(dd,op,fe);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd,T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,T);
+        return(NULL);
     }
     cuddRef(E);
 
     res = (T == E) ? T : cuddUniqueInter(dd,(int)index,T,E);
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	Cudd_RecursiveDeref(dd, E);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        Cudd_RecursiveDeref(dd, E);
+        return(NULL);
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -914,4 +943,7 @@ cuddAddMonadicApplyRecur(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
 

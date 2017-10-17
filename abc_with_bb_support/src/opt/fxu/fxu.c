@@ -19,6 +19,9 @@
 #include "fxuInt.h" 
 #include "fxu.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -54,10 +57,12 @@ static int s_MemoryPeak;
 ***********************************************************************/
 int Fxu_FastExtract( Fxu_Data_t * pData )
 {
+    int fScrollLines = 0;
 	Fxu_Matrix * p;
     Fxu_Single * pSingle;
     Fxu_Double * pDouble;
 	int Weight1, Weight2, Weight3;
+    int Counter = 0;
 
     s_MemoryTotal = 0;
     s_MemoryPeak  = 0;
@@ -77,8 +82,8 @@ int Fxu_FastExtract( Fxu_Data_t * pData )
         {
 		    Weight1 = Fxu_HeapSingleReadMaxWeight( p->pHeapSingle );
             if ( pData->fVerbose )
-                printf( "Best single = %3d.\n", Weight1 );
-            if ( Weight1 > 0 || Weight1 == 0 && pData->fUse0 )
+                printf( "Div %5d : Best single = %5d.%s", Counter++, Weight1, fScrollLines?"\n":"\r" );
+            if ( Weight1 > pData->WeightMin || (Weight1 == 0 && pData->fUse0) )
 			    Fxu_UpdateSingle( p );
             else
                 break;
@@ -92,8 +97,8 @@ int Fxu_FastExtract( Fxu_Data_t * pData )
         {
 		    Weight2 = Fxu_HeapDoubleReadMaxWeight( p->pHeapDouble );
             if ( pData->fVerbose )
-                printf( "Best double = %3d.\n", Weight2 );
-            if ( Weight2 > 0 || Weight2 == 0 && pData->fUse0 )
+                printf( "Div %5d : Best double = %5d.%s", Counter++, Weight2, fScrollLines?"\n":"\r" );
+            if ( Weight2 > pData->WeightMin || (Weight2 == 0 && pData->fUse0) )
 			    Fxu_UpdateDouble( p );
             else
                 break;
@@ -109,19 +114,19 @@ int Fxu_FastExtract( Fxu_Data_t * pData )
 		    Weight2 = Fxu_HeapDoubleReadMaxWeight( p->pHeapDouble );
 
             if ( pData->fVerbose )
-                printf( "Best double = %3d. Best single = %3d.\n", Weight2, Weight1 );
+                printf( "Div %5d : Best double = %5d. Best single = %5d.%s", Counter++, Weight2, Weight1, fScrollLines?"\n":"\r" );
 //Fxu_Select( p, &pSingle, &pDouble );
 
             if ( Weight1 >= Weight2 )
             {
-                if ( Weight1 > 0 || Weight1 == 0 && pData->fUse0 )
+                if ( Weight1 > pData->WeightMin || (Weight1 == 0 && pData->fUse0) )
 			        Fxu_UpdateSingle( p );
                 else
                     break;
             }
             else
             {
-                if ( Weight2 > 0 || Weight2 == 0 && pData->fUse0 )
+                if ( Weight2 > pData->WeightMin || (Weight2 == 0 && pData->fUse0) )
 			        Fxu_UpdateDouble( p );
                 else
                     break;
@@ -140,10 +145,10 @@ int Fxu_FastExtract( Fxu_Data_t * pData )
             // select the best single and double
             Weight3 = Fxu_Select( p, &pSingle, &pDouble );
             if ( pData->fVerbose )
-                printf( "Best double = %3d. Best single = %3d. Best complement = %3d.\n", 
-                    Weight2, Weight1, Weight3 );
+                printf( "Div %5d : Best double = %5d. Best single = %5d. Best complement = %5d.%s", 
+                    Counter++, Weight2, Weight1, Weight3, fScrollLines?"\n":"\r" );
 
-            if ( Weight3 > 0 || Weight3 == 0 && pData->fUse0 )
+            if ( Weight3 > pData->WeightMin || (Weight3 == 0 && pData->fUse0) )
                 Fxu_Update( p, pSingle, pDouble );
             else
                 break;
@@ -152,7 +157,8 @@ int Fxu_FastExtract( Fxu_Data_t * pData )
     }
 
     if ( pData->fVerbose )
-        printf( "Total single = %3d. Total double = %3d. Total compl = %3d.\n", p->nDivs1, p->nDivs2, p->nDivs3 );
+        printf( "Total single = %3d. Total double = %3d. Total compl = %3d.                    \n", 
+        p->nDivs1, p->nDivs2, p->nDivs3 );
 
     // create the new covers
     if ( pData->nNodesNew )
@@ -223,7 +229,7 @@ char * Fxu_MemFetch( Fxu_Matrix * p, int nBytes )
     s_MemoryTotal += nBytes;
     if ( s_MemoryPeak < s_MemoryTotal )
         s_MemoryPeak = s_MemoryTotal;
-//    return malloc( nBytes );
+//    return ABC_ALLOC( char, nBytes );
     return Extra_MmFixedEntryFetch( p->pMemMan );
 }
 
@@ -241,7 +247,7 @@ char * Fxu_MemFetch( Fxu_Matrix * p, int nBytes )
 void Fxu_MemRecycle( Fxu_Matrix * p, char * pItem, int nBytes )
 {
     s_MemoryTotal -= nBytes;
-//    free( pItem );
+//    ABC_FREE( pItem );
     Extra_MmFixedEntryRecycle( p->pMemMan, pItem );
 }
 
@@ -249,4 +255,6 @@ void Fxu_MemRecycle( Fxu_Matrix * p, char * pItem, int nBytes )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

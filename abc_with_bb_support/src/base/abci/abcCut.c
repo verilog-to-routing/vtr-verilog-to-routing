@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "cut.h"
+#include "base/abc/abc.h"
+#include "opt/cut/cut.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -39,6 +42,74 @@ static int Abc_NtkComputeArea( Abc_Ntk_t * pNtk, Cut_Man_t * p );
 
 /**Function*************************************************************
 
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkCutsSubtractFanunt( Abc_Ntk_t * pNtk )
+{
+    Abc_Obj_t * pObj, * pFan0, * pFan1, * pFanC;
+    int i, Counter = 0;
+    Abc_NtkForEachObj( pNtk, pObj, i )
+    {
+        if ( !Abc_NodeIsMuxType(pObj) )
+            continue;
+        pFanC = Abc_NodeRecognizeMux( pObj, &pFan1, &pFan0 );
+        pFanC = Abc_ObjRegular(pFanC);
+        pFan0 = Abc_ObjRegular(pFan0);
+        assert( pFanC->vFanouts.nSize > 1 );
+        pFanC->vFanouts.nSize--;
+        Counter++;
+        if ( Abc_NodeIsExorType(pObj) )
+        {
+            assert( pFan0->vFanouts.nSize > 1 );
+            pFan0->vFanouts.nSize--;
+            Counter++;
+        }
+    }
+    printf("Substracted %d fanouts\n", Counter );
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkCutsAddFanunt( Abc_Ntk_t * pNtk )
+{
+    Abc_Obj_t * pObj, * pFan0, * pFan1, * pFanC;
+    int i, Counter = 0;
+    Abc_NtkForEachObj( pNtk, pObj, i )
+    {
+        if ( !Abc_NodeIsMuxType(pObj) )
+            continue;
+        pFanC = Abc_NodeRecognizeMux( pObj, &pFan1, &pFan0 );
+        pFanC = Abc_ObjRegular(pFanC);
+        pFan0 = Abc_ObjRegular(pFan0);
+        pFanC->vFanouts.nSize++;
+        Counter++;
+        if ( Abc_NodeIsExorType(pObj) )
+        {
+            pFan0->vFanouts.nSize++;
+            Counter++;
+        }
+    }
+    printf("Added %d fanouts\n", Counter );
+}
+
+/**Function*************************************************************
+
   Synopsis    [Computes the cuts for the network.]
 
   Description []
@@ -51,15 +122,19 @@ static int Abc_NtkComputeArea( Abc_Ntk_t * pNtk, Cut_Man_t * p );
 Cut_Man_t * Abc_NtkCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
 {
     ProgressBar * pProgress;
-    Cut_Man_t *  p;
+    Cut_Man_t * p;
+    Cut_Cut_t * pList;
     Abc_Obj_t * pObj, * pNode;
     Vec_Ptr_t * vNodes;
     Vec_Int_t * vChoices;
     int i;
-    int clk = clock();
+    abctime clk = Abc_Clock();
 
     extern void Abc_NtkBalanceAttach( Abc_Ntk_t * pNtk );
     extern void Abc_NtkBalanceDetach( Abc_Ntk_t * pNtk );
+
+    if ( pParams->fAdjust )
+    Abc_NtkCutsSubtractFanunt( pNtk );
 
     nTotal = nGood = nEqual = 0;
 
@@ -84,7 +159,7 @@ Cut_Man_t * Abc_NtkCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
     vNodes = Abc_AigDfs( pNtk, 0, 1 ); // collects POs
     vChoices = Vec_IntAlloc( 100 );
     pProgress = Extra_ProgressBarStart( stdout, Vec_PtrSize(vNodes) );
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
         // when we reached a CO, it is time to deallocate the cuts
         if ( Abc_ObjIsCo(pObj) )
@@ -98,7 +173,15 @@ Cut_Man_t * Abc_NtkCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
 //            continue;
         Extra_ProgressBarUpdate( pProgress, i, NULL );
         // compute the cuts to the internal node
-        Abc_NodeGetCuts( p, pObj, pParams->fDag, pParams->fTree );  
+        pList = (Cut_Cut_t *)Abc_NodeGetCuts( p, pObj, pParams->fDag, pParams->fTree );
+        if ( pParams->fNpnSave && pList )
+        {
+            extern void Npn_ManSaveOne( unsigned * puTruth, int nVars );
+            Cut_Cut_t * pCut;
+            for ( pCut = pList; pCut; pCut = pCut->pNext )
+                if ( pCut->nLeaves >= 4 )
+                    Npn_ManSaveOne( Cut_CutReadTruth(pCut), pCut->nLeaves );
+        }
         // consider dropping the fanins cuts
         if ( pParams->fDrop )
         {
@@ -109,7 +192,7 @@ Cut_Man_t * Abc_NtkCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
         if ( Abc_AigNodeIsChoice(pObj) )
         {
             Vec_IntClear( vChoices );
-            for ( pNode = pObj; pNode; pNode = pNode->pData )
+            for ( pNode = pObj; pNode; pNode = (Abc_Obj_t *)pNode->pData )
                 Vec_IntPush( vChoices, pNode->Id );
             Cut_NodeUnionCuts( p, vChoices );
         }
@@ -118,14 +201,16 @@ Cut_Man_t * Abc_NtkCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
     Vec_PtrFree( vNodes );
     Vec_IntFree( vChoices );
     Cut_ManPrintStats( p );
-PRT( "TOTAL ", clock() - clk );
-    printf( "Area = %d.\n", Abc_NtkComputeArea( pNtk, p ) );
+ABC_PRT( "TOTAL", Abc_Clock() - clk );
+//    printf( "Area = %d.\n", Abc_NtkComputeArea( pNtk, p ) );
 //Abc_NtkPrintCuts( p, pNtk, 0 );
-//    Cut_ManPrintStatsToFile( p, pNtk->pSpec, clock() - clk );
+//    Cut_ManPrintStatsToFile( p, pNtk->pSpec, Abc_Clock() - clk );
 
     // temporary printout of stats
     if ( nTotal )
     printf( "Total cuts = %d. Good cuts = %d.  Ratio = %5.2f\n", nTotal, nGood, ((double)nGood)/nTotal );
+    if ( pParams->fAdjust )
+    Abc_NtkCutsAddFanunt( pNtk );
     return p;
 }
 
@@ -144,7 +229,7 @@ void Abc_NtkCutsOracle( Abc_Ntk_t * pNtk, Cut_Oracle_t * p )
 {
     Abc_Obj_t * pObj;
     Vec_Ptr_t * vNodes;
-    int i, clk = clock();
+    int i; //, clk = Abc_Clock();
     int fDrop = Cut_OracleReadDrop(p);
 
     assert( Abc_NtkIsStrash(pNtk) );
@@ -160,7 +245,7 @@ void Abc_NtkCutsOracle( Abc_Ntk_t * pNtk, Cut_Oracle_t * p )
 
     // compute cuts for internal nodes
     vNodes = Abc_AigDfs( pNtk, 0, 1 ); // collects POs
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
         // when we reached a CO, it is time to deallocate the cuts
         if ( Abc_ObjIsCo(pObj) )
@@ -183,7 +268,7 @@ void Abc_NtkCutsOracle( Abc_Ntk_t * pNtk, Cut_Oracle_t * p )
         }
     }
     Vec_PtrFree( vNodes );
-//PRT( "Total", clock() - clk );
+//ABC_PRT( "Total", Abc_Clock() - clk );
 //Abc_NtkPrintCuts_( p, pNtk, 0 );
 }
 
@@ -206,7 +291,7 @@ Cut_Man_t * Abc_NtkSeqCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
     Abc_Obj_t * pObj, * pNode;
     int i, nIters, fStatus;
     Vec_Int_t * vChoices;
-    int clk = clock();
+    abctime clk = Abc_Clock();
 
     assert( Abc_NtkIsSeq(pNtk) );
     assert( pParams->fSeq );
@@ -283,7 +368,7 @@ Cut_Man_t * Abc_NtkSeqCuts( Abc_Ntk_t * pNtk, Cut_Params_t * pParams )
 if ( pParams->fVerbose )
 {
     Cut_ManPrintStats( p );
-PRT( "TOTAL ", clock() - clk );
+ABC_PRT( "TOTAL ", Abc_Clock() - clk );
 printf( "Converged after %d iterations.\n", nIters );
 }
 //Abc_NtkPrintCuts( p, pNtk, 1 );
@@ -327,7 +412,7 @@ int Abc_NtkComputeArea( Abc_Ntk_t * pNtk, Cut_Man_t * p )
 void * Abc_NodeGetCutsRecursive( void * p, Abc_Obj_t * pObj, int fDag, int fTree )
 {
     void * pList;
-    if ( pList = Abc_NodeReadCuts( p, pObj ) )
+    if ( (pList = Abc_NodeReadCuts( p, pObj )) )
         return pList;
     Abc_NodeGetCutsRecursive( p, Abc_ObjFanin0(pObj), fDag, fTree );
     Abc_NodeGetCutsRecursive( p, Abc_ObjFanin1(pObj), fDag, fTree );
@@ -352,11 +437,10 @@ void * Abc_NodeGetCuts( void * p, Abc_Obj_t * pObj, int fDag, int fTree )
 //    assert( Abc_NtkIsStrash(pObj->pNtk) );
     assert( Abc_ObjFaninNum(pObj) == 2 );
 
-
     // check if the node is a DAG node
     fDagNode = (Abc_ObjFanoutNum(pObj) > 1 && !Abc_NodeIsMuxControlType(pObj));
     // increment the counter of DAG nodes
-    if ( fDagNode ) Cut_ManIncrementDagNodes( p );
+    if ( fDagNode ) Cut_ManIncrementDagNodes( (Cut_Man_t *)p );
     // add the trivial cut if the node is a DAG node, or if we compute all cuts
     fTriv = fDagNode || !fDag;
     // check if fanins are DAG nodes
@@ -368,15 +452,14 @@ void * Abc_NodeGetCuts( void * p, Abc_Obj_t * pObj, int fDag, int fTree )
         TreeCode |= ((Abc_ObjFanoutNum(pFanin) > 1 && !Abc_NodeIsMuxControlType(pFanin)) << 1);
     }
 
-
     // changes due to the global/local cut computation
     {
-        Cut_Params_t * pParams = Cut_ManReadParams(p);
+        Cut_Params_t * pParams = Cut_ManReadParams((Cut_Man_t *)p);
         if ( pParams->fLocal )
         {
-            Vec_Int_t * vNodeAttrs = Cut_ManReadNodeAttrs(p);
+            Vec_Int_t * vNodeAttrs = Cut_ManReadNodeAttrs((Cut_Man_t *)p);
             fDagNode = Vec_IntEntry( vNodeAttrs, pObj->Id );
-            if ( fDagNode ) Cut_ManIncrementDagNodes( p );
+            if ( fDagNode ) Cut_ManIncrementDagNodes( (Cut_Man_t *)p );
 //            fTriv = fDagNode || !pParams->fGlobal;
             fTriv = !Vec_IntEntry( vNodeAttrs, pObj->Id );
             TreeCode = 0;
@@ -386,7 +469,7 @@ void * Abc_NodeGetCuts( void * p, Abc_Obj_t * pObj, int fDag, int fTree )
             TreeCode |= (Vec_IntEntry( vNodeAttrs, pFanin->Id ) << 1);
         }
     }
-    return Cut_NodeComputeCuts( p, pObj->Id, Abc_ObjFaninId0(pObj), Abc_ObjFaninId1(pObj),  
+    return Cut_NodeComputeCuts( (Cut_Man_t *)p, pObj->Id, Abc_ObjFaninId0(pObj), Abc_ObjFaninId1(pObj),  
         Abc_ObjFaninC0(pObj), Abc_ObjFaninC1(pObj), fTriv, TreeCode );  
 }
 
@@ -427,7 +510,7 @@ void Abc_NodeGetCutsSeq( void * p, Abc_Obj_t * pObj, int fTriv )
 ***********************************************************************/
 void * Abc_NodeReadCuts( void * p, Abc_Obj_t * pObj )
 {
-    return Cut_NodeReadCutsNew( p, pObj->Id );  
+    return Cut_NodeReadCutsNew( (Cut_Man_t *)p, pObj->Id );  
 }
 
 /**Function*************************************************************
@@ -443,7 +526,7 @@ void * Abc_NodeReadCuts( void * p, Abc_Obj_t * pObj )
 ***********************************************************************/
 void Abc_NodeFreeCuts( void * p, Abc_Obj_t * pObj )
 {
-    Cut_NodeFreeCuts( p, pObj->Id );
+    Cut_NodeFreeCuts( (Cut_Man_t *)p, pObj->Id );
 }
 
 /**Function*************************************************************
@@ -459,14 +542,13 @@ void Abc_NodeFreeCuts( void * p, Abc_Obj_t * pObj )
 ***********************************************************************/
 void Abc_NtkPrintCuts( void * p, Abc_Ntk_t * pNtk, int fSeq )
 {
-    Cut_Man_t * pMan = p;
     Cut_Cut_t * pList;
     Abc_Obj_t * pObj;
     int i;
     printf( "Cuts of the network:\n" );
     Abc_NtkForEachObj( pNtk, pObj, i )
     {
-        pList = Abc_NodeReadCuts( p, pObj );
+        pList = (Cut_Cut_t *)Abc_NodeReadCuts( (Cut_Man_t *)p, pObj );
         printf( "Node %s:\n", Abc_ObjName(pObj) );
         Cut_CutPrintList( pList, fSeq );
     }
@@ -485,17 +567,13 @@ void Abc_NtkPrintCuts( void * p, Abc_Ntk_t * pNtk, int fSeq )
 ***********************************************************************/
 void Abc_NtkPrintCuts_( void * p, Abc_Ntk_t * pNtk, int fSeq )
 {
-    Cut_Man_t * pMan = p;
     Cut_Cut_t * pList;
     Abc_Obj_t * pObj;
     pObj = Abc_NtkObj( pNtk, 2 * Abc_NtkObjNum(pNtk) / 3 );
-    pList = Abc_NodeReadCuts( p, pObj );
+    pList = (Cut_Cut_t *)Abc_NodeReadCuts( (Cut_Man_t *)p, pObj );
     printf( "Node %s:\n", Abc_ObjName(pObj) );
     Cut_CutPrintList( pList, fSeq );
 }
-
-
-
 
 /**Function*************************************************************
 
@@ -515,7 +593,7 @@ Vec_Int_t * Abc_NtkGetNodeAttributes( Abc_Ntk_t * pNtk )
     Abc_Obj_t * pObj;//, * pTemp;
     int i;//, k;
     int nNodesTotal = 0, nMffcsTotal = 0;
-    extern Vec_Ptr_t * Abc_NodeMffsInsideCollect( Abc_Obj_t * pNode );
+    extern Vec_Ptr_t * Abc_NodeMffcInsideCollect( Abc_Obj_t * pNode );
 
     vAttrs = Vec_IntStart( Abc_NtkObjNumMax(pNtk) + 1 );
 //    Abc_NtkForEachCi( pNtk, pObj, i )
@@ -544,8 +622,8 @@ Vec_Int_t * Abc_NtkGetNodeAttributes( Abc_Ntk_t * pNtk )
     {
         if ( Vec_IntEntry( vAttrs, pObj->Id ) )
         {
-            vNodes = Abc_NodeMffsInsideCollect( pObj );
-            Vec_PtrForEachEntry( vNodes, pTemp, k )
+            vNodes = Abc_NodeMffcInsideCollect( pObj );
+            Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pTemp, k )
                 if ( pTemp != pObj )
                     Vec_IntWriteEntry( vAttrs, pTemp->Id, 0 );
             Vec_PtrFree( vNodes );
@@ -617,4 +695,6 @@ Vec_Int_t * Abc_NtkGetNodeAttributes2( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

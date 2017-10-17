@@ -7,77 +7,110 @@
   Synopsis    [Utility functions.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_PrintMinterm()
-		<li> Cudd_PrintDebug()
-		<li> Cudd_DagSize()
-		<li> Cudd_EstimateCofactor()
-		<li> Cudd_EstimateCofactorSimple()
-		<li> Cudd_SharingSize()
-		<li> Cudd_CountMinterm()
-		<li> Cudd_EpdCountMinterm()
-		<li> Cudd_CountPath()
-		<li> Cudd_CountPathsToNonZero()
-		<li> Cudd_Support()
-		<li> Cudd_SupportIndex()
-		<li> Cudd_SupportSize()
-		<li> Cudd_VectorSupport()
-		<li> Cudd_VectorSupportIndex()
-		<li> Cudd_VectorSupportSize()
-		<li> Cudd_ClassifySupport()
-		<li> Cudd_CountLeaves()
-		<li> Cudd_bddPickOneCube()
-		<li> Cudd_bddPickOneMinterm()
-		<li> Cudd_bddPickArbitraryMinterms()
-		<li> Cudd_SubsetWithMaskVars()
-		<li> Cudd_FirstCube()
-		<li> Cudd_NextCube()
-		<li> Cudd_bddComputeCube()
-		<li> Cudd_addComputeCube()
-		<li> Cudd_FirstNode()
-		<li> Cudd_NextNode()
-		<li> Cudd_GenFree()
-		<li> Cudd_IsGenEmpty()
-		<li> Cudd_IndicesToCube()
-		<li> Cudd_PrintVersion()
-		<li> Cudd_AverageDistance()
-		<li> Cudd_Random()
-		<li> Cudd_Srandom()
-		<li> Cudd_Density()
-		</ul>
-	Internal procedures included in this module:
-		<ul>
-		<li> cuddP()
-		<li> cuddStCountfree()
-		<li> cuddCollectNodes()
-		</ul>
-	Static procedures included in this module:
-		<ul>
-		<li> dp2()
-		<li> ddPrintMintermAux()
-		<li> ddDagInt()
-		<li> ddCountMintermAux()
-		<li> ddEpdCountMintermAux()
-		<li> ddCountPathAux()
-		<li> ddSupportStep()
-		<li> ddClearFlag()
-		<li> ddLeavesInt()
-		<li> ddPickArbitraryMinterms()
-		<li> ddPickRepresentativeCube()
-		<li> ddEpdFree()
-		</ul>]
+                <ul>
+                <li> Cudd_PrintMinterm()
+                <li> Cudd_bddPrintCover()
+                <li> Cudd_PrintDebug()
+                <li> Cudd_DagSize()
+                <li> Cudd_EstimateCofactor()
+                <li> Cudd_EstimateCofactorSimple()
+                <li> Cudd_SharingSize()
+                <li> Cudd_CountMinterm()
+                <li> Cudd_EpdCountMinterm()
+                <li> Cudd_CountPath()
+                <li> Cudd_CountPathsToNonZero()
+                <li> Cudd_Support()
+                <li> Cudd_SupportIndex()
+                <li> Cudd_SupportSize()
+                <li> Cudd_VectorSupport()
+                <li> Cudd_VectorSupportIndex()
+                <li> Cudd_VectorSupportSize()
+                <li> Cudd_ClassifySupport()
+                <li> Cudd_CountLeaves()
+                <li> Cudd_bddPickOneCube()
+                <li> Cudd_bddPickOneMinterm()
+                <li> Cudd_bddPickArbitraryMinterms()
+                <li> Cudd_SubsetWithMaskVars()
+                <li> Cudd_FirstCube()
+                <li> Cudd_NextCube()
+                <li> Cudd_bddComputeCube()
+                <li> Cudd_addComputeCube()
+                <li> Cudd_FirstNode()
+                <li> Cudd_NextNode()
+                <li> Cudd_GenFree()
+                <li> Cudd_IsGenEmpty()
+                <li> Cudd_IndicesToCube()
+                <li> Cudd_PrintVersion()
+                <li> Cudd_AverageDistance()
+                <li> Cudd_Random()
+                <li> Cudd_Srandom()
+                <li> Cudd_Density()
+                </ul>
+        Internal procedures included in this module:
+                <ul>
+                <li> cuddP()
+                <li> cuddStCountfree()
+                <li> cuddCollectNodes()
+                <li> cuddNodeArray()
+                </ul>
+        Static procedures included in this module:
+                <ul>
+                <li> dp2()
+                <li> ddPrintMintermAux()
+                <li> ddDagInt()
+                <li> ddCountMintermAux()
+                <li> ddEpdCountMintermAux()
+                <li> ddCountPathAux()
+                <li> ddSupportStep()
+                <li> ddClearFlag()
+                <li> ddLeavesInt()
+                <li> ddPickArbitraryMinterms()
+                <li> ddPickRepresentativeCube()
+                <li> ddEpdFree()
+                </ul>]
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -109,21 +142,21 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddUtil.c,v 1.1.1.1 2003/02/24 22:23:53 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddUtil.c,v 1.81 2009/03/08 02:49:02 fabio Exp $";
 #endif
 
-static	DdNode	*background, *zero;
+static  DdNode  *background, *zero;
 
-static	long cuddRand = 0;
-static	long cuddRand2;
-static	long shuffleSelect;
-static 	long shuffleTable[STAB_SIZE];
+static  long cuddRand = 0;
+static  long cuddRand2;
+static  long shuffleSelect;
+static  long shuffleTable[STAB_SIZE];
 
 /*---------------------------------------------------------------------------*/
 /* Macro declarations                                                        */
 /*---------------------------------------------------------------------------*/
 
-#define bang(f)	((Cudd_IsComplement(f)) ? '!' : ' ')
+#define bang(f) ((Cudd_IsComplement(f)) ? '!' : ' ')
 
 /**AutomaticStart*************************************************************/
 
@@ -131,25 +164,25 @@ static 	long shuffleTable[STAB_SIZE];
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static int dp2 ARGS((DdManager *dd, DdNode *f, st_table *t));
-static void ddPrintMintermAux ARGS((DdManager *dd, DdNode *node, int *list));
-static int ddDagInt ARGS((DdNode *n));
-static int cuddEstimateCofactor ARGS((DdManager *dd, st_table *table, DdNode * node, int i, int phase, DdNode ** ptr));
-static DdNode * cuddUniqueLookup ARGS((DdManager * unique, int  index, DdNode * T, DdNode * E));
-static int cuddEstimateCofactorSimple ARGS((DdNode * node, int i));
-static double ddCountMintermAux ARGS((DdNode *node, double max, DdHashTable *table));
-static int ddEpdCountMintermAux ARGS((DdNode *node, EpDouble *max, EpDouble *epd, st_table *table));
-static double ddCountPathAux ARGS((DdNode *node, st_table *table));
-static double ddCountPathsToNonZero ARGS((DdNode * N, st_table * table));
-static void ddSupportStep ARGS((DdNode *f, int *support));
-static void ddClearFlag ARGS((DdNode *f));
-static int ddLeavesInt ARGS((DdNode *n));
-static int ddPickArbitraryMinterms ARGS((DdManager *dd, DdNode *node, int nvars, int nminterms, char **string));
-static int ddPickRepresentativeCube ARGS((DdManager *dd, DdNode *node, int nvars, double *weight, char *string));
-static enum st_retval ddEpdFree ARGS((char * key, char * value, char * arg));
+static int dp2 (DdManager *dd, DdNode *f, st__table *t);
+static void ddPrintMintermAux (DdManager *dd, DdNode *node, int *list);
+static int ddDagInt (DdNode *n);
+static int cuddNodeArrayRecur (DdNode *f, DdNodePtr *table, int index);
+static int cuddEstimateCofactor (DdManager *dd, st__table *table, DdNode * node, int i, int phase, DdNode ** ptr);
+static DdNode * cuddUniqueLookup (DdManager * unique, int  index, DdNode * T, DdNode * E);
+static int cuddEstimateCofactorSimple (DdNode * node, int i);
+static double ddCountMintermAux (DdNode *node, double max, DdHashTable *table);
+static int ddEpdCountMintermAux (DdNode *node, EpDouble *max, EpDouble *epd, st__table *table);
+static double ddCountPathAux (DdNode *node, st__table *table);
+static double ddCountPathsToNonZero (DdNode * N, st__table * table);
+static void ddSupportStep (DdNode *f, int *support);
+static void ddClearFlag (DdNode *f);
+static int ddLeavesInt (DdNode *n);
+static int ddPickArbitraryMinterms (DdManager *dd, DdNode *node, int nvars, int nminterms, char **string);
+static int ddPickRepresentativeCube (DdManager *dd, DdNode *node, double *weight, char *string);
+static enum st__retval ddEpdFree (char * key, char * value, char * arg);
 
 /**AutomaticEnd***************************************************************/
-
 
 /*---------------------------------------------------------------------------*/
 /* Definition of exported functions                                          */
@@ -176,18 +209,18 @@ Cudd_PrintMinterm(
   DdManager * manager,
   DdNode * node)
 {
-    int		i, *list;
+    int         i, *list;
 
     background = manager->background;
     zero = Cudd_Not(manager->one);
-    list = ALLOC(int,manager->size);
+    list = ABC_ALLOC(int,manager->size);
     if (list == NULL) {
-	manager->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        manager->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
     for (i = 0; i < manager->size; i++) list[i] = 2;
     ddPrintMintermAux(manager,node,list);
-    FREE(list);
+    ABC_FREE(list);
     return(1);
 
 } /* end of Cudd_PrintMinterm */
@@ -221,7 +254,7 @@ Cudd_bddPrintCover(
     DdNode *cover;
 #endif
 
-    array = ALLOC(int, Cudd_ReadSize(dd));
+    array = ABC_ALLOC(int, Cudd_ReadSize(dd));
     if (array == NULL) return(0);
     lb = l;
     cuddRef(lb);
@@ -230,75 +263,75 @@ Cudd_bddPrintCover(
     cuddRef(cover);
 #endif
     while (lb != Cudd_ReadLogicZero(dd)) {
-	DdNode *implicant, *prime, *tmp;
-	int length;
-	implicant = Cudd_LargestCube(dd,lb,&length);
-	if (implicant == NULL) {
-	    Cudd_RecursiveDeref(dd,lb);
-	    FREE(array);
-	    return(0);
-	}
-	cuddRef(implicant);
-	prime = Cudd_bddMakePrime(dd,implicant,u);
-	if (prime == NULL) {
-	    Cudd_RecursiveDeref(dd,lb);
-	    Cudd_RecursiveDeref(dd,implicant);
-	    FREE(array);
-	    return(0);
-	}
-	cuddRef(prime);
-	Cudd_RecursiveDeref(dd,implicant);
-	tmp = Cudd_bddAnd(dd,lb,Cudd_Not(prime));
-	if (tmp == NULL) {
-	    Cudd_RecursiveDeref(dd,lb);
-	    Cudd_RecursiveDeref(dd,prime);
-	    FREE(array);
-	    return(0);
-	}
-	cuddRef(tmp);
-	Cudd_RecursiveDeref(dd,lb);
-	lb = tmp;
-	result = Cudd_BddToCubeArray(dd,prime,array);
-	if (result == 0) {
-	    Cudd_RecursiveDeref(dd,lb);
-	    Cudd_RecursiveDeref(dd,prime);
-	    FREE(array);
-	    return(0);
-	}
-	for (q = 0; q < dd->size; q++) {
-	    switch (array[q]) {
-	    case 0:
-		(void) fprintf(dd->out, "0");
-		break;
-	    case 1:
-		(void) fprintf(dd->out, "1");
-		break;
-	    case 2:
-		(void) fprintf(dd->out, "-");
-		break;
-	    default:
-		(void) fprintf(dd->out, "?");
-	    }
-	}
-	(void) fprintf(dd->out, " 1\n");
+        DdNode *implicant, *prime, *tmp;
+        int length;
+        implicant = Cudd_LargestCube(dd,lb,&length);
+        if (implicant == NULL) {
+            Cudd_RecursiveDeref(dd,lb);
+            ABC_FREE(array);
+            return(0);
+        }
+        cuddRef(implicant);
+        prime = Cudd_bddMakePrime(dd,implicant,u);
+        if (prime == NULL) {
+            Cudd_RecursiveDeref(dd,lb);
+            Cudd_RecursiveDeref(dd,implicant);
+            ABC_FREE(array);
+            return(0);
+        }
+        cuddRef(prime);
+        Cudd_RecursiveDeref(dd,implicant);
+        tmp = Cudd_bddAnd(dd,lb,Cudd_Not(prime));
+        if (tmp == NULL) {
+            Cudd_RecursiveDeref(dd,lb);
+            Cudd_RecursiveDeref(dd,prime);
+            ABC_FREE(array);
+            return(0);
+        }
+        cuddRef(tmp);
+        Cudd_RecursiveDeref(dd,lb);
+        lb = tmp;
+        result = Cudd_BddToCubeArray(dd,prime,array);
+        if (result == 0) {
+            Cudd_RecursiveDeref(dd,lb);
+            Cudd_RecursiveDeref(dd,prime);
+            ABC_FREE(array);
+            return(0);
+        }
+        for (q = 0; q < dd->size; q++) {
+            switch (array[q]) {
+            case 0:
+                (void) fprintf(dd->out, "0");
+                break;
+            case 1:
+                (void) fprintf(dd->out, "1");
+                break;
+            case 2:
+                (void) fprintf(dd->out, "-");
+                break;
+            default:
+                (void) fprintf(dd->out, "?");
+            }
+        }
+        (void) fprintf(dd->out, " 1\n");
 #ifdef DD_DEBUG
-	tmp = Cudd_bddOr(dd,prime,cover);
-	if (tmp == NULL) {
-	    Cudd_RecursiveDeref(dd,cover);
-	    Cudd_RecursiveDeref(dd,lb);
-	    Cudd_RecursiveDeref(dd,prime);
-	    FREE(array);
-	    return(0);
-	}
-	cuddRef(tmp);
-	Cudd_RecursiveDeref(dd,cover);
-	cover = tmp;
+        tmp = Cudd_bddOr(dd,prime,cover);
+        if (tmp == NULL) {
+            Cudd_RecursiveDeref(dd,cover);
+            Cudd_RecursiveDeref(dd,lb);
+            Cudd_RecursiveDeref(dd,prime);
+            ABC_FREE(array);
+            return(0);
+        }
+        cuddRef(tmp);
+        Cudd_RecursiveDeref(dd,cover);
+        cover = tmp;
 #endif
-	Cudd_RecursiveDeref(dd,prime);
+        Cudd_RecursiveDeref(dd,prime);
     }
     (void) fprintf(dd->out, "\n");
     Cudd_RecursiveDeref(dd,lb);
-    FREE(array);
+    ABC_FREE(array);
 #ifdef DD_DEBUG
     if (!Cudd_bddLeq(dd,cover,u) || !Cudd_bddLeq(dd,l,cover)) {
         Cudd_RecursiveDeref(dd,cover);
@@ -345,15 +378,15 @@ Cudd_PrintDebug(
   int  pr)
 {
     DdNode *azero, *bzero;
-    int	   nodes;
-    int	   leaves;
+    int    nodes;
+    int    leaves;
     double minterms;
     int    retval = 1;
 
     if (f == NULL) {
-	(void) fprintf(dd->out,": is the NULL DD\n");
-	(void) fflush(dd->out);
-	return(0);
+        (void) fprintf(dd->out,": is the NULL DD\n");
+        (void) fflush(dd->out);
+        return(0);
     }
     azero = DD_ZERO(dd);
     bzero = Cudd_Not(DD_ONE(dd));
@@ -363,21 +396,21 @@ Cudd_PrintDebug(
        return(1);
     }
     if (pr > 0) {
-	nodes = Cudd_DagSize(f);
-	if (nodes == CUDD_OUT_OF_MEM) retval = 0;
-	leaves = Cudd_CountLeaves(f);
-	if (leaves == CUDD_OUT_OF_MEM) retval = 0;
-	minterms = Cudd_CountMinterm(dd, f, n);
-	if (minterms == (double)CUDD_OUT_OF_MEM) retval = 0;
-	(void) fprintf(dd->out,": %d nodes %d leaves %g minterms\n",
-		       nodes, leaves, minterms);
+        nodes = Cudd_DagSize(f);
+        if (nodes == CUDD_OUT_OF_MEM) retval = 0;
+        leaves = Cudd_CountLeaves(f);
+        if (leaves == CUDD_OUT_OF_MEM) retval = 0;
+        minterms = Cudd_CountMinterm(dd, f, n);
+        if (minterms == (double)CUDD_OUT_OF_MEM) retval = 0;
+        (void) fprintf(dd->out,": %d nodes %d leaves %g minterms\n",
+                       nodes, leaves, minterms);
         if (pr > 2) {
-	    if (!cuddP(dd, f)) retval = 0;
-	}
-	if (pr == 2 || pr > 3) {
-	    if (!Cudd_PrintMinterm(dd,f)) retval = 0;
-	    (void) fprintf(dd->out,"\n");
-	}
+            if (!cuddP(dd, f)) retval = 0;
+        }
+        if (pr == 2 || pr > 3) {
+            if (!Cudd_PrintMinterm(dd,f)) retval = 0;
+            (void) fprintf(dd->out,"\n");
+        }
         (void) fflush(dd->out);
     }
     return(retval);
@@ -401,7 +434,7 @@ int
 Cudd_DagSize(
   DdNode * node)
 {
-    int	i;	
+    int i;
 
     i = ddDagInt(Cudd_Regular(node));
     ddClearFlag(Cudd_Regular(node));
@@ -423,7 +456,7 @@ Cudd_DagSize(
   (ICCAD96). The refinement allows the procedure to account for part
   of the recombination that may occur in the part of the cofactor above
   the cofactoring variable. This procedure does no create any new node.
-  It does keep a small table of results; therefore itmay run out of memory.
+  It does keep a small table of results; therefore it may run out of memory.
   If this is a concern, one should use Cudd_EstimateCofactorSimple, which
   is faster, does not allocate any memory, but is less accurate.]
 
@@ -435,20 +468,20 @@ Cudd_DagSize(
 int
 Cudd_EstimateCofactor(
   DdManager *dd /* manager */,
-  DdNode * f	/* function */,
-  int i		/* index of variable */,
-  int phase	/* 1: positive; 0: negative */
+  DdNode * f    /* function */,
+  int i         /* index of variable */,
+  int phase     /* 1: positive; 0: negative */
   )
 {
-    int	val;
+    int val;
     DdNode *ptr;
-    st_table *table;
+    st__table *table;
 
-    table = st_init_table(st_ptrcmp,st_ptrhash);
+    table = st__init_table( st__ptrcmp, st__ptrhash);
     if (table == NULL) return(CUDD_OUT_OF_MEM);
     val = cuddEstimateCofactor(dd,table,Cudd_Regular(f),i,phase,&ptr);
     ddClearFlag(Cudd_Regular(f));
-    st_free_table(table);
+    st__free_table(table);
 
     return(val);
 
@@ -477,7 +510,7 @@ Cudd_EstimateCofactorSimple(
   DdNode * node,
   int i)
 {
-    int	val;	
+    int val;
 
     val = cuddEstimateCofactorSimple(Cudd_Regular(node),i);
     ddClearFlag(Cudd_Regular(node));
@@ -504,14 +537,14 @@ Cudd_SharingSize(
   DdNode ** nodeArray,
   int  n)
 {
-    int	i,j;	
+    int i,j;
 
     i = 0;
     for (j = 0; j < n; j++) {
-	i += ddDagInt(Cudd_Regular(nodeArray[j]));
+        i += ddDagInt(Cudd_Regular(nodeArray[j]));
     }
     for (j = 0; j < n; j++) {
-	ddClearFlag(Cudd_Regular(nodeArray[j]));
+        ddClearFlag(Cudd_Regular(nodeArray[j]));
     }
     return(i);
 
@@ -539,18 +572,18 @@ Cudd_CountMinterm(
   DdNode * node,
   int  nvars)
 {
-    double	max;
-    DdHashTable	*table;
-    double	res;
+    double      max;
+    DdHashTable *table;
+    double      res;
     CUDD_VALUE_TYPE epsilon;
 
     background = manager->background;
     zero = Cudd_Not(manager->one);
-    
+
     max = pow(2.0,(double)nvars);
     table = cuddHashTableInit(manager,1,2);
     if (table == NULL) {
-	return((double)CUDD_OUT_OF_MEM);
+        return((double)CUDD_OUT_OF_MEM);
     }
     epsilon = Cudd_ReadEpsilon(manager);
     Cudd_SetEpsilon(manager,(CUDD_VALUE_TYPE)0.0);
@@ -583,16 +616,16 @@ Cudd_CountPath(
   DdNode * node)
 {
 
-    st_table	*table;
-    double	i;	
+    st__table    *table;
+    double      i;
 
-    table = st_init_table(st_ptrcmp,st_ptrhash);
+    table = st__init_table( st__ptrcmp, st__ptrhash);
     if (table == NULL) {
-	return((double)CUDD_OUT_OF_MEM);
+        return((double)CUDD_OUT_OF_MEM);
     }
     i = ddCountPathAux(Cudd_Regular(node),table);
-    st_foreach(table, cuddStCountfree, NULL);
-    st_free_table(table);
+    st__foreach(table, cuddStCountfree, NULL);
+    st__free_table(table);
     return(i);
 
 } /* end of Cudd_CountPath */
@@ -619,29 +652,29 @@ Cudd_EpdCountMinterm(
   int  nvars,
   EpDouble * epd)
 {
-    EpDouble	max, tmp;
-    st_table	*table;
-    int		status;
+    EpDouble    max, tmp;
+    st__table    *table;
+    int         status;
 
     background = manager->background;
     zero = Cudd_Not(manager->one);
-    
+
     EpdPow2(nvars, &max);
-    table = st_init_table(EpdCmp, st_ptrhash);
+    table = st__init_table(EpdCmp, st__ptrhash);
     if (table == NULL) {
-	EpdMakeZero(epd, 0);
-	return(CUDD_OUT_OF_MEM);
+        EpdMakeZero(epd, 0);
+        return(CUDD_OUT_OF_MEM);
     }
     status = ddEpdCountMintermAux(Cudd_Regular(node),&max,epd,table);
-    st_foreach(table, ddEpdFree, NULL);
-    st_free_table(table);
+    st__foreach(table, ddEpdFree, NULL);
+    st__free_table(table);
     if (status == CUDD_OUT_OF_MEM) {
-	EpdMakeZero(epd, 0);
-	return(CUDD_OUT_OF_MEM);
+        EpdMakeZero(epd, 0);
+        return(CUDD_OUT_OF_MEM);
     }
     if (Cudd_IsComplement(node)) {
-    	EpdSubtract3(&max, epd, &tmp);
-    	EpdCopy(&tmp, epd);
+        EpdSubtract3(&max, epd, &tmp);
+        EpdCopy(&tmp, epd);
     }
     return(0);
 
@@ -667,16 +700,16 @@ Cudd_CountPathsToNonZero(
   DdNode * node)
 {
 
-    st_table	*table;
-    double	i;	
+    st__table    *table;
+    double      i;
 
-    table = st_init_table(st_ptrcmp,st_ptrhash);
+    table = st__init_table( st__ptrcmp, st__ptrhash);
     if (table == NULL) {
-	return((double)CUDD_OUT_OF_MEM);
+        return((double)CUDD_OUT_OF_MEM);
     }
     i = ddCountPathsToNonZero(node,table);
-    st_foreach(table, cuddStCountfree, NULL);
-    st_free_table(table);
+    st__foreach(table, cuddStCountfree, NULL);
+    st__free_table(table);
     return(i);
 
 } /* end of Cudd_CountPathsToNonZero */
@@ -700,20 +733,20 @@ Cudd_Support(
   DdManager * dd /* manager */,
   DdNode * f /* DD whose support is sought */)
 {
-    int	*support;
+    int *support;
     DdNode *res, *tmp, *var;
-    int	i,j;
+    int i,j;
     int size;
 
     /* Allocate and initialize support array for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    support = ALLOC(int,size);
+    support = ABC_ALLOC(int,size);
     if (support == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < size; i++) {
-	support[i] = 0;
+        support[i] = 0;
     }
 
     /* Compute support and clean up markers. */
@@ -722,30 +755,33 @@ Cudd_Support(
 
     /* Transform support from array to cube. */
     do {
-	dd->reordered = 0;
-	res = DD_ONE(dd);
-	cuddRef(res);
-	for (j = size - 1; j >= 0; j--) { /* for each level bottom-up */
-	    i = (j >= dd->size) ? j : dd->invperm[j];
-	    if (support[i] == 1) {
-		var = cuddUniqueInter(dd,i,dd->one,Cudd_Not(dd->one));
-		cuddRef(var);
-		tmp = cuddBddAndRecur(dd,res,var);
-		if (tmp == NULL) {
-		    Cudd_RecursiveDeref(dd,res);
-		    Cudd_RecursiveDeref(dd,var);
-		    res = NULL;
-		    break;
-		}
-		cuddRef(tmp);
-		Cudd_RecursiveDeref(dd,res);
-		Cudd_RecursiveDeref(dd,var);
-		res = tmp;
-	    }
-	}
+        dd->reordered = 0;
+        res = DD_ONE(dd);
+        cuddRef(res);
+        for (j = size - 1; j >= 0; j--) { /* for each level bottom-up */
+            i = (j >= dd->size) ? j : dd->invperm[j];
+            if (support[i] == 1) {
+                /* The following call to cuddUniqueInter is guaranteed
+                ** not to trigger reordering because the node we look up
+                ** already exists. */
+                var = cuddUniqueInter(dd,i,dd->one,Cudd_Not(dd->one));
+                cuddRef(var);
+                tmp = cuddBddAndRecur(dd,res,var);
+                if (tmp == NULL) {
+                    Cudd_RecursiveDeref(dd,res);
+                    Cudd_RecursiveDeref(dd,var);
+                    res = NULL;
+                    break;
+                }
+                cuddRef(tmp);
+                Cudd_RecursiveDeref(dd,res);
+                Cudd_RecursiveDeref(dd,var);
+                res = tmp;
+            }
+        }
     } while (dd->reordered == 1);
 
-    FREE(support);
+    ABC_FREE(support);
     if (res != NULL) cuddDeref(res);
     return(res);
 
@@ -756,8 +792,11 @@ Cudd_Support(
 
   Synopsis    [Finds the variables on which a DD depends.]
 
-  Description [Finds the variables on which a DD depends.
-  Returns an index array of the variables if successful; NULL otherwise.]
+  Description [Finds the variables on which a DD depends.  Returns an
+  index array of the variables if successful; NULL otherwise.  The
+  size of the array equals the number of variables in the manager.
+  Each entry of the array is 1 if the corresponding variable is in the
+  support of the DD and 0 otherwise.]
 
   SideEffects [None]
 
@@ -769,19 +808,19 @@ Cudd_SupportIndex(
   DdManager * dd /* manager */,
   DdNode * f /* DD whose support is sought */)
 {
-    int	*support;
-    int	i;
+    int *support;
+    int i;
     int size;
 
     /* Allocate and initialize support array for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    support = ALLOC(int,size);
+    support = ABC_ALLOC(int,size);
     if (support == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < size; i++) {
-	support[i] = 0;
+        support[i] = 0;
     }
 
     /* Compute support and clean up markers. */
@@ -811,20 +850,20 @@ Cudd_SupportSize(
   DdManager * dd /* manager */,
   DdNode * f /* DD whose support size is sought */)
 {
-    int	*support;
-    int	i;
+    int *support;
+    int i;
     int size;
     int count;
 
     /* Allocate and initialize support array for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    support = ALLOC(int,size);
+    support = ABC_ALLOC(int,size);
     if (support == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(CUDD_OUT_OF_MEM);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(CUDD_OUT_OF_MEM);
     }
     for (i = 0; i < size; i++) {
-	support[i] = 0;
+        support[i] = 0;
     }
 
     /* Compute support and clean up markers. */
@@ -834,10 +873,10 @@ Cudd_SupportSize(
     /* Count support variables. */
     count = 0;
     for (i = 0; i < size; i++) {
-	if (support[i] == 1) count++;
+        if (support[i] == 1) count++;
     }
 
-    FREE(support);
+    ABC_FREE(support);
     return(count);
 
 } /* end of Cudd_SupportSize */
@@ -863,53 +902,53 @@ Cudd_VectorSupport(
   DdNode ** F /* array of DDs whose support is sought */,
   int  n /* size of the array */)
 {
-    int	*support;
+    int *support;
     DdNode *res, *tmp, *var;
-    int	i,j;
+    int i,j;
     int size;
 
     /* Allocate and initialize support array for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    support = ALLOC(int,size);
+    support = ABC_ALLOC(int,size);
     if (support == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < size; i++) {
-	support[i] = 0;
+        support[i] = 0;
     }
 
     /* Compute support and clean up markers. */
     for (i = 0; i < n; i++) {
-	ddSupportStep(Cudd_Regular(F[i]),support);
+        ddSupportStep(Cudd_Regular(F[i]),support);
     }
     for (i = 0; i < n; i++) {
-	ddClearFlag(Cudd_Regular(F[i]));
+        ddClearFlag(Cudd_Regular(F[i]));
     }
 
     /* Transform support from array to cube. */
     res = DD_ONE(dd);
     cuddRef(res);
     for (j = size - 1; j >= 0; j--) { /* for each level bottom-up */
-	i = (j >= dd->size) ? j : dd->invperm[j];
-	if (support[i] == 1) {
-	    var = cuddUniqueInter(dd,i,dd->one,Cudd_Not(dd->one));
-	    cuddRef(var);
-	    tmp = Cudd_bddAnd(dd,res,var);
-	    if (tmp == NULL) {
-		Cudd_RecursiveDeref(dd,res);
-		Cudd_RecursiveDeref(dd,var);
-		FREE(support);
-		return(NULL);
-	    }
-	    cuddRef(tmp);
-	    Cudd_RecursiveDeref(dd,res);
-	    Cudd_RecursiveDeref(dd,var);
-	    res = tmp;
-	}
+        i = (j >= dd->size) ? j : dd->invperm[j];
+        if (support[i] == 1) {
+            var = cuddUniqueInter(dd,i,dd->one,Cudd_Not(dd->one));
+            cuddRef(var);
+            tmp = Cudd_bddAnd(dd,res,var);
+            if (tmp == NULL) {
+                Cudd_RecursiveDeref(dd,res);
+                Cudd_RecursiveDeref(dd,var);
+                ABC_FREE(support);
+                return(NULL);
+            }
+            cuddRef(tmp);
+            Cudd_RecursiveDeref(dd,res);
+            Cudd_RecursiveDeref(dd,var);
+            res = tmp;
+        }
     }
 
-    FREE(support);
+    ABC_FREE(support);
     cuddDeref(res);
     return(res);
 
@@ -935,27 +974,27 @@ Cudd_VectorSupportIndex(
   DdNode ** F /* array of DDs whose support is sought */,
   int  n /* size of the array */)
 {
-    int	*support;
-    int	i;
+    int *support;
+    int i;
     int size;
 
     /* Allocate and initialize support array for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    support = ALLOC(int,size);
+    support = ABC_ALLOC(int,size);
     if (support == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < size; i++) {
-	support[i] = 0;
+        support[i] = 0;
     }
 
     /* Compute support and clean up markers. */
     for (i = 0; i < n; i++) {
-	ddSupportStep(Cudd_Regular(F[i]),support);
+        ddSupportStep(Cudd_Regular(F[i]),support);
     }
     for (i = 0; i < n; i++) {
-	ddClearFlag(Cudd_Regular(F[i]));
+        ddClearFlag(Cudd_Regular(F[i]));
     }
 
     return(support);
@@ -983,37 +1022,37 @@ Cudd_VectorSupportSize(
   DdNode ** F /* array of DDs whose support is sought */,
   int  n /* size of the array */)
 {
-    int	*support;
-    int	i;
+    int *support;
+    int i;
     int size;
     int count;
 
     /* Allocate and initialize support array for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    support = ALLOC(int,size);
+    support = ABC_ALLOC(int,size);
     if (support == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(CUDD_OUT_OF_MEM);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(CUDD_OUT_OF_MEM);
     }
     for (i = 0; i < size; i++) {
-	support[i] = 0;
+        support[i] = 0;
     }
 
     /* Compute support and clean up markers. */
     for (i = 0; i < n; i++) {
-	ddSupportStep(Cudd_Regular(F[i]),support);
+        ddSupportStep(Cudd_Regular(F[i]),support);
     }
     for (i = 0; i < n; i++) {
-	ddClearFlag(Cudd_Regular(F[i]));
+        ddClearFlag(Cudd_Regular(F[i]));
     }
 
     /* Count vriables in support. */
     count = 0;
     for (i = 0; i < size; i++) {
-	if (support[i] == 1) count++;
+        if (support[i] == 1) count++;
     }
 
-    FREE(support);
+    ABC_FREE(support);
     return(count);
 
 } /* end of Cudd_VectorSupportSize */
@@ -1043,27 +1082,27 @@ Cudd_ClassifySupport(
   DdNode ** onlyF /* cube of variables only in f */,
   DdNode ** onlyG /* cube of variables only in g */)
 {
-    int	*supportF, *supportG;
+    int *supportF, *supportG;
     DdNode *tmp, *var;
-    int	i,j;
+    int i,j;
     int size;
 
     /* Allocate and initialize support arrays for ddSupportStep. */
     size = ddMax(dd->size, dd->sizeZ);
-    supportF = ALLOC(int,size);
+    supportF = ABC_ALLOC(int,size);
     if (supportF == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
-    supportG = ALLOC(int,size);
+    supportG = ABC_ALLOC(int,size);
     if (supportG == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	FREE(supportF);
-	return(0);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(supportF);
+        return(0);
     }
     for (i = 0; i < size; i++) {
-	supportF[i] = 0;
-	supportG[i] = 0;
+        supportF[i] = 0;
+        supportG[i] = 0;
     }
 
     /* Compute supports and clean up markers. */
@@ -1076,54 +1115,54 @@ Cudd_ClassifySupport(
     *common = *onlyF = *onlyG = DD_ONE(dd);
     cuddRef(*common); cuddRef(*onlyF); cuddRef(*onlyG);
     for (j = size - 1; j >= 0; j--) { /* for each level bottom-up */
-	i = (j >= dd->size) ? j : dd->invperm[j];
-	if (supportF[i] == 0 && supportG[i] == 0) continue;
-	var = cuddUniqueInter(dd,i,dd->one,Cudd_Not(dd->one));
-	cuddRef(var);
-	if (supportG[i] == 0) {
-	    tmp = Cudd_bddAnd(dd,*onlyF,var);
-	    if (tmp == NULL) {
-		Cudd_RecursiveDeref(dd,*common);
-		Cudd_RecursiveDeref(dd,*onlyF);
-		Cudd_RecursiveDeref(dd,*onlyG);
-		Cudd_RecursiveDeref(dd,var);
-		FREE(supportF); FREE(supportG);
-		return(0);
-	    }
-	    cuddRef(tmp);
-	    Cudd_RecursiveDeref(dd,*onlyF);
-	    *onlyF = tmp;
-	} else if (supportF[i] == 0) {
-	    tmp = Cudd_bddAnd(dd,*onlyG,var);
-	    if (tmp == NULL) {
-		Cudd_RecursiveDeref(dd,*common);
-		Cudd_RecursiveDeref(dd,*onlyF);
-		Cudd_RecursiveDeref(dd,*onlyG);
-		Cudd_RecursiveDeref(dd,var);
-		FREE(supportF); FREE(supportG);
-		return(0);
-	    }
-	    cuddRef(tmp);
-	    Cudd_RecursiveDeref(dd,*onlyG);
-	    *onlyG = tmp;
-	} else {
-	    tmp = Cudd_bddAnd(dd,*common,var);
-	    if (tmp == NULL) {
-		Cudd_RecursiveDeref(dd,*common);
-		Cudd_RecursiveDeref(dd,*onlyF);
-		Cudd_RecursiveDeref(dd,*onlyG);
-		Cudd_RecursiveDeref(dd,var);
-		FREE(supportF); FREE(supportG);
-		return(0);
-	    }
-	    cuddRef(tmp);
-	    Cudd_RecursiveDeref(dd,*common);
-	    *common = tmp;
-	}
-	Cudd_RecursiveDeref(dd,var);
+        i = (j >= dd->size) ? j : dd->invperm[j];
+        if (supportF[i] == 0 && supportG[i] == 0) continue;
+        var = cuddUniqueInter(dd,i,dd->one,Cudd_Not(dd->one));
+        cuddRef(var);
+        if (supportG[i] == 0) {
+            tmp = Cudd_bddAnd(dd,*onlyF,var);
+            if (tmp == NULL) {
+                Cudd_RecursiveDeref(dd,*common);
+                Cudd_RecursiveDeref(dd,*onlyF);
+                Cudd_RecursiveDeref(dd,*onlyG);
+                Cudd_RecursiveDeref(dd,var);
+                ABC_FREE(supportF); ABC_FREE(supportG);
+                return(0);
+            }
+            cuddRef(tmp);
+            Cudd_RecursiveDeref(dd,*onlyF);
+            *onlyF = tmp;
+        } else if (supportF[i] == 0) {
+            tmp = Cudd_bddAnd(dd,*onlyG,var);
+            if (tmp == NULL) {
+                Cudd_RecursiveDeref(dd,*common);
+                Cudd_RecursiveDeref(dd,*onlyF);
+                Cudd_RecursiveDeref(dd,*onlyG);
+                Cudd_RecursiveDeref(dd,var);
+                ABC_FREE(supportF); ABC_FREE(supportG);
+                return(0);
+            }
+            cuddRef(tmp);
+            Cudd_RecursiveDeref(dd,*onlyG);
+            *onlyG = tmp;
+        } else {
+            tmp = Cudd_bddAnd(dd,*common,var);
+            if (tmp == NULL) {
+                Cudd_RecursiveDeref(dd,*common);
+                Cudd_RecursiveDeref(dd,*onlyF);
+                Cudd_RecursiveDeref(dd,*onlyG);
+                Cudd_RecursiveDeref(dd,var);
+                ABC_FREE(supportF); ABC_FREE(supportG);
+                return(0);
+            }
+            cuddRef(tmp);
+            Cudd_RecursiveDeref(dd,*common);
+            *common = tmp;
+        }
+        Cudd_RecursiveDeref(dd,var);
     }
 
-    FREE(supportF); FREE(supportG);
+    ABC_FREE(supportF); ABC_FREE(supportG);
     cuddDeref(*common); cuddDeref(*onlyF); cuddDeref(*onlyG);
     return(1);
 
@@ -1147,7 +1186,7 @@ int
 Cudd_CountLeaves(
   DdNode * node)
 {
-    int	i;	
+    int i;
 
     i = ddLeavesInt(Cudd_Regular(node));
     ddClearFlag(Cudd_Regular(node));
@@ -1192,25 +1231,25 @@ Cudd_bddPickOneCube(
 
     for (;;) {
 
-	if (node == one) break;
+        if (node == one) break;
 
-	N = Cudd_Regular(node);
+        N = Cudd_Regular(node);
 
-	T = cuddT(N); E = cuddE(N);
-	if (Cudd_IsComplement(node)) {
-	    T = Cudd_Not(T); E = Cudd_Not(E);
-	}
-	if (T == bzero) {
-	    string[N->index] = 0;
-	    node = E;
-	} else if (E == bzero) {
-	    string[N->index] = 1;
-	    node = T;
-	} else {
-	    dir = (char) ((Cudd_Random() & 0x2000) >> 13);
-	    string[N->index] = dir;
-	    node = dir ? T : E;
-	}
+        T = cuddT(N); E = cuddE(N);
+        if (Cudd_IsComplement(node)) {
+            T = Cudd_Not(T); E = Cudd_Not(E);
+        }
+        if (T == bzero) {
+            string[N->index] = 0;
+            node = E;
+        } else if (E == bzero) {
+            string[N->index] = 1;
+            node = T;
+        } else {
+            dir = (char) ((Cudd_Random() & 0x2000) >> 13);
+            string[N->index] = dir;
+            node = dir ? T : E;
+        }
     }
     return(1);
 
@@ -1254,16 +1293,16 @@ Cudd_bddPickOneMinterm(
     DdNode *old, *neW;
 
     size = dd->size;
-    string = ALLOC(char, size);
+    string = ABC_ALLOC(char, size);
     if (string == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
-    indices = ALLOC(int,n);
+    indices = ABC_ALLOC(int,n);
     if (indices == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	FREE(string);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(string);
+        return(NULL);
     }
 
     for (i = 0; i < n; i++) {
@@ -1272,15 +1311,15 @@ Cudd_bddPickOneMinterm(
 
     result = Cudd_bddPickOneCube(dd,f,string);
     if (result == 0) {
-	FREE(string);
-	FREE(indices);
-	return(NULL);
+        ABC_FREE(string);
+        ABC_FREE(indices);
+        return(NULL);
     }
 
     /* Randomize choice for don't cares. */
     for (i = 0; i < n; i++) {
-	if (string[indices[i]] == 2) 
-	    string[indices[i]] = (char) ((Cudd_Random() & 0x20) >> 5);
+        if (string[indices[i]] == 2)
+            string[indices[i]] = (char) ((Cudd_Random() & 0x20) >> 5);
     }
 
     /* Build result BDD. */
@@ -1288,32 +1327,32 @@ Cudd_bddPickOneMinterm(
     cuddRef(old);
 
     for (i = n-1; i >= 0; i--) {
-	neW = Cudd_bddAnd(dd,old,Cudd_NotCond(vars[i],string[indices[i]]==0));
-	if (neW == NULL) {
-	    FREE(string);
-	    FREE(indices);
-	    Cudd_RecursiveDeref(dd,old);
-	    return(NULL);
-	}
-	cuddRef(neW);
-	Cudd_RecursiveDeref(dd,old);
-	old = neW;
+        neW = Cudd_bddAnd(dd,old,Cudd_NotCond(vars[i],string[indices[i]]==0));
+        if (neW == NULL) {
+            ABC_FREE(string);
+            ABC_FREE(indices);
+            Cudd_RecursiveDeref(dd,old);
+            return(NULL);
+        }
+        cuddRef(neW);
+        Cudd_RecursiveDeref(dd,old);
+        old = neW;
     }
 
 #ifdef DD_DEBUG
     /* Test. */
     if (Cudd_bddLeq(dd,old,f)) {
-	cuddDeref(old);
+        cuddDeref(old);
     } else {
-	Cudd_RecursiveDeref(dd,old);
-	old = NULL;
+        Cudd_RecursiveDeref(dd,old);
+        old = NULL;
     }
 #else
     cuddDeref(old);
 #endif
 
-    FREE(string);
-    FREE(indices);
+    ABC_FREE(string);
+    ABC_FREE(indices);
     return(old);
 
 }  /* end of Cudd_bddPickOneMinterm */
@@ -1357,38 +1396,38 @@ Cudd_bddPickArbitraryMinterms(
     DdNode **old, *neW;
     double minterms;
     char *saveString;
-    int saveFlag, savePoint, isSame;
+    int saveFlag, savePoint = -1, isSame;
 
     minterms = Cudd_CountMinterm(dd,f,n);
     if ((double)k > minterms) {
-	return(NULL);
+        return(NULL);
     }
 
     size = dd->size;
-    string = ALLOC(char *, k);
+    string = ABC_ALLOC(char *, k);
     if (string == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < k; i++) {
-	string[i] = ALLOC(char, size + 1);
-	if (string[i] == NULL) {
-	    for (j = 0; j < i; j++)
-		FREE(string[i]);
-	    FREE(string);
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(NULL);
-	}
-	for (j = 0; j < size; j++) string[i][j] = '2';
-	string[i][size] = '\0';
+        string[i] = ABC_ALLOC(char, size + 1);
+        if (string[i] == NULL) {
+            for (j = 0; j < i; j++)
+                ABC_FREE(string[i]);
+            ABC_FREE(string);
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(NULL);
+        }
+        for (j = 0; j < size; j++) string[i][j] = '2';
+        string[i][size] = '\0';
     }
-    indices = ALLOC(int,n);
+    indices = ABC_ALLOC(int,n);
     if (indices == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	for (i = 0; i < k; i++)
-	    FREE(string[i]);
-	FREE(string);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        for (i = 0; i < k; i++)
+            ABC_FREE(string[i]);
+        ABC_FREE(string);
+        return(NULL);
     }
 
     for (i = 0; i < n; i++) {
@@ -1397,132 +1436,133 @@ Cudd_bddPickArbitraryMinterms(
 
     result = ddPickArbitraryMinterms(dd,f,n,k,string);
     if (result == 0) {
-	for (i = 0; i < k; i++)
-	    FREE(string[i]);
-	FREE(string);
-	FREE(indices);
-	return(NULL);
+        for (i = 0; i < k; i++)
+            ABC_FREE(string[i]);
+        ABC_FREE(string);
+        ABC_FREE(indices);
+        return(NULL);
     }
 
-    old = ALLOC(DdNode *, k);
+    old = ABC_ALLOC(DdNode *, k);
     if (old == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	for (i = 0; i < k; i++)
-	    FREE(string[i]);
-	FREE(string);
-	FREE(indices);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        for (i = 0; i < k; i++)
+            ABC_FREE(string[i]);
+        ABC_FREE(string);
+        ABC_FREE(indices);
+        return(NULL);
     }
-    saveString = ALLOC(char, size + 1);
+    saveString = ABC_ALLOC(char, size + 1);
     if (saveString == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	for (i = 0; i < k; i++)
-	    FREE(string[i]);
-	FREE(string);
-	FREE(indices);
-	FREE(old);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        for (i = 0; i < k; i++)
+            ABC_FREE(string[i]);
+        ABC_FREE(string);
+        ABC_FREE(indices);
+        ABC_FREE(old);
+        return(NULL);
     }
     saveFlag = 0;
 
     /* Build result BDD array. */
     for (i = 0; i < k; i++) {
-	isSame = 0;
-	if (!saveFlag) {
-	    for (j = i + 1; j < k; j++) {
-		if (strcmp(string[i], string[j]) == 0) {
-		    savePoint = i;
-		    strcpy(saveString, string[i]);
-		    saveFlag = 1;
-		    break;
-		}
-	    }
-	} else {
-	    if (strcmp(string[i], saveString) == 0) {
-		isSame = 1;
-	    } else {
-		saveFlag = 0;
-		for (j = i + 1; j < k; j++) {
-		    if (strcmp(string[i], string[j]) == 0) {
-			savePoint = i;
-			strcpy(saveString, string[i]);
-			saveFlag = 1;
-			break;
-		    }
-		}
-	    }
-	}
-	/* Randomize choice for don't cares. */
-	for (j = 0; j < n; j++) {
-	    if (string[i][indices[j]] == '2')
-		string[i][indices[j]] = (Cudd_Random() & 0x20) ? '1' : '0';
-	}
+        isSame = 0;
+        if (!saveFlag) {
+            for (j = i + 1; j < k; j++) {
+                if (strcmp(string[i], string[j]) == 0) {
+                    savePoint = i;
+                    strcpy(saveString, string[i]);
+                    saveFlag = 1;
+                    break;
+                }
+            }
+        } else {
+            if (strcmp(string[i], saveString) == 0) {
+                isSame = 1;
+            } else {
+                saveFlag = 0;
+                for (j = i + 1; j < k; j++) {
+                    if (strcmp(string[i], string[j]) == 0) {
+                        savePoint = i;
+                        strcpy(saveString, string[i]);
+                        saveFlag = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        /* Randomize choice for don't cares. */
+        for (j = 0; j < n; j++) {
+            if (string[i][indices[j]] == '2')
+                string[i][indices[j]] =
+                  (char) ((Cudd_Random() & 0x20) ? '1' : '0');
+        }
 
-	while (isSame) {
-	    isSame = 0;
-	    for (j = savePoint; j < i; j++) {
-		if (strcmp(string[i], string[j]) == 0) {
-		    isSame = 1;
-		    break;
-		}
-	    }
-	    if (isSame) {
-		strcpy(string[i], saveString);
-		/* Randomize choice for don't cares. */
-		for (j = 0; j < n; j++) {
-		    if (string[i][indices[j]] == '2') 
-			string[i][indices[j]] = (Cudd_Random() & 0x20) ?
-			    '1' : '0';
-		}
-	    }
-	}
+        while (isSame) {
+            isSame = 0;
+            for (j = savePoint; j < i; j++) {
+                if (strcmp(string[i], string[j]) == 0) {
+                    isSame = 1;
+                    break;
+                }
+            }
+            if (isSame) {
+                strcpy(string[i], saveString);
+                /* Randomize choice for don't cares. */
+                for (j = 0; j < n; j++) {
+                    if (string[i][indices[j]] == '2')
+                        string[i][indices[j]] =
+                          (char) ((Cudd_Random() & 0x20) ? '1' : '0');
+                }
+            }
+        }
 
-	old[i] = Cudd_ReadOne(dd);
-	cuddRef(old[i]);
+        old[i] = Cudd_ReadOne(dd);
+        cuddRef(old[i]);
 
-	for (j = 0; j < n; j++) {
-	    if (string[i][indices[j]] == '0') {
-		neW = Cudd_bddAnd(dd,old[i],Cudd_Not(vars[j]));
-	    } else {
-		neW = Cudd_bddAnd(dd,old[i],vars[j]);
-	    }
-	    if (neW == NULL) {
-		FREE(saveString);
-		for (l = 0; l < k; l++)
-		    FREE(string[l]);
-		FREE(string);
-		FREE(indices);
-		for (l = 0; l <= i; l++)
-		    Cudd_RecursiveDeref(dd,old[l]);
-		FREE(old);
-		return(NULL);
-	    }
-	    cuddRef(neW);
-	    Cudd_RecursiveDeref(dd,old[i]);
-	    old[i] = neW;
-	}
+        for (j = 0; j < n; j++) {
+            if (string[i][indices[j]] == '0') {
+                neW = Cudd_bddAnd(dd,old[i],Cudd_Not(vars[j]));
+            } else {
+                neW = Cudd_bddAnd(dd,old[i],vars[j]);
+            }
+            if (neW == NULL) {
+                ABC_FREE(saveString);
+                for (l = 0; l < k; l++)
+                    ABC_FREE(string[l]);
+                ABC_FREE(string);
+                ABC_FREE(indices);
+                for (l = 0; l <= i; l++)
+                    Cudd_RecursiveDeref(dd,old[l]);
+                ABC_FREE(old);
+                return(NULL);
+            }
+            cuddRef(neW);
+            Cudd_RecursiveDeref(dd,old[i]);
+            old[i] = neW;
+        }
 
-	/* Test. */
-	if (!Cudd_bddLeq(dd,old[i],f)) {
-	    FREE(saveString);
-	    for (l = 0; l < k; l++)
-		FREE(string[l]);
-	    FREE(string);
-	    FREE(indices);
-	    for (l = 0; l <= i; l++)
-		Cudd_RecursiveDeref(dd,old[l]);
-	    FREE(old);
-	    return(NULL);
-	}
+        /* Test. */
+        if (!Cudd_bddLeq(dd,old[i],f)) {
+            ABC_FREE(saveString);
+            for (l = 0; l < k; l++)
+                ABC_FREE(string[l]);
+            ABC_FREE(string);
+            ABC_FREE(indices);
+            for (l = 0; l <= i; l++)
+                Cudd_RecursiveDeref(dd,old[l]);
+            ABC_FREE(old);
+            return(NULL);
+        }
     }
 
-    FREE(saveString);
+    ABC_FREE(saveString);
     for (i = 0; i < k; i++) {
-	cuddDeref(old[i]);
-	FREE(string[i]);
+        cuddDeref(old[i]);
+        ABC_FREE(string[i]);
     }
-    FREE(string);
-    FREE(indices);
+    ABC_FREE(string);
+    ABC_FREE(indices);
     return(old);
 
 }  /* end of Cudd_bddPickArbitraryMinterms */
@@ -1559,114 +1599,119 @@ Cudd_SubsetWithMaskVars(
   DdNode ** maskVars /* array of variables */,
   int  mvars /* size of <code>maskVars</code> */)
 {
-    double	*weight;
-    char	*string;
-    int		i, size;
-    int		*indices, *mask;
-    int		result;
-    DdNode	*zero, *cube, *newCube, *subset;
-    DdNode	*cof;
+    double      *weight;
+    char        *string;
+    int         i, size;
+    int         *indices, *mask;
+    int         result;
+    DdNode      *zero, *cube, *newCube, *subset;
+    DdNode      *cof;
 
-    DdNode	*support;
+    DdNode      *support;
     support = Cudd_Support(dd,f);
     cuddRef(support);
     Cudd_RecursiveDeref(dd,support);
 
     zero = Cudd_Not(dd->one);
     size = dd->size;
-    
-    weight = ALLOC(double,size);
+
+    weight = ABC_ALLOC(double,size);
     if (weight == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < size; i++) {
         weight[i] = 0.0;
     }
     for (i = 0; i < mvars; i++) {
-	cof = Cudd_Cofactor(dd, f, maskVars[i]);
-	cuddRef(cof);
-	weight[i] = Cudd_CountMinterm(dd, cof, nvars);
-	Cudd_RecursiveDeref(dd,cof);
+        cof = Cudd_Cofactor(dd, f, maskVars[i]);
+        cuddRef(cof);
+        weight[i] = Cudd_CountMinterm(dd, cof, nvars);
+        Cudd_RecursiveDeref(dd,cof);
 
-	cof = Cudd_Cofactor(dd, f, Cudd_Not(maskVars[i]));
-	cuddRef(cof);
-	weight[i] -= Cudd_CountMinterm(dd, cof, nvars);
-	Cudd_RecursiveDeref(dd,cof);
+        cof = Cudd_Cofactor(dd, f, Cudd_Not(maskVars[i]));
+        cuddRef(cof);
+        weight[i] -= Cudd_CountMinterm(dd, cof, nvars);
+        Cudd_RecursiveDeref(dd,cof);
     }
 
-    string = ALLOC(char, size + 1);
+    string = ABC_ALLOC(char, size + 1);
     if (string == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(weight);
+        return(NULL);
     }
-    mask = ALLOC(int, size);
+    mask = ABC_ALLOC(int, size);
     if (mask == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	FREE(string);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(weight);
+        ABC_FREE(string);
+        return(NULL);
     }
     for (i = 0; i < size; i++) {
-	string[i] = '2';
-	mask[i] = 0;
+        string[i] = '2';
+        mask[i] = 0;
     }
     string[size] = '\0';
-    indices = ALLOC(int,nvars);
+    indices = ABC_ALLOC(int,nvars);
     if (indices == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	FREE(string);
-	FREE(mask);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(weight);
+        ABC_FREE(string);
+        ABC_FREE(mask);
+        return(NULL);
     }
     for (i = 0; i < nvars; i++) {
         indices[i] = vars[i]->index;
     }
 
-    result = ddPickRepresentativeCube(dd,f,nvars,weight,string);
+    result = ddPickRepresentativeCube(dd,f,weight,string);
     if (result == 0) {
-	FREE(string);
-	FREE(mask);
-	FREE(indices);
-	return(NULL);
+        ABC_FREE(weight);
+        ABC_FREE(string);
+        ABC_FREE(mask);
+        ABC_FREE(indices);
+        return(NULL);
     }
 
     cube = Cudd_ReadOne(dd);
     cuddRef(cube);
     zero = Cudd_Not(Cudd_ReadOne(dd));
     for (i = 0; i < nvars; i++) {
-	if (string[indices[i]] == '0') {
-	    newCube = Cudd_bddIte(dd,cube,Cudd_Not(vars[i]),zero);
-	} else if (string[indices[i]] == '1') {
-	    newCube = Cudd_bddIte(dd,cube,vars[i],zero);
-	} else
-	    continue;
-	if (newCube == NULL) {
-	    FREE(string);
-	    FREE(mask);
-	    FREE(indices);
-	    Cudd_RecursiveDeref(dd,cube);
-	    return(NULL);
-	}
-	cuddRef(newCube);
-	Cudd_RecursiveDeref(dd,cube);
-	cube = newCube;
+        if (string[indices[i]] == '0') {
+            newCube = Cudd_bddIte(dd,cube,Cudd_Not(vars[i]),zero);
+        } else if (string[indices[i]] == '1') {
+            newCube = Cudd_bddIte(dd,cube,vars[i],zero);
+        } else
+            continue;
+        if (newCube == NULL) {
+            ABC_FREE(weight);
+            ABC_FREE(string);
+            ABC_FREE(mask);
+            ABC_FREE(indices);
+            Cudd_RecursiveDeref(dd,cube);
+            return(NULL);
+        }
+        cuddRef(newCube);
+        Cudd_RecursiveDeref(dd,cube);
+        cube = newCube;
     }
     Cudd_RecursiveDeref(dd,cube);
 
     for (i = 0; i < mvars; i++) {
-	mask[maskVars[i]->index] = 1;
+        mask[maskVars[i]->index] = 1;
     }
     for (i = 0; i < nvars; i++) {
-	if (mask[indices[i]]) {
-	    if (string[indices[i]] == '2') {
-		if (weight[indices[i]] >= 0.0)
-		    string[indices[i]] = '1';
-		else
-		    string[indices[i]] = '0';
-	    }
-	} else {
-	    string[indices[i]] = '2';
-	}
+        if (mask[indices[i]]) {
+            if (string[indices[i]] == '2') {
+                if (weight[indices[i]] >= 0.0)
+                    string[indices[i]] = '1';
+                else
+                    string[indices[i]] = '0';
+            }
+        } else {
+            string[indices[i]] = '2';
+        }
     }
 
     cube = Cudd_ReadOne(dd);
@@ -1675,22 +1720,23 @@ Cudd_SubsetWithMaskVars(
 
     /* Build result BDD. */
     for (i = 0; i < nvars; i++) {
-	if (string[indices[i]] == '0') {
-	    newCube = Cudd_bddIte(dd,cube,Cudd_Not(vars[i]),zero);
-	} else if (string[indices[i]] == '1') {
-	    newCube = Cudd_bddIte(dd,cube,vars[i],zero);
-	} else
-	    continue;
-	if (newCube == NULL) {
-	    FREE(string);
-	    FREE(mask);
-	    FREE(indices);
-	    Cudd_RecursiveDeref(dd,cube);
-	    return(NULL);
-	}
-	cuddRef(newCube);
-	Cudd_RecursiveDeref(dd,cube);
-	cube = newCube;
+        if (string[indices[i]] == '0') {
+            newCube = Cudd_bddIte(dd,cube,Cudd_Not(vars[i]),zero);
+        } else if (string[indices[i]] == '1') {
+            newCube = Cudd_bddIte(dd,cube,vars[i],zero);
+        } else
+            continue;
+        if (newCube == NULL) {
+            ABC_FREE(weight);
+            ABC_FREE(string);
+            ABC_FREE(mask);
+            ABC_FREE(indices);
+            Cudd_RecursiveDeref(dd,cube);
+            return(NULL);
+        }
+        cuddRef(newCube);
+        Cudd_RecursiveDeref(dd,cube);
+        cube = newCube;
     }
 
     subset = Cudd_bddAnd(dd,f,cube);
@@ -1699,16 +1745,16 @@ Cudd_SubsetWithMaskVars(
 
     /* Test. */
     if (Cudd_bddLeq(dd,subset,f)) {
-	cuddDeref(subset);
+        cuddDeref(subset);
     } else {
-	Cudd_RecursiveDeref(dd,subset);
-	subset = NULL;
+        Cudd_RecursiveDeref(dd,subset);
+        subset = NULL;
     }
 
-    FREE(string);
-    FREE(mask);
-    FREE(indices);
-    FREE(weight);
+    ABC_FREE(weight);
+    ABC_FREE(string);
+    ABC_FREE(mask);
+    ABC_FREE(indices);
     return(subset);
 
 } /* end of Cudd_SubsetWithMaskVars */
@@ -1756,10 +1802,10 @@ Cudd_FirstCube(
     if (dd == NULL || f == NULL) return(NULL);
 
     /* Allocate generator an initialize it. */
-    gen = ALLOC(DdGen,1);
+    gen = ABC_ALLOC(DdGen,1);
     if (gen == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
 
     gen->manager = dd;
@@ -1772,11 +1818,11 @@ Cudd_FirstCube(
     gen->node = NULL;
 
     nvars = dd->size;
-    gen->gen.cubes.cube = ALLOC(int,nvars);
+    gen->gen.cubes.cube = ABC_ALLOC(int,nvars);
     if (gen->gen.cubes.cube == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	FREE(gen);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(gen);
+        return(NULL);
     }
     for (i = 0; i < nvars; i++) gen->gen.cubes.cube[i] = 2;
 
@@ -1784,12 +1830,12 @@ Cudd_FirstCube(
     ** because a path may have nodes at all levels, including the
     ** constant level.
     */
-    gen->stack.stack = ALLOC(DdNode *, nvars+1);
+    gen->stack.stack = ABC_ALLOC(DdNodePtr, nvars+1);
     if (gen->stack.stack == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	FREE(gen->gen.cubes.cube);
-	FREE(gen);
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(gen->gen.cubes.cube);
+        ABC_FREE(gen);
+        return(NULL);
     }
     for (i = 0; i <= nvars; i++) gen->stack.stack[i] = NULL;
 
@@ -1797,43 +1843,43 @@ Cudd_FirstCube(
     gen->stack.stack[gen->stack.sp] = f; gen->stack.sp++;
 
     while (1) {
-	top = gen->stack.stack[gen->stack.sp-1];
-	treg = Cudd_Regular(top);
-	if (!cuddIsConstant(treg)) {
-	    /* Take the else branch first. */
-	    gen->gen.cubes.cube[treg->index] = 0;
-	    next = cuddE(treg);
-	    if (top != treg) next = Cudd_Not(next);
-	    gen->stack.stack[gen->stack.sp] = next; gen->stack.sp++;
-	} else if (top == Cudd_Not(DD_ONE(dd)) || top == dd->background) {
-	    /* Backtrack */
-	    while (1) {
-		if (gen->stack.sp == 1) {
-		    /* The current node has no predecessor. */
-		    gen->status = CUDD_GEN_EMPTY;
-		    gen->stack.sp--;
-		    goto done;
-		}
-		prev = gen->stack.stack[gen->stack.sp-2];
-		preg = Cudd_Regular(prev);
-		nreg = cuddT(preg);
-		if (prev != preg) {next = Cudd_Not(nreg);} else {next = nreg;}
-		if (next != top) { /* follow the then branch next */
-		    gen->gen.cubes.cube[preg->index] = 1;
-		    gen->stack.stack[gen->stack.sp-1] = next;
-		    break;
-		}
-		/* Pop the stack and try again. */
-		gen->gen.cubes.cube[preg->index] = 2;
-		gen->stack.sp--;
-		top = gen->stack.stack[gen->stack.sp-1];
-		treg = Cudd_Regular(top);
-	    }
-	} else {
-	    gen->status = CUDD_GEN_NONEMPTY;
-	    gen->gen.cubes.value = cuddV(top);
-	    goto done;
-	}
+        top = gen->stack.stack[gen->stack.sp-1];
+        treg = Cudd_Regular(top);
+        if (!cuddIsConstant(treg)) {
+            /* Take the else branch first. */
+            gen->gen.cubes.cube[treg->index] = 0;
+            next = cuddE(treg);
+            if (top != treg) next = Cudd_Not(next);
+            gen->stack.stack[gen->stack.sp] = next; gen->stack.sp++;
+        } else if (top == Cudd_Not(DD_ONE(dd)) || top == dd->background) {
+            /* Backtrack */
+            while (1) {
+                if (gen->stack.sp == 1) {
+                    /* The current node has no predecessor. */
+                    gen->status = CUDD_GEN_EMPTY;
+                    gen->stack.sp--;
+                    goto done;
+                }
+                prev = gen->stack.stack[gen->stack.sp-2];
+                preg = Cudd_Regular(prev);
+                nreg = cuddT(preg);
+                if (prev != preg) {next = Cudd_Not(nreg);} else {next = nreg;}
+                if (next != top) { /* follow the then branch next */
+                    gen->gen.cubes.cube[preg->index] = 1;
+                    gen->stack.stack[gen->stack.sp-1] = next;
+                    break;
+                }
+                /* Pop the stack and try again. */
+                gen->gen.cubes.cube[preg->index] = 2;
+                gen->stack.sp--;
+                top = gen->stack.stack[gen->stack.sp-1];
+                treg = Cudd_Regular(top);
+            }
+        } else {
+            gen->status = CUDD_GEN_NONEMPTY;
+            gen->gen.cubes.value = cuddV(top);
+            goto done;
+        }
     }
 
 done:
@@ -1870,66 +1916,66 @@ Cudd_NextCube(
 
     /* Backtrack from previously reached terminal node. */
     while (1) {
-	if (gen->stack.sp == 1) {
-	    /* The current node has no predecessor. */
-	    gen->status = CUDD_GEN_EMPTY;
-	    gen->stack.sp--;
-	    goto done;
-	}
-	top = gen->stack.stack[gen->stack.sp-1];
-	treg = Cudd_Regular(top);
-	prev = gen->stack.stack[gen->stack.sp-2];
-	preg = Cudd_Regular(prev);
-	nreg = cuddT(preg);
-	if (prev != preg) {next = Cudd_Not(nreg);} else {next = nreg;}
-	if (next != top) { /* follow the then branch next */
-	    gen->gen.cubes.cube[preg->index] = 1;
-	    gen->stack.stack[gen->stack.sp-1] = next;
-	    break;
-	}
-	/* Pop the stack and try again. */
-	gen->gen.cubes.cube[preg->index] = 2;
-	gen->stack.sp--;
+        if (gen->stack.sp == 1) {
+            /* The current node has no predecessor. */
+            gen->status = CUDD_GEN_EMPTY;
+            gen->stack.sp--;
+            goto done;
+        }
+        top = gen->stack.stack[gen->stack.sp-1];
+        treg = Cudd_Regular(top);
+        prev = gen->stack.stack[gen->stack.sp-2];
+        preg = Cudd_Regular(prev);
+        nreg = cuddT(preg);
+        if (prev != preg) {next = Cudd_Not(nreg);} else {next = nreg;}
+        if (next != top) { /* follow the then branch next */
+            gen->gen.cubes.cube[preg->index] = 1;
+            gen->stack.stack[gen->stack.sp-1] = next;
+            break;
+        }
+        /* Pop the stack and try again. */
+        gen->gen.cubes.cube[preg->index] = 2;
+        gen->stack.sp--;
     }
 
     while (1) {
-	top = gen->stack.stack[gen->stack.sp-1];
-	treg = Cudd_Regular(top);
-	if (!cuddIsConstant(treg)) {
-	    /* Take the else branch first. */
-	    gen->gen.cubes.cube[treg->index] = 0;
-	    next = cuddE(treg);
-	    if (top != treg) next = Cudd_Not(next);
-	    gen->stack.stack[gen->stack.sp] = next; gen->stack.sp++;
-	} else if (top == Cudd_Not(DD_ONE(dd)) || top == dd->background) {
-	    /* Backtrack */
-	    while (1) {
-		if (gen->stack.sp == 1) {
-		    /* The current node has no predecessor. */
-		    gen->status = CUDD_GEN_EMPTY;
-		    gen->stack.sp--;
-		    goto done;
-		}
-		prev = gen->stack.stack[gen->stack.sp-2];
-		preg = Cudd_Regular(prev);
-		nreg = cuddT(preg);
-		if (prev != preg) {next = Cudd_Not(nreg);} else {next = nreg;}
-		if (next != top) { /* follow the then branch next */
-		    gen->gen.cubes.cube[preg->index] = 1;
-		    gen->stack.stack[gen->stack.sp-1] = next;
-		    break;
-		}
-		/* Pop the stack and try again. */
-		gen->gen.cubes.cube[preg->index] = 2;
-		gen->stack.sp--;
-		top = gen->stack.stack[gen->stack.sp-1];
-		treg = Cudd_Regular(top);
-	    }
-	} else {
-	    gen->status = CUDD_GEN_NONEMPTY;
-	    gen->gen.cubes.value = cuddV(top);
-	    goto done;
-	}
+        top = gen->stack.stack[gen->stack.sp-1];
+        treg = Cudd_Regular(top);
+        if (!cuddIsConstant(treg)) {
+            /* Take the else branch first. */
+            gen->gen.cubes.cube[treg->index] = 0;
+            next = cuddE(treg);
+            if (top != treg) next = Cudd_Not(next);
+            gen->stack.stack[gen->stack.sp] = next; gen->stack.sp++;
+        } else if (top == Cudd_Not(DD_ONE(dd)) || top == dd->background) {
+            /* Backtrack */
+            while (1) {
+                if (gen->stack.sp == 1) {
+                    /* The current node has no predecessor. */
+                    gen->status = CUDD_GEN_EMPTY;
+                    gen->stack.sp--;
+                    goto done;
+                }
+                prev = gen->stack.stack[gen->stack.sp-2];
+                preg = Cudd_Regular(prev);
+                nreg = cuddT(preg);
+                if (prev != preg) {next = Cudd_Not(nreg);} else {next = nreg;}
+                if (next != top) { /* follow the then branch next */
+                    gen->gen.cubes.cube[preg->index] = 1;
+                    gen->stack.stack[gen->stack.sp-1] = next;
+                    break;
+                }
+                /* Pop the stack and try again. */
+                gen->gen.cubes.cube[preg->index] = 2;
+                gen->stack.sp--;
+                top = gen->stack.stack[gen->stack.sp-1];
+                treg = Cudd_Regular(top);
+            }
+        } else {
+            gen->status = CUDD_GEN_NONEMPTY;
+            gen->gen.cubes.value = cuddV(top);
+            goto done;
+        }
     }
 
 done:
@@ -1939,6 +1985,188 @@ done:
     return(1);
 
 } /* end of Cudd_NextCube */
+
+
+/**Function********************************************************************
+
+  Synopsis    [Finds the first prime of a Boolean function.]
+
+  Description [Defines an iterator on a pair of BDDs describing a
+  (possibly incompletely specified) Boolean functions and finds the
+  first cube of a cover of the function.  Returns a generator
+  that contains the information necessary to continue the enumeration
+  if successful; NULL otherwise.<p>
+
+  The two argument BDDs are the lower and upper bounds of an interval.
+  It is a mistake to call this function with a lower bound that is not
+  less than or equal to the upper bound.<p>
+
+  A cube is represented as an array of literals, which are integers in
+  {0, 1, 2}; 0 represents a complemented literal, 1 represents an
+  uncomplemented literal, and 2 stands for don't care. The enumeration
+  produces a prime and irredundant cover of the function associated
+  with the two BDDs.  The size of the array equals the number of
+  variables in the manager at the time Cudd_FirstCube is called.<p>
+
+  This iterator can only be used on BDDs.]
+
+  SideEffects [The first cube is returned as side effect.]
+
+  SeeAlso     [Cudd_ForeachPrime Cudd_NextPrime Cudd_GenFree Cudd_IsGenEmpty
+  Cudd_FirstCube Cudd_FirstNode]
+
+******************************************************************************/
+DdGen *
+Cudd_FirstPrime(
+  DdManager *dd,
+  DdNode *l,
+  DdNode *u,
+  int **cube)
+{
+    DdGen *gen;
+    DdNode *implicant, *prime, *tmp;
+    int length, result;
+
+    /* Sanity Check. */
+    if (dd == NULL || l == NULL || u == NULL) return(NULL);
+
+    /* Allocate generator an initialize it. */
+    gen = ABC_ALLOC(DdGen,1);
+    if (gen == NULL) {
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
+    }
+
+    gen->manager = dd;
+    gen->type = CUDD_GEN_PRIMES;
+    gen->status = CUDD_GEN_EMPTY;
+    gen->gen.primes.cube = NULL;
+    gen->gen.primes.ub = u;
+    gen->stack.sp = 0;
+    gen->stack.stack = NULL;
+    gen->node = l;
+    cuddRef(l);
+
+    gen->gen.primes.cube = ABC_ALLOC(int,dd->size);
+    if (gen->gen.primes.cube == NULL) {
+        dd->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(gen);
+        return(NULL);
+    }
+
+    if (gen->node == Cudd_ReadLogicZero(dd)) {
+        gen->status = CUDD_GEN_EMPTY;
+    } else {
+        implicant = Cudd_LargestCube(dd,gen->node,&length);
+        if (implicant == NULL) {
+            Cudd_RecursiveDeref(dd,gen->node);
+            ABC_FREE(gen->gen.primes.cube);
+            ABC_FREE(gen);
+            return(NULL);
+        }
+        cuddRef(implicant);
+        prime = Cudd_bddMakePrime(dd,implicant,gen->gen.primes.ub);
+        if (prime == NULL) {
+            Cudd_RecursiveDeref(dd,gen->node);
+            Cudd_RecursiveDeref(dd,implicant);
+            ABC_FREE(gen->gen.primes.cube);
+            ABC_FREE(gen);
+            return(NULL);
+        }
+        cuddRef(prime);
+        Cudd_RecursiveDeref(dd,implicant);
+        tmp = Cudd_bddAnd(dd,gen->node,Cudd_Not(prime));
+        if (tmp == NULL) {
+            Cudd_RecursiveDeref(dd,gen->node);
+            Cudd_RecursiveDeref(dd,prime);
+            ABC_FREE(gen->gen.primes.cube);
+            ABC_FREE(gen);
+            return(NULL);
+        }
+        cuddRef(tmp);
+        Cudd_RecursiveDeref(dd,gen->node);
+        gen->node = tmp;
+        result = Cudd_BddToCubeArray(dd,prime,gen->gen.primes.cube);
+        if (result == 0) {
+            Cudd_RecursiveDeref(dd,gen->node);
+            Cudd_RecursiveDeref(dd,prime);
+            ABC_FREE(gen->gen.primes.cube);
+            ABC_FREE(gen);
+            return(NULL);
+        }
+        Cudd_RecursiveDeref(dd,prime);
+        gen->status = CUDD_GEN_NONEMPTY;
+    }
+    *cube = gen->gen.primes.cube;
+    return(gen);
+
+} /* end of Cudd_FirstPrime */
+
+
+/**Function********************************************************************
+
+  Synopsis    [Generates the next prime of a Boolean function.]
+
+  Description [Generates the next cube of a Boolean function,
+  using generator gen. Returns 0 if the enumeration is completed; 1
+  otherwise.]
+
+  SideEffects [The cube and is returned as side effects. The
+  generator is modified.]
+
+  SeeAlso     [Cudd_ForeachPrime Cudd_FirstPrime Cudd_GenFree Cudd_IsGenEmpty
+  Cudd_NextCube Cudd_NextNode]
+
+******************************************************************************/
+int
+Cudd_NextPrime(
+  DdGen *gen,
+  int **cube)
+{
+    DdNode *implicant, *prime, *tmp;
+    DdManager *dd = gen->manager;
+    int length, result;
+
+    if (gen->node == Cudd_ReadLogicZero(dd)) {
+        gen->status = CUDD_GEN_EMPTY;
+    } else {
+        implicant = Cudd_LargestCube(dd,gen->node,&length);
+        if (implicant == NULL) {
+            gen->status = CUDD_GEN_EMPTY;
+            return(0);
+        }
+        cuddRef(implicant);
+        prime = Cudd_bddMakePrime(dd,implicant,gen->gen.primes.ub);
+        if (prime == NULL) {
+            Cudd_RecursiveDeref(dd,implicant);
+            gen->status = CUDD_GEN_EMPTY;
+            return(0);
+        }
+        cuddRef(prime);
+        Cudd_RecursiveDeref(dd,implicant);
+        tmp = Cudd_bddAnd(dd,gen->node,Cudd_Not(prime));
+        if (tmp == NULL) {
+            Cudd_RecursiveDeref(dd,prime);
+            gen->status = CUDD_GEN_EMPTY;
+            return(0);
+        }
+        cuddRef(tmp);
+        Cudd_RecursiveDeref(dd,gen->node);
+        gen->node = tmp;
+        result = Cudd_BddToCubeArray(dd,prime,gen->gen.primes.cube);
+        if (result == 0) {
+            Cudd_RecursiveDeref(dd,prime);
+            gen->status = CUDD_GEN_EMPTY;
+            return(0);
+        }
+        Cudd_RecursiveDeref(dd,prime);
+        gen->status = CUDD_GEN_NONEMPTY;
+    }
+    if (gen->status == CUDD_GEN_EMPTY) return(0);
+    *cube = gen->gen.primes.cube;
+    return(1);
+
+} /* end of Cudd_NextPrime */
 
 
 /**Function********************************************************************
@@ -1963,26 +2191,26 @@ Cudd_bddComputeCube(
   int * phase,
   int  n)
 {
-    DdNode	*cube;
-    DdNode 	*fn;
+    DdNode      *cube;
+    DdNode      *fn;
     int         i;
 
     cube = DD_ONE(dd);
     cuddRef(cube);
 
     for (i = n - 1; i >= 0; i--) {
-	if (phase == NULL || phase[i] != 0) {
-	    fn = Cudd_bddAnd(dd,vars[i],cube);
-	} else {
-	    fn = Cudd_bddAnd(dd,Cudd_Not(vars[i]),cube);
-	}
-	if (fn == NULL) {
-	    Cudd_RecursiveDeref(dd,cube);
-	    return(NULL);
-	}
-	cuddRef(fn);
-	Cudd_RecursiveDeref(dd,cube);
-	cube = fn;
+        if (phase == NULL || phase[i] != 0) {
+            fn = Cudd_bddAnd(dd,vars[i],cube);
+        } else {
+            fn = Cudd_bddAnd(dd,Cudd_Not(vars[i]),cube);
+        }
+        if (fn == NULL) {
+            Cudd_RecursiveDeref(dd,cube);
+            return(NULL);
+        }
+        cuddRef(fn);
+        Cudd_RecursiveDeref(dd,cube);
+        cube = fn;
     }
     cuddDeref(cube);
 
@@ -2013,8 +2241,8 @@ Cudd_addComputeCube(
   int * phase,
   int  n)
 {
-    DdNode	*cube, *zero;
-    DdNode 	*fn;
+    DdNode      *cube, *zero;
+    DdNode      *fn;
     int         i;
 
     cube = DD_ONE(dd);
@@ -2022,18 +2250,18 @@ Cudd_addComputeCube(
     zero = DD_ZERO(dd);
 
     for (i = n - 1; i >= 0; i--) {
-	if (phase == NULL || phase[i] != 0) {
-	    fn = Cudd_addIte(dd,vars[i],cube,zero);
-	} else {
-	    fn = Cudd_addIte(dd,vars[i],zero,cube);
-	}
-	if (fn == NULL) {
-	    Cudd_RecursiveDeref(dd,cube);
-	    return(NULL);
-	}
-	cuddRef(fn);
-	Cudd_RecursiveDeref(dd,cube);
-	cube = fn;
+        if (phase == NULL || phase[i] != 0) {
+            fn = Cudd_addIte(dd,vars[i],cube,zero);
+        } else {
+            fn = Cudd_addIte(dd,vars[i],zero,cube);
+        }
+        if (fn == NULL) {
+            Cudd_RecursiveDeref(dd,cube);
+            return(NULL);
+        }
+        cuddRef(fn);
+        Cudd_RecursiveDeref(dd,cube);
+        cube = fn;
     }
     cuddDeref(cube);
 
@@ -2070,17 +2298,17 @@ Cudd_CubeArrayToBdd(
     cube = DD_ONE(dd);
     cuddRef(cube);
     for (i = size - 1; i >= 0; i--) {
-	if ((array[i] & ~1) == 0) {
-	    var = Cudd_bddIthVar(dd,i);
-	    tmp = Cudd_bddAnd(dd,cube,Cudd_NotCond(var,array[i]==0));
-	    if (tmp == NULL) {
-		Cudd_RecursiveDeref(dd,cube);
-		return(NULL);
-	    }
-	    cuddRef(tmp);
-	    Cudd_RecursiveDeref(dd,cube);
-	    cube = tmp;
-	}
+        if ((array[i] & ~1) == 0) {
+            var = Cudd_bddIthVar(dd,i);
+            tmp = Cudd_bddAnd(dd,cube,Cudd_NotCond(var,array[i]==0));
+            if (tmp == NULL) {
+                Cudd_RecursiveDeref(dd,cube);
+                return(NULL);
+            }
+            cuddRef(tmp);
+            Cudd_RecursiveDeref(dd,cube);
+            cube = tmp;
+        }
     }
     cuddDeref(cube);
     return(cube);
@@ -2118,26 +2346,26 @@ Cudd_BddToCubeArray(
     DdNode *zero = Cudd_Not(DD_ONE(dd));
 
     for (i = size-1; i >= 0; i--) {
-	array[i] = 2;
+        array[i] = 2;
     }
     scan = cube;
     while (!Cudd_IsConstant(scan)) {
-	int index = Cudd_Regular(scan)->index;
-	cuddGetBranches(scan,&t,&e);
-	if (t == zero) {
-	    array[index] = 0;
-	    scan = e;
-	} else if (e == zero) {
-	    array[index] = 1;
-	    scan = t;
-	} else {
-	    return(0);	/* cube is not a cube */
-	}
+        int index = Cudd_Regular(scan)->index;
+        cuddGetBranches(scan,&t,&e);
+        if (t == zero) {
+            array[index] = 0;
+            scan = e;
+        } else if (e == zero) {
+            array[index] = 1;
+            scan = t;
+        } else {
+            return(0);  /* cube is not a cube */
+        }
     }
     if (scan == zero) {
-	return(0);
+        return(0);
     } else {
-	return(1);
+        return(1);
     }
 
 } /* end of Cudd_BddToCubeArray */
@@ -2149,8 +2377,10 @@ Cudd_BddToCubeArray(
 
   Description [Defines an iterator on the nodes of a decision diagram
   and finds its first node. Returns a generator that contains the
-  information necessary to continue the enumeration if successful; NULL
-  otherwise.]
+  information necessary to continue the enumeration if successful;
+  NULL otherwise.  The nodes are enumerated in a reverse topological
+  order, so that a node is always preceded in the enumeration by its
+  descendants.]
 
   SideEffects [The first node is returned as a side effect.]
 
@@ -2165,54 +2395,38 @@ Cudd_FirstNode(
   DdNode ** node)
 {
     DdGen *gen;
-    int retval;
+    int size;
 
     /* Sanity Check. */
     if (dd == NULL || f == NULL) return(NULL);
 
     /* Allocate generator an initialize it. */
-    gen = ALLOC(DdGen,1);
+    gen = ABC_ALLOC(DdGen,1);
     if (gen == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
 
     gen->manager = dd;
     gen->type = CUDD_GEN_NODES;
     gen->status = CUDD_GEN_EMPTY;
-    gen->gen.nodes.visited = NULL;
-    gen->gen.nodes.stGen = NULL;
     gen->stack.sp = 0;
-    gen->stack.stack = NULL;
     gen->node = NULL;
 
-    gen->gen.nodes.visited = st_init_table(st_ptrcmp,st_ptrhash);
-    if (gen->gen.nodes.visited == NULL) {
-	FREE(gen);
-	return(NULL);
+    /* Collect all the nodes on the generator stack for later perusal. */
+    gen->stack.stack = cuddNodeArray(Cudd_Regular(f), &size);
+    if (gen->stack.stack == NULL) {
+        ABC_FREE(gen);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
-
-    /* Collect all the nodes in a st table for later perusal. */
-    retval = cuddCollectNodes(Cudd_Regular(f),gen->gen.nodes.visited);
-    if (retval == 0) {
-	st_free_table(gen->gen.nodes.visited);
-	FREE(gen);
-	return(NULL);
-    }
-
-    /* Initialize the st table generator. */
-    gen->gen.nodes.stGen = st_init_gen(gen->gen.nodes.visited);
-    if (gen->gen.nodes.stGen == NULL) {
-	st_free_table(gen->gen.nodes.visited);
-	FREE(gen);
-	return(NULL);
-    }
+    gen->gen.nodes.size = size;
 
     /* Find the first node. */
-    retval = st_gen(gen->gen.nodes.stGen, (char **) &(gen->node), NULL);
-    if (retval != 0) {
-	gen->status = CUDD_GEN_NONEMPTY;
-	*node = gen->node;
+    if (gen->stack.sp < gen->gen.nodes.size) {
+        gen->status = CUDD_GEN_NONEMPTY;
+        gen->node = gen->stack.stack[gen->stack.sp];
+        *node = gen->node;
     }
 
     return(gen);
@@ -2238,17 +2452,16 @@ Cudd_NextNode(
   DdGen * gen,
   DdNode ** node)
 {
-    int retval;
-
     /* Find the next node. */
-    retval = st_gen(gen->gen.nodes.stGen, (char **) &(gen->node), NULL);
-    if (retval == 0) {
-	gen->status = CUDD_GEN_EMPTY;
+    gen->stack.sp++;
+    if (gen->stack.sp < gen->gen.nodes.size) {
+        gen->node = gen->stack.stack[gen->stack.sp];
+        *node = gen->node;
+        return(1);
     } else {
-	*node = gen->node;
+        gen->status = CUDD_GEN_EMPTY;
+        return(0);
     }
-
-    return(retval);
 
 } /* end of Cudd_NextNode */
 
@@ -2270,22 +2483,24 @@ int
 Cudd_GenFree(
   DdGen * gen)
 {
-
     if (gen == NULL) return(0);
     switch (gen->type) {
     case CUDD_GEN_CUBES:
     case CUDD_GEN_ZDD_PATHS:
-	FREE(gen->gen.cubes.cube);
-	FREE(gen->stack.stack);
-	break;
+        ABC_FREE(gen->gen.cubes.cube);
+        ABC_FREE(gen->stack.stack);
+        break;
+    case CUDD_GEN_PRIMES:
+        ABC_FREE(gen->gen.primes.cube);
+        Cudd_RecursiveDeref(gen->manager,gen->node);
+        break;
     case CUDD_GEN_NODES:
-	st_free_gen(gen->gen.nodes.stGen);
-	st_free_table(gen->gen.nodes.visited);
-	break;
+        ABC_FREE(gen->stack.stack);
+        break;
     default:
-	return(0);
+        return(0);
     }
-    FREE(gen);
+    ABC_FREE(gen);
     return(0);
 
 } /* end of Cudd_GenFree */
@@ -2338,14 +2553,14 @@ Cudd_IndicesToCube(
     cube = DD_ONE(dd);
     cuddRef(cube);
     for (i = n - 1; i >= 0; i--) {
-	tmp = Cudd_bddAnd(dd,Cudd_bddIthVar(dd,array[i]),cube);
-	if (tmp == NULL) {
-	    Cudd_RecursiveDeref(dd,cube);
-	    return(NULL);
-	}
-	cuddRef(tmp);
-	Cudd_RecursiveDeref(dd,cube);
-	cube = tmp;
+        tmp = Cudd_bddAnd(dd,Cudd_bddIthVar(dd,array[i]),cube);
+        if (tmp == NULL) {
+            Cudd_RecursiveDeref(dd,cube);
+            return(NULL);
+        }
+        cuddRef(tmp);
+        Cudd_RecursiveDeref(dd,cube);
+        cube = tmp;
     }
 
     cuddDeref(cube);
@@ -2412,28 +2627,28 @@ Cudd_AverageDistance(
 
     /* Scan the variable subtables. */
     for (i = 0; i < nvars; i++) {
-	nodelist = dd->subtables[i].nodelist;
-	tesubtotal = 0.0;
-	nextsubtotal = 0.0;
-	slots = dd->subtables[i].slots;
-	for (j = 0; j < slots; j++) {
-	    scan = nodelist[j];
-	    while (scan != sentinel) {
-		diff = (long) scan - (long) cuddT(scan);
-		tesubtotal += (double) ddAbs(diff);
-		diff = (long) scan - (long) Cudd_Regular(cuddE(scan));
-		tesubtotal += (double) ddAbs(diff);
-		temeasured += 2.0;
-		if (scan->next != NULL) {
-		    diff = (long) scan - (long) scan->next;
-		    nextsubtotal += (double) ddAbs(diff);
-		    nextmeasured += 1.0;
-		}
-		scan = scan->next;
-	    }
-	}
-	tetotal += tesubtotal;
-	nexttotal += nextsubtotal;
+        nodelist = dd->subtables[i].nodelist;
+        tesubtotal = 0.0;
+        nextsubtotal = 0.0;
+        slots = dd->subtables[i].slots;
+        for (j = 0; j < slots; j++) {
+            scan = nodelist[j];
+            while (scan != sentinel) {
+                diff = (long) scan - (long) cuddT(scan);
+                tesubtotal += (double) ddAbs(diff);
+                diff = (long) scan - (long) Cudd_Regular(cuddE(scan));
+                tesubtotal += (double) ddAbs(diff);
+                temeasured += 2.0;
+                if (scan->next != sentinel) {
+                    diff = (long) scan - (long) scan->next;
+                    nextsubtotal += (double) ddAbs(diff);
+                    nextmeasured += 1.0;
+                }
+                scan = scan->next;
+            }
+        }
+        tetotal += tesubtotal;
+        nexttotal += nextsubtotal;
     }
 
     /* Scan the constant table. */
@@ -2441,15 +2656,15 @@ Cudd_AverageDistance(
     nextsubtotal = 0.0;
     slots = dd->constants.slots;
     for (j = 0; j < slots; j++) {
-	scan = nodelist[j];
-	while (scan != NULL) {
-	    if (scan->next != NULL) {
-		diff = (long) scan - (long) scan->next;
-		nextsubtotal += (double) ddAbs(diff);
-		nextmeasured += 1.0;
-	    }
-	    scan = scan->next;
-	}
+        scan = nodelist[j];
+        while (scan != NULL) {
+            if (scan->next != NULL) {
+                diff = (long) scan - (long) scan->next;
+                nextsubtotal += (double) ddAbs(diff);
+                nextmeasured += 1.0;
+            }
+            scan = scan->next;
+        }
     }
     nexttotal += nextsubtotal;
 
@@ -2476,10 +2691,9 @@ Cudd_AverageDistance(
 
 ******************************************************************************/
 long
-Cudd_Random(
-   )
+Cudd_Random(void)
 {
-    int i;	/* index in the shuffle table */
+    int i;      /* index in the shuffle table */
     long int w; /* work variable */
 
     /* cuddRand == 0 if the geneartor has not been initialized yet. */
@@ -2550,11 +2764,11 @@ Cudd_Srandom(
     cuddRand2 = cuddRand;
     /* Load the shuffle table (after 11 warm-ups). */
     for (i = 0; i < STAB_SIZE + 11; i++) {
-	long int w;
-	w = cuddRand / LEQQ1;
-	cuddRand = LEQA1 * (cuddRand - w * LEQQ1) - w * LEQR1;
-	cuddRand += (cuddRand < 0) * MODULUS1;
-	shuffleTable[i % STAB_SIZE] = cuddRand;
+        long int w;
+        w = cuddRand / LEQQ1;
+        cuddRand = LEQA1 * (cuddRand - w * LEQQ1) - w * LEQR1;
+        cuddRand += (cuddRand < 0) * MODULUS1;
+        shuffleTable[i % STAB_SIZE] = cuddRand;
     }
     shuffleSelect = shuffleTable[1 % STAB_SIZE];
 
@@ -2646,12 +2860,12 @@ cuddP(
   DdNode * f)
 {
     int retval;
-    st_table *table = st_init_table(st_ptrcmp,st_ptrhash);
+    st__table *table = st__init_table( st__ptrcmp, st__ptrhash);
 
     if (table == NULL) return(0);
 
     retval = dp2(dd,f,table);
-    st_free_table(table);
+    st__free_table(table);
     (void) fputc('\n',dd->out);
     return(retval);
 
@@ -2664,22 +2878,22 @@ cuddP(
   in the visited table.]
 
   Description [Frees the memory used to store the minterm counts
-  recorded in the visited table. Returns ST_CONTINUE.]
+  recorded in the visited table. Returns st__CONTINUE.]
 
   SideEffects [None]
 
 ******************************************************************************/
-enum st_retval
+enum st__retval
 cuddStCountfree(
   char * key,
   char * value,
   char * arg)
 {
-    double	*d;
+    double      *d;
 
     d = (double *)value;
-    FREE(d);
-    return(ST_CONTINUE);
+    ABC_FREE(d);
+    return( st__CONTINUE);
 
 } /* end of cuddStCountfree */
 
@@ -2689,7 +2903,7 @@ cuddStCountfree(
   Synopsis    [Recursively collects all the nodes of a DD in a symbol
   table.]
 
-  Description [Traverses the BDD f and collects all its nodes in a
+  Description [Traverses the DD f and collects all its nodes in a
   symbol table.  f is assumed to be a regular pointer and
   cuddCollectNodes guarantees this assumption in the recursive calls.
   Returns 1 in case of success; 0 otherwise.]
@@ -2702,17 +2916,17 @@ cuddStCountfree(
 int
 cuddCollectNodes(
   DdNode * f,
-  st_table * visited)
+  st__table * visited)
 {
-    DdNode	*T, *E;
-    int		retval;
+    DdNode      *T, *E;
+    int         retval;
 
 #ifdef DD_DEBUG
     assert(!Cudd_IsComplement(f));
 #endif
 
     /* If already visited, nothing to do. */
-    if (st_is_member(visited, (char *) f) == 1)
+    if ( st__is_member(visited, (char *) f) == 1)
         return(1);
 
     /* Check for abnormal condition that should never happen. */
@@ -2720,12 +2934,12 @@ cuddCollectNodes(
         return(0);
 
     /* Mark node as visited. */
-    if (st_add_direct(visited, (char *) f, NULL) == ST_OUT_OF_MEM)
+    if ( st__add_direct(visited, (char *) f, NULL) == st__OUT_OF_MEM)
         return(0);
 
     /* Check terminal case. */
     if (cuddIsConstant(f))
-	return(1);
+        return(1);
 
     /* Recursive calls. */
     T = cuddT(f);
@@ -2736,6 +2950,45 @@ cuddCollectNodes(
     return(retval);
 
 } /* end of cuddCollectNodes */
+
+
+/**Function********************************************************************
+
+  Synopsis    [Recursively collects all the nodes of a DD in an array.]
+
+  Description [Traverses the DD f and collects all its nodes in an array.
+  The caller should free the array returned by cuddNodeArray.
+  Returns a pointer to the array of nodes in case of success; NULL
+  otherwise.  The nodes are collected in reverse topological order, so
+  that a node is always preceded in the array by all its descendants.]
+
+  SideEffects [The number of nodes is returned as a side effect.]
+
+  SeeAlso     [Cudd_FirstNode]
+
+******************************************************************************/
+DdNodePtr *
+cuddNodeArray(
+  DdNode *f,
+  int *n)
+{
+    DdNodePtr *table;
+    int size, retval;
+
+    size = ddDagInt(Cudd_Regular(f));
+    table = ABC_ALLOC(DdNodePtr, size);
+    if (table == NULL) {
+        ddClearFlag(Cudd_Regular(f));
+        return(NULL);
+    }
+
+    retval = cuddNodeArrayRecur(f, table, 0);
+    assert(retval == size);
+
+    *n = size;
+    return(table);
+
+} /* cuddNodeArray */
 
 
 /*---------------------------------------------------------------------------*/
@@ -2757,11 +3010,11 @@ static int
 dp2(
   DdManager *dd,
   DdNode * f,
-  st_table * t)
+  st__table * t)
 {
     DdNode *g, *n, *N;
     int T,E;
-    
+
     if (f == NULL) {
         return(0);
     }
@@ -2769,68 +3022,68 @@ dp2(
     if (cuddIsConstant(g)) {
 #if SIZEOF_VOID_P == 8
         (void) fprintf(dd->out,"ID = %c0x%lx\tvalue = %-9g\n", bang(f),
-		(unsigned long) g / (unsigned long) sizeof(DdNode),cuddV(g));
+                (ptruint) g / (ptruint) sizeof(DdNode),cuddV(g));
 #else
         (void) fprintf(dd->out,"ID = %c0x%x\tvalue = %-9g\n", bang(f),
-		(unsigned) g / (unsigned) sizeof(DdNode),cuddV(g));
+                (ptruint) g / (ptruint) sizeof(DdNode),cuddV(g));
 #endif
-	return(1);
-    }
-    if (st_is_member(t,(char *) g) == 1) {
         return(1);
     }
-    if (st_add_direct(t,(char *) g,NULL) == ST_OUT_OF_MEM)
-	return(0);
+    if ( st__is_member(t,(char *) g) == 1) {
+        return(1);
+    }
+    if ( st__add_direct(t,(char *) g,NULL) == st__OUT_OF_MEM)
+        return(0);
 #ifdef DD_STATS
 #if SIZEOF_VOID_P == 8
     (void) fprintf(dd->out,"ID = %c0x%lx\tindex = %d\tr = %d\t", bang(f),
-		(unsigned long) g / (unsigned long) sizeof(DdNode), g->index, g->ref);
+                (ptruint) g / (ptruint) sizeof(DdNode), g->index, g->ref);
 #else
     (void) fprintf(dd->out,"ID = %c0x%x\tindex = %d\tr = %d\t", bang(f),
-		(unsigned) g / (unsigned) sizeof(DdNode),g->index,g->ref);
+                (ptruint) g / (ptruint) sizeof(DdNode),g->index,g->ref);
 #endif
 #else
 #if SIZEOF_VOID_P == 8
-    (void) fprintf(dd->out,"ID = %c0x%lx\tindex = %d\t", bang(f),
-		(unsigned long) g / (unsigned long) sizeof(DdNode),g->index);
+    (void) fprintf(dd->out,"ID = %c0x%lx\tindex = %u\t", bang(f),
+                (ptruint) g / (ptruint) sizeof(DdNode),g->index);
 #else
-    (void) fprintf(dd->out,"ID = %c0x%x\tindex = %d\t", bang(f),
-		(unsigned) g / (unsigned) sizeof(DdNode),g->index);
+    (void) fprintf(dd->out,"ID = %c0x%x\tindex = %hu\t", bang(f),
+                (ptruint) g / (ptruint) sizeof(DdNode),g->index);
 #endif
 #endif
     n = cuddT(g);
     if (cuddIsConstant(n)) {
         (void) fprintf(dd->out,"T = %-9g\t",cuddV(n));
-	T = 1;
+        T = 1;
     } else {
 #if SIZEOF_VOID_P == 8
-        (void) fprintf(dd->out,"T = 0x%lx\t",(unsigned long) n / (unsigned long) sizeof(DdNode));
+        (void) fprintf(dd->out,"T = 0x%lx\t",(ptruint) n / (ptruint) sizeof(DdNode));
 #else
-        (void) fprintf(dd->out,"T = 0x%x\t",(unsigned) n / (unsigned) sizeof(DdNode));
+        (void) fprintf(dd->out,"T = 0x%x\t",(ptruint) n / (ptruint) sizeof(DdNode));
 #endif
-	T = 0;
+        T = 0;
     }
 
     n = cuddE(g);
     N = Cudd_Regular(n);
     if (cuddIsConstant(N)) {
         (void) fprintf(dd->out,"E = %c%-9g\n",bang(n),cuddV(N));
-	E = 1;
+        E = 1;
     } else {
 #if SIZEOF_VOID_P == 8
-        (void) fprintf(dd->out,"E = %c0x%lx\n", bang(n), (unsigned long) N/(unsigned long) sizeof(DdNode));
+        (void) fprintf(dd->out,"E = %c0x%lx\n", bang(n), (ptruint) N/(ptruint) sizeof(DdNode));
 #else
-        (void) fprintf(dd->out,"E = %c0x%x\n", bang(n), (unsigned) N/(unsigned) sizeof(DdNode));
+        (void) fprintf(dd->out,"E = %c0x%x\n", bang(n), (ptruint) N/(ptruint) sizeof(DdNode));
 #endif
-	E = 0;
+        E = 0;
     }
     if (E == 0) {
         if (dp2(dd,N,t) == 0)
-	    return(0);
+            return(0);
     }
     if (T == 0) {
         if (dp2(dd,cuddT(g),t) == 0)
-	    return(0);
+            return(0);
     }
     return(1);
 
@@ -2852,38 +3105,38 @@ ddPrintMintermAux(
   DdNode * node /* current node */,
   int * list /* current recursion path */)
 {
-    DdNode	*N,*Nv,*Nnv;
-    int		i,v,index;
+    DdNode      *N,*Nv,*Nnv;
+    int         i,v,index;
 
     N = Cudd_Regular(node);
 
     if (cuddIsConstant(N)) {
-	/* Terminal case: Print one cube based on the current recursion
-	** path, unless we have reached the background value (ADDs) or
-	** the logical zero (BDDs).
-	*/
-	if (node != background && node != zero) {
-	    for (i = 0; i < dd->size; i++) {
-		v = list[i];
-		if (v == 0) (void) fprintf(dd->out,"0");
-		else if (v == 1) (void) fprintf(dd->out,"1");
-		else (void) fprintf(dd->out,"-");
-	    }
-	    (void) fprintf(dd->out," % g\n", cuddV(node));
-	}
+        /* Terminal case: Print one cube based on the current recursion
+        ** path, unless we have reached the background value (ADDs) or
+        ** the logical zero (BDDs).
+        */
+        if (node != background && node != zero) {
+            for (i = 0; i < dd->size; i++) {
+                v = list[i];
+                if (v == 0) (void) fprintf(dd->out,"0");
+                else if (v == 1) (void) fprintf(dd->out,"1");
+                else (void) fprintf(dd->out,"-");
+            }
+            (void) fprintf(dd->out," % g\n", cuddV(node));
+        }
     } else {
-	Nv  = cuddT(N);
-	Nnv = cuddE(N);
-	if (Cudd_IsComplement(node)) {
-	    Nv  = Cudd_Not(Nv);
-	    Nnv = Cudd_Not(Nnv);
-	}
-	index = N->index;
-	list[index] = 0;
-	ddPrintMintermAux(dd,Nnv,list); 
-	list[index] = 1;
-	ddPrintMintermAux(dd,Nv,list);
-	list[index] = 2;
+        Nv  = cuddT(N);
+        Nnv = cuddE(N);
+        if (Cudd_IsComplement(node)) {
+            Nv  = Cudd_Not(Nv);
+            Nnv = Cudd_Not(Nnv);
+        }
+        index = N->index;
+        list[index] = 0;
+        ddPrintMintermAux(dd,Nnv,list);
+        list[index] = 1;
+        ddPrintMintermAux(dd,Nv,list);
+        list[index] = 2;
     }
     return;
 
@@ -2907,17 +3160,57 @@ ddDagInt(
     int tval, eval;
 
     if (Cudd_IsComplement(n->next)) {
-	return(0);
+        return(0);
     }
     n->next = Cudd_Not(n->next);
     if (cuddIsConstant(n)) {
-	return(1);
+        return(1);
     }
     tval = ddDagInt(cuddT(n));
     eval = ddDagInt(Cudd_Regular(cuddE(n)));
     return(1 + tval + eval);
 
 } /* end of ddDagInt */
+
+
+/**Function********************************************************************
+
+  Synopsis    [Performs the recursive step of cuddNodeArray.]
+
+  Description [Performs the recursive step of cuddNodeArray.  Returns
+  an the number of nodes in the DD.  Clear the least significant bit
+  of the next field that was used as visited flag by
+  cuddNodeArrayRecur when counting the nodes.  node is supposed to be
+  regular; the invariant is maintained by this procedure.]
+
+  SideEffects [None]
+
+  SeeAlso     []
+
+******************************************************************************/
+static int
+cuddNodeArrayRecur(
+  DdNode *f,
+  DdNodePtr *table,
+  int index)
+{
+    int tindex, eindex;
+
+    if (!Cudd_IsComplement(f->next)) {
+        return(index);
+    }
+    /* Clear visited flag. */
+    f->next = Cudd_Regular(f->next);
+    if (cuddIsConstant(f)) {
+        table[index] = f;
+        return(index + 1);
+    }
+    tindex = cuddNodeArrayRecur(cuddT(f), table, index);
+    eindex = cuddNodeArrayRecur(Cudd_Regular(cuddE(f)), table, tindex);
+    table[eindex] = f;
+    return(eindex + 1);
+
+} /* end of cuddNodeArrayRecur */
 
 
 /**Function********************************************************************
@@ -2938,7 +3231,7 @@ ddDagInt(
 static int
 cuddEstimateCofactor(
   DdManager *dd,
-  st_table *table,
+  st__table *table,
   DdNode * node,
   int i,
   int phase,
@@ -2948,73 +3241,75 @@ cuddEstimateCofactor(
     DdNode *ptrT, *ptrE;
 
     if (Cudd_IsComplement(node->next)) {
-	if (!st_lookup(table,(char *)node,(char **)ptr)) {
-	    st_add_direct(table,(char *)node,(char *)node);
-	    *ptr = node;
-	}
-	return(0);
+        if (! st__lookup(table,(char *)node,(char **)ptr)) {
+            if ( st__add_direct(table,(char *)node,(char *)node) ==
+                st__OUT_OF_MEM)
+                return(CUDD_OUT_OF_MEM);
+            *ptr = node;
+        }
+        return(0);
     }
     node->next = Cudd_Not(node->next);
     if (cuddIsConstant(node)) {
-	*ptr = node;
-	if (st_add_direct(table,(char *)node,(char *)node) == ST_OUT_OF_MEM)
-	    return(CUDD_OUT_OF_MEM);
-	return(1);
+        *ptr = node;
+        if ( st__add_direct(table,(char *)node,(char *)node) == st__OUT_OF_MEM)
+            return(CUDD_OUT_OF_MEM);
+        return(1);
     }
     if ((int) node->index == i) {
-	if (phase == 1) {
-	    *ptr = cuddT(node);
-	    val = ddDagInt(cuddT(node));
-	} else {
-	    *ptr = cuddE(node);
-	    val = ddDagInt(Cudd_Regular(cuddE(node)));
-	}
-	if (node->ref > 1) {
-	    if (st_add_direct(table,(char *)node,(char *)*ptr) ==
-		ST_OUT_OF_MEM)
-		return(CUDD_OUT_OF_MEM);
-	}
-	return(val);
+        if (phase == 1) {
+            *ptr = cuddT(node);
+            val = ddDagInt(cuddT(node));
+        } else {
+            *ptr = cuddE(node);
+            val = ddDagInt(Cudd_Regular(cuddE(node)));
+        }
+        if (node->ref > 1) {
+            if ( st__add_direct(table,(char *)node,(char *)*ptr) ==
+                st__OUT_OF_MEM)
+                return(CUDD_OUT_OF_MEM);
+        }
+        return(val);
     }
     if (dd->perm[node->index] > dd->perm[i]) {
-	*ptr = node;
-	tval = ddDagInt(cuddT(node));
-	eval = ddDagInt(Cudd_Regular(cuddE(node)));
-	if (node->ref > 1) {
-	    if (st_add_direct(table,(char *)node,(char *)node) ==
-		ST_OUT_OF_MEM)
-		return(CUDD_OUT_OF_MEM);
-	}
-	val = 1 + tval + eval;
-	return(val);
+        *ptr = node;
+        tval = ddDagInt(cuddT(node));
+        eval = ddDagInt(Cudd_Regular(cuddE(node)));
+        if (node->ref > 1) {
+            if ( st__add_direct(table,(char *)node,(char *)node) ==
+                st__OUT_OF_MEM)
+                return(CUDD_OUT_OF_MEM);
+        }
+        val = 1 + tval + eval;
+        return(val);
     }
     tval = cuddEstimateCofactor(dd,table,cuddT(node),i,phase,&ptrT);
     eval = cuddEstimateCofactor(dd,table,Cudd_Regular(cuddE(node)),i,
-				phase,&ptrE);
+                                phase,&ptrE);
     ptrE = Cudd_NotCond(ptrE,Cudd_IsComplement(cuddE(node)));
-    if (ptrT == ptrE) {		/* recombination */
-	*ptr = ptrT;
-	val = tval;
-	if (node->ref > 1) {
-	    if (st_add_direct(table,(char *)node,(char *)*ptr) ==
-		    ST_OUT_OF_MEM)
-		return(CUDD_OUT_OF_MEM);
-	}
+    if (ptrT == ptrE) {         /* recombination */
+        *ptr = ptrT;
+        val = tval;
+        if (node->ref > 1) {
+            if ( st__add_direct(table,(char *)node,(char *)*ptr) ==
+                    st__OUT_OF_MEM)
+                return(CUDD_OUT_OF_MEM);
+        }
     } else if ((ptrT != cuddT(node) || ptrE != cuddE(node)) &&
-	       (*ptr = cuddUniqueLookup(dd,node->index,ptrT,ptrE)) != NULL) {
-	if (Cudd_IsComplement((*ptr)->next)) {
-	    val = 0;
-	} else {
-	    val = 1 + tval + eval;
-	}
-	if (node->ref > 1) {
-	    if (st_add_direct(table,(char *)node,(char *)*ptr) ==
-		    ST_OUT_OF_MEM)
-		return(CUDD_OUT_OF_MEM);
-	}
+               (*ptr = cuddUniqueLookup(dd,node->index,ptrT,ptrE)) != NULL) {
+        if (Cudd_IsComplement((*ptr)->next)) {
+            val = 0;
+        } else {
+            val = 1 + tval + eval;
+        }
+        if (node->ref > 1) {
+            if ( st__add_direct(table,(char *)node,(char *)*ptr) ==
+                    st__OUT_OF_MEM)
+                return(CUDD_OUT_OF_MEM);
+        }
     } else {
-	*ptr = node;
-	val = 1 + tval + eval;
+        *ptr = node;
+        val = 1 + tval + eval;
     }
     return(val);
 
@@ -3047,7 +3342,7 @@ cuddUniqueLookup(
     DdSubtable *subtable;
 
     if (index >= unique->size) {
-	return(NULL);
+        return(NULL);
     }
 
     level = unique->perm[index];
@@ -3058,18 +3353,18 @@ cuddUniqueLookup(
     assert(level < (unsigned) cuddI(unique,Cudd_Regular(E)->index));
 #endif
 
-    posn = ddHash(T, E, subtable->shift);
+    posn = ddHash(cuddF2L(T), cuddF2L(E), subtable->shift);
     nodelist = subtable->nodelist;
     looking = nodelist[posn];
 
     while (T < cuddT(looking)) {
-	looking = Cudd_Regular(looking->next);
+        looking = Cudd_Regular(looking->next);
     }
     while (T == cuddT(looking) && E < cuddE(looking)) {
-	looking = Cudd_Regular(looking->next);
+        looking = Cudd_Regular(looking->next);
     }
     if (cuddT(looking) == T && cuddE(looking) == E) {
-	return(looking);
+        return(looking);
     }
 
     return(NULL);
@@ -3100,11 +3395,11 @@ cuddEstimateCofactorSimple(
     int tval, eval;
 
     if (Cudd_IsComplement(node->next)) {
-	return(0);
+        return(0);
     }
     node->next = Cudd_Not(node->next);
     if (cuddIsConstant(node)) {
-	return(1);
+        return(1);
     }
     tval = cuddEstimateCofactorSimple(cuddT(node),i);
     if ((int) node->index == i) return(tval);
@@ -3138,31 +3433,31 @@ ddCountMintermAux(
   double  max,
   DdHashTable * table)
 {
-    DdNode	*N, *Nt, *Ne;
-    double	min, minT, minE;
-    DdNode	*res;
+    DdNode      *N, *Nt, *Ne;
+    double      min, minT, minE;
+    DdNode      *res;
 
     N = Cudd_Regular(node);
 
     if (cuddIsConstant(N)) {
-	if (node == background || node == zero) {
-	    return(0.0);
-	} else {
-	    return(max);
-	}
+        if (node == background || node == zero) {
+            return(0.0);
+        } else {
+            return(max);
+        }
     }
     if (N->ref != 1 && (res = cuddHashTableLookup1(table,node)) != NULL) {
-	min = cuddV(res);
-	if (res->ref == 0) {
-	    table->manager->dead++;
-	    table->manager->constants.dead++;
-	}
-	return(min);
+        min = cuddV(res);
+        if (res->ref == 0) {
+            table->manager->dead++;
+            table->manager->constants.dead++;
+        }
+        return(min);
     }
 
     Nt = cuddT(N); Ne = cuddE(N);
     if (Cudd_IsComplement(node)) {
-	Nt = Cudd_Not(Nt); Ne = Cudd_Not(Ne);
+        Nt = Cudd_Not(Nt); Ne = Cudd_Not(Ne);
     }
 
     minT = ddCountMintermAux(Nt,max,table);
@@ -3174,13 +3469,13 @@ ddCountMintermAux(
     min = minT + minE;
 
     if (N->ref != 1) {
-	ptrint fanout = (ptrint) N->ref;
-	cuddSatDec(fanout);
-	res = cuddUniqueConst(table->manager,min);
-	if (!cuddHashTableInsert1(table,node,res,fanout)) {
-	    cuddRef(res); Cudd_RecursiveDeref(table->manager, res);
-	    return((double)CUDD_OUT_OF_MEM);
-	}
+        ptrint fanout = (ptrint) N->ref;
+        cuddSatDec(fanout);
+        res = cuddUniqueConst(table->manager,min);
+        if (!cuddHashTableInsert1(table,node,res,fanout)) {
+            cuddRef(res); Cudd_RecursiveDeref(table->manager, res);
+            return((double)CUDD_OUT_OF_MEM);
+        }
     }
 
     return(min);
@@ -3208,20 +3503,20 @@ ddCountMintermAux(
 static double
 ddCountPathAux(
   DdNode * node,
-  st_table * table)
+  st__table * table)
 {
 
-    DdNode	*Nv, *Nnv;
-    double	paths, *ppaths, paths1, paths2;
-    double	*dummy;
+    DdNode      *Nv, *Nnv;
+    double      paths, *ppaths, paths1, paths2;
+    double      *dummy;
 
 
     if (cuddIsConstant(node)) {
-	return(1.0);
+        return(1.0);
     }
-    if (st_lookup(table, (char *)node, (char **)&dummy)) {
-	paths = *dummy;
-	return(paths);
+    if ( st__lookup(table, (const char *)node, (char **)&dummy)) {
+        paths = *dummy;
+        return(paths);
     }
 
     Nv = cuddT(node); Nnv = cuddE(node);
@@ -3231,17 +3526,17 @@ ddCountPathAux(
     paths2 = ddCountPathAux(Cudd_Regular(Nnv),table);
     if (paths2 == (double)CUDD_OUT_OF_MEM) return((double)CUDD_OUT_OF_MEM);
     paths = paths1 + paths2;
-    
-    ppaths = ALLOC(double,1);
+
+    ppaths = ABC_ALLOC(double,1);
     if (ppaths == NULL) {
-	return((double)CUDD_OUT_OF_MEM);
+        return((double)CUDD_OUT_OF_MEM);
     }
 
     *ppaths = paths;
 
-    if (st_add_direct(table,(char *)node, (char *)ppaths) == ST_OUT_OF_MEM) {
-	FREE(ppaths);
-	return((double)CUDD_OUT_OF_MEM);
+    if ( st__add_direct(table,(char *)node, (char *)ppaths) == st__OUT_OF_MEM) {
+        ABC_FREE(ppaths);
+        return((double)CUDD_OUT_OF_MEM);
     }
     return(paths);
 
@@ -3250,9 +3545,9 @@ ddCountPathAux(
 
 /**Function********************************************************************
 
-  Synopsis    [Performs the recursive step of Cudd_CountMinterm.]
+  Synopsis    [Performs the recursive step of Cudd_EpdCountMinterm.]
 
-  Description [Performs the recursive step of Cudd_CountMinterm.
+  Description [Performs the recursive step of Cudd_EpdCountMinterm.
   It is based on the following identity. Let |f| be the
   number of minterms of f. Then:
   <xmp>
@@ -3271,52 +3566,50 @@ ddEpdCountMintermAux(
   DdNode * node,
   EpDouble * max,
   EpDouble * epd,
-  st_table * table)
+  st__table * table)
 {
-    DdNode	*Nt, *Ne;
-    EpDouble	*min, minT, minE;
-    EpDouble	*res;
-    int		status;
+    DdNode      *Nt, *Ne;
+    EpDouble    *min, minT, minE;
+    EpDouble    *res;
+    int         status;
 
+    /* node is assumed to be regular */
     if (cuddIsConstant(node)) {
-	if (node == background || node == zero) {
-	    EpdMakeZero(epd, 0);
-	} else {
-	    EpdCopy(max, epd);
-	}
-	return(0);
+        if (node == background || node == zero) {
+            EpdMakeZero(epd, 0);
+        } else {
+            EpdCopy(max, epd);
+        }
+        return(0);
     }
-    if (node->ref != 1 && st_lookup(table, (char *)node, (char **)&res)) {
-	EpdCopy(res, epd);
-	return(0);
+    if (node->ref != 1 && st__lookup(table, (const char *)node, (char **)&res)) {
+        EpdCopy(res, epd);
+        return(0);
     }
 
     Nt = cuddT(node); Ne = cuddE(node);
-    if (Cudd_IsComplement(node)) {
-	Nt = Cudd_Not(Nt); Ne = Cudd_Not(Ne);
-    }
 
     status = ddEpdCountMintermAux(Nt,max,&minT,table);
     if (status == CUDD_OUT_OF_MEM) return(CUDD_OUT_OF_MEM);
     EpdMultiply(&minT, (double)0.5);
-    status = ddEpdCountMintermAux(Ne,max,&minE,table);
+    status = ddEpdCountMintermAux(Cudd_Regular(Ne),max,&minE,table);
     if (status == CUDD_OUT_OF_MEM) return(CUDD_OUT_OF_MEM);
     if (Cudd_IsComplement(Ne)) {
-    	EpdSubtract3(max, &minE, epd);
-    	EpdCopy(epd, &minE);
+        EpdSubtract3(max, &minE, epd);
+        EpdCopy(epd, &minE);
     }
     EpdMultiply(&minE, (double)0.5);
     EpdAdd3(&minT, &minE, epd);
 
     if (node->ref > 1) {
-	min = EpdAlloc();
-	if (!min)
-	    return(CUDD_OUT_OF_MEM);
-	EpdCopy(epd, min);
-	if (st_insert(table, (char *)node, (char *)min) == ST_OUT_OF_MEM) {
-	    EpdFree(min);
-	    return(CUDD_OUT_OF_MEM);
-	}
+        min = EpdAlloc();
+        if (!min)
+            return(CUDD_OUT_OF_MEM);
+        EpdCopy(epd, min);
+        if ( st__insert(table, (char *)node, (char *)min) == st__OUT_OF_MEM) {
+            EpdFree(min);
+            return(CUDD_OUT_OF_MEM);
+        }
     }
 
     return(0);
@@ -3343,25 +3636,25 @@ ddEpdCountMintermAux(
 static double
 ddCountPathsToNonZero(
   DdNode * N,
-  st_table * table)
+  st__table * table)
 {
 
-    DdNode	*node, *Nt, *Ne;
-    double	paths, *ppaths, paths1, paths2;
-    double	*dummy;
+    DdNode      *node, *Nt, *Ne;
+    double      paths, *ppaths, paths1, paths2;
+    double      *dummy;
 
     node = Cudd_Regular(N);
     if (cuddIsConstant(node)) {
-	return((double) !(Cudd_IsComplement(N) || cuddV(node)==DD_ZERO_VAL));
+        return((double) !(Cudd_IsComplement(N) || cuddV(node)==DD_ZERO_VAL));
     }
-    if (st_lookup(table, (char *)N, (char **)&dummy)) {
-	paths = *dummy;
-	return(paths);
+    if ( st__lookup(table, (const char *)N, (char **)&dummy)) {
+        paths = *dummy;
+        return(paths);
     }
 
     Nt = cuddT(node); Ne = cuddE(node);
     if (node != N) {
-	Nt = Cudd_Not(Nt); Ne = Cudd_Not(Ne);
+        Nt = Cudd_Not(Nt); Ne = Cudd_Not(Ne);
     }
 
     paths1 = ddCountPathsToNonZero(Nt,table);
@@ -3370,16 +3663,16 @@ ddCountPathsToNonZero(
     if (paths2 == (double)CUDD_OUT_OF_MEM) return((double)CUDD_OUT_OF_MEM);
     paths = paths1 + paths2;
 
-    ppaths = ALLOC(double,1);
+    ppaths = ABC_ALLOC(double,1);
     if (ppaths == NULL) {
-	return((double)CUDD_OUT_OF_MEM);
+        return((double)CUDD_OUT_OF_MEM);
     }
 
     *ppaths = paths;
 
-    if (st_add_direct(table,(char *)N, (char *)ppaths) == ST_OUT_OF_MEM) {
-	FREE(ppaths);
-	return((double)CUDD_OUT_OF_MEM);
+    if ( st__add_direct(table,(char *)N, (char *)ppaths) == st__OUT_OF_MEM) {
+        ABC_FREE(ppaths);
+        return((double)CUDD_OUT_OF_MEM);
     }
     return(paths);
 
@@ -3405,7 +3698,7 @@ ddSupportStep(
   int * support)
 {
     if (cuddIsConstant(f) || Cudd_IsComplement(f->next)) {
-	return;
+        return;
     }
 
     support[f->index] = 1;
@@ -3435,12 +3728,12 @@ ddClearFlag(
   DdNode * f)
 {
     if (!Cudd_IsComplement(f->next)) {
-	return;
+        return;
     }
     /* Clear visited flag. */
     f->next = Cudd_Regular(f->next);
     if (cuddIsConstant(f)) {
-	return;
+        return;
     }
     ddClearFlag(cuddT(f));
     ddClearFlag(Cudd_Regular(cuddE(f)));
@@ -3468,11 +3761,11 @@ ddLeavesInt(
     int tval, eval;
 
     if (Cudd_IsComplement(n->next)) {
-	return(0);
+        return(0);
     }
     n->next = Cudd_Not(n->next);
     if (cuddIsConstant(n)) {
-	return(1);
+        return(1);
     }
     tval = ddLeavesInt(cuddT(n));
     eval = ddLeavesInt(Cudd_Regular(cuddE(n)));
@@ -3513,13 +3806,13 @@ ddPickArbitraryMinterms(
     bzero = Cudd_Not(one);
     if (nminterms == 0 || node == bzero) return(1);
     if (node == one) {
-	return(1);
+        return(1);
     }
 
     N = Cudd_Regular(node);
     T = cuddT(N); E = cuddE(N);
     if (Cudd_IsComplement(node)) {
-	T = Cudd_Not(T); E = Cudd_Not(E);
+        T = Cudd_Not(T); E = Cudd_Not(E);
     }
 
     min1 = Cudd_CountMinterm(dd, T, nvars) / 2.0;
@@ -3529,13 +3822,13 @@ ddPickArbitraryMinterms(
 
     t = (int)((double)nminterms * min1 / (min1 + min2) + 0.5);
     for (i = 0; i < t; i++)
-	string[i][N->index] = '1';
+        string[i][N->index] = '1';
     for (i = t; i < nminterms; i++)
-	string[i][N->index] = '0';
+        string[i][N->index] = '0';
 
     result = ddPickArbitraryMinterms(dd,T,nvars,t,&string[0]);
     if (result == 0)
-	return(0);
+        return(0);
     result = ddPickArbitraryMinterms(dd,E,nvars,nminterms-t,&string[t]);
     return(result);
 
@@ -3558,7 +3851,6 @@ static int
 ddPickRepresentativeCube(
   DdManager *dd,
   DdNode *node,
-  int nvars,
   double *weight,
   char *string)
 {
@@ -3575,32 +3867,32 @@ ddPickRepresentativeCube(
     if (node == DD_ONE(dd)) return(1);
 
     for (;;) {
-	N = Cudd_Regular(node);
-	if (N == one)
-	    break;
-	T = cuddT(N);
-	E = cuddE(N);
-	if (Cudd_IsComplement(node)) {
-	    T = Cudd_Not(T);
-	    E = Cudd_Not(E);
-	}
-	if (weight[N->index] >= 0.0) {
-	    if (T == bzero) {
-		node = E;
-		string[N->index] = '0';
-	    } else {
-		node = T;
-		string[N->index] = '1';
-	    }
-	} else {
-	    if (E == bzero) {
-		node = T;
-		string[N->index] = '1';
-	    } else {
-		node = E;
-		string[N->index] = '0';
-	    }
-	}
+        N = Cudd_Regular(node);
+        if (N == one)
+            break;
+        T = cuddT(N);
+        E = cuddE(N);
+        if (Cudd_IsComplement(node)) {
+            T = Cudd_Not(T);
+            E = Cudd_Not(E);
+        }
+        if (weight[N->index] >= 0.0) {
+            if (T == bzero) {
+                node = E;
+                string[N->index] = '0';
+            } else {
+                node = T;
+                string[N->index] = '1';
+            }
+        } else {
+            if (E == bzero) {
+                node = T;
+                string[N->index] = '1';
+            } else {
+                node = E;
+                string[N->index] = '0';
+            }
+        }
     }
     return(1);
 
@@ -3613,21 +3905,25 @@ ddPickRepresentativeCube(
   in the visited table.]
 
   Description [Frees the memory used to store the minterm counts
-  recorded in the visited table. Returns ST_CONTINUE.]
+  recorded in the visited table. Returns st__CONTINUE.]
 
   SideEffects [None]
 
 ******************************************************************************/
-static enum st_retval
+static enum st__retval
 ddEpdFree(
   char * key,
   char * value,
   char * arg)
 {
-    EpDouble	*epd;
+    EpDouble    *epd;
 
     epd = (EpDouble *) value;
     EpdFree(epd);
-    return(ST_CONTINUE);
+    return( st__CONTINUE);
 
 } /* end of ddEpdFree */
+
+
+ABC_NAMESPACE_IMPL_END
+

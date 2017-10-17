@@ -4,30 +4,61 @@
 
   PackageName [cudd]
 
-  Synopsis    [function to compute the negation of an ADD.]
+  Synopsis    [Function to compute the negation of an ADD.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_addNegate()
-		<li> Cudd_addRoundOff()
-		</ul>
-	Internal procedures included in this module:
-		<ul>
-		<li> cuddAddNegateRecur()
-		<li> cuddAddRoundOffRecur()
-		</ul> ]
+                <ul>
+                <li> Cudd_addNegate()
+                <li> Cudd_addRoundOff()
+                </ul>
+        Internal procedures included in this module:
+                <ul>
+                <li> cuddAddNegateRecur()
+                <li> cuddAddRoundOffRecur()
+                </ul> ]
 
   Author      [Fabio Somenzi, Balakrishna Kumthekar]
 
-  Copyright   [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -50,7 +81,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddAddNeg.c,v 1.1.1.1 2003/02/24 22:23:50 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddAddNeg.c,v 1.12 2009/02/20 02:14:58 fabio Exp $";
 #endif
 
 
@@ -93,7 +124,7 @@ Cudd_addNegate(
     DdNode *res;
 
     do {
-	res = cuddAddNegateRecur(dd,f);
+        res = cuddAddNegateRecur(dd,f);
     } while (dd->reordered == 1);
     return(res);
 
@@ -123,7 +154,7 @@ Cudd_addRoundOff(
     double trunc = pow(10.0,(double)N);
 
     do {
-	res = cuddAddRoundOffRecur(dd,f,trunc);
+        res = cuddAddRoundOffRecur(dd,f,trunc);
     } while (dd->reordered == 1);
     return(res);
 
@@ -151,14 +182,14 @@ cuddAddNegateRecur(
   DdNode * f)
 {
     DdNode *res,
-	    *fv, *fvn,
-	    *T, *E;
+            *fv, *fvn,
+            *T, *E;
 
     statLine(dd);
     /* Check terminal cases. */
     if (cuddIsConstant(f)) {
-	res = cuddUniqueConst(dd,-cuddV(f));
-	return(res);
+        res = cuddUniqueConst(dd,-cuddV(f));
+        return(res);
     }
 
     /* Check cache */
@@ -174,15 +205,15 @@ cuddAddNegateRecur(
 
     E = cuddAddNegateRecur(dd,fvn);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd,T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,T);
+        return(NULL);
     }
     cuddRef(E);
     res = (T == E) ? T : cuddUniqueInter(dd,(int)f->index,T,E);
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	Cudd_RecursiveDeref(dd, E);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        Cudd_RecursiveDeref(dd, E);
+        return(NULL);
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -214,15 +245,15 @@ cuddAddRoundOffRecur(
 
     DdNode *res, *fv, *fvn, *T, *E;
     double n;
-    DdNode *(*cacheOp)(DdManager *, DdNode *);
-  
+    DD_CTFP1 cacheOp;
+
     statLine(dd);
     if (cuddIsConstant(f)) {
         n = ceil(cuddV(f)*trunc)/trunc;
-	res = cuddUniqueConst(dd,n);
-	return(res);
+        res = cuddUniqueConst(dd,n);
+        return(res);
     }
-    cacheOp = (DdNode *(*)(DdManager *, DdNode *)) Cudd_addRoundOff;
+    cacheOp = (DD_CTFP1) Cudd_addRoundOff;
     res = cuddCacheLookup1(dd,cacheOp,f);
     if (res != NULL) {
         return(res);
@@ -238,14 +269,14 @@ cuddAddRoundOffRecur(
     E = cuddAddRoundOffRecur(dd,fvn,trunc);
     if (E == NULL) {
         Cudd_RecursiveDeref(dd,T);
-	return(NULL);
+        return(NULL);
     }
     cuddRef(E);
     res = (T == E) ? T : cuddUniqueInter(dd,(int)f->index,T,E);
     if (res == NULL) {
         Cudd_RecursiveDeref(dd,T);
-	Cudd_RecursiveDeref(dd,E);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,E);
+        return(NULL);
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -253,10 +284,13 @@ cuddAddRoundOffRecur(
     /* Store result. */
     cuddCacheInsert1(dd,cacheOp,f,res);
     return(res);
-  
+
 } /* end of cuddAddRoundOffRecur */
 
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
 

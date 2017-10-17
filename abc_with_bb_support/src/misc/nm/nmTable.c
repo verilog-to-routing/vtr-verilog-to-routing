@@ -20,6 +20,9 @@
 
 #include "nmInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -77,7 +80,7 @@ int Nm_ManTableAdd( Nm_Man_t * p, Nm_Entry_t * pEntry )
     pEntry->pNextI2N = *ppSpot;
     *ppSpot = pEntry;
     // check if an entry with the same name already exists
-    if ( pOther = Nm_ManTableLookupName(p, pEntry->Name, -1) )
+    if ( (pOther = Nm_ManTableLookupName(p, pEntry->Name, -1)) )
     {
         // entry with the same name already exists - add it to the ring
         pEntry->pNameSake = pOther->pNameSake? pOther->pNameSake : pOther;
@@ -188,7 +191,6 @@ Nm_Entry_t * Nm_ManTableLookupId( Nm_Man_t * p, int ObjId )
 Nm_Entry_t * Nm_ManTableLookupName( Nm_Man_t * p, char * pName, int Type )
 {
     Nm_Entry_t * pEntry, * pTemp;
-    int Counter = 0;
     for ( pEntry = p->pBinsN2I[ Nm_HashString(pName, p->nBins) ]; pEntry; pEntry = pEntry->pNextN2I )
     {
         // check the entry itself
@@ -254,14 +256,15 @@ void Nm_ManProfile( Nm_Man_t * p )
 void Nm_ManResize( Nm_Man_t * p )
 {
     Nm_Entry_t ** pBinsNewI2N, ** pBinsNewN2I, * pEntry, * pEntry2, ** ppSpot;
-    int nBinsNew, Counter, e, clk;
+    int nBinsNew, Counter, e;
+    abctime clk;
 
-clk = clock();
+clk = Abc_Clock();
     // get the new table size
-    nBinsNew = Cudd_PrimeCopy( p->nGrowthFactor * p->nBins ); 
+    nBinsNew = Abc_PrimeCudd( p->nGrowthFactor * p->nBins ); 
     // allocate a new array
-    pBinsNewI2N = ALLOC( Nm_Entry_t *, nBinsNew );
-    pBinsNewN2I = ALLOC( Nm_Entry_t *, nBinsNew );
+    pBinsNewI2N = ABC_ALLOC( Nm_Entry_t *, nBinsNew );
+    pBinsNewN2I = ABC_ALLOC( Nm_Entry_t *, nBinsNew );
     memset( pBinsNewI2N, 0, sizeof(Nm_Entry_t *) * nBinsNew );
     memset( pBinsNewN2I, 0, sizeof(Nm_Entry_t *) * nBinsNew );
     // rehash entries in Id->Name table
@@ -286,10 +289,10 @@ clk = clock();
             }
     assert( Counter == p->nEntries );
 //    printf( "Increasing the structural table size from %6d to %6d. ", p->nBins, nBinsNew );
-//    PRT( "Time", clock() - clk );
+//    ABC_PRT( "Time", Abc_Clock() - clk );
     // replace the table and the parameters
-    free( p->pBinsI2N );
-    free( p->pBinsN2I );
+    ABC_FREE( p->pBinsI2N );
+    ABC_FREE( p->pBinsN2I );
     p->pBinsI2N = pBinsNewI2N;
     p->pBinsN2I = pBinsNewN2I;
     p->nBins = nBinsNew;
@@ -297,44 +300,11 @@ clk = clock();
 }
 
 
-/**Function*************************************************************
-
-  Synopsis    [Returns the smallest prime larger than the number.]
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-unsigned int Cudd_PrimeNm( unsigned int  p)
-{
-    int i,pn;
-
-    p--;
-    do {
-        p++;
-        if (p&1) {
-	    pn = 1;
-	    i = 3;
-	    while ((unsigned) (i * i) <= p) {
-		if (p % i == 0) {
-		    pn = 0;
-		    break;
-		}
-		i += 2;
-	    }
-	} else {
-	    pn = 0;
-	}
-    } while (!pn);
-    return(p);
-
-} /* end of Cudd_Prime */
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

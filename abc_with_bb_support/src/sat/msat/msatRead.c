@@ -20,6 +20,9 @@
 
 #include "msatInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -45,14 +48,15 @@ char * Msat_FileRead( FILE * pFile )
 {
     int nFileSize;
     char * pBuffer;
+    int RetValue;
     // get the file size, in bytes
     fseek( pFile, 0, SEEK_END );  
     nFileSize = ftell( pFile );  
     // move the file current reading position to the beginning
     rewind( pFile ); 
     // load the contents of the file into memory
-    pBuffer = ALLOC( char, nFileSize + 3 );
-    fread( pBuffer, nFileSize, 1, pFile );
+    pBuffer = ABC_ALLOC( char, nFileSize + 3 );
+    RetValue = fread( pBuffer, nFileSize, 1, pFile );
     // terminate the string with '\0'
     pBuffer[ nFileSize + 0] = '\n';
     pBuffer[ nFileSize + 1] = '\0';
@@ -133,7 +137,7 @@ static void skipLine( char ** pIn )
 static int Msat_ReadInt( char ** pIn ) 
 {
     int     val = 0;
-    bool    neg = 0;
+    int     neg = 0;
 
     Msat_ReadWhitespace( pIn );
     if ( **pIn == '-' ) 
@@ -194,10 +198,10 @@ static void Msat_ReadClause( char ** pIn, Msat_Solver_t * p, Msat_IntVec_t * pLi
   SeeAlso     []
 
 ***********************************************************************/
-static bool Msat_ReadDimacs( char * pText, Msat_Solver_t ** pS, bool fVerbose ) 
+static int  Msat_ReadDimacs( char * pText, Msat_Solver_t ** pS, int  fVerbose ) 
 {
-    Msat_Solver_t * p;
-    Msat_IntVec_t * pLits;
+    Msat_Solver_t * p = NULL; // Suppress "might be used uninitialized"
+    Msat_IntVec_t * pLits = NULL; // Suppress "might be used uninitialized"
     char * pIn = pText;
     int nVars, nClas;
     while ( 1 )
@@ -251,13 +255,13 @@ static bool Msat_ReadDimacs( char * pText, Msat_Solver_t ** pS, bool fVerbose )
   SeeAlso     []
 
 ***********************************************************************/
-bool Msat_SolverParseDimacs( FILE * pFile, Msat_Solver_t ** p, int fVerbose )
+int  Msat_SolverParseDimacs( FILE * pFile, Msat_Solver_t ** p, int fVerbose )
 {
     char * pText;
-    bool Value;
+    int  Value;
     pText = Msat_FileRead( pFile );
     Value = Msat_ReadDimacs( pText, p, fVerbose );
-    free( pText );
+    ABC_FREE( pText );
     return Value;
 }
 
@@ -265,4 +269,6 @@ bool Msat_SolverParseDimacs( FILE * pFile, Msat_Solver_t ** p, int fVerbose )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,6 +18,9 @@
 
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -52,7 +55,7 @@ float       Fpga_LutLibReadLutArea( Fpga_LutLib_t * p, int Size )    { assert( S
   SeeAlso     []
 
 ***********************************************************************/
-Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
+Fpga_LutLib_t * Fpga_LutLibRead( char * FileName, int fVerbose )
 {
     char pBuffer[1000], * pToken;
     Fpga_LutLib_t * p;
@@ -66,7 +69,7 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
         return NULL;
     }
 
-    p = ALLOC( Fpga_LutLib_t, 1 );
+    p = ABC_ALLOC( Fpga_LutLib_t, 1 );
     memset( p, 0, sizeof(Fpga_LutLib_t) );
     p->pName = Extra_UtilStrsav( FileName );
 
@@ -81,7 +84,7 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
         if ( i != atoi(pToken) )
         {
             printf( "Error in the LUT library file \"%s\".\n", FileName );
-            free( p );
+            ABC_FREE( p );
             return NULL;
         }
 
@@ -91,7 +94,7 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
 
         // read delays
         k = 0;
-        while ( pToken = strtok( NULL, " \t\n" ) )
+        while ( (pToken = strtok( NULL, " \t\n" )) )
             p->pLutDelays[i][k++] = (float)atof(pToken);
 
         // check for out-of-bound
@@ -113,12 +116,13 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
         i++;
     }
     p->LutMax = i-1;
+/*
     if ( p->LutMax > FPGA_MAX_LEAVES )
     {
         p->LutMax = FPGA_MAX_LEAVES;
-        printf( "Warning: LUTs with more than %d input will not be used.\n", FPGA_MAX_LEAVES );
+        printf( "Warning: LUTs with more than %d inputs will not be used.\n", FPGA_MAX_LEAVES );
     }
-
+*/
     // check the library
     if ( p->fVarPinDelays )
     {
@@ -129,7 +133,7 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
                     printf( "Warning: Pin %d of LUT %d has delay %f. Pin delays should be non-negative numbers. Technology mapping may not work correctly.\n", 
                         k, i, p->pLutDelays[i][k] );
                 if ( k && p->pLutDelays[i][k-1] > p->pLutDelays[i][k] )
-                    printf( "Warning: Pin %d of LUT %d has delay %f. Pin %d of LUT %d has delay %f. Pin delays should be in non-degreasing order. Technology mapping may not work correctly.\n", 
+                    printf( "Warning: Pin %d of LUT %d has delay %f. Pin %d of LUT %d has delay %f. Pin delays should be in non-decreasing order. Technology mapping may not work correctly.\n", 
                         k-1, i, p->pLutDelays[i][k-1], 
                         k, i, p->pLutDelays[i][k] );
             }
@@ -140,7 +144,7 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
         {
             if ( p->pLutDelays[i][0] <= 0.0 )
                 printf( "Warning: LUT %d has delay %f. Pin delays should be non-negative numbers. Technology mapping may not work correctly.\n", 
-                    k, i, p->pLutDelays[i][0] );
+                    i, p->pLutDelays[i][0] );
         }
     }
 
@@ -161,7 +165,7 @@ Fpga_LutLib_t * Fpga_LutLibCreate( char * FileName, int fVerbose )
 Fpga_LutLib_t * Fpga_LutLibDup( Fpga_LutLib_t * p )
 {
     Fpga_LutLib_t * pNew;
-    pNew = ALLOC( Fpga_LutLib_t, 1 );
+    pNew = ABC_ALLOC( Fpga_LutLib_t, 1 );
     *pNew = *p;
     pNew->pName = Extra_UtilStrsav( pNew->pName );
     return pNew;
@@ -182,8 +186,8 @@ void Fpga_LutLibFree( Fpga_LutLib_t * pLutLib )
 {
     if ( pLutLib == NULL )
         return;
-    FREE( pLutLib->pName );
-    FREE( pLutLib );
+    ABC_FREE( pLutLib->pName );
+    ABC_FREE( pLutLib );
 }
 
 
@@ -246,4 +250,6 @@ int Fpga_LutLibDelaysAreDiscrete( Fpga_LutLib_t * pLutLib )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

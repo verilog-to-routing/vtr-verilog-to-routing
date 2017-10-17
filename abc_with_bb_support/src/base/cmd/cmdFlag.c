@@ -18,7 +18,11 @@
 
 ***********************************************************************/
 
-#include "mainInt.h"
+#include "base/abc/abc.h"
+#include "base/main/mainInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -43,7 +47,7 @@
 char * Cmd_FlagReadByName( Abc_Frame_t * pAbc, char * flag )
 {
     char * value;
-    if ( st_lookup(pAbc->tFlags, flag, &value) )
+    if ( st__lookup(pAbc->tFlags, flag, &value) )
         return value;
     return NULL;
 }
@@ -58,7 +62,7 @@ char * Cmd_FlagReadByName( Abc_Frame_t * pAbc, char * flag )
   SideEffects []
 
 ******************************************************************************/
-void Cmd_FlagUpdateValue( Abc_Frame_t * pAbc, char * key, char * value )
+void Cmd_FlagUpdateValue( Abc_Frame_t * pAbc, const char * key, char * value )
 {
     char * oldValue, * newValue;
     if ( !key )
@@ -68,9 +72,9 @@ void Cmd_FlagUpdateValue( Abc_Frame_t * pAbc, char * key, char * value )
     else
         newValue = Extra_UtilStrsav("");
 //        newValue = NULL;
-    if ( st_delete(pAbc->tFlags, &key, &oldValue) )
-        FREE(oldValue);
-    st_insert( pAbc->tFlags, key, newValue );
+    if ( st__delete(pAbc->tFlags, &key, &oldValue) )
+        ABC_FREE(oldValue);
+    st__insert( pAbc->tFlags, key, newValue );
 }
 
 
@@ -83,15 +87,15 @@ void Cmd_FlagUpdateValue( Abc_Frame_t * pAbc, char * key, char * value )
   SideEffects []
 
 ******************************************************************************/
-void Cmd_FlagDeleteByName( Abc_Frame_t * pAbc, char * key )
+void Cmd_FlagDeleteByName( Abc_Frame_t * pAbc, const char * key )
 {
     char *value;
     if ( !key )
         return;
-    if ( st_delete( pAbc->tFlags, &key, &value ) ) 
+    if ( st__delete( pAbc->tFlags, &key, &value ) ) 
     {
-        FREE(key);
-        FREE(value);
+        ABC_FREE(key);
+        ABC_FREE(value);
     }
 }
 
@@ -101,4 +105,6 @@ void Cmd_FlagDeleteByName( Abc_Frame_t * pAbc, char * key )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,6 +18,9 @@
 
 #include "mvc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -44,7 +47,7 @@ Mvc_Cover_t * Mvc_CoverAlloc( Mvc_Manager_t * pMem, int nBits )
 
     nBitsInUnsigned  = 8 * sizeof(Mvc_CubeWord_t);
 #ifdef USE_SYSTEM_MEMORY_MANAGEMENT
-    p                = (Mvc_Cover_t *)malloc( sizeof(Mvc_Cover_t) );
+    p                = (Mvc_Cover_t *)ABC_ALLOC( char, sizeof(Mvc_Cover_t) );
 #else
     p                = (Mvc_Cover_t *)Extra_MmFixedEntryFetch( pMem->pManC );
 #endif
@@ -77,7 +80,7 @@ Mvc_Cover_t * Mvc_CoverClone( Mvc_Cover_t * p )
 {
     Mvc_Cover_t * pCover;
 #ifdef USE_SYSTEM_MEMORY_MANAGEMENT
-    pCover                = (Mvc_Cover_t *)malloc( sizeof(Mvc_Cover_t) );
+    pCover                = (Mvc_Cover_t *)ABC_ALLOC( char, sizeof(Mvc_Cover_t) );
 #else
     pCover                = (Mvc_Cover_t *)Extra_MmFixedEntryFetch( p->pMem->pManC );
 #endif
@@ -144,7 +147,7 @@ void Mvc_CoverFree( Mvc_Cover_t * p )
     MEM_FREE( p->pMem, int,          p->nBits,       p->pLits  );
 
 #ifdef USE_SYSTEM_MEMORY_MANAGEMENT
-    free( p );
+    ABC_FREE( p );
 #else
     Extra_MmFixedEntryRecycle( p->pMem->pManC, (char *)p );
 #endif
@@ -248,4 +251,6 @@ void Mvc_CoverDeallocateArrayLits( Mvc_Cover_t * pCover )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

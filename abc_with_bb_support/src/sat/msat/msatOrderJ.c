@@ -20,6 +20,9 @@
 
 #include "msatInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /* 
 The J-boundary (justification boundary) is defined as a set of unassigned 
 variables belonging to the cone of interest, such that for each of them,
@@ -78,8 +81,8 @@ struct Msat_Order_t_
 static void Msat_OrderRingAddLast( Msat_OrderRing_t * pRing, Msat_OrderVar_t * pVar );
 static void Msat_OrderRingRemove( Msat_OrderRing_t * pRing, Msat_OrderVar_t * pVar );
 
-extern int timeSelect;
-extern int timeAssign;
+extern clock_t timeSelect;
+extern clock_t timeAssign;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -261,7 +264,7 @@ int Msat_OrderVarSelect( Msat_Order_t * p )
     Msat_OrderVar_t * pVar, * pNext, * pVarBest;
     double * pdActs = p->pSat->pdActivity;
     double dfActBest;
-//    int clk = clock();
+//    clock_t clk = clock();
 
     pVarBest = NULL;
     dfActBest = -1.0;
@@ -469,4 +472,6 @@ void Msat_OrderRingRemove( Msat_OrderRing_t * pRing, Msat_OrderVar_t * pVar )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

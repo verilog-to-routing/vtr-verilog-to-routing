@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -109,10 +112,10 @@ void Abc_NtkChangeCiOrder( Abc_Ntk_t * pNtk, Vec_Ptr_t * vSupp, int fReverse )
     assert( Vec_PtrSize(vSupp) == Abc_NtkCiNum(pNtk) );
     // order CIs using the array
     if ( fReverse )
-        Vec_PtrForEachEntry( vSupp, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vSupp, pObj, i )
             Vec_PtrWriteEntry( pNtk->vCis, Vec_PtrSize(vSupp)-1-i, pObj );
     else
-        Vec_PtrForEachEntry( vSupp, pObj, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vSupp, pObj, i )
             Vec_PtrWriteEntry( pNtk->vCis, i, pObj );
     // order PIs accordingly
     Vec_PtrClear( pNtk->vPis );
@@ -128,4 +131,6 @@ void Abc_NtkChangeCiOrder( Abc_Ntk_t * pNtk, Vec_Ptr_t * vSupp, int fReverse )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

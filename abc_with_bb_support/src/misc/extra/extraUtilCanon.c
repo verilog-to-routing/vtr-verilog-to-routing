@@ -20,6 +20,9 @@
 
 #include "extra.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
 /*---------------------------------------------------------------------------*/
@@ -36,366 +39,6 @@
 /* Variable declarations                                                     */
 /*---------------------------------------------------------------------------*/
 
-static unsigned s_Truths3[256];
-static char s_Phases3[256][9];
-
-/*---------------------------------------------------------------------------*/
-/* Macro declarations                                                        */
-/*---------------------------------------------------------------------------*/
-
-
-/**AutomaticStart*************************************************************/
-
-/*---------------------------------------------------------------------------*/
-/* Static function prototypes                                                */
-/*---------------------------------------------------------------------------*/
-
-static int Extra_TruthCanonN_rec( int nVars, unsigned char * pt, unsigned ** pptRes, char ** ppfRes, int Flag );
-
-/**AutomaticEnd***************************************************************/
-
-/*---------------------------------------------------------------------------*/
-/* Definition of exported functions                                          */
-/*---------------------------------------------------------------------------*/
-
-/**Function********************************************************************
-
-  Synopsis    [Computes the N-canonical form of the Boolean function up to 6 inputs.]
-
-  Description [The N-canonical form is defined as the truth table with 
-  the minimum integer value. This function exhaustively enumerates 
-  through the complete set of 2^N phase assignments.
-  Returns pointers to the static storage to the truth table and phases. 
-  This data should be used before the function is called again.]
-
-  SideEffects []
-
-  SeeAlso     []
-
-******************************************************************************/
-int Extra_TruthCanonFastN( int nVarsMax, int nVarsReal, unsigned * pt, unsigned ** pptRes, char ** ppfRes )
-{
-    static unsigned uTruthStore6[2];
-    int RetValue;
-    assert( nVarsMax <= 6 );
-    assert( nVarsReal <= nVarsMax );
-    RetValue = Extra_TruthCanonN_rec( nVarsReal <= 3? 3: nVarsReal, (unsigned char *)pt, pptRes, ppfRes, 0 );
-    if ( nVarsMax == 6 && nVarsReal < nVarsMax )
-    {
-        uTruthStore6[0] = **pptRes;
-        uTruthStore6[1] = **pptRes;
-        *pptRes = uTruthStore6;
-    }
-    return RetValue;
-}
-
-/*---------------------------------------------------------------------------*/
-/* Definition of internal functions                                          */
-/*---------------------------------------------------------------------------*/
-
-/**Function*************************************************************
-
-  Synopsis    [Recursive implementation of the above.]
-
-  Description []
-               
-  SideEffects [This procedure has a bug, which shows on Solaris.
-  Most likely has something to do with the casts, i.g *((unsigned *)pt0)]
-
-  SeeAlso     []
-
-***********************************************************************/
-int Extra_TruthCanonN_rec( int nVars, unsigned char * pt, unsigned ** pptRes, char ** ppfRes, int Flag )
-{
-    static unsigned uTruthStore[7][2][2];
-    static char uPhaseStore[7][2][64];
-
-    unsigned char * pt0, * pt1;
-    unsigned * ptRes0, * ptRes1, * ptRes;
-    unsigned uInit0, uInit1, uTruth0, uTruth1, uTemp;
-    char * pfRes0, * pfRes1, * pfRes;
-    int nf0, nf1, nfRes, i, nVarsN;
-
-    // table lookup for three vars
-    if ( nVars == 3 )
-    {
-        *pptRes = &s_Truths3[*pt];
-        *ppfRes = s_Phases3[*pt]+1;
-        return s_Phases3[*pt][0];
-    }
-
-    // number of vars for the next call
-    nVarsN = nVars-1;
-    // truth table for the next call
-    pt0 = pt;
-    pt1 = pt + (1 << nVarsN) / 8;
-    // 5-var truth tables for this call
-//    uInit0 = *((unsigned *)pt0);
-//    uInit1 = *((unsigned *)pt1);
-    if ( nVarsN == 3 )
-    {
-        uInit0 = (pt0[0] << 24) | (pt0[0] << 16) | (pt0[0] << 8) | pt0[0];
-        uInit1 = (pt1[0] << 24) | (pt1[0] << 16) | (pt1[0] << 8) | pt1[0];
-    }
-    else if ( nVarsN == 4 )
-    {
-        uInit0 = (pt0[1] << 24) | (pt0[0] << 16) | (pt0[1] << 8) | pt0[0];
-        uInit1 = (pt1[1] << 24) | (pt1[0] << 16) | (pt1[1] << 8) | pt1[0];
-    }
-    else
-    {
-        uInit0 = (pt0[3] << 24) | (pt0[2] << 16) | (pt0[1] << 8) | pt0[0];
-        uInit1 = (pt1[3] << 24) | (pt1[2] << 16) | (pt1[1] << 8) | pt1[0];
-    }
-
-    // storage for truth tables and phases
-    ptRes  = uTruthStore[nVars][Flag];
-    pfRes  = uPhaseStore[nVars][Flag];
-
-    // solve trivial cases
-    if ( uInit1 == 0 )
-    {
-        nf0 = Extra_TruthCanonN_rec( nVarsN, pt0, &ptRes0, &pfRes0, 0 );
-        uTruth1 = uInit1;
-        uTruth0 = *ptRes0;
-        nfRes   = 0;
-        for ( i = 0; i < nf0; i++ )
-            pfRes[nfRes++] = pfRes0[i];
-        goto finish;
-    }
-    if ( uInit0 == 0 )
-    {
-        nf1 = Extra_TruthCanonN_rec( nVarsN, pt1, &ptRes1, &pfRes1, 1 );
-        uTruth1 = uInit0;
-        uTruth0 = *ptRes1;
-        nfRes   = 0;
-        for ( i = 0; i < nf1; i++ )
-            pfRes[nfRes++] = pfRes1[i] | (1<<nVarsN);
-        goto finish;
-    }
-
-    if ( uInit1 == 0xFFFFFFFF )
-    {
-        nf0 = Extra_TruthCanonN_rec( nVarsN, pt0, &ptRes0, &pfRes0, 0 );
-        uTruth1 = *ptRes0;
-        uTruth0 = uInit1;
-        nfRes   = 0;
-        for ( i = 0; i < nf0; i++ )
-            pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
-        goto finish;
-    }
-    if ( uInit0 == 0xFFFFFFFF )
-    {
-        nf1 = Extra_TruthCanonN_rec( nVarsN, pt1, &ptRes1, &pfRes1, 1 );
-        uTruth1 = *ptRes1;
-        uTruth0 = uInit0;
-        nfRes   = 0;
-        for ( i = 0; i < nf1; i++ )
-            pfRes[nfRes++] = pfRes1[i];
-        goto finish;
-    }
-
-    // solve the problem for cofactors
-    nf0 = Extra_TruthCanonN_rec( nVarsN, pt0, &ptRes0, &pfRes0, 0 );
-    nf1 = Extra_TruthCanonN_rec( nVarsN, pt1, &ptRes1, &pfRes1, 1 );
-
-    // combine the result
-    if ( *ptRes1 < *ptRes0 )
-    {
-        uTruth0 = 0xFFFFFFFF;
-        nfRes   = 0;
-        for ( i = 0; i < nf1; i++ )
-        {
-            uTemp = Extra_TruthPolarize( uInit0, pfRes1[i], nVarsN );
-            if ( uTruth0 > uTemp )
-            {
-                nfRes          = 0;
-                uTruth0        = uTemp;
-                pfRes[nfRes++] = pfRes1[i];
-            }
-            else if ( uTruth0 == uTemp ) 
-                pfRes[nfRes++] = pfRes1[i];
-        }
-        uTruth1 = *ptRes1;
-    }
-    else if ( *ptRes1 > *ptRes0 )
-    {
-        uTruth0 = 0xFFFFFFFF;
-        nfRes   = 0;
-        for ( i = 0; i < nf0; i++ )
-        {
-            uTemp = Extra_TruthPolarize( uInit1, pfRes0[i], nVarsN );
-            if ( uTruth0 > uTemp )
-            {
-                nfRes          = 0;
-                uTruth0        = uTemp;
-                pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
-            }
-            else if ( uTruth0 == uTemp ) 
-                pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
-        }
-        uTruth1 = *ptRes0;
-    }
-    else 
-    {
-        assert( nf0 == nf1 );
-        nfRes = 0; 
-        for ( i = 0; i < nf1; i++ )
-            pfRes[nfRes++] = pfRes1[i];
-        for ( i = 0; i < nf0; i++ )
-            pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
-        uTruth0 = Extra_TruthPolarize( uInit0, pfRes1[0], nVarsN );
-        uTruth1 = *ptRes0;
-    }
-
-finish :
-    if ( nVarsN == 3 )
-    {
-        uTruth0 &= 0xFF;
-        uTruth1 &= 0xFF;
-        uTemp = (uTruth1 << 8) | uTruth0;
-        *ptRes = (uTemp << 16) | uTemp;
-    }
-    else if ( nVarsN == 4 )
-    {
-        uTruth0 &= 0xFFFF;
-        uTruth1 &= 0xFFFF;
-        *ptRes = (uTruth1 << 16) | uTruth0;
-    }
-    else if ( nVarsN == 5 )
-    {
-        *(ptRes+0) = uTruth0;
-        *(ptRes+1) = uTruth1;
-    }
-
-    *pptRes = ptRes;
-    *ppfRes = pfRes;
-    return nfRes;
-}
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_Var3Print()
-{
-    extern void Extra_Truth3VarN( unsigned ** puCanons, char *** puPhases, char ** ppCounters );
-
-    unsigned * uCanons;
-    char ** uPhases;
-    char * pCounters;
-    int i, k;
-
-    Extra_Truth3VarN( &uCanons, &uPhases, &pCounters );
-
-    for ( i = 0; i < 256; i++ )
-    {
-        if ( i % 8 == 0 )
-            printf( "\n" );
-        Extra_PrintHex( stdout, uCanons[i], 5 ); 
-        printf( ", " );
-    }
-    printf( "\n" );
-
-    for ( i = 0; i < 256; i++ )
-    {
-        printf( "%3d */  { %2d,   ", i, pCounters[i] );
-        for ( k = 0; k < pCounters[i]; k++ )            
-            printf( "%s%d", k? ", ":"", uPhases[i][k] );
-        printf( " }\n" );
-    }
-    printf( "\n" );
-}
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_Var3Test()
-{
-    extern void Extra_Truth3VarN( unsigned ** puCanons, char *** puPhases, char ** ppCounters );
-
-    unsigned * uCanons;
-    char ** uPhases;
-    char * pCounters;
-    int i;
-    unsigned * ptRes;
-    char * pfRes;
-    unsigned uTruth;
-    int Count;
-
-    Extra_Truth3VarN( &uCanons, &uPhases, &pCounters );
-
-    for ( i = 0; i < 256; i++ )
-    {
-        uTruth = i;
-        Count =  Extra_TruthCanonFastN( 5, 3, &uTruth, &ptRes, &pfRes );
-        if ( *ptRes != uCanons[i] || Count != pCounters[i] )
-        {
-            int k = 0;
-        }
-    }
-}
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_Var4Test()
-{
-    extern void Extra_Truth4VarN( unsigned short ** puCanons, char *** puPhases, char ** ppCounters, int PhaseMax );
-
-    unsigned short * uCanons;
-    char ** uPhases;
-    char * pCounters;
-    int i, k;
-    unsigned * ptRes;
-    char * pfRes;
-    unsigned uTruth;
-    int Count;
-
-    Extra_Truth4VarN( &uCanons, &uPhases, &pCounters, 16 );
-
-    for ( i = 0; i < 256*256; i++ )
-    {
-        uTruth = i;
-        Count =  Extra_TruthCanonFastN( 5, 4, &uTruth, &ptRes, &pfRes );
-        if ( (*ptRes & 0xFFFF) != uCanons[i] || Count != pCounters[i] )
-        {
-            int k = 0;
-        }
-        for ( k = 0; k < Count; k++ )
-            if ( uPhases[i][k] != pfRes[k] )
-            {
-                int v = 0;
-            }
-    }
-}
-
-/*---------------------------------------------------------------------------*/
-/* Definition of static Functions                                            */
-/*---------------------------------------------------------------------------*/
 
 static unsigned s_Truths3[256] = 
 {
@@ -694,8 +337,355 @@ static char s_Phases3[256][9] =
 };
 
 
+/*---------------------------------------------------------------------------*/
+/* Macro declarations                                                        */
+/*---------------------------------------------------------------------------*/
+
+
+/**AutomaticStart*************************************************************/
+
+/*---------------------------------------------------------------------------*/
+/* Static function prototypes                                                */
+/*---------------------------------------------------------------------------*/
+
+static int Extra_TruthCanonN_rec( int nVars, unsigned char * pt, unsigned ** pptRes, char ** ppfRes, int Flag );
+
+/**AutomaticEnd***************************************************************/
+
+/*---------------------------------------------------------------------------*/
+/* Definition of exported functions                                          */
+/*---------------------------------------------------------------------------*/
+
+/**Function********************************************************************
+
+  Synopsis    [Computes the N-canonical form of the Boolean function up to 6 inputs.]
+
+  Description [The N-canonical form is defined as the truth table with 
+  the minimum integer value. This function exhaustively enumerates 
+  through the complete set of 2^N phase assignments.
+  Returns pointers to the static storage to the truth table and phases. 
+  This data should be used before the function is called again.]
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+int Extra_TruthCanonFastN( int nVarsMax, int nVarsReal, unsigned * pt, unsigned ** pptRes, char ** ppfRes )
+{
+    static unsigned uTruthStore6[2];
+    int RetValue;
+    assert( nVarsMax <= 6 );
+    assert( nVarsReal <= nVarsMax );
+    RetValue = Extra_TruthCanonN_rec( nVarsReal <= 3? 3: nVarsReal, (unsigned char *)pt, pptRes, ppfRes, 0 );
+    if ( nVarsMax == 6 && nVarsReal < nVarsMax )
+    {
+        uTruthStore6[0] = **pptRes;
+        uTruthStore6[1] = **pptRes;
+        *pptRes = uTruthStore6;
+    }
+    return RetValue;
+}
+
+/*---------------------------------------------------------------------------*/
+/* Definition of internal functions                                          */
+/*---------------------------------------------------------------------------*/
+
+/**Function*************************************************************
+
+  Synopsis    [Recursive implementation of the above.]
+
+  Description []
+               
+  SideEffects [This procedure has a bug, which shows on Solaris.
+  Most likely has something to do with the casts, i.g *((unsigned *)pt0)]
+
+  SeeAlso     []
+
+***********************************************************************/
+int Extra_TruthCanonN_rec( int nVars, unsigned char * pt, unsigned ** pptRes, char ** ppfRes, int Flag )
+{
+    static unsigned uTruthStore[7][2][2];
+    static char uPhaseStore[7][2][64];
+
+    unsigned char * pt0, * pt1;
+    unsigned * ptRes0, * ptRes1, * ptRes;
+    unsigned uInit0, uInit1, uTruth0, uTruth1, uTemp;
+    char * pfRes0, * pfRes1, * pfRes;
+    int nf0, nf1, nfRes, i, nVarsN;
+
+    // table lookup for three vars
+    if ( nVars == 3 )
+    {
+        *pptRes = &s_Truths3[*pt];
+        *ppfRes = s_Phases3[*pt]+1;
+        return s_Phases3[*pt][0];
+    }
+
+    // number of vars for the next call
+    nVarsN = nVars-1;
+    // truth table for the next call
+    pt0 = pt;
+    pt1 = pt + (1 << nVarsN) / 8;
+    // 5-var truth tables for this call
+//    uInit0 = *((unsigned *)pt0);
+//    uInit1 = *((unsigned *)pt1);
+    if ( nVarsN == 3 )
+    {
+        uInit0 = (pt0[0] << 24) | (pt0[0] << 16) | (pt0[0] << 8) | pt0[0];
+        uInit1 = (pt1[0] << 24) | (pt1[0] << 16) | (pt1[0] << 8) | pt1[0];
+    }
+    else if ( nVarsN == 4 )
+    {
+        uInit0 = (pt0[1] << 24) | (pt0[0] << 16) | (pt0[1] << 8) | pt0[0];
+        uInit1 = (pt1[1] << 24) | (pt1[0] << 16) | (pt1[1] << 8) | pt1[0];
+    }
+    else
+    {
+        uInit0 = (pt0[3] << 24) | (pt0[2] << 16) | (pt0[1] << 8) | pt0[0];
+        uInit1 = (pt1[3] << 24) | (pt1[2] << 16) | (pt1[1] << 8) | pt1[0];
+    }
+
+    // storage for truth tables and phases
+    ptRes  = uTruthStore[nVars][Flag];
+    pfRes  = uPhaseStore[nVars][Flag];
+
+    // solve trivial cases
+    if ( uInit1 == 0 )
+    {
+        nf0 = Extra_TruthCanonN_rec( nVarsN, pt0, &ptRes0, &pfRes0, 0 );
+        uTruth1 = uInit1;
+        uTruth0 = *ptRes0;
+        nfRes   = 0;
+        for ( i = 0; i < nf0; i++ )
+            pfRes[nfRes++] = pfRes0[i];
+        goto finish;
+    }
+    if ( uInit0 == 0 )
+    {
+        nf1 = Extra_TruthCanonN_rec( nVarsN, pt1, &ptRes1, &pfRes1, 1 );
+        uTruth1 = uInit0;
+        uTruth0 = *ptRes1;
+        nfRes   = 0;
+        for ( i = 0; i < nf1; i++ )
+            pfRes[nfRes++] = pfRes1[i] | (1<<nVarsN);
+        goto finish;
+    }
+
+    if ( uInit1 == 0xFFFFFFFF )
+    {
+        nf0 = Extra_TruthCanonN_rec( nVarsN, pt0, &ptRes0, &pfRes0, 0 );
+        uTruth1 = *ptRes0;
+        uTruth0 = uInit1;
+        nfRes   = 0;
+        for ( i = 0; i < nf0; i++ )
+            pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
+        goto finish;
+    }
+    if ( uInit0 == 0xFFFFFFFF )
+    {
+        nf1 = Extra_TruthCanonN_rec( nVarsN, pt1, &ptRes1, &pfRes1, 1 );
+        uTruth1 = *ptRes1;
+        uTruth0 = uInit0;
+        nfRes   = 0;
+        for ( i = 0; i < nf1; i++ )
+            pfRes[nfRes++] = pfRes1[i];
+        goto finish;
+    }
+
+    // solve the problem for cofactors
+    nf0 = Extra_TruthCanonN_rec( nVarsN, pt0, &ptRes0, &pfRes0, 0 );
+    nf1 = Extra_TruthCanonN_rec( nVarsN, pt1, &ptRes1, &pfRes1, 1 );
+
+    // combine the result
+    if ( *ptRes1 < *ptRes0 )
+    {
+        uTruth0 = 0xFFFFFFFF;
+        nfRes   = 0;
+        for ( i = 0; i < nf1; i++ )
+        {
+            uTemp = Extra_TruthPolarize( uInit0, pfRes1[i], nVarsN );
+            if ( uTruth0 > uTemp )
+            {
+                nfRes          = 0;
+                uTruth0        = uTemp;
+                pfRes[nfRes++] = pfRes1[i];
+            }
+            else if ( uTruth0 == uTemp ) 
+                pfRes[nfRes++] = pfRes1[i];
+        }
+        uTruth1 = *ptRes1;
+    }
+    else if ( *ptRes1 > *ptRes0 )
+    {
+        uTruth0 = 0xFFFFFFFF;
+        nfRes   = 0;
+        for ( i = 0; i < nf0; i++ )
+        {
+            uTemp = Extra_TruthPolarize( uInit1, pfRes0[i], nVarsN );
+            if ( uTruth0 > uTemp )
+            {
+                nfRes          = 0;
+                uTruth0        = uTemp;
+                pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
+            }
+            else if ( uTruth0 == uTemp ) 
+                pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
+        }
+        uTruth1 = *ptRes0;
+    }
+    else 
+    {
+        assert( nf0 == nf1 );
+        nfRes = 0; 
+        for ( i = 0; i < nf1; i++ )
+            pfRes[nfRes++] = pfRes1[i];
+        for ( i = 0; i < nf0; i++ )
+            pfRes[nfRes++] = pfRes0[i] | (1<<nVarsN);
+        uTruth0 = Extra_TruthPolarize( uInit0, pfRes1[0], nVarsN );
+        uTruth1 = *ptRes0;
+    }
+
+finish :
+    if ( nVarsN == 3 )
+    {
+        uTruth0 &= 0xFF;
+        uTruth1 &= 0xFF;
+        uTemp = (uTruth1 << 8) | uTruth0;
+        *ptRes = (uTemp << 16) | uTemp;
+    }
+    else if ( nVarsN == 4 )
+    {
+        uTruth0 &= 0xFFFF;
+        uTruth1 &= 0xFFFF;
+        *ptRes = (uTruth1 << 16) | uTruth0;
+    }
+    else if ( nVarsN == 5 )
+    {
+        *(ptRes+0) = uTruth0;
+        *(ptRes+1) = uTruth1;
+    }
+
+    *pptRes = ptRes;
+    *ppfRes = pfRes;
+    return nfRes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Map_Var3Print()
+{
+    extern void Extra_Truth3VarN( unsigned ** puCanons, char *** puPhases, char ** ppCounters );
+
+    unsigned * uCanons;
+    char ** uPhases;
+    char * pCounters;
+    int i, k;
+
+    Extra_Truth3VarN( &uCanons, &uPhases, &pCounters );
+
+    for ( i = 0; i < 256; i++ )
+    {
+        if ( i % 8 == 0 )
+            printf( "\n" );
+        Extra_PrintHex( stdout, uCanons + i, 5 ); 
+        printf( ", " );
+    }
+    printf( "\n" );
+
+    for ( i = 0; i < 256; i++ )
+    {
+        printf( "%3d */  { %2d,   ", i, pCounters[i] );
+        for ( k = 0; k < pCounters[i]; k++ )            
+            printf( "%s%d", k? ", ":"", uPhases[i][k] );
+        printf( " }\n" );
+    }
+    printf( "\n" );
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Map_Var3Test()
+{
+    extern void Extra_Truth3VarN( unsigned ** puCanons, char *** puPhases, char ** ppCounters );
+
+    unsigned * uCanons;
+    char ** uPhases;
+    char * pCounters;
+    int i;
+    unsigned * ptRes;
+    char * pfRes;
+    unsigned uTruth;
+    int Count;
+
+    Extra_Truth3VarN( &uCanons, &uPhases, &pCounters );
+
+    for ( i = 0; i < 256; i++ )
+    {
+        uTruth = i;
+        Count =  Extra_TruthCanonFastN( 5, 3, &uTruth, &ptRes, &pfRes );
+    }
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Map_Var4Test()
+{
+    extern void Extra_Truth4VarN( unsigned short ** puCanons, char *** puPhases, char ** ppCounters, int PhaseMax );
+
+    unsigned short * uCanons;
+    char ** uPhases;
+    char * pCounters;
+    int i;
+    unsigned * ptRes;
+    char * pfRes;
+    unsigned uTruth;
+    int Count;
+
+    Extra_Truth4VarN( &uCanons, &uPhases, &pCounters, 16 );
+
+    for ( i = 0; i < 256*256; i++ )
+    {
+        uTruth = i;
+        Count =  Extra_TruthCanonFastN( 5, 4, &uTruth, &ptRes, &pfRes );
+    }
+}
+
+/*---------------------------------------------------------------------------*/
+/* Definition of static Functions                                            */
+/*---------------------------------------------------------------------------*/
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

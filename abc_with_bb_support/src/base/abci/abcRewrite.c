@@ -18,9 +18,12 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "rwr.h"
-#include "dec.h"
+#include "base/abc/abc.h"
+#include "opt/rwr/rwr.h"
+#include "bool/dec/dec.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 /*
     The ideas realized in this package are inspired by the paper:
@@ -57,18 +60,19 @@ extern void  Abc_PlaceUpdate( Vec_Ptr_t * vAddedCells, Vec_Ptr_t * vUpdatedNets 
 ***********************************************************************/
 int Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose, int fVeryVerbose, int fPlaceEnable )
 {
+    extern void           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
     ProgressBar * pProgress;
     Cut_Man_t * pManCut;
     Rwr_Man_t * pManRwr;
     Abc_Obj_t * pNode;
-    Vec_Ptr_t * vAddedCells = NULL, * vUpdatedNets = NULL;
+//    Vec_Ptr_t * vAddedCells = NULL, * vUpdatedNets = NULL;
     Dec_Graph_t * pGraph;
     int i, nNodes, nGain, fCompl;
-    int clk, clkStart = clock();
+    abctime clk, clkStart = Abc_Clock();
 
     assert( Abc_NtkIsStrash(pNtk) );
     // cleanup the AIG
-    Abc_AigCleanup(pNtk->pManFunc);
+    Abc_AigCleanup((Abc_Aig_t *)pNtk->pManFunc);
 /*
     {
         Vec_Vec_t * vParts;
@@ -78,11 +82,11 @@ int Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerb
 */
 
     // start placement package
-    if ( fPlaceEnable )
-    {
-        Abc_PlaceBegin( pNtk );
-        vAddedCells = Abc_AigUpdateStart( pNtk->pManFunc, &vUpdatedNets );
-    }
+//    if ( fPlaceEnable )
+//    {
+//        Abc_PlaceBegin( pNtk );
+//        vAddedCells = Abc_AigUpdateStart( pNtk->pManFunc, &vUpdatedNets );
+//    }
 
     // start the rewriting manager
     pManRwr = Rwr_ManStart( 0 );
@@ -92,9 +96,9 @@ int Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerb
     if ( fUpdateLevel )
         Abc_NtkStartReverseLevels( pNtk, 0 );
     // start the cut manager
-clk = clock();
+clk = Abc_Clock();
     pManCut = Abc_NtkStartCutManForRewrite( pNtk );
-Rwr_ManAddTimeCuts( pManRwr, clock() - clk );
+Rwr_ManAddTimeCuts( pManRwr, Abc_Clock() - clk );
     pNtk->pManCut = pManCut;
 
     if ( fVeryVerbose )
@@ -119,31 +123,31 @@ Rwr_ManAddTimeCuts( pManRwr, clock() - clk );
 
         // for each cut, try to resynthesize it
         nGain = Rwr_NodeRewrite( pManRwr, pManCut, pNode, fUpdateLevel, fUseZeros, fPlaceEnable );
-        if ( !(nGain > 0 || nGain == 0 && fUseZeros) )
+        if ( !(nGain > 0 || (nGain == 0 && fUseZeros)) )
             continue;
         // if we end up here, a rewriting step is accepted
 
         // get hold of the new subgraph to be added to the AIG
-        pGraph = Rwr_ManReadDecs(pManRwr);
+        pGraph = (Dec_Graph_t *)Rwr_ManReadDecs(pManRwr);
         fCompl = Rwr_ManReadCompl(pManRwr);
 
         // reset the array of the changed nodes
         if ( fPlaceEnable )
-            Abc_AigUpdateReset( pNtk->pManFunc );
+            Abc_AigUpdateReset( (Abc_Aig_t *)pNtk->pManFunc );
 
         // complement the FF if needed
         if ( fCompl ) Dec_GraphComplement( pGraph );
-clk = clock();
+clk = Abc_Clock();
         Dec_GraphUpdateNetwork( pNode, pGraph, fUpdateLevel, nGain );
-Rwr_ManAddTimeUpdate( pManRwr, clock() - clk );
+Rwr_ManAddTimeUpdate( pManRwr, Abc_Clock() - clk );
         if ( fCompl ) Dec_GraphComplement( pGraph );
 
         // use the array of changed nodes to update placement
-        if ( fPlaceEnable )
-            Abc_PlaceUpdate( vAddedCells, vUpdatedNets );
+//        if ( fPlaceEnable )
+//            Abc_PlaceUpdate( vAddedCells, vUpdatedNets );
     }
     Extra_ProgressBarStop( pProgress );
-Rwr_ManAddTimeTotal( pManRwr, clock() - clkStart );
+Rwr_ManAddTimeTotal( pManRwr, Abc_Clock() - clkStart );
     // print stats
     pManRwr->nNodesEnd = Abc_NtkNodeNum(pNtk);
     if ( fVerbose )
@@ -157,17 +161,17 @@ Rwr_ManAddTimeTotal( pManRwr, clock() - clkStart );
     pNtk->pManCut = NULL;
 
     // start placement package
-    if ( fPlaceEnable )
-    {
-        Abc_PlaceEnd( pNtk );
-        Abc_AigUpdateStop( pNtk->pManFunc );
-    }
+//    if ( fPlaceEnable )
+//    {
+//        Abc_PlaceEnd( pNtk );
+//        Abc_AigUpdateStop( pNtk->pManFunc );
+//    }
 
     // put the nodes into the DFS order and reassign their IDs
     {
-//        int clk = clock();
+//        abctime clk = Abc_Clock();
     Abc_NtkReassignIds( pNtk );
-//        PRT( "time", clock() - clk );
+//        ABC_PRT( "time", Abc_Clock() - clk );
     }
 //    Abc_AigCheckFaninOrder( pNtk->pManFunc );
     // fix the levels
@@ -241,7 +245,7 @@ void Abc_NodePrintCuts( Abc_Obj_t * pNode )
 
     printf( "\nNode %s\n", Abc_ObjName(pNode) );
     vCuts = (Vec_Ptr_t *)pNode->pCopy;
-    Vec_PtrForEachEntry( vCuts, pCut, k )
+    Vec_PtrForEachEntry( Cut_Cut_t *, vCuts, pCut, k )
     {
         Extra_PrintBinary( stdout, (unsigned *)&pCut->uSign, 16 ); 
         printf( "   " );
@@ -266,9 +270,9 @@ void Abc_ManRewritePrintDivs( Vec_Ptr_t * vDivs, int nLeaves )
 {
     Abc_Obj_t * pFanin, * pNode, * pRoot;
     int i, k;
-    pRoot = Vec_PtrEntryLast(vDivs);
+    pRoot = (Abc_Obj_t *)Vec_PtrEntryLast(vDivs);
     // print the nodes
-    Vec_PtrForEachEntry( vDivs, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vDivs, pNode, i )
     {
         if ( i < nLeaves )
         {
@@ -277,7 +281,7 @@ void Abc_ManRewritePrintDivs( Vec_Ptr_t * vDivs, int nLeaves )
         }
         printf( "%6d : %2d = ", pNode->Id, i );
         // find the first fanin
-        Vec_PtrForEachEntry( vDivs, pFanin, k )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vDivs, pFanin, k )
             if ( Abc_ObjFanin0(pNode) == pFanin )
                 break;
         if ( k < nLeaves )
@@ -286,7 +290,7 @@ void Abc_ManRewritePrintDivs( Vec_Ptr_t * vDivs, int nLeaves )
             printf( "%d", k );
         printf( "%s ", Abc_ObjFaninC0(pNode)? "\'" : "" );
         // find the second fanin
-        Vec_PtrForEachEntry( vDivs, pFanin, k )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vDivs, pFanin, k )
             if ( Abc_ObjFanin1(pNode) == pFanin )
                 break;
         if ( k < nLeaves )
@@ -341,7 +345,7 @@ void Abc_ManShowCutCone( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves )
     int i;
     vDivs = Vec_PtrAlloc( 100 );
     Abc_NtkIncrementTravId( pNtk );
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
     {
         Abc_NodeSetTravIdCurrent( Abc_ObjRegular(pObj) );
         Vec_PtrPush( vDivs, Abc_ObjRegular(pObj) );
@@ -396,7 +400,7 @@ void Abc_RwrExpWithCut( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves )
     Abc_RwrExpWithCut_rec( Abc_ObjFanin0(pNode), vLeaves, 1 );
     Abc_RwrExpWithCut_rec( Abc_ObjFanin1(pNode), vLeaves, 0 );
     CountA = CountB = 0;
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
     {
         CountA += Abc_ObjRegular(pObj)->fMarkA;
         CountB += Abc_ObjRegular(pObj)->fMarkB;
@@ -411,4 +415,6 @@ void Abc_RwrExpWithCut( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

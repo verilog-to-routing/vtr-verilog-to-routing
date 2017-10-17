@@ -18,6 +18,9 @@
 
 #include "mvc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -45,9 +48,9 @@ Mvc_Cube_t * Mvc_CubeAlloc( Mvc_Cover_t * pCover )
     // allocate the cube
 #ifdef USE_SYSTEM_MEMORY_MANAGEMENT
     if ( pCover->nWords == 0 )
-        pCube = (Mvc_Cube_t *)malloc( sizeof(Mvc_Cube_t) );
+        pCube = (Mvc_Cube_t *)ABC_ALLOC( char, sizeof(Mvc_Cube_t) );
     else
-        pCube = (Mvc_Cube_t *)malloc( sizeof(Mvc_Cube_t) + sizeof(Mvc_CubeWord_t) * (pCover->nWords - 1) );
+        pCube = (Mvc_Cube_t *)ABC_ALLOC( char,  sizeof(Mvc_Cube_t) + sizeof(Mvc_CubeWord_t) * (pCover->nWords - 1) );
 #else
     switch( pCover->nWords )
     {
@@ -63,7 +66,7 @@ Mvc_Cube_t * Mvc_CubeAlloc( Mvc_Cover_t * pCover )
         pCube = (Mvc_Cube_t *)Extra_MmFixedEntryFetch( pCover->pMem->pMan4 );
         break;
     default:
-        pCube = (Mvc_Cube_t *)malloc( sizeof(Mvc_Cube_t) + sizeof(Mvc_CubeWord_t) * (pCover->nWords - 1) );
+        pCube = (Mvc_Cube_t *)ABC_ALLOC( char, sizeof(Mvc_Cube_t) + sizeof(Mvc_CubeWord_t) * (pCover->nWords - 1) );
         break;
     }
 #endif
@@ -119,7 +122,7 @@ void Mvc_CubeFree( Mvc_Cover_t * pCover, Mvc_Cube_t * pCube )
 
     // deallocate the cube
 #ifdef USE_SYSTEM_MEMORY_MANAGEMENT
-    free( pCube );
+    ABC_FREE( pCube );
 #else
     switch( pCover->nWords )
     {
@@ -135,7 +138,7 @@ void Mvc_CubeFree( Mvc_Cover_t * pCover, Mvc_Cube_t * pCube )
         Extra_MmFixedEntryRecycle( pCover->pMem->pMan4, (char *)pCube );
         break;
     default:
-        free( pCube );
+        ABC_FREE( pCube );
         break;
     }
 #endif
@@ -172,4 +175,6 @@ void Mvc_CubeBitRemoveDcs( Mvc_Cube_t * pCube )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

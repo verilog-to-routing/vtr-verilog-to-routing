@@ -17,6 +17,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 static void cb_unravel(c, start, end, startbase, B1)
 IN register pcube c;
@@ -357,8 +360,7 @@ int i;
  *
  *  Each function returns TRUE if process is to continue
  */
-void
-foreach_output_function(PLA, func, func1)
+void foreach_output_function(PLA, func, func1)
 pPLA PLA;
 int (*func)();
 int (*func1)();
@@ -538,3 +540,5 @@ int i;
     PLA->F = NULL;
     return 1;
 }
+ABC_NAMESPACE_IMPL_END
+

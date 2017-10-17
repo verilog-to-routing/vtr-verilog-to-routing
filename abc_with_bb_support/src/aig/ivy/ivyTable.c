@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -203,14 +206,15 @@ int Ivy_TableCountEntries( Ivy_Man_t * p )
 void Ivy_TableResize( Ivy_Man_t * p )
 {
     int * pTableOld, * pPlace;
-    int nTableSizeOld, Counter, nEntries, e, clk;
-clk = clock();
+    int nTableSizeOld, Counter, nEntries, e;
+    abctime clk;
+clk = Abc_Clock();
     // save the old table
     pTableOld = p->pTable;
     nTableSizeOld = p->nTableSize;
     // get the new table
-    p->nTableSize = Cudd_PrimeAig( 5 * Ivy_ManHashObjNum(p) ); 
-    p->pTable = ALLOC( int, p->nTableSize );
+    p->nTableSize = Abc_PrimeCudd( 5 * Ivy_ManHashObjNum(p) ); 
+    p->pTable = ABC_ALLOC( int, p->nTableSize );
     memset( p->pTable, 0, sizeof(int) * p->nTableSize );
     // rehash the entries from the old table
     Counter = 0;
@@ -227,9 +231,9 @@ clk = clock();
     nEntries = Ivy_ManHashObjNum(p);
 //    assert( Counter == nEntries );
 //    printf( "Increasing the structural table size from %6d to %6d. ", nTableSizeOld, p->nTableSize );
-//    PRT( "Time", clock() - clk );
+//    ABC_PRT( "Time", Abc_Clock() - clk );
     // replace the table and the parameters
-    free( pTableOld );
+    ABC_FREE( pTableOld );
 }
 
 /**Function********************************************************************
@@ -258,44 +262,11 @@ void Ivy_TableProfile( Ivy_Man_t * p )
     }
 }
 
-/**Function********************************************************************
-
-  Synopsis    [Returns the next prime &gt;= p.]
-
-  Description [Copied from CUDD, for stand-aloneness.]
-
-  SideEffects [None]
-
-  SeeAlso     []
-
-******************************************************************************/
-unsigned int Cudd_PrimeAig( unsigned int  p)
-{
-    int i,pn;
-
-    p--;
-    do {
-        p++;
-        if (p&1) {
-	    pn = 1;
-	    i = 3;
-	    while ((unsigned) (i * i) <= p) {
-		if (p % i == 0) {
-		    pn = 0;
-		    break;
-		}
-		i += 2;
-	    }
-	} else {
-	    pn = 0;
-	}
-    } while (!pn);
-    return(p);
-
-} /* end of Cudd_Prime */
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,12 +18,9 @@
 
 ***********************************************************************/
  
-#ifndef __CAS_H__
-#define __CAS_H__
+#ifndef ABC__bdd__cas__cas_h
+#define ABC__bdd__cas__cas_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -32,6 +29,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 #define MAXINPUTS   1024
 #define MAXOUTPUTS  1024
@@ -50,9 +52,11 @@ extern "C" {
 
 /*=== zzz.c ==========================================================*/
  
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

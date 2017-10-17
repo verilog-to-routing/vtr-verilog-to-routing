@@ -9,6 +9,9 @@
  */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 /* cost -- compute the cost of a cover */
 void cover_cost(F, cost)
@@ -140,3 +143,5 @@ char *s;
     (void) fprintf(stderr, "espresso: %s\n", s);
     exit(1);
 }
+ABC_NAMESPACE_IMPL_END
+

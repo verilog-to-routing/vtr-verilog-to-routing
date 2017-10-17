@@ -18,6 +18,9 @@
 
 #include "fxuInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -55,11 +58,11 @@ static void Fxu_HeapSingleMoveDn( Fxu_HeapSingle * p, Fxu_Single * pSingle );
 Fxu_HeapSingle * Fxu_HeapSingleStart()
 {
 	Fxu_HeapSingle * p;
-	p = ALLOC( Fxu_HeapSingle, 1 );
+	p = ABC_ALLOC( Fxu_HeapSingle, 1 );
 	memset( p, 0, sizeof(Fxu_HeapSingle) );
 	p->nItems      = 0;
 	p->nItemsAlloc = 2000;
-	p->pTree       = ALLOC( Fxu_Single *, p->nItemsAlloc + 10 );
+	p->pTree       = ABC_ALLOC( Fxu_Single *, p->nItemsAlloc + 10 );
 	p->pTree[0]    = NULL;
 	return p;
 }
@@ -79,7 +82,7 @@ Fxu_HeapSingle * Fxu_HeapSingleStart()
 void Fxu_HeapSingleResize( Fxu_HeapSingle * p )
 {
 	p->nItemsAlloc *= 2;
-	p->pTree = REALLOC( Fxu_Single *, p->pTree, p->nItemsAlloc + 10 );
+	p->pTree = ABC_REALLOC( Fxu_Single *, p->pTree, p->nItemsAlloc + 10 );
 }
 
 /**Function*************************************************************
@@ -97,9 +100,9 @@ void Fxu_HeapSingleStop( Fxu_HeapSingle * p )
 {
     int i;
     i = 0;
-	free( p->pTree );
+	ABC_FREE( p->pTree );
     i = 1;
-	free( p );
+	ABC_FREE( p );
 }
 
 
@@ -442,3 +445,5 @@ void Fxu_HeapSingleMoveDn( Fxu_HeapSingle * p, Fxu_Single * pSingle )
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+ABC_NAMESPACE_IMPL_END
+

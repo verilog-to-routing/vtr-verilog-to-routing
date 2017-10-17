@@ -18,16 +18,19 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
  
-static void        Abc_NtkBalancePerform( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkAig, bool fDuplicate, bool fSelective, bool fUpdateLevel );
-static Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNode, Vec_Vec_t * vStorage, int Level, bool fDuplicate, bool fSelective, bool fUpdateLevel );
-static Vec_Ptr_t * Abc_NodeBalanceCone( Abc_Obj_t * pNode, Vec_Vec_t * vSuper, int Level, int fDuplicate, bool fSelective );
-static int         Abc_NodeBalanceCone_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, bool fFirst, bool fDuplicate, bool fSelective );
+static void        Abc_NtkBalancePerform( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkAig, int fDuplicate, int fSelective, int fUpdateLevel );
+static Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNode, Vec_Vec_t * vStorage, int Level, int fDuplicate, int fSelective, int fUpdateLevel );
+static Vec_Ptr_t * Abc_NodeBalanceCone( Abc_Obj_t * pNode, Vec_Vec_t * vSuper, int Level, int fDuplicate, int fSelective );
+static int         Abc_NodeBalanceCone_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, int fFirst, int fDuplicate, int fSelective );
 static void        Abc_NtkMarkCriticalNodes( Abc_Ntk_t * pNtk );
 static Vec_Ptr_t * Abc_NodeBalanceConeExor( Abc_Obj_t * pNode );
 
@@ -47,9 +50,9 @@ static Vec_Ptr_t * Abc_NodeBalanceConeExor( Abc_Obj_t * pNode );
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkBalance( Abc_Ntk_t * pNtk, bool fDuplicate, bool fSelective, bool fUpdateLevel )
+Abc_Ntk_t * Abc_NtkBalance( Abc_Ntk_t * pNtk, int fDuplicate, int fSelective, int fUpdateLevel )
 {
-    extern void Abc_NtkHaigTranfer( Abc_Ntk_t * pNtkOld, Abc_Ntk_t * pNtkNew );
+//    extern void Abc_NtkHaigTranfer( Abc_Ntk_t * pNtkOld, Abc_Ntk_t * pNtkNew );
     Abc_Ntk_t * pNtkAig;
     assert( Abc_NtkIsStrash(pNtk) );
     // compute the required times
@@ -61,10 +64,11 @@ Abc_Ntk_t * Abc_NtkBalance( Abc_Ntk_t * pNtk, bool fDuplicate, bool fSelective, 
     // perform balancing
     pNtkAig = Abc_NtkStartFrom( pNtk, ABC_NTK_STRASH, ABC_FUNC_AIG );
     // transfer HAIG
-    Abc_NtkHaigTranfer( pNtk, pNtkAig );
+//    Abc_NtkHaigTranfer( pNtk, pNtkAig );
     // perform balancing
     Abc_NtkBalancePerform( pNtk, pNtkAig, fDuplicate, fSelective, fUpdateLevel );
     Abc_NtkFinalize( pNtk, pNtkAig );
+    Abc_AigCleanup( (Abc_Aig_t *)pNtkAig->pManFunc );
     // undo the required times
     if ( fSelective )
     {
@@ -80,6 +84,7 @@ Abc_Ntk_t * Abc_NtkBalance( Abc_Ntk_t * pNtk, bool fDuplicate, bool fSelective, 
         Abc_NtkDelete( pNtkAig );
         return NULL;
     }
+//Abc_NtkPrintCiLevels( pNtkAig );
     return pNtkAig;
 }
 
@@ -94,26 +99,38 @@ Abc_Ntk_t * Abc_NtkBalance( Abc_Ntk_t * pNtk, bool fDuplicate, bool fSelective, 
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkBalancePerform( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkAig, bool fDuplicate, bool fSelective, bool fUpdateLevel )
+void Abc_NtkBalancePerform( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkAig, int fDuplicate, int fSelective, int fUpdateLevel )
 {
-    int fCheck = 1;
     ProgressBar * pProgress;
     Vec_Vec_t * vStorage;
-    Abc_Obj_t * pNode, * pDriver;
+    Abc_Obj_t * pNode;
     int i;
-
+    // transfer level
+    Abc_NtkForEachCi( pNtk, pNode, i )
+        pNode->pCopy->Level = pNode->Level;
     // set the level of PIs of AIG according to the arrival times of the old network
     Abc_NtkSetNodeLevelsArrival( pNtk );
     // allocate temporary storage for supergates
     vStorage = Vec_VecStart( 10 );
     // perform balancing of POs
     pProgress = Extra_ProgressBarStart( stdout, Abc_NtkCoNum(pNtk) );
-    Abc_NtkForEachCo( pNtk, pNode, i )
+    if ( pNtk->nBarBufs == 0 )
     {
-        Extra_ProgressBarUpdate( pProgress, i, NULL );
-        // strash the driver node
-        pDriver = Abc_ObjFanin0(pNode);
-        Abc_NodeBalance_rec( pNtkAig, pDriver, vStorage, 0, fDuplicate, fSelective, fUpdateLevel );
+        Abc_NtkForEachCo( pNtk, pNode, i )
+        {
+            Extra_ProgressBarUpdate( pProgress, i, NULL );
+            Abc_NodeBalance_rec( pNtkAig, Abc_ObjFanin0(pNode), vStorage, 0, fDuplicate, fSelective, fUpdateLevel );
+        }
+    }
+    else
+    {
+        Abc_NtkForEachLiPo( pNtk, pNode, i )
+        {
+            Extra_ProgressBarUpdate( pProgress, i, NULL );
+            Abc_NodeBalance_rec( pNtkAig, Abc_ObjFanin0(pNode), vStorage, 0, fDuplicate, fSelective, fUpdateLevel );
+            if ( i < pNtk->nBarBufs )
+                Abc_ObjFanout0(Abc_ObjFanout0(pNode))->Level = Abc_ObjFanin0(pNode)->Level;
+        }
     }
     Extra_ProgressBarStop( pProgress );
     Vec_VecFree( vStorage );
@@ -143,19 +160,19 @@ int Abc_NodeBalanceFindLeft( Vec_Ptr_t * vSuper )
         return 0;
     // set the pointer to the one before the last
     Current = Vec_PtrSize(vSuper) - 2;
-    pNodeRight = Vec_PtrEntry( vSuper, Current );
+    pNodeRight = (Abc_Obj_t *)Vec_PtrEntry( vSuper, Current );
     // go through the nodes to the left of this one
     for ( Current--; Current >= 0; Current-- )
     {
         // get the next node on the left
-        pNodeLeft = Vec_PtrEntry( vSuper, Current );
+        pNodeLeft = (Abc_Obj_t *)Vec_PtrEntry( vSuper, Current );
         // if the level of this node is different, quit the loop
         if ( Abc_ObjRegular(pNodeLeft)->Level != Abc_ObjRegular(pNodeRight)->Level )
             break;
     }
     Current++;    
     // get the node, for which the equality holds
-    pNodeLeft = Vec_PtrEntry( vSuper, Current );
+    pNodeLeft = (Abc_Obj_t *)Vec_PtrEntry( vSuper, Current );
     assert( Abc_ObjRegular(pNodeLeft)->Level == Abc_ObjRegular(pNodeRight)->Level );
     return Current;
 }
@@ -182,13 +199,13 @@ void Abc_NodeBalancePermute( Abc_Ntk_t * pNtkNew, Vec_Ptr_t * vSuper, int LeftBo
     if ( LeftBound == RightBound )
         return;
     // get the two last nodes
-    pNode1 = Vec_PtrEntry( vSuper, RightBound + 1 );
-    pNode2 = Vec_PtrEntry( vSuper, RightBound     );
+    pNode1 = (Abc_Obj_t *)Vec_PtrEntry( vSuper, RightBound + 1 );
+    pNode2 = (Abc_Obj_t *)Vec_PtrEntry( vSuper, RightBound     );
     // find the first node that can be shared
     for ( i = RightBound; i >= LeftBound; i-- )
     {
-        pNode3 = Vec_PtrEntry( vSuper, i );
-        if ( Abc_AigAndLookup( pNtkNew->pManFunc, pNode1, pNode3 ) )
+        pNode3 = (Abc_Obj_t *)Vec_PtrEntry( vSuper, i );
+        if ( Abc_AigAndLookup( (Abc_Aig_t *)pNtkNew->pManFunc, pNode1, pNode3 ) )
         {
             if ( pNode3 == pNode2 )
                 return;
@@ -221,9 +238,9 @@ void Abc_NodeBalancePermute( Abc_Ntk_t * pNtkNew, Vec_Ptr_t * vSuper, int LeftBo
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld, Vec_Vec_t * vStorage, int Level, bool fDuplicate, bool fSelective, bool fUpdateLevel )
+Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld, Vec_Vec_t * vStorage, int Level, int fDuplicate, int fSelective, int fUpdateLevel )
 {
-    Abc_Aig_t * pMan = pNtkNew->pManFunc;
+    Abc_Aig_t * pMan = (Abc_Aig_t *)pNtkNew->pManFunc;
     Abc_Obj_t * pNodeNew, * pNode1, * pNode2;
     Vec_Ptr_t * vSuper;
     int i, LeftBound;
@@ -243,13 +260,13 @@ Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld, Vec_
     // for each old node, derive the new well-balanced node
     for ( i = 0; i < vSuper->nSize; i++ )
     {
-        pNodeNew = Abc_NodeBalance_rec( pNtkNew, Abc_ObjRegular(vSuper->pArray[i]), vStorage, Level + 1, fDuplicate, fSelective, fUpdateLevel );
-        vSuper->pArray[i] = Abc_ObjNotCond( pNodeNew, Abc_ObjIsComplement(vSuper->pArray[i]) );
+        pNodeNew = Abc_NodeBalance_rec( pNtkNew, Abc_ObjRegular((Abc_Obj_t *)vSuper->pArray[i]), vStorage, Level + 1, fDuplicate, fSelective, fUpdateLevel );
+        vSuper->pArray[i] = Abc_ObjNotCond( pNodeNew, Abc_ObjIsComplement((Abc_Obj_t *)vSuper->pArray[i]) );
     }
     if ( vSuper->nSize < 2 )
         printf( "BUG!\n" );
     // sort the new nodes by level in the decreasing order
-    Vec_PtrSort( vSuper, Abc_NodeCompareLevelsDecrease );
+    Vec_PtrSort( vSuper, (int (*)(void))Abc_NodeCompareLevelsDecrease );
     // balance the nodes
     assert( vSuper->nSize > 1 );
     while ( vSuper->nSize > 1 )
@@ -259,21 +276,18 @@ Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld, Vec_
         // find the node that can be shared (if no such node, randomize choice)
         Abc_NodeBalancePermute( pNtkNew, vSuper, LeftBound );
         // pull out the last two nodes
-        pNode1 = Vec_PtrPop(vSuper);
-        pNode2 = Vec_PtrPop(vSuper);
+        pNode1 = (Abc_Obj_t *)Vec_PtrPop(vSuper);
+        pNode2 = (Abc_Obj_t *)Vec_PtrPop(vSuper);
         Abc_VecObjPushUniqueOrderByLevel( vSuper, Abc_AigAnd(pMan, pNode1, pNode2) );
     }
     // make sure the balanced node is not assigned
     assert( pNodeOld->pCopy == NULL );
     // mark the old node with the new node
-    pNodeOld->pCopy = vSuper->pArray[0];
+    pNodeOld->pCopy = (Abc_Obj_t *)vSuper->pArray[0];
     vSuper->nSize = 0;
 //    if ( Abc_ObjRegular(pNodeOld->pCopy) == Abc_AigConst1(pNtkNew) )
 //        printf( "Constant node\n" );
 //    assert( pNodeOld->Level >= Abc_ObjRegular(pNodeOld->pCopy)->Level );
-    // update HAIG
-    if ( Abc_ObjRegular(pNodeOld->pCopy)->pNtk->pHaig )
-        Hop_ObjCreateChoice( pNodeOld->pEquiv, Abc_ObjRegular(pNodeOld->pCopy)->pEquiv );
     return pNodeOld->pCopy;
 }
 
@@ -290,7 +304,7 @@ Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld, Vec_
   SeeAlso     []
 
 ***********************************************************************/
-Vec_Ptr_t * Abc_NodeBalanceCone( Abc_Obj_t * pNode, Vec_Vec_t * vStorage, int Level, int fDuplicate, bool fSelective )
+Vec_Ptr_t * Abc_NodeBalanceCone( Abc_Obj_t * pNode, Vec_Vec_t * vStorage, int Level, int fDuplicate, int fSelective )
 {
     Vec_Ptr_t * vNodes;
     int RetValue, i;
@@ -328,7 +342,7 @@ Vec_Ptr_t * Abc_NodeBalanceCone( Abc_Obj_t * pNode, Vec_Vec_t * vStorage, int Le
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeBalanceCone_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, bool fFirst, bool fDuplicate, bool fSelective )
+int Abc_NodeBalanceCone_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, int fFirst, int fDuplicate, int fSelective )
 {
     int RetValue1, RetValue2, i;
     // check if the node is visited
@@ -346,7 +360,7 @@ int Abc_NodeBalanceCone_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, bool fFirst,
         return 0;
     }
     // if the new node is complemented or a PI, another gate begins
-    if ( !fFirst && (Abc_ObjIsComplement(pNode) || !Abc_ObjIsNode(pNode) || !fDuplicate && !fSelective && (Abc_ObjFanoutNum(pNode) > 1)) )
+    if ( !fFirst && (Abc_ObjIsComplement(pNode) || !Abc_ObjIsNode(pNode) || (!fDuplicate && !fSelective && (Abc_ObjFanoutNum(pNode) > 1)) || Vec_PtrSize(vSuper) > 10000) )
     {
         Vec_PtrPush( vSuper, pNode );
         Abc_ObjRegular(pNode)->fMarkB = 1;
@@ -375,7 +389,7 @@ int Abc_NodeBalanceCone_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, bool fFirst,
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeBalanceConeExor_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, bool fFirst )
+int Abc_NodeBalanceConeExor_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, int fFirst )
 {
     int RetValue1, RetValue2, i;
     // check if the node occurs in the same polarity
@@ -460,7 +474,7 @@ Vec_Ptr_t * Abc_NodeFindCone_rec( Abc_Obj_t * pNode )
         RetValue = Abc_NodeBalanceCone_rec( pNode, vNodes, 1, 1, 0 );
         assert( vNodes->nSize > 1 );
         // unmark the visited nodes
-        Vec_PtrForEachEntry( vNodes, pNode, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
             Abc_ObjRegular(pNode)->fMarkB = 0;
         // if we found the node and its complement in the same implication supergate, 
         // return empty set of nodes (meaning that we should use constant-0 node)
@@ -468,7 +482,7 @@ Vec_Ptr_t * Abc_NodeFindCone_rec( Abc_Obj_t * pNode )
             vNodes->nSize = 0;
     }
     // call for the fanin
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
         pNode = Abc_ObjRegular(pNode);
         if ( pNode->pCopy )
@@ -550,7 +564,7 @@ int Abc_NtkBalanceLevel_rec( Abc_Obj_t * pNode )
     vSuper = (Vec_Ptr_t *)pNode->pCopy;
     assert( vSuper != NULL );
     LevelMax = 0;
-    Vec_PtrForEachEntry( vSuper, pFanin, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vSuper, pFanin, i )
     {
         pFanin = Abc_ObjRegular(pFanin);
         Abc_NtkBalanceLevel_rec(pFanin);
@@ -610,4 +624,6 @@ void Abc_NtkMarkCriticalNodes( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

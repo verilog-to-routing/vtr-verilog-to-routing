@@ -19,7 +19,10 @@
 ***********************************************************************/
 
 #include "rwr.h"
-#include "dec.h"
+#include "bool/dec/dec.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -49,7 +52,7 @@ void Rwr_ManPreprocess( Rwr_Man_t * p )
     Rwr_Node_t * pNode;
     int i, k;
     // put the nodes into the structure
-    p->pMapInv  = ALLOC( unsigned short, 222 );
+    p->pMapInv  = ABC_ALLOC( unsigned short, 222 );
     memset( p->pMapInv, 0, sizeof(unsigned short) * 222 );
     p->vClasses = Vec_VecStart( 222 );
     for ( i = 0; i < p->nFuncs; i++ )
@@ -60,13 +63,13 @@ void Rwr_ManPreprocess( Rwr_Man_t * p )
         for ( pNode = p->pTable[i]; pNode; pNode = pNode->pNext )
         {
             assert( pNode->uTruth == p->pTable[i]->uTruth );
-            assert( p->pMap[pNode->uTruth] >= 0 && p->pMap[pNode->uTruth] < 222 );
+            assert( p->pMap[pNode->uTruth] < 222 ); // Guaranteed to be >=0 b/c unsigned
             Vec_VecPush( p->vClasses, p->pMap[pNode->uTruth], pNode );
             p->pMapInv[ p->pMap[pNode->uTruth] ] = p->puCanons[pNode->uTruth];
         }
     }
     // compute decomposition forms for each node and verify them
-    Vec_VecForEachEntry( p->vClasses, pNode, i, k )
+    Vec_VecForEachEntry( Rwr_Node_t *, p->vClasses, pNode, i, k )
     {
         pGraph = Rwr_NodePreprocess( p, pNode );
         pNode->pNext = (Rwr_Node_t *)pGraph;
@@ -147,4 +150,6 @@ Dec_Edge_t Rwr_TravCollect_rec( Rwr_Man_t * p, Rwr_Node_t * pNode, Dec_Graph_t *
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

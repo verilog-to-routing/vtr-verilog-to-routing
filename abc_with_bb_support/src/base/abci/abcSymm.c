@@ -18,12 +18,22 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+#include "opt/sim/sim.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
  
+#ifdef ABC_USE_CUDD
+
 static void Abc_NtkSymmetriesUsingBdds( Abc_Ntk_t * pNtk, int fNaive, int fReorder, int fVerbose );
 static void Abc_NtkSymmetriesUsingSandS( Abc_Ntk_t * pNtk, int fVerbose );
 static void Ntk_NetworkSymmsBdd( DdManager * dd, Abc_Ntk_t * pNtk, int fNaive, int fVerbose );
@@ -65,7 +75,7 @@ void Abc_NtkSymmetries( Abc_Ntk_t * pNtk, int fUseBdds, int fNaive, int fReorder
 ***********************************************************************/
 void Abc_NtkSymmetriesUsingSandS( Abc_Ntk_t * pNtk, int fVerbose )
 {
-    extern int Sim_ComputeTwoVarSymms( Abc_Ntk_t * pNtk, int fVerbose );
+//    extern int Sim_ComputeTwoVarSymms( Abc_Ntk_t * pNtk, int fVerbose );
     int nSymms = Sim_ComputeTwoVarSymms( pNtk, fVerbose );
     printf( "The total number of symmetries is %d.\n", nSymms );
 }
@@ -84,30 +94,30 @@ void Abc_NtkSymmetriesUsingSandS( Abc_Ntk_t * pNtk, int fVerbose )
 void Abc_NtkSymmetriesUsingBdds( Abc_Ntk_t * pNtk, int fNaive, int fReorder, int fVerbose )
 {
     DdManager * dd;
-    int clk, clkBdd, clkSym;
+    abctime clk, clkBdd, clkSym;
     int fGarbCollect = 1;
 
     // compute the global functions
-clk = clock();
-    dd = Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, fReorder, fVerbose );
+clk = Abc_Clock();
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, fReorder, fVerbose );
     printf( "Shared BDD size = %d nodes.\n", Abc_NtkSizeOfGlobalBdds(pNtk) ); 
     Cudd_AutodynDisable( dd );
     if ( !fGarbCollect )
         Cudd_DisableGarbageCollection( dd );
     Cudd_zddVarsFromBddVars( dd, 2 );
-clkBdd = clock() - clk;
+clkBdd = Abc_Clock() - clk;
     // create the collapsed network
-clk = clock();
+clk = Abc_Clock();
     Ntk_NetworkSymmsBdd( dd, pNtk, fNaive, fVerbose );
-clkSym = clock() - clk;
+clkSym = Abc_Clock() - clk;
     // undo the global functions
     Abc_NtkFreeGlobalBdds( pNtk, 1 );
 printf( "Statistics of BDD-based symmetry detection:\n" );
 printf( "Algorithm = %s. Reordering = %s. Garbage collection = %s.\n", 
        fNaive? "naive" : "fast", fReorder? "yes" : "no", fGarbCollect? "yes" : "no" );
-PRT( "Constructing BDDs", clkBdd );
-PRT( "Computing symms  ", clkSym );
-PRT( "TOTAL            ", clkBdd + clkSym );
+ABC_PRT( "Constructing BDDs", clkBdd );
+ABC_PRT( "Computing symms  ", clkSym );
+ABC_PRT( "TOTAL            ", clkBdd + clkSym );
 }
 
 /**Function*************************************************************
@@ -134,7 +144,7 @@ void Ntk_NetworkSymmsBdd( DdManager * dd, Abc_Ntk_t * pNtk, int fNaive, int fVer
     Abc_NtkForEachCo( pNtk, pNode, i )
     {
 //      bFunc = pNtk->vFuncsGlob->pArray[i];
-        bFunc = Abc_ObjGlobalBdd( pNode );
+        bFunc = (DdNode *)Abc_ObjGlobalBdd( pNode );
         nSupps += Cudd_SupportSize( dd, bFunc );
         if ( Cudd_IsConstant(bFunc) )
             continue;
@@ -177,7 +187,7 @@ void Ntk_NetworkSymmsPrint( Abc_Ntk_t * pNtk, Extra_SymmInfo_t * pSymms )
     pInputNames = Abc_NtkCollectCioNames( pNtk, 0 );
 
     // alloc the array of marks
-    pVarTaken = ALLOC( int, nVars );
+    pVarTaken = ABC_ALLOC( int, nVars );
     memset( pVarTaken, 0, sizeof(int) * nVars );
 
     // print the groups
@@ -217,13 +227,20 @@ void Ntk_NetworkSymmsPrint( Abc_Ntk_t * pNtk, Extra_SymmInfo_t * pSymms )
     }   
     printf( "\n" );
 
-    free( pInputNames );
-    free( pVarTaken );
+    ABC_FREE( pInputNames );
+    ABC_FREE( pVarTaken );
 }
 
+#else
+
+void Abc_NtkSymmetries( Abc_Ntk_t * pNtk, int fUseBdds, int fNaive, int fReorder, int fVerbose ) {}
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

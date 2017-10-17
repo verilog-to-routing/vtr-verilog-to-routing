@@ -20,6 +20,9 @@
 
 #include "nmInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -43,15 +46,15 @@ Nm_Man_t * Nm_ManCreate( int nSize )
 {
     Nm_Man_t * p;
     // allocate the table
-    p = ALLOC( Nm_Man_t, 1 );
+    p = ABC_ALLOC( Nm_Man_t, 1 );
     memset( p, 0, sizeof(Nm_Man_t) );
     // set the parameters
     p->nSizeFactor   = 2; // determined the limit on the grow of data before the table resizes
     p->nGrowthFactor = 3; // determined how much the table grows after resizing
     // allocate and clean the bins
-    p->nBins = Cudd_PrimeNm(nSize);
-    p->pBinsI2N = ALLOC( Nm_Entry_t *, p->nBins );
-    p->pBinsN2I = ALLOC( Nm_Entry_t *, p->nBins );
+    p->nBins = Abc_PrimeCudd(nSize);
+    p->pBinsI2N = ABC_ALLOC( Nm_Entry_t *, p->nBins );
+    p->pBinsN2I = ABC_ALLOC( Nm_Entry_t *, p->nBins );
     memset( p->pBinsI2N, 0, sizeof(Nm_Entry_t *) * p->nBins );
     memset( p->pBinsN2I, 0, sizeof(Nm_Entry_t *) * p->nBins );
     // start the memory manager
@@ -73,9 +76,9 @@ Nm_Man_t * Nm_ManCreate( int nSize )
 void Nm_ManFree( Nm_Man_t * p )
 {
     Extra_MmFlexStop( p->pMem );
-    FREE( p->pBinsI2N );
-    FREE( p->pBinsN2I );
-    FREE( p );
+    ABC_FREE( p->pBinsI2N );
+    ABC_FREE( p->pBinsN2I );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -111,14 +114,15 @@ char * Nm_ManStoreIdName( Nm_Man_t * p, int ObjId, int Type, char * pName, char 
     Nm_Entry_t * pEntry;
     int RetValue, nEntrySize;
     // check if the object with this ID is already stored
-    if ( pEntry = Nm_ManTableLookupId(p, ObjId) )
+    if ( (pEntry = Nm_ManTableLookupId(p, ObjId)) )
     {
         printf( "Nm_ManStoreIdName(): Entry with the same ID already exists.\n" );
         return NULL;
     }
     // create a new entry
     nEntrySize = sizeof(Nm_Entry_t) + strlen(pName) + (pSuffix?strlen(pSuffix):0) + 1;
-    nEntrySize = (nEntrySize / 4 + ((nEntrySize % 4) > 0)) * 4;
+//    nEntrySize = (nEntrySize / 4 + ((nEntrySize % 4) > 0)) * 4;
+    nEntrySize = (nEntrySize / sizeof(char*) + ((nEntrySize % sizeof(char*)) > 0)) * sizeof(char*); // added by Saurabh on Sep 3, 2009
     pEntry = (Nm_Entry_t *)Extra_MmFlexEntryFetch( p->pMem, nEntrySize );
     pEntry->pNextI2N = pEntry->pNextN2I = pEntry->pNameSake = NULL;
     pEntry->ObjId = ObjId;
@@ -173,7 +177,7 @@ char * Nm_ManCreateUniqueName( Nm_Man_t * p, int ObjId )
     static char NameStr[1000];
     Nm_Entry_t * pEntry;
     int i;
-    if ( pEntry = Nm_ManTableLookupId(p, ObjId) )
+    if ( (pEntry = Nm_ManTableLookupId(p, ObjId)) )
         return pEntry->Name;
     sprintf( NameStr, "n%d", ObjId );
     for ( i = 1; Nm_ManTableLookupName(p, NameStr, -1); i++ )
@@ -195,7 +199,7 @@ char * Nm_ManCreateUniqueName( Nm_Man_t * p, int ObjId )
 char * Nm_ManFindNameById( Nm_Man_t * p, int ObjId )
 {
     Nm_Entry_t * pEntry;
-    if ( pEntry = Nm_ManTableLookupId(p, ObjId) )
+    if ( (pEntry = Nm_ManTableLookupId(p, ObjId)) )
         return pEntry->Name;
     return NULL;
 }
@@ -215,7 +219,7 @@ char * Nm_ManFindNameById( Nm_Man_t * p, int ObjId )
 int Nm_ManFindIdByName( Nm_Man_t * p, char * pName, int Type )
 {
     Nm_Entry_t * pEntry;
-    if ( pEntry = Nm_ManTableLookupName(p, pName, Type) )
+    if ( (pEntry = Nm_ManTableLookupName(p, pName, Type)) )
         return pEntry->ObjId;
     return -1;
 }
@@ -269,4 +273,6 @@ Vec_Int_t * Nm_ManReturnNameIds( Nm_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

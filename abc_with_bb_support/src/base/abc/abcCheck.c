@@ -19,24 +19,30 @@
 ***********************************************************************/
 
 #include "abc.h"
-#include "main.h"
-//#include "seq.h"
+#include "base/main/main.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static bool Abc_NtkCheckNames( Abc_Ntk_t * pNtk );
-static bool Abc_NtkCheckPis( Abc_Ntk_t * pNtk );
-static bool Abc_NtkCheckPos( Abc_Ntk_t * pNtk );
-//static bool Abc_NtkCheckObj( Abc_Ntk_t * pNtk, Abc_Obj_t * pObj );
-static bool Abc_NtkCheckNet( Abc_Ntk_t * pNtk, Abc_Obj_t * pNet );
-static bool Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode );
-static bool Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch );
+static int Abc_NtkCheckNames( Abc_Ntk_t * pNtk );
+static int Abc_NtkCheckPis( Abc_Ntk_t * pNtk );
+static int Abc_NtkCheckPos( Abc_Ntk_t * pNtk );
+//static int Abc_NtkCheckObj( Abc_Ntk_t * pNtk, Abc_Obj_t * pObj );
+static int Abc_NtkCheckNet( Abc_Ntk_t * pNtk, Abc_Obj_t * pNet );
+static int Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode );
+static int Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch );
 
-static bool Abc_NtkComparePis( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb );
-static bool Abc_NtkComparePos( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb );
-static bool Abc_NtkCompareLatches( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb );
+static int Abc_NtkComparePis( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb );
+static int Abc_NtkComparePos( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb );
+static int Abc_NtkCompareLatches( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb );
 
 static inline char * Abc_ObjNameNet( Abc_Obj_t * pObj ) { return (Abc_ObjIsNode(pObj) && Abc_NtkIsNetlist(pObj->pNtk)) ? Abc_ObjName(Abc_ObjFanout0(pObj)) : Abc_ObjName(pObj); }
 
@@ -55,7 +61,7 @@ static inline char * Abc_ObjNameNet( Abc_Obj_t * pObj ) { return (Abc_ObjIsNode(
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheck( Abc_Ntk_t * pNtk )
+int Abc_NtkCheck( Abc_Ntk_t * pNtk )
 { 
    return !Abc_FrameIsFlagEnabled( "check" ) || Abc_NtkDoCheck( pNtk );
 }
@@ -71,7 +77,7 @@ bool Abc_NtkCheck( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckRead( Abc_Ntk_t * pNtk )
+int Abc_NtkCheckRead( Abc_Ntk_t * pNtk )
 {
    return !Abc_FrameIsFlagEnabled( "checkread" ) || Abc_NtkDoCheck( pNtk );
 }
@@ -87,7 +93,7 @@ bool Abc_NtkCheckRead( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
+int Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
 {
     Abc_Obj_t * pObj, * pNet, * pNode;
     int i;
@@ -122,7 +128,7 @@ bool Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
             fprintf( stdout, "in procedure Abc_NtkCreateObj() and in the user's code.\n" );
             return 0;
         }
-        if ( Abc_NtkPoNum(pNtk) + Abc_NtkAssertNum(pNtk) + Abc_NtkLatchNum(pNtk) != Abc_NtkCoNum(pNtk) )
+        if ( Abc_NtkPoNum(pNtk) + Abc_NtkLatchNum(pNtk) != Abc_NtkCoNum(pNtk) )
         {
             fprintf( stdout, "NetworkCheck: Number of COs does not match number of POs, asserts, and latches.\n" );
             fprintf( stdout, "One possible reason is that latches are added twice:\n" );
@@ -154,10 +160,7 @@ bool Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
     if ( Abc_NtkIsNetlist(pNtk) )
     {
         if ( Abc_NtkNetNum(pNtk) == 0 )
-        {
-            fprintf( stdout, "NetworkCheck: Netlist has no nets.\n" );
-            return 0;
-        }
+            fprintf( stdout, "NetworkCheck: Warning! Netlist has no nets.\n" );
         // check the nets
         Abc_NtkForEachNet( pNtk, pNet, i )
             if ( !Abc_NtkCheckNet( pNtk, pNet ) )
@@ -174,7 +177,7 @@ bool Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
 
     // check the nodes
     if ( Abc_NtkIsStrash(pNtk) )
-        Abc_AigCheck( pNtk->pManFunc );
+        Abc_AigCheck( (Abc_Aig_t *)pNtk->pManFunc );
     else
     {
         Abc_NtkForEachNode( pNtk, pNode, i )
@@ -188,13 +191,13 @@ bool Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
             return 0;
 
     // finally, check for combinational loops
-//  clk = clock();
+//  clk = Abc_Clock();
     if ( !Abc_NtkIsAcyclic( pNtk ) )
     {
         fprintf( stdout, "NetworkCheck: Network contains a combinational loop.\n" );
         return 0;
     }
-//  PRT( "Acyclic  ", clock() - clk );
+//  ABC_PRT( "Acyclic  ", Abc_Clock() - clk );
 
     // check the EXDC network if present
     if ( pNtk->pExdc )
@@ -235,9 +238,9 @@ bool Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckNames( Abc_Ntk_t * pNtk )
+int Abc_NtkCheckNames( Abc_Ntk_t * pNtk )
 {
-    Abc_Obj_t * pObj;
+    Abc_Obj_t * pObj = NULL; // Ensure pObj isn't used uninitialized.
     Vec_Int_t * vNameIds;
     char * pName;
     int i, NameId;
@@ -264,6 +267,8 @@ bool Abc_NtkCheckNames( Abc_Ntk_t * pNtk )
             return 0;
         }
     }
+
+    assert(pObj); // pObj should point to something here.
 
     // return the array of all IDs, which have names
     vNameIds = Nm_ManReturnNameIds( pNtk->pManName );
@@ -307,7 +312,7 @@ bool Abc_NtkCheckNames( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckPis( Abc_Ntk_t * pNtk )
+int Abc_NtkCheckPis( Abc_Ntk_t * pNtk )
 {
     Abc_Obj_t * pObj;
     int i;
@@ -355,7 +360,7 @@ bool Abc_NtkCheckPis( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckPos( Abc_Ntk_t * pNtk )
+int Abc_NtkCheckPos( Abc_Ntk_t * pNtk )
 {
     Abc_Obj_t * pObj;
     int i;
@@ -375,12 +380,12 @@ bool Abc_NtkCheckPos( Abc_Ntk_t * pNtk )
         }
         if ( Abc_ObjFaninNum(pObj) != 1 )
         {
-            fprintf( stdout, "NetworkCheck: A PO \"%s\" does not have one fanin.\n", Abc_ObjName(pObj) );
+            fprintf( stdout, "NetworkCheck: A PO \"%s\" does not have one fanin (but %d).\n", Abc_ObjName(pObj), Abc_ObjFaninNum(pObj) );
             return 0;
         }
         if ( Abc_ObjFanoutNum(pObj) > 0 )
         {
-            fprintf( stdout, "NetworkCheck: A PO \"%s\" has fanouts.\n", Abc_ObjName(pObj) );
+            fprintf( stdout, "NetworkCheck: A PO \"%s\" has %d fanout(s).\n", Abc_ObjName(pObj), Abc_ObjFanoutNum(pObj) );
             return 0;
         }
         pObj->pCopy = (Abc_Obj_t *)1;
@@ -409,11 +414,11 @@ bool Abc_NtkCheckPos( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckObj( Abc_Ntk_t * pNtk, Abc_Obj_t * pObj )
+int Abc_NtkCheckObj( Abc_Ntk_t * pNtk, Abc_Obj_t * pObj )
 {
     Abc_Obj_t * pFanin, * pFanout;
-    int i, Value = 1;
-    int k;
+    int Value = 1;
+    int i, k;
 
     // check the network
     if ( pObj->pNtk != pNtk )
@@ -488,7 +493,7 @@ bool Abc_NtkCheckObj( Abc_Ntk_t * pNtk, Abc_Obj_t * pObj )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckNet( Abc_Ntk_t * pNtk, Abc_Obj_t * pNet )
+int Abc_NtkCheckNet( Abc_Ntk_t * pNtk, Abc_Obj_t * pNet )
 {
     if ( Abc_ObjFaninNum(pNet) == 0 )
     {
@@ -514,7 +519,7 @@ bool Abc_NtkCheckNet( Abc_Ntk_t * pNtk, Abc_Obj_t * pNet )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode )
+int Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode )
 {
     // detect internal nodes that do not have nets
     if ( Abc_NtkIsNetlist(pNtk) && Abc_ObjFanoutNum(pNode) == 0 )
@@ -525,13 +530,15 @@ bool Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode )
     // the node should have a function assigned unless it is an AIG
     if ( pNode->pData == NULL )
     {
+        if ( Abc_ObjIsBarBuf(pNode) )
+            return 1;
         fprintf( stdout, "NodeCheck: An internal node \"%s\" does not have a logic function.\n", Abc_ObjNameNet(pNode) );
         return 0;
     }
     // the netlist and SOP logic network should have SOPs
     if ( Abc_NtkHasSop(pNtk) )
     {
-        if ( !Abc_SopCheck( pNode->pData, Abc_ObjFaninNum(pNode) ) )
+        if ( !Abc_SopCheck( (char *)pNode->pData, Abc_ObjFaninNum(pNode) ) )
         {
             fprintf( stdout, "NodeCheck: SOP check for node \"%s\" has failed.\n", Abc_ObjNameNet(pNode) );
             return 0;
@@ -539,12 +546,14 @@ bool Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode )
     }
     else if ( Abc_NtkHasBdd(pNtk) )
     {
-        int nSuppSize = Cudd_SupportSize(pNtk->pManFunc, pNode->pData);
+#ifdef ABC_USE_CUDD
+        int nSuppSize = Cudd_SupportSize((DdManager *)pNtk->pManFunc, (DdNode *)pNode->pData);
         if ( nSuppSize > Abc_ObjFaninNum(pNode) )
         {
             fprintf( stdout, "NodeCheck: BDD of the node \"%s\" has incorrect support size.\n", Abc_ObjNameNet(pNode) );
             return 0;
         }
+#endif
     }
     else if ( !Abc_NtkHasMapping(pNtk) && !Abc_NtkHasBlifMv(pNtk) && !Abc_NtkHasAig(pNtk) )
     {
@@ -564,7 +573,7 @@ bool Abc_NtkCheckNode( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch )
+int Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch )
 {
     int Value = 1;
     // check whether the object is a latch
@@ -573,17 +582,13 @@ bool Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch )
         fprintf( stdout, "NodeCheck: Latch \"%s\" is in a latch list but is not a latch.\n", Abc_ObjName(pLatch) );
         Value = 0;
     }
-
-#if 0 // ??? janders must FIX
     // make sure the latch has a reasonable return value
-    if ( (int)pLatch->pData < ABC_INIT_ZERO || (int)pLatch->pData > ABC_INIT_DC )
+    if ( (int)(ABC_PTRINT_T)pLatch->pData < ABC_INIT_ZERO || (int)(ABC_PTRINT_T)pLatch->pData > ABC_INIT_DC )
     {
         fprintf( stdout, "NodeCheck: Latch \"%s\" has incorrect reset value (%d).\n", 
-            Abc_ObjName(pLatch), (int)pLatch->pData );
+            Abc_ObjName(pLatch), (int)(ABC_PTRINT_T)pLatch->pData );
         Value = 0;
     }
-#endif
-
     // make sure the latch has only one fanin
     if ( Abc_ObjFaninNum(pLatch) != 1 )
     {
@@ -634,7 +639,7 @@ bool Abc_NtkCheckLatch( Abc_Ntk_t * pNtk, Abc_Obj_t * pLatch )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkComparePis( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
+int Abc_NtkComparePis( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
 {
     Abc_Obj_t * pObj1;
     int i;
@@ -667,7 +672,7 @@ bool Abc_NtkComparePis( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkComparePos( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
+int Abc_NtkComparePos( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
 {
     Abc_Obj_t * pObj1;
     int i;
@@ -700,7 +705,7 @@ bool Abc_NtkComparePos( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCompareBoxes( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
+int Abc_NtkCompareBoxes( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
 {
     Abc_Obj_t * pObj1;
     int i;
@@ -732,12 +737,13 @@ bool Abc_NtkCompareBoxes( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fComb )
 
   Description []
                
-  SideEffects []
+  SideEffects [Ordering POs by name is a very bad idea! It destroys
+  the natural order of the logic in the circuit.]
 
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkCompareSignals( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fOnlyPis, int fComb )
+int Abc_NtkCompareSignals( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int fOnlyPis, int fComb )
 {
     Abc_NtkOrderObjsByName( pNtk1, fComb );
     Abc_NtkOrderObjsByName( pNtk2, fComb );
@@ -782,7 +788,7 @@ int Abc_NtkIsAcyclicHierarchy_rec( Abc_Ntk_t * pNtk )
     {
         if ( Abc_ObjIsLatch(pObj) )
             continue;
-        pNtkNext = pObj->pData;
+        pNtkNext = (Abc_Ntk_t *)pObj->pData;
         assert( pNtkNext != NULL );
         if ( pNtkNext->fHiePath )
             return 0;
@@ -811,14 +817,14 @@ int Abc_NtkIsAcyclicHierarchy( Abc_Ntk_t * pNtk )
     int i, RetValue;
     assert( Abc_NtkIsNetlist(pNtk) && pNtk->pDesign );
     // clear the modules
-    Vec_PtrForEachEntry( pNtk->pDesign->vModules, pTemp, i )
+    Vec_PtrForEachEntry( Abc_Ntk_t *, pNtk->pDesign->vModules, pTemp, i )
         pTemp->fHieVisited = pTemp->fHiePath = 0;
     // traverse
     pNtk->fHiePath = 1;
     RetValue = Abc_NtkIsAcyclicHierarchy_rec( pNtk );
     pNtk->fHiePath = 0;
     // clear the modules
-    Vec_PtrForEachEntry( pNtk->pDesign->vModules, pTemp, i )
+    Vec_PtrForEachEntry( Abc_Ntk_t *, pNtk->pDesign->vModules, pTemp, i )
         pTemp->fHieVisited = pTemp->fHiePath = 0;
     return RetValue;
 }
@@ -859,11 +865,11 @@ int Abc_NtkCheckUniqueCiNames( Abc_Ntk_t * pNtk )
     vNames = Vec_PtrAlloc( Abc_NtkCiNum(pNtk) );
     Abc_NtkForEachCi( pNtk, pObj, i )
         Vec_PtrPush( vNames, Abc_ObjName(pObj) );
-    Vec_PtrSort( vNames, Abc_NtkNamesCompare );
+    Vec_PtrSort( vNames, (int (*)())Abc_NtkNamesCompare );
     for ( i = 1; i < Abc_NtkCiNum(pNtk); i++ )
-        if ( !strcmp( Vec_PtrEntry(vNames,i-1), Vec_PtrEntry(vNames,i) ) )
+        if ( !strcmp( (const char *)Vec_PtrEntry(vNames,i-1), (const char *)Vec_PtrEntry(vNames,i) ) )
         {
-            printf( "Abc_NtkCheck: Repeated CI names: %s and %s.\n", Vec_PtrEntry(vNames,i-1), Vec_PtrEntry(vNames,i) );
+            printf( "Abc_NtkCheck: Repeated CI names: %s and %s.\n", (char*)Vec_PtrEntry(vNames,i-1), (char*)Vec_PtrEntry(vNames,i) );
             fRetValue = 0;
         }
     Vec_PtrFree( vNames );
@@ -890,13 +896,13 @@ int Abc_NtkCheckUniqueCoNames( Abc_Ntk_t * pNtk )
     vNames = Vec_PtrAlloc( Abc_NtkCoNum(pNtk) );
     Abc_NtkForEachCo( pNtk, pObj, i )
         Vec_PtrPush( vNames, Abc_ObjName(pObj) );
-    Vec_PtrSort( vNames, Abc_NtkNamesCompare );
+    Vec_PtrSort( vNames, (int (*)())Abc_NtkNamesCompare );
     for ( i = 1; i < Abc_NtkCoNum(pNtk); i++ )
     {
 //        printf( "%s\n", Vec_PtrEntry(vNames,i) );
-        if ( !strcmp( Vec_PtrEntry(vNames,i-1), Vec_PtrEntry(vNames,i) ) )
+        if ( !strcmp( (const char *)Vec_PtrEntry(vNames,i-1), (const char *)Vec_PtrEntry(vNames,i) ) )
         {
-            printf( "Abc_NtkCheck: Repeated CO names: %s and %s.\n", Vec_PtrEntry(vNames,i-1), Vec_PtrEntry(vNames,i) );
+            printf( "Abc_NtkCheck: Repeated CO names: %s and %s.\n", (char*)Vec_PtrEntry(vNames,i-1), (char*)Vec_PtrEntry(vNames,i) );
             fRetValue = 0;
         }
     }
@@ -917,7 +923,7 @@ int Abc_NtkCheckUniqueCoNames( Abc_Ntk_t * pNtk )
 ***********************************************************************/
 int Abc_NtkCheckUniqueCioNames( Abc_Ntk_t * pNtk )
 {
-    Abc_Obj_t * pObj, * pObjCi;
+    Abc_Obj_t * pObj, * pObjCi, * pFanin;
     int i, nCiId, fRetValue = 1;
     assert( !Abc_NtkIsNetlist(pNtk) );
     Abc_NtkForEachCo( pNtk, pObj, i )
@@ -927,9 +933,11 @@ int Abc_NtkCheckUniqueCioNames( Abc_Ntk_t * pNtk )
             continue;
         pObjCi = Abc_NtkObj( pNtk, nCiId );
         assert( !strcmp( Abc_ObjName(pObj), Abc_ObjName(pObjCi) ) );
-        if ( Abc_ObjFanin0(pObj) != pObjCi )
+        pFanin = Abc_ObjFanin0(pObj);
+        if ( pFanin != pObjCi )
         {
-            printf( "Abc_NtkCheck: A CI/CO pair share the name (%s) but do not link directly.\n", Abc_ObjName(pObj) );
+            printf( "Abc_NtkCheck: A CI/CO pair share the name (%s) but do not link directly. The name of the CO fanin is %s.\n", 
+                Abc_ObjName(pObj), Abc_ObjName(Abc_ObjFanin0(pObj)) );
             fRetValue = 0;
         }
     }
@@ -940,4 +948,6 @@ int Abc_NtkCheckUniqueCioNames( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

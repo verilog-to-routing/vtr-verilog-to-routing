@@ -16,12 +16,9 @@
 
 ***********************************************************************/
 
-#ifndef __SUPER_H__
-#define __SUPER_H__
+#ifndef ABC__map__super__super_h
+#define ABC__map__super__super_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -30,6 +27,8 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_HEADER_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                    STRUCTURE DEFINITIONS                         ///
@@ -47,11 +46,14 @@ extern "C" {
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
-/*=== superCore.c =============================================================*/
-    
-#ifdef __cplusplus
-}
-#endif
+/*=== superAnd.c =============================================================*/
+extern void        Super2_Precompute( int nInputs, int nLevels, int fVerbose );
+/*=== superGate.c =============================================================*/
+extern Vec_Str_t * Super_PrecomputeStr( Mio_Library_t * pLibGen, int nVarsMax, int nLevels, int nGatesMax, float tDelayMax, float tAreaMax, int TimeLimit, int fSkipInv, int fVerbose );
+extern void        Super_Precompute( Mio_Library_t * pLibGen, int nVarsMax, int nLevels, int nGatesMax, float tDelayMax, float tAreaMax, int TimeLimit, int fSkipInv, int fVerbose, char * pFileName );
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

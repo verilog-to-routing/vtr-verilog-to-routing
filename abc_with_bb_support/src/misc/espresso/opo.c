@@ -9,6 +9,9 @@
  */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
  *   Phase assignment technique (T. Sasao):
  *
@@ -411,7 +414,7 @@ int n;
  *  duplicated in the output part
  */
 
-output_phase_setup(PLA, first_output)
+void output_phase_setup(PLA, first_output)
 INOUT pPLA PLA;
 int first_output;
 {
@@ -622,3 +625,5 @@ pPLA PLA;
 	EXEC_S(PLA->F = espresso(PLA->F, PLA->D, PLA->R), "ESPRESSO  ",PLA->F);
     }
 }
+ABC_NAMESPACE_IMPL_END
+

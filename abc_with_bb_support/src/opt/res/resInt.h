@@ -18,12 +18,9 @@
 
 ***********************************************************************/
  
-#ifndef __RES_INT_H__
-#define __RES_INT_H__
+#ifndef ABC__opt__res__resInt_h
+#define ABC__opt__res__resInt_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -34,6 +31,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -89,7 +91,7 @@ struct Res_Sim_t_
     // resub candidates
     Vec_Vec_t *      vCands;       // resubstitution candidates
     // statistics
-    int              timeSat;
+    abctime          timeSat;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -125,9 +127,11 @@ extern int           Res_WinIsTrivial( Res_Win_t * p );
 extern int           Res_WinCompute( Abc_Obj_t * pNode, int nWinTfiMax, int nWinTfoMax, Res_Win_t * p );
 
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

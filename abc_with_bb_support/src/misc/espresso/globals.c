@@ -9,6 +9,9 @@
  */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
  *    Global Variable Declarations
  */
@@ -37,27 +40,27 @@ bool use_super_gasp;		 /* -strong command line option */
 char *filename;			 /* filename PLA was read from */
 
 struct pla_types_struct pla_types[] = {
-    "-f", F_type,
-    "-r", R_type,
-    "-d", D_type,
-    "-fd", FD_type,
-    "-fr", FR_type,
-    "-dr", DR_type,
-    "-fdr", FDR_type,
-    "-fc", F_type | CONSTRAINTS_type,
-    "-rc", R_type | CONSTRAINTS_type,
-    "-dc", D_type | CONSTRAINTS_type,
-    "-fdc", FD_type | CONSTRAINTS_type,
-    "-frc", FR_type | CONSTRAINTS_type,
-    "-drc", DR_type | CONSTRAINTS_type,
-    "-fdrc", FDR_type | CONSTRAINTS_type,
-    "-pleasure", PLEASURE_type,
-    "-eqn", EQNTOTT_type,
-    "-eqntott", EQNTOTT_type,
-    "-kiss", KISS_type,
-    "-cons", CONSTRAINTS_type,
-    "-scons", SYMBOLIC_CONSTRAINTS_type,
-    0, 0
+    {"-f", F_type},
+    {"-r", R_type},
+    {"-d", D_type},
+    {"-fd", FD_type},
+    {"-fr", FR_type},
+    {"-dr", DR_type},
+    {"-fdr", FDR_type},
+    {"-fc", F_type | CONSTRAINTS_type},
+    {"-rc", R_type | CONSTRAINTS_type},
+    {"-dc", D_type | CONSTRAINTS_type},
+    {"-fdc", FD_type | CONSTRAINTS_type},
+    {"-frc", FR_type | CONSTRAINTS_type},
+    {"-drc", DR_type | CONSTRAINTS_type},
+    {"-fdrc", FDR_type | CONSTRAINTS_type},
+    {"-pleasure", PLEASURE_type},
+    {"-eqn", EQNTOTT_type},
+    {"-eqntott", EQNTOTT_type},
+    {"-kiss", KISS_type},
+    {"-cons", CONSTRAINTS_type},
+    {"-scons", SYMBOLIC_CONSTRAINTS_type},
+    {0, 0}
 };
 
 
@@ -74,3 +77,5 @@ int bit_count[256] = {
   2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
   3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
 };
+ABC_NAMESPACE_IMPL_END
+

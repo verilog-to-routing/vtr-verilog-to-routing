@@ -20,12 +20,15 @@
 
 #include "abc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static int Abc_NodeRefDeref( Abc_Obj_t * pNode, bool fReference, bool fLabel );
-static int Abc_NodeRefDerefStop( Abc_Obj_t * pNode, bool fReference );
+static int Abc_NodeRefDeref( Abc_Obj_t * pNode, int fReference, int fLabel );
+static int Abc_NodeRefDerefStop( Abc_Obj_t * pNode, int fReference );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -45,8 +48,8 @@ static int Abc_NodeRefDerefStop( Abc_Obj_t * pNode, bool fReference );
 int Abc_NodeMffcSize( Abc_Obj_t * pNode )
 {
     int nConeSize1, nConeSize2;
-    assert( Abc_NtkIsStrash(pNode->pNtk) );
-    assert( !Abc_ObjIsComplement( pNode ) );
+//    assert( Abc_NtkIsStrash(pNode->pNtk) );
+//    assert( !Abc_ObjIsComplement( pNode ) );
     assert( Abc_ObjIsNode( pNode ) );
     if ( Abc_ObjFaninNum(pNode) == 0 )
         return 0;
@@ -120,7 +123,7 @@ int Abc_NodeMffcLabelAig( Abc_Obj_t * pNode )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeRefDeref( Abc_Obj_t * pNode, bool fReference, bool fLabel )
+int Abc_NodeRefDeref( Abc_Obj_t * pNode, int fReference, int fLabel )
 {
     Abc_Obj_t * pNode0, * pNode1;
     int Counter;
@@ -165,7 +168,7 @@ int Abc_NodeRefDeref( Abc_Obj_t * pNode, bool fReference, bool fLabel )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeRefDerefStop( Abc_Obj_t * pNode, bool fReference )
+int Abc_NodeRefDerefStop( Abc_Obj_t * pNode, int fReference )
 {
     Abc_Obj_t * pNode0, * pNode1;
     int Counter;
@@ -178,18 +181,18 @@ int Abc_NodeRefDerefStop( Abc_Obj_t * pNode, bool fReference )
     Counter = 1;
     if ( fReference )
     {
-        if ( pNode0->vFanouts.nSize++ == 0 && !Abc_ObjFaninC0(pNode) )
+        if ( !Abc_ObjFaninC0(pNode) && pNode0->vFanouts.nSize++ == 0 )
             Counter += Abc_NodeRefDerefStop( pNode0, fReference );
-        if ( pNode1->vFanouts.nSize++ == 0 && !Abc_ObjFaninC1(pNode) )
+        if ( !Abc_ObjFaninC1(pNode) && pNode1->vFanouts.nSize++ == 0 )
             Counter += Abc_NodeRefDerefStop( pNode1, fReference );
     }
     else
     {
         assert( pNode0->vFanouts.nSize > 0 );
         assert( pNode1->vFanouts.nSize > 0 );
-        if ( --pNode0->vFanouts.nSize == 0 && !Abc_ObjFaninC0(pNode) )
+        if ( !Abc_ObjFaninC0(pNode) && --pNode0->vFanouts.nSize == 0 )
             Counter += Abc_NodeRefDerefStop( pNode0, fReference );
-        if ( --pNode1->vFanouts.nSize == 0 && !Abc_ObjFaninC1(pNode) )
+        if ( !Abc_ObjFaninC1(pNode) && --pNode1->vFanouts.nSize == 0 )
             Counter += Abc_NodeRefDerefStop( pNode1, fReference );
     }
     return Counter;
@@ -260,7 +263,7 @@ int Abc_NodeRef_rec( Abc_Obj_t * pNode )
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NodeMffsConeSupp_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t * vSupp, int fTopmost )
+void Abc_NodeMffcConeSupp_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t * vSupp, int fTopmost )
 {
     Abc_Obj_t * pFanin;
     int i;
@@ -276,7 +279,7 @@ void Abc_NodeMffsConeSupp_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t *
     }
     // recur on the children
     Abc_ObjForEachFanin( pNode, pFanin, i )
-        Abc_NodeMffsConeSupp_rec( pFanin, vCone, vSupp, 0 );
+        Abc_NodeMffcConeSupp_rec( pFanin, vCone, vSupp, 0 );
     // collect the internal node
     if ( vCone ) Vec_PtrPush( vCone, pNode );
 //    printf( "%d ", pNode->Id );
@@ -293,14 +296,14 @@ void Abc_NodeMffsConeSupp_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t *
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NodeMffsConeSupp( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t * vSupp )
+void Abc_NodeMffcConeSupp( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t * vSupp )
 {
     assert( Abc_ObjIsNode(pNode) );
     assert( !Abc_ObjIsComplement(pNode) );
     if ( vCone ) Vec_PtrClear( vCone );
     if ( vSupp ) Vec_PtrClear( vSupp );
     Abc_NtkIncrementTravId( pNode->pNtk );
-    Abc_NodeMffsConeSupp_rec( pNode, vCone, vSupp, 1 );
+    Abc_NodeMffcConeSupp_rec( pNode, vCone, vSupp, 1 );
 //    printf( "\n" );
 }
 
@@ -315,7 +318,7 @@ void Abc_NodeMffsConeSupp( Abc_Obj_t * pNode, Vec_Ptr_t * vCone, Vec_Ptr_t * vSu
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NodeMffsConeSuppPrint( Abc_Obj_t * pNode )
+void Abc_NodeMffcConeSuppPrint( Abc_Obj_t * pNode )
 {
     Vec_Ptr_t * vCone, * vSupp;
     Abc_Obj_t * pObj;
@@ -323,11 +326,11 @@ void Abc_NodeMffsConeSuppPrint( Abc_Obj_t * pNode )
     vCone = Vec_PtrAlloc( 100 );
     vSupp = Vec_PtrAlloc( 100 );
     Abc_NodeDeref_rec( pNode );
-    Abc_NodeMffsConeSupp( pNode, vCone, vSupp );
+    Abc_NodeMffcConeSupp( pNode, vCone, vSupp );
     Abc_NodeRef_rec( pNode );
     printf( "Node = %6s : Supp = %3d  Cone = %3d  (", 
         Abc_ObjName(pNode), Vec_PtrSize(vSupp), Vec_PtrSize(vCone) );
-    Vec_PtrForEachEntry( vCone, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vCone, pObj, i )
         printf( " %s", Abc_ObjName(pObj) );
     printf( " )\n" );
     Vec_PtrFree( vCone );
@@ -345,22 +348,22 @@ void Abc_NodeMffsConeSuppPrint( Abc_Obj_t * pNode )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeMffsInside( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vInside )
+int Abc_NodeMffcInside( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vInside )
 {
     Abc_Obj_t * pObj;
     int i, Count1, Count2;
     // increment the fanout counters for the leaves
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->vFanouts.nSize++;
     // dereference the node
     Count1 = Abc_NodeDeref_rec( pNode );
     // collect the nodes inside the MFFC
-    Abc_NodeMffsConeSupp( pNode, vInside, NULL );
+    Abc_NodeMffcConeSupp( pNode, vInside, NULL );
     // reference it back
     Count2 = Abc_NodeRef_rec( pNode );
     assert( Count1 == Count2 );
     // remove the extra counters
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLeaves, pObj, i )
         pObj->vFanouts.nSize--;
     return Count1;
 }
@@ -376,7 +379,7 @@ int Abc_NodeMffsInside( Abc_Obj_t * pNode, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vIns
   SeeAlso     []
 
 ***********************************************************************/
-Vec_Ptr_t * Abc_NodeMffsInsideCollect( Abc_Obj_t * pNode )
+Vec_Ptr_t * Abc_NodeMffcInsideCollect( Abc_Obj_t * pNode )
 {
     Vec_Ptr_t * vInside;
     int Count1, Count2;
@@ -384,7 +387,7 @@ Vec_Ptr_t * Abc_NodeMffsInsideCollect( Abc_Obj_t * pNode )
     Count1 = Abc_NodeDeref_rec( pNode );
     // collect the nodes inside the MFFC
     vInside = Vec_PtrAlloc( 10 );
-    Abc_NodeMffsConeSupp( pNode, vInside, NULL );
+    Abc_NodeMffcConeSupp( pNode, vInside, NULL );
     // reference it back
     Count2 = Abc_NodeRef_rec( pNode );
     assert( Count1 == Count2 );
@@ -449,4 +452,6 @@ int Abc_NodeMffcLabel( Abc_Obj_t * pNode )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

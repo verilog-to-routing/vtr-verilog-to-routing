@@ -19,8 +19,11 @@
 ***********************************************************************/
 
 #include "rwr.h"
-#include "main.h"
-#include "dec.h"
+#include "base/main/main.h"
+#include "bool/dec/dec.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -41,16 +44,16 @@
   SeeAlso     []
 
 ***********************************************************************/
-Rwr_Man_t * Rwr_ManStart( bool fPrecompute )
+Rwr_Man_t * Rwr_ManStart( int  fPrecompute )
 {
     Dec_Man_t * pManDec;
     Rwr_Man_t * p;
-    int clk = clock();
-clk = clock();
-    p = ALLOC( Rwr_Man_t, 1 );
+    abctime clk = Abc_Clock();
+clk = Abc_Clock();
+    p = ABC_ALLOC( Rwr_Man_t, 1 );
     memset( p, 0, sizeof(Rwr_Man_t) );
     p->nFuncs = (1<<16);
-    pManDec   = Abc_FrameReadManDec();
+    pManDec   = (Dec_Man_t *)Abc_FrameReadManDec();
     p->puCanons = pManDec->puCanons; 
     p->pPhases  = pManDec->pPhases; 
     p->pPerms   = pManDec->pPerms; 
@@ -58,7 +61,7 @@ clk = clock();
     // initialize practical NPN classes
     p->pPractical  = Rwr_ManGetPractical( p );
     // create the table
-    p->pTable = ALLOC( Rwr_Node_t *, p->nFuncs );
+    p->pTable = ABC_ALLOC( Rwr_Node_t *, p->nFuncs );
     memset( p->pTable, 0, sizeof(Rwr_Node_t *) * p->nFuncs );
     // create the elementary nodes
     p->pMmNode  = Extra_MmFixedStart( sizeof(Rwr_Node_t) );
@@ -88,7 +91,7 @@ clk = clock();
 //        Rwr_ManPrint( p );
         Rwr_ManPreprocess( p );
     }
-p->timeStart = clock() - clk;
+p->timeStart = Abc_Clock() - clk;
     return p;
 }
 
@@ -109,7 +112,7 @@ void Rwr_ManStop( Rwr_Man_t * p )
     {
         Rwr_Node_t * pNode;
         int i, k;
-        Vec_VecForEachEntry( p->vClasses, pNode, i, k )
+        Vec_VecForEachEntry( Rwr_Node_t *, p->vClasses, pNode, i, k )
             Dec_GraphFree( (Dec_Graph_t *)pNode->pNext );
     }
     if ( p->vClasses )  Vec_VecFree( p->vClasses );
@@ -119,11 +122,11 @@ void Rwr_ManStop( Rwr_Man_t * p )
     Vec_PtrFree( p->vFanins );
     Vec_PtrFree( p->vFaninsCur );
     Extra_MmFixedStop( p->pMmNode );
-    FREE( p->pMapInv );
-    free( p->pTable );
-    free( p->pPractical );
-    free( p->pPerms4 );
-    free( p );
+    ABC_FREE( p->pMapInv );
+    ABC_FREE( p->pTable );
+    ABC_FREE( p->pPractical );
+    ABC_FREE( p->pPerms4 );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -151,13 +154,13 @@ void Rwr_ManPrintStats( Rwr_Man_t * p )
     printf( "Nodes considered  = %8d.\n", p->nNodesConsidered );
     printf( "Nodes rewritten   = %8d.\n", p->nNodesRewritten );
     printf( "Gain              = %8d. (%6.2f %%).\n", p->nNodesBeg-p->nNodesEnd, 100.0*(p->nNodesBeg-p->nNodesEnd)/p->nNodesBeg );
-    PRT( "Start       ", p->timeStart );
-    PRT( "Cuts        ", p->timeCut );
-    PRT( "Resynthesis ", p->timeRes );
-    PRT( "    Mffc    ", p->timeMffc );
-    PRT( "    Eval    ", p->timeEval );
-    PRT( "Update      ", p->timeUpdate );
-    PRT( "TOTAL       ", p->timeTotal );
+    ABC_PRT( "Start       ", p->timeStart );
+    ABC_PRT( "Cuts        ", p->timeCut );
+    ABC_PRT( "Resynthesis ", p->timeRes );
+    ABC_PRT( "    Mffc    ", p->timeMffc );
+    ABC_PRT( "    Eval    ", p->timeEval );
+    ABC_PRT( "Update      ", p->timeUpdate );
+    ABC_PRT( "TOTAL       ", p->timeTotal );
 
 /*
     printf( "The scores are:\n" );
@@ -255,7 +258,7 @@ int Rwr_ManReadCompl( Rwr_Man_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-void Rwr_ManAddTimeCuts( Rwr_Man_t * p, int Time )
+void Rwr_ManAddTimeCuts( Rwr_Man_t * p, abctime Time )
 {
     p->timeCut += Time;
 }
@@ -271,7 +274,7 @@ void Rwr_ManAddTimeCuts( Rwr_Man_t * p, int Time )
   SeeAlso     []
 
 ***********************************************************************/
-void Rwr_ManAddTimeUpdate( Rwr_Man_t * p, int Time )
+void Rwr_ManAddTimeUpdate( Rwr_Man_t * p, abctime Time )
 {
     p->timeUpdate += Time;
 }
@@ -287,7 +290,7 @@ void Rwr_ManAddTimeUpdate( Rwr_Man_t * p, int Time )
   SeeAlso     []
 
 ***********************************************************************/
-void Rwr_ManAddTimeTotal( Rwr_Man_t * p, int Time )
+void Rwr_ManAddTimeTotal( Rwr_Man_t * p, abctime Time )
 {
     p->timeTotal += Time;
 }
@@ -315,4 +318,6 @@ void Rwr_Precompute()
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

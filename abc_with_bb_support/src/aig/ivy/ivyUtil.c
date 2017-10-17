@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -729,6 +732,7 @@ void Ivy_ManPrintVerbose( Ivy_Man_t * p, int fHaig )
     Ivy_ManForEachNodeVec( p, vNodes, pObj, i )
         Ivy_ObjPrintVerbose( p, pObj, fHaig ), printf( "\n" );
     printf( "\n" );
+    Vec_IntFree( vNodes );
 }
 
 /**Function*************************************************************
@@ -815,4 +819,6 @@ int Ivy_CutTruthPrint( Ivy_Man_t * p, Ivy_Cut_t * pCut, unsigned uTruth )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

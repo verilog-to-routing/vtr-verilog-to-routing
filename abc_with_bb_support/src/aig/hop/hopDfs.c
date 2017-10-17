@@ -20,6 +20,9 @@
 
 #include "hop.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -94,7 +97,7 @@ Vec_Ptr_t * Hop_ManDfsNode( Hop_Man_t * p, Hop_Obj_t * pNode )
     assert( !Hop_IsComplement(pNode) );
     vNodes = Vec_PtrAlloc( 16 );
     Hop_ManDfs_rec( pNode, vNodes );
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Hop_Obj_t *, vNodes, pObj, i )
         Hop_ObjClearMarkA(pObj);
     return vNodes;
 }
@@ -121,17 +124,17 @@ int Hop_ManCountLevels( Hop_Man_t * p )
         pObj->pData = NULL;
     // compute levels in a DFS order
     vNodes = Hop_ManDfs( p );
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Hop_Obj_t *, vNodes, pObj, i )
     {
-        Level0 = (int)Hop_ObjFanin0(pObj)->pData;
-        Level1 = (int)Hop_ObjFanin1(pObj)->pData;
-        pObj->pData = (void *)(1 + Hop_ObjIsExor(pObj) + AIG_MAX(Level0, Level1));
+        Level0 = (int)(ABC_PTRUINT_T)Hop_ObjFanin0(pObj)->pData;
+        Level1 = (int)(ABC_PTRUINT_T)Hop_ObjFanin1(pObj)->pData;
+        pObj->pData = (void *)(ABC_PTRUINT_T)(1 + Hop_ObjIsExor(pObj) + Abc_MaxInt(Level0, Level1));
     }
     Vec_PtrFree( vNodes );
     // get levels of the POs
     LevelsMax = 0;
     Hop_ManForEachPo( p, pObj, i )
-        LevelsMax = AIG_MAX( LevelsMax, (int)Hop_ObjFanin0(pObj)->pData );
+        LevelsMax = Abc_MaxInt( LevelsMax, (int)(ABC_PTRUINT_T)Hop_ObjFanin0(pObj)->pData );
     return LevelsMax;
 }
 
@@ -283,6 +286,38 @@ int Hop_DagSize( Hop_Obj_t * pObj )
 
 /**Function*************************************************************
 
+  Synopsis    [Counts how many fanout the given node has.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Hop_ObjFanoutCount_rec( Hop_Obj_t * pObj, Hop_Obj_t * pPivot )
+{
+    int Counter;
+    assert( !Hop_IsComplement(pObj) );
+    if ( !Hop_ObjIsNode(pObj) || Hop_ObjIsMarkA(pObj) )
+        return (int)(pObj == pPivot);
+    Counter = Hop_ObjFanoutCount_rec( Hop_ObjFanin0(pObj), pPivot ) + 
+              Hop_ObjFanoutCount_rec( Hop_ObjFanin1(pObj), pPivot );
+    assert( !Hop_ObjIsMarkA(pObj) ); // loop detection
+    Hop_ObjSetMarkA( pObj );
+    return Counter;
+}
+int Hop_ObjFanoutCount( Hop_Obj_t * pObj, Hop_Obj_t * pPivot )
+{
+    int Counter;
+    assert( !Hop_IsComplement(pPivot) );
+    Counter = Hop_ObjFanoutCount_rec( Hop_Regular(pObj), pPivot );
+    Hop_ConeUnmark_rec( Hop_Regular(pObj) );
+    return Counter;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Transfers the AIG from one manager into another.]
 
   Description []
@@ -335,7 +370,7 @@ Hop_Obj_t * Hop_Transfer( Hop_Man_t * pSour, Hop_Man_t * pDest, Hop_Obj_t * pRoo
     Hop_Transfer_rec( pDest, Hop_Regular(pRoot) );
     // clear the markings
     Hop_ConeUnmark_rec( Hop_Regular(pRoot) );
-    return Hop_NotCond( Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
+    return Hop_NotCond( (Hop_Obj_t *)Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
 }
 
 /**Function*************************************************************
@@ -389,11 +424,168 @@ Hop_Obj_t * Hop_Compose( Hop_Man_t * p, Hop_Obj_t * pRoot, Hop_Obj_t * pFunc, in
     Hop_Compose_rec( p, Hop_Regular(pRoot), pFunc, Hop_ManPi(p, iVar) );
     // clear the markings
     Hop_ConeUnmark_rec( Hop_Regular(pRoot) );
-    return Hop_NotCond( Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
+    return Hop_NotCond( (Hop_Obj_t *)Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Complements the AIG (pRoot) with the function (pFunc) using PI var (iVar).]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Hop_Complement_rec( Hop_Man_t * p, Hop_Obj_t * pObj, Hop_Obj_t * pVar )
+{
+    assert( !Hop_IsComplement(pObj) );
+    if ( Hop_ObjIsMarkA(pObj) )
+        return;
+    if ( Hop_ObjIsConst1(pObj) || Hop_ObjIsPi(pObj) )
+    {
+        pObj->pData = pObj == pVar ? Hop_Not(pObj) : pObj;
+        return;
+    }
+    Hop_Complement_rec( p, Hop_ObjFanin0(pObj), pVar ); 
+    Hop_Complement_rec( p, Hop_ObjFanin1(pObj), pVar );
+    pObj->pData = Hop_And( p, Hop_ObjChild0Copy(pObj), Hop_ObjChild1Copy(pObj) );
+    assert( !Hop_ObjIsMarkA(pObj) ); // loop detection
+    Hop_ObjSetMarkA( pObj );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Complements the AIG (pRoot) with the function (pFunc) using PI var (iVar).]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Hop_Obj_t * Hop_Complement( Hop_Man_t * p, Hop_Obj_t * pRoot, int iVar )
+{
+    // quit if the PI variable is not defined
+    if ( iVar >= Hop_ManPiNum(p) )
+    {
+        printf( "Hop_Complement(): The PI variable %d is not defined.\n", iVar );
+        return NULL;
+    }
+    // recursively perform composition
+    Hop_Complement_rec( p, Hop_Regular(pRoot), Hop_ManPi(p, iVar) );
+    // clear the markings
+    Hop_ConeUnmark_rec( Hop_Regular(pRoot) );
+    return Hop_NotCond( (Hop_Obj_t *)Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Remaps the AIG (pRoot) to have the given support (uSupp).]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Hop_Remap_rec( Hop_Man_t * p, Hop_Obj_t * pObj )
+{
+    assert( !Hop_IsComplement(pObj) );
+    if ( !Hop_ObjIsNode(pObj) || Hop_ObjIsMarkA(pObj) )
+        return;
+    Hop_Remap_rec( p, Hop_ObjFanin0(pObj) ); 
+    Hop_Remap_rec( p, Hop_ObjFanin1(pObj) );
+    pObj->pData = Hop_And( p, Hop_ObjChild0Copy(pObj), Hop_ObjChild1Copy(pObj) );
+    assert( !Hop_ObjIsMarkA(pObj) ); // loop detection
+    Hop_ObjSetMarkA( pObj );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Remaps the AIG (pRoot) to have the given support (uSupp).]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Hop_Obj_t * Hop_Remap( Hop_Man_t * p, Hop_Obj_t * pRoot, unsigned uSupp, int nVars )
+{
+    Hop_Obj_t * pObj;
+    int i, k;
+    // quit if the PI variable is not defined
+    if ( nVars > Hop_ManPiNum(p) )
+    {
+        printf( "Hop_Remap(): The number of variables (%d) is more than the manager size (%d).\n", nVars, Hop_ManPiNum(p) );
+        return NULL;
+    }
+    // return if constant
+    if ( Hop_ObjIsConst1( Hop_Regular(pRoot) ) )
+        return pRoot;
+    if ( uSupp == 0 )
+        return Hop_NotCond( Hop_ManConst0(p), Hop_ObjPhaseCompl(pRoot) );
+    // set the PI mapping
+    k = 0;
+    Hop_ManForEachPi( p, pObj, i )
+    {
+        if ( i == nVars )
+           break;
+        if ( uSupp & (1 << i) )
+            pObj->pData = Hop_IthVar(p, k++);
+        else
+            pObj->pData = Hop_ManConst0(p);
+    }
+    assert( k > 0 && k < nVars );
+    // recursively perform composition
+    Hop_Remap_rec( p, Hop_Regular(pRoot) );
+    // clear the markings
+    Hop_ConeUnmark_rec( Hop_Regular(pRoot) );
+    return Hop_NotCond( (Hop_Obj_t *)Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Permute the AIG according to the given permutation.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Hop_Obj_t * Hop_Permute( Hop_Man_t * p, Hop_Obj_t * pRoot, int nRootVars, int * pPermute )
+{
+    Hop_Obj_t * pObj;
+    int i;
+    // return if constant
+    if ( Hop_ObjIsConst1( Hop_Regular(pRoot) ) )
+        return pRoot;
+    // create mapping
+    Hop_ManForEachPi( p, pObj, i )
+    {
+        if ( i == nRootVars )
+            break;
+        assert( pPermute[i] >= 0 && pPermute[i] < Hop_ManPiNum(p) );
+        pObj->pData = Hop_IthVar( p, pPermute[i] );
+    }
+    // recursively perform composition
+    Hop_Remap_rec( p, Hop_Regular(pRoot) );
+    // clear the markings
+    Hop_ConeUnmark_rec( Hop_Regular(pRoot) );
+    return Hop_NotCond( (Hop_Obj_t *)Hop_Regular(pRoot)->pData, Hop_IsComplement(pRoot) );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

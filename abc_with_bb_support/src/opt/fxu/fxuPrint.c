@@ -18,6 +18,9 @@
 
 #include "fxuInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -111,9 +114,11 @@ void Fxu_MatrixPrint( FILE * pFile, Fxu_Matrix * p )
 	{
 		fprintf( pFile, "Cube #%3d: ", pCube->iCube );
         if ( pCube->pVar->ppPairs )
+        {
 		    Fxu_CubeForEachPair( pCube, pPair, i )
 				fprintf( pFile, " <%d %d> (d=%d) (b=%d)", 
 					pPair->iCube1, pPair->iCube2, pPair->pDiv->Num, pPair->nBase );
+        }
 		fprintf( pFile, "\n" );
 	}
     fprintf( pFile, "\n" );
@@ -161,7 +166,7 @@ void Fxu_MatrixPrintDivisorProfile( FILE * pFile, Fxu_Matrix * p )
     int i;
 
     WeightMax = Fxu_HeapDoubleReadMaxWeight( p->pHeapDouble );
-    pProfile = ALLOC( int, (WeightMax + 1) );
+    pProfile = ABC_ALLOC( int, (WeightMax + 1) );
     memset( pProfile, 0, sizeof(int) * (WeightMax + 1) );
 
     Counter1 = 0;
@@ -184,7 +189,7 @@ void Fxu_MatrixPrintDivisorProfile( FILE * pFile, Fxu_Matrix * p )
         if ( pProfile[i] )
 	        fprintf( pFile, "Weight   %3d divisors = %6d\n", i, pProfile[i] );
 	fprintf( pFile, "End of divisor profile printout\n" );
-    FREE( pProfile );
+    ABC_FREE( pProfile );
 }
 
 
@@ -192,4 +197,6 @@ void Fxu_MatrixPrintDivisorProfile( FILE * pFile, Fxu_Matrix * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

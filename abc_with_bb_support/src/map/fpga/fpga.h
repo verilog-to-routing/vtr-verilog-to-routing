@@ -16,12 +16,9 @@
 
 ***********************************************************************/
 
-#ifndef __FPGA_H__
-#define __FPGA_H__
+#ifndef ABC__map__fpga__fpga_h
+#define ABC__map__fpga__fpga_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -30,6 +27,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 // the maximum size of LUTs used for mapping
 #define FPGA_MAX_LUTSIZE   32
@@ -52,10 +54,10 @@ typedef struct Fpga_LutLibStruct_t_      Fpga_LutLib_t;
 ///                       MACRO DEFINITIONS                          ///
 ////////////////////////////////////////////////////////////////////////
  
-#define Fpga_IsComplement(p)    (((int)((unsigned long) (p) & 01)))
-#define Fpga_Regular(p)         ((Fpga_Node_t *)((unsigned long)(p) & ~01)) 
-#define Fpga_Not(p)             ((Fpga_Node_t *)((unsigned long)(p) ^ 01)) 
-#define Fpga_NotCond(p,c)       ((Fpga_Node_t *)((unsigned long)(p) ^ (c)))
+#define Fpga_IsComplement(p)    (((int)((ABC_PTRUINT_T) (p) & 01)))
+#define Fpga_Regular(p)         ((Fpga_Node_t *)((ABC_PTRUINT_T)(p) & ~01)) 
+#define Fpga_Not(p)             ((Fpga_Node_t *)((ABC_PTRUINT_T)(p) ^ 01)) 
+#define Fpga_NotCond(p,c)       ((Fpga_Node_t *)((ABC_PTRUINT_T)(p) ^ (c)))
 
 #define Fpga_Ref(p)   
 #define Fpga_Deref(p)
@@ -78,16 +80,14 @@ extern Fpga_Node_t **  Fpga_ManReadOutputs( Fpga_Man_t * p );
 extern Fpga_Node_t *   Fpga_ManReadConst1 ( Fpga_Man_t * p );
 extern float *         Fpga_ManReadInputArrivals( Fpga_Man_t * p );
 extern int             Fpga_ManReadVerbose( Fpga_Man_t * p );
+extern int             Fpga_ManReadVarMax( Fpga_Man_t * p );
 extern float *         Fpga_ManReadLutAreas( Fpga_Man_t * p );
-extern void            Fpga_ManSetTimeToMap( Fpga_Man_t * p, int Time );
-extern void            Fpga_ManSetTimeToNet( Fpga_Man_t * p, int Time );
-extern void            Fpga_ManSetTimeTotal( Fpga_Man_t * p, int Time );
+extern Fpga_NodeVec_t* Fpga_ManReadMapping( Fpga_Man_t * p );
 extern void            Fpga_ManSetOutputNames( Fpga_Man_t * p, char ** ppNames );
 extern void            Fpga_ManSetInputArrivals( Fpga_Man_t * p, float * pArrivals );
 extern void            Fpga_ManSetAreaRecovery( Fpga_Man_t * p, int fAreaRecovery );
 extern void            Fpga_ManSetDelayLimit( Fpga_Man_t * p, float DelayLimit );
 extern void            Fpga_ManSetAreaLimit( Fpga_Man_t * p, float AreaLimit );
-extern void            Fpga_ManSetTimeLimit( Fpga_Man_t * p, float TimeLimit );
 extern void            Fpga_ManSetObeyFanoutLimits( Fpga_Man_t * p, int fObeyFanoutLimits );              
 extern void            Fpga_ManSetNumIterations( Fpga_Man_t * p, int nNumIterations );
 extern int             Fpga_ManReadFanoutViolations( Fpga_Man_t * p );
@@ -141,6 +141,7 @@ extern int             Fpga_Mapping( Fpga_Man_t * p );
 /*=== fpgaCut.c ===============================================================*/
 extern void            Fpga_MappingCreatePiCuts( Fpga_Man_t * p );
 extern void            Fpga_CutsCleanSign( Fpga_Man_t * pMan );
+extern void            Fpga_CutsCleanRoot( Fpga_Man_t * pMan );
 /*=== fpgaCutUtils.c =============================================================*/
 extern void            Fpga_CutCreateFromNode( Fpga_Man_t * p, int iRoot, int * pLeaves, int nLeaves );
 extern void            Fpga_MappingSetUsedCuts( Fpga_Man_t * p );
@@ -161,9 +162,11 @@ extern Fpga_NodeVec_t * Fpga_CollectNodeTfo( Fpga_Man_t * pMan, Fpga_Node_t * pN
 /*=== fpga.c =============================================================*/
 extern void            Fpga_SetSimpleLutLib( int nLutSize );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

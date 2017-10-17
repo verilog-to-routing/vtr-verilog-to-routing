@@ -16,9 +16,12 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "fxuInt.h"
 #include "fxu.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -55,21 +58,21 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
     Fxu_Cube * pCube1, * pCube2;
     Fxu_Var * pVar;
     int nCubes, nBitsMax, nSum;
-    int CutOffNum, CutOffQuant;
+    int CutOffNum = -1, CutOffQuant = -1; // Suppress "might be used uninitialized"
     int iPair, iQuant, k, c;
-    int clk = clock();
+//    abctime clk = Abc_Clock();
     char * pSopCover;
     int nFanins;
 
     assert( nPairsMax < nPairsTotal );
 
     // allocate storage for counter of diffs
-    pnLitsDiff = ALLOC( unsigned char, nPairsTotal );
+    pnLitsDiff = ABC_FALLOC( unsigned char, nPairsTotal );
     // go through the covers and precompute the distances between the pairs
     iPair    =  0;
     nBitsMax = -1;
     for ( c = 0; c < vCovers->nSize; c++ )
-        if ( pSopCover = vCovers->pArray[c] )
+        if ( (pSopCover = (char *)vCovers->pArray[c]) )
         {
             nFanins = Abc_SopGetVarNum(pSopCover);
             // precompute the differences
@@ -83,7 +86,7 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
     assert( iPair == nPairsTotal );
 
     // allocate storage for counters of cube pairs by difference
-    pnPairCounters = ALLOC( int, 2 * nBitsMax );
+    pnPairCounters = ABC_FALLOC( int, 2 * nBitsMax );
     memset( pnPairCounters, 0, sizeof(int) * 2 * nBitsMax );
     // count the number of different pairs
     for ( k = 0; k < nPairsTotal; k++ )
@@ -92,11 +95,15 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
     // so that there would be exactly pPairsMax pairs
     if ( pnPairCounters[0] != 0 )
     {
-        printf( "The SOPs of the nodes are not cube-free. Run \"bdd; sop\" before \"fx\".\n" );
+        ABC_FREE( pnLitsDiff );
+        ABC_FREE( pnPairCounters );
+        printf( "The SOPs of the nodes contain duplicated cubes. Run \"bdd; sop\" before \"fx\".\n" );
         return 0;
     }
     if ( pnPairCounters[1] != 0 )
     {
+        ABC_FREE( pnLitsDiff );
+        ABC_FREE( pnPairCounters );
         printf( "The SOPs of the nodes are not SCC-free. Run \"bdd; sop\" before \"fx\".\n" );
         return 0;
     }
@@ -113,7 +120,7 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
             break;
         }
     }
-    FREE( pnPairCounters );
+    ABC_FREE( pnPairCounters );
 
     // set to 0 all the pairs above the cut-off number and quantity
     iQuant = 0;
@@ -135,7 +142,7 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
     // collect the corresponding pairs and add the divisors
     iPair = 0;
     for ( c = 0; c < vCovers->nSize; c++ )
-        if ( pSopCover = vCovers->pArray[c] )
+        if ( (pSopCover = (char *)vCovers->pArray[c]) )
         {
             // get the var
             pVar = p->ppVars[2*c+1];
@@ -156,8 +163,8 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
                     }
         }
     assert( iPair == nPairsTotal );
-    FREE( pnLitsDiff );
-//PRT( "Preprocess", clock() - clk );
+    ABC_FREE( pnLitsDiff );
+//ABC_PRT( "Preprocess", Abc_Clock() - clk );
     return 1;
 }
 
@@ -201,4 +208,6 @@ int Fxu_CountPairDiffs( char * pCover, unsigned char pDiffs[] )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

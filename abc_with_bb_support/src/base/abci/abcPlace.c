@@ -18,10 +18,13 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 
 // placement includes
-#include "place_base.h"
+#include "phys/place/place_base.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -102,7 +105,7 @@ float Abc_PlaceEvaluateCut( Abc_Obj_t * pRoot, Vec_Ptr_t * vFanins )
     Abc_Obj_t * pObj;
 //    double x, y;
     int i;
-    Vec_PtrForEachEntry( vFanins, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vFanins, pObj, i )
     {
 //        pObj->Id
     }
@@ -131,7 +134,7 @@ void Abc_PlaceUpdate( Vec_Ptr_t * vAddedCells, Vec_Ptr_t * vUpdatedNets )
     vNets = Vec_PtrAlloc( 32 );
 
     // go through the new nodes
-    Vec_PtrForEachEntry( vAddedCells, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vAddedCells, pObj, i )
     {
         assert( !Abc_ObjIsComplement(pObj) );
         Abc_PlaceCreateCell( pObj, 1 );
@@ -144,7 +147,7 @@ void Abc_PlaceUpdate( Vec_Ptr_t * vAddedCells, Vec_Ptr_t * vUpdatedNets )
     }
 
     // go through the modified nets
-    Vec_PtrForEachEntry( vUpdatedNets, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vUpdatedNets, pObj, i )
     {
         assert( !Abc_ObjIsComplement(pObj) );
         if ( Abc_ObjType(pObj) == ABC_OBJ_NONE ) // dead node
@@ -252,4 +255,6 @@ void Abc_PlaceEnd( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -64,7 +67,7 @@ static inline Ivy_Supp_t * Ivy_ObjSuppStart( Ivy_Man_t * pAig, Ivy_Obj_t * pObj 
     return pSupp;
 }
 
-static void Ivy_FastMapPrint( Ivy_Man_t * pAig, int Delay, int Area, int Time, char * pStr );
+static void Ivy_FastMapPrint( Ivy_Man_t * pAig, int Delay, int Area, abctime Time, char * pStr );
 static int  Ivy_FastMapDelay( Ivy_Man_t * pAig );
 static int  Ivy_FastMapArea( Ivy_Man_t * pAig );
 static void Ivy_FastMapNode( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit );
@@ -80,7 +83,7 @@ static int  Ivy_FastMapNodeRef( Ivy_Man_t * pAig, Ivy_Obj_t * pObj );
 static int  Ivy_FastMapNodeDeref( Ivy_Man_t * pAig, Ivy_Obj_t * pObj );
 
 
-extern int s_MappingTime;
+extern abctime s_MappingTime;
 extern int s_MappingMem;
 
 
@@ -103,18 +106,19 @@ void Ivy_FastMapPerform( Ivy_Man_t * pAig, int nLimit, int fRecovery, int fVerbo
 {
     Ivy_SuppMan_t * pMan;
     Ivy_Obj_t * pObj;
-    int i, Delay, Area, clk, clkTotal = clock();
+    int i, Delay, Area;
+    abctime clk, clkTotal = Abc_Clock();
     // start the memory for supports
-    pMan = ALLOC( Ivy_SuppMan_t, 1 );
+    pMan = ABC_ALLOC( Ivy_SuppMan_t, 1 );
     memset( pMan, 0, sizeof(Ivy_SuppMan_t) );
     pMan->nLimit = nLimit;
     pMan->nObjs  = Ivy_ManObjIdMax(pAig) + 1;
     pMan->nSize  = sizeof(Ivy_Supp_t) + nLimit * sizeof(int);
-    pMan->pMem   = (char *)malloc( pMan->nObjs * pMan->nSize );
+    pMan->pMem   = (char *)ABC_ALLOC( char, pMan->nObjs * pMan->nSize );
     memset( pMan->pMem, 0, pMan->nObjs * pMan->nSize );
     pMan->vLuts  = Vec_VecAlloc( 100 );
     pAig->pData  = pMan;
-clk = clock();
+clk = Abc_Clock();
     // set the PI mapping
     Ivy_ObjSuppStart( pAig, Ivy_ManConst1(pAig) );
     Ivy_ManForEachPi( pAig, pObj, i )
@@ -126,22 +130,22 @@ clk = clock();
     Delay = Ivy_FastMapDelay( pAig );
     Area = Ivy_FastMapArea(pAig);
     if ( fVerbose )
-        Ivy_FastMapPrint( pAig, Delay, Area, clock() - clk, "Delay oriented mapping: " );
+        Ivy_FastMapPrint( pAig, Delay, Area, Abc_Clock() - clk, "Delay oriented mapping: " );
 
 // 2-1-2 (doing 2-1-2-1-2 improves 0.5%)
 
     if ( fRecovery )
     {
-clk = clock();
+clk = Abc_Clock();
     Ivy_FastMapRequired( pAig, Delay, 0 );
     // remap the nodes
     Ivy_FastMapRecover( pAig, nLimit );
     Delay = Ivy_FastMapDelay( pAig );
     Area = Ivy_FastMapArea(pAig);
     if ( fVerbose )
-        Ivy_FastMapPrint( pAig, Delay, Area, clock() - clk, "Area recovery 2       : " );
+        Ivy_FastMapPrint( pAig, Delay, Area, Abc_Clock() - clk, "Area recovery 2       : " );
 
-clk = clock();
+clk = Abc_Clock();
     Ivy_FastMapRequired( pAig, Delay, 0 );
     // iterate through all nodes in the topological order
     Ivy_ManForEachNode( pAig, pObj, i )
@@ -149,26 +153,26 @@ clk = clock();
     Delay = Ivy_FastMapDelay( pAig );
     Area = Ivy_FastMapArea(pAig);
     if ( fVerbose )
-        Ivy_FastMapPrint( pAig, Delay, Area, clock() - clk, "Area recovery 1       : " );
+        Ivy_FastMapPrint( pAig, Delay, Area, Abc_Clock() - clk, "Area recovery 1       : " );
 
-clk = clock();
+clk = Abc_Clock();
     Ivy_FastMapRequired( pAig, Delay, 0 );
     // remap the nodes
     Ivy_FastMapRecover( pAig, nLimit );
     Delay = Ivy_FastMapDelay( pAig );
     Area = Ivy_FastMapArea(pAig);
     if ( fVerbose )
-        Ivy_FastMapPrint( pAig, Delay, Area, clock() - clk, "Area recovery 2       : " );
+        Ivy_FastMapPrint( pAig, Delay, Area, Abc_Clock() - clk, "Area recovery 2       : " );
     }
 
 
-    s_MappingTime = clock() - clkTotal;
+    s_MappingTime = Abc_Clock() - clkTotal;
     s_MappingMem = pMan->nObjs * pMan->nSize;
 /*
     {
         Vec_Ptr_t * vNodes;
         vNodes = Vec_PtrAlloc( 100 );
-        Vec_VecForEachEntry( pMan->vLuts, pObj, i, k )
+        Vec_VecForEachEntry( Ivy_Obj_t *, pMan->vLuts, pObj, i, k )
             Vec_PtrPush( vNodes, pObj );
         Ivy_ManShow( pAig, 0, vNodes );
         Vec_PtrFree( vNodes );
@@ -189,10 +193,10 @@ clk = clock();
 ***********************************************************************/
 void Ivy_FastMapStop( Ivy_Man_t * pAig )
 {
-    Ivy_SuppMan_t * p = pAig->pData;
+    Ivy_SuppMan_t * p = (Ivy_SuppMan_t *)pAig->pData;
     Vec_VecFree( p->vLuts );
-    free( p->pMem );
-    free( p );
+    ABC_FREE( p->pMem );
+    ABC_FREE( p );
     pAig->pData = NULL;
 }
 
@@ -207,10 +211,10 @@ void Ivy_FastMapStop( Ivy_Man_t * pAig )
   SeeAlso     []
 
 ***********************************************************************/
-void Ivy_FastMapPrint( Ivy_Man_t * pAig, int Delay, int Area, int Time, char * pStr )
+void Ivy_FastMapPrint( Ivy_Man_t * pAig, int Delay, int Area, abctime Time, char * pStr )
 {
     printf( "%s : Delay = %3d. Area = %6d. ", pStr, Delay, Area );
-    PRT( "Time", Time );
+    ABC_PRT( "Time", Time );
 }
 
 /**Function*************************************************************
@@ -309,7 +313,7 @@ int Ivy_FastMapArea( Ivy_Man_t * pAig )
   SeeAlso     []
 
 ***********************************************************************/
-static inline Ivy_ObjIsNodeInt1( Ivy_Obj_t * pObj )
+static inline int Ivy_ObjIsNodeInt1( Ivy_Obj_t * pObj )
 {
     return Ivy_ObjIsNode(pObj) && Ivy_ObjRefs(pObj) == 1;
 }
@@ -325,35 +329,9 @@ static inline Ivy_ObjIsNodeInt1( Ivy_Obj_t * pObj )
   SeeAlso     []
 
 ***********************************************************************/
-static inline Ivy_ObjIsNodeInt2( Ivy_Obj_t * pObj )
+static inline int Ivy_ObjIsNodeInt2( Ivy_Obj_t * pObj )
 {
     return Ivy_ObjIsNode(pObj) && Ivy_ObjRefs(pObj) <= 2;
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Performs fast mapping for one node.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-static inline void Vec_IntSelectSort( int * pArray, int nSize )
-{
-    int temp, i, j, best_i;
-    for ( i = 0; i < nSize-1; i++ )
-    {
-        best_i = i;
-        for ( j = i+1; j < nSize; j++ )
-            if ( pArray[j] < pArray[best_i] )
-                best_i = j;
-        temp = pArray[i]; 
-        pArray[i] = pArray[best_i]; 
-        pArray[best_i] = temp;
-    }
 }
 
 /**Function*************************************************************
@@ -612,30 +590,30 @@ void Ivy_FastMapNode( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit )
                 pFaninA = Ivy_ObjFanin0(pFanin0);
                 pFaninB = Ivy_ObjFanin1(pFanin0);
                 if ( Ivy_ObjIsNodeInt1(pFaninA) && Ivy_ObjIsNodeInt1(pFaninB) )
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin0);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin0);
                 else
                 {
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninA);
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninB);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninA);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninB);
                 }
             }
             else
-                pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin0);
+                pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin0);
             // process the second fanin
             if ( Ivy_ObjIsNodeInt1(pFanin1) )
             {
                 pFaninA = Ivy_ObjFanin0(pFanin1);
                 pFaninB = Ivy_ObjFanin1(pFanin1);
                 if ( Ivy_ObjIsNodeInt1(pFaninA) && Ivy_ObjIsNodeInt1(pFaninB) )
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin1);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin1);
                 else
                 {
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninA);
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninB);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninA);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninB);
                 }
             }
             else
-                pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin1);
+                pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin1);
             // sort the fanins
             Vec_IntSelectSort( pSupp->pArray, pSupp->nSize );
             pSupp->nSize = Vec_IntRemoveDup( pSupp->pArray, pSupp->nSize );
@@ -681,30 +659,30 @@ void Ivy_FastMapNode( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit )
                 pFaninA = Ivy_ObjFanin0(pFanin0);
                 pFaninB = Ivy_ObjFanin1(pFanin0);
                 if ( Ivy_ObjIsNodeInt1(pFaninA) && Ivy_ObjIsNodeInt1(pFaninB) )
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin0);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin0);
                 else
                 {
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninA);
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninB);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninA);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninB);
                 }
             }
             else
-                pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin0);
+                pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin0);
             // process the second fanin
             if ( Ivy_ObjIsNodeInt1(pFanin1) )
             {
                 pFaninA = Ivy_ObjFanin0(pFanin1);
                 pFaninB = Ivy_ObjFanin1(pFanin1);
                 if ( Ivy_ObjIsNodeInt1(pFaninA) && Ivy_ObjIsNodeInt1(pFaninB) )
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin1);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin1);
                 else
                 {
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninA);
-                    pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFaninB);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninA);
+                    pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFaninB);
                 }
             }
             else
-                pSupp->pArray[pSupp->nSize++] = Ivy_ObjId(pFanin1);
+                pSupp->pArray[(int)(pSupp->nSize++)] = Ivy_ObjId(pFanin1);
             // sort the fanins
             Vec_IntSelectSort( pSupp->pArray, pSupp->nSize );
             pSupp->nSize = Vec_IntRemoveDup( pSupp->pArray, pSupp->nSize );
@@ -886,7 +864,7 @@ void Ivy_FastMapRequired( Ivy_Man_t * pAig, int Delay, int fSetInter )
     vLuts = ((Ivy_SuppMan_t *)pAig->pData)->vLuts;
     // propagate the required times
     Vec_VecForEachLevelReverse( vLuts, vNodes, i )
-    Vec_PtrForEachEntry( vNodes, pObj, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pObj, k )
     {
         pSupp = Ivy_ObjSupp( pAig, pObj );
         assert( pSupp->nRefs > 0 );
@@ -911,7 +889,7 @@ void Ivy_FastMapRequired( Ivy_Man_t * pAig, int Delay, int fSetInter )
     {
         // set the required times of the intermediate nodes
         Vec_VecForEachLevelReverse( vLuts, vNodes, i )
-        Vec_PtrForEachEntry( vNodes, pObj, k )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pObj, k )
         {
             pSupp = Ivy_ObjSupp( pAig, pObj );
             Ivy_FastMapRequired_rec( pAig, pObj, pObj, pSupp->DelayR ); 
@@ -1117,7 +1095,7 @@ int Ivy_FastMapCutCost( Ivy_Man_t * pAig, Vec_Ptr_t * vFront )
     Ivy_Supp_t * pSuppF;
     Ivy_Obj_t * pFanin;
     int i, Counter = 0;
-    Vec_PtrForEachEntry( vFront, pFanin, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pFanin, i )
     {
         pSuppF = Ivy_ObjSupp( pAig, pFanin );
         if ( pSuppF->nRefs == 0 )
@@ -1246,7 +1224,7 @@ int Ivy_FastMapNodeFaninCompact0( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit
 {
     Ivy_Obj_t * pFanin;
     int i;
-    Vec_PtrForEachEntry( vFront, pFanin, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pFanin, i )
     {
         if ( Ivy_ObjIsCi(pFanin) )
             continue;
@@ -1276,7 +1254,7 @@ int Ivy_FastMapNodeFaninCompact1( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit
 {
     Ivy_Obj_t * pFanin;
     int i;
-    Vec_PtrForEachEntry( vFront, pFanin, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pFanin, i )
     {
         if ( Ivy_ObjIsCi(pFanin) )
             continue;
@@ -1304,7 +1282,7 @@ int Ivy_FastMapNodeFaninCompact2( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit
 {
     Ivy_Obj_t * pFanin;
     int i;
-    Vec_PtrForEachEntry( vFront, pFanin, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pFanin, i )
     {
         if ( Ivy_ObjIsCi(pFanin) )
             continue;
@@ -1409,7 +1387,7 @@ void Ivy_FastMapNodeUpdate( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, Vec_Ptr_t * vFro
     Ivy_FastMapNodeDeref( pAig, pObj );
     // update the node's cut
     pSupp->nSize = Vec_PtrSize(vFront);
-    Vec_PtrForEachEntry( vFront, pFanin, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pFanin, i )
         pSupp->pArray[i] = pFanin->Id;
     // ref the new cut
     Ivy_FastMapNodeRef( pAig, pObj );
@@ -1497,10 +1475,6 @@ void Ivy_FastMapNodeRecover( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit, Vec
     AreaBef = Ivy_FastMapNodeAreaRefed( pAig, pObj );
 //    if ( AreaBef == 1 )
 //        return;
-    if ( pObj->Id == 102 )
-    {
-        int x = 0;
-    }
     // the cut is non-trivial
     Ivy_FastMapNodePrepare( pAig, pObj, nLimit, vFront, vFrontOld );
     // iteratively modify the cut
@@ -1590,4 +1564,6 @@ void Ivy_FastMapNodeRecover4( Ivy_Man_t * pAig, Ivy_Obj_t * pObj, int nLimit, Ve
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

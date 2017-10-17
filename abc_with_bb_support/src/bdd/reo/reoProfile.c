@@ -18,6 +18,9 @@
 
 #include "reo.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -132,8 +135,8 @@ void reoProfileWidthStart( reo_man * p )
 	int v;
 
 	// allocate and clean the storage for starting and stopping levels
-	pWidthStart = ALLOC( int, p->nSupp + 1 );
-	pWidthStop  = ALLOC( int, p->nSupp + 1 );
+	pWidthStart = ABC_ALLOC( int, p->nSupp + 1 );
+	pWidthStop  = ABC_ALLOC( int, p->nSupp + 1 );
 	memset( pWidthStart, 0, sizeof(int) * (p->nSupp + 1) );
 	memset( pWidthStop, 0, sizeof(int) * (p->nSupp + 1) );
 
@@ -197,11 +200,11 @@ void reoProfileWidthStart( reo_man * p )
 			p->pPlanes[v].statsWidth = p->pPlanes[v-1].statsWidth + pWidthStart[v] - pWidthStop[v];
 		p->pPlanes[v].statsCost = p->pPlanes[v].statsWidth;
 		p->nWidthCur += p->pPlanes[v].statsWidth;
-//		printf( "Level %2d: Width = %5d. Correct = %d.\n", v, Temp, p->pPlanes[v].statsWidth );
+		printf( "Level %2d: Width = %5d.\n", v, p->pPlanes[v].statsWidth );
 	}
 	p->nWidthBeg = p->nWidthCur;
-	free( pWidthStart );
-	free( pWidthStop );
+	ABC_FREE( pWidthStart );
+	ABC_FREE( pWidthStop );
 }
 
 /**Function********************************************************************
@@ -325,13 +328,13 @@ void reoProfileWidthPrint( reo_man * p )
 	TotalWidth = 0;
 	for ( i = 0; i <= p->nSupp; i++ )
 	{
-//		printf( "Level = %2d. Width = %3d.\n", i, p->pProfile[i] );
+		printf( "Level = %2d. Width = %3d.\n", i, p->pPlanes[i].statsWidth );
 		if ( WidthMax < p->pPlanes[i].statsWidth )
 			 WidthMax = p->pPlanes[i].statsWidth;
 		TotalWidth += p->pPlanes[i].statsWidth;
 	}
 	assert( p->nWidthCur == TotalWidth );
-	printf( "WIDTH:  " );
+	printf( "WIDTH: " );
 	printf( "Maximum = %5d.  ", WidthMax );
 	printf( "Total = %7d.  ", p->nWidthCur );
 	printf( "Average = %6.2f.\n", TotalWidth / (float)p->nSupp );
@@ -362,4 +365,6 @@ void reoProfileWidthVerifyLevel( reo_plane * pPlane, int Level )
 ////////////////////////////////////////////////////////////////////////
 ///                         END OF FILE                              ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

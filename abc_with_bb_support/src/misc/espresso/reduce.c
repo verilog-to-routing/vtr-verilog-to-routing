@@ -18,6 +18,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 static bool toggle = TRUE;
 
 
@@ -256,3 +259,5 @@ OUT pcube *result;              /* returned only if answer determined */
     /* Not much we can do about it */
     return MAYBE;
 }
+ABC_NAMESPACE_IMPL_END
+

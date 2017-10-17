@@ -18,7 +18,7 @@
 
 #include "util_hack.h" // added
 
-#define ptime()		    util_cpu_time()
+#define ABC__misc__espresso__espresso_h
 #define print_time(t)	util_print_time(t)
 
 #ifdef IBM_WATC
@@ -55,8 +55,12 @@
 
 
 /* Define host machine characteristics of "unsigned int" */
-#ifndef BPI
-#define BPI             32              /* # bits per integer */
+#ifndef ABC__misc__espresso__espresso_h
+#define BPI
+
+
+ABC_NAMESPACE_HEADER_START
+             32              /* # bits per integer */
 #endif
 
 #if BPI == 32
@@ -509,6 +513,10 @@ extern struct cdata_struct cdata, temp_cdata_save;
 #else
 #define DISJOINT 0x5555
 #endif
+
+
+ABC_NAMESPACE_HEADER_END
+
 #endif
 
 /* function declarations */
@@ -546,7 +554,7 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* cubestr.c */	extern void restore_cube_struct();
 /* cubestr.c */	extern void save_cube_struct();
 /* cubestr.c */	extern void setdown_cube();
-/* cvrin.c */	extern PLA_labels();
+/* cvrin.c */	extern void PLA_labels();
 /* cvrin.c */	extern char *get_word();
 /* cvrin.c */	extern int label_index();
 /* cvrin.c */	extern int read_pla();
@@ -590,9 +598,9 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* cvrout.c */	extern char *pc1();
 /* cvrout.c */	extern char *pc2();
 /* cvrout.c */	extern char *pc3();
-/* cvrout.c */	extern int makeup_labels();
-/* cvrout.c */	extern kiss_output();
-/* cvrout.c */	extern kiss_print_cube();
+/* cvrout.c */	extern void makeup_labels();
+/* cvrout.c */	extern void kiss_output();
+/* cvrout.c */	extern void kiss_print_cube();
 /* cvrout.c */	extern void output_symbolic_constraints();
 /* cvrout.c */	extern void cprint();
 /* cvrout.c */	extern void debug1_print();
@@ -606,7 +614,7 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* cvrout.c */	extern void print_cube();
 /* cvrout.c */	extern void print_expanded_cube();
 /* cvrout.c */	extern void sf_debug_print();
-/* equiv.c */	extern find_equiv_outputs();
+/* equiv.c */	extern void find_equiv_outputs();
 /* equiv.c */	extern int check_equiv();
 /* espresso.c */	extern pcover espresso();
 /* essen.c */	extern bool essen_cube();
@@ -633,12 +641,12 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* gasp.c */	extern pcover super_gasp();
 /* gasp.c */	extern void expand1_gasp();
 /* getopt.c */	extern int util_getopt();
-/* hack.c */	extern find_dc_inputs();
-/* hack.c */	extern find_inputs();
-/* hack.c */	extern form_bitvector();
+/* hack.c */	extern void find_dc_inputs();
+/* hack.c */	extern void find_inputs();
+/* hack.c */	extern void form_bitvector();
 /* hack.c */	extern void map_dcset();
-/* hack.c */	extern map_output_symbolic();
-/* hack.c */	extern map_symbolic();
+/* hack.c */	extern void map_output_symbolic();
+/* hack.c */	extern void map_symbolic();
 /* hack.c */	extern pcover map_symbolic_cover();
 /* hack.c */	extern void symbolic_hack_labels();
 /* irred.c */	extern bool cube_is_covered();
@@ -651,7 +659,7 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* map.c */	extern pset minterms();
 /* map.c */	extern void explode();
 /* map.c */	extern void map();
-/* opo.c */	extern output_phase_setup();
+/* opo.c */	extern void output_phase_setup();
 /* opo.c */	extern pPLA set_phase();
 /* opo.c */	extern pcover opo();
 /* opo.c */	extern pcube find_phase();
@@ -664,17 +672,17 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* opo.c */	extern void repeated_phase_assignment();
 /* pair.c */	extern void generate_all_pairs();
 /* pair.c */	extern int **find_pairing_cost();
-/* pair.c */	extern int find_best_cost();
+/* pair.c */	extern void find_best_cost();
 /* pair.c */	extern int greedy_best_cost();
-/* pair.c */	extern int minimize_pair();
-/* pair.c */	extern int pair_free();
-/* pair.c */	extern pair_all();
+/* pair.c */	extern void minimize_pair();
+/* pair.c */	extern void pair_free();
+/* pair.c */	extern void pair_all();
 /* pair.c */	extern pcover delvar();
 /* pair.c */	extern pcover pairvar();
 /* pair.c */	extern ppair pair_best_cost();
 /* pair.c */	extern ppair pair_new();
 /* pair.c */	extern ppair pair_save();
-/* pair.c */	extern print_pair();
+/* pair.c */	extern void print_pair();
 /* pair.c */	extern void find_optimal_pairing();
 /* pair.c */	extern void set_pair();
 /* pair.c */	extern void set_pair1();
@@ -764,12 +772,6 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* sminterf.c */pset do_sm_minimum_cover();
 /* sparse.c */	extern pcover make_sparse();
 /* sparse.c */	extern pcover mv_reduce();
-#if 0
-#if !defined(__osf__) && !defined(__STDC__) && !defined(__hpux)
-/* ucbqsort.c */	extern qsort();
-#endif
-/* ucbqsort.c */	extern qst();
-#endif
 /* unate.c */	extern pcover find_all_minimal_covers_petrick();
 /* unate.c */	extern pcover map_cover_to_unate();
 /* unate.c */	extern pcover map_unate_to_cover();
@@ -778,7 +780,7 @@ extern struct cdata_struct cdata, temp_cdata_save;
 /* unate.c */	extern pset_family unate_compl();
 /* unate.c */	extern pset_family unate_complement();
 /* unate.c */	extern pset_family unate_intersect();
-/* verify.c */	extern PLA_permute();
+/* verify.c */	extern void PLA_permute();
 /* verify.c */	extern bool PLA_verify();
 /* verify.c */	extern bool check_consistency();
 /* verify.c */	extern bool verify();

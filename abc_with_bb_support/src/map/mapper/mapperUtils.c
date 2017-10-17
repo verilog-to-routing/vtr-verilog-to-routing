@@ -18,13 +18,15 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
 #define MAP_CO_LIST_SIZE 5
 
-static void  Map_MappingDfs_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes, int fCollectEquiv );
 static int   Map_MappingCountLevels_rec( Map_Node_t * pNode );
 static float Map_MappingSetRefsAndArea_rec( Map_Man_t * pMan, Map_Node_t * pNode );
 static float Map_MappingSetRefsAndSwitch_rec( Map_Man_t * pMan, Map_Node_t * pNode );
@@ -34,69 +36,15 @@ static float Map_MappingArea_rec( Map_Man_t * pMan, Map_Node_t * pNode, Map_Node
 static int   Map_MappingCompareOutputDelay( Map_Node_t ** ppNode1, Map_Node_t ** ppNode2 );
 static void  Map_MappingFindLatest( Map_Man_t * p, int * pNodes, int nNodesMax );
 static unsigned Map_MappingExpandTruth_rec( unsigned uTruth, int nVars );
-static void Map_MappingGetChoiceLevels( Map_Man_t * pMan, Map_Node_t * p1, Map_Node_t * p2, int * pMin, int * pMax );
-static float Map_MappingGetChoiceVolumes( Map_Man_t * pMan, Map_Node_t * p1, Map_Node_t * p2 );
 static int Map_MappingCountUsedNodes( Map_Man_t * pMan, int fChoices );
-static Map_Man_t * s_pMan = NULL;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
-
 /**Function*************************************************************
 
   Synopsis    [Computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Map_NodeVec_t * Map_MappingDfs( Map_Man_t * pMan, int fCollectEquiv )
-{
-    Map_NodeVec_t * vNodes;
-    int i;
-    // perform the traversal
-    vNodes = Map_NodeVecAlloc( 100 );
-    for ( i = 0; i < pMan->nOutputs; i++ )
-        Map_MappingDfs_rec( Map_Regular(pMan->pOutputs[i]), vNodes, fCollectEquiv );
-    for ( i = 0; i < vNodes->nSize; i++ )
-        vNodes->pArray[i]->fMark0 = 0;
-//    for ( i = 0; i < pMan->nOutputs; i++ )
-//        Map_MappingUnmark_rec( Map_Regular(pMan->pOutputs[i]) );
-    return vNodes;
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Map_NodeVec_t * Map_MappingDfsNodes( Map_Man_t * pMan, Map_Node_t ** ppCuts, int nNodes, int fEquiv )
-{
-    Map_NodeVec_t * vNodes;
-    int i;
-    // perform the traversal
-    vNodes = Map_NodeVecAlloc( 200 );
-    for ( i = 0; i < nNodes; i++ )
-        Map_MappingDfs_rec( ppCuts[i], vNodes, fEquiv );
-    for ( i = 0; i < vNodes->nSize; i++ )
-        vNodes->pArray[i]->fMark0 = 0;
-    return vNodes;
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Recursively computes the DFS ordering of the nodes.]
 
   Description []
                
@@ -126,143 +74,20 @@ void Map_MappingDfs_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes, int fCollec
     // add the node to the list
     Map_NodeVecPush( vNodes, pNode );
 }
-
-
-
-/**Function*************************************************************
-
-  Synopsis    [Recursively computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_MappingDfsMarked1_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes, int fFirst )
+Map_NodeVec_t * Map_MappingDfs( Map_Man_t * pMan, int fCollectEquiv )
 {
-    assert( !Map_IsComplement(pNode) );
-    if ( pNode->fMark0 )
-        return;
-    // visit the transitive fanin
-    if ( Map_NodeIsAnd(pNode) )
-    {
-        Map_MappingDfsMarked1_rec( Map_Regular(pNode->p1), vNodes, 0 );
-        Map_MappingDfsMarked1_rec( Map_Regular(pNode->p2), vNodes, 0 );
-    }
-    // visit the equivalent nodes
-    if ( !fFirst && pNode->pNextE )
-        Map_MappingDfsMarked1_rec( pNode->pNextE, vNodes, 0 );
-    // make sure the node is not visited through the equivalent nodes
-    assert( pNode->fMark0 == 0 );
-    // mark the node as visited
-    pNode->fMark0 = 1;
-    // add the node to the list
-    Map_NodeVecPush( vNodes, pNode );
+    Map_NodeVec_t * vNodes;
+    int i;
+    // perform the traversal
+    vNodes = Map_NodeVecAlloc( 100 );
+    for ( i = 0; i < pMan->nOutputs; i++ )
+        Map_MappingDfs_rec( Map_Regular(pMan->pOutputs[i]), vNodes, fCollectEquiv );
+    for ( i = 0; i < vNodes->nSize; i++ )
+        vNodes->pArray[i]->fMark0 = 0;
+//    for ( i = 0; i < pMan->nOutputs; i++ )
+//        Map_MappingUnmark_rec( Map_Regular(pMan->pOutputs[i]) );
+    return vNodes;
 }
-
-/**Function*************************************************************
-
-  Synopsis    [Recursively computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_MappingDfsMarked2_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes, Map_NodeVec_t * vBoundary, int fFirst )
-{
-    assert( !Map_IsComplement(pNode) );
-    if ( pNode->fMark1 )
-        return;
-    if ( pNode->fMark0 || Map_NodeIsVar(pNode) )
-    {
-        pNode->fMark1 = 1;
-        Map_NodeVecPush(vBoundary, pNode);
-        return;
-    }
-    // visit the transitive fanin
-    if ( Map_NodeIsAnd(pNode) )
-    {
-        Map_MappingDfsMarked2_rec( Map_Regular(pNode->p1), vNodes, vBoundary, 0 );
-        Map_MappingDfsMarked2_rec( Map_Regular(pNode->p2), vNodes, vBoundary, 0 );
-    }
-    // visit the equivalent nodes
-    if ( !fFirst && pNode->pNextE )
-        Map_MappingDfsMarked2_rec( pNode->pNextE, vNodes, vBoundary, 0 );
-    // make sure the node is not visited through the equivalent nodes
-    assert( pNode->fMark1 == 0 );
-    // mark the node as visited
-    pNode->fMark1 = 1;
-    // add the node to the list
-    Map_NodeVecPush( vNodes, pNode );
-}
-
-
-/**Function*************************************************************
-
-  Synopsis    [Recursively computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_MappingDfsMarked3_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes )
-{
-    assert( !Map_IsComplement(pNode) );
-    if ( pNode->fMark0 )
-        return;
-    // visit the transitive fanin
-    if ( Map_NodeIsAnd(pNode) )
-    {
-        Map_MappingDfsMarked3_rec( Map_Regular(pNode->p1), vNodes );
-        Map_MappingDfsMarked3_rec( Map_Regular(pNode->p2), vNodes );
-    }
-    // make sure the node is not visited through the equivalent nodes
-    assert( pNode->fMark0 == 0 );
-    // mark the node as visited
-    pNode->fMark0 = 1;
-    // add the node to the list
-    Map_NodeVecPush( vNodes, pNode );
-}
-
-/**Function*************************************************************
-
-  Synopsis    [Recursively computes the DFS ordering of the nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_MappingDfsMarked4_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes )
-{
-    assert( !Map_IsComplement(pNode) );
-    if ( pNode->fMark1 )
-        return;
-    // visit the transitive fanin
-    if ( Map_NodeIsAnd(pNode) )
-    {
-        Map_MappingDfsMarked4_rec( Map_Regular(pNode->p1), vNodes );
-        Map_MappingDfsMarked4_rec( Map_Regular(pNode->p2), vNodes );
-    }
-    // make sure the node is not visited through the equivalent nodes
-    assert( pNode->fMark1 == 0 );
-    // mark the node as visited
-    pNode->fMark1 = 1;
-    // add the node to the list
-    Map_NodeVecPush( vNodes, pNode );
-}
-
-
 
 /**Function*************************************************************
 
@@ -785,26 +610,26 @@ int Map_MappingCountDoubles( Map_Man_t * pMan, Map_NodeVec_t * vNodes )
   SeeAlso     []
 
 ***********************************************************************/
-st_table * Map_CreateTableGate2Super( Map_Man_t * pMan )
+ st__table * Map_CreateTableGate2Super( Map_Man_t * pMan )
 {
     Map_Super_t * pSuper;
-    st_table * tTable;
+    st__table * tTable;
     int i, nInputs, v;
-    tTable = st_init_table(strcmp, st_strhash);
+    tTable = st__init_table(strcmp, st__strhash);
     for ( i = 0; i < pMan->pSuperLib->nSupersAll; i++ )
     {
         pSuper = pMan->pSuperLib->ppSupers[i];
         if ( pSuper->nGates == 1 )
         {
             // skip different versions of the same root gate
-            nInputs = Mio_GateReadInputs(pSuper->pRoot);
+            nInputs = Mio_GateReadPinNum(pSuper->pRoot);
             for ( v = 0; v < nInputs; v++ )
                 if ( pSuper->pFanins[v]->Num != nInputs - 1 - v )
                     break;
             if ( v != nInputs )
                 continue;
 //            printf( "%s\n", Mio_GateReadName(pSuper->pRoot) );
-            if ( st_insert( tTable, (char *)pSuper->pRoot, (char *)pSuper ) )
+            if ( st__insert( tTable, (char *)pSuper->pRoot, (char *)pSuper ) )
             {
                 assert( 0 );
             }
@@ -827,8 +652,8 @@ st_table * Map_CreateTableGate2Super( Map_Man_t * pMan )
 void Map_ManCleanData( Map_Man_t * p )
 {
     int i;
-    for ( i = 0; i < p->vNodesAll->nSize; i++ )
-        p->vNodesAll->pArray[i]->pData0 = p->vNodesAll->pArray[i]->pData1 = 0;
+    for ( i = 0; i < p->vMapObjs->nSize; i++ )
+        p->vMapObjs->pArray[i]->pData0 = p->vMapObjs->pArray[i]->pData1 = 0;
 }
 
 /**Function*************************************************************
@@ -890,10 +715,10 @@ float Map_MappingComputeDelayWithFanouts( Map_Man_t * p )
     Map_Node_t * pNode;
     float Result;
     int i;
-    for ( i = 0; i < p->vAnds->nSize; i++ )
+    for ( i = 0; i < p->vMapObjs->nSize; i++ )
     {
         // skip primary inputs
-        pNode = p->vAnds->pArray[i];
+        pNode = p->vMapObjs->pArray[i];
         if ( !Map_NodeIsAnd( pNode ) )
             continue;
         // skip a secondary node
@@ -1029,9 +854,9 @@ void Map_MappingReportChoices( Map_Man_t * pMan )
 
     // report statistics about choices
     nChoiceNodes = nChoices = 0;
-    for ( i = 0; i < pMan->vAnds->nSize; i++ )
+    for ( i = 0; i < pMan->vMapObjs->nSize; i++ )
     {
-        pNode = pMan->vAnds->pArray[i];
+        pNode = pMan->vMapObjs->pArray[i];
         if ( pNode->pRepr == NULL && pNode->pNextE != NULL )
         { // this is a choice node = the primary node that has equivalent nodes
             nChoiceNodes++;
@@ -1042,89 +867,6 @@ void Map_MappingReportChoices( Map_Man_t * pMan )
     printf( "Maximum level: Original = %d. Reduced due to choices = %d.\n", LevelMax1, LevelMax2 );
     printf( "Choice stats:  Choice nodes = %d. Total choices = %d.\n", nChoiceNodes, nChoices );
 }
-
-/**Function*************************************************************
-
-  Synopsis    [Computes the maximum and minimum levels of the choice nodes.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-void Map_MappingGetChoiceLevels( Map_Man_t * pMan, Map_Node_t * p1, Map_Node_t * p2, int * pMin, int * pMax )
-{
-    Map_NodeVec_t * vNodes;
-    Map_NodeVec_t * vBoundary;
-    Map_Node_t * pNode;
-    int i, Min, Max;
-
-    vNodes    = Map_NodeVecAlloc( 100 );
-    vBoundary = Map_NodeVecAlloc( 100 );
-    Map_MappingDfsMarked1_rec( p1, vNodes, 1 );
-    Map_MappingDfsMarked2_rec( p2, vNodes, vBoundary, 1 );
-    // clean the marks
-    Min =  100000;
-    Max = -100000;
-    for ( i = 0; i < vBoundary->nSize; i++ )
-    {
-        pNode = vBoundary->pArray[i];
-        if ( Min > (int)pNode->Level )
-            Min = pNode->Level;
-        if ( Max < (int)pNode->Level )
-            Max = pNode->Level;
-    }
-    Map_NodeVecFree( vBoundary );
-    for ( i = 0; i < vNodes->nSize; i++ )
-    {
-        pNode = vNodes->pArray[i];
-        pNode->fMark0 = pNode->fMark1 = 0;
-    }
-    Map_NodeVecFree( vNodes );
-    *pMin = Min;
-    *pMax = Max;
-}
-
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-float Map_MappingGetChoiceVolumes( Map_Man_t * pMan, Map_Node_t * p1, Map_Node_t * p2 )
-{
-    Map_NodeVec_t * vNodes;
-    Map_Node_t * pNode;
-    int i, nVolumeTotal, nVolumeUnique;
-
-    vNodes    = Map_NodeVecAlloc( 100 );
-    Map_MappingDfsMarked3_rec( p1, vNodes );
-    Map_MappingDfsMarked4_rec( p2, vNodes );
-    // clean the marks
-    nVolumeTotal = nVolumeUnique = 0;
-    for ( i = 0; i < vNodes->nSize; i++ )
-    {
-        pNode = vNodes->pArray[i];
-        if ( !Map_NodeIsAnd(pNode) )
-            continue;
-        nVolumeTotal++;
-        if ( pNode->fMark0 ^ pNode->fMark1 )
-            nVolumeUnique++;
-        pNode->fMark0 = pNode->fMark1 = 0;
-    }
-    Map_NodeVecFree( vNodes );
-//    return ((float)nVolumeUnique)/nVolumeTotal;
-    return (float)nVolumeUnique;
-}
-
 
 /**Function*************************************************************
 
@@ -1151,4 +893,6 @@ int Map_MappingCountUsedNodes( Map_Man_t * pMan, int fChoices )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

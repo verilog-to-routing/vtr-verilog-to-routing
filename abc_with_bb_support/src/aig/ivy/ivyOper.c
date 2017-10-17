@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -265,7 +268,7 @@ Ivy_Obj_t * Ivy_Miter( Ivy_Man_t * p, Vec_Ptr_t * vPairs )
     assert( vPairs->nSize % 2 == 0 );
     // go through the cubes of the node's SOP
     for ( i = 0; i < vPairs->nSize; i += 2 )
-        vPairs->pArray[i/2] = Ivy_Not( Ivy_Exor( p, vPairs->pArray[i], vPairs->pArray[i+1] ) );
+        vPairs->pArray[i/2] = Ivy_Not( Ivy_Exor( p, (Ivy_Obj_t *)vPairs->pArray[i], (Ivy_Obj_t *)vPairs->pArray[i+1] ) );
     vPairs->nSize = vPairs->nSize/2;
     return Ivy_Not( Ivy_Multi_rec( p, (Ivy_Obj_t **)vPairs->pArray, vPairs->nSize, IVY_AND ) );
 }
@@ -290,4 +293,6 @@ Ivy_Obj_t * Ivy_Latch( Ivy_Man_t * p, Ivy_Obj_t * pObj, Ivy_Init_t Init )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -41,6 +44,8 @@
 ***********************************************************************/
 void Abc_NtkSynthesize( Abc_Ntk_t ** ppNtk, int fMoreEffort )
 {
+    extern Abc_Ntk_t * Abc_NtkIvyFraig( Abc_Ntk_t * pNtk, int nConfLimit, int fDoSparse, int fProve, int fTransfer, int fVerbose );
+
     Abc_Ntk_t * pNtk, * pNtkTemp;
 
     pNtk = *ppNtk;
@@ -55,6 +60,9 @@ void Abc_NtkSynthesize( Abc_Ntk_t ** ppNtk, int fMoreEffort )
         Abc_NtkRewrite( pNtk, 0, 0, 0, 0, 0 );
         Abc_NtkRefactor( pNtk, 10, 16, 0, 0, 0, 0 );
         pNtk = Abc_NtkBalance( pNtkTemp = pNtk, 0, 0, 0 );          
+        Abc_NtkDelete( pNtkTemp );
+
+        pNtk = Abc_NtkIvyFraig( pNtkTemp = pNtk, 100, 1, 0, 0, 0 );
         Abc_NtkDelete( pNtkTemp );
     }
 
@@ -89,18 +97,24 @@ int Abc_NtkQuantify( Abc_Ntk_t * pNtk, int fUniv, int iVar, int fVerbose )
     pObj->pData = Abc_AigConst1(pNtk); 
 
     // quantify the nodes
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
         for ( pNext = pObj? pObj->pCopy : pObj; pObj; pObj = pNext, pNext = pObj? pObj->pCopy : pObj )
         {
             pFanin = Abc_ObjFanin0(pObj);
             if ( !Abc_NodeIsTravIdCurrent(pFanin) )
-                pFanin->pCopy = pFanin->pData = pFanin;
+            {
+                pFanin->pCopy = pFanin;
+                pFanin->pData = pFanin;
+            }
             pFanin = Abc_ObjFanin1(pObj);
             if ( !Abc_NodeIsTravIdCurrent(pFanin) )
-                pFanin->pCopy = pFanin->pData = pFanin;
-            pObj->pCopy = Abc_AigAnd( pNtk->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild1Copy(pObj) );
-            pObj->pData = Abc_AigAnd( pNtk->pManFunc, Abc_ObjChild0Data(pObj), Abc_ObjChild1Data(pObj) );
+            {
+                pFanin->pCopy = pFanin;
+                pFanin->pData = pFanin;
+            }
+            pObj->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtk->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild1Copy(pObj) );
+            pObj->pData = Abc_AigAnd( (Abc_Aig_t *)pNtk->pManFunc, Abc_ObjChild0Data(pObj), Abc_ObjChild1Data(pObj) );
         }
     }
     Vec_PtrFree( vNodes );
@@ -113,9 +127,9 @@ int Abc_NtkQuantify( Abc_Ntk_t * pNtk, int fUniv, int iVar, int fVerbose )
         pFanin = Abc_ObjFanin0(pObj);
         // get the result of quantification
         if ( fUniv )
-            pNext = Abc_AigAnd( pNtk->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild0Data(pObj) );
+            pNext = Abc_AigAnd( (Abc_Aig_t *)pNtk->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild0Data(pObj) );
         else
-            pNext = Abc_AigOr( pNtk->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild0Data(pObj) );
+            pNext = Abc_AigOr( (Abc_Aig_t *)pNtk->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild0Data(pObj) );
         pNext = Abc_ObjNotCond( pNext, Abc_ObjFaninC0(pObj) );
         if ( Abc_ObjRegular(pNext) == pFanin )
             continue;
@@ -178,7 +192,7 @@ Abc_Ntk_t * Abc_NtkTransRel( Abc_Ntk_t * pNtk, int fInputs, int fVerbose )
     // restrash the nodes (assuming a topological order of the old network)
     Abc_AigConst1(pNtk)->pCopy = Abc_AigConst1(pNtkNew);
     Abc_NtkForEachNode( pNtk, pObj, i )
-        pObj->pCopy = Abc_AigAnd( pNtkNew->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild1Copy(pObj) );
+        pObj->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtkNew->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild1Copy(pObj) );
     // create the function of the primary output
     assert( Abc_NtkBoxNum(pNtk) == Abc_NtkLatchNum(pNtk) );
     vPairs = Vec_PtrAlloc( 2*nLatches );
@@ -187,7 +201,7 @@ Abc_Ntk_t * Abc_NtkTransRel( Abc_Ntk_t * pNtk, int fInputs, int fVerbose )
         Vec_PtrPush( vPairs, Abc_ObjChild0Copy(pObj) );
         Vec_PtrPush( vPairs, Abc_NtkPi(pNtkNew, i+nLatches) );
     }
-    pMiter = Abc_AigMiter( pNtkNew->pManFunc, vPairs );
+    pMiter = Abc_AigMiter( (Abc_Aig_t *)pNtkNew->pManFunc, vPairs, 0 );
     Vec_PtrFree( vPairs );
     // add the primary output
     Abc_ObjAddFanin( Abc_NtkPo(pNtkNew,0), Abc_ObjNot(pMiter) );
@@ -205,7 +219,7 @@ Abc_Ntk_t * Abc_NtkTransRel( Abc_Ntk_t * pNtk, int fInputs, int fVerbose )
             if ( fSynthesis  )
             {
                 Abc_NtkCleanData( pNtkNew );
-                Abc_AigCleanup( pNtkNew->pManFunc );
+                Abc_AigCleanup( (Abc_Aig_t *)pNtkNew->pManFunc );
                 Abc_NtkSynthesize( &pNtkNew, 1 );
             }
 //            printf( "Var = %3d. Nodes = %6d. ", Abc_NtkPiNum(pNtkNew) - 1 - i, Abc_NtkNodeNum(pNtkNew) );
@@ -213,7 +227,7 @@ Abc_Ntk_t * Abc_NtkTransRel( Abc_Ntk_t * pNtk, int fInputs, int fVerbose )
         }
 //        printf( "\n" );
         Abc_NtkCleanData( pNtkNew );
-        Abc_AigCleanup( pNtkNew->pManFunc );
+        Abc_AigCleanup( (Abc_Aig_t *)pNtkNew->pManFunc );
         for ( i = Abc_NtkPiNum(pNtkNew) - 1; i >= 2*nLatches; i-- )
         {
             pObj = Abc_NtkPi( pNtkNew, i );
@@ -255,7 +269,7 @@ Abc_Ntk_t * Abc_NtkInitialState( Abc_Ntk_t * pNtk )
     // compute the all-zero state in terms of the CS variables
     pMiter = Abc_AigConst1(pNtkNew);
     for ( i = 0; i < nVars; i++ )
-        pMiter = Abc_AigAnd( pNtkNew->pManFunc, pMiter, Abc_ObjNot( Abc_NtkPi(pNtkNew, i) ) );
+        pMiter = Abc_AigAnd( (Abc_Aig_t *)pNtkNew->pManFunc, pMiter, Abc_ObjNot( Abc_NtkPi(pNtkNew, i) ) );
     // add the PO
     Abc_ObjAddFanin( Abc_NtkPo(pNtkNew,0), pMiter );
     return pNtkNew;
@@ -291,7 +305,7 @@ Abc_Ntk_t * Abc_NtkSwapVariables( Abc_Ntk_t * pNtk )
     }
     // restrash
     Abc_NtkForEachNode( pNtk, pObj, i )
-        pObj->pCopy = Abc_AigAnd( pNtkNew->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild1Copy(pObj) );
+        pObj->pCopy = Abc_AigAnd( (Abc_Aig_t *)pNtkNew->pManFunc, Abc_ObjChild0Copy(pObj), Abc_ObjChild1Copy(pObj) );
     // add the PO
     pMiter = Abc_ObjChild0Copy( Abc_NtkPo(pNtk,0) );
     Abc_ObjAddFanin( Abc_NtkPo(pNtkNew,0), pMiter );
@@ -313,10 +327,11 @@ Abc_Ntk_t * Abc_NtkReachability( Abc_Ntk_t * pNtkRel, int nIters, int fVerbose )
 {
     Abc_Obj_t * pObj;
     Abc_Ntk_t * pNtkFront, * pNtkReached, * pNtkNext, * pNtkTemp;
-    int clk, i, v, nVars, nNodesOld, nNodesNew, nNodesPrev;
+    int i, v, nVars, nNodesOld, nNodesNew, nNodesPrev;
     int fFixedPoint = 0;
     int fSynthesis  = 1;
     int fMoreEffort = 1;
+    abctime clk;
 
     assert( Abc_NtkIsStrash(pNtkRel) );
     assert( Abc_NtkLatchNum(pNtkRel) == 0 );
@@ -335,7 +350,7 @@ Abc_Ntk_t * Abc_NtkReachability( Abc_Ntk_t * pNtkRel, int nIters, int fVerbose )
     nVars = Abc_NtkPiNum(pNtkRel)/2;
     for ( i = 0; i < nIters; i++ )
     {
-        clk = clock();
+        clk = Abc_Clock();
         // get the set of next states
         pNtkNext = Abc_NtkMiterAnd( pNtkRel, pNtkFront, 0, 0 );
         Abc_NtkDelete( pNtkFront );
@@ -346,12 +361,12 @@ Abc_Ntk_t * Abc_NtkReachability( Abc_Ntk_t * pNtkRel, int nIters, int fVerbose )
             if ( fSynthesis && (v % 3 == 2) )
             {
                 Abc_NtkCleanData( pNtkNext );
-                Abc_AigCleanup( pNtkNext->pManFunc );
+                Abc_AigCleanup( (Abc_Aig_t *)pNtkNext->pManFunc );
                 Abc_NtkSynthesize( &pNtkNext, fMoreEffort );
             }
         }
         Abc_NtkCleanData( pNtkNext );
-        Abc_AigCleanup( pNtkNext->pManFunc );
+        Abc_AigCleanup( (Abc_Aig_t *)pNtkNext->pManFunc );
         if ( fSynthesis )
             Abc_NtkSynthesize( &pNtkNext, 1 );
         // map the next states into the current states
@@ -384,7 +399,7 @@ Abc_Ntk_t * Abc_NtkReachability( Abc_Ntk_t * pNtkRel, int nIters, int fVerbose )
         {
             printf( "I = %3d : Reach = %6d  Fr = %6d  FrM = %6d  %7.2f %%   ", 
                 i + 1, Abc_NtkNodeNum(pNtkReached), nNodesOld, nNodesNew, 100.0*(nNodesNew-nNodesPrev)/nNodesPrev );
-            PRT( "T", clock() - clk );
+            ABC_PRT( "T", Abc_Clock() - clk );
         }
         nNodesPrev = Abc_NtkNodeNum(pNtkFront);
     }
@@ -416,4 +431,6 @@ Abc_Ntk_t * Abc_NtkReachability( Abc_Ntk_t * pNtkRel, int nIters, int fVerbose )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

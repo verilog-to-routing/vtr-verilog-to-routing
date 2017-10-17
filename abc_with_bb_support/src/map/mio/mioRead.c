@@ -16,7 +16,12 @@
 
 ***********************************************************************/
 
+#include <ctype.h>
 #include "mioInt.h"
+#include "base/io/ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -26,17 +31,14 @@
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
-static Mio_Library_t * Mio_LibraryReadOne( Abc_Frame_t * pAbc, char * FileName, bool fExtendedFormat, st_table * tExcludeGate, int fVerbose );
-static int          Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, bool fExtendedFormat, st_table * tExcludeGate, int fVerbose );
-static Mio_Gate_t * Mio_LibraryReadGate( char ** ppToken, bool fExtendedFormat );
-static Mio_Pin_t *  Mio_LibraryReadPin( char ** ppToken, bool fExtendedFormat );
-static char *       chomp( char *s );
-static void         Mio_LibraryDetectSpecialGates( Mio_Library_t * pLib );
-static void         Io_ReadFileRemoveComments( char * pBuffer, int * pnDots, int * pnLines );
-
-#ifdef WIN32
-extern int          isspace( int c );  // to silence the warning in VS
-#endif
+static Mio_Library_t * Mio_LibraryReadOne( char * FileName, int fExtendedFormat, st__table * tExcludeGate, int fVerbose );
+       Mio_Library_t * Mio_LibraryReadBuffer( char * pBuffer, int fExtendedFormat, st__table * tExcludeGate, int fVerbose );
+static int             Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, int fExtendedFormat, st__table * tExcludeGate, int fVerbose );
+static Mio_Gate_t *    Mio_LibraryReadGate( char ** ppToken, int fExtendedFormat );
+static Mio_Pin_t *     Mio_LibraryReadPin( char ** ppToken, int fExtendedFormat );
+static char *          chomp( char *s );
+static void            Mio_LibraryDetectSpecialGates( Mio_Library_t * pLib );
+static void            Io_ReadFileRemoveComments( char * pBuffer, int * pnDots, int * pnLines );
 
 /**Function*************************************************************
 
@@ -49,35 +51,94 @@ extern int          isspace( int c );  // to silence the warning in VS
   SeeAlso     []
 
 ***********************************************************************/
-Mio_Library_t * Mio_LibraryRead( void * pAbc, char * FileName, char * ExcludeFile, int fVerbose )
+Mio_Library_t * Mio_LibraryRead( char * FileName, char * pBuffer, char * ExcludeFile, int fVerbose )
 {
     Mio_Library_t * pLib;
     int num;
+    char * pBufferCopy;
 
-    st_table * tExcludeGate = 0;
+    st__table * tExcludeGate = 0;
 
     if ( ExcludeFile )
     {
-        tExcludeGate = st_init_table(strcmp, st_strhash);
-        if ( (num = Mio_LibraryReadExclude( pAbc, ExcludeFile, tExcludeGate )) == -1 )
+        tExcludeGate = st__init_table(strcmp, st__strhash);
+        if ( (num = Mio_LibraryReadExclude( ExcludeFile, tExcludeGate )) == -1 )
         {
-            st_free_table( tExcludeGate );
+            st__free_table( tExcludeGate );
             tExcludeGate = 0;
             return 0;
         }
-       
-        fprintf ( Abc_FrameReadOut( pAbc ), "Read %d gates from exclude file\n", num );
+        fprintf ( stdout, "Read %d gates from exclude file\n", num );
     }
 
-    pLib = Mio_LibraryReadOne( pAbc, FileName, 0, tExcludeGate, fVerbose );       // try normal format first ..
+    pBufferCopy = Abc_UtilStrsav(pBuffer);
+    if ( pBuffer == NULL )
+        pLib = Mio_LibraryReadOne( FileName, 0, tExcludeGate, fVerbose );       // try normal format first ..
+    else
+    {
+        pLib = Mio_LibraryReadBuffer( pBuffer, 0, tExcludeGate, fVerbose );       // try normal format first ..
+        if ( pLib )
+            pLib->pName = Abc_UtilStrsav( Extra_FileNameGenericAppend(FileName, ".genlib") );
+    }
     if ( pLib == NULL )
     {
-        pLib = Mio_LibraryReadOne( pAbc, FileName, 1, tExcludeGate, fVerbose );   // .. otherwise try extended format 
+        if ( pBuffer == NULL )
+            pLib = Mio_LibraryReadOne( FileName, 1, tExcludeGate, fVerbose );       // try normal format first ..
+        else
+        {
+            pLib = Mio_LibraryReadBuffer( pBufferCopy, 1, tExcludeGate, fVerbose );       // try normal format first ..
+            if ( pLib )
+                pLib->pName = Abc_UtilStrsav( Extra_FileNameGenericAppend(FileName, ".genlib") );
+        }
         if ( pLib != NULL )
-            printf ( "Warning: Read extended GENLIB format but ignoring extensions\n" );
+            printf ( "Warning: Read extended genlib format but ignoring extensions\n" );
     }
+    ABC_FREE( pBufferCopy );
+    if ( tExcludeGate )
+        st__free_table( tExcludeGate );
 
     return pLib;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Read contents of the file.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Mio_ReadFile( char * FileName, int fAddEnd )
+{
+    char * pBuffer;
+    FILE * pFile;
+    int nFileSize;
+    int RetValue;
+
+    // open the BLIF file for binary reading
+    pFile = Io_FileOpen( FileName, "open_path", "rb", 1 );
+//    pFile = fopen( FileName, "rb" );
+    // if we got this far, file should be okay otherwise would
+    // have been detected by caller
+    assert ( pFile != NULL );
+    // get the file size, in bytes
+    fseek( pFile, 0, SEEK_END );  
+    nFileSize = ftell( pFile );  
+    // move the file current reading position to the beginning
+    rewind( pFile ); 
+    // load the contents of the file into memory
+    pBuffer   = ABC_ALLOC( char, nFileSize + 10 );
+    RetValue = fread( pBuffer, nFileSize, 1, pFile );
+    // terminate the string with '\0'
+    pBuffer[ nFileSize ] = '\0';
+    if ( fAddEnd )
+        strcat( pBuffer, "\n.end\n" );
+    // close file
+    fclose( pFile );
+    return pBuffer;
 }
 
 /**Function*************************************************************
@@ -91,48 +152,15 @@ Mio_Library_t * Mio_LibraryRead( void * pAbc, char * FileName, char * ExcludeFil
   SeeAlso     []
 
 ***********************************************************************/
-Mio_Library_t * Mio_LibraryReadOne( Abc_Frame_t * pAbc, char * FileName, bool fExtendedFormat, st_table * tExcludeGate, int fVerbose )
+Mio_Library_t * Mio_LibraryReadBuffer( char * pBuffer, int fExtendedFormat, st__table * tExcludeGate, int fVerbose )
 {
     Mio_Library_t * pLib;
-    char * pBuffer = 0;
 
     // allocate the genlib structure
-    pLib = ALLOC( Mio_Library_t, 1 );
-    memset( pLib, 0, sizeof(Mio_Library_t) );
-    pLib->pName = Extra_UtilStrsav( FileName );
-    pLib->tName2Gate = st_init_table(strcmp, st_strhash);
-    pLib->pMmFlex = Extra_MmFlexStart();
+    pLib = ABC_CALLOC( Mio_Library_t, 1 );
+    pLib->tName2Gate = st__init_table(strcmp, st__strhash);
+    pLib->pMmFlex = Mem_FlexStart();
     pLib->vCube = Vec_StrAlloc( 100 );
-
-    // read the file and clean comments
-    // pBuffer = Io_ReadFileFileContents( FileName, NULL );
-    // we don't use above function but actually do the same thing explicitly
-    // to handle open_path expansion correctly
-
-    {
-        FILE * pFile;
-        int nFileSize;
-
-        // open the BLIF file for binary reading
-        pFile = Io_FileOpen( FileName, "open_path", "rb", 1 );
-//        pFile = fopen( FileName, "rb" );
-        // if we got this far, file should be okay otherwise would
-        // have been detected by caller
-        assert ( pFile != NULL );
-        // get the file size, in bytes
-        fseek( pFile, 0, SEEK_END );  
-        nFileSize = ftell( pFile );  
-        // move the file current reading position to the beginning
-        rewind( pFile ); 
-        // load the contents of the file into memory
-        pBuffer   = ALLOC( char, nFileSize + 10 );
-        fread( pBuffer, nFileSize, 1, pFile );
-        // terminate the string with '\0'
-        pBuffer[ nFileSize ] = '\0';
-        strcat( pBuffer, "\n.end\n" );
-        // close file
-        fclose( pFile );
-    }
 
     Io_ReadFileRemoveComments( pBuffer, NULL, NULL );
 
@@ -140,10 +168,8 @@ Mio_Library_t * Mio_LibraryReadOne( Abc_Frame_t * pAbc, char * FileName, bool fE
     if ( Mio_LibraryReadInternal( pLib, pBuffer, fExtendedFormat, tExcludeGate, fVerbose ) )
     {
         Mio_LibraryDelete( pLib );
-        free( pBuffer );
         return NULL;
     }
-    free( pBuffer );
 
     // derive the functinality of gates
     if ( Mio_LibraryParseFormulas( pLib ) )
@@ -170,7 +196,36 @@ Mio_Library_t * Mio_LibraryReadOne( Abc_Frame_t * pAbc, char * FileName, bool fE
   SeeAlso     []
 
 ***********************************************************************/
-int Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, bool fExtendedFormat, st_table * tExcludeGate, int fVerbose )
+Mio_Library_t * Mio_LibraryReadOne( char * FileName, int fExtendedFormat, st__table * tExcludeGate, int fVerbose )
+{
+    Mio_Library_t * pLib;
+    char * pBuffer;
+    // read the file and clean comments
+    // pBuffer = Io_ReadFileFileContents( FileName, NULL );
+    // we don't use above function but actually do the same thing explicitly
+    // to handle open_path expansion correctly
+    pBuffer = Mio_ReadFile( FileName, 1 );
+    if ( pBuffer == NULL )
+        return NULL;
+    pLib = Mio_LibraryReadBuffer( pBuffer, fExtendedFormat, tExcludeGate, fVerbose );
+    ABC_FREE( pBuffer );
+    if ( pLib )
+        pLib->pName = Abc_UtilStrsav( FileName );
+    return pLib;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Read the genlib type of library.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, int fExtendedFormat, st__table * tExcludeGate, int fVerbose )
 {
     Mio_Gate_t * pGate, ** ppGate;
     char * pToken;
@@ -183,19 +238,43 @@ int Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, bool fExtende
 
     // read gates one by one
     pToken = strtok( pBuffer, " \t\r\n" );
-    while ( pToken && strcmp( pToken, MIO_STRING_GATE ) == 0 )
+    while ( pToken && (strcmp( pToken, MIO_STRING_GATE ) == 0 || strcmp( pToken, MIO_STRING_LATCH ) == 0) )
     {
+        // skip latches
+        if ( strcmp( pToken, MIO_STRING_LATCH ) == 0 )
+        {
+            while ( pToken && strcmp( pToken, MIO_STRING_GATE ) != 0 && strcmp( pToken, ".end" ) != 0 )
+            {
+                if ( strcmp( pToken, MIO_STRING_LATCH ) == 0 )
+                {
+                    pToken = strtok( NULL, " \t\r\n" );
+                    printf( "Skipping latch \"%s\"...\n", pToken );
+                    continue;
+                }
+                pToken = strtok( NULL, " \t\r\n" );
+            }
+            if ( !(pToken && strcmp( pToken, MIO_STRING_GATE ) == 0) )
+                break;
+        }
+
         // derive the next gate
         pGate = Mio_LibraryReadGate( &pToken, fExtendedFormat );
         if ( pGate == NULL )
             return 1;
-        
+
+        // skip the gate if its formula has problems
+        if ( !Mio_ParseCheckFormula(pGate, pGate->pForm) )
+        {
+            Mio_GateDelete( pGate );
+            continue;
+        }
+       
         // set the library
         pGate->pLib = pLib;
 
         // printf ("Processing: '%s'\n", pGate->pName);
 
-        if ( tExcludeGate && st_is_member( tExcludeGate, pGate->pName ) )
+        if ( tExcludeGate && st__is_member( tExcludeGate, pGate->pName ) )
         {
             //printf ("Excluding: '%s'\n", pGate->pName);
             Mio_GateDelete( pGate );
@@ -209,14 +288,28 @@ int Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, bool fExtende
             nGates++;
 
             // remember this gate by name
-            if ( !st_is_member( pLib->tName2Gate, pGate->pName ) )
-                st_insert( pLib->tName2Gate, pGate->pName, (char *)pGate );
+            if ( ! st__is_member( pLib->tName2Gate, pGate->pName ) )
+                st__insert( pLib->tName2Gate, pGate->pName, (char *)pGate );
             else
-                printf( "The gate with name \"%s\" appears more than once.\n", pGate->pName );
+            {
+                Mio_Gate_t * pBase = Mio_LibraryReadGateByName( pLib, pGate->pName, NULL );
+                if ( pBase->pTwin != NULL )
+                {
+                    printf( "Gates with more than 2 outputs are not supported.\n" );
+                    continue;
+                }
+                pBase->pTwin = pGate;
+                pGate->pTwin = pBase;
+//                printf( "Gate \"%s\" appears two times. Creating a 2-output gate.\n", pGate->pName );
+            }
         }
     }
-    if ( fVerbose )
-    printf( "The number of gates read = %d.\n", nGates );
+
+    if ( nGates == 0 )
+    {
+        printf( "The library contains no gates.\n" );
+        return 1;
+    }
 
     // check what is the last word read
     if ( pToken && strcmp( pToken, ".end" ) != 0 )
@@ -239,19 +332,43 @@ int Mio_LibraryReadInternal( Mio_Library_t * pLib, char * pBuffer, bool fExtende
   SeeAlso     []
 
 ***********************************************************************/
-Mio_Gate_t * Mio_LibraryReadGate( char ** ppToken, bool fExtendedFormat )
+char * Mio_LibraryCleanStr( char * p )
+{
+    int i, k;
+    int whitespace_state = 0;
+    char * pRes = Abc_UtilStrsav( p );
+    for ( i = k = 0; pRes[i]; i++ )
+        if ( pRes[i] != ' ' && pRes[i] != '\t' && pRes[i] != '\r' && pRes[i] != '\n' ) 
+        {
+            if ( pRes[i] != '(' && pRes[i] != ')' && pRes[i] != '+' && pRes[i] != '*' && pRes[i] != '|' && pRes[i] != '&' && pRes[i] != '^' && pRes[i] != '\'' && pRes[i] != '!' ) 
+            {
+                if (whitespace_state == 2)
+                    pRes[k++] = ' ';
+                whitespace_state = 1;
+            } 
+            else
+                whitespace_state = 0;
+            pRes[k++] = pRes[i];
+        } 
+        else
+            whitespace_state = whitespace_state ? 2 : 0;
+    pRes[k] = 0;
+    return pRes;
+}
+
+Mio_Gate_t * Mio_LibraryReadGate( char ** ppToken, int fExtendedFormat )
 {
     Mio_Gate_t * pGate;
     Mio_Pin_t * pPin, ** ppPin;
     char * pToken = *ppToken;
 
     // allocate the gate structure
-    pGate = ALLOC( Mio_Gate_t, 1 );
-    memset( pGate, 0, sizeof(Mio_Gate_t) );
+    pGate = ABC_CALLOC( Mio_Gate_t, 1 );
+    pGate->Cell = -1;
 
     // read the name
     pToken = strtok( NULL, " \t\r\n" );
-    pGate->pName = Extra_UtilStrsav( pToken );
+    pGate->pName = Abc_UtilStrsav( pToken );
 
     // read the area
     pToken = strtok( NULL, " \t\r\n" );
@@ -265,7 +382,8 @@ Mio_Gate_t * Mio_LibraryReadGate( char ** ppToken, bool fExtendedFormat )
 
     // then rest of the expression 
     pToken = strtok( NULL, ";" );
-    pGate->pForm = Extra_UtilStrsav( pToken );
+//    pGate->pForm = Mio_LibraryCleanStr( pToken );
+    pGate->pForm = Abc_UtilStrsav( pToken );
 
     // read the pin info
     // start the linked list of pins
@@ -308,18 +426,17 @@ Mio_Gate_t * Mio_LibraryReadGate( char ** ppToken, bool fExtendedFormat )
   SeeAlso     []
 
 ***********************************************************************/
-Mio_Pin_t * Mio_LibraryReadPin( char ** ppToken, bool fExtendedFormat )
+Mio_Pin_t * Mio_LibraryReadPin( char ** ppToken, int fExtendedFormat )
 {
     Mio_Pin_t * pPin;
     char * pToken = *ppToken;
 
     // allocate the gate structure
-    pPin = ALLOC( Mio_Pin_t, 1 );
-    memset( pPin, 0, sizeof(Mio_Pin_t) );
+    pPin = ABC_CALLOC( Mio_Pin_t, 1 );
 
     // read the name
     pToken = strtok( NULL, " \t\r\n" );
-    pPin->pName = Extra_UtilStrsav( pToken );
+    pPin->pName = Abc_UtilStrsav( pToken );
 
     // read the pin phase
     pToken = strtok( NULL, " \t\r\n" );
@@ -392,21 +509,27 @@ Mio_Pin_t * Mio_LibraryReadPin( char ** ppToken, bool fExtendedFormat )
   SeeAlso     []
 
 ***********************************************************************/
-char *chomp( char *s )
+char * chomp( char *s )
 {
-    char *b = ALLOC(char, strlen(s)+1), *c = b;
-    while (*s && isspace(*s))
-        ++s;
-    while (*s && !isspace(*s))
-        *c++ = *s++;
-    *c = 0;
-    return b;
+    char *a, *b, *c;
+    // remove leading spaces
+    for ( b = s; *b; b++ )
+        if ( !isspace(*b) )
+            break;
+    // strsav the string
+    a = strcpy( ABC_ALLOC(char, strlen(b)+1), b );
+    // remove trailing spaces
+    for ( c = a+strlen(a); c > a; c-- )
+        if ( *c == 0 || isspace(*c) )
+            *c = 0;
+        else
+            break;
+    return a;
 }   
         
 /**Function*************************************************************
 
-  Synopsis    [Duplicates string and returns it with leading and 
-               trailing spaces removed.]
+  Synopsis    []
 
   Description []
                
@@ -415,64 +538,137 @@ char *chomp( char *s )
   SeeAlso     []
 
 ***********************************************************************/
+int Mio_LibraryCompareGatesByArea( Mio_Gate_t ** pp1, Mio_Gate_t ** pp2 )
+{
+    double Diff = (*pp1)->dArea - (*pp2)->dArea;
+    if ( Diff < 0.0 )
+        return -1;
+    if ( Diff > 0.0 ) 
+        return 1;
+    return 0; 
+}
+        
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Mio_LibraryCompareGatesByName( Mio_Gate_t ** pp1, Mio_Gate_t ** pp2 )
+{
+    int Diff = strcmp( (*pp1)->pName, (*pp2)->pName );
+    if ( Diff < 0 )
+        return -1;
+    if ( Diff > 0 ) 
+        return 1;
+    return 0; 
+}
+        
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Mio_LibrarySortGates( Mio_Library_t * pLib )
+{
+    Mio_Gate_t ** ppGates, * pGate;
+    int i = 0;
+    ppGates = ABC_ALLOC( Mio_Gate_t *, pLib->nGates );
+    Mio_LibraryForEachGate( pLib, pGate )
+    {
+        pGate->Cell = i;
+        ppGates[i++] = pGate;
+    }
+    assert( i == pLib->nGates );
+    // sort gates by name
+    pLib->ppGates0 = ABC_ALLOC( Mio_Gate_t *, pLib->nGates );
+    for ( i = 0; i < pLib->nGates; i++ )
+        pLib->ppGates0[i] = ppGates[i];
+    qsort( (void *)ppGates, pLib->nGates, sizeof(void *), 
+            (int (*)(const void *, const void *)) Mio_LibraryCompareGatesByName );
+    for ( i = 0; i < pLib->nGates; i++ )
+        ppGates[i]->pNext = (i < pLib->nGates-1)? ppGates[i+1] : NULL;
+    pLib->pGates = ppGates[0];
+    pLib->ppGatesName = ppGates;
+}
+        
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline Mio_Gate_t * Mio_GateCompare( Mio_Gate_t * pThis, Mio_Gate_t * pNew, word uTruth )
+{
+    if ( pNew->uTruth != uTruth )
+        return pThis;
+    if ( pThis == NULL )
+        return pNew;
+    if ( pThis->dArea > pNew->dArea || (pThis->dArea == pNew->dArea && strcmp(pThis->pName, pNew->pName) > 0) )
+        return pNew;
+    return pThis;
+}
 void Mio_LibraryDetectSpecialGates( Mio_Library_t * pLib )
 {
     Mio_Gate_t * pGate;
-    DdNode * bFuncBuf, * bFuncInv, * bFuncNand2, * bFuncAnd2;
+    word uFuncBuf, uFuncInv, uFuncNand2, uFuncAnd2, uFuncNor2, uFuncOr2;
 
-    bFuncBuf   = pLib->dd->vars[0];                                              Cudd_Ref( bFuncBuf );
-    bFuncInv   = Cudd_Not( pLib->dd->vars[0] );                                  Cudd_Ref( bFuncInv );
-    bFuncNand2 = Cudd_bddNand( pLib->dd, pLib->dd->vars[0], pLib->dd->vars[1] ); Cudd_Ref( bFuncNand2 );
-    bFuncAnd2  = Cudd_bddAnd( pLib->dd, pLib->dd->vars[0], pLib->dd->vars[1] );  Cudd_Ref( bFuncAnd2 );
+    Mio_LibrarySortGates( pLib );
 
-    // get buffer
+    uFuncBuf   = ABC_CONST(0xAAAAAAAAAAAAAAAA);
+    uFuncAnd2  = ABC_CONST(0xAAAAAAAAAAAAAAAA) & ABC_CONST(0xCCCCCCCCCCCCCCCC);
+    uFuncOr2   = ABC_CONST(0xAAAAAAAAAAAAAAAA) | ABC_CONST(0xCCCCCCCCCCCCCCCC);
+    uFuncInv   = ~uFuncBuf;
+    uFuncNand2 = ~uFuncAnd2;
+    uFuncNor2  = ~uFuncOr2;
+
+    // get smallest-area buffer
     Mio_LibraryForEachGate( pLib, pGate )
-        if ( pLib->pGateBuf == NULL && pGate->bFunc == bFuncBuf )
-        {
-            pLib->pGateBuf = pGate;
-            break;
-        }
+        pLib->pGateBuf = Mio_GateCompare( pLib->pGateBuf, pGate, uFuncBuf );
     if ( pLib->pGateBuf == NULL )
     {
-        printf( "Warnings: GENLIB library reader cannot detect the buffer gate.\n" );
+        printf( "Warnings: genlib library reader cannot detect the buffer gate.\n" );
         printf( "Some parts of the supergate-based technology mapper may not work correctly.\n" );
     }
  
-    // get inverter
+    // get smallest-area inverter
     Mio_LibraryForEachGate( pLib, pGate )
-        if ( pLib->pGateInv == NULL && pGate->bFunc == bFuncInv )
-        {
-            pLib->pGateInv = pGate;
-            break;
-        }
+        pLib->pGateInv = Mio_GateCompare( pLib->pGateInv, pGate, uFuncInv );
     if ( pLib->pGateInv == NULL )
     {
-        printf( "Warnings: GENLIB library reader cannot detect the invertor gate.\n" );
+        printf( "Warnings: genlib library reader cannot detect the invertor gate.\n" );
         printf( "Some parts of the supergate-based technology mapper may not work correctly.\n" );
     }
 
-    // get the NAND2 and AND2 gates
+    // get smallest-area NAND2/AND2 gates
     Mio_LibraryForEachGate( pLib, pGate )
-        if ( pLib->pGateNand2 == NULL && pGate->bFunc == bFuncNand2 )
-        {
-            pLib->pGateNand2 = pGate;
-            break;
-        }
-    Mio_LibraryForEachGate( pLib, pGate )
-        if ( pLib->pGateAnd2 == NULL && pGate->bFunc == bFuncAnd2 )
-        {
-            pLib->pGateAnd2 = pGate;
-            break;
-        }
-    if ( pLib->pGateAnd2 == NULL && pLib->pGateNand2 == NULL )
     {
-        printf( "Warnings: GENLIB library reader cannot detect the AND2 or NAND2 gate.\n" );
+        pLib->pGateNand2 = Mio_GateCompare( pLib->pGateNand2, pGate, uFuncNand2 );
+        pLib->pGateAnd2 = Mio_GateCompare( pLib->pGateAnd2, pGate, uFuncAnd2 );
+        pLib->pGateNor2 = Mio_GateCompare( pLib->pGateNor2, pGate, uFuncNor2 );
+        pLib->pGateOr2 = Mio_GateCompare( pLib->pGateOr2, pGate, uFuncOr2 );
+    }
+    if ( pLib->pGateAnd2 == NULL && pLib->pGateNand2 == NULL && pLib->pGateNor2 == NULL && pLib->pGateOr2 == NULL )
+    {
+        printf( "Warnings: genlib library reader cannot detect the AND2, NAND2, OR2, and NOR2 gate.\n" );
         printf( "Some parts of the supergate-based technology mapper may not work correctly.\n" );
     }
-
-    Cudd_RecursiveDeref( pLib->dd, bFuncInv );
-    Cudd_RecursiveDeref( pLib->dd, bFuncNand2 );
-    Cudd_RecursiveDeref( pLib->dd, bFuncAnd2 );
 }
 
 /**Function*************************************************************
@@ -486,7 +682,7 @@ void Mio_LibraryDetectSpecialGates( Mio_Library_t * pLib )
   SeeAlso     []
 
 ***********************************************************************/
-int Mio_LibraryReadExclude( void * pAbc, char * ExcludeFile, st_table * tExcludeGate )
+int Mio_LibraryReadExclude( char * ExcludeFile, st__table * tExcludeGate )
 {
     int nDel = 0;
     FILE *pEx;
@@ -500,14 +696,14 @@ int Mio_LibraryReadExclude( void * pAbc, char * ExcludeFile, st_table * tExclude
 
         if ( pEx == NULL )
         {
-            fprintf ( Abc_FrameReadErr( pAbc ), "Error: Could not open exclude file %s. Stop.\n", ExcludeFile );
+            fprintf ( stdout, "Error: Could not open exclude file %s. Stop.\n", ExcludeFile );
             return -1;
         }
 
         while (1 == fscanf( pEx, "%127s", buffer ))
         {
             //printf ("Read: '%s'\n", buffer );
-            st_insert( tExcludeGate, Extra_UtilStrsav( buffer ), (char *)0 );
+            st__insert( tExcludeGate, Abc_UtilStrsav( buffer ), (char *)0 );
             nDel++;
         }
 
@@ -579,4 +775,6 @@ void Io_ReadFileRemoveComments( char * pBuffer, int * pnDots, int * pnLines )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

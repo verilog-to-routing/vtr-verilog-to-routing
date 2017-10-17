@@ -18,6 +18,9 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -76,7 +79,7 @@ int Map_CanonComputeSlow( unsigned uTruths[][2], int nVarsMax, int nVarsReal, un
         for ( m = 0; m < nMints; m++ )
         {
             Map_CanonComputePhase6( uTruths, nVarsMax, uTruth, m, uTruthPerm );
-            if ( uTruthRes[1] > uTruthPerm[1] || uTruthRes[1] == uTruthPerm[1] && uTruthRes[0] > uTruthPerm[0] )
+            if ( uTruthRes[1] > uTruthPerm[1] || (uTruthRes[1] == uTruthPerm[1] && uTruthRes[0] > uTruthPerm[0]) )
             {
                 uTruthRes[0] = uTruthPerm[0];
                 uTruthRes[1] = uTruthPerm[1];
@@ -170,7 +173,8 @@ void Map_CanonComputePhase6( unsigned uTruths[][2], int nVars, unsigned uTruth[]
 int Map_CanonComputeFast( Map_Man_t * p, int nVarsMax, int nVarsReal, unsigned uTruth[], unsigned char * puPhases, unsigned uTruthRes[] )
 {
     unsigned uTruth0, uTruth1;
-    unsigned uCanon0, uCanon1, uCanonBest, uPhaseBest;
+    unsigned uCanon0, uCanon1, uCanonBest;
+    unsigned uPhaseBest = 16; // Suppress "might be used uninitialized" (asserts require < 16)
     int i, Limit;
 
     if ( nVarsMax == 6 )
@@ -268,4 +272,6 @@ int Map_CanonComputeFast( Map_Man_t * p, int nVarsMax, int nVarsReal, unsigned u
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

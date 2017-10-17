@@ -20,13 +20,16 @@
 
 #include "ver.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
 // the list of operation symbols to be used in expressions
-#define VER_PARSE_SYM_OPEN    '('   // opening paranthesis
-#define VER_PARSE_SYM_CLOSE   ')'   // closing paranthesis
+#define VER_PARSE_SYM_OPEN    '('   // opening parenthesis
+#define VER_PARSE_SYM_CLOSE   ')'   // closing parenthesis
 #define VER_PARSE_SYM_CONST0  '0'   // constant 0
 #define VER_PARSE_SYM_CONST1  '1'   // constant 1
 #define VER_PARSE_SYM_NEGBEF1 '!'   // negation before the variable
@@ -44,7 +47,7 @@
 #define VER_PARSE_OPER_OR      4    // logic OR
 #define VER_PARSE_OPER_EQU     3    // equvalence   (a'b'| ab )
 #define VER_PARSE_OPER_MUX     2    // MUX(a,b,c)   (ab | a'c )
-#define VER_PARSE_OPER_MARK    1    // OpStack token standing for an opening paranthesis
+#define VER_PARSE_OPER_MARK    1    // OpStack token standing for an opening parenthesis
 
 // these are values of the internal Flag
 #define VER_PARSE_FLAG_START   1    // after the opening parenthesis 
@@ -84,11 +87,11 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
     Vec_IntClear( vStackOp );
 
     if ( !strcmp(pFormula, "0") || !strcmp(pFormula, "1\'b0") )
-        return Hop_ManConst0(pMan);
+        return Hop_ManConst0((Hop_Man_t *)pMan);
     if ( !strcmp(pFormula, "1") || !strcmp(pFormula, "1\'b1") )
-        return Hop_ManConst1(pMan);
+        return Hop_ManConst1((Hop_Man_t *)pMan);
 
-    // make sure that the number of opening and closing parantheses is the same
+    // make sure that the number of opening and closing parentheses is the same
     nParans = 0;
     for ( pTemp = pFormula; *pTemp; pTemp++ )
         if ( *pTemp == '(' )
@@ -97,11 +100,11 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
             nParans--;
     if ( nParans != 0 )
     {
-        sprintf( pErrorMessage, "Parse_FormulaParser(): Different number of opening and closing parantheses ()." );
+        sprintf( pErrorMessage, "Parse_FormulaParser(): Different number of opening and closing parentheses ()." );
         return NULL;
     }
  
-    // add parantheses
+    // add parentheses
     pTemp = pFormula + strlen(pFormula) + 2;
     *pTemp-- = 0; *pTemp = ')';
     while ( --pTemp != pFormula )
@@ -183,7 +186,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
         case VER_PARSE_SYM_OPEN:
 			if ( Flag == VER_PARSE_FLAG_VAR )
 			{
-				sprintf( pErrorMessage, "Parse_FormulaParser(): Variable before a paranthesis." );
+				sprintf( pErrorMessage, "Parse_FormulaParser(): Variable before a parenthesis." );
 				Flag = VER_PARSE_FLAG_ERROR; 
                 break;
 			}
@@ -199,7 +202,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
 			    {
 				    if ( !Vec_IntSize( vStackOp ) )
 					{
-						sprintf( pErrorMessage, "Parse_FormulaParser(): There is no opening paranthesis\n" );
+						sprintf( pErrorMessage, "Parse_FormulaParser(): There is no opening parenthesis\n" );
 						Flag = VER_PARSE_FLAG_ERROR; 
                         break;
 					}
@@ -214,7 +217,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
 //                    }
 
                     // perform the given operation
-                    if ( Ver_FormulaParserTopOper( pMan, vStackFn, Oper ) == NULL )
+                    if ( Ver_FormulaParserTopOper( (Hop_Man_t *)pMan, vStackFn, Oper ) == NULL )
 	                {
 		                sprintf( pErrorMessage, "Parse_FormulaParser(): Unknown operation\n" );
 		                return NULL;
@@ -223,7 +226,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
             }
 		    else
 			{
-				sprintf( pErrorMessage, "Parse_FormulaParser(): There is no opening paranthesis\n" );
+				sprintf( pErrorMessage, "Parse_FormulaParser(): There is no opening parenthesis\n" );
 				Flag = VER_PARSE_FLAG_ERROR; 
                 break;
 			}
@@ -237,7 +240,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
             v = Ver_FormulaParserFindVar( pTemp, vNames );
             if ( *pTemp == '\\' )
                 pTemp++;
-            pTemp += (int)Vec_PtrEntry( vNames, 2*v ) - 1;
+            pTemp += (int)(ABC_PTRUINT_T)Vec_PtrEntry( vNames, 2*v ) - 1;
 
 			// assume operation AND, if vars follow one another
 			if ( Flag == VER_PARSE_FLAG_VAR )
@@ -245,7 +248,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
 		        sprintf( pErrorMessage, "Parse_FormulaParser(): Incorrect state." );
                 return NULL;
             }
-            bTemp = Hop_IthVar( pMan, v );
+            bTemp = Hop_IthVar( (Hop_Man_t *)pMan, v );
 			Vec_PtrPush( vStackFn, bTemp ); //  Cudd_Ref( bTemp );
             Flag = VER_PARSE_FLAG_VAR; 
             break;
@@ -269,7 +272,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
 				else
 				{
 //      				Vec_PtrPush( vStackFn, Cudd_Not(Vec_PtrPop(vStackFn)) );
-      				Vec_PtrPush( vStackFn, Hop_Not(Vec_PtrPop(vStackFn)) );
+      				Vec_PtrPush( vStackFn, Hop_Not((Hop_Obj_t *)Vec_PtrPop(vStackFn)) );
 				}
 			}
 		else // if ( Flag == VER_PARSE_FLAG_OPER )
@@ -285,7 +288,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
 				Oper2 = Vec_IntPop( vStackOp ); // the operation before the last one
 				if ( Oper2 >= Oper1 && !(Oper1 == Oper2 && Oper1 == VER_PARSE_OPER_MUX) )  
 				{  // if Oper2 precedence is higher or equal, execute it
-                    if ( Ver_FormulaParserTopOper( pMan, vStackFn, Oper2 ) == NULL )
+                    if ( Ver_FormulaParserTopOper( (Hop_Man_t *)pMan, vStackFn, Oper2 ) == NULL )
 	                {
 		                sprintf( pErrorMessage, "Parse_FormulaParser(): Unknown operation\n" );
 		                return NULL;
@@ -305,7 +308,7 @@ void * Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_
     {
 		if ( Vec_PtrSize(vStackFn) )
 	    {	
-			bFunc = Vec_PtrPop(vStackFn);
+			bFunc = (Hop_Obj_t *)Vec_PtrPop(vStackFn);
 			if ( !Vec_PtrSize(vStackFn) )
 				if ( !Vec_IntSize(vStackOp) )
                 {
@@ -340,8 +343,8 @@ Hop_Obj_t * Ver_FormulaParserTopOper( Hop_Man_t * pMan, Vec_Ptr_t * vStackFn, in
 {
     Hop_Obj_t * bArg0, * bArg1, * bArg2, * bFunc;
     // perform the given operation
-    bArg2 = Vec_PtrPop( vStackFn );
-    bArg1 = Vec_PtrPop( vStackFn );
+    bArg2 = (Hop_Obj_t *)Vec_PtrPop( vStackFn );
+    bArg1 = (Hop_Obj_t *)Vec_PtrPop( vStackFn );
 	if ( Oper == VER_PARSE_OPER_AND )
 		bFunc = Hop_And( pMan, bArg1, bArg2 );
 	else if ( Oper == VER_PARSE_OPER_XOR )
@@ -352,7 +355,7 @@ Hop_Obj_t * Ver_FormulaParserTopOper( Hop_Man_t * pMan, Vec_Ptr_t * vStackFn, in
 		bFunc = Hop_Not( Hop_Exor( pMan, bArg1, bArg2 ) );
 	else if ( Oper == VER_PARSE_OPER_MUX )
     {
-        bArg0 = Vec_PtrPop( vStackFn );
+        bArg0 = (Hop_Obj_t *)Vec_PtrPop( vStackFn );
 //		bFunc = Cudd_bddIte( dd, bArg0, bArg1, bArg2 );  Cudd_Ref( bFunc );
 		bFunc = Hop_Mux( pMan, bArg0, bArg1, bArg2 ); 
 //        Cudd_RecursiveDeref( dd, bArg0 );
@@ -404,16 +407,16 @@ int Ver_FormulaParserFindVar( char * pString, Vec_Ptr_t * vNames )
     nLength = pTemp - pString;
     for ( i = 0; i < Vec_PtrSize(vNames)/2; i++ )
     {
-        nLength2 = (int)Vec_PtrEntry( vNames, 2*i + 0 );
+        nLength2 = (int)(ABC_PTRUINT_T)Vec_PtrEntry( vNames, 2*i + 0 );
         if ( nLength2 != nLength )
             continue;
-        pTemp2   = Vec_PtrEntry( vNames, 2*i + 1 );
+        pTemp2   = (char *)Vec_PtrEntry( vNames, 2*i + 1 );
         if ( strncmp( pString, pTemp2, nLength ) )
             continue;
         return i;
     }
     // could not find - add and return the number
-    Vec_PtrPush( vNames, (void *)nLength );
+    Vec_PtrPush( vNames, (void *)(ABC_PTRUINT_T)nLength );
     Vec_PtrPush( vNames, pString );
     return i;
 }
@@ -431,7 +434,7 @@ int Ver_FormulaParserFindVar( char * pString, Vec_Ptr_t * vNames )
 ***********************************************************************/
 void * Ver_FormulaReduction( char * pFormula, void * pMan, Vec_Ptr_t * vNames, char * pErrorMessage )
 {
-    Hop_Obj_t * pRes;
+    Hop_Obj_t * pRes = NULL;
     int v, fCompl;
     char Symbol;
 
@@ -453,17 +456,17 @@ void * Ver_FormulaReduction( char * pFormula, void * pMan, Vec_Ptr_t * vNames, c
     while ( *pFormula != '}' )
     {
         v = Ver_FormulaParserFindVar( pFormula, vNames );
-        pFormula += (int)Vec_PtrEntry( vNames, 2*v );
+        pFormula += (int)(ABC_PTRUINT_T)Vec_PtrEntry( vNames, 2*v );
         while ( *pFormula == ' ' || *pFormula == ',' )
             pFormula++;
     }
     // compute the function
     if ( Symbol == '&' )
-        pRes = Hop_CreateAnd( pMan, Vec_PtrSize(vNames)/2 );
+        pRes = Hop_CreateAnd( (Hop_Man_t *)pMan, Vec_PtrSize(vNames)/2 );
     else if ( Symbol == '|' )
-        pRes = Hop_CreateOr( pMan, Vec_PtrSize(vNames)/2 );
+        pRes = Hop_CreateOr( (Hop_Man_t *)pMan, Vec_PtrSize(vNames)/2 );
     else if ( Symbol == '^' )
-        pRes = Hop_CreateExor( pMan, Vec_PtrSize(vNames)/2 );
+        pRes = Hop_CreateExor( (Hop_Man_t *)pMan, Vec_PtrSize(vNames)/2 );
     return Hop_NotCond( pRes, fCompl );
 }
 
@@ -471,4 +474,6 @@ void * Ver_FormulaReduction( char * pFormula, void * pMan, Vec_Ptr_t * vNames, c
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

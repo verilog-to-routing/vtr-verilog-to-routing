@@ -18,6 +18,9 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -181,15 +184,16 @@ float Map_SwitchCutRefDeref( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase, i
   SeeAlso     []
 
 ***********************************************************************/
-float Map_MappingGetSwitching( Map_Man_t * pMan, Map_NodeVec_t * vMapping )
+float Map_MappingGetSwitching( Map_Man_t * pMan )
 {
     Map_Node_t * pNode;
-    float Switch;
+    float Switch = 0.0;
     int i;
-    Switch = 0.0;
-    for ( i = 0; i < vMapping->nSize; i++ )
+    for ( i = 0; i < pMan->vMapObjs->nSize; i++ )
     {
-        pNode = vMapping->pArray[i];
+        pNode = pMan->vMapObjs->pArray[i];
+        if ( pNode->nRefAct[2] == 0 )
+            continue;
         // at least one phase has the best cut assigned
         assert( pNode->pCutBest[0] != NULL || pNode->pCutBest[1] != NULL );
         // at least one phase is used in the mapping
@@ -220,4 +224,6 @@ float Map_MappingGetSwitching( Map_Man_t * pMan, Map_NodeVec_t * vMapping )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

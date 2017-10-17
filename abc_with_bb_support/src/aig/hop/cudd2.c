@@ -19,7 +19,10 @@
 ***********************************************************************/
 
 #include "hop.h"
-#include "st.h"
+#include "misc/st/st.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -29,7 +32,7 @@ typedef struct Aig_CuddMan_t_        Aig_CuddMan_t;
 struct Aig_CuddMan_t_
 {
     Aig_Man_t *  pAig;   // internal AIG package
-    st_table *   pTable; // hash table mapping BDD nodes into AIG nodes
+    st__table *   pTable; // hash table mapping BDD nodes into AIG nodes
 };
 
 // static Cudd AIG manager used in this experiment
@@ -58,7 +61,7 @@ void Cudd2_Init( unsigned int numVars, unsigned int numVarsZ, unsigned int numSl
         return;
     s_pCuddMan = ALLOC( Aig_CuddMan_t, 1 );
     s_pCuddMan->pAig = Aig_ManStart();
-    s_pCuddMan->pTable = st_init_table( st_ptrcmp, st_ptrhash );
+    s_pCuddMan->pTable = st__init_table( st__ptrcmp, st__ptrhash );
     for ( v = 0; v < (int)numVars; v++ )
         Aig_ObjCreatePi( s_pCuddMan->pAig );
 }
@@ -77,9 +80,9 @@ void Cudd2_Init( unsigned int numVars, unsigned int numVarsZ, unsigned int numSl
 void Cudd2_Quit( void * pCudd )
 {
     assert( s_pCuddMan != NULL );
-    Aig_ManDumpBlif( s_pCuddMan->pAig, "aig_temp.blif" );
+    Aig_ManDumpBlif( s_pCuddMan->pAig, "aig_temp.blif", NULL, NULL );
     Aig_ManStop( s_pCuddMan->pAig );
-    st_free_table( s_pCuddMan->pTable );
+    st__free_table( s_pCuddMan->pTable );
     free( s_pCuddMan );
     s_pCuddMan = NULL;
 }
@@ -99,7 +102,7 @@ static Aig_Obj_t * Cudd2_GetArg( void * pArg )
 {
     Aig_Obj_t * pNode;
     assert( s_pCuddMan != NULL );
-    if ( !st_lookup( s_pCuddMan->pTable, (char *)Aig_Regular(pArg), (char **)&pNode ) )
+    if ( ! st__lookup( s_pCuddMan->pTable, (char *)Aig_Regular(pArg), (char **)&pNode ) )
     {
         printf( "Cudd2_GetArg(): An argument BDD is not in the hash table.\n" );
         return NULL;
@@ -121,10 +124,10 @@ static Aig_Obj_t * Cudd2_GetArg( void * pArg )
 static void Cudd2_SetArg( Aig_Obj_t * pNode, void * pResult )
 {
     assert( s_pCuddMan != NULL );
-    if ( st_is_member( s_pCuddMan->pTable, (char *)Aig_Regular(pResult) ) )
+    if ( st__is_member( s_pCuddMan->pTable, (char *)Aig_Regular(pResult) ) )
         return;
     pNode = Aig_NotCond( pNode,  Aig_IsComplement(pResult) );
-    st_insert( s_pCuddMan->pTable, (char *)Aig_Regular(pResult), (char *)pNode );
+    st__insert( s_pCuddMan->pTable, (char *)Aig_Regular(pResult), (char *)pNode );
 }
 
 /**Function*************************************************************
@@ -352,4 +355,6 @@ void Cudd2_bddEqual( void * pCudd, void * pArg0, void * pArg1, int Result )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

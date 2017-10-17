@@ -18,12 +18,9 @@
 
 ***********************************************************************/
 
-#ifndef __CUDD2_H__
-#define __CUDD2_H__
+#ifndef ABC__aig__hop__cudd2_h
+#define ABC__aig__hop__cudd2_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif 
 
 // HA: Added for printing messages
 #ifndef MSG 
@@ -37,6 +34,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+ 
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -70,9 +72,11 @@ extern void Cudd2_bddCompose( void * pCudd, void * pArg0, void * pArg1, int v, v
 extern void Cudd2_bddLeq    ( void * pCudd, void * pArg0, void * pArg1, int Result );
 extern void Cudd2_bddEqual  ( void * pCudd, void * pArg0, void * pArg1, int Result );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

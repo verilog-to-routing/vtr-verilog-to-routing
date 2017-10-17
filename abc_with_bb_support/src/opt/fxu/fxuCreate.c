@@ -16,9 +16,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
 #include "fxuInt.h"
 #include "fxu.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -69,9 +71,9 @@ Fxu_Matrix * Fxu_CreateMatrix( Fxu_Data_t * pData )
     nCubesTotal =  0;
     nPairsTotal =  0;
     nPairsStore =  0;
-    nBitsMax    = -1;
+    nBitsMax    = -1; 
     for ( i = 0; i < pData->nNodesOld; i++ )
-        if ( pSopCover = pData->vSops->pArray[i] )
+        if ( (pSopCover = (char *)pData->vSops->pArray[i]) )
         {
             nCubes       = Abc_SopGetCubeNum( pSopCover );
             nFanins      = Abc_SopGetVarNum( pSopCover );
@@ -88,28 +90,28 @@ Fxu_Matrix * Fxu_CreateMatrix( Fxu_Data_t * pData )
         printf( "The current network does not have SOPs to perform extraction.\n" );
         return NULL;
     }
-/*
-    if ( nPairsStore > 10000000 )
+
+    if ( nPairsStore > 50000000 )
     {
         printf( "The problem is too large to be solved by \"fxu\" (%d cubes and %d cube pairs)\n", nCubesTotal, nPairsStore );
         return NULL;
     }
-*/
+
     // start the matrix
 	p = Fxu_MatrixAllocate();
     // create the column labels 
-    p->ppVars = ALLOC( Fxu_Var *, 2 * (pData->nNodesOld + pData->nNodesExt) );
+    p->ppVars = ABC_ALLOC( Fxu_Var *, 2 * (pData->nNodesOld + pData->nNodesExt) );
     for ( i = 0; i < 2 * pData->nNodesOld; i++ )
         p->ppVars[i] = Fxu_MatrixAddVar( p );
 
     // allocate storage for all cube pairs at once
-    p->pppPairs = ALLOC( Fxu_Pair **, nCubesTotal + 100 );
-    p->ppPairs  = ALLOC( Fxu_Pair *,  nPairsStore + 100 );
+    p->pppPairs = ABC_ALLOC( Fxu_Pair **, nCubesTotal + 100 );
+    p->ppPairs  = ABC_ALLOC( Fxu_Pair *,  nPairsStore + 100 );
     memset( p->ppPairs, 0, sizeof(Fxu_Pair *) * nPairsStore );
     iCube = 0;
     iPair = 0;
     for ( i = 0; i < pData->nNodesOld; i++ )
-        if ( pSopCover = pData->vSops->pArray[i] )
+        if ( (pSopCover = (char *)pData->vSops->pArray[i]) )
         {
             // get the number of cubes
             nCubes = Abc_SopGetCubeNum( pSopCover );
@@ -133,17 +135,17 @@ Fxu_Matrix * Fxu_CreateMatrix( Fxu_Data_t * pData )
 
 
     // allocate room for the reordered literals
-    pOrder = ALLOC( int, nBitsMax );
+    pOrder = ABC_ALLOC( int, nBitsMax );
     // create the rows
     for ( i = 0; i < pData->nNodesOld; i++ )
-    if ( pSopCover = pData->vSops->pArray[i] )
+    if ( (pSopCover = (char *)pData->vSops->pArray[i]) )
     {
         // get the new var in the matrix
         pVar = p->ppVars[2*i+1];
         // here we sort the literals of the cover
         // in the increasing order of the numbers of the corresponding nodes
         // because literals should be added to the matrix in this order
-        vFanins = pData->vFanins->pArray[i];
+        vFanins = (Vec_Int_t *)pData->vFanins->pArray[i];
         s_pLits = vFanins->pArray;
         // start the variable order
         nFanins = Abc_SopGetVarNum( pSopCover );
@@ -174,16 +176,42 @@ Fxu_Matrix * Fxu_CreateMatrix( Fxu_Data_t * pData )
 				    Fxu_MatrixAddDivisor( p, pCube1, pCube2 );
         }
     }
-    FREE( pOrder );
+    ABC_FREE( pOrder );
 
     // consider the case when cube pairs should be preprocessed
     // before adding them to the set of divisors
+//    if ( pData->fVerbose )
+//        printf( "The total number of cube pairs is %d.\n", nPairsTotal );
+    if ( nPairsTotal > 10000000 )
+    {
+        printf( "The total number of cube pairs of the network is more than 10,000,000.\n" );
+        printf( "Command \"fx\" takes a long time to run in such cases. It is suggested\n" );
+        printf( "that the user changes the network by reducing the size of logic node and\n" );
+        printf( "consequently the number of cube pairs to be processed by this command.\n" );
+        printf( "It can be achieved as follows: \"st; if -K <num>\" or \"st; renode -s -K <num>\"\n" );
+        printf( "as a proprocessing step, while selecting <num> as approapriate.\n" );
+        return NULL;
+    }
     if ( nPairsTotal > pData->nPairsMax )
         if ( !Fxu_PreprocessCubePairs( p, pData->vSops, nPairsTotal, pData->nPairsMax ) )
             return NULL;
+//    if ( pData->fVerbose )
+//        printf( "Only %d best cube pairs will be used by the fast extract command.\n", pData->nPairsMax );
+
+    if ( p->lVars.nItems > 1000000 )
+    {
+        printf( "The total number of variables is more than 1,000,000.\n" );
+        printf( "Command \"fx\" takes a long time to run in such cases. It is suggested\n" );
+        printf( "that the user changes the network by reducing the size of logic node and\n" );
+        printf( "consequently the number of cube pairs to be processed by this command.\n" );
+        printf( "It can be achieved as follows: \"st; if -K <num>\" or \"st; renode -s -K <num>\"\n" );
+        printf( "as a proprocessing step, while selecting <num> as approapriate.\n" );
+        return NULL;
+    }
+
 
     // add the var pairs to the heap
-    Fxu_MatrixComputeSingles( p );
+    Fxu_MatrixComputeSingles( p, pData->fUse0, pData->nSingleMax );
 
     // print stats
     if ( pData->fVerbose )
@@ -194,9 +222,8 @@ Fxu_Matrix * Fxu_CreateMatrix( Fxu_Data_t * pData )
             p->lVars.nItems, p->lCubes.nItems );
 	    fprintf( stdout, "Lits = %d  Density = %.5f%%\n", 
             p->nEntries, Density );
-	    fprintf( stdout, "1-cube divisors = %6d.  ",  p->lSingles.nItems );
-	    fprintf( stdout, "2-cube divisors = %6d.  ",  p->nDivsTotal );
-	    fprintf( stdout, "Cube pairs = %6d.",    nPairsTotal );
+	    fprintf( stdout, "1-cube divs = %6d. (Total = %6d)  ",  p->lSingles.nItems, p->nSingleTotal );
+	    fprintf( stdout, "2-cube divs = %6d. (Total = %6d)",  p->nDivsTotal, nPairsTotal );
 	    fprintf( stdout, "\n" );
     }
 //    Fxu_MatrixPrint( stdout, p );
@@ -259,7 +286,7 @@ void Fxu_CreateCovers( Fxu_Matrix * p, Fxu_Data_t * pData )
 
     // go through the internal nodes
     for ( n = 0; n < pData->nNodesOld; n++ )
-    if ( pSopCover = pData->vSops->pArray[n] )
+    if ( (pSopCover = (char *)pData->vSops->pArray[n]) )
     {
         // get the number of this node
         iNode = n;
@@ -345,7 +372,7 @@ void Fxu_CreateCoversNode( Fxu_Matrix * p, Fxu_Data_t * pData, int iNode, Fxu_Cu
     // allocate room for the new cover
     pSopCover = Abc_SopStart( pData->pManSop, nCubes, vInputsNew->nSize );
     // set the correct polarity of the cover
-    if ( iNode < pData->nNodesOld && Abc_SopGetPhase( pData->vSops->pArray[iNode] ) == 0 )
+    if ( iNode < pData->nNodesOld && Abc_SopGetPhase( (char *)pData->vSops->pArray[iNode] ) == 0 )
         Abc_SopComplement( pSopCover );
 
     // add the cubes
@@ -416,3 +443,5 @@ int Fxu_CreateMatrixLitCompare( int * ptrX, int * ptrY )
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+ABC_NAMESPACE_IMPL_END
+

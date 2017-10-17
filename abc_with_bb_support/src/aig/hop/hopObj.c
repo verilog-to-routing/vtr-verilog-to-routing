@@ -20,6 +20,9 @@
 
 #include "hop.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -44,6 +47,7 @@ Hop_Obj_t * Hop_ObjCreatePi( Hop_Man_t * p )
     Hop_Obj_t * pObj;
     pObj = Hop_ManFetchMemory( p );
     pObj->Type = AIG_PI;
+    pObj->PioNum = Vec_PtrSize( p->vPis );
     Vec_PtrPush( p->vPis, pObj );
     p->nObjs[AIG_PI]++;
     return pObj;
@@ -73,7 +77,7 @@ Hop_Obj_t * Hop_ObjCreatePo( Hop_Man_t * p, Hop_Obj_t * pDriver )
     else
         pObj->nRefs = Hop_ObjLevel( Hop_Regular(pDriver) );
     // set the phase
-    pObj->fPhase = Hop_ObjFaninPhase(pDriver);
+    pObj->fPhase = Hop_ObjPhaseCompl(pDriver);
     // update node counters of the manager
     p->nObjs[AIG_PO]++;
     return pObj;
@@ -136,7 +140,7 @@ void Hop_ObjConnect( Hop_Man_t * p, Hop_Obj_t * pObj, Hop_Obj_t * pFan0, Hop_Obj
     else
         pObj->nRefs = Hop_ObjLevelNew( pObj );
     // set the phase
-    pObj->fPhase = Hop_ObjFaninPhase(pFan0) & Hop_ObjFaninPhase(pFan1);
+    pObj->fPhase = Hop_ObjPhaseCompl(pFan0) & Hop_ObjPhaseCompl(pFan1);
     // add the node to the structural hash table
     Hop_TableInsert( p, pObj );
 }
@@ -239,7 +243,7 @@ Hop_Obj_t * Hop_ObjRepr( Hop_Obj_t * pObj )
     assert( !Hop_IsComplement(pObj) );
     if ( pObj->pData == NULL || pObj->pData == pObj )
         return pObj;
-    return Hop_ObjRepr( pObj->pData );
+    return Hop_ObjRepr( (Hop_Obj_t *)pObj->pData );
 }
 
 /**Function*************************************************************
@@ -268,4 +272,6 @@ void Hop_ObjCreateChoice( Hop_Obj_t * pOld, Hop_Obj_t * pNew )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,24 +18,26 @@
 
 ***********************************************************************/
  
-#ifndef __NM_INT_H__
-#define __NM_INT_H__
+#ifndef ABC__misc__nm__nmInt_h
+#define ABC__misc__nm__nmInt_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "extra.h"
-#include "vec.h"
+#include "misc/extra/extra.h"
+#include "misc/vec/vec.h"
 #include "nm.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -44,8 +46,8 @@ extern "C" {
 typedef struct Nm_Entry_t_ Nm_Entry_t;
 struct Nm_Entry_t_
 {
-    unsigned         Type   :  4;   // object type
-    unsigned         ObjId  : 28;   // object ID
+    unsigned         Type;          // object type
+    unsigned         ObjId;         // object ID
     Nm_Entry_t *     pNextI2N;      // the next entry in the ID hash table
     Nm_Entry_t *     pNextN2I;      // the next entry in the name hash table
     Nm_Entry_t *     pNameSake;     // the next entry with the same name
@@ -76,11 +78,12 @@ extern int              Nm_ManTableAdd( Nm_Man_t * p, Nm_Entry_t * pEntry );
 extern int              Nm_ManTableDelete( Nm_Man_t * p, int ObjId );
 extern Nm_Entry_t *     Nm_ManTableLookupId( Nm_Man_t * p, int ObjId );
 extern Nm_Entry_t *     Nm_ManTableLookupName( Nm_Man_t * p, char * pName, int Type );
-extern unsigned int     Cudd_PrimeNm( unsigned int p );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

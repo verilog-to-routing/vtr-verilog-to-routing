@@ -15,6 +15,9 @@
 
 #include "place_base.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 // --------------------------------------------------------------------
 // writeBookshelfNodes()
@@ -92,3 +95,5 @@ void writeBookshelf(const char *filename) {
   writeBookshelfNodes("out.nodes");
   writeBookshelfPl("out.pl");
 }
+ABC_NAMESPACE_IMPL_END
+

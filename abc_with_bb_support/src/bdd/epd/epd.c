@@ -12,12 +12,39 @@
 
   Author      [In-Ho Moon]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
 
-  Revision    [$Id: epd.c,v 1.1.1.1 2003/02/24 22:23:57 wjiang Exp $]
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
+
+  Revision    [$Id: epd.c,v 1.10 2004/08/13 18:20:30 fabio Exp $]
 
 ******************************************************************************/
 
@@ -25,9 +52,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "epd.h"
 
+ABC_NAMESPACE_IMPL_START
 
 /**Function********************************************************************
 
@@ -41,11 +69,11 @@
 
 ******************************************************************************/
 EpDouble *
-EpdAlloc()
+EpdAlloc(void)
 {
-  EpDouble	*epd;
+  EpDouble      *epd;
 
-  epd = ALLOC(EpDouble, 1);
+  epd = ABC_ALLOC(EpDouble, 1);
   return(epd);
 }
 
@@ -88,15 +116,15 @@ EpdCmp(const char *key1, const char *key2)
 void
 EpdFree(EpDouble *epd)
 {
-  FREE(epd);
+  ABC_FREE(epd);
 }
 
 
 /**Function********************************************************************
 
-  Synopsis    [Multiplies two arbitrary precision double values.]
+  Synopsis    [Converts an arbitrary precision double value to a string.]
 
-  Description [Multiplies two arbitrary precision double values.]
+  Description [Converts an arbitrary precision double value to a string.]
 
   SideEffects []
 
@@ -106,9 +134,9 @@ EpdFree(EpDouble *epd)
 void
 EpdGetString(EpDouble *epd, char *str)
 {
-  double	value;
-  int		exponent;
-  char		*pos;
+  double        value;
+  int           exponent;
+  char          *pos;
 
   if (IsNanDouble(epd->type.value)) {
     sprintf(str, "NaN");
@@ -122,7 +150,7 @@ EpdGetString(EpDouble *epd, char *str)
   }
 
   assert(epd->type.bits.exponent == EPD_MAX_BIN ||
-	 epd->type.bits.exponent == 0);
+         epd->type.bits.exponent == 0);
 
   EpdGetValueAndDecimalExponent(epd, &value, &exponent);
   sprintf(str, "%e", value);
@@ -176,15 +204,15 @@ EpdConvert(double value, EpDouble *epd)
 void
 EpdMultiply(EpDouble *epd1, double value)
 {
-  EpDouble	epd2;
-  double	tmp;
-  int		exponent;
+  EpDouble      epd2;
+  double        tmp;
+  int           exponent;
 
   if (EpdIsNan(epd1) || IsNanDouble(value)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || IsInfDouble(value)) {
-    int	sign;
+    int sign;
 
     EpdConvert(value, &epd2);
     sign = epd1->type.bits.sign ^ epd2.type.bits.sign;
@@ -217,14 +245,14 @@ EpdMultiply(EpDouble *epd1, double value)
 void
 EpdMultiply2(EpDouble *epd1, EpDouble *epd2)
 {
-  double	value;
-  int		exponent;
+  double        value;
+  int           exponent;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
     EpdMakeInf(epd1, sign);
@@ -256,14 +284,14 @@ EpdMultiply2(EpDouble *epd1, EpDouble *epd2)
 void
 EpdMultiply2Decimal(EpDouble *epd1, EpDouble *epd2)
 {
-  double	value;
-  int		exponent;
+  double        value;
+  int           exponent;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
     EpdMakeInf(epd1, sign);
@@ -296,7 +324,7 @@ EpdMultiply3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
     EpdMakeInf(epd3, sign);
@@ -330,7 +358,7 @@ EpdMultiply3Decimal(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
     EpdMakeInf(epd3, sign);
@@ -357,15 +385,15 @@ EpdMultiply3Decimal(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
 void
 EpdDivide(EpDouble *epd1, double value)
 {
-  EpDouble	epd2;
-  double	tmp;
-  int		exponent;
+  EpDouble      epd2;
+  double        tmp;
+  int           exponent;
 
   if (EpdIsNan(epd1) || IsNanDouble(value)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || IsInfDouble(value)) {
-    int	sign;
+    int sign;
 
     EpdConvert(value, &epd2);
     if (EpdIsInf(epd1) && IsInfDouble(value)) {
@@ -410,14 +438,14 @@ EpdDivide(EpDouble *epd1, double value)
 void
 EpdDivide2(EpDouble *epd1, EpDouble *epd2)
 {
-  double	value;
-  int		exponent;
+  double        value;
+  int           exponent;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     if (EpdIsInf(epd1) && EpdIsInf(epd2)) {
       EpdMakeNan(epd1);
@@ -465,7 +493,7 @@ EpdDivide3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     EpdMakeNan(epd3);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     if (EpdIsInf(epd1) && EpdIsInf(epd2)) {
       EpdMakeNan(epd3);
@@ -507,21 +535,21 @@ EpdDivide3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
 void
 EpdAdd(EpDouble *epd1, double value)
 {
-  EpDouble	epd2;
-  double	tmp;
-  int		exponent, diff;
+  EpDouble      epd2;
+  double        tmp;
+  int           exponent, diff;
 
   if (EpdIsNan(epd1) || IsNanDouble(value)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || IsInfDouble(value)) {
-    int	sign;
+    int sign;
 
     EpdConvert(value, &epd2);
     if (EpdIsInf(epd1) && IsInfDouble(value)) {
       sign = epd1->type.bits.sign ^ epd2.type.bits.sign;
       if (sign == 1)
-	EpdMakeNan(epd1);
+        EpdMakeNan(epd1);
     } else if (EpdIsInf(&epd2)) {
       EpdCopy(&epd2, epd1);
     }
@@ -569,19 +597,19 @@ EpdAdd(EpDouble *epd1, double value)
 void
 EpdAdd2(EpDouble *epd1, EpDouble *epd2)
 {
-  double	value;
-  int		exponent, diff;
+  double        value;
+  int           exponent, diff;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     if (EpdIsInf(epd1) && EpdIsInf(epd2)) {
       sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
       if (sign == 1)
-	EpdMakeNan(epd1);
+        EpdMakeNan(epd1);
     } else if (EpdIsInf(epd2)) {
       EpdCopy(epd2, epd1);
     }
@@ -595,7 +623,7 @@ EpdAdd2(EpDouble *epd1, EpDouble *epd2)
     diff = epd1->exponent - epd2->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value +
-		epd2->type.value / pow((double)2.0, (double)diff);
+                epd2->type.value / pow((double)2.0, (double)diff);
     } else
       value = epd1->type.value;
     exponent = epd1->exponent;
@@ -603,7 +631,7 @@ EpdAdd2(EpDouble *epd1, EpDouble *epd2)
     diff = epd2->exponent - epd1->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value / pow((double)2.0, (double)diff) +
-		epd2->type.value;
+                epd2->type.value;
     } else
       value = epd2->type.value;
     exponent = epd2->exponent;
@@ -631,21 +659,21 @@ EpdAdd2(EpDouble *epd1, EpDouble *epd2)
 void
 EpdAdd3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
 {
-  double	value;
-  int		exponent, diff;
+  double        value;
+  int           exponent, diff;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd3);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     if (EpdIsInf(epd1) && EpdIsInf(epd2)) {
       sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
       if (sign == 1)
-	EpdMakeNan(epd3);
+        EpdMakeNan(epd3);
       else
-	EpdCopy(epd1, epd3);
+        EpdCopy(epd1, epd3);
     } else if (EpdIsInf(epd1)) {
       EpdCopy(epd1, epd3);
     } else {
@@ -661,7 +689,7 @@ EpdAdd3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     diff = epd1->exponent - epd2->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value +
-		epd2->type.value / pow((double)2.0, (double)diff);
+                epd2->type.value / pow((double)2.0, (double)diff);
     } else
       value = epd1->type.value;
     exponent = epd1->exponent;
@@ -669,7 +697,7 @@ EpdAdd3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     diff = epd2->exponent - epd1->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value / pow((double)2.0, (double)diff) +
-		epd2->type.value;
+                epd2->type.value;
     } else
       value = epd2->type.value;
     exponent = epd2->exponent;
@@ -697,21 +725,21 @@ EpdAdd3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
 void
 EpdSubtract(EpDouble *epd1, double value)
 {
-  EpDouble	epd2;
-  double	tmp;
-  int		exponent, diff;
+  EpDouble      epd2;
+  double        tmp;
+  int           exponent, diff;
 
   if (EpdIsNan(epd1) || IsNanDouble(value)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || IsInfDouble(value)) {
-    int	sign;
+    int sign;
 
     EpdConvert(value, &epd2);
     if (EpdIsInf(epd1) && IsInfDouble(value)) {
       sign = epd1->type.bits.sign ^ epd2.type.bits.sign;
       if (sign == 0)
-	EpdMakeNan(epd1);
+        EpdMakeNan(epd1);
     } else if (EpdIsInf(&epd2)) {
       EpdCopy(&epd2, epd1);
     }
@@ -759,19 +787,19 @@ EpdSubtract(EpDouble *epd1, double value)
 void
 EpdSubtract2(EpDouble *epd1, EpDouble *epd2)
 {
-  double	value;
-  int		exponent, diff;
+  double        value;
+  int           exponent, diff;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd1);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     if (EpdIsInf(epd1) && EpdIsInf(epd2)) {
       sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
       if (sign == 0)
-	EpdMakeNan(epd1);
+        EpdMakeNan(epd1);
     } else if (EpdIsInf(epd2)) {
       EpdCopy(epd2, epd1);
     }
@@ -785,7 +813,7 @@ EpdSubtract2(EpDouble *epd1, EpDouble *epd2)
     diff = epd1->exponent - epd2->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value -
-		epd2->type.value / pow((double)2.0, (double)diff);
+                epd2->type.value / pow((double)2.0, (double)diff);
     } else
       value = epd1->type.value;
     exponent = epd1->exponent;
@@ -793,7 +821,7 @@ EpdSubtract2(EpDouble *epd1, EpDouble *epd2)
     diff = epd2->exponent - epd1->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value / pow((double)2.0, (double)diff) -
-		epd2->type.value;
+                epd2->type.value;
     } else
       value = epd2->type.value * (double)(-1.0);
     exponent = epd2->exponent;
@@ -821,21 +849,21 @@ EpdSubtract2(EpDouble *epd1, EpDouble *epd2)
 void
 EpdSubtract3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
 {
-  double	value;
-  int		exponent, diff;
+  double        value;
+  int           exponent, diff;
 
   if (EpdIsNan(epd1) || EpdIsNan(epd2)) {
     EpdMakeNan(epd3);
     return;
   } else if (EpdIsInf(epd1) || EpdIsInf(epd2)) {
-    int	sign;
+    int sign;
 
     if (EpdIsInf(epd1) && EpdIsInf(epd2)) {
       sign = epd1->type.bits.sign ^ epd2->type.bits.sign;
       if (sign == 0)
-	EpdCopy(epd1, epd3);
+        EpdCopy(epd1, epd3);
       else
-	EpdMakeNan(epd3);
+        EpdMakeNan(epd3);
     } else if (EpdIsInf(epd1)) {
       EpdCopy(epd1, epd1);
     } else {
@@ -852,7 +880,7 @@ EpdSubtract3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     diff = epd1->exponent - epd2->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value -
-		epd2->type.value / pow((double)2.0, (double)diff);
+                epd2->type.value / pow((double)2.0, (double)diff);
     } else
       value = epd1->type.value;
     exponent = epd1->exponent;
@@ -860,7 +888,7 @@ EpdSubtract3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3)
     diff = epd2->exponent - epd1->exponent;
     if (diff <= EPD_MAX_BIN) {
       value = epd1->type.value / pow((double)2.0, (double)diff) -
-		epd2->type.value;
+                epd2->type.value;
     } else
       value = epd2->type.value * (double)(-1.0);
     exponent = epd2->exponent;
@@ -891,8 +919,8 @@ EpdPow2(int n, EpDouble *epd)
   if (n <= EPD_MAX_BIN) {
     EpdConvert(pow((double)2.0, (double)n), epd);
   } else {
-    EpDouble	epd1, epd2;
-    int		n1, n2;
+    EpDouble    epd1, epd2;
+    int         n1, n2;
 
     n1 = n / 2;
     n2 = n - n1;
@@ -922,8 +950,8 @@ EpdPow2Decimal(int n, EpDouble *epd)
     epd->exponent = 0;
     EpdNormalizeDecimal(epd);
   } else {
-    EpDouble	epd1, epd2;
-    int		n1, n2;
+    EpDouble    epd1, epd2;
+    int         n1, n2;
 
     n1 = n / 2;
     n2 = n - n1;
@@ -948,7 +976,7 @@ EpdPow2Decimal(int n, EpDouble *epd)
 void
 EpdNormalize(EpDouble *epd)
 {
-  int		exponent;
+  int           exponent;
 
   if (IsNanOrInfDouble(epd->type.value)) {
     epd->exponent = 0;
@@ -978,7 +1006,7 @@ EpdNormalize(EpDouble *epd)
 void
 EpdNormalizeDecimal(EpDouble *epd)
 {
-  int		exponent;
+  int           exponent;
 
   if (IsNanOrInfDouble(epd->type.value)) {
     epd->exponent = 0;
@@ -1005,7 +1033,7 @@ EpdNormalizeDecimal(EpDouble *epd)
 void
 EpdGetValueAndDecimalExponent(EpDouble *epd, double *value, int *exponent)
 {
-  EpDouble	epd1, epd2;
+  EpDouble      epd1, epd2;
 
   if (EpdIsNanOrInf(epd))
     return;
@@ -1039,8 +1067,8 @@ EpdGetValueAndDecimalExponent(EpDouble *epd, double *value, int *exponent)
 int
 EpdGetExponent(double value)
 {
-  int		exponent;
-  EpDouble	epd;
+  int           exponent;
+  EpDouble      epd;
 
   epd.type.value = value;
   exponent = epd.type.bits.exponent;
@@ -1062,8 +1090,8 @@ EpdGetExponent(double value)
 int
 EpdGetExponentDecimal(double value)
 {
-  char	*pos, str[24];
-  int	exponent;
+  char  *pos, str[24];
+  int   exponent;
 
   sprintf(str, "%E", value);
   pos = strstr(str, "E");
@@ -1247,12 +1275,13 @@ EpdIsNanOrInf(EpDouble *epd)
 int
 IsInfDouble(double value)
 {
-  IeeeDouble	*ptr = (IeeeDouble *)(&value);
+  EpType val;
 
-  if (ptr->exponent == EPD_EXP_INF &&
-      ptr->mantissa0 == 0 &&
-      ptr->mantissa1 == 0) {
-    if (ptr->sign == 0)
+  val.value = value;
+  if (val.bits.exponent == EPD_EXP_INF &&
+      val.bits.mantissa0 == 0 &&
+      val.bits.mantissa1 == 0) {
+    if (val.bits.sign == 0)
       return(1);
     else
       return(-1);
@@ -1275,13 +1304,14 @@ IsInfDouble(double value)
 int
 IsNanDouble(double value)
 {
-  IeeeNan	*ptr = (IeeeNan *)(&value);
-
-  if (ptr->exponent == EPD_EXP_INF &&
-      ptr->sign == 1 &&
-      ptr->quiet_bit == 1 &&
-      ptr->mantissa0 == 0 &&
-      ptr->mantissa1 == 0) {
+  EpType        val;
+  
+  val.value = value;
+  if (val.nan.exponent == EPD_EXP_INF &&
+      val.nan.sign == 1 &&
+      val.nan.quiet_bit == 1 &&
+      val.nan.mantissa0 == 0 &&
+      val.nan.mantissa1 == 0) {
     return(1);
   }
   return(0);
@@ -1302,13 +1332,16 @@ IsNanDouble(double value)
 int
 IsNanOrInfDouble(double value)
 {
-  IeeeNan	*ptr = (IeeeNan *)(&value);
+  EpType        val;
 
-  if (ptr->exponent == EPD_EXP_INF &&
-      ptr->mantissa0 == 0 &&
-      ptr->mantissa1 == 0 &&
-      (ptr->sign == 1 || ptr->quiet_bit == 0)) {
+  val.value = value;
+  if (val.nan.exponent == EPD_EXP_INF &&
+      val.nan.mantissa0 == 0 &&
+      val.nan.mantissa1 == 0 &&
+      (val.nan.sign == 1 || val.nan.quiet_bit == 0)) {
     return(1);
   }
   return(0);
 }
+
+ABC_NAMESPACE_IMPL_END

@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -44,7 +47,7 @@ static void Ivy_WriteDotAig( Ivy_Man_t * pMan, char * pFileName, int fHaig, Vec_
 void Ivy_ManShow( Ivy_Man_t * pMan, int fHaig, Vec_Ptr_t * vBold )
 {
     extern void Abc_ShowFile( char * FileNameDot );
-    static Counter = 0;
+    static int Counter = 0;
     char FileNameDot[200];
     FILE * pFile;
     // create the file name
@@ -94,7 +97,7 @@ void Ivy_WriteDotAig( Ivy_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 
     // mark the nodes
     if ( vBold )
-        Vec_PtrForEachEntry( vBold, pNode, i )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, vBold, pNode, i )
             pNode->fMarkB = 1;
 
     // compute levels
@@ -326,7 +329,7 @@ void Ivy_WriteDotAig( Ivy_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 
     // unmark nodes
     if ( vBold )
-        Vec_PtrForEachEntry( vBold, pNode, i )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, vBold, pNode, i )
             pNode->fMarkB = 0;
 }
 
@@ -335,4 +338,6 @@ void Ivy_WriteDotAig( Ivy_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

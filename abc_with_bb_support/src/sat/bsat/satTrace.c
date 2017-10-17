@@ -18,9 +18,10 @@
 
 ***********************************************************************/
 
-#include <stdio.h>
-#include <assert.h>
 #include "satSolver.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 /*
     The trace of SAT solving contains the original clause of the problem
@@ -106,4 +107,6 @@ void Sat_SolverTraceWrite( sat_solver * pSat, int * pBeg, int * pEnd, int fRoot 
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

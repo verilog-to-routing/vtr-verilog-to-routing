@@ -18,6 +18,9 @@
 
 #include "mvc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -329,7 +332,7 @@ int Mvc_CoverGetCubeSize( Mvc_Cube_t * pCube )
   entries as there are different pairs of cubes in the cover: n(n-1)/2.
   Fills out the array pDiffs with the following info: For each cube
   pair, included in the array is the number of literals in both cubes
-  after they are made cube free.]
+  after they are made cube ABC_FREE.]
                
   SideEffects []
 
@@ -671,7 +674,7 @@ Mvc_Cover_t ** Mvc_CoverCofactors( Mvc_Data_t * pData, Mvc_Cover_t * pCover, int
     // start the covers for cofactors
     iValueFirst = Vm_VarMapReadValuesFirst(pData->pVm, iVar);
     nValues = Vm_VarMapReadValues(pData->pVm, iVar);
-    ppCofs = ALLOC( Mvc_Cover_t *, nValues + 1 );
+    ppCofs = ABC_ALLOC( Mvc_Cover_t *, nValues + 1 );
     for ( i = 0; i <= nValues; i++ )
         ppCofs[i] = Mvc_CoverClone( pCover );
 
@@ -865,4 +868,6 @@ int Mvc_UtilsCheckUnusedZeros( Mvc_Cover_t * pCover )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

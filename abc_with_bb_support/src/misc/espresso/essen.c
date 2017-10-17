@@ -14,6 +14,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
     essential -- return a cover consisting of the cubes of F which are
     essential prime implicants (with respect to F u D); Further, remove
@@ -177,3 +180,5 @@ register pcube p, c;
     set_free(temp);
     return R;
 }
+ABC_NAMESPACE_IMPL_END
+

@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "sim.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -72,7 +75,7 @@ void Sim_SymmsStructCompute( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMatrs, Vec_Ptr_t * v
     pMap = Sim_SymmsCreateMap( pNtk );
     // collect the nodes in the TFI cone of this output
     vNodes = Abc_NtkDfs( pNtk, 0 );
-    Vec_PtrForEachEntry( vNodes, pTemp, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pTemp, i )
     {
 //        if ( Abc_NodeIsConst(pTemp) )
 //            continue;
@@ -85,18 +88,18 @@ void Sim_SymmsStructCompute( Abc_Ntk_t * pNtk, Vec_Ptr_t * vMatrs, Vec_Ptr_t * v
         pTemp = Abc_ObjFanin0(pTemp);
         if ( Abc_ObjIsCi(pTemp) || Abc_AigNodeIsConst(pTemp) )
             continue;
-        Sim_SymmsTransferToMatrix( Vec_PtrEntry(vMatrs, i), SIM_READ_SYMMS(pTemp), Vec_PtrEntry(vSuppFun, i) );
+        Sim_SymmsTransferToMatrix( (Extra_BitMat_t *)Vec_PtrEntry(vMatrs, i), SIM_READ_SYMMS(pTemp), (unsigned *)Vec_PtrEntry(vSuppFun, i) );
     }
     // clean the intermediate results
     Sim_UtilInfoFree( pNtk->vSupps );
     pNtk->vSupps = NULL;
     Abc_NtkForEachCi( pNtk, pTemp, i )
         Vec_IntFree( SIM_READ_SYMMS(pTemp) );
-    Vec_PtrForEachEntry( vNodes, pTemp, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pTemp, i )
 //        if ( !Abc_NodeIsConst(pTemp) )
             Vec_IntFree( SIM_READ_SYMMS(pTemp) );
     Vec_PtrFree( vNodes );
-    free( pMap );
+    ABC_FREE( pMap );
 }
 
 /**Function*************************************************************
@@ -137,7 +140,7 @@ void Sim_SymmsStructComputeOne( Abc_Ntk_t * pNtk, Abc_Obj_t * pNode, int * pMap 
     // add symmetries from other inputs
     for ( i = 0; i < vNodesOther->nSize; i++ )
     {
-        pTemp = Abc_ObjRegular(vNodesOther->pArray[i]);
+        pTemp = Abc_ObjRegular((Abc_Obj_t *)vNodesOther->pArray[i]);
         Sim_SymmsAppendFromNode( pNtk, SIM_READ_SYMMS(pTemp), vNodesOther, vNodesPi0, vNodesPi1, vSymms, pMap );
     }
     Vec_PtrFree( vNodes );
@@ -196,7 +199,7 @@ void Sim_SymmsPartitionNodes( Vec_Ptr_t * vNodes, Vec_Ptr_t * vNodesPis0,
 {
     Abc_Obj_t * pNode;
     int i;
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
         if ( !Abc_ObjIsCi(Abc_ObjRegular(pNode)) )
             Vec_PtrPush( vNodesOther, pNode );
@@ -232,8 +235,8 @@ void Sim_SymmsAppendFromGroup( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodesPi, Vec_Ptr_t
     for ( k = i+1; k < vNodesPi->nSize; k++ )
     {
         // get the two PI nodes
-        pNode1 = Abc_ObjRegular(vNodesPi->pArray[i]);
-        pNode2 = Abc_ObjRegular(vNodesPi->pArray[k]);
+        pNode1 = Abc_ObjRegular((Abc_Obj_t *)vNodesPi->pArray[i]);
+        pNode2 = Abc_ObjRegular((Abc_Obj_t *)vNodesPi->pArray[k]);
         assert( pMap[pNode1->Id] != pMap[pNode2->Id] );
         assert( pMap[pNode1->Id] >= 0 );
         assert( pMap[pNode2->Id] >= 0 );
@@ -310,7 +313,7 @@ int Sim_SymmsIsCompatibleWithNodes( Abc_Ntk_t * pNtk, unsigned uSymm, Vec_Ptr_t 
     // if they belong, but are not part of symmetry, quit
     for ( i = 0; i < vNodesOther->nSize; i++ )
     {
-        pNode = Abc_ObjRegular(vNodesOther->pArray[i]);
+        pNode = Abc_ObjRegular((Abc_Obj_t *)vNodesOther->pArray[i]);
         fIsVar1 = Sim_SuppStrHasVar( pNtk->vSupps, pNode, Ind1 );
         fIsVar2 = Sim_SuppStrHasVar( pNtk->vSupps, pNode, Ind2 );
 
@@ -357,7 +360,7 @@ int Sim_SymmsIsCompatibleWithGroup( unsigned uSymm, Vec_Ptr_t * vNodesPi, int * 
     fHasVar1 = fHasVar2 = 0;
     for ( i = 0; i < vNodesPi->nSize; i++ )
     {
-        pNode = Abc_ObjRegular(vNodesPi->pArray[i]);
+        pNode = Abc_ObjRegular((Abc_Obj_t *)vNodesPi->pArray[i]);
         if ( pMap[pNode->Id] == Ind1 )
             fHasVar1 = 1;
         else if ( pMap[pNode->Id] == Ind2 )
@@ -471,7 +474,7 @@ int * Sim_SymmsCreateMap( Abc_Ntk_t * pNtk )
     int * pMap;
     Abc_Obj_t * pNode;
     int i;
-    pMap = ALLOC( int, Abc_NtkObjNumMax(pNtk) );
+    pMap = ABC_ALLOC( int, Abc_NtkObjNumMax(pNtk) );
     for ( i = 0; i < Abc_NtkObjNumMax(pNtk); i++ )
         pMap[i] = -1;
     Abc_NtkForEachCi( pNtk, pNode, i )
@@ -485,4 +488,6 @@ int * Sim_SymmsCreateMap( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

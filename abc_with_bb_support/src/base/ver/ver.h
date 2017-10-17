@@ -18,23 +18,25 @@
 
 ***********************************************************************/
 
-#ifndef __VER_H__
-#define __VER_H__
+#ifndef ABC__base__ver__ver_h
+#define ABC__base__ver__ver_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif 
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include "abc.h"
+#include "base/abc/abc.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+ 
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -55,8 +57,8 @@ struct Ver_Man_t_
     int             fNameLast;
     ProgressBar *   pProgress;
     // current design
-    Abc_Lib_t *     pDesign;
-    st_table *      tName2Suffix;
+    Abc_Des_t *     pDesign;
+    st__table *      tName2Suffix;
     // error handling
     FILE *          Output;
     int             fTopLevel;
@@ -83,7 +85,7 @@ struct Ver_Man_t_
 ////////////////////////////////////////////////////////////////////////
 
 /*=== verCore.c ========================================================*/
-extern Abc_Lib_t *    Ver_ParseFile( char * pFileName, Abc_Lib_t * pGateLib, int fCheck, int fUseMemMan );
+extern Abc_Des_t *    Ver_ParseFile( char * pFileName, Abc_Des_t * pGateLib, int fCheck, int fUseMemMan );
 extern void           Ver_ParsePrintErrorMessage( Ver_Man_t * p );
 /*=== verFormula.c ========================================================*/
 extern void *         Ver_FormulaParser( char * pFormula, void * pMan, Vec_Ptr_t * vNames, Vec_Ptr_t * vStackFn, Vec_Int_t * vStackOp, char * pErrorMessage );
@@ -106,9 +108,11 @@ extern void           Ver_StreamSkipChars( Ver_Stream_t * p, char * pCharsToSkip
 extern void           Ver_StreamSkipToChars( Ver_Stream_t * p, char * pCharsToStop );
 extern char *         Ver_StreamGetWord( Ver_Stream_t * p, char * pCharsToStop );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

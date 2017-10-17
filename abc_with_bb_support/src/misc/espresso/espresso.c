@@ -47,6 +47,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 pcover espresso(F, D1, R)
 pcover F, D1, R;
 {
@@ -137,3 +140,5 @@ begin:
 
     return F;
 }
+ABC_NAMESPACE_IMPL_END
+

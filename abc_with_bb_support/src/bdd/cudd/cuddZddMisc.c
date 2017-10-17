@@ -4,37 +4,68 @@
 
   PackageName [cudd]
 
-  Synopsis    [.]
+  Synopsis    [Miscellaneous utility functions for ZDDs.]
 
   Description [External procedures included in this module:
-		    <ul>
-		    <li> Cudd_zddDagSize()
-		    <li> Cudd_zddCountMinterm()
-		    <li> Cudd_zddPrintSubtable()
-		    </ul>
-	       Internal procedures included in this module:
-		    <ul>
-		    </ul>
-	       Static procedures included in this module:
-		    <ul>
-		    <li> cuddZddDagInt()
-		    </ul>
-	      ]
+                    <ul>
+                    <li> Cudd_zddDagSize()
+                    <li> Cudd_zddCountMinterm()
+                    <li> Cudd_zddPrintSubtable()
+                    </ul>
+               Internal procedures included in this module:
+                    <ul>
+                    </ul>
+               Static procedures included in this module:
+                    <ul>
+                    <li> cuddZddDagInt()
+                    </ul>
+              ]
 
   SeeAlso     []
 
   Author      [Hyong-Kyoon Shin, In-Ho Moon]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    <math.h>
-#include    "util_hack.h"
-#include    "cuddInt.h"
+#include <math.h>
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -56,7 +87,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddZddMisc.c,v 1.1.1.1 2003/02/24 22:23:54 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddZddMisc.c,v 1.16 2009/02/20 02:14:58 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -70,7 +101,7 @@ static char rcsid[] DD_UNUSED = "$Id: cuddZddMisc.c,v 1.1.1.1 2003/02/24 22:23:5
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static int cuddZddDagInt ARGS((DdNode *n, st_table *tab));
+static int cuddZddDagInt (DdNode *n, st__table *tab);
 
 /**AutomaticEnd***************************************************************/
 
@@ -97,12 +128,12 @@ Cudd_zddDagSize(
   DdNode * p_node)
 {
 
-    int		i;	
-    st_table	*table;
+    int         i;
+    st__table    *table;
 
-    table = st_init_table(st_ptrcmp, st_ptrhash);
+    table = st__init_table( st__ptrcmp, st__ptrhash);
     i = cuddZddDagInt(p_node, table);
-    st_free_table(table);
+    st__free_table(table);
     return(i);
 
 } /* end of Cudd_zddDagSize */
@@ -129,7 +160,7 @@ Cudd_zddCountMinterm(
   DdNode * node,
   int  path)
 {
-    double	dc_var, minterms;	
+    double      dc_var, minterms;
 
     dc_var = (double)((double)(zdd->sizeZ) - (double)path);
     minterms = Cudd_zddCountDouble(zdd, node) / pow(2.0, dc_var);
@@ -153,60 +184,60 @@ void
 Cudd_zddPrintSubtable(
   DdManager * table)
 {
-    int		i, j;
-    DdNode 	*z1, *z1_next, *base;
-    DdSubtable	*ZSubTable;
+    int         i, j;
+    DdNode      *z1, *z1_next, *base;
+    DdSubtable  *ZSubTable;
 
     base = table->one;
     for (i = table->sizeZ - 1; i >= 0; i--) {
-	ZSubTable = &(table->subtableZ[i]);
-	printf("subtable[%d]:\n", i);
-	for (j = ZSubTable->slots - 1; j >= 0; j--) {
-	    z1 = ZSubTable->nodelist[j];
-	    while (z1 != NIL(DdNode)) {
-		(void) fprintf(table->out,
+        ZSubTable = &(table->subtableZ[i]);
+        printf("subtable[%d]:\n", i);
+        for (j = ZSubTable->slots - 1; j >= 0; j--) {
+            z1 = ZSubTable->nodelist[j];
+            while (z1 != NIL(DdNode)) {
+                (void) fprintf(table->out,
 #if SIZEOF_VOID_P == 8
-		    "ID = 0x%lx\tindex = %d\tr = %d\t",
-		    (unsigned long) z1 / (unsigned long) sizeof(DdNode),
-		    z1->index, z1->ref);
+                    "ID = 0x%lx\tindex = %u\tr = %u\t",
+                    (ptruint) z1 / (ptruint) sizeof(DdNode),
+                    z1->index, z1->ref);
 #else
-		    "ID = 0x%x\tindex = %d\tr = %d\t",
-		    (unsigned) z1 / (unsigned) sizeof(DdNode),
-		    z1->index, z1->ref);
+                    "ID = 0x%x\tindex = %hu\tr = %hu\t",
+                    (ptruint) z1 / (ptruint) sizeof(DdNode),
+                    z1->index, z1->ref);
 #endif
-		z1_next = cuddT(z1);
-		if (Cudd_IsConstant(z1_next)) {
-		    (void) fprintf(table->out, "T = %d\t\t",
-			(z1_next == base));
-		}
-		else {
+                z1_next = cuddT(z1);
+                if (Cudd_IsConstant(z1_next)) {
+                    (void) fprintf(table->out, "T = %d\t\t",
+                        (z1_next == base));
+                }
+                else {
 #if SIZEOF_VOID_P == 8
-		    (void) fprintf(table->out, "T = 0x%lx\t",
-			(unsigned long) z1_next / (unsigned long) sizeof(DdNode));
+                    (void) fprintf(table->out, "T = 0x%lx\t",
+                        (ptruint) z1_next / (ptruint) sizeof(DdNode));
 #else
-		    (void) fprintf(table->out, "T = 0x%x\t",
-			(unsigned) z1_next / (unsigned) sizeof(DdNode));
+                    (void) fprintf(table->out, "T = 0x%x\t",
+                        (ptruint) z1_next / (ptruint) sizeof(DdNode));
 #endif
-		}
-		z1_next = cuddE(z1);
-		if (Cudd_IsConstant(z1_next)) {
-		    (void) fprintf(table->out, "E = %d\n",
-			(z1_next == base));
-		}
-		else {
+                }
+                z1_next = cuddE(z1);
+                if (Cudd_IsConstant(z1_next)) {
+                    (void) fprintf(table->out, "E = %d\n",
+                        (z1_next == base));
+                }
+                else {
 #if SIZEOF_VOID_P == 8
-		    (void) fprintf(table->out, "E = 0x%lx\n",
-			(unsigned long) z1_next / (unsigned long) sizeof(DdNode));
+                    (void) fprintf(table->out, "E = 0x%lx\n",
+                        (ptruint) z1_next / (ptruint) sizeof(DdNode));
 #else
-		    (void) fprintf(table->out, "E = 0x%x\n",
-			(unsigned) z1_next / (unsigned) sizeof(DdNode));
+                    (void) fprintf(table->out, "E = 0x%x\n",
+                        (ptruint) z1_next / (ptruint) sizeof(DdNode));
 #endif
-		}
+                }
 
-		z1_next = z1->next;
-		z1 = z1_next;
-	    }
-	}
+                z1_next = z1->next;
+                z1 = z1_next;
+            }
+        }
     }
     putchar('\n');
 
@@ -233,20 +264,23 @@ Cudd_zddPrintSubtable(
 static int
 cuddZddDagInt(
   DdNode * n,
-  st_table * tab)
+  st__table * tab)
 {
     if (n == NIL(DdNode))
-	return(0);
+        return(0);
 
-    if (st_is_member(tab, (char *)n) == 1)
-	return(0);
+    if ( st__is_member(tab, (char *)n) == 1)
+        return(0);
 
     if (Cudd_IsConstant(n))
-	return(0);
+        return(0);
 
-    (void)st_insert(tab, (char *)n, NIL(char));
+    (void) st__insert(tab, (char *)n, NIL(char));
     return(1 + cuddZddDagInt(cuddT(n), tab) +
-	cuddZddDagInt(cuddE(n), tab));
+        cuddZddDagInt(cuddE(n), tab));
 
 } /* cuddZddDagInt */
+
+
+ABC_NAMESPACE_IMPL_END
 

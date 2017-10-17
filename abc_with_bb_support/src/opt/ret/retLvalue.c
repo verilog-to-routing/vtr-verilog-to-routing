@@ -20,6 +20,9 @@
 
 #include "retInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -37,8 +40,8 @@ static Vec_Ptr_t * Abc_ManCollectLatches( Abc_Ntk_t * pNtk );
 static int         Abc_NtkRetimeUsingLags( Abc_Ntk_t * pNtk, Vec_Int_t * vLags, int fVerbose );
 
 static inline int  Abc_NodeComputeLag( int LValue, int Fi )          { return (LValue + (1<<16)*Fi)/Fi - (1<<16) - (int)(LValue % Fi == 0);     }
-static inline int  Abc_NodeGetLValue( Abc_Obj_t * pNode )            { return (int)pNode->pCopy;        }
-static inline void Abc_NodeSetLValue( Abc_Obj_t * pNode, int Value ) { pNode->pCopy = (void *)Value;    }
+static inline int  Abc_NodeGetLValue( Abc_Obj_t * pNode )            { return (int)(ABC_PTRUINT_T)pNode->pCopy;        }
+static inline void Abc_NodeSetLValue( Abc_Obj_t * pNode, int Value ) { pNode->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)Value;    }
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -90,7 +93,8 @@ Vec_Int_t * Abc_NtkRetimeGetLags( Abc_Ntk_t * pNtk, int nIterLimit, int fVerbose
     Vec_Int_t * vLags;
     Vec_Ptr_t * vNodes, * vLatches;
     Abc_Obj_t * pNode;
-    int i, FiMax, FiBest, RetValue, clk, clkIter;
+    int i, FiMax, FiBest, RetValue;
+    abctime clk, clkIter;
     char NodeLag;
 
     // get the upper bound on the clock period
@@ -101,15 +105,16 @@ Vec_Int_t * Abc_NtkRetimeGetLags( Abc_Ntk_t * pNtk, int nIterLimit, int fVerbose
     vLatches = Abc_ManCollectLatches( pNtk );
     if ( !Abc_NtkRetimeForPeriod( pNtk, vNodes, vLatches, FiMax, nIterLimit, fVerbose ) )
     {
+        Vec_PtrFree( vLatches );
         Vec_PtrFree( vNodes );
         printf( "Abc_NtkRetimeGetLags() error: The upper bound on the clock period cannot be computed.\n" );
         return Vec_IntStart( Abc_NtkObjNumMax(pNtk) + 1 );
     }
  
     // search for the optimal clock period between 0 and nLevelMax
-clk = clock();
+clk = Abc_Clock();
     FiBest = Abc_NtkRetimeSearch_rec( pNtk, vNodes, vLatches, 0, FiMax, nIterLimit, fVerbose );
-clkIter = clock() - clk;
+clkIter = Abc_Clock() - clk;
 
     // recompute the best l-values
     RetValue = Abc_NtkRetimeForPeriod( pNtk, vNodes, vLatches, FiBest, nIterLimit, fVerbose );
@@ -247,7 +252,7 @@ int Abc_NtkRetimeUpdateLValue( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, Vec_Ptr_t *
     int i, k, lValueNew, fChange;
     // go through the nodes and detect change
     fChange = 0;
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
         assert( Abc_ObjIsNode(pObj) );
         lValueNew = -ABC_INFINITY;
@@ -264,7 +269,7 @@ int Abc_NtkRetimeUpdateLValue( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, Vec_Ptr_t *
         }
     }
     // propagate values through the latches
-    Vec_PtrForEachEntry( vLatches, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vLatches, pObj, i )
         Abc_NodeSetLValue( Abc_ObjFanout0(pObj), Abc_NodeGetLValue(Abc_ObjFanin0(Abc_ObjFanin0(pObj))) - Fi );
     return fChange;
 }
@@ -392,4 +397,6 @@ int Abc_NtkRetimeUsingLags( Abc_Ntk_t * pNtk, Vec_Int_t * vLags, int fVerbose )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

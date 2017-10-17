@@ -13,6 +13,9 @@
 #include <assert.h>
 #include "place_base.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 // --------------------------------------------------------------------
 // Hash type/functions
@@ -358,3 +361,5 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+ABC_NAMESPACE_IMPL_END
+
