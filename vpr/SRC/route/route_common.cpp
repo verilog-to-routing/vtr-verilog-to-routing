@@ -97,13 +97,14 @@ static vtr::t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
 /******************** Subroutines local to route_common.c *******************/
 
-static void load_route_bb(int bb_factor);
 
 static void add_to_heap(t_heap *hptr);
 static t_heap *alloc_heap_data(void);
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor);
+static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
@@ -486,7 +487,8 @@ void init_route_structs(int bb_factor) {
 		free_traceback(net_id);
 
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
-	load_route_bb(bb_factor);
+	route_ctx.route_bb = load_route_bb(bb_factor);
+    route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
 
     //Allocate the routing status for each net
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
@@ -913,8 +915,51 @@ static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(con
     return net_rr_terminals;
 }
 
+/* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
+* in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
+* they are used only to reserve pins for locally used OPINs in the router. *
+* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
+* The values for blocks that are padsare NOT valid.                        */
+static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices) {
+    vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source;
 
-static void load_route_bb(int bb_factor) {
+	int i, j, iclass, inode;
+    int class_low, class_high;
+    t_rr_type rr_type;
+    t_type_ptr type;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    rr_blk_source.resize(cluster_ctx.clb_nlist.blocks().size());
+
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        get_class_range_for_block(blk_id, &class_low, &class_high);
+		rr_blk_source[blk_id].resize(type->num_class);
+        for (iclass = 0; iclass < type->num_class; iclass++) {
+            if (iclass >= class_low && iclass <= class_high) {
+                i = place_ctx.block_locs[blk_id].x;
+                j = place_ctx.block_locs[blk_id].y;
+
+                if (type->class_inf[iclass].type == DRIVER)
+                    rr_type = SOURCE;
+                else
+                    rr_type = SINK;
+
+                inode = get_rr_node_index(L_rr_node_indices, i, j, rr_type, iclass);
+                rr_blk_source[blk_id][iclass] = inode;
+            } else {
+                rr_blk_source[blk_id][iclass] = OPEN;
+            }
+        }
+    }
+
+    return rr_blk_source;
+}
+
+
+static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
 
 	/* This routine loads the bounding box arrays used to limit the space  *
 	 * searched by the maze router when routing each net.  The search is   *
@@ -927,12 +972,15 @@ static void load_route_bb(int bb_factor) {
 	 * are different from the ones used by the placer in that they are     * 
 	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1) rather than (1,1) and   *
 	 * (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            */
+    vtr::vector_map<ClusterNetId, t_bb> route_bb;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    auto nets = cluster_ctx.clb_nlist.nets();
+    route_bb.resize(nets.size());
+	for (auto net_id : nets) {
         int driver_rr = route_ctx.net_rr_terminals[net_id][0];
         const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
         VTR_ASSERT(source_node.type() == SOURCE);
@@ -967,11 +1015,12 @@ static void load_route_bb(int bb_factor) {
 		/* Expand the net bounding box by bb_factor, then clip to the physical *
 		 * chip area.                                                          */
 
-		route_ctx.route_bb[net_id].xmin = max<int>(xmin - bb_factor, 0);
-		route_ctx.route_bb[net_id].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-		route_ctx.route_bb[net_id].ymin = max<int>(ymin - bb_factor, 0);
-		route_ctx.route_bb[net_id].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+		route_bb[net_id].xmin = max<int>(xmin - bb_factor, 0);
+		route_bb[net_id].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+		route_bb[net_id].ymin = max<int>(ymin - bb_factor, 0);
+		route_bb[net_id].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
 	}
+    return route_bb;
 }
 
 void add_to_mod_list(float *fptr) {

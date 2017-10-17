@@ -58,7 +58,5 @@ void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 
 void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes);
 
-void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices);
-
 #endif
 

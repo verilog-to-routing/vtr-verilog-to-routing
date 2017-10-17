@@ -176,9 +176,6 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_seg_id(next_component, loc_data);
 
-        //Load all the external routing data structures if for routing
-        alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
-
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types, segment_inf);
 
 #ifdef USE_MAP_LOOKAHEAD

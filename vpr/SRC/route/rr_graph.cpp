@@ -811,8 +811,6 @@ static void rr_graph_externals(
     alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
             max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
     load_rr_index_segments(num_seg_types);
-
-    alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
 }
 
 static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
@@ -1199,46 +1197,6 @@ void free_rr_graph(void) {
 
     delete[] device_ctx.switch_fanin_remap;
     device_ctx.switch_fanin_remap = nullptr;
-}
-
-/* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
-* in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
-* they are used only to reserve pins for locally used OPINs in the router. *
-* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
-* The values for blocks that are padsare NOT valid.                        */
-void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
-	int i, j, iclass, inode;
-    int class_low, class_high;
-    t_rr_type rr_type;
-    t_type_ptr type;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    route_ctx.rr_blk_source.resize(cluster_ctx.clb_nlist.blocks().size());
-
-	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
-        get_class_range_for_block(blk_id, &class_low, &class_high);
-		route_ctx.rr_blk_source[blk_id].resize(type->num_class);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
-            if (iclass >= class_low && iclass <= class_high) {
-                i = place_ctx.block_locs[blk_id].x;
-                j = place_ctx.block_locs[blk_id].y;
-
-                if (type->class_inf[iclass].type == DRIVER)
-                    rr_type = SOURCE;
-                else
-                    rr_type = SINK;
-
-                inode = get_rr_node_index(L_rr_node_indices, i, j, rr_type, iclass);
-                route_ctx.rr_blk_source[blk_id][iclass] = inode;
-            } else {
-                route_ctx.rr_blk_source[blk_id][iclass] = OPEN;
-            }
-        }
-    }
 }
 
 static void build_rr_sinks_sources(const int i, const int j,
