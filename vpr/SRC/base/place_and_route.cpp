@@ -171,7 +171,7 @@ bool place_and_route(t_placer_opts placer_opts,
                 router_opts.read_rr_graph_name);
 
         //Load the routing
-        read_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str(), router_opts, segment_inf);
+        read_route(filename_opts.RouteFile.c_str(), router_opts, segment_inf, filename_opts.verify_file_digests);
 
         route_success = true;
     } else if (router_opts.doRouting == STAGE_DO) {
