@@ -195,7 +195,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin);
 
 static void rr_graph_externals(
         const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
-        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type, bool for_placement);
+        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type);
 
 void alloc_and_load_edges_and_switches(
         t_rr_node * L_rr_node, const int inode,
@@ -239,7 +239,7 @@ static void build_rr_graph(
         const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings, bool for_placement);
+        int *Warnings);
 
 /******************* Subroutine definitions *******************************/
 
@@ -266,19 +266,18 @@ void create_rr_graph(
         int *num_rr_switches,
         int *Warnings,
         const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name,
-        bool for_placement) {
+        const std::string read_rr_graph_name) {
 
     if (!read_rr_graph_name.empty()) {
         load_rr_file(graph_type, grid,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
                 wire_to_rr_ipin_switch, num_rr_switches,
-                read_rr_graph_name.c_str(), for_placement);
+                read_rr_graph_name.c_str());
     } else {
         build_rr_graph(graph_type, L_num_types, types, grid, nodes_per_chan, sb_type, Fs, switchblocks,
                 num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
                 R_minW_nmos, R_minW_pmos, base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
-                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings, for_placement);
+                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings);
     }
     //Write out rr graph file if needed
     if (!write_rr_graph_name.empty()) {
@@ -312,8 +311,7 @@ static void build_rr_graph(
         const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings, 
-        bool for_placement) {
+        int *Warnings) {
 
     vtr::printf_info("Starting build routing resource graph...\n");
     clock_t begin = clock();
@@ -575,7 +573,7 @@ static void build_rr_graph(
     (*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     rr_graph_externals(segment_inf, num_seg_types, max_chan_width,
-            *wire_to_rr_ipin_switch, base_cost_type, for_placement);
+            *wire_to_rr_ipin_switch, base_cost_type);
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
         dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
     }
@@ -806,7 +804,7 @@ static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
 
 static void rr_graph_externals(
         const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
-        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type, bool for_placement) {
+        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
     add_rr_graph_C_from_switches(device_ctx.rr_switch_inf[wire_to_rr_ipin_switch].Cin);
@@ -814,11 +812,7 @@ static void rr_graph_externals(
             max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
     load_rr_index_segments(num_seg_types);
 
-    if (!for_placement) {
-        alloc_net_rr_terminals();
-        load_net_rr_terminals(device_ctx.rr_node_indices);
-        alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
-    }
+    alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
 }
 
 static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
@@ -1205,52 +1199,6 @@ void free_rr_graph(void) {
 
     delete[] device_ctx.switch_fanin_remap;
     device_ctx.switch_fanin_remap = nullptr;
-}
-
-void alloc_net_rr_terminals(void) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    route_ctx.net_rr_terminals.resize(cluster_ctx.clb_nlist.nets().size());
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        route_ctx.net_rr_terminals[net_id].resize(cluster_ctx.clb_nlist.net_pins(net_id).size());
-    }
-}
-
-/* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
-* index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    * 
-* Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
-
-    int inode, i, j, node_block_pin, iclass;
-    t_type_ptr type;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		int pin_count = 0;
-		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-			i = place_ctx.block_locs[block_id].x;
-			j = place_ctx.block_locs[block_id].y;
-            type = cluster_ctx.clb_nlist.block_type(block_id);
-
-            /* In the routing graph, each (x, y) location has unique pins on it
-             * so when there is capacity, blocks are packed and their pin numbers
-             * are offset to get their actual rr_node */
-            node_block_pin = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-
-            iclass = type->pin_class[node_block_pin];
-
-            inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                    iclass);
-            route_ctx.net_rr_terminals[net_id][pin_count] = inode;
-			pin_count++;
-        }
-    }
 }
 
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *

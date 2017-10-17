@@ -8,7 +8,7 @@
 
 
 
-void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup);
+void read_route(const char* placement_file, const char* route_file, const t_router_opts& RouterOpts, const t_segment_inf* segment_inf);
 
 
 #endif /* READ_ROUTE_H */

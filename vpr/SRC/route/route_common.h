@@ -90,7 +90,6 @@ void reset_rr_node_route_structs(void);
 
 void alloc_route_static_structs(void);
 
-
 void free_trace_structs(void);
 
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,

@@ -52,7 +52,7 @@ static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_nu
 static string format_name(string name);
 
 /*************Global Functions****************************/
-void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup) {
+void read_route(const char* placement_file, const char* route_file, const t_router_opts& router_opts, const t_segment_inf* segment_inf) {
 
     /* Reads in the routing file to fill in the trace_head and t_clb_opins_used data structure. 
      * Perform a series of verification tests to ensure the netlist, placement, and routing
@@ -81,7 +81,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
     t_clb_opins_used clb_opins_used_locally = alloc_route_structs();
-    init_route_structs(vpr_setup.RouterOpts.bb_factor);
+    init_route_structs(router_opts.bb_factor);
 
     /*Check dimensions*/
     getline(fp, header_str);
@@ -103,13 +103,13 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     recompute_occupancy_from_scratch(clb_opins_used_locally);
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
-    pathfinder_update_cost(vpr_setup.RouterOpts.initial_pres_fac, vpr_setup.RouterOpts.acc_fac);
+    pathfinder_update_cost(router_opts.initial_pres_fac, router_opts.acc_fac);
 
-    reserve_locally_used_opins(vpr_setup.RouterOpts.initial_pres_fac,
-            vpr_setup.RouterOpts.acc_fac, true, clb_opins_used_locally);
+    reserve_locally_used_opins(router_opts.initial_pres_fac,
+            router_opts.acc_fac, true, clb_opins_used_locally);
 
     /* Finished loading in the routing, now check it*/
-    check_route(vpr_setup.RouterOpts.route_type, device_ctx.num_rr_switches, clb_opins_used_locally, vpr_setup.Segments);
+    check_route(router_opts.route_type, device_ctx.num_rr_switches, clb_opins_used_locally, segment_inf);
     get_serial_num();
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {

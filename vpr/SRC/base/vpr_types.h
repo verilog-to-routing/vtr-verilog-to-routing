@@ -636,6 +636,13 @@ struct t_netlist_opts {
     bool sweep_constant_primary_outputs = true;
 };
 
+//Should a stage in the CAD flow be skipped, loaded from a file, or performed
+enum e_stage_action {
+    STAGE_SKIP = 0,
+    STAGE_LOAD,
+    STAGE_DO
+};
+
 /* Options for packing
  * TODO: document each packing parameter         */
 enum e_packer_algorithm {
@@ -657,7 +664,7 @@ struct t_packer_opts {
 	bool auto_compute_inter_cluster_net_delay;
 	bool allow_unrelated_clustering;
 	bool connection_driven;
-	bool doPacking;
+	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
 	std::string hmetis_input_file;
@@ -718,7 +725,7 @@ struct t_placer_opts {
 	float td_place_exp_first;
 	int seed;
 	float td_place_exp_last;
-	bool doPlacement;
+	e_stage_action doPlacement;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -810,7 +817,7 @@ struct t_router_opts {
 	bool congestion_analysis;
 	bool fanout_analysis;
     bool switch_usage_analysis;
-	bool doRouting;
+	e_stage_action doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 	enum e_routing_budgets_algorithm routing_budgets_algorithm;
 	std::string write_rr_graph_name;
@@ -818,7 +825,7 @@ struct t_router_opts {
 };
 
 struct t_analysis_opts {
-    bool doAnalysis;
+    e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
 };

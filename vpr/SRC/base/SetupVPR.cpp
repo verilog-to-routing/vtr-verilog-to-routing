@@ -141,22 +141,46 @@ void SetupVPR(t_options *Options,
 	SetupPackerOpts(*Options, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
 
-    //Setup the default flow
+    //Setup the default flow, if no specific stages specified
+    //do all
     if (   !Options->do_packing
         && !Options->do_placement
         && !Options->do_routing
         && !Options->do_analysis) {
 
         //run all stages if none specified
-        PackerOpts->doPacking = true;
-        PlacerOpts->doPlacement = true;
-        RouterOpts->doRouting = true;
-        AnalysisOpts->doAnalysis = true;
-    }
+        PackerOpts->doPacking = STAGE_DO;
+        PlacerOpts->doPlacement = STAGE_DO;
+        RouterOpts->doRouting = STAGE_DO;
+        AnalysisOpts->doAnalysis = STAGE_DO;
+    } else {
+        //We run all stages up to the specified stage
+        //Note that by checking in reverse order (i.e. analysis to packing)
+        //we ensure that earlier stages override the default 'LOAD' action
+        //set by later stages
 
-    //By default run analysis after routing
-    if(RouterOpts->doRouting) {
-        AnalysisOpts->doAnalysis = true;
+        if(Options->do_analysis) {
+            PackerOpts->doPacking = STAGE_LOAD;
+            PlacerOpts->doPlacement = STAGE_LOAD;
+            RouterOpts->doRouting = STAGE_LOAD;
+            AnalysisOpts->doAnalysis = STAGE_DO;
+        }
+
+        if(Options->do_routing) {
+            PackerOpts->doPacking = STAGE_LOAD;
+            PlacerOpts->doPlacement = STAGE_LOAD;
+            RouterOpts->doRouting = STAGE_DO;
+            AnalysisOpts->doAnalysis = STAGE_DO; //Always run analysis after routing
+        }
+
+        if(Options->do_placement) {
+            PackerOpts->doPacking = STAGE_LOAD;
+            PlacerOpts->doPlacement = STAGE_DO;
+        }
+
+        if(Options->do_packing) {
+            PackerOpts->doPacking = STAGE_DO;
+        }
     }
 
 	/* init global variables */
@@ -308,7 +332,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
 	RouterOpts->first_iter_pres_fac = Options.first_iter_pres_fac;
 	RouterOpts->acc_fac = Options.acc_fac;
 	RouterOpts->bend_cost = Options.bend_cost;
-	RouterOpts->doRouting = Options.do_routing;
+    if (Options.do_routing) {
+        RouterOpts->doRouting = STAGE_DO;
+    }
 	RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
 	RouterOpts->write_rr_graph_name = Options.write_rr_graph_file;
         RouterOpts->read_rr_graph_name = Options.read_rr_graph_file;
@@ -354,7 +380,9 @@ void SetupPackerOpts(const t_options& Options,
 
 	PackerOpts->blif_file_name = Options.BlifFile;
 
-	PackerOpts->doPacking = Options.do_packing;
+    if (Options.do_packing) {
+        PackerOpts->doPacking = STAGE_DO;
+    }
 
     //TODO: document?
 	PackerOpts->global_clocks = true; /* DEFAULT */
@@ -391,7 +419,9 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
  * such as checking for conflicting params is assumed to be done beforehand */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts) {
 
-	PlacerOpts->doPlacement = Options.do_placement;
+    if (Options.do_placement) {
+        PlacerOpts->doPlacement = STAGE_DO;
+    }
 
 	PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
 
@@ -421,7 +451,9 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
-	analysis_opts.doAnalysis = Options.do_analysis;
+    if (Options.do_analysis) {
+        analysis_opts.doAnalysis = STAGE_DO;
+    }
 
     analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
 }

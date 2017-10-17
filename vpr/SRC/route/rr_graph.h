@@ -47,19 +47,16 @@ void create_rr_graph(
         int *num_rr_switches,
         int *Warnings,
         const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name, bool for_placement);
+        const std::string read_rr_graph_name);
 
 void free_rr_graph(void);
 
 void dump_rr_graph(const char *file_name);
 void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */
-void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 
 void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 
 void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes);
-
-void alloc_net_rr_terminals(void);
 
 void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices);
 

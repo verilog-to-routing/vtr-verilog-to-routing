@@ -247,7 +247,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
             &det_routing_arch->wire_to_rr_ipin_switch,
             &device_ctx.num_rr_switches,
             &warnings, router_opts.write_rr_graph_name.c_str(),
-            router_opts.read_rr_graph_name.c_str(), true);
+            router_opts.read_rr_graph_name.c_str());
 
     alloc_and_load_rr_node_route_structs();
 

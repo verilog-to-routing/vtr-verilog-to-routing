@@ -25,6 +25,7 @@ using namespace std;
 #include "route_breadth_first.h"
 #include "place_and_route.h"
 #include "rr_graph.h"
+#include "rr_graph2.h"
 #include "read_xml_arch_file.h"
 #include "draw.h"
 #include "echo_files.h"
@@ -101,6 +102,8 @@ static void load_route_bb(int bb_factor);
 static void add_to_heap(t_heap *hptr);
 static t_heap *alloc_heap_data(void);
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
+
+static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
@@ -253,7 +256,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			&device_ctx.num_rr_switches,
 			&warning_count,
             router_opts.write_rr_graph_name.c_str(),
-            router_opts.read_rr_graph_name.c_str(), false);
+            router_opts.read_rr_graph_name.c_str());
 
 	clock_t end = clock();
 
@@ -320,7 +323,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			&device_ctx.num_rr_switches,
 			&warning_count, 
             router_opts.write_rr_graph_name.c_str(),
-            router_opts.read_rr_graph_name.c_str(), false);
+            router_opts.read_rr_graph_name.c_str());
 
 	clock_t end = clock();
 
@@ -476,11 +479,13 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	 * sets the list of rr_nodes touched to empty.                            */
 void init_route_structs(int bb_factor) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets())
 		free_traceback(net_id);
 
+    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
 	load_route_bb(bb_factor);
 
     //Allocate the routing status for each net
@@ -781,6 +786,10 @@ void free_trace_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    if (route_ctx.trace_head.empty() && route_ctx.trace_tail.empty()) {
+        return;
+    }
+
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		free_traceback(net_id);
 
@@ -859,6 +868,51 @@ void reset_rr_node_route_structs(void) {
 		route_ctx.rr_node_route_inf[inode].set_occ(0);
 	}
 }
+
+
+/* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
+* index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    * 
+* Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
+static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+    vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals;
+
+    int inode, i, j, node_block_pin, iclass;
+    t_type_ptr type;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    auto nets = cluster_ctx.clb_nlist.nets();
+    net_rr_terminals.resize(nets.size());
+
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto net_pins = cluster_ctx.clb_nlist.net_pins(net_id);
+        net_rr_terminals[net_id].resize(net_pins.size());
+
+		int pin_count = 0;
+		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+			i = place_ctx.block_locs[block_id].x;
+			j = place_ctx.block_locs[block_id].y;
+            type = cluster_ctx.clb_nlist.block_type(block_id);
+
+            /* In the routing graph, each (x, y) location has unique pins on it
+             * so when there is capacity, blocks are packed and their pin numbers
+             * are offset to get their actual rr_node */
+            node_block_pin = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+
+            iclass = type->pin_class[node_block_pin];
+
+            inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                    iclass);
+            net_rr_terminals[net_id][pin_count] = inode;
+			pin_count++;
+        }
+    }
+
+    return net_rr_terminals;
+}
+
 
 static void load_route_bb(int bb_factor) {
 

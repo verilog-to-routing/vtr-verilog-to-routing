@@ -73,7 +73,7 @@ void load_rr_file(const t_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        const char* read_rr_graph_name, bool for_placement) {
+        const char* read_rr_graph_name) {
 
     const char *Prop;
     pugi::xml_node next_component;
@@ -177,11 +177,7 @@ void load_rr_file(const t_graph_type graph_type,
         process_seg_id(next_component, loc_data);
 
         //Load all the external routing data structures if for routing
-        if (!for_placement) {
-            alloc_net_rr_terminals();
-            load_net_rr_terminals(device_ctx.rr_node_indices);
-            alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
-        }
+        alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
 
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types, segment_inf);
 

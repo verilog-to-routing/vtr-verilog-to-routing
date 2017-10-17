@@ -217,7 +217,10 @@ t_seg_details *alloc_and_load_seg_details(
         VTR_ASSERT(directionality == UNI_DIRECTIONAL);
         fac = 2;
     }
-    VTR_ASSERT(*max_chan_width % fac == 0);
+
+    if (*max_chan_width % fac != 0) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
+    }
 
     /* Map segment type fractions and groupings to counts of tracks */
     sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),

@@ -329,6 +329,10 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 }
 
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    if (vpr_setup.PackerOpts.doPacking != STAGE_DO) {
+        return;
+    }
+
     std::chrono::high_resolution_clock::time_point end, begin;
     begin = std::chrono::high_resolution_clock::now();
     vtr::printf_info("Initialize packing.\n");
@@ -620,34 +624,9 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
 
-void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    if (!vpr_setup.RouterOpts.doRouting) {
-        //Load up netlist and other device parameters
-        vpr_init_pre_place_and_route(vpr_setup, Arch);
-
-        read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(),
-                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.grid);
-        sync_grid_to_blocks();
-
-        post_place_sync();
-
-        int width_fac = vpr_setup.RouterOpts.fixed_channel_width;
-        if (width_fac != NO_FIXED_CHANNEL_WIDTH) {
-            //Only try if a fixed channel width is specified
-            try_graph(width_fac, vpr_setup.RouterOpts, &vpr_setup.RoutingArch,
-                    vpr_setup.Segments, Arch.Chans,
-                    Arch.Directs, Arch.num_directs);
-        }
-
-        //load up routing from file
-        read_route(vpr_setup.FileNameOpts.PlaceFile.c_str(), vpr_setup.FileNameOpts.RouteFile.c_str(), vpr_setup);
-    }
-}
-
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
-    if (!vpr_setup.AnalysisOpts.doAnalysis) return;
+    if (vpr_setup.AnalysisOpts.doAnalysis == STAGE_SKIP) return;
+    VTR_ASSERT(vpr_setup.AnalysisOpts.doAnalysis == STAGE_DO);
 
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.mutable_device();

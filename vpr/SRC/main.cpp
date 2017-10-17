@@ -66,12 +66,13 @@ int main(int argc, const char **argv) {
             return SUCCESS_EXIT_CODE;
         }
 
-        /* If the user requests packing, do packing */
-        if (vpr_setup.PackerOpts.doPacking) {
+        {
+            //Pack
             vpr_pack(vpr_setup, Arch);
         }
 
-        if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
+        {
+            //Place & Route
             vpr_init_pre_place_and_route(vpr_setup, Arch);
             bool place_route_succeeded = vpr_place_and_route(&vpr_setup, Arch);
 
@@ -81,8 +82,8 @@ int main(int argc, const char **argv) {
             }
         }
 
-        if (vpr_setup.AnalysisOpts.doAnalysis) {
-            vpr_init_analysis(vpr_setup, Arch);
+        {
+            //Analysis
             vpr_analysis(vpr_setup, Arch);
         }
 
