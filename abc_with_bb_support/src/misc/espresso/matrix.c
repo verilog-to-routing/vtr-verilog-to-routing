@@ -10,6 +10,9 @@
 //#include "port.h"
 #include "sparse_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
  *  free-lists are only used if 'FAST_AND_LOOSE' is set; this is because
  *  we lose the debugging capability of libmm_t which trashes objects when
@@ -572,3 +575,5 @@ sm_cleanup()
     sm_col_freelist = 0;
 #endif
 }
+ABC_NAMESPACE_IMPL_END
+

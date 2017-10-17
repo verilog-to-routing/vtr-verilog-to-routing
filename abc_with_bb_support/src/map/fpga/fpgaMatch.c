@@ -18,6 +18,9 @@
 
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -116,7 +119,7 @@ int Fpga_MappingMatches( Fpga_Man_t * p, int fDelayOriented )
 int Fpga_MatchNode( Fpga_Man_t * p, Fpga_Node_t * pNode, int fDelayOriented )
 {
     Fpga_Cut_t * pCut, * pCutBestOld;
-    int clk;
+    clock_t clk;
     // make sure that at least one cut other than the trivial is present
     if ( pNode->pCuts->pNext == NULL )
     {
@@ -153,10 +156,10 @@ clk = clock();
         // (2) area recovery (subsequent traversals), area-flow first, delay as a tie-breaker
         if ( (fDelayOriented && 
                (Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival) || 
-                Fpga_FloatEqual(p, pNode->pCutBest->tArrival, pCut->tArrival) && Fpga_FloatMoreThan(p, pNode->pCutBest->aFlow, pCut->aFlow) )) ||
+                (Fpga_FloatEqual(p, pNode->pCutBest->tArrival, pCut->tArrival) && Fpga_FloatMoreThan(p, pNode->pCutBest->aFlow, pCut->aFlow)) )) ||
              (!fDelayOriented && 
                (Fpga_FloatMoreThan(p, pNode->pCutBest->aFlow, pCut->aFlow) || 
-                Fpga_FloatEqual(p, pNode->pCutBest->aFlow, pCut->aFlow) && Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival)))  )
+                (Fpga_FloatEqual(p, pNode->pCutBest->aFlow, pCut->aFlow) && Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival))))  )
         {
             pNode->pCutBest = pCut;
         }
@@ -266,7 +269,7 @@ int Fpga_MatchNodeArea( Fpga_Man_t * p, Fpga_Node_t * pNode )
 {
     Fpga_Cut_t * pCut, * pCutBestOld;
     float aAreaCutBest;
-    int clk;
+    clock_t clk;
     // make sure that at least one cut other than the trivial is present
     if ( pNode->pCuts->pNext == NULL )
     {
@@ -301,7 +304,7 @@ clk = clock();
         }
         // choose the best cut as follows: exact area first, delay as a tie-breaker
         if ( Fpga_FloatMoreThan(p, pNode->pCutBest->aFlow, pCut->aFlow) || 
-             Fpga_FloatEqual(p, pNode->pCutBest->aFlow, pCut->aFlow) && Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival) )
+             (Fpga_FloatEqual(p, pNode->pCutBest->aFlow, pCut->aFlow) && Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival)) )
         {
             pNode->pCutBest = pCut;
         }
@@ -386,8 +389,8 @@ int Fpga_MappingMatchesSwitch( Fpga_Man_t * p )
 int Fpga_MatchNodeSwitch( Fpga_Man_t * p, Fpga_Node_t * pNode )
 {
     Fpga_Cut_t * pCut, * pCutBestOld;
-    float aAreaCutBest;
-    int clk;
+    float aAreaCutBest = FPGA_FLOAT_LARGE;
+    clock_t clk;
     // make sure that at least one cut other than the trivial is present
     if ( pNode->pCuts->pNext == NULL )
     {
@@ -422,7 +425,7 @@ clk = clock();
         }
         // choose the best cut as follows: exact area first, delay as a tie-breaker
         if ( Fpga_FloatMoreThan(p, pNode->pCutBest->aFlow, pCut->aFlow) || 
-             Fpga_FloatEqual(p, pNode->pCutBest->aFlow, pCut->aFlow) && Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival) )
+             (Fpga_FloatEqual(p, pNode->pCutBest->aFlow, pCut->aFlow) && Fpga_FloatMoreThan(p, pNode->pCutBest->tArrival, pCut->tArrival)) )
         {
             pNode->pCutBest = pCut;
         }
@@ -664,7 +667,8 @@ Fpga_Cut_t * Fpga_MappingAreaWithoutNode( Fpga_Man_t * p, Fpga_Node_t * pNode, F
 {
     Fpga_Cut_t * pCut, * pCutBestOld, * pCutRes;
     float aAreaCutBest;
-    int i, clk;
+    int i;
+    clock_t clk;
     // make sure that at least one cut other than the trivial is present
     if ( pNode->pCuts->pNext == NULL )
     {
@@ -792,3 +796,5 @@ float Fpga_FindBestNode( Fpga_Man_t * p, Fpga_NodeVec_t * vNodes, Fpga_Node_t **
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+ABC_NAMESPACE_IMPL_END
+

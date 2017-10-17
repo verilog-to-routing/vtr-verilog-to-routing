@@ -18,7 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+#include "base/io/ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -26,8 +30,6 @@
 
 static int Abc_NtkCountFaninsTotal( Abc_Ntk_t * pNtk );
 static Abc_Ntk_t * Abc_NtkAutoDebugModify( Abc_Ntk_t * pNtk, int ObjNum, int fConst1 );
-
-extern void Io_WriteBlifLogic( Abc_Ntk_t * pNtk, char * FileName, int fWriteLatches );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -49,7 +51,8 @@ void Abc_NtkAutoDebug( Abc_Ntk_t * pNtk, int (*pFuncError) (Abc_Ntk_t *) )
 {
     Abc_Ntk_t * pNtkMod;
     char * pFileName = "bug_found.blif";
-    int i, nSteps, nIter, ModNum, RandNum = 1, clk, clkTotal = clock();
+    int i, nSteps, nIter, ModNum, RandNum = 1;
+    abctime clk, clkTotal = Abc_Clock();
     assert( Abc_NtkIsLogic(pNtk) );
     srand( 0x123123 );
     // create internal copy of the network
@@ -63,7 +66,7 @@ void Abc_NtkAutoDebug( Abc_Ntk_t * pNtk, int (*pFuncError) (Abc_Ntk_t *) )
     // perform incremental modifications
     for ( nIter = 0; ; nIter++ )
     {
-        clk = clock();
+        clk = Abc_Clock();
         // count how many ways of modifying the network exists
         nSteps = 2 * Abc_NtkCountFaninsTotal(pNtk);
         // try modifying the network as many times
@@ -88,14 +91,14 @@ void Abc_NtkAutoDebug( Abc_Ntk_t * pNtk, int (*pFuncError) (Abc_Ntk_t *) )
         }
         printf( "Iter %6d : Latches = %6d. Nodes = %6d. Steps = %6d. Error step = %3d.  ", 
             nIter, Abc_NtkLatchNum(pNtk), Abc_NtkNodeNum(pNtk), nSteps, i );
-        PRT( "Time", clock() - clk );
+        ABC_PRT( "Time", Abc_Clock() - clk );
         if ( i == nSteps ) // could not modify it while preserving the bug
             break;
     }
     // write out the final network
     Io_WriteBlifLogic( pNtk, pFileName, 1 );
     printf( "Final network written into file \"%s\". ", pFileName );
-    PRT( "Total time", clock() - clkTotal );
+    ABC_PRT( "Total time", Abc_Clock() - clkTotal );
     Abc_NtkDelete( pNtk );
 }
 
@@ -196,7 +199,7 @@ Abc_Ntk_t * Abc_NtkAutoDebugModify( Abc_Ntk_t * pNtkInit, int Step, int fConst1 
 
     Abc_NtkSweep( pNtk, 0 );
     Abc_NtkCleanupSeq( pNtk, 0, 0, 0 );
-    Abc_NtkToSop( pNtk, 0 );
+    Abc_NtkToSop( pNtk, -1, ABC_INFINITY );
     Abc_NtkCycleInitStateSop( pNtk, 50, 0 );
     return pNtk;
 }
@@ -205,4 +208,6 @@ Abc_Ntk_t * Abc_NtkAutoDebugModify( Abc_Ntk_t * pNtkInit, int Step, int fConst1 
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

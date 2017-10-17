@@ -15,6 +15,9 @@
 #include "place_base.h"
 #include "place_gordian.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 inline int sqHashId(int id, int max) {
   return ((id * (id+17)) % max);
 }
@@ -104,3 +107,5 @@ float fastEstimate(ConcreteCell *cell,
   
   return len;
 }
+ABC_NAMESPACE_IMPL_END
+

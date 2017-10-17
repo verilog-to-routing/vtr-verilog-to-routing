@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -90,8 +93,8 @@ Abc_Ntk_t * Io_ReadEdifNetwork( Extra_FileReader_t * p )
     int fTokensReady, iLine, i;
 
     // read the first line
-    vTokens = Extra_FileReaderGetTokens(p);
-    if ( strcmp( vTokens->pArray[0], "edif" ) != 0 )
+    vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+    if ( strcmp( (char *)vTokens->pArray[0], "edif" ) != 0 )
     {
         printf( "%s: Wrong input file format.\n", Extra_FileReaderGetFileName(p) );
         return NULL;
@@ -103,19 +106,19 @@ Abc_Ntk_t * Io_ReadEdifNetwork( Extra_FileReader_t * p )
     // go through the lines of the file
     fTokensReady = 0;
     pProgress = Extra_ProgressBarStart( stdout, Extra_FileReaderGetFileSize(p) );
-    for ( iLine = 1; fTokensReady || (vTokens = Extra_FileReaderGetTokens(p)); iLine++ )
+    for ( iLine = 1; fTokensReady || (vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p)); iLine++ )
     {
         Extra_ProgressBarUpdate( pProgress, Extra_FileReaderGetCurPosition(p), NULL );
 
         // get the type of the line
         fTokensReady = 0;
-        if ( strcmp( vTokens->pArray[0], "instance" ) == 0 )
+        if ( strcmp( (char *)vTokens->pArray[0], "instance" ) == 0 )
         { 
-            pNetName = vTokens->pArray[1];
+            pNetName = (char *)vTokens->pArray[1];
             pNet = Abc_NtkFindOrCreateNet( pNtk, pNetName );
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            pGateName = vTokens->pArray[1];
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            pGateName = (char *)vTokens->pArray[1];
             if ( strncmp( pGateName, "Flip", 4 ) == 0 )
             {
                 pObj = Abc_NtkCreateLatch( pNtk );
@@ -129,63 +132,63 @@ Abc_Ntk_t * Io_ReadEdifNetwork( Extra_FileReader_t * p )
             }
             Abc_ObjAddFanin( pNet, pObj );
         }
-        else if ( strcmp( vTokens->pArray[0], "net" ) == 0 )
+        else if ( strcmp( (char *)vTokens->pArray[0], "net" ) == 0 )
         {
-            pNetName = vTokens->pArray[1];
+            pNetName = (char *)vTokens->pArray[1];
             if ( strcmp( pNetName, "CK" ) == 0 || strcmp( pNetName, "RESET" ) == 0 )
                 continue;
             if ( strcmp( pNetName + strlen(pNetName) - 4, "_out" ) == 0 )
                 pNetName[strlen(pNetName) - 4] = 0;
             pNet = Abc_NtkFindNet( pNtk, pNetName );
             assert( pNet );
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            while ( strcmp( vTokens->pArray[0], "portRef" ) == 0 )
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            while ( strcmp( (char *)vTokens->pArray[0], "portRef" ) == 0 )
             {
-                if ( strcmp( pNetName, vTokens->pArray[3] ) != 0 )
+                if ( strcmp( pNetName, (char *)vTokens->pArray[3] ) != 0 )
                 {
-                    pFanout = Abc_NtkFindNet( pNtk, vTokens->pArray[3] );
+                    pFanout = Abc_NtkFindNet( pNtk, (char *)vTokens->pArray[3] );
                     Abc_ObjAddFanin( Abc_ObjFanin0(pFanout), pNet );
                 }
-                vTokens = Extra_FileReaderGetTokens(p);
+                vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
             }
             fTokensReady = 1;
         }
-        else if ( strcmp( vTokens->pArray[0], "library" ) == 0 )
+        else if ( strcmp( (char *)vTokens->pArray[0], "library" ) == 0 )
         {
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            vTokens = Extra_FileReaderGetTokens(p);
-            while ( strcmp( vTokens->pArray[0], "port" ) == 0 )
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
+            while ( strcmp( (char *)vTokens->pArray[0], "port" ) == 0 )
             {
-                pNetName = vTokens->pArray[1];
+                pNetName = (char *)vTokens->pArray[1];
                 if ( strcmp( pNetName, "CK" ) == 0 || strcmp( pNetName, "RESET" ) == 0 )
                 {
-                    vTokens = Extra_FileReaderGetTokens(p);
+                    vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
                     continue;
                 }
                 if ( strcmp( pNetName + strlen(pNetName) - 3, "_PO" ) == 0 )
                     pNetName[strlen(pNetName) - 3] = 0;
-                if ( strcmp( vTokens->pArray[3], "INPUT" ) == 0 )
-                    Io_ReadCreatePi( pNtk, vTokens->pArray[1] );
-                else if ( strcmp( vTokens->pArray[3], "OUTPUT" ) == 0 )
-                    Io_ReadCreatePo( pNtk, vTokens->pArray[1] );
+                if ( strcmp( (char *)vTokens->pArray[3], "INPUT" ) == 0 )
+                    Io_ReadCreatePi( pNtk, (char *)vTokens->pArray[1] );
+                else if ( strcmp( (char *)vTokens->pArray[3], "OUTPUT" ) == 0 )
+                    Io_ReadCreatePo( pNtk, (char *)vTokens->pArray[1] );
                 else
                 {
                     printf( "%s (line %d): Wrong interface specification.\n", Extra_FileReaderGetFileName(p), iLine );
                     Abc_NtkDelete( pNtk );
                     return NULL;
                 }
-                vTokens = Extra_FileReaderGetTokens(p);
+                vTokens = (Vec_Ptr_t *)Extra_FileReaderGetTokens(p);
             }
         }
-        else if ( strcmp( vTokens->pArray[0], "design" ) == 0 )
+        else if ( strcmp( (char *)vTokens->pArray[0], "design" ) == 0 )
         {
-            free( pNtk->pName ); 
-            pNtk->pName = Extra_UtilStrsav( vTokens->pArray[3] );
+            ABC_FREE( pNtk->pName ); 
+            pNtk->pName = (char *)Extra_UtilStrsav( (char *)vTokens->pArray[3] );
             break;
         }
     }
@@ -194,25 +197,25 @@ Abc_Ntk_t * Io_ReadEdifNetwork( Extra_FileReader_t * p )
     // assign logic functions
     Abc_NtkForEachNode( pNtk, pObj, i )
     {
-        if ( strncmp( pObj->pData, "And", 3 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateAnd(pNtk->pManFunc, Abc_ObjFaninNum(pObj), NULL) );
-        else if ( strncmp( pObj->pData, "Or", 2 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateOr(pNtk->pManFunc, Abc_ObjFaninNum(pObj), NULL) );
-        else if ( strncmp( pObj->pData, "Nand", 4 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateNand(pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
-        else if ( strncmp( pObj->pData, "Nor", 3 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateNor(pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
-        else if ( strncmp( pObj->pData, "Exor", 4 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateXor(pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
-        else if ( strncmp( pObj->pData, "Exnor", 5 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateNxor(pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
-        else if ( strncmp( pObj->pData, "Inv", 3 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateInv(pNtk->pManFunc) );
-        else if ( strncmp( pObj->pData, "Buf", 3 ) == 0 )
-            Abc_ObjSetData( pObj, Abc_SopCreateBuf(pNtk->pManFunc) );
+        if ( strncmp( (char *)pObj->pData, "And", 3 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateAnd((Mem_Flex_t *)pNtk->pManFunc, Abc_ObjFaninNum(pObj), NULL) );
+        else if ( strncmp( (char *)pObj->pData, "Or", 2 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateOr((Mem_Flex_t *)pNtk->pManFunc, Abc_ObjFaninNum(pObj), NULL) );
+        else if ( strncmp( (char *)pObj->pData, "Nand", 4 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateNand((Mem_Flex_t *)pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
+        else if ( strncmp( (char *)pObj->pData, "Nor", 3 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateNor((Mem_Flex_t *)pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
+        else if ( strncmp( (char *)pObj->pData, "Exor", 4 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateXor((Mem_Flex_t *)pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
+        else if ( strncmp( (char *)pObj->pData, "Exnor", 5 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateNxor((Mem_Flex_t *)pNtk->pManFunc, Abc_ObjFaninNum(pObj)) );
+        else if ( strncmp( (char *)pObj->pData, "Inv", 3 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateInv((Mem_Flex_t *)pNtk->pManFunc) );
+        else if ( strncmp( (char *)pObj->pData, "Buf", 3 ) == 0 )
+            Abc_ObjSetData( pObj, Abc_SopCreateBuf((Mem_Flex_t *)pNtk->pManFunc) );
         else
         {
-            printf( "%s: Unknown gate type \"%s\".\n", Extra_FileReaderGetFileName(p), pObj->pData );
+            printf( "%s: Unknown gate type \"%s\".\n", Extra_FileReaderGetFileName(p), (char*)pObj->pData );
             Abc_NtkDelete( pNtk );
             return NULL;
         }
@@ -232,4 +235,6 @@ Abc_Ntk_t * Io_ReadEdifNetwork( Extra_FileReader_t * p )
 ////////////////////////////////////////////////////////////////////////
 
 
+
+ABC_NAMESPACE_IMPL_END
 

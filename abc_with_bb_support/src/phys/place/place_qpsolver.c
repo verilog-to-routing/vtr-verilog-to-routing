@@ -14,6 +14,9 @@
 
 #include "place_qpsolver.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 #undef  QPS_DEBUG
 
 #define QPS_TOL 1.0e-3
@@ -1268,3 +1271,5 @@ qps_clean(qps_problem_t * p)
 }
 
 /**********************************************************************/
+ABC_NAMESPACE_IMPL_END
+

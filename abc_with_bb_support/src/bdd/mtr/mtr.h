@@ -20,22 +20,50 @@
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
 
-  Revision    [$Id: mtr.h,v 1.1.1.1 2003/02/24 22:24:02 wjiang Exp $]
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
+
+  Revision    [$Id: mtr.h,v 1.14 2009/02/20 02:03:47 fabio Exp $]
 
 ******************************************************************************/
 
-#ifndef __MTR
-#define __MTR
+#ifndef ABC__bdd__mtr__mtr_h
+#define ABC__bdd__mtr__mtr_h
 
 /*---------------------------------------------------------------------------*/
 /* Nested includes                                                           */
 /*---------------------------------------------------------------------------*/
 
+ABC_NAMESPACE_HEADER_START
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -48,28 +76,12 @@
 #define SIZEOF_INT 4
 #endif
 
-#undef CONST
-#if defined(__STDC__) || defined(__cplusplus)
-#define CONST           const
-#else /* !(__STDC__ || __cplusplus) */
-#define CONST
-#endif /* !(__STDC__ || __cplusplus) */
-
-/* These are potential duplicates. */
-#ifndef EXTERN
-#   ifdef __cplusplus
-#	define EXTERN extern "C"
-#   else
-#	define EXTERN extern
-#   endif
-#endif
-#ifndef ARGS
-#   if defined(__STDC__) || defined(__cplusplus)
-#	define ARGS(protos)    protos          /* ANSI C */
-#   else /* !(__STDC__ || __cplusplus) */
-#	define ARGS(protos)    ()              /* K&R C */
-#   endif /* !(__STDC__ || __cplusplus) */
-#endif
+//#undef CONST
+//#if defined(__STDC__) || defined(__cplusplus)
+//#define CONST           const
+//#else /* !(__STDC__ || __cplusplus) */
+//#define CONST
+//#endif /* !(__STDC__ || __cplusplus) */
 
 #if defined(__GNUC__)
 #define MTR_INLINE __inline__
@@ -82,22 +94,22 @@
 #define MTR_INLINE
 #define MTR_UNUSED
 #endif
- 
+
 /* Flag definitions */
-#define MTR_DEFAULT	0x00000000
-#define MTR_TERMINAL 	0x00000001
-#define MTR_SOFT	0x00000002
-#define MTR_FIXED	0x00000004
-#define MTR_NEWNODE	0x00000008
+#define MTR_DEFAULT     0x00000000
+#define MTR_TERMINAL    0x00000001
+#define MTR_SOFT        0x00000002
+#define MTR_FIXED       0x00000004
+#define MTR_NEWNODE     0x00000008
 
 /* MTR_MAXHIGH is defined in such a way that on 32-bit and 64-bit
 ** machines one can cast a value to (int) without generating a negative
 ** number.
 */
 #if SIZEOF_VOID_P == 8 && SIZEOF_INT == 4
-#define MTR_MAXHIGH	(((MtrHalfWord) ~0) >> 1)
+#define MTR_MAXHIGH     (((MtrHalfWord) ~0) >> 1)
 #else
-#define MTR_MAXHIGH	((MtrHalfWord) ~0)
+#define MTR_MAXHIGH     ((MtrHalfWord) ~0)
 #endif
 
 
@@ -138,9 +150,9 @@ typedef struct MtrNode {
 /*---------------------------------------------------------------------------*/
 
 /* Flag manipulation macros */
-#define MTR_SET(node, flag)		(node->flags |= (flag))
-#define MTR_RESET(node, flag)	(node->flags &= ~ (flag))
-#define MTR_TEST(node, flag)	(node->flags & (flag))
+#define MTR_SET(node, flag)             (node->flags |= (flag))
+#define MTR_RESET(node, flag)   (node->flags &= ~ (flag))
+#define MTR_TEST(node, flag)    (node->flags & (flag))
 
 
 /**AutomaticStart*************************************************************/
@@ -149,25 +161,27 @@ typedef struct MtrNode {
 /* Function prototypes                                                       */
 /*---------------------------------------------------------------------------*/
 
-EXTERN MtrNode * Mtr_AllocNode ARGS(());
-EXTERN void Mtr_DeallocNode ARGS((MtrNode *node));
-EXTERN MtrNode * Mtr_InitTree ARGS(());
-EXTERN void Mtr_FreeTree ARGS((MtrNode *node));
-EXTERN MtrNode * Mtr_CopyTree ARGS((MtrNode *node, int expansion));
-EXTERN void Mtr_MakeFirstChild ARGS((MtrNode *parent, MtrNode *child));
-EXTERN void Mtr_MakeLastChild ARGS((MtrNode *parent, MtrNode *child));
-EXTERN MtrNode * Mtr_CreateFirstChild ARGS((MtrNode *parent));
-EXTERN MtrNode * Mtr_CreateLastChild ARGS((MtrNode *parent));
-EXTERN void Mtr_MakeNextSibling ARGS((MtrNode *first, MtrNode *second));
-EXTERN void Mtr_PrintTree ARGS((MtrNode *node));
-EXTERN MtrNode * Mtr_InitGroupTree ARGS((int lower, int size));
-EXTERN MtrNode * Mtr_MakeGroup ARGS((MtrNode *root, unsigned int low, unsigned int high, unsigned int flags));
-EXTERN MtrNode * Mtr_DissolveGroup ARGS((MtrNode *group));
-EXTERN MtrNode * Mtr_FindGroup ARGS((MtrNode *root, unsigned int low, unsigned int high));
-EXTERN int Mtr_SwapGroups ARGS((MtrNode *first, MtrNode *second));
-EXTERN void Mtr_PrintGroups ARGS((MtrNode *root, int silent));
-EXTERN MtrNode * Mtr_ReadGroups ARGS((FILE *fp, int nleaves));
+extern MtrNode * Mtr_AllocNode (void);
+extern void Mtr_DeallocNode (MtrNode *node);
+extern MtrNode * Mtr_InitTree (void);
+extern void Mtr_FreeTree (MtrNode *node);
+extern MtrNode * Mtr_CopyTree (MtrNode *node, int expansion);
+extern void Mtr_MakeFirstChild (MtrNode *parent, MtrNode *child);
+extern void Mtr_MakeLastChild (MtrNode *parent, MtrNode *child);
+extern MtrNode * Mtr_CreateFirstChild (MtrNode *parent);
+extern MtrNode * Mtr_CreateLastChild (MtrNode *parent);
+extern void Mtr_MakeNextSibling (MtrNode *first, MtrNode *second);
+extern void Mtr_PrintTree (MtrNode *node);
+extern MtrNode * Mtr_InitGroupTree (int lower, int size);
+extern MtrNode * Mtr_MakeGroup (MtrNode *root, unsigned int low, unsigned int high, unsigned int flags);
+extern MtrNode * Mtr_DissolveGroup (MtrNode *group);
+extern MtrNode * Mtr_FindGroup (MtrNode *root, unsigned int low, unsigned int high);
+extern int Mtr_SwapGroups (MtrNode *first, MtrNode *second);
+extern void Mtr_PrintGroups (MtrNode *root, int silent);
+extern MtrNode * Mtr_ReadGroups (FILE *fp, int nleaves);
 
 /**AutomaticEnd***************************************************************/
+
+ABC_NAMESPACE_HEADER_END
 
 #endif /* __MTR */

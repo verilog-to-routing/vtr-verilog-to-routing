@@ -17,6 +17,9 @@
 
 #include "place_base.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 // --------------------------------------------------------------------
 // Global variables
 //
@@ -275,3 +278,5 @@ void spreadDensityY(int numBins, float maxMovement) {
   free(binCells);
   free(allCells);
 }
+ABC_NAMESPACE_IMPL_END
+

@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -70,7 +73,7 @@ Ivy_Store_t * Ivy_NodeFindCutsTravAll( Ivy_Man_t * p, Ivy_Obj_t * pObj, int nLea
 
     // set elementary cuts for the leaves
     nWords = Extra_BitWordNum( nNodes );
-    Vec_PtrForEachEntry( vFront, pLeaf, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pLeaf, i )
     {
         assert( Ivy_ObjTravId(pLeaf) < nNodes );
         // get the new bitcut
@@ -80,7 +83,7 @@ Ivy_Store_t * Ivy_NodeFindCutsTravAll( Ivy_Man_t * p, Ivy_Obj_t * pObj, int nLea
     }
 
     // compute the cuts for each node
-    Vec_PtrForEachEntry( vNodes, pLeaf, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pLeaf, i )
     {
         // skip the leaves
         vCuts = Vec_VecEntry( vBitCuts, Ivy_ObjTravId(pLeaf) );
@@ -104,7 +107,7 @@ Ivy_Store_t * Ivy_NodeFindCutsTravAll( Ivy_Man_t * p, Ivy_Obj_t * pObj, int nLea
     pCutStore->nCutsMax = IVY_CUT_LIMIT;
     // collect the cuts of the root node
     vCuts = Vec_VecEntry( vBitCuts, Ivy_ObjTravId(pObj) );
-    Vec_PtrForEachEntry( vCuts, pBitCut, i )
+    Vec_PtrForEachEntry( unsigned *, vCuts, pBitCut, i )
     {
         pCut = pCutStore->pCuts + pCutStore->nCuts++;
         pCut->nSize = 0;
@@ -112,14 +115,14 @@ Ivy_Store_t * Ivy_NodeFindCutsTravAll( Ivy_Man_t * p, Ivy_Obj_t * pObj, int nLea
         pCut->uHash = 0;
         for ( k = 0; k < nNodes; k++ )
             if ( Extra_TruthHasBit(pBitCut, k) )
-                pCut->pArray[ pCut->nSize++ ] = Ivy_ObjId( Vec_PtrEntry(vNodes, k) );
+                pCut->pArray[ pCut->nSize++ ] = Ivy_ObjId( (Ivy_Obj_t *)Vec_PtrEntry(vNodes, k) );
         assert( pCut->nSize <= nLeaves );
         if ( pCutStore->nCuts == pCutStore->nCutsMax )
             break;
     }
 
     // clean the travIds
-    Vec_PtrForEachEntry( vNodes, pLeaf, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pLeaf, i )
         pLeaf->TravId = 0;
     return pCutStore;
 }
@@ -228,7 +231,7 @@ void Ivy_NodeComputeVolume( Ivy_Obj_t * pObj, int nNodeLimit, Vec_Ptr_t * vNodes
     Ivy_NodeComputeVolumeTrav2_rec( pObj, vFront );
     // find the fanins that are not marked
     Vec_PtrClear( vNodes );
-    Vec_PtrForEachEntry( vFront, pTemp, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, i )
     {
         pFanin = Ivy_ObjFanin0(pTemp);
         if ( !pFanin->fMarkA )
@@ -246,17 +249,17 @@ void Ivy_NodeComputeVolume( Ivy_Obj_t * pObj, int nNodeLimit, Vec_Ptr_t * vNodes
     // remember the number of nodes in the frontier
     nNodes = Vec_PtrSize( vNodes );
     // add the remaining nodes
-    Vec_PtrForEachEntry( vFront, pTemp, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, i )
         Vec_PtrPush( vNodes, pTemp );
     // unmark the nodes
-    Vec_PtrForEachEntry( vNodes, pTemp, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pTemp, i )
     {
         pTemp->fMarkA = 0;
         pTemp->TravId = i;
     }
     // collect the frontier nodes
     Vec_PtrClear( vFront );
-    Vec_PtrForEachEntryStop( vNodes, pTemp, i, nNodes )
+    Vec_PtrForEachEntryStop( Ivy_Obj_t *, vNodes, pTemp, i, nNodes )
         Vec_PtrPush( vFront, pTemp );
 //    printf( "%d ", Vec_PtrSize(vNodes) );
 }
@@ -289,7 +292,7 @@ void Ivy_NodeComputeVolume2( Ivy_Obj_t * pObj, int nNodeLimit, Vec_Ptr_t * vNode
     do {
         // get the node to expand
         pPivot = NULL;
-        Vec_PtrForEachEntryReverse( vFront, pLeaf, i )
+        Vec_PtrForEachEntryReverse( Ivy_Obj_t *, vFront, pLeaf, i )
         {
             if ( (int)pLeaf->Level == LevelMax )
             {
@@ -326,14 +329,14 @@ void Ivy_NodeComputeVolume2( Ivy_Obj_t * pObj, int nNodeLimit, Vec_Ptr_t * vNode
     } while ( Vec_PtrSize(vNodes) < nNodeLimit );
 
     // sort nodes by level
-    Vec_PtrSort( vNodes, Ivy_CompareNodesByLevel );
+    Vec_PtrSort( vNodes, (int (*)(void))Ivy_CompareNodesByLevel );
     // make sure the nodes are ordered in the increasing number of levels
-    pFanin = Vec_PtrEntry( vNodes, 0 );
-    pPivot = Vec_PtrEntryLast( vNodes );
+    pFanin = (Ivy_Obj_t *)Vec_PtrEntry( vNodes, 0 );
+    pPivot = (Ivy_Obj_t *)Vec_PtrEntryLast( vNodes );
     assert( pFanin->Level <= pPivot->Level );
 
     // clean the marks and remember node numbers in the TravId
-    Vec_PtrForEachEntry( vNodes, pFanin, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vNodes, pFanin, i )
     {
         pFanin->fMarkA = 0;
         pFanin->TravId = i;
@@ -383,8 +386,8 @@ void Ivy_NodeFindCutsMerge( Vec_Ptr_t * vCuts0, Vec_Ptr_t * vCuts1, Vec_Ptr_t * 
     unsigned * pBitCut, * pBitCut0, * pBitCut1, * pBitCutTest;
     int i, k, c, w, Counter;
     // iterate through the cut pairs
-    Vec_PtrForEachEntry( vCuts0, pBitCut0, i )
-    Vec_PtrForEachEntry( vCuts1, pBitCut1, k )
+    Vec_PtrForEachEntry( unsigned *, vCuts0, pBitCut0, i )
+    Vec_PtrForEachEntry( unsigned *, vCuts1, pBitCut1, k )
     {
         // skip infeasible cuts
         Counter = 0;
@@ -401,7 +404,7 @@ void Ivy_NodeFindCutsMerge( Vec_Ptr_t * vCuts0, Vec_Ptr_t * vCuts1, Vec_Ptr_t * 
         Extra_TruthOrWords( pBitCutTest, pBitCut0, pBitCut1, nWords );
         // filter contained cuts; try to find containing cut
         w = 0;
-        Vec_PtrForEachEntry( vCuts, pBitCut, c )
+        Vec_PtrForEachEntry( unsigned *, vCuts, pBitCut, c )
         {
             if ( Extra_TruthIsImplyWords( pBitCut, pBitCutTest, nWords ) )
                 break;
@@ -436,7 +439,7 @@ void Ivy_ManTestCutsTravAll( Ivy_Man_t * p )
     Vec_Int_t * vStore;
     Vec_Vec_t * vBitCuts;
     int i, nCutsCut, nCutsTotal, nNodeTotal, nNodeOver;
-    int clk = clock();
+    abctime clk = Abc_Clock();
 
     vNodes = Vec_PtrAlloc( 100 );
     vFront = Vec_PtrAlloc( 100 );
@@ -457,7 +460,7 @@ void Ivy_ManTestCutsTravAll( Ivy_Man_t * p )
     }
     printf( "Total cuts = %6d. Trivial = %6d.   Nodes = %6d. Satur = %6d.  ", 
         nCutsTotal, Ivy_ManPiNum(p) + Ivy_ManNodeNum(p), nNodeTotal, nNodeOver );
-    PRT( "Time", clock() - clk );
+    ABC_PRT( "Time", Abc_Clock() - clk );
 
     Vec_PtrFree( vNodes );
     Vec_PtrFree( vFront );
@@ -470,4 +473,6 @@ void Ivy_ManTestCutsTravAll( Ivy_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

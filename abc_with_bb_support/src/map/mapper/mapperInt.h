@@ -16,22 +16,26 @@
 
 ***********************************************************************/
 
-#ifndef __MAPPER_INT_H__
-#define __MAPPER_INT_H__
+#ifndef ABC__map__mapper__mapperInt_h
+#define ABC__map__mapper__mapperInt_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
  
-//#include "leaks.h"       
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
-#include "cuddInt.h"
-#include "main.h"
-#include "mio.h"
+#include <math.h>
+
+#include "base/main/main.h"
+#include "map/mio/mio.h"
 #include "mapper.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
@@ -61,10 +65,10 @@
 #define MAP_RANDOM_UNSIGNED   ((((unsigned)rand()) << 24) ^ (((unsigned)rand()) << 12) ^ ((unsigned)rand()))
 
 // internal macros to work with cuts
-#define Map_CutIsComplement(p)  (((int)((unsigned long) (p) & 01)))
-#define Map_CutRegular(p)       ((Map_Cut_t *)((unsigned long)(p) & ~01)) 
-#define Map_CutNot(p)           ((Map_Cut_t *)((unsigned long)(p) ^ 01)) 
-#define Map_CutNotCond(p,c)     ((Map_Cut_t *)((unsigned long)(p) ^ (c)))
+#define Map_CutIsComplement(p)  (((int)((ABC_PTRUINT_T) (p) & 01)))
+#define Map_CutRegular(p)       ((Map_Cut_t *)((ABC_PTRUINT_T)(p) & ~01)) 
+#define Map_CutNot(p)           ((Map_Cut_t *)((ABC_PTRUINT_T)(p) ^ 01)) 
+#define Map_CutNotCond(p,c)     ((Map_Cut_t *)((ABC_PTRUINT_T)(p) ^ (c)))
 
 // internal macros for referencing of nodes
 #define Map_NodeReadRef(p)      ((Map_Regular(p))->nRefs)
@@ -95,14 +99,14 @@ struct Map_ManStruct_t_
     int                 nOutputs;      // the number of outputs
     int                 nNodes;        // the total number of nodes
     Map_Node_t *        pConst1;       // the constant 1 node
-    Map_NodeVec_t *     vAnds;         // the array of nodes in the DFS order
-    Map_NodeVec_t *     vNodesAll;     // the array of all nodes
-    Map_NodeVec_t *     vNodesTemp;    // the array of all nodes
-    Map_NodeVec_t *     vMapping;      // the array of internal nodes used in the mapping
+    Map_NodeVec_t *     vMapObjs;      // the array of all nodes
+    Map_NodeVec_t *     vMapBufs;      // the array of all nodes
+    float *             pNodeDelays;   // the array of node delays
 
     // info about the original circuit
     char **             ppOutputNames; // the primary output names
     Map_Time_t *        pInputArrivals;// the PI arrival times
+    Map_Time_t *        pOutputRequireds;// the PI arrival times
 
     // mapping parameters
     int                 nVarsMax;      // the max number of variables
@@ -114,10 +118,12 @@ struct Map_ManStruct_t_
     float               AreaBase;      // the area after delay-oriented mapping
     float               AreaFinal;     // the area after delay-oriented mapping
     int                 nIterations;   // How many matching passes to do
-    bool                fObeyFanoutLimits;// Should mapper try to obey fanout limits or not
+    int                 fObeyFanoutLimits;// Should mapper try to obey fanout limits or not
     float               DelayTarget;   // the required times set by the user
     int                 nTravIds;      // the traversal counter
-    bool                fSwitching;    // Should mapper try to obey fanout limits or not
+    int                 fSwitching;    // use switching activity
+    int                 fSkipFanout;   // skip large gates when mapping high-fanout nodes
+    int                 fUseProfile;   // use standard-cell profile
 
     // the supergate library
     Map_SuperLib_t *    pSuperLib;     // the current supergate library
@@ -145,17 +151,17 @@ struct Map_ManStruct_t_
     int                 nFanoutViolations;  // the number of nodes in mapped circuit violating fanout
 
     // runtime statistics
-    int                 timeToMap;     // time to transfer to the mapping structure
-    int                 timeCuts;      // time to compute k-feasible cuts
-    int                 timeTruth;     // time to compute the truth table for each cut
-    int                 timeMatch;     // time to perform matching for each node
-    int                 timeArea;      // time to recover area after delay oriented mapping
-    int                 timeSweep;     // time to perform technology dependent sweep
-    int                 timeToNet;     // time to transfer back to the network
-    int                 timeTotal;     // the total mapping time
-    int                 time1;         // time to transfer to the mapping structure
-    int                 time2;         // time to transfer to the mapping structure
-    int                 time3;         // time to transfer to the mapping structure
+    abctime             timeToMap;     // time to transfer to the mapping structure
+    abctime             timeCuts;      // time to compute k-feasible cuts
+    abctime             timeTruth;     // time to compute the truth table for each cut
+    abctime             timeMatch;     // time to perform matching for each node
+    abctime             timeArea;      // time to recover area after delay oriented mapping
+    abctime             timeSweep;     // time to perform technology dependent sweep
+    abctime             timeToNet;     // time to transfer back to the network
+    abctime             timeTotal;     // the total mapping time
+    abctime             time1;         // time to transfer to the mapping structure
+    abctime             time2;         // time to transfer to the mapping structure
+    abctime             time3;         // time to transfer to the mapping structure
 };
 
 // the supergate library
@@ -170,7 +176,7 @@ struct Map_SuperLibStruct_t_
     int                 nSupersAll;    // the total number of supergates
     int                 nSupersReal;   // the total number of supergates
     int                 nLines;        // the total number of lines in the supergate file
-    bool                fVerbose;      // the verbosity flag
+    int                 fVerbose;      // the verbosity flag
 
     // hash tables
     Map_Super_t **      ppSupers;      // the array of supergates
@@ -353,10 +359,6 @@ struct Map_HashEntryStruct_t_
 /*=== mapperCanon.c =============================================================*/
 /*=== mapperCut.c ===============================================================*/
 extern void              Map_MappingCuts( Map_Man_t * p );
-extern int               Map_MappingCountAllCuts( Map_Man_t * p );
-/*=== mapperCutDcs.c ===============================================================*/
-extern void              Map_ComputeDcs( Map_Man_t * p );
-extern unsigned          Map_ComputeIsop_rec( Map_Man_t * p, unsigned uF, unsigned uFD, int iVar, int nVars, int fDir );
 /*=== mapperCutUtils.c ===============================================================*/
 extern Map_Cut_t *       Map_CutAlloc( Map_Man_t * p );
 extern void              Map_CutFree( Map_Man_t * p, Map_Cut_t * pCut );
@@ -374,34 +376,29 @@ extern void              Map_NodeAddFaninFanout( Map_Node_t * pFanin, Map_Node_t
 extern void              Map_NodeRemoveFaninFanout( Map_Node_t * pFanin, Map_Node_t * pFanoutToRemove );
 extern int               Map_NodeGetFanoutNum( Map_Node_t * pNode );
 /*=== mapperLib.c ============================================================*/
-extern Map_SuperLib_t *  Map_SuperLibCreate( char * pFileName, char * pExcludeFile, bool fAlgorithm, bool fVerbose );
+extern Map_SuperLib_t *  Map_SuperLibCreate( Mio_Library_t * pGenlib, Vec_Str_t * vStr, char * pFileName, char * pExcludeFile, int  fAlgorithm, int  fVerbose );
 extern void              Map_SuperLibFree( Map_SuperLib_t * p );
 /*=== mapperMatch.c ===============================================================*/
 extern int               Map_MappingMatches( Map_Man_t * p );
-extern float             Map_MappingCombinePhases( Map_Man_t * p );
-extern void              Map_MatchClean( Map_Match_t * pMatch );
-extern int               Map_MatchCompare( Map_Man_t * pMan, Map_Match_t * pM1, Map_Match_t * pM2, int fDoingArea );
-/*=== mapperPower.c =============================================================*/
-extern float             Map_SwitchCutGetDerefed( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
-extern float             Map_SwitchCutRef( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
-extern float             Map_SwitchCutDeref( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
-extern float             Map_MappingGetSwitching( Map_Man_t * pMan, Map_NodeVec_t * vMapping );
 /*=== mapperRefs.c =============================================================*/
-extern int               Map_NodeReadRefPhaseAct( Map_Node_t * pNode, int fPhase );
-extern float             Map_NodeReadRefPhaseEst( Map_Node_t * pNode, int fPhase );
 extern void              Map_MappingEstimateRefsInit( Map_Man_t * p );
 extern void              Map_MappingEstimateRefs( Map_Man_t * p );
 extern float             Map_CutGetAreaFlow( Map_Cut_t * pCut, int fPhase );
 extern float             Map_CutGetAreaRefed( Map_Cut_t * pCut, int fPhase );
 extern float             Map_CutGetAreaDerefed( Map_Cut_t * pCut, int fPhase );
-extern float             Map_CutRef( Map_Cut_t * pCut, int fPhase );
-extern float             Map_CutDeref( Map_Cut_t * pCut, int fPhase );
+extern float             Map_CutRef( Map_Cut_t * pCut, int fPhase, int fProfile );
+extern float             Map_CutDeref( Map_Cut_t * pCut, int fPhase, int fProfile );
 extern void              Map_MappingSetRefs( Map_Man_t * pMan );
-extern float             Map_MappingGetArea( Map_Man_t * pMan, Map_NodeVec_t * vMapping );
-/*=== mapperShow.c =============================================================*/
-extern void              Map_MappingShow( Map_Man_t * pMan, char * pFileName );
+extern float             Map_MappingGetArea( Map_Man_t * pMan );
+/*=== mapperSwitch.c =============================================================*/
+extern float             Map_SwitchCutGetDerefed( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
+extern float             Map_SwitchCutRef( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
+extern float             Map_SwitchCutDeref( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
+extern float             Map_MappingGetSwitching( Map_Man_t * pMan );
 /*=== mapperTree.c ===============================================================*/
-extern int               Map_LibraryReadTree( Map_SuperLib_t * pLib, char * pFileName, char * pExcludeFile );
+extern int               Map_LibraryDeriveGateInfo( Map_SuperLib_t * pLib, st__table * tExcludeGate );
+extern int               Map_LibraryReadFileTreeStr( Map_SuperLib_t * pLib, Mio_Library_t * pGenlib, Vec_Str_t * vStr, char * pFileName );
+extern int               Map_LibraryReadTree( Map_SuperLib_t * pLib, Mio_Library_t * pGenlib, char * pFileName, char * pExcludeFile );
 extern void              Map_LibraryPrintTree( Map_SuperLib_t * pLib );
 /*=== mapperSuper.c ===============================================================*/
 extern int               Map_LibraryRead( Map_SuperLib_t * p, char * pFileName );
@@ -416,13 +413,8 @@ extern void              Map_SuperTableSortSupergates( Map_HashTable_t * p, int 
 extern void              Map_SuperTableSortSupergatesByDelay( Map_HashTable_t * p, int nSupersMax );
 /*=== mapperTime.c =============================================================*/
 extern float             Map_TimeCutComputeArrival( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase, float tWorstCaseLimit );
-extern void              Map_TimeCutComputeArrival_rec( Map_Cut_t * pCut, int fPhase );
 extern float             Map_TimeComputeArrivalMax( Map_Man_t * p );
 extern void              Map_TimeComputeRequiredGlobal( Map_Man_t * p );
-extern void              Map_TimeComputeRequired( Map_Man_t * p, float fRequired );
-extern float             Map_TimeNodeFanoutDelay( Map_Node_t * pNode, int fPhase );
-extern float             Map_TimeCutFanoutDelay( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase );
-extern float             Map_TimeMatchWithInverter( Map_Man_t * p, Map_Match_t * pMatch );
 /*=== mapperTruth.c ===============================================================*/
 extern void              Map_MappingTruths( Map_Man_t * pMan );
 extern int               Map_TruthsCutDontCare( Map_Man_t * pMan, Map_Cut_t * pCut, unsigned * uTruthDc );
@@ -430,11 +422,6 @@ extern int               Map_TruthCountOnes( unsigned * uTruth, int nLeaves );
 extern int               Map_TruthDetectTwoFirst( unsigned * uTruth, int nLeaves );
 /*=== mapperUtils.c ===============================================================*/
 extern Map_NodeVec_t *   Map_MappingDfs( Map_Man_t * pMan, int fCollectEquiv );
-extern Map_NodeVec_t *   Map_MappingDfsNodes( Map_Man_t * pMan, Map_Node_t ** ppNodes, int nNodes, int fEquiv );
-
-extern void              Map_MappingDfsMarked1_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes, int fFirst );
-extern void              Map_MappingDfsMarked2_rec( Map_Node_t * pNode, Map_NodeVec_t * vNodes, Map_NodeVec_t * vBoundary, int fFirst );
-
 extern int               Map_MappingCountLevels( Map_Man_t * pMan );
 extern void              Map_MappingUnmark( Map_Man_t * pMan );
 extern void              Map_MappingMark_rec( Map_Node_t * pNode );
@@ -457,6 +444,7 @@ extern void              Map_MappingReportChoices( Map_Man_t * pMan );
 /*=== mapperVec.c =============================================================*/
 extern Map_NodeVec_t *   Map_NodeVecAlloc( int nCap );
 extern void              Map_NodeVecFree( Map_NodeVec_t * p );
+extern Map_NodeVec_t *   Map_NodeVecDup( Map_NodeVec_t * p );
 extern Map_Node_t **     Map_NodeVecReadArray( Map_NodeVec_t * p );
 extern int               Map_NodeVecReadSize( Map_NodeVec_t * p );
 extern void              Map_NodeVecGrow( Map_NodeVec_t * p, int nCapMin );
@@ -469,6 +457,10 @@ extern void              Map_NodeVecRemove( Map_NodeVec_t * p, Map_Node_t * Entr
 extern void              Map_NodeVecWriteEntry( Map_NodeVec_t * p, int i, Map_Node_t * Entry );
 extern Map_Node_t *      Map_NodeVecReadEntry( Map_NodeVec_t * p, int i );
 extern void              Map_NodeVecSortByLevel( Map_NodeVec_t * p );
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

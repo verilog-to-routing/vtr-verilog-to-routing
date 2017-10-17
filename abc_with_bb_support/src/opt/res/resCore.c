@@ -18,10 +18,13 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "resInt.h"
-#include "kit.h"
-#include "satStore.h"
+#include "bool/kit/kit.h"
+#include "sat/bsat/satStore.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -57,23 +60,23 @@ struct Res_Man_t_
     int           nTotalNets2;   // the total number of nets
     int           nTotalNodes2;  // the total number of nodess
     // runtime
-    int           timeWin;       // windowing
-    int           timeDiv;       // divisors
-    int           timeAig;       // strashing
-    int           timeSim;       // simulation
-    int           timeCand;      // resubstitution candidates
-    int           timeSatTotal;  // SAT solving total 
-    int           timeSatSat;    // SAT solving (sat calls)
-    int           timeSatUnsat;  // SAT solving (unsat calls)
-    int           timeSatSim;    // SAT solving (simulation)
-    int           timeInt;       // interpolation 
-    int           timeUpd;       // updating  
-    int           timeTotal;     // total runtime
+    abctime       timeWin;       // windowing
+    abctime       timeDiv;       // divisors
+    abctime       timeAig;       // strashing
+    abctime       timeSim;       // simulation
+    abctime       timeCand;      // resubstitution candidates
+    abctime       timeSatTotal;  // SAT solving total 
+    abctime       timeSatSat;    // SAT solving (sat calls)
+    abctime       timeSatUnsat;  // SAT solving (unsat calls)
+    abctime       timeSatSim;    // SAT solving (simulation)
+    abctime       timeInt;       // interpolation 
+    abctime       timeUpd;       // updating  
+    abctime       timeTotal;     // total runtime
 };
 
 extern Hop_Obj_t * Kit_GraphToHop( Hop_Man_t * pMan, Kit_Graph_t * pGraph );
 
-extern int s_ResynTime;
+extern abctime s_ResynTime;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -93,14 +96,14 @@ extern int s_ResynTime;
 Res_Man_t * Res_ManAlloc( Res_Par_t * pPars )
 {
     Res_Man_t * p;
-    p = ALLOC( Res_Man_t, 1 );
+    p = ABC_ALLOC( Res_Man_t, 1 );
     memset( p, 0, sizeof(Res_Man_t) );
     assert( pPars->nWindow > 0 && pPars->nWindow < 100 );
     assert( pPars->nCands > 0 && pPars->nCands < 100 );
     p->pPars = pPars;
     p->pWin = Res_WinAlloc();
     p->pSim = Res_SimAlloc( pPars->nSimWords );
-    p->pMan = Int_ManAlloc( 512 );
+    p->pMan = Int_ManAlloc();
     p->vMem = Vec_IntAlloc( 0 );
     p->vResubs  = Vec_VecStart( pPars->nCands );
     p->vResubsW = Vec_VecStart( pPars->nCands );
@@ -143,18 +146,18 @@ void Res_ManFree( Res_Man_t * p )
         printf( "Proved = %d.", p->nProvedSets );
         printf( "\n" );
 
-        PRTP( "Windowing  ", p->timeWin,      p->timeTotal );
-        PRTP( "Divisors   ", p->timeDiv,      p->timeTotal );
-        PRTP( "Strashing  ", p->timeAig,      p->timeTotal );
-        PRTP( "Simulation ", p->timeSim,      p->timeTotal );
-        PRTP( "Candidates ", p->timeCand,     p->timeTotal );
-        PRTP( "SAT solver ", p->timeSatTotal, p->timeTotal );
-        PRTP( "    sat    ", p->timeSatSat,   p->timeTotal );
-        PRTP( "    unsat  ", p->timeSatUnsat, p->timeTotal );
-        PRTP( "    simul  ", p->timeSatSim,   p->timeTotal );
-        PRTP( "Interpol   ", p->timeInt,      p->timeTotal );
-        PRTP( "Undating   ", p->timeUpd,      p->timeTotal );
-        PRTP( "TOTAL      ", p->timeTotal,    p->timeTotal );
+        ABC_PRTP( "Windowing  ", p->timeWin,      p->timeTotal );
+        ABC_PRTP( "Divisors   ", p->timeDiv,      p->timeTotal );
+        ABC_PRTP( "Strashing  ", p->timeAig,      p->timeTotal );
+        ABC_PRTP( "Simulation ", p->timeSim,      p->timeTotal );
+        ABC_PRTP( "Candidates ", p->timeCand,     p->timeTotal );
+        ABC_PRTP( "SAT solver ", p->timeSatTotal, p->timeTotal );
+        ABC_PRTP( "    sat    ", p->timeSatSat,   p->timeTotal );
+        ABC_PRTP( "    unsat  ", p->timeSatUnsat, p->timeTotal );
+        ABC_PRTP( "    simul  ", p->timeSatSim,   p->timeTotal );
+        ABC_PRTP( "Interpol   ", p->timeInt,      p->timeTotal );
+        ABC_PRTP( "Undating   ", p->timeUpd,      p->timeTotal );
+        ABC_PRTP( "TOTAL      ", p->timeTotal,    p->timeTotal );
     }
     Res_WinFree( p->pWin );
     if ( p->pAig ) Abc_NtkDelete( p->pAig );
@@ -165,7 +168,7 @@ void Res_ManFree( Res_Man_t * p )
     Vec_VecFree( p->vResubs );
     Vec_VecFree( p->vResubsW );
     Vec_VecFree( p->vLevels );
-    free( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -183,12 +186,15 @@ void Res_UpdateNetwork( Abc_Obj_t * pObj, Vec_Ptr_t * vFanins, Hop_Obj_t * pFunc
 {
     Abc_Obj_t * pObjNew, * pFanin;
     int k;
+
     // create the new node
     pObjNew = Abc_NtkCreateNode( pObj->pNtk );
     pObjNew->pData = pFunc;
-    Vec_PtrForEachEntry( vFanins, pFanin, k )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vFanins, pFanin, k )
         Abc_ObjAddFanin( pObjNew, pFanin );
     // replace the old node by the new node
+//printf( "Replacing node " ); Abc_ObjPrint( stdout, pObj );
+//printf( "Inserting node " ); Abc_ObjPrint( stdout, pObjNew );
     // update the level of the node
     Abc_NtkUpdate( pObj, pObjNew, vLevels );
 }
@@ -214,13 +220,15 @@ int Abc_NtkResynthesize( Abc_Ntk_t * pNtk, Res_Par_t * pPars )
     Vec_Ptr_t * vFanins;
     unsigned * puTruth;
     int i, k, RetValue, nNodesOld, nFanins, nFaninsMax;
-    int clk, clkTotal = clock();
+    abctime clk, clkTotal = Abc_Clock();
 
     // start the manager
     p = Res_ManAlloc( pPars );
     p->nTotalNets = Abc_NtkGetTotalFanins(pNtk);
     p->nTotalNodes = Abc_NtkNodeNum(pNtk);
     nFaninsMax = Abc_NtkGetFaninMax(pNtk);
+    if ( nFaninsMax > 8 )
+        nFaninsMax = 8;
 
     // perform the network sweep
     Abc_NtkSweep( pNtk, 0 );
@@ -246,13 +254,15 @@ int Abc_NtkResynthesize( Abc_Ntk_t * pNtk, Res_Par_t * pPars )
         Extra_ProgressBarUpdate( pProgress, i, NULL );
         if ( !Abc_ObjIsNode(pObj) )
             continue;
+        if ( Abc_ObjFaninNum(pObj) > 8 )
+            continue;
         if ( pObj->Id > nNodesOld )
             break;
 
         // create the window for this node
-clk = clock();
+clk = Abc_Clock();
         RetValue = Res_WinCompute( pObj, p->pPars->nWindow/10, p->pPars->nWindow%10, p->pWin );
-p->timeWin += clock() - clk;
+p->timeWin += Abc_Clock() - clk;
         if ( !RetValue )
             continue;
         p->nWinsTriv += Res_WinIsTrivial( p->pWin );
@@ -268,9 +278,9 @@ p->timeWin += clock() - clk;
         }
 
         // collect the divisors
-clk = clock();
+clk = Abc_Clock();
         Res_WinDivisors( p->pWin, Abc_ObjRequiredLevel(pObj) - 1 );
-p->timeDiv += clock() - clk;
+p->timeDiv += Abc_Clock() - clk;
 
         p->nWins++;
         p->nWinNodes += Vec_PtrSize(p->pWin->vNodes);
@@ -283,10 +293,10 @@ p->timeDiv += clock() - clk;
         }
 
         // create the AIG for the window
-clk = clock();
+clk = Abc_Clock();
         if ( p->pAig ) Abc_NtkDelete( p->pAig );
         p->pAig = Res_WndStrash( p->pWin );
-p->timeAig += clock() - clk;
+p->timeAig += Abc_Clock() - clk;
 
         if ( p->pPars->fVeryVerbose )
         {
@@ -295,9 +305,9 @@ p->timeAig += clock() - clk;
         }
  
         // prepare simulation info
-clk = clock();
+clk = Abc_Clock();
         RetValue = Res_SimPrepare( p->pSim, p->pAig, Vec_PtrSize(p->pWin->vLeaves), 0 ); //p->pPars->fVerbose );
-p->timeSim += clock() - clk;
+p->timeSim += Abc_Clock() - clk;
         if ( !RetValue )
         {
             p->nSimEmpty++;
@@ -309,7 +319,7 @@ p->timeSim += clock() - clk;
         {
             p->nConstsUsed++;
 
-            pFunc = p->pSim->fConst1? Hop_ManConst1(pNtk->pManFunc) : Hop_ManConst0(pNtk->pManFunc);
+            pFunc = p->pSim->fConst1? Hop_ManConst1((Hop_Man_t *)pNtk->pManFunc) : Hop_ManConst0((Hop_Man_t *)pNtk->pManFunc);
             vFanins = Vec_VecEntry( p->vResubsW, 0 );
             Vec_PtrClear( vFanins );
             Res_UpdateNetwork( pObj, vFanins, pFunc, p->vLevels );
@@ -319,12 +329,12 @@ p->timeSim += clock() - clk;
 //        printf( " " );
 
         // find resub candidates for the node
-clk = clock();
+clk = Abc_Clock();
         if ( p->pPars->fArea )
             RetValue = Res_FilterCandidates( p->pWin, p->pAig, p->pSim, p->vResubs, p->vResubsW, nFaninsMax, 1 );
         else
             RetValue = Res_FilterCandidates( p->pWin, p->pAig, p->pSim, p->vResubs, p->vResubsW, nFaninsMax, 0 );
-p->timeCand += clock() - clk;
+p->timeCand += Abc_Clock() - clk;
         p->nCandSets += RetValue;
         if ( RetValue == 0 )
             continue;
@@ -340,17 +350,17 @@ p->timeCand += clock() - clk;
                 break;
 
             // solve the SAT problem and get clauses
-clk = clock();
+clk = Abc_Clock();
             if ( p->pCnf ) Sto_ManFree( p->pCnf );
-            p->pCnf = Res_SatProveUnsat( p->pAig, vFanins );
+            p->pCnf = (Sto_Man_t *)Res_SatProveUnsat( p->pAig, vFanins );
             if ( p->pCnf == NULL )
             {
-p->timeSatSat += clock() - clk;
+p->timeSatSat += Abc_Clock() - clk;
 //                printf( " Sat\n" );
 //                printf( "-" );
                 continue;
             }
-p->timeSatUnsat += clock() - clk;
+p->timeSatUnsat += Abc_Clock() - clk;
 //            printf( "+" );
 
             p->nProvedSets++;
@@ -362,9 +372,9 @@ p->timeSatUnsat += clock() - clk;
 //            Sto_ManDumpClauses( p->pCnf, "trace.cnf" );
 
             // interpolate the problem if it was UNSAT
-clk = clock();
+clk = Abc_Clock();
             nFanins = Int_ManInterpolate( p->pMan, p->pCnf, 0, &puTruth );
-p->timeInt += clock() - clk;
+p->timeInt += Abc_Clock() - clk;
             if ( nFanins != Vec_PtrSize(vFanins) - 2 )
                 continue;
             assert( puTruth );
@@ -374,13 +384,13 @@ p->timeInt += clock() - clk;
             pGraph = Kit_TruthToGraph( puTruth, nFanins, p->vMem );
 
             // derive the AIG for the decomposition tree
-            pFunc = Kit_GraphToHop( pNtk->pManFunc, pGraph );
+            pFunc = Kit_GraphToHop( (Hop_Man_t *)pNtk->pManFunc, pGraph );
             Kit_GraphFree( pGraph );
 
             // update the network
-clk = clock();
+clk = Abc_Clock();
             Res_UpdateNetwork( pObj, Vec_VecEntry(p->vResubsW, k), pFunc, p->vLevels );
-p->timeUpd += clock() - clk;
+p->timeUpd += Abc_Clock() - clk;
             break;
         }
 //        printf( "\n" );
@@ -395,10 +405,10 @@ p->timeSatTotal = p->timeSatSat + p->timeSatUnsat + p->timeSatSim;
     p->nTotalNodes2 = Abc_NtkNodeNum(pNtk);
 
     // quit resubstitution manager
-p->timeTotal = clock() - clkTotal;
+p->timeTotal = Abc_Clock() - clkTotal;
     Res_ManFree( p );
 
-s_ResynTime += clock() - clkTotal;
+s_ResynTime += Abc_Clock() - clkTotal;
     // check the resulting network
     if ( !Abc_NtkCheck( pNtk ) )
     {
@@ -412,4 +422,6 @@ s_ResynTime += clock() - clkTotal;
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

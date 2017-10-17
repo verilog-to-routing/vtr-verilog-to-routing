@@ -20,6 +20,9 @@
 
 #include "lpkInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -54,7 +57,7 @@ void Lpk_CreateVarOrder( Kit_DsdNtk_t * pNtk, char pTable[][16] )
         Kit_DsdObjForEachFanin( pNtk, pObj, iFaninLit, k )
         {
             if ( Kit_DsdLitIsLeaf( pNtk, iFaninLit ) )
-                Above[nAbove++] = Kit_DsdLit2Var(iFaninLit);
+                Above[nAbove++] = Abc_Lit2Var(iFaninLit);
             else
                 uSuppFanins |= Kit_DsdLitSupport( pNtk, iFaninLit );
         }
@@ -187,7 +190,7 @@ int Lpk_FindHighest( Kit_DsdNtk_t ** ppNtks, int * piLits, int nSize, int * pPri
             uSupps[i] = Kit_DsdLitSupport( ppNtks[i], piLits[i] );
         else
         {
-            pObj = Kit_DsdNtkObj( ppNtks[i], Kit_DsdLit2Var(piLits[i]) );
+            pObj = Kit_DsdNtkObj( ppNtks[i], Abc_Lit2Var(piLits[i]) );
             if ( pObj->Type == KIT_DSD_PRIME )
             {
                 pTriv[i] = 0;
@@ -289,7 +292,7 @@ If_Obj_t * Lpk_MapTreeMulti_rec( Lpk_Man_t * p, Kit_DsdNtk_t ** ppNtks, int * pi
             if ( p->pPars->fVeryVerbose )
                 printf( "%d ", i );
             assert( piLits[i] >= 0 );
-            pObj = Kit_DsdNtkObj( ppNtks[i], Kit_DsdLit2Var(piLits[i]) );
+            pObj = Kit_DsdNtkObj( ppNtks[i], Abc_Lit2Var(piLits[i]) );
             if ( pObj == NULL )
                 piLitsNew[i] = -2;
             else if ( pObj->Type == KIT_DSD_PRIME )
@@ -343,14 +346,31 @@ If_Obj_t * Lpk_MapTreeMulti_rec( Lpk_Man_t * p, Kit_DsdNtk_t ** ppNtks, int * pi
 ***********************************************************************/
 If_Obj_t * Lpk_MapTreeMulti( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj_t ** ppLeaves )
 {
-    static Counter = 0;
+    static int Counter = 0;
     If_Obj_t * pResult;
     Kit_DsdNtk_t * ppNtks[8] = {0}, * pTemp;
     Kit_DsdObj_t * pRoot;
     int piCofVar[4], pPrios[16], pFreqs[16] = {0}, piLits[16];
     int i, k, nCBars, nSize, nMemSize;
     unsigned * ppCofs[4][8], uSupport;
-    char pTable[16][16] = {0};
+    char pTable[16][16] = {
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+    };
     int fVerbose = p->pPars->fVeryVerbose;
 
     Counter++;
@@ -358,7 +378,7 @@ If_Obj_t * Lpk_MapTreeMulti( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj
 
     // allocate storage for cofactors
     nMemSize = Kit_TruthWordNum(nVars);
-    ppCofs[0][0] = ALLOC( unsigned, 32 * nMemSize );
+    ppCofs[0][0] = ABC_ALLOC( unsigned, 32 * nMemSize );
     nSize = 0;
     for ( i = 0; i < 4; i++ )
     for ( k = 0; k < 8; k++ )
@@ -422,10 +442,6 @@ If_Obj_t * Lpk_MapTreeMulti( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj
     if ( fVerbose )
         printf( "After restructuring with priority:\n" );
 
-    if ( Counter == 1 )
-    {
-        int x = 0;
-    }
     // transform all networks according to the variable order
     for ( i = 0; i < nSize; i++ )
     {
@@ -448,9 +464,9 @@ If_Obj_t * Lpk_MapTreeMulti( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj
         // collect the roots
         pRoot = Kit_DsdNtkRoot(ppNtks[i]);
         if ( pRoot->Type == KIT_DSD_CONST1 )
-            piLits[i] = Kit_DsdLitIsCompl(ppNtks[i]->Root)? -2: -1;
+            piLits[i] = Abc_LitIsCompl(ppNtks[i]->Root)? -2: -1;
         else if ( pRoot->Type == KIT_DSD_VAR )
-            piLits[i] = Kit_DsdLitNotCond( pRoot->pFans[0], Kit_DsdLitIsCompl(ppNtks[i]->Root) );
+            piLits[i] = Abc_LitNotCond( pRoot->pFans[0], Abc_LitIsCompl(ppNtks[i]->Root) );
         else
             piLits[i] = ppNtks[i]->Root;
     }
@@ -483,7 +499,7 @@ If_Obj_t * Lpk_MapTreeMulti( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj
     for ( i = 0; i < 8; i++ )
         if ( ppNtks[i] )
             Kit_DsdNtkFree( ppNtks[i] );
-    free( ppCofs[0][0] );
+    ABC_FREE( ppCofs[0][0] );
 
     return pResult;
 }
@@ -492,4 +508,6 @@ If_Obj_t * Lpk_MapTreeMulti( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

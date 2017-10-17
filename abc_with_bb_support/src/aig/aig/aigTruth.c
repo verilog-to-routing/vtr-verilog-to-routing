@@ -20,6 +20,9 @@
 
 #include "aig.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -43,8 +46,8 @@ unsigned * Aig_ManCutTruthOne( Aig_Obj_t * pNode, unsigned * pTruth, int nWords 
 {
     unsigned * pTruth0, * pTruth1;
     int i;
-    pTruth0 = Aig_ObjFanin0(pNode)->pData;
-    pTruth1 = Aig_ObjFanin1(pNode)->pData;
+    pTruth0 = (unsigned *)Aig_ObjFanin0(pNode)->pData;
+    pTruth1 = (unsigned *)Aig_ObjFanin1(pNode)->pData;
     if ( Aig_ObjIsExor(pNode) )
         for ( i = 0; i < nWords; i++ )
             pTruth[i] = pTruth0[i] ^ pTruth1[i];
@@ -82,17 +85,19 @@ unsigned * Aig_ManCutTruth( Aig_Obj_t * pRoot, Vec_Ptr_t * vLeaves, Vec_Ptr_t * 
     assert( Vec_PtrSize(vNodes) <= Vec_PtrSize(vTruthStore) );
     assert( Vec_PtrSize(vNodes) == 0 || pRoot == Vec_PtrEntryLast(vNodes) );  
     // assign elementary truth tables
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Aig_Obj_t *, vLeaves, pObj, i )
         pObj->pData = Vec_PtrEntry( vTruthElem, i );
     // compute truths for other nodes
-    nWords = Aig_TruthWordNum( Vec_PtrSize(vLeaves) );
-    Vec_PtrForEachEntry( vNodes, pObj, i )
-        pObj->pData = Aig_ManCutTruthOne( pObj, Vec_PtrEntry(vTruthStore, i), nWords );
-    return pRoot->pData;
+    nWords = Abc_TruthWordNum( Vec_PtrSize(vLeaves) );
+    Vec_PtrForEachEntry( Aig_Obj_t *, vNodes, pObj, i )
+        pObj->pData = Aig_ManCutTruthOne( pObj, (unsigned *)Vec_PtrEntry(vTruthStore, i), nWords );
+    return (unsigned *)pRoot->pData;
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

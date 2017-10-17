@@ -19,8 +19,11 @@
 ***********************************************************************/
 
 #include "ivy.h"
-#include "deco.h"
-#include "rwt.h"
+#include "bool/deco/deco.h"
+#include "opt/rwt/rwt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -62,7 +65,7 @@ int Ivy_ManRewriteSeq( Ivy_Man_t * p, int fUseZeroCost, int fVerbose )
     Rwt_Man_t * pManRwt;
     Ivy_Obj_t * pNode;
     int i, nNodes, nGain;
-    int clk, clkStart = clock();
+    abctime clk, clkStart = Abc_Clock();
 
     // set the DC latch values
     Ivy_ManForEachLatch( p, pNode, i )
@@ -91,19 +94,19 @@ int Ivy_ManRewriteSeq( Ivy_Man_t * p, int fUseZeroCost, int fVerbose )
             break;
         // for each cut, try to resynthesize it
         nGain = Ivy_NodeRewriteSeq( p, pManRwt, pNode, fUseZeroCost );
-        if ( nGain > 0 || nGain == 0 && fUseZeroCost )
+        if ( nGain > 0 || (nGain == 0 && fUseZeroCost) )
         {
-            Dec_Graph_t * pGraph = Rwt_ManReadDecs(pManRwt);
+            Dec_Graph_t * pGraph = (Dec_Graph_t *)Rwt_ManReadDecs(pManRwt);
             int fCompl           = Rwt_ManReadCompl(pManRwt);
             // complement the FF if needed
-clk = clock();
+clk = Abc_Clock();
             if ( fCompl ) Dec_GraphComplement( pGraph );
             Ivy_GraphUpdateNetworkSeq( p, pNode, pGraph, nGain );
             if ( fCompl ) Dec_GraphComplement( pGraph );
-Rwt_ManAddTimeUpdate( pManRwt, clock() - clk );
+Rwt_ManAddTimeUpdate( pManRwt, Abc_Clock() - clk );
         }
     }
-Rwt_ManAddTimeTotal( pManRwt, clock() - clkStart );
+Rwt_ManAddTimeTotal( pManRwt, Abc_Clock() - clkStart );
     // print stats
     if ( fVerbose )
         Rwt_ManPrintStats( pManRwt );
@@ -147,20 +150,23 @@ int Ivy_NodeRewriteSeq( Ivy_Man_t * pMan, Rwt_Man_t * p, Ivy_Obj_t * pNode, int 
     Ivy_Cut_t * pCut;
     Ivy_Obj_t * pFanin;//, * pFanout;
     Vec_Ptr_t * vFanout;
-    unsigned uPhase, uTruthBest, uTruth;//, nNewClauses;
+    unsigned uPhase;
+    unsigned uTruthBest = 0; // Suppress "might be used uninitialized"
+    unsigned uTruth;//, nNewClauses;
     char * pPerm;
-    int nNodesSaved, nNodesSaveCur;
-    int i, c, GainCur, GainBest = -1;
-    int clk, clk2;//, clk3;
+    int nNodesSaved;
+    int nNodesSaveCur = -1; // Suppress "might be used uninitialized"
+    int i, c, GainCur = -1, GainBest = -1;
+    abctime clk, clk2;//, clk3;
 
     p->nNodesConsidered++;
     // get the node's cuts
-clk = clock();
+clk = Abc_Clock();
     pStore = Ivy_CutComputeForNode( pMan, pNode, 5 );
-p->timeCut += clock() - clk;
+p->timeCut += Abc_Clock() - clk;
 
     // go through the cuts
-clk = clock();
+clk = Abc_Clock();
     vFanout = Vec_PtrAlloc( 100 );
     for ( c = 1; c < pStore->nCuts; c++ )
     {
@@ -179,24 +185,24 @@ clk = clock();
         }
         p->nCutsGood++;
         // get the fanin permutation
-clk2 = clock();
+clk2 = Abc_Clock();
         uTruth = 0xFFFF & Ivy_CutGetTruth( pMan, pNode, pCut->pArray, pCut->nSize );  // truth table
-p->timeTruth += clock() - clk2;
-        pPerm = p->pPerms4[ p->pPerms[uTruth] ];
+p->timeTruth += Abc_Clock() - clk2;
+        pPerm = p->pPerms4[ (int)p->pPerms[uTruth] ];
         uPhase = p->pPhases[uTruth];
         // collect fanins with the corresponding permutation/phase
         Vec_PtrClear( p->vFaninsCur );
         Vec_PtrFill( p->vFaninsCur, (int)pCut->nSize, 0 );
         for ( i = 0; i < (int)pCut->nSize; i++ )
         {
-            pFanin = Ivy_ManObj( pMan, Ivy_LeafId( pCut->pArray[pPerm[i]] ) );
+            pFanin = Ivy_ManObj( pMan, Ivy_LeafId( pCut->pArray[(int)pPerm[i]] ) );
             assert( Ivy_ObjIsNode(pFanin) || Ivy_ObjIsCi(pFanin) || Ivy_ObjIsConst1(pFanin) );
             pFanin = Ivy_NotCond(pFanin, ((uPhase & (1<<i)) > 0) );
             Vec_PtrWriteEntry( p->vFaninsCur, i, pFanin );
         }
-clk2 = clock();
+clk2 = Abc_Clock();
         // mark the fanin boundary 
-        Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, p->vFaninsCur, pFanin, i )
             Ivy_ObjRefsInc( Ivy_Regular(pFanin) );
         // label MFFC with current ID
         Ivy_ManIncrementTravId( pMan );
@@ -205,14 +211,14 @@ clk2 = clock();
 //        Ivy_ObjForEachFanout( pMan, pNode, vFanout, pFanout, i )
 //            Ivy_ObjSetTravIdCurrent( pMan, pFanout );
         // unmark the fanin boundary
-        Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+        Vec_PtrForEachEntry( Ivy_Obj_t *, p->vFaninsCur, pFanin, i )
             Ivy_ObjRefsDec( Ivy_Regular(pFanin) );
-p->timeMffc += clock() - clk2;
+p->timeMffc += Abc_Clock() - clk2;
 
         // evaluate the cut
-clk2 = clock();
+clk2 = Abc_Clock();
         pGraph = Rwt_CutEvaluateSeq( pMan, p, pNode, pCut, pPerm, p->vFaninsCur, nNodesSaved, &GainCur, uTruth );
-p->timeEval += clock() - clk2;
+p->timeEval += Abc_Clock() - clk2;
 
 
         // check if the cut is better than the current best one
@@ -228,12 +234,12 @@ p->timeEval += clock() - clk2;
             uTruthBest = uTruth;
             // collect fanins in the
             Vec_PtrClear( p->vFanins );
-            Vec_PtrForEachEntry( p->vFaninsCur, pFanin, i )
+            Vec_PtrForEachEntry( Ivy_Obj_t *, p->vFaninsCur, pFanin, i )
                 Vec_PtrPush( p->vFanins, pFanin );
         }
     }
     Vec_PtrFree( vFanout );
-p->timeRes += clock() - clk;
+p->timeRes += Abc_Clock() - clk;
 
     if ( GainBest == -1 )
         return -1;
@@ -247,9 +253,9 @@ p->timeRes += clock() - clk;
     }
 */
 
-//clk3 = clock();
+//clk3 = Abc_Clock();
 //nNewClauses = Ivy_CutTruthPrint( pMan, p->pCut, uTruth );
-//timeInv += clock() - clk;
+//timeInv += Abc_Clock() - clk;
 
 //    nClauses += nNewClauses;
 //    nMoves++;
@@ -257,7 +263,7 @@ p->timeRes += clock() - clk;
 //        nMovesS++;
 
     // copy the leaves
-    Ivy_GraphPrepare( p->pGraph, p->pCut, p->vFanins, p->pPerm );
+    Ivy_GraphPrepare( (Dec_Graph_t *)p->pGraph, (Ivy_Cut_t *)p->pCut, p->vFanins, p->pPerm );
 
     p->nScores[p->pMap[uTruthBest]]++;
     p->nNodesGained += GainBest;
@@ -283,7 +289,7 @@ p->timeRes += clock() - clk;
         printf( "Save = %d.  ", nNodesSaveCur );
         printf( "Add = %d.  ",  nNodesSaveCur-GainBest );
         printf( "GAIN = %d.  ", GainBest );
-        printf( "Cone = %d.  ", p->pGraph? Dec_GraphNodeNum(p->pGraph) : 0 );
+        printf( "Cone = %d.  ", p->pGraph? Dec_GraphNodeNum((Dec_Graph_t *)p->pGraph) : 0 );
         printf( "Class = %d.  ", p->pMap[uTruthBest] );
         printf( "\n" );
     }
@@ -305,7 +311,8 @@ p->timeRes += clock() - clk;
 Dec_Graph_t * Rwt_CutEvaluateSeq( Ivy_Man_t * pMan, Rwt_Man_t * p, Ivy_Obj_t * pRoot, Ivy_Cut_t * pCut, char * pPerm, Vec_Ptr_t * vFaninsCur, int nNodesSaved, int * pGainBest, unsigned uTruth )
 {
     Vec_Ptr_t * vSubgraphs;
-    Dec_Graph_t * pGraphBest, * pGraphCur;
+    Dec_Graph_t * pGraphBest = NULL; // Suppress "might be used uninitialized"
+    Dec_Graph_t * pGraphCur;
     Rwt_Node_t * pNode;
     int nNodesAdded, GainBest, i;
     // find the matching class of subgraphs
@@ -313,7 +320,7 @@ Dec_Graph_t * Rwt_CutEvaluateSeq( Ivy_Man_t * pMan, Rwt_Man_t * p, Ivy_Obj_t * p
     p->nSubgraphs += vSubgraphs->nSize;
     // determine the best subgraph
     GainBest = -1;
-    Vec_PtrForEachEntry( vSubgraphs, pNode, i )
+    Vec_PtrForEachEntry( Rwt_Node_t *, vSubgraphs, pNode, i )
     {
         // get the current graph
         pGraphCur = (Dec_Graph_t *)pNode->pNext;
@@ -321,7 +328,7 @@ Dec_Graph_t * Rwt_CutEvaluateSeq( Ivy_Man_t * pMan, Rwt_Man_t * p, Ivy_Obj_t * p
 //        if ( pRoot->Id == 8648 )
 //        Dec_GraphPrint( stdout, pGraphCur, NULL, NULL );
         // copy the leaves
-//        Vec_PtrForEachEntry( vFaninsCur, pFanin, k )
+//        Vec_PtrForEachEntry( Ivy_Obj_t *, vFaninsCur, pFanin, k )
 //            Dec_GraphNode(pGraphCur, k)->pFunc = pFanin;
         Ivy_GraphPrepare( pGraphCur, pCut, vFaninsCur, pPerm );
 
@@ -364,7 +371,7 @@ void Ivy_GraphPrepare( Dec_Graph_t * pGraph, Ivy_Cut_t * pCut, Vec_Ptr_t * vFani
     Dec_GraphForEachLeaf( pGraph, pNode, i )
     {
         pNode->pFunc = Vec_PtrEntry( vFanins, i );
-        pNode->nLat2 = Ivy_LeafLat( pCut->pArray[pPerm[i]] );
+        pNode->nLat2 = Ivy_LeafLat( pCut->pArray[(int)pPerm[i]] );
     }
     // propagate latches through the nodes
     Dec_GraphForEachNode( pGraph, pNode, i )
@@ -409,8 +416,8 @@ int Ivy_GraphToNetworkSeqCountSeq( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Dec_Graph_t
         pNode0 = Dec_GraphNode( pGraph, pNode->eEdge0.Node );
         pNode1 = Dec_GraphNode( pGraph, pNode->eEdge1.Node );
         // get the AIG nodes corresponding to the children 
-        pAnd0 = pNode0->pFunc; 
-        pAnd1 = pNode1->pFunc; 
+        pAnd0 = (Ivy_Obj_t *)pNode0->pFunc; 
+        pAnd1 = (Ivy_Obj_t *)pNode1->pFunc; 
         // skip the latches
         for ( k = 0; pAnd0 && k < (int)pNode->nLat0; k++ )
         {
@@ -470,7 +477,7 @@ int Ivy_GraphToNetworkSeqCountSeq( Ivy_Man_t * p, Ivy_Obj_t * pRoot, Dec_Graph_t
 Ivy_Obj_t * Ivy_GraphToNetworkSeq( Ivy_Man_t * p, Dec_Graph_t * pGraph )
 {
     Ivy_Obj_t * pAnd0, * pAnd1;
-    Dec_Node_t * pNode;
+    Dec_Node_t * pNode = NULL; // Suppress "might be used uninitialized"
     int i, k;
     // check for constant function
     if ( Dec_GraphIsConst(pGraph) )
@@ -482,14 +489,14 @@ Ivy_Obj_t * Ivy_GraphToNetworkSeq( Ivy_Man_t * p, Dec_Graph_t * pGraph )
         pNode = Dec_GraphVar(pGraph);
         // add the remaining latches
         for ( k = 0; k < (int)pNode->nLat2; k++ )
-            pNode->pFunc = Ivy_Latch( p, pNode->pFunc, IVY_INIT_DC );
-        return Ivy_NotCond( pNode->pFunc, Dec_GraphIsComplement(pGraph) );
+            pNode->pFunc = Ivy_Latch( p, (Ivy_Obj_t *)pNode->pFunc, IVY_INIT_DC );
+        return Ivy_NotCond( (Ivy_Obj_t *)pNode->pFunc, Dec_GraphIsComplement(pGraph) );
     }
     // build the AIG nodes corresponding to the AND gates of the graph
     Dec_GraphForEachNode( pGraph, pNode, i )
     {
-        pAnd0 = Ivy_NotCond( Dec_GraphNode(pGraph, pNode->eEdge0.Node)->pFunc, pNode->eEdge0.fCompl ); 
-        pAnd1 = Ivy_NotCond( Dec_GraphNode(pGraph, pNode->eEdge1.Node)->pFunc, pNode->eEdge1.fCompl ); 
+        pAnd0 = Ivy_NotCond( (Ivy_Obj_t *)Dec_GraphNode(pGraph, pNode->eEdge0.Node)->pFunc, pNode->eEdge0.fCompl ); 
+        pAnd1 = Ivy_NotCond( (Ivy_Obj_t *)Dec_GraphNode(pGraph, pNode->eEdge1.Node)->pFunc, pNode->eEdge1.fCompl ); 
         // add the latches
         for ( k = 0; k < (int)pNode->nLat0; k++ )
             pAnd0 = Ivy_Latch( p, pAnd0, IVY_INIT_DC );
@@ -500,9 +507,9 @@ Ivy_Obj_t * Ivy_GraphToNetworkSeq( Ivy_Man_t * p, Dec_Graph_t * pGraph )
     }
     // add the remaining latches
     for ( k = 0; k < (int)pNode->nLat2; k++ )
-        pNode->pFunc = Ivy_Latch( p, pNode->pFunc, IVY_INIT_DC );
+        pNode->pFunc = Ivy_Latch( p, (Ivy_Obj_t *)pNode->pFunc, IVY_INIT_DC );
     // complement the result if necessary
-    return Ivy_NotCond( pNode->pFunc, Dec_GraphIsComplement(pGraph) );
+    return Ivy_NotCond( (Ivy_Obj_t *)pNode->pFunc, Dec_GraphIsComplement(pGraph) );
 }
 
 /**Function*************************************************************
@@ -1021,7 +1028,6 @@ Ivy_Store_t * Ivy_CutComputeForNode( Ivy_Man_t * p, Ivy_Obj_t * pObj, int nLeave
 {
     static Ivy_Store_t CutStore, * pCutStore = &CutStore;
     Ivy_Cut_t CutNew, * pCutNew = &CutNew, * pCut;
-    Ivy_Man_t * pMan = p;
     Ivy_Obj_t * pLeaf;
     int i, k, Temp, nLats, iLeaf0, iLeaf1;
 
@@ -1104,7 +1110,7 @@ void Ivy_CutComputeAll( Ivy_Man_t * p, int nInputs )
     Ivy_Store_t * pStore;
     Ivy_Obj_t * pObj;
     int i, nCutsTotal, nCutsTotalM, nNodeTotal, nNodeOver;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     if ( nInputs > IVY_CUT_INPUT )
     {
         printf( "Cannot compute cuts for more than %d inputs.\n", IVY_CUT_INPUT );
@@ -1124,11 +1130,13 @@ void Ivy_CutComputeAll( Ivy_Man_t * p, int nInputs )
     }
     printf( "All = %6d. Minus = %6d. Triv = %6d.   Node = %6d. Satur = %6d.  ", 
         nCutsTotal, nCutsTotalM, Ivy_ManPiNum(p) + Ivy_ManNodeNum(p), nNodeTotal, nNodeOver );
-    PRT( "Time", clock() - clk );
+    ABC_PRT( "Time", Abc_Clock() - clk );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

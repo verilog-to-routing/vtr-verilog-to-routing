@@ -19,7 +19,10 @@
 ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "extra.h"
+
+ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -38,30 +41,14 @@
  *  Purpose: get option letter from argv.
  */
 
-char * globalUtilOptarg;        // Global argument pointer (util_optarg)
+const char * globalUtilOptarg;        // Global argument pointer (util_optarg)
 int    globalUtilOptind = 0;    // Global argv index (util_optind)
 
-static char *pScanStr;
+static const char *pScanStr;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
-
-/**Function*************************************************************
-
-  Synopsis    [util_cpu_time()]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-long Extra_CpuTime()
-{
-    return clock();
-}
 
 /**Function*************************************************************
 
@@ -108,42 +95,52 @@ void Extra_UtilGetoptReset()
   SeeAlso     []
 
 ***********************************************************************/
-int Extra_UtilGetopt( int argc, char *argv[], char *optstring )
+int Extra_UtilGetopt( int argc, char *argv[], const char *optstring )
 {
     register int c;
-    register char *place;
+    register const char *place;
 
     globalUtilOptarg = NULL;
 
-    if (pScanStr == NULL || *pScanStr == '\0') {
-    if (globalUtilOptind == 0) globalUtilOptind++;
-    if (globalUtilOptind >= argc) return EOF;
-    place = argv[globalUtilOptind];
-    if (place[0] != '-' || place[1] == '\0') return EOF;
-    globalUtilOptind++;
-    if (place[1] == '-' && place[2] == '\0') return EOF;
-    pScanStr = place+1;
+    if (pScanStr == NULL || *pScanStr == '\0') 
+    {
+        if (globalUtilOptind == 0) 
+            globalUtilOptind++;
+        if (globalUtilOptind >= argc) 
+            return EOF;
+        place = argv[globalUtilOptind];
+        if (place[0] != '-' || place[1] == '\0') 
+            return EOF;
+        globalUtilOptind++;
+        if (place[1] == '-' && place[2] == '\0') 
+            return EOF;
+        pScanStr = place+1;
     }
 
     c = *pScanStr++;
     place = strchr(optstring, c);
     if (place == NULL || c == ':') {
-    (void) fprintf(stderr, "%s: unknown option %c\n", argv[0], c);
-    return '?';
-    }
-    if (*++place == ':') {
-    if (*pScanStr != '\0') {
-        globalUtilOptarg = pScanStr;
-        pScanStr = NULL;
-    } else {
-        if (globalUtilOptind >= argc) {
-        (void) fprintf(stderr, "%s: %c requires an argument\n", 
-            argv[0], c);
+        (void) fprintf(stderr, "%s: unknown option %c\n", argv[0], c);
         return '?';
-        }
-        globalUtilOptarg = argv[globalUtilOptind];
-        globalUtilOptind++;
     }
+    if (*++place == ':') 
+    {
+        if (*pScanStr != '\0') 
+        {
+            globalUtilOptarg = pScanStr;
+            pScanStr = NULL;
+        } 
+        else 
+        {
+            if (globalUtilOptind >= argc) 
+            {
+                (void) fprintf(stderr, "%s: %c requires an argument\n", 
+                    argv[0], c);
+                return '?';
+            }
+            globalUtilOptarg = argv[globalUtilOptind];
+            globalUtilOptind++;
+        }
     }
     return c;
 }
@@ -179,13 +176,13 @@ char * Extra_UtilPrintTime( long t )
   SeeAlso     []
 
 ***********************************************************************/
-char * Extra_UtilStrsav( char *s )
+char * Extra_UtilStrsav( const char *s )
 {
     if(s == NULL) {  /* added 7/95, for robustness */
-       return s;
+       return NULL;
     }
     else {
-       return strcpy(ALLOC(char, strlen(s)+1), s);
+       return strcpy(ABC_ALLOC(char, strlen(s)+1), s);
     }
 }
 
@@ -193,7 +190,7 @@ char * Extra_UtilStrsav( char *s )
 
   Synopsis    [util_tilde_expand()]
 
-  Description []
+  Description [The code contributed by Niklas Sorensson.]
                
   SideEffects []
 
@@ -203,6 +200,32 @@ char * Extra_UtilStrsav( char *s )
 char * Extra_UtilTildeExpand( char *fname )
 {
     return Extra_UtilStrsav( fname );
+/*
+    int         n_tildes = 0;
+    const char* home;
+    char*       expanded;
+    int         length;
+    int         i, j, k;
+
+    for (i = 0; i < (int)strlen(fname); i++)
+        if (fname[i] == '~') n_tildes++;
+
+    home     = getenv("HOME");
+    length   = n_tildes * strlen(home) + strlen(fname);
+    expanded = ABC_ALLOC(char, length + 1);
+
+    j = 0;
+    for (i = 0; i < (int)strlen(fname); i++){
+        if (fname[i] == '~'){
+            for (k = 0; k < (int)strlen(home); k++)
+                expanded[j++] = home[k];
+        }else
+            expanded[j++] = fname[i];
+    }
+
+    expanded[j] = '\0';
+    return expanded; 
+*/
 }
 
 /**Function*************************************************************
@@ -216,7 +239,7 @@ char * Extra_UtilTildeExpand( char *fname )
   SeeAlso     []
 
 ***********************************************************************/
-int Extra_UtilCheckFile(char *filename, char *mode)
+int Extra_UtilCheckFile(char *filename, const char *mode)
 {
     FILE *fp;
     int got_file;
@@ -269,22 +292,22 @@ char * Extra_UtilFileSearch(char *file, char *path, char *mode)
 	if (strcmp(path, ".") == 0) {
 	    buffer = Extra_UtilStrsav(file);
 	} else {
-	    buffer = ALLOC(char, strlen(path) + strlen(file) + 4);
+	    buffer = ABC_ALLOC(char, strlen(path) + strlen(file) + 4);
 	    (void) sprintf(buffer, "%s/%s", path, file);
 	}
 	filename = Extra_UtilTildeExpand(buffer);
-	FREE(buffer);
+	ABC_FREE(buffer);
 
 	/* see if we can access it */
 	if (Extra_UtilCheckFile(filename, mode)) {
-	    FREE(save_path);
+	    ABC_FREE(save_path);
 	    return filename;
 	}
-	FREE(filename);
+	ABC_FREE(filename);
 	path = ++cp;
     } while (! quit); 
 
-    FREE(save_path);
+    ABC_FREE(save_path);
     return 0;
 }
 
@@ -300,7 +323,7 @@ char * Extra_UtilFileSearch(char *file, char *path, char *mode)
 
 ***********************************************************************/
 /* MMout_of_memory -- out of memory for lazy people, flush and exit */
-void Extra_UtilMMout_Of_Memory( long size )
+void Extra_UtilMMout_Of_Memory( long size ) 
 {
     (void) fflush(stdout);
     (void) fprintf(stderr, "\nout of memory allocating %u bytes\n",
@@ -320,11 +343,79 @@ void Extra_UtilMMout_Of_Memory( long size )
   SeeAlso     []
 
 ***********************************************************************/
-void (*Extra_UtilMMoutOfMemory)() = Extra_UtilMMout_Of_Memory;
+void (*Extra_UtilMMoutOfMemory)( long size ) = (void (*)( long size ))Extra_UtilMMout_Of_Memory;
 
+
+/**Function*************************************************************
+
+  Synopsis    [util_cpu_time()]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+abctime Extra_CpuTime()
+{
+    return Abc_Clock();
+}
+
+/**Function*************************************************************
+
+  Synopsis    [util_cpu_time()]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+#if defined(NT) || defined(NT64) || defined(WIN32)
+double Extra_CpuTimeDouble()
+{
+    return 1.0*Abc_Clock()/CLOCKS_PER_SEC;
+}
+#else
+
+ABC_NAMESPACE_IMPL_END
+
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
+
+ABC_NAMESPACE_IMPL_START
+
+double Extra_CpuTimeDouble()
+{
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; 
+}
+#endif
+
+/**Function*************************************************************
+
+  Synopsis    [Testing memory leaks.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Extra_MemTest()
+{
+//    ABC_ALLOC( char, 1002 );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

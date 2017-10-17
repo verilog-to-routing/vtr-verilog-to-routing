@@ -7,24 +7,55 @@
   Synopsis    [Functions to read in a matrix]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_addRead()
-		<li> Cudd_bddRead()
-		</ul>]
+                <ul>
+                <li> Cudd_addRead()
+                <li> Cudd_bddRead()
+                </ul>]
 
   SeeAlso     [cudd_addHarwell.c]
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -47,7 +78,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddRead.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddRead.c,v 1.6 2004/08/13 18:04:50 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -142,85 +173,85 @@ Cudd_addRead(
 
     err = fscanf(fp, "%d %d", &u, &v);
     if (err == EOF) {
-	return(0);
+        return(0);
     } else if (err != 2) {
-	return(0);
+        return(0);
     }
 
     *m = u;
     /* Compute the number of x variables. */
     lx = *x; lxn = *xn;
-    u--; 	/* row and column numbers start from 0 */
+    u--;        /* row and column numbers start from 0 */
     for (lnx=0; u > 0; lnx++) {
-	u >>= 1;
+        u >>= 1;
     }
     /* Here we rely on the fact that REALLOC of a null pointer is
     ** translates to an ALLOC.
     */
     if (lnx > *nx) {
-	*x = lx = REALLOC(DdNode *, *x, lnx);
-	if (lx == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
-	*xn = lxn =  REALLOC(DdNode *, *xn, lnx);
-	if (lxn == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
+        *x = lx = ABC_REALLOC(DdNode *, *x, lnx);
+        if (lx == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
+        *xn = lxn =  ABC_REALLOC(DdNode *, *xn, lnx);
+        if (lxn == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
     }
 
     *n = v;
     /* Compute the number of y variables. */
     ly = *y; lyn = *yn_;
-    v--; 	/* row and column numbers start from 0 */
+    v--;        /* row and column numbers start from 0 */
     for (lny=0; v > 0; lny++) {
-	v >>= 1;
+        v >>= 1;
     }
     /* Here we rely on the fact that REALLOC of a null pointer is
     ** translates to an ALLOC.
     */
     if (lny > *ny) {
-	*y = ly = REALLOC(DdNode *, *y, lny);
-	if (ly == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
-	*yn_ = lyn =  REALLOC(DdNode *, *yn_, lny);
-	if (lyn == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
+        *y = ly = ABC_REALLOC(DdNode *, *y, lny);
+        if (ly == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
+        *yn_ = lyn =  ABC_REALLOC(DdNode *, *yn_, lny);
+        if (lyn == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
     }
 
     /* Create all new variables. */
     for (i = *nx, nv = bx + (*nx) * sx; i < lnx; i++, nv += sx) {
-	do {
-	    dd->reordered = 0;
-	    lx[i] = cuddUniqueInter(dd, nv, one, zero);
-	} while (dd->reordered == 1);
-	if (lx[i] == NULL) return(0);
+        do {
+            dd->reordered = 0;
+            lx[i] = cuddUniqueInter(dd, nv, one, zero);
+        } while (dd->reordered == 1);
+        if (lx[i] == NULL) return(0);
         cuddRef(lx[i]);
-	do {
-	    dd->reordered = 0;
-	    lxn[i] = cuddUniqueInter(dd, nv, zero, one);
-	} while (dd->reordered == 1);
-	if (lxn[i] == NULL) return(0);
+        do {
+            dd->reordered = 0;
+            lxn[i] = cuddUniqueInter(dd, nv, zero, one);
+        } while (dd->reordered == 1);
+        if (lxn[i] == NULL) return(0);
         cuddRef(lxn[i]);
     }
     for (i = *ny, nv = by + (*ny) * sy; i < lny; i++, nv += sy) {
-	do {
-	    dd->reordered = 0;
-	    ly[i] = cuddUniqueInter(dd, nv, one, zero);
-	} while (dd->reordered == 1);
-	if (ly[i] == NULL) return(0);
-	cuddRef(ly[i]);
-	do {
-	    dd->reordered = 0;
-	    lyn[i] = cuddUniqueInter(dd, nv, zero, one);
-	} while (dd->reordered == 1);
-	if (lyn[i] == NULL) return(0);
-	cuddRef(lyn[i]);
+        do {
+            dd->reordered = 0;
+            ly[i] = cuddUniqueInter(dd, nv, one, zero);
+        } while (dd->reordered == 1);
+        if (ly[i] == NULL) return(0);
+        cuddRef(ly[i]);
+        do {
+            dd->reordered = 0;
+            lyn[i] = cuddUniqueInter(dd, nv, zero, one);
+        } while (dd->reordered == 1);
+        if (lyn[i] == NULL) return(0);
+        cuddRef(lyn[i]);
     }
     *nx = lnx;
     *ny = lny;
@@ -229,69 +260,69 @@ Cudd_addRead(
     cuddRef(*E);
 
     while (! feof(fp)) {
-	err = fscanf(fp, "%d %d %lf", &u, &v, &val);
-	if (err == EOF) {
-	    break;
-	} else if (err != 3) {
-	    return(0);
-	} else if (u >= *m || v >= *n || u < 0 || v < 0) {
-	    return(0);
-	}
+        err = fscanf(fp, "%d %d %lf", &u, &v, &val);
+        if (err == EOF) {
+            break;
+        } else if (err != 3) {
+            return(0);
+        } else if (u >= *m || v >= *n || u < 0 || v < 0) {
+            return(0);
+        }
  
-	minterm1 = one; cuddRef(minterm1);
+        minterm1 = one; cuddRef(minterm1);
 
-	/* Build minterm1 corresponding to this arc */
-	for (i = lnx - 1; i>=0; i--) {
-	    if (u & 1) {
-		w = Cudd_addApply(dd, Cudd_addTimes, minterm1, lx[i]);
-	    } else {
-		w = Cudd_addApply(dd, Cudd_addTimes, minterm1, lxn[i]);
-	    }
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, minterm1);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    minterm1 = w;
-	    u >>= 1;
-	}
-	for (i = lny - 1; i>=0; i--) {
-	    if (v & 1) {
-		w = Cudd_addApply(dd, Cudd_addTimes, minterm1, ly[i]);
-	    } else {
-		w = Cudd_addApply(dd, Cudd_addTimes, minterm1, lyn[i]);
-	    }
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, minterm1);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    minterm1 = w;
-	    v >>= 1;
-	}
-	/* Create new constant node if necessary.
-	** This call will never cause reordering.
-	*/
-	neW = cuddUniqueConst(dd, val);
-	if (neW == NULL) {
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    return(0);
-	}
-    	cuddRef(neW);
+        /* Build minterm1 corresponding to this arc */
+        for (i = lnx - 1; i>=0; i--) {
+            if (u & 1) {
+                w = Cudd_addApply(dd, Cudd_addTimes, minterm1, lx[i]);
+            } else {
+                w = Cudd_addApply(dd, Cudd_addTimes, minterm1, lxn[i]);
+            }
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, minterm1);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, minterm1);
+            minterm1 = w;
+            u >>= 1;
+        }
+        for (i = lny - 1; i>=0; i--) {
+            if (v & 1) {
+                w = Cudd_addApply(dd, Cudd_addTimes, minterm1, ly[i]);
+            } else {
+                w = Cudd_addApply(dd, Cudd_addTimes, minterm1, lyn[i]);
+            }
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, minterm1);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, minterm1);
+            minterm1 = w;
+            v >>= 1;
+        }
+        /* Create new constant node if necessary.
+        ** This call will never cause reordering.
+        */
+        neW = cuddUniqueConst(dd, val);
+        if (neW == NULL) {
+            Cudd_RecursiveDeref(dd, minterm1);
+            return(0);
+        }
+        cuddRef(neW);
 
-	w = Cudd_addIte(dd, minterm1, neW, *E);
-	if (w == NULL) {
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    Cudd_RecursiveDeref(dd, neW);
-	    return(0);
-	}
-	cuddRef(w);
-	Cudd_RecursiveDeref(dd, minterm1);
-	Cudd_RecursiveDeref(dd, neW);
-	Cudd_RecursiveDeref(dd, *E);
-	*E = w;
+        w = Cudd_addIte(dd, minterm1, neW, *E);
+        if (w == NULL) {
+            Cudd_RecursiveDeref(dd, minterm1);
+            Cudd_RecursiveDeref(dd, neW);
+            return(0);
+        }
+        cuddRef(w);
+        Cudd_RecursiveDeref(dd, minterm1);
+        Cudd_RecursiveDeref(dd, neW);
+        Cudd_RecursiveDeref(dd, *E);
+        *E = w;
     }
     return(1);
 
@@ -362,57 +393,57 @@ Cudd_bddRead(
 
     err = fscanf(fp, "%d %d", &u, &v);
     if (err == EOF) {
-	return(0);
+        return(0);
     } else if (err != 2) {
-	return(0);
+        return(0);
     }
 
     *m = u;
     /* Compute the number of x variables. */
     lx = *x;
-    u--; 	/* row and column numbers start from 0 */
+    u--;        /* row and column numbers start from 0 */
     for (lnx=0; u > 0; lnx++) {
-	u >>= 1;
+        u >>= 1;
     }
     if (lnx > *nx) {
-	*x = lx = REALLOC(DdNode *, *x, lnx);
-	if (lx == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
+        *x = lx = ABC_REALLOC(DdNode *, *x, lnx);
+        if (lx == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
     }
 
     *n = v;
     /* Compute the number of y variables. */
     ly = *y;
-    v--; 	/* row and column numbers start from 0 */
+    v--;        /* row and column numbers start from 0 */
     for (lny=0; v > 0; lny++) {
-	v >>= 1;
+        v >>= 1;
     }
     if (lny > *ny) {
-	*y = ly = REALLOC(DdNode *, *y, lny);
-	if (ly == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
+        *y = ly = ABC_REALLOC(DdNode *, *y, lny);
+        if (ly == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
     }
 
     /* Create all new variables. */
     for (i = *nx, nv = bx + (*nx) * sx; i < lnx; i++, nv += sx) {
-	do {
-	    dd->reordered = 0;
-	    lx[i] = cuddUniqueInter(dd, nv, one, zero);
-	} while (dd->reordered == 1);
-	if (lx[i] == NULL) return(0);
+        do {
+            dd->reordered = 0;
+            lx[i] = cuddUniqueInter(dd, nv, one, zero);
+        } while (dd->reordered == 1);
+        if (lx[i] == NULL) return(0);
         cuddRef(lx[i]);
     }
     for (i = *ny, nv = by + (*ny) * sy; i < lny; i++, nv += sy) {
-	do {
-	    dd->reordered = 0;
-	    ly[i] = cuddUniqueInter(dd, nv, one, zero);
-	} while (dd->reordered == 1);
-	if (ly[i] == NULL) return(0);
-	cuddRef(ly[i]);
+        do {
+            dd->reordered = 0;
+            ly[i] = cuddUniqueInter(dd, nv, one, zero);
+        } while (dd->reordered == 1);
+        if (ly[i] == NULL) return(0);
+        cuddRef(ly[i]);
     }
     *nx = lnx;
     *ny = lny;
@@ -421,59 +452,59 @@ Cudd_bddRead(
     cuddRef(*E);
 
     while (! feof(fp)) {
-	err = fscanf(fp, "%d %d", &u, &v);
-	if (err == EOF) {
-	    break;
-	} else if (err != 2) {
-	    return(0);
-	} else if (u >= *m || v >= *n || u < 0 || v < 0) {
-	    return(0);
-	}
+        err = fscanf(fp, "%d %d", &u, &v);
+        if (err == EOF) {
+            break;
+        } else if (err != 2) {
+            return(0);
+        } else if (u >= *m || v >= *n || u < 0 || v < 0) {
+            return(0);
+        }
  
-	minterm1 = one; cuddRef(minterm1);
+        minterm1 = one; cuddRef(minterm1);
 
-	/* Build minterm1 corresponding to this arc. */
-	for (i = lnx - 1; i>=0; i--) {
-	    if (u & 1) {
-		w = Cudd_bddAnd(dd, minterm1, lx[i]);
-	    } else {
-		w = Cudd_bddAnd(dd, minterm1, Cudd_Not(lx[i]));
-	    }
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, minterm1);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd,minterm1);
-	    minterm1 = w;
-	    u >>= 1;
-	}
-	for (i = lny - 1; i>=0; i--) {
-	    if (v & 1) {
-		w = Cudd_bddAnd(dd, minterm1, ly[i]);
-	    } else {
-		w = Cudd_bddAnd(dd, minterm1, Cudd_Not(ly[i]));
-	    }
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, minterm1);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    minterm1 = w;
-	    v >>= 1;
-	}
+        /* Build minterm1 corresponding to this arc. */
+        for (i = lnx - 1; i>=0; i--) {
+            if (u & 1) {
+                w = Cudd_bddAnd(dd, minterm1, lx[i]);
+            } else {
+                w = Cudd_bddAnd(dd, minterm1, Cudd_Not(lx[i]));
+            }
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, minterm1);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd,minterm1);
+            minterm1 = w;
+            u >>= 1;
+        }
+        for (i = lny - 1; i>=0; i--) {
+            if (v & 1) {
+                w = Cudd_bddAnd(dd, minterm1, ly[i]);
+            } else {
+                w = Cudd_bddAnd(dd, minterm1, Cudd_Not(ly[i]));
+            }
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, minterm1);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, minterm1);
+            minterm1 = w;
+            v >>= 1;
+        }
 
-	w = Cudd_bddAnd(dd, Cudd_Not(minterm1), Cudd_Not(*E));
-	if (w == NULL) {
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    return(0);
-	}
-	w = Cudd_Not(w);
-	cuddRef(w);
-	Cudd_RecursiveDeref(dd, minterm1);
-	Cudd_RecursiveDeref(dd, *E);
-	*E = w;
+        w = Cudd_bddAnd(dd, Cudd_Not(minterm1), Cudd_Not(*E));
+        if (w == NULL) {
+            Cudd_RecursiveDeref(dd, minterm1);
+            return(0);
+        }
+        w = Cudd_Not(w);
+        cuddRef(w);
+        Cudd_RecursiveDeref(dd, minterm1);
+        Cudd_RecursiveDeref(dd, *E);
+        *E = w;
     }
     return(1);
 
@@ -487,4 +518,8 @@ Cudd_bddRead(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+
 

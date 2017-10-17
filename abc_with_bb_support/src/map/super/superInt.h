@@ -16,19 +16,23 @@
 
 ***********************************************************************/
 
-#ifndef __super_INT_H__
-#define __super_INT_H__
+#ifndef ABC__map__super__superInt_h
+#define ABC__map__super__superInt_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "abc.h"
-#include "mainInt.h"
-#include "mvc.h"
-#include "mio.h"
-#include "stmm.h"
+#include "base/abc/abc.h"
+#include "base/main/mainInt.h"
+#include "misc/mvc/mvc.h"
+#include "map/mio/mio.h"
+#include "misc/st/stmm.h"
 #include "super.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
@@ -50,10 +54,8 @@
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
-/*=== superAnd.c =============================================================*/
-extern void       Super2_Precompute( int nInputs, int nLevels, int fVerbose );
-/*=== superGate.c =============================================================*/
-extern void       Super_Precompute( Mio_Library_t * pLibGen, int nInputs, int nLevels, float tDelayMax, float tAreaMax, int TimeLimit, bool fSkipInv, bool fWriteOldFormat, int fVerbose );
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

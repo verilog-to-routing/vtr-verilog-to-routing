@@ -7,29 +7,60 @@
   Synopsis    [Boolean equation solver and related functions.]
 
   Description [External functions included in this modoule:
-		<ul>
-		<li> Cudd_SolveEqn()
-		<li> Cudd_VerifySol()
-		</ul>
-	Internal functions included in this module:
-		<ul>
-		<li> cuddSolveEqnRecur()
-		<li> cuddVerifySol()
-		</ul> ]
+                <ul>
+                <li> Cudd_SolveEqn()
+                <li> Cudd_VerifySol()
+                </ul>
+        Internal functions included in this module:
+                <ul>
+                <li> cuddSolveEqnRecur()
+                <li> cuddVerifySol()
+                </ul> ]
 
   SeeAlso     []
 
   Author      [Balakrishna Kumthekar]
 
-  Copyright [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -51,7 +82,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddSolve.c,v 1.1.1.1 2003/02/24 22:23:53 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddSolve.c,v 1.12 2004/08/13 18:04:51 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -103,17 +134,17 @@ Cudd_SolveEqn(
     DdNode *res;
     int *temp;
 
-    *yIndex = temp = ALLOC(int, n);
+    *yIndex = temp = ABC_ALLOC(int, n);
     if (temp == NULL) {
-	bdd->errorCode = CUDD_MEMORY_OUT;
-	(void) fprintf(bdd->out,
-		       "Cudd_SolveEqn: Out of memory for yIndex\n");
-	return(NULL);
+        bdd->errorCode = CUDD_MEMORY_OUT;
+        (void) fprintf(bdd->out,
+                       "Cudd_SolveEqn: Out of memory for yIndex\n");
+        return(NULL);
     }
 
     do {
-	bdd->reordered = 0;
-	res = cuddSolveEqnRecur(bdd, F, Y, G, n, temp, 0);
+        bdd->reordered = 0;
+        res = cuddSolveEqnRecur(bdd, F, Y, G, n, temp, 0);
     } while (bdd->reordered == 1);
 
     return(res);
@@ -145,11 +176,11 @@ Cudd_VerifySol(
     DdNode *res;
 
     do {
-	bdd->reordered = 0;
-	res = cuddVerifySol(bdd, F, G, yIndex, n);
+        bdd->reordered = 0;
+        res = cuddVerifySol(bdd, F, G, yIndex, n);
     } while (bdd->reordered == 1);
 
-    FREE(yIndex);
+    ABC_FREE(yIndex);
 
     return(res);
 
@@ -196,7 +227,7 @@ cuddSolveEqnRecur(
 
     /* Base condition. */
     if (Y == one) {
-	return F;
+        return F;
     }
 
     /* Cofactor of Y. */
@@ -206,61 +237,61 @@ cuddSolveEqnRecur(
     /* Universal abstraction of F with respect to the top variable index. */
     Fm1 = cuddBddExistAbstractRecur(bdd, Cudd_Not(F), variables[yIndex[i]]);
     if (Fm1) {
-	Fm1 = Cudd_Not(Fm1);
-	cuddRef(Fm1);
+        Fm1 = Cudd_Not(Fm1);
+        cuddRef(Fm1);
     } else {
-	return(NULL);
+        return(NULL);
     }
 
     Fn = cuddSolveEqnRecur(bdd, Fm1, nextY, G, n, yIndex, i+1);
     if (Fn) {
-	cuddRef(Fn);
+        cuddRef(Fn);
     } else {
-	Cudd_RecursiveDeref(bdd, Fm1);
-	return(NULL);
+        Cudd_RecursiveDeref(bdd, Fm1);
+        return(NULL);
     }
 
     Fv = cuddCofactorRecur(bdd, F, variables[yIndex[i]]);
     if (Fv) {
-	cuddRef(Fv);
+        cuddRef(Fv);
     } else {
-	Cudd_RecursiveDeref(bdd, Fm1);
-	Cudd_RecursiveDeref(bdd, Fn);
-	return(NULL);
+        Cudd_RecursiveDeref(bdd, Fm1);
+        Cudd_RecursiveDeref(bdd, Fn);
+        return(NULL);
     }
 
     Fvbar = cuddCofactorRecur(bdd, F, Cudd_Not(variables[yIndex[i]]));
     if (Fvbar) {
-	cuddRef(Fvbar);
+        cuddRef(Fvbar);
     } else {
-	Cudd_RecursiveDeref(bdd, Fm1);
-	Cudd_RecursiveDeref(bdd, Fn);
-	Cudd_RecursiveDeref(bdd, Fv);
-	return(NULL);
+        Cudd_RecursiveDeref(bdd, Fm1);
+        Cudd_RecursiveDeref(bdd, Fn);
+        Cudd_RecursiveDeref(bdd, Fv);
+        return(NULL);
     }
 
     /* Build i-th component of the solution. */
     w = cuddBddIteRecur(bdd, variables[yIndex[i]], Cudd_Not(Fv), Fvbar);
     if (w) {
-	cuddRef(w);
+        cuddRef(w);
     } else {
-	Cudd_RecursiveDeref(bdd, Fm1);
-	Cudd_RecursiveDeref(bdd, Fn);
-	Cudd_RecursiveDeref(bdd, Fv);
-	Cudd_RecursiveDeref(bdd, Fvbar);
-	return(NULL);
+        Cudd_RecursiveDeref(bdd, Fm1);
+        Cudd_RecursiveDeref(bdd, Fn);
+        Cudd_RecursiveDeref(bdd, Fv);
+        Cudd_RecursiveDeref(bdd, Fvbar);
+        return(NULL);
     }
 
     T = cuddBddRestrictRecur(bdd, w, Cudd_Not(Fm1));
     if(T) {
-	cuddRef(T);
+        cuddRef(T);
     } else {
-	Cudd_RecursiveDeref(bdd, Fm1);
-	Cudd_RecursiveDeref(bdd, Fn);
-	Cudd_RecursiveDeref(bdd, Fv);
-	Cudd_RecursiveDeref(bdd, Fvbar);
-	Cudd_RecursiveDeref(bdd, w);
-	return(NULL);
+        Cudd_RecursiveDeref(bdd, Fm1);
+        Cudd_RecursiveDeref(bdd, Fn);
+        Cudd_RecursiveDeref(bdd, Fv);
+        Cudd_RecursiveDeref(bdd, Fvbar);
+        Cudd_RecursiveDeref(bdd, w);
+        return(NULL);
     }
 
     Cudd_RecursiveDeref(bdd,Fm1);
@@ -270,16 +301,16 @@ cuddSolveEqnRecur(
 
     /* Substitute components of solution already found into solution. */
     for (j = n-1; j > i; j--) {
-	w = cuddBddComposeRecur(bdd,T, G[j], variables[yIndex[j]]);
-	if(w) {
-	    cuddRef(w);
-	} else {
-	    Cudd_RecursiveDeref(bdd, Fn);
-	    Cudd_RecursiveDeref(bdd, T);
-	    return(NULL);
-	}
-	Cudd_RecursiveDeref(bdd,T);
-	T = w;
+        w = cuddBddComposeRecur(bdd,T, G[j], variables[yIndex[j]]);
+        if(w) {
+            cuddRef(w);
+        } else {
+            Cudd_RecursiveDeref(bdd, Fn);
+            Cudd_RecursiveDeref(bdd, T);
+            return(NULL);
+        }
+        Cudd_RecursiveDeref(bdd,T);
+        T = w;
     }
     G[i] = T;
 
@@ -316,14 +347,14 @@ cuddVerifySol(
     R = F;
     cuddRef(R);
     for(j = n - 1; j >= 0; j--) {
-	 w = Cudd_bddCompose(bdd, R, G[j], yIndex[j]);
-	if (w) {
-	    cuddRef(w);
-	} else {
-	    return(NULL); 
-	}
-	Cudd_RecursiveDeref(bdd,R);
-	R = w;
+         w = Cudd_bddCompose(bdd, R, G[j], yIndex[j]);
+        if (w) {
+            cuddRef(w);
+        } else {
+            return(NULL); 
+        }
+        Cudd_RecursiveDeref(bdd,R);
+        R = w;
     }
 
     cuddDeref(R);
@@ -336,4 +367,8 @@ cuddVerifySol(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+
 

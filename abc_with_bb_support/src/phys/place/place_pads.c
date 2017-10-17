@@ -14,6 +14,9 @@
 
 #include "place_base.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 // --------------------------------------------------------------------
 // globalPreplace()
 //
@@ -138,4 +141,6 @@ void globalPreplace(float utilization) {
   }
 
 }
+
+ABC_NAMESPACE_IMPL_END
 

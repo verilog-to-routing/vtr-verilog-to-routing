@@ -20,6 +20,9 @@
 
 #include "hop.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -28,8 +31,8 @@
 static unsigned long Hop_Hash( Hop_Obj_t * pObj, int TableSize ) 
 {
     unsigned long Key = Hop_ObjIsExor(pObj) * 1699;
-    Key ^= (long)Hop_ObjFanin0(pObj) * 7937;
-    Key ^= (long)Hop_ObjFanin1(pObj) * 2971;
+    Key ^= Hop_ObjFanin0(pObj)->Id * 7937;
+    Key ^= Hop_ObjFanin1(pObj)->Id * 2971;
     Key ^= Hop_ObjFaninC0(pObj) * 911;
     Key ^= Hop_ObjFaninC1(pObj) * 353;
     return Key % TableSize;
@@ -49,7 +52,6 @@ static Hop_Obj_t ** Hop_TableFind( Hop_Man_t * p, Hop_Obj_t * pObj )
 }
 
 static void         Hop_TableResize( Hop_Man_t * p );
-static unsigned int Cudd_PrimeAig( unsigned int  p );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -165,14 +167,15 @@ void Hop_TableResize( Hop_Man_t * p )
 {
     Hop_Obj_t * pEntry, * pNext;
     Hop_Obj_t ** pTableOld, ** ppPlace;
-    int nTableSizeOld, Counter, nEntries, i, clk;
-clk = clock();
+    int nTableSizeOld, Counter, nEntries, i;
+    abctime clk;
+clk = Abc_Clock();
     // save the old table
     pTableOld = p->pTable;
     nTableSizeOld = p->nTableSize;
     // get the new table
-    p->nTableSize = Cudd_PrimeAig( 2 * Hop_ManNodeNum(p) ); 
-    p->pTable = ALLOC( Hop_Obj_t *, p->nTableSize );
+    p->nTableSize = Abc_PrimeCudd( 2 * Hop_ManNodeNum(p) ); 
+    p->pTable = ABC_ALLOC( Hop_Obj_t *, p->nTableSize );
     memset( p->pTable, 0, sizeof(Hop_Obj_t *) * p->nTableSize );
     // rehash the entries from the old table
     Counter = 0;
@@ -190,9 +193,9 @@ clk = clock();
     nEntries = Hop_ManNodeNum(p);
     assert( Counter == nEntries );
 //    printf( "Increasing the structural table size from %6d to %6d. ", nTableSizeOld, p->nTableSize );
-//    PRT( "Time", clock() - clk );
+//    ABC_PRT( "Time", Abc_Clock() - clk );
     // replace the table and the parameters
-    free( pTableOld );
+    ABC_FREE( pTableOld );
 }
 
 /**Function********************************************************************
@@ -220,43 +223,10 @@ void Hop_TableProfile( Hop_Man_t * p )
     }
 }
 
-/**Function********************************************************************
-
-  Synopsis    [Returns the next prime &gt;= p.]
-
-  Description [Copied from CUDD, for stand-aloneness.]
-
-  SideEffects [None]
-
-  SeeAlso     []
-
-******************************************************************************/
-unsigned int Cudd_PrimeAig( unsigned int  p)
-{
-    int i,pn;
-    p--;
-    do {
-        p++;
-        if (p&1) {
-	    pn = 1;
-	    i = 3;
-	    while ((unsigned) (i * i) <= p) {
-		if (p % i == 0) {
-		    pn = 0;
-		    break;
-		}
-		i += 2;
-	    }
-	} else {
-	    pn = 0;
-	}
-    } while (!pn);
-    return(p);
-
-} /* end of Cudd_Prime */
-
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

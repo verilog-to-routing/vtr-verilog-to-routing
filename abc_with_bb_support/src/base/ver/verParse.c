@@ -20,6 +20,9 @@
 
 #include "ver.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -60,7 +63,7 @@ int Ver_ParseSkipComments( Ver_Man_t * pMan )
         return Ver_ParseSkipComments( pMan );
     }
     if ( Symbol == '*' )
-    { // skip till the next occurance of */
+    { // skip till the next occurrence of */
         Ver_StreamPopChar( p );
         do {
             Ver_StreamSkipToChars( p, "*" );
@@ -101,10 +104,19 @@ char * Ver_ParseGetName( Ver_Man_t * pMan )
         pMan->fNameLast = 1;
         Ver_StreamPopChar( p );
         pWord = Ver_StreamGetWord( p, " \r\n" );
+        Ver_StreamSkipChars( p, " \r\n" );
+        if ( Ver_StreamScanChar(p) == '[' )
+        {
+            char This, * pEnd = pWord + strlen( pWord );
+            while ( (This = Ver_StreamPopChar(p)) != ']' )
+                *pEnd++ = This;
+            *pEnd++ = This;
+            *pEnd = 0;
+        }
     }
     else
         pWord = Ver_StreamGetWord( p, " \t\n\r(),;" );
-    if ( !Ver_ParseSkipComments( pMan ) )
+    if ( Ver_StreamIsOkey(p) && !Ver_ParseSkipComments( pMan ) )
         return NULL;
     return pWord;
 }
@@ -114,4 +126,6 @@ char * Ver_ParseGetName( Ver_Man_t * pMan )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

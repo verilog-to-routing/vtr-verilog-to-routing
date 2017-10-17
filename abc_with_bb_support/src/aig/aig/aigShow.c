@@ -19,6 +19,10 @@
 ***********************************************************************/
 
 #include "aig.h"
+#include "misc/extra/extra.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -44,7 +48,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 {
     FILE * pFile;
     Aig_Obj_t * pNode;//, * pTemp, * pPrev;
-    int LevelMax, Level, i;
+    int LevelMax, Prev, Level, i;
 
     if ( Aig_ManNodeNum(pMan) > 200 )
     {
@@ -59,13 +63,13 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 
     // mark the nodes
     if ( vBold )
-        Vec_PtrForEachEntry( vBold, pNode, i )
+        Vec_PtrForEachEntry( Aig_Obj_t *, vBold, pNode, i )
             pNode->fMarkB = 1;
 
     // compute levels
 //    LevelMax = 1 + Aig_ManSetLevels( pMan, fHaig );
     LevelMax = 1 + Aig_ManLevels( pMan );
-    Aig_ManForEachPo( pMan, pNode, i )
+    Aig_ManForEachCo( pMan, pNode, i )
         pNode->Level = LevelMax;
 
     // write the DOT header
@@ -128,7 +132,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
     fprintf( pFile, "%s", "AIG structure visualized by ABC" );
     fprintf( pFile, "\\n" );
     fprintf( pFile, "Benchmark \\\"%s\\\". ", "aig" );
-    fprintf( pFile, "Time was %s. ",  Extra_TimeStamp() );
+//    fprintf( pFile, "Time was %s. ",  Extra_TimeStamp() );
     fprintf( pFile, "\"\n" );
     fprintf( pFile, "         ];\n" );
     fprintf( pFile, "}" );
@@ -157,7 +161,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
     // the labeling node of this level
     fprintf( pFile, "  Level%d;\n",  LevelMax );
     // generate the CO nodes
-    Aig_ManForEachPo( pMan, pNode, i )
+    Aig_ManForEachCo( pMan, pNode, i )
     {
 /*
         if ( fHaig || pNode->pEquiv == NULL )
@@ -170,7 +174,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 */
         fprintf( pFile, "  Node%d [label = \"%d\"", pNode->Id, pNode->Id ); 
 
-        fprintf( pFile, ", shape = %s", (Aig_ObjIsLatch(pNode)? "box":"invtriangle") );
+        fprintf( pFile, ", shape = %s", "invtriangle" );
         fprintf( pFile, ", color = coral, fillcolor = coral" );
         fprintf( pFile, "];\n" );
     }
@@ -224,7 +228,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
         fprintf( pFile, "];\n" );
     }
     // generate the CI nodes
-    Aig_ManForEachPi( pMan, pNode, i )
+    Aig_ManForEachCi( pMan, pNode, i )
     {
 /*
         if ( fHaig || pNode->pEquiv == NULL )
@@ -237,7 +241,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 */
         fprintf( pFile, "  Node%d [label = \"%d\"", pNode->Id, pNode->Id ); 
 
-        fprintf( pFile, ", shape = %s", (Aig_ObjIsLatch(pNode)? "box":"triangle") );
+        fprintf( pFile, ", shape = %s", "triangle" );
         fprintf( pFile, ", color = coral, fillcolor = coral" );
         fprintf( pFile, "];\n" );
     }
@@ -247,18 +251,26 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 
     // generate invisible edges from the square down
     fprintf( pFile, "title1 -> title2 [style = invis];\n" );
-    Aig_ManForEachPo( pMan, pNode, i )
-        fprintf( pFile, "title2 -> Node%d%s [style = invis];\n", pNode->Id, (Aig_ObjIsLatch(pNode)? "_in":"") );
+    Aig_ManForEachCo( pMan, pNode, i )
+        fprintf( pFile, "title2 -> Node%d [style = invis];\n", pNode->Id );
+    // generate invisible edges among the COs
+    Prev = -1;
+    Aig_ManForEachCo( pMan, pNode, i )
+    {
+        if ( i > 0 )
+            fprintf( pFile, "Node%d -> Node%d [style = invis];\n", Prev, pNode->Id );
+        Prev = pNode->Id;
+    }
 
     // generate edges
     Aig_ManForEachObj( pMan, pNode, i )
     {
-        if ( !Aig_ObjIsNode(pNode) && !Aig_ObjIsPo(pNode) && !Aig_ObjIsBuf(pNode) )
+        if ( !Aig_ObjIsNode(pNode) && !Aig_ObjIsCo(pNode) && !Aig_ObjIsBuf(pNode) )
             continue;
         // generate the edge from this node to the next
-        fprintf( pFile, "Node%d%s",  pNode->Id, (Aig_ObjIsLatch(pNode)? "_in":"") );
+        fprintf( pFile, "Node%d",  pNode->Id );
         fprintf( pFile, " -> " );
-        fprintf( pFile, "Node%d%s",  Aig_ObjFaninId0(pNode), (Aig_ObjIsLatch(Aig_ObjFanin0(pNode))? "_out":"") );
+        fprintf( pFile, "Node%d",  Aig_ObjFaninId0(pNode) );
         fprintf( pFile, " [" );
         fprintf( pFile, "style = %s", Aig_ObjFaninC0(pNode)? "dotted" : "bold" );
 //        if ( Aig_NtkIsSeq(pNode->pMan) && Seq_ObjFaninL0(pNode) > 0 )
@@ -270,7 +282,7 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
         // generate the edge from this node to the next
         fprintf( pFile, "Node%d",  pNode->Id );
         fprintf( pFile, " -> " );
-        fprintf( pFile, "Node%d%s",  Aig_ObjFaninId1(pNode), (Aig_ObjIsLatch(Aig_ObjFanin1(pNode))? "_out":"") );
+        fprintf( pFile, "Node%d",  Aig_ObjFaninId1(pNode) );
         fprintf( pFile, " [" );
         fprintf( pFile, "style = %s", Aig_ObjFaninC1(pNode)? "dotted" : "bold" );
 //        if ( Aig_NtkIsSeq(pNode->pMan) && Seq_ObjFaninL1(pNode) > 0 )
@@ -308,10 +320,10 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 
     // unmark nodes
     if ( vBold )
-        Vec_PtrForEachEntry( vBold, pNode, i )
+        Vec_PtrForEachEntry( Aig_Obj_t *, vBold, pNode, i )
             pNode->fMarkB = 0;
 
-    Aig_ManForEachPo( pMan, pNode, i )
+    Aig_ManForEachCo( pMan, pNode, i )
         pNode->Level = Aig_ObjFanin0(pNode)->Level;
 }
 
@@ -329,12 +341,10 @@ void Aig_WriteDotAig( Aig_Man_t * pMan, char * pFileName, int fHaig, Vec_Ptr_t *
 void Aig_ManShow( Aig_Man_t * pMan, int fHaig, Vec_Ptr_t * vBold )
 {
     extern void Abc_ShowFile( char * FileNameDot );
-    static Counter = 0;
     char FileNameDot[200];
     FILE * pFile;
     // create the file name
-//    Aig_ShowGetFileName( pMan->pName, FileNameDot );
-    sprintf( FileNameDot, "temp%02d.dot", Counter++ );
+    sprintf( FileNameDot, "%s", Extra_FileNameGenericAppend(pMan->pName, ".dot") );
     // check that the file can be opened
     if ( (pFile = fopen( FileNameDot, "w" )) == NULL )
     {
@@ -353,4 +363,6 @@ void Aig_ManShow( Aig_Man_t * pMan, int fHaig, Vec_Ptr_t * vBold )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

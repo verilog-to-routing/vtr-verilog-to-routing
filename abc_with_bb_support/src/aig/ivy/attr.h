@@ -18,22 +18,24 @@
 
 ***********************************************************************/
  
-#ifndef __ATTR_H__
-#define __ATTR_H__
+#ifndef ABC__aig__ivy__attr_h
+#define ABC__aig__ivy__attr_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "extra.h"
+#include "misc/extra/extra.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -402,9 +404,11 @@ static inline void Attr_ManSetAttrPtr( Attr_Man_t * p, int Id, void * pAttr )
 
 
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

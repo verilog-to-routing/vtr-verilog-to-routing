@@ -25,33 +25,64 @@
   
   Internal procedures provided by this module:
                 <ul>
-		<li> cuddLevelQueueInit()
-		<li> cuddLevelQueueQuit()
-		<li> cuddLevelQueueEnqueue()
-		<li> cuddLevelQueueDequeue()
-		</ul>
+                <li> cuddLevelQueueInit()
+                <li> cuddLevelQueueQuit()
+                <li> cuddLevelQueueEnqueue()
+                <li> cuddLevelQueueDequeue()
+                </ul>
   Static procedures included in this module:
-		<ul>
-		<li> hashLookup()
-		<li> hashInsert()
-		<li> hashDelete()
-		<li> hashResize()
-		</ul>
-		]
+                <ul>
+                <li> hashLookup()
+                <li> hashInsert()
+                <li> hashDelete()
+                <li> hashResize()
+                </ul>
+                ]
 
   SeeAlso     []
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at
-               Boulder.  The University of Colorado at Boulder makes no
-	       warranty about the suitability of this software for any
-	       purpose.  It is presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -71,7 +102,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddLevelQ.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddLevelQ.c,v 1.13 2009/03/08 02:49:02 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -92,7 +123,7 @@ static char rcsid[] DD_UNUSED = "$Id: cuddLevelQ.c,v 1.1.1.1 2003/02/24 22:23:52
 ******************************************************************************/
 #if SIZEOF_VOID_P == 8 && SIZEOF_INT == 4
 #define lqHash(key,shift) \
-(((unsigned)(unsigned long)(key) * DD_P1) >> (shift))
+(((unsigned)(ptruint)(key) * DD_P1) >> (shift))
 #else
 #define lqHash(key,shift) \
 (((unsigned)(key) * DD_P1) >> (shift))
@@ -105,10 +136,10 @@ static char rcsid[] DD_UNUSED = "$Id: cuddLevelQ.c,v 1.1.1.1 2003/02/24 22:23:52
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static DdQueueItem * hashLookup ARGS((DdLevelQueue *queue, void *key));
-static int hashInsert ARGS((DdLevelQueue *queue, DdQueueItem *item));
-static void hashDelete ARGS((DdLevelQueue *queue, DdQueueItem *item));
-static int hashResize ARGS((DdLevelQueue *queue));
+static DdQueueItem * hashLookup (DdLevelQueue *queue, void *key);
+static int hashInsert (DdLevelQueue *queue, DdQueueItem *item);
+static void hashDelete (DdLevelQueue *queue, DdQueueItem *item);
+static int hashResize (DdLevelQueue *queue);
 
 /**AutomaticEnd***************************************************************/
 
@@ -143,21 +174,21 @@ cuddLevelQueueInit(
     DdLevelQueue *queue;
     int logSize;
 
-    queue = ALLOC(DdLevelQueue,1);
+    queue = ABC_ALLOC(DdLevelQueue,1);
     if (queue == NULL)
-	return(NULL);
+        return(NULL);
 #ifdef __osf__
 #pragma pointer_size save
 #pragma pointer_size short
 #endif
     /* Keep pointers to the insertion points for all levels. */
-    queue->last = ALLOC(DdQueueItem *, levels);
+    queue->last = ABC_ALLOC(DdQueueItem *, levels);
 #ifdef __osf__
 #pragma pointer_size restore
 #endif
     if (queue->last == NULL) {
-	FREE(queue);
-	return(NULL);
+        ABC_FREE(queue);
+        return(NULL);
     }
     /* Use a hash table to test for uniqueness. */
     if (numBuckets < 2) numBuckets = 2;
@@ -168,14 +199,14 @@ cuddLevelQueueInit(
 #pragma pointer_size save
 #pragma pointer_size short
 #endif
-    queue->buckets = ALLOC(DdQueueItem *, queue->numBuckets);
+    queue->buckets = ABC_ALLOC(DdQueueItem *, queue->numBuckets);
 #ifdef __osf__
 #pragma pointer_size restore
 #endif
     if (queue->buckets == NULL) {
-	FREE(queue->last);
-	FREE(queue);
-	return(NULL);
+        ABC_FREE(queue->last);
+        ABC_FREE(queue);
+        return(NULL);
     }
 #ifdef __osf__
 #pragma pointer_size save
@@ -216,18 +247,18 @@ cuddLevelQueueQuit(
     DdQueueItem *item;
 
     while (queue->freelist != NULL) {
-	item = queue->freelist;
-	queue->freelist = item->next;
-	FREE(item);
+        item = queue->freelist;
+        queue->freelist = item->next;
+        ABC_FREE(item);
     }
     while (queue->first != NULL) {
-	item = (DdQueueItem *) queue->first;
-	queue->first = item->next;
-	FREE(item);
+        item = (DdQueueItem *) queue->first;
+        queue->first = item->next;
+        ABC_FREE(item);
     }
-    FREE(queue->buckets);
-    FREE(queue->last);
-    FREE(queue);
+    ABC_FREE(queue->buckets);
+    ABC_FREE(queue->last);
+    ABC_FREE(queue);
     return;
 
 } /* end of cuddLevelQueueQuit */
@@ -265,12 +296,12 @@ cuddLevelQueueEnqueue(
 
     /* Get a free item from either the free list or the memory manager. */
     if (queue->freelist == NULL) {
-	item = (DdQueueItem *) ALLOC(char, queue->itemsize);
-	if (item == NULL)
-	    return(NULL);
+        item = (DdQueueItem *) ABC_ALLOC(char, queue->itemsize);
+        if (item == NULL)
+            return(NULL);
     } else {
-	item = queue->freelist;
-	queue->freelist = item->next;
+        item = queue->freelist;
+        queue->freelist = item->next;
     }
     /* Initialize. */
     memset(item, 0, queue->itemsize);
@@ -279,29 +310,29 @@ cuddLevelQueueEnqueue(
     queue->size++;
 
     if (queue->last[level]) {
-	/* There are already items for this level in the queue. */
-	item->next = queue->last[level]->next;
-	queue->last[level]->next = item;
+        /* There are already items for this level in the queue. */
+        item->next = queue->last[level]->next;
+        queue->last[level]->next = item;
     } else {
-	/* There are no items at the current level.  Look for the first
-	** non-empty level preceeding this one. */
-	plevel = level;
-	while (plevel != 0 && queue->last[plevel] == NULL)
-	    plevel--;
-	if (queue->last[plevel] == NULL) {
-	    /* No element precedes this one in the queue. */
-	    item->next = (DdQueueItem *) queue->first;
-	    queue->first = item;
-	} else {
-	    item->next = queue->last[plevel]->next;
-	    queue->last[plevel]->next = item;
-	}
+        /* There are no items at the current level.  Look for the first
+        ** non-empty level preceeding this one. */
+        plevel = level;
+        while (plevel != 0 && queue->last[plevel] == NULL)
+            plevel--;
+        if (queue->last[plevel] == NULL) {
+            /* No element precedes this one in the queue. */
+            item->next = (DdQueueItem *) queue->first;
+            queue->first = item;
+        } else {
+            item->next = queue->last[plevel]->next;
+            queue->last[plevel]->next = item;
+        }
     }
     queue->last[level] = item;
 
     /* Insert entry for the key in the hash table. */
     if (hashInsert(queue,item) == 0) {
-	return(NULL);
+        return(NULL);
     }
     return(item);
 
@@ -332,7 +363,7 @@ cuddLevelQueueDequeue(
     /* Since we delete from the front, if this is the last item for
     ** its level, there are no other items for the same level. */
     if (queue->last[level] == item)
-	queue->last[level] = NULL;
+        queue->last[level] = NULL;
 
     queue->first = item->next;
     /* Put item on the free list. */
@@ -375,10 +406,10 @@ hashLookup(
     item = queue->buckets[posn];
 
     while (item != NULL) {
-	if (item->key == key) {
-	    return(item);
-	}
-	item = item->cnext;
+        if (item->key == key) {
+            return(item);
+        }
+        item = item->cnext;
     }
     return(NULL);
 
@@ -407,8 +438,8 @@ hashInsert(
     int posn;
 
     if (queue->size > queue->maxsize) {
-	result = hashResize(queue);
-	if (result == 0) return(0);
+        result = hashResize(queue);
+        if (result == 0) return(0);
     }
 
     posn = lqHash(item->key,queue->shift);
@@ -445,16 +476,16 @@ hashDelete(
 
     if (prevItem == NULL) return;
     if (prevItem == item) {
-	queue->buckets[posn] = prevItem->cnext;
-	return;
+        queue->buckets[posn] = prevItem->cnext;
+        return;
     }
 
     while (prevItem->cnext != NULL) {
-	if (prevItem->cnext == item) {
-	    prevItem->cnext = item->cnext;
-	    return;
-	}
-	prevItem = prevItem->cnext;
+        if (prevItem->cnext == item) {
+            prevItem->cnext = item->cnext;
+            return;
+        }
+        prevItem = prevItem->cnext;
     }
     return;
 
@@ -493,8 +524,8 @@ hashResize(
 #endif
     int shift;
     int oldNumBuckets = queue->numBuckets;
-    extern void (*MMoutOfMemory)(long);
-    void (*saveHandler)(long);
+    extern DD_OOMFP MMoutOfMemory;
+    DD_OOMFP saveHandler;
 
     /* Compute the new size of the subtable. */
     numBuckets = oldNumBuckets << 1;
@@ -504,10 +535,11 @@ hashResize(
 #pragma pointer_size save
 #pragma pointer_size short
 #endif
-    buckets = queue->buckets = ALLOC(DdQueueItem *, numBuckets);
+    buckets = queue->buckets = ABC_ALLOC(DdQueueItem *, numBuckets);
+    MMoutOfMemory = saveHandler;
     if (buckets == NULL) {
-	queue->maxsize <<= 1;
-	return(1);
+        queue->maxsize <<= 1;
+        return(1);
     }
 
     queue->numBuckets = numBuckets;
@@ -518,16 +550,20 @@ hashResize(
 #pragma pointer_size restore
 #endif
     for (j = 0; j < oldNumBuckets; j++) {
-	item = oldBuckets[j];
-	while (item != NULL) {
-	    next = item->cnext;
-	    posn = lqHash(item->key, shift);
-	    item->cnext = buckets[posn];
-	    buckets[posn] = item;
-	    item = next;
-	}
+        item = oldBuckets[j];
+        while (item != NULL) {
+            next = item->cnext;
+            posn = lqHash(item->key, shift);
+            item->cnext = buckets[posn];
+            buckets[posn] = item;
+            item = next;
+        }
     }
-    FREE(oldBuckets);
+    ABC_FREE(oldBuckets);
     return(1);
 
 } /* end of hashResize */
+
+
+ABC_NAMESPACE_IMPL_END
+

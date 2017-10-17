@@ -7,41 +7,72 @@
   Synopsis    [The University of Colorado decision diagram package.]
 
   Description [External functions and data strucures of the CUDD package.
-  <ul>
-  <li> To turn on the gathering of statistics, define DD_STATS.
-  <li> To link with mis, define DD_MIS.
-  </ul>
-  Modified by Abelardo Pardo to interface it to VIS.
+                <ul>
+                <li> To turn on the gathering of statistics, define DD_STATS.
+                <li> To link with mis, define DD_MIS.
+                </ul>
+               Modified by Abelardo Pardo to interface it to VIS.
   ]
 
   SeeAlso     []
 
   Author      [Fabio Somenzi]
 
-  Copyright [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
 
-  Revision    [$Id: cudd.h,v 1.1.1.1 2003/02/24 22:23:50 wjiang Exp $]
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
+
+  Revision    [$Id: cudd.h,v 1.174 2009/02/21 05:55:18 fabio Exp $]
 
 ******************************************************************************/
 
-#ifndef _CUDD
-#define _CUDD
+#ifndef ABC__bdd__cudd__cudd_h
+#define ABC__bdd__cudd__cudd_h
+
 
 /*---------------------------------------------------------------------------*/
 /* Nested includes                                                           */
 /*---------------------------------------------------------------------------*/
 
-#include "mtr.h"
-#include "epd.h"
+#include "bdd/mtr/mtr.h"
+#include "bdd/epd/epd.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
 /*---------------------------------------------------------------------------*/
 
-#define CUDD_VERSION "2.3.1"
+#define CUDD_VERSION "2.4.2"
 
 #ifndef SIZEOF_VOID_P
 #define SIZEOF_VOID_P 4
@@ -60,40 +91,46 @@
 #define FALSE 0
 #endif
 
-#define CUDD_VALUE_TYPE		double
-#define CUDD_OUT_OF_MEM		-1
+#define CUDD_VALUE_TYPE         double
+#define CUDD_OUT_OF_MEM         -1
 /* The sizes of the subtables and the cache must be powers of two. */
-#define CUDD_UNIQUE_SLOTS	256	/* initial size of subtables */
-#define CUDD_CACHE_SLOTS	262144	/* default size of the cache */
+#define CUDD_UNIQUE_SLOTS       256     /* initial size of subtables */
+#define CUDD_CACHE_SLOTS        262144  /* default size of the cache */
 
 /* Constants for residue functions. */
-#define CUDD_RESIDUE_DEFAULT	0
-#define CUDD_RESIDUE_MSB	1
-#define CUDD_RESIDUE_TC		2
+#define CUDD_RESIDUE_DEFAULT    0
+#define CUDD_RESIDUE_MSB        1
+#define CUDD_RESIDUE_TC         2
 
 /* CUDD_MAXINDEX is defined in such a way that on 32-bit and 64-bit
 ** machines one can cast an index to (int) without generating a negative
 ** number.
 */
 #if SIZEOF_VOID_P == 8 && SIZEOF_INT == 4
-#define CUDD_MAXINDEX		(((DdHalfWord) ~0) >> 1)
+#define CUDD_MAXINDEX           (((DdHalfWord) ~0) >> 1)
 #else
-#define CUDD_MAXINDEX		((DdHalfWord) ~0)
+#define CUDD_MAXINDEX           ((DdHalfWord) ~0)
 #endif
 
 /* CUDD_CONST_INDEX is the index of constant nodes.  Currently this
 ** is a synonim for CUDD_MAXINDEX. */
-#define CUDD_CONST_INDEX	CUDD_MAXINDEX
+#define CUDD_CONST_INDEX        CUDD_MAXINDEX
 
 /* These constants define the digits used in the representation of
-** arbitrary precision integers.  The two configurations tested use 8
-** and 16 bits for each digit.  The typedefs should be in agreement
+** arbitrary precision integers.  The configurations tested use 8, 16,
+** and 32 bits for each digit.  The typedefs should be in agreement
 ** with these definitions.
 */
-#define DD_APA_BITS	16
-#define DD_APA_BASE	(1 << DD_APA_BITS)
-#define DD_APA_MASK	(DD_APA_BASE - 1)
-#define DD_APA_HEXPRINT	"%04x"
+#if SIZEOF_LONG == 8
+#define DD_APA_BITS     32
+#define DD_APA_BASE     (1L << DD_APA_BITS)
+#define DD_APA_HEXPRINT "%08x"
+#else
+#define DD_APA_BITS     16
+#define DD_APA_BASE     (1 << DD_APA_BITS)
+#define DD_APA_HEXPRINT "%04x"
+#endif
+#define DD_APA_MASK     (DD_APA_BASE - 1)
 
 /*---------------------------------------------------------------------------*/
 /* Stucture declarations                                                     */
@@ -240,12 +277,13 @@ typedef struct DdChildren {
 /* The DdNode structure is the only one exported out of the package */
 struct DdNode {
     DdHalfWord index;
-    DdHalfWord ref;		/* reference count */
-    DdNode *next;		/* next pointer for unique table */
+    DdHalfWord ref;             /* reference count */
+    DdNode *next;               /* next pointer for unique table */
     union {
-	CUDD_VALUE_TYPE value;	/* for constant nodes */
-	DdChildren kids;	/* for internal nodes */
+        CUDD_VALUE_TYPE value;  /* for constant nodes */
+        DdChildren kids;        /* for internal nodes */
     } type;
+    ABC_INT64_T Id;
 };
 
 #ifdef __osf__
@@ -258,9 +296,34 @@ typedef struct DdGen DdGen;
 
 /* These typedefs for arbitrary precision arithmetic should agree with
 ** the corresponding constant definitions above. */
-typedef unsigned short int DdApaDigit;
+#if SIZEOF_LONG == 8
+typedef unsigned int DdApaDigit;
 typedef unsigned long int DdApaDoubleDigit;
+#else
+typedef unsigned short int DdApaDigit;
+typedef unsigned int DdApaDoubleDigit;
+#endif
 typedef DdApaDigit * DdApaNumber;
+
+/* Return type for function computing two-literal clauses. */
+typedef struct DdTlcInfo DdTlcInfo;
+
+/* Type of hook function. */
+typedef int (*DD_HFP)(DdManager *, const char *, void *);
+/* Type of priority function */
+typedef DdNode * (*DD_PRFP)(DdManager * , int, DdNode **, DdNode **,
+                            DdNode **);
+/* Type of apply operator. */
+typedef DdNode * (*DD_AOP)(DdManager *, DdNode **, DdNode **);
+/* Type of monadic apply operator. */
+typedef DdNode * (*DD_MAOP)(DdManager *, DdNode *);
+/* Types of cache tag functions. */
+typedef DdNode * (*DD_CTFP)(DdManager *, DdNode *, DdNode *);
+typedef DdNode * (*DD_CTFP1)(DdManager *, DdNode *);
+/* Type of memory-out function. */
+typedef void (*DD_OOMFP)(long);
+/* Type of comparison function for qsort. */
+typedef int (*DD_QSFP)(const void *, const void *);
 
 /*---------------------------------------------------------------------------*/
 /* Variable declarations                                                     */
@@ -301,7 +364,7 @@ typedef DdApaDigit * DdApaNumber;
   SeeAlso      [Cudd_NotCond]
 
 ******************************************************************************/
-#define Cudd_Not(node) ((DdNode *)((long)(node) ^ 01))
+#define Cudd_Not(node) ((DdNode *)((ptrint)(node) ^ 01))
 
 
 /**Macro***********************************************************************
@@ -317,7 +380,7 @@ typedef DdApaDigit * DdApaNumber;
   SeeAlso      [Cudd_Not]
 
 ******************************************************************************/
-#define Cudd_NotCond(node,c) ((DdNode *)((long)(node) ^ (c)))
+#define Cudd_NotCond(node,c) ((DdNode *)((ptrint)(node) ^ (c)))
 
 
 /**Macro***********************************************************************
@@ -331,7 +394,7 @@ typedef DdApaDigit * DdApaNumber;
   SeeAlso      [Cudd_Complement Cudd_IsComplement]
 
 ******************************************************************************/
-#define Cudd_Regular(node) ((DdNode *)((unsigned long)(node) & ~01))
+#define Cudd_Regular(node) ((DdNode *)((ptruint)(node) & ~01))
 
 
 /**Macro***********************************************************************
@@ -345,7 +408,7 @@ typedef DdApaDigit * DdApaNumber;
   SeeAlso      [Cudd_Regular Cudd_IsComplement]
 
 ******************************************************************************/
-#define Cudd_Complement(node) ((DdNode *)((unsigned long)(node) | 01))
+#define Cudd_Complement(node) ((DdNode *)((ptruint)(node) | 01))
 
 
 /**Macro***********************************************************************
@@ -359,7 +422,7 @@ typedef DdApaDigit * DdApaNumber;
   SeeAlso      [Cudd_Regular Cudd_Complement]
 
 ******************************************************************************/
-#define Cudd_IsComplement(node)	((int) ((long) (node) & 01))
+#define Cudd_IsComplement(node) ((int) ((ptrint) (node) & 01))
 
 
 /**Macro***********************************************************************
@@ -455,8 +518,40 @@ typedef DdApaDigit * DdApaNumber;
 ******************************************************************************/
 #define Cudd_ForeachCube(manager, f, gen, cube, value)\
     for((gen) = Cudd_FirstCube(manager, f, &cube, &value);\
-	Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
-	(void) Cudd_NextCube(gen, &cube, &value))
+        Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
+        (void) Cudd_NextCube(gen, &cube, &value))
+
+
+/**Macro***********************************************************************
+
+  Synopsis     [Iterates over the primes of a Boolean function.]
+
+  Description  [Iterates over the primes of a Boolean function producing
+  a prime and irredundant cover.
+  <ul>
+  <li> DdManager *manager;
+  <li> DdNode *l;
+  <li> DdNode *u;
+  <li> DdGen *gen;
+  <li> int *cube;
+  </ul>
+  The Boolean function is described by an upper bound and a lower bound.  If
+  the function is completely specified, the two bounds coincide.
+  Cudd_ForeachPrime allocates and frees the generator.  Therefore the
+  application should not try to do that.  Also, the cube is freed at the
+  end of Cudd_ForeachPrime and hence is not available outside of the loop.<p>
+  CAUTION: It is a mistake to change a diagram on which generation is ongoing.]
+
+  SideEffects  [none]
+
+  SeeAlso      [Cudd_ForeachCube Cudd_FirstPrime Cudd_NextPrime Cudd_GenFree
+  Cudd_IsGenEmpty]
+
+******************************************************************************/
+#define Cudd_ForeachPrime(manager, l, u, gen, cube)\
+    for((gen) = Cudd_FirstPrime(manager, l, u, &cube);\
+        Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
+        (void) Cudd_NextPrime(gen, &cube))
 
 
 /**Macro***********************************************************************
@@ -489,8 +584,8 @@ typedef DdApaDigit * DdApaNumber;
 ******************************************************************************/
 #define Cudd_ForeachNode(manager, f, gen, node)\
     for((gen) = Cudd_FirstNode(manager, f, &node);\
-	Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
-	(void) Cudd_NextNode(gen, &node))
+        Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
+        (void) Cudd_NextNode(gen, &node))
 
 
 /**Macro***********************************************************************
@@ -523,25 +618,9 @@ typedef DdApaDigit * DdApaNumber;
 ******************************************************************************/
 #define Cudd_zddForeachPath(manager, f, gen, path)\
     for((gen) = Cudd_zddFirstPath(manager, f, &path);\
-	Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
-	(void) Cudd_zddNextPath(gen, &path))
+        Cudd_IsGenEmpty(gen) ? Cudd_GenFree(gen) : TRUE;\
+        (void) Cudd_zddNextPath(gen, &path))
 
-
-/* These are potential duplicates. */
-#ifndef EXTERN
-#   ifdef __cplusplus
-#	define EXTERN extern "C"
-#   else
-#	define EXTERN extern
-#   endif
-#endif
-#ifndef ARGS
-#   if defined(__STDC__) || defined(__cplusplus)
-#	define ARGS(protos)	protos		/* ANSI C */
-#   else /* !(__STDC__ || __cplusplus) */
-#	define ARGS(protos)	()		/* K&R C */
-#   endif /* !(__STDC__ || __cplusplus) */
-#endif
 
 
 /**AutomaticStart*************************************************************/
@@ -550,410 +629,426 @@ typedef DdApaDigit * DdApaNumber;
 /* Function prototypes                                                       */
 /*---------------------------------------------------------------------------*/
 
-EXTERN DdNode * Cudd_addNewVar ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_addNewVarAtLevel ARGS((DdManager *dd, int level));
-EXTERN DdNode * Cudd_bddNewVar ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_bddNewVarAtLevel ARGS((DdManager *dd, int level));
-EXTERN DdNode * Cudd_addIthVar ARGS((DdManager *dd, int i));
-EXTERN DdNode * Cudd_bddIthVar ARGS((DdManager *dd, int i));
-EXTERN DdNode * Cudd_zddIthVar ARGS((DdManager *dd, int i));
-EXTERN int Cudd_zddVarsFromBddVars ARGS((DdManager *dd, int multiplicity));
-EXTERN DdNode * Cudd_addConst ARGS((DdManager *dd, CUDD_VALUE_TYPE c));
-EXTERN int Cudd_IsNonConstant ARGS((DdNode *f));
-EXTERN void Cudd_AutodynEnable ARGS((DdManager *unique, Cudd_ReorderingType method));
-EXTERN void Cudd_AutodynDisable ARGS((DdManager *unique));
-EXTERN int Cudd_ReorderingStatus ARGS((DdManager *unique, Cudd_ReorderingType *method));
-EXTERN void Cudd_AutodynEnableZdd ARGS((DdManager *unique, Cudd_ReorderingType method));
-EXTERN void Cudd_AutodynDisableZdd ARGS((DdManager *unique));
-EXTERN int Cudd_ReorderingStatusZdd ARGS((DdManager *unique, Cudd_ReorderingType *method));
-EXTERN int Cudd_zddRealignmentEnabled ARGS((DdManager *unique));
-EXTERN void Cudd_zddRealignEnable ARGS((DdManager *unique));
-EXTERN void Cudd_zddRealignDisable ARGS((DdManager *unique));
-EXTERN int Cudd_bddRealignmentEnabled ARGS((DdManager *unique));
-EXTERN void Cudd_bddRealignEnable ARGS((DdManager *unique));
-EXTERN void Cudd_bddRealignDisable ARGS((DdManager *unique));
-EXTERN DdNode * Cudd_ReadOne ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_ReadZddOne ARGS((DdManager *dd, int i));
-EXTERN DdNode * Cudd_ReadZero ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_ReadLogicZero ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_ReadPlusInfinity ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_ReadMinusInfinity ARGS((DdManager *dd));
-EXTERN DdNode * Cudd_ReadBackground ARGS((DdManager *dd));
-EXTERN void Cudd_SetBackground ARGS((DdManager *dd, DdNode *bck));
-EXTERN unsigned int Cudd_ReadCacheSlots ARGS((DdManager *dd));
-EXTERN double Cudd_ReadCacheUsedSlots ARGS((DdManager * dd));
-EXTERN double Cudd_ReadCacheLookUps ARGS((DdManager *dd));
-EXTERN double Cudd_ReadCacheHits ARGS((DdManager *dd));
-EXTERN double Cudd_ReadRecursiveCalls ARGS ((DdManager * dd));
-EXTERN unsigned int Cudd_ReadMinHit ARGS((DdManager *dd));
-EXTERN void Cudd_SetMinHit ARGS((DdManager *dd, unsigned int hr));
-EXTERN unsigned int Cudd_ReadLooseUpTo ARGS((DdManager *dd));
-EXTERN void Cudd_SetLooseUpTo ARGS((DdManager *dd, unsigned int lut));
-EXTERN unsigned int Cudd_ReadMaxCache ARGS((DdManager *dd));
-EXTERN unsigned int Cudd_ReadMaxCacheHard ARGS((DdManager *dd));
-EXTERN void Cudd_SetMaxCacheHard ARGS((DdManager *dd, unsigned int mc));
-EXTERN int Cudd_ReadSize ARGS((DdManager *dd));
-EXTERN int Cudd_ReadZddSize ARGS((DdManager *dd));
-EXTERN unsigned int Cudd_ReadSlots ARGS((DdManager *dd));
-EXTERN double Cudd_ReadUsedSlots ARGS((DdManager * dd));
-EXTERN double Cudd_ExpectedUsedSlots ARGS((DdManager * dd));
-EXTERN unsigned int Cudd_ReadKeys ARGS((DdManager *dd));
-EXTERN unsigned int Cudd_ReadDead ARGS((DdManager *dd));
-EXTERN unsigned int Cudd_ReadMinDead ARGS((DdManager *dd));
-EXTERN int Cudd_ReadReorderings ARGS((DdManager *dd));
-EXTERN long Cudd_ReadReorderingTime ARGS((DdManager * dd));
-EXTERN int Cudd_ReadGarbageCollections ARGS((DdManager * dd));
-EXTERN long Cudd_ReadGarbageCollectionTime ARGS((DdManager * dd));
-EXTERN double Cudd_ReadNodesFreed ARGS((DdManager * dd));
-EXTERN double Cudd_ReadNodesDropped ARGS((DdManager * dd));
-EXTERN double Cudd_ReadUniqueLookUps ARGS((DdManager * dd));
-EXTERN double Cudd_ReadUniqueLinks ARGS((DdManager * dd));
-EXTERN int Cudd_ReadSiftMaxVar ARGS((DdManager *dd));
-EXTERN void Cudd_SetSiftMaxVar ARGS((DdManager *dd, int smv));
-EXTERN int Cudd_ReadSiftMaxSwap ARGS((DdManager *dd));
-EXTERN void Cudd_SetSiftMaxSwap ARGS((DdManager *dd, int sms));
-EXTERN double Cudd_ReadMaxGrowth ARGS((DdManager *dd));
-EXTERN void Cudd_SetMaxGrowth ARGS((DdManager *dd, double mg));
-EXTERN double Cudd_ReadMaxGrowthAlternate ARGS((DdManager * dd));
-EXTERN void Cudd_SetMaxGrowthAlternate ARGS((DdManager * dd, double mg));
-EXTERN int Cudd_ReadReorderingCycle ARGS((DdManager * dd));
-EXTERN void Cudd_SetReorderingCycle ARGS((DdManager * dd, int cycle));
-EXTERN MtrNode * Cudd_ReadTree ARGS((DdManager *dd));
-EXTERN void Cudd_SetTree ARGS((DdManager *dd, MtrNode *tree));
-EXTERN void Cudd_FreeTree ARGS((DdManager *dd));
-EXTERN MtrNode * Cudd_ReadZddTree ARGS((DdManager *dd));
-EXTERN void Cudd_SetZddTree ARGS((DdManager *dd, MtrNode *tree));
-EXTERN void Cudd_FreeZddTree ARGS((DdManager *dd));
-EXTERN unsigned int Cudd_NodeReadIndex ARGS((DdNode *node));
-EXTERN int Cudd_ReadPerm ARGS((DdManager *dd, int i));
-EXTERN int Cudd_ReadPermZdd ARGS((DdManager *dd, int i));
-EXTERN int Cudd_ReadInvPerm ARGS((DdManager *dd, int i));
-EXTERN int Cudd_ReadInvPermZdd ARGS((DdManager *dd, int i));
-EXTERN DdNode * Cudd_ReadVars ARGS((DdManager *dd, int i));
-EXTERN CUDD_VALUE_TYPE Cudd_ReadEpsilon ARGS((DdManager *dd));
-EXTERN void Cudd_SetEpsilon ARGS((DdManager *dd, CUDD_VALUE_TYPE ep));
-EXTERN Cudd_AggregationType Cudd_ReadGroupcheck ARGS((DdManager *dd));
-EXTERN void Cudd_SetGroupcheck ARGS((DdManager *dd, Cudd_AggregationType gc));
-EXTERN int Cudd_GarbageCollectionEnabled ARGS((DdManager *dd));
-EXTERN void Cudd_EnableGarbageCollection ARGS((DdManager *dd));
-EXTERN void Cudd_DisableGarbageCollection ARGS((DdManager *dd));
-EXTERN int Cudd_DeadAreCounted ARGS((DdManager *dd));
-EXTERN void Cudd_TurnOnCountDead ARGS((DdManager *dd));
-EXTERN void Cudd_TurnOffCountDead ARGS((DdManager *dd));
-EXTERN int Cudd_ReadRecomb ARGS((DdManager *dd));
-EXTERN void Cudd_SetRecomb ARGS((DdManager *dd, int recomb));
-EXTERN int Cudd_ReadSymmviolation ARGS((DdManager *dd));
-EXTERN void Cudd_SetSymmviolation ARGS((DdManager *dd, int symmviolation));
-EXTERN int Cudd_ReadArcviolation ARGS((DdManager *dd));
-EXTERN void Cudd_SetArcviolation ARGS((DdManager *dd, int arcviolation));
-EXTERN int Cudd_ReadPopulationSize ARGS((DdManager *dd));
-EXTERN void Cudd_SetPopulationSize ARGS((DdManager *dd, int populationSize));
-EXTERN int Cudd_ReadNumberXovers ARGS((DdManager *dd));
-EXTERN void Cudd_SetNumberXovers ARGS((DdManager *dd, int numberXovers));
-EXTERN long Cudd_ReadMemoryInUse ARGS((DdManager *dd));
-EXTERN int Cudd_PrintInfo ARGS((DdManager *dd, FILE *fp));
-EXTERN long Cudd_ReadPeakNodeCount ARGS((DdManager *dd));
-EXTERN int Cudd_ReadPeakLiveNodeCount ARGS((DdManager * dd));
-EXTERN long Cudd_ReadNodeCount ARGS((DdManager *dd));
-EXTERN long Cudd_zddReadNodeCount ARGS((DdManager *dd));
-EXTERN int Cudd_AddHook ARGS((DdManager *dd, int (*f)(DdManager *, char *, void *), Cudd_HookType where));
-EXTERN int Cudd_RemoveHook ARGS((DdManager *dd, int (*f)(DdManager *, char *, void *), Cudd_HookType where));
-EXTERN int Cudd_IsInHook ARGS((DdManager * dd, int (*f)(DdManager *, char *, void *), Cudd_HookType where));
-EXTERN int Cudd_StdPreReordHook ARGS((DdManager *dd, char *str, void *data));
-EXTERN int Cudd_StdPostReordHook ARGS((DdManager *dd, char *str, void *data));
-EXTERN int Cudd_EnableReorderingReporting ARGS((DdManager *dd));
-EXTERN int Cudd_DisableReorderingReporting ARGS((DdManager *dd));
-EXTERN int Cudd_ReorderingReporting ARGS((DdManager *dd));
-EXTERN Cudd_ErrorType Cudd_ReadErrorCode ARGS((DdManager *dd));
-EXTERN void Cudd_ClearErrorCode ARGS((DdManager *dd));
-EXTERN FILE * Cudd_ReadStdout ARGS((DdManager *dd));
-EXTERN void Cudd_SetStdout ARGS((DdManager *dd, FILE *fp));
-EXTERN FILE * Cudd_ReadStderr ARGS((DdManager *dd));
-EXTERN void Cudd_SetStderr ARGS((DdManager *dd, FILE *fp));
-EXTERN unsigned int Cudd_ReadNextReordering ARGS((DdManager *dd));
-EXTERN void Cudd_SetNextReordering ARGS((DdManager *dd, unsigned int next));
-EXTERN double Cudd_ReadSwapSteps ARGS((DdManager *dd));
-EXTERN unsigned int Cudd_ReadMaxLive ARGS((DdManager *dd));
-EXTERN void Cudd_SetMaxLive ARGS((DdManager *dd, unsigned int maxLive));
-EXTERN long Cudd_ReadMaxMemory ARGS((DdManager *dd));
-EXTERN void Cudd_SetMaxMemory ARGS((DdManager *dd, long maxMemory));
-EXTERN int Cudd_bddBindVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddUnbindVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddVarIsBound ARGS((DdManager *dd, int index));
-EXTERN DdNode * Cudd_addExistAbstract ARGS((DdManager *manager, DdNode *f, DdNode *cube));
-EXTERN DdNode * Cudd_addUnivAbstract ARGS((DdManager *manager, DdNode *f, DdNode *cube));
-EXTERN DdNode * Cudd_addOrAbstract ARGS((DdManager *manager, DdNode *f, DdNode *cube));
-EXTERN DdNode * Cudd_addApply ARGS((DdManager *dd, DdNode * (*)(DdManager *, DdNode **, DdNode **), DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_addPlus ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addTimes ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addThreshold ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addSetNZ ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addDivide ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addMinus ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addMinimum ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addMaximum ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addOneZeroMaximum ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addDiff ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addAgreement ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addOr ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addNand ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addNor ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addXor ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addXnor ARGS((DdManager *dd, DdNode **f, DdNode **g));
-EXTERN DdNode * Cudd_addMonadicApply ARGS((DdManager * dd, DdNode * (*op)(DdManager *, DdNode *), DdNode * f));
-EXTERN DdNode * Cudd_addLog ARGS((DdManager * dd, DdNode * f));
-EXTERN DdNode * Cudd_addFindMax ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_addFindMin ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_addIthBit ARGS((DdManager *dd, DdNode *f, int bit));
-EXTERN DdNode * Cudd_addScalarInverse ARGS((DdManager *dd, DdNode *f, DdNode *epsilon));
-EXTERN DdNode * Cudd_addIte ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *h));
-EXTERN DdNode * Cudd_addIteConstant ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *h));
-EXTERN DdNode * Cudd_addEvalConst ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN int Cudd_addLeq ARGS((DdManager * dd, DdNode * f, DdNode * g));
-EXTERN DdNode * Cudd_addCmpl ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_addNegate ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_addRoundOff ARGS((DdManager *dd, DdNode *f, int N));
-EXTERN DdNode * Cudd_addWalsh ARGS((DdManager *dd, DdNode **x, DdNode **y, int n));
-EXTERN DdNode * Cudd_addResidue ARGS((DdManager *dd, int n, int m, int options, int top));
-EXTERN DdNode * Cudd_bddAndAbstract ARGS((DdManager *manager, DdNode *f, DdNode *g, DdNode *cube));
-EXTERN int Cudd_ApaNumberOfDigits ARGS((int binaryDigits));
-EXTERN DdApaNumber Cudd_NewApaNumber ARGS((int digits));
-EXTERN void Cudd_ApaCopy ARGS((int digits, DdApaNumber source, DdApaNumber dest));
-EXTERN DdApaDigit Cudd_ApaAdd ARGS((int digits, DdApaNumber a, DdApaNumber b, DdApaNumber sum));
-EXTERN DdApaDigit Cudd_ApaSubtract ARGS((int digits, DdApaNumber a, DdApaNumber b, DdApaNumber diff));
-EXTERN DdApaDigit Cudd_ApaShortDivision ARGS((int digits, DdApaNumber dividend, DdApaDigit divisor, DdApaNumber quotient));
-EXTERN unsigned int Cudd_ApaIntDivision ARGS((int  digits, DdApaNumber dividend, unsigned int  divisor, DdApaNumber  quotient));
-EXTERN void Cudd_ApaShiftRight ARGS((int digits, DdApaDigit in, DdApaNumber a, DdApaNumber b));
-EXTERN void Cudd_ApaSetToLiteral ARGS((int digits, DdApaNumber number, DdApaDigit literal));
-EXTERN void Cudd_ApaPowerOfTwo ARGS((int digits, DdApaNumber number, int power));
-EXTERN int Cudd_ApaCompare ARGS((int digitsFirst, DdApaNumber  first, int digitsSecond, DdApaNumber  second));
-EXTERN int Cudd_ApaCompareRatios ARGS ((int digitsFirst, DdApaNumber firstNum, unsigned int firstDen, int digitsSecond, DdApaNumber secondNum, unsigned int secondDen));
-EXTERN int Cudd_ApaPrintHex ARGS((FILE *fp, int digits, DdApaNumber number));
-EXTERN int Cudd_ApaPrintDecimal ARGS((FILE *fp, int digits, DdApaNumber number));
-EXTERN int Cudd_ApaPrintExponential ARGS((FILE * fp, int  digits, DdApaNumber  number, int precision));
-EXTERN DdApaNumber Cudd_ApaCountMinterm ARGS((DdManager *manager, DdNode *node, int nvars, int *digits));
-EXTERN int Cudd_ApaPrintMinterm ARGS((FILE *fp, DdManager *dd, DdNode *node, int nvars));
-EXTERN int Cudd_ApaPrintMintermExp ARGS((FILE * fp, DdManager * dd, DdNode * node, int  nvars, int precision));
-EXTERN int Cudd_ApaPrintDensity ARGS((FILE * fp, DdManager * dd, DdNode * node, int  nvars));
-EXTERN DdNode * Cudd_UnderApprox ARGS((DdManager *dd, DdNode *f, int numVars, int threshold, int safe, double quality));
-EXTERN DdNode * Cudd_OverApprox ARGS((DdManager *dd, DdNode *f, int numVars, int threshold, int safe, double quality));
-EXTERN DdNode * Cudd_RemapUnderApprox ARGS((DdManager *dd, DdNode *f, int numVars, int threshold, double quality));
-EXTERN DdNode * Cudd_RemapOverApprox ARGS((DdManager *dd, DdNode *f, int numVars, int threshold, double quality));
-EXTERN DdNode * Cudd_BiasedUnderApprox ARGS((DdManager *dd, DdNode *f, DdNode *b, int numVars, int threshold, double quality1, double quality0));
-EXTERN DdNode * Cudd_BiasedOverApprox ARGS((DdManager *dd, DdNode *f, DdNode *b, int numVars, int threshold, double quality1, double quality0));
-EXTERN DdNode * Cudd_bddExistAbstract ARGS((DdManager *manager, DdNode *f, DdNode *cube));
-EXTERN DdNode * Cudd_bddXorExistAbstract ARGS((DdManager *manager, DdNode *f, DdNode *g, DdNode *cube));
-EXTERN DdNode * Cudd_bddUnivAbstract ARGS((DdManager *manager, DdNode *f, DdNode *cube));
-EXTERN DdNode * Cudd_bddBooleanDiff ARGS((DdManager *manager, DdNode *f, int x));
-EXTERN int Cudd_bddVarIsDependent ARGS((DdManager *dd, DdNode *f, DdNode *var));
-EXTERN double Cudd_bddCorrelation ARGS((DdManager *manager, DdNode *f, DdNode *g));
-EXTERN double Cudd_bddCorrelationWeights ARGS((DdManager *manager, DdNode *f, DdNode *g, double *prob));
-EXTERN DdNode * Cudd_bddIte ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *h));
-EXTERN DdNode * Cudd_bddIteConstant ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *h));
-EXTERN DdNode * Cudd_bddIntersect ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddAnd ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddOr ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddNand ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddNor ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddXor ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddXnor ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN int Cudd_bddLeq ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_addBddThreshold ARGS((DdManager *dd, DdNode *f, CUDD_VALUE_TYPE value));
-EXTERN DdNode * Cudd_addBddStrictThreshold ARGS((DdManager *dd, DdNode *f, CUDD_VALUE_TYPE value));
-EXTERN DdNode * Cudd_addBddInterval ARGS((DdManager *dd, DdNode *f, CUDD_VALUE_TYPE lower, CUDD_VALUE_TYPE upper));
-EXTERN DdNode * Cudd_addBddIthBit ARGS((DdManager *dd, DdNode *f, int bit));
-EXTERN DdNode * Cudd_BddToAdd ARGS((DdManager *dd, DdNode *B));
-EXTERN DdNode * Cudd_addBddPattern ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_bddTransfer ARGS((DdManager *ddSource, DdManager *ddDestination, DdNode *f));
-EXTERN int Cudd_DebugCheck ARGS((DdManager *table));
-EXTERN int Cudd_CheckKeys ARGS((DdManager *table));
-EXTERN DdNode * Cudd_bddClippingAnd ARGS((DdManager *dd, DdNode *f, DdNode *g, int maxDepth, int direction));
-EXTERN DdNode * Cudd_bddClippingAndAbstract ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *cube, int maxDepth, int direction));
-EXTERN DdNode * Cudd_Cofactor ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_bddCompose ARGS((DdManager *dd, DdNode *f, DdNode *g, int v));
-EXTERN DdNode * Cudd_addCompose ARGS((DdManager *dd, DdNode *f, DdNode *g, int v));
-EXTERN DdNode * Cudd_addPermute ARGS((DdManager *manager, DdNode *node, int *permut));
-EXTERN DdNode * Cudd_addSwapVariables ARGS((DdManager *dd, DdNode *f, DdNode **x, DdNode **y, int n));
-EXTERN DdNode * Cudd_bddPermute ARGS((DdManager *manager, DdNode *node, int *permut));
-EXTERN DdNode * Cudd_bddVarMap ARGS((DdManager *manager, DdNode *f));
-EXTERN int Cudd_SetVarMap ARGS((DdManager *manager, DdNode **x, DdNode **y, int n));
-EXTERN DdNode * Cudd_bddSwapVariables ARGS((DdManager *dd, DdNode *f, DdNode **x, DdNode **y, int n));
-EXTERN DdNode * Cudd_bddAdjPermuteX ARGS((DdManager *dd, DdNode *B, DdNode **x, int n));
-EXTERN DdNode * Cudd_addVectorCompose ARGS((DdManager *dd, DdNode *f, DdNode **vector));
-EXTERN DdNode * Cudd_addGeneralVectorCompose ARGS((DdManager *dd, DdNode *f, DdNode **vectorOn, DdNode **vectorOff));
-EXTERN DdNode * Cudd_addNonSimCompose ARGS((DdManager *dd, DdNode *f, DdNode **vector));
-EXTERN DdNode * Cudd_bddVectorCompose ARGS((DdManager *dd, DdNode *f, DdNode **vector));
-EXTERN int Cudd_bddApproxConjDecomp ARGS((DdManager *dd, DdNode *f, DdNode ***conjuncts));
-EXTERN int Cudd_bddApproxDisjDecomp ARGS((DdManager *dd, DdNode *f, DdNode ***disjuncts));
-EXTERN int Cudd_bddIterConjDecomp ARGS((DdManager *dd, DdNode *f, DdNode ***conjuncts));
-EXTERN int Cudd_bddIterDisjDecomp ARGS((DdManager *dd, DdNode *f, DdNode ***disjuncts));
-EXTERN int Cudd_bddGenConjDecomp ARGS((DdManager *dd, DdNode *f, DdNode ***conjuncts));
-EXTERN int Cudd_bddGenDisjDecomp ARGS((DdManager *dd, DdNode *f, DdNode ***disjuncts));
-EXTERN int Cudd_bddVarConjDecomp ARGS((DdManager *dd, DdNode * f, DdNode ***conjuncts));
-EXTERN int Cudd_bddVarDisjDecomp ARGS((DdManager *dd, DdNode * f, DdNode ***disjuncts));
-EXTERN DdNode * Cudd_FindEssential ARGS((DdManager *dd, DdNode *f));
-EXTERN int Cudd_bddIsVarEssential ARGS((DdManager *manager, DdNode *f, int id, int phase));
-EXTERN int Cudd_DumpBlif ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, char *mname, FILE *fp));
-EXTERN int Cudd_DumpBlifBody ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, FILE *fp));
-EXTERN int Cudd_DumpDot ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, FILE *fp));
-EXTERN int Cudd_DumpDaVinci ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, FILE *fp));
-EXTERN int Cudd_DumpDDcal ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, FILE *fp));
-EXTERN int Cudd_DumpFactoredForm ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, FILE *fp));
-EXTERN DdNode * Cudd_bddConstrain ARGS((DdManager *dd, DdNode *f, DdNode *c));
-EXTERN DdNode * Cudd_bddRestrict ARGS((DdManager *dd, DdNode *f, DdNode *c));
-EXTERN DdNode * Cudd_addConstrain ARGS((DdManager *dd, DdNode *f, DdNode *c));
-EXTERN DdNode ** Cudd_bddConstrainDecomp ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_addRestrict ARGS((DdManager *dd, DdNode *f, DdNode *c));
-EXTERN DdNode ** Cudd_bddCharToVect ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_bddLICompaction ARGS((DdManager *dd, DdNode *f, DdNode *c));
-EXTERN DdNode * Cudd_bddSqueeze ARGS((DdManager *dd, DdNode *l, DdNode *u));
-EXTERN DdNode * Cudd_bddMinimize ARGS((DdManager *dd, DdNode *f, DdNode *c));
-EXTERN DdNode * Cudd_SubsetCompress ARGS((DdManager *dd, DdNode *f, int nvars, int threshold));
-EXTERN DdNode * Cudd_SupersetCompress ARGS((DdManager *dd, DdNode *f, int nvars, int threshold));
-EXTERN MtrNode * Cudd_MakeTreeNode ARGS((DdManager *dd, unsigned int low, unsigned int size, unsigned int type));
-EXTERN int Cudd_addHarwell ARGS((FILE *fp, DdManager *dd, DdNode **E, DdNode ***x, DdNode ***y, DdNode ***xn, DdNode ***yn_, int *nx, int *ny, int *m, int *n, int bx, int sx, int by, int sy, int pr));
-EXTERN DdManager * Cudd_Init ARGS((unsigned int numVars, unsigned int numVarsZ, unsigned int numSlots, unsigned int cacheSize, unsigned long maxMemory));
-EXTERN void Cudd_Quit ARGS((DdManager *unique));
-EXTERN int Cudd_PrintLinear ARGS((DdManager *table));
-EXTERN int Cudd_ReadLinear ARGS((DdManager *table, int x, int y));
-EXTERN DdNode * Cudd_bddLiteralSetIntersection ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode * Cudd_addMatrixMultiply ARGS((DdManager *dd, DdNode *A, DdNode *B, DdNode **z, int nz));
-EXTERN DdNode * Cudd_addTimesPlus ARGS((DdManager *dd, DdNode *A, DdNode *B, DdNode **z, int nz));
-EXTERN DdNode * Cudd_addTriangle ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode **z, int nz));
-EXTERN DdNode * Cudd_addOuterSum ARGS((DdManager *dd, DdNode *M, DdNode *r, DdNode *c));
-EXTERN DdNode * Cudd_PrioritySelect ARGS((DdManager *dd, DdNode *R, DdNode **x, DdNode **y, DdNode **z, DdNode *Pi, int n, DdNode * (*)(DdManager *, int, DdNode **, DdNode **, DdNode **)));
-EXTERN DdNode * Cudd_Xgty ARGS((DdManager *dd, int N, DdNode **z, DdNode **x, DdNode **y));
-EXTERN DdNode * Cudd_Xeqy ARGS((DdManager *dd, int N, DdNode **x, DdNode **y));
-EXTERN DdNode * Cudd_addXeqy ARGS((DdManager *dd, int N, DdNode **x, DdNode **y));
-EXTERN DdNode * Cudd_Dxygtdxz ARGS((DdManager *dd, int N, DdNode **x, DdNode **y, DdNode **z));
-EXTERN DdNode * Cudd_Dxygtdyz ARGS((DdManager *dd, int N, DdNode **x, DdNode **y, DdNode **z));
-EXTERN DdNode * Cudd_CProjection ARGS((DdManager *dd, DdNode *R, DdNode *Y));
-EXTERN DdNode * Cudd_addHamming ARGS((DdManager *dd, DdNode **xVars, DdNode **yVars, int nVars));
-EXTERN int Cudd_MinHammingDist ARGS((DdManager *dd, DdNode *f, int *minterm, int upperBound));
-EXTERN DdNode * Cudd_bddClosestCube ARGS((DdManager *dd, DdNode * f, DdNode *g, int *distance));
-EXTERN int Cudd_addRead ARGS((FILE *fp, DdManager *dd, DdNode **E, DdNode ***x, DdNode ***y, DdNode ***xn, DdNode ***yn_, int *nx, int *ny, int *m, int *n, int bx, int sx, int by, int sy));
-EXTERN int Cudd_bddRead ARGS((FILE *fp, DdManager *dd, DdNode **E, DdNode ***x, DdNode ***y, int *nx, int *ny, int *m, int *n, int bx, int sx, int by, int sy));
-EXTERN void Cudd_Ref ARGS((DdNode *n));
-EXTERN void Cudd_RecursiveDeref ARGS((DdManager *table, DdNode *n));
-EXTERN void Cudd_IterDerefBdd ARGS((DdManager *table, DdNode *n));
-EXTERN void Cudd_DelayedDerefBdd ARGS((DdManager * table, DdNode * n));
-EXTERN void Cudd_RecursiveDerefZdd ARGS((DdManager *table, DdNode *n));
-EXTERN void Cudd_Deref ARGS((DdNode *node));
-EXTERN int Cudd_CheckZeroRef ARGS((DdManager *manager));
-EXTERN int Cudd_ReduceHeap ARGS((DdManager *table, Cudd_ReorderingType heuristic, int minsize));
-EXTERN int Cudd_ShuffleHeap ARGS((DdManager *table, int *permutation));
-EXTERN DdNode * Cudd_Eval ARGS((DdManager *dd, DdNode *f, int *inputs));
-EXTERN DdNode * Cudd_ShortestPath ARGS((DdManager *manager, DdNode *f, int *weight, int *support, int *length));
-EXTERN DdNode * Cudd_LargestCube ARGS((DdManager *manager, DdNode *f, int *length));
-EXTERN int Cudd_ShortestLength ARGS((DdManager *manager, DdNode *f, int *weight));
-EXTERN DdNode * Cudd_Decreasing ARGS((DdManager *dd, DdNode *f, int i));
-EXTERN DdNode * Cudd_Increasing ARGS((DdManager *dd, DdNode *f, int i));
-EXTERN int Cudd_EquivDC ARGS((DdManager *dd, DdNode *F, DdNode *G, DdNode *D));
-EXTERN int Cudd_bddLeqUnless ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *D));
-EXTERN int Cudd_EqualSupNorm ARGS((DdManager *dd, DdNode *f, DdNode *g, CUDD_VALUE_TYPE tolerance, int pr));
-EXTERN DdNode * Cudd_bddMakePrime ARGS ((DdManager *dd, DdNode *cube, DdNode *f));
-EXTERN double * Cudd_CofMinterm ARGS((DdManager *dd, DdNode *node));
-EXTERN DdNode * Cudd_SolveEqn ARGS((DdManager * bdd, DdNode *F, DdNode *Y, DdNode **G, int **yIndex, int n));
-EXTERN DdNode * Cudd_VerifySol ARGS((DdManager * bdd, DdNode *F, DdNode **G, int *yIndex, int n));
-EXTERN DdNode * Cudd_SplitSet ARGS((DdManager *manager, DdNode *S, DdNode **xVars, int n, double m));
-EXTERN DdNode * Cudd_SubsetHeavyBranch ARGS((DdManager *dd, DdNode *f, int numVars, int threshold));
-EXTERN DdNode * Cudd_SupersetHeavyBranch ARGS((DdManager *dd, DdNode *f, int numVars, int threshold));
-EXTERN DdNode * Cudd_SubsetShortPaths ARGS((DdManager *dd, DdNode *f, int numVars, int threshold, int hardlimit));
-EXTERN DdNode * Cudd_SupersetShortPaths ARGS((DdManager *dd, DdNode *f, int numVars, int threshold, int hardlimit));
-EXTERN void Cudd_SymmProfile ARGS((DdManager *table, int lower, int upper));
-EXTERN unsigned int Cudd_Prime ARGS((unsigned int p));
-EXTERN int Cudd_PrintMinterm ARGS((DdManager *manager, DdNode *node));
-EXTERN int Cudd_bddPrintCover ARGS((DdManager *dd, DdNode *l, DdNode *u));
-EXTERN int Cudd_PrintDebug ARGS((DdManager *dd, DdNode *f, int n, int pr));
-EXTERN int Cudd_DagSize ARGS((DdNode *node));
-EXTERN int Cudd_EstimateCofactor ARGS((DdManager *dd, DdNode * node, int i, int phase));
-EXTERN int Cudd_EstimateCofactorSimple ARGS((DdNode * node, int i));
-EXTERN int Cudd_SharingSize ARGS((DdNode **nodeArray, int n));
-EXTERN double Cudd_CountMinterm ARGS((DdManager *manager, DdNode *node, int nvars));
-EXTERN int Cudd_EpdCountMinterm ARGS((DdManager *manager, DdNode *node, int nvars, EpDouble *epd));
-EXTERN double Cudd_CountPath ARGS((DdNode *node));
-EXTERN double Cudd_CountPathsToNonZero ARGS((DdNode *node));
-EXTERN DdNode * Cudd_Support ARGS((DdManager *dd, DdNode *f));
-EXTERN int * Cudd_SupportIndex ARGS((DdManager *dd, DdNode *f));
-EXTERN int Cudd_SupportSize ARGS((DdManager *dd, DdNode *f));
-EXTERN DdNode * Cudd_VectorSupport ARGS((DdManager *dd, DdNode **F, int n));
-EXTERN int * Cudd_VectorSupportIndex ARGS((DdManager *dd, DdNode **F, int n));
-EXTERN int Cudd_VectorSupportSize ARGS((DdManager *dd, DdNode **F, int n));
-EXTERN int Cudd_ClassifySupport ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode **common, DdNode **onlyF, DdNode **onlyG));
-EXTERN int Cudd_CountLeaves ARGS((DdNode *node));
-EXTERN int Cudd_bddPickOneCube ARGS((DdManager *ddm, DdNode *node, char *string));
-EXTERN DdNode * Cudd_bddPickOneMinterm ARGS((DdManager *dd, DdNode *f, DdNode **vars, int n));
-EXTERN DdNode ** Cudd_bddPickArbitraryMinterms ARGS((DdManager *dd, DdNode *f, DdNode **vars, int n, int k));
-EXTERN DdNode * Cudd_SubsetWithMaskVars ARGS((DdManager *dd, DdNode *f, DdNode **vars, int nvars, DdNode **maskVars, int mvars));
-EXTERN DdGen * Cudd_FirstCube ARGS((DdManager *dd, DdNode *f, int **cube, CUDD_VALUE_TYPE *value));
-EXTERN int Cudd_NextCube ARGS((DdGen *gen, int **cube, CUDD_VALUE_TYPE *value));
-EXTERN DdNode * Cudd_bddComputeCube ARGS((DdManager *dd, DdNode **vars, int *phase, int n));
-EXTERN DdNode * Cudd_addComputeCube ARGS((DdManager *dd, DdNode **vars, int *phase, int n));
-EXTERN DdNode * Cudd_CubeArrayToBdd ARGS((DdManager *dd, int *array));
-EXTERN int Cudd_BddToCubeArray ARGS((DdManager *dd, DdNode *cube, int *array));
-EXTERN DdGen * Cudd_FirstNode ARGS((DdManager *dd, DdNode *f, DdNode **node));
-EXTERN int Cudd_NextNode ARGS((DdGen *gen, DdNode **node));
-EXTERN int Cudd_GenFree ARGS((DdGen *gen));
-EXTERN int Cudd_IsGenEmpty ARGS((DdGen *gen));
-EXTERN DdNode * Cudd_IndicesToCube ARGS((DdManager *dd, int *array, int n));
-EXTERN void Cudd_PrintVersion ARGS((FILE *fp));
-EXTERN double Cudd_AverageDistance ARGS((DdManager *dd));
-EXTERN long Cudd_Random ARGS(());
-EXTERN void Cudd_Srandom ARGS((long seed));
-EXTERN double Cudd_Density ARGS((DdManager *dd, DdNode *f, int nvars));
-EXTERN void Cudd_OutOfMem ARGS((long size));
-EXTERN int Cudd_zddCount ARGS((DdManager *zdd, DdNode *P));
-EXTERN double Cudd_zddCountDouble ARGS((DdManager *zdd, DdNode *P));
-EXTERN DdNode	* Cudd_zddProduct ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode	* Cudd_zddUnateProduct ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode	* Cudd_zddWeakDiv ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode	* Cudd_zddDivide ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode	* Cudd_zddWeakDivF ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode	* Cudd_zddDivideF ARGS((DdManager *dd, DdNode *f, DdNode *g));
-EXTERN DdNode	* Cudd_zddComplement ARGS((DdManager *dd, DdNode *node));
-EXTERN MtrNode * Cudd_MakeZddTreeNode ARGS((DdManager *dd, unsigned int low, unsigned int size, unsigned int type));
-EXTERN DdNode	* Cudd_zddIsop ARGS((DdManager *dd, DdNode *L, DdNode *U, DdNode **zdd_I));
-EXTERN DdNode	* Cudd_bddIsop ARGS((DdManager *dd, DdNode *L, DdNode *U));
-EXTERN DdNode	* Cudd_MakeBddFromZddCover ARGS((DdManager *dd, DdNode *node));
-EXTERN int Cudd_zddDagSize ARGS((DdNode *p_node));
-EXTERN double Cudd_zddCountMinterm ARGS((DdManager *zdd, DdNode *node, int path));
-EXTERN void Cudd_zddPrintSubtable ARGS((DdManager *table));
-EXTERN DdNode * Cudd_zddPortFromBdd ARGS((DdManager *dd, DdNode *B));
-EXTERN DdNode * Cudd_zddPortToBdd ARGS((DdManager *dd, DdNode *f));
-EXTERN int Cudd_zddReduceHeap ARGS((DdManager *table, Cudd_ReorderingType heuristic, int minsize));
-EXTERN int Cudd_zddShuffleHeap ARGS((DdManager *table, int *permutation));
-EXTERN DdNode * Cudd_zddIte ARGS((DdManager *dd, DdNode *f, DdNode *g, DdNode *h));
-EXTERN DdNode * Cudd_zddUnion ARGS((DdManager *dd, DdNode *P, DdNode *Q));
-EXTERN DdNode * Cudd_zddIntersect ARGS((DdManager *dd, DdNode *P, DdNode *Q));
-EXTERN DdNode * Cudd_zddDiff ARGS((DdManager *dd, DdNode *P, DdNode *Q));
-EXTERN DdNode * Cudd_zddDiffConst ARGS((DdManager *zdd, DdNode *P, DdNode *Q));
-EXTERN DdNode * Cudd_zddSubset1 ARGS((DdManager *dd, DdNode *P, int var));
-EXTERN DdNode * Cudd_zddSubset0 ARGS((DdManager *dd, DdNode *P, int var));
-EXTERN DdNode * Cudd_zddChange ARGS((DdManager *dd, DdNode *P, int var));
-EXTERN void Cudd_zddSymmProfile ARGS((DdManager *table, int lower, int upper));
-EXTERN int Cudd_zddPrintMinterm ARGS((DdManager *zdd, DdNode *node));
-EXTERN int Cudd_zddPrintCover ARGS((DdManager *zdd, DdNode *node));
-EXTERN int Cudd_zddPrintDebug ARGS((DdManager *zdd, DdNode *f, int n, int pr));
-EXTERN DdGen * Cudd_zddFirstPath ARGS((DdManager *zdd, DdNode *f, int **path));
-EXTERN int Cudd_zddNextPath ARGS((DdGen *gen, int **path));
-EXTERN char * Cudd_zddCoverPathToString ARGS((DdManager *zdd, int *path, char *str));
-EXTERN int Cudd_zddDumpDot ARGS((DdManager *dd, int n, DdNode **f, char **inames, char **onames, FILE *fp));
-EXTERN int Cudd_bddSetPiVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddSetPsVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddSetNsVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddIsPiVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddIsPsVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddIsNsVar ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddSetPairIndex ARGS((DdManager *dd, int index, int pairIndex));
-EXTERN int Cudd_bddReadPairIndex ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddSetVarToBeGrouped ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddSetVarHardGroup ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddResetVarToBeGrouped ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddIsVarToBeGrouped ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddSetVarToBeUngrouped ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddIsVarToBeUngrouped ARGS((DdManager *dd, int index));
-EXTERN int Cudd_bddIsVarHardGroup ARGS((DdManager *dd, int index));
+extern DdNode *        Cudd_addNewVar( DdManager * dd );
+extern DdNode *        Cudd_addNewVarAtLevel( DdManager * dd, int level );
+extern DdNode *        Cudd_bddNewVar( DdManager * dd );
+extern DdNode *        Cudd_bddNewVarAtLevel( DdManager * dd, int level );
+extern DdNode *        Cudd_addIthVar( DdManager * dd, int i );
+extern DdNode *        Cudd_bddIthVar( DdManager * dd, int i );
+extern DdNode *        Cudd_zddIthVar( DdManager * dd, int i );
+extern int             Cudd_zddVarsFromBddVars( DdManager * dd, int multiplicity );
+extern DdNode *        Cudd_addConst( DdManager * dd, CUDD_VALUE_TYPE c );
+extern int             Cudd_IsNonConstant( DdNode * f );
+extern void            Cudd_AutodynEnable( DdManager * unique, Cudd_ReorderingType method );
+extern void            Cudd_AutodynDisable( DdManager * unique );
+extern int             Cudd_ReorderingStatus( DdManager * unique, Cudd_ReorderingType * method );
+extern void            Cudd_AutodynEnableZdd( DdManager * unique, Cudd_ReorderingType method );
+extern void            Cudd_AutodynDisableZdd( DdManager * unique );
+extern int             Cudd_ReorderingStatusZdd( DdManager * unique, Cudd_ReorderingType * method );
+extern int             Cudd_zddRealignmentEnabled( DdManager * unique );
+extern void            Cudd_zddRealignEnable( DdManager * unique );
+extern void            Cudd_zddRealignDisable( DdManager * unique );
+extern int             Cudd_bddRealignmentEnabled( DdManager * unique );
+extern void            Cudd_bddRealignEnable( DdManager * unique );
+extern void            Cudd_bddRealignDisable( DdManager * unique );
+extern DdNode *        Cudd_ReadOne( DdManager * dd );
+extern DdNode *        Cudd_ReadZddOne( DdManager * dd, int i );
+extern DdNode *        Cudd_ReadZero( DdManager * dd );
+extern DdNode *        Cudd_ReadLogicZero( DdManager * dd );
+extern DdNode *        Cudd_ReadPlusInfinity( DdManager * dd );
+extern DdNode *        Cudd_ReadMinusInfinity( DdManager * dd );
+extern DdNode *        Cudd_ReadBackground( DdManager * dd );
+extern void            Cudd_SetBackground( DdManager * dd, DdNode * bck );
+extern unsigned int    Cudd_ReadCacheSlots( DdManager * dd );
+extern double          Cudd_ReadCacheUsedSlots( DdManager * dd );
+extern double          Cudd_ReadCacheLookUps( DdManager * dd );
+extern double          Cudd_ReadCacheHits( DdManager * dd );
+extern double          Cudd_ReadRecursiveCalls( DdManager * dd );
+extern unsigned int    Cudd_ReadMinHit( DdManager * dd );
+extern void            Cudd_SetMinHit( DdManager * dd, unsigned int hr );
+extern unsigned int    Cudd_ReadLooseUpTo( DdManager * dd );
+extern void            Cudd_SetLooseUpTo( DdManager * dd, unsigned int lut );
+extern unsigned int    Cudd_ReadMaxCache( DdManager * dd );
+extern unsigned int    Cudd_ReadMaxCacheHard( DdManager * dd );
+extern void            Cudd_SetMaxCacheHard( DdManager * dd, unsigned int mc );
+extern int             Cudd_ReadSize( DdManager * dd );
+extern int             Cudd_ReadZddSize( DdManager * dd );
+extern unsigned int    Cudd_ReadSlots( DdManager * dd );
+extern double          Cudd_ReadUsedSlots( DdManager * dd );
+extern double          Cudd_ExpectedUsedSlots( DdManager * dd );
+extern unsigned int    Cudd_ReadKeys( DdManager * dd );
+extern unsigned int    Cudd_ReadDead( DdManager * dd );
+extern unsigned int    Cudd_ReadMinDead( DdManager * dd );
+extern int             Cudd_ReadReorderings( DdManager * dd );
+extern long            Cudd_ReadReorderingTime( DdManager * dd );
+extern int             Cudd_ReadGarbageCollections( DdManager * dd );
+extern long            Cudd_ReadGarbageCollectionTime( DdManager * dd );
+extern double          Cudd_ReadNodesFreed( DdManager * dd );
+extern double          Cudd_ReadNodesDropped( DdManager * dd );
+extern double          Cudd_ReadUniqueLookUps( DdManager * dd );
+extern double          Cudd_ReadUniqueLinks( DdManager * dd );
+extern int             Cudd_ReadSiftMaxVar( DdManager * dd );
+extern void            Cudd_SetSiftMaxVar( DdManager * dd, int smv );
+extern int             Cudd_ReadSiftMaxSwap( DdManager * dd );
+extern void            Cudd_SetSiftMaxSwap( DdManager * dd, int sms );
+extern double          Cudd_ReadMaxGrowth( DdManager * dd );
+extern void            Cudd_SetMaxGrowth( DdManager * dd, double mg );
+extern double          Cudd_ReadMaxGrowthAlternate( DdManager * dd );
+extern void            Cudd_SetMaxGrowthAlternate( DdManager * dd, double mg );
+extern int             Cudd_ReadReorderingCycle( DdManager * dd );
+extern void            Cudd_SetReorderingCycle( DdManager * dd, int cycle );
+extern MtrNode *       Cudd_ReadTree( DdManager * dd );
+extern void            Cudd_SetTree( DdManager * dd, MtrNode * tree );
+extern void            Cudd_FreeTree( DdManager * dd );
+extern MtrNode *       Cudd_ReadZddTree( DdManager * dd );
+extern void            Cudd_SetZddTree( DdManager * dd, MtrNode * tree );
+extern void            Cudd_FreeZddTree( DdManager * dd );
+extern unsigned int    Cudd_NodeReadIndex( DdNode * node );
+extern int             Cudd_ReadPerm( DdManager * dd, int i );
+extern int             Cudd_ReadPermZdd( DdManager * dd, int i );
+extern int             Cudd_ReadInvPerm( DdManager * dd, int i );
+extern int             Cudd_ReadInvPermZdd( DdManager * dd, int i );
+extern DdNode *        Cudd_ReadVars( DdManager * dd, int i );
+extern CUDD_VALUE_TYPE Cudd_ReadEpsilon( DdManager * dd );
+extern void            Cudd_SetEpsilon( DdManager * dd, CUDD_VALUE_TYPE ep );
+extern Cudd_AggregationType Cudd_ReadGroupcheck( DdManager * dd );
+extern void            Cudd_SetGroupcheck( DdManager * dd, Cudd_AggregationType gc );
+extern int             Cudd_GarbageCollectionEnabled( DdManager * dd );
+extern void            Cudd_EnableGarbageCollection( DdManager * dd );
+extern void            Cudd_DisableGarbageCollection( DdManager * dd );
+extern int             Cudd_DeadAreCounted( DdManager * dd );
+extern void            Cudd_TurnOnCountDead( DdManager * dd );
+extern void            Cudd_TurnOffCountDead( DdManager * dd );
+extern int             Cudd_ReadRecomb( DdManager * dd );
+extern void            Cudd_SetRecomb( DdManager * dd, int recomb );
+extern int             Cudd_ReadSymmviolation( DdManager * dd );
+extern void            Cudd_SetSymmviolation( DdManager * dd, int symmviolation );
+extern int             Cudd_ReadArcviolation( DdManager * dd );
+extern void            Cudd_SetArcviolation( DdManager * dd, int arcviolation );
+extern int             Cudd_ReadPopulationSize( DdManager * dd );
+extern void            Cudd_SetPopulationSize( DdManager * dd, int populationSize );
+extern int             Cudd_ReadNumberXovers( DdManager * dd );
+extern void            Cudd_SetNumberXovers( DdManager * dd, int numberXovers );
+extern unsigned long   Cudd_ReadMemoryInUse( DdManager * dd );
+extern int             Cudd_PrintInfo( DdManager * dd, FILE * fp );
+extern long            Cudd_ReadPeakNodeCount( DdManager * dd );
+extern int             Cudd_ReadPeakLiveNodeCount( DdManager * dd );
+extern long            Cudd_ReadNodeCount( DdManager * dd );
+extern long            Cudd_zddReadNodeCount( DdManager * dd );
+extern int             Cudd_AddHook( DdManager * dd, DD_HFP f, Cudd_HookType where );
+extern int             Cudd_RemoveHook( DdManager * dd, DD_HFP f, Cudd_HookType where );
+extern int             Cudd_IsInHook( DdManager * dd, DD_HFP f, Cudd_HookType where );
+extern int             Cudd_StdPreReordHook( DdManager * dd, const char * str, void * data );
+extern int             Cudd_StdPostReordHook( DdManager * dd, const char * str, void * data );
+extern int             Cudd_EnableReorderingReporting( DdManager * dd );
+extern int             Cudd_DisableReorderingReporting( DdManager * dd );
+extern int             Cudd_ReorderingReporting( DdManager * dd );
+extern Cudd_ErrorType  Cudd_ReadErrorCode( DdManager * dd );
+extern void            Cudd_ClearErrorCode( DdManager * dd );
+extern FILE *          Cudd_ReadStdout( DdManager * dd );
+extern void            Cudd_SetStdout( DdManager * dd, FILE * fp );
+extern FILE *          Cudd_ReadStderr( DdManager * dd );
+extern void            Cudd_SetStderr( DdManager * dd, FILE * fp );
+extern unsigned int    Cudd_ReadNextReordering( DdManager * dd );
+extern void            Cudd_SetNextReordering( DdManager * dd, unsigned int next );
+extern double          Cudd_ReadSwapSteps( DdManager * dd );
+extern unsigned int    Cudd_ReadMaxLive( DdManager * dd );
+extern void            Cudd_SetMaxLive( DdManager * dd, unsigned int maxLive );
+extern unsigned long   Cudd_ReadMaxMemory( DdManager * dd );
+extern void            Cudd_SetMaxMemory( DdManager * dd, unsigned long maxMemory );
+extern int             Cudd_bddBindVar( DdManager * dd, int index );
+extern int             Cudd_bddUnbindVar( DdManager * dd, int index );
+extern int             Cudd_bddVarIsBound( DdManager * dd, int index );
+extern DdNode *        Cudd_addExistAbstract( DdManager * manager, DdNode * f, DdNode * cube );
+extern DdNode *        Cudd_addUnivAbstract( DdManager * manager, DdNode * f, DdNode * cube );
+extern DdNode *        Cudd_addOrAbstract( DdManager * manager, DdNode * f, DdNode * cube );
+extern DdNode *        Cudd_addApply( DdManager * dd, DdNode * ( * )(DdManager * , DdNode ** , DdNode ** ), DdNode * f, DdNode * g );
+extern DdNode *        Cudd_addPlus( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addTimes( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addThreshold( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addSetNZ( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addDivide( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addMinus( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addMinimum( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addMaximum( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addOneZeroMaximum( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addDiff( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addAgreement( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addOr( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addNand( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addNor( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addXor( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addXnor( DdManager * dd, DdNode ** f, DdNode ** g );
+extern DdNode *        Cudd_addMonadicApply( DdManager * dd, DdNode * ( * op)(DdManager * , DdNode * ), DdNode * f );
+extern DdNode *        Cudd_addLog( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_addFindMax( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_addFindMin( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_addIthBit( DdManager * dd, DdNode * f, int bit );
+extern DdNode *        Cudd_addScalarInverse( DdManager * dd, DdNode * f, DdNode * epsilon );
+extern DdNode *        Cudd_addIte( DdManager * dd, DdNode * f, DdNode * g, DdNode * h );
+extern DdNode *        Cudd_addIteConstant( DdManager * dd, DdNode * f, DdNode * g, DdNode * h );
+extern DdNode *        Cudd_addEvalConst( DdManager * dd, DdNode * f, DdNode * g );
+extern int             Cudd_addLeq( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_addCmpl( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_addNegate( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_addRoundOff( DdManager * dd, DdNode * f, int N );
+extern DdNode *        Cudd_addWalsh( DdManager * dd, DdNode ** x, DdNode ** y, int n );
+extern DdNode *        Cudd_addResidue( DdManager * dd, int n, int m, int options, int top );
+extern DdNode *        Cudd_bddAndAbstract( DdManager * manager, DdNode * f, DdNode * g, DdNode * cube );
+extern DdNode *        Cudd_bddAndAbstractLimit( DdManager * manager, DdNode * f, DdNode * g, DdNode * cube, unsigned int limit );
+extern int             Cudd_ApaNumberOfDigits( int binaryDigits );
+extern DdApaNumber     Cudd_NewApaNumber( int digits );
+extern void            Cudd_ApaCopy( int digits, DdApaNumber source, DdApaNumber dest );
+extern DdApaDigit      Cudd_ApaAdd( int digits, DdApaNumber a, DdApaNumber b, DdApaNumber sum );
+extern DdApaDigit      Cudd_ApaSubtract( int digits, DdApaNumber a, DdApaNumber b, DdApaNumber diff );
+extern DdApaDigit      Cudd_ApaShortDivision( int digits, DdApaNumber dividend, DdApaDigit divisor, DdApaNumber quotient );
+extern unsigned int    Cudd_ApaIntDivision( int digits, DdApaNumber dividend, unsigned int divisor, DdApaNumber quotient );
+extern void            Cudd_ApaShiftRight( int digits, DdApaDigit in, DdApaNumber a, DdApaNumber b );
+extern void            Cudd_ApaSetToLiteral( int digits, DdApaNumber number, DdApaDigit literal );
+extern void            Cudd_ApaPowerOfTwo( int digits, DdApaNumber number, int power );
+extern int             Cudd_ApaCompare( int digitsFirst, DdApaNumber first, int digitsSecond, DdApaNumber second );
+extern int             Cudd_ApaCompareRatios( int digitsFirst, DdApaNumber firstNum, unsigned int firstDen, int digitsSecond, DdApaNumber secondNum, unsigned int secondDen );
+extern int             Cudd_ApaPrintHex( FILE * fp, int digits, DdApaNumber number );
+extern int             Cudd_ApaPrintDecimal( FILE * fp, int digits, DdApaNumber number );
+extern int             Cudd_ApaPrintExponential( FILE * fp, int digits, DdApaNumber number, int precision );
+extern DdApaNumber     Cudd_ApaCountMinterm( DdManager * manager, DdNode * node, int nvars, int * digits );
+extern int             Cudd_ApaPrintMinterm( FILE * fp, DdManager * dd, DdNode * node, int nvars );
+extern int             Cudd_ApaPrintMintermExp( FILE * fp, DdManager * dd, DdNode * node, int nvars, int precision );
+extern int             Cudd_ApaPrintDensity( FILE * fp, DdManager * dd, DdNode * node, int nvars );
+extern DdNode *        Cudd_UnderApprox( DdManager * dd, DdNode * f, int numVars, int threshold, int safe, double quality );
+extern DdNode *        Cudd_OverApprox( DdManager * dd, DdNode * f, int numVars, int threshold, int safe, double quality );
+extern DdNode *        Cudd_RemapUnderApprox( DdManager * dd, DdNode * f, int numVars, int threshold, double quality );
+extern DdNode *        Cudd_RemapOverApprox( DdManager * dd, DdNode * f, int numVars, int threshold, double quality );
+extern DdNode *        Cudd_BiasedUnderApprox( DdManager * dd, DdNode * f, DdNode * b, int numVars, int threshold, double quality1, double quality0 );
+extern DdNode *        Cudd_BiasedOverApprox( DdManager * dd, DdNode * f, DdNode * b, int numVars, int threshold, double quality1, double quality0 );
+extern DdNode *        Cudd_bddExistAbstract( DdManager * manager, DdNode * f, DdNode * cube );
+extern DdNode *        Cudd_bddXorExistAbstract( DdManager * manager, DdNode * f, DdNode * g, DdNode * cube );
+extern DdNode *        Cudd_bddUnivAbstract( DdManager * manager, DdNode * f, DdNode * cube );
+extern DdNode *        Cudd_bddBooleanDiff( DdManager * manager, DdNode * f, int x );
+extern int             Cudd_bddVarIsDependent( DdManager * dd, DdNode * f, DdNode * var );
+extern double          Cudd_bddCorrelation( DdManager * manager, DdNode * f, DdNode * g );
+extern double          Cudd_bddCorrelationWeights( DdManager * manager, DdNode * f, DdNode * g, double * prob );
+extern DdNode *        Cudd_bddIte( DdManager * dd, DdNode * f, DdNode * g, DdNode * h );
+extern DdNode *        Cudd_bddIteConstant( DdManager * dd, DdNode * f, DdNode * g, DdNode * h );
+extern DdNode *        Cudd_bddIntersect( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddAnd( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddAndLimit( DdManager * dd, DdNode * f, DdNode * g, unsigned int limit );
+extern DdNode *        Cudd_bddOr( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddNand( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddNor( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddXor( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddXnor( DdManager * dd, DdNode * f, DdNode * g );
+extern int             Cudd_bddLeq( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_addBddThreshold( DdManager * dd, DdNode * f, CUDD_VALUE_TYPE value );
+extern DdNode *        Cudd_addBddStrictThreshold( DdManager * dd, DdNode * f, CUDD_VALUE_TYPE value );
+extern DdNode *        Cudd_addBddInterval( DdManager * dd, DdNode * f, CUDD_VALUE_TYPE lower, CUDD_VALUE_TYPE upper );
+extern DdNode *        Cudd_addBddIthBit( DdManager * dd, DdNode * f, int bit );
+extern DdNode *        Cudd_BddToAdd( DdManager * dd, DdNode * B );
+extern DdNode *        Cudd_addBddPattern( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_bddTransfer( DdManager * ddSource, DdManager * ddDestination, DdNode * f );
+extern int             Cudd_DebugCheck( DdManager * table );
+extern int             Cudd_CheckKeys( DdManager * table );
+extern DdNode *        Cudd_bddClippingAnd( DdManager * dd, DdNode * f, DdNode * g, int maxDepth, int direction );
+extern DdNode *        Cudd_bddClippingAndAbstract( DdManager * dd, DdNode * f, DdNode * g, DdNode * cube, int maxDepth, int direction );
+extern DdNode *        Cudd_Cofactor( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_bddCompose( DdManager * dd, DdNode * f, DdNode * g, int v );
+extern DdNode *        Cudd_addCompose( DdManager * dd, DdNode * f, DdNode * g, int v );
+extern DdNode *        Cudd_addPermute( DdManager * manager, DdNode * node, int * permut );
+extern DdNode *        Cudd_addSwapVariables( DdManager * dd, DdNode * f, DdNode ** x, DdNode ** y, int n );
+extern DdNode *        Cudd_bddPermute( DdManager * manager, DdNode * node, int * permut );
+extern DdNode *        Cudd_bddVarMap( DdManager * manager, DdNode * f );
+extern int             Cudd_SetVarMap( DdManager * manager, DdNode ** x, DdNode ** y, int n );
+extern DdNode *        Cudd_bddSwapVariables( DdManager * dd, DdNode * f, DdNode ** x, DdNode ** y, int n );
+extern DdNode *        Cudd_bddAdjPermuteX( DdManager * dd, DdNode * B, DdNode ** x, int n );
+extern DdNode *        Cudd_addVectorCompose( DdManager * dd, DdNode * f, DdNode ** vector );
+extern DdNode *        Cudd_addGeneralVectorCompose( DdManager * dd, DdNode * f, DdNode ** vectorOn, DdNode ** vectorOff );
+extern DdNode *        Cudd_addNonSimCompose( DdManager * dd, DdNode * f, DdNode ** vector );
+extern DdNode *        Cudd_bddVectorCompose( DdManager * dd, DdNode * f, DdNode ** vector );
+extern int             Cudd_bddApproxConjDecomp( DdManager * dd, DdNode * f, DdNode ** * conjuncts );
+extern int             Cudd_bddApproxDisjDecomp( DdManager * dd, DdNode * f, DdNode ** * disjuncts );
+extern int             Cudd_bddIterConjDecomp( DdManager * dd, DdNode * f, DdNode ** * conjuncts );
+extern int             Cudd_bddIterDisjDecomp( DdManager * dd, DdNode * f, DdNode ** * disjuncts );
+extern int             Cudd_bddGenConjDecomp( DdManager * dd, DdNode * f, DdNode ** * conjuncts );
+extern int             Cudd_bddGenDisjDecomp( DdManager * dd, DdNode * f, DdNode ** * disjuncts );
+extern int             Cudd_bddVarConjDecomp( DdManager * dd, DdNode * f, DdNode ** * conjuncts );
+extern int             Cudd_bddVarDisjDecomp( DdManager * dd, DdNode * f, DdNode ** * disjuncts );
+extern DdNode *        Cudd_FindEssential( DdManager * dd, DdNode * f );
+extern int             Cudd_bddIsVarEssential( DdManager * manager, DdNode * f, int id, int phase );
+extern DdTlcInfo *     Cudd_FindTwoLiteralClauses( DdManager * dd, DdNode * f );
+extern int             Cudd_PrintTwoLiteralClauses( DdManager * dd, DdNode * f, char ** names, FILE * fp );
+extern int             Cudd_ReadIthClause( DdTlcInfo * tlc, int i, DdHalfWord * var1, DdHalfWord * var2, int * phase1, int * phase2 );
+extern void            Cudd_tlcInfoFree( DdTlcInfo * t );
+extern int             Cudd_DumpBlif( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, char * mname, FILE * fp, int mv );
+extern int             Cudd_DumpBlifBody( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, FILE * fp, int mv );
+extern int             Cudd_DumpDot( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, FILE * fp );
+extern int             Cudd_DumpDaVinci( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, FILE * fp );
+extern int             Cudd_DumpDDcal( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, FILE * fp );
+extern int             Cudd_DumpFactoredForm( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, FILE * fp );
+extern DdNode *        Cudd_bddConstrain( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode *        Cudd_bddRestrict( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode *        Cudd_bddNPAnd( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode *        Cudd_addConstrain( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode **       Cudd_bddConstrainDecomp( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_addRestrict( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode **       Cudd_bddCharToVect( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_bddLICompaction( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode *        Cudd_bddSqueeze( DdManager * dd, DdNode * l, DdNode * u );
+extern DdNode *        Cudd_bddMinimize( DdManager * dd, DdNode * f, DdNode * c );
+extern DdNode *        Cudd_SubsetCompress( DdManager * dd, DdNode * f, int nvars, int threshold );
+extern DdNode *        Cudd_SupersetCompress( DdManager * dd, DdNode * f, int nvars, int threshold );
+extern MtrNode *       Cudd_MakeTreeNode( DdManager * dd, unsigned int low, unsigned int size, unsigned int type );
+extern int             Cudd_addHarwell( FILE * fp, DdManager * dd, DdNode ** E, DdNode ** * x, DdNode ** * y, DdNode ** * xn, DdNode ** * yn_, int * nx, int * ny, int * m, int * n, int bx, int sx, int by, int sy, int pr );
+extern DdManager *     Cudd_Init( unsigned int numVars, unsigned int numVarsZ, unsigned int numSlots, unsigned int cacheSize, unsigned long maxMemory );
+extern void            Cudd_Quit( DdManager * unique );
+extern int             Cudd_PrintLinear( DdManager * table );
+extern int             Cudd_ReadLinear( DdManager * table, int x, int y );
+extern DdNode *        Cudd_bddLiteralSetIntersection( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_addMatrixMultiply( DdManager * dd, DdNode * A, DdNode * B, DdNode ** z, int nz );
+extern DdNode *        Cudd_addTimesPlus( DdManager * dd, DdNode * A, DdNode * B, DdNode ** z, int nz );
+extern DdNode *        Cudd_addTriangle( DdManager * dd, DdNode * f, DdNode * g, DdNode ** z, int nz );
+extern DdNode *        Cudd_addOuterSum( DdManager * dd, DdNode * M, DdNode * r, DdNode * c );
+extern DdNode *        Cudd_PrioritySelect( DdManager * dd, DdNode * R, DdNode ** x, DdNode ** y, DdNode ** z, DdNode * Pi, int n, DdNode * ( * )(DdManager * , int, DdNode ** , DdNode ** , DdNode ** ) );
+extern DdNode *        Cudd_Xgty( DdManager * dd, int N, DdNode ** z, DdNode ** x, DdNode ** y );
+extern DdNode *        Cudd_Xeqy( DdManager * dd, int N, DdNode ** x, DdNode ** y );
+extern DdNode *        Cudd_addXeqy( DdManager * dd, int N, DdNode ** x, DdNode ** y );
+extern DdNode *        Cudd_Dxygtdxz( DdManager * dd, int N, DdNode ** x, DdNode ** y, DdNode ** z );
+extern DdNode *        Cudd_Dxygtdyz( DdManager * dd, int N, DdNode ** x, DdNode ** y, DdNode ** z );
+extern DdNode *        Cudd_Inequality( DdManager * dd, int N, int c, DdNode ** x, DdNode ** y );
+extern DdNode *        Cudd_Disequality( DdManager * dd, int N, int c, DdNode ** x, DdNode ** y );
+extern DdNode *        Cudd_bddInterval( DdManager * dd, int N, DdNode ** x, unsigned int lowerB, unsigned int upperB );
+extern DdNode *        Cudd_CProjection( DdManager * dd, DdNode * R, DdNode * Y );
+extern DdNode *        Cudd_addHamming( DdManager * dd, DdNode ** xVars, DdNode ** yVars, int nVars );
+extern int             Cudd_MinHammingDist( DdManager * dd, DdNode * f, int * minterm, int upperBound );
+extern DdNode *        Cudd_bddClosestCube( DdManager * dd, DdNode * f, DdNode * g, int * distance );
+extern int             Cudd_addRead( FILE * fp, DdManager * dd, DdNode ** E, DdNode ** * x, DdNode ** * y, DdNode ** * xn, DdNode ** * yn_, int * nx, int * ny, int * m, int * n, int bx, int sx, int by, int sy );
+extern int             Cudd_bddRead( FILE * fp, DdManager * dd, DdNode ** E, DdNode ** * x, DdNode ** * y, int * nx, int * ny, int * m, int * n, int bx, int sx, int by, int sy );
+extern void            Cudd_Ref( DdNode * n );
+extern void            Cudd_RecursiveDeref( DdManager * table, DdNode * n );
+extern void            Cudd_IterDerefBdd( DdManager * table, DdNode * n );
+extern void            Cudd_DelayedDerefBdd( DdManager * table, DdNode * n );
+extern void            Cudd_RecursiveDerefZdd( DdManager * table, DdNode * n );
+extern void            Cudd_Deref( DdNode * node );
+extern int             Cudd_CheckZeroRef( DdManager * manager );
+extern int             Cudd_ReduceHeap( DdManager * table, Cudd_ReorderingType heuristic, int minsize );
+extern int             Cudd_ShuffleHeap( DdManager * table, int * permutation );
+extern DdNode *        Cudd_Eval( DdManager * dd, DdNode * f, int * inputs );
+extern DdNode *        Cudd_ShortestPath( DdManager * manager, DdNode * f, int * weight, int * support, int * length );
+extern DdNode *        Cudd_LargestCube( DdManager * manager, DdNode * f, int * length );
+extern int             Cudd_ShortestLength( DdManager * manager, DdNode * f, int * weight );
+extern DdNode *        Cudd_Decreasing( DdManager * dd, DdNode * f, int i );
+extern DdNode *        Cudd_Increasing( DdManager * dd, DdNode * f, int i );
+extern int             Cudd_EquivDC( DdManager * dd, DdNode * F, DdNode * G, DdNode * D );
+extern int             Cudd_bddLeqUnless( DdManager * dd, DdNode * f, DdNode * g, DdNode * D );
+extern int             Cudd_EqualSupNorm( DdManager * dd, DdNode * f, DdNode * g, CUDD_VALUE_TYPE tolerance, int pr );
+extern DdNode *        Cudd_bddMakePrime( DdManager * dd, DdNode * cube, DdNode * f );
+extern double *        Cudd_CofMinterm( DdManager * dd, DdNode * node );
+extern DdNode *        Cudd_SolveEqn( DdManager * bdd, DdNode * F, DdNode * Y, DdNode ** G, int ** yIndex, int n );
+extern DdNode *        Cudd_VerifySol( DdManager * bdd, DdNode * F, DdNode ** G, int * yIndex, int n );
+extern DdNode *        Cudd_SplitSet( DdManager * manager, DdNode * S, DdNode ** xVars, int n, double m );
+extern DdNode *        Cudd_SubsetHeavyBranch( DdManager * dd, DdNode * f, int numVars, int threshold );
+extern DdNode *        Cudd_SupersetHeavyBranch( DdManager * dd, DdNode * f, int numVars, int threshold );
+extern DdNode *        Cudd_SubsetShortPaths( DdManager * dd, DdNode * f, int numVars, int threshold, int hardlimit );
+extern DdNode *        Cudd_SupersetShortPaths( DdManager * dd, DdNode * f, int numVars, int threshold, int hardlimit );
+extern void            Cudd_SymmProfile( DdManager * table, int lower, int upper );
+extern unsigned int    Cudd_Prime( unsigned int p );
+extern int             Cudd_PrintMinterm( DdManager * manager, DdNode * node );
+extern int             Cudd_bddPrintCover( DdManager * dd, DdNode * l, DdNode * u );
+extern int             Cudd_PrintDebug( DdManager * dd, DdNode * f, int n, int pr );
+extern int             Cudd_DagSize( DdNode * node );
+extern int             Cudd_EstimateCofactor( DdManager * dd, DdNode * node, int i, int phase );
+extern int             Cudd_EstimateCofactorSimple( DdNode * node, int i );
+extern int             Cudd_SharingSize( DdNode ** nodeArray, int n );
+extern double          Cudd_CountMinterm( DdManager * manager, DdNode * node, int nvars );
+extern int             Cudd_EpdCountMinterm( DdManager * manager, DdNode * node, int nvars, EpDouble * epd );
+extern double          Cudd_CountPath( DdNode * node );
+extern double          Cudd_CountPathsToNonZero( DdNode * node );
+extern DdNode *        Cudd_Support( DdManager * dd, DdNode * f );
+extern int *           Cudd_SupportIndex( DdManager * dd, DdNode * f );
+extern int             Cudd_SupportSize( DdManager * dd, DdNode * f );
+extern DdNode *        Cudd_VectorSupport( DdManager * dd, DdNode ** F, int n );
+extern int *           Cudd_VectorSupportIndex( DdManager * dd, DdNode ** F, int n );
+extern int             Cudd_VectorSupportSize( DdManager * dd, DdNode ** F, int n );
+extern int             Cudd_ClassifySupport( DdManager * dd, DdNode * f, DdNode * g, DdNode ** common, DdNode ** onlyF, DdNode ** onlyG );
+extern int             Cudd_CountLeaves( DdNode * node );
+extern int             Cudd_bddPickOneCube( DdManager * ddm, DdNode * node, char * string );
+extern DdNode *        Cudd_bddPickOneMinterm( DdManager * dd, DdNode * f, DdNode ** vars, int n );
+extern DdNode **       Cudd_bddPickArbitraryMinterms( DdManager * dd, DdNode * f, DdNode ** vars, int n, int k );
+extern DdNode *        Cudd_SubsetWithMaskVars( DdManager * dd, DdNode * f, DdNode ** vars, int nvars, DdNode ** maskVars, int mvars );
+extern DdGen *         Cudd_FirstCube( DdManager * dd, DdNode * f, int ** cube, CUDD_VALUE_TYPE * value );
+extern int             Cudd_NextCube( DdGen * gen, int ** cube, CUDD_VALUE_TYPE * value );
+extern DdGen *         Cudd_FirstPrime(DdManager * dd, DdNode * l, DdNode * u, int ** cube );
+extern int             Cudd_NextPrime(DdGen * gen, int ** cube );
+extern DdNode *        Cudd_bddComputeCube( DdManager * dd, DdNode ** vars, int * phase, int n );
+extern DdNode *        Cudd_addComputeCube( DdManager * dd, DdNode ** vars, int * phase, int n );
+extern DdNode *        Cudd_CubeArrayToBdd( DdManager * dd, int * array );
+extern int             Cudd_BddToCubeArray( DdManager * dd, DdNode * cube, int * array );
+extern DdGen *         Cudd_FirstNode( DdManager * dd, DdNode * f, DdNode ** node );
+extern int             Cudd_NextNode( DdGen * gen, DdNode ** node );
+extern int             Cudd_GenFree( DdGen * gen );
+extern int             Cudd_IsGenEmpty( DdGen * gen );
+extern DdNode *        Cudd_IndicesToCube( DdManager * dd, int * array, int n );
+extern void            Cudd_PrintVersion( FILE * fp );
+extern double          Cudd_AverageDistance( DdManager * dd );
+extern long            Cudd_Random( void );
+extern void            Cudd_Srandom( long seed );
+extern double          Cudd_Density( DdManager * dd, DdNode * f, int nvars );
+extern void            Cudd_OutOfMem( long size );
+extern int             Cudd_zddCount( DdManager * zdd, DdNode * P );
+extern double          Cudd_zddCountDouble( DdManager * zdd, DdNode * P );
+extern DdNode *        Cudd_zddProduct( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_zddUnateProduct( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_zddWeakDiv( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_zddDivide( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_zddWeakDivF( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_zddDivideF( DdManager * dd, DdNode * f, DdNode * g );
+extern DdNode *        Cudd_zddComplement( DdManager * dd, DdNode * node );
+extern MtrNode *       Cudd_MakeZddTreeNode( DdManager * dd, unsigned int low, unsigned int size, unsigned int type );
+extern DdNode *        Cudd_zddIsop( DdManager * dd, DdNode * L, DdNode * U, DdNode ** zdd_I );
+extern DdNode *        Cudd_bddIsop( DdManager * dd, DdNode * L, DdNode * U );
+extern DdNode *        Cudd_MakeBddFromZddCover( DdManager * dd, DdNode * node );
+extern int             Cudd_zddDagSize( DdNode * p_node );
+extern double          Cudd_zddCountMinterm( DdManager * zdd, DdNode * node, int path );
+extern void            Cudd_zddPrintSubtable( DdManager * table );
+extern DdNode *        Cudd_zddPortFromBdd( DdManager * dd, DdNode * B );
+extern DdNode *        Cudd_zddPortToBdd( DdManager * dd, DdNode * f );
+extern int             Cudd_zddReduceHeap( DdManager * table, Cudd_ReorderingType heuristic, int minsize );
+extern int             Cudd_zddShuffleHeap( DdManager * table, int * permutation );
+extern DdNode *        Cudd_zddIte( DdManager * dd, DdNode * f, DdNode * g, DdNode * h );
+extern DdNode *        Cudd_zddUnion( DdManager * dd, DdNode * P, DdNode * Q );
+extern DdNode *        Cudd_zddIntersect( DdManager * dd, DdNode * P, DdNode * Q );
+extern DdNode *        Cudd_zddDiff( DdManager * dd, DdNode * P, DdNode * Q );
+extern DdNode *        Cudd_zddDiffConst( DdManager * zdd, DdNode * P, DdNode * Q );
+extern DdNode *        Cudd_zddSubset1( DdManager * dd, DdNode * P, int var );
+extern DdNode *        Cudd_zddSubset0( DdManager * dd, DdNode * P, int var );
+extern DdNode *        Cudd_zddChange( DdManager * dd, DdNode * P, int var );
+extern void            Cudd_zddSymmProfile( DdManager * table, int lower, int upper );
+extern int             Cudd_zddPrintMinterm( DdManager * zdd, DdNode * node );
+extern int             Cudd_zddPrintCover( DdManager * zdd, DdNode * node );
+extern int             Cudd_zddPrintDebug( DdManager * zdd, DdNode * f, int n, int pr );
+extern DdGen *         Cudd_zddFirstPath( DdManager * zdd, DdNode * f, int ** path );
+extern int             Cudd_zddNextPath( DdGen * gen, int ** path );
+extern char *          Cudd_zddCoverPathToString( DdManager * zdd, int * path, char * str );
+extern int             Cudd_zddDumpDot( DdManager * dd, int n, DdNode ** f, char ** inames, char ** onames, FILE * fp );
+extern int             Cudd_bddSetPiVar( DdManager * dd, int index );
+extern int             Cudd_bddSetPsVar( DdManager * dd, int index );
+extern int             Cudd_bddSetNsVar( DdManager * dd, int index );
+extern int             Cudd_bddIsPiVar( DdManager * dd, int index );
+extern int             Cudd_bddIsPsVar( DdManager * dd, int index );
+extern int             Cudd_bddIsNsVar( DdManager * dd, int index );
+extern int             Cudd_bddSetPairIndex( DdManager * dd, int index, int pairIndex );
+extern int             Cudd_bddReadPairIndex( DdManager * dd, int index );
+extern int             Cudd_bddSetVarToBeGrouped( DdManager * dd, int index );
+extern int             Cudd_bddSetVarHardGroup( DdManager * dd, int index );
+extern int             Cudd_bddResetVarToBeGrouped( DdManager * dd, int index );
+extern int             Cudd_bddIsVarToBeGrouped( DdManager * dd, int index );
+extern int             Cudd_bddSetVarToBeUngrouped( DdManager * dd, int index );
+extern int             Cudd_bddIsVarToBeUngrouped( DdManager * dd, int index );
+extern int             Cudd_bddIsVarHardGroup( DdManager * dd, int index );
 
 /**AutomaticEnd***************************************************************/
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif /* _CUDD */

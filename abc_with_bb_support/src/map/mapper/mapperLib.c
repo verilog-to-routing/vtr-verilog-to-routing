@@ -15,8 +15,18 @@
   Revision    [$Id: mapperLib.c,v 1.6 2005/01/23 06:59:44 alanmi Exp $]
 
 ***********************************************************************/
+#define _BSD_SOURCE
+
+#ifndef WIN32
+#include <unistd.h>
+#endif
 
 #include "mapperInt.h"
+#include "map/super/super.h"
+#include "map/mapper/mapperInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -45,15 +55,15 @@
   SeeAlso     []
 
 ***********************************************************************/
-Map_SuperLib_t * Map_SuperLibCreate( char * pFileName, char * pExcludeFile, bool fAlgorithm, bool fVerbose )
+Map_SuperLib_t * Map_SuperLibCreate( Mio_Library_t * pGenlib, Vec_Str_t * vStr, char * pFileName, char * pExcludeFile, int fAlgorithm, int fVerbose )
 {
     Map_SuperLib_t * p;
-    int clk;
+    abctime clk;
 
     // start the supergate library
-    p = ALLOC( Map_SuperLib_t, 1 );
+    p = ABC_ALLOC( Map_SuperLib_t, 1 );
     memset( p, 0, sizeof(Map_SuperLib_t) );
-    p->pName     = pFileName;
+    p->pName     = Abc_UtilStrsav(pFileName);
     p->fVerbose  = fVerbose;
     p->mmSupers  = Extra_MmFixedStart( sizeof(Map_Super_t) );
     p->mmEntries = Extra_MmFixedStart( sizeof(Map_HashEntry_t) );
@@ -65,10 +75,28 @@ Map_SuperLib_t * Map_SuperLibCreate( char * pFileName, char * pExcludeFile, bool
     p->tTable  = Map_SuperTableCreate( p );
 
     // read the supergate library from file
-clk = clock();
-    if ( fAlgorithm )
+clk = Abc_Clock();
+    if ( vStr != NULL )
     {
-        if ( !Map_LibraryReadTree( p, pFileName, pExcludeFile ) )
+        // read the supergate library from file
+        int Status = Map_LibraryReadFileTreeStr( p, pGenlib, vStr, pFileName );
+        if ( Status == 0 )
+        {
+            Map_SuperLibFree( p );
+            return NULL;
+        }
+        // prepare the info about the library
+        Status = Map_LibraryDeriveGateInfo( p, NULL );
+        if ( Status == 0 )
+        {
+            Map_SuperLibFree( p );
+            return NULL;
+        }
+        assert( p->nVarsMax > 0 );
+    }
+    else if ( fAlgorithm )
+    {
+        if ( !Map_LibraryReadTree( p, pGenlib, pFileName, pExcludeFile ) )
         {
             Map_SuperLibFree( p );
             return NULL;
@@ -78,6 +106,7 @@ clk = clock();
     {
         if ( pExcludeFile != 0 )
         {
+            Map_SuperLibFree( p );
             printf ("Error: Exclude file support not present for old format. Stop.\n");
             return NULL;
         }
@@ -90,11 +119,12 @@ clk = clock();
     assert( p->nVarsMax > 0 );
 
     // report the stats
-if ( fVerbose ) {
-    printf( "Loaded %d unique %d-input supergates from \"%s\".  ", 
-        p->nSupersReal, p->nVarsMax, pFileName );
-    PRT( "Time", clock() - clk );
-}
+    if ( fVerbose ) 
+    {
+        printf( "Loaded %d unique %d-input supergates from \"%s\".  ", 
+            p->nSupersReal, p->nVarsMax, pFileName );
+        ABC_PRT( "Time", Abc_Clock() - clk );
+    }
 
     // assign the interver parameters
     p->pGateInv        = Mio_LibraryReadInv( p->pGenlib );
@@ -139,9 +169,9 @@ void Map_SuperLibFree( Map_SuperLib_t * p )
     if ( p == NULL ) return;
     if ( p->pGenlib )
     {
-        assert( p->pGenlib == Abc_FrameReadLibGen() );
-        Mio_LibraryDelete( p->pGenlib );
-        Abc_FrameSetLibGen( NULL );
+        if ( p->pGenlib != Abc_FrameReadLibGen() )
+            Mio_LibraryDelete( p->pGenlib );
+        p->pGenlib = NULL;
     }
     if ( p->tTableC )
         Map_SuperTableFree( p->tTableC );
@@ -150,8 +180,9 @@ void Map_SuperLibFree( Map_SuperLib_t * p )
     Extra_MmFixedStop( p->mmSupers );
     Extra_MmFixedStop( p->mmEntries );
     Extra_MmFlexStop( p->mmForms );
-    FREE( p->ppSupers );
-    FREE( p );
+    ABC_FREE( p->ppSupers );
+    ABC_FREE( p->pName );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -165,67 +196,63 @@ void Map_SuperLibFree( Map_SuperLib_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-int Map_SuperLibDeriveFromGenlib( Mio_Library_t * pLib )
+int Map_SuperLibDeriveFromGenlib( Mio_Library_t * pLib, int fVerbose )
 {
-    Abc_Frame_t * pAbc = Abc_FrameGetGlobalFrame();
-    char * pNameGeneric;
-    char FileNameGenlib[100];
-    char FileNameSuper[100];
-    char CommandSuper[500];
-    char CommandRead[500];
-    FILE * pFile;
-
+    Map_SuperLib_t * pLibSuper;
+    Vec_Str_t * vStr;
+    char * pFileName;
     if ( pLib == NULL )
         return 0;
 
-    // write the current library into the file
-    sprintf( FileNameGenlib, "%s_temp", Mio_LibraryReadName(pLib) );
-    pFile = fopen( FileNameGenlib, "w" );
-    Mio_WriteLibrary( pFile, pLib, 0 );
-    fclose( pFile );
-
-    // get the file name with the library
-    pNameGeneric = Extra_FileNameGeneric( Mio_LibraryReadName(pLib) );
-    sprintf( FileNameSuper, "%s.super", pNameGeneric );
-    free( pNameGeneric );
-
-    sprintf( CommandSuper,  "super -l 1 -i 5 -d 10000000 -a 10000000 -t 100 %s", FileNameGenlib ); 
-    if ( Cmd_CommandExecute( pAbc, CommandSuper ) )
-    {
-        fprintf( stdout, "Cannot execute command \"%s\".\n", CommandSuper );
+    // compute supergates
+    vStr = Super_PrecomputeStr( pLib, 5, 1, 100000000, 10000000, 10000000, 100, 1, 0 );
+    if ( vStr == NULL )
         return 0;
-    }
-//#ifdef WIN32
-//        _unlink( FileNameGenlib );
-//#else
-//        unlink( FileNameGenlib );
-//#endif
 
-    sprintf( CommandRead,  "read_super %s", FileNameSuper ); 
-    if ( Cmd_CommandExecute( pAbc, CommandRead ) )
-    {
-#ifdef WIN32
-        _unlink( FileNameSuper );
-#else
-        unlink( FileNameSuper );
-#endif
-        fprintf( stdout, "Cannot execute command \"%s\".\n", CommandRead );
-        return 0;
-    }
+    // create supergate library
+    pFileName = Extra_FileNameGenericAppend( Mio_LibraryReadName(pLib), ".super" );
+    pLibSuper = Map_SuperLibCreate( pLib, vStr, pFileName, NULL, 1, 0 );
+    Vec_StrFree( vStr );
 
-/* // don't remove the intermediate file
-#ifdef WIN32
-    _unlink( FileNameSuper );
-#else
-    unlink( FileNameSuper );
-#endif
-*/
-     return 1;
+    // replace the library
+    Map_SuperLibFree( (Map_SuperLib_t *)Abc_FrameReadLibSuper() );
+    Abc_FrameSetLibSuper( pLibSuper );
+    return 1;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Derives the library from the genlib library.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Map_SuperLibDeriveFromGenlib2( Mio_Library_t * pLib, int fVerbose )
+{
+    Abc_Frame_t * pAbc = Abc_FrameGetGlobalFrame();
+    char * pFileName;
+    if ( pLib == NULL )
+        return 0;
+    // compute supergates
+    pFileName = Extra_FileNameGenericAppend(Mio_LibraryReadName(pLib), ".super");
+    Super_Precompute( pLib, 5, 1, 100000000, 10000000, 10000000, 100, 1, 0, pFileName );
+    // assuming that it terminated successfully
+    if ( Cmd_CommandExecute( pAbc, pFileName ) )
+    {
+        fprintf( stdout, "Cannot execute command \"read_super %s\".\n", pFileName );
+        return 0;
+    }
+    return 1;
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -19,6 +19,9 @@
 #include <string.h>
 #include "mvc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -41,7 +44,7 @@
 Mvc_Manager_t * Mvc_ManagerStart()
 {
     Mvc_Manager_t * p;
-    p = ALLOC( Mvc_Manager_t, 1 );
+    p = ABC_ALLOC( Mvc_Manager_t, 1 );
     memset( p, 0, sizeof(Mvc_Manager_t) );
     p->pMan1 = Extra_MmFixedStart( sizeof(Mvc_Cube_t)                              );
     p->pMan2 = Extra_MmFixedStart( sizeof(Mvc_Cube_t) +     sizeof(Mvc_CubeWord_t) );
@@ -67,11 +70,13 @@ void Mvc_ManagerFree( Mvc_Manager_t * p )
     Extra_MmFixedStop( p->pMan2 );
     Extra_MmFixedStop( p->pMan4 );
     Extra_MmFixedStop( p->pManC );
-    free( p );
+    ABC_FREE( p );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

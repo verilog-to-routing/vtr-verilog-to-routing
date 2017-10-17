@@ -7,22 +7,53 @@
   Synopsis    [Function to read a matrix in Harwell format.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_addHarwell()
-		</ul>
-	]
+                <ul>
+                <li> Cudd_addHarwell()
+                </ul>
+        ]
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -44,7 +75,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddHarwell.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddHarwell.c,v 1.9 2004/08/13 18:04:49 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -113,16 +144,16 @@ Cudd_addHarwell(
     DdNode *cubex, *cubey, *minterm1;
     int u, v, err, i, j, nv;
     double val;
-    DdNode **lx, **ly, **lxn, **lyn;	/* local copies of x, y, xn, yn_ */
-    int lnx, lny;			/* local copies of nx and ny */
+    DdNode **lx = NULL, **ly = NULL, **lxn = NULL, **lyn = NULL;    /* local copies of x, y, xn, yn_ */
+    int lnx, lny;                       /* local copies of nx and ny */
     char title[73], key[9], mxtype[4], rhstyp[4];
     int totcrd, ptrcrd, indcrd, valcrd, rhscrd,
         nrow, ncol, nnzero, neltvl,
-	nrhs, nrhsix;
+        nrhs, nrhsix;
     int *colptr, *rowind;
 #if 0
     int nguess, nexact;
-    int	*rhsptr, *rhsind;
+    int *rhsptr, *rhsind;
 #endif
 
     if (*nx < 0 || *ny < 0) return(0);
@@ -133,7 +164,7 @@ Cudd_addHarwell(
     /* Read the header */
     err = fscanf(fp, "%72c %8c", title, key);
     if (err == EOF) {
-	return(0);
+        return(0);
     } else if (err != 2) {
         return(0);
     }
@@ -143,7 +174,7 @@ Cudd_addHarwell(
     err = fscanf(fp, "%d %d %d %d %d", &totcrd, &ptrcrd, &indcrd,
     &valcrd, &rhscrd);
     if (err == EOF) {
-	return(0);
+        return(0);
     } else if (err != 5) {
         return(0);
     }
@@ -151,55 +182,55 @@ Cudd_addHarwell(
     err = fscanf(fp, "%3s %d %d %d %d", mxtype, &nrow, &ncol,
     &nnzero, &neltvl);
     if (err == EOF) {
-	return(0);
+        return(0);
     } else if (err != 5) {
         return(0);
     }
 
     /* Skip FORTRAN formats */
     if (rhscrd == 0) {
-	err = fscanf(fp, "%*s %*s %*s \n");
+        err = fscanf(fp, "%*s %*s %*s \n");
     } else {
-	err = fscanf(fp, "%*s %*s %*s %*s \n");
+        err = fscanf(fp, "%*s %*s %*s %*s \n");
     }
     if (err == EOF) {
-	return(0);
+        return(0);
     } else if (err != 0) {
         return(0);
     }
 
     /* Print out some stuff if requested to be verbose */
     if (pr>0) {
-	(void) fprintf(dd->out,"%s: type %s, %d rows, %d columns, %d entries\n", key,
-	mxtype, nrow, ncol, nnzero);
-	if (pr>1) (void) fprintf(dd->out,"%s\n", title);
+        (void) fprintf(dd->out,"%s: type %s, %d rows, %d columns, %d entries\n", key,
+        mxtype, nrow, ncol, nnzero);
+        if (pr>1) (void) fprintf(dd->out,"%s\n", title);
     }
 
     /* Check matrix type */
     if (mxtype[0] != 'R' || mxtype[1] != 'U' || mxtype[2] != 'A') {
-	(void) fprintf(dd->err,"%s: Illegal matrix type: %s\n",
-		       key, mxtype);
-	return(0);
+        (void) fprintf(dd->err,"%s: Illegal matrix type: %s\n",
+                       key, mxtype);
+        return(0);
     }
     if (neltvl != 0) return(0);
 
     /* Read optional 5-th line */
     if (rhscrd != 0) {
-	err = fscanf(fp, "%3c %d %d", rhstyp, &nrhs, &nrhsix);
-	if (err == EOF) {
-	    return(0);
-	} else if (err != 3) {
-	    return(0);
-	}
-	rhstyp[3] = (char) 0;
-	if (rhstyp[0] != 'F') {
-	    (void) fprintf(dd->err,
-	    "%s: Sparse right-hand side not yet supported\n", key);
-	    return(0);
-	}
-	if (pr>0) (void) fprintf(dd->out,"%d right-hand side(s)\n", nrhs);
+        err = fscanf(fp, "%3c %d %d", rhstyp, &nrhs, &nrhsix);
+        if (err == EOF) {
+            return(0);
+        } else if (err != 3) {
+            return(0);
+        }
+        rhstyp[3] = (char) 0;
+        if (rhstyp[0] != 'F') {
+            (void) fprintf(dd->err,
+            "%s: Sparse right-hand side not yet supported\n", key);
+            return(0);
+        }
+        if (pr>0) (void) fprintf(dd->out,"%d right-hand side(s)\n", nrhs);
     } else {
-	nrhs = 0;
+        nrhs = 0;
     }
 
     /* Compute the number of variables */
@@ -207,109 +238,109 @@ Cudd_addHarwell(
     /* row and column numbers start from 0 */
     u = nrow - 1;
     for (i=0; u > 0; i++) {
-	u >>= 1;
+        u >>= 1;
     }
     lnx = i;
     if (nrhs == 0) {
-	v = ncol - 1;
+        v = ncol - 1;
     } else {
-	v = 2* (ddMax(ncol, nrhs) - 1);
+        v = 2* (ddMax(ncol, nrhs) - 1);
     }
     for (i=0; v > 0; i++) {
-	v >>= 1;
+        v >>= 1;
     }
     lny = i;
 
     /* Allocate or reallocate arrays for variables as needed */
     if (*nx == 0) {
-	if (lnx > 0) {
-	    *x = lx = ALLOC(DdNode *,lnx);
-	    if (lx == NULL) {
-		dd->errorCode = CUDD_MEMORY_OUT;
-		return(0);
-	    }
-	    *xn = lxn =  ALLOC(DdNode *,lnx);
-	    if (lxn == NULL) {
-		dd->errorCode = CUDD_MEMORY_OUT;
-		return(0);
-	    }
-	} else {
-	    *x = *xn = NULL;
-	}
+        if (lnx > 0) {
+            *x = lx = ABC_ALLOC(DdNode *,lnx);
+            if (lx == NULL) {
+                dd->errorCode = CUDD_MEMORY_OUT;
+                return(0);
+            }
+            *xn = lxn =  ABC_ALLOC(DdNode *,lnx);
+            if (lxn == NULL) {
+                dd->errorCode = CUDD_MEMORY_OUT;
+                return(0);
+            }
+        } else {
+            *x = *xn = NULL;
+        }
     } else if (lnx > *nx) {
-	*x = lx = REALLOC(DdNode *, *x, lnx);
-	if (lx == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
-	*xn = lxn =  REALLOC(DdNode *, *xn, lnx);
-	if (lxn == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
+        *x = lx = ABC_REALLOC(DdNode *, *x, lnx);
+        if (lx == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
+        *xn = lxn =  ABC_REALLOC(DdNode *, *xn, lnx);
+        if (lxn == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
     } else {
-	lx = *x;
-	lxn = *xn;
+        lx = *x;
+        lxn = *xn;
     }
     if (*ny == 0) {
-	if (lny >0) {
-	    *y = ly = ALLOC(DdNode *,lny);
-	    if (ly == NULL) {
-		dd->errorCode = CUDD_MEMORY_OUT;
-		return(0);
-	    }
-	    *yn_ = lyn = ALLOC(DdNode *,lny);
-	    if (lyn == NULL) {
-		dd->errorCode = CUDD_MEMORY_OUT;
-		return(0);
-	    }
-	} else {
-	    *y = *yn_ = NULL;
-	}
+        if (lny >0) {
+            *y = ly = ABC_ALLOC(DdNode *,lny);
+            if (ly == NULL) {
+                dd->errorCode = CUDD_MEMORY_OUT;
+                return(0);
+            }
+            *yn_ = lyn = ABC_ALLOC(DdNode *,lny);
+            if (lyn == NULL) {
+                dd->errorCode = CUDD_MEMORY_OUT;
+                return(0);
+            }
+        } else {
+            *y = *yn_ = NULL;
+        }
     } else if (lny > *ny) {
-	*y = ly = REALLOC(DdNode *, *y, lny);
-	if (ly == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
-	*yn_ = lyn = REALLOC(DdNode *, *yn_, lny);
-	if (lyn == NULL) {
-	    dd->errorCode = CUDD_MEMORY_OUT;
-	    return(0);
-	}
+        *y = ly = ABC_REALLOC(DdNode *, *y, lny);
+        if (ly == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
+        *yn_ = lyn = ABC_REALLOC(DdNode *, *yn_, lny);
+        if (lyn == NULL) {
+            dd->errorCode = CUDD_MEMORY_OUT;
+            return(0);
+        }
     } else {
-	ly = *y;
-	lyn = *yn_;
+        ly = *y;
+        lyn = *yn_;
     }
 
     /* Create new variables as needed */
     for (i= *nx,nv=bx+(*nx)*sx; i < lnx; i++,nv+=sx) {
-	do {
-	    dd->reordered = 0;
-	    lx[i] = cuddUniqueInter(dd, nv, one, zero);
-	} while (dd->reordered == 1);
-	if (lx[i] == NULL) return(0);
+        do {
+            dd->reordered = 0;
+            lx[i] = cuddUniqueInter(dd, nv, one, zero);
+        } while (dd->reordered == 1);
+        if (lx[i] == NULL) return(0);
         cuddRef(lx[i]);
-	do {
-	    dd->reordered = 0;
-	    lxn[i] = cuddUniqueInter(dd, nv, zero, one);
-	} while (dd->reordered == 1);
-	if (lxn[i] == NULL) return(0);
+        do {
+            dd->reordered = 0;
+            lxn[i] = cuddUniqueInter(dd, nv, zero, one);
+        } while (dd->reordered == 1);
+        if (lxn[i] == NULL) return(0);
         cuddRef(lxn[i]);
     }
     for (i= *ny,nv=by+(*ny)*sy; i < lny; i++,nv+=sy) {
-	do {
-	    dd->reordered = 0;
-	    ly[i] = cuddUniqueInter(dd, nv, one, zero);
-	} while (dd->reordered == 1);
-	if (ly[i] == NULL) return(0);
-	cuddRef(ly[i]);
-	do {
-	    dd->reordered = 0;
-	    lyn[i] = cuddUniqueInter(dd, nv, zero, one);
-	} while (dd->reordered == 1);
-	if (lyn[i] == NULL) return(0);
-	cuddRef(lyn[i]);
+        do {
+            dd->reordered = 0;
+            ly[i] = cuddUniqueInter(dd, nv, one, zero);
+        } while (dd->reordered == 1);
+        if (ly[i] == NULL) return(0);
+        cuddRef(ly[i]);
+        do {
+            dd->reordered = 0;
+            lyn[i] = cuddUniqueInter(dd, nv, zero, one);
+        } while (dd->reordered == 1);
+        if (lyn[i] == NULL) return(0);
+        cuddRef(lyn[i]);
     }
 
     /* Update matrix parameters */
@@ -317,213 +348,213 @@ Cudd_addHarwell(
     *ny = lny;
     *m = nrow;
     if (nrhs == 0) {
-	*n = ncol;
+        *n = ncol;
     } else {
-	*n = (1 << (lny - 1)) + nrhs;
+        *n = (1 << (lny - 1)) + nrhs;
     }
     
     /* Read structure data */
-    colptr = ALLOC(int, ncol+1);
+    colptr = ABC_ALLOC(int, ncol+1);
     if (colptr == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
-    rowind = ALLOC(int, nnzero);
+    rowind = ABC_ALLOC(int, nnzero);
     if (rowind == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
 
     for (i=0; i<ncol+1; i++) {
-	err = fscanf(fp, " %d ", &u);
-	if (err == EOF){ 
-	    FREE(colptr);
-	    FREE(rowind);
-	    return(0);
-	} else if (err != 1) {
-	    FREE(colptr);
-	    FREE(rowind);
-	    return(0);
-	}
-	colptr[i] = u - 1;
+        err = fscanf(fp, " %d ", &u);
+        if (err == EOF){ 
+            ABC_FREE(colptr);
+            ABC_FREE(rowind);
+            return(0);
+        } else if (err != 1) {
+            ABC_FREE(colptr);
+            ABC_FREE(rowind);
+            return(0);
+        }
+        colptr[i] = u - 1;
     }
     if (colptr[0] != 0) {
-	(void) fprintf(dd->err,"%s: Unexpected colptr[0] (%d)\n",
-		       key,colptr[0]);
-	FREE(colptr);
-	FREE(rowind);
-	return(0);
+        (void) fprintf(dd->err,"%s: Unexpected colptr[0] (%d)\n",
+                       key,colptr[0]);
+        ABC_FREE(colptr);
+        ABC_FREE(rowind);
+        return(0);
     }
     for (i=0; i<nnzero; i++) {
-	err = fscanf(fp, " %d ", &u);
-	if (err == EOF){ 
-	    FREE(colptr);
-	    FREE(rowind);
-	    return(0);
-	} else if (err != 1) {
-	    FREE(colptr);
-	    FREE(rowind);
-	    return(0);
-	}
-	rowind[i] = u - 1;
+        err = fscanf(fp, " %d ", &u);
+        if (err == EOF){ 
+            ABC_FREE(colptr);
+            ABC_FREE(rowind);
+            return(0);
+        } else if (err != 1) {
+            ABC_FREE(colptr);
+            ABC_FREE(rowind);
+            return(0);
+        }
+        rowind[i] = u - 1;
     }
 
     *E = zero; cuddRef(*E);
 
     for (j=0; j<ncol; j++) {
-	v = j;
-	cubey = one; cuddRef(cubey);
-	for (nv = lny - 1; nv>=0; nv--) {
-	    if (v & 1) {
-		w = Cudd_addApply(dd, Cudd_addTimes, cubey, ly[nv]);
-	    } else {
-		w = Cudd_addApply(dd, Cudd_addTimes, cubey, lyn[nv]);
-	    }
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		FREE(colptr);
-		FREE(rowind);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, cubey);
-	    cubey = w;
-	    v >>= 1;
-	}
-	for (i=colptr[j]; i<colptr[j+1]; i++) {
-	    u = rowind[i];
-	    err = fscanf(fp, " %lf ", &val);
-	    if (err == EOF || err != 1){ 
-		Cudd_RecursiveDeref(dd, cubey);
-		FREE(colptr);
-		FREE(rowind);
-		return(0);
-	    }
-	    /* Create new Constant node if necessary */
-	    cubex = cuddUniqueConst(dd, (CUDD_VALUE_TYPE) val);
-	    if (cubex == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		FREE(colptr);
-		FREE(rowind);
-		return(0);
-	    }
-	    cuddRef(cubex);
+        v = j;
+        cubey = one; cuddRef(cubey);
+        for (nv = lny - 1; nv>=0; nv--) {
+            if (v & 1) {
+                w = Cudd_addApply(dd, Cudd_addTimes, cubey, ly[nv]);
+            } else {
+                w = Cudd_addApply(dd, Cudd_addTimes, cubey, lyn[nv]);
+            }
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                ABC_FREE(colptr);
+                ABC_FREE(rowind);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, cubey);
+            cubey = w;
+            v >>= 1;
+        }
+        for (i=colptr[j]; i<colptr[j+1]; i++) {
+            u = rowind[i];
+            err = fscanf(fp, " %lf ", &val);
+            if (err == EOF || err != 1){ 
+                Cudd_RecursiveDeref(dd, cubey);
+                ABC_FREE(colptr);
+                ABC_FREE(rowind);
+                return(0);
+            }
+            /* Create new Constant node if necessary */
+            cubex = cuddUniqueConst(dd, (CUDD_VALUE_TYPE) val);
+            if (cubex == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                ABC_FREE(colptr);
+                ABC_FREE(rowind);
+                return(0);
+            }
+            cuddRef(cubex);
 
-	    for (nv = lnx - 1; nv>=0; nv--) {
-		if (u & 1) {
-		    w = Cudd_addApply(dd, Cudd_addTimes, cubex, lx[nv]);
-		} else { 
-		    w = Cudd_addApply(dd, Cudd_addTimes, cubex, lxn[nv]);
-		}
-		if (w == NULL) {
-		    Cudd_RecursiveDeref(dd, cubey);
-		    Cudd_RecursiveDeref(dd, cubex);
-		    FREE(colptr);
-		    FREE(rowind);
-		    return(0);
-		}
-		cuddRef(w);
-		Cudd_RecursiveDeref(dd, cubex);
-		cubex = w;
-		u >>= 1;
-	    }
-	    minterm1 = Cudd_addApply(dd, Cudd_addTimes, cubey, cubex);
-	    if (minterm1 == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		Cudd_RecursiveDeref(dd, cubex);
-		FREE(colptr);
-		FREE(rowind);
-		return(0);
-	    }
-	    cuddRef(minterm1);
-	    Cudd_RecursiveDeref(dd, cubex);
-	    w = Cudd_addApply(dd, Cudd_addPlus, *E, minterm1);
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		FREE(colptr);
-		FREE(rowind);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    Cudd_RecursiveDeref(dd, *E);
-	    *E = w;
-	}
-	Cudd_RecursiveDeref(dd, cubey);
+            for (nv = lnx - 1; nv>=0; nv--) {
+                if (u & 1) {
+                    w = Cudd_addApply(dd, Cudd_addTimes, cubex, lx[nv]);
+                } else { 
+                    w = Cudd_addApply(dd, Cudd_addTimes, cubex, lxn[nv]);
+                }
+                if (w == NULL) {
+                    Cudd_RecursiveDeref(dd, cubey);
+                    Cudd_RecursiveDeref(dd, cubex);
+                    ABC_FREE(colptr);
+                    ABC_FREE(rowind);
+                    return(0);
+                }
+                cuddRef(w);
+                Cudd_RecursiveDeref(dd, cubex);
+                cubex = w;
+                u >>= 1;
+            }
+            minterm1 = Cudd_addApply(dd, Cudd_addTimes, cubey, cubex);
+            if (minterm1 == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                Cudd_RecursiveDeref(dd, cubex);
+                ABC_FREE(colptr);
+                ABC_FREE(rowind);
+                return(0);
+            }
+            cuddRef(minterm1);
+            Cudd_RecursiveDeref(dd, cubex);
+            w = Cudd_addApply(dd, Cudd_addPlus, *E, minterm1);
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                ABC_FREE(colptr);
+                ABC_FREE(rowind);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, minterm1);
+            Cudd_RecursiveDeref(dd, *E);
+            *E = w;
+        }
+        Cudd_RecursiveDeref(dd, cubey);
     }
-    FREE(colptr);
-    FREE(rowind);
+    ABC_FREE(colptr);
+    ABC_FREE(rowind);
 
     /* Read right-hand sides */
     for (j=0; j<nrhs; j++) {
-	v = j + (1<< (lny-1));
-	cubey = one; cuddRef(cubey);
-	for (nv = lny - 1; nv>=0; nv--) {
-	    if (v & 1) {
-		w = Cudd_addApply(dd, Cudd_addTimes, cubey, ly[nv]);
-	    } else {
-		w = Cudd_addApply(dd, Cudd_addTimes, cubey, lyn[nv]);
-	    }
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, cubey);
-	    cubey = w;
-	    v >>= 1;
-	}
-	for (i=0; i<nrow; i++) {
-	    u = i;
-	    err = fscanf(fp, " %lf ", &val);
-	    if (err == EOF || err != 1){ 
-		Cudd_RecursiveDeref(dd, cubey);
-		return(0);
-	    }
-	    /* Create new Constant node if necessary */
-	    if (val == (double) 0.0) continue;
-	    cubex = cuddUniqueConst(dd, (CUDD_VALUE_TYPE) val);
-	    if (cubex == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		return(0);
-	    }
-	    cuddRef(cubex);
+        v = j + (1<< (lny-1));
+        cubey = one; cuddRef(cubey);
+        for (nv = lny - 1; nv>=0; nv--) {
+            if (v & 1) {
+                w = Cudd_addApply(dd, Cudd_addTimes, cubey, ly[nv]);
+            } else {
+                w = Cudd_addApply(dd, Cudd_addTimes, cubey, lyn[nv]);
+            }
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, cubey);
+            cubey = w;
+            v >>= 1;
+        }
+        for (i=0; i<nrow; i++) {
+            u = i;
+            err = fscanf(fp, " %lf ", &val);
+            if (err == EOF || err != 1){ 
+                Cudd_RecursiveDeref(dd, cubey);
+                return(0);
+            }
+            /* Create new Constant node if necessary */
+            if (val == (double) 0.0) continue;
+            cubex = cuddUniqueConst(dd, (CUDD_VALUE_TYPE) val);
+            if (cubex == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                return(0);
+            }
+            cuddRef(cubex);
 
-	    for (nv = lnx - 1; nv>=0; nv--) {
-		if (u & 1) {
-		   w = Cudd_addApply(dd, Cudd_addTimes, cubex, lx[nv]);
-		} else { 
-		    w = Cudd_addApply(dd, Cudd_addTimes, cubex, lxn[nv]);
-		}
-		if (w == NULL) {
-		    Cudd_RecursiveDeref(dd, cubey);
-		    Cudd_RecursiveDeref(dd, cubex);
-		    return(0);
-		}
-		cuddRef(w);
-		Cudd_RecursiveDeref(dd, cubex);
-		cubex = w;
-		u >>= 1;
-	    }
-	    minterm1 = Cudd_addApply(dd, Cudd_addTimes, cubey, cubex);
-	    if (minterm1 == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		Cudd_RecursiveDeref(dd, cubex);
-		return(0);
-	    }
-	    cuddRef(minterm1);
-	    Cudd_RecursiveDeref(dd, cubex);
-	    w = Cudd_addApply(dd, Cudd_addPlus, *E, minterm1);
-	    if (w == NULL) {
-		Cudd_RecursiveDeref(dd, cubey);
-		return(0);
-	    }
-	    cuddRef(w);
-	    Cudd_RecursiveDeref(dd, minterm1);
-	    Cudd_RecursiveDeref(dd, *E);
-	    *E = w;
-	}
-	Cudd_RecursiveDeref(dd, cubey);
+            for (nv = lnx - 1; nv>=0; nv--) {
+                if (u & 1) {
+                   w = Cudd_addApply(dd, Cudd_addTimes, cubex, lx[nv]);
+                } else { 
+                    w = Cudd_addApply(dd, Cudd_addTimes, cubex, lxn[nv]);
+                }
+                if (w == NULL) {
+                    Cudd_RecursiveDeref(dd, cubey);
+                    Cudd_RecursiveDeref(dd, cubex);
+                    return(0);
+                }
+                cuddRef(w);
+                Cudd_RecursiveDeref(dd, cubex);
+                cubex = w;
+                u >>= 1;
+            }
+            minterm1 = Cudd_addApply(dd, Cudd_addTimes, cubey, cubex);
+            if (minterm1 == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                Cudd_RecursiveDeref(dd, cubex);
+                return(0);
+            }
+            cuddRef(minterm1);
+            Cudd_RecursiveDeref(dd, cubex);
+            w = Cudd_addApply(dd, Cudd_addPlus, *E, minterm1);
+            if (w == NULL) {
+                Cudd_RecursiveDeref(dd, cubey);
+                return(0);
+            }
+            cuddRef(w);
+            Cudd_RecursiveDeref(dd, minterm1);
+            Cudd_RecursiveDeref(dd, *E);
+            *E = w;
+        }
+        Cudd_RecursiveDeref(dd, cubey);
     }
 
     return(1);
@@ -538,4 +569,8 @@ Cudd_addHarwell(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+
 

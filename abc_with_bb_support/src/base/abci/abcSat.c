@@ -18,8 +18,17 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "satSolver.h"
+#include "base/abc/abc.h"
+#include "base/main/main.h"
+#include "base/cmd/cmd.h"
+#include "sat/bsat/satSolver.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -27,7 +36,7 @@
 
 static sat_solver * Abc_NtkMiterSatCreateLogic( Abc_Ntk_t * pNtk, int fAllPrimes );
 extern Vec_Int_t * Abc_NtkGetCiSatVarNums( Abc_Ntk_t * pNtk );
-static nMuxes;
+static int nMuxes;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -44,11 +53,12 @@ static nMuxes;
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkMiterSat( Abc_Ntk_t * pNtk, sint64 nConfLimit, sint64 nInsLimit, int fVerbose, sint64 * pNumConfs, sint64 * pNumInspects )
+int Abc_NtkMiterSat( Abc_Ntk_t * pNtk, ABC_INT64_T nConfLimit, ABC_INT64_T nInsLimit, int fVerbose, ABC_INT64_T * pNumConfs, ABC_INT64_T * pNumInspects )
 {
     sat_solver * pSat;
     lbool   status;
-    int RetValue, clk;
+    int RetValue = 0;
+    abctime clk;
  
     if ( pNumConfs )
         *pNumConfs = 0;
@@ -61,8 +71,8 @@ int Abc_NtkMiterSat( Abc_Ntk_t * pNtk, sint64 nConfLimit, sint64 nInsLimit, int 
 //        fprintf( stdout, "Warning: The miter has %d outputs. SAT will try to prove all of them.\n", Abc_NtkPoNum(pNtk) );
 
     // load clauses into the sat_solver
-    clk = clock();
-    pSat = Abc_NtkMiterSatCreate( pNtk, 0 );
+    clk = Abc_Clock();
+    pSat = (sat_solver *)Abc_NtkMiterSatCreate( pNtk, 0 );
     if ( pSat == NULL )
         return 1;
 //printf( "%d \n", pSat->clauses.size );
@@ -70,13 +80,13 @@ int Abc_NtkMiterSat( Abc_Ntk_t * pNtk, sint64 nConfLimit, sint64 nInsLimit, int 
 //return 1;
 
 //    printf( "Created SAT problem with %d variable and %d clauses. ", sat_solver_nvars(pSat), sat_solver_nclauses(pSat) );
-//    PRT( "Time", clock() - clk );
+//    ABC_PRT( "Time", Abc_Clock() - clk );
 
     // simplify the problem
-    clk = clock();
+    clk = Abc_Clock();
     status = sat_solver_simplify(pSat);
 //    printf( "Simplified the problem to %d variables and %d clauses. ", sat_solver_nvars(pSat), sat_solver_nclauses(pSat) );
-//    PRT( "Time", clock() - clk );
+//    ABC_PRT( "Time", Abc_Clock() - clk );
     if ( status == 0 )
     {
         sat_solver_delete( pSat );
@@ -85,10 +95,10 @@ int Abc_NtkMiterSat( Abc_Ntk_t * pNtk, sint64 nConfLimit, sint64 nInsLimit, int 
     }
 
     // solve the miter
-    clk = clock();
+    clk = Abc_Clock();
     if ( fVerbose )
         pSat->verbosity = 1;
-    status = sat_solver_solve( pSat, NULL, NULL, (sint64)nConfLimit, (sint64)nInsLimit, (sint64)0, (sint64)0 );
+    status = sat_solver_solve( pSat, NULL, NULL, (ABC_INT64_T)nConfLimit, (ABC_INT64_T)nInsLimit, (ABC_INT64_T)0, (ABC_INT64_T)0 );
     if ( status == l_Undef )
     {
 //        printf( "The problem timed out.\n" );
@@ -106,7 +116,7 @@ int Abc_NtkMiterSat( Abc_Ntk_t * pNtk, sint64 nConfLimit, sint64 nInsLimit, int 
     }
     else
         assert( 0 );
-//    PRT( "SAT sat_solver time", clock() - clk );
+//    ABC_PRT( "SAT sat_solver time", Abc_Clock() - clk );
 //    printf( "The number of conflicts = %d.\n", (int)pSat->sat_solver_stats.conflicts );
 
     // if the problem is SAT, get the counterexample
@@ -151,7 +161,7 @@ Vec_Int_t * Abc_NtkGetCiSatVarNums( Abc_Ntk_t * pNtk )
     int i;
     vCiIds = Vec_IntAlloc( Abc_NtkCiNum(pNtk) );
     Abc_NtkForEachCi( pNtk, pObj, i )
-        Vec_IntPush( vCiIds, (int)pObj->pCopy );
+        Vec_IntPush( vCiIds, (int)(ABC_PTRINT_T)pObj->pCopy );
     return vCiIds;
 }
 
@@ -172,7 +182,7 @@ int Abc_NtkClauseTriv( sat_solver * pSat, Abc_Obj_t * pNode, Vec_Int_t * vVars )
 {
 //printf( "Adding triv %d.         %d\n", Abc_ObjRegular(pNode)->Id, (int)pSat->sat_solver_stats.clauses );
     vVars->nSize = 0;
-    Vec_IntPush( vVars, toLitCond( (int)Abc_ObjRegular(pNode)->pCopy, Abc_ObjIsComplement(pNode) ) );
+    Vec_IntPush( vVars, toLitCond( (int)(ABC_PTRINT_T)Abc_ObjRegular(pNode)->pCopy, Abc_ObjIsComplement(pNode) ) );
 //    Vec_IntPush( vVars, toLitCond( (int)Abc_ObjRegular(pNode)->Id, Abc_ObjIsComplement(pNode) ) );
     return sat_solver_addclause( pSat, vVars->pArray, vVars->pArray + vVars->nSize );
 }
@@ -194,8 +204,8 @@ int Abc_NtkClauseTop( sat_solver * pSat, Vec_Ptr_t * vNodes, Vec_Int_t * vVars )
     int i;
 //printf( "Adding triv %d.         %d\n", Abc_ObjRegular(pNode)->Id, (int)pSat->sat_solver_stats.clauses );
     vVars->nSize = 0;
-    Vec_PtrForEachEntry( vNodes, pNode, i )
-        Vec_IntPush( vVars, toLitCond( (int)Abc_ObjRegular(pNode)->pCopy, Abc_ObjIsComplement(pNode) ) );
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
+        Vec_IntPush( vVars, toLitCond( (int)(ABC_PTRINT_T)Abc_ObjRegular(pNode)->pCopy, Abc_ObjIsComplement(pNode) ) );
 //    Vec_IntPush( vVars, toLitCond( (int)Abc_ObjRegular(pNode)->Id, Abc_ObjIsComplement(pNode) ) );
     return sat_solver_addclause( pSat, vVars->pArray, vVars->pArray + vVars->nSize );
 }
@@ -220,7 +230,7 @@ int Abc_NtkClauseAnd( sat_solver * pSat, Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, 
     assert( Abc_ObjIsNode( pNode ) );
 
 //    nVars = sat_solver_nvars(pSat);
-    Var = (int)pNode->pCopy;
+    Var = (int)(ABC_PTRINT_T)pNode->pCopy;
 //    Var = pNode->Id;
 
 //    assert( Var  < nVars ); 
@@ -228,9 +238,9 @@ int Abc_NtkClauseAnd( sat_solver * pSat, Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, 
     {
         // get the predecessor nodes
         // get the complemented attributes of the nodes
-        fComp1 = Abc_ObjIsComplement(vSuper->pArray[i]);
+        fComp1 = Abc_ObjIsComplement((Abc_Obj_t *)vSuper->pArray[i]);
         // determine the variable numbers
-        Var1 = (int)Abc_ObjRegular(vSuper->pArray[i])->pCopy;
+        Var1 = (int)(ABC_PTRINT_T)Abc_ObjRegular((Abc_Obj_t *)vSuper->pArray[i])->pCopy;
 //        Var1 = (int)Abc_ObjRegular(vSuper->pArray[i])->Id;
 
         // check that the variables are in the SAT manager
@@ -253,9 +263,9 @@ int Abc_NtkClauseAnd( sat_solver * pSat, Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, 
     {
         // get the predecessor nodes
         // get the complemented attributes of the nodes
-        fComp1 = Abc_ObjIsComplement(vSuper->pArray[i]);
+        fComp1 = Abc_ObjIsComplement((Abc_Obj_t *)vSuper->pArray[i]);
         // determine the variable numbers
-        Var1 = (int)Abc_ObjRegular(vSuper->pArray[i])->pCopy;
+        Var1 = (int)(ABC_PTRINT_T)Abc_ObjRegular((Abc_Obj_t *)vSuper->pArray[i])->pCopy;
 //        Var1 = (int)Abc_ObjRegular(vSuper->pArray[i])->Id;
         // add this variable to the array
         Vec_IntPush( vVars, toLitCond(Var1, !fComp1) );
@@ -283,10 +293,10 @@ int Abc_NtkClauseMux( sat_solver * pSat, Abc_Obj_t * pNode, Abc_Obj_t * pNodeC, 
     assert( !Abc_ObjIsComplement( pNode ) );
     assert( Abc_NodeIsMuxType( pNode ) );
     // get the variable numbers
-    VarF = (int)pNode->pCopy;
-    VarI = (int)pNodeC->pCopy;
-    VarT = (int)Abc_ObjRegular(pNodeT)->pCopy;
-    VarE = (int)Abc_ObjRegular(pNodeE)->pCopy;
+    VarF = (int)(ABC_PTRINT_T)pNode->pCopy;
+    VarI = (int)(ABC_PTRINT_T)pNodeC->pCopy;
+    VarT = (int)(ABC_PTRINT_T)Abc_ObjRegular(pNodeT)->pCopy;
+    VarE = (int)(ABC_PTRINT_T)Abc_ObjRegular(pNodeE)->pCopy;
 //    VarF = (int)pNode->Id;
 //    VarI = (int)pNodeC->Id;
 //    VarT = (int)Abc_ObjRegular(pNodeT)->Id;
@@ -379,12 +389,12 @@ int Abc_NtkCollectSupergate_rec( Abc_Obj_t * pNode, Vec_Ptr_t * vSuper, int fFir
     }
     // if the new node is complemented or a PI, another gate begins
     if ( !fFirst )
-    if ( Abc_ObjIsComplement(pNode) || !Abc_ObjIsNode(pNode) || Abc_ObjFanoutNum(pNode) > 1 || fStopAtMux && Abc_NodeIsMuxType(pNode) )
-    {
-        Vec_PtrPush( vSuper, pNode );
-        Abc_ObjRegular(pNode)->fMarkB = 1;
-        return 0;
-    }
+        if ( Abc_ObjIsComplement(pNode) || !Abc_ObjIsNode(pNode) || Abc_ObjFanoutNum(pNode) > 1 || (fStopAtMux && Abc_NodeIsMuxType(pNode)) )
+        {
+            Vec_PtrPush( vSuper, pNode );
+            Abc_ObjRegular(pNode)->fMarkB = 1;
+            return 0;
+        }
     assert( !Abc_ObjIsComplement(pNode) );
     assert( Abc_ObjIsNode(pNode) );
     // go through the branches
@@ -462,9 +472,7 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
     Vec_Ptr_t * vNodes, * vSuper;
     Vec_Int_t * vVars;
     int i, k, fUseMuxes = 1;
-    int clk1 = clock();
 //    int fOrderCiVarsFirst = 0;
-    int nLevelsMax = Abc_AigLevel(pNtk);
     int RetValue = 0;
 
     assert( Abc_NtkIsStrash(pNtk) );
@@ -481,7 +489,7 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
     // add the clause for the constant node
     pNode = Abc_AigConst1(pNtk);
     pNode->fMarkA = 1;
-    pNode->pCopy = (Abc_Obj_t *)vNodes->nSize;
+    pNode->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)vNodes->nSize;
     Vec_PtrPush( vNodes, pNode );
     Abc_NtkClauseTriv( pSat, pNode, vVars );
 /*
@@ -503,7 +511,7 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
         if ( pFanin->fMarkA == 0 )
         {
             pFanin->fMarkA = 1;
-            pFanin->pCopy = (Abc_Obj_t *)vNodes->nSize;
+            pFanin->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)vNodes->nSize;
             Vec_PtrPush( vNodes, pFanin );
         }
         // add the trivial clause
@@ -514,7 +522,7 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
 
 
     // add the clauses
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
         assert( !Abc_ObjIsComplement(pNode) );
         if ( !Abc_AigNodeIsAnd(pNode) )
@@ -532,13 +540,13 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
             Vec_PtrPush( vSuper, pNodeT );
             Vec_PtrPush( vSuper, pNodeE );
             // add the fanin nodes to explore
-            Vec_PtrForEachEntry( vSuper, pFanin, k )
+            Vec_PtrForEachEntry( Abc_Obj_t *, vSuper, pFanin, k )
             {
                 pFanin = Abc_ObjRegular(pFanin);
                 if ( pFanin->fMarkA == 0 )
                 {
                     pFanin->fMarkA = 1;
-                    pFanin->pCopy = (Abc_Obj_t *)vNodes->nSize;
+                    pFanin->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)vNodes->nSize;
                     Vec_PtrPush( vNodes, pFanin );
                 }
             }
@@ -551,13 +559,13 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
             // get the supergate
             Abc_NtkCollectSupergate( pNode, fUseMuxes, vSuper );
             // add the fanin nodes to explore
-            Vec_PtrForEachEntry( vSuper, pFanin, k )
+            Vec_PtrForEachEntry( Abc_Obj_t *, vSuper, pFanin, k )
             {
                 pFanin = Abc_ObjRegular(pFanin);
                 if ( pFanin->fMarkA == 0 )
                 {
                     pFanin->fMarkA = 1;
-                    pFanin->pCopy = (Abc_Obj_t *)vNodes->nSize;
+                    pFanin->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)vNodes->nSize;
                     Vec_PtrPush( vNodes, pFanin );
                 }
             }
@@ -579,7 +587,7 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
     // set preferred variables
     if ( fOrderCiVarsFirst )
     {
-        int * pPrefVars = ALLOC( int, Abc_NtkCiNum(pNtk) );
+        int * pPrefVars = ABC_ALLOC( int, Abc_NtkCiNum(pNtk) );
         int nVars = 0;
         Abc_NtkForEachCi( pNtk, pNode, i )
         {
@@ -587,9 +595,19 @@ int Abc_NtkMiterSatCreateInt( sat_solver * pSat, Abc_Ntk_t * pNtk )
                 continue;
             pPrefVars[nVars++] = (int)pNode->pCopy;
         }
-        nVars = ABC_MIN( nVars, 10 );
+        nVars = Abc_MinInt( nVars, 10 );
         ASat_SolverSetPrefVars( pSat, pPrefVars, nVars );
     }
+*/
+/*
+    Abc_NtkForEachObj( pNtk, pNode, i )
+    {
+        if ( !pNode->fMarkA )
+            continue;
+        printf( "%10s : ", Abc_ObjName(pNode) );
+        printf( "%3d\n", (int)pNode->pCopy );
+    }
+    printf( "\n" );
 */
     RetValue = 1;
 Quits :
@@ -615,7 +633,7 @@ void * Abc_NtkMiterSatCreate( Abc_Ntk_t * pNtk, int fAllPrimes )
 {
     sat_solver * pSat;
     Abc_Obj_t * pNode;
-    int RetValue, i, clk = clock();
+    int RetValue, i; //, clk = Abc_Clock();
 
     assert( Abc_NtkIsStrash(pNtk) || Abc_NtkIsBddLogic(pNtk) );
     if ( Abc_NtkIsBddLogic(pNtk) )
@@ -636,12 +654,13 @@ sat_solver_store_mark_roots( pSat );
         return NULL;
     }
 //    printf( "Ands = %6d.  Muxes = %6d (%5.2f %%).  ", Abc_NtkNodeNum(pNtk), nMuxes, 300.0*nMuxes/Abc_NtkNodeNum(pNtk) );
-//    PRT( "Creating sat_solver", clock() - clk );
+//    ABC_PRT( "Creating sat_solver", Abc_Clock() - clk );
     return pSat;
 }
 
 
 
+#ifdef ABC_USE_CUDD
 
 /**Function*************************************************************
 
@@ -658,14 +677,14 @@ int Abc_NodeAddClauses( sat_solver * pSat, char * pSop0, char * pSop1, Abc_Obj_t
 {
     Abc_Obj_t * pFanin;
     int i, c, nFanins;
-    int RetValue;
+    int RetValue = 0;
     char * pCube;
 
     nFanins = Abc_ObjFaninNum( pNode );
     assert( nFanins == Abc_SopGetVarNum( pSop0 ) );
 
 //    if ( nFanins == 0 )
-    if ( Cudd_Regular(pNode->pData) == Cudd_ReadOne(pNode->pNtk->pManFunc) )
+    if ( Cudd_Regular((Abc_Obj_t *)pNode->pData) == Cudd_ReadOne((DdManager *)pNode->pNtk->pManFunc) )
     {
         vVars->nSize = 0;
 //        if ( Abc_SopIsConst1(pSop1) )
@@ -748,7 +767,7 @@ int Abc_NodeAddClauses( sat_solver * pSat, char * pSop0, char * pSop1, Abc_Obj_t
 int Abc_NodeAddClausesTop( sat_solver * pSat, Abc_Obj_t * pNode, Vec_Int_t * vVars )
 {
     Abc_Obj_t * pFanin;
-    int RetValue;
+    int RetValue = 0;
 
     pFanin = Abc_ObjFanin0(pNode);
     if ( Abc_ObjFaninC0(pNode) )
@@ -821,7 +840,7 @@ int Abc_NodeAddClausesTop( sat_solver * pSat, Abc_Obj_t * pNode, Vec_Int_t * vVa
 sat_solver * Abc_NtkMiterSatCreateLogic( Abc_Ntk_t * pNtk, int fAllPrimes )
 {
     sat_solver * pSat;
-    Extra_MmFlex_t * pMmFlex;
+    Mem_Flex_t * pMmFlex;
     Abc_Obj_t * pNode;
     Vec_Str_t * vCube;
     Vec_Int_t * vVars;
@@ -832,12 +851,12 @@ sat_solver * Abc_NtkMiterSatCreateLogic( Abc_Ntk_t * pNtk, int fAllPrimes )
 
     // transfer the IDs to the copy field
     Abc_NtkForEachPi( pNtk, pNode, i )
-        pNode->pCopy = (void *)pNode->Id;
+        pNode->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)pNode->Id;
 
     // start the data structures
     pSat    = sat_solver_new();
 sat_solver_store_alloc( pSat );
-    pMmFlex = Extra_MmFlexStart();
+    pMmFlex = Mem_FlexStart();
     vCube   = Vec_StrAlloc( 100 );
     vVars   = Vec_IntAlloc( 100 );
 
@@ -870,15 +889,132 @@ finish:
     // delete
     Vec_StrFree( vCube );
     Vec_IntFree( vVars );
-    Extra_MmFlexStop( pMmFlex );
+    Mem_FlexStop( pMmFlex, 0 );
     return pSat;
 }
 
+#else
 
+sat_solver * Abc_NtkMiterSatCreateLogic( Abc_Ntk_t * pNtk, int fAllPrimes ) { return NULL; }
+
+#endif
+
+/**Function*************************************************************
+
+  Synopsis    [Writes CNF for the sorter with N inputs asserting Q ones.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkWriteSorterCnf( char * pFileName, int nVars, int nQueens )
+{
+    char Command[100];
+    void * pAbc;
+    Abc_Ntk_t * pNtk;
+    Abc_Obj_t * pObj, * ppNodes[2], * ppRoots[2];
+    Vec_Ptr_t * vNodes;
+    FILE * pFile;
+    int i, Counter;
+
+    if ( nQueens <= 0 && nQueens >= nVars )
+    {
+        printf( "The number of queens (Q = %d) should belong to the interval: 0 < Q < %d.\n", nQueens, nQueens);
+        return;
+    }
+    assert( nQueens > 0 && nQueens < nVars );
+	pAbc = Abc_FrameGetGlobalFrame();
+    // generate sorter
+    sprintf( Command, "gen -s -N %d sorter%d.blif", nVars, nVars );
+    if ( Cmd_CommandExecute( (Abc_Frame_t *)pAbc, Command ) )
+    {
+        fprintf( stdout, "Cannot execute command \"%s\".\n", Command );
+        return;
+    }
+    // read the file
+    sprintf( Command, "read sorter%d.blif; strash", nVars );
+    if ( Cmd_CommandExecute( (Abc_Frame_t *)pAbc, Command ) )
+    {
+        fprintf( stdout, "Cannot execute command \"%s\".\n", Command );
+        return;
+    }
+
+    // get the current network
+    pNtk = Abc_FrameReadNtk((Abc_Frame_t *)pAbc);
+    // collect the nodes for the given two primary outputs
+    ppNodes[0] = Abc_NtkPo( pNtk, nVars - nQueens - 1 );
+    ppNodes[1] = Abc_NtkPo( pNtk, nVars - nQueens );
+    ppRoots[0] = Abc_ObjFanin0( ppNodes[0] );
+    ppRoots[1] = Abc_ObjFanin0( ppNodes[1] );
+    vNodes = Abc_NtkDfsNodes( pNtk, ppRoots, 2 );
+
+    // assign CNF variables
+    Counter = 0;
+    Abc_NtkForEachObj( pNtk, pObj, i )
+        pObj->pCopy = (Abc_Obj_t *)~0;
+    Abc_NtkForEachPi( pNtk, pObj, i )
+        pObj->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)Counter++;
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+        pObj->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)Counter++;
+
+/*
+        OutVar   = pCnf->pVarNums[ pObj->Id ];
+        pVars[0] = pCnf->pVarNums[ Aig_ObjFanin0(pObj)->Id ];
+        pVars[1] = pCnf->pVarNums[ Aig_ObjFanin1(pObj)->Id ];
+
+        // positive phase
+        *pClas++ = pLits;
+        *pLits++ = 2 * OutVar; 
+        *pLits++ = 2 * pVars[0] + !Aig_ObjFaninC0(pObj); 
+        *pLits++ = 2 * pVars[1] + !Aig_ObjFaninC1(pObj); 
+        // negative phase
+        *pClas++ = pLits;
+        *pLits++ = 2 * OutVar + 1; 
+        *pLits++ = 2 * pVars[0] + Aig_ObjFaninC0(pObj); 
+        *pClas++ = pLits;
+        *pLits++ = 2 * OutVar + 1; 
+        *pLits++ = 2 * pVars[1] + Aig_ObjFaninC1(pObj); 
+*/
+
+    // add clauses for these nodes
+    pFile = fopen( pFileName, "w" );
+    fprintf( pFile, "c CNF for %d-bit sorter with %d bits set to 1 generated by ABC.\n", nVars, nQueens );
+    fprintf( pFile, "p cnf %d %d\n", Counter, 3 * Vec_PtrSize(vNodes) + 2 );
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
+    {
+        // positive phase
+        fprintf( pFile, "%d %s%d %s%d 0\n", 1+(int)(ABC_PTRINT_T)pObj->pCopy,
+            Abc_ObjFaninC0(pObj)? "" : "-", 1+(int)(ABC_PTRINT_T)Abc_ObjFanin0(pObj)->pCopy,
+            Abc_ObjFaninC1(pObj)? "" : "-", 1+(int)(ABC_PTRINT_T)Abc_ObjFanin1(pObj)->pCopy );
+        // negative phase
+        fprintf( pFile, "-%d %s%d 0\n",     1+(int)(ABC_PTRINT_T)pObj->pCopy,
+            Abc_ObjFaninC0(pObj)? "-" : "", 1+(int)(ABC_PTRINT_T)Abc_ObjFanin0(pObj)->pCopy );
+        fprintf( pFile, "-%d %s%d 0\n",     1+(int)(ABC_PTRINT_T)pObj->pCopy,
+            Abc_ObjFaninC1(pObj)? "-" : "", 1+(int)(ABC_PTRINT_T)Abc_ObjFanin1(pObj)->pCopy );
+    }
+    Vec_PtrFree( vNodes );
+
+/*
+    *pClas++ = pLits;
+    *pLits++ = 2 * OutVar + Aig_ObjFaninC0(pObj); 
+*/
+    // assert the first literal to zero
+    fprintf( pFile, "%s%d 0\n", 
+        Abc_ObjFaninC0(ppNodes[0])? "" : "-", 1+(int)(ABC_PTRINT_T)Abc_ObjFanin0(ppNodes[0])->pCopy );
+    // assert the second literal to one
+    fprintf( pFile, "%s%d 0\n", 
+        Abc_ObjFaninC0(ppNodes[1])? "-" : "", 1+(int)(ABC_PTRINT_T)Abc_ObjFanin0(ppNodes[1])->pCopy );
+    fclose( pFile );
+}
 
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

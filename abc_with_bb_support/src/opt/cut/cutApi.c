@@ -20,6 +20,9 @@
 
 #include "cutInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -43,7 +46,7 @@ Cut_Cut_t * Cut_NodeReadCutsNew( Cut_Man_t * p, int Node )
 {
     if ( Node >= p->vCutsNew->nSize )
         return NULL;
-    return Vec_PtrEntry( p->vCutsNew, Node );
+    return (Cut_Cut_t *)Vec_PtrEntry( p->vCutsNew, Node );
 }
 
 /**Function*************************************************************
@@ -60,7 +63,7 @@ Cut_Cut_t * Cut_NodeReadCutsNew( Cut_Man_t * p, int Node )
 Cut_Cut_t * Cut_NodeReadCutsOld( Cut_Man_t * p, int Node )
 {
     assert( Node < p->vCutsOld->nSize );
-    return Vec_PtrEntry( p->vCutsOld, Node );
+    return (Cut_Cut_t *)Vec_PtrEntry( p->vCutsOld, Node );
 }
 
 /**Function*************************************************************
@@ -77,7 +80,7 @@ Cut_Cut_t * Cut_NodeReadCutsOld( Cut_Man_t * p, int Node )
 Cut_Cut_t * Cut_NodeReadCutsTemp( Cut_Man_t * p, int Node )
 {
     assert( Node < p->vCutsTemp->nSize );
-    return Vec_PtrEntry( p->vCutsTemp, Node );
+    return (Cut_Cut_t *)Vec_PtrEntry( p->vCutsTemp, Node );
 }
 
 /**Function*************************************************************
@@ -194,4 +197,6 @@ void Cut_NodeFreeCuts( Cut_Man_t * p, int Node )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

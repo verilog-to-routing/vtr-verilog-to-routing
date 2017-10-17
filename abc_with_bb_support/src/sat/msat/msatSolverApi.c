@@ -20,6 +20,9 @@
 
 #include "msatInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -47,7 +50,7 @@ int                Msat_SolverReadVarAllocNum( Msat_Solver_t * p )             {
 int                Msat_SolverReadDecisionLevel( Msat_Solver_t * p )           { return Msat_IntVecReadSize(p->vTrailLim); }
 int *              Msat_SolverReadDecisionLevelArray( Msat_Solver_t * p )      { return p->pLevel;     }
 Msat_Clause_t **    Msat_SolverReadReasonArray( Msat_Solver_t * p )            { return p->pReasons;   }
-Msat_Lit_t          Msat_SolverReadVarValue( Msat_Solver_t * p, Msat_Var_t Var ) { return p->pAssigns[Var]; }
+Msat_Type_t         Msat_SolverReadVarValue( Msat_Solver_t * p, Msat_Var_t Var ) { return (Msat_Type_t)p->pAssigns[Var]; }
 Msat_ClauseVec_t *  Msat_SolverReadLearned( Msat_Solver_t * p )                { return p->vLearned;   }
 Msat_ClauseVec_t ** Msat_SolverReadWatchedArray( Msat_Solver_t * p )           { return p->pvWatched;  }
 int *              Msat_SolverReadAssignsArray( Msat_Solver_t * p )            { return p->pAssigns;   }
@@ -151,7 +154,7 @@ Msat_IntVec_t *  Msat_SolverReadVarsUsed( Msat_Solver_t * p )
 Msat_Solver_t * Msat_SolverAlloc( int nVarsAlloc,
     double dClaInc, double dClaDecay, 
     double dVarInc, double dVarDecay, 
-    bool fVerbose )
+    int  fVerbose )
 {
     Msat_Solver_t * p;
     int i;
@@ -159,7 +162,7 @@ Msat_Solver_t * Msat_SolverAlloc( int nVarsAlloc,
     assert(sizeof(Msat_Lit_t) == sizeof(unsigned));
     assert(sizeof(float)     == sizeof(unsigned));
 
-    p = ALLOC( Msat_Solver_t, 1 );
+    p = ABC_ALLOC( Msat_Solver_t, 1 );
     memset( p, 0, sizeof(Msat_Solver_t) );
 
     p->nVarsAlloc = nVarsAlloc;
@@ -174,31 +177,31 @@ Msat_Solver_t * Msat_SolverAlloc( int nVarsAlloc,
     p->dVarInc   = dVarInc;
     p->dVarDecay = dVarDecay;
 
-    p->pdActivity = ALLOC( double, p->nVarsAlloc );
-    p->pFactors   = ALLOC( float, p->nVarsAlloc );
+    p->pdActivity = ABC_ALLOC( double, p->nVarsAlloc );
+    p->pFactors   = ABC_ALLOC( float, p->nVarsAlloc );
     for ( i = 0; i < p->nVarsAlloc; i++ )
     {
         p->pdActivity[i] = 0.0;
         p->pFactors[i]   = 1.0;
     }
 
-    p->pAssigns  = ALLOC( int, p->nVarsAlloc ); 
-    p->pModel    = ALLOC( int, p->nVarsAlloc ); 
+    p->pAssigns  = ABC_ALLOC( int, p->nVarsAlloc ); 
+    p->pModel    = ABC_ALLOC( int, p->nVarsAlloc ); 
     for ( i = 0; i < p->nVarsAlloc; i++ )
         p->pAssigns[i] = MSAT_VAR_UNASSIGNED;
 //    p->pOrder    = Msat_OrderAlloc( p->pAssigns, p->pdActivity, p->nVarsAlloc );
     p->pOrder    = Msat_OrderAlloc( p );
 
-    p->pvWatched = ALLOC( Msat_ClauseVec_t *, 2 * p->nVarsAlloc );
+    p->pvWatched = ABC_ALLOC( Msat_ClauseVec_t *, 2 * p->nVarsAlloc );
     for ( i = 0; i < 2 * p->nVarsAlloc; i++ )
         p->pvWatched[i] = Msat_ClauseVecAlloc( 16 );
     p->pQueue    = Msat_QueueAlloc( p->nVarsAlloc );
 
     p->vTrail    = Msat_IntVecAlloc( p->nVarsAlloc );
     p->vTrailLim = Msat_IntVecAlloc( p->nVarsAlloc );
-    p->pReasons  = ALLOC( Msat_Clause_t *, p->nVarsAlloc );
+    p->pReasons  = ABC_ALLOC( Msat_Clause_t *, p->nVarsAlloc );
     memset( p->pReasons, 0, sizeof(Msat_Clause_t *) * p->nVarsAlloc );
-    p->pLevel = ALLOC( int, p->nVarsAlloc );
+    p->pLevel = ABC_ALLOC( int, p->nVarsAlloc );
     for ( i = 0; i < p->nVarsAlloc; i++ )
         p->pLevel[i] = -1;
     p->dRandSeed = 91648253;
@@ -215,7 +218,7 @@ Msat_Solver_t * Msat_SolverAlloc( int nVarsAlloc,
     Msat_IntVecFill( p->vVarsUsed, p->nVarsAlloc, 1 );
 
 
-    p->pSeen     = ALLOC( int, p->nVarsAlloc );
+    p->pSeen     = ABC_ALLOC( int, p->nVarsAlloc );
     memset( p->pSeen, 0, sizeof(int) * p->nVarsAlloc );
     p->nSeenId   = 1;
     p->vReason   = Msat_IntVecAlloc( p->nVarsAlloc );
@@ -243,38 +246,38 @@ void Msat_SolverResize( Msat_Solver_t * p, int nVarsAlloc )
     nVarsAllocOld = p->nVarsAlloc;
     p->nVarsAlloc = nVarsAlloc;
 
-    p->pdActivity = REALLOC( double, p->pdActivity, p->nVarsAlloc );
-    p->pFactors   = REALLOC( float, p->pFactors, p->nVarsAlloc );
+    p->pdActivity = ABC_REALLOC( double, p->pdActivity, p->nVarsAlloc );
+    p->pFactors   = ABC_REALLOC( float, p->pFactors, p->nVarsAlloc );
     for ( i = nVarsAllocOld; i < p->nVarsAlloc; i++ )
     {
         p->pdActivity[i] = 0.0;
         p->pFactors[i]   = 1.0;
     }
 
-    p->pAssigns  = REALLOC( int, p->pAssigns, p->nVarsAlloc );
-    p->pModel    = REALLOC( int, p->pModel, p->nVarsAlloc );
+    p->pAssigns  = ABC_REALLOC( int, p->pAssigns, p->nVarsAlloc );
+    p->pModel    = ABC_REALLOC( int, p->pModel, p->nVarsAlloc );
     for ( i = nVarsAllocOld; i < p->nVarsAlloc; i++ )
         p->pAssigns[i] = MSAT_VAR_UNASSIGNED;
 
 //    Msat_OrderRealloc( p->pOrder, p->pAssigns, p->pdActivity, p->nVarsAlloc );
     Msat_OrderSetBounds( p->pOrder, p->nVarsAlloc );
 
-    p->pvWatched = REALLOC( Msat_ClauseVec_t *, p->pvWatched, 2 * p->nVarsAlloc );
+    p->pvWatched = ABC_REALLOC( Msat_ClauseVec_t *, p->pvWatched, 2 * p->nVarsAlloc );
     for ( i = 2 * nVarsAllocOld; i < 2 * p->nVarsAlloc; i++ )
         p->pvWatched[i] = Msat_ClauseVecAlloc( 16 );
 
     Msat_QueueFree( p->pQueue );
     p->pQueue    = Msat_QueueAlloc( p->nVarsAlloc );
 
-    p->pReasons  = REALLOC( Msat_Clause_t *, p->pReasons, p->nVarsAlloc );
-    p->pLevel    = REALLOC( int, p->pLevel, p->nVarsAlloc );
+    p->pReasons  = ABC_REALLOC( Msat_Clause_t *, p->pReasons, p->nVarsAlloc );
+    p->pLevel    = ABC_REALLOC( int, p->pLevel, p->nVarsAlloc );
     for ( i = nVarsAllocOld; i < p->nVarsAlloc; i++ )
     {
         p->pReasons[i] = NULL;
         p->pLevel[i] = -1;
     }
 
-    p->pSeen     = REALLOC( int, p->pSeen, p->nVarsAlloc );
+    p->pSeen     = ABC_REALLOC( int, p->pSeen, p->nVarsAlloc );
     for ( i = nVarsAllocOld; i < p->nVarsAlloc; i++ )
         p->pSeen[i] = 0;
 
@@ -326,7 +329,7 @@ void Msat_SolverClean( Msat_Solver_t * p, int nVars )
 //    Msat_ClauseVecFree( p->vLearned );
     Msat_ClauseVecClear( p->vLearned );
 
-//    FREE( p->pdActivity );
+//    ABC_FREE( p->pdActivity );
     for ( i = 0; i < p->nVars; i++ )
         p->pdActivity[i] = 0;
 
@@ -337,20 +340,20 @@ void Msat_SolverClean( Msat_Solver_t * p, int nVars )
     for ( i = 0; i < 2 * p->nVars; i++ )
 //        Msat_ClauseVecFree( p->pvWatched[i] );
         Msat_ClauseVecClear( p->pvWatched[i] );
-//    FREE( p->pvWatched );
+//    ABC_FREE( p->pvWatched );
 //    Msat_QueueFree( p->pQueue );
     Msat_QueueClear( p->pQueue );
 
-//    FREE( p->pAssigns );
+//    ABC_FREE( p->pAssigns );
     for ( i = 0; i < p->nVars; i++ )
         p->pAssigns[i] = MSAT_VAR_UNASSIGNED;
 //    Msat_IntVecFree( p->vTrail );
     Msat_IntVecClear( p->vTrail );
 //    Msat_IntVecFree( p->vTrailLim );
     Msat_IntVecClear( p->vTrailLim );
-//    FREE( p->pReasons );
+//    ABC_FREE( p->pReasons );
     memset( p->pReasons, 0, sizeof(Msat_Clause_t *) * p->nVars );
-//    FREE( p->pLevel );
+//    ABC_FREE( p->pLevel );
     for ( i = 0; i < p->nVars; i++ )
         p->pLevel[i] = -1;
 //    Msat_IntVecFree( p->pModel );
@@ -358,7 +361,7 @@ void Msat_SolverClean( Msat_Solver_t * p, int nVars )
     p->dRandSeed = 91648253;
     p->dProgress = 0.0;
 
-//    FREE( p->pSeen );
+//    ABC_FREE( p->pSeen );
     memset( p->pSeen, 0, sizeof(int) * p->nVars );
     p->nSeenId = 1;
 //    Msat_IntVecFree( p->vReason );
@@ -366,7 +369,7 @@ void Msat_SolverClean( Msat_Solver_t * p, int nVars )
 //    Msat_IntVecFree( p->vTemp );
     Msat_IntVecClear( p->vTemp );
 //    printf(" The number of clauses remaining = %d (%d).\n", p->nClausesAlloc, p->nClausesAllocL );
-//    FREE( p );
+//    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -402,21 +405,21 @@ void Msat_SolverFree( Msat_Solver_t * p )
         Msat_ClauseFree( p, pClauses[i], 0 );
     Msat_ClauseVecFree( p->vLearned );
 
-    FREE( p->pdActivity );
-    FREE( p->pFactors );
+    ABC_FREE( p->pdActivity );
+    ABC_FREE( p->pFactors );
     Msat_OrderFree( p->pOrder );
 
     for ( i = 0; i < 2 * p->nVarsAlloc; i++ )
         Msat_ClauseVecFree( p->pvWatched[i] );
-    FREE( p->pvWatched );
+    ABC_FREE( p->pvWatched );
     Msat_QueueFree( p->pQueue );
 
-    FREE( p->pAssigns );
-    FREE( p->pModel );
+    ABC_FREE( p->pAssigns );
+    ABC_FREE( p->pModel );
     Msat_IntVecFree( p->vTrail );
     Msat_IntVecFree( p->vTrailLim );
-    FREE( p->pReasons );
-    FREE( p->pLevel );
+    ABC_FREE( p->pReasons );
+    ABC_FREE( p->pLevel );
 
     Msat_MmStepStop( p->pMem, 0 );
 
@@ -428,10 +431,10 @@ void Msat_SolverFree( Msat_Solver_t * p )
     Msat_IntVecFree( p->vConeVars );
     Msat_IntVecFree( p->vVarsUsed );
 
-    FREE( p->pSeen );
+    ABC_FREE( p->pSeen );
     Msat_IntVecFree( p->vReason );
     Msat_IntVecFree( p->vTemp );
-    FREE( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -497,4 +500,6 @@ void Msat_SolverSetupTruthTables( unsigned uTruths[][2] )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

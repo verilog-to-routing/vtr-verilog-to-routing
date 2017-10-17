@@ -16,10 +16,13 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "mainInt.h"
-#include "mio.h"
+#include "base/abc/abc.h"
+#include "base/main/mainInt.h"
+#include "map/mio/mio.h"
 #include "mapperInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -58,10 +61,10 @@ void Map_Init( Abc_Frame_t * pAbc )
   SeeAlso     []
 
 ***********************************************************************/
-void Map_End()
+void Map_End( Abc_Frame_t * pAbc )
 {
 //    Map_SuperLibFree( s_pSuperLib );
-     Map_SuperLibFree( Abc_FrameReadLibSuper() );
+     Map_SuperLibFree( (Map_SuperLib_t *)Abc_FrameReadLibSuper() );
 }
 
 
@@ -132,30 +135,34 @@ int Map_CommandReadLibrary( Abc_Frame_t * pAbc, int argc, char **argv )
 //    if ( (pFile = fopen( FileName, "r" )) == NULL )
     {
         fprintf( pErr, "Cannot open input file \"%s\". ", FileName );
-        if ( FileName = Extra_FileGetSimilarName( FileName, ".genlib", ".lib", ".gen", ".g", NULL ) )
+        if (( FileName = Extra_FileGetSimilarName( FileName, ".genlib", ".lib", ".gen", ".g", NULL )) )
             fprintf( pErr, "Did you mean \"%s\"?", FileName );
         fprintf( pErr, "\n" );
         return 1;
     }
     fclose( pFile );
 
+    if ( Abc_FrameReadLibGen() == NULL )
+    {
+        fprintf( pErr, "Genlib library should be read in first..\n" );
+        return 1;
+    }
+
     // set the new network
-    pLib = Map_SuperLibCreate( FileName, ExcludeFile, fAlgorithm, fVerbose );
+    pLib = Map_SuperLibCreate( (Mio_Library_t *)Abc_FrameReadLibGen(), NULL, FileName, ExcludeFile, fAlgorithm, fVerbose );
     if ( pLib == NULL )
     {
         fprintf( pErr, "Reading supergate library has failed.\n" );
-        goto usage;
+        return 1;
     }
     // replace the current library
 //    Map_SuperLibFree( s_pSuperLib );
 //    s_pSuperLib = pLib;
-    Map_SuperLibFree( Abc_FrameReadLibSuper() );
+    Map_SuperLibFree( (Map_SuperLib_t *)Abc_FrameReadLibSuper() );
     Abc_FrameSetLibSuper( pLib );
     // replace the current genlib library
-//    if ( s_pLib ) Mio_LibraryDelete( s_pLib );
-//    s_pLib = s_pSuperLib->pGenlib;
-    Mio_LibraryDelete( Abc_FrameReadLibGen() );
-    Abc_FrameSetLibGen( pLib->pGenlib );
+//    Mio_LibraryDelete( (Mio_Library_t *)Abc_FrameReadLibGen() );
+//    Abc_FrameSetLibGen( (Mio_Library_t *)pLib->pGenlib );
     return 0;
 
 usage:
@@ -173,4 +180,6 @@ usage:
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

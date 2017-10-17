@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "sim.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -64,15 +67,15 @@ Vec_Int_t * Sim_NtkComputeSwitching( Abc_Ntk_t * pNtk, int nPatterns )
     pSwitching = (float *)vSwitching->pArray;
     Abc_NtkForEachCi( pNtk, pNode, i )
     {
-        pSimInfo = Vec_PtrEntry(vSimInfo, pNode->Id);
+        pSimInfo = (unsigned *)Vec_PtrEntry(vSimInfo, pNode->Id);
         Sim_UtilSetRandom( pSimInfo, nSimWords );
         pSwitching[pNode->Id] = Sim_ComputeSwitching( pSimInfo, nSimWords );
     }
     // simulate the internal nodes
     vNodes  = Abc_AigDfs( pNtk, 1, 0 );
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
-        pSimInfo = Vec_PtrEntry(vSimInfo, pNode->Id);
+        pSimInfo = (unsigned *)Vec_PtrEntry(vSimInfo, pNode->Id);
         Sim_UtilSimulateNodeOne( pNode, vSimInfo, nSimWords, 0 );
         pSwitching[pNode->Id] = Sim_ComputeSwitching( pSimInfo, nSimWords );
     }
@@ -97,11 +100,13 @@ float Sim_ComputeSwitching( unsigned * pSimInfo, int nSimWords )
     int nOnes, nTotal;
     nTotal = 32 * nSimWords;
     nOnes = Sim_UtilCountOnes( pSimInfo, nSimWords );
-    return (float)2.0 * nOnes * (nTotal - nOnes) / nTotal / nTotal;
+    return (float)2.0 * nOnes / nTotal * (nTotal - nOnes) / nTotal;
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

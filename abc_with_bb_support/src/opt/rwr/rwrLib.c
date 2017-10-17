@@ -20,6 +20,9 @@
 
 #include "rwr.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -49,8 +52,8 @@ void Rwr_ManPrecompute( Rwr_Man_t * p )
     int LevelOld = -1;
     int nNodes;
 
-    Vec_PtrForEachEntryStart( p->vForest, p0, i, 1 )
-    Vec_PtrForEachEntryStart( p->vForest, p1, k, 1 )
+    Vec_PtrForEachEntryStart( Rwr_Node_t *, p->vForest, p0, i, 1 )
+    Vec_PtrForEachEntryStart( Rwr_Node_t *, p->vForest, p1, k, 1 )
     {
         if ( LevelOld < (int)p0->Level )
         {
@@ -72,7 +75,7 @@ void Rwr_ManPrecompute( Rwr_Man_t * p )
 //            break;
 
         // compute the level and volume of the new nodes
-        Level  = 1 + ABC_MAX( p0->Level, p1->Level );
+        Level  = 1 + Abc_MaxInt( p0->Level, p1->Level );
         Volume = 1 + Rwr_ManNodeVolume( p, p0, p1 );
         // try four different AND nodes
         Rwr_ManTryNode( p,         p0 ,         p1 , 0, Level, Volume );
@@ -99,7 +102,7 @@ save :
     Rwr_ManIncTravId( p );
     k = 5;
     nNodes = 0;
-    Vec_PtrForEachEntryStart( p->vForest, p0, i, 5 )
+    Vec_PtrForEachEntryStart( Rwr_Node_t *, p->vForest, p0, i, 5 )
         if ( p0->uTruth == p->puCanons[p0->uTruth] )
         {
             Rwr_MarkUsed_rec( p, p0 );
@@ -108,7 +111,7 @@ save :
 
     // compact the array by throwing away non-canonical
     k = 5;
-    Vec_PtrForEachEntryStart( p->vForest, p0, i, 5 )
+    Vec_PtrForEachEntryStart( Rwr_Node_t *, p->vForest, p0, i, 5 )
         if ( p0->fUsed )
         {
             p->vForest->pArray[k] = p0;
@@ -350,7 +353,7 @@ void Rwr_ManIncTravId( Rwr_Man_t * p )
     int i;
     if ( p->nTravIds++ < 0x8FFFFFFF )
         return;
-    Vec_PtrForEachEntry( p->vForest, pNode, i )
+    Vec_PtrForEachEntry( Rwr_Node_t *, p->vForest, pNode, i )
         pNode->TravId = 0;
     p->nTravIds = 1;
 }
@@ -359,4 +362,6 @@ void Rwr_ManIncTravId( Rwr_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,8 +18,15 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "fpgaInt.h"
+#include "base/abc/abc.h"
+#include "map/fpga/fpgaInt.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -49,14 +56,15 @@ Abc_Ntk_t * Abc_NtkFpga( Abc_Ntk_t * pNtk, float DelayTarget, int fRecovery, int
     int fShowSwitching = 1;
     Abc_Ntk_t * pNtkNew;
     Fpga_Man_t * pMan;
-    Vec_Int_t * vSwitching;
+    Vec_Int_t * vSwitching = NULL;
     float * pSwitching = NULL;
+    int Num;
 
     assert( Abc_NtkIsStrash(pNtk) );
 
     // print a warning about choice nodes
-    if ( Abc_NtkGetChoiceNum( pNtk ) )
-        printf( "Performing FPGA mapping with choices.\n" );
+    if ( (Num = Abc_NtkGetChoiceNum( pNtk )) )
+        Abc_Print( 0, "Performing LUT mapping with %d choices.\n", Num );
 
     // compute switching activity
     fShowSwitching |= fSwitching;
@@ -69,7 +77,7 @@ Abc_Ntk_t * Abc_NtkFpga( Abc_Ntk_t * pNtk, float DelayTarget, int fRecovery, int
 
     // perform FPGA mapping
     pMan = Abc_NtkToFpga( pNtk, fRecovery, pSwitching, fLatchPaths, fVerbose );    
-    if ( pSwitching ) Vec_IntFree( vSwitching );
+    if ( pSwitching ) { assert(vSwitching); Vec_IntFree( vSwitching ); }
     if ( pMan == NULL )
         return NULL;
     Fpga_ManSetSwitching( pMan, fSwitching );
@@ -155,7 +163,7 @@ Fpga_Man_t * Abc_NtkToFpga( Abc_Ntk_t * pNtk, int fRecovery, float * pSwitching,
     // load the AIG into the mapper
     vNodes = Abc_AigDfs( pNtk, 0, 0 );
     pProgress = Extra_ProgressBarStart( stdout, vNodes->nSize );
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
     {
         Extra_ProgressBarUpdate( pProgress, i, NULL );
         // add the node to the mapper
@@ -169,7 +177,7 @@ Fpga_Man_t * Abc_NtkToFpga( Abc_Ntk_t * pNtk, int fRecovery, float * pSwitching,
             Fpga_NodeSetSwitching( pNodeFpga, pSwitching[pNode->Id] );
         // set up the choice node
         if ( Abc_AigNodeIsChoice( pNode ) )
-            for ( pPrev = pNode, pFanin = pNode->pData; pFanin; pPrev = pFanin, pFanin = pFanin->pData )
+            for ( pPrev = pNode, pFanin = (Abc_Obj_t *)pNode->pData; pFanin; pPrev = pFanin, pFanin = (Abc_Obj_t *)pFanin->pData )
             {
                 Fpga_NodeSetNextE( (Fpga_Node_t *)pPrev->pCopy, (Fpga_Node_t *)pFanin->pCopy );
                 Fpga_NodeSetRepr( (Fpga_Node_t *)pFanin->pCopy, (Fpga_Node_t *)pNode->pCopy );
@@ -229,8 +237,8 @@ Abc_Ntk_t * Abc_NtkFromFpga( Fpga_Man_t * pMan, Abc_Ntk_t * pNtk )
         Abc_NtkDeleteObj( pNodeNew );
     // decouple the PO driver nodes to reduce the number of levels
     nDupGates = Abc_NtkLogicMakeSimpleCos( pNtkNew, 1 );
-//    if ( nDupGates && Fpga_ManReadVerbose(pMan) )
-//        printf( "Duplicated %d gates to decouple the CO drivers.\n", nDupGates );
+    if ( nDupGates && Fpga_ManReadVerbose(pMan) )
+        printf( "Duplicated %d gates to decouple the CO drivers.\n", nDupGates );
     return pNtkNew;
 }
 
@@ -266,7 +274,7 @@ Abc_Obj_t * Abc_NodeFromFpga_rec( Abc_Ntk_t * pNtkNew, Fpga_Node_t * pNodeFpga )
     for ( i = 0; i < nLeaves; i++ )
         Abc_ObjAddFanin( pNodeNew, Abc_NodeFromFpga_rec(pNtkNew, ppLeaves[i]) );
     // derive the function of this node
-    pNodeNew->pData = Fpga_TruthsCutBdd( pNtkNew->pManFunc, pCutBest );   Cudd_Ref( pNodeNew->pData );
+    pNodeNew->pData = Fpga_TruthsCutBdd( pNtkNew->pManFunc, pCutBest );   Cudd_Ref( (DdNode *)pNodeNew->pData );
     Fpga_NodeSetData0( pNodeFpga, (char *)pNodeNew );
     return pNodeNew;
 }
@@ -275,4 +283,6 @@ Abc_Obj_t * Abc_NodeFromFpga_rec( Abc_Ntk_t * pNtkNew, Fpga_Node_t * pNodeFpga )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

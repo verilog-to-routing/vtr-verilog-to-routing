@@ -20,6 +20,9 @@
 
 #include "msatInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -50,10 +53,10 @@ struct Msat_Queue_t_
 Msat_Queue_t * Msat_QueueAlloc( int nVars )
 {
     Msat_Queue_t * p;
-    p = ALLOC( Msat_Queue_t, 1 );
+    p = ABC_ALLOC( Msat_Queue_t, 1 );
     memset( p, 0, sizeof(Msat_Queue_t) );
     p->nVars  = nVars;
-    p->pVars  = ALLOC( int, nVars );
+    p->pVars  = ABC_ALLOC( int, nVars );
     return p;
 }
 
@@ -70,8 +73,8 @@ Msat_Queue_t * Msat_QueueAlloc( int nVars )
 ***********************************************************************/
 void Msat_QueueFree( Msat_Queue_t * p )
 {
-    free( p->pVars );
-    free( p );
+    ABC_FREE( p->pVars );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -154,4 +157,6 @@ void Msat_QueueClear( Msat_Queue_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,23 +18,26 @@
 
 ***********************************************************************/
 
-#ifndef __IVY_H__
-#define __IVY_H__
+#ifndef ABC__aig__ivy__ivy_h
+#define ABC__aig__ivy__ivy_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif 
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include "vec.h"
+#include "misc/extra/extra.h"
+#include "misc/vec/vec.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+ 
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -122,8 +125,8 @@ struct Ivy_Man_t_
     Vec_Ptr_t *      vPages;         // memory pages used by nodes
     Ivy_Obj_t *      pListFree;      // the list of free nodes 
     // timing statistics
-    int              time1;
-    int              time2;
+    abctime          time1;
+    abctime          time2;
 };
 
 struct Ivy_FraigParams_t_
@@ -179,16 +182,18 @@ struct Ivy_Store_t_
 #define IVY_MIN(a,b)       (((a) < (b))? (a) : (b))
 #define IVY_MAX(a,b)       (((a) > (b))? (a) : (b))
 
+extern void Ivy_ManAddMemory( Ivy_Man_t * p );
+
 static inline int          Ivy_BitWordNum( int nBits )            { return (nBits>>5) + ((nBits&31) > 0);           }
 static inline int          Ivy_TruthWordNum( int nVars )          { return nVars <= 5 ? 1 : (1 << (nVars - 5));     }
 static inline int          Ivy_InfoHasBit( unsigned * p, int i )  { return (p[(i)>>5] & (1<<((i) & 31))) > 0;       }
 static inline void         Ivy_InfoSetBit( unsigned * p, int i )  { p[(i)>>5] |= (1<<((i) & 31));                   }
 static inline void         Ivy_InfoXorBit( unsigned * p, int i )  { p[(i)>>5] ^= (1<<((i) & 31));                   }
 
-static inline Ivy_Obj_t *  Ivy_Regular( Ivy_Obj_t * p )           { return (Ivy_Obj_t *)((unsigned long)(p) & ~01);      }
-static inline Ivy_Obj_t *  Ivy_Not( Ivy_Obj_t * p )               { return (Ivy_Obj_t *)((unsigned long)(p) ^  01);      }
-static inline Ivy_Obj_t *  Ivy_NotCond( Ivy_Obj_t * p, int c )    { return (Ivy_Obj_t *)((unsigned long)(p) ^ (c));      }
-static inline int          Ivy_IsComplement( Ivy_Obj_t * p )      { return (int )(((unsigned long)p) & 01);              }
+static inline Ivy_Obj_t *  Ivy_Regular( Ivy_Obj_t * p )           { return (Ivy_Obj_t *)((ABC_PTRUINT_T)(p) & ~01); }
+static inline Ivy_Obj_t *  Ivy_Not( Ivy_Obj_t * p )               { return (Ivy_Obj_t *)((ABC_PTRUINT_T)(p) ^  01); }
+static inline Ivy_Obj_t *  Ivy_NotCond( Ivy_Obj_t * p, int c )    { return (Ivy_Obj_t *)((ABC_PTRUINT_T)(p) ^ (c)); }
+static inline int          Ivy_IsComplement( Ivy_Obj_t * p )      { return (int)((ABC_PTRUINT_T)(p) & 01);          }
 
 static inline Ivy_Obj_t *  Ivy_ManConst0( Ivy_Man_t * p )         { return Ivy_Not(p->pConst1);                     }
 static inline Ivy_Obj_t *  Ivy_ManConst1( Ivy_Man_t * p )         { return p->pConst1;                              }
@@ -223,8 +228,8 @@ static inline int          Ivy_ManNodeNum( Ivy_Man_t * p )        { return p->nO
 static inline int          Ivy_ManHashObjNum( Ivy_Man_t * p )     { return p->nObjs[IVY_AND]+p->nObjs[IVY_EXOR]+p->nObjs[IVY_LATCH];     }
 static inline int          Ivy_ManGetCost( Ivy_Man_t * p )        { return p->nObjs[IVY_AND]+3*p->nObjs[IVY_EXOR]+8*p->nObjs[IVY_LATCH]; }
 
-static inline Ivy_Type_t   Ivy_ObjType( Ivy_Obj_t * pObj )        { return pObj->Type;               }
-static inline Ivy_Init_t   Ivy_ObjInit( Ivy_Obj_t * pObj )        { return pObj->Init;               }
+static inline Ivy_Type_t   Ivy_ObjType( Ivy_Obj_t * pObj )        { return (Ivy_Type_t)pObj->Type;               }
+static inline Ivy_Init_t   Ivy_ObjInit( Ivy_Obj_t * pObj )        { return (Ivy_Init_t)pObj->Init;               }
 static inline int          Ivy_ObjIsConst1( Ivy_Obj_t * pObj )    { return pObj->Id == 0;            }
 static inline int          Ivy_ObjIsGhost( Ivy_Obj_t * pObj )     { return pObj->Id < 0;             }
 static inline int          Ivy_ObjIsNone( Ivy_Obj_t * pObj )      { return pObj->Type == IVY_NONE;   }
@@ -358,7 +363,6 @@ static Ivy_Init_t Ivy_InitExor( Ivy_Init_t InitA, Ivy_Init_t InitB )
 // internal memory manager
 static inline Ivy_Obj_t * Ivy_ManFetchMemory( Ivy_Man_t * p )  
 { 
-    extern void Ivy_ManAddMemory( Ivy_Man_t * p );
     Ivy_Obj_t * pTemp;
     if ( p->pListFree == NULL )
         Ivy_ManAddMemory( p );
@@ -381,13 +385,13 @@ static inline void Ivy_ManRecycleMemory( Ivy_Man_t * p, Ivy_Obj_t * pEntry )
 
 // iterator over the primary inputs
 #define Ivy_ManForEachPi( p, pObj, i )                                          \
-    Vec_PtrForEachEntry( p->vPis, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, p->vPis, pObj, i )
 // iterator over the primary outputs
 #define Ivy_ManForEachPo( p, pObj, i )                                          \
-    Vec_PtrForEachEntry( p->vPos, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, p->vPos, pObj, i )
 // iterator over all objects, including those currently not used
 #define Ivy_ManForEachObj( p, pObj, i )                                         \
-    Vec_PtrForEachEntry( p->vObjs, pObj, i ) if ( (pObj) == NULL ) {} else
+    Vec_PtrForEachEntry( Ivy_Obj_t *, p->vObjs, pObj, i ) if ( (pObj) == NULL ) {} else
 // iterator over the combinational inputs
 #define Ivy_ManForEachCi( p, pObj, i )                                          \
     Ivy_ManForEachObj( p, pObj, i ) if ( !Ivy_ObjIsCi(pObj) ) {} else
@@ -406,7 +410,7 @@ static inline void Ivy_ManRecycleMemory( Ivy_Man_t * p, Ivy_Obj_t * pEntry )
 // iterator over the fanouts of an object
 #define Ivy_ObjForEachFanout( p, pObj, vArray, pFanout, i )                     \
     for ( i = 0, Ivy_ObjCollectFanouts(p, pObj, vArray);                        \
-          i < Vec_PtrSize(vArray) && ((pFanout) = Vec_PtrEntry(vArray,i)); i++ )
+          i < Vec_PtrSize(vArray) && ((pFanout) = (Ivy_Obj_t *)Vec_PtrEntry(vArray,i)); i++ )
 
 ////////////////////////////////////////////////////////////////////////
 ///                    FUNCTION DECLARATIONS                         ///
@@ -544,9 +548,11 @@ extern void            Ivy_ObjPrintVerbose( Ivy_Man_t * p, Ivy_Obj_t * pObj, int
 extern void            Ivy_ManPrintVerbose( Ivy_Man_t * p, int fHaig );
 extern int             Ivy_CutTruthPrint( Ivy_Man_t * p, Ivy_Cut_t * pCut, unsigned uTruth );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

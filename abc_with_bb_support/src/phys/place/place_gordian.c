@@ -16,6 +16,9 @@
 #include "place_gordian.h"
 #include "place_base.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 // --------------------------------------------------------------------
 // Global variables
@@ -158,3 +161,5 @@ void sanitizePlacement() {
     cell->m_y = y;
   }
 }
+ABC_NAMESPACE_IMPL_END
+

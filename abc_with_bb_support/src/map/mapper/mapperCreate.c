@@ -18,16 +18,18 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
 static void            Map_TableCreate( Map_Man_t * p );
 static void            Map_TableResize( Map_Man_t * p );
-static Map_Node_t *    Map_TableLookup( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 );
 
 // hash key for the structural hash table
-static inline unsigned Map_HashKey2( Map_Node_t * p0, Map_Node_t * p1, int TableSize ) { return ((unsigned)(p0) + (unsigned)(p1) * 12582917) % TableSize; }
+static inline unsigned Map_HashKey2( Map_Node_t * p0, Map_Node_t * p1, int TableSize ) { return (unsigned)(((ABC_PTRUINT_T)(p0) + (ABC_PTRUINT_T)(p1) * 12582917) % TableSize); }
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -46,30 +48,33 @@ static inline unsigned Map_HashKey2( Map_Node_t * p0, Map_Node_t * p1, int Table
 ***********************************************************************/
 int             Map_ManReadInputNum( Map_Man_t * p )                    { return p->nInputs;    }
 int             Map_ManReadOutputNum( Map_Man_t * p )                   { return p->nOutputs;   }
+int             Map_ManReadBufNum( Map_Man_t * p )                      { return Map_NodeVecReadSize(p->vMapBufs);   }
 Map_Node_t **   Map_ManReadInputs ( Map_Man_t * p )                     { return p->pInputs;    }
 Map_Node_t **   Map_ManReadOutputs( Map_Man_t * p )                     { return p->pOutputs;   }
+Map_Node_t **   Map_ManReadBufs( Map_Man_t * p )                        { return Map_NodeVecReadArray(p->vMapBufs);  }
+Map_Node_t *    Map_ManReadBufDriver( Map_Man_t * p, int i )            { return Map_ManReadBufs(p)[i]->p1;           }
 Map_Node_t *    Map_ManReadConst1 ( Map_Man_t * p )                     { return p->pConst1;    }
-Map_Time_t *    Map_ManReadInputArrivals( Map_Man_t * p )               { return p->pInputArrivals;}
+Map_Time_t *    Map_ManReadInputArrivals( Map_Man_t * p )               { return p->pInputArrivals; }
+Map_Time_t *    Map_ManReadOutputRequireds( Map_Man_t * p )             { return p->pOutputRequireds; }
 Mio_Library_t * Map_ManReadGenLib ( Map_Man_t * p )                     { return p->pSuperLib->pGenlib; }
-bool            Map_ManReadVerbose( Map_Man_t * p )                     { return p->fVerbose;   }
+int             Map_ManReadVerbose( Map_Man_t * p )                     { return p->fVerbose;   }
 float           Map_ManReadAreaFinal( Map_Man_t * p )                   { return p->AreaFinal;  }
-float           Map_ManReadRequiredGlo( Map_Man_t * p )                 { return p->fRequiredGlo;  }
-void            Map_ManSetTimeToMap( Map_Man_t * p, int Time )          { p->timeToMap = Time;  }
-void            Map_ManSetTimeToNet( Map_Man_t * p, int Time )          { p->timeToNet = Time;  }
-void            Map_ManSetTimeSweep( Map_Man_t * p, int Time )          { p->timeSweep = Time;  }
-void            Map_ManSetTimeTotal( Map_Man_t * p, int Time )          { p->timeTotal = Time;  }
-void            Map_ManSetOutputNames( Map_Man_t * p, char ** ppNames ) { p->ppOutputNames = ppNames; }
+float           Map_ManReadRequiredGlo( Map_Man_t * p )                 { return p->fRequiredGlo; }
+void            Map_ManSetOutputNames( Map_Man_t * p, char ** ppNames ) { p->ppOutputNames = ppNames;}
 void            Map_ManSetAreaRecovery( Map_Man_t * p, int fAreaRecovery ) { p->fAreaRecovery = fAreaRecovery;}
 void            Map_ManSetDelayTarget( Map_Man_t * p, float DelayTarget ) { p->DelayTarget = DelayTarget;}
-void            Map_ManSetInputArrivals( Map_Man_t * p, Map_Time_t * pArrivals ) { p->pInputArrivals = pArrivals;}
-void            Map_ManSetObeyFanoutLimits( Map_Man_t * p, bool fObeyFanoutLimits )  { p->fObeyFanoutLimits = fObeyFanoutLimits;     }
+void            Map_ManSetInputArrivals( Map_Man_t * p, Map_Time_t * pArrivals )     { p->pInputArrivals = pArrivals;    }
+void            Map_ManSetOutputRequireds( Map_Man_t * p, Map_Time_t * pRequireds )  { p->pOutputRequireds = pRequireds; }
+void            Map_ManSetObeyFanoutLimits( Map_Man_t * p, int  fObeyFanoutLimits )  { p->fObeyFanoutLimits = fObeyFanoutLimits;     }
 void            Map_ManSetNumIterations( Map_Man_t * p, int nIterations )            { p->nIterations = nIterations;     }
-int             Map_ManReadFanoutViolations( Map_Man_t * p )            { return p->nFanoutViolations; }  
-void            Map_ManSetFanoutViolations( Map_Man_t * p, int nVio )   { p->nFanoutViolations = nVio; }  
+int             Map_ManReadFanoutViolations( Map_Man_t * p )            { return p->nFanoutViolations;   }  
+void            Map_ManSetFanoutViolations( Map_Man_t * p, int nVio )   { p->nFanoutViolations = nVio;   }  
 void            Map_ManSetChoiceNodeNum( Map_Man_t * p, int nChoiceNodes ) { p->nChoiceNodes = nChoiceNodes; }  
-void            Map_ManSetChoiceNum( Map_Man_t * p, int nChoices )         { p->nChoices = nChoices; }   
-void            Map_ManSetVerbose( Map_Man_t * p, int fVerbose )           { p->fVerbose = fVerbose; }   
+void            Map_ManSetChoiceNum( Map_Man_t * p, int nChoices )         { p->nChoices = nChoices;     }   
+void            Map_ManSetVerbose( Map_Man_t * p, int fVerbose )           { p->fVerbose = fVerbose;     }   
 void            Map_ManSetSwitching( Map_Man_t * p, int fSwitching )       { p->fSwitching = fSwitching; }   
+void            Map_ManSetSkipFanout( Map_Man_t * p, int fSkipFanout )     { p->fSkipFanout = fSkipFanout; }   
+void            Map_ManSetUseProfile( Map_Man_t * p )                      { p->fUseProfile = 1;         }   
 
 /**Function*************************************************************
 
@@ -108,7 +113,8 @@ void            Map_NodeSetSwitching( Map_Node_t * p, float Switching )     { p-
 ***********************************************************************/
 int             Map_NodeIsConst( Map_Node_t * p )    {  return (Map_Regular(p))->Num == -1;    }
 int             Map_NodeIsVar( Map_Node_t * p )      {  return (Map_Regular(p))->p1 == NULL && (Map_Regular(p))->Num >= 0; }
-int             Map_NodeIsAnd( Map_Node_t * p )      {  return (Map_Regular(p))->p1 != NULL;  }
+int             Map_NodeIsBuf( Map_Node_t * p )      {  return (Map_Regular(p))->p1 != NULL && (Map_Regular(p))->p2 == NULL;  }
+int             Map_NodeIsAnd( Map_Node_t * p )      {  return (Map_Regular(p))->p1 != NULL && (Map_Regular(p))->p2 != NULL;  }
 int             Map_NodeComparePhase( Map_Node_t * p1, Map_Node_t * p2 ) { assert( !Map_IsComplement(p1) ); assert( !Map_IsComplement(p2) ); return p1->fInv ^ p2->fInv; }
 
 /**Function*************************************************************
@@ -185,14 +191,14 @@ Map_Man_t * Map_ManCreate( int nInputs, int nOutputs, int fVerbose )
     // derive the supergate library
     if ( Abc_FrameReadLibSuper() == NULL )
     {
-        printf( "The supergate library is not specified. Use \"read_library\" or \"read_super\".\n" );
+        printf( "The supergate library is not specified. Use \"read_super\".\n" );
         return NULL;
     }
 
     // start the manager
-    p = ALLOC( Map_Man_t, 1 );
+    p = ABC_ALLOC( Map_Man_t, 1 );
     memset( p, 0, sizeof(Map_Man_t) );
-    p->pSuperLib = Abc_FrameReadLibSuper();
+    p->pSuperLib = (Map_SuperLib_t *)Abc_FrameReadLibSuper();
     p->nVarsMax  = p->pSuperLib->nVarsMax;
     p->fVerbose  = fVerbose;
     p->fEpsilon  = (float)0.001;
@@ -213,20 +219,19 @@ Map_Man_t * Map_ManCreate( int nInputs, int nOutputs, int fVerbose )
     p->nNodes = -1;
     // create the constant node
     p->pConst1    = Map_NodeCreate( p, NULL, NULL );
-    p->vNodesAll  = Map_NodeVecAlloc( 100 );
-    p->vNodesTemp = Map_NodeVecAlloc( 100 );
-    p->vMapping   = Map_NodeVecAlloc( 100 );
+    p->vMapObjs   = Map_NodeVecAlloc( 100 );
+    p->vMapBufs   = Map_NodeVecAlloc( 100 );
     p->vVisited   = Map_NodeVecAlloc( 100 );
 
     // create the PI nodes
     p->nInputs = nInputs;
-    p->pInputs = ALLOC( Map_Node_t *, nInputs );
+    p->pInputs = ABC_ALLOC( Map_Node_t *, nInputs );
     for ( i = 0; i < nInputs; i++ )
         p->pInputs[i] = Map_NodeCreate( p, NULL, NULL );
 
     // create the place for the output nodes
     p->nOutputs = nOutputs;
-    p->pOutputs = ALLOC( Map_Node_t *, nOutputs );
+    p->pOutputs = ABC_ALLOC( Map_Node_t *, nOutputs );
     memset( p->pOutputs, 0, sizeof(Map_Node_t *) * nOutputs );
     return p;
 }
@@ -245,30 +250,54 @@ Map_Man_t * Map_ManCreate( int nInputs, int nOutputs, int fVerbose )
 void Map_ManFree( Map_Man_t * p )
 {
 //    int i;
-//    for ( i = 0; i < p->vNodesAll->nSize; i++ )
-//        Map_NodeVecFree( p->vNodesAll->pArray[i]->vFanouts );
+//    for ( i = 0; i < p->vMapObjs->nSize; i++ )
+//        Map_NodeVecFree( p->vMapObjs->pArray[i]->vFanouts );
 //    Map_NodeVecFree( p->pConst1->vFanouts );
-    if ( p->vAnds )    
-        Map_NodeVecFree( p->vAnds );
-    if ( p->vNodesAll )    
-        Map_NodeVecFree( p->vNodesAll );
-    if ( p->vNodesTemp )    
-        Map_NodeVecFree( p->vNodesTemp );
-    if ( p->vMapping )    
-        Map_NodeVecFree( p->vMapping );
-    if ( p->vVisited )    
-        Map_NodeVecFree( p->vVisited );
-    if ( p->uCanons )   free( p->uCanons );
-    if ( p->uPhases )   free( p->uPhases );
-    if ( p->pCounters ) free( p->pCounters );
+    Map_NodeVecFree( p->vMapObjs );
+    Map_NodeVecFree( p->vMapBufs );
+    Map_NodeVecFree( p->vVisited );
+    if ( p->uCanons )   ABC_FREE( p->uCanons );
+    if ( p->uPhases )   ABC_FREE( p->uPhases );
+    if ( p->pCounters ) ABC_FREE( p->pCounters );
     Extra_MmFixedStop( p->mmNodes );
     Extra_MmFixedStop( p->mmCuts );
-    FREE( p->pInputArrivals );
-    FREE( p->pInputs );
-    FREE( p->pOutputs );
-    FREE( p->pBins );
-    FREE( p->ppOutputNames );
-    FREE( p );
+    ABC_FREE( p->pNodeDelays );
+    ABC_FREE( p->pInputArrivals );
+    ABC_FREE( p->pOutputRequireds );
+    ABC_FREE( p->pInputs );
+    ABC_FREE( p->pOutputs );
+    ABC_FREE( p->pBins );
+    ABC_FREE( p->ppOutputNames );
+    ABC_FREE( p );
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Creates node delays.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Map_ManCreateNodeDelays( Map_Man_t * p, int LogFan )
+{
+    Map_Node_t * pNode;
+    int k;
+    assert( p->pNodeDelays == NULL );
+    p->pNodeDelays = ABC_CALLOC( float, p->vMapObjs->nSize );
+    for ( k = 0; k < p->vMapObjs->nSize; k++ )
+    {
+        pNode = p->vMapObjs->pArray[k];
+        if ( pNode->nRefs == 0 )
+            continue;
+        p->pNodeDelays[k] = 0.014426 * LogFan * p->pSuperLib->tDelayInv.Worst * log( (double)pNode->nRefs ); // 1.4426 = 1/ln(2)
+//        printf( "%d = %d (%.2f)  ", k, pNode->nRefs, p->pNodeDelays[k] );
+    }
+//    printf( "\n" );
 }
 
 
@@ -287,17 +316,17 @@ void Map_ManPrintTimeStats( Map_Man_t * p )
 {
     printf( "N-canonical = %d. Matchings = %d.  Phases = %d.  ", p->nCanons, p->nMatches, p->nPhases );
     printf( "Choice nodes = %d. Choices = %d.\n", p->nChoiceNodes, p->nChoices );
-    PRT( "ToMap", p->timeToMap );
-    PRT( "Cuts ", p->timeCuts  );
-    PRT( "Truth", p->timeTruth );
-    PRT( "Match", p->timeMatch );
-    PRT( "Area ", p->timeArea  );
-    PRT( "Sweep", p->timeSweep );
-    PRT( "ToNet", p->timeToNet );
-    PRT( "TOTAL", p->timeTotal );
-    if ( p->time1 ) { PRT( "time1", p->time1 ); }
-    if ( p->time2 ) { PRT( "time2", p->time2 ); }
-    if ( p->time3 ) { PRT( "time3", p->time3 ); }
+    ABC_PRT( "ToMap", p->timeToMap );
+    ABC_PRT( "Cuts ", p->timeCuts  );
+    ABC_PRT( "Truth", p->timeTruth );
+    ABC_PRT( "Match", p->timeMatch );
+    ABC_PRT( "Area ", p->timeArea  );
+    ABC_PRT( "Sweep", p->timeSweep );
+    ABC_PRT( "ToNet", p->timeToNet );
+    ABC_PRT( "TOTAL", p->timeTotal );
+    if ( p->time1 ) { ABC_PRT( "time1", p->time1 ); }
+    if ( p->time2 ) { ABC_PRT( "time2", p->time2 ); }
+    if ( p->time3 ) { ABC_PRT( "time3", p->time3 ); }
 }
 
 /**Function*************************************************************
@@ -311,7 +340,7 @@ void Map_ManPrintTimeStats( Map_Man_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-void Map_ManPrintStatsToFile( char * pName, float Area, float Delay, int Time )
+void Map_ManPrintStatsToFile( char * pName, float Area, float Delay, abctime Time )
 {
     FILE * pTable;
     pTable = fopen( "map_stats.txt", "a+" );
@@ -351,7 +380,7 @@ Map_Node_t * Map_NodeCreate( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 )
 //    pNode->vFanouts = Map_NodeVecAlloc( 5 );
     // store this node in the internal array
     if ( pNode->Num >= 0 )
-        Map_NodeVecPush( p->vNodesAll, pNode );
+        Map_NodeVecPush( p->vMapObjs, pNode );
     else
         pNode->fInv = 1;
     // set the level of this node
@@ -360,10 +389,20 @@ Map_Node_t * Map_NodeCreate( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 )
 #ifdef MAP_ALLOCATE_FANOUT
         // create the fanout info
         Map_NodeAddFaninFanout( Map_Regular(p1), pNode );
+        if ( p2 )
         Map_NodeAddFaninFanout( Map_Regular(p2), pNode );
 #endif
-        pNode->Level = 1 + MAP_MAX(Map_Regular(pNode->p1)->Level, Map_Regular(pNode->p2)->Level);
-        pNode->fInv  = Map_NodeIsSimComplement(p1) & Map_NodeIsSimComplement(p2);
+
+        if ( p2 )
+        {
+            pNode->Level = 1 + MAP_MAX(Map_Regular(pNode->p1)->Level, Map_Regular(pNode->p2)->Level);
+            pNode->fInv  = Map_NodeIsSimComplement(p1) & Map_NodeIsSimComplement(p2);
+        }
+        else
+        {
+            pNode->Level = Map_Regular(pNode->p1)->Level;
+            pNode->fInv  = Map_NodeIsSimComplement(p1);
+        }
     }
     // reference the inputs (will be used to compute the number of fanouts)
     if ( p1 ) Map_NodeRef(p1);
@@ -387,8 +426,8 @@ Map_Node_t * Map_NodeCreate( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 )
 void Map_TableCreate( Map_Man_t * pMan )
 {
     assert( pMan->pBins == NULL );
-    pMan->nBins = Cudd_Prime(5000);
-    pMan->pBins = ALLOC( Map_Node_t *, pMan->nBins );
+    pMan->nBins = Abc_PrimeCudd(5000);
+    pMan->pBins = ABC_ALLOC( Map_Node_t *, pMan->nBins );
     memset( pMan->pBins, 0, sizeof(Map_Node_t *) * pMan->nBins );
     pMan->nNodes = 0;
 }
@@ -407,7 +446,7 @@ void Map_TableCreate( Map_Man_t * pMan )
   SeeAlso     []
 
 ***********************************************************************/
-Map_Node_t * Map_TableLookup( Map_Man_t * pMan, Map_Node_t * p1, Map_Node_t * p2 )
+Map_Node_t * Map_NodeAnd( Map_Man_t * pMan, Map_Node_t * p1, Map_Node_t * p2 )
 {
     Map_Node_t * pEnt;
     unsigned Key;
@@ -466,14 +505,15 @@ void Map_TableResize( Map_Man_t * pMan )
 {
     Map_Node_t ** pBinsNew;
     Map_Node_t * pEnt, * pEnt2;
-    int nBinsNew, Counter, i, clk;
+    int nBinsNew, Counter, i;
+    abctime clk;
     unsigned Key;
 
-clk = clock();
+clk = Abc_Clock();
     // get the new table size
-    nBinsNew = Cudd_Prime(2 * pMan->nBins); 
+    nBinsNew = Abc_PrimeCudd(2 * pMan->nBins); 
     // allocate a new array
-    pBinsNew = ALLOC( Map_Node_t *, nBinsNew );
+    pBinsNew = ABC_ALLOC( Map_Node_t *, nBinsNew );
     memset( pBinsNew, 0, sizeof(Map_Node_t *) * nBinsNew );
     // rehash the entries from the old table
     Counter = 0;
@@ -490,10 +530,10 @@ clk = clock();
     if ( pMan->fVerbose )
     {
 //        printf( "Increasing the unique table size from %6d to %6d. ", pMan->nBins, nBinsNew );
-//        PRT( "Time", clock() - clk );
+//        ABC_PRT( "Time", Abc_Clock() - clk );
     }
     // replace the table and the parameters
-    free( pMan->pBins );
+    ABC_FREE( pMan->pBins );
     pMan->pBins = pBinsNew;
     pMan->nBins = nBinsNew;
 }
@@ -511,67 +551,12 @@ clk = clock();
   SeeAlso     []
 
 ***********************************************************************/
-Map_Node_t * Map_NodeAnd( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 )
+Map_Node_t * Map_NodeBuf( Map_Man_t * p, Map_Node_t * p1 )
 {
-    Map_Node_t * pNode;
-    pNode = Map_TableLookup( p, p1, p2 );    
+    Map_Node_t * pNode = Map_NodeCreate( p, p1, NULL );
+    Map_NodeVecPush( p->vMapBufs, pNode );
     return pNode;
 }
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Map_Node_t * Map_NodeOr( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 )
-{
-    Map_Node_t * pNode;
-    pNode = Map_Not( Map_TableLookup( p, Map_Not(p1), Map_Not(p2) ) ); 
-    return pNode;
-}
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Map_Node_t * Map_NodeExor( Map_Man_t * p, Map_Node_t * p1, Map_Node_t * p2 )
-{
-    return Map_NodeMux( p, p1, Map_Not(p2), p2 );
-}
-
-/**Function*************************************************************
-
-  Synopsis    []
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-Map_Node_t * Map_NodeMux( Map_Man_t * p, Map_Node_t * pC, Map_Node_t * pT, Map_Node_t * pE )
-{
-    Map_Node_t * pAnd1, * pAnd2, * pRes;
-    pAnd1 = Map_TableLookup( p, pC,          pT ); 
-    pAnd2 = Map_TableLookup( p, Map_Not(pC), pE ); 
-    pRes  = Map_NodeOr( p, pAnd1, pAnd2 );                 
-    return pRes;
-}
-
 
 /**Function*************************************************************
 
@@ -597,4 +582,6 @@ void Map_NodeSetChoice( Map_Man_t * pMan, Map_Node_t * pNodeOld, Map_Node_t * pN
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

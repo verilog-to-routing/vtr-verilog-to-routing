@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -47,14 +50,14 @@ static int Io_WriteBenchLutOneNode( FILE * pFile, Abc_Obj_t * pNode, Vec_Int_t *
   SeeAlso     []
 
 ***********************************************************************/
-int Io_WriteBench( Abc_Ntk_t * pNtk, char * pFileName )
+int Io_WriteBench( Abc_Ntk_t * pNtk, const char * pFileName )
 {
     Abc_Ntk_t * pExdc;
     FILE * pFile;
     assert( Abc_NtkIsSopNetlist(pNtk) );
     if ( !Io_WriteBenchCheckNames(pNtk) )
     {
-        fprintf( stdout, "Io_WriteBench(): Signal names in this benchmark contain parantheses making them impossible to reproduce in the BENCH format. Use \"short_names\".\n" );
+        fprintf( stdout, "Io_WriteBench(): Signal names in this benchmark contain parentheses making them impossible to reproduce in the BENCH format. Use \"short_names\".\n" );
         return 0;
     }
     pFile = fopen( pFileName, "w" );
@@ -176,7 +179,7 @@ int Io_WriteBenchLut( Abc_Ntk_t * pNtk, char * pFileName )
     assert( Abc_NtkIsAigNetlist(pNtk) );
     if ( !Io_WriteBenchCheckNames(pNtk) )
     {
-        fprintf( stdout, "Io_WriteBenchLut(): Signal names in this benchmark contain parantheses making them impossible to reproduce in the BENCH format. Use \"short_names\".\n" );
+        fprintf( stdout, "Io_WriteBenchLut(): Signal names in this benchmark contain parentheses making them impossible to reproduce in the BENCH format. Use \"short_names\".\n" );
         return 0;
     }
     pFile = fopen( pFileName, "w" );
@@ -258,8 +261,8 @@ int Io_WriteBenchLutOneNode( FILE * pFile, Abc_Obj_t * pNode, Vec_Int_t * vTruth
     nFanins = Abc_ObjFaninNum(pNode);
     assert( nFanins <= 8 );
     // compute the truth table
-    pTruth = Abc_ConvertAigToTruth( pNode->pNtk->pManFunc, Hop_Regular(pNode->pData), nFanins, vTruth, 0 );
-    if ( Hop_IsComplement(pNode->pData) )
+    pTruth = Hop_ManConvertAigToTruth( (Hop_Man_t *)pNode->pNtk->pManFunc, Hop_Regular((Hop_Obj_t *)pNode->pData), nFanins, vTruth, 0 );
+    if ( Hop_IsComplement((Hop_Obj_t *)pNode->pData) )
         Extra_TruthNot( pTruth, pTruth, nFanins );
     // consider simple cases
     if ( Extra_TruthIsConst0(pTruth, nFanins) )
@@ -332,4 +335,6 @@ int Io_WriteBenchCheckNames( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

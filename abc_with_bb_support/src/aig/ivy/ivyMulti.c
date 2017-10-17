@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -56,7 +59,8 @@ int Ivy_MultiPlus( Ivy_Man_t * p, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vCone, Ivy_Ty
 {
     static Ivy_Eva_t pEvals[IVY_EVAL_LIMIT];
     Ivy_Eva_t * pEval, * pFan0, * pFan1;
-    Ivy_Obj_t * pObj, * pTemp;
+    Ivy_Obj_t * pObj = NULL; // Suppress "might be used uninitialized"
+    Ivy_Obj_t * pTemp;
     int nEvals, nEvalsOld, i, k, x, nLeaves;
     unsigned uMaskAll;
 
@@ -73,7 +77,7 @@ int Ivy_MultiPlus( Ivy_Man_t * p, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vCone, Ivy_Ty
     // set the leaf entries
     uMaskAll = ((1 << nLeaves) - 1);
     nEvals = 0;
-    Vec_PtrForEachEntry( vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vLeaves, pObj, i )
     {
         pEval = pEvals + nEvals;
         pEval->pArg   = pObj;
@@ -85,7 +89,7 @@ int Ivy_MultiPlus( Ivy_Man_t * p, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vCone, Ivy_Ty
     }
 
     // propagate masks through the cone
-    Vec_PtrForEachEntry( vCone, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pObj, i )
     {
         pObj->TravId = nEvals + i;
         if ( Ivy_ObjIsBuf(pObj) )
@@ -95,7 +99,7 @@ int Ivy_MultiPlus( Ivy_Man_t * p, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vCone, Ivy_Ty
     }
 
     // set the internal entries
-    Vec_PtrForEachEntry( vCone, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pObj, i )
     {
         if ( i == Vec_PtrSize(vCone) - 1 )
             break;
@@ -128,7 +132,7 @@ int Ivy_MultiPlus( Ivy_Man_t * p, Vec_Ptr_t * vLeaves, Vec_Ptr_t * vCone, Ivy_Ty
             continue;
         // skip the leaves
         for ( x = 0; x < nLeaves; x++ )
-            if ( pTemp == Ivy_Regular(vLeaves->pArray[x]) )
+            if ( pTemp == Ivy_Regular((Ivy_Obj_t *)vLeaves->pArray[x]) )
                 break;
         if ( x < nLeaves )
             continue;
@@ -218,9 +222,14 @@ static inline int Ivy_MultiWeight( unsigned uMask, int nMaskOnes, unsigned uFoun
 int Ivy_MultiCover( Ivy_Man_t * p, Ivy_Eva_t * pEvals, int nLeaves, int nEvals, int nLimit, Vec_Ptr_t * vSols )
 {
     int fVerbose = 0;
-    Ivy_Eva_t * pEval, * pEvalBest;
+    Ivy_Eva_t * pEval;
+    Ivy_Eva_t * pEvalBest = NULL; // Suppress "might be used uninitialized"
     unsigned uMaskAll, uFound, uTemp;
-    int i, k, BestK, WeightBest, WeightCur, LevelBest, LevelCur;
+    int i, k, BestK;
+    int WeightBest = -1; // Suppress "might be used uninitialized"
+    int WeightCur;
+    int LevelBest = -1; // Suppress "might be used uninitialized"
+    int LevelCur;
     uMaskAll = (nLeaves == 32)? (~(unsigned)0) : ((1 << nLeaves) - 1);
     uFound = 0;
     // solve the covering problem
@@ -298,4 +307,6 @@ int Ivy_MultiCover( Ivy_Man_t * p, Ivy_Eva_t * pEvals, int nLeaves, int nEvals, 
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

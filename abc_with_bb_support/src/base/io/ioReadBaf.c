@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -49,12 +52,13 @@ Abc_Ntk_t * Io_ReadBaf( char * pFileName, int fCheck )
     int nInputs, nOutputs, nLatches, nAnds, nFileSize, Num, i;
     char * pContents, * pName, * pCur;
     unsigned * pBufferNode;
+    int RetValue;
 
     // read the file into the buffer
     nFileSize = Extra_FileSize( pFileName );
     pFile = fopen( pFileName, "rb" );
-    pContents = ALLOC( char, nFileSize );
-    fread( pContents, nFileSize, 1, pFile );
+    pContents = ABC_ALLOC( char, nFileSize );
+    RetValue = fread( pContents, nFileSize, 1, pFile );
     fclose( pFile );
 
     // skip the comments (comment lines begin with '#' and end with '\n')
@@ -112,11 +116,11 @@ Abc_Ntk_t * Io_ReadBaf( char * pFileName, int fCheck )
     }
 
     // get the pointer to the beginning of the node array
-    pBufferNode = (int *)(pContents + (nFileSize - (2 * nAnds + nOutputs + nLatches) * sizeof(int)) );
+    pBufferNode = (unsigned *)(pContents + (nFileSize - (2 * nAnds + nOutputs + nLatches) * sizeof(int)) );
     // make sure we are at the place where the nodes begin
-    if ( pBufferNode != (int *)pCur )
+    if ( pBufferNode != (unsigned *)pCur )
     {
-        free( pContents );
+        ABC_FREE( pContents );
         Vec_PtrFree( vNodes );
         Abc_NtkDelete( pNtkNew );
         printf( "Warning: Internal reader error.\n" );
@@ -128,9 +132,9 @@ Abc_Ntk_t * Io_ReadBaf( char * pFileName, int fCheck )
     for ( i = 0; i < nAnds; i++ )
     {
         Extra_ProgressBarUpdate( pProgress, i, NULL );
-        pNode0 = Abc_ObjNotCond( Vec_PtrEntry(vNodes, pBufferNode[2*i+0] >> 1), pBufferNode[2*i+0] & 1 );
-        pNode1 = Abc_ObjNotCond( Vec_PtrEntry(vNodes, pBufferNode[2*i+1] >> 1), pBufferNode[2*i+1] & 1 );
-        Vec_PtrPush( vNodes, Abc_AigAnd(pNtkNew->pManFunc, pNode0, pNode1) );
+        pNode0 = Abc_ObjNotCond( (Abc_Obj_t *)Vec_PtrEntry(vNodes, pBufferNode[2*i+0] >> 1), pBufferNode[2*i+0] & 1 );
+        pNode1 = Abc_ObjNotCond( (Abc_Obj_t *)Vec_PtrEntry(vNodes, pBufferNode[2*i+1] >> 1), pBufferNode[2*i+1] & 1 );
+        Vec_PtrPush( vNodes, Abc_AigAnd((Abc_Aig_t *)pNtkNew->pManFunc, pNode0, pNode1) );
     }
     Extra_ProgressBarStop( pProgress );
 
@@ -140,17 +144,17 @@ Abc_Ntk_t * Io_ReadBaf( char * pFileName, int fCheck )
         Num = pBufferNode[2*nAnds+i];
         if ( Abc_ObjFanoutNum(pObj) > 0 && Abc_ObjIsLatch(Abc_ObjFanout0(pObj)) )
         {
-            Abc_ObjSetData( Abc_ObjFanout0(pObj), (void *)(Num & 3) );
+            Abc_ObjSetData( Abc_ObjFanout0(pObj), (void *)(ABC_PTRINT_T)(Num & 3) );
             Num >>= 2;
         }
-        pNode0 = Abc_ObjNotCond( Vec_PtrEntry(vNodes, Num >> 1), Num & 1 );
+        pNode0 = Abc_ObjNotCond( (Abc_Obj_t *)Vec_PtrEntry(vNodes, Num >> 1), Num & 1 );
         Abc_ObjAddFanin( pObj, pNode0 );
     }
-    free( pContents );
+    ABC_FREE( pContents );
     Vec_PtrFree( vNodes );
 
     // remove the extra nodes
-//    Abc_AigCleanup( pNtkNew->pManFunc );
+//    Abc_AigCleanup( (Abc_Aig_t *)pNtkNew->pManFunc );
 
     // check the result
     if ( fCheck && !Abc_NtkCheckRead( pNtkNew ) )
@@ -168,4 +172,6 @@ Abc_Ntk_t * Io_ReadBaf( char * pFileName, int fCheck )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

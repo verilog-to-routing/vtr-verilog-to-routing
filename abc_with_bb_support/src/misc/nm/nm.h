@@ -18,12 +18,9 @@
 
 ***********************************************************************/
  
-#ifndef __NM_H__
-#define __NM_H__
+#ifndef ABC__misc__nm__nm_h
+#define ABC__misc__nm__nm_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*
     This manager is designed to store ID-to-name and name-to-ID mapping
@@ -54,6 +51,11 @@ extern "C" {
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
 
+
+
+ABC_NAMESPACE_HEADER_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -80,9 +82,11 @@ extern int          Nm_ManFindIdByName( Nm_Man_t * p, char * pName, int Type );
 extern int          Nm_ManFindIdByNameTwoTypes( Nm_Man_t * p, char * pName, int Type1, int Type2 );
 extern Vec_Int_t *  Nm_ManReturnNameIds( Nm_Man_t * p );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

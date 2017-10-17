@@ -18,15 +18,24 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
+#ifdef ABC_USE_CUDD
+
 static DdNode *    Abc_NtkTransitionRelation( DdManager * dd, Abc_Ntk_t * pNtk, int fVerbose );
 static DdNode *    Abc_NtkInitStateAndVarMap( DdManager * dd, Abc_Ntk_t * pNtk, int fVerbose );
-static DdNode *    Abc_NtkComputeUnreachable( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bRelation, DdNode * bInitial, bool fVerbose );
+static DdNode *    Abc_NtkComputeUnreachable( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bRelation, DdNode * bInitial, int fVerbose );
 static Abc_Ntk_t * Abc_NtkConstructExdc     ( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bUnreach );
 
 ////////////////////////////////////////////////////////////////////////
@@ -44,7 +53,7 @@ static Abc_Ntk_t * Abc_NtkConstructExdc     ( DdManager * dd, Abc_Ntk_t * pNtk, 
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkExtractSequentialDcs( Abc_Ntk_t * pNtk, bool fVerbose )
+int Abc_NtkExtractSequentialDcs( Abc_Ntk_t * pNtk, int fVerbose )
 {
     int fReorder = 1;
     DdManager * dd;
@@ -58,7 +67,7 @@ int Abc_NtkExtractSequentialDcs( Abc_Ntk_t * pNtk, bool fVerbose )
     }
 
     // compute the global BDDs of the latches
-    dd = Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, fVerbose );    
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, fVerbose );    
     if ( dd == NULL )
         return 0;
     if ( fVerbose )
@@ -138,7 +147,7 @@ DdNode * Abc_NtkTransitionRelation( DdManager * dd, Abc_Ntk_t * pNtk, int fVerbo
     {
         bVar  = Cudd_bddIthVar( dd, Abc_NtkCiNum(pNtk) + i );
 //        bProd = Cudd_bddXnor( dd, bVar, pNtk->vFuncsGlob->pArray[i] );  Cudd_Ref( bProd );
-        bProd = Cudd_bddXnor( dd, bVar, Abc_ObjGlobalBdd(Abc_ObjFanin0(pNode)) );  Cudd_Ref( bProd );
+        bProd = Cudd_bddXnor( dd, bVar, (DdNode *)Abc_ObjGlobalBdd(Abc_ObjFanin0(pNode)) );  Cudd_Ref( bProd );
         bRel  = Cudd_bddAnd( dd, bTemp = bRel, bProd );                 Cudd_Ref( bRel );
         Cudd_RecursiveDeref( dd, bTemp ); 
         Cudd_RecursiveDeref( dd, bProd ); 
@@ -186,8 +195,8 @@ DdNode * Abc_NtkInitStateAndVarMap( DdManager * dd, Abc_Ntk_t * pNtk, int fVerbo
     int i;
 
     // set the variable mapping for Cudd_bddVarMap()
-    pbVarsX = ALLOC( DdNode *, dd->size );
-    pbVarsY = ALLOC( DdNode *, dd->size );
+    pbVarsX = ABC_ALLOC( DdNode *, dd->size );
+    pbVarsY = ABC_ALLOC( DdNode *, dd->size );
     bProd = b1;         Cudd_Ref( bProd );
     Abc_NtkForEachLatch( pNtk, pLatch, i )
     {
@@ -199,8 +208,8 @@ DdNode * Abc_NtkInitStateAndVarMap( DdManager * dd, Abc_Ntk_t * pNtk, int fVerbo
         Cudd_RecursiveDeref( dd, bTemp ); 
     }
     Cudd_SetVarMap( dd, pbVarsX, pbVarsY, Abc_NtkLatchNum(pNtk) );
-    FREE( pbVarsX );
-    FREE( pbVarsY );
+    ABC_FREE( pbVarsX );
+    ABC_FREE( pbVarsY );
 
     Cudd_Deref( bProd );
     return bProd;
@@ -217,7 +226,7 @@ DdNode * Abc_NtkInitStateAndVarMap( DdManager * dd, Abc_Ntk_t * pNtk, int fVerbo
   SeeAlso     []
 
 ***********************************************************************/
-DdNode * Abc_NtkComputeUnreachable( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bTrans, DdNode * bInitial, bool fVerbose )
+DdNode * Abc_NtkComputeUnreachable( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bTrans, DdNode * bInitial, int fVerbose )
 {
     DdNode * bRelation, * bReached, * bCubeCs;
     DdNode * bCurrent, * bNext, * bTemp;
@@ -262,7 +271,7 @@ DdNode * Abc_NtkComputeUnreachable( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * b
         fprintf( stdout, "Reachability analysis completed in %d iterations.\n", nIters );
         fprintf( stdout, "The number of minterms in the reachable state set = %d. (%6.2f %%)\n", nMints, 100.0*nMints/(1<<Abc_NtkLatchNum(pNtk)) );
     }
-//PRB( dd, bReached );
+//ABC_PRB( dd, bReached );
     Cudd_Deref( bReached );
     return Cudd_Not( bReached );
 }
@@ -302,14 +311,14 @@ Abc_Ntk_t * Abc_NtkConstructExdc( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bUn
         Abc_ObjAddFanin( pNodeNew, pNode->pCopy );
 
     // create the logic function
-    pPermute = ALLOC( int, dd->size );
+    pPermute = ABC_ALLOC( int, dd->size );
     for ( i = 0; i < dd->size; i++ )
         pPermute[i] = -1;
     Abc_NtkForEachLatch( pNtk, pNode, i )
         pPermute[Abc_NtkPiNum(pNtk) + i] = i;
     // remap the functions
-    pNodeNew->pData = Extra_TransferPermute( dd, pNtkNew->pManFunc, bUnreach, pPermute );   Cudd_Ref( pNodeNew->pData );
-    free( pPermute );
+    pNodeNew->pData = Extra_TransferPermute( dd, (DdManager *)pNtkNew->pManFunc, bUnreach, pPermute );   Cudd_Ref( (DdNode *)pNodeNew->pData );
+    ABC_FREE( pPermute );
     Abc_NodeMinimumBase( pNodeNew );
 
     // for each CO, create PO (skip POs equal to CIs because of name conflict)
@@ -327,13 +336,13 @@ Abc_Ntk_t * Abc_NtkConstructExdc( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bUn
         Abc_ObjAddFanin( pNode->pCopy, pNodeNew );
 
     // remove the extra nodes
-    Abc_AigCleanup( pNtkNew->pManFunc );
+    Abc_AigCleanup( (Abc_Aig_t *)pNtkNew->pManFunc );
 
     // fix the problem with complemented and duplicated CO edges
     Abc_NtkLogicMakeSimpleCos( pNtkNew, 0 );
 
     // transform the network to the SOP representation
-    if ( !Abc_NtkBddToSop( pNtkNew, 0 ) )
+    if ( !Abc_NtkBddToSop( pNtkNew, -1, ABC_INFINITY ) )
     {
         printf( "Abc_NtkConstructExdc(): Converting to SOPs has failed.\n" );
         return NULL;
@@ -342,8 +351,16 @@ Abc_Ntk_t * Abc_NtkConstructExdc( DdManager * dd, Abc_Ntk_t * pNtk, DdNode * bUn
 //    return NULL;
 }
 
+#else
+
+int Abc_NtkExtractSequentialDcs( Abc_Ntk_t * pNtk, int fVerbose ) { return 1; }
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

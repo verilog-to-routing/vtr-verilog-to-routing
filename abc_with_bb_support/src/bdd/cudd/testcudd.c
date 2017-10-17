@@ -16,14 +16,41 @@
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "util.h"
 #include "cuddInt.h"
 
 
@@ -38,10 +65,10 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: testcudd.c,v 1.1.1.1 2003/02/24 22:23:54 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: testcudd.c,v 1.20 2009/03/08 02:49:02 fabio Exp $";
 #endif
 
-static char *onames[] = { "C", "M" }; /* names of functions to be dumped */
+static const char *onames[] = { "C", "M" }; /* names of functions to be dumped */
 
 /**AutomaticStart*************************************************************/
 
@@ -49,12 +76,12 @@ static char *onames[] = { "C", "M" }; /* names of functions to be dumped */
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static void usage ARGS((char * prog));
-static FILE *open_file ARGS((char *filename, char *mode));
-static int testIterators ARGS((DdManager *dd, DdNode *M, DdNode *C, int pr));
-static int testXor ARGS((DdManager *dd, DdNode *f, int pr, int nvars));
-static int testHamming ARGS((DdManager *dd, DdNode *f, int pr, int nvars));
-static int testWalsh ARGS((DdManager *dd, int N, int cmu, int approach, int pr));
+static void usage (char * prog);
+static FILE *open_file (char *filename, const char *mode);
+static int testIterators (DdManager *dd, DdNode *M, DdNode *C, int pr);
+static int testXor (DdManager *dd, DdNode *f, int pr, int nvars);
+static int testHamming (DdManager *dd, DdNode *f, int pr);
+static int testWalsh (DdManager *dd, int N, int cmu, int approach, int pr);
 
 /**AutomaticEnd***************************************************************/
 
@@ -74,17 +101,17 @@ int
 main(int argc, char **argv)
 {
     FILE *fp;           /* pointer to input file */
-    char *file = "";	/* input file name */
+    char *file = (char *) "";	/* input file name */
     FILE *dfp = NULL;	/* pointer to dump file */
     char *dfile;	/* file for DD dump */
     DdNode *dfunc[2];	/* addresses of the functions to be dumped */
     DdManager *dd;	/* pointer to DD manager */
-    DdNode *one, *zero;	/* fast access to constant functions */
+    DdNode *one;	/* fast access to constant function */
     DdNode *M;
     DdNode **x;		/* pointers to variables */
     DdNode **y;		/* pointers to variables */
-    DdNode **xn;       	/* complements of row variables */
-    DdNode **yn_;      	/* complements of column variables */
+    DdNode **xn;	/* complements of row variables */
+    DdNode **yn_;	/* complements of column variables */
     DdNode **xvars;
     DdNode **yvars;
     DdNode *C;		/* result of converting from ADD to BDD */
@@ -146,7 +173,7 @@ main(int argc, char **argv)
     blifOrDot = 0; /* dot format */
 
     /* Parse command line. */
-    while ((c = util_getopt(argc, argv, "CDHMPS:a:bcd:g:hkmn:p:v:x:X:"))
+    while ((c = util_getopt(argc, argv, (char *) "CDHMPS:a:bcd:g:hkmn:p:v:x:X:"))
 	   != EOF) {
 	switch(c) {
 	case 'C':
@@ -213,7 +240,7 @@ main(int argc, char **argv)
     }
 
     if (argc - util_optind == 0) {
-	file = "-";
+	file = (char *) "-";
     } else if (argc - util_optind == 1) {
 	file = argv[util_optind];
     } else {
@@ -238,7 +265,6 @@ main(int argc, char **argv)
     /* Initialize manager and provide easy reference to terminals. */
     dd = Cudd_Init(nvars,0,nslots,cacheSize,maxMemory);
     one = DD_ONE(dd);
-    zero = DD_ZERO(dd);
     dd->groupcheck = (Cudd_AggregationType) groupcheck;
     if (autodyn) Cudd_AutodynEnable(dd,CUDD_REORDER_SAME);
 
@@ -332,7 +358,7 @@ main(int argc, char **argv)
 	if (retval == 0) exit(2);
 
 	/* Test Hamming distance functions. */
-	retval = testHamming(dd,C,pr,nx+ny);
+	retval = testHamming(dd,C,pr);
 	if (retval == 0) exit(2);
 
 	/* Test selection functions. */
@@ -352,6 +378,43 @@ main(int argc, char **argv)
 		(void) printf("CP != CPr!\n");
 	    }
 	    Cudd_RecursiveDeref(dd, CPr);
+	}
+
+	/* Test inequality generator. */
+	{
+	    int Nmin = ddMin(nx,ny);
+	    int q;
+	    DdGen *gen;
+	    int *cube;
+	    DdNode *f = Cudd_Inequality(dd,Nmin,2,xvars,yvars);
+	    if (f == NULL) exit(2);
+	    Cudd_Ref(f);
+	    if (pr>0) {
+		(void) printf(":4: ineq");
+		Cudd_PrintDebug(dd,f,nx+ny,pr);
+		if (pr>1) {
+		    Cudd_ForeachPrime(dd,Cudd_Not(f),Cudd_Not(f),gen,cube) {
+			for (q = 0; q < dd->size; q++) {
+			    switch (cube[q]) {
+			    case 0:
+				(void) printf("1");
+				break;
+			    case 1:
+				(void) printf("0");
+				break;
+			    case 2:
+				(void) printf("-");
+				break;
+			    default:
+				(void) printf("?");
+			    }
+			}
+			(void) printf(" 1\n");
+		    }
+		    (void) printf("\n");
+		}
+	    }
+	    Cudd_IterDerefBdd(dd, f);
 	}
 	FREE(xvars); FREE(yvars);
 
@@ -416,7 +479,7 @@ main(int argc, char **argv)
 	}
 
 	/* Reorder if so requested. */
-        if (approach != CUDD_REORDER_NONE) {
+	if (approach != CUDD_REORDER_NONE) {
 #ifndef DD_STATS
 	    retval = Cudd_EnableReorderingReporting(dd);
 	    if (retval == 0) {
@@ -499,9 +562,10 @@ main(int argc, char **argv)
 	    dfunc[1] = M;
 	    if (blifOrDot == 1) {
 		/* Only dump C because blif cannot handle ADDs */
-		retval = Cudd_DumpBlif(dd,1,dfunc,NULL,onames,NULL,dfp);
+		retval = Cudd_DumpBlif(dd,1,dfunc,NULL,(char **)onames,
+				       NULL,dfp,0);
 	    } else {
-		retval = Cudd_DumpDot(dd,2,dfunc,NULL,onames,dfp);
+		retval = Cudd_DumpDot(dd,2,dfunc,NULL,(char **)onames,dfp);
 	    }
 	    if (retval != 1) {
 		(void) fprintf(stderr,"abnormal termination\n");
@@ -521,9 +585,9 @@ main(int argc, char **argv)
 	}
 	if (pr>0) {
 	    (void) printf("Number of variables = %6d\t",dd->size);
-	    (void) printf("Number of slots     = %6d\n",dd->slots);
-	    (void) printf("Number of keys      = %6d\t",dd->keys);
-	    (void) printf("Number of min dead  = %6d\n",dd->minDead);
+	    (void) printf("Number of slots     = %6u\n",dd->slots);
+	    (void) printf("Number of keys      = %6u\t",dd->keys);
+	    (void) printf("Number of min dead  = %6u\n",dd->minDead);
 	}
 
     } while (multiple && !feof(fp));
@@ -640,15 +704,15 @@ usage(char *prog)
 
 ******************************************************************************/
 static FILE *
-open_file(char *filename, char *mode)
+open_file(char *filename, const char *mode)
 {
     FILE *fp;
 
     if (strcmp(filename, "-") == 0) {
-        return mode[0] == 'r' ? stdin : stdout;
+	return mode[0] == 'r' ? stdin : stdout;
     } else if ((fp = fopen(filename, mode)) == NULL) {
-        perror(filename);
-        exit(1);
+	perror(filename);
+	exit(1);
     }
     return fp;
 
@@ -795,34 +859,56 @@ testIterators(
 	if (!Cudd_bddPrintCover(dd,C,C)) return(0);
     }
 
+    if (pr>1) {
+	(void) printf("Testing iterator on primes (CNF):\n");
+	Cudd_ForeachPrime(dd,Cudd_Not(C),Cudd_Not(C),gen,cube) {
+	    for (q = 0; q < dd->size; q++) {
+		switch (cube[q]) {
+		case 0:
+		    (void) printf("1");
+		    break;
+		case 1:
+		    (void) printf("0");
+		    break;
+		case 2:
+		    (void) printf("-");
+		    break;
+		default:
+		    (void) printf("?");
+		}
+	    }
+	    (void) printf(" 1\n");
+	}
+	(void) printf("\n");
+    }
+
     /* Test iterator on nodes. */
     if (pr>2) {
-	DdGen *gen;
 	DdNode *node;
 	(void) printf("Testing iterator on nodes:\n");
 	Cudd_ForeachNode(dd,M,gen,node) {
 	    if (Cudd_IsConstant(node)) {
 #if SIZEOF_VOID_P == 8
 		(void) printf("ID = 0x%lx\tvalue = %-9g\n",
-			      (unsigned long) node /
-			      (unsigned long) sizeof(DdNode),
+			      (ptruint) node /
+			      (ptruint) sizeof(DdNode),
 			      Cudd_V(node));
 #else
 		(void) printf("ID = 0x%x\tvalue = %-9g\n",
-			      (unsigned int) node /
-			      (unsigned int) sizeof(DdNode),
+			      (ptruint) node /
+			      (ptruint) sizeof(DdNode),
 			      Cudd_V(node));
 #endif
 	    } else {
 #if SIZEOF_VOID_P == 8
-		(void) printf("ID = 0x%lx\tindex = %d\tr = %d\n",
-			      (unsigned long) node /
-			      (unsigned long) sizeof(DdNode),
+		(void) printf("ID = 0x%lx\tindex = %u\tr = %u\n",
+			      (ptruint) node /
+			      (ptruint) sizeof(DdNode),
 			      node->index, node->ref);
 #else
-		(void) printf("ID = 0x%x\tindex = %d\tr = %d\n",
-			      (unsigned int) node /
-			      (unsigned int) sizeof(DdNode),
+		(void) printf("ID = 0x%x\tindex = %u\tr = %u\n",
+			      (ptruint) node /
+			      (ptruint) sizeof(DdNode),
 			      node->index, node->ref);
 #endif
 	    }
@@ -929,8 +1015,7 @@ static int
 testHamming(
   DdManager *dd,
   DdNode *f,
-  int pr,
-  int nvars)
+  int pr)
 {
     DdNode **vars, *minBdd, *zero, *scan;
     int i;

@@ -18,9 +18,12 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "main.h"
-#include "mio.h"
+#include "base/abc/abc.h"
+#include "base/main/main.h"
+#include "map/mio/mio.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -66,7 +69,7 @@ int Abc_NtkAttach( Abc_Ntk_t * pNtk )
     assert( Abc_NtkIsSopLogic(pNtk) );
 
     // check that the library is available
-    pGenlib = Abc_FrameReadLibGen();
+    pGenlib = (Mio_Library_t *)Abc_FrameReadLibGen();
     if ( pGenlib == NULL )
     {
         printf( "The current library is not available.\n" );
@@ -77,15 +80,15 @@ int Abc_NtkAttach( Abc_Ntk_t * pNtk )
     Abc_AttachSetupTruthTables( uTruths );
     
     // collect all the gates
-    ppGates = Mio_CollectRoots( pGenlib, 6, (float)1.0e+20, 1, &nGates );
+    ppGates = Mio_CollectRoots( pGenlib, 6, (float)1.0e+20, 1, &nGates, 0 );
 
     // derive the gate truth tables
-    puTruthGates    = ALLOC( unsigned *, nGates );
-    puTruthGates[0] = ALLOC( unsigned, 2 * nGates );
+    puTruthGates    = ABC_ALLOC( unsigned *, nGates );
+    puTruthGates[0] = ABC_ALLOC( unsigned, 2 * nGates );
     for ( i = 1; i < nGates; i++ )
         puTruthGates[i] = puTruthGates[i-1] + 2;
     for ( i = 0; i < nGates; i++ )
-        Mio_DeriveTruthTable( ppGates[i], uTruths, Mio_GateReadInputs(ppGates[i]), 6, puTruthGates[i] );
+        Mio_DeriveTruthTable( ppGates[i], uTruths, Mio_GateReadPinNum(ppGates[i]), 6, puTruthGates[i] );
 
     // assign the gates to pNode->pCopy
     Abc_NtkCleanCopy( pNtk );
@@ -94,14 +97,14 @@ int Abc_NtkAttach( Abc_Ntk_t * pNtk )
         nFanins = Abc_ObjFaninNum(pNode);
         if ( nFanins == 0 )
         {
-            if ( Abc_SopIsConst1(pNode->pData) )
+            if ( Abc_SopIsConst1((char *)pNode->pData) )
                 pNode->pCopy = (Abc_Obj_t *)Mio_LibraryReadConst1(pGenlib);
             else
                 pNode->pCopy = (Abc_Obj_t *)Mio_LibraryReadConst0(pGenlib);
         }
         else if ( nFanins == 1 )
         {
-            if ( Abc_SopIsBuf(pNode->pData) )
+            if ( Abc_SopIsBuf((char *)pNode->pData) )
                 pNode->pCopy = (Abc_Obj_t *)Mio_LibraryReadBuf(pGenlib);
             else
                 pNode->pCopy = (Abc_Obj_t *)Mio_LibraryReadInv(pGenlib);
@@ -109,24 +112,24 @@ int Abc_NtkAttach( Abc_Ntk_t * pNtk )
         else if ( nFanins > 6 )
         {
             printf( "Cannot attach gate with more than 6 inputs to node %s.\n", Abc_ObjName(pNode) );
-            free( puTruthGates[0] );
-            free( puTruthGates );
-            free( ppGates );
+            ABC_FREE( puTruthGates[0] );
+            ABC_FREE( puTruthGates );
+            ABC_FREE( ppGates );
             return 0;
         }
         else if ( !Abc_NodeAttach( pNode, ppGates, puTruthGates, nGates, uTruths ) )
         {
             printf( "Could not attach the library gate to node %s.\n", Abc_ObjName(pNode) );
-            free( puTruthGates[0] );
-            free( puTruthGates );
-            free( ppGates );
+            ABC_FREE( puTruthGates[0] );
+            ABC_FREE( puTruthGates );
+            ABC_FREE( ppGates );
             return 0;
         }
     }
-    free( puTruthGates[0] );
-    free( puTruthGates );
-    free( ppGates );
-    FREE( s_pPerms );
+    ABC_FREE( puTruthGates[0] );
+    ABC_FREE( puTruthGates );
+    ABC_FREE( ppGates );
+    ABC_FREE( s_pPerms );
 
     // perform the final transformation
     Abc_NtkForEachNode( pNtk, pNode, i )
@@ -142,7 +145,7 @@ int Abc_NtkAttach( Abc_Ntk_t * pNtk )
     Abc_NtkForEachNode( pNtk, pNode, i )
         pNode->pData = pNode->pCopy, pNode->pCopy = NULL;
     pNtk->ntkFunc = ABC_FUNC_MAP;
-    Extra_MmFlexStop( pNtk->pManFunc );
+    Extra_MmFlexStop( (Extra_MmFlex_t *)pNtk->pManFunc );
     pNtk->pManFunc = pGenlib;
 
     printf( "Library gates are successfully attached to the nodes.\n" );
@@ -177,7 +180,7 @@ int Abc_NodeAttach( Abc_Obj_t * pNode, Mio_Gate_t ** ppGates, unsigned ** puTrut
     int nFanins, i;
 
     // compute the node's truth table
-    Abc_AttachComputeTruth( pNode->pData, uTruths, uTruthNode );
+    Abc_AttachComputeTruth( (char *)pNode->pData, uTruths, uTruthNode );
     // find the matching gate and permutation
     pGate = Abc_AttachFind( ppGates, puTruthGates, nGates, uTruthNode, Perm );
     if ( pGate == NULL )
@@ -401,4 +404,6 @@ void Abc_TruthPermute( char * pPerm, int nVars, unsigned * uTruthNode, unsigned 
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

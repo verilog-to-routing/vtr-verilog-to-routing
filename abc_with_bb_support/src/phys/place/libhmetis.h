@@ -1,7 +1,11 @@
 // A. Hurst ahurst@eecs.berkeley.edu
 
-#ifndef LIBHMETIS_H_
-#define LIBHMETIS_H_
+#ifndef ABC__phys__place__libhmetis_h
+#define ABC__phys__place__libhmetis_h
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 static void HMETIS_PartRecursive(int nvtxs, 
 			  int nhedges, 
@@ -27,5 +31,9 @@ static void HMETIS_PartKway(int nvtxs,
 		     int *options, 
 		     int *part, 
              int *edgecnt ) {} //;
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif

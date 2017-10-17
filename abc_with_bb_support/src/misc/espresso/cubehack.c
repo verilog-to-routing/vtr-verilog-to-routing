@@ -27,6 +27,9 @@ bool use_random_order;
 */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 void 
 cautious_define_cube_size(n)
@@ -136,3 +139,5 @@ set_espresso_flags()
     use_super_gasp = FALSE;
     use_random_order = FALSE;
 }
+ABC_NAMESPACE_IMPL_END
+

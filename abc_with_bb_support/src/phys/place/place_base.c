@@ -15,6 +15,9 @@
 #include "place_base.h"
 #include "place_gordian.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 // --------------------------------------------------------------------
 // Global variables
 //
@@ -343,3 +346,5 @@ int cellSortByID(const void *a, const void *b) {
   if (pa->m_id > pb->m_id) return 1;
   return 0;
 }
+ABC_NAMESPACE_IMPL_END
+

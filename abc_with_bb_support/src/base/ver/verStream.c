@@ -20,13 +20,16 @@
 
 #include "ver.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-#define VER_BUFFER_SIZE        1048576    // 1M   - size of the data chunk stored in memory
-#define VER_OFFSET_SIZE           4096    // 4K   - load new data when less than this is left
-#define VER_WORD_SIZE             4096    // 4K   - the largest token that can be returned
+#define VER_BUFFER_SIZE        1048576    // 1M  - size of the data chunk stored in memory
+#define VER_OFFSET_SIZE          65536    // 64K - load new data when less than this is left
+#define VER_WORD_SIZE            65536    // 64K - the largest token that can be returned
 
 #define VER_MINIMUM(a,b)       (((a) < (b))? (a) : (b))
 
@@ -35,17 +38,17 @@ struct Ver_Stream_t_
     // the input file
     char *           pFileName;     // the input file name
     FILE *           pFile;         // the input file pointer
-    int              nFileSize;     // the total number of bytes in the file
-    int              nFileRead;     // the number of bytes currently read from file
-    int              nLineCounter;  // the counter of lines processed
+    iword            nFileSize;     // the total number of bytes in the file
+    iword            nFileRead;     // the number of bytes currently read from file
+    iword            nLineCounter;  // the counter of lines processed
     // temporary storage for data 
+    iword            nBufferSize;   // the size of the buffer
     char *           pBuffer;       // the buffer
-    int              nBufferSize;   // the size of the buffer
     char *           pBufferCur;    // the current reading position
     char *           pBufferEnd;    // the first position not used by currently loaded data
     char *           pBufferStop;   // the position where loading new data will be done
     // tokens given to the user
-    char             pChars[VER_WORD_SIZE+5]; // temporary storage for a word (plus end-of-string and two parantheses)
+    char             pChars[VER_WORD_SIZE+5]; // temporary storage for a word (plus end-of-string and two parentheses)
     int              nChars;        // the total number of characters in the word
     // status of the parser
     int              fStop;         // this flag goes high when the end of file is reached
@@ -73,6 +76,7 @@ Ver_Stream_t * Ver_StreamAlloc( char * pFileName )
     Ver_Stream_t * p;
     FILE * pFile;
     int nCharsToRead;
+    int RetValue;
     // check if the file can be opened
     pFile = fopen( pFileName, "rb" );
     if ( pFile == NULL )
@@ -81,7 +85,7 @@ Ver_Stream_t * Ver_StreamAlloc( char * pFileName )
         return NULL;
     }
     // start the file reader    
-    p = ALLOC( Ver_Stream_t, 1 );
+    p = ABC_ALLOC( Ver_Stream_t, 1 );
     memset( p, 0, sizeof(Ver_Stream_t) );
     p->pFileName   = pFileName;
     p->pFile       = pFile;
@@ -90,13 +94,13 @@ Ver_Stream_t * Ver_StreamAlloc( char * pFileName )
     p->nFileSize = ftell( pFile );  
     rewind( pFile ); 
     // allocate the buffer
-    p->pBuffer = ALLOC( char, VER_BUFFER_SIZE+1 );
+    p->pBuffer = ABC_ALLOC( char, VER_BUFFER_SIZE+1 );
     p->nBufferSize = VER_BUFFER_SIZE;
     p->pBufferCur  = p->pBuffer;
     // determine how many chars to read
     nCharsToRead = VER_MINIMUM(p->nFileSize, VER_BUFFER_SIZE);
     // load the first part into the buffer
-    fread( p->pBuffer, nCharsToRead, 1, p->pFile );
+    RetValue = fread( p->pBuffer, nCharsToRead, 1, p->pFile );
     p->nFileRead = nCharsToRead;
     // set the ponters to the end and the stopping point
     p->pBufferEnd  = p->pBuffer + nCharsToRead;
@@ -120,6 +124,7 @@ Ver_Stream_t * Ver_StreamAlloc( char * pFileName )
 void Ver_StreamReload( Ver_Stream_t * p )
 {
     int nCharsUsed, nCharsToRead;
+    int RetValue;
     assert( !p->fStop );
     assert( p->pBufferCur > p->pBufferStop );
     assert( p->pBufferCur < p->pBufferEnd );
@@ -131,7 +136,7 @@ void Ver_StreamReload( Ver_Stream_t * p )
     // determine how many chars we will read
     nCharsToRead = VER_MINIMUM( p->nBufferSize - nCharsUsed, p->nFileSize - p->nFileRead );
     // read the chars
-    fread( p->pBuffer + nCharsUsed, nCharsToRead, 1, p->pFile );
+    RetValue = fread( p->pBuffer + nCharsUsed, nCharsToRead, 1, p->pFile );
     p->nFileRead += nCharsToRead;
     // set the ponters to the end and the stopping point
     p->pBufferEnd  = p->pBuffer + nCharsUsed + nCharsToRead;
@@ -153,8 +158,8 @@ void Ver_StreamFree( Ver_Stream_t * p )
 {
     if ( p->pFile )
         fclose( p->pFile );
-    FREE( p->pBuffer );
-    free( p );
+    ABC_FREE( p->pBuffer );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -410,7 +415,10 @@ char * Ver_StreamGetWord( Ver_Stream_t * p, char * pCharsToStop )
         {
             p->pChars[p->nChars++] = *pChar;
             if ( p->nChars == VER_WORD_SIZE )
+            {
+                printf( "Ver_StreamGetWord(): The buffer size is exceeded.\n" );
                 return NULL;
+            }
             // count the lines
             if ( *pChar == '\n' )
                 p->nLineCounter++;
@@ -437,4 +445,6 @@ char * Ver_StreamGetWord( Ver_Stream_t * p, char * pCharsToStop )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

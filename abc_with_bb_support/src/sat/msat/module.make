@@ -2,7 +2,7 @@ SRC +=  src/sat/msat/msatActivity.c \
 	src/sat/msat/msatClause.c \
 	src/sat/msat/msatClauseVec.c \
 	src/sat/msat/msatMem.c \
-	src/sat/msat/msatOrderJ.c \
+	src/sat/msat/msatOrderH.c \
 	src/sat/msat/msatQueue.c \
 	src/sat/msat/msatRead.c \
 	src/sat/msat/msatSolverApi.c \

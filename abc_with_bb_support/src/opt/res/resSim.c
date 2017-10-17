@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "resInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -43,7 +46,7 @@
 Res_Sim_t * Res_SimAlloc( int nWords )
 {
     Res_Sim_t * p;
-    p = ALLOC( Res_Sim_t, 1 );
+    p = ABC_ALLOC( Res_Sim_t, 1 );
     memset( p, 0, sizeof(Res_Sim_t) );
     // simulation parameters
     p->nWords    = nWords;
@@ -102,8 +105,8 @@ void Res_SimAdjust( Res_Sim_t * p, Abc_Ntk_t * pAig, int nTruePis )
         p->vOuts = Vec_PtrAllocSimInfo( Abc_NtkPoNum(pAig), p->nWordsOut );
     }
     // clean storage info for patterns
-    Abc_InfoClear( Vec_PtrEntry(p->vPats0,0), p->nWords * nTruePis );
-    Abc_InfoClear( Vec_PtrEntry(p->vPats1,0), p->nWords * nTruePis );
+    Abc_InfoClear( (unsigned *)Vec_PtrEntry(p->vPats0,0), p->nWords * nTruePis );
+    Abc_InfoClear( (unsigned *)Vec_PtrEntry(p->vPats1,0), p->nWords * nTruePis );
     p->nPats0 = 0;
     p->nPats1 = 0;
     p->fConst0 = 0;
@@ -128,7 +131,7 @@ void Res_SimFree( Res_Sim_t * p )
     Vec_PtrFree( p->vPats1 );
     Vec_PtrFree( p->vOuts );
     Vec_VecFree( p->vCands );
-    free( p );
+    ABC_FREE( p );
 }
 
 
@@ -175,7 +178,7 @@ void Res_SimSetRandomBytes( Res_Sim_t * p )
     int i;
     Abc_NtkForEachPi( p->pAig, pObj, i )
     {
-        pInfo = Vec_PtrEntry( p->vPats, pObj->Id );
+        pInfo = (unsigned *)Vec_PtrEntry( p->vPats, pObj->Id );
         if ( i < p->nTruePis )
             Abc_InfoRandomBytes( pInfo, p->nWordsIn );
         else
@@ -220,7 +223,7 @@ void Res_SimSetDerivedBytes( Res_Sim_t * p, int fUseWalk )
     {
         if ( i == p->nTruePis )
             break;
-        Abc_InfoRandomBytes( Vec_PtrEntry(p->vPats, pObj->Id), nPats/4 );
+        Abc_InfoRandomBytes( (unsigned *)Vec_PtrEntry(p->vPats, pObj->Id), nPats/4 );
     }
 
     // set special patterns
@@ -283,7 +286,7 @@ void Res_SimSetDerivedBytes( Res_Sim_t * p, int fUseWalk )
                     if ( i == p->nTruePis )
                         break;
                     pInfo = (unsigned char *)Vec_PtrEntry( p->vPats, pObj->Id );
-                    if ( (i == k) ^ Abc_InfoHasBit( Vec_PtrEntry(vPatsSource[z], i), s ) )
+                    if ( (i == k) ^ Abc_InfoHasBit( (unsigned *)Vec_PtrEntry(vPatsSource[z], i), s ) )
                     {
                         pInfo[nPats] = 0xff;
 //                        if ( s == 0 )
@@ -347,8 +350,8 @@ void Res_SimSetGiven( Res_Sim_t * p, Vec_Ptr_t * vInfo )
     {
         if ( i == p->nTruePis )
             break;
-        pInfo = Vec_PtrEntry( p->vPats, pObj->Id );
-        pInfo2 = Vec_PtrEntry( vInfo, i );
+        pInfo = (unsigned *)Vec_PtrEntry( p->vPats, pObj->Id );
+        pInfo2 = (unsigned *)Vec_PtrEntry( vInfo, i );
         for ( w = 0; w < p->nWords; w++ )
             pInfo[w] = pInfo2[w];
     }
@@ -371,9 +374,9 @@ void Res_SimPerformOne( Abc_Obj_t * pNode, Vec_Ptr_t * vSimInfo, int nSimWords )
     int k, fComp1, fComp2;
     // simulate the internal nodes
     assert( Abc_ObjIsNode(pNode) );
-    pInfo  = Vec_PtrEntry(vSimInfo, pNode->Id);
-    pInfo1 = Vec_PtrEntry(vSimInfo, Abc_ObjFaninId0(pNode));
-    pInfo2 = Vec_PtrEntry(vSimInfo, Abc_ObjFaninId1(pNode));
+    pInfo  = (unsigned *)Vec_PtrEntry(vSimInfo, pNode->Id);
+    pInfo1 = (unsigned *)Vec_PtrEntry(vSimInfo, Abc_ObjFaninId0(pNode));
+    pInfo2 = (unsigned *)Vec_PtrEntry(vSimInfo, Abc_ObjFaninId1(pNode));
     fComp1 = Abc_ObjFaninC0(pNode);
     fComp2 = Abc_ObjFaninC1(pNode);
     if ( fComp1 && fComp2 )
@@ -407,8 +410,8 @@ void Res_SimTransferOne( Abc_Obj_t * pNode, Vec_Ptr_t * vSimInfo, int nSimWords 
     int k, fComp1;
     // simulate the internal nodes
     assert( Abc_ObjIsCo(pNode) );
-    pInfo  = Vec_PtrEntry(vSimInfo, pNode->Id);
-    pInfo1 = Vec_PtrEntry(vSimInfo, Abc_ObjFaninId0(pNode));
+    pInfo  = (unsigned *)Vec_PtrEntry(vSimInfo, pNode->Id);
+    pInfo1 = (unsigned *)Vec_PtrEntry(vSimInfo, Abc_ObjFaninId0(pNode));
     fComp1 = Abc_ObjFaninC0(pNode);
     if ( fComp1 )
         for ( k = 0; k < nSimWords; k++ )
@@ -433,7 +436,7 @@ void Res_SimPerformRound( Res_Sim_t * p, int nWords )
 {
     Abc_Obj_t * pObj;
     int i;
-    Abc_InfoFill( Vec_PtrEntry(p->vPats,0), nWords );
+    Abc_InfoFill( (unsigned *)Vec_PtrEntry(p->vPats,0), nWords );
     Abc_AigForEachAnd( p->pAig, pObj, i )
         Res_SimPerformOne( pObj, p->vPats, nWords );
     Abc_NtkForEachPo( p->pAig, pObj, i )
@@ -460,14 +463,14 @@ void Res_SimPadSimInfo( Vec_Ptr_t * vPats, int nPats, int nWords )
     // pad the first word
     if ( nPats < 8 * sizeof(unsigned) )
     {
-        Vec_PtrForEachEntry( vPats, pInfo, i )
+        Vec_PtrForEachEntry( unsigned *, vPats, pInfo, i )
             if ( pInfo[0] & 1 )
                 pInfo[0] |= ((~0) << nPats);
         nPats = 8 * sizeof(unsigned);
     }
     // pad the empty words
     iWords = nPats / (8 * sizeof(unsigned));
-    Vec_PtrForEachEntry( vPats, pInfo, i )
+    Vec_PtrForEachEntry( unsigned *, vPats, pInfo, i )
     {
         for ( w = iWords; w < nWords; w++ )
             pInfo[w] = pInfo[0];
@@ -492,8 +495,8 @@ void Res_SimDeriveInfoReplicate( Res_Sim_t * p )
     int i, j, w;
     Abc_NtkForEachPo( p->pAig, pObj, i )
     {
-        pInfo = Vec_PtrEntry( p->vPats, pObj->Id );
-        pInfo2 = Vec_PtrEntry( p->vOuts, i );
+        pInfo = (unsigned *)Vec_PtrEntry( p->vPats, pObj->Id );
+        pInfo2 = (unsigned *)Vec_PtrEntry( p->vOuts, i );
         for ( j = 0; j < p->nPats; j++ )
             for ( w = 0; w < p->nWords; w++ )
                 *pInfo2++ = pInfo[w];
@@ -518,8 +521,8 @@ void Res_SimDeriveInfoComplement( Res_Sim_t * p )
     int i, j, w;
     Abc_NtkForEachPo( p->pAig, pObj, i )
     {
-        pInfo = Vec_PtrEntry( p->vPats, pObj->Id );
-        pInfo2 = Vec_PtrEntry( p->vOuts, i );
+        pInfo = (unsigned *)Vec_PtrEntry( p->vPats, pObj->Id );
+        pInfo2 = (unsigned *)Vec_PtrEntry( p->vOuts, i );
         for ( j = 0; j < p->nPats; j++, pInfo2 += p->nWords )
             if ( Abc_InfoHasBit( pInfo, j ) )
                 for ( w = 0; w < p->nWords; w++ )
@@ -545,7 +548,7 @@ void Res_SimPrintOutPatterns( Res_Sim_t * p, Abc_Ntk_t * pAig )
     int i;
     Abc_NtkForEachPo( pAig, pObj, i )
     {
-        pInfo2 = Vec_PtrEntry( p->vOuts, i );
+        pInfo2 = (unsigned *)Vec_PtrEntry( p->vOuts, i );
         Extra_PrintBinary( stdout, pInfo2, p->nPatsOut );
         printf( "\n" );
     }
@@ -565,7 +568,7 @@ void Res_SimPrintOutPatterns( Res_Sim_t * p, Abc_Ntk_t * pAig )
 void Res_SimPrintNodePatterns( Res_Sim_t * p, Abc_Ntk_t * pAig )
 {
     unsigned * pInfo;
-    pInfo = Vec_PtrEntry( p->vPats, Abc_NtkPo(p->pAig, 1)->Id );
+    pInfo = (unsigned *)Vec_PtrEntry( p->vPats, Abc_NtkPo(p->pAig, 1)->Id );
     Extra_PrintBinary( stdout, pInfo, p->nPats );
     printf( "\n" );
 }
@@ -643,7 +646,7 @@ void Res_SimCollectPatterns( Res_Sim_t * p, int fVerbose )
                 pInfo = (unsigned char *)Vec_PtrEntry( p->vPats, pObj->Id );
                 assert( pInfo[i] == 0 || pInfo[i] == 0xff );
                 if ( pInfo[i] )
-                    Abc_InfoSetBit( Vec_PtrEntry(p->vPats0, j), p->nPats0 );
+                    Abc_InfoSetBit( (unsigned *)Vec_PtrEntry(p->vPats0, j), p->nPats0 );
             }
             p->nPats0++;
         }
@@ -658,7 +661,7 @@ void Res_SimCollectPatterns( Res_Sim_t * p, int fVerbose )
                 pInfo = (unsigned char *)Vec_PtrEntry( p->vPats, pObj->Id );
                 assert( pInfo[i] == 0 || pInfo[i] == 0xff );
                 if ( pInfo[i] )
-                    Abc_InfoSetBit( Vec_PtrEntry(p->vPats1, j), p->nPats1 );
+                    Abc_InfoSetBit( (unsigned *)Vec_PtrEntry(p->vPats1, j), p->nPats1 );
             }
             p->nPats1++;
         }
@@ -696,20 +699,20 @@ int Res_SimVerifyValue( Res_Sim_t * p, int fOnSet )
             break;
         if ( fOnSet )
         {
-            pInfo2 = Vec_PtrEntry( p->vPats1, i );
+            pInfo2 = (unsigned *)Vec_PtrEntry( p->vPats1, i );
             value = Abc_InfoHasBit( pInfo2, p->nPats1 - 1 );
         }
         else
         {
-            pInfo2 = Vec_PtrEntry( p->vPats0, i );
+            pInfo2 = (unsigned *)Vec_PtrEntry( p->vPats0, i );
             value = Abc_InfoHasBit( pInfo2, p->nPats0 - 1 );
         }
-        pInfo = Vec_PtrEntry( p->vPats, pObj->Id );
+        pInfo = (unsigned *)Vec_PtrEntry( p->vPats, pObj->Id );
         pInfo[0] = value ? ~0 : 0;
     }
     Res_SimPerformRound( p, 1 );
     pObj = Abc_NtkPo( p->pAig, 1 );
-    pInfo = Vec_PtrEntry( p->vPats, pObj->Id );
+    pInfo = (unsigned *)Vec_PtrEntry( p->vPats, pObj->Id );
     assert( pInfo[0] == 0 || pInfo[0] == ~0 );
     return pInfo[0] > 0;
 }
@@ -787,4 +790,6 @@ int Res_SimPrepare( Res_Sim_t * p, Abc_Ntk_t * pAig, int nTruePis, int fVerbose 
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

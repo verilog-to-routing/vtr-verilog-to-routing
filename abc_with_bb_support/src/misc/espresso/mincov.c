@@ -9,6 +9,9 @@
  */
 #include "mincov_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
  *  mincov.c
  */
@@ -376,3 +379,5 @@ sm_row *cover;
     }
     return 1;
 }
+ABC_NAMESPACE_IMPL_END
+

@@ -18,6 +18,9 @@
 
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -142,7 +145,7 @@ Fpga_Cut_t * Fpga_CutCreateSimple( Fpga_Man_t * p, Fpga_Node_t * pNode )
 ***********************************************************************/
 float Fpga_CutGetRootArea( Fpga_Man_t * p, Fpga_Cut_t * pCut )
 {
-    return p->pLutLib->pLutAreas[pCut->nLeaves];
+    return p->pLutLib->pLutAreas[(int)pCut->nLeaves];
 }
 
 /**Function*************************************************************
@@ -158,7 +161,8 @@ float Fpga_CutGetRootArea( Fpga_Man_t * p, Fpga_Cut_t * pCut )
 ***********************************************************************/
 Fpga_Cut_t * Fpga_CutListAppend( Fpga_Cut_t * pSetAll, Fpga_Cut_t * pSets )
 {
-    Fpga_Cut_t * pPrev, * pTemp;
+    Fpga_Cut_t * pPrev = NULL; // Suppress "might be used uninitialized"
+    Fpga_Cut_t * pTemp;
     if ( pSetAll == NULL )
         return pSets;
     if ( pSets == NULL )
@@ -277,7 +281,7 @@ void Fpga_CutGetParameters( Fpga_Man_t * pMan, Fpga_Cut_t * pCut )
     Fpga_Cut_t * pFaninCut;
     int i;
     pCut->tArrival = -FPGA_FLOAT_LARGE;
-    pCut->aFlow    = pMan->pLutLib->pLutAreas[pCut->nLeaves];
+    pCut->aFlow    = pMan->pLutLib->pLutAreas[(int)pCut->nLeaves];
     for ( i = 0; i < pCut->nLeaves; i++ )
     {
         pFaninCut = pCut->ppLeaves[i]->pCutBest;
@@ -292,7 +296,7 @@ void Fpga_CutGetParameters( Fpga_Man_t * pMan, Fpga_Cut_t * pCut )
     }
     // use the first pin to compute the delay of the LUT 
     // (this mapper does not support the variable pin delay model)
-    pCut->tArrival += pMan->pLutLib->pLutDelays[pCut->nLeaves][0];
+    pCut->tArrival += pMan->pLutLib->pLutDelays[(int)pCut->nLeaves][0];
 }
 
 
@@ -311,7 +315,7 @@ float Fpga_CutGetAreaFlow( Fpga_Man_t * pMan, Fpga_Cut_t * pCut )
 {
     Fpga_Cut_t * pCutFanin;
     int i;
-    pCut->aFlow = pMan->pLutLib->pLutAreas[pCut->nLeaves];
+    pCut->aFlow = pMan->pLutLib->pLutAreas[(int)pCut->nLeaves];
     for ( i = 0; i < pCut->nLeaves; i++ )
     {
         // get the cut implementing this phase of the fanin
@@ -388,7 +392,7 @@ float Fpga_CutRef( Fpga_Man_t * pMan, Fpga_Node_t * pNode, Fpga_Cut_t * pCut, in
 //        Fpga_CutInsertFanouts( pMan, pNode, pCut );
 
     // start the area of this cut
-    aArea = pMan->pLutLib->pLutAreas[pCut->nLeaves];
+    aArea = pMan->pLutLib->pLutAreas[(int)pCut->nLeaves];
     // go through the children
     for ( i = 0; i < pCut->nLeaves; i++ )
     {
@@ -425,7 +429,7 @@ float Fpga_CutDeref( Fpga_Man_t * pMan, Fpga_Node_t * pNode, Fpga_Cut_t * pCut, 
 //        Fpga_CutRemoveFanouts( pMan, pNode, pCut );
 
     // start the area of this cut
-    aArea = pMan->pLutLib->pLutAreas[pCut->nLeaves];
+    aArea = pMan->pLutLib->pLutAreas[(int)pCut->nLeaves];
     // go through the children
     for ( i = 0; i < pCut->nLeaves; i++ )
     {
@@ -467,4 +471,6 @@ void Fpga_MappingSetUsedCuts( Fpga_Man_t * pMan )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

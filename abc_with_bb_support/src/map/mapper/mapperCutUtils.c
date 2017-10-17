@@ -18,6 +18,9 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -161,7 +164,8 @@ int Map_NodeGetLeafPhase( Map_Node_t * pNode, int fPhase, int iLeaf )
 ***********************************************************************/
 Map_Cut_t * Map_CutListAppend( Map_Cut_t * pSetAll, Map_Cut_t * pSets )
 {
-    Map_Cut_t * pPrev, * pTemp;
+    Map_Cut_t * pPrev = NULL; // Suppress "might be used uninitialized"
+    Map_Cut_t * pTemp;
     if ( pSetAll == NULL )
         return pSets;
     if ( pSets == NULL )
@@ -270,4 +274,6 @@ void Map_CutInsertFanouts( Map_Node_t * pNode, Map_Cut_t * pCut, int fPhase )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

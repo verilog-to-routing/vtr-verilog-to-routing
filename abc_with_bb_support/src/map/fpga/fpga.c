@@ -17,7 +17,10 @@
 ***********************************************************************/
 
 #include "fpgaInt.h"
-#include "main.h"
+#include "base/main/main.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -78,9 +81,9 @@ void Fpga_Init( Abc_Frame_t * pAbc )
   SeeAlso     []
 
 ***********************************************************************/
-void Fpga_End()
+void Fpga_End( Abc_Frame_t * pAbc )
 {
-    Fpga_LutLibFree( Abc_FrameReadLibLut() );
+    Fpga_LutLibFree( (Fpga_LutLib_t *)Abc_FrameReadLibLut() );
 }
 
 
@@ -138,7 +141,7 @@ int Fpga_CommandReadLibrary( Abc_Frame_t * pAbc, int argc, char **argv )
     if ( (pFile = fopen( FileName, "r" )) == NULL )
     {
         fprintf( pErr, "Cannot open input file \"%s\". ", FileName );
-        if ( FileName = Extra_FileGetSimilarName( FileName, ".genlib", ".lib", ".gen", ".g", NULL ) )
+        if ( (FileName = Extra_FileGetSimilarName( FileName, ".genlib", ".lib", ".gen", ".g", NULL )) )
             fprintf( pErr, "Did you mean \"%s\"?", FileName );
         fprintf( pErr, "\n" );
         return 1;
@@ -146,19 +149,19 @@ int Fpga_CommandReadLibrary( Abc_Frame_t * pAbc, int argc, char **argv )
     fclose( pFile );
 
     // set the new network
-    pLib = Fpga_LutLibCreate( FileName, fVerbose );
+    pLib = Fpga_LutLibRead( FileName, fVerbose );
     if ( pLib == NULL )
     {
         fprintf( pErr, "Reading LUT library has failed.\n" );
         goto usage;
     }
     // replace the current library
-    Fpga_LutLibFree( Abc_FrameReadLibLut() );
+    Fpga_LutLibFree( (Fpga_LutLib_t *)Abc_FrameReadLibLut() );
     Abc_FrameSetLibLut( pLib );
     return 0;
 
 usage:
-    fprintf( pErr, "\nusage: read_lut [-vh]\n");
+    fprintf( pErr, "usage: read_lut [-vh]\n");
     fprintf( pErr, "\t          read the LUT library from the file\n" );  
     fprintf( pErr, "\t-v      : toggles enabling of verbose output [default = %s]\n", (fVerbose? "yes" : "no") );
     fprintf( pErr, "\t-h      : print the command usage\n");
@@ -224,11 +227,11 @@ int Fpga_CommandPrintLibrary( Abc_Frame_t * pAbc, int argc, char **argv )
     }
 
     // set the new network
-    Fpga_LutLibPrint( Abc_FrameReadLibLut() );
+    Fpga_LutLibPrint( (Fpga_LutLib_t *)Abc_FrameReadLibLut() );
     return 0;
 
 usage:
-    fprintf( pErr, "\nusage: read_print [-vh]\n");
+    fprintf( pErr, "usage: print_lut [-vh]\n");
     fprintf( pErr, "\t          print the current LUT library\n" );  
     fprintf( pErr, "\t-v      : toggles enabling of verbose output [default = %s]\n", (fVerbose? "yes" : "no") );
     fprintf( pErr, "\t-h      : print the command usage\n");
@@ -272,7 +275,7 @@ void Fpga_SetSimpleLutLib( int nLutSize )
     }
     if ( pLutLib == NULL )
         return;
-    Fpga_LutLibFree( Abc_FrameReadLibLut() );
+    Fpga_LutLibFree( (Fpga_LutLib_t *)Abc_FrameReadLibLut() );
     Abc_FrameSetLibLut( Fpga_LutLibDup(pLutLib) );
 }
 
@@ -280,4 +283,6 @@ void Fpga_SetSimpleLutLib( int nLutSize )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

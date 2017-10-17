@@ -18,15 +18,19 @@
 
 ***********************************************************************/
  
-#ifndef __HASH_FLT_H__
-#define __HASH_FLT_H__
+#ifndef ABC__misc__hash__hashFlt_h
+#define ABC__misc__hash__hashFlt_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include "extra.h"
+#include "misc/extra/extra.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 extern int Hash_DefaultHashFunc(int key, int nBins);
 
@@ -86,11 +90,11 @@ static inline Hash_Flt_t * Hash_FltAlloc( int nBins )
   Hash_Flt_t * p;
   int i;
   assert(nBins > 0);
-  p = ALLOC( Hash_Flt_t, 1);
+  p = ABC_ALLOC( Hash_Flt_t, 1);
   p->nBins = nBins;
   p->fHash = Hash_DefaultHashFunc;
   p->nSize  = 0;
-  p->pArray = ALLOC( Hash_Flt_Entry_t *, nBins );
+  p->pArray = ABC_ALLOC( Hash_Flt_Entry_t *, nBins );
   for(i=0; i<nBins; i++)
     p->pArray[i] = NULL;
 
@@ -164,7 +168,7 @@ static inline void Hash_FltWriteEntry( Hash_Flt_t *p, int key, float data )
   // this key does not currently exist
   // create a new entry and add to bin
   p->nSize++;
-  (*pLast) = pEntry = ALLOC( Hash_Flt_Entry_t, 1 );
+  (*pLast) = pEntry = ABC_ALLOC( Hash_Flt_Entry_t, 1 );
   pEntry->pNext = NULL;
   pEntry->key = key;
   pEntry->data = data;
@@ -206,7 +210,7 @@ static inline float Hash_FltEntry( Hash_Flt_t *p, int key, int fCreate )
   if (fCreate) {
     // create a new entry and add to bin
     p->nSize++;
-    (*pLast) = pEntry = ALLOC( Hash_Flt_Entry_t, 1 );
+    (*pLast) = pEntry = ABC_ALLOC( Hash_Flt_Entry_t, 1 );
     pEntry->pNext = NULL;
     pEntry->key = key;
     pEntry->data = 0.0;
@@ -249,7 +253,7 @@ static inline float* Hash_FltEntryPtr( Hash_Flt_t *p, int key )
   // this key does not currently exist
   // create a new entry and add to bin
   p->nSize++;
-  (*pLast) = pEntry = ALLOC( Hash_Flt_Entry_t, 1 );
+  (*pLast) = pEntry = ABC_ALLOC( Hash_Flt_Entry_t, 1 );
   pEntry->pNext = NULL;
   pEntry->key = key;
   pEntry->data = 0.0;
@@ -283,7 +287,7 @@ static inline void Hash_FltRemove( Hash_Flt_t *p, int key )
     if (pEntry->key == key) {
       p->nSize--;
       *pLast = pEntry->pNext;
-      FREE( pEntry );
+      ABC_FREE( pEntry );
       return;
     }
     pLast = &(pEntry->pNext);
@@ -307,24 +311,29 @@ static inline void Hash_FltRemove( Hash_Flt_t *p, int key )
 ***********************************************************************/
 static inline void Hash_FltFree( Hash_Flt_t *p ) {
   int bin;
-  Hash_Flt_Entry_t *pEntry;
+  Hash_Flt_Entry_t *pEntry, *pTemp;
 
   // free bins
   for(bin = 0; bin < p->nBins; bin++) {
     pEntry = p->pArray[bin];
     while(pEntry) {
+      pTemp = pEntry;
       pEntry = pEntry->pNext;
-      FREE( pEntry );
+      ABC_FREE( pTemp );
     }
   }
  
   // free hash
-  FREE( p->pArray );
-  FREE( p );
+  ABC_FREE( p->pArray );
+  ABC_FREE( p );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif

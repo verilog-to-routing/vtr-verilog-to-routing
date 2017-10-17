@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "ivy.h"
+#include "base/abc/abc.h"
+#include "aig/ivy/ivy.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -84,7 +87,7 @@ printf( "Fraig has %6d nodes.\n", Ivy_ManNodeNum(pFraig) );
 ***********************************************************************/
 void Abc_NtkBmcReport( Ivy_Man_t * pMan, Ivy_Man_t * pFrames, Ivy_Man_t * pFraig, Vec_Ptr_t * vMapping, int nFrames )
 {
-    Ivy_Obj_t * pFirst1, * pFirst2, * pFirst3;
+    Ivy_Obj_t * pFirst1, * pFirst2 = NULL, * pFirst3 = NULL;
     int i, f, nIdMax, Prev2, Prev3;
     nIdMax = Ivy_ManObjIdMax(pMan);
     // check what is the number of nodes in each frame
@@ -93,7 +96,7 @@ void Abc_NtkBmcReport( Ivy_Man_t * pMan, Ivy_Man_t * pFrames, Ivy_Man_t * pFraig
     {
         Ivy_ManForEachNode( pMan, pFirst1, i )
         {
-            pFirst2 = Ivy_Regular( Vec_PtrEntry(vMapping, f * nIdMax + pFirst1->Id) );
+            pFirst2 = Ivy_Regular( (Ivy_Obj_t *)Vec_PtrEntry(vMapping, f * nIdMax + pFirst1->Id) );
             if ( Ivy_ObjIsConst1(pFirst2) || pFirst2->Type == 0 )
                 continue;
             pFirst3 = Ivy_Regular( pFirst2->pEquiv );
@@ -101,6 +104,8 @@ void Abc_NtkBmcReport( Ivy_Man_t * pMan, Ivy_Man_t * pFrames, Ivy_Man_t * pFraig
                 continue;
             break;
         }
+        assert(pFirst2);
+        assert(pFirst3);
         if ( f )
             printf( "Frame %3d :  Strash = %5d  Fraig = %5d\n", f, pFirst2->Id - Prev2, pFirst3->Id - Prev3 );
         Prev2 = pFirst2->Id;
@@ -112,4 +117,6 @@ void Abc_NtkBmcReport( Ivy_Man_t * pMan, Ivy_Man_t * pFrames, Ivy_Man_t * pFraig
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

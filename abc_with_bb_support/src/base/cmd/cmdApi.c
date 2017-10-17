@@ -18,9 +18,12 @@
 
 ***********************************************************************/
 
-#include "mainInt.h"
+#include "base/abc/abc.h"
+#include "base/main/mainInt.h"
 #include "cmdInt.h"
-#include "abc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -41,14 +44,31 @@
   SeeAlso     []
 
 ***********************************************************************/
-void Cmd_CommandAdd( Abc_Frame_t * pAbc, char * sGroup, char * sName, void * pFunc, int fChanges )
+int Cmd_CommandIsDefined( Abc_Frame_t * pAbc, const char * sName )
 {
-    char * key, * value;
+    return st__is_member( pAbc->tCommands, sName );
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Cmd_CommandAdd( Abc_Frame_t * pAbc, const char * sGroup, const char * sName, Cmd_CommandFuncType pFunc, int fChanges )
+{
+    const char * key;
+    char * value;
     Abc_Command * pCommand;
     int fStatus;
 
     key = sName;
-    if ( st_delete( pAbc->tCommands, &key, &value ) ) 
+    if ( st__delete( pAbc->tCommands, &key, &value ) ) 
     {
         // delete existing definition for this command 
         fprintf( pAbc->Err, "Cmd warning: redefining '%s'\n", sName );
@@ -56,12 +76,12 @@ void Cmd_CommandAdd( Abc_Frame_t * pAbc, char * sGroup, char * sName, void * pFu
     }
 
     // create the new command
-    pCommand = ALLOC( Abc_Command, 1 );
+    pCommand = ABC_ALLOC( Abc_Command, 1 );
     pCommand->sName   = Extra_UtilStrsav( sName );
     pCommand->sGroup  = Extra_UtilStrsav( sGroup );
     pCommand->pFunc   = pFunc;
     pCommand->fChange = fChanges;
-    fStatus = st_insert( pAbc->tCommands, sName, (char *)pCommand );
+    fStatus = st__insert( pAbc->tCommands, pCommand->sName, (char *)pCommand );
     assert( !fStatus );  // the command should not be in the table
 }
 
@@ -76,12 +96,13 @@ void Cmd_CommandAdd( Abc_Frame_t * pAbc, char * sGroup, char * sName, void * pFu
   SeeAlso     []
 
 ***********************************************************************/
-int Cmd_CommandExecute( Abc_Frame_t * pAbc, char * sCommand )
+int Cmd_CommandExecute( Abc_Frame_t * pAbc, const char * sCommand )
 {
     int fStatus = 0, argc, loop;
-    char * sCommandNext, **argv;
+    const char * sCommandNext;
+    char **argv;
 
-    if ( !pAbc->fAutoexac ) 
+    if ( !pAbc->fAutoexac && !pAbc->fSource ) 
 	    Cmd_HistoryAddCommand(pAbc, sCommand);
     sCommandNext = sCommand;
     do 
@@ -90,7 +111,7 @@ int Cmd_CommandExecute( Abc_Frame_t * pAbc, char * sCommand )
 		loop = 0;
 		fStatus = CmdApplyAlias( pAbc, &argc, &argv, &loop );
 		if ( fStatus == 0 ) 
-			fStatus = CmdCommandDispatch( pAbc, argc, argv );
+			fStatus = CmdCommandDispatch( pAbc, &argc, &argv );
        	CmdFreeArgv( argc, argv );
     } 
     while ( fStatus == 0 && *sCommandNext != '\0' );
@@ -101,4 +122,6 @@ int Cmd_CommandExecute( Abc_Frame_t * pAbc, char * sCommand )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

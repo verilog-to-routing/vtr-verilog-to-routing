@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -50,9 +53,13 @@ struct Ivy_Dec_t_
     unsigned  Fan5   : 4;   // fanin 5
 };
 
-static inline int        Ivy_DecToInt( Ivy_Dec_t Node )     { return *((int *)&Node);       }
-static inline Ivy_Dec_t  Ivy_IntToDec( int Node )           { return *((Ivy_Dec_t *)&Node); }
-static inline void       Ivy_DecClear( Ivy_Dec_t * pNode )  { *((int *)pNode) = 0;          }
+static inline int        Ivy_DecToInt( Ivy_Dec_t m )        { union { Ivy_Dec_t x; int y; } v; v.x = m; return v.y;  }
+static inline Ivy_Dec_t  Ivy_IntToDec( int m )              { union { Ivy_Dec_t x; int y; } v; v.y = m; return v.x;  }
+static inline void       Ivy_DecClear( Ivy_Dec_t * pNode )  { *pNode = Ivy_IntToDec(0);                              }
+
+//static inline int        Ivy_DecToInt( Ivy_Dec_t Node )     { return *((int *)&Node);       }
+//static inline Ivy_Dec_t  Ivy_IntToDec( int Node )           { return *((Ivy_Dec_t *)&Node); }
+//static inline void       Ivy_DecClear( Ivy_Dec_t * pNode )  { *((int *)pNode) = 0;          }
 
 
 static unsigned s_Masks[6][2] = {
@@ -212,8 +219,8 @@ int Ivy_TruthDsd( unsigned uTruth, Vec_Int_t * vTree )
 int Ivy_TruthDecompose_rec( unsigned uTruth, Vec_Int_t * vTree )
 {
     Ivy_Dec_t Node;
-    int Supp[5], Vars0[5], Vars1[5], Vars2[5], * pVars;
-    int nSupp, Count0, Count1, Count2, nVars, RetValue, fCompl, i;
+    int Supp[5], Vars0[5], Vars1[5], Vars2[5], * pVars = NULL;
+    int nSupp, Count0, Count1, Count2, nVars = 0, RetValue, fCompl = 0, i;
     unsigned uTruthCof, uCof0, uCof1;
 
     // get constant confactors
@@ -715,6 +722,8 @@ void Ivy_TruthTestOne( unsigned uTruth )
 //    Vec_IntFree( vTree );
 }
 
+#if 0
+
 /**Function*************************************************************
 
   Synopsis    []
@@ -810,10 +819,13 @@ void Ivy_TruthTest5()
     fclose( pFile );
 }
 
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

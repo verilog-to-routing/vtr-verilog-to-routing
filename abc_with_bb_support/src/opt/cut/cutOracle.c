@@ -20,6 +20,9 @@
 
 #include "cutInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -43,7 +46,7 @@ struct Cut_OracleStruct_t_
     int                EntrySize;
     int                nTruthWords;
     // stats
-    int                timeTotal;
+    abctime            timeTotal;
     int                nCuts;
     int                nCutsTriv;
 };
@@ -70,12 +73,11 @@ static Cut_Cut_t * Cut_CutMerge( Cut_Oracle_t * p, Cut_Cut_t * pCut0, Cut_Cut_t 
 Cut_Oracle_t * Cut_OracleStart( Cut_Man_t * pMan )
 {
     Cut_Oracle_t * p;
-    int clk = clock();
 
     assert( pMan->pParams->nVarsMax >= 3 && pMan->pParams->nVarsMax <= CUT_SIZE_MAX );
     assert( pMan->pParams->fRecord );
 
-    p = ALLOC( Cut_Oracle_t, 1 );
+    p = ABC_ALLOC( Cut_Oracle_t, 1 );
     memset( p, 0, sizeof(Cut_Oracle_t) );
 
     // set and correct parameters
@@ -124,21 +126,13 @@ Cut_Oracle_t * Cut_OracleStart( Cut_Man_t * pMan )
 ***********************************************************************/
 void Cut_OracleStop( Cut_Oracle_t * p )
 {
-    Cut_Cut_t * pCut;
-    int i;
-
 //    if ( p->pParams->fVerbose )
     {
         printf( "Cut computation statistics with oracle:\n" );
         printf( "Current cuts      = %8d. (Trivial = %d.)\n", p->nCuts-p->nCutsTriv, p->nCutsTriv );
-        PRT( "Total time ", p->timeTotal );
+        ABC_PRT( "Total time ", p->timeTotal );
     }
 
-    Vec_PtrForEachEntry( p->vCutsNew, pCut, i )
-        if ( pCut != NULL )
-        {
-            int k = 0;
-        }
     if ( p->vCuts0 )      Vec_PtrFree( p->vCuts0 );
     if ( p->vCuts1 )      Vec_PtrFree( p->vCuts1 );
     if ( p->vCutsNew )    Vec_PtrFree( p->vCutsNew );
@@ -149,7 +143,7 @@ void Cut_OracleStop( Cut_Oracle_t * p )
     if ( p->vCutPairs )   Vec_IntFree( p->vCutPairs );
 
     Extra_MmFixedStop( p->pMmCuts );
-    free( p ); 
+    ABC_FREE( p ); 
 }
 
 /**Function*************************************************************
@@ -328,11 +322,11 @@ Cut_Cut_t * Cut_OracleComputeCuts( Cut_Oracle_t * p, int Node, int Node0, int No
     Cut_Cut_t * pList = NULL, ** ppTail = &pList;
     Cut_Cut_t * pCut, * pCut0, * pCut1, * pList0, * pList1;
     int iCutStart, nCuts, i, Entry;
-    int clk = clock();
+    abctime clk = Abc_Clock();
 
     // get the cuts of the children
-    pList0 = Vec_PtrEntry( p->vCutsNew, Node0 );
-    pList1 = Vec_PtrEntry( p->vCutsNew, Node1 );
+    pList0 = (Cut_Cut_t *)Vec_PtrEntry( p->vCutsNew, Node0 );
+    pList1 = (Cut_Cut_t *)Vec_PtrEntry( p->vCutsNew, Node1 );
     assert( pList0 && pList1 );
 
     // get the complemented attribute of the cut
@@ -359,8 +353,8 @@ Cut_Cut_t * Cut_OracleComputeCuts( Cut_Oracle_t * p, int Node, int Node0, int No
     for ( i = 1; i < nCuts; i++ )
     {
         Entry = Vec_IntEntry( p->vCutPairs, iCutStart + i );
-        pCut0 = Vec_PtrEntry( p->vCuts0, Entry & 0xFFFF );
-        pCut1 = Vec_PtrEntry( p->vCuts1, Entry >> 16 );
+        pCut0 = (Cut_Cut_t *)Vec_PtrEntry( p->vCuts0, Entry & 0xFFFF );
+        pCut1 = (Cut_Cut_t *)Vec_PtrEntry( p->vCuts1, Entry >> 16 );
         pCut  = Cut_CutMerge( p, pCut0, pCut1 );
         *ppTail = pCut;
         ppTail = &pCut->pNext;
@@ -373,7 +367,7 @@ Cut_Cut_t * Cut_OracleComputeCuts( Cut_Oracle_t * p, int Node, int Node0, int No
     // write the new cut
     assert( Vec_PtrEntry( p->vCutsNew, Node ) == NULL );
     Vec_PtrWriteEntry( p->vCutsNew, Node, pList );
-p->timeTotal += clock() - clk;
+p->timeTotal += Abc_Clock() - clk;
     return pList;
 }
 
@@ -391,7 +385,7 @@ p->timeTotal += clock() - clk;
 void Cut_OracleFreeCuts( Cut_Oracle_t * p, int Node )
 {
     Cut_Cut_t * pList, * pCut, * pCut2;
-    pList = Vec_PtrEntry( p->vCutsNew, Node );
+    pList = (Cut_Cut_t *)Vec_PtrEntry( p->vCutsNew, Node );
     if ( pList == NULL )
         return;
     Cut_ListForEachCutSafe( pList, pCut, pCut2 )
@@ -425,4 +419,6 @@ void Cut_OracleTryDroppingCuts( Cut_Oracle_t * p, int Node )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -30,7 +30,7 @@
  *  e: an object to use if insertion needed (set to actual value used)
  */
 
-#define sorted_insert(type, first, last, count, next, prev, value, newval, e) \
+#define ABC__misc__espresso__sparse_int_h
     if (last == 0) { \
 	e->value = newval; \
 	first = e; \

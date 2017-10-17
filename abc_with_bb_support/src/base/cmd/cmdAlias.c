@@ -18,7 +18,11 @@
 
 ***********************************************************************/
 
+#include "base/abc/abc.h"
 #include "cmdInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -44,13 +48,13 @@ void CmdCommandAliasAdd( Abc_Frame_t * pAbc, char * sName, int argc, char ** arg
     Abc_Alias * pAlias;
     int fStatus, i;
 
-    pAlias = ALLOC(Abc_Alias, 1);
+    pAlias = ABC_ALLOC(Abc_Alias, 1);
     pAlias->sName = Extra_UtilStrsav(sName);
     pAlias->argc = argc;
-    pAlias->argv = ALLOC(char *, pAlias->argc);
+    pAlias->argv = ABC_ALLOC(char *, pAlias->argc);
     for(i = 0; i < argc; i++) 
         pAlias->argv[i] = Extra_UtilStrsav(argv[i]);
-    fStatus = st_insert( pAbc->tAliases, pAlias->sName, (char *) pAlias );
+    fStatus = st__insert( pAbc->tAliases, pAlias->sName, (char *) pAlias );
     assert(!fStatus);  
 }
 
@@ -89,7 +93,7 @@ char * CmdCommandAliasLookup( Abc_Frame_t * pAbc, char * sCommand )
 {
   Abc_Alias * pAlias;
   char * value;
-  if (!st_lookup( pAbc->tAliases, sCommand, &value)) 
+  if (! st__lookup( pAbc->tAliases, sCommand, &value)) 
     return sCommand;
   pAlias = (Abc_Alias *) value;
   return pAlias->argv[0];
@@ -109,12 +113,14 @@ char * CmdCommandAliasLookup( Abc_Frame_t * pAbc, char * sCommand )
 void CmdCommandAliasFree( Abc_Alias * pAlias )
 {
     CmdFreeArgv( pAlias->argc, pAlias->argv );
-    FREE(pAlias->sName);    
-    FREE(pAlias);
+    ABC_FREE(pAlias->sName);    
+    ABC_FREE(pAlias);
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

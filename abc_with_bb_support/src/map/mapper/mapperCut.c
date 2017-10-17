@@ -18,6 +18,9 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -85,6 +88,51 @@ static unsigned         Map_CutComputeTruth( Map_Man_t * p, Map_Cut_t * pCut, Ma
 
 /**Function*************************************************************
 
+  Synopsis    [Counts all the cuts.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Map_MappingCountAllCuts( Map_Man_t * pMan )
+{
+    Map_Node_t * pNode;
+    Map_Cut_t * pCut;
+    int i, nCuts;
+//    int nCuts55 = 0, nCuts5x = 0, nCuts4x = 0, nCuts3x = 0;
+//    int pCounts[7] = {0};
+    nCuts = 0;
+    for ( i = 0; i < pMan->nBins; i++ )
+        for ( pNode = pMan->pBins[i]; pNode; pNode = pNode->pNext )
+            for ( pCut = pNode->pCuts; pCut; pCut = pCut->pNext )
+                if ( pCut->nLeaves > 1 ) // skip the elementary cuts
+                {
+                    nCuts++;
+/*
+                    if ( Map_CutRegular(pCut->pOne)->nLeaves == 5 && Map_CutRegular(pCut->pTwo)->nLeaves == 5 )
+                        nCuts55++;
+                    if ( Map_CutRegular(pCut->pOne)->nLeaves == 5 || Map_CutRegular(pCut->pTwo)->nLeaves == 5 )
+                        nCuts5x++;
+                    else if ( Map_CutRegular(pCut->pOne)->nLeaves == 4 || Map_CutRegular(pCut->pTwo)->nLeaves == 4 )
+                        nCuts4x++;
+                    else if ( Map_CutRegular(pCut->pOne)->nLeaves == 3 || Map_CutRegular(pCut->pTwo)->nLeaves == 3 )
+                        nCuts3x++;
+*/                  
+//                    pCounts[ Map_CutRegular(pCut->pOne)->nLeaves ]++;
+//                    pCounts[ Map_CutRegular(pCut->pTwo)->nLeaves ]++;
+                }
+//    printf( "Total cuts = %6d. 55 = %6d. 5x = %6d. 4x = %6d. 3x = %6d.\n", nCuts, nCuts55, nCuts5x, nCuts4x, nCuts3x );
+
+//    printf( "Total cuts = %6d. 6= %6d. 5= %6d. 4= %6d. 3= %6d. 2= %6d. 1= %6d.\n", 
+//        nCuts, pCounts[6], pCounts[5], pCounts[4], pCounts[3], pCounts[2], pCounts[1] );
+    return nCuts;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Computes the cuts for each node in the object graph.]
 
   Description [The cuts are computed in one sweep over the mapping graph. 
@@ -107,39 +155,44 @@ static unsigned         Map_CutComputeTruth( Map_Man_t * p, Map_Cut_t * pCut, Ma
   SeeAlso     []
 
 ***********************************************************************/
+void Map_MappingCutsInput( Map_Man_t * p, Map_Node_t * pNode )
+{
+    Map_Cut_t * pCut;
+    assert( Map_NodeIsVar(pNode) || Map_NodeIsBuf(pNode) );
+    pCut = Map_CutAlloc( p );
+    pCut->nLeaves = 1;
+    pCut->ppLeaves[0] = pNode;
+    pNode->pCuts   = pCut;
+    pNode->pCutBest[0] = NULL; // negative polarity is not mapped
+    pNode->pCutBest[1] = pCut; // positive polarity is a trivial cut
+    pCut->uTruth = 0xAAAAAAAA; // the first variable "1010"
+    pCut->M[0].AreaFlow = 0.0;
+    pCut->M[1].AreaFlow = 0.0;
+}
 void Map_MappingCuts( Map_Man_t * p )
 {
     ProgressBar * pProgress;
     Map_CutTable_t * pTable;
     Map_Node_t * pNode;
-    Map_Cut_t * pCut;
     int nCuts, nNodes, i;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     // set the elementary cuts for the PI variables
     assert( p->nVarsMax > 1 && p->nVarsMax < 7 );
     for ( i = 0; i < p->nInputs; i++ )
-    {
-        pCut = Map_CutAlloc( p );
-        pCut->nLeaves = 1;
-        pCut->ppLeaves[0] = p->pInputs[i];
-        p->pInputs[i]->pCuts   = pCut;
-        p->pInputs[i]->pCutBest[0] = NULL; // negative polarity is not mapped
-        p->pInputs[i]->pCutBest[1] = pCut; // positive polarity is a trivial cut
-        pCut->uTruth = 0xAAAAAAAA;         // the first variable "10101010"
-        pCut->M[0].AreaFlow = 0.0;
-        pCut->M[1].AreaFlow = 0.0;
-    }
+        Map_MappingCutsInput( p, p->pInputs[i] );
 
     // compute the cuts for the internal nodes
-    nNodes = p->vAnds->nSize;
+    nNodes = p->vMapObjs->nSize;
     pProgress = Extra_ProgressBarStart( stdout, nNodes );
     pTable = Map_CutTableStart( p );
     for ( i = 0; i < nNodes; i++ )
     {
-        pNode = p->vAnds->pArray[i];
-        if ( !Map_NodeIsAnd( pNode ) )
-            continue;
-        Map_CutCompute( p, pTable, pNode );
+        pNode = p->vMapObjs->pArray[i];
+        if ( Map_NodeIsBuf(pNode) )
+            Map_MappingCutsInput( p, pNode );
+        else if ( Map_NodeIsAnd(pNode) )
+            Map_CutCompute( p, pTable, pNode );
+        else continue;
         Extra_ProgressBarUpdate( pProgress, i, "Cuts ..." );
     }
     Extra_ProgressBarStop( pProgress );
@@ -151,7 +204,7 @@ void Map_MappingCuts( Map_Man_t * p )
         nCuts = Map_MappingCountAllCuts(p);
         printf( "Nodes = %6d.  Total %d-feasible cuts = %10d.  Per node = %.1f. ", 
                p->nNodes, p->nVarsMax, nCuts, ((float)nCuts)/p->nNodes );
-        PRT( "Time", clock() - clk );
+        ABC_PRT( "Time", Abc_Clock() - clk );
     }
 
     // print the cuts for the first primary output
@@ -355,8 +408,8 @@ Map_Cut_t * Map_CutMergeLists( Map_Man_t * p, Map_CutTable_t * pTable,
 //            if ( p->nVarsMax == 5 )
 //            pCut->uTruth = Map_CutComputeTruth( p, pCut, pTemp1, pTemp2, fComp1, fComp2 );
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == MAP_CUTS_MAX_COMPUTE )
@@ -389,8 +442,8 @@ Map_Cut_t * Map_CutMergeLists( Map_Man_t * p, Map_CutTable_t * pTable,
 //            if ( p->nVarsMax == 5 )
 //            pCut->uTruth = Map_CutComputeTruth( p, pCut, pTemp1, pTemp2, fComp1, fComp2 );
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == MAP_CUTS_MAX_COMPUTE )
@@ -426,8 +479,8 @@ Map_Cut_t * Map_CutMergeLists( Map_Man_t * p, Map_CutTable_t * pTable,
 //            if ( p->nVarsMax == 5 )
 //            pCut->uTruth = Map_CutComputeTruth( p, pCut, pTemp1, pTemp2, fComp1, fComp2 );
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == MAP_CUTS_MAX_COMPUTE )
@@ -493,8 +546,8 @@ Map_Cut_t * Map_CutMergeLists2( Map_Man_t * p, Map_CutTable_t * pTable,
             pCut->pOne = Map_CutNotCond( pTemp1, fComp1 );
             pCut->pTwo = Map_CutNotCond( pTemp2, fComp2 );
             // add it to the corresponding list
-            pCut->pNext = pLists[pCut->nLeaves];
-            pLists[pCut->nLeaves] = pCut;
+            pCut->pNext = pLists[(int)pCut->nLeaves];
+            pLists[(int)pCut->nLeaves] = pCut;
             // count this cut and quit if limit is reached
             Counter++;
             if ( Counter == MAP_CUTS_MAX_COMPUTE )
@@ -676,51 +729,6 @@ int Map_CutBelongsToList( Map_Cut_t * pList, Map_Node_t * ppNodes[], int nNodes 
     return 0;
 }
 
-/**Function*************************************************************
-
-  Synopsis    [Counts all the cuts.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-int Map_MappingCountAllCuts( Map_Man_t * pMan )
-{
-    Map_Node_t * pNode;
-    Map_Cut_t * pCut;
-    int i, nCuts;
-//    int nCuts55 = 0, nCuts5x = 0, nCuts4x = 0, nCuts3x = 0;
-//    int pCounts[7] = {0};
-    nCuts = 0;
-    for ( i = 0; i < pMan->nBins; i++ )
-        for ( pNode = pMan->pBins[i]; pNode; pNode = pNode->pNext )
-            for ( pCut = pNode->pCuts; pCut; pCut = pCut->pNext )
-                if ( pCut->nLeaves > 1 ) // skip the elementary cuts
-                {
-                    nCuts++;
-/*
-                    if ( Map_CutRegular(pCut->pOne)->nLeaves == 5 && Map_CutRegular(pCut->pTwo)->nLeaves == 5 )
-                        nCuts55++;
-                    if ( Map_CutRegular(pCut->pOne)->nLeaves == 5 || Map_CutRegular(pCut->pTwo)->nLeaves == 5 )
-                        nCuts5x++;
-                    else if ( Map_CutRegular(pCut->pOne)->nLeaves == 4 || Map_CutRegular(pCut->pTwo)->nLeaves == 4 )
-                        nCuts4x++;
-                    else if ( Map_CutRegular(pCut->pOne)->nLeaves == 3 || Map_CutRegular(pCut->pTwo)->nLeaves == 3 )
-                        nCuts3x++;
-*/                  
-//                    pCounts[ Map_CutRegular(pCut->pOne)->nLeaves ]++;
-//                    pCounts[ Map_CutRegular(pCut->pTwo)->nLeaves ]++;
-                }
-//    printf( "Total cuts = %6d. 55 = %6d. 5x = %6d. 4x = %6d. 3x = %6d.\n", nCuts, nCuts55, nCuts5x, nCuts4x, nCuts3x );
-
-//    printf( "Total cuts = %6d. 6= %6d. 5= %6d. 4= %6d. 3= %6d. 2= %6d. 1= %6d.\n", 
-//        nCuts, pCounts[6], pCounts[5], pCounts[4], pCounts[3], pCounts[2], pCounts[1] );
-    return nCuts;
-}
-
 
 /**Function*************************************************************
 
@@ -809,15 +817,15 @@ Map_CutTable_t * Map_CutTableStart( Map_Man_t * pMan )
 {
     Map_CutTable_t * p;
     // allocate the table
-    p = ALLOC( Map_CutTable_t, 1 );
+    p = ABC_ALLOC( Map_CutTable_t, 1 );
     memset( p, 0, sizeof(Map_CutTable_t) );
-    p->nBins = Cudd_Prime( 10 * MAP_CUTS_MAX_COMPUTE );
-    p->pBins = ALLOC( Map_Cut_t *, p->nBins );
+    p->nBins = Abc_PrimeCudd( 10 * MAP_CUTS_MAX_COMPUTE );
+    p->pBins = ABC_ALLOC( Map_Cut_t *, p->nBins );
     memset( p->pBins, 0, sizeof(Map_Cut_t *) * p->nBins );
-    p->pCuts = ALLOC( int, 2 * MAP_CUTS_MAX_COMPUTE );
-    p->pArray = ALLOC( Map_Cut_t *, 2 * MAP_CUTS_MAX_COMPUTE );
-    p->pCuts1 = ALLOC( Map_Cut_t *, 2 * MAP_CUTS_MAX_COMPUTE );
-    p->pCuts2 = ALLOC( Map_Cut_t *, 2 * MAP_CUTS_MAX_COMPUTE );
+    p->pCuts = ABC_ALLOC( int, 2 * MAP_CUTS_MAX_COMPUTE );
+    p->pArray = ABC_ALLOC( Map_Cut_t *, 2 * MAP_CUTS_MAX_COMPUTE );
+    p->pCuts1 = ABC_ALLOC( Map_Cut_t *, 2 * MAP_CUTS_MAX_COMPUTE );
+    p->pCuts2 = ABC_ALLOC( Map_Cut_t *, 2 * MAP_CUTS_MAX_COMPUTE );
     return p;
 }
 
@@ -834,12 +842,12 @@ Map_CutTable_t * Map_CutTableStart( Map_Man_t * pMan )
 ***********************************************************************/
 void Map_CutTableStop( Map_CutTable_t * p )
 {
-    free( p->pCuts1 );
-    free( p->pCuts2 );
-    free( p->pArray );
-    free( p->pBins );
-    free( p->pCuts );
-    free( p );
+    ABC_FREE( p->pCuts1 );
+    ABC_FREE( p->pCuts2 );
+    ABC_FREE( p->pArray );
+    ABC_FREE( p->pBins );
+    ABC_FREE( p->pCuts );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -912,16 +920,16 @@ Map_Cut_t * Map_CutTableConsider( Map_Man_t * pMan, Map_CutTable_t * p, Map_Node
 {
     Map_Cut_t * pCut;
     int Place, i;
-//    int clk;
+//    abctime clk;
     // check the cut
     Place = Map_CutTableLookup( p, ppNodes, nNodes );
     if ( Place == -1 )
         return NULL;
     assert( nNodes > 0 );
     // create the new cut
-//clk = clock();
+//clk = Abc_Clock();
     pCut = Map_CutAlloc( pMan );
-//pMan->time1 += clock() - clk;
+//pMan->time1 += Abc_Clock() - clk;
     pCut->nLeaves = nNodes;
     for ( i = 0; i < nNodes; i++ )
         pCut->ppLeaves[i] = ppNodes[i];
@@ -993,15 +1001,15 @@ Map_Cut_t * Map_CutSortCuts( Map_Man_t * pMan, Map_CutTable_t * p, Map_Cut_t * p
 {
     Map_Cut_t * pListNew;
     int nCuts, i;
-//    int clk;
+//    abctime clk;
     // move the cuts from the list into the array
     nCuts = Map_CutList2Array( p->pCuts1, pList );
     assert( nCuts <= MAP_CUTS_MAX_COMPUTE );
     // sort the cuts
-//clk = clock();
+//clk = Abc_Clock();
     qsort( (void *)p->pCuts1, nCuts, sizeof(Map_Cut_t *), 
             (int (*)(const void *, const void *)) Map_CutSortCutsCompare );
-//pMan->time2 += clock() - clk;
+//pMan->time2 += Abc_Clock() - clk;
     // move them back into the list
     if ( nCuts > MAP_CUTS_MAX_USE - 1 )
     {
@@ -1165,4 +1173,6 @@ unsigned Map_CutComputeTruth( Map_Man_t * p, Map_Cut_t * pCut, Map_Cut_t * pTemp
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

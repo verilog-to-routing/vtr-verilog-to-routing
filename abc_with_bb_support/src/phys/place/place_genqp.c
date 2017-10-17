@@ -17,6 +17,9 @@
 #include "place_qpsolver.h"
 #include "place_gordian.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 // --------------------------------------------------------------------
 // Global variables
 //
@@ -181,7 +184,7 @@ typedef struct reverseCOG {
 //
 // --------------------------------------------------------------------
 int generateCoGConstraints(reverseCOG COG_rev[]) {
-  int numConstraints = 0; // actual num contraints
+  int numConstraints = 0; // actual num constraints
   int cogRevNum = 0;
   Partition **stack = malloc(sizeof(Partition*)*g_place_numPartitions*2);
   int stackPtr = 0;
@@ -307,3 +310,5 @@ void solveQuadraticProblem(bool useCOG) {
 
   free(COG_rev);
 }
+ABC_NAMESPACE_IMPL_END
+

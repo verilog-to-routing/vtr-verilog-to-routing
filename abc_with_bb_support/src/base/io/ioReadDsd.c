@@ -18,7 +18,10 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -87,17 +90,17 @@ int Io_ReadDsdStrSplit( char * pCur, char * pParts[], int * pTypeXor )
             // skip hex truth table
             while ( (*pCur >= '0' && *pCur <= '9') || (*pCur >= 'A' && *pCur <= 'F') )
                 pCur++;
-            // process parantheses
+            // process parentheses
             if ( *pCur != '(' )
             {
-                printf( "Cannot find the opening paranthesis.\n" );
+                printf( "Cannot find the opening parenthesis.\n" );
                 break;
             }
-            // find the corresponding closing paranthesis
+            // find the corresponding closing parenthesis
             pCur = Io_ReadDsdFindEnd( pCur );
             if ( pCur == NULL )
             {
-                printf( "Cannot find the closing paranthesis.\n" );
+                printf( "Cannot find the closing parenthesis.\n" );
                 break;
             }
             pCur++;
@@ -183,11 +186,11 @@ Abc_Obj_t * Io_ReadDsd_rec( Abc_Ntk_t * pNtk, char * pCur, char * pSop )
             }
         }
         if ( pSop )
-            pObj->pData = Abc_SopRegister( pNtk->pManFunc, pSop );
+            pObj->pData = Abc_SopRegister( (Mem_Flex_t *)pNtk->pManFunc, pSop );
         else if ( TypeExor )
-            pObj->pData = Abc_SopCreateXorSpecial( pNtk->pManFunc, nParts );
+            pObj->pData = Abc_SopCreateXorSpecial( (Mem_Flex_t *)pNtk->pManFunc, nParts );
         else
-            pObj->pData = Abc_SopCreateAnd( pNtk->pManFunc, nParts, NULL );
+            pObj->pData = Abc_SopCreateAnd( (Mem_Flex_t *)pNtk->pManFunc, nParts, NULL );
         return pObj;
     }
     if ( *pCur >= 'a' && *pCur <= 'z' )
@@ -211,7 +214,7 @@ Abc_Obj_t * Io_ReadDsd_rec( Abc_Ntk_t * pNtk, char * pCur, char * pSop )
     pSop = Abc_SopFromTruthHex( pCur );
     *pEnd = '(';
     pObj = Io_ReadDsd_rec( pNtk, pEnd, pSop );
-    free( pSop );
+    ABC_FREE( pSop );
     return pObj;
 }
 
@@ -238,7 +241,7 @@ Abc_Ntk_t * Io_ReadDsd( char * pForm )
     nInputs = 0;
     for ( pCur = pForm; *pCur; pCur++ )
         if ( *pCur >= 'a' && *pCur <= 'z' )
-            nInputs = ABC_MAX( nInputs, *pCur - 'a' );
+            nInputs = Abc_MaxInt( nInputs, *pCur - 'a' );
     nInputs++;
 
     // create the network
@@ -248,12 +251,12 @@ Abc_Ntk_t * Io_ReadDsd( char * pForm )
     // create PIs
     vNames = Abc_NodeGetFakeNames( nInputs );
     for ( i = 0; i < nInputs; i++ )
-        Abc_ObjAssignName( Abc_NtkCreatePi(pNtk), Vec_PtrEntry(vNames, i), NULL );
+        Abc_ObjAssignName( Abc_NtkCreatePi(pNtk), (char *)Vec_PtrEntry(vNames, i), NULL );
     Abc_NodeFreeNames( vNames );
 
-    // transform the formula by inserting parantheses
+    // transform the formula by inserting parentheses
     // this transforms strings like PRIME(a,b,cd) into (PRIME((a),(b),(cd)))
-    pCur = pFormCopy = ALLOC( char, 3 * strlen(pForm) + 10 );
+    pCur = pFormCopy = ABC_ALLOC( char, 3 * strlen(pForm) + 10 );
     *pCur++ = '(';
     for ( ; *pForm; pForm++ )
         if ( *pForm == '(' )
@@ -279,7 +282,7 @@ Abc_Ntk_t * Io_ReadDsd( char * pForm )
 
     // parse the formula
     pObj = Io_ReadDsd_rec( pNtk, pFormCopy, NULL );
-    free( pFormCopy );
+    ABC_FREE( pFormCopy );
     if ( pObj == NULL )
         return NULL;
 
@@ -305,4 +308,6 @@ Abc_Ntk_t * Io_ReadDsd( char * pForm )
 ////////////////////////////////////////////////////////////////////////
 
 
+
+ABC_NAMESPACE_IMPL_END
 

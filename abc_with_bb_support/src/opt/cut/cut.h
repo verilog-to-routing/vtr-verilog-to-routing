@@ -18,12 +18,9 @@
 
 ***********************************************************************/
 
-#ifndef __CUT_H__
-#define __CUT_H__
+#ifndef ABC__opt__cut__cut_h
+#define ABC__opt__cut__cut_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -32,6 +29,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 #define CUT_SIZE_MIN    3      // the min K of the K-feasible cut computation
 #define CUT_SIZE_MAX   12      // the max K of the K-feasible cut computation
@@ -64,8 +66,11 @@ struct Cut_ParamsStruct_t_
     int                fGlobal;           // compute only global cuts
     int                fLocal;            // compute only local cuts
     int                fRecord;           // record the cut computation flow
+    int                fRecordAig;        // record the cut functions
     int                fFancy;            // perform fancy computations
     int                fMap;              // computes delay of FPGA mapping with cuts
+    int                fAdjust;           // removed useless fanouts of XORs/MUXes
+    int                fNpnSave;          // enables dumping 6-input truth tables
     int                fVerbose;          // the verbosiness flag
 };
 
@@ -119,7 +124,7 @@ extern int              Cut_CutCountList( Cut_Cut_t * pList );
 extern Cut_Man_t *      Cut_ManStart( Cut_Params_t * pParams );
 extern void             Cut_ManStop( Cut_Man_t * p );
 extern void             Cut_ManPrintStats( Cut_Man_t * p );
-extern void             Cut_ManPrintStatsToFile( Cut_Man_t * p, char * pFileName, int TimeTotal );
+extern void             Cut_ManPrintStatsToFile( Cut_Man_t * p, char * pFileName, abctime TimeTotal );
 extern void             Cut_ManSetFanoutCounts( Cut_Man_t * p, Vec_Int_t * vFanCounts );
 extern void             Cut_ManSetNodeAttrs( Cut_Man_t * p, Vec_Int_t * vFanCounts );
 extern int              Cut_ManReadVarsMax( Cut_Man_t * p );
@@ -153,9 +158,11 @@ extern int              Cut_CellIsRunning();
 extern void             Cut_CellDumpToFile();
 extern int              Cut_CellTruthLookup( unsigned * pTruth, int nVars );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

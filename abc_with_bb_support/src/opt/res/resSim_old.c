@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "resInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -327,14 +330,14 @@ void Res_SimPadSimInfo( Vec_Ptr_t * vPats, int nPats, int nWords )
     // pad the first word
     if ( nPats < 8 * sizeof(unsigned) )
     {
-        Vec_PtrForEachEntry( vPats, pInfo, i )
+        Vec_PtrForEachEntry( unsigned *, vPats, pInfo, i )
             if ( pInfo[0] & 1 )
                 pInfo[0] |= ((~0) << nPats);
         nPats = 8 * sizeof(unsigned);
     }
     // pad the empty words
     iWords = nPats / (8 * sizeof(unsigned));
-    Vec_PtrForEachEntry( vPats, pInfo, i )
+    Vec_PtrForEachEntry( unsigned *, vPats, pInfo, i )
     {
         for ( w = iWords; w < nWords; w++ )
             pInfo[w] = pInfo[0];
@@ -518,4 +521,6 @@ int Res_SimPrepare( Res_Sim_t * p, Abc_Ntk_t * pAig, int nTruePis, int fVerbose 
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

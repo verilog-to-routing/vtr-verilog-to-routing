@@ -20,6 +20,9 @@
 
 #include "abc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -27,6 +30,45 @@
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline void Vec_IntPushMem( Mem_Step_t * pMemMan, Vec_Int_t * p, int Entry )
+{
+    if ( p->nSize == p->nCap )
+    {
+        int * pArray;
+        int i;
+
+        if ( p->nSize == 0 )
+            p->nCap = 1;
+        if ( pMemMan )
+            pArray = (int *)Mem_StepEntryFetch( pMemMan, p->nCap * 8 );
+        else
+            pArray = ABC_ALLOC( int, p->nCap * 2 );
+        if ( p->pArray )
+        {
+            for ( i = 0; i < p->nSize; i++ )
+                pArray[i] = p->pArray[i];
+            if ( pMemMan )
+                Mem_StepEntryRecycle( pMemMan, (char *)p->pArray, p->nCap * 4 );
+            else
+                ABC_FREE( p->pArray );
+        }
+        p->nCap *= 2;
+        p->pArray = pArray;
+    }
+    p->pArray[p->nSize++] = Entry;
+}
 
 /**Function*************************************************************
 
@@ -45,16 +87,13 @@ void Abc_ObjAddFanin( Abc_Obj_t * pObj, Abc_Obj_t * pFanin )
     assert( !Abc_ObjIsComplement(pObj) );
     assert( pObj->pNtk == pFaninR->pNtk );
     assert( pObj->Id >= 0 && pFaninR->Id >= 0 );
+    assert( !Abc_ObjIsPi(pObj) && !Abc_ObjIsPo(pFaninR) );    // fanin of PI or fanout of PO
+    assert( !Abc_ObjIsCo(pObj) || !Abc_ObjFaninNum(pObj) );  // CO with two fanins
+    assert( !Abc_ObjIsNet(pObj) || !Abc_ObjFaninNum(pObj) ); // net with two fanins
     Vec_IntPushMem( pObj->pNtk->pMmStep, &pObj->vFanins,     pFaninR->Id );
     Vec_IntPushMem( pObj->pNtk->pMmStep, &pFaninR->vFanouts, pObj->Id    );
     if ( Abc_ObjIsComplement(pFanin) )
         Abc_ObjSetFaninC( pObj, Abc_ObjFaninNum(pObj)-1 );
-    if ( Abc_ObjIsNet(pObj) && Abc_ObjFaninNum(pObj) > 1 )
-    {
-        int x = 0; 
-    }
-//    printf( "Adding fanin of %s ", Abc_ObjName(pObj) );
-//    printf( "to be %s\n", Abc_ObjName(pFanin) );
 }
 
 
@@ -172,6 +211,34 @@ void Abc_ObjPatchFanin( Abc_Obj_t * pObj, Abc_Obj_t * pFaninOld, Abc_Obj_t * pFa
 
 /**Function*************************************************************
 
+  Synopsis    [Replaces pObj by iObjNew in the fanin arrays of the fanouts.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_ObjPatchFanoutFanin( Abc_Obj_t * pObj, int iObjNew )
+{
+    Abc_Obj_t * pFanout;
+    int i, k, Entry;
+    // update fanouts of the node to point to this one
+    Abc_ObjForEachFanout( pObj, pFanout, i )
+    {
+        Vec_IntForEachEntry( &pFanout->vFanins, Entry, k )
+            if ( Entry == (int)Abc_ObjId(pObj) )
+            {
+                Vec_IntWriteEntry( &pFanout->vFanins, k, iObjNew );
+                break;
+            }
+        assert( k < Vec_IntSize(&pFanout->vFanins) );
+    }
+}
+
+/**Function*************************************************************
+
   Synopsis    [Inserts one-input node of the type specified between the nodes.]
 
   Description []
@@ -231,14 +298,14 @@ void Abc_ObjTransferFanout( Abc_Obj_t * pNodeFrom, Abc_Obj_t * pNodeTo )
     assert( !Abc_ObjIsPo(pNodeFrom) && !Abc_ObjIsPo(pNodeTo) );
     assert( pNodeFrom->pNtk == pNodeTo->pNtk );
     assert( pNodeFrom != pNodeTo );
-    assert( Abc_ObjFanoutNum(pNodeFrom) > 0 );
+    assert( !Abc_ObjIsNode(pNodeFrom) || Abc_ObjFanoutNum(pNodeFrom) > 0 );
     // get the fanouts of the old node
     nFanoutsOld = Abc_ObjFanoutNum(pNodeTo);
     vFanouts = Vec_PtrAlloc( nFanoutsOld );
     Abc_NodeCollectFanouts( pNodeFrom, vFanouts );
     // patch the fanin of each of them
     for ( i = 0; i < vFanouts->nSize; i++ )
-        Abc_ObjPatchFanin( vFanouts->pArray[i], pNodeFrom, pNodeTo );
+        Abc_ObjPatchFanin( (Abc_Obj_t *)vFanouts->pArray[i], pNodeFrom, pNodeTo );
     assert( Abc_ObjFanoutNum(pNodeFrom) == 0 );
     assert( Abc_ObjFanoutNum(pNodeTo) == nFanoutsOld + vFanouts->nSize );
     Vec_PtrFree( vFanouts );
@@ -294,4 +361,6 @@ int Abc_ObjFanoutFaninNum( Abc_Obj_t * pFanout, Abc_Obj_t * pFanin )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

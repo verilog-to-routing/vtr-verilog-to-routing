@@ -16,11 +16,15 @@
 
 ***********************************************************************/
 
-#ifndef __DSD_INT_H__
-#define __DSD_INT_H__
+#ifndef ABC__bdd__dsd__dsdInt_h
+#define ABC__bdd__dsd__dsdInt_h
 
-#include "extra.h"
+
+#include "bdd/extrab/extraBdd.h"
 #include "dsd.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                      TYPEDEF DEFINITIONS                         ///
@@ -35,27 +39,27 @@ typedef unsigned char byte;
 // DSD manager
 struct Dsd_Manager_t_ 
 {
-	DdManager *    dd;         // the BDD manager
-	st_table *     Table;      // the mapping of BDDs into their DEs
-	int            nInputs;    // the number of primary inputs
-	int            nRoots;     // the number of primary outputs
-	int            nRootsAlloc;// the number of primary outputs
-	Dsd_Node_t **  pInputs;    // the primary input nodes
-	Dsd_Node_t **  pRoots;     // the primary output nodes
+    DdManager *    dd;         // the BDD manager
+    st__table *     Table;      // the mapping of BDDs into their DEs
+    int            nInputs;    // the number of primary inputs
+    int            nRoots;     // the number of primary outputs
+    int            nRootsAlloc;// the number of primary outputs
+    Dsd_Node_t **  pInputs;    // the primary input nodes
+    Dsd_Node_t **  pRoots;     // the primary output nodes
     Dsd_Node_t *   pConst1;    // the constant node
-	int            fVerbose;   // the verbosity level 
+    int            fVerbose;   // the verbosity level 
 };
 
 // DSD node
 struct Dsd_Node_t_
 {
-	Dsd_Type_t     Type;       // decomposition type
-	DdNode *       G;          // function of the node	 
-	DdNode *       S;          // support of this function
-	Dsd_Node_t **  pDecs;      // pointer to structures for formal inputs
-	int            Mark;       // the mark used by CASE 4 of disjoint decomposition
-	short          nDecs;      // the number of formal inputs
-	short          nVisits;    // the counter of visits
+    Dsd_Type_t     Type;       // decomposition type
+    DdNode *       G;          // function of the node   
+    DdNode *       S;          // support of this function
+    Dsd_Node_t **  pDecs;      // pointer to structures for formal inputs
+    int            Mark;       // the mark used by CASE 4 of disjoint decomposition
+    short          nDecs;      // the number of formal inputs
+    short          nVisits;    // the counter of visits
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -82,6 +86,10 @@ extern Dsd_Node_t * Dsd_TreeNodeCreate( int Type, int nDecs, int BlockNum );
 extern void         Dsd_TreeNodeDelete( DdManager * dd, Dsd_Node_t * pNode );
 extern void         Dsd_TreeUnmark( Dsd_Manager_t * dMan );
 extern DdNode *     Dsd_TreeGetPrimeFunctionOld( DdManager * dd, Dsd_Node_t * pNode, int fRemap );
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

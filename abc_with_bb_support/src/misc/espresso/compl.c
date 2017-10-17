@@ -26,6 +26,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 #define USE_COMPL_LIFT			0
 #define USE_COMPL_LIFT_ONSET		1
 #define USE_COMPL_LIFT_ONSET_COMPLEX	2
@@ -678,3 +681,5 @@ pcover *Tnew;			/* returned only if answer determined */
 	return MAYBE;
     }
 }
+ABC_NAMESPACE_IMPL_END
+

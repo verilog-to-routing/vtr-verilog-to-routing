@@ -7,18 +7,18 @@
   Synopsis    [Functions to manipulate the variable interaction matrix.]
 
   Description [Internal procedures included in this file:
-	<ul>
-	<li> cuddSetInteract()
-	<li> cuddTestInteract()
-	<li> cuddInitInteract()
-	</ul>
+        <ul>
+        <li> cuddSetInteract()
+        <li> cuddTestInteract()
+        <li> cuddInitInteract()
+        </ul>
   Static procedures included in this file:
-	<ul>
-	<li> ddSuppInteract()
-	<li> ddClearLocal()
-	<li> ddUpdateInteract()
-	<li> ddClearGlobal()
-	</ul>
+        <ul>
+        <li> ddSuppInteract()
+        <li> ddClearLocal()
+        <li> ddUpdateInteract()
+        <li> ddClearGlobal()
+        </ul>
   The interaction matrix tells whether two variables are
   both in the support of some function of the DD. The main use of the
   interaction matrix is in the in-place swapping. Indeed, if two
@@ -40,15 +40,46 @@
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -77,7 +108,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddInteract.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddInteract.c,v 1.12 2004/08/13 18:04:49 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -91,10 +122,10 @@ static char rcsid[] DD_UNUSED = "$Id: cuddInteract.c,v 1.1.1.1 2003/02/24 22:23:
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static void ddSuppInteract ARGS((DdNode *f, int *support));
-static void ddClearLocal ARGS((DdNode *f));
-static void ddUpdateInteract ARGS((DdManager *table, int *support));
-static void ddClearGlobal ARGS((DdManager *table));
+static void ddSuppInteract (DdNode *f, int *support);
+static void ddClearLocal (DdNode *f);
+static void ddUpdateInteract (DdManager *table, int *support);
+static void ddClearGlobal (DdManager *table);
 
 /**AutomaticEnd***************************************************************/
 
@@ -165,9 +196,9 @@ cuddTestInteract(
     int posn, word, bit, result;
 
     if (x > y) {
-	int tmp = x;
-	x = y;
-	y = tmp;
+        int tmp = x;
+        x = y;
+        y = tmp;
     }
 #ifdef DD_DEBUG
     assert(x < y);
@@ -207,7 +238,7 @@ cuddInitInteract(
   DdManager * table)
 {
     int i,j,k;
-    int words;
+    ABC_UINT64_T words;
     long *interact;
     int *support;
     DdNode *f;
@@ -217,49 +248,49 @@ cuddInitInteract(
     int n = table->size;
 
     words = ((n * (n-1)) >> (1 + LOGBPL)) + 1;
-    table->interact = interact = ALLOC(long,words);
+    table->interact = interact = ABC_ALLOC(long,(unsigned)words);
     if (interact == NULL) {
-	table->errorCode = CUDD_MEMORY_OUT;
-	return(0);
+        table->errorCode = CUDD_MEMORY_OUT;
+        return(0);
     }
     for (i = 0; i < words; i++) {
-	interact[i] = 0;
+        interact[i] = 0;
     }
 
-    support = ALLOC(int,n);
+    support = ABC_ALLOC(int,n);
     if (support == NULL) {
-	table->errorCode = CUDD_MEMORY_OUT;
-	FREE(interact);
-	return(0);
+        table->errorCode = CUDD_MEMORY_OUT;
+        ABC_FREE(interact);
+        return(0);
     }
 
     for (i = 0; i < n; i++) {
-	nodelist = table->subtables[i].nodelist;
-	slots = table->subtables[i].slots;
-	for (j = 0; j < slots; j++) {
-	    f = nodelist[j];
-	    while (f != sentinel) {
-		/* A node is a root of the DAG if it cannot be
-		** reached by nodes above it. If a node was never
-		** reached during the previous depth-first searches,
-		** then it is a root, and we start a new depth-first
-		** search from it.
-		*/
-		if (!Cudd_IsComplement(f->next)) {
-		    for (k = 0; k < n; k++) {
-			support[k] = 0;
-		    }
-		    ddSuppInteract(f,support);
-		    ddClearLocal(f);
-		    ddUpdateInteract(table,support);
-		}
-		f = Cudd_Regular(f->next);
-	    }
-	}
+        nodelist = table->subtables[i].nodelist;
+        slots = table->subtables[i].slots;
+        for (j = 0; j < slots; j++) {
+            f = nodelist[j];
+            while (f != sentinel) {
+                /* A node is a root of the DAG if it cannot be
+                ** reached by nodes above it. If a node was never
+                ** reached during the previous depth-first searches,
+                ** then it is a root, and we start a new depth-first
+                ** search from it.
+                */
+                if (!Cudd_IsComplement(f->next)) {
+                    for (k = 0; k < n; k++) {
+                        support[k] = 0;
+                    }
+                    ddSuppInteract(f,support);
+                    ddClearLocal(f);
+                    ddUpdateInteract(table,support);
+                }
+                f = Cudd_Regular(f->next);
+            }
+        }
     }
     ddClearGlobal(table);
 
-    FREE(support);
+    ABC_FREE(support);
     return(1);
 
 } /* end of cuddInitInteract */
@@ -288,7 +319,7 @@ ddSuppInteract(
   int * support)
 {
     if (cuddIsConstant(f) || Cudd_IsComplement(cuddT(f))) {
-	return;
+        return;
     }
 
     support[f->index] = 1;
@@ -318,7 +349,7 @@ ddClearLocal(
   DdNode * f)
 {
     if (cuddIsConstant(f) || !Cudd_IsComplement(cuddT(f))) {
-	return;
+        return;
     }
     /* clear visited flag */
     cuddT(f) = Cudd_Regular(cuddT(f));
@@ -351,13 +382,13 @@ ddUpdateInteract(
     int n = table->size;
 
     for (i = 0; i < n-1; i++) {
-	if (support[i] == 1) {
-	    for (j = i+1; j < n; j++) {
-		if (support[j] == 1) {
-		    cuddSetInteract(table,i,j);
-		}
-	    }
-	}
+        if (support[i] == 1) {
+            for (j = i+1; j < n; j++) {
+                if (support[j] == 1) {
+                    cuddSetInteract(table,i,j);
+                }
+            }
+        }
     }
 
 } /* end of ddUpdateInteract */
@@ -387,16 +418,20 @@ ddClearGlobal(
     int slots;
 
     for (i = 0; i < table->size; i++) {
-	nodelist = table->subtables[i].nodelist;
-	slots = table->subtables[i].slots;
-	for (j = 0; j < slots; j++) {
-	    f = nodelist[j];
-	    while (f != sentinel) {
-		f->next = Cudd_Regular(f->next);
-		f = f->next;
-	    }
-	}
+        nodelist = table->subtables[i].nodelist;
+        slots = table->subtables[i].slots;
+        for (j = 0; j < slots; j++) {
+            f = nodelist[j];
+            while (f != sentinel) {
+                f->next = Cudd_Regular(f->next);
+                f = f->next;
+            }
+        }
     }
 
 } /* end of ddClearGlobal */
+
+
+ABC_NAMESPACE_IMPL_END
+
 

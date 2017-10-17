@@ -18,23 +18,25 @@
 
 ***********************************************************************/
  
-#ifndef __RWR_H__
-#define __RWR_H__
+#ifndef ABC__opt__rwr__rwr_h
+#define ABC__opt__rwr__rwr_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "abc.h"
-#include "cut.h"
+#include "base/abc/abc.h"
+#include "opt/cut/cut.h"
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -84,13 +86,13 @@ struct Rwr_Man_t_
     int                nCutsBad;
     int                nSubgraphs;
     // runtime statistics
-    int                timeStart;
-    int                timeCut;
-    int                timeRes;
-    int                timeEval;
-    int                timeMffc;
-    int                timeUpdate;
-    int                timeTotal;
+    abctime            timeStart;
+    abctime            timeCut;
+    abctime            timeRes;
+    abctime            timeEval;
+    abctime            timeMffc;
+    abctime            timeUpdate;
+    abctime            timeTotal;
 };
 
 struct Rwr_Node_t_ // 24 bytes
@@ -111,10 +113,10 @@ struct Rwr_Node_t_ // 24 bytes
 };
 
 // manipulation of complemented attributes
-static inline bool         Rwr_IsComplement( Rwr_Node_t * p )    { return (bool)(((unsigned long)p) & 01);           }
-static inline Rwr_Node_t * Rwr_Regular( Rwr_Node_t * p )         { return (Rwr_Node_t *)((unsigned long)(p) & ~01);  }
-static inline Rwr_Node_t * Rwr_Not( Rwr_Node_t * p )             { return (Rwr_Node_t *)((unsigned long)(p) ^  01);  }
-static inline Rwr_Node_t * Rwr_NotCond( Rwr_Node_t * p, int c )  { return (Rwr_Node_t *)((unsigned long)(p) ^ (c));  }
+static inline int          Rwr_IsComplement( Rwr_Node_t * p )    { return (int )(((ABC_PTRUINT_T)p) & 01);           }
+static inline Rwr_Node_t * Rwr_Regular( Rwr_Node_t * p )         { return (Rwr_Node_t *)((ABC_PTRUINT_T)(p) & ~01);  }
+static inline Rwr_Node_t * Rwr_Not( Rwr_Node_t * p )             { return (Rwr_Node_t *)((ABC_PTRUINT_T)(p) ^  01);  }
+static inline Rwr_Node_t * Rwr_NotCond( Rwr_Node_t * p, int c )  { return (Rwr_Node_t *)((ABC_PTRUINT_T)(p) ^ (c));  }
 
 ////////////////////////////////////////////////////////////////////////
 ///                      MACRO DEFINITIONS                           ///
@@ -137,16 +139,16 @@ extern Rwr_Node_t *      Rwr_ManAddNode( Rwr_Man_t * p, Rwr_Node_t * p0, Rwr_Nod
 extern int               Rwr_ManNodeVolume( Rwr_Man_t * p, Rwr_Node_t * p0, Rwr_Node_t * p1 );
 extern void              Rwr_ManIncTravId( Rwr_Man_t * p );
 /*=== rwrMan.c ========================================================*/
-extern Rwr_Man_t *       Rwr_ManStart( bool fPrecompute );
+extern Rwr_Man_t *       Rwr_ManStart( int  fPrecompute );
 extern void              Rwr_ManStop( Rwr_Man_t * p );
 extern void              Rwr_ManPrintStats( Rwr_Man_t * p );
 extern void              Rwr_ManPrintStatsFile( Rwr_Man_t * p );
 extern void *            Rwr_ManReadDecs( Rwr_Man_t * p );
 extern Vec_Ptr_t *       Rwr_ManReadLeaves( Rwr_Man_t * p );
 extern int               Rwr_ManReadCompl( Rwr_Man_t * p );
-extern void              Rwr_ManAddTimeCuts( Rwr_Man_t * p, int Time );
-extern void              Rwr_ManAddTimeUpdate( Rwr_Man_t * p, int Time );
-extern void              Rwr_ManAddTimeTotal( Rwr_Man_t * p, int Time );
+extern void              Rwr_ManAddTimeCuts( Rwr_Man_t * p, abctime Time );
+extern void              Rwr_ManAddTimeUpdate( Rwr_Man_t * p, abctime Time );
+extern void              Rwr_ManAddTimeTotal( Rwr_Man_t * p, abctime Time );
 /*=== rwrPrint.c ========================================================*/
 extern void              Rwr_ManPrint( Rwr_Man_t * p );
 /*=== rwrUtil.c ========================================================*/
@@ -157,9 +159,11 @@ extern void              Rwr_ManLoadFromFile( Rwr_Man_t * p, char * pFileName );
 extern void              Rwr_ListAddToTail( Rwr_Node_t ** ppList, Rwr_Node_t * pNode );
 extern char *            Rwr_ManGetPractical( Rwr_Man_t * p );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

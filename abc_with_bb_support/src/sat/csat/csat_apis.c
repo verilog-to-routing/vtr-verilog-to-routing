@@ -16,9 +16,14 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "fraig.h"
+#include "base/abc/abc.h"
+#include "proof/fraig/fraig.h"
 #include "csat_apis.h"
+#include "misc/st/stmm.h"
+#include "base/main/main.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -36,7 +41,7 @@ struct ABC_ManagerStruct_t
     Abc_Ntk_t *           pNtk;          // the starting ABC network
     Abc_Ntk_t *           pTarget;       // the AIG representing the target
     char *                pDumpFileName; // the name of the file to dump the target network
-    Extra_MmFlex_t *      pMmNames;      // memory manager for signal names
+    Mem_Flex_t *      pMmNames;      // memory manager for signal names
     // solving parameters
     int                   mode;          // 0 = resource-aware integration; 1 = brute-force SAT
     Prove_Params_t        Params;        // integrated CEC parameters
@@ -56,7 +61,7 @@ extern void  Abc_Start();
 extern void  Abc_Stop();
 
 // some external procedures
-extern int Io_WriteBench( Abc_Ntk_t * pNtk, char * FileName );
+extern int Io_WriteBench( Abc_Ntk_t * pNtk, const char * FileName );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -77,13 +82,13 @@ ABC_Manager ABC_InitManager()
 {
     ABC_Manager_t * mng;
     Abc_Start();
-    mng = ALLOC( ABC_Manager_t, 1 );
+    mng = ABC_ALLOC( ABC_Manager_t, 1 );
     memset( mng, 0, sizeof(ABC_Manager_t) );
     mng->pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
     mng->pNtk->pName = Extra_UtilStrsav("csat_network");
     mng->tName2Node = stmm_init_table(strcmp, stmm_strhash);
     mng->tNode2Name = stmm_init_table(stmm_ptrcmp, stmm_ptrhash);
-    mng->pMmNames   = Extra_MmFlexStart();
+    mng->pMmNames   = Mem_FlexStart();
     mng->vNodes     = Vec_PtrAlloc( 100 );
     mng->vValues    = Vec_IntAlloc( 100 );
     mng->mode       = 0; // set "resource-aware integration" as the default mode
@@ -111,13 +116,13 @@ void ABC_ReleaseManager( ABC_Manager mng )
     ABC_TargetResFree(p_res);
     if ( mng->tNode2Name ) stmm_free_table( mng->tNode2Name );
     if ( mng->tName2Node ) stmm_free_table( mng->tName2Node );
-    if ( mng->pMmNames )   Extra_MmFlexStop( mng->pMmNames );
+    if ( mng->pMmNames )   Mem_FlexStop( mng->pMmNames, 0 );
     if ( mng->pNtk )       Abc_NtkDelete( mng->pNtk );
     if ( mng->pTarget )    Abc_NtkDelete( mng->pTarget );
     if ( mng->vNodes )     Vec_PtrFree( mng->vNodes );
     if ( mng->vValues )    Vec_IntFree( mng->vValues );
-    FREE( mng->pDumpFileName );
-    free( mng );
+    ABC_FREE( mng->pDumpFileName );
+    ABC_FREE( mng );
     Abc_Stop();
 }
 
@@ -169,12 +174,14 @@ void ABC_UseOnlyCoreSatSolver( ABC_Manager mng )
 ***********************************************************************/
 int ABC_AddGate( ABC_Manager mng, enum GateType type, char * name, int nofi, char ** fanins, int dc_attr )
 {
-    Abc_Obj_t * pObj, * pFanin;
-    char * pSop, * pNewName;
+    Abc_Obj_t * pObj = NULL; // Suppress "might be used uninitialized"
+    Abc_Obj_t * pFanin;
+    char * pSop = NULL; // Suppress "might be used uninitialized"
+    char * pNewName;
     int i;
 
     // save the name in the local memory manager
-    pNewName = Extra_MmFlexEntryFetch( mng->pMmNames, strlen(name) + 1 );
+    pNewName = Mem_FlexEntryFetch( mng->pMmNames, strlen(name) + 1 );
     strcpy( pNewName, name );
     name = pNewName;
 
@@ -213,51 +220,51 @@ int ABC_AddGate( ABC_Manager mng, enum GateType type, char * name, int nofi, cha
             case CSAT_CONST:
                 if ( nofi != 0 )
                     { printf( "ABC_AddGate: The constant gate \"%s\" has fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateConst1( mng->pNtk->pManFunc );
+                pSop = Abc_SopCreateConst1( (Mem_Flex_t *)mng->pNtk->pManFunc );
                 break;
             case CSAT_BAND:
                 if ( nofi < 1 )
                     { printf( "ABC_AddGate: The AND gate \"%s\" no fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateAnd( mng->pNtk->pManFunc, nofi, NULL );
+                pSop = Abc_SopCreateAnd( (Mem_Flex_t *)mng->pNtk->pManFunc, nofi, NULL );
                 break;
             case CSAT_BNAND:
                 if ( nofi < 1 )
                     { printf( "ABC_AddGate: The NAND gate \"%s\" no fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateNand( mng->pNtk->pManFunc, nofi );
+                pSop = Abc_SopCreateNand( (Mem_Flex_t *)mng->pNtk->pManFunc, nofi );
                 break;
             case CSAT_BOR:
                 if ( nofi < 1 )
                     { printf( "ABC_AddGate: The OR gate \"%s\" no fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateOr( mng->pNtk->pManFunc, nofi, NULL );
+                pSop = Abc_SopCreateOr( (Mem_Flex_t *)mng->pNtk->pManFunc, nofi, NULL );
                 break;
             case CSAT_BNOR:
                 if ( nofi < 1 )
                     { printf( "ABC_AddGate: The NOR gate \"%s\" no fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateNor( mng->pNtk->pManFunc, nofi );
+                pSop = Abc_SopCreateNor( (Mem_Flex_t *)mng->pNtk->pManFunc, nofi );
                 break;
             case CSAT_BXOR:
                 if ( nofi < 1 )
                     { printf( "ABC_AddGate: The XOR gate \"%s\" no fanins.\n", name ); return 0; }
                 if ( nofi > 2 )
                     { printf( "ABC_AddGate: The XOR gate \"%s\" has more than two fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateXor( mng->pNtk->pManFunc, nofi );
+                pSop = Abc_SopCreateXor( (Mem_Flex_t *)mng->pNtk->pManFunc, nofi );
                 break;
             case CSAT_BXNOR:
                 if ( nofi < 1 )
                     { printf( "ABC_AddGate: The XNOR gate \"%s\" no fanins.\n", name ); return 0; }
                 if ( nofi > 2 )
                     { printf( "ABC_AddGate: The XNOR gate \"%s\" has more than two fanins.\n", name ); return 0; }
-                pSop = Abc_SopCreateNxor( mng->pNtk->pManFunc, nofi );
+                pSop = Abc_SopCreateNxor( (Mem_Flex_t *)mng->pNtk->pManFunc, nofi );
                 break;
             case CSAT_BINV:
                 if ( nofi != 1 )
                     { printf( "ABC_AddGate: The inverter gate \"%s\" does not have exactly one fanin.\n", name ); return 0; }
-                pSop = Abc_SopCreateInv( mng->pNtk->pManFunc );
+                pSop = Abc_SopCreateInv( (Mem_Flex_t *)mng->pNtk->pManFunc );
                 break;
             case CSAT_BBUF:
                 if ( nofi != 1 )
                     { printf( "ABC_AddGate: The buffer gate \"%s\" does not have exactly one fanin.\n", name ); return 0; }
-                pSop = Abc_SopCreateBuf( mng->pNtk->pManFunc );
+                pSop = Abc_SopCreateBuf( (Mem_Flex_t *)mng->pNtk->pManFunc );
                 break;
             default :
                 break;
@@ -440,7 +447,7 @@ void ABC_SetSolveImplicationLimit( ABC_Manager mng, int num )
   SeeAlso     []
 
 ***********************************************************************/
-void ABC_SetTotalBacktrackLimit( ABC_Manager mng, uint64 num )
+void ABC_SetTotalBacktrackLimit( ABC_Manager mng, ABC_UINT64_T num )
 {
     mng->Params.nTotalBacktrackLimit = num;
 }
@@ -456,7 +463,7 @@ void ABC_SetTotalBacktrackLimit( ABC_Manager mng, uint64 num )
   SeeAlso     []
 
 ***********************************************************************/
-void ABC_SetTotalInspectLimit( ABC_Manager mng, uint64 num )
+void ABC_SetTotalInspectLimit( ABC_Manager mng, ABC_UINT64_T num )
 {
     mng->Params.nTotalInspectLimit = num;
 }
@@ -471,7 +478,7 @@ void ABC_SetTotalInspectLimit( ABC_Manager mng, uint64 num )
   SeeAlso     []
 
 ***********************************************************************/
-uint64 ABC_GetTotalBacktracksMade( ABC_Manager mng )
+ABC_UINT64_T ABC_GetTotalBacktracksMade( ABC_Manager mng )
 {
     return mng->Params.nTotalBacktracksMade;
 }
@@ -487,7 +494,7 @@ uint64 ABC_GetTotalBacktracksMade( ABC_Manager mng )
   SeeAlso     []
 
 ***********************************************************************/
-uint64 ABC_GetTotalInspectsMade( ABC_Manager mng )
+ABC_UINT64_T ABC_GetTotalInspectsMade( ABC_Manager mng )
 {
     return mng->Params.nTotalInspectsMade;
 }
@@ -505,7 +512,7 @@ uint64 ABC_GetTotalInspectsMade( ABC_Manager mng )
 ***********************************************************************/
 void ABC_EnableDump( ABC_Manager mng, char * dump_file )
 {
-    FREE( mng->pDumpFileName );
+    ABC_FREE( mng->pDumpFileName );
     mng->pDumpFileName = Extra_UtilStrsav( dump_file );
 }
 
@@ -612,7 +619,7 @@ enum CSAT_StatusT ABC_Solve( ABC_Manager mng )
 
     // try to prove the miter using a number of techniques
     if ( mng->mode )
-        RetValue = Abc_NtkMiterSat( mng->pTarget, (sint64)pParams->nMiteringLimitLast, (sint64)0, 0, NULL, NULL );
+        RetValue = Abc_NtkMiterSat( mng->pTarget, (ABC_INT64_T)pParams->nMiteringLimitLast, (ABC_INT64_T)0, 0, NULL, NULL );
     else
 //        RetValue = Abc_NtkMiterProve( &mng->pTarget, pParams ); // old CEC engine
         RetValue = Abc_NtkIvyProve( &mng->pTarget, pParams ); // new CEC engine
@@ -632,7 +639,7 @@ enum CSAT_StatusT ABC_Solve( ABC_Manager mng )
             mng->pResult->names[i]  = Extra_UtilStrsav( ABC_GetNodeName(mng, Abc_NtkCi(mng->pNtk, i)) ); 
             mng->pResult->values[i] = mng->pTarget->pModel[i];
         }
-        FREE( mng->pTarget->pModel );
+        ABC_FREE( mng->pTarget->pModel );
     }
     else assert( 0 );
 
@@ -673,7 +680,7 @@ CSAT_Target_ResultT * ABC_Get_Target_Result( ABC_Manager mng, int TargetID )
 void ABC_Dump_Bench_File( ABC_Manager mng )
 {
     Abc_Ntk_t * pNtkTemp, * pNtkAig;
-    char * pFileName;
+    const char * pFileName;
  
     // derive the netlist
     pNtkAig = Abc_NtkStrash( mng->pNtk, 0, 0, 0 );
@@ -702,11 +709,11 @@ void ABC_Dump_Bench_File( ABC_Manager mng )
 CSAT_Target_ResultT * ABC_TargetResAlloc( int nVars )
 {
     CSAT_Target_ResultT * p;
-    p = ALLOC( CSAT_Target_ResultT, 1 );
+    p = ABC_ALLOC( CSAT_Target_ResultT, 1 );
     memset( p, 0, sizeof(CSAT_Target_ResultT) );
     p->no_sig = nVars;
-    p->names = ALLOC( char *, nVars );
-    p->values = ALLOC( int, nVars );
+    p->names = ABC_ALLOC( char *, nVars );
+    p->values = ABC_ALLOC( int, nVars );
     memset( p->names, 0, sizeof(char *) * nVars );
     memset( p->values, 0, sizeof(int) * nVars );
     return p;
@@ -732,12 +739,12 @@ void ABC_TargetResFree( CSAT_Target_ResultT * p )
         int i = 0;
         for ( i = 0; i < p->no_sig; i++ )
         {
-            FREE(p->names[i]);
+            ABC_FREE(p->names[i]);
         }
     }
-    FREE( p->names );
-    FREE( p->values );
-    free( p );
+    ABC_FREE( p->names );
+    ABC_FREE( p->values );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -766,4 +773,6 @@ char * ABC_GetNodeName( ABC_Manager mng, Abc_Obj_t * pNode )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

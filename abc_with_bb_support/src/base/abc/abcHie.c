@@ -20,6 +20,9 @@
 
 #include "abc.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -40,9 +43,9 @@
   SeeAlso     []
 
 ***********************************************************************/
-void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, int * pCounter )
+void Abc_NtkFlattenLogicHierarchy2_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, int * pCounter )
 {
-    char Suffix[1000] = {0};
+    char Suffix[2000] = {0};
     Abc_Ntk_t * pNtkModel;
     Abc_Obj_t * pObj, * pTerm, * pNet, * pFanin;
     int i, k;
@@ -70,7 +73,7 @@ void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, in
 
     (*pCounter)++;
 
-    // create the prefix, which will be appended to the internal names
+    // create the suffix, which will be appended to the internal names
     if ( *pCounter )
         sprintf( Suffix, "_%s_%d", Abc_NtkName(pNtk), *pCounter );
 
@@ -98,7 +101,18 @@ void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, in
     Abc_NtkForEachPi( pNtk, pTerm, i )
         Abc_NodeSetTravIdCurrent( pTerm );
     Abc_NtkForEachPo( pNtk, pTerm, i )
+    {
         Abc_NodeSetTravIdCurrent( pTerm );
+        // if the netlist has net names beginning with "abc_property_"
+        // these names will be addes as primary outputs of the network
+        pNet = Abc_ObjFanin0(pTerm);
+        if ( strncmp( Abc_ObjName(pNet), "abc_property", 12 ) )
+            continue;
+        Abc_ObjAddFanin( Abc_NtkCreatePo(pNet->pCopy->pNtk), pNet->pCopy );
+        if ( Nm_ManFindNameById(pNet->pCopy->pNtk->pManName, pNet->pCopy->Id) )
+            Nm_ManDeleteIdName(pNet->pCopy->pNtk->pManName, pNet->pCopy->Id);
+        Abc_ObjAssignName( pNet->pCopy, Abc_ObjName(pNet), Suffix );
+    }
     Abc_NtkForEachBox( pNtk, pObj, i )
     {
         if ( Abc_ObjIsLatch(pObj) )
@@ -132,7 +146,7 @@ void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, in
     {
         if ( Abc_ObjIsLatch(pObj) )
             continue;
-        pNtkModel = pObj->pData;
+        pNtkModel = (Abc_Ntk_t *)pObj->pData;
         // check the match between the number of actual and formal parameters
         assert( Abc_ObjFaninNum(pObj) == Abc_NtkPiNum(pNtkModel) );
         assert( Abc_ObjFanoutNum(pObj) == Abc_NtkPoNum(pNtkModel) );
@@ -144,7 +158,7 @@ void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, in
         Abc_ObjForEachFanout( pObj, pTerm, k )
             Abc_ObjFanin0( Abc_NtkPo(pNtkModel, k) )->pCopy = Abc_ObjFanout0(pTerm)->pCopy;
         // call recursively
-        Abc_NtkFlattenLogicHierarchy_rec( pNtkNew, pNtkModel, pCounter );
+        Abc_NtkFlattenLogicHierarchy2_rec( pNtkNew, pNtkModel, pCounter );
     }
 
     // if it is a BLIF-MV netlist transfer the values of all nets
@@ -168,14 +182,346 @@ void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, in
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkFlattenLogicHierarchy( Abc_Ntk_t * pNtk )
+Abc_Ntk_t * Abc_NtkFlattenLogicHierarchy2( Abc_Ntk_t * pNtk )
 {
     Abc_Ntk_t * pNtkNew; 
     Abc_Obj_t * pTerm, * pNet;
     int i, Counter;
-    extern Abc_Lib_t * Abc_LibDupBlackboxes( Abc_Lib_t * pLib, Abc_Ntk_t * pNtkSave );
+    extern Abc_Des_t * Abc_DesDupBlackboxes( Abc_Des_t * p, Abc_Ntk_t * pNtkSave );
 
     assert( Abc_NtkIsNetlist(pNtk) );
+    // start the network
+    pNtkNew = Abc_NtkAlloc( pNtk->ntkType, pNtk->ntkFunc, 1 );
+    // duplicate the name and the spec
+    pNtkNew->pName = Abc_UtilStrsav(pNtk->pName);
+    pNtkNew->pSpec = Abc_UtilStrsav(pNtk->pSpec);
+
+    // clean the node copy fields
+    Abc_NtkCleanCopy( pNtk );
+
+    // duplicate PIs/POs and their nets
+    Abc_NtkForEachPi( pNtk, pTerm, i )
+    {
+        Abc_NtkDupObj( pNtkNew, pTerm, 0 );
+        pNet = Abc_ObjFanout0( pTerm );
+        pNet->pCopy = Abc_NtkFindOrCreateNet( pNtkNew, Abc_ObjName(pNet) );
+        Abc_ObjAddFanin( pNet->pCopy, pTerm->pCopy );
+    }
+    Abc_NtkForEachPo( pNtk, pTerm, i )
+    {
+        Abc_NtkDupObj( pNtkNew, pTerm, 0 );
+        pNet = Abc_ObjFanin0( pTerm );
+        pNet->pCopy = Abc_NtkFindOrCreateNet( pNtkNew, Abc_ObjName(pNet) );
+        Abc_ObjAddFanin( pTerm->pCopy, pNet->pCopy );
+    }
+
+    // recursively flatten hierarchy, create internal logic, add new PI/PO names if there are black boxes
+    Counter = -1;
+    Abc_NtkFlattenLogicHierarchy2_rec( pNtkNew, pNtk, &Counter );
+    printf( "Hierarchy reader flattened %d instances of logic boxes and left %d black boxes.\n", 
+        Counter, Abc_NtkBlackboxNum(pNtkNew) );
+
+    if ( pNtk->pDesign )
+    {
+        // pass on the design
+        assert( Vec_PtrEntry(pNtk->pDesign->vTops, 0) == pNtk );
+        pNtkNew->pDesign = Abc_DesDupBlackboxes( pNtk->pDesign, pNtkNew );
+        // update the pointers
+        Abc_NtkForEachBlackbox( pNtkNew, pTerm, i )
+            pTerm->pData = ((Abc_Ntk_t *)pTerm->pData)->pCopy;
+    }
+
+    // we may have added property outputs
+    Abc_NtkOrderCisCos( pNtkNew );
+
+    // copy the timing information
+//    Abc_ManTimeDup( pNtk, pNtkNew );
+    // duplicate EXDC 
+    if ( pNtk->pExdc )
+        printf( "EXDC is not transformed.\n" );
+    if ( !Abc_NtkCheck( pNtkNew ) )
+    {
+        fprintf( stdout, "Abc_NtkFlattenLogicHierarchy2(): Network check has failed.\n" );
+        Abc_NtkDelete( pNtkNew );
+        return NULL;
+    }
+    return pNtkNew;
+}
+
+
+
+/**Function*************************************************************
+
+  Synopsis    [Recursively flattens logic hierarchy of the netlist.]
+
+  Description [When this procedure is called, the PI/PO nets of the old 
+  netlist point to the corresponding nets of the flattened netlist.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkFlattenLogicHierarchy_rec( Abc_Ntk_t * pNtkNew, Abc_Ntk_t * pNtk, int * pCounter, Vec_Str_t * vPref )
+{
+    Abc_Ntk_t * pNtkModel;
+    Abc_Obj_t * pObj, * pTerm, * pNet, * pFanin;
+    int i, k, Length;
+
+    // process the blackbox
+    if ( Abc_NtkHasBlackbox(pNtk) )
+    {
+        //printf( "Flatting black box \"%s\".\n", pNtk->pName );
+        // duplicate the blackbox
+        assert( Abc_NtkBoxNum(pNtk) == 1 );
+        pObj = Abc_NtkBox( pNtk, 0 );
+        Abc_NtkDupBox( pNtkNew, pObj, 1 );
+        pObj->pCopy->pData = pNtk;
+
+        // connect blackbox fanins to the PI nets
+        assert( Abc_ObjFaninNum(pObj->pCopy) == Abc_NtkPiNum(pNtk) );
+        Abc_NtkForEachPi( pNtk, pTerm, i )
+            Abc_ObjAddFanin( Abc_ObjFanin(pObj->pCopy,i), Abc_ObjFanout0(pTerm)->pCopy );
+
+        // connect blackbox fanouts to the PO nets
+        assert( Abc_ObjFanoutNum(pObj->pCopy) == Abc_NtkPoNum(pNtk) );
+        Abc_NtkForEachPo( pNtk, pTerm, i )
+            Abc_ObjAddFanin( Abc_ObjFanin0(pTerm)->pCopy, Abc_ObjFanout(pObj->pCopy,i) );
+        return;
+    }
+
+    (*pCounter)++;
+
+    // create the suffix, which will be appended to the internal names
+    if ( *pCounter )
+    {
+        char Buffer[20];
+        sprintf( Buffer, "(%d)", *pCounter );
+        Vec_StrPrintStr( vPref, Buffer );
+    }
+    Vec_StrPush( vPref, '|' );
+    Vec_StrPush( vPref, 0 );
+
+    // duplicate nets of all boxes, including latches
+    Abc_NtkForEachBox( pNtk, pObj, i )
+    {
+        Abc_ObjForEachFanin( pObj, pTerm, k )
+        {
+            pNet = Abc_ObjFanin0(pTerm);
+            if ( pNet->pCopy )
+                continue;
+            pNet->pCopy = Abc_NtkFindOrCreateNet( pNtkNew, Abc_ObjNamePrefix(pNet, Vec_StrArray(vPref)) );
+        }
+        Abc_ObjForEachFanout( pObj, pTerm, k )
+        {
+            pNet = Abc_ObjFanout0(pTerm);
+            if ( pNet->pCopy )
+                continue;
+            pNet->pCopy = Abc_NtkFindOrCreateNet( pNtkNew, Abc_ObjNamePrefix(pNet, Vec_StrArray(vPref)) );
+        }
+    }
+
+    // mark objects that will not be used
+    Abc_NtkIncrementTravId( pNtk );
+    Abc_NtkForEachPi( pNtk, pTerm, i )
+        Abc_NodeSetTravIdCurrent( pTerm );
+    Abc_NtkForEachPo( pNtk, pTerm, i )
+    {
+        Abc_NodeSetTravIdCurrent( pTerm );
+        // if the netlist has net names beginning with "abc_property_"
+        // these names will be addes as primary outputs of the network
+        pNet = Abc_ObjFanin0(pTerm);
+        if ( strncmp( Abc_ObjName(pNet), "abc_property", 12 ) )
+            continue;
+        Abc_ObjAddFanin( Abc_NtkCreatePo(pNet->pCopy->pNtk), pNet->pCopy );
+        if ( Nm_ManFindNameById(pNet->pCopy->pNtk->pManName, pNet->pCopy->Id) )
+            Nm_ManDeleteIdName(pNet->pCopy->pNtk->pManName, pNet->pCopy->Id);
+        Abc_ObjAssignName( pNet->pCopy, Vec_StrArray(vPref), Abc_ObjName(pNet) );
+    }
+    Abc_NtkForEachBox( pNtk, pObj, i )
+    {
+        if ( Abc_ObjIsLatch(pObj) )
+            continue;
+        Abc_NodeSetTravIdCurrent( pObj );
+        Abc_ObjForEachFanin( pObj, pTerm, k )
+            Abc_NodeSetTravIdCurrent( pTerm );
+        Abc_ObjForEachFanout( pObj, pTerm, k )
+            Abc_NodeSetTravIdCurrent( pTerm );
+    }
+
+    // duplicate objects that do not have prototypes yet
+    Abc_NtkForEachObj( pNtk, pObj, i )
+    {
+        if ( Abc_NodeIsTravIdCurrent(pObj) )
+            continue;
+        if ( pObj->pCopy )
+            continue;
+        Abc_NtkDupObj( pNtkNew, pObj, 0 );
+    }
+
+    // connect objects
+    Abc_NtkForEachObj( pNtk, pObj, i )
+        if ( !Abc_NodeIsTravIdCurrent(pObj) )
+            Abc_ObjForEachFanin( pObj, pFanin, k )
+                if ( !Abc_NodeIsTravIdCurrent(pFanin) )
+                    Abc_ObjAddFanin( pObj->pCopy, pFanin->pCopy );
+
+    // call recursively
+    Vec_StrPop( vPref );
+    Length = Vec_StrSize( vPref );
+    Abc_NtkForEachBox( pNtk, pObj, i )
+    {
+        if ( Abc_ObjIsLatch(pObj) )
+            continue;
+        pNtkModel = (Abc_Ntk_t *)pObj->pData;
+        // check the match between the number of actual and formal parameters
+        assert( Abc_ObjFaninNum(pObj) == Abc_NtkPiNum(pNtkModel) );
+        assert( Abc_ObjFanoutNum(pObj) == Abc_NtkPoNum(pNtkModel) );
+        // clean the node copy fields
+        Abc_NtkCleanCopy( pNtkModel );
+        // map PIs/POs
+        Abc_ObjForEachFanin( pObj, pTerm, k )
+            Abc_ObjFanout0( Abc_NtkPi(pNtkModel, k) )->pCopy = Abc_ObjFanin0(pTerm)->pCopy;
+        Abc_ObjForEachFanout( pObj, pTerm, k )
+            Abc_ObjFanin0( Abc_NtkPo(pNtkModel, k) )->pCopy = Abc_ObjFanout0(pTerm)->pCopy;
+        // create name
+        Vec_StrShrink( vPref, Length );
+        Vec_StrPrintStr( vPref, Abc_NtkName(pNtkModel) );
+        // call recursively
+        Abc_NtkFlattenLogicHierarchy_rec( pNtkNew, pNtkModel, pCounter, vPref );
+    }
+
+    // if it is a BLIF-MV netlist transfer the values of all nets
+    if ( Abc_NtkHasBlifMv(pNtk) && Abc_NtkMvVar(pNtk) )
+    {
+        if ( Abc_NtkMvVar( pNtkNew ) == NULL )
+            Abc_NtkStartMvVars( pNtkNew );
+        Abc_NtkForEachNet( pNtk, pObj, i )
+            Abc_NtkSetMvVarValues( pObj->pCopy, Abc_ObjMvVarNum(pObj) );
+    }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Returns 0 if CI names are repeated.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_NtkCompareNames( Abc_Ntk_t ** p1, Abc_Ntk_t ** p2 )
+{
+    return strcmp( Abc_NtkName(*p1), Abc_NtkName(*p2) );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Prints information about boxes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkPrintBoxInfo( Abc_Ntk_t * pNtk )
+{
+    Vec_Ptr_t * vMods;
+    Abc_Ntk_t * pModel, * pBoxModel;
+    Abc_Obj_t * pObj;
+    Vec_Int_t * vCounts;
+    int i, k, Num;
+    if ( pNtk->pDesign == NULL || pNtk->pDesign->vModules == NULL )
+    {
+//        printf( "There is no hierarchy information.\n" );
+        return;
+    }
+    // sort models by name
+    vMods = pNtk->pDesign->vModules;
+    Vec_PtrSort( vMods, (int(*)())Abc_NtkCompareNames );
+//    Vec_PtrForEachEntry( Abc_Ntk_t *, vMods, pModel, i )
+//        printf( "%s\n", Abc_NtkName(pModel) );
+
+    // swap the first model
+    Num = Vec_PtrFind( vMods, pNtk );
+    assert( Num >= 0 && Num < Vec_PtrSize(vMods) );
+    pBoxModel = (Abc_Ntk_t *)Vec_PtrEntry(vMods, 0);
+    Vec_PtrWriteEntry(vMods, 0, (Abc_Ntk_t *)Vec_PtrEntry(vMods, Num) );
+    Vec_PtrWriteEntry(vMods, Num, pBoxModel );
+
+    // print models
+    vCounts = Vec_IntStart( Vec_PtrSize(vMods) );
+    Vec_PtrForEachEntry( Abc_Ntk_t *, vMods, pModel, i )
+    {
+        if ( Abc_NtkBoxNum(pModel) == 0 )
+            continue;
+        Vec_IntFill( vCounts, Vec_IntSize(vCounts), 0 );
+        Abc_NtkForEachBox( pModel, pObj, k )
+        {
+            pBoxModel = (Abc_Ntk_t *)pObj->pData;
+            if ( pBoxModel == NULL )
+                continue;
+            Num = Vec_PtrFind( vMods, pBoxModel );
+            assert( Num >= 0 && Num < Vec_PtrSize(vMods) );
+            Vec_IntAddToEntry( vCounts, Num, 1 );
+        }
+
+//        Abc_NtkPrintStats( pModel, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+        printf( "MODULE  " );
+        printf( "%-30s : ", Abc_NtkName(pModel) );
+        printf( "PI=%6d ", Abc_NtkPiNum(pModel) );
+        printf( "PO=%6d ", Abc_NtkPoNum(pModel) );
+        printf( "BB=%6d ", Abc_NtkBoxNum(pModel) );
+        printf( "ND=%6d ", Abc_NtkNodeNum(pModel) ); // sans constants
+        printf( "Lev=%5d ", Abc_NtkLevel(pModel) );
+        printf( "\n" );
+
+        Vec_IntForEachEntry( vCounts, Num, k )
+            if ( Num )
+                printf( "%15d : %s\n", Num, Abc_NtkName((Abc_Ntk_t *)Vec_PtrEntry(vMods, k)) );
+    }
+    Vec_IntFree( vCounts );
+    Vec_PtrForEachEntry( Abc_Ntk_t *, vMods, pModel, i )
+    {
+        if ( Abc_NtkBoxNum(pModel) != 0 )
+            continue;
+        printf( "MODULE   " );
+        printf( "%-30s : ", Abc_NtkName(pModel) );
+        printf( "PI=%6d ", Abc_NtkPiNum(pModel) );
+        printf( "PO=%6d ", Abc_NtkPoNum(pModel) );
+        printf( "BB=%6d ", Abc_NtkBoxNum(pModel) );
+        printf( "ND=%6d ", Abc_NtkNodeNum(pModel) );
+        printf( "Lev=%5d ", Abc_NtkLevel(pModel) );
+        printf( "\n" );
+    }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Flattens the logic hierarchy of the netlist.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Ntk_t * Abc_NtkFlattenLogicHierarchy( Abc_Ntk_t * pNtk )
+{
+    extern Abc_Des_t * Abc_DesDupBlackboxes( Abc_Des_t * p, Abc_Ntk_t * pNtkSave );
+    Vec_Str_t * vPref;
+    Abc_Ntk_t * pNtkNew; 
+    Abc_Obj_t * pTerm, * pNet;
+    int i, Counter = -1;
+
+    assert( Abc_NtkIsNetlist(pNtk) );
+//    Abc_NtkPrintBoxInfo( pNtk );
+
     // start the network
     pNtkNew = Abc_NtkAlloc( pNtk->ntkType, pNtk->ntkFunc, 1 );
     // duplicate the name and the spec
@@ -202,20 +548,25 @@ Abc_Ntk_t * Abc_NtkFlattenLogicHierarchy( Abc_Ntk_t * pNtk )
     }
 
     // recursively flatten hierarchy, create internal logic, add new PI/PO names if there are black boxes
-    Counter = -1;
-    Abc_NtkFlattenLogicHierarchy_rec( pNtkNew, pNtk, &Counter );
+    vPref = Vec_StrAlloc( 1000 );
+    Vec_StrPrintStr( vPref, Abc_NtkName(pNtk) );
+    Abc_NtkFlattenLogicHierarchy_rec( pNtkNew, pNtk, &Counter, vPref );
     printf( "Hierarchy reader flattened %d instances of logic boxes and left %d black boxes.\n", 
         Counter, Abc_NtkBlackboxNum(pNtkNew) );
+    Vec_StrFree( vPref );
 
     if ( pNtk->pDesign )
     {
         // pass on the design
         assert( Vec_PtrEntry(pNtk->pDesign->vTops, 0) == pNtk );
-        pNtkNew->pDesign = Abc_LibDupBlackboxes( pNtk->pDesign, pNtkNew );
+        pNtkNew->pDesign = Abc_DesDupBlackboxes( pNtk->pDesign, pNtkNew );
         // update the pointers
         Abc_NtkForEachBlackbox( pNtkNew, pTerm, i )
             pTerm->pData = ((Abc_Ntk_t *)pTerm->pData)->pCopy;
     }
+
+    // we may have added property outputs
+    Abc_NtkOrderCisCos( pNtkNew );
 
     // copy the timing information
 //    Abc_ManTimeDup( pNtk, pNtkNew );
@@ -230,6 +581,7 @@ Abc_Ntk_t * Abc_NtkFlattenLogicHierarchy( Abc_Ntk_t * pNtk )
     }
     return pNtkNew;
 }
+
 
 /**Function*************************************************************
 
@@ -338,7 +690,7 @@ Abc_Ntk_t * Abc_NtkConvertBlackboxes( Abc_Ntk_t * pNtk )
 ***********************************************************************/
 Abc_Ntk_t * Abc_NtkInsertNewLogic( Abc_Ntk_t * pNtkH, Abc_Ntk_t * pNtkL )
 {
-    Abc_Lib_t * pDesign;
+    Abc_Des_t * pDesign;
     Abc_Ntk_t * pNtkNew;
     Abc_Obj_t * pObjH, * pObjL, * pNetH, * pNetL, * pTermH;
     int i, k;
@@ -472,9 +824,6 @@ Abc_Ntk_t * Abc_NtkInsertNewLogic( Abc_Ntk_t * pNtkH, Abc_Ntk_t * pNtkL )
     Vec_PtrWriteEntry( pDesign->vModules, 0, pNtkNew );
     pNtkNew->pDesign = pDesign;
 
-//Abc_NtkPrintStats( stdout, pNtkH, 0 );
-//Abc_NtkPrintStats( stdout, pNtkNew, 0 );
-
     // check integrity
     if ( !Abc_NtkCheck( pNtkNew ) )
     {
@@ -489,4 +838,6 @@ Abc_Ntk_t * Abc_NtkInsertNewLogic( Abc_Ntk_t * pNtkH, Abc_Ntk_t * pNtkL )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

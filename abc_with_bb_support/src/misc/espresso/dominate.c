@@ -9,6 +9,9 @@
  */
 #include "mincov_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 int 
 sm_row_dominance(A)
@@ -96,3 +99,5 @@ int *weight;
 
     return colcnt - A->ncols;
 }
+ABC_NAMESPACE_IMPL_END
+

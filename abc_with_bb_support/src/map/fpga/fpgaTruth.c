@@ -17,7 +17,10 @@
 ***********************************************************************/
 
 #include "fpgaInt.h"
-#include "cudd.h"
+#include "bdd/cudd/cudd.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -44,7 +47,7 @@ DdNode * Fpga_TruthsCutBdd_rec( DdManager * dd, Fpga_Cut_t * pCut, Fpga_NodeVec_
     assert( !Fpga_IsComplement(pCut) );
     // if the cut is visited, return the result
     if ( pCut->uSign )
-        return (DdNode *)pCut->uSign;
+        return (DdNode *)(ABC_PTRUINT_T)pCut->uSign;
     // compute the functions of the children
     bFunc0 = Fpga_TruthsCutBdd_rec( dd, Fpga_CutRegular(pCut->pOne), vVisited );   Cudd_Ref( bFunc0 );
     bFunc0 = Cudd_NotCond( bFunc0, Fpga_CutIsComplement(pCut->pOne) );
@@ -56,7 +59,7 @@ DdNode * Fpga_TruthsCutBdd_rec( DdManager * dd, Fpga_Cut_t * pCut, Fpga_NodeVec_
     Cudd_RecursiveDeref( dd, bFunc0 );
     Cudd_RecursiveDeref( dd, bFunc1 );
     assert( pCut->uSign == 0 );
-    pCut->uSign = (unsigned)bFunc;
+    pCut->uSign = (unsigned)(ABC_PTRUINT_T)bFunc;
     // add this cut to the visited list
     Fpga_NodeVecPush( vVisited, (Fpga_Node_t *)pCut );
     return bFunc;
@@ -81,17 +84,17 @@ void * Fpga_TruthsCutBdd( void * dd, Fpga_Cut_t * pCut )
     assert( pCut->nLeaves > 1 );
     // set the leaf variables
     for ( i = 0; i < pCut->nLeaves; i++ )
-        pCut->ppLeaves[i]->pCuts->uSign = (unsigned)Cudd_bddIthVar( dd, i );
+        pCut->ppLeaves[i]->pCuts->uSign = (unsigned)(ABC_PTRUINT_T)Cudd_bddIthVar( (DdManager *)dd, i );
     // recursively compute the function
     vVisited = Fpga_NodeVecAlloc( 10 );
-    bFunc = Fpga_TruthsCutBdd_rec( dd, pCut, vVisited );   Cudd_Ref( bFunc );
+    bFunc = Fpga_TruthsCutBdd_rec( (DdManager *)dd, pCut, vVisited );   Cudd_Ref( bFunc );
     // clean the intermediate BDDs
     for ( i = 0; i < pCut->nLeaves; i++ )
         pCut->ppLeaves[i]->pCuts->uSign = 0;
     for ( i = 0; i < vVisited->nSize; i++ )
     {
         pCut = (Fpga_Cut_t *)vVisited->pArray[i];
-        Cudd_RecursiveDeref( dd, (DdNode*)pCut->uSign );
+        Cudd_RecursiveDeref( (DdManager *)dd, (DdNode*)(ABC_PTRUINT_T)pCut->uSign );
         pCut->uSign = 0;
     }
 //    printf( "%d ", vVisited->nSize );
@@ -163,4 +166,6 @@ int Fpga_CutVolume( Fpga_Cut_t * pCut )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

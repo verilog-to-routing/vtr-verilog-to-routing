@@ -8,13 +8,13 @@
 /*===================================================================*/
 
 #if !defined(_QPS_H)
-#define _QPS_H
+#define ABC__phys__place__place_qpsolver_h
+
 
 #include <stdio.h>
 
-#if defined(__cplusplus)
-extern "C" {
-#endif				/* __cplusplus */
+ABC_NAMESPACE_HEADER_START
+
 
   typedef float qps_float_t;
 
@@ -134,7 +134,6 @@ extern "C" {
   /* this discards the private data structures assigned by qps_init() */
   extern void qps_clean(qps_problem_t *);
 
-#if defined(__cplusplus)
-}
-#endif				/* __cplusplus */
+ABC_NAMESPACE_HEADER_END
+
 #endif				/* _QPS_H */

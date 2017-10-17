@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "kit.h"
+#include "base/abc/abc.h"
+#include "bool/kit/kit.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -143,7 +146,7 @@ unsigned Abc_Ntk4VarObj( Vec_Ptr_t * vNodes )
     Abc_Obj_t * pObj;
     unsigned uTruth0, uTruth1;
     int i;
-    Vec_PtrForEachEntry( vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pObj, i )
     {
         uTruth0 = (unsigned)(Abc_ObjFanin0(pObj)->pCopy);
         uTruth1 = (unsigned)(Abc_ObjFanin1(pObj)->pCopy);
@@ -151,7 +154,7 @@ unsigned Abc_Ntk4VarObj( Vec_Ptr_t * vNodes )
             uTruth0 = ~uTruth0;
         if ( Abc_ObjFaninC1(pObj) )
             uTruth1 = ~uTruth1;
-        pObj->pCopy = (void *)(uTruth0 & uTruth1);
+        pObj->pCopy = (Abc_Obj_t *)(uTruth0 & uTruth1);
     }
     return uTruth0 & uTruth1;
 }
@@ -207,9 +210,9 @@ void Abc_Ntk4VarTable( Abc_Ntk_t * pNtk )
 
     // set elementary truth tables
     assert( Abc_NtkPiNum(pNtk) == 4 );
-    Abc_AigConst1(pNtk)->pCopy = (void *)0xFFFFFFFF;
+    Abc_AigConst1(pNtk)->pCopy = (Abc_Obj_t *)0xFFFFFFFF;
     Abc_NtkForEachPi( pNtk, pObj, i )
-        pObj->pCopy = (void *)u4VarTruths[i];
+        pObj->pCopy = (Abc_Obj_t *)u4VarTruths[i];
 
     // create truth tables
     Abc_NtkForEachPo( pNtk, pObj, i )
@@ -244,8 +247,8 @@ void Abc_Ntk4VarTable( Abc_Ntk_t * pNtk )
 //        Counters[ puMap[uTruth & 0xFFFF] ]++;
         Vec_PtrFree( vNodes );
     }
-    free( puCanons );
-    free( puMap );
+    ABC_FREE( puCanons );
+    ABC_FREE( puMap );
 
     Count = 0;
     for ( k = 0; k < 222; k++ )
@@ -475,4 +478,6 @@ void Abc_NtkPrintOneDec( unsigned * pTruth, int nVars )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

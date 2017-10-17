@@ -20,6 +20,9 @@
 
 #include "lpkInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -85,8 +88,8 @@ int Lpk_MapTreeBestCofVar( Lpk_Man_t * p, unsigned * pTruth, int nVars, unsigned
 ***********************************************************************/
 If_Obj_t * Lpk_MapTreeMux_rec( Lpk_Man_t * p, unsigned * pTruth, int nVars, If_Obj_t ** ppLeaves )
 {
-    unsigned * pCof0 = Vec_PtrEntry( p->vTtNodes, 0 );
-    unsigned * pCof1 = Vec_PtrEntry( p->vTtNodes, 1 );
+    unsigned * pCof0 = (unsigned *)Vec_PtrEntry( p->vTtNodes, 0 );
+    unsigned * pCof1 = (unsigned *)Vec_PtrEntry( p->vTtNodes, 1 );
     If_Obj_t * pObj0, * pObj1;
     Kit_DsdNtk_t * ppNtks[2];
     int iBestVar;
@@ -131,18 +134,18 @@ If_Obj_t * Lpk_MapSuppRedDec_rec( Lpk_Man_t * p, unsigned * pTruth, int nVars, I
 {
     Kit_DsdNtk_t * pNtkDec, * pNtkComp, * ppNtks[2], * pTemp;
     If_Obj_t * pObjNew;
-    unsigned * pCof0 = Vec_PtrEntry( p->vTtNodes,  0 );
-    unsigned * pCof1 = Vec_PtrEntry( p->vTtNodes,  1 );
-    unsigned * pDec0 = Vec_PtrEntry( p->vTtNodes,  2 );
-    unsigned * pDec1 = Vec_PtrEntry( p->vTtNodes,  3 );
-    unsigned * pDec  = Vec_PtrEntry( p->vTtNodes,  4 );
-    unsigned * pCo00 = Vec_PtrEntry( p->vTtNodes,  5 );
-    unsigned * pCo01 = Vec_PtrEntry( p->vTtNodes,  6 );
-    unsigned * pCo10 = Vec_PtrEntry( p->vTtNodes,  7 );
-    unsigned * pCo11 = Vec_PtrEntry( p->vTtNodes,  8 );
-    unsigned * pCo0  = Vec_PtrEntry( p->vTtNodes,  9 );
-    unsigned * pCo1  = Vec_PtrEntry( p->vTtNodes, 10 );
-    unsigned * pCo   = Vec_PtrEntry( p->vTtNodes, 11 );
+    unsigned * pCof0 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  0 );
+    unsigned * pCof1 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  1 );
+    unsigned * pDec0 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  2 );
+    unsigned * pDec1 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  3 );
+    unsigned * pDec  = (unsigned *)Vec_PtrEntry( p->vTtNodes,  4 );
+    unsigned * pCo00 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  5 );
+    unsigned * pCo01 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  6 );
+    unsigned * pCo10 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  7 );
+    unsigned * pCo11 = (unsigned *)Vec_PtrEntry( p->vTtNodes,  8 );
+    unsigned * pCo0  = (unsigned *)Vec_PtrEntry( p->vTtNodes,  9 );
+    unsigned * pCo1  = (unsigned *)Vec_PtrEntry( p->vTtNodes, 10 );
+    unsigned * pCo   = (unsigned *)Vec_PtrEntry( p->vTtNodes, 11 );
     int TrueMint0, TrueMint1, FalseMint0, FalseMint1;
     int uSubsets, uSubset0, uSubset1, iVar, iVarReused, i;
 
@@ -167,6 +170,8 @@ If_Obj_t * Lpk_MapSuppRedDec_rec( Lpk_Man_t * p, unsigned * pTruth, int nVars, I
     ppNtks[1] = Kit_DsdExpand( pTemp = ppNtks[1] );      Kit_DsdNtkFree( pTemp );
     Kit_DsdTruthPartial( p->pDsdMan, ppNtks[0], pDec0, uSubset0 );
     Kit_DsdTruthPartial( p->pDsdMan, ppNtks[1], pDec1, uSubset1 );
+//    Kit_DsdTruthPartialTwo( p->pDsdMan, ppNtks[0], uSubset0, iVarReused, pCo0, pDec0 );
+//    Kit_DsdTruthPartialTwo( p->pDsdMan, ppNtks[1], uSubset1, iVarReused, pCo1, pDec1 );
     Kit_DsdNtkFree( ppNtks[0] );
     Kit_DsdNtkFree( ppNtks[1] );
 //Kit_DsdPrintFromTruth( pDec0, nVars );
@@ -218,6 +223,7 @@ If_Obj_t * Lpk_MapSuppRedDec_rec( Lpk_Man_t * p, unsigned * pTruth, int nVars, I
     Kit_TruthMuxVar( pCo1, pCo10, pCo11, nVars, iVarReused );
 //Kit_DsdPrintFromTruth( pCo0, nVars );
 //Kit_DsdPrintFromTruth( pCo1, nVars );
+
     // derive the composition function
     Kit_TruthMuxVar( pCo , pCo0 , pCo1 , nVars, iVar );
 
@@ -241,4 +247,6 @@ If_Obj_t * Lpk_MapSuppRedDec_rec( Lpk_Man_t * p, unsigned * pTruth, int nVars, I
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

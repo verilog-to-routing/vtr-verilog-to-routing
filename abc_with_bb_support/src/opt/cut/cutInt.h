@@ -18,18 +18,22 @@
 
 ***********************************************************************/
 
-#ifndef __CUT_INT_H__
-#define __CUT_INT_H__
+#ifndef ABC__opt__cut__cutInt_h
+#define ABC__opt__cut__cutInt_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include "extra.h"
-#include "vec.h"
+#include "misc/extra/extra.h"
+#include "misc/vec/vec.h"
 #include "cut.h"
 #include "cutList.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
@@ -88,12 +92,12 @@ struct Cut_ManStruct_t_
     int                nNodesDag;
     int                nNodesNoCuts;
     // runtime
-    int                timeMerge;
-    int                timeUnion;
-    int                timeTruth;
-    int                timeFilter;
-    int                timeHash;
-    int                timeMap;
+    abctime            timeMerge;
+    abctime            timeUnion;
+    abctime            timeTruth;
+    abctime            timeFilter;
+    abctime            timeHash;
+    abctime            timeMap;
 };
 
 // iterator through all the cuts of the list
@@ -148,6 +152,10 @@ extern int                 Cut_TableReadTime( Cut_HashTable_t * pTable );
 /*=== cutTruth.c ==========================================================*/
 extern void                Cut_TruthComputeOld( Cut_Cut_t * pCut, Cut_Cut_t * pCut0, Cut_Cut_t * pCut1, int fCompl0, int fCompl1 );
 extern void                Cut_TruthCompute( Cut_Man_t * p, Cut_Cut_t * pCut, Cut_Cut_t * pCut0, Cut_Cut_t * pCut1, int fCompl0, int fCompl1 );
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

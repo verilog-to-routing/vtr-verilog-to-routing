@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -136,7 +139,7 @@ Ivy_Obj_t * Ivy_NodeRewriteAlg( Ivy_Obj_t * pObj, Vec_Ptr_t * vFront, Vec_Ptr_t 
 /*       
     printf( "%d ", Vec_PtrSize(vFront) );
     printf( "( " );
-    Vec_PtrForEachEntry( vFront, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, k )
         printf( "%d ", Ivy_ObjRefs(Ivy_Regular(pTemp)) );
     printf( ")\n" );
 */
@@ -147,7 +150,7 @@ Ivy_Obj_t * Ivy_NodeRewriteAlg( Ivy_Obj_t * pObj, Vec_Ptr_t * vFront, Vec_Ptr_t 
         Ivy_ManCollectCone( pObj, vLeaves, vCone );
 
     // deref nodes in the cone
-    Vec_PtrForEachEntry( vCone, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pTemp, k )
     {
         Ivy_ObjRefsDec( Ivy_ObjFanin0(pTemp) );
         Ivy_ObjRefsDec( Ivy_ObjFanin1(pTemp) );
@@ -155,27 +158,27 @@ Ivy_Obj_t * Ivy_NodeRewriteAlg( Ivy_Obj_t * pObj, Vec_Ptr_t * vFront, Vec_Ptr_t 
     }
 
     // count the MFFC size
-    Vec_PtrForEachEntry( vFront, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, k )
         Ivy_Regular(pTemp)->fMarkA = 1;
     nMffc = Ivy_NodeCountMffc( pObj );
-    Vec_PtrForEachEntry( vFront, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, k )
         Ivy_Regular(pTemp)->fMarkA = 0;
 
     if ( fVerbose )
     {
     Counter = 0;
-    Vec_PtrForEachEntry( vCone, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pTemp, k )
         Counter += (Ivy_ObjRefs(pTemp) > 0);
     printf( "%5d : Leaves = %2d. Cone = %2d. ConeRef = %2d.   Mffc = %d.   Lev = %d.  LevR = %d.\n", 
         pObj->Id, Vec_PtrSize(vFront), Vec_PtrSize(vCone), Counter-1, nMffc, Ivy_ObjLevel(pObj), LevelR );
     }
 /*
     printf( "Leaves:" );
-    Vec_PtrForEachEntry( vLeaves, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vLeaves, pTemp, k )
         printf( " %d%s", Ivy_Regular(pTemp)->Id, Ivy_IsComplement(pTemp)? "\'" : "" );
     printf( "\n" );
     printf( "Cone:\n" );
-    Vec_PtrForEachEntry( vCone, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pTemp, k )
         printf( " %5d = %d%s %d%s\n", pTemp->Id,
             Ivy_ObjFaninId0(pTemp), Ivy_ObjFaninC0(pTemp)? "\'" : "",
             Ivy_ObjFaninId1(pTemp), Ivy_ObjFaninC1(pTemp)? "\'" : "" );
@@ -184,7 +187,7 @@ Ivy_Obj_t * Ivy_NodeRewriteAlg( Ivy_Obj_t * pObj, Vec_Ptr_t * vFront, Vec_Ptr_t 
     RetValue = Ivy_MultiPlus( vLeaves, vCone, Ivy_ObjType(pObj), nMffc + fUseZeroCost, vSols );
 
     // ref nodes in the cone
-    Vec_PtrForEachEntry( vCone, pTemp, k )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pTemp, k )
     {
         Ivy_ObjRefsInc( Ivy_ObjFanin0(pTemp) );
         Ivy_ObjRefsInc( Ivy_ObjFanin1(pTemp) );
@@ -356,7 +359,7 @@ int Ivy_ManFindAlgCut( Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vLeave
     Vec_PtrClear( vLeaves );
     RetValue = Ivy_ManFindAlgCut_rec( pRoot, Ivy_ObjType(pRoot), vFront, vCone );
     // clean the marks
-    Vec_PtrForEachEntry( vCone, pObj, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vCone, pObj, i )
         pObj->fMarkA = pObj->fMarkB = 0;
     // quit if the same node is found in both polarities
     if ( RetValue == -1 )
@@ -368,11 +371,11 @@ int Ivy_ManFindAlgCut( Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vLeave
     if ( Vec_PtrSize(vFront) <= 2 )
         return 1;
     // sort the entries in increasing order
-    Vec_PtrSort( vFront, Ivy_ManFindAlgCutCompare );
+    Vec_PtrSort( vFront, (int (*)(void))Ivy_ManFindAlgCutCompare );
     // remove duplicates from vFront and save the nodes in vLeaves
     pPrev = Vec_PtrEntry(vFront, 0);
     Vec_PtrPush( vLeaves, pPrev );
-    Vec_PtrForEachEntryStart( vFront, pObj, i, 1 )
+    Vec_PtrForEachEntryStart( Ivy_Obj_t *, vFront, pObj, i, 1 )
     {
         // compare current entry and the previous entry
         if ( pObj == pPrev )
@@ -405,4 +408,6 @@ int Ivy_ManFindAlgCut( Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vLeave
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

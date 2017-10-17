@@ -18,6 +18,9 @@
 
 #include "superInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -61,10 +64,10 @@ struct Super2_GateStruct_t_
 
 
 // manipulation of complemented attributes
-#define Super2_IsComplement(p)    (((int)((unsigned long) (p) & 01)))
-#define Super2_Regular(p)         ((Super2_Gate_t *)((unsigned long)(p) & ~01)) 
-#define Super2_Not(p)             ((Super2_Gate_t *)((unsigned long)(p) ^ 01)) 
-#define Super2_NotCond(p,c)       ((Super2_Gate_t *)((unsigned long)(p) ^ (c)))
+#define Super2_IsComplement(p)    (((int)((ABC_PTRUINT_T) (p) & 01)))
+#define Super2_Regular(p)         ((Super2_Gate_t *)((ABC_PTRUINT_T)(p) & ~01)) 
+#define Super2_Not(p)             ((Super2_Gate_t *)((ABC_PTRUINT_T)(p) ^ 01)) 
+#define Super2_NotCond(p,c)       ((Super2_Gate_t *)((ABC_PTRUINT_T)(p) ^ (c)))
 
 // iterating through the gates in the library
 #define Super2_LibForEachGate( Lib, Gate )                        \
@@ -112,7 +115,7 @@ void Super2_Precompute( int nInputs, int nLevels, int fVerbose )
     Super2_Man_t * pMan;
     Super2_Lib_t * pLibCur, * pLibNext;
     int Level;
-    int clk;
+    abctime clk;
 
     assert( nInputs < 6 );
 
@@ -126,13 +129,13 @@ void Super2_Precompute( int nInputs, int nLevels, int fVerbose )
 printf( "Computing supergates for %d inputs and %d levels:\n", nInputs, nLevels );
     for ( Level = 1; Level <= nLevels; Level++ )
     {
-clk = clock();
+clk = Abc_Clock();
         pLibNext = Super2_LibCompute( pMan, pLibCur );
         pLibNext->nLevels = Level;
         Super2_LibStop( pLibCur );
         pLibCur = pLibNext;
 printf( "Level %d:  Tried = %7d.  Computed = %7d.  ", Level, pMan->nTried, pLibCur->nGates );
-PRT( "Runtime", clock() - clk );
+ABC_PRT( "Runtime", Abc_Clock() - clk );
 fflush( stdout );
     }
 
@@ -163,10 +166,10 @@ fflush( stdout );
 Super2_Man_t * Super2_ManStart()
 {
     Super2_Man_t * pMan;
-    pMan = ALLOC( Super2_Man_t, 1 );
+    pMan = ABC_ALLOC( Super2_Man_t, 1 );
     memset( pMan, 0, sizeof(Super2_Man_t) );
     pMan->pMem   = Extra_MmFixedStart( sizeof(Super2_Gate_t) );
-    pMan->tTable = stmm_init_table( st_ptrcmp, st_ptrhash );
+    pMan->tTable = stmm_init_table( st__ptrcmp, st__ptrhash );
     return pMan;
 }
 
@@ -185,7 +188,7 @@ void Super2_ManStop( Super2_Man_t * pMan )
 {
     Extra_MmFixedStop( pMan->pMem );
     stmm_free_table( pMan->tTable );
-    free( pMan );
+    ABC_FREE( pMan );
 }
 
 /**Function*************************************************************
@@ -202,7 +205,7 @@ void Super2_ManStop( Super2_Man_t * pMan )
 Super2_Lib_t * Super2_LibStart()
 {
     Super2_Lib_t * pLib;
-    pLib = ALLOC( Super2_Lib_t, 1 );
+    pLib = ABC_ALLOC( Super2_Lib_t, 1 );
     memset( pLib, 0, sizeof(Super2_Lib_t) );
     return pLib;
 }
@@ -228,7 +231,7 @@ Super2_Lib_t * Super2_LibDup( Super2_Lib_t * pLib )
     pLibNew->nGates      = pLib->nGates;
     pLibNew->uMaskBit    = pLib->uMaskBit;
     pLibNew->nGatesAlloc = 1000 + pLib->nGatesAlloc;
-    pLibNew->pGates      = ALLOC( Super2_Gate_t *, pLibNew->nGatesAlloc );
+    pLibNew->pGates      = ABC_ALLOC( Super2_Gate_t *, pLibNew->nGatesAlloc );
     memcpy( pLibNew->pGates, pLib->pGates, pLibNew->nGates * sizeof(Super2_Gate_t *) );
     return pLibNew;
 }
@@ -248,7 +251,7 @@ void Super2_LibAddGate( Super2_Lib_t * pLib, Super2_Gate_t * pGate )
 {
     if ( pLib->nGates == pLib->nGatesAlloc )
     {
-        pLib->pGates  = REALLOC( Super2_Gate_t *, pLib->pGates,  3 * pLib->nGatesAlloc );
+        pLib->pGates  = ABC_REALLOC( Super2_Gate_t *, pLib->pGates,  3 * pLib->nGatesAlloc );
         pLib->nGatesAlloc *= 3;
     }
     pLib->pGates[ pLib->nGates++ ] = pGate;
@@ -267,8 +270,8 @@ void Super2_LibAddGate( Super2_Lib_t * pLib, Super2_Gate_t * pGate )
 ***********************************************************************/
 void Super2_LibStop( Super2_Lib_t * pLib )
 {
-    free( pLib->pGates );
-    free( pLib );
+    ABC_FREE( pLib->pGates );
+    ABC_FREE( pLib );
 }
 
 /**Function*************************************************************
@@ -297,7 +300,7 @@ Super2_Lib_t * Super2_LibFirst( Super2_Man_t * pMan, int nInputs )
     pLib->nGates      = nInputs + 1;
     pLib->nGatesAlloc = nInputs + 1;
     pLib->uMaskBit    = (1 << (pLib->nMints-1));
-    pLib->pGates      = ALLOC( Super2_Gate_t *, nInputs + 1 );
+    pLib->pGates      = ABC_ALLOC( Super2_Gate_t *, nInputs + 1 );
     // add the constant 0
     pLib->pGates[0] = (Super2_Gate_t *)Extra_MmFixedEntryFetch( pMan->pMem );
     memset( pLib->pGates[0], 0, sizeof(Super2_Gate_t) );
@@ -306,7 +309,7 @@ Super2_Lib_t * Super2_LibFirst( Super2_Man_t * pMan, int nInputs )
     {
         pLib->pGates[v+1] = (Super2_Gate_t *)Extra_MmFixedEntryFetch( pMan->pMem );
         memset( pLib->pGates[v+1], 0, sizeof(Super2_Gate_t) );
-        pLib->pGates[v+1]->pTwo = (Super2_Gate_t *)v;
+        pLib->pGates[v+1]->pTwo = (Super2_Gate_t *)(ABC_PTRUINT_T)v;
     }
 
     // set up their truth tables
@@ -341,13 +344,13 @@ Super2_Lib_t * Super2_LibCompute( Super2_Man_t * pMan, Super2_Lib_t * pLib )
 
     // reset the hash table
     stmm_free_table( pMan->tTable );
-    pMan->tTable = stmm_init_table( st_ptrcmp, st_ptrhash );
+    pMan->tTable = stmm_init_table( st__ptrcmp, st__ptrhash );
     // set the starting things into the hash table
     Super2_LibForEachGate( pLibNew, pGate1 )
     {
         uTruthR = ((pGate1->uTruth & pLibNew->uMaskBit)? Mask & ~pGate1->uTruth : pGate1->uTruth);
 
-        if ( stmm_lookup( pMan->tTable, (char *)uTruthR, (char **)&pGate2 ) )
+        if ( stmm_lookup( pMan->tTable, (char *)(ABC_PTRUINT_T)uTruthR, (char **)&pGate2 ) )
         {
             printf( "New gate:\n" );
             Super2_LibWriteGate( stdout, pLibNew, pGate1 );
@@ -355,7 +358,7 @@ Super2_Lib_t * Super2_LibCompute( Super2_Man_t * pMan, Super2_Lib_t * pLib )
             Super2_LibWriteGate( stdout, pLibNew, pGate2 );
             assert( 0 );
         }
-        stmm_insert( pMan->tTable, (char *)uTruthR, (char *)pGate1 );
+        stmm_insert( pMan->tTable, (char *)(ABC_PTRUINT_T)uTruthR, (char *)(ABC_PTRUINT_T)pGate1 );
     }
 
 
@@ -382,7 +385,7 @@ Super2_Lib_t * Super2_LibCompute( Super2_Man_t * pMan, Super2_Lib_t * pLib )
             uTruth  = uTruth1  & uTruth2;
             uTruthR = ((uTruth & pLibNew->uMaskBit)? Mask & ~uTruth : uTruth);
 
-            if ( !stmm_find_or_add( pMan->tTable, (char *)uTruthR, (char ***)&ppGate ) )
+            if ( !stmm_find_or_add( pMan->tTable, (char *)(ABC_PTRUINT_T)uTruthR, (char ***)&ppGate ) )
             {
                 pGateNew = (Super2_Gate_t *)Extra_MmFixedEntryFetch( pMan->pMem );
                 pGateNew->pOne  = pGate1;
@@ -396,7 +399,7 @@ Super2_Lib_t * Super2_LibCompute( Super2_Man_t * pMan, Super2_Lib_t * pLib )
             uTruth  = uTruth1c & uTruth2;
             uTruthR = ((uTruth & pLibNew->uMaskBit)? Mask & ~uTruth : uTruth);
 
-            if ( !stmm_find_or_add( pMan->tTable, (char *)uTruthR, (char ***)&ppGate ) )
+            if ( !stmm_find_or_add( pMan->tTable, (char *)(ABC_PTRUINT_T)uTruthR, (char ***)&ppGate ) )
             {
                 pGateNew = (Super2_Gate_t *)Extra_MmFixedEntryFetch( pMan->pMem );
                 pGateNew->pOne  = Super2_Not(pGate1);
@@ -410,7 +413,7 @@ Super2_Lib_t * Super2_LibCompute( Super2_Man_t * pMan, Super2_Lib_t * pLib )
             uTruth  = uTruth1  & uTruth2c;
             uTruthR = ((uTruth & pLibNew->uMaskBit)? Mask & ~uTruth : uTruth);
 
-            if ( !stmm_find_or_add( pMan->tTable, (char *)uTruthR, (char ***)&ppGate ) )
+            if ( !stmm_find_or_add( pMan->tTable, (char *)(ABC_PTRUINT_T)uTruthR, (char ***)&ppGate ) )
             {
                 pGateNew = (Super2_Gate_t *)Extra_MmFixedEntryFetch( pMan->pMem );
                 pGateNew->pOne  = pGate1;
@@ -424,7 +427,7 @@ Super2_Lib_t * Super2_LibCompute( Super2_Man_t * pMan, Super2_Lib_t * pLib )
             uTruth  = uTruth1c & uTruth2c;
             uTruthR = ((uTruth & pLibNew->uMaskBit)? Mask & ~uTruth : uTruth);
 
-            if ( !stmm_find_or_add( pMan->tTable, (char *)uTruthR, (char ***)&ppGate ) )
+            if ( !stmm_find_or_add( pMan->tTable, (char *)(ABC_PTRUINT_T)uTruthR, (char ***)&ppGate ) )
             {
                 pGateNew = (Super2_Gate_t *)Extra_MmFixedEntryFetch( pMan->pMem );
                 pGateNew->pOne  = Super2_Not(pGate1);
@@ -460,7 +463,7 @@ void Super2_LibWrite( Super2_Lib_t * pLib )
     Super2_Gate_t * pGate;
     FILE * pFile;
     char FileName[100];
-    int clk;
+    abctime clk;
 
     if ( pLib->nLevels > 5 )
     {
@@ -468,14 +471,14 @@ void Super2_LibWrite( Super2_Lib_t * pLib )
         return;
     }
 
-clk = clock();
+clk = Abc_Clock();
     // sort the supergates by truth table
     s_uMaskBit = pLib->uMaskBit;
     s_uMaskAll = SUPER_MASK(pLib->nMints);
     qsort( (void *)pLib->pGates, pLib->nGates, sizeof(Super2_Gate_t *), 
             (int (*)(const void *, const void *)) Super2_LibCompareGates );
     assert( Super2_LibCompareGates( pLib->pGates, pLib->pGates + pLib->nGates - 1 ) < 0 );
-PRT( "Sorting", clock() - clk );
+ABC_PRT( "Sorting", Abc_Clock() - clk );
 
 
     // start the file
@@ -496,7 +499,7 @@ PRT( "Sorting", clock() - clk );
     fclose( pFile );
 
     printf( "The supergates are written into file \"%s\" ", FileName );
-    printf( "(%0.2f Mb).\n", ((double)Extra_FileSize(FileName))/(1<<20) );
+    printf( "(%0.2f MB).\n", ((double)Extra_FileSize(FileName))/(1<<20) );
 }
 
 /**Function*************************************************************
@@ -600,7 +603,7 @@ char * Super2_LibWriteGate_rec( Super2_Gate_t * pGate, int fInv, int Level )
         }
         else
         {
-            pBuffer1[0] = (fInv? 'A' + ((int)pGate->pTwo): 'a' + ((int)pGate->pTwo));
+            pBuffer1[0] = (fInv? 'A' + ((int)(ABC_PTRUINT_T)pGate->pTwo): 'a' + ((int)(ABC_PTRUINT_T)pGate->pTwo));
             pBuffer1[1] = 0;
         }
         return pBuffer1;
@@ -693,4 +696,6 @@ int Super2_LibWriteCompare( char * pStr1, char * pStr2 )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -7,8 +7,8 @@
  * $Date: 1993/06/07 21:04:07 $
  *
  */
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef ABC__misc__espresso__util_old_h
+#define ABC__misc__espresso__util_old_h
 
 #if defined(_IBMR2)
 #ifndef _POSIX_SOURCE
@@ -240,7 +240,8 @@ extern long random();
 
 /*
 #if !defined(__osf__)
-#define MAXPATHLEN 1024
+#define MAXPATHLEN
+ 1024
 #endif
 */
 
@@ -298,4 +299,11 @@ extern char *util_optarg;
 #endif
 
 #include <varargs.h>
+
+ABC_NAMESPACE_HEADER_START
+
+
+
+ABC_NAMESPACE_HEADER_END
+
 #endif

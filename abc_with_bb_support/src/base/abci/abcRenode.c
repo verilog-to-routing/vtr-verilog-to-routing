@@ -18,20 +18,29 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "reo.h"
-#include "if.h"
-#include "kit.h"
+#include "base/abc/abc.h"
+#include "map/if/if.h"
+#include "bool/kit/kit.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#include "bdd/reo/reo.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static int Abc_NtkRenodeEvalAig( If_Cut_t * pCut );
-static int Abc_NtkRenodeEvalBdd( If_Cut_t * pCut );
-static int Abc_NtkRenodeEvalSop( If_Cut_t * pCut );
-static int Abc_NtkRenodeEvalCnf( If_Cut_t * pCut );
-static int Abc_NtkRenodeEvalMv( If_Cut_t * pCut );
+#ifdef ABC_USE_CUDD
+
+static int Abc_NtkRenodeEvalAig( If_Man_t * p, If_Cut_t * pCut );
+static int Abc_NtkRenodeEvalBdd( If_Man_t * p, If_Cut_t * pCut );
+static int Abc_NtkRenodeEvalSop( If_Man_t * p, If_Cut_t * pCut );
+static int Abc_NtkRenodeEvalCnf( If_Man_t * p, If_Cut_t * pCut );
+static int Abc_NtkRenodeEvalMv( If_Man_t * p, If_Cut_t * pCut );
 
 static reo_man * s_pReo       = NULL;
 static DdManager * s_pDd      = NULL;
@@ -74,17 +83,18 @@ Abc_Ntk_t * Abc_NtkRenode( Abc_Ntk_t * pNtk, int nFaninMax, int nCubeMax, int nF
     pPars->nFlowIters  =  nFlowIters;
     pPars->nAreaIters  =  nAreaIters;
     pPars->DelayTarget = -1;
+    pPars->Epsilon     =  (float)0.005;
     pPars->fPreprocess =  1;
     pPars->fArea       =  fArea;
     pPars->fFancy      =  0;
     pPars->fExpRed     =  0; //
     pPars->fLatchPaths =  0;
-    pPars->fSeqMap     =  0;
     pPars->fVerbose    =  fVerbose;
     // internal parameters
     pPars->fTruth      =  1;
     pPars->fUsePerm    =  1; 
-    pPars->nLatches    =  0;
+    pPars->nLatchesCi  =  0;
+    pPars->nLatchesCo  =  0;
     pPars->pLutLib     =  NULL; // Abc_FrameReadLibLut();
     pPars->pTimesArr   =  NULL; 
     pPars->pTimesArr   =  NULL;   
@@ -156,28 +166,21 @@ Abc_Ntk_t * Abc_NtkRenode( Abc_Ntk_t * pNtk, int nFaninMax, int nCubeMax, int nF
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRenodeEvalAig( If_Cut_t * pCut )
+int Abc_NtkRenodeEvalAig( If_Man_t * p, If_Cut_t * pCut )
 {
+    char * pPerm = If_CutPerm( pCut );
     Kit_Graph_t * pGraph;
     int i, nNodes;
-/*
-extern void Kit_DsdTest( unsigned * pTruth, int nVars );
-if ( If_CutLeaveNum(pCut) == 8 )
-{
-    nDsdCounter++;
-    Kit_DsdTest( If_CutTruth(pCut), If_CutLeaveNum(pCut) );
-}
-*/
-    pGraph = Kit_TruthToGraph( If_CutTruth(pCut), If_CutLeaveNum(pCut), s_vMemory );
+    pGraph = Kit_TruthToGraph( If_CutTruth(p, pCut), If_CutLeaveNum(pCut), s_vMemory );
     if ( pGraph == NULL )
     {
         for ( i = 0; i < If_CutLeaveNum(pCut); i++ )
-            pCut->pPerm[i] = 100;
+            pPerm[i] = 100;
         return IF_COST_MAX;
     }
     nNodes = Kit_GraphNodeNum( pGraph );
     for ( i = 0; i < If_CutLeaveNum(pCut); i++ )
-        pCut->pPerm[i] = Kit_GraphLeafDepth_rec( pGraph, Kit_GraphNodeLast(pGraph), Kit_GraphNode(pGraph, i) );
+        pPerm[i] = Kit_GraphLeafDepth_rec( pGraph, Kit_GraphNodeLast(pGraph), Kit_GraphNode(pGraph, i) );
     Kit_GraphFree( pGraph );
     return nNodes;
 }
@@ -193,18 +196,19 @@ if ( If_CutLeaveNum(pCut) == 8 )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRenodeEvalBdd( If_Cut_t * pCut )
+int Abc_NtkRenodeEvalBdd( If_Man_t * p, If_Cut_t * pCut )
 {
+    char * pPerm = If_CutPerm( pCut );
     int pOrder[IF_MAX_LUTSIZE];
     DdNode * bFunc, * bFuncNew;
     int i, k, nNodes;
     for ( i = 0; i < If_CutLeaveNum(pCut); i++ )
-        pCut->pPerm[i] = pOrder[i] = -100;
-    bFunc = Kit_TruthToBdd( s_pDd, If_CutTruth(pCut), If_CutLeaveNum(pCut), 0 );  Cudd_Ref( bFunc );
+        pPerm[i] = pOrder[i] = -100;
+    bFunc = Kit_TruthToBdd( s_pDd, If_CutTruth(p, pCut), If_CutLeaveNum(pCut), 0 );  Cudd_Ref( bFunc );
     bFuncNew = Extra_Reorder( s_pReo, s_pDd, bFunc, pOrder );                     Cudd_Ref( bFuncNew );
     for ( i = k = 0; i < If_CutLeaveNum(pCut); i++ )
         if ( pOrder[i] >= 0 )
-            pCut->pPerm[pOrder[i]] = ++k; // double-check this!
+            pPerm[pOrder[i]] = ++k; // double-check this!
     nNodes = -1 + Cudd_DagSize( bFuncNew );
     Cudd_RecursiveDeref( s_pDd, bFuncNew );
     Cudd_RecursiveDeref( s_pDd, bFunc );
@@ -222,12 +226,13 @@ int Abc_NtkRenodeEvalBdd( If_Cut_t * pCut )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRenodeEvalSop( If_Cut_t * pCut )
+int Abc_NtkRenodeEvalSop( If_Man_t * p, If_Cut_t * pCut )
 {
+    char * pPerm = If_CutPerm( pCut );
     int i, RetValue;
     for ( i = 0; i < If_CutLeaveNum(pCut); i++ )
-        pCut->pPerm[i] = 1;
-    RetValue = Kit_TruthIsop( If_CutTruth(pCut), If_CutLeaveNum(pCut), s_vMemory, 1 );
+        pPerm[i] = 1;
+    RetValue = Kit_TruthIsop( If_CutTruth(p, pCut), If_CutLeaveNum(pCut), s_vMemory, 1 );
     if ( RetValue == -1 )
         return IF_COST_MAX;
     assert( RetValue == 0 || RetValue == 1 );
@@ -245,22 +250,23 @@ int Abc_NtkRenodeEvalSop( If_Cut_t * pCut )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRenodeEvalCnf( If_Cut_t * pCut )
+int Abc_NtkRenodeEvalCnf( If_Man_t * p, If_Cut_t * pCut )
 {
+    char * pPerm = If_CutPerm( pCut );
     int i, RetValue, nClauses;
     // set internal mapper parameters
     for ( i = 0; i < If_CutLeaveNum(pCut); i++ )
-        pCut->pPerm[i] = 1;
+        pPerm[i] = 1;
     // compute ISOP for the positive phase
-    RetValue = Kit_TruthIsop( If_CutTruth(pCut), If_CutLeaveNum(pCut), s_vMemory, 0 );
+    RetValue = Kit_TruthIsop( If_CutTruth(p, pCut), If_CutLeaveNum(pCut), s_vMemory, 0 );
     if ( RetValue == -1 )
         return IF_COST_MAX;
     assert( RetValue == 0 || RetValue == 1 );
     nClauses = Vec_IntSize( s_vMemory );
     // compute ISOP for the negative phase
-    Kit_TruthNot( If_CutTruth(pCut), If_CutTruth(pCut), If_CutLeaveNum(pCut) );
-    RetValue = Kit_TruthIsop( If_CutTruth(pCut), If_CutLeaveNum(pCut), s_vMemory, 0 );
-    Kit_TruthNot( If_CutTruth(pCut), If_CutTruth(pCut), If_CutLeaveNum(pCut) );
+    Kit_TruthNot( If_CutTruth(p, pCut), If_CutTruth(p, pCut), If_CutLeaveNum(pCut) );
+    RetValue = Kit_TruthIsop( If_CutTruth(p, pCut), If_CutLeaveNum(pCut), s_vMemory, 0 );
+    Kit_TruthNot( If_CutTruth(p, pCut), If_CutTruth(p, pCut), If_CutLeaveNum(pCut) );
     if ( RetValue == -1 )
         return IF_COST_MAX;
     assert( RetValue == 0 || RetValue == 1 );
@@ -279,21 +285,22 @@ int Abc_NtkRenodeEvalCnf( If_Cut_t * pCut )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRenodeEvalMv( If_Cut_t * pCut )
+int Abc_NtkRenodeEvalMv( If_Man_t * p, If_Cut_t * pCut )
 {
+    char * pPerm = If_CutPerm( pCut );
     int i, RetValue;
     // set internal mapper parameters
     for ( i = 0; i < If_CutLeaveNum(pCut); i++ )
-        pCut->pPerm[i] = 1;
+        pPerm[i] = 1;
     // compute ISOP for the positive phase
-    RetValue = Kit_TruthIsop( If_CutTruth(pCut), If_CutLeaveNum(pCut), s_vMemory, 0 );
+    RetValue = Kit_TruthIsop( If_CutTruth(p, pCut), If_CutLeaveNum(pCut), s_vMemory, 0 );
     if ( RetValue == -1 )
         return IF_COST_MAX;
     assert( RetValue == 0 || RetValue == 1 );
     // compute ISOP for the negative phase
-    Kit_TruthNot( If_CutTruth(pCut), If_CutTruth(pCut), If_CutLeaveNum(pCut) );
-    RetValue = Kit_TruthIsop( If_CutTruth(pCut), If_CutLeaveNum(pCut), s_vMemory2, 0 );
-    Kit_TruthNot( If_CutTruth(pCut), If_CutTruth(pCut), If_CutLeaveNum(pCut) );
+    Kit_TruthNot( If_CutTruth(p, pCut), If_CutTruth(p, pCut), If_CutLeaveNum(pCut) );
+    RetValue = Kit_TruthIsop( If_CutTruth(p, pCut), If_CutLeaveNum(pCut), s_vMemory2, 0 );
+    Kit_TruthNot( If_CutTruth(p, pCut), If_CutTruth(p, pCut), If_CutLeaveNum(pCut) );
     if ( RetValue == -1 )
         return IF_COST_MAX;
     assert( RetValue == 0 || RetValue == 1 );
@@ -304,8 +311,16 @@ int Abc_NtkRenodeEvalMv( If_Cut_t * pCut )
     return RetValue;
 }
 
+#else
+
+Abc_Ntk_t * Abc_NtkRenode( Abc_Ntk_t * pNtk, int nFaninMax, int nCubeMax, int nFlowIters, int nAreaIters, int fArea, int fUseBdds, int fUseSops, int fUseCnfs, int fUseMv, int fVerbose ) { return NULL; }
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

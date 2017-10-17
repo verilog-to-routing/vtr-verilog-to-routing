@@ -18,6 +18,9 @@
 
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -46,7 +49,7 @@ float Fpga_TimeCutComputeArrival( Fpga_Man_t * pMan, Fpga_Cut_t * pCut )
     for ( i = 0; i < pCut->nLeaves; i++ )
         if ( tArrival < pCut->ppLeaves[i]->pCutBest->tArrival )
             tArrival = pCut->ppLeaves[i]->pCutBest->tArrival;
-    tArrival += pMan->pLutLib->pLutDelays[pCut->nLeaves][0];
+    tArrival += pMan->pLutLib->pLutDelays[(int)pCut->nLeaves][0];
     return tArrival;
 }
 
@@ -216,7 +219,7 @@ void Fpga_TimePropagateRequired( Fpga_Man_t * p, Fpga_NodeVec_t * vNodes )
         if ( !Fpga_NodeIsAnd(pNode) )
             continue;
         // get the required time for children
-        fRequired = pNode->tRequired - p->pLutLib->pLutDelays[pNode->pCutBest->nLeaves][0];
+        fRequired = pNode->tRequired - p->pLutLib->pLutDelays[(int)pNode->pCutBest->nLeaves][0];
         // update the required time of the children
         for ( i = 0; i < pNode->pCutBest->nLeaves; i++ )
         {
@@ -259,4 +262,6 @@ void Fpga_TimePropagateArrival( Fpga_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

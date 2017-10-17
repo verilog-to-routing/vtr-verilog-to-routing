@@ -16,15 +16,18 @@
 
 ***********************************************************************/
  
-#ifndef __FXU_INT_H__
-#define __FXU_INT_H__
+#ifndef ABC__opt__fxu__fxuInt_h
+#define ABC__opt__fxu__fxuInt_h
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "extra.h"
-#include "vec.h"
+#include "base/abc/abc.h"
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
@@ -172,6 +175,8 @@ struct FxuMatrix // ~ 30 words
     // the single cube divisors
     Fxu_ListSingle   lSingles;    // the linked list of single cube divisors  
 	Fxu_HeapSingle * pHeapSingle; // the heap of variables by the number of literals in the matrix
+    int              nWeightLimit;// the limit on weight of single cube divisors collected
+    int              nSingleTotal;// the total number of single cube divisors
     // storage for cube pairs
     Fxu_Pair ***     pppPairs;
     Fxu_Pair **      ppPairs;
@@ -362,10 +367,9 @@ struct FxuSingle // 7 words
 // iterator through the cube pairs belonging to the given cube 
 #define Fxu_CubeForEachPair( pCube, pPair, i )\
   for ( i = 0;\
-        i < pCube->pVar->nCubes &&\
-        (((unsigned)(pPair = pCube->pVar->ppPairs[pCube->iCube][i])) >= 0);\
+        i < pCube->pVar->nCubes && (((pPair) = (pCube)->pVar->ppPairs[(pCube)->iCube][i]), 1);\
 		i++ )\
-	    if ( pPair )
+        if ( pPair == NULL ) {} else
 
 // iterator through all the items in the heap
 #define Fxu_HeapDoubleForEachItem( Heap, Div )\
@@ -419,8 +423,8 @@ extern void Fxu_MatrixRingVarsUnmark( Fxu_Matrix * p );
 // MEM_ALLOC: allocate the given number (Size) of items of type (Type)
 // MEM_FREE:  deallocate the pointer (Pointer) to the given number (Size) of items of type (Type)
 #ifdef USE_SYSTEM_MEMORY_MANAGEMENT
-#define MEM_ALLOC_FXU( Manager, Type, Size )          ((Type *)malloc( (Size) * sizeof(Type) ))
-#define MEM_FREE_FXU( Manager, Type, Size, Pointer )  if ( Pointer ) { free(Pointer); Pointer = NULL; }
+#define MEM_ALLOC_FXU( Manager, Type, Size )          ((Type *)ABC_ALLOC( char, (Size) * sizeof(Type) ))
+#define MEM_FREE_FXU( Manager, Type, Size, Pointer )  if ( Pointer ) { ABC_FREE(Pointer); Pointer = NULL; }
 #else
 #define MEM_ALLOC_FXU( Manager, Type, Size )\
         ((Type *)Fxu_MemFetch( Manager, (Size) * sizeof(Type) ))
@@ -459,7 +463,7 @@ extern void         Fxu_PairClearStorage( Fxu_Cube * pCube );
 extern Fxu_Pair *   Fxu_PairAlloc( Fxu_Matrix * p, Fxu_Cube * pCube1, Fxu_Cube * pCube2 );
 extern void         Fxu_PairAdd( Fxu_Pair * pPair );
 /*===== fxuSingle.c ====================================================*/
-extern void         Fxu_MatrixComputeSingles( Fxu_Matrix * p );
+extern void         Fxu_MatrixComputeSingles( Fxu_Matrix * p, int fUse0, int nSingleMax );
 extern void         Fxu_MatrixComputeSinglesOne( Fxu_Matrix * p, Fxu_Var * pVar );
 extern int          Fxu_SingleCountCoincidence( Fxu_Matrix * p, Fxu_Var * pVar1, Fxu_Var * pVar2 );
 /*===== fxuMatrix.c ====================================================*/
@@ -528,6 +532,10 @@ extern void         Fxu_HeapSingleDelete( Fxu_HeapSingle * p, Fxu_Single * pSing
 extern int          Fxu_HeapSingleReadMaxWeight( Fxu_HeapSingle * p );  
 extern Fxu_Single * Fxu_HeapSingleReadMax( Fxu_HeapSingle * p );
 extern Fxu_Single * Fxu_HeapSingleGetMax( Fxu_HeapSingle * p );  
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif
 

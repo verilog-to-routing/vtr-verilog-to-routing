@@ -18,6 +18,9 @@
 
 #include "superInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
     One record in the supergate library file consists of:
 
@@ -32,7 +35,7 @@
 		GATENAME1( GATENAME2( a, c ), GATENAME3( a, d ), ... )
 		The gate names (GATENAME1, etc) are the names as they appear in the .genlib library.
 		The primary inputs of the gates are denoted by lowercase chars 'a', 'b', etc.
-		The parantheses are mandatory for each gate, except for the wire. 
+		The parentheses are mandatory for each gate, except for the wire. 
 		The wire name can be omitted, so that "a" can be used instead of "**wire**( a )".
 		The spaces are optional in any position of this string.
 
@@ -73,4 +76,6 @@
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -22,23 +22,114 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static int           Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileName );
-static Map_Super_t * Map_LibraryReadGateTree( Map_SuperLib_t * pLib, char * pBuffer, int Number, int nVars );
-static int           Map_LibraryDeriveGateInfo( Map_SuperLib_t * pLib, st_table * tExcludeGate );
-static void          Map_LibraryAddFaninDelays( Map_SuperLib_t * pLib, Map_Super_t * pGate, Map_Super_t * pFanin, Mio_Pin_t * pPin );
-static int           Map_LibraryGetMaxSuperPi_rec( Map_Super_t * pGate );
-static unsigned      Map_LibraryGetGateSupp_rec( Map_Super_t * pGate );
+static void      Map_LibraryAddFaninDelays( Map_SuperLib_t * pLib, Map_Super_t * pGate, Map_Super_t * pFanin, Mio_Pin_t * pPin );
+static int       Map_LibraryGetMaxSuperPi_rec( Map_Super_t * pGate );
+static unsigned  Map_LibraryGetGateSupp_rec( Map_Super_t * pGate );
 
 // fanout limits
-extern const int s_MapFanoutLimits[10] = { 1/*0*/, 10/*1*/, 5/*2*/, 2/*3*/, 1/*4*/, 1/*5*/, 1/*6*/ };
+static const int s_MapFanoutLimits[10] = { 1/*0*/, 10/*1*/, 5/*2*/, 2/*3*/, 1/*4*/, 1/*5*/, 1/*6*/ };
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
+
+/**Function*************************************************************
+
+  Synopsis    [Reads one gate.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Map_Super_t * Map_LibraryReadGateTree( Map_SuperLib_t * pLib, char * pBuffer, int Number, int nVarsMax )
+{
+    Map_Super_t * pGate;
+    char * pTemp;
+    int i, Num;
+
+    // start and clean the gate
+    pGate = (Map_Super_t *)Extra_MmFixedEntryFetch( pLib->mmSupers );
+    memset( pGate, 0, sizeof(Map_Super_t) );
+
+    // set the gate number
+    pGate->Num = Number;
+
+    // read the mark
+    pTemp = strtok( pBuffer, " " );
+    if ( pTemp[0] == '*' )
+    {
+        pGate->fSuper = 1;
+        pTemp = strtok( NULL, " " );
+    }
+
+    // read the root gate
+    pGate->pRoot = Mio_LibraryReadGateByName( pLib->pGenlib, pTemp, NULL );
+    if ( pGate->pRoot == NULL )
+    {
+        printf( "Cannot read the root gate names %s.\n", pTemp );
+        return NULL;
+    }
+    // set the max number of fanouts
+    pGate->nFanLimit = s_MapFanoutLimits[ Mio_GateReadPinNum(pGate->pRoot) ];
+
+    // read the pin-to-pin delay
+    for ( i = 0; ( pTemp = strtok( NULL, " \n\0" ) ); i++ )
+    {
+        if ( pTemp[0] == '#' )
+            break;
+        if ( i == nVarsMax )
+        {
+            printf( "There are too many entries on the line.\n" );
+            return NULL;
+        }
+        Num = atoi(pTemp);
+        if ( Num < 0 )
+        {
+            printf( "The number of a child supergate is negative.\n" );
+            return NULL;
+        }
+        if ( Num > pLib->nLines )
+        {
+            printf( "The number of a child supergate (%d) exceeded the number of lines (%d).\n", 
+                Num, pLib->nLines );
+            return NULL;
+        }
+        pGate->pFanins[i] = pLib->ppSupers[Num];
+    }
+    pGate->nFanins = i;
+    if ( pGate->nFanins != (unsigned)Mio_GateReadPinNum(pGate->pRoot) )
+    {
+        printf( "The number of fanins of a root gate is wrong.\n" );
+        return NULL;
+    }
+
+    // save the gate name, just in case
+    if ( pTemp && pTemp[0] == '#' )
+    {
+        if ( pTemp[1] == 0 )
+            pTemp = strtok( NULL, " \n\0" );
+        else // skip spaces
+            for ( pTemp++; *pTemp == ' '; pTemp++ );
+        // save the formula
+        pGate->pFormula = Extra_MmFlexEntryFetch( pLib->mmForms, strlen(pTemp)+1 );
+        strcpy( pGate->pFormula, pTemp );
+    }
+    // check the rest of the string
+    pTemp = strtok( NULL, " \n\0" );
+    if ( pTemp != NULL )
+        printf( "The following trailing symbols found \"%s\".\n", pTemp );
+    return pGate;
+}
 
 /**Function*************************************************************
 
@@ -51,66 +142,15 @@ extern const int s_MapFanoutLimits[10] = { 1/*0*/, 10/*1*/, 5/*2*/, 2/*3*/, 1/*4
   SeeAlso     []
 
 ***********************************************************************/
-int Map_LibraryReadTree( Map_SuperLib_t * pLib, char * pFileName, char * pExcludeFile )
-{
-    FILE * pFile;
-    int Status, num;
-    Abc_Frame_t * pAbc;
-    st_table * tExcludeGate = 0;
-
-    // read the beginning of the file
-    assert( pLib->pGenlib == NULL );
-    pFile = Io_FileOpen( pFileName, "open_path", "r", 1 );
-//    pFile = fopen( pFileName, "r" ); 
-    if ( pFile == NULL )
-    {
-        printf( "Cannot open input file \"%s\".\n", pFileName );
-        return 0;
-    }
-
-    if ( pExcludeFile )
-    {
-        pAbc = Abc_FrameGetGlobalFrame();
-        
-        tExcludeGate = st_init_table(strcmp, st_strhash);
-        if ( (num = Mio_LibraryReadExclude( pAbc, pExcludeFile, tExcludeGate )) == -1 )
-        {
-            st_free_table( tExcludeGate );
-            tExcludeGate = 0;
-            return 0;
-        }
-
-        fprintf ( Abc_FrameReadOut( pAbc ), "Read %d gates from exclude file\n", num );
-    }
-    
-    Status = Map_LibraryReadFileTree( pLib, pFile, pFileName );
-    fclose( pFile );
-    if ( Status == 0 )
-        return 0;
-    // prepare the info about the library
-    return Map_LibraryDeriveGateInfo( pLib, tExcludeGate );
-}
-
-
-/**Function*************************************************************
-
-  Synopsis    [Reads the library file.]
-
-  Description []
-               
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
+/*
 int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileName )
 {
     ProgressBar * pProgress;
-    char pBuffer[5000], pLibFile[5000];
-    FILE * pFileGen;
+    char pBuffer[5000];
     Map_Super_t * pGate;
     char * pTemp = 0, * pLibName;
     int nCounter, k, i;
+    int RetValue;
 
     // skip empty and comment lines
     while ( fgets( pBuffer, 5000, pFile ) != NULL )
@@ -121,53 +161,17 @@ int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileNam
         if ( *pTemp != 0 && *pTemp != '#' )
             break;
     }
-    
-    // get the genlib file name (base)
+
     pLibName = strtok( pTemp, " \t\r\n" );
-    
-    if ( strcmp( pLibName, "GATE" ) == 0 )
+    pLib->pGenlib = (Mio_Library_t *)Abc_FrameReadLibGen();
+    if ( pLib->pGenlib == NULL || strcmp( Mio_LibraryReadName(pLib->pGenlib), pLibName ) )
     {
-        printf( "The input file \"%s\" looks like a GENLIB file and not a supergate library file.\n", pLib->pName );
-        return 0;
-    }
-    
-
-    // now figure out the directory if any in the pFileName
-#ifdef __linux__
-    snprintf( pLibFile, 5000, "%s/%s", dirname(strdup(pFileName)), pLibName ); 
-#else
-    {
-        char * pStr;
-        strcpy( pLibFile, pFileName );
-        pStr = pLibFile + strlen(pBuffer) - 1;
-        while ( pStr > pLibFile && *pStr != '\\' && *pStr != '/' )
-            pStr--;
-        if ( pStr == pLibFile )
-            strcpy( pLibFile, pLibName );
-        else
-            sprintf( pStr, "/%s", pLibName );
-    }
-#endif
-    
-    pFileGen = Io_FileOpen( pLibFile, "open_path", "r", 1 );
-//    pFileGen = fopen( pLibFile, "r" ); 
-    if ( pFileGen == NULL )
-    {
-        printf( "Cannot open the GENLIB file \"%s\".\n", pLibFile );
-        return 0;
-    }
-    fclose( pFileGen );
-
-    // read the genlib library
-    pLib->pGenlib = Mio_LibraryRead( Abc_FrameGetGlobalFrame(), pLibFile, 0, 0 );
-    if ( pLib->pGenlib == NULL )
-    {
-        printf( "Cannot read GENLIB file \"%s\".\n", pLibFile );
+        printf( "Supergate library \"%s\" requires the use of genlib library \"%s\".\n", pFileName, pLibName );
         return 0;
     }
 
     // read the number of variables
-    fscanf( pFile, "%d\n", &pLib->nVarsMax );
+    RetValue = fscanf( pFile, "%d\n", &pLib->nVarsMax );
     if ( pLib->nVarsMax < 2 || pLib->nVarsMax > 10 )
     {
         printf( "Suspicious number of variables (%d).\n", pLib->nVarsMax );
@@ -175,7 +179,7 @@ int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileNam
     }
 
     // read the number of gates
-    fscanf( pFile, "%d\n", &pLib->nSupersReal );
+    RetValue = fscanf( pFile, "%d\n", &pLib->nSupersReal );
     if ( pLib->nSupersReal < 1 || pLib->nSupersReal > 10000000 )
     {
         printf( "Suspicious number of gates (%d).\n", pLib->nSupersReal );
@@ -183,7 +187,7 @@ int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileNam
     }
 
     // read the number of lines
-    fscanf( pFile, "%d\n", &pLib->nLines );
+    RetValue = fscanf( pFile, "%d\n", &pLib->nLines );
     if ( pLib->nLines < 1 || pLib->nLines > 10000000 )
     {
         printf( "Suspicious number of lines (%d).\n", pLib->nLines );
@@ -191,7 +195,7 @@ int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileNam
     }
 
     // allocate room for supergate pointers
-    pLib->ppSupers = ALLOC( Map_Super_t *, pLib->nLines + 10000 );
+    pLib->ppSupers = ABC_ALLOC( Map_Super_t *, pLib->nLines + 10000 );
 
     // create the elementary supergates
     for ( i = 0; i < pLib->nVarsMax; i++ )
@@ -257,10 +261,50 @@ int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileNam
     pLib->nSupersReal = nCounter;
     return 1;
 }
+int Map_LibraryReadTree2( Map_SuperLib_t * pLib, char * pFileName, char * pExcludeFile )
+{
+    FILE * pFile;
+    int Status, num;
+    Abc_Frame_t * pAbc;
+    st__table * tExcludeGate = 0;
+
+    // read the beginning of the file
+    assert( pLib->pGenlib == NULL );
+    pFile = Io_FileOpen( pFileName, "open_path", "r", 1 );
+//    pFile = fopen( pFileName, "r" ); 
+    if ( pFile == NULL )
+    {
+        printf( "Cannot open input file \"%s\".\n", pFileName );
+        return 0;
+    }
+
+    if ( pExcludeFile )
+    {
+        pAbc = Abc_FrameGetGlobalFrame();
+        
+        tExcludeGate = st__init_table(strcmp, st__strhash);
+        if ( (num = Mio_LibraryReadExclude( pExcludeFile, tExcludeGate )) == -1 )
+        {
+            st__free_table( tExcludeGate );
+            tExcludeGate = 0;
+            return 0;
+        }
+
+        fprintf ( Abc_FrameReadOut( pAbc ), "Read %d gates from exclude file\n", num );
+    }
+    
+    Status = Map_LibraryReadFileTree( pLib, pFile, pFileName );
+    fclose( pFile );
+    if ( Status == 0 )
+        return 0;
+    // prepare the info about the library
+    return Map_LibraryDeriveGateInfo( pLib, tExcludeGate );
+}
+*/
 
 /**Function*************************************************************
 
-  Synopsis    [Reads one gate.]
+  Synopsis    [Similar to fgets.]
 
   Description []
                
@@ -269,85 +313,263 @@ int Map_LibraryReadFileTree( Map_SuperLib_t * pLib, FILE * pFile, char *pFileNam
   SeeAlso     []
 
 ***********************************************************************/
-Map_Super_t * Map_LibraryReadGateTree( Map_SuperLib_t * pLib, char * pBuffer, int Number, int nVarsMax )
+int Vec_StrGets( char * pBuffer, int nBufferSize, Vec_Str_t * vStr, int * pPos )
 {
-    Map_Super_t * pGate;
-    char * pTemp;
-    int i, Num;
-
-    // start and clean the gate
-    pGate = (Map_Super_t *)Extra_MmFixedEntryFetch( pLib->mmSupers );
-    memset( pGate, 0, sizeof(Map_Super_t) );
-
-    // set the gate number
-    pGate->Num = Number;
-
-    // read the mark
-    pTemp = strtok( pBuffer, " " );
-    if ( pTemp[0] == '*' )
+    char * pCur;
+    char * pBeg = Vec_StrArray(vStr) + *pPos;
+    char * pEnd = Vec_StrArray(vStr) + Vec_StrSize(vStr);
+    assert( nBufferSize > 1 );
+    if ( pBeg == pEnd )
     {
-        pGate->fSuper = 1;
-        pTemp = strtok( NULL, " " );
+        *pBuffer = 0;
+        return 0;
     }
-
-    // read the root gate
-    pGate->pRoot = Mio_LibraryReadGateByName( pLib->pGenlib, pTemp );
-    if ( pGate->pRoot == NULL )
+    assert( pBeg < pEnd );
+    for ( pCur = pBeg; pCur < pEnd; pCur++ )
     {
-        printf( "Cannot read the root gate names %s.\n", pTemp );
-        return NULL;
-    }
-    // set the max number of fanouts
-    pGate->nFanLimit = s_MapFanoutLimits[ Mio_GateReadInputs(pGate->pRoot) ];
-
-    // read the pin-to-pin delay
-    for ( i = 0; ( pTemp = strtok( NULL, " \n\0" ) ); i++ )
-    {
-        if ( pTemp[0] == '#' )
-            break;
-        if ( i == nVarsMax )
+        *pBuffer++ = *pCur;
+        if ( *pCur == 0 )
         {
-            printf( "There are too many entries on the line.\n" );
-            return NULL;
+            *pPos += pCur - pBeg;
+            return 0;
         }
-        Num = atoi(pTemp);
-        if ( Num < 0 )
+        if ( *pCur == '\n' )
         {
-            printf( "The number of a child supergate is negative.\n" );
-            return NULL;
+            *pPos += pCur - pBeg + 1;
+            *pBuffer = 0;
+            return 1;
         }
-        if ( Num > pLib->nLines )
+        if ( pCur - pBeg == nBufferSize-1 )
         {
-            printf( "The number of a child supergate (%d) exceeded the number of lines (%d).\n", 
-                Num, pLib->nLines );
-            return NULL;
+            *pPos += pCur - pBeg + 1;
+            *pBuffer = 0;
+            return 1;
         }
-        pGate->pFanins[i] = pLib->ppSupers[Num];
     }
-    pGate->nFanins = i;
-    if ( pGate->nFanins != (unsigned)Mio_GateReadInputs(pGate->pRoot) )
-    {
-        printf( "The number of fanins of a root gate is wrong.\n" );
-        return NULL;
-    }
-
-    // save the gate name, just in case
-    if ( pTemp && pTemp[0] == '#' )
-    {
-        if ( pTemp[1] == 0 )
-            pTemp = strtok( NULL, " \n\0" );
-        else // skip spaces
-            for ( pTemp++; *pTemp == ' '; pTemp++ );
-        // save the formula
-        pGate->pFormula = Extra_MmFlexEntryFetch( pLib->mmForms, strlen(pTemp)+1 );
-        strcpy( pGate->pFormula, pTemp );
-    }
-    // check the rest of the string
-    pTemp = strtok( NULL, " \n\0" );
-    if ( pTemp != NULL )
-        printf( "The following trailing symbols found \"%s\".\n", pTemp );
-    return pGate;
+    return 0;
 }
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Map_LibraryCompareLibNames( char * pName1, char * pName2 )
+{
+    char * p1 = Abc_UtilStrsav( pName1 );
+    char * p2 = Abc_UtilStrsav( pName2 );
+    int i, RetValue;
+    for ( i = 0; p1[i]; i++ )
+        if ( p1[i] == '>' || p1[i] == '\\' || p1[i] == '/' )
+            p1[i] = '/';
+    for ( i = 0; p2[i]; i++ )
+        if ( p2[i] == '>' || p2[i] == '\\' || p2[i] == '/' )
+            p2[i] = '/';
+    RetValue = strcmp( p1, p2 );
+    ABC_FREE( p1 );
+    ABC_FREE( p2 );
+    return RetValue; 
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the supergate library from file.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Map_LibraryReadFileTreeStr( Map_SuperLib_t * pLib, Mio_Library_t * pGenlib, Vec_Str_t * vStr, char * pFileName )
+{
+    ProgressBar * pProgress;
+    char pBuffer[5000];
+    Map_Super_t * pGate;
+    char * pTemp = 0, * pLibName;
+    int nCounter, k, i;
+    int RetValue, nPos = 0;
+
+    // skip empty and comment lines
+//    while ( fgets( pBuffer, 5000, pFile ) != NULL )
+    while ( 1 )
+    {
+        RetValue = Vec_StrGets( pBuffer, 5000, vStr, &nPos );
+        if ( RetValue == 0 )
+            return 0;
+        // skip leading spaces
+        for ( pTemp = pBuffer; *pTemp == ' ' || *pTemp == '\r' || *pTemp == '\n'; pTemp++ );
+        // skip comment lines and empty lines
+        if ( *pTemp != 0 && *pTemp != '#' )
+            break;
+    }
+
+    pLibName = strtok( pTemp, " \t\r\n" );
+//    pLib->pGenlib = (Mio_Library_t *)Abc_FrameReadLibGen();
+    pLib->pGenlib = pGenlib;
+//    if ( pLib->pGenlib == NULL || strcmp( , pLibName ) )
+    if ( pLib->pGenlib == NULL || Map_LibraryCompareLibNames(Mio_LibraryReadName(pLib->pGenlib), pLibName) )
+    {
+        printf( "Supergate library \"%s\" requires the use of genlib library \"%s\".\n", pFileName, pLibName );
+        return 0;
+    }
+
+    // read the number of variables
+    RetValue = Vec_StrGets( pBuffer, 5000, vStr, &nPos );
+    if ( RetValue == 0 )
+        return 0;
+    RetValue = sscanf( pBuffer, "%d\n", &pLib->nVarsMax );
+    if ( pLib->nVarsMax < 2 || pLib->nVarsMax > 10 )
+    {
+        printf( "Suspicious number of variables (%d).\n", pLib->nVarsMax );
+        return 0;
+    }
+
+    // read the number of gates
+    RetValue = Vec_StrGets( pBuffer, 5000, vStr, &nPos );
+    if ( RetValue == 0 )
+        return 0;
+    RetValue = sscanf( pBuffer, "%d\n", &pLib->nSupersReal );
+    if ( pLib->nSupersReal < 1 || pLib->nSupersReal > 10000000 )
+    {
+        printf( "Suspicious number of gates (%d).\n", pLib->nSupersReal );
+        return 0;
+    }
+
+    // read the number of lines
+    RetValue = Vec_StrGets( pBuffer, 5000, vStr, &nPos );
+    if ( RetValue == 0 )
+        return 0;
+    RetValue = sscanf( pBuffer, "%d\n", &pLib->nLines );
+    if ( pLib->nLines < 1 || pLib->nLines > 10000000 )
+    {
+        printf( "Suspicious number of lines (%d).\n", pLib->nLines );
+        return 0;
+    }
+
+    // allocate room for supergate pointers
+    pLib->ppSupers = ABC_ALLOC( Map_Super_t *, pLib->nLines + 10000 );
+
+    // create the elementary supergates
+    for ( i = 0; i < pLib->nVarsMax; i++ )
+    {
+        // get a new gate
+        pGate = (Map_Super_t *)Extra_MmFixedEntryFetch( pLib->mmSupers );
+        memset( pGate, 0, sizeof(Map_Super_t) );
+        // assign the elementary variable, the truth table, and the delays
+        pGate->Num = i;
+        // set the truth table
+        pGate->uTruth[0] = pLib->uTruths[i][0];
+        pGate->uTruth[1] = pLib->uTruths[i][1];
+        // set the arrival times of all input to non-existent delay
+        for ( k = 0; k < pLib->nVarsMax; k++ )
+        {
+            pGate->tDelaysR[k].Rise = pGate->tDelaysR[k].Fall = MAP_NO_VAR;
+            pGate->tDelaysF[k].Rise = pGate->tDelaysF[k].Fall = MAP_NO_VAR;
+        }
+        // set an existent arrival time for rise and fall
+        pGate->tDelaysR[i].Rise = 0.0;
+        pGate->tDelaysF[i].Fall = 0.0;
+        // set the gate
+        pLib->ppSupers[i] = pGate;
+    }
+
+    // read the lines
+    nCounter = pLib->nVarsMax;
+    pProgress = Extra_ProgressBarStart( stdout, pLib->nLines );
+//    while ( fgets( pBuffer, 5000, pFile ) != NULL )
+    while ( Vec_StrGets( pBuffer, 5000, vStr, &nPos ) )
+    {
+        for ( pTemp = pBuffer; *pTemp == ' ' || *pTemp == '\r' || *pTemp == '\n'; pTemp++ );
+        if ( pTemp[0] == '\0' )
+            continue;
+//        if ( pTemp[0] == 'a' || pTemp[2] == 'a' )
+//        {
+//            pLib->nLines--;
+//            continue;
+//        }
+
+        // get the gate
+        pGate = Map_LibraryReadGateTree( pLib, pTemp, nCounter, pLib->nVarsMax );
+        if ( pGate == NULL )
+        {
+            Extra_ProgressBarStop( pProgress );
+            return 0;
+        }
+        pLib->ppSupers[nCounter++] = pGate;
+        // later we will derive: truth table, delays, area, number of component gates, etc
+
+        // update the progress bar
+        Extra_ProgressBarUpdate( pProgress, nCounter, NULL );
+    }
+    Extra_ProgressBarStop( pProgress );
+    if ( nCounter != pLib->nLines )
+        printf( "The number of lines read (%d) is different from what the file says (%d).\n", nCounter, pLib->nLines );
+    pLib->nSupersAll = nCounter;
+    // count the number of real supergates
+    nCounter = 0;
+    for ( k = 0; k < pLib->nLines; k++ )
+        nCounter += pLib->ppSupers[k]->fSuper;
+    if ( nCounter != pLib->nSupersReal )
+        printf( "The number of gates read (%d) is different what the file says (%d).\n", nCounter, pLib->nSupersReal );
+    pLib->nSupersReal = nCounter;
+    return 1;
+}
+int Map_LibraryReadTree( Map_SuperLib_t * pLib, Mio_Library_t * pGenlib, char * pFileName, char * pExcludeFile )
+{
+    char * pBuffer;
+    Vec_Str_t * vStr;
+    int Status, num;
+    Abc_Frame_t * pAbc;
+    st__table * tExcludeGate = 0;
+
+    // read the beginning of the file
+    assert( pLib->pGenlib == NULL );
+//    pFile = Io_FileOpen( pFileName, "open_path", "r", 1 );
+    pBuffer = Mio_ReadFile( pFileName, 0 );
+    if ( pBuffer == NULL )
+    {
+        printf( "Cannot open input file \"%s\".\n", pFileName );
+        return 0;
+    }
+    vStr = Vec_StrAllocArray( pBuffer, strlen(pBuffer) );
+
+    if ( pExcludeFile )
+    {
+        pAbc = Abc_FrameGetGlobalFrame();
+        
+        tExcludeGate = st__init_table(strcmp, st__strhash);
+        if ( (num = Mio_LibraryReadExclude( pExcludeFile, tExcludeGate )) == -1 )
+        {
+            st__free_table( tExcludeGate );
+            tExcludeGate = 0;
+            Vec_StrFree( vStr );
+            return 0;
+        }
+
+        fprintf ( Abc_FrameReadOut( pAbc ), "Read %d gates from exclude file\n", num );
+    }
+    
+    Status = Map_LibraryReadFileTreeStr( pLib, pGenlib, vStr, pFileName );
+    Vec_StrFree( vStr );
+    if ( Status == 0 )
+        return 0;
+    // prepare the info about the library
+    return Map_LibraryDeriveGateInfo( pLib, tExcludeGate );
+}
+
+
+
+
+
+
 
 
 /**Function*************************************************************
@@ -361,7 +583,7 @@ Map_Super_t * Map_LibraryReadGateTree( Map_SuperLib_t * pLib, char * pBuffer, in
   SeeAlso     []
 
 ***********************************************************************/
-int Map_LibraryDeriveGateInfo( Map_SuperLib_t * pLib, st_table * tExcludeGate )
+int Map_LibraryDeriveGateInfo( Map_SuperLib_t * pLib, st__table * tExcludeGate )
 {
     Map_Super_t * pGate, * pFanin;
     Mio_Pin_t * pPin;
@@ -376,7 +598,7 @@ int Map_LibraryDeriveGateInfo( Map_SuperLib_t * pLib, st_table * tExcludeGate )
 
         if ( tExcludeGate )
         {
-            if ( st_is_member( tExcludeGate, Mio_GateReadName( pGate->pRoot ) ) )
+            if ( st__is_member( tExcludeGate, Mio_GateReadName( pGate->pRoot ) ) )
                 pGate->fExclude = 1;
             for ( k = 0; k < (int)pGate->nFanins; k++ )
             {
@@ -553,7 +775,7 @@ void Map_LibraryAddFaninDelays( Map_SuperLib_t * pLib, Map_Super_t * pGate, Map_
 {
     Mio_PinPhase_t PinPhase;
     float tDelayBlockRise, tDelayBlockFall, tDelayPin;
-    bool fMaxDelay = 0;
+    int fMaxDelay = 0;
     int i;
 
     // use this node to enable max-delay model
@@ -815,4 +1037,6 @@ void Map_LibraryPrintTree( Map_SuperLib_t * pLib )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

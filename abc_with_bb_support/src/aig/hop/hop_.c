@@ -1,6 +1,6 @@
 /**CFile****************************************************************
 
-  FileName    [ivy_.c]
+  FileName    [hop_.c]
 
   SystemName  [ABC: Logic synthesis and verification system.]
 
@@ -14,11 +14,14 @@
 
   Date        [Ver. 1.0. Started - May 11, 2006.]
 
-  Revision    [$Id: ivy_.c,v 1.00 2006/05/11 00:00:00 alanmi Exp $]
+  Revision    [$Id: hop_.c,v 1.00 2006/05/11 00:00:00 alanmi Exp $]
 
 ***********************************************************************/
 
-#include "ivy.h"
+#include "hop.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -45,4 +48,6 @@
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

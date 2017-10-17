@@ -18,21 +18,51 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "fxu.h"
+#include "base/abc/abc.h"
+#include "opt/fxu/fxu.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
  
-static bool Abc_NtkFxuCheck( Abc_Ntk_t * pNtk );
+static int  Abc_NtkFxuCheck( Abc_Ntk_t * pNtk );
 static void Abc_NtkFxuCollectInfo( Abc_Ntk_t * pNtk, Fxu_Data_t * p );
 static void Abc_NtkFxuReconstruct( Abc_Ntk_t * pNtk, Fxu_Data_t * p );
+
+extern int  Fxu_FastExtract( Fxu_Data_t * pData );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
+/**Function*************************************************************
+
+  Synopsis    [Sets default values of the FXU parameters.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_NtkSetDefaultFxParams( Fxu_Data_t * p )
+{
+    memset( p, 0, sizeof(Fxu_Data_t) );
+    p->nSingleMax =  20000;
+    p->nPairsMax  =  30000;
+    p->nNodesExt  =1000000;
+    p->WeightMin  =      0;
+    p->LitCountMax=      4;
+    p->fOnlyS     =      0;
+    p->fOnlyD     =      0;
+    p->fUse0      =      0;
+    p->fUseCompl  =      1;
+    p->fVerbose   =      0;
+}
 
 /**Function*************************************************************
 
@@ -50,7 +80,7 @@ static void Abc_NtkFxuReconstruct( Abc_Ntk_t * pNtk, Fxu_Data_t * p );
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkFastExtract( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
+int Abc_NtkFastExtract( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
 {
     assert( Abc_NtkIsLogic(pNtk) );
     // if the network is already in the SOP form, it may come from BLIF file
@@ -61,7 +91,7 @@ bool Abc_NtkFastExtract( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
 //        Abc_NtkBddToSop(pNtk);
     }
     // get the network in the SOP form
-    if ( !Abc_NtkToSop(pNtk, 0) )
+    if ( !Abc_NtkToSop(pNtk, -1, ABC_INFINITY) )
     {
         printf( "Abc_NtkFastExtract(): Converting to SOPs has failed.\n" );
         return 0;
@@ -103,7 +133,7 @@ bool Abc_NtkFastExtract( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_NtkFxuCheck( Abc_Ntk_t * pNtk )
+int Abc_NtkFxuCheck( Abc_Ntk_t * pNtk )
 {
     Abc_Obj_t * pNode, * pFanin1, * pFanin2;
     int n, i, k;
@@ -141,7 +171,7 @@ void Abc_NtkFxuCollectInfo( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
     Abc_Obj_t * pNode;
     int i;
     // add information to the manager
-    p->pManSop    = pNtk->pManFunc;
+    p->pManSop    = (Mem_Flex_t *)pNtk->pManFunc;
     p->vSops      = Vec_PtrAlloc(0);
     p->vFanins    = Vec_PtrAlloc(0);
     p->vSopsNew   = Vec_PtrAlloc(0);
@@ -153,9 +183,9 @@ void Abc_NtkFxuCollectInfo( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
     // add SOPs and fanin array
     Abc_NtkForEachNode( pNtk, pNode, i )
     {
-        if ( Abc_SopGetVarNum(pNode->pData) < 2 )
+        if ( Abc_SopGetVarNum((char *)pNode->pData) < 2 )
             continue;
-        if ( Abc_SopGetCubeNum(pNode->pData) < 1 )
+        if ( Abc_SopGetCubeNum((char *)pNode->pData) < 1 )
             continue;
         p->vSops->pArray[i]   = pNode->pData;
         p->vFanins->pArray[i] = &pNode->vFanins;
@@ -181,18 +211,18 @@ void Abc_NtkFxuFreeInfo( Fxu_Data_t * p )
     if ( p->vFaninsNew )
         for ( i = 0; i < p->vFaninsNew->nSize; i++ )
             if ( p->vFaninsNew->pArray[i] )
-                Vec_IntFree( p->vFaninsNew->pArray[i] );
+                Vec_IntFree( (Vec_Int_t *)p->vFaninsNew->pArray[i] );
     // free the arrays
     if ( p->vSops      ) Vec_PtrFree( p->vSops      );
     if ( p->vSopsNew   ) Vec_PtrFree( p->vSopsNew   );
     if ( p->vFanins    ) Vec_PtrFree( p->vFanins    );
     if ( p->vFaninsNew ) Vec_PtrFree( p->vFaninsNew );
-    FREE( p );
+//    ABC_FREE( p );
 }
 
 /**Function*************************************************************
 
-  Synopsis    [Recostructs the network after FX.]
+  Synopsis    [Reconstructs the network after FX.]
 
   Description []
                
@@ -219,14 +249,14 @@ void Abc_NtkFxuReconstruct( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
     for ( i = 0; i < p->vFanins->nSize; i++ )
     {
         // the new array of fanins
-        vFanins = p->vFaninsNew->pArray[i];
+        vFanins = (Vec_Int_t *)p->vFaninsNew->pArray[i];
         if ( vFanins == NULL )
             continue;
         // remove old fanins
         pNode = Abc_NtkObj( pNtk, i );
         Abc_ObjRemoveFanins( pNode );
         // add new fanins
-        vFanins = p->vFaninsNew->pArray[i];
+        vFanins = (Vec_Int_t *)p->vFaninsNew->pArray[i];
         for ( k = 0; k < vFanins->nSize; k++ )
         {
             pFanin = Abc_NtkObj( pNtk, vFanins->pArray[k] );
@@ -241,7 +271,7 @@ void Abc_NtkFxuReconstruct( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
         // get the new node
         pNode = Abc_NtkObj( pNtk, i );
         // add the fanins
-        vFanins = p->vFaninsNew->pArray[i];
+        vFanins = (Vec_Int_t *)p->vFaninsNew->pArray[i];
         for ( k = 0; k < vFanins->nSize; k++ )
         {
             pFanin = Abc_NtkObj( pNtk, vFanins->pArray[k] );
@@ -257,4 +287,6 @@ void Abc_NtkFxuReconstruct( Abc_Ntk_t * pNtk, Fxu_Data_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

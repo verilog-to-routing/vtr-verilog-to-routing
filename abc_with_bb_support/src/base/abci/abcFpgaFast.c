@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "ivy.h"
+#include "base/abc/abc.h"
+#include "aig/ivy/ivy.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -30,8 +33,8 @@ extern Ivy_Man_t * Abc_NtkIvyBefore( Abc_Ntk_t * pNtk, int fSeq, int fUseDc );
 static Abc_Ntk_t * Ivy_ManFpgaToAbc( Abc_Ntk_t * pNtk, Ivy_Man_t * pMan );
 static Abc_Obj_t * Ivy_ManToAbcFast_rec( Abc_Ntk_t * pNtkNew, Ivy_Man_t * pMan, Ivy_Obj_t * pObjIvy, Vec_Int_t * vNodes );
 
-static inline void        Abc_ObjSetIvy2Abc( Ivy_Man_t * p, int IvyId, Abc_Obj_t * pObjAbc ) {  assert(Vec_PtrEntry(p->pCopy, IvyId) == NULL); assert(!Abc_ObjIsComplement(pObjAbc)); Vec_PtrWriteEntry( p->pCopy, IvyId, pObjAbc );  }
-static inline Abc_Obj_t * Abc_ObjGetIvy2Abc( Ivy_Man_t * p, int IvyId )                      {  return Vec_PtrEntry( p->pCopy, IvyId );         }
+static inline void        Abc_ObjSetIvy2Abc( Ivy_Man_t * p, int IvyId, Abc_Obj_t * pObjAbc ) {  assert(Vec_PtrEntry((Vec_Ptr_t *)p->pCopy, IvyId) == NULL); assert(!Abc_ObjIsComplement(pObjAbc)); Vec_PtrWriteEntry( (Vec_Ptr_t *)p->pCopy, IvyId, pObjAbc );  }
+static inline Abc_Obj_t * Abc_ObjGetIvy2Abc( Ivy_Man_t * p, int IvyId )                      {  return (Abc_Obj_t *)Vec_PtrEntry( (Vec_Ptr_t *)p->pCopy, IvyId );         }
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -118,7 +121,7 @@ Abc_Ntk_t * Ivy_ManFpgaToAbc( Abc_Ntk_t * pNtk, Ivy_Man_t * pMan )
                 // clone the node
                 pObj = Abc_NtkCloneObj( pObjAbc );
                 // set complemented functions
-                pObj->pData = Hop_Not( pObjAbc->pData );
+                pObj->pData = Hop_Not( (Hop_Obj_t *)pObjAbc->pData );
                 // return the new node
                 pObjAbc = pObj;
             }
@@ -126,7 +129,7 @@ Abc_Ntk_t * Ivy_ManFpgaToAbc( Abc_Ntk_t * pNtk, Ivy_Man_t * pMan )
         Abc_ObjAddFanin( Abc_NtkCo(pNtkNew, i), pObjAbc );
     }
     Vec_IntFree( vNodes );
-    Vec_PtrFree( pMan->pCopy ); 
+    Vec_PtrFree( (Vec_Ptr_t *)pMan->pCopy ); 
     pMan->pCopy = NULL;
     // remove dangling nodes
     Abc_NtkCleanup( pNtkNew, 0 );
@@ -172,9 +175,9 @@ Abc_Obj_t * Ivy_ManToAbcFast_rec( Abc_Ntk_t * pNtkNew, Ivy_Man_t * pMan, Ivy_Obj
     Ivy_ManForEachNodeVec( pMan, vNodes, pNodeIvy, i )
     {
         if ( i < Vec_IntSize(vSupp) )
-            pNodeIvy->pEquiv = (Ivy_Obj_t *)Hop_IthVar( pNtkNew->pManFunc, i );
+            pNodeIvy->pEquiv = (Ivy_Obj_t *)Hop_IthVar( (Hop_Man_t *)pNtkNew->pManFunc, i );
         else
-            pNodeIvy->pEquiv = (Ivy_Obj_t *)Hop_And( pNtkNew->pManFunc, (Hop_Obj_t *)Ivy_ObjChild0Equiv(pNodeIvy), (Hop_Obj_t *)Ivy_ObjChild1Equiv(pNodeIvy) );
+            pNodeIvy->pEquiv = (Ivy_Obj_t *)Hop_And( (Hop_Man_t *)pNtkNew->pManFunc, (Hop_Obj_t *)Ivy_ObjChild0Equiv(pNodeIvy), (Hop_Obj_t *)Ivy_ObjChild1Equiv(pNodeIvy) );
     }
     // set the local function
     pObjAbc->pData = (Abc_Obj_t *)pObjIvy->pEquiv;
@@ -187,4 +190,6 @@ Abc_Obj_t * Ivy_ManToAbcFast_rec( Abc_Ntk_t * pNtkNew, Ivy_Man_t * pMan, Ivy_Obj
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

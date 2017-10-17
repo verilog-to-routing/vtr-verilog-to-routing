@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -64,8 +67,8 @@ void Ivy_ManStopMemory( Ivy_Man_t * p )
 {
     void * pMemory;
     int i;
-    Vec_PtrForEachEntry( p->vChunks, pMemory, i )
-        free( pMemory );
+    Vec_PtrForEachEntry( void *, p->vChunks, pMemory, i )
+        ABC_FREE( pMemory );
     Vec_PtrFree( p->vChunks );
     Vec_PtrFree( p->vPages );
     p->pListFree = NULL;
@@ -93,10 +96,10 @@ void Ivy_ManAddMemory( Ivy_Man_t * p )
 //    assert( (Ivy_ManObjNum(p) & IVY_PAGE_MASK) == 0 );
     // allocate new memory page
     nBytes = sizeof(Ivy_Obj_t) * (1<<IVY_PAGE_SIZE) + EntrySizeMax;
-    pMemory = ALLOC( char, nBytes );
+    pMemory = ABC_ALLOC( char, nBytes );
     Vec_PtrPush( p->vChunks, pMemory );
     // align memory at the 32-byte boundary
-    pMemory = pMemory + EntrySizeMax - (((int)pMemory) & (EntrySizeMax-1));
+    pMemory = pMemory + EntrySizeMax - (((int)(ABC_PTRUINT_T)pMemory) & (EntrySizeMax-1));
     // remember the manager in the first entry
     Vec_PtrPush( p->vPages, pMemory );
     // break the memory down into nodes
@@ -113,4 +116,6 @@ void Ivy_ManAddMemory( Ivy_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

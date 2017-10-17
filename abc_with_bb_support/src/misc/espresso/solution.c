@@ -9,6 +9,9 @@
  */
 #include "mincov_int.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 solution_t *
 solution_alloc()
@@ -112,3 +115,5 @@ solution_t *best1, *best2;
 	}
     }
 }
+ABC_NAMESPACE_IMPL_END
+

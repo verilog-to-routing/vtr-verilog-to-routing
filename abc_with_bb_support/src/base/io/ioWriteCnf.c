@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "io.h"
-#include "satSolver.h"
+#include "ioAbc.h"
+#include "sat/bsat/satSolver.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -68,7 +71,7 @@ int Io_WriteCnf( Abc_Ntk_t * pNtk, char * pFileName, int fAllPrimes )
     if ( Abc_NtkIsLogic(pNtk) )
         Abc_NtkToBdd( pNtk );
     // create solver with clauses
-    pSat = Abc_NtkMiterSatCreate( pNtk, fAllPrimes );
+    pSat = (sat_solver *)Abc_NtkMiterSatCreate( pNtk, fAllPrimes );
     if ( pSat == NULL )
     {
         fprintf( stdout, "The problem is trivially UNSAT. No CNF file is generated.\n" );
@@ -112,4 +115,6 @@ void Io_WriteCnfOutputPiMapping( FILE * pFile, int incrementVars )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

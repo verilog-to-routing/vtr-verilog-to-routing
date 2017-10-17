@@ -18,6 +18,9 @@
 
 #include "mapperInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -48,11 +51,11 @@ void Map_MappingTruths( Map_Man_t * pMan )
     Map_Cut_t * pCut;
     int nNodes, i;
     // compute the cuts for the POs
-    nNodes = pMan->vAnds->nSize;
+    nNodes = pMan->vMapObjs->nSize;
     pProgress = Extra_ProgressBarStart( stdout, nNodes );
     for ( i = 0; i < nNodes; i++ )
     {
-        pNode = pMan->vAnds->pArray[i];
+        pNode = pMan->vMapObjs->pArray[i];
         if ( !Map_NodeIsAnd( pNode ) )
             continue;
         assert( pNode->pCuts );
@@ -194,7 +197,7 @@ void Map_TruthsCut( Map_Man_t * p, Map_Cut_t * pCut )
 void Map_TruthsCutOne( Map_Man_t * p, Map_Cut_t * pCut, unsigned uTruth[] )
 {
     unsigned uTruth1[2], uTruth2[2];
-    Map_Cut_t * pTemp;
+    Map_Cut_t * pTemp = NULL; // Suppress "might be used uninitialized"
     int i;
     // mark the cut leaves
     for ( i = 0; i < pCut->nLeaves; i++ )
@@ -307,4 +310,6 @@ void Map_CutsCollect_rec( Map_Cut_t * pCut, Map_NodeVec_t * vVisited )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

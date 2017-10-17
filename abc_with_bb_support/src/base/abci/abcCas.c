@@ -18,7 +18,14 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 /* 
     This LUT cascade synthesis algorithm is described in the paper:
@@ -30,6 +37,8 @@
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
+
+#ifdef ABC_USE_CUDD
 
 extern int Abc_CascadeExperiment( char * pFileGeneric, DdManager * dd, DdNode ** pOutputs, int nInputs, int nOutputs, int nLutSize, int fCheck, int fVerbose );
 
@@ -56,8 +65,8 @@ Abc_Ntk_t * Abc_NtkCascade( Abc_Ntk_t * pNtk, int nLutSize, int fCheck, int fVer
     Abc_Obj_t * pNode;
     char * pFileGeneric;
     int fBddSizeMax = 500000;
-    int fReorder = 1;
-    int i, clk = clock();
+    int i, fReorder = 1;
+    abctime clk = Abc_Clock();
 
     assert( Abc_NtkIsStrash(pNtk) );
     // compute the global BDDs
@@ -66,16 +75,16 @@ Abc_Ntk_t * Abc_NtkCascade( Abc_Ntk_t * pNtk, int nLutSize, int fCheck, int fVer
 
     if ( fVerbose )
     {
-        DdManager * dd = Abc_NtkGlobalBddMan( pNtk );
+        DdManager * dd = (DdManager *)Abc_NtkGlobalBddMan( pNtk );
         printf( "Shared BDD size = %6d nodes.  ", Cudd_ReadKeys(dd) - Cudd_ReadDead(dd) );
-        PRT( "BDD construction time", clock() - clk );
+        ABC_PRT( "BDD construction time", Abc_Clock() - clk );
     }
 
     // collect global BDDs
-    dd = Abc_NtkGlobalBddMan( pNtk );
-    ppOutputs = ALLOC( DdNode *, Abc_NtkCoNum(pNtk) );
+    dd = (DdManager *)Abc_NtkGlobalBddMan( pNtk );
+    ppOutputs = ABC_ALLOC( DdNode *, Abc_NtkCoNum(pNtk) );
     Abc_NtkForEachCo( pNtk, pNode, i )
-        ppOutputs[i] = Abc_ObjGlobalBdd(pNode);
+        ppOutputs[i] = (DdNode *)Abc_ObjGlobalBdd(pNode);
 
     // call the decomposition
     pFileGeneric = Extra_FileNameGeneric( pNtk->pSpec );
@@ -89,8 +98,8 @@ Abc_Ntk_t * Abc_NtkCascade( Abc_Ntk_t * pNtk, int nLutSize, int fCheck, int fVer
 
     // cleanup
     Abc_NtkFreeGlobalBdds( pNtk, 1 );
-    free( ppOutputs );
-    free( pFileGeneric );
+    ABC_FREE( ppOutputs );
+    ABC_FREE( pFileGeneric );
 
 //    if ( pNtk->pExdc )
 //        pNtkNew->pExdc = Abc_NtkDup( pNtk->pExdc );
@@ -104,8 +113,16 @@ Abc_Ntk_t * Abc_NtkCascade( Abc_Ntk_t * pNtk, int nLutSize, int fCheck, int fVer
     return pNtkNew;
 }
 
+#else
+
+Abc_Ntk_t * Abc_NtkCascade( Abc_Ntk_t * pNtk, int nLutSize, int fCheck, int fVerbose ) { return NULL; }
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -22,9 +22,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
-//#include "vec.h"
+
+#include "misc/util/abc_global.h"
 #include "pr.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -85,15 +88,11 @@ struct Pr_Man_t_
     int             nResLits;     // the number of literals of the resolvent
     int             nResLitsAlloc;// the number of literals of the resolvent
     // runtime stats
-    int             timeBcp;
-    int             timeTrace;
-    int             timeRead;
-    int             timeTotal;
+    abctime         timeBcp;
+    abctime         timeTrace;
+    abctime         timeRead;
+    abctime         timeTotal;
 };
-
-#ifndef PRT
-#define PRT(a,t)  printf("%s = ", (a)); printf("%6.2f sec\n", (float)(t)/(float)(CLOCKS_PER_SEC))
-#endif
 
 // variable assignments 
 static const lit  LIT_UNDEF = 0xffffffff;
@@ -143,7 +142,7 @@ Pr_Man_t * Pr_ManAlloc( int nVarsAlloc )
 {
     Pr_Man_t * p;
     // allocate the manager
-    p = (Pr_Man_t *)malloc( sizeof(Pr_Man_t) );
+    p = (Pr_Man_t *)ABC_ALLOC( char, sizeof(Pr_Man_t) );
     memset( p, 0, sizeof(Pr_Man_t) );
     // allocate internal arrays
     Pr_ManResize( p, nVarsAlloc? nVarsAlloc : 256 );
@@ -153,7 +152,7 @@ Pr_Man_t * Pr_ManAlloc( int nVarsAlloc )
     p->nChunkSize = (1<<16); // use 64K chunks
     // verification
     p->nResLitsAlloc = (1<<16);
-    p->pResLits = malloc( sizeof(lit) * p->nResLitsAlloc );
+    p->pResLits = ABC_ALLOC( lit, p->nResLitsAlloc );
     // parameters
     p->fProofWrite = 0;
     p->fProofVerif = 0;
@@ -183,12 +182,12 @@ void Pr_ManResize( Pr_Man_t * p, int nVarsNew )
         while ( p->nVarsAlloc < nVarsNew ) 
             p->nVarsAlloc *= 2;
         // resize the arrays
-        p->pTrail    = (lit *)      realloc( p->pTrail,    sizeof(lit) * p->nVarsAlloc );
-        p->pAssigns  = (lit *)      realloc( p->pAssigns,  sizeof(lit) * p->nVarsAlloc );
-        p->pSeens    = (char *)     realloc( p->pSeens,    sizeof(char) * p->nVarsAlloc );
-        p->pVarTypes = (char *)     realloc( p->pVarTypes, sizeof(char) * p->nVarsAlloc );
-        p->pReasons  = (Pr_Cls_t **)realloc( p->pReasons,  sizeof(Pr_Cls_t *) * p->nVarsAlloc );
-        p->pWatches  = (Pr_Cls_t **)realloc( p->pWatches,  sizeof(Pr_Cls_t *) * p->nVarsAlloc*2 );
+        p->pTrail    = ABC_REALLOC(lit,        p->pTrail,    p->nVarsAlloc );
+        p->pAssigns  = ABC_REALLOC(lit,        p->pAssigns,  p->nVarsAlloc );
+        p->pSeens    = ABC_REALLOC(char,       p->pSeens,    p->nVarsAlloc );
+        p->pVarTypes = ABC_REALLOC(char,       p->pVarTypes, p->nVarsAlloc );
+        p->pReasons  = ABC_REALLOC(Pr_Cls_t *, p->pReasons,  p->nVarsAlloc );
+        p->pWatches  = ABC_REALLOC(Pr_Cls_t *, p->pWatches,  p->nVarsAlloc*2 );
         // clean the free space
         memset( p->pAssigns  + nVarsAllocOld, 0xff, sizeof(lit) * (p->nVarsAlloc - nVarsAllocOld) );
         memset( p->pSeens    + nVarsAllocOld, 0, sizeof(char) * (p->nVarsAlloc - nVarsAllocOld) );
@@ -215,20 +214,20 @@ void Pr_ManResize( Pr_Man_t * p, int nVarsNew )
 void Pr_ManFree( Pr_Man_t * p )
 {
     printf( "Runtime stats:\n" );
-PRT( "Reading ", p->timeRead  );
-PRT( "BCP     ", p->timeBcp   );
-PRT( "Trace   ", p->timeTrace );
-PRT( "TOTAL   ", p->timeTotal );
+ABC_PRT( "Reading ", p->timeRead  );
+ABC_PRT( "BCP     ", p->timeBcp   );
+ABC_PRT( "Trace   ", p->timeTrace );
+ABC_PRT( "TOTAL   ", p->timeTotal );
 
     Pr_ManMemoryStop( p );
-    free( p->pTrail );
-    free( p->pAssigns );
-    free( p->pSeens );
-    free( p->pVarTypes );
-    free( p->pReasons );
-    free( p->pWatches );
-    free( p->pResLits );
-    free( p );
+    ABC_FREE( p->pTrail );
+    ABC_FREE( p->pAssigns );
+    ABC_FREE( p->pSeens );
+    ABC_FREE( p->pVarTypes );
+    ABC_FREE( p->pReasons );
+    ABC_FREE( p->pWatches );
+    ABC_FREE( p->pResLits );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -348,7 +347,7 @@ char * Pr_ManMemoryFetch( Pr_Man_t * p, int nBytes )
     char * pMem;
     if ( p->pChunkLast == NULL || nBytes > p->nChunkSize - p->nChunkUsed )
     {
-        pMem = (char *)malloc( p->nChunkSize );
+        pMem = (char *)ABC_ALLOC( char, p->nChunkSize );
         *(char **)pMem = p->pChunkLast;
         p->pChunkLast = pMem;
         p->nChunkUsed = sizeof(char *);
@@ -375,8 +374,8 @@ void Pr_ManMemoryStop( Pr_Man_t * p )
     if ( p->pChunkLast == NULL )
         return;
     for ( pMem = p->pChunkLast; pNext = *(char **)pMem; pMem = pNext )
-        free( pMem );
-    free( pMem );
+        ABC_FREE( pMem );
+    ABC_FREE( pMem );
 }
 
 /**Function*************************************************************
@@ -579,17 +578,17 @@ Pr_Cls_t * Pr_ManPropagate( Pr_Man_t * p, int Start )
 {
     Pr_Cls_t * pClause;
     int i;
-    int clk = clock();
+    abctime clk = Abc_Clock();
     for ( i = Start; i < p->nTrailSize; i++ )
     {
         pClause = Pr_ManPropagateOne( p, p->pTrail[i] );
         if ( pClause )
         {
-p->timeBcp += clock() - clk;
+p->timeBcp += Abc_Clock() - clk;
             return pClause;
         }
     }
-p->timeBcp += clock() - clk;
+p->timeBcp += Abc_Clock() - clk;
     return NULL;
 }
 
@@ -652,10 +651,10 @@ void Pr_ManProofWriteOne( Pr_Man_t * p, Pr_Cls_t * pClause )
     if ( p->fProofWrite )
     {
         int v;
-        fprintf( p->pManProof, "%d", (int)pClause->pProof );
+        fprintf( (FILE *)p->pManProof, "%d", (int)pClause->pProof );
         for ( v = 0; v < (int)pClause->nLits; v++ )
-            fprintf( p->pManProof, " %d", lit_print(pClause->pLits[v]) );
-        fprintf( p->pManProof, " 0 0\n" );
+            fprintf( (FILE *)p->pManProof, " %d", lit_print(pClause->pLits[v]) );
+        fprintf( (FILE *)p->pManProof, " 0 0\n" );
     }
 }
 
@@ -675,7 +674,7 @@ int Pr_ManProofTraceOne( Pr_Man_t * p, Pr_Cls_t * pConflict, Pr_Cls_t * pFinal )
     Pr_Cls_t * pReason;
     int i, v, Var, PrevId;
     int fPrint = 0;
-    int clk = clock();
+    abctime clk = Abc_Clock();
 
     // collect resolvent literals
     if ( p->fProofVerif )
@@ -721,7 +720,7 @@ int Pr_ManProofTraceOne( Pr_Man_t * p, Pr_Cls_t * pConflict, Pr_Cls_t * pFinal )
         assert( pReason->pProof > 0 );
         p->Counter++;
         if ( p->fProofWrite )
-            fprintf( p->pManProof, "%d * %d %d 0\n", p->Counter, PrevId, (int)pReason->pProof );
+            fprintf( (FILE *)p->pManProof, "%d * %d %d 0\n", p->Counter, PrevId, (int)pReason->pProof );
         PrevId = p->Counter;
 
         if ( p->nClausesA )
@@ -806,7 +805,7 @@ int Pr_ManProofTraceOne( Pr_Man_t * p, Pr_Cls_t * pConflict, Pr_Cls_t * pFinal )
             Pr_ManPrintClause( pFinal );
         }
     }
-p->timeTrace += clock() - clk;
+p->timeTrace += Abc_Clock() - clk;
 
     // return the proof pointer 
     if ( p->nClausesA )
@@ -1089,7 +1088,7 @@ int Pr_ManProofWrite( Pr_Man_t * p )
     // stop the proof
     if ( p->fProofWrite )
     {
-        fclose( p->pManProof );
+        fclose( (FILE *)p->pManProof );
         p->pManProof = NULL;    
     }
     return RetValue;
@@ -1124,7 +1123,7 @@ Pr_Man_t * Pr_ManProofRead( char * pFileName )
     }
 
     // read the file
-    pBuffer = (char *)malloc( (1<<16) );
+    pBuffer = (char *)ABC_ALLOC( char, (1<<16) );
     for ( Counter = 0; fgets( pBuffer, (1<<16), pFile ); )
     {
         if ( pBuffer[0] == 'c' )
@@ -1139,7 +1138,7 @@ Pr_Man_t * Pr_ManProofRead( char * pFileName )
                 printf( "Wrong input file format.\n" );
             }
             p = Pr_ManAlloc( nVars );
-            pArray = (int *)malloc( sizeof(int) * (nVars + 10) );
+            pArray = (int *)ABC_ALLOC( char, sizeof(int) * (nVars + 10) );
             continue;
         }
         // skip empty lines
@@ -1165,7 +1164,7 @@ Pr_Man_t * Pr_ManProofRead( char * pFileName )
             for ( ; *pCur && *pCur != ' '; pCur++ );
         }
         // add the clause
-        if ( !Pr_ManAddClause( p, pArray, pArray + nNumbers, Counter < nRoots, Counter < nClausesA ) )
+        if ( !Pr_ManAddClause( p, (unsigned *)pArray, (unsigned *)pArray + nNumbers, Counter < nRoots, Counter < nClausesA ) )
         {
             printf( "Bad clause number %d.\n", Counter );
             return NULL;
@@ -1178,8 +1177,8 @@ Pr_Man_t * Pr_ManProofRead( char * pFileName )
         printf( "Expected %d clauses but read %d.\n", nClauses, Counter );
 
     // finish
-    if ( pArray ) free( pArray );
-    if ( pBuffer ) free( pBuffer );
+    if ( pArray ) ABC_FREE( pArray );
+    if ( pBuffer ) ABC_FREE( pBuffer );
     fclose( pFile );
     return p;
 }
@@ -1207,7 +1206,7 @@ int Pr_ManProofCount_rec( Pr_Cls_t * pClause )
     pClause->fVisit = 1;
     // count the number of visited clauses
     Counter = 1;
-    Vec_PtrForEachEntry( pClause->pAntis, pNext, i )
+    Vec_PtrForEachEntry( Pr_Cls_t *, pClause->pAntis, pNext, i )
         Counter += Pr_ManProofCount_rec( pNext );
     return Counter;
 }
@@ -1227,11 +1226,11 @@ int Pr_ManProofCount_rec( Pr_Cls_t * pClause )
 int Pr_ManProofTest( char * pFileName )
 {
     Pr_Man_t * p;
-    int clk, clkTotal = clock();
+    abctime clk, clkTotal = Abc_Clock();
 
-clk = clock();
+clk = Abc_Clock();
     p = Pr_ManProofRead( pFileName );
-p->timeRead = clock() - clk;
+p->timeRead = Abc_Clock() - clk;
     if ( p == NULL )
         return 0;
 
@@ -1245,12 +1244,12 @@ p->timeRead = clock() - clk;
         1.0*(p->Counter-p->nRoots)/(p->nClauses-p->nRoots),
         nUsed, 1.0*nUsed/(p->nClauses-p->nRoots)  );
 */
-    printf( "Vars = %d. Roots = %d. Learned = %d. Resol steps = %d.  Ave = %.2f.  Mem = %.2f Mb\n", 
+    printf( "Vars = %d. Roots = %d. Learned = %d. Resol steps = %d.  Ave = %.2f.  Mem = %.2f MB\n", 
         p->nVars, p->nRoots, p->nClauses-p->nRoots, p->Counter,  
         1.0*(p->Counter-p->nRoots)/(p->nClauses-p->nRoots), 
         1.0*Pr_ManMemoryReport(p)/(1<<20) );
 
-p->timeTotal = clock() - clkTotal;
+p->timeTotal = Abc_Clock() - clkTotal;
     Pr_ManFree( p );
     return 1;
 }
@@ -1260,4 +1259,6 @@ p->timeTotal = clock() - clkTotal;
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

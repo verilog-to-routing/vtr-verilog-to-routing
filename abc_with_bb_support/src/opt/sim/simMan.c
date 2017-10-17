@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "sim.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -45,7 +48,7 @@ Sym_Man_t * Sym_ManStart( Abc_Ntk_t * pNtk, int fVerbose )
     Sym_Man_t * p;
     int i, v; 
     // start the manager
-    p = ALLOC( Sym_Man_t, 1 );
+    p = ABC_ALLOC( Sym_Man_t, 1 );
     memset( p, 0, sizeof(Sym_Man_t) );
     p->pNtk = pNtk;
     p->vNodes     = Abc_NtkDfs( pNtk, 0 );
@@ -66,9 +69,9 @@ Sym_Man_t * Sym_ManStart( Abc_Ntk_t * pNtk, int fVerbose )
         p->vMatrNonSymms->pArray[i] = Extra_BitMatrixStart( p->nInputs );
     }
     // temporary patterns
-    p->uPatRand = ALLOC( unsigned, p->nSimWords );
-    p->uPatCol  = ALLOC( unsigned, p->nSimWords );
-    p->uPatRow  = ALLOC( unsigned, p->nSimWords );
+    p->uPatRand = ABC_ALLOC( unsigned, p->nSimWords );
+    p->uPatCol  = ABC_ALLOC( unsigned, p->nSimWords );
+    p->uPatRow  = ABC_ALLOC( unsigned, p->nSimWords );
     p->vVarsU   = Vec_IntStart( 100 );
     p->vVarsV   = Vec_IntStart( 100 );
     // compute supports
@@ -77,7 +80,7 @@ Sym_Man_t * Sym_ManStart( Abc_Ntk_t * pNtk, int fVerbose )
     for ( i = 0; i < p->nOutputs; i++ )
         for ( v = 0; v < p->nInputs; v++ )
             if ( Sim_SuppFunHasVar( p->vSuppFun, i, v ) )
-                Vec_VecPush( p->vSupports, i, (void *)v );
+                Vec_VecPush( p->vSupports, i, (void *)(ABC_PTRUINT_T)v );
     return p;
 }
 
@@ -102,8 +105,8 @@ void Sym_ManStop( Sym_Man_t * p )
     if ( p->vSupports )    Vec_VecFree( p->vSupports );
     for ( i = 0; i < p->nOutputs; i++ )
     {
-        Extra_BitMatrixStop( p->vMatrSymms->pArray[i] );
-        Extra_BitMatrixStop( p->vMatrNonSymms->pArray[i] );
+        Extra_BitMatrixStop( (Extra_BitMat_t *)p->vMatrSymms->pArray[i] );
+        Extra_BitMatrixStop( (Extra_BitMat_t *)p->vMatrNonSymms->pArray[i] );
     }
     Vec_IntFree( p->vVarsU );
     Vec_IntFree( p->vVarsV );
@@ -112,10 +115,10 @@ void Sym_ManStop( Sym_Man_t * p )
     Vec_IntFree( p->vPairsTotal );
     Vec_IntFree( p->vPairsSym );
     Vec_IntFree( p->vPairsNonSym );
-    FREE( p->uPatRand );
-    FREE( p->uPatCol );
-    FREE( p->uPatRow );
-    free( p );
+    ABC_FREE( p->uPatRand );
+    ABC_FREE( p->uPatCol );
+    ABC_FREE( p->uPatRow );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -139,13 +142,13 @@ void Sym_ManPrintStats( Sym_Man_t * p )
     printf( "Total var pairs    = %8d.\n", p->nPairsTotal );
     printf( "Sat runs SAT       = %8d.\n", p->nSatRunsSat );
     printf( "Sat runs UNSAT     = %8d.\n", p->nSatRunsUnsat );
-    PRT( "Structural  ", p->timeStruct );
-    PRT( "Simulation  ", p->timeSim );
-    PRT( "Matrix      ", p->timeMatr );
-    PRT( "Counting    ", p->timeCount );
-    PRT( "Fraiging    ", p->timeFraig );
-    PRT( "SAT         ", p->timeSat );
-    PRT( "TOTAL       ", p->timeTotal );
+    ABC_PRT( "Structural  ", p->timeStruct );
+    ABC_PRT( "Simulation  ", p->timeSim );
+    ABC_PRT( "Matrix      ", p->timeMatr );
+    ABC_PRT( "Counting    ", p->timeCount );
+    ABC_PRT( "Fraiging    ", p->timeFraig );
+    ABC_PRT( "SAT         ", p->timeSat );
+    ABC_PRT( "TOTAL       ", p->timeTotal );
 }
 
 
@@ -164,7 +167,7 @@ Sim_Man_t * Sim_ManStart( Abc_Ntk_t * pNtk, int fLightweight )
 {
     Sim_Man_t * p;
     // start the manager
-    p = ALLOC( Sim_Man_t, 1 );
+    p = ABC_ALLOC( Sim_Man_t, 1 );
     memset( p, 0, sizeof(Sim_Man_t) );
     p->pNtk = pNtk;
     p->nInputs    = Abc_NtkCiNum(p->pNtk);
@@ -213,7 +216,7 @@ void Sim_ManStop( Sim_Man_t * p )
     if ( p->pMmPat )       Extra_MmFixedStop( p->pMmPat );
     if ( p->vFifo )        Vec_PtrFree( p->vFifo );
     if ( p->vDiffs )       Vec_IntFree( p->vDiffs );
-    free( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -235,11 +238,11 @@ void Sim_ManPrintStats( Sim_Man_t * p )
     printf( "Total struct supps = %8d.\n", Sim_UtilCountSuppSizes(p, 1) );
     printf( "Sat runs SAT       = %8d.\n", p->nSatRunsSat );
     printf( "Sat runs UNSAT     = %8d.\n", p->nSatRunsUnsat );
-    PRT( "Simulation  ", p->timeSim );
-    PRT( "Traversal   ", p->timeTrav );
-    PRT( "Fraiging    ", p->timeFraig );
-    PRT( "SAT         ", p->timeSat );
-    PRT( "TOTAL       ", p->timeTotal );
+    ABC_PRT( "Simulation  ", p->timeSim );
+    ABC_PRT( "Traversal   ", p->timeTrav );
+    ABC_PRT( "Fraiging    ", p->timeFraig );
+    ABC_PRT( "SAT         ", p->timeSat );
+    ABC_PRT( "TOTAL       ", p->timeTotal );
 }
 
 
@@ -285,4 +288,6 @@ void Sim_ManPatFree( Sim_Man_t * p, Sim_Pat_t * pPat )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

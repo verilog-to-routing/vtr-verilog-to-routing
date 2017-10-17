@@ -20,6 +20,9 @@
 
 #include "aig.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -64,17 +67,15 @@ struct Aig_MmFlex_t_
 
 struct Aig_MmStep_t_
 {
-    int             nMems;    // the number of fixed memory managers employed
+    int               nMems;    // the number of fixed memory managers employed
     Aig_MmFixed_t **  pMems;    // memory managers: 2^1 words, 2^2 words, etc
-    int             nMapSize; // the size of the memory array
+    int               nMapSize; // the size of the memory array
     Aig_MmFixed_t **  pMap;     // maps the number of bytes into its memory manager
+    // additional memory chunks
+    int           nChunksAlloc;  // the maximum number of memory chunks 
+    int           nChunks;       // the current number of memory chunks 
+    char **       pChunks;       // the allocated memory
 };
-
-#define ALLOC(type, num)	 ((type *) malloc(sizeof(type) * (num)))
-#define FREE(obj)		     ((obj) ? (free((char *) (obj)), (obj) = 0) : 0)
-#define REALLOC(type, obj, num)	\
-        ((obj) ? ((type *) realloc((char *)(obj), sizeof(type) * (num))) : \
-	     ((type *) malloc(sizeof(type) * (num))))
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -96,7 +97,7 @@ Aig_MmFixed_t * Aig_MmFixedStart( int nEntrySize, int nEntriesMax )
 {
     Aig_MmFixed_t * p;
 
-    p = ALLOC( Aig_MmFixed_t, 1 );
+    p = ABC_ALLOC( Aig_MmFixed_t, 1 );
     memset( p, 0, sizeof(Aig_MmFixed_t) );
 
     p->nEntrySize    = nEntrySize;
@@ -110,7 +111,7 @@ Aig_MmFixed_t * Aig_MmFixedStart( int nEntrySize, int nEntriesMax )
 
     p->nChunksAlloc  = 64;
     p->nChunks       = 0;
-    p->pChunks       = ALLOC( char *, p->nChunksAlloc );
+    p->pChunks       = ABC_ALLOC( char *, p->nChunksAlloc );
 
     p->nMemoryUsed   = 0;
     p->nMemoryAlloc  = 0;
@@ -141,9 +142,9 @@ void Aig_MmFixedStop( Aig_MmFixed_t * p, int fVerbose )
             p->nEntriesUsed, p->nEntriesMax, p->nEntrySize * p->nEntriesUsed, p->nMemoryAlloc );
     }
     for ( i = 0; i < p->nChunks; i++ )
-        free( p->pChunks[i] );
-    free( p->pChunks );
-    free( p );
+        ABC_FREE( p->pChunks[i] );
+    ABC_FREE( p->pChunks );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -169,9 +170,9 @@ char * Aig_MmFixedEntryFetch( Aig_MmFixed_t * p )
         if ( p->nChunks == p->nChunksAlloc )
         {
             p->nChunksAlloc *= 2;
-            p->pChunks = REALLOC( char *, p->pChunks, p->nChunksAlloc ); 
+            p->pChunks = ABC_REALLOC( char *, p->pChunks, p->nChunksAlloc ); 
         }
-        p->pEntriesFree = ALLOC( char, p->nEntrySize * p->nChunkSize );
+        p->pEntriesFree = ABC_ALLOC( char, p->nEntrySize * p->nChunkSize );
         p->nMemoryAlloc += p->nEntrySize * p->nChunkSize;
         // transform these entries into a linked list
         pTemp = p->pEntriesFree;
@@ -236,7 +237,7 @@ void Aig_MmFixedRestart( Aig_MmFixed_t * p )
         return;
     // deallocate all chunks except the first one
     for ( i = 1; i < p->nChunks; i++ )
-        free( p->pChunks[i] );
+        ABC_FREE( p->pChunks[i] );
     p->nChunks = 1;
     // transform these entries into a linked list
     pTemp = p->pChunks[0];
@@ -305,7 +306,7 @@ Aig_MmFlex_t * Aig_MmFlexStart()
 {
     Aig_MmFlex_t * p;
 
-    p = ALLOC( Aig_MmFlex_t, 1 );
+    p = ABC_ALLOC( Aig_MmFlex_t, 1 );
     memset( p, 0, sizeof(Aig_MmFlex_t) );
 
     p->nEntriesUsed  = 0;
@@ -315,7 +316,7 @@ Aig_MmFlex_t * Aig_MmFlexStart()
     p->nChunkSize    = (1 << 18);
     p->nChunksAlloc  = 64;
     p->nChunks       = 0;
-    p->pChunks       = ALLOC( char *, p->nChunksAlloc );
+    p->pChunks       = ABC_ALLOC( char *, p->nChunksAlloc );
 
     p->nMemoryUsed   = 0;
     p->nMemoryAlloc  = 0;
@@ -346,9 +347,9 @@ void Aig_MmFlexStop( Aig_MmFlex_t * p, int fVerbose )
             p->nEntriesUsed, p->nMemoryUsed, p->nMemoryAlloc );
     }
     for ( i = 0; i < p->nChunks; i++ )
-        free( p->pChunks[i] );
-    free( p->pChunks );
-    free( p );
+        ABC_FREE( p->pChunks[i] );
+    ABC_FREE( p->pChunks );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -365,13 +366,17 @@ void Aig_MmFlexStop( Aig_MmFlex_t * p, int fVerbose )
 char * Aig_MmFlexEntryFetch( Aig_MmFlex_t * p, int nBytes )
 {
     char * pTemp;
+#ifdef ABC_MEMALIGN
+    // extend size to max alignment
+    nBytes += (ABC_MEMALIGN - nBytes % ABC_MEMALIGN) % ABC_MEMALIGN;
+#endif
     // check if there are still free entries
     if ( p->pCurrent == NULL || p->pCurrent + nBytes > p->pEnd )
     { // need to allocate more entries
         if ( p->nChunks == p->nChunksAlloc )
         {
             p->nChunksAlloc *= 2;
-            p->pChunks = REALLOC( char *, p->pChunks, p->nChunksAlloc ); 
+            p->pChunks = ABC_REALLOC( char *, p->pChunks, p->nChunksAlloc ); 
         }
         if ( nBytes > p->nChunkSize )
         {
@@ -379,7 +384,7 @@ char * Aig_MmFlexEntryFetch( Aig_MmFlex_t * p, int nBytes )
             // (ideally, this should never happen)
             p->nChunkSize = 2 * nBytes;
         }
-        p->pCurrent = ALLOC( char, p->nChunkSize );
+        p->pCurrent = ABC_ALLOC( char, p->nChunkSize );
         p->pEnd     = p->pCurrent + p->nChunkSize;
         p->nMemoryAlloc += p->nChunkSize;
         // add the chunk to the chunk storage
@@ -414,7 +419,7 @@ void Aig_MmFlexRestart( Aig_MmFlex_t * p )
         return;
     // deallocate all chunks except the first one
     for ( i = 1; i < p->nChunks; i++ )
-        free( p->pChunks[i] );
+        ABC_FREE( p->pChunks[i] );
     p->nChunks  = 1;
     p->nMemoryAlloc = p->nChunkSize;
     // transform these entries into a linked list
@@ -457,7 +462,7 @@ int Aig_MmFlexReadMemUsage( Aig_MmFlex_t * p )
   are employed internally. Calling this procedure with nSteps equal
   to 10 results in 10 hierarchically arranged internal memory managers, 
   which can allocate up to 4096 (1Kb) entries. Requests for larger 
-  entries are handed over to malloc() and then free()ed.]
+  entries are handed over to malloc() and then ABC_FREE()ed.]
                
   SideEffects []
 
@@ -468,16 +473,16 @@ Aig_MmStep_t * Aig_MmStepStart( int nSteps )
 {
     Aig_MmStep_t * p;
     int i, k;
-    p = ALLOC( Aig_MmStep_t, 1 );
+    p = ABC_ALLOC( Aig_MmStep_t, 1 );
     memset( p, 0, sizeof(Aig_MmStep_t) );
     p->nMems = nSteps;
     // start the fixed memory managers
-    p->pMems = ALLOC( Aig_MmFixed_t *, p->nMems );
+    p->pMems = ABC_ALLOC( Aig_MmFixed_t *, p->nMems );
     for ( i = 0; i < p->nMems; i++ )
         p->pMems[i] = Aig_MmFixedStart( (8<<i), (1<<13) );
     // set up the mapping of the required memory size into the corresponding manager
     p->nMapSize = (4<<p->nMems);
-    p->pMap = ALLOC( Aig_MmFixed_t *, p->nMapSize+1 );
+    p->pMap = ABC_ALLOC( Aig_MmFixed_t *, p->nMapSize+1 );
     p->pMap[0] = NULL;
     for ( k = 1; k <= 4; k++ )
         p->pMap[k] = p->pMems[0];
@@ -486,6 +491,9 @@ Aig_MmStep_t * Aig_MmStepStart( int nSteps )
             p->pMap[k] = p->pMems[i];
 //for ( i = 1; i < 100; i ++ )
 //printf( "%10d: size = %10d\n", i, p->pMap[i]->nEntrySize );
+    p->nChunksAlloc  = 64;
+    p->nChunks       = 0;
+    p->pChunks       = ABC_ALLOC( char *, p->nChunksAlloc );
     return p;
 }
 
@@ -505,15 +513,15 @@ void Aig_MmStepStop( Aig_MmStep_t * p, int fVerbose )
     int i;
     for ( i = 0; i < p->nMems; i++ )
         Aig_MmFixedStop( p->pMems[i], fVerbose );
-//    if ( p->pLargeChunks ) 
-//    {
-//      for ( i = 0; i < p->nLargeChunks; i++ )
-//          free( p->pLargeChunks[i] );
-//      free( p->pLargeChunks );
-//    }
-    free( p->pMems );
-    free( p->pMap );
-    free( p );
+    if ( p->nChunksAlloc )
+    {
+        for ( i = 0; i < p->nChunks; i++ )
+            ABC_FREE( p->pChunks[i] );
+        ABC_FREE( p->pChunks );
+    }
+    ABC_FREE( p->pMems );
+    ABC_FREE( p->pMap );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -531,21 +539,19 @@ char * Aig_MmStepEntryFetch( Aig_MmStep_t * p, int nBytes )
 {
     if ( nBytes == 0 )
         return NULL;
+#ifdef ABC_MEMALIGN
+    // extend size to max alignment
+    nBytes += (ABC_MEMALIGN - nBytes % ABC_MEMALIGN) % ABC_MEMALIGN;
+#endif
     if ( nBytes > p->nMapSize )
     {
-//        printf( "Allocating %d bytes.\n", nBytes );
-/*
-        if ( p->nLargeChunks == p->nLargeChunksAlloc )
+        if ( p->nChunks == p->nChunksAlloc )
         {
-            if ( p->nLargeChunksAlloc == 0 )
-                p->nLargeChunksAlloc = 5;
-            p->nLargeChunksAlloc *= 2;
-            p->pLargeChunks = REALLOC( char *, p->pLargeChunks, p->nLargeChunksAlloc ); 
+            p->nChunksAlloc *= 2;
+            p->pChunks = ABC_REALLOC( char *, p->pChunks, p->nChunksAlloc ); 
         }
-        p->pLargeChunks[ p->nLargeChunks++ ] = ALLOC( char, nBytes );
-        return p->pLargeChunks[ p->nLargeChunks - 1 ];
-*/
-        return ALLOC( char, nBytes );
+        p->pChunks[ p->nChunks++ ] = ABC_ALLOC( char, nBytes );
+        return p->pChunks[p->nChunks-1];
     }
     return Aig_MmFixedEntryFetch( p->pMap[nBytes] );
 }
@@ -566,9 +572,13 @@ void Aig_MmStepEntryRecycle( Aig_MmStep_t * p, char * pEntry, int nBytes )
 {
     if ( nBytes == 0 )
         return;
+#ifdef ABC_MEMALIGN
+    // extend size to max alignment
+    nBytes += (ABC_MEMALIGN - nBytes % ABC_MEMALIGN) % ABC_MEMALIGN;
+#endif
     if ( nBytes > p->nMapSize )
     {
-        free( pEntry );
+//        ABC_FREE( pEntry );
         return;
     }
     Aig_MmFixedEntryRecycle( p->pMap[nBytes], pEntry );
@@ -596,3 +606,5 @@ int Aig_MmStepReadMemUsage( Aig_MmStep_t * p )
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
+ABC_NAMESPACE_IMPL_END
+

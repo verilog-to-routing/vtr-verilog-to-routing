@@ -18,9 +18,18 @@
 
 ***********************************************************************/
 
-#include "abc.h"
-#include "fraig.h"
-#include "sim.h"
+#include "base/abc/abc.h"
+#include "base/main/main.h"
+#include "base/cmd/cmd.h"
+#include "proof/fraig/fraig.h"
+#include "opt/sim/sim.h"
+#include "aig/aig/aig.h"
+#include "aig/saig/saig.h"
+#include "aig/gia/gia.h"
+#include "proof/ssw/ssw.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -52,7 +61,7 @@ void Abc_NtkCecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
     int RetValue;
 
     // get the miter of the two networks
-    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, 0 );
+    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, 0, 0, 0 );
     if ( pMiter == NULL )
     {
         printf( "Miter computation has failed.\n" );
@@ -65,7 +74,7 @@ void Abc_NtkCecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
         // report the error
         pMiter->pModel = Abc_NtkVerifyGetCleanModel( pMiter, 1 );
         Abc_NtkVerifyReportError( pNtk1, pNtk2, pMiter->pModel );
-        FREE( pMiter->pModel );
+        ABC_FREE( pMiter->pModel );
         Abc_NtkDelete( pMiter );
         return;
     }
@@ -86,7 +95,7 @@ void Abc_NtkCecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
     }
 
     // solve the CNF using the SAT solver
-    RetValue = Abc_NtkMiterSat( pCnf, (sint64)nConfLimit, (sint64)nInsLimit, 0, NULL, NULL );
+    RetValue = Abc_NtkMiterSat( pCnf, (ABC_INT64_T)nConfLimit, (ABC_INT64_T)nInsLimit, 0, NULL, NULL );
     if ( RetValue == -1 )
         printf( "Networks are undecided (SAT solver timed out).\n" );
     else if ( RetValue == 0 )
@@ -95,7 +104,7 @@ void Abc_NtkCecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
         printf( "Networks are equivalent after SAT.\n" );
     if ( pCnf->pModel )
         Abc_NtkVerifyReportError( pNtk1, pNtk2, pCnf->pModel );
-    FREE( pCnf->pModel );
+    ABC_FREE( pCnf->pModel );
     Abc_NtkDelete( pCnf );
 }
 
@@ -113,34 +122,69 @@ void Abc_NtkCecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
 ***********************************************************************/
 void Abc_NtkCecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int fVerbose )
 {
+    abctime clk = Abc_Clock();
     Prove_Params_t Params, * pParams = &Params;
 //    Fraig_Params_t Params;
 //    Fraig_Man_t * pMan;
-    Abc_Ntk_t * pMiter;
+    Abc_Ntk_t * pMiter, * pTemp;
+    Abc_Ntk_t * pExdc = NULL;
     int RetValue;
 
+    if ( pNtk1->pExdc != NULL || pNtk2->pExdc != NULL )
+    {
+        if ( pNtk1->pExdc != NULL && pNtk2->pExdc != NULL )
+        {
+            printf( "Comparing EXDC of the two networks:\n" );
+            Abc_NtkCecFraig( pNtk1->pExdc, pNtk2->pExdc, nSeconds, fVerbose );
+            printf( "Comparing networks under EXDC of the first network.\n" );
+            pExdc = pNtk1->pExdc;
+        }
+        else if ( pNtk1->pExdc != NULL )
+        {
+            printf( "Second network has no EXDC. Comparing main networks under EXDC of the first network.\n" );
+            pExdc = pNtk1->pExdc;
+        }
+        else if ( pNtk2->pExdc != NULL ) 
+        {
+            printf( "First network has no EXDC. Comparing main networks under EXDC of the second network.\n" );
+            pExdc = pNtk2->pExdc;
+        }
+        else assert( 0 );
+    }
+
     // get the miter of the two networks
-    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, 0 );
+    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, 0, 0, 0 );
     if ( pMiter == NULL )
     {
         printf( "Miter computation has failed.\n" );
         return;
     }
+    // add EXDC to the miter
+    if ( pExdc )
+    {
+        assert( Abc_NtkPoNum(pMiter) == 1 );
+        assert( Abc_NtkPoNum(pExdc) == 1 );
+        pMiter = Abc_NtkMiter( pTemp = pMiter, pExdc, 1, 0, 1, 0 );
+        Abc_NtkDelete( pTemp );
+    }
+    // handle trivial case
     RetValue = Abc_NtkMiterIsConstant( pMiter );
     if ( RetValue == 0 )
     {
-        printf( "Networks are NOT EQUIVALENT after structural hashing.\n" );
+        printf( "Networks are NOT EQUIVALENT after structural hashing.  " );
         // report the error
         pMiter->pModel = Abc_NtkVerifyGetCleanModel( pMiter, 1 );
         Abc_NtkVerifyReportError( pNtk1, pNtk2, pMiter->pModel );
-        FREE( pMiter->pModel );
+        ABC_FREE( pMiter->pModel );
         Abc_NtkDelete( pMiter );
+        Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
         return;
     }
     if ( RetValue == 1 )
     {
-        printf( "Networks are equivalent after structural hashing.\n" );
+        printf( "Networks are equivalent after structural hashing.  " );
         Abc_NtkDelete( pMiter );
+        Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
         return;
     }
 /*
@@ -151,7 +195,7 @@ void Abc_NtkCecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int fV
 //    Params.fFuncRed = 0;
 //    Params.nPatsRand = 0;
 //    Params.nPatsDyna = 0;
-    pMan = Abc_NtkToFraig( pMiter, &Params, 0, 0 ); 
+    pMan = (Fraig_Man_t *)Abc_NtkToFraig( pMiter, &Params, 0, 0 ); 
     Fraig_ManProveMiter( pMan );
 
     // analyze the result
@@ -179,18 +223,19 @@ void Abc_NtkCecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int fV
 //    pParams->fVerbose = 1;
     RetValue = Abc_NtkIvyProve( &pMiter, pParams );
     if ( RetValue == -1 )
-        printf( "Networks are undecided (resource limits is reached).\n" );
+        printf( "Networks are undecided (resource limits is reached).  " );
     else if ( RetValue == 0 )
     {
         int * pSimInfo = Abc_NtkVerifySimulatePattern( pMiter, pMiter->pModel );
         if ( pSimInfo[0] != 1 )
             printf( "ERROR in Abc_NtkMiterProve(): Generated counter-example is invalid.\n" );
         else
-            printf( "Networks are NOT EQUIVALENT.\n" );
-        free( pSimInfo );
+            printf( "Networks are NOT EQUIVALENT.  " );
+        ABC_FREE( pSimInfo );
     }
     else
-        printf( "Networks are equivalent.\n" );
+        printf( "Networks are equivalent.  " );
+    Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
     if ( pMiter->pModel )
         Abc_NtkVerifyReportError( pNtk1, pNtk2, pMiter->pModel );
     Abc_NtkDelete( pMiter );
@@ -209,9 +254,6 @@ void Abc_NtkCecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int fV
 ***********************************************************************/
 void Abc_NtkCecFraigPart( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nPartSize, int fVerbose )
 {
-    extern int Cmd_CommandExecute( void * pAbc, char * sCommand );
-    extern void * Abc_FrameGetGlobalFrame();
-
     Prove_Params_t Params, * pParams = &Params;
     Abc_Ntk_t * pMiter, * pMiterPart;
     Abc_Obj_t * pObj;
@@ -225,7 +267,7 @@ void Abc_NtkCecFraigPart( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, in
     assert( nPartSize > 0 );
 
     // get the miter of the two networks
-    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, nPartSize );
+    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, nPartSize, 0, 0 );
     if ( pMiter == NULL )
     {
         printf( "Miter computation has failed.\n" );
@@ -238,7 +280,7 @@ void Abc_NtkCecFraigPart( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, in
         // report the error
         pMiter->pModel = Abc_NtkVerifyGetCleanModel( pMiter, 1 );
         Abc_NtkVerifyReportError( pNtk1, pNtk2, pMiter->pModel );
-        FREE( pMiter->pModel );
+        ABC_FREE( pMiter->pModel );
         Abc_NtkDelete( pMiter );
         return;
     }
@@ -287,13 +329,13 @@ void Abc_NtkCecFraigPart( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, in
                 printf( "ERROR in Abc_NtkMiterProve(): Generated counter-example is invalid.\n" );
             else
                 printf( "Networks are NOT EQUIVALENT.                 \n" );
-            free( pSimInfo );
+            ABC_FREE( pSimInfo );
             Status = 0;
             break;
         }
         else
         {
-            printf( "Finished part %d (out of %d)\r", i+1, Abc_NtkPoNum(pMiter) );
+            printf( "Finished part %5d (out of %5d)\r", i+1, Abc_NtkPoNum(pMiter) );
             nOutputs += nPartSize;
         }
 //        if ( pMiter->pModel )
@@ -301,7 +343,7 @@ void Abc_NtkCecFraigPart( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, in
         if ( pMiterPart )
             Abc_NtkDelete( pMiterPart );
     }
-
+  
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "set progressbar" );
 
     if ( Status == 1 )
@@ -324,13 +366,11 @@ void Abc_NtkCecFraigPart( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, in
 ***********************************************************************/
 void Abc_NtkCecFraigPartAuto( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int fVerbose )
 {
-    extern int Abc_NtkCombinePos( Abc_Ntk_t * pNtk, int fAnd );
-    extern Vec_Vec_t * Abc_NtkPartitionSmart( Abc_Ntk_t * pNtk, int nPartSizeLimit, int fVerbose );
-    extern int Cmd_CommandExecute( void * pAbc, char * sCommand );
-    extern void * Abc_FrameGetGlobalFrame();
+    extern Vec_Ptr_t * Abc_NtkPartitionSmart( Abc_Ntk_t * pNtk, int nPartSizeLimit, int fVerbose );
+    extern void Abc_NtkConvertCos( Abc_Ntk_t * pNtk, Vec_Int_t * vOuts, Vec_Ptr_t * vOnePtr );
 
-    Vec_Vec_t * vParts;
-    Vec_Ptr_t * vOne;
+    Vec_Ptr_t * vParts, * vOnePtr;
+    Vec_Int_t * vOne;
     Prove_Params_t Params, * pParams = &Params;
     Abc_Ntk_t * pMiter, * pMiterPart;
     int i, RetValue, Status, nOutputs;
@@ -341,7 +381,7 @@ void Abc_NtkCecFraigPartAuto( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds
     //    pParams->fVerbose = 1;
 
     // get the miter of the two networks
-    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, 1 );
+    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 1, 1, 0, 0 );
     if ( pMiter == NULL )
     {
         printf( "Miter computation has failed.\n" );
@@ -354,7 +394,7 @@ void Abc_NtkCecFraigPartAuto( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds
         // report the error
         pMiter->pModel = Abc_NtkVerifyGetCleanModel( pMiter, 1 );
         Abc_NtkVerifyReportError( pNtk1, pNtk2, pMiter->pModel );
-        FREE( pMiter->pModel );
+        ABC_FREE( pMiter->pModel );
         Abc_NtkDelete( pMiter );
         return;
     }
@@ -368,16 +408,18 @@ void Abc_NtkCecFraigPartAuto( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "unset progressbar" );
 
     // partition the outputs
-    vParts = Abc_NtkPartitionSmart( pMiter, 50, 1 );
+    vParts = Abc_NtkPartitionSmart( pMiter, 300, 0 );
 
     // fraig each partition
     Status = 1;
     nOutputs = 0;
-    Vec_VecForEachLevel( vParts, vOne, i )
+    vOnePtr = Vec_PtrAlloc( 1000 );
+    Vec_PtrForEachEntry( Vec_Int_t *, vParts, vOne, i )
     {
         // get this part of the miter
-        pMiterPart = Abc_NtkCreateConeArray( pMiter, vOne, 0 );
-        Abc_NtkCombinePos( pMiterPart, 0 );
+        Abc_NtkConvertCos( pMiter, vOne, vOnePtr );
+        pMiterPart = Abc_NtkCreateConeArray( pMiter, vOnePtr, 0 );
+        Abc_NtkCombinePos( pMiterPart, 0, 0 );
         // check the miter for being constant
         RetValue = Abc_NtkMiterIsConstant( pMiterPart );
         if ( RetValue == 0 )
@@ -391,6 +433,10 @@ void Abc_NtkCecFraigPartAuto( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds
             Abc_NtkDelete( pMiterPart );
             continue;
         }
+        printf( "Verifying part %4d  (out of %4d)  PI = %5d. PO = %5d. And = %6d. Lev = %4d.\r", 
+            i+1, Vec_PtrSize(vParts), Abc_NtkPiNum(pMiterPart), Abc_NtkPoNum(pMiterPart), 
+            Abc_NtkNodeNum(pMiterPart), Abc_AigLevel(pMiterPart) );
+        fflush( stdout );
         // solve the problem
         RetValue = Abc_NtkIvyProve( &pMiterPart, pParams );
         if ( RetValue == -1 )
@@ -405,19 +451,21 @@ void Abc_NtkCecFraigPartAuto( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds
                 printf( "ERROR in Abc_NtkMiterProve(): Generated counter-example is invalid.\n" );
             else
                 printf( "Networks are NOT EQUIVALENT.                 \n" );
-            free( pSimInfo );
+            ABC_FREE( pSimInfo );
             Status = 0;
             Abc_NtkDelete( pMiterPart );
             break;
         }
         else
         {
-            printf( "Finished part %d (out of %d)\r", i+1, Vec_VecSize(vParts) );
-            nOutputs += Vec_PtrSize(vOne);
+//            printf( "Finished part %5d (out of %5d)\r", i+1, Vec_PtrSize(vParts) );
+            nOutputs += Vec_IntSize(vOne);
         }
         Abc_NtkDelete( pMiterPart );
     }
-    Vec_VecFree( vParts );
+    printf( "                                                                                          \r" );
+    Vec_VecFree( (Vec_Vec_t *)vParts );
+    Vec_PtrFree( vOnePtr );
 
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "set progressbar" );
 
@@ -448,7 +496,7 @@ void Abc_NtkSecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
     int RetValue;
 
     // get the miter of the two networks
-    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 0, 0 );
+    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 0, 0, 0, 0 );
     if ( pMiter == NULL )
     {
         printf( "Miter computation has failed.\n" );
@@ -469,7 +517,7 @@ void Abc_NtkSecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
     }
 
     // create the timeframes
-    pFrames = Abc_NtkFrames( pMiter, nFrames, 1 );
+    pFrames = Abc_NtkFrames( pMiter, nFrames, 1, 0 );
     Abc_NtkDelete( pMiter );
     if ( pFrames == NULL )
     {
@@ -500,7 +548,7 @@ void Abc_NtkSecSat( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nConfLimit, int nI
     }
 
     // solve the CNF using the SAT solver
-    RetValue = Abc_NtkMiterSat( pCnf, (sint64)nConfLimit, (sint64)nInsLimit, 0, NULL, NULL );
+    RetValue = Abc_NtkMiterSat( pCnf, (ABC_INT64_T)nConfLimit, (ABC_INT64_T)nInsLimit, 0, NULL, NULL );
     if ( RetValue == -1 )
         printf( "Networks are undecided (SAT solver timed out).\n" );
     else if ( RetValue == 0 )
@@ -530,7 +578,7 @@ int Abc_NtkSecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nFr
     int RetValue;
 
     // get the miter of the two networks
-    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 0, 0 );
+    pMiter = Abc_NtkMiter( pNtk1, pNtk2, 0, 0, 0, 0 );
     if ( pMiter == NULL )
     {
         printf( "Miter computation has failed.\n" );
@@ -543,7 +591,7 @@ int Abc_NtkSecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nFr
         // report the error
         pMiter->pModel = Abc_NtkVerifyGetCleanModel( pMiter, nFrames );
         Abc_NtkVerifyReportErrorSeq( pNtk1, pNtk2, pMiter->pModel, nFrames );
-        FREE( pMiter->pModel );
+        ABC_FREE( pMiter->pModel );
         Abc_NtkDelete( pMiter );
         return 0;
     }
@@ -555,7 +603,7 @@ int Abc_NtkSecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nFr
     }
 
     // create the timeframes
-    pFrames = Abc_NtkFrames( pMiter, nFrames, 1 );
+    pFrames = Abc_NtkFrames( pMiter, nFrames, 1, 0 );
     Abc_NtkDelete( pMiter );
     if ( pFrames == NULL )
     {
@@ -569,7 +617,7 @@ int Abc_NtkSecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nFr
         // report the error
         pFrames->pModel = Abc_NtkVerifyGetCleanModel( pFrames, 1 );
 //        Abc_NtkVerifyReportErrorSeq( pNtk1, pNtk2, pFrames->pModel, nFrames );
-        FREE( pFrames->pModel );
+        ABC_FREE( pFrames->pModel );
         Abc_NtkDelete( pFrames );
         return 0;
     }
@@ -587,7 +635,7 @@ int Abc_NtkSecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nFr
 //    Params.fFuncRed = 0;
 //    Params.nPatsRand = 0;
 //    Params.nPatsDyna = 0;
-    pMan = Abc_NtkToFraig( pFrames, &Params, 0, 0 ); 
+    pMan = (Fraig_Man_t *)Abc_NtkToFraig( pFrames, &Params, 0, 0 ); 
     Fraig_ManProveMiter( pMan );
 
     // analyze the result
@@ -623,7 +671,7 @@ int Abc_NtkSecFraig( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int nSeconds, int nFr
 ***********************************************************************/
 int * Abc_NtkVerifyGetCleanModel( Abc_Ntk_t * pNtk, int nFrames )
 {
-    int * pModel = ALLOC( int, Abc_NtkCiNum(pNtk) * nFrames );
+    int * pModel = ABC_ALLOC( int, Abc_NtkCiNum(pNtk) * nFrames );
     memset( pModel, 0, sizeof(int) * Abc_NtkCiNum(pNtk) * nFrames );
     return pModel;
 }
@@ -658,20 +706,20 @@ int * Abc_NtkVerifySimulatePattern( Abc_Ntk_t * pNtk, int * pModel )
     // increment the trav ID
     Abc_NtkIncrementTravId( pNtk );
     // set the CI values
-    Abc_AigConst1(pNtk)->pCopy = (void *)1;
+    Abc_AigConst1(pNtk)->pCopy = (Abc_Obj_t *)1;
     Abc_NtkForEachCi( pNtk, pNode, i )
-        pNode->pCopy = (void *)pModel[i];
+        pNode->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)pModel[i];
     // simulate in the topological order
     Abc_NtkForEachNode( pNtk, pNode, i )
     {
-        Value0 = ((int)Abc_ObjFanin0(pNode)->pCopy) ^ Abc_ObjFaninC0(pNode);
-        Value1 = ((int)Abc_ObjFanin1(pNode)->pCopy) ^ Abc_ObjFaninC1(pNode);
-        pNode->pCopy = (void *)(Value0 & Value1);
+        Value0 = ((int)(ABC_PTRINT_T)Abc_ObjFanin0(pNode)->pCopy) ^ (int)Abc_ObjFaninC0(pNode);
+        Value1 = ((int)(ABC_PTRINT_T)Abc_ObjFanin1(pNode)->pCopy) ^ (int)Abc_ObjFaninC1(pNode);
+        pNode->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)(Value0 & Value1);
     }
     // fill the output values
-    pValues = ALLOC( int, Abc_NtkCoNum(pNtk) );
+    pValues = ABC_ALLOC( int, Abc_NtkCoNum(pNtk) );
     Abc_NtkForEachCo( pNtk, pNode, i )
-        pValues[i] = ((int)Abc_ObjFanin0(pNode)->pCopy) ^ Abc_ObjFaninC0(pNode);
+        pValues[i] = ((int)(ABC_PTRINT_T)Abc_ObjFanin0(pNode)->pCopy) ^ (int)Abc_ObjFaninC0(pNode);
     if ( fStrashed )
         Abc_NtkDelete( pNtk );
     return pValues;
@@ -731,22 +779,22 @@ void Abc_NtkVerifyReportError( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int * pMode
         vNodes = Abc_NtkNodeSupport( pNtk1, &pNode, 1 );
         // set the PI numbers
         Abc_NtkForEachCi( pNtk1, pNode, i )
-            pNode->pCopy = (void*)i;
+            pNode->pCopy = (Abc_Obj_t *)(ABC_PTRINT_T)i;
         // print the model
-        pNode = Vec_PtrEntry( vNodes, 0 );
+        pNode = (Abc_Obj_t *)Vec_PtrEntry( vNodes, 0 );
         if ( Abc_ObjIsCi(pNode) )
         {
-            Vec_PtrForEachEntry( vNodes, pNode, i )
+            Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNode, i )
             {
                 assert( Abc_ObjIsCi(pNode) );
-                printf( " %s=%d", Abc_ObjName(pNode), pModel[(int)pNode->pCopy] );
+                printf( " %s=%d", Abc_ObjName(pNode), pModel[(int)(ABC_PTRINT_T)pNode->pCopy] );
             }
         }
         printf( "\n" );
         Vec_PtrFree( vNodes );
     }
-    free( pValues1 );
-    free( pValues2 );
+    ABC_FREE( pValues1 );
+    ABC_FREE( pValues2 );
 }
 
 
@@ -768,7 +816,7 @@ void Abc_NtkGetSeqPoSupp( Abc_Ntk_t * pNtk, int iFrame, int iNumPo )
     Vec_Ptr_t * vSupp;
     int i, k;
     // get the timeframes of the network
-    pFrames = Abc_NtkFrames( pNtk, iFrame + 1, 0 );
+    pFrames = Abc_NtkFrames( pNtk, iFrame + 1, 0, 0 );
 //Abc_NtkShowAig( pFrames );
 
     // get the PO of the timeframes
@@ -778,18 +826,18 @@ void Abc_NtkGetSeqPoSupp( Abc_Ntk_t * pNtk, int iFrame, int iNumPo )
     // mark the support of the frames
     Abc_NtkForEachCi( pFrames, pObj, i )
         pObj->pCopy = NULL;
-    Vec_PtrForEachEntry( vSupp, pObj, i )
-        pObj->pCopy = (void *)1;
+    Vec_PtrForEachEntry( Abc_Obj_t *, vSupp, pObj, i )
+        pObj->pCopy = (Abc_Obj_t *)1;
     // mark the support of the network if the support of the timeframes is marked
     Abc_NtkForEachCi( pNtk, pObj, i )
         pObj->pCopy = NULL;
     Abc_NtkForEachLatch( pNtk, pObj, i )
         if ( Abc_NtkBox(pFrames, i)->pCopy )
-            pObj->pCopy = (void *)1;
+            pObj->pCopy = (Abc_Obj_t *)1;
     Abc_NtkForEachPi( pNtk, pObj, i )
         for ( k = 0; k <= iFrame; k++ )
             if ( Abc_NtkPi(pFrames, k*Abc_NtkPiNum(pNtk) + i)->pCopy )
-                pObj->pCopy = (void *)1;
+                pObj->pCopy = (Abc_Obj_t *)1;
     // free stuff
     Vec_PtrFree( vSupp );
     Abc_NtkDelete( pFrames );
@@ -810,9 +858,9 @@ void Abc_NtkVerifyReportErrorSeq( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int * pM
 {
     Vec_Ptr_t * vInfo1, * vInfo2;
     Abc_Obj_t * pObj, * pObjError, * pObj1, * pObj2;
-    int ValueError1, ValueError2;
+    int ValueError1 = -1, ValueError2 = -1;
     unsigned * pPats1, * pPats2;
-    int i, o, k, nErrors, iFrameError, iNodePo, nPrinted;
+    int i, o, k, nErrors, iFrameError = -1, iNodePo = -1, nPrinted;
     int fRemove1 = 0, fRemove2 = 0;
 
     if ( !Abc_NtkIsStrash(pNtk1) )
@@ -978,16 +1026,16 @@ void Abc_NtkSimulteBuggyMiter( Abc_Ntk_t * pNtk )
     assert( strlen(vPiValues1) == (unsigned)Abc_NtkPiNum(pNtk) );
     assert( 1 == Abc_NtkPoNum(pNtk) );
 
-    pModel1 = ALLOC( int, Abc_NtkCiNum(pNtk) );
+    pModel1 = ABC_ALLOC( int, Abc_NtkCiNum(pNtk) );
     Abc_NtkForEachPi( pNtk, pObj, i )
         pModel1[i] = vPiValues1[i] - '0';
     Abc_NtkForEachLatch( pNtk, pObj, i )
-        pModel1[Abc_NtkPiNum(pNtk)+i] = ((int)pObj->pData) - 1;
+        pModel1[Abc_NtkPiNum(pNtk)+i] = ((int)(ABC_PTRINT_T)pObj->pData) - 1;
 
     pResult1 = Abc_NtkVerifySimulatePattern( pNtk, pModel1 );
     printf( "Value = %d\n", pResult1[0] );
 
-    pModel2 = ALLOC( int, Abc_NtkCiNum(pNtk) );
+    pModel2 = ABC_ALLOC( int, Abc_NtkCiNum(pNtk) );
     Abc_NtkForEachPi( pNtk, pObj, i )
         pModel2[i] = vPiValues2[i] - '0';
     Abc_NtkForEachLatch( pNtk, pObj, i )
@@ -996,10 +1044,59 @@ void Abc_NtkSimulteBuggyMiter( Abc_Ntk_t * pNtk )
     pResult2 = Abc_NtkVerifySimulatePattern( pNtk, pModel2 );
     printf( "Value = %d\n", pResult2[0] );
 
-    free( pModel1 );
-    free( pModel2 );
-    free( pResult1 );
-    free( pResult2 );
+    ABC_FREE( pModel1 );
+    ABC_FREE( pModel2 );
+    ABC_FREE( pResult1 );
+    ABC_FREE( pResult2 );
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Returns the PO values under the given input pattern.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     [] 
+
+***********************************************************************/
+int Abc_NtkIsTrueCex( Abc_Ntk_t * pNtk, Abc_Cex_t * pCex )
+{
+    extern Aig_Man_t * Abc_NtkToDar( Abc_Ntk_t * pNtk, int fExors, int fRegisters );
+    Aig_Man_t * pMan;
+    int status = 0, fStrashed = 0;
+    if ( !Abc_NtkIsStrash(pNtk) )
+    {
+        pNtk = Abc_NtkStrash(pNtk, 0, 0, 0);
+        fStrashed = 1;
+    }
+    pMan = Abc_NtkToDar( pNtk, 0, 1 );
+    if ( pMan )
+    {
+        status = Saig_ManVerifyCex( pMan, pCex );
+        Aig_ManStop( pMan );
+    }
+    if ( fStrashed )
+        Abc_NtkDelete( pNtk );
+    return status;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Returns 1 if the number of PIs matches.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     [] 
+
+***********************************************************************/
+int Abc_NtkIsValidCex( Abc_Ntk_t * pNtk, Abc_Cex_t * pCex )
+{
+    return Abc_NtkPiNum(pNtk) == pCex->nPis;
 }
 
 
@@ -1007,4 +1104,6 @@ void Abc_NtkSimulteBuggyMiter( Abc_Ntk_t * pNtk )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

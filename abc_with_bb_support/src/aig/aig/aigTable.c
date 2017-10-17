@@ -20,6 +20,9 @@
 
 #include "aig.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -39,15 +42,8 @@ static unsigned long Aig_Hash( Aig_Obj_t * pObj, int TableSize )
 static Aig_Obj_t ** Aig_TableFind( Aig_Man_t * p, Aig_Obj_t * pObj )
 {
     Aig_Obj_t ** ppEntry;
-    if ( Aig_ObjIsLatch(pObj) )
-    {
-        assert( Aig_ObjChild0(pObj) && Aig_ObjChild1(pObj) == NULL );
-    }
-    else
-    {
-        assert( Aig_ObjChild0(pObj) && Aig_ObjChild1(pObj) );
-        assert( Aig_ObjFanin0(pObj)->Id < Aig_ObjFanin1(pObj)->Id );
-    }
+    assert( Aig_ObjChild0(pObj) && Aig_ObjChild1(pObj) );
+    assert( Aig_ObjFanin0(pObj)->Id < Aig_ObjFanin1(pObj)->Id );
     for ( ppEntry = p->pTable + Aig_Hash(pObj, p->nTableSize); *ppEntry; ppEntry = &(*ppEntry)->pNext )
         if ( *ppEntry == pObj )
             return ppEntry;
@@ -74,14 +70,16 @@ void Aig_TableResize( Aig_Man_t * p )
 {
     Aig_Obj_t * pEntry, * pNext;
     Aig_Obj_t ** pTableOld, ** ppPlace;
-    int nTableSizeOld, Counter, nEntries, i, clk;
-clk = clock();
+    int nTableSizeOld, Counter, i;
+    abctime clk;
+    assert( p->pTable != NULL );
+clk = Abc_Clock();
     // save the old table
     pTableOld = p->pTable;
     nTableSizeOld = p->nTableSize;
     // get the new table
-    p->nTableSize = Aig_PrimeCudd( 2 * Aig_ManNodeNum(p) ); 
-    p->pTable = ALLOC( Aig_Obj_t *, p->nTableSize );
+    p->nTableSize = Abc_PrimeCudd( 2 * Aig_ManNodeNum(p) ); 
+    p->pTable = ABC_ALLOC( Aig_Obj_t *, p->nTableSize );
     memset( p->pTable, 0, sizeof(Aig_Obj_t *) * p->nTableSize );
     // rehash the entries from the old table
     Counter = 0;
@@ -97,12 +95,11 @@ clk = clock();
         pEntry->pNext = NULL;
         Counter++;
     }
-    nEntries = Aig_ManNodeNum(p);
-    assert( Counter == nEntries );
-    printf( "Increasing the structural table size from %6d to %6d. ", nTableSizeOld, p->nTableSize );
-    PRT( "Time", clock() - clk );
+    assert( Counter == Aig_ManNodeNum(p) );
+//    printf( "Increasing the structural table size from %6d to %6d. ", nTableSizeOld, p->nTableSize );
+//    ABC_PRT( "Time", Abc_Clock() - clk );
     // replace the table and the parameters
-    free( pTableOld );
+    ABC_FREE( pTableOld );
 }
 
 /**Function*************************************************************
@@ -120,20 +117,11 @@ Aig_Obj_t * Aig_TableLookup( Aig_Man_t * p, Aig_Obj_t * pGhost )
 {
     Aig_Obj_t * pEntry;
     assert( !Aig_IsComplement(pGhost) );
-    if ( pGhost->Type == AIG_OBJ_LATCH )
-    {
-        assert( Aig_ObjChild0(pGhost) && Aig_ObjChild1(pGhost) == NULL );
-        if ( !Aig_ObjRefs(Aig_ObjFanin0(pGhost)) )
-            return NULL;
-    }
-    else
-    {
-        assert( pGhost->Type == AIG_OBJ_AND );
-        assert( Aig_ObjChild0(pGhost) && Aig_ObjChild1(pGhost) );
-        assert( Aig_ObjFanin0(pGhost)->Id < Aig_ObjFanin1(pGhost)->Id );
-        if ( !Aig_ObjRefs(Aig_ObjFanin0(pGhost)) || !Aig_ObjRefs(Aig_ObjFanin1(pGhost)) )
-            return NULL;
-    }
+    assert( Aig_ObjIsNode(pGhost) );
+    assert( Aig_ObjChild0(pGhost) && Aig_ObjChild1(pGhost) );
+    assert( Aig_ObjFanin0(pGhost)->Id < Aig_ObjFanin1(pGhost)->Id );
+    if ( p->pTable == NULL || !Aig_ObjRefs(Aig_ObjFanin0(pGhost)) || !Aig_ObjRefs(Aig_ObjFanin1(pGhost)) )
+        return NULL;
     for ( pEntry = p->pTable[Aig_Hash(pGhost, p->nTableSize)]; pEntry; pEntry = pEntry->pNext )
     {
         if ( Aig_ObjChild0(pEntry) == Aig_ObjChild0(pGhost) && 
@@ -252,6 +240,7 @@ void Aig_TableProfile( Aig_Man_t * p )
 {
     Aig_Obj_t * pEntry;
     int i, Counter;
+    printf( "Table size = %d. Entries = %d.\n", p->nTableSize, Aig_ManNodeNum(p) );
     for ( i = 0; i < p->nTableSize; i++ )
     {
         Counter = 0;
@@ -262,8 +251,27 @@ void Aig_TableProfile( Aig_Man_t * p )
     }
 }
 
+/**Function********************************************************************
+
+  Synopsis    [Profiles the hash table.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+void Aig_TableClear( Aig_Man_t * p )
+{
+    ABC_FREE( p->pTable );
+    p->nTableSize = 0;
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

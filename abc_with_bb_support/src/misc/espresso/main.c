@@ -14,7 +14,10 @@
  */
 
 #include "espresso.h"
-#include "main.h"		/* table definitions for options */
+#include "base/main/main.h"
+
+ABC_NAMESPACE_IMPL_START
+		/* table definitions for options */
 
 static FILE *last_fp;
 static int input_type = FD_type;
@@ -744,3 +747,5 @@ register char *argv[], *s;
     }
     return FALSE;
 }
+ABC_NAMESPACE_IMPL_END
+

@@ -18,6 +18,9 @@
 
 #include "reo.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -41,7 +44,8 @@ reo_unit * reoTransferNodesToUnits_rec( reo_man * p, DdNode * F )
 {
 	DdManager * dd = p->dd;
 	reo_unit * pUnit;
-	int HKey, fComp;
+	int HKey = -1; // Suppress "might be used uninitialized"
+        int fComp;
 	
 	fComp = Cudd_IsComplement(F);
 	F = Cudd_Regular(F);
@@ -68,7 +72,7 @@ reo_unit * reoTransferNodesToUnits_rec( reo_man * p, DdNode * F )
 	if ( cuddIsConstant(F) )
 	{
 		pUnit->lev    = REO_CONST_LEVEL;
-		pUnit->pE     = (reo_unit*)((int)(cuddV(F)));
+		pUnit->pE     = (reo_unit*)(ABC_PTRUINT_T)(cuddV(F));
 		pUnit->pT     = NULL;
 		// check if the diagram that is being reordering has complement edges
 		if ( F != dd->one )
@@ -117,7 +121,8 @@ DdNode * reoTransferUnitsToNodes_rec( reo_man * p, reo_unit * pUnit )
 {
 	DdManager * dd = p->dd;
 	DdNode * bRes, * E, * T;
-	int HKey, fComp;
+	int HKey = -1; // Suppress "might be used uninitialized"
+        int fComp;
 
 	fComp = Cudd_IsComplement(pUnit);
 	pUnit = Unit_Regular(pUnit);
@@ -137,7 +142,7 @@ DdNode * reoTransferUnitsToNodes_rec( reo_man * p, reo_unit * pUnit )
 	// treat the case of constants
 	if ( Unit_IsConstant(pUnit) )
 	{
-		bRes = cuddUniqueConst( dd, ((double)((int)(pUnit->pE))) );
+		bRes = cuddUniqueConst( dd, ((double)((int)(ABC_PTRUINT_T)(pUnit->pE))) );
 		cuddRef( bRes );
 	}
 	else
@@ -196,4 +201,6 @@ DdNode * reoTransferUnitsToNodes_rec( reo_man * p, reo_unit * pUnit )
 ////////////////////////////////////////////////////////////////////////
 ///                         END OF FILE                              ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

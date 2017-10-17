@@ -9,6 +9,9 @@
  */
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 
 pset
 do_sm_minimum_cover(A)
@@ -42,3 +45,5 @@ pset_family A;
 
     return cover;
 }
+ABC_NAMESPACE_IMPL_END
+

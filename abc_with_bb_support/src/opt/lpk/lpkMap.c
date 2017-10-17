@@ -20,6 +20,9 @@
 
 #include "lpkInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -41,7 +44,7 @@
 ***********************************************************************/
 If_Obj_t * Lpk_MapPrimeInternal( If_Man_t * pIfMan, Kit_Graph_t * pGraph )
 {
-    Kit_Node_t * pNode;
+    Kit_Node_t * pNode = NULL; // Suppress "might be used uninitialized"
     If_Obj_t * pAnd0, * pAnd1;
     int i;
     // check for constant function
@@ -49,17 +52,17 @@ If_Obj_t * Lpk_MapPrimeInternal( If_Man_t * pIfMan, Kit_Graph_t * pGraph )
         return If_ManConst1(pIfMan);
     // check for a literal
     if ( Kit_GraphIsVar(pGraph) )
-        return Kit_GraphVar(pGraph)->pFunc;
+        return (If_Obj_t *)Kit_GraphVar(pGraph)->pFunc;
     // build the AIG nodes corresponding to the AND gates of the graph
     Kit_GraphForEachNode( pGraph, pNode, i )
     {
-        pAnd0 = Kit_GraphNode(pGraph, pNode->eEdge0.Node)->pFunc; 
-        pAnd1 = Kit_GraphNode(pGraph, pNode->eEdge1.Node)->pFunc; 
+        pAnd0 = (If_Obj_t *)Kit_GraphNode(pGraph, pNode->eEdge0.Node)->pFunc; 
+        pAnd1 = (If_Obj_t *)Kit_GraphNode(pGraph, pNode->eEdge1.Node)->pFunc; 
         pNode->pFunc = If_ManCreateAnd( pIfMan, 
             If_NotCond( If_Regular(pAnd0), If_IsComplement(pAnd0) ^ pNode->eEdge0.fCompl ), 
             If_NotCond( If_Regular(pAnd1), If_IsComplement(pAnd1) ^ pNode->eEdge1.fCompl ) );
     }
-    return pNode->pFunc;
+    return (If_Obj_t *)pNode->pFunc;
 }
 
 /**Function*************************************************************
@@ -113,20 +116,20 @@ If_Obj_t * Lpk_MapTree_rec( Lpk_Man_t * p, Kit_DsdNtk_t * pNtk, If_Obj_t ** ppLe
     assert( iLit >= 0 );
 
     // consider the case of a gate
-    pObj = Kit_DsdNtkObj( pNtk, Kit_DsdLit2Var(iLit) );
+    pObj = Kit_DsdNtkObj( pNtk, Abc_Lit2Var(iLit) );
     if ( pObj == NULL )
     {
-        pObjNew = ppLeaves[Kit_DsdLit2Var(iLit)];
-        return If_NotCond( pObjNew, Kit_DsdLitIsCompl(iLit) );
+        pObjNew = ppLeaves[Abc_Lit2Var(iLit)];
+        return If_NotCond( pObjNew, Abc_LitIsCompl(iLit) );
     }
     if ( pObj->Type == KIT_DSD_CONST1 )
     {
-        return If_NotCond( If_ManConst1(p->pIfMan), Kit_DsdLitIsCompl(iLit) );
+        return If_NotCond( If_ManConst1(p->pIfMan), Abc_LitIsCompl(iLit) );
     }
     if ( pObj->Type == KIT_DSD_VAR )
     {
-        pObjNew = ppLeaves[Kit_DsdLit2Var(pObj->pFans[0])];
-        return If_NotCond( pObjNew, Kit_DsdLitIsCompl(iLit) ^ Kit_DsdLitIsCompl(pObj->pFans[0]) );
+        pObjNew = ppLeaves[Abc_Lit2Var(pObj->pFans[0])];
+        return If_NotCond( pObjNew, Abc_LitIsCompl(iLit) ^ Abc_LitIsCompl(pObj->pFans[0]) );
     }
     if ( pObj->Type == KIT_DSD_AND )
     {
@@ -136,11 +139,11 @@ If_Obj_t * Lpk_MapTree_rec( Lpk_Man_t * p, Kit_DsdNtk_t * pNtk, If_Obj_t ** ppLe
         if ( pFansNew[0] == NULL || pFansNew[1] == NULL )
             return NULL;
         pObjNew = If_ManCreateAnd( p->pIfMan, pFansNew[0], pFansNew[1] ); 
-        return If_NotCond( pObjNew, Kit_DsdLitIsCompl(iLit) );
+        return If_NotCond( pObjNew, Abc_LitIsCompl(iLit) );
     }
     if ( pObj->Type == KIT_DSD_XOR )
     {
-        int fCompl = Kit_DsdLitIsCompl(iLit);
+        int fCompl = Abc_LitIsCompl(iLit);
         assert( pObj->nFans == 2 );
         pFansNew[0] = Lpk_MapTree_rec( p, pNtk, ppLeaves, pObj->pFans[0], NULL );
         pFansNew[1] = pResult? pResult : Lpk_MapTree_rec( p, pNtk, ppLeaves, pObj->pFans[1], NULL );
@@ -167,7 +170,7 @@ If_Obj_t * Lpk_MapTree_rec( Lpk_Man_t * p, Kit_DsdNtk_t * pNtk, If_Obj_t ** ppLe
     if ( !p->fCofactoring && p->pPars->nVarsShared > 0 && (int)pObj->nFans > p->pPars->nLutSize )
     {
         pObjNew = Lpk_MapTreeMulti( p, Kit_DsdObjTruth(pObj), pObj->nFans, pFansNew );
-        return If_NotCond( pObjNew, Kit_DsdLitIsCompl(iLit) );
+        return If_NotCond( pObjNew, Abc_LitIsCompl(iLit) );
     }
 */
 /*
@@ -175,7 +178,7 @@ If_Obj_t * Lpk_MapTree_rec( Lpk_Man_t * p, Kit_DsdNtk_t * pNtk, If_Obj_t ** ppLe
     {
         pObjNew2 = Lpk_MapTreeMux_rec( p, Kit_DsdObjTruth(pObj), pObj->nFans, pFansNew );
 //        if ( pObjNew2 )
-//            return If_NotCond( pObjNew2, Kit_DsdLitIsCompl(iLit) );
+//            return If_NotCond( pObjNew2, Abc_LitIsCompl(iLit) );
     }
 */
 
@@ -184,7 +187,7 @@ If_Obj_t * Lpk_MapTree_rec( Lpk_Man_t * p, Kit_DsdNtk_t * pNtk, If_Obj_t ** ppLe
     {
         pObjNew2 = Lpk_MapSuppRedDec_rec( p, Kit_DsdObjTruth(pObj), pObj->nFans, pFansNew );
         if ( pObjNew2 )
-            return If_NotCond( pObjNew2, Kit_DsdLitIsCompl(iLit) );
+            return If_NotCond( pObjNew2, Abc_LitIsCompl(iLit) );
     }
 
     pObjNew = Lpk_MapPrime( p, Kit_DsdObjTruth(pObj), pObj->nFans, pFansNew );
@@ -195,11 +198,13 @@ If_Obj_t * Lpk_MapTree_rec( Lpk_Man_t * p, Kit_DsdNtk_t * pNtk, If_Obj_t ** ppLe
         If_ObjSetChoice( If_Regular(pObjNew), If_Regular(pObjNew2) );
         If_ManCreateChoice( p->pIfMan, If_Regular(pObjNew) );
     }
-    return If_NotCond( pObjNew, Kit_DsdLitIsCompl(iLit) );
+    return If_NotCond( pObjNew, Abc_LitIsCompl(iLit) );
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

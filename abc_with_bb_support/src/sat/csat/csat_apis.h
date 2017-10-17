@@ -16,12 +16,9 @@
 
 ***********************************************************************/
 
-#ifndef __ABC_APIS_H__
-#define __ABC_APIS_H__
+#ifndef ABC__sat__csat__csat_apis_h
+#define ABC__sat__csat__csat_apis_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                          INCLUDES                                ///
@@ -30,6 +27,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                    STRUCTURE DEFINITIONS                         ///
@@ -182,10 +184,10 @@ extern void                  ABC_SetSolveBacktrackLimit(ABC_Manager mng, int num
 extern void                  ABC_SetLearnBacktrackLimit(ABC_Manager mng, int num);
 extern void                  ABC_EnableDump(ABC_Manager mng, char* dump_file);
 
-extern void                  ABC_SetTotalBacktrackLimit( ABC_Manager mng, uint64 num );
-extern void                  ABC_SetTotalInspectLimit( ABC_Manager mng, uint64 num );
-extern uint64                ABC_GetTotalBacktracksMade( ABC_Manager mng );
-extern uint64                ABC_GetTotalInspectsMade( ABC_Manager mng );
+extern void                  ABC_SetTotalBacktrackLimit( ABC_Manager mng, ABC_UINT64_T num );
+extern void                  ABC_SetTotalInspectLimit( ABC_Manager mng, ABC_UINT64_T num );
+extern ABC_UINT64_T         ABC_GetTotalBacktracksMade( ABC_Manager mng );
+extern ABC_UINT64_T         ABC_GetTotalInspectsMade( ABC_Manager mng );
 
 // the meaning of the parameters are:
 // nog: number of gates that are in the targets
@@ -211,9 +213,11 @@ extern void                  ABC_TargetResFree( CSAT_Target_ResultT * p );
 
 extern void CSAT_SetCaller(ABC_Manager mng, enum CSAT_CallerT caller);
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

@@ -7,30 +7,61 @@
   Synopsis    [Matrix multiplication functions.]
 
   Description [External procedures included in this module:
-		<ul>
-		<li> Cudd_addMatrixMultiply()
-		<li> Cudd_addTimesPlus()
-		<li> Cudd_addTriangle()
-		<li> Cudd_addOuterSum()
-		</ul>
-	Static procedures included in this module:
-		<ul>
-		<li> addMMRecur()
-		<li> addTriangleRecur()
-		<li> cuddAddOuterSumRecur()
-		</ul>]
+                <ul>
+                <li> Cudd_addMatrixMultiply()
+                <li> Cudd_addTimesPlus()
+                <li> Cudd_addTriangle()
+                <li> Cudd_addOuterSum()
+                </ul>
+        Static procedures included in this module:
+                <ul>
+                <li> addMMRecur()
+                <li> addTriangleRecur()
+                <li> cuddAddOuterSumRecur()
+                </ul>]
 
   Author      [Fabio Somenzi]
 
-  Copyright   [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -53,7 +84,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddMatMult.c,v 1.1.1.1 2003/02/24 22:23:52 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddMatMult.c,v 1.17 2004/08/13 18:04:50 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -67,9 +98,9 @@ static char rcsid[] DD_UNUSED = "$Id: cuddMatMult.c,v 1.1.1.1 2003/02/24 22:23:5
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static DdNode * addMMRecur ARGS((DdManager *dd, DdNode *A, DdNode *B, int topP, int *vars));
-static DdNode * addTriangleRecur ARGS((DdManager *dd, DdNode *f, DdNode *g, int *vars, DdNode *cube));
-static DdNode * cuddAddOuterSumRecur ARGS((DdManager *dd, DdNode *M, DdNode *r, DdNode *c));
+static DdNode * addMMRecur (DdManager *dd, DdNode *A, DdNode *B, int topP, int *vars);
+static DdNode * addTriangleRecur (DdManager *dd, DdNode *f, DdNode *g, int *vars, DdNode *cube);
+static DdNode * cuddAddOuterSumRecur (DdManager *dd, DdNode *M, DdNode *r, DdNode *c);
 
 /**AutomaticEnd***************************************************************/
 
@@ -110,10 +141,10 @@ Cudd_addMatrixMultiply(
 
     /* Array vars says what variables are "summation" variables. */
     nvars = dd->size;
-    vars = ALLOC(int,nvars);
+    vars = ABC_ALLOC(int,nvars);
     if (vars == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < nvars; i++) {
         vars[i] = 0;
@@ -123,10 +154,10 @@ Cudd_addMatrixMultiply(
     }
 
     do {
-	dd->reordered = 0;
-	res = addMMRecur(dd,A,B,-1,vars);
+        dd->reordered = 0;
+        res = addMMRecur(dd,A,B,-1,vars);
     } while (dd->reordered == 1);
-    FREE(vars);
+    ABC_FREE(vars);
     return(res);
 
 } /* end of Cudd_addMatrixMultiply */
@@ -165,20 +196,20 @@ Cudd_addTimesPlus(
     Cudd_Ref(tmp);
     Cudd_Ref(cube = DD_ONE(dd));
     for (i = nz-1; i >= 0; i--) {
-	 w = Cudd_addIte(dd,z[i],cube,DD_ZERO(dd));
-	 if (w == NULL) {
-	    Cudd_RecursiveDeref(dd,tmp);
-	    return(NULL);
-	 }
-	 Cudd_Ref(w);
-	 Cudd_RecursiveDeref(dd,cube);
-	 cube = w;
+         w = Cudd_addIte(dd,z[i],cube,DD_ZERO(dd));
+         if (w == NULL) {
+            Cudd_RecursiveDeref(dd,tmp);
+            return(NULL);
+         }
+         Cudd_Ref(w);
+         Cudd_RecursiveDeref(dd,cube);
+         cube = w;
     }
     res = Cudd_addExistAbstract(dd,tmp,cube);
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd,tmp);
-	Cudd_RecursiveDeref(dd,cube);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,tmp);
+        Cudd_RecursiveDeref(dd,cube);
+        return(NULL);
     }
     Cudd_Ref(res);
     Cudd_RecursiveDeref(dd,cube);
@@ -220,28 +251,28 @@ Cudd_addTriangle(
     DdNode *res, *cube;
 
     nvars = dd->size;
-    vars = ALLOC(int, nvars);
+    vars = ABC_ALLOC(int, nvars);
     if (vars == NULL) {
-	dd->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        dd->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
     for (i = 0; i < nvars; i++) vars[i] = -1;
     for (i = 0; i < nz; i++) vars[z[i]->index] = i;
     cube = Cudd_addComputeCube(dd, z, NULL, nz);
     if (cube == NULL) {
-	FREE(vars);
-	return(NULL);
+        ABC_FREE(vars);
+        return(NULL);
     }
     cuddRef(cube);
 
     do {
-	dd->reordered = 0;
-	res = addTriangleRecur(dd, f, g, vars, cube);
+        dd->reordered = 0;
+        res = addTriangleRecur(dd, f, g, vars, cube);
     } while (dd->reordered == 1);
     if (res != NULL) cuddRef(res);
     Cudd_RecursiveDeref(dd,cube);
     if (res != NULL) cuddDeref(res);
-    FREE(vars);
+    ABC_FREE(vars);
     return(res);
 
 } /* end of Cudd_addTriangle */
@@ -271,8 +302,8 @@ Cudd_addOuterSum(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddAddOuterSumRecur(dd, M, r, c);
+        dd->reordered = 0;
+        res = cuddAddOuterSumRecur(dd, M, r, c);
     } while (dd->reordered == 1);
     return(res);
 
@@ -307,21 +338,21 @@ addMMRecur(
   int * vars)
 {
     DdNode *zero,
-           *At,		/* positive cofactor of first operand */
-	   *Ae,		/* negative cofactor of first operand */
-	   *Bt,		/* positive cofactor of second operand */
-	   *Be,		/* negative cofactor of second operand */
-	   *t,		/* positive cofactor of result */
-	   *e,		/* negative cofactor of result */
-	   *scaled,	/* scaled result */
-	   *add_scale,	/* ADD representing the scaling factor */
-	   *res;
-    int	i;		/* loop index */
-    double scale;	/* scaling factor */
-    int index;		/* index of the top variable */
+           *At,         /* positive cofactor of first operand */
+           *Ae,         /* negative cofactor of first operand */
+           *Bt,         /* positive cofactor of second operand */
+           *Be,         /* negative cofactor of second operand */
+           *t,          /* positive cofactor of result */
+           *e,          /* negative cofactor of result */
+           *scaled,     /* scaled result */
+           *add_scale,  /* ADD representing the scaling factor */
+           *res;
+    int i;              /* loop index */
+    double scale;       /* scaling factor */
+    int index;          /* index of the top variable */
     CUDD_VALUE_TYPE value;
     unsigned int topA, topB, topV;
-    DdNode *(*cacheOp)(DdManager *, DdNode *, DdNode *);
+    DD_CTFP cacheOp;
 
     statLine(dd);
     zero = DD_ZERO(dd);
@@ -331,21 +362,21 @@ addMMRecur(
     }
 
     if (cuddIsConstant(A) && cuddIsConstant(B)) {
-	/* Compute the scaling factor. It is 2^k, where k is the
-	** number of summation variables below the current variable.
-	** Indeed, these constants represent blocks of 2^k identical
-	** constant values in both A and B.
-	*/
-	value = cuddV(A) * cuddV(B);
-	for (i = 0; i < dd->size; i++) {
-	    if (vars[i]) {
-		if (dd->perm[i] > topP) {
-		    value *= (CUDD_VALUE_TYPE) 2;
-		}
-	    }
-	}
-	res = cuddUniqueConst(dd, value);
-	return(res);
+        /* Compute the scaling factor. It is 2^k, where k is the
+        ** number of summation variables below the current variable.
+        ** Indeed, these constants represent blocks of 2^k identical
+        ** constant values in both A and B.
+        */
+        value = cuddV(A) * cuddV(B);
+        for (i = 0; i < dd->size; i++) {
+            if (vars[i]) {
+                if (dd->perm[i] > topP) {
+                    value *= (CUDD_VALUE_TYPE) 2;
+                }
+            }
+        }
+        res = cuddUniqueConst(dd, value);
+        return(res);
     }
 
     /* Standardize to increase cache efficiency. Clearly, A*B != B*A
@@ -354,67 +385,67 @@ addMMRecur(
     ** which one is passed as first argument.
     */
     if (A > B) {
-	DdNode *tmp = A;
-	A = B;
-	B = tmp;
+        DdNode *tmp = A;
+        A = B;
+        B = tmp;
     }
 
     topA = cuddI(dd,A->index); topB = cuddI(dd,B->index);
     topV = ddMin(topA,topB);
 
-    cacheOp = (DdNode *(*)(DdManager *, DdNode *, DdNode *)) addMMRecur;
+    cacheOp = (DD_CTFP) addMMRecur;
     res = cuddCacheLookup2(dd,cacheOp,A,B);
     if (res != NULL) {
-	/* If the result is 0, there is no need to normalize.
-	** Otherwise we count the number of z variables between
-	** the current depth and the top of the ADDs. These are
-	** the missing variables that determine the size of the
-	** constant blocks.
-	*/
-	if (res == zero) return(res);
-	scale = 1.0;
-	for (i = 0; i < dd->size; i++) {
-	    if (vars[i]) {
-		if (dd->perm[i] > topP && (unsigned) dd->perm[i] < topV) {
-		    scale *= 2;
-		}
-	    }
-	}
-	if (scale > 1.0) {
-	    cuddRef(res);
-	    add_scale = cuddUniqueConst(dd,(CUDD_VALUE_TYPE)scale);
-	    if (add_scale == NULL) {
-		Cudd_RecursiveDeref(dd, res);
-		return(NULL);
-	    }
-	    cuddRef(add_scale);
-	    scaled = cuddAddApplyRecur(dd,Cudd_addTimes,res,add_scale);
-	    if (scaled == NULL) {
-		Cudd_RecursiveDeref(dd, add_scale);
-		Cudd_RecursiveDeref(dd, res);
-		return(NULL);
-	    }
-	    cuddRef(scaled);
-	    Cudd_RecursiveDeref(dd, add_scale);
-	    Cudd_RecursiveDeref(dd, res);
-	    res = scaled;
-	    cuddDeref(res);
-	}
+        /* If the result is 0, there is no need to normalize.
+        ** Otherwise we count the number of z variables between
+        ** the current depth and the top of the ADDs. These are
+        ** the missing variables that determine the size of the
+        ** constant blocks.
+        */
+        if (res == zero) return(res);
+        scale = 1.0;
+        for (i = 0; i < dd->size; i++) {
+            if (vars[i]) {
+                if (dd->perm[i] > topP && (unsigned) dd->perm[i] < topV) {
+                    scale *= 2;
+                }
+            }
+        }
+        if (scale > 1.0) {
+            cuddRef(res);
+            add_scale = cuddUniqueConst(dd,(CUDD_VALUE_TYPE)scale);
+            if (add_scale == NULL) {
+                Cudd_RecursiveDeref(dd, res);
+                return(NULL);
+            }
+            cuddRef(add_scale);
+            scaled = cuddAddApplyRecur(dd,Cudd_addTimes,res,add_scale);
+            if (scaled == NULL) {
+                Cudd_RecursiveDeref(dd, add_scale);
+                Cudd_RecursiveDeref(dd, res);
+                return(NULL);
+            }
+            cuddRef(scaled);
+            Cudd_RecursiveDeref(dd, add_scale);
+            Cudd_RecursiveDeref(dd, res);
+            res = scaled;
+            cuddDeref(res);
+        }
         return(res);
     }
 
     /* compute the cofactors */
     if (topV == topA) {
-	At = cuddT(A);
-	Ae = cuddE(A);
+        At = cuddT(A);
+        Ae = cuddE(A);
     } else {
-	At = Ae = A;
+        At = Ae = A;
     }
     if (topV == topB) {
-	Bt = cuddT(B);
-	Be = cuddE(B);
+        Bt = cuddT(B);
+        Be = cuddE(B);
     } else {
-	Bt = Be = B;
+        Bt = Be = B;
     }
 
     t = addMMRecur(dd, At, Bt, (int)topV, vars);
@@ -422,39 +453,39 @@ addMMRecur(
     cuddRef(t);
     e = addMMRecur(dd, Ae, Be, (int)topV, vars);
     if (e == NULL) {
-	Cudd_RecursiveDeref(dd, t);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, t);
+        return(NULL);
     }
     cuddRef(e);
 
     index = dd->invperm[topV];
     if (vars[index] == 0) {
-	/* We have split on either the rows of A or the columns
-	** of B. We just need to connect the two subresults,
-	** which correspond to two submatrices of the result.
-	*/
-	res = (t == e) ? t : cuddUniqueInter(dd,index,t,e);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, t);
-	    Cudd_RecursiveDeref(dd, e);
-	    return(NULL);
-	}
-	cuddRef(res);
-	cuddDeref(t);
-	cuddDeref(e);
+        /* We have split on either the rows of A or the columns
+        ** of B. We just need to connect the two subresults,
+        ** which correspond to two submatrices of the result.
+        */
+        res = (t == e) ? t : cuddUniqueInter(dd,index,t,e);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, t);
+            Cudd_RecursiveDeref(dd, e);
+            return(NULL);
+        }
+        cuddRef(res);
+        cuddDeref(t);
+        cuddDeref(e);
     } else {
-	/* we have simultaneously split on the columns of A and
-	** the rows of B. The two subresults must be added.
-	*/
-	res = cuddAddApplyRecur(dd,Cudd_addPlus,t,e);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, t);
-	    Cudd_RecursiveDeref(dd, e);
-	    return(NULL);
-	}
-	cuddRef(res);
-	Cudd_RecursiveDeref(dd, t);
-	Cudd_RecursiveDeref(dd, e);
+        /* we have simultaneously split on the columns of A and
+        ** the rows of B. The two subresults must be added.
+        */
+        res = cuddAddApplyRecur(dd,Cudd_addPlus,t,e);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, t);
+            Cudd_RecursiveDeref(dd, e);
+            return(NULL);
+        }
+        cuddRef(res);
+        Cudd_RecursiveDeref(dd, t);
+        Cudd_RecursiveDeref(dd, e);
     }
 
     cuddCacheInsert2(dd,cacheOp,A,B,res);
@@ -466,32 +497,32 @@ addMMRecur(
     ** scaling the result.
     */
     if (res != zero) {
-	scale = 1.0;
-	for (i = 0; i < dd->size; i++) {
-	    if (vars[i]) {
-		if (dd->perm[i] > topP && (unsigned) dd->perm[i] < topV) {
-		    scale *= 2;
-		}
-	    }
-	}
-	if (scale > 1.0) {
-	    add_scale = cuddUniqueConst(dd,(CUDD_VALUE_TYPE)scale);
-	    if (add_scale == NULL) {
-		Cudd_RecursiveDeref(dd, res);
-		return(NULL);
-	    }
-	    cuddRef(add_scale);
-	    scaled = cuddAddApplyRecur(dd,Cudd_addTimes,res,add_scale);
-	    if (scaled == NULL) {
-		Cudd_RecursiveDeref(dd, res);
-		Cudd_RecursiveDeref(dd, add_scale);
-		return(NULL);
-	    }
-	    cuddRef(scaled);
-	    Cudd_RecursiveDeref(dd, add_scale);
-	    Cudd_RecursiveDeref(dd, res);
-	    res = scaled;
-	}
+        scale = 1.0;
+        for (i = 0; i < dd->size; i++) {
+            if (vars[i]) {
+                if (dd->perm[i] > topP && (unsigned) dd->perm[i] < topV) {
+                    scale *= 2;
+                }
+            }
+        }
+        if (scale > 1.0) {
+            add_scale = cuddUniqueConst(dd,(CUDD_VALUE_TYPE)scale);
+            if (add_scale == NULL) {
+                Cudd_RecursiveDeref(dd, res);
+                return(NULL);
+            }
+            cuddRef(add_scale);
+            scaled = cuddAddApplyRecur(dd,Cudd_addTimes,res,add_scale);
+            if (scaled == NULL) {
+                Cudd_RecursiveDeref(dd, res);
+                Cudd_RecursiveDeref(dd, add_scale);
+                return(NULL);
+            }
+            cuddRef(scaled);
+            Cudd_RecursiveDeref(dd, add_scale);
+            Cudd_RecursiveDeref(dd, res);
+            res = scaled;
+        }
     }
     cuddDeref(res);
     return(res);
@@ -523,25 +554,25 @@ addTriangleRecur(
 
     statLine(dd);
     if (f == DD_PLUS_INFINITY(dd) || g == DD_PLUS_INFINITY(dd)) {
-	return(DD_PLUS_INFINITY(dd));
+        return(DD_PLUS_INFINITY(dd));
     }
 
     if (cuddIsConstant(f) && cuddIsConstant(g)) {
-	value = cuddV(f) + cuddV(g);
-	res = cuddUniqueConst(dd, value);
-	return(res);
+        value = cuddV(f) + cuddV(g);
+        res = cuddUniqueConst(dd, value);
+        return(res);
     }
     if (f < g) {
-	DdNode *tmp = f;
-	f = g;
-	g = tmp;
+        DdNode *tmp = f;
+        f = g;
+        g = tmp;
     }
 
     if (f->ref != 1 || g->ref != 1) {
-	res = cuddCacheLookup(dd, DD_ADD_TRIANGLE_TAG, f, g, cube);
-	if (res != NULL) {
-	    return(res);
-	}
+        res = cuddCacheLookup(dd, DD_ADD_TRIANGLE_TAG, f, g, cube);
+        if (res != NULL) {
+            return(res);
+        }
     }
 
     topf = cuddI(dd,f->index); topg = cuddI(dd,g->index);
@@ -555,36 +586,36 @@ addTriangleRecur(
     cuddRef(t);
     e = addTriangleRecur(dd, fvn, gvn, vars, cube);
     if (e == NULL) {
-	Cudd_RecursiveDeref(dd, t);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, t);
+        return(NULL);
     }
     cuddRef(e);
 
     index = dd->invperm[top];
     if (vars[index] < 0) {
-	res = (t == e) ? t : cuddUniqueInter(dd,index,t,e);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, t);
-	    Cudd_RecursiveDeref(dd, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        res = (t == e) ? t : cuddUniqueInter(dd,index,t,e);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, t);
+            Cudd_RecursiveDeref(dd, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     } else {
-	res = cuddAddApplyRecur(dd,Cudd_addMinimum,t,e);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, t);
-	    Cudd_RecursiveDeref(dd, e);
-	    return(NULL);
-	}
-	cuddRef(res);
-	Cudd_RecursiveDeref(dd, t);
-	Cudd_RecursiveDeref(dd, e);
-	cuddDeref(res);
+        res = cuddAddApplyRecur(dd,Cudd_addMinimum,t,e);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, t);
+            Cudd_RecursiveDeref(dd, e);
+            return(NULL);
+        }
+        cuddRef(res);
+        Cudd_RecursiveDeref(dd, t);
+        Cudd_RecursiveDeref(dd, e);
+        cuddDeref(res);
     }
 
     if (f->ref != 1 || g->ref != 1) {
-	cuddCacheInsert(dd, DD_ADD_TRIANGLE_TAG, f, g, cube, res);
+        cuddCacheInsert(dd, DD_ADD_TRIANGLE_TAG, f, g, cube, res);
     }
 
     return(res);
@@ -620,23 +651,23 @@ cuddAddOuterSumRecur(
     if (r == DD_PLUS_INFINITY(dd) || c == DD_PLUS_INFINITY(dd)) return(M); 
 
     if (cuddIsConstant(c) && cuddIsConstant(r)) {
-	R = cuddUniqueConst(dd,Cudd_V(c)+Cudd_V(r));
-	cuddRef(R);
-	if (cuddIsConstant(M)) {
-	    if (cuddV(R) <= cuddV(M)) {
-		cuddDeref(R);
-	        return(R);
-	    } else {
-	        Cudd_RecursiveDeref(dd,R);       
-		return(M);
-	    }
-	} else {
-	    P = Cudd_addApply(dd,Cudd_addMinimum,R,M);
-	    cuddRef(P);
-	    Cudd_RecursiveDeref(dd,R);
-	    cuddDeref(P);
-	    return(P);
-	}
+        R = cuddUniqueConst(dd,Cudd_V(c)+Cudd_V(r));
+        cuddRef(R);
+        if (cuddIsConstant(M)) {
+            if (cuddV(R) <= cuddV(M)) {
+                cuddDeref(R);
+                return(R);
+            } else {
+                Cudd_RecursiveDeref(dd,R);       
+                return(M);
+            }
+        } else {
+            P = Cudd_addApply(dd,Cudd_addMinimum,R,M);
+            cuddRef(P);
+            Cudd_RecursiveDeref(dd,R);
+            cuddDeref(P);
+            return(P);
+        }
     }
 
     /* Check the cache. */
@@ -658,16 +689,16 @@ cuddAddOuterSumRecur(
     cuddRef(Rt);
     Re = cuddAddOuterSumRecur(dd,Me,re,ce);
     if (Re == NULL) {
-	Cudd_RecursiveDeref(dd, Rt);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, Rt);
+        return(NULL);
     }
     cuddRef(Re);
     index = dd->invperm[v];
     R = (Rt == Re) ? Rt : cuddUniqueInter(dd,index,Rt,Re);
     if (R == NULL) {
-	Cudd_RecursiveDeref(dd, Rt);
-	Cudd_RecursiveDeref(dd, Re);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, Rt);
+        Cudd_RecursiveDeref(dd, Re);
+        return(NULL);
     }
     cuddDeref(Rt);
     cuddDeref(Re);
@@ -678,3 +709,7 @@ cuddAddOuterSumRecur(
     return(R);
 
 } /* end of cuddAddOuterSumRecur */
+
+
+ABC_NAMESPACE_IMPL_END
+

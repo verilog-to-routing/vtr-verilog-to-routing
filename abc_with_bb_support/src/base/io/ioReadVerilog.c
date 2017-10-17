@@ -18,13 +18,17 @@
 
 ***********************************************************************/
 
-#include "io.h"
+#include "ioAbc.h"
+#include "base/ver/ver.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-extern Abc_Lib_t * Ver_ParseFile( char * pFileName, Abc_Lib_t * pGateLib, int fCheck, int fUseMemMan );
+//extern Abc_Des_t * Ver_ParseFile( char * pFileName, Abc_Des_t * pGateLib, int fCheck, int fUseMemMan );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -43,9 +47,9 @@ extern Abc_Lib_t * Ver_ParseFile( char * pFileName, Abc_Lib_t * pGateLib, int fC
 ***********************************************************************/
 Abc_Ntk_t * Io_ReadVerilog( char * pFileName, int fCheck )
 {
-    Abc_Ntk_t * pNtk;
-    Abc_Lib_t * pDesign;
-    int RetValue;
+    Abc_Ntk_t * pNtk, * pTemp;
+    Abc_Des_t * pDesign;
+    int i, RetValue;
 
     // parse the verilog file
     pDesign = Ver_ParseFile( pFileName, NULL, fCheck, 1 );
@@ -53,11 +57,16 @@ Abc_Ntk_t * Io_ReadVerilog( char * pFileName, int fCheck )
         return NULL;
 
     // detect top-level model
-    RetValue = Abc_LibFindTopLevelModels( pDesign );
-    pNtk = Vec_PtrEntry( pDesign->vTops, 0 );
+    RetValue = Abc_DesFindTopLevelModels( pDesign );
+    pNtk = (Abc_Ntk_t *)Vec_PtrEntry( pDesign->vTops, 0 );
     if ( RetValue > 1 )
-        printf( "Warning: The design has %d root-level modules. The first one (%s) will be used.\n",
-            Vec_PtrSize(pDesign->vTops), pNtk->pName );
+    {
+        printf( "Warning: The design has %d root-level modules: ", Vec_PtrSize(pDesign->vTops) );
+        Vec_PtrForEachEntry( Abc_Ntk_t *, pDesign->vTops, pTemp, i )
+            printf( " %s", Abc_NtkName(pTemp) );
+        printf( "\n" );
+        printf( "The first one (%s) will be used.\n", pNtk->pName );
+    }
 
     // extract the master network
     pNtk->pDesign = pDesign;
@@ -68,7 +77,7 @@ Abc_Ntk_t * Io_ReadVerilog( char * pFileName, int fCheck )
     if ( Vec_PtrSize(pDesign->vModules) == 1 )
     {
 //        printf( "Warning: The design is not hierarchical.\n" );
-        Abc_LibFree( pDesign, pNtk );
+        Abc_DesFree( pDesign, pNtk );
         pNtk->pDesign = NULL;
         pNtk->pSpec = Extra_UtilStrsav( pFileName );
     }
@@ -79,6 +88,7 @@ Abc_Ntk_t * Io_ReadVerilog( char * pFileName, int fCheck )
     }
 
 //Io_WriteVerilog( pNtk, "_temp.v" );
+//    Abc_NtkPrintBoxInfo( pNtk );
     return pNtk;
 }
 
@@ -87,4 +97,6 @@ Abc_Ntk_t * Io_ReadVerilog( char * pFileName, int fCheck )
 ////////////////////////////////////////////////////////////////////////
 
 
+
+ABC_NAMESPACE_IMPL_END
 

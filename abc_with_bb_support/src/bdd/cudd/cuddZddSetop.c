@@ -7,47 +7,78 @@
   Synopsis    [Set operations on ZDDs.]
 
   Description [External procedures included in this module:
-		    <ul>
-		    <li> Cudd_zddIte()
-		    <li> Cudd_zddUnion()
-		    <li> Cudd_zddIntersect()
-		    <li> Cudd_zddDiff()
-		    <li> Cudd_zddDiffConst()
-		    <li> Cudd_zddSubset1()
-		    <li> Cudd_zddSubset0()
-		    <li> Cudd_zddChange()
-		    </ul>
-	       Internal procedures included in this module:
-		    <ul>
-		    <li> cuddZddIte()
-		    <li> cuddZddUnion()
-		    <li> cuddZddIntersect()
-		    <li> cuddZddDiff()
-		    <li> cuddZddChangeAux()
-		    <li> cuddZddSubset1()
-		    <li> cuddZddSubset0()
-		    </ul>
-	       Static procedures included in this module:
-		    <ul>
-		    <li> zdd_subset1_aux()
-		    <li> zdd_subset0_aux()
-		    <li> zddVarToConst()
-		    </ul>
-	      ]
+                    <ul>
+                    <li> Cudd_zddIte()
+                    <li> Cudd_zddUnion()
+                    <li> Cudd_zddIntersect()
+                    <li> Cudd_zddDiff()
+                    <li> Cudd_zddDiffConst()
+                    <li> Cudd_zddSubset1()
+                    <li> Cudd_zddSubset0()
+                    <li> Cudd_zddChange()
+                    </ul>
+               Internal procedures included in this module:
+                    <ul>
+                    <li> cuddZddIte()
+                    <li> cuddZddUnion()
+                    <li> cuddZddIntersect()
+                    <li> cuddZddDiff()
+                    <li> cuddZddChangeAux()
+                    <li> cuddZddSubset1()
+                    <li> cuddZddSubset0()
+                    </ul>
+               Static procedures included in this module:
+                    <ul>
+                    <li> zdd_subset1_aux()
+                    <li> zdd_subset0_aux()
+                    <li> zddVarToConst()
+                    </ul>
+              ]
 
   SeeAlso     []
 
   Author      [Hyong-Kyoon Shin, In-Ho Moon]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
-#include    "cuddInt.h"
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -69,13 +100,12 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddZddSetop.c,v 1.1.1.1 2003/02/24 22:23:54 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddZddSetop.c,v 1.25 2004/08/13 18:04:54 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
 /* Macro declarations                                                        */
 /*---------------------------------------------------------------------------*/
-
 
 /**AutomaticStart*************************************************************/
 
@@ -83,12 +113,11 @@ static char rcsid[] DD_UNUSED = "$Id: cuddZddSetop.c,v 1.1.1.1 2003/02/24 22:23:
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static DdNode * zdd_subset1_aux ARGS((DdManager *zdd, DdNode *P, DdNode *zvar));
-static DdNode * zdd_subset0_aux ARGS((DdManager *zdd, DdNode *P, DdNode *zvar));
-static void zddVarToConst ARGS((DdNode *f, DdNode **gp, DdNode **hp, DdNode *base, DdNode *empty));
+static DdNode * zdd_subset1_aux (DdManager *zdd, DdNode *P, DdNode *zvar);
+static DdNode * zdd_subset0_aux (DdManager *zdd, DdNode *P, DdNode *zvar);
+static void zddVarToConst (DdNode *f, DdNode **gp, DdNode **hp, DdNode *base, DdNode *empty);
 
 /**AutomaticEnd***************************************************************/
-
 
 /*---------------------------------------------------------------------------*/
 /* Definition of exported functions                                          */
@@ -117,8 +146,8 @@ Cudd_zddIte(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddZddIte(dd, f, g, h);
+        dd->reordered = 0;
+        res = cuddZddIte(dd, f, g, h);
     } while (dd->reordered == 1);
     return(res);
 
@@ -146,8 +175,8 @@ Cudd_zddUnion(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddZddUnion(dd, P, Q);
+        dd->reordered = 0;
+        res = cuddZddUnion(dd, P, Q);
     } while (dd->reordered == 1);
     return(res);
 
@@ -175,8 +204,8 @@ Cudd_zddIntersect(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddZddIntersect(dd, P, Q);
+        dd->reordered = 0;
+        res = cuddZddIntersect(dd, P, Q);
     } while (dd->reordered == 1);
     return(res);
 
@@ -204,8 +233,8 @@ Cudd_zddDiff(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = cuddZddDiff(dd, P, Q);
+        dd->reordered = 0;
+        res = cuddZddDiff(dd, P, Q);
     } while (dd->reordered == 1);
     return(res);
 
@@ -231,41 +260,41 @@ Cudd_zddDiffConst(
   DdNode * P,
   DdNode * Q)
 {
-    int		p_top, q_top;
-    DdNode	*empty = DD_ZERO(zdd), *t, *res;
-    DdManager	*table = zdd;
+    int         p_top, q_top;
+    DdNode      *empty = DD_ZERO(zdd), *t, *res;
+    DdManager   *table = zdd;
 
     statLine(zdd);
     if (P == empty)
-	return(empty);
+        return(empty);
     if (Q == empty)
-	return(P);
+        return(P);
     if (P == Q)
-	return(empty);
+        return(empty);
 
     /* Check cache.  The cache is shared by cuddZddDiff(). */
     res = cuddCacheLookup2Zdd(table, cuddZddDiff, P, Q);
     if (res != NULL)
-	return(res);
+        return(res);
 
     if (cuddIsConstant(P))
-	p_top = P->index;
+        p_top = P->index;
     else
-	p_top = zdd->permZ[P->index];
+        p_top = zdd->permZ[P->index];
     if (cuddIsConstant(Q))
-	q_top = Q->index;
+        q_top = Q->index;
     else
-	q_top = zdd->permZ[Q->index];
+        q_top = zdd->permZ[Q->index];
     if (p_top < q_top) {
-	res = DD_NON_CONSTANT;
+        res = DD_NON_CONSTANT;
     } else if (p_top > q_top) {
-	res = Cudd_zddDiffConst(zdd, P, cuddE(Q));
+        res = Cudd_zddDiffConst(zdd, P, cuddE(Q));
     } else {
-	t = Cudd_zddDiffConst(zdd, cuddT(P), cuddT(Q));
-	if (t != empty)
-	    res = DD_NON_CONSTANT;
-	else
-	    res = Cudd_zddDiffConst(zdd, cuddE(P), cuddE(Q));
+        t = Cudd_zddDiffConst(zdd, cuddT(P), cuddT(Q));
+        if (t != empty)
+            res = DD_NON_CONSTANT;
+        else
+            res = Cudd_zddDiffConst(zdd, cuddE(P), cuddE(Q));
     }
 
     cuddCacheInsert2(table, cuddZddDiff, P, Q, res);
@@ -295,11 +324,11 @@ Cudd_zddSubset1(
   DdNode * P,
   int  var)
 {
-    DdNode	*r;
+    DdNode      *r;
 
     do {
-	dd->reordered = 0;
-	r = cuddZddSubset1(dd, P, var);
+        dd->reordered = 0;
+        r = cuddZddSubset1(dd, P, var);
     } while (dd->reordered == 1);
 
     return(r);
@@ -327,11 +356,11 @@ Cudd_zddSubset0(
   DdNode * P,
   int  var)
 {
-    DdNode	*r;
+    DdNode      *r;
 
     do {
-	dd->reordered = 0;
-	r = cuddZddSubset0(dd, P, var);
+        dd->reordered = 0;
+        r = cuddZddSubset0(dd, P, var);
     } while (dd->reordered == 1);
 
     return(r);
@@ -357,13 +386,13 @@ Cudd_zddChange(
   DdNode * P,
   int  var)
 {
-    DdNode	*res;
+    DdNode      *res;
 
     if ((unsigned int) var >= CUDD_MAXINDEX - 1) return(NULL);
     
     do {
-	dd->reordered = 0;
-	res = cuddZddChange(dd, P, var);
+        dd->reordered = 0;
+        res = cuddZddChange(dd, P, var);
     } while (dd->reordered == 1);
     return(res);
 
@@ -401,8 +430,8 @@ cuddZddIte(
     statLine(dd);
     /* Trivial cases. */
     /* One variable cases. */
-    if (f == (empty = DD_ZERO(dd))) {	/* ITE(0,G,H) = H */
-	return(h);
+    if (f == (empty = DD_ZERO(dd))) {   /* ITE(0,G,H) = H */
+        return(h);
     }
     topf = cuddIZ(dd,f->index);
     topg = cuddIZ(dd,g->index);
@@ -411,26 +440,26 @@ cuddZddIte(
     top  = ddMin(topf,v);
 
     tautology = (top == CUDD_MAXINDEX) ? DD_ONE(dd) : dd->univ[top];
-    if (f == tautology) {			/* ITE(1,G,H) = G */
-    	return(g);
+    if (f == tautology) {                       /* ITE(1,G,H) = G */
+        return(g);
     }
 
     /* From now on, f is known to not be a constant. */
     zddVarToConst(f,&g,&h,tautology,empty);
 
     /* Check remaining one variable cases. */
-    if (g == h) {			/* ITE(F,G,G) = G */
-	return(g);
+    if (g == h) {                       /* ITE(F,G,G) = G */
+        return(g);
     }
 
-    if (g == tautology) {			/* ITE(F,1,0) = F */
-	if (h == empty) return(f);
+    if (g == tautology) {                       /* ITE(F,1,0) = F */
+        if (h == empty) return(f);
     }
 
     /* Check cache. */
     r = cuddCacheLookupZdd(dd,DD_ZDD_ITE_TAG,f,g,h);
     if (r != NULL) {
-	return(r);
+        return(r);
     }
 
     /* Recompute these because they may have changed in zddVarToConst. */
@@ -439,59 +468,59 @@ cuddZddIte(
     v = ddMin(topg,toph);
 
     if (topf < v) {
-	r = cuddZddIte(dd,cuddE(f),g,h);
-	if (r == NULL) return(NULL);
+        r = cuddZddIte(dd,cuddE(f),g,h);
+        if (r == NULL) return(NULL);
     } else if (topf > v) {
-	if (topg > v) {
-	    Gvn = g;
-	    index = h->index;
-	} else {
-	    Gvn = cuddE(g);
-	    index = g->index;
-	}
-	if (toph > v) {
-	    Hv = empty; Hvn = h;
-	} else {
-	    Hv = cuddT(h); Hvn = cuddE(h);
-	}
-	e = cuddZddIte(dd,f,Gvn,Hvn);
-	if (e == NULL) return(NULL);
-	cuddRef(e);
-	r = cuddZddGetNode(dd,index,Hv,e);
-	if (r == NULL) {
-	    Cudd_RecursiveDerefZdd(dd,e);
-	    return(NULL);
-	}
-	cuddDeref(e);
+        if (topg > v) {
+            Gvn = g;
+            index = h->index;
+        } else {
+            Gvn = cuddE(g);
+            index = g->index;
+        }
+        if (toph > v) {
+            Hv = empty; Hvn = h;
+        } else {
+            Hv = cuddT(h); Hvn = cuddE(h);
+        }
+        e = cuddZddIte(dd,f,Gvn,Hvn);
+        if (e == NULL) return(NULL);
+        cuddRef(e);
+        r = cuddZddGetNode(dd,index,Hv,e);
+        if (r == NULL) {
+            Cudd_RecursiveDerefZdd(dd,e);
+            return(NULL);
+        }
+        cuddDeref(e);
     } else {
-	index = f->index;
-	if (topg > v) {
-	    Gv = empty; Gvn = g;
-	} else {
-	    Gv = cuddT(g); Gvn = cuddE(g);
-	}
-	if (toph > v) {
-	    Hv = empty; Hvn = h;
-	} else {
-	    Hv = cuddT(h); Hvn = cuddE(h);
-	}
-	e = cuddZddIte(dd,cuddE(f),Gvn,Hvn);
-	if (e == NULL) return(NULL);
-	cuddRef(e);
-	t = cuddZddIte(dd,cuddT(f),Gv,Hv);
-	if (t == NULL) {
-	    Cudd_RecursiveDerefZdd(dd,e);
-	    return(NULL);
-	}
-	cuddRef(t);
-	r = cuddZddGetNode(dd,index,t,e);
-	if (r == NULL) {
-	    Cudd_RecursiveDerefZdd(dd,e);
-	    Cudd_RecursiveDerefZdd(dd,t);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        index = f->index;
+        if (topg > v) {
+            Gv = empty; Gvn = g;
+        } else {
+            Gv = cuddT(g); Gvn = cuddE(g);
+        }
+        if (toph > v) {
+            Hv = empty; Hvn = h;
+        } else {
+            Hv = cuddT(h); Hvn = cuddE(h);
+        }
+        e = cuddZddIte(dd,cuddE(f),Gvn,Hvn);
+        if (e == NULL) return(NULL);
+        cuddRef(e);
+        t = cuddZddIte(dd,cuddT(f),Gv,Hv);
+        if (t == NULL) {
+            Cudd_RecursiveDerefZdd(dd,e);
+            return(NULL);
+        }
+        cuddRef(t);
+        r = cuddZddGetNode(dd,index,t,e);
+        if (r == NULL) {
+            Cudd_RecursiveDerefZdd(dd,e);
+            Cudd_RecursiveDerefZdd(dd,t);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert(dd,DD_ZDD_ITE_TAG,f,g,h,r);
@@ -518,69 +547,69 @@ cuddZddUnion(
   DdNode * P,
   DdNode * Q)
 {
-    int		p_top, q_top;
-    DdNode	*empty = DD_ZERO(zdd), *t, *e, *res;
-    DdManager	*table = zdd;
+    int         p_top, q_top;
+    DdNode      *empty = DD_ZERO(zdd), *t, *e, *res;
+    DdManager   *table = zdd;
 
     statLine(zdd);
     if (P == empty)
-	return(Q);
+        return(Q);
     if (Q == empty)
-	return(P);
+        return(P);
     if (P == Q)
-	return(P);
+        return(P);
 
     /* Check cache */
     res = cuddCacheLookup2Zdd(table, cuddZddUnion, P, Q);
     if (res != NULL)
-	return(res);
+        return(res);
 
     if (cuddIsConstant(P))
-	p_top = P->index;
+        p_top = P->index;
     else
-	p_top = zdd->permZ[P->index];
+        p_top = zdd->permZ[P->index];
     if (cuddIsConstant(Q))
-	q_top = Q->index;
+        q_top = Q->index;
     else
-	q_top = zdd->permZ[Q->index];
+        q_top = zdd->permZ[Q->index];
     if (p_top < q_top) {
-	e = cuddZddUnion(zdd, cuddE(P), Q);
-	if (e == NULL) return (NULL);
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, P->index, cuddT(P), e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(table, e);
-	    return(NULL);
-	}
-	cuddDeref(e);
+        e = cuddZddUnion(zdd, cuddE(P), Q);
+        if (e == NULL) return (NULL);
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, P->index, cuddT(P), e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(table, e);
+            return(NULL);
+        }
+        cuddDeref(e);
     } else if (p_top > q_top) {
-	e = cuddZddUnion(zdd, P, cuddE(Q));
-	if (e == NULL) return(NULL);
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, Q->index, cuddT(Q), e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(table, e);
-	    return(NULL);
-	}
-	cuddDeref(e);
+        e = cuddZddUnion(zdd, P, cuddE(Q));
+        if (e == NULL) return(NULL);
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, Q->index, cuddT(Q), e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(table, e);
+            return(NULL);
+        }
+        cuddDeref(e);
     } else {
-	t = cuddZddUnion(zdd, cuddT(P), cuddT(Q));
-	if (t == NULL) return(NULL);
-	cuddRef(t);
-	e = cuddZddUnion(zdd, cuddE(P), cuddE(Q));
-	if (e == NULL) {
-	    Cudd_RecursiveDerefZdd(table, t);
-	    return(NULL);
-	}
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, P->index, t, e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(table, t);
-	    Cudd_RecursiveDerefZdd(table, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        t = cuddZddUnion(zdd, cuddT(P), cuddT(Q));
+        if (t == NULL) return(NULL);
+        cuddRef(t);
+        e = cuddZddUnion(zdd, cuddE(P), cuddE(Q));
+        if (e == NULL) {
+            Cudd_RecursiveDerefZdd(table, t);
+            return(NULL);
+        }
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, P->index, t, e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(table, t);
+            Cudd_RecursiveDerefZdd(table, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(table, cuddZddUnion, P, Q, res);
@@ -607,55 +636,55 @@ cuddZddIntersect(
   DdNode * P,
   DdNode * Q)
 {
-    int		p_top, q_top;
-    DdNode	*empty = DD_ZERO(zdd), *t, *e, *res;
-    DdManager	*table = zdd;
+    int         p_top, q_top;
+    DdNode      *empty = DD_ZERO(zdd), *t, *e, *res;
+    DdManager   *table = zdd;
 
     statLine(zdd);
     if (P == empty)
-	return(empty);
+        return(empty);
     if (Q == empty)
-	return(empty);
+        return(empty);
     if (P == Q)
-	return(P);
+        return(P);
 
     /* Check cache. */
     res = cuddCacheLookup2Zdd(table, cuddZddIntersect, P, Q);
     if (res != NULL)
-	return(res);
+        return(res);
 
     if (cuddIsConstant(P))
-	p_top = P->index;
+        p_top = P->index;
     else
-	p_top = zdd->permZ[P->index];
+        p_top = zdd->permZ[P->index];
     if (cuddIsConstant(Q))
-	q_top = Q->index;
+        q_top = Q->index;
     else
-	q_top = zdd->permZ[Q->index];
+        q_top = zdd->permZ[Q->index];
     if (p_top < q_top) {
-	res = cuddZddIntersect(zdd, cuddE(P), Q);
-	if (res == NULL) return(NULL);
+        res = cuddZddIntersect(zdd, cuddE(P), Q);
+        if (res == NULL) return(NULL);
     } else if (p_top > q_top) {
-	res = cuddZddIntersect(zdd, P, cuddE(Q));
-	if (res == NULL) return(NULL);
+        res = cuddZddIntersect(zdd, P, cuddE(Q));
+        if (res == NULL) return(NULL);
     } else {
-	t = cuddZddIntersect(zdd, cuddT(P), cuddT(Q));
-	if (t == NULL) return(NULL);
-	cuddRef(t);
-	e = cuddZddIntersect(zdd, cuddE(P), cuddE(Q));
-	if (e == NULL) {
-	    Cudd_RecursiveDerefZdd(table, t);
-	    return(NULL);
-	}
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, P->index, t, e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(table, t);
-	    Cudd_RecursiveDerefZdd(table, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        t = cuddZddIntersect(zdd, cuddT(P), cuddT(Q));
+        if (t == NULL) return(NULL);
+        cuddRef(t);
+        e = cuddZddIntersect(zdd, cuddE(P), cuddE(Q));
+        if (e == NULL) {
+            Cudd_RecursiveDerefZdd(table, t);
+            return(NULL);
+        }
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, P->index, t, e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(table, t);
+            Cudd_RecursiveDerefZdd(table, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(table, cuddZddIntersect, P, Q, res);
@@ -682,62 +711,62 @@ cuddZddDiff(
   DdNode * P,
   DdNode * Q)
 {
-    int		p_top, q_top;
-    DdNode	*empty = DD_ZERO(zdd), *t, *e, *res;
-    DdManager	*table = zdd;
+    int         p_top, q_top;
+    DdNode      *empty = DD_ZERO(zdd), *t, *e, *res;
+    DdManager   *table = zdd;
 
     statLine(zdd);
     if (P == empty)
-	return(empty);
+        return(empty);
     if (Q == empty)
-	return(P);
+        return(P);
     if (P == Q)
-	return(empty);
+        return(empty);
 
     /* Check cache.  The cache is shared by Cudd_zddDiffConst(). */
     res = cuddCacheLookup2Zdd(table, cuddZddDiff, P, Q);
     if (res != NULL && res != DD_NON_CONSTANT)
-	return(res);
+        return(res);
 
     if (cuddIsConstant(P))
-	p_top = P->index;
+        p_top = P->index;
     else
-	p_top = zdd->permZ[P->index];
+        p_top = zdd->permZ[P->index];
     if (cuddIsConstant(Q))
-	q_top = Q->index;
+        q_top = Q->index;
     else
-	q_top = zdd->permZ[Q->index];
+        q_top = zdd->permZ[Q->index];
     if (p_top < q_top) {
-	e = cuddZddDiff(zdd, cuddE(P), Q);
-	if (e == NULL) return(NULL);
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, P->index, cuddT(P), e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(table, e);
-	    return(NULL);
-	}
-	cuddDeref(e);
+        e = cuddZddDiff(zdd, cuddE(P), Q);
+        if (e == NULL) return(NULL);
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, P->index, cuddT(P), e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(table, e);
+            return(NULL);
+        }
+        cuddDeref(e);
     } else if (p_top > q_top) {
-	res = cuddZddDiff(zdd, P, cuddE(Q));
-	if (res == NULL) return(NULL);
+        res = cuddZddDiff(zdd, P, cuddE(Q));
+        if (res == NULL) return(NULL);
     } else {
-	t = cuddZddDiff(zdd, cuddT(P), cuddT(Q));
-	if (t == NULL) return(NULL);
-	cuddRef(t);
-	e = cuddZddDiff(zdd, cuddE(P), cuddE(Q));
-	if (e == NULL) {
-	    Cudd_RecursiveDerefZdd(table, t);
-	    return(NULL);
-	}
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, P->index, t, e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(table, t);
-	    Cudd_RecursiveDerefZdd(table, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        t = cuddZddDiff(zdd, cuddT(P), cuddT(Q));
+        if (t == NULL) return(NULL);
+        cuddRef(t);
+        e = cuddZddDiff(zdd, cuddE(P), cuddE(Q));
+        if (e == NULL) {
+            Cudd_RecursiveDerefZdd(table, t);
+            return(NULL);
+        }
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, P->index, t, e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(table, t);
+            Cudd_RecursiveDerefZdd(table, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(table, cuddZddDiff, P, Q, res);
@@ -764,49 +793,49 @@ cuddZddChangeAux(
   DdNode * P,
   DdNode * zvar)
 {
-    int		top_var, level;
-    DdNode	*res, *t, *e;
-    DdNode	*base = DD_ONE(zdd);
-    DdNode	*empty = DD_ZERO(zdd);
+    int         top_var, level;
+    DdNode      *res, *t, *e;
+    DdNode      *base = DD_ONE(zdd);
+    DdNode      *empty = DD_ZERO(zdd);
 
     statLine(zdd);
     if (P == empty)
-	return(empty);
+        return(empty);
     if (P == base)
-	return(zvar);
+        return(zvar);
 
     /* Check cache. */
     res = cuddCacheLookup2Zdd(zdd, cuddZddChangeAux, P, zvar);
     if (res != NULL)
-	return(res);
+        return(res);
 
     top_var = zdd->permZ[P->index];
     level = zdd->permZ[zvar->index];
 
     if (top_var > level) {
-	res = cuddZddGetNode(zdd, zvar->index, P, DD_ZERO(zdd));
-	if (res == NULL) return(NULL);
+        res = cuddZddGetNode(zdd, zvar->index, P, DD_ZERO(zdd));
+        if (res == NULL) return(NULL);
     } else if (top_var == level) {
-	res = cuddZddGetNode(zdd, zvar->index, cuddE(P), cuddT(P));
-	if (res == NULL) return(NULL);
+        res = cuddZddGetNode(zdd, zvar->index, cuddE(P), cuddT(P));
+        if (res == NULL) return(NULL);
     } else {
-	t = cuddZddChangeAux(zdd, cuddT(P), zvar);
-	if (t == NULL) return(NULL);
-	cuddRef(t);
-	e = cuddZddChangeAux(zdd, cuddE(P), zvar);
-	if (e == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd, t);
-	    return(NULL);
-	}
-	cuddRef(e);
-	res = cuddZddGetNode(zdd, P->index, t, e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd, t);
-	    Cudd_RecursiveDerefZdd(zdd, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        t = cuddZddChangeAux(zdd, cuddT(P), zvar);
+        if (t == NULL) return(NULL);
+        cuddRef(t);
+        e = cuddZddChangeAux(zdd, cuddE(P), zvar);
+        if (e == NULL) {
+            Cudd_RecursiveDerefZdd(zdd, t);
+            return(NULL);
+        }
+        cuddRef(e);
+        res = cuddZddGetNode(zdd, P->index, t, e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(zdd, t);
+            Cudd_RecursiveDerefZdd(zdd, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(zdd, cuddZddChangeAux, P, zvar, res);
@@ -839,24 +868,24 @@ cuddZddSubset1(
   DdNode * P,
   int  var)
 {
-    DdNode	*zvar, *r;
-    DdNode	*base, *empty;
+    DdNode      *zvar, *r;
+    DdNode      *base, *empty;
 
     base = DD_ONE(dd);
     empty = DD_ZERO(dd);
 
     zvar = cuddUniqueInterZdd(dd, var, base, empty);
     if (zvar == NULL) {
-	return(NULL);
+        return(NULL);
     } else {
-	cuddRef(zvar);
-	r = zdd_subset1_aux(dd, P, zvar);
-	if (r == NULL) {
-	    Cudd_RecursiveDerefZdd(dd, zvar);
-	    return(NULL);
-	}
-	cuddRef(r);
-	Cudd_RecursiveDerefZdd(dd, zvar);
+        cuddRef(zvar);
+        r = zdd_subset1_aux(dd, P, zvar);
+        if (r == NULL) {
+            Cudd_RecursiveDerefZdd(dd, zvar);
+            return(NULL);
+        }
+        cuddRef(r);
+        Cudd_RecursiveDerefZdd(dd, zvar);
     }
 
     cuddDeref(r);
@@ -888,24 +917,24 @@ cuddZddSubset0(
   DdNode * P,
   int  var)
 {
-    DdNode	*zvar, *r;
-    DdNode	*base, *empty;
+    DdNode      *zvar, *r;
+    DdNode      *base, *empty;
 
     base = DD_ONE(dd);
     empty = DD_ZERO(dd);
 
     zvar = cuddUniqueInterZdd(dd, var, base, empty);
     if (zvar == NULL) {
-	return(NULL);
+        return(NULL);
     } else {
-	cuddRef(zvar);
-	r = zdd_subset0_aux(dd, P, zvar);
-	if (r == NULL) {
-	    Cudd_RecursiveDerefZdd(dd, zvar);
-	    return(NULL);
-	}
-	cuddRef(r);
-	Cudd_RecursiveDerefZdd(dd, zvar);
+        cuddRef(zvar);
+        r = zdd_subset0_aux(dd, P, zvar);
+        if (r == NULL) {
+            Cudd_RecursiveDerefZdd(dd, zvar);
+            return(NULL);
+        }
+        cuddRef(r);
+        Cudd_RecursiveDerefZdd(dd, zvar);
     }
 
     cuddDeref(r);
@@ -936,7 +965,7 @@ cuddZddChange(
   DdNode * P,
   int  var)
 {
-    DdNode	*zvar, *res;
+    DdNode      *zvar, *res;
 
     zvar = cuddUniqueInterZdd(dd, var, DD_ONE(dd), DD_ZERO(dd));
     if (zvar == NULL) return(NULL);
@@ -944,8 +973,8 @@ cuddZddChange(
 
     res = cuddZddChangeAux(dd, P, zvar);
     if (res == NULL) {
-	Cudd_RecursiveDerefZdd(dd,zvar);
-	return(NULL);
+        Cudd_RecursiveDerefZdd(dd,zvar);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDerefZdd(dd,zvar);
@@ -977,23 +1006,22 @@ zdd_subset1_aux(
   DdNode * P,
   DdNode * zvar)
 {
-    int		top_var, level;
-    DdNode	*res, *t, *e;
-    DdNode	*base, *empty;
+    int         top_var, level;
+    DdNode      *res, *t, *e;
+    DdNode      *empty;
 
     statLine(zdd);
-    base = DD_ONE(zdd);
     empty = DD_ZERO(zdd);
 
     /* Check cache. */
     res = cuddCacheLookup2Zdd(zdd, zdd_subset1_aux, P, zvar);
     if (res != NULL)
-	return(res);
+        return(res);
 
     if (cuddIsConstant(P)) {
-	res = empty;
-	cuddCacheInsert2(zdd, zdd_subset1_aux, P, zvar, res);
-	return(res);
+        res = empty;
+        cuddCacheInsert2(zdd, zdd_subset1_aux, P, zvar, res);
+        return(res);
     }
 
     top_var = zdd->permZ[P->index];
@@ -1002,25 +1030,25 @@ zdd_subset1_aux(
     if (top_var > level) {
         res = empty;
     } else if (top_var == level) {
-	res = cuddT(P);
+        res = cuddT(P);
     } else {
         t = zdd_subset1_aux(zdd, cuddT(P), zvar);
-	if (t == NULL) return(NULL);
-	cuddRef(t);
+        if (t == NULL) return(NULL);
+        cuddRef(t);
         e = zdd_subset1_aux(zdd, cuddE(P), zvar);
-	if (e == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd, t);
-	    return(NULL);
-	}
-	cuddRef(e);
+        if (e == NULL) {
+            Cudd_RecursiveDerefZdd(zdd, t);
+            return(NULL);
+        }
+        cuddRef(e);
         res = cuddZddGetNode(zdd, P->index, t, e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd, t);
-	    Cudd_RecursiveDerefZdd(zdd, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(zdd, t);
+            Cudd_RecursiveDerefZdd(zdd, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(zdd, zdd_subset1_aux, P, zvar, res);
@@ -1047,23 +1075,20 @@ zdd_subset0_aux(
   DdNode * P,
   DdNode * zvar)
 {
-    int		top_var, level;
-    DdNode	*res, *t, *e;
-    DdNode	*base, *empty;
+    int         top_var, level;
+    DdNode      *res, *t, *e;
 
     statLine(zdd);
-    base = DD_ONE(zdd);
-    empty = DD_ZERO(zdd);
 
     /* Check cache. */
     res = cuddCacheLookup2Zdd(zdd, zdd_subset0_aux, P, zvar);
     if (res != NULL)
-	return(res);
+        return(res);
 
     if (cuddIsConstant(P)) {
-	res = P;
-	cuddCacheInsert2(zdd, zdd_subset0_aux, P, zvar, res);
-	return(res);
+        res = P;
+        cuddCacheInsert2(zdd, zdd_subset0_aux, P, zvar, res);
+        return(res);
     }
 
     top_var = zdd->permZ[P->index];
@@ -1077,22 +1102,22 @@ zdd_subset0_aux(
     }
     else {
         t = zdd_subset0_aux(zdd, cuddT(P), zvar);
-	if (t == NULL) return(NULL);
-	cuddRef(t);
+        if (t == NULL) return(NULL);
+        cuddRef(t);
         e = zdd_subset0_aux(zdd, cuddE(P), zvar);
-	if (e == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd, t);
-	    return(NULL);
-	}
-	cuddRef(e);
+        if (e == NULL) {
+            Cudd_RecursiveDerefZdd(zdd, t);
+            return(NULL);
+        }
+        cuddRef(e);
         res = cuddZddGetNode(zdd, P->index, t, e);
-	if (res == NULL) {
-	    Cudd_RecursiveDerefZdd(zdd, t);
-	    Cudd_RecursiveDerefZdd(zdd, e);
-	    return(NULL);
-	}
-	cuddDeref(t);
-	cuddDeref(e);
+        if (res == NULL) {
+            Cudd_RecursiveDerefZdd(zdd, t);
+            Cudd_RecursiveDerefZdd(zdd, e);
+            return(NULL);
+        }
+        cuddDeref(t);
+        cuddDeref(e);
     }
 
     cuddCacheInsert2(zdd, zdd_subset0_aux, P, zvar, res);
@@ -1126,12 +1151,16 @@ zddVarToConst(
     DdNode *h = *hp;
 
     if (f == g) { /* ITE(F,F,H) = ITE(F,1,H) = F + H */
-	*gp = base;
+        *gp = base;
     }
 
     if (f == h) { /* ITE(F,G,F) = ITE(F,G,0) = F * G */
-	*hp = empty;
+        *hp = empty;
     }
 
 } /* end of zddVarToConst */
+
+
+ABC_NAMESPACE_IMPL_END
+
 

@@ -1,5 +1,5 @@
 /**CFile****************************************************************
-
+ 
   FileName    [aigCheck.c]
 
   SystemName  [ABC: Logic synthesis and verification system.]
@@ -17,8 +17,11 @@
   Revision    [$Id: aigCheck.c,v 1.00 2007/04/28 00:00:00 alanmi Exp $]
 
 ***********************************************************************/
-
+ 
 #include "aig.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -44,7 +47,7 @@ int Aig_ManCheck( Aig_Man_t * p )
     Aig_Obj_t * pObj, * pObj2;
     int i;
     // check primary inputs
-    Aig_ManForEachPi( p, pObj, i )
+    Aig_ManForEachCi( p, pObj, i )
     {
         if ( Aig_ObjFanin0(pObj) || Aig_ObjFanin1(pObj) )
         {
@@ -53,7 +56,7 @@ int Aig_ManCheck( Aig_Man_t * p )
         }
     }
     // check primary outputs
-    Aig_ManForEachPo( p, pObj, i )
+    Aig_ManForEachCo( p, pObj, i )
     {
         if ( !Aig_ObjFanin0(pObj) )
         {
@@ -89,23 +92,24 @@ int Aig_ManCheck( Aig_Man_t * p )
         }
     }
     // count the total number of nodes
-    if ( Aig_ManObjNum(p) != 1 + Aig_ManPiNum(p) + Aig_ManPoNum(p) + Aig_ManBufNum(p) + Aig_ManAndNum(p) + Aig_ManExorNum(p) + Aig_ManLatchNum(p) )
+    if ( Aig_ManObjNum(p) != 1 + Aig_ManCiNum(p) + Aig_ManCoNum(p) + 
+        Aig_ManBufNum(p) + Aig_ManAndNum(p) + Aig_ManExorNum(p) )
     {
         printf( "Aig_ManCheck: The number of created nodes is wrong.\n" );
-        printf( "C1 = %d. Pi = %d. Po = %d. Buf = %d. And = %d. Xor = %d. Lat = %d. Total = %d.\n",
-            1, Aig_ManPiNum(p), Aig_ManPoNum(p), Aig_ManBufNum(p), Aig_ManAndNum(p), Aig_ManExorNum(p), Aig_ManLatchNum(p), 
-            1 + Aig_ManPiNum(p) + Aig_ManPoNum(p) + Aig_ManBufNum(p) + Aig_ManAndNum(p) + Aig_ManExorNum(p) + Aig_ManLatchNum(p) );
+        printf( "C1 = %d. Pi = %d. Po = %d. Buf = %d. And = %d. Xor = %d. Total = %d.\n",
+            1, Aig_ManCiNum(p), Aig_ManCoNum(p), Aig_ManBufNum(p), Aig_ManAndNum(p), Aig_ManExorNum(p), 
+            1 + Aig_ManCiNum(p) + Aig_ManCoNum(p) + Aig_ManBufNum(p) + Aig_ManAndNum(p) + Aig_ManExorNum(p) );
         printf( "Created = %d. Deleted = %d. Existing = %d.\n",
-            p->nCreated, p->nDeleted, p->nCreated - p->nDeleted );
+            Aig_ManObjNumMax(p), p->nDeleted, Aig_ManObjNum(p) );
         return 0;
     }
     // count the number of nodes in the table
-    if ( Aig_TableCountEntries(p) != Aig_ManAndNum(p) + Aig_ManExorNum(p) + Aig_ManLatchNum(p) )
+    if ( Aig_TableCountEntries(p) != Aig_ManAndNum(p) + Aig_ManExorNum(p) )
     {
         printf( "Aig_ManCheck: The number of nodes in the structural hashing table is wrong.\n" );
-        printf( "Entries = %d. And = %d. Xor = %d. Lat = %d. Total = %d.\n", 
-            Aig_TableCountEntries(p), Aig_ManAndNum(p), Aig_ManExorNum(p), Aig_ManLatchNum(p),
-            Aig_ManAndNum(p) + Aig_ManExorNum(p) + Aig_ManLatchNum(p) );
+        printf( "Entries = %d. And = %d. Xor = %d. Total = %d.\n", 
+            Aig_TableCountEntries(p), Aig_ManAndNum(p), Aig_ManExorNum(p), 
+            Aig_ManAndNum(p) + Aig_ManExorNum(p) );
 
         return 0;
     }
@@ -149,7 +153,7 @@ void Aig_ManCheckPhase( Aig_Man_t * p )
     Aig_Obj_t * pObj;
     int i;
     Aig_ManForEachObj( p, pObj, i )
-        if ( Aig_ObjIsPi(pObj) )
+        if ( Aig_ObjIsCi(pObj) )
             assert( (int)pObj->fPhase == 0 );
         else
             assert( (int)pObj->fPhase == (Aig_ObjPhaseReal(Aig_ObjChild0(pObj)) & Aig_ObjPhaseReal(Aig_ObjChild1(pObj))) );
@@ -159,4 +163,6 @@ void Aig_ManCheckPhase( Aig_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

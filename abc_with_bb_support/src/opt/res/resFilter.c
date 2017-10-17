@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "resInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -50,7 +53,7 @@ int Res_FilterCandidates( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pSim, 
     int Counter, RetValue, i, i2, d, d2, iDiv, iDiv2, k;
 
     // check that the info the node is one
-    pInfo = Vec_PtrEntry( pSim->vOuts, 1 );
+    pInfo = (unsigned *)Vec_PtrEntry( pSim->vOuts, 1 );
     RetValue = Abc_InfoIsOne( pInfo, pSim->nWordsOut );
     if ( RetValue == 0 )
     {
@@ -109,7 +112,7 @@ int Res_FilterCandidates( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pSim, 
         // go over the set of divisors
         for ( d = Abc_ObjFaninNum(pWin->pNode) + 2; d < Abc_NtkPoNum(pAig); d++ )
         {
-            pInfoDiv = Vec_PtrEntry( pSim->vOuts, d );
+            pInfoDiv = (unsigned *)Vec_PtrEntry( pSim->vOuts, d );
             iDiv = d - (Abc_ObjFaninNum(pWin->pNode) + 2);
             if ( !Abc_InfoIsOrOne( pInfo, pInfoDiv, pSim->nWordsOut ) )
                 continue;
@@ -147,12 +150,12 @@ int Res_FilterCandidates( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pSim, 
             // go over the set of divisors
             for ( d = Abc_ObjFaninNum(pWin->pNode) + 2; d < Abc_NtkPoNum(pAig); d++ )
             {
-                pInfoDiv = Vec_PtrEntry( pSim->vOuts, d );
+                pInfoDiv = (unsigned *)Vec_PtrEntry( pSim->vOuts, d );
                 iDiv = d - (Abc_ObjFaninNum(pWin->pNode) + 2);
                 // go through the second divisor
                 for ( d2 = d + 1; d2 < Abc_NtkPoNum(pAig); d2++ )
                 {
-                    pInfoDiv2 = Vec_PtrEntry( pSim->vOuts, d2 );
+                    pInfoDiv2 = (unsigned *)Vec_PtrEntry( pSim->vOuts, d2 );
                     iDiv2 = d2 - (Abc_ObjFaninNum(pWin->pNode) + 2);
                     if ( !Abc_InfoIsOrOne3( pInfo, pInfoDiv, pInfoDiv2, pSim->nWordsOut ) )
                         continue;
@@ -194,7 +197,7 @@ int Res_FilterCandidates( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pSim, 
                 // go over the set of divisors
                 for ( d = Abc_ObjFaninNum(pWin->pNode) + 2; d < Abc_NtkPoNum(pAig); d++ )
                 {
-                    pInfoDiv = Vec_PtrEntry( pSim->vOuts, d );
+                    pInfoDiv = (unsigned *)Vec_PtrEntry( pSim->vOuts, d );
                     iDiv = d - (Abc_ObjFaninNum(pWin->pNode) + 2);
                     if ( !Abc_InfoIsOrOne( pInfo, pInfoDiv, pSim->nWordsOut ) )
                         continue;
@@ -242,7 +245,7 @@ int Res_FilterCandidatesArea( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pS
     int Counter, RetValue, d, d2, k, iDiv, iDiv2, iBest;
 
     // check that the info the node is one
-    pInfo = Vec_PtrEntry( pSim->vOuts, 1 );
+    pInfo = (unsigned *)Vec_PtrEntry( pSim->vOuts, 1 );
     RetValue = Abc_InfoIsOne( pInfo, pSim->nWordsOut );
     if ( RetValue == 0 )
     {
@@ -294,7 +297,7 @@ int Res_FilterCandidatesArea( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pS
     // go through the divisors
     for ( d = Abc_ObjFaninNum(pWin->pNode) + 2; d < Abc_NtkPoNum(pAig); d++ )
     {
-        pInfoDiv = Vec_PtrEntry( pSim->vOuts, d );
+        pInfoDiv = (unsigned *)Vec_PtrEntry( pSim->vOuts, d );
         iDiv = d - (Abc_ObjFaninNum(pWin->pNode) + 2);
         if ( !Abc_InfoIsOrOne( pInfo, pInfoDiv, pSim->nWordsOut ) )
             continue;
@@ -327,12 +330,12 @@ int Res_FilterCandidatesArea( Res_Win_t * pWin, Abc_Ntk_t * pAig, Res_Sim_t * pS
     // try to find the node pairs
     for ( d = Abc_ObjFaninNum(pWin->pNode) + 2; d < Abc_NtkPoNum(pAig); d++ )
     {
-        pInfoDiv = Vec_PtrEntry( pSim->vOuts, d );
+        pInfoDiv = (unsigned *)Vec_PtrEntry( pSim->vOuts, d );
         iDiv = d - (Abc_ObjFaninNum(pWin->pNode) + 2);
         // go through the second divisor
         for ( d2 = d + 1; d2 < Abc_NtkPoNum(pAig); d2++ )
         {
-            pInfoDiv2 = Vec_PtrEntry( pSim->vOuts, d2 );
+            pInfoDiv2 = (unsigned *)Vec_PtrEntry( pSim->vOuts, d2 );
             iDiv2 = d2 - (Abc_ObjFaninNum(pWin->pNode) + 2);
 
             if ( !Abc_InfoIsOrOne3( pInfo, pInfoDiv, pInfoDiv2, pSim->nWordsOut ) )
@@ -382,12 +385,12 @@ unsigned * Res_FilterCollectFaninInfo( Res_Win_t * pWin, Res_Sim_t * pSim, unsig
     Abc_Obj_t * pFanin;
     unsigned * pInfo;
     int i;
-    pInfo = Vec_PtrEntry( pSim->vOuts, 0 );
+    pInfo = (unsigned *)Vec_PtrEntry( pSim->vOuts, 0 );
     Abc_InfoClear( pInfo, pSim->nWordsOut );
     Abc_ObjForEachFanin( pWin->pNode, pFanin, i )
     {
         if ( uMask & (1 << i) )
-            Abc_InfoOr( pInfo, Vec_PtrEntry(pSim->vOuts, 2+i), pSim->nWordsOut );
+            Abc_InfoOr( pInfo, (unsigned *)Vec_PtrEntry(pSim->vOuts, 2+i), pSim->nWordsOut );
     }
     return pInfo;
 }
@@ -431,4 +434,6 @@ int Res_FilterCriticalFanin( Abc_Obj_t * pNode )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

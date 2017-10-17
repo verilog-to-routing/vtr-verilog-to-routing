@@ -12,7 +12,11 @@
     purpose: cube and cover input routines
 */
 
+#include <ctype.h>
 #include "espresso.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 static bool line_length_error;
 static int lineno;
@@ -658,7 +662,7 @@ pPLA new_PLA()
 }
 
 
-PLA_labels(PLA)
+void PLA_labels(PLA)
 pPLA PLA;
 {
     int i;
@@ -808,3 +812,5 @@ int *ip;
     }
     return FALSE;
 }
+ABC_NAMESPACE_IMPL_END
+

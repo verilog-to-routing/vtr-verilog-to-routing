@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -53,7 +56,7 @@ Ivy_Obj_t * Ivy_CanonPair_rec( Ivy_Man_t * p, Ivy_Obj_t * pGhost )
     // consider the case when the pair is canonical
     if ( !Ivy_ObjIsLatch(Ivy_ObjFanin0(pGhost)) || !Ivy_ObjIsLatch(Ivy_ObjFanin1(pGhost)) )
     {
-        if ( pResult = Ivy_TableLookup( p, pGhost ) )
+        if ( (pResult = Ivy_TableLookup( p, pGhost )) )
             return pResult;
         return Ivy_ObjCreate( p, pGhost );
     }
@@ -141,4 +144,6 @@ Ivy_Obj_t * Ivy_CanonLatch( Ivy_Man_t * p, Ivy_Obj_t * pObj, Ivy_Init_t Init )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

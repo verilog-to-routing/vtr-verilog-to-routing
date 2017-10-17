@@ -18,11 +18,20 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
+
+#ifdef ABC_USE_CUDD
 
 static void        Abc_NtkMultiInt( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew );
 static Abc_Obj_t * Abc_NtkMulti_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld );
@@ -129,7 +138,7 @@ void Abc_NtkMultiInt( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtkNew )
     if ( Abc_ObjFanoutNum(pConst1) > 0 )
     {
         pNodeNew = Abc_NtkCreateNode( pNtkNew );  
-        pNodeNew->pData = Cudd_ReadOne( pNtkNew->pManFunc );   Cudd_Ref( pNodeNew->pData );
+        pNodeNew->pData = Cudd_ReadOne( (DdManager *)pNtkNew->pManFunc );   Cudd_Ref( (DdNode *)pNodeNew->pData );
         pConst1->pCopy = pNodeNew;
     }
 
@@ -186,11 +195,11 @@ Abc_Obj_t * Abc_NtkMulti_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld )
     // create a new node 
     pNodeNew = Abc_NtkCreateNode( pNtkNew ); 
     for ( i = 0; i < vCone->nSize; i++ )
-        Abc_ObjAddFanin( pNodeNew, Abc_NtkMulti_rec(pNtkNew, vCone->pArray[i]) );
+        Abc_ObjAddFanin( pNodeNew, Abc_NtkMulti_rec(pNtkNew, (Abc_Obj_t *)vCone->pArray[i]) );
 
     // derive the function of this node
-    pNodeNew->pData = Abc_NtkMultiDeriveBdd( pNtkNew->pManFunc, pNodeOld, vCone );    
-    Cudd_Ref( pNodeNew->pData );
+    pNodeNew->pData = Abc_NtkMultiDeriveBdd( (DdManager *)pNtkNew->pManFunc, pNodeOld, vCone );    
+    Cudd_Ref( (DdNode *)pNodeNew->pData );
     Vec_PtrFree( vCone );
 
     // remember the node
@@ -220,8 +229,8 @@ DdNode * Abc_NtkMultiDeriveBdd( DdManager * dd, Abc_Obj_t * pNodeOld, Vec_Ptr_t 
     // set the elementary BDD variables for the input nodes
     for ( i = 0; i < vFaninsOld->nSize; i++ )
     {
-        pFaninOld = vFaninsOld->pArray[i];
-        pFaninOld->pData = Cudd_bddIthVar( dd, i );    Cudd_Ref( pFaninOld->pData );
+        pFaninOld = (Abc_Obj_t *)vFaninsOld->pArray[i];
+        pFaninOld->pData = Cudd_bddIthVar( dd, i );    Cudd_Ref( (DdNode *)pFaninOld->pData );
         pFaninOld->fMarkC = 1;
     }
     // call the recursive BDD computation
@@ -229,8 +238,8 @@ DdNode * Abc_NtkMultiDeriveBdd( DdManager * dd, Abc_Obj_t * pNodeOld, Vec_Ptr_t 
     // dereference the intermediate nodes
     for ( i = 0; i < vFaninsOld->nSize; i++ )
     {
-        pFaninOld = vFaninsOld->pArray[i];
-        Cudd_RecursiveDeref( dd, pFaninOld->pData );
+        pFaninOld = (Abc_Obj_t *)vFaninsOld->pArray[i];
+        Cudd_RecursiveDeref( dd, (DdNode *)pFaninOld->pData );
         pFaninOld->fMarkC = 0;
     }
     Cudd_Deref( bFunc );
@@ -256,7 +265,7 @@ DdNode * Abc_NtkMultiDeriveBdd_rec( DdManager * dd, Abc_Obj_t * pNode, Vec_Ptr_t
     if ( pNode->fMarkC )
     {
         assert( pNode->pData ); // network has a cycle
-        return pNode->pData;
+        return (DdNode *)pNode->pData;
     }
     // mark the node as visited
     pNode->fMarkC = 1;
@@ -264,8 +273,8 @@ DdNode * Abc_NtkMultiDeriveBdd_rec( DdManager * dd, Abc_Obj_t * pNode, Vec_Ptr_t
     // compute the result for both branches
     bFunc0 = Abc_NtkMultiDeriveBdd_rec( dd, Abc_ObjFanin(pNode,0), vFanins ); Cudd_Ref( bFunc0 );
     bFunc1 = Abc_NtkMultiDeriveBdd_rec( dd, Abc_ObjFanin(pNode,1), vFanins ); Cudd_Ref( bFunc1 );
-    bFunc0 = Cudd_NotCond( bFunc0, Abc_ObjFaninC0(pNode) );
-    bFunc1 = Cudd_NotCond( bFunc1, Abc_ObjFaninC1(pNode) );
+    bFunc0 = Cudd_NotCond( bFunc0, (long)Abc_ObjFaninC0(pNode) );
+    bFunc1 = Cudd_NotCond( bFunc1, (long)Abc_ObjFaninC1(pNode) );
     // get the final result
     bFunc = Cudd_bddAnd( dd, bFunc0, bFunc1 );   Cudd_Ref( bFunc );
     Cudd_RecursiveDeref( dd, bFunc0 );
@@ -636,8 +645,16 @@ void Abc_NtkMultiCone( Abc_Obj_t * pNode, Vec_Ptr_t * vCone )
     Abc_NtkMultiCone_rec( Abc_ObjFanin(pNode,1), vCone );
 }
 
+#else
+
+Abc_Ntk_t * Abc_NtkMulti( Abc_Ntk_t * pNtk, int nThresh, int nFaninMax, int fCnf, int fMulti, int fSimple, int fFactor ) { return NULL; }
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

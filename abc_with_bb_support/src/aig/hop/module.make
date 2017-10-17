@@ -6,4 +6,5 @@ SRC +=	src/aig/hop/hopBalance.c \
 	src/aig/hop/hopObj.c \
 	src/aig/hop/hopOper.c \
 	src/aig/hop/hopTable.c \
+	src/aig/hop/hopTruth.c \
 	src/aig/hop/hopUtil.c 

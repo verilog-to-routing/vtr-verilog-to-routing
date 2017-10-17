@@ -20,6 +20,9 @@
 
 #include "hop.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -116,7 +119,7 @@ Hop_Obj_t * Hop_And( Hop_Man_t * p, Hop_Obj_t * p0, Hop_Obj_t * p1 )
 //        return Hop_Exor( p, pFan0, pFan1 );
     // check the table
     pGhost = Hop_ObjCreateGhost( p, p0, p1, AIG_AND );
-    if ( pResult = Hop_TableLookup( p, pGhost ) )
+    if ( (pResult = Hop_TableLookup( p, pGhost )) )
         return pResult;
     return Hop_ObjCreate( p, pGhost );
 }
@@ -298,7 +301,7 @@ Hop_Obj_t * Hop_Miter( Hop_Man_t * p, Vec_Ptr_t * vPairs )
     assert( vPairs->nSize % 2 == 0 );
     // go through the cubes of the node's SOP
     for ( i = 0; i < vPairs->nSize; i += 2 )
-        vPairs->pArray[i/2] = Hop_Not( Hop_Exor( p, vPairs->pArray[i], vPairs->pArray[i+1] ) );
+        vPairs->pArray[i/2] = Hop_Not( Hop_Exor( p, (Hop_Obj_t *)vPairs->pArray[i], (Hop_Obj_t *)vPairs->pArray[i+1] ) );
     vPairs->nSize = vPairs->nSize/2;
     return Hop_Not( Hop_Multi_rec( p, (Hop_Obj_t **)vPairs->pArray, vPairs->nSize, AIG_AND ) );
 }
@@ -370,4 +373,6 @@ Hop_Obj_t * Hop_CreateExor( Hop_Man_t * p, int nVars )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

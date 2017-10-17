@@ -20,6 +20,9 @@
 
 #include "retInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -41,24 +44,25 @@ static int Abc_NtkRetimeOneWay( Abc_Ntk_t * pNtk, int fForward, int fVerbose );
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRetimeIncremental( Abc_Ntk_t * pNtk, int fForward, int fMinDelay, int fVerbose )
+int Abc_NtkRetimeIncremental( Abc_Ntk_t * pNtk, int nDelayLim, int fForward, int fMinDelay, int fOneStep, int fUseOldNames, int fVerbose )
 {
     Abc_Ntk_t * pNtkCopy = NULL;
     Vec_Ptr_t * vBoxes;
-    st_table * tLatches;
+    st__table * tLatches;
     int nLatches = Abc_NtkLatchNum(pNtk);
     int nIdMaxStart = Abc_NtkObjNumMax(pNtk);
-    int RetValue, nIterLimit;
+    int RetValue;
+    int nIterLimit = -1; // Suppress "might be used uninitialized"
     if ( Abc_NtkNodeNum(pNtk) == 0 )
         return 0;
     // reorder CI/CO/latch inputs
     Abc_NtkOrderCisCos( pNtk );
     if ( fMinDelay ) 
     {
-        nIterLimit = 2 * Abc_NtkLevel(pNtk);
+        nIterLimit = fOneStep? 1 : 2 * Abc_NtkLevel(pNtk);
         pNtkCopy = Abc_NtkDup( pNtk );
         tLatches = Abc_NtkRetimePrepareLatches( pNtkCopy );
-        st_free_table( tLatches );
+        st__free_table( tLatches );
     }
     // collect latches and remove CIs/COs
     tLatches = Abc_NtkRetimePrepareLatches( pNtk );
@@ -68,7 +72,7 @@ int Abc_NtkRetimeIncremental( Abc_Ntk_t * pNtk, int fForward, int fMinDelay, int
     vBoxes = pNtk->vBoxes;  pNtk->vBoxes = NULL;
     // perform the retiming
     if ( fMinDelay )
-        Abc_NtkRetimeMinDelay( pNtk, pNtkCopy, nIterLimit, fForward, fVerbose );
+        Abc_NtkRetimeMinDelay( pNtk, pNtkCopy, nDelayLim, nIterLimit, fForward, fVerbose );
     else
         Abc_NtkRetimeOneWay( pNtk, fForward, fVerbose );
     if ( fMinDelay ) 
@@ -78,8 +82,8 @@ int Abc_NtkRetimeIncremental( Abc_Ntk_t * pNtk, int fForward, int fMinDelay, int
     // restore boxes
     pNtk->vBoxes = vBoxes;
     // finalize the latches
-    RetValue = Abc_NtkRetimeFinalizeLatches( pNtk, tLatches, nIdMaxStart );
-    st_free_table( tLatches );
+    RetValue = Abc_NtkRetimeFinalizeLatches( pNtk, tLatches, nIdMaxStart, fUseOldNames );
+    st__free_table( tLatches );
     if ( RetValue == 0 )
         return 0;
     // fix the COs
@@ -102,17 +106,17 @@ int Abc_NtkRetimeIncremental( Abc_Ntk_t * pNtk, int fForward, int fMinDelay, int
   SeeAlso     []
 
 ***********************************************************************/
-st_table * Abc_NtkRetimePrepareLatches( Abc_Ntk_t * pNtk )
+ st__table * Abc_NtkRetimePrepareLatches( Abc_Ntk_t * pNtk )
 {
-    st_table * tLatches;
+    st__table * tLatches;
     Abc_Obj_t * pLatch, * pLatchIn, * pLatchOut, * pFanin;
     int i, nOffSet = Abc_NtkBoxNum(pNtk) - Abc_NtkLatchNum(pNtk);
     // collect latches and remove CIs/COs
-    tLatches = st_init_table( st_ptrcmp, st_ptrhash );
+    tLatches = st__init_table( st__ptrcmp, st__ptrhash );
     Abc_NtkForEachLatch( pNtk, pLatch, i )
     {
         // map latch into its true number
-        st_insert( tLatches, (void *)pLatch, (void *)(i-nOffSet) );
+        st__insert( tLatches, (char *)(ABC_PTRUINT_T)pLatch, (char *)(ABC_PTRUINT_T)(i-nOffSet) );
         // disconnect LI     
         pLatchIn = Abc_ObjFanin0(pLatch);
         pFanin = Abc_ObjFanin0(pLatchIn);
@@ -139,7 +143,7 @@ st_table * Abc_NtkRetimePrepareLatches( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRetimeFinalizeLatches( Abc_Ntk_t * pNtk, st_table * tLatches, int nIdMaxStart )
+int Abc_NtkRetimeFinalizeLatches( Abc_Ntk_t * pNtk, st__table * tLatches, int nIdMaxStart, int fUseOldNames )
 {
     Vec_Ptr_t * vCisOld, * vCosOld, * vBoxesOld, * vCisNew, * vCosNew, * vBoxesNew;
     Abc_Obj_t * pObj, * pLatch, * pLatchIn, * pLatchOut;
@@ -149,11 +153,11 @@ int Abc_NtkRetimeFinalizeLatches( Abc_Ntk_t * pNtk, st_table * tLatches, int nId
     vCosOld   = pNtk->vCos;    pNtk->vCos   = NULL;  vCosNew   = Vec_PtrAlloc( 100 );  
     vBoxesOld = pNtk->vBoxes;  pNtk->vBoxes = NULL;  vBoxesNew = Vec_PtrAlloc( 100 );
     // copy boxes and their CIs/COs
-    Vec_PtrForEachEntryStop( vCisOld, pObj, i, Vec_PtrSize(vCisOld) - st_count(tLatches) )
+    Vec_PtrForEachEntryStop( Abc_Obj_t *, vCisOld, pObj, i, Vec_PtrSize(vCisOld) - st__count(tLatches) )
         Vec_PtrPush( vCisNew, pObj );
-    Vec_PtrForEachEntryStop( vCosOld, pObj, i, Vec_PtrSize(vCosOld) - st_count(tLatches) )
+    Vec_PtrForEachEntryStop( Abc_Obj_t *, vCosOld, pObj, i, Vec_PtrSize(vCosOld) - st__count(tLatches) )
         Vec_PtrPush( vCosNew, pObj );
-    Vec_PtrForEachEntryStop( vBoxesOld, pObj, i, Vec_PtrSize(vBoxesOld) - st_count(tLatches) )
+    Vec_PtrForEachEntryStop( Abc_Obj_t *, vBoxesOld, pObj, i, Vec_PtrSize(vBoxesOld) - st__count(tLatches) )
         Vec_PtrPush( vBoxesNew, pObj );
     // go through the latches
     Abc_NtkForEachObj( pNtk, pLatch, i )
@@ -165,22 +169,31 @@ int Abc_NtkRetimeFinalizeLatches( Abc_Ntk_t * pNtk, st_table * tLatches, int nId
             // this is a new latch 
             pLatchIn  = Abc_NtkCreateBi(pNtk);
             pLatchOut = Abc_NtkCreateBo(pNtk);
-            Abc_ObjAssignName( pLatchOut, Abc_ObjName(pLatch), "_out" );
-            Abc_ObjAssignName( pLatchIn,  Abc_ObjName(pLatch), "_in" );
+
+            if ( fUseOldNames )
+            {
+                Abc_ObjAssignName( pLatchOut, Abc_ObjName(pLatch), "_out" );
+                Abc_ObjAssignName( pLatchIn,  Abc_ObjName(pLatch), "_in" );
+            }
+            else
+            {
+                Abc_ObjAssignName( pLatchOut, Abc_ObjName(Abc_ObjFanin0(pLatch)), "_o2" );
+                Abc_ObjAssignName( pLatchIn,  Abc_ObjName(Abc_ObjFanin0(pLatch)), "_i2" );
+            }
         }
         else
         {
             // this is an old latch 
             // get its number in the original order
-            if ( !st_lookup( tLatches, (char *)pLatch, (char **)&Index ) )
+            if ( ! st__lookup_int( tLatches, (char *)pLatch, &Index ) )
             {
                 printf( "Abc_NtkRetimeFinalizeLatches(): Internal error.\n" );
                 return 0;
             }
-            assert( pLatch == Vec_PtrEntry(vBoxesOld, Vec_PtrSize(vBoxesOld) - st_count(tLatches) + Index) );
+            assert( pLatch == Vec_PtrEntry(vBoxesOld, Vec_PtrSize(vBoxesOld) - st__count(tLatches) + Index) );
             // reconnect with the old LIs/LOs
-            pLatchIn  = Vec_PtrEntry( vCosOld, Vec_PtrSize(vCosOld) - st_count(tLatches) + Index );
-            pLatchOut = Vec_PtrEntry( vCisOld, Vec_PtrSize(vCisOld) - st_count(tLatches) + Index );
+            pLatchIn  = (Abc_Obj_t *)Vec_PtrEntry( vCosOld, Vec_PtrSize(vCosOld) - st__count(tLatches) + Index );
+            pLatchOut = (Abc_Obj_t *)Vec_PtrEntry( vCisOld, Vec_PtrSize(vCisOld) - st__count(tLatches) + Index );
         }
         // connect
         Abc_ObjAddFanin( pLatchIn, Abc_ObjFanin0(pLatch) );
@@ -194,10 +207,10 @@ int Abc_NtkRetimeFinalizeLatches( Abc_Ntk_t * pNtk, st_table * tLatches, int nId
         Vec_PtrPush( vBoxesNew, pLatch );
     }
     // free useless Cis/Cos
-    Vec_PtrForEachEntry( vCisOld, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vCisOld, pObj, i )
         if ( !Abc_ObjIsPi(pObj) && Abc_ObjFaninNum(pObj) == 0 && Abc_ObjFanoutNum(pObj) == 0 )
             Abc_NtkDeleteObj(pObj);
-    Vec_PtrForEachEntry( vCosOld, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, vCosOld, pObj, i )
         if ( !Abc_ObjIsPo(pObj) && Abc_ObjFaninNum(pObj) == 0 && Abc_ObjFanoutNum(pObj) == 0 )
             Abc_NtkDeleteObj(pObj);
     // set the new arrays
@@ -220,8 +233,8 @@ int Abc_NtkRetimeFinalizeLatches( Abc_Ntk_t * pNtk, st_table * tLatches, int nId
 ***********************************************************************/
 int Abc_NtkRetimeOneWay( Abc_Ntk_t * pNtk, int fForward, int fVerbose )
 {
-    Abc_Ntk_t * pNtkNew;
-    Vec_Int_t * vValues;
+    Abc_Ntk_t * pNtkNew = NULL; // Suppress "might be used uninitialized"
+    Vec_Int_t * vValues = NULL; // Suppress "might be used uninitialized"
     Abc_Obj_t * pObj;
     int i, fChanges, nTotalMoves = 0, nTotalMovesLimit = 10000;
     if ( fForward )
@@ -315,15 +328,15 @@ void Abc_NtkRetimeNode( Abc_Obj_t * pObj, int fForward, int fInitial )
     Abc_Obj_t * pNext, * pLatch;
     int i;
     vNodes = Vec_PtrAlloc( 10 );
-    if ( fForward )
+    if ( fForward ) 
     {
         // compute the initial value
         if ( fInitial )
-            pObj->pCopy = (void *)Abc_ObjSopSimulate( pObj );
+            pObj->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)Abc_ObjSopSimulate( pObj );
         // collect fanins
         Abc_NodeCollectFanins( pObj, vNodes );
         // make the node point to the fanins fanins
-        Vec_PtrForEachEntry( vNodes, pNext, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNext, i )
         {
             assert( Abc_ObjIsLatch(pNext) );
             Abc_ObjPatchFanin( pObj, pNext, Abc_ObjFanin0(pNext) );
@@ -355,7 +368,7 @@ void Abc_NtkRetimeNode( Abc_Obj_t * pObj, int fForward, int fInitial )
         // collect fanouts
         Abc_NodeCollectFanouts( pObj, vNodes );
         // make the fanouts fanouts point to the node
-        Vec_PtrForEachEntry( vNodes, pNext, i )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pNext, i )
         {
             assert( Abc_ObjIsLatch(pNext) );
             Abc_ObjTransferFanout( pNext, pObj );
@@ -371,6 +384,7 @@ void Abc_NtkRetimeNode( Abc_Obj_t * pObj, int fForward, int fInitial )
             if ( fInitial )
             {
                 pLatch->pCopy = Abc_NtkCreateNodeBuf( pNtkNew, NULL );
+                Abc_ObjAssignName( pLatch->pCopy, Abc_ObjName(pNext), "_buf" );
                 Abc_ObjAddFanin( pObj->pCopy, pLatch->pCopy );
             }
         }
@@ -399,10 +413,10 @@ int Abc_NtkRetimeCheckCompatibleLatchFanouts( Abc_Obj_t * pObj )
             continue;
         if ( Init == -1 )
         {
-            Init = (int)pObj->pData;
+            Init = (int)(ABC_PTRUINT_T)pObj->pData;
             nLatches++;
         }
-        else if ( Init == (int)pObj->pData )
+        else if ( Init == (int)(ABC_PTRUINT_T)pObj->pData )
             nLatches++;
     }
     return nLatches;
@@ -438,7 +452,7 @@ void Abc_NtkRetimeShareLatches( Abc_Ntk_t * pNtk, int fInitial )
         assert( pLatchTop && Abc_ObjIsLatch(pLatchTop) );
         // redirect compatible fanout latches to the first latch
         Abc_NodeCollectFanouts( pFanin, vNodes );
-        Vec_PtrForEachEntry( vNodes, pLatchCur, k )
+        Vec_PtrForEachEntry( Abc_Obj_t *, vNodes, pLatchCur, k )
         {
             if ( !Abc_ObjIsLatch(pLatchCur) )
                 continue;
@@ -461,4 +475,6 @@ void Abc_NtkRetimeShareLatches( Abc_Ntk_t * pNtk, int fInitial )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

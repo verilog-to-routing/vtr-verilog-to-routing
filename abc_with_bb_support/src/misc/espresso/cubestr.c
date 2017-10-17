@@ -13,6 +13,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 /*
     cube_setup -- assume that the fields "num_vars", "num_binary_vars", and
     part_size[num_binary_vars .. num_vars-1] are setup, and initialize the
@@ -150,3 +153,5 @@ void restore_cube_struct()
     cube = temp_cube_save;              /* structure copy ! */
     cdata = temp_cdata_save;            /*      ""          */
 }
+ABC_NAMESPACE_IMPL_END
+

@@ -18,6 +18,9 @@
 
 #include "reo.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -48,7 +51,7 @@ reo_man * Extra_ReorderInit( int nDdVarsMax, int nNodesMax )
 {
 	reo_man * p;
 	// allocate and clean the data structure
-	p = ALLOC( reo_man, 1 );
+	p = ABC_ALLOC( reo_man, 1 );
 	memset( p, 0, sizeof(reo_man) );
 	// resize the manager to meet user's needs	
 	reoResizeStructures( p, nDdVarsMax, nNodesMax, 100 );
@@ -75,21 +78,21 @@ reo_man * Extra_ReorderInit( int nDdVarsMax, int nNodesMax )
 ***********************************************************************/
 void Extra_ReorderQuit( reo_man * p )
 {
-	free( p->pTops );
-	free( p->pSupp );
-	free( p->pOrderInt );
-	free( p->pWidthCofs );
-	free( p->pMapToPlanes );
-	free( p->pMapToDdVarsOrig );
-	free( p->pMapToDdVarsFinal );
-	free( p->pPlanes );
-	free( p->pVarCosts );
-	free( p->pLevelOrder );
-	free( p->HTable );
-	free( p->pRefNodes );
+	ABC_FREE( p->pTops );
+	ABC_FREE( p->pSupp );
+	ABC_FREE( p->pOrderInt );
+	ABC_FREE( p->pWidthCofs );
+	ABC_FREE( p->pMapToPlanes );
+	ABC_FREE( p->pMapToDdVarsOrig );
+	ABC_FREE( p->pMapToDdVarsFinal );
+	ABC_FREE( p->pPlanes );
+	ABC_FREE( p->pVarCosts );
+	ABC_FREE( p->pLevelOrder );
+	ABC_FREE( p->HTable );
+	ABC_FREE( p->pRefNodes );
 	reoUnitsStopDispenser( p );
-	free( p->pMemChunks );
-	free( p );
+	ABC_FREE( p->pMemChunks );
+	ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -286,4 +289,6 @@ void Extra_ReorderArray( reo_man * p, DdManager * dd, DdNode * Funcs[], DdNode *
 ////////////////////////////////////////////////////////////////////////
 ///                         END OF FILE                              ///
 ////////////////////////////////////////////////////////////////////////
+
+ABC_NAMESPACE_IMPL_END
 

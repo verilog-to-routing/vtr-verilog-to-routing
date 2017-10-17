@@ -18,13 +18,16 @@
 
 #include "fxuInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
 #define MAX_PRIMES      304
 
-static s_Primes[MAX_PRIMES] =
+static int s_Primes[MAX_PRIMES] =
 {
 	2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 
 	41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 
@@ -452,8 +455,8 @@ void Fxu_PairAllocStorage( Fxu_Var * pVar, int nCubes )
 //    assert( pVar->nCubes == 0 );
     pVar->nCubes  = nCubes;
 	// allocate memory for all the pairs
-	pVar->ppPairs    = ALLOC( Fxu_Pair **, nCubes );
-	pVar->ppPairs[0] = ALLOC( Fxu_Pair *,  nCubes * nCubes );
+	pVar->ppPairs    = ABC_ALLOC( Fxu_Pair **, nCubes );
+	pVar->ppPairs[0] = ABC_ALLOC( Fxu_Pair *,  nCubes * nCubes );
     memset( pVar->ppPairs[0], 0, sizeof(Fxu_Pair *) * nCubes * nCubes );
     for ( k = 1; k < nCubes; k++ )
         pVar->ppPairs[k] = pVar->ppPairs[k-1] + nCubes;
@@ -497,8 +500,8 @@ void Fxu_PairFreeStorage( Fxu_Var * pVar )
 {
     if ( pVar->ppPairs )
     {
-        FREE( pVar->ppPairs[0] );
-        FREE( pVar->ppPairs );
+        ABC_FREE( pVar->ppPairs[0] );
+        ABC_FREE( pVar->ppPairs );
     }
 }
 
@@ -552,4 +555,6 @@ void Fxu_PairAdd( Fxu_Pair * pPair )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -18,8 +18,11 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
 #include "resInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -55,12 +58,12 @@ Abc_Ntk_t * Res_WndStrash( Res_Win_t * p )
     pAig = Abc_NtkAlloc( ABC_NTK_STRASH, ABC_FUNC_AIG, 1 );
     pAig->pName = Extra_UtilStrsav( "window" );
     // create the inputs
-    Vec_PtrForEachEntry( p->vLeaves, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vLeaves, pObj, i )
         pObj->pCopy = Abc_NtkCreatePi( pAig );
-    Vec_PtrForEachEntry( p->vBranches, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vBranches, pObj, i )
         pObj->pCopy = Abc_NtkCreatePi( pAig );
     // go through the nodes in the topological order
-    Vec_PtrForEachEntry( p->vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vNodes, pObj, i )
     {
         pObj->pCopy = Abc_ConvertAigToAig( pAig, pObj );
         if ( pObj == p->pNode )
@@ -68,7 +71,7 @@ Abc_Ntk_t * Res_WndStrash( Res_Win_t * p )
     }
     // collect the POs
     vPairs = Vec_PtrAlloc( 2 * Vec_PtrSize(p->vRoots) );
-    Vec_PtrForEachEntry( p->vRoots, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vRoots, pObj, i )
     {
         Vec_PtrPush( vPairs, pObj->pCopy );
         Vec_PtrPush( vPairs, NULL );
@@ -80,16 +83,16 @@ Abc_Ntk_t * Res_WndStrash( Res_Win_t * p )
     p->pNode->pCopy = Abc_ObjNot( p->pNode->pCopy );
     Abc_NodeSetTravIdPrevious( p->pNode );
     // redo strashing in the TFO
-    Vec_PtrForEachEntry( p->vNodes, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vNodes, pObj, i )
     {
         if ( Abc_NodeIsTravIdCurrent(pObj) )
             pObj->pCopy = Abc_ConvertAigToAig( pAig, pObj );
     }
     // collect the POs
-    Vec_PtrForEachEntry( p->vRoots, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vRoots, pObj, i )
         Vec_PtrWriteEntry( vPairs, 2 * i + 1, pObj->pCopy );
     // add the miter
-    pMiter = Abc_AigMiter( pAig->pManFunc, vPairs );
+    pMiter = Abc_AigMiter( (Abc_Aig_t *)pAig->pManFunc, vPairs, 0 );
     Abc_ObjAddFanin( Abc_NtkCreatePo(pAig), pMiter );
     Vec_PtrFree( vPairs );
     // add the node
@@ -98,7 +101,7 @@ Abc_Ntk_t * Res_WndStrash( Res_Win_t * p )
     Abc_ObjForEachFanin( p->pNode, pObj, i )
         Abc_ObjAddFanin( Abc_NtkCreatePo(pAig), pObj->pCopy );
     // add the divisors
-    Vec_PtrForEachEntry( p->vDivs, pObj, i )
+    Vec_PtrForEachEntry( Abc_Obj_t *, p->vDivs, pObj, i )
         Abc_ObjAddFanin( Abc_NtkCreatePo(pAig), pObj->pCopy );
     // add the names
     Abc_NtkAddDummyPiNames( pAig );
@@ -114,4 +117,6 @@ Abc_Ntk_t * Res_WndStrash( Res_Win_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

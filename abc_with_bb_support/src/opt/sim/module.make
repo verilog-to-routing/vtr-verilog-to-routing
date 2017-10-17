@@ -1,5 +1,4 @@
 SRC +=  src/opt/sim/simMan.c \
-	src/opt/sim/simSat.c \
 	src/opt/sim/simSeq.c \
 	src/opt/sim/simSupp.c \
 	src/opt/sim/simSwitch.c \

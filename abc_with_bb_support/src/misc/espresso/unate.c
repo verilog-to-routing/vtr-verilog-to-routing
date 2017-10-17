@@ -13,6 +13,9 @@
 
 #include "espresso.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 static pset_family abs_covered();
 static pset_family abs_covered_many();
 static int abs_select_restricted();
@@ -139,7 +142,7 @@ pset_family unate_complement(A)
 pset_family A;			/* disposes of A */
 {
     pset_family Abar;
-    register pset p, p1, restrictVar;
+    register pset p, p1, restrict;
     register int i;
     int max_i, min_set_ord, j;
 
@@ -166,14 +169,14 @@ pset_family A;			/* disposes of A */
 	/* Select splitting variable as the variable which belongs to a set
 	 * of the smallest size, and which has greatest column count
 	 */
-	restrictVar = set_new(A->sf_size);
+	restrict = set_new(A->sf_size);
 	min_set_ord = A->sf_size + 1;
 	foreachi_set(A, i, p) {
 	    if (SIZE(p) < min_set_ord) {
-		set_copy(restrictVar, p);
+		set_copy(restrict, p);
 		min_set_ord = SIZE(p);
 	    } else if (SIZE(p) == min_set_ord) {
-		set_or(restrictVar, restrictVar, p);
+		set_or(restrict, restrict, p);
 	    }
 	}
 
@@ -184,15 +187,15 @@ pset_family A;			/* disposes of A */
 
 	/* Check for "essential" columns */
 	} else if (min_set_ord == 1) {
-	    Abar = unate_complement(abs_covered_many(A, restrictVar));
+	    Abar = unate_complement(abs_covered_many(A, restrict));
 	    sf_free(A);
 	    foreachi_set(Abar, i, p) {
-		set_or(p, p, restrictVar);
+		set_or(p, p, restrict);
 	    }
 
 	/* else, recur as usual */
 	} else {
-	    max_i = abs_select_restricted(A, restrictVar);
+	    max_i = abs_select_restricted(A, restrict);
 
 	    /* Select those rows of A which are not covered by max_i,
 	     * recursively find all minimal covers of these rows, and
@@ -214,7 +217,7 @@ pset_family A;			/* disposes of A */
 
 	    Abar = sf_append(Abar, unate_complement(A));
 	}
-	set_free(restrictVar);
+	set_free(restrict);
     }
 
     return Abar;
@@ -414,14 +417,14 @@ register pset pick_set;
  *  1 / (set_ord(p) - 1).
  */
 static int
-abs_select_restricted(A, restrictVar)
+abs_select_restricted(A, restrict)
 pset_family A;
-pset restrictVar;
+pset restrict;
 {
     register int i, best_var, best_count, *count;
 
     /* Sum the elements in these columns */
-    count = sf_count_restricted(A, restrictVar);
+    count = sf_count_restricted(A, restrict);
 
     /* Find which variable has maximum weight */
     best_var = -1;
@@ -439,3 +442,5 @@ pset restrictVar;
 
     return best_var;
 }
+ABC_NAMESPACE_IMPL_END
+

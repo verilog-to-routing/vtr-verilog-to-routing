@@ -20,6 +20,10 @@
 
 #include <stdio.h>
 #include "extra.h"
+#include "base/main/main.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -58,11 +62,8 @@ static void Extra_ProgressBarClean( ProgressBar * p );
 ProgressBar * Extra_ProgressBarStart( FILE * pFile, int nItemsTotal )
 {
     ProgressBar * p;
-    extern int Abc_FrameShowProgress( void * p );
-    extern void * Abc_FrameGetGlobalFrame();
-
     if ( !Abc_FrameShowProgress(Abc_FrameGetGlobalFrame()) ) return NULL;
-    p = ALLOC( ProgressBar, 1 );
+    p = ABC_ALLOC( ProgressBar, 1 );
     memset( p, 0, sizeof(ProgressBar) );
     p->pFile       = pFile;
     p->nItemsTotal = nItemsTotal;
@@ -118,7 +119,7 @@ void Extra_ProgressBarStop( ProgressBar * p )
 {
     if ( p == NULL ) return;
     Extra_ProgressBarClean( p );
-    FREE( p );
+    ABC_FREE( p );
 }
 
 /**Function*************************************************************
@@ -135,7 +136,10 @@ void Extra_ProgressBarStop( ProgressBar * p )
 void Extra_ProgressBarShow( ProgressBar * p, char * pString )
 {
     int i;
-    if ( p == NULL ) return;
+    if ( p == NULL ) 
+        return;
+    if ( Abc_FrameIsBatchMode() )
+        return;
     if ( pString )
         fprintf( p->pFile, "%s ", pString );
     for ( i = (pString? strlen(pString) + 1 : 0); i < p->posCur; i++ )
@@ -162,7 +166,10 @@ void Extra_ProgressBarShow( ProgressBar * p, char * pString )
 void Extra_ProgressBarClean( ProgressBar * p )
 {
     int i;
-    if ( p == NULL ) return;
+    if ( p == NULL ) 
+        return;
+    if ( Abc_FrameIsBatchMode() )
+        return;
     for ( i = 0; i <= p->posTotal; i++ )
         fprintf( p->pFile, " " );
     fprintf( p->pFile, "\r" );
@@ -173,4 +180,6 @@ void Extra_ProgressBarClean( ProgressBar * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

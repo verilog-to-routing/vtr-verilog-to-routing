@@ -18,11 +18,19 @@
 
 ***********************************************************************/
 
-#include "abc.h"
+#include "base/abc/abc.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
+#ifdef ABC_USE_CUDD
 
 static void Abc_NtkPrintUnateBdd( Abc_Ntk_t * pNtk, int fUseNaive, int fVerbose );
 static void Abc_NtkPrintUnateSat( Abc_Ntk_t * pNtk, int fVerbose );
@@ -69,18 +77,19 @@ void Abc_NtkPrintUnateBdd( Abc_Ntk_t * pNtk, int fUseNaive, int fVerbose )
 //	DdNode ** pbGlobal;     // temporary storage for global BDDs
     int TotalSupps = 0;
     int TotalUnate = 0;
-	int i, clk = clock();
-    int clkBdd, clkUnate;
+	int i;
+    abctime clk = Abc_Clock();
+    abctime clkBdd, clkUnate;
 
     // compute the global BDDs
-    dd = Abc_NtkBuildGlobalBdds(pNtk, 10000000, 1, 1, fVerbose);
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds(pNtk, 10000000, 1, 1, fVerbose);
     if ( dd == NULL )
         return;
-clkBdd = clock() - clk;
+clkBdd = Abc_Clock() - clk;
 
     // get information about the network
 //    dd       = pNtk->pManGlob;
-//    dd       = Abc_NtkGlobalBddMan( pNtk );
+//    dd       = (DdManager *)Abc_NtkGlobalBddMan( pNtk );
 //    pbGlobal = (DdNode **)Vec_PtrArray( pNtk->vFuncsGlob );
 
     // print the size of the BDDs
@@ -92,9 +101,12 @@ clkBdd = clock() - clk;
         Abc_NtkForEachCo( pNtk, pNode, i )
         {
 //            p = Extra_UnateComputeSlow( dd, pbGlobal[i] );
-            p = Extra_UnateComputeSlow( dd, Abc_ObjGlobalBdd(pNode) );
+            p = Extra_UnateComputeSlow( dd, (DdNode *)Abc_ObjGlobalBdd(pNode) );
             if ( fVerbose )
+            {
+                printf( "Out%4d : ", i );
                 Extra_UnateInfoPrint( p );
+            }
             TotalSupps += p->nVars;
             TotalUnate += p->nUnate;
             Extra_UnateInfoDissolve( p );
@@ -108,22 +120,25 @@ clkBdd = clock() - clk;
         Abc_NtkForEachCo( pNtk, pNode, i )
         {
 //            p = Extra_UnateComputeFast( dd, pbGlobal[i] );
-            p = Extra_UnateComputeFast( dd, Abc_ObjGlobalBdd(pNode) );
+            p = Extra_UnateComputeFast( dd, (DdNode *)Abc_ObjGlobalBdd(pNode) );
             if ( fVerbose )
+            {
+                printf( "Out%4d : ", i );
                 Extra_UnateInfoPrint( p );
+            }
             TotalSupps += p->nVars;
             TotalUnate += p->nUnate;
             Extra_UnateInfoDissolve( p );
         }
     }
-clkUnate = clock() - clk - clkBdd;
+clkUnate = Abc_Clock() - clk - clkBdd;
 
     // print stats
     printf( "Ins/Outs = %4d/%4d.  Total supp = %5d.  Total unate = %5d.\n",
         Abc_NtkCiNum(pNtk), Abc_NtkCoNum(pNtk), TotalSupps, TotalUnate );
-    PRT( "Glob BDDs", clkBdd );
-    PRT( "Unateness", clkUnate );
-    PRT( "Total    ", clock() - clk );
+    ABC_PRT( "Glob BDDs", clkBdd );
+    ABC_PRT( "Unateness", clkUnate );
+    ABC_PRT( "Total    ", Abc_Clock() - clk );
 
 	// deref the PO functions
 //    Abc_NtkFreeGlobalBdds( pNtk );
@@ -148,8 +163,16 @@ void Abc_NtkPrintUnateSat( Abc_Ntk_t * pNtk, int fVerbose )
 {
 }
 
+#else
+
+void Abc_NtkPrintUnate( Abc_Ntk_t * pNtk, int fUseBdds, int fUseNaive, int fVerbose ){}
+
+#endif
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -7,33 +7,64 @@
   Synopsis    [Returns a subset of minterms from a boolean function.]
 
   Description [External functions included in this modoule:
-		<ul>
-		<li> Cudd_SplitSet()
-		</ul>
-	Internal functions included in this module:
-		<ul>
-		<li> cuddSplitSetRecur()
-		</u>
+                <ul>
+                <li> Cudd_SplitSet()
+                </ul>
+        Internal functions included in this module:
+                <ul>
+                <li> cuddSplitSetRecur()
+                </u>
         Static functions included in this module:
-		<ul>
-		<li> selectMintermsFromUniverse()
-		<li> mintermsFromUniverse()
-		<li> bddAnnotateMintermCount()
-		</ul> ]
+                <ul>
+                <li> selectMintermsFromUniverse()
+                <li> mintermsFromUniverse()
+                <li> bddAnnotateMintermCount()
+                </ul> ]
 
   SeeAlso     []
 
   Author      [Balakrishna Kumthekar]
 
-  Copyright [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include "util_hack.h"
+#include "misc/util/util_hack.h"
 #include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -65,9 +96,9 @@
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static DdNode * selectMintermsFromUniverse ARGS((DdManager *manager, int *varSeen, double n));
-static DdNode * mintermsFromUniverse ARGS((DdManager *manager, DdNode **vars, int numVars, double n, int index));
-static double bddAnnotateMintermCount ARGS((DdManager *manager, DdNode *node, double max, st_table *table));
+static DdNode * selectMintermsFromUniverse (DdManager *manager, int *varSeen, double n);
+static DdNode * mintermsFromUniverse (DdManager *manager, DdNode **vars, int numVars, double n, int index);
+static double bddAnnotateMintermCount (DdManager *manager, DdNode *node, double max, st__table *table);
 
 /**AutomaticEnd***************************************************************/
 
@@ -104,7 +135,7 @@ Cudd_SplitSet(
     DdNode *result;
     DdNode *zero, *one;
     double  max, num;
-    st_table *mtable;
+    st__table *mtable;
     int *varSeen;
     int i,index, size;
 
@@ -114,69 +145,71 @@ Cudd_SplitSet(
 
     /* Trivial cases. */
     if (m == 0.0) {
-	return(zero);
+        return(zero);
     }
     if (S == zero) {
-	return(NULL);
+        return(NULL);
     }
 
     max = pow(2.0,(double)n);
     if (m > max)
-	return(NULL);
+        return(NULL);
 
     do {
-	manager->reordered = 0;
-	/* varSeen is used to mark the variables that are encountered
-	** while traversing the BDD S.
-	*/
-	varSeen = ALLOC(int, size);
-	if (varSeen == NULL) {
-	    manager->errorCode = CUDD_MEMORY_OUT;
-	    return(NULL);
-	}
-	for (i = 0; i < size; i++) {
-	    varSeen[i] = -1;
-	}
-	for (i = 0; i < n; i++) {
-	    index = (xVars[i])->index;
-	    varSeen[manager->invperm[index]] = 0;
-	}
+        manager->reordered = 0;
+        /* varSeen is used to mark the variables that are encountered
+        ** while traversing the BDD S.
+        */
+        varSeen = ABC_ALLOC(int, size);
+        if (varSeen == NULL) {
+            manager->errorCode = CUDD_MEMORY_OUT;
+            return(NULL);
+        }
+        for (i = 0; i < size; i++) {
+            varSeen[i] = -1;
+        }
+        for (i = 0; i < n; i++) {
+            index = (xVars[i])->index;
+            varSeen[manager->invperm[index]] = 0;
+        }
 
-	if (S == one) {
-	    if (m == max) 
-		return(S);
-	    result = selectMintermsFromUniverse(manager,varSeen,m);
-	    if (result)
-		cuddRef(result);
-	    FREE(varSeen);
-	} else {
-	    mtable = st_init_table(st_ptrcmp,st_ptrhash);
-	    if (mtable == NULL) {
-		(void) fprintf(manager->out,
-			       "Cudd_SplitSet: out-of-memory.\n");
-		FREE(varSeen);
-		manager->errorCode = CUDD_MEMORY_OUT;
-		return(NULL);
-	    }
-	    /* The nodes of BDD S are annotated by the number of minterms
-	    ** in their onset. The node and the number of minterms in its
-	    ** onset are stored in mtable.
-	    */
-	    num = bddAnnotateMintermCount(manager,S,max,mtable);
-	    if (m == num) {
-		st_foreach(mtable,cuddStCountfree,NIL(char));
-		st_free_table(mtable);
-		FREE(varSeen);
-		return(S);
-	    }
-	    
-	    result = cuddSplitSetRecur(manager,mtable,varSeen,S,m,max,0);
-	    if (result)
-		cuddRef(result);
-	    st_foreach(mtable,cuddStCountfree,NULL);
-	    st_free_table(mtable);
-	    FREE(varSeen);
-	}
+        if (S == one) {
+            if (m == max) {
+                ABC_FREE(varSeen);
+                return(S);
+            }
+            result = selectMintermsFromUniverse(manager,varSeen,m);
+            if (result)
+                cuddRef(result);
+            ABC_FREE(varSeen);
+        } else {
+            mtable = st__init_table( st__ptrcmp, st__ptrhash);
+            if (mtable == NULL) {
+                (void) fprintf(manager->out,
+                               "Cudd_SplitSet: out-of-memory.\n");
+                ABC_FREE(varSeen);
+                manager->errorCode = CUDD_MEMORY_OUT;
+                return(NULL);
+            }
+            /* The nodes of BDD S are annotated by the number of minterms
+            ** in their onset. The node and the number of minterms in its
+            ** onset are stored in mtable.
+            */
+            num = bddAnnotateMintermCount(manager,S,max,mtable);
+            if (m == num) {
+                st__foreach(mtable,cuddStCountfree,NIL(char));
+                st__free_table(mtable);
+                ABC_FREE(varSeen);
+                return(S);
+            }
+            
+            result = cuddSplitSetRecur(manager,mtable,varSeen,S,m,max,0);
+            if (result)
+                cuddRef(result);
+            st__foreach(mtable,cuddStCountfree,NULL);
+            st__free_table(mtable);
+            ABC_FREE(varSeen);
+        }
     } while (manager->reordered == 1);
 
     cuddDeref(result);
@@ -213,7 +246,7 @@ Cudd_SplitSet(
 DdNode*
 cuddSplitSetRecur(
   DdManager * manager,
-  st_table * mtable,
+  st__table * mtable,
   int * varSeen,
   DdNode * p,
   double  n,
@@ -235,8 +268,8 @@ cuddSplitSetRecur(
     ** constant 0.
     */
     if (Cudd_IsConstant(p)) {
-	q = selectMintermsFromUniverse(manager,varSeen,n);
-	return(q);
+        q = selectMintermsFromUniverse(manager,varSeen,n);
+        return(q);
     }
 
     N = Cudd_Regular(p);
@@ -248,47 +281,47 @@ cuddSplitSetRecur(
     Nv = cuddT(N);
     Nnv = cuddE(N);
     if (Cudd_IsComplement(p)) {
-	Nv = Cudd_Not(Nv);
-	Nnv = Cudd_Not(Nnv);
+        Nv = Cudd_Not(Nv);
+        Nnv = Cudd_Not(Nnv);
     }
 
     /* If both the children of 'p' are constants, extract n minterms from a
     ** constant node.
     */
     if (Cudd_IsConstant(Nv) && Cudd_IsConstant(Nnv)) {
-	q = selectMintermsFromUniverse(manager,varSeen,n);
-	if (q == NULL) {
-	    return(NULL);
-	}
-	cuddRef(q);
-	r = cuddBddAndRecur(manager,p,q);
-	if (r == NULL) {
-	    Cudd_RecursiveDeref(manager,q);
-	    return(NULL);
-	}
-	cuddRef(r);
-	Cudd_RecursiveDeref(manager,q);
-	cuddDeref(r);
-	return(r);
+        q = selectMintermsFromUniverse(manager,varSeen,n);
+        if (q == NULL) {
+            return(NULL);
+        }
+        cuddRef(q);
+        r = cuddBddAndRecur(manager,p,q);
+        if (r == NULL) {
+            Cudd_RecursiveDeref(manager,q);
+            return(NULL);
+        }
+        cuddRef(r);
+        Cudd_RecursiveDeref(manager,q);
+        cuddDeref(r);
+        return(r);
     }
   
     /* Lookup the # of minterms in the onset of the node from the table. */
     if (!Cudd_IsConstant(Nv)) {
-	st_lookup(mtable,(char *)Nv, (char **)&dummy);
-	numT = *dummy/(2*(1<<index));
+        if (! st__lookup(mtable, (const char *)Nv, (char **)&dummy)) return(NULL);
+        numT = *dummy/(2*(1<<index));
     } else if (Nv == one) {
-	numT = max/(2*(1<<index));
+        numT = max/(2*(1<<index));
     } else {
-	numT = 0;
+        numT = 0;
     }
   
     if (!Cudd_IsConstant(Nnv)) {
-	st_lookup(mtable,(char *)Nnv, (char **)&dummy);
-	numE = *dummy/(2*(1<<index));
+        if (! st__lookup(mtable, (const char *)Nnv, (char **)&dummy)) return(NULL);
+        numE = *dummy/(2*(1<<index));
     } else if (Nnv == one) {
-	numE = max/(2*(1<<index));
+        numE = max/(2*(1<<index));
     } else {
-	numE = 0;
+        numE = 0;
     }
 
     v = cuddUniqueInter(manager,variable,one,zero);
@@ -296,72 +329,72 @@ cuddSplitSetRecur(
 
     /* If perfect match. */
     if (numT == n) {
-	q = cuddBddAndRecur(manager,v,Nv);
-	if (q == NULL) {
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(q);
-	Cudd_RecursiveDeref(manager,v);
-	cuddDeref(q);
-	return(q);
+        q = cuddBddAndRecur(manager,v,Nv);
+        if (q == NULL) {
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(q);
+        Cudd_RecursiveDeref(manager,v);
+        cuddDeref(q);
+        return(q);
     }
     if (numE == n) {
-	q = cuddBddAndRecur(manager,Cudd_Not(v),Nnv);
-	if (q == NULL) {
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(q);
-	Cudd_RecursiveDeref(manager,v);
-	cuddDeref(q);
-	return(q);
+        q = cuddBddAndRecur(manager,Cudd_Not(v),Nnv);
+        if (q == NULL) {
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(q);
+        Cudd_RecursiveDeref(manager,v);
+        cuddDeref(q);
+        return(q);
     }
     /* If n is greater than numT, extract the difference from the ELSE child
     ** and retain the function represented by the THEN branch.
     */
     if (numT < n) {
-	q = cuddSplitSetRecur(manager,mtable,varSeen,
-			      Nnv,(n-numT),max,index+1);
-	if (q == NULL) {
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(q);
-	r = cuddBddIteRecur(manager,v,Nv,q);
-	if (r == NULL) {
-	    Cudd_RecursiveDeref(manager,q);
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(r);
-	Cudd_RecursiveDeref(manager,q);
-	Cudd_RecursiveDeref(manager,v);
-	cuddDeref(r);
-	return(r);
+        q = cuddSplitSetRecur(manager,mtable,varSeen,
+                              Nnv,(n-numT),max,index+1);
+        if (q == NULL) {
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(q);
+        r = cuddBddIteRecur(manager,v,Nv,q);
+        if (r == NULL) {
+            Cudd_RecursiveDeref(manager,q);
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(r);
+        Cudd_RecursiveDeref(manager,q);
+        Cudd_RecursiveDeref(manager,v);
+        cuddDeref(r);
+        return(r);
     }
     /* If n is greater than numE, extract the difference from the THEN child
     ** and retain the function represented by the ELSE branch.
     */
     if (numE < n) {
-	q = cuddSplitSetRecur(manager,mtable,varSeen,
-			      Nv, (n-numE),max,index+1);
-	if (q == NULL) {
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(q);
-	r = cuddBddIteRecur(manager,v,q,Nnv);
-	if (r == NULL) {
-	    Cudd_RecursiveDeref(manager,q);
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(r);
-	Cudd_RecursiveDeref(manager,q);
-	Cudd_RecursiveDeref(manager,v);
-	cuddDeref(r);    
-	return(r);
+        q = cuddSplitSetRecur(manager,mtable,varSeen,
+                              Nv, (n-numE),max,index+1);
+        if (q == NULL) {
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(q);
+        r = cuddBddIteRecur(manager,v,q,Nnv);
+        if (r == NULL) {
+            Cudd_RecursiveDeref(manager,q);
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(r);
+        Cudd_RecursiveDeref(manager,q);
+        Cudd_RecursiveDeref(manager,v);
+        cuddDeref(r);    
+        return(r);
     }
 
     /* None of the above cases; (n < numT and n < numE) and either of
@@ -369,41 +402,41 @@ cuddSplitSetRecur(
     ** required minterms the constant branch.
     */
     if (Cudd_IsConstant(Nv) && !Cudd_IsConstant(Nnv)) {
-	q = selectMintermsFromUniverse(manager,varSeen,n);
-	if (q == NULL) {
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(q);
-	result = cuddBddAndRecur(manager,v,q);
-	if (result == NULL) {
-	    Cudd_RecursiveDeref(manager,q);
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(result);
-	Cudd_RecursiveDeref(manager,q);
-	Cudd_RecursiveDeref(manager,v);
-	cuddDeref(result);
-	return(result);
+        q = selectMintermsFromUniverse(manager,varSeen,n);
+        if (q == NULL) {
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(q);
+        result = cuddBddAndRecur(manager,v,q);
+        if (result == NULL) {
+            Cudd_RecursiveDeref(manager,q);
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(result);
+        Cudd_RecursiveDeref(manager,q);
+        Cudd_RecursiveDeref(manager,v);
+        cuddDeref(result);
+        return(result);
     } else if (!Cudd_IsConstant(Nv) && Cudd_IsConstant(Nnv)) {
-	q = selectMintermsFromUniverse(manager,varSeen,n);
-	if (q == NULL) {
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(q);
-	result = cuddBddAndRecur(manager,Cudd_Not(v),q);
-	if (result == NULL) {
-	    Cudd_RecursiveDeref(manager,q);
-	    Cudd_RecursiveDeref(manager,v);
-	    return(NULL);
-	}
-	cuddRef(result);
-	Cudd_RecursiveDeref(manager,q);
-	Cudd_RecursiveDeref(manager,v);
-	cuddDeref(result);
-	return(result);
+        q = selectMintermsFromUniverse(manager,varSeen,n);
+        if (q == NULL) {
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(q);
+        result = cuddBddAndRecur(manager,Cudd_Not(v),q);
+        if (result == NULL) {
+            Cudd_RecursiveDeref(manager,q);
+            Cudd_RecursiveDeref(manager,v);
+            return(NULL);
+        }
+        cuddRef(result);
+        Cudd_RecursiveDeref(manager,q);
+        Cudd_RecursiveDeref(manager,v);
+        cuddDeref(result);
+        return(result);
     }
 
     /* Both Nv and Nnv are not constants. So choose the one which
@@ -411,29 +444,29 @@ cuddSplitSetRecur(
     */
     positive = 0;
     if (numT < numE) {
-	q = cuddSplitSetRecur(manager,mtable,varSeen,
-			      Nv,n,max,index+1);
-	positive = 1;
+        q = cuddSplitSetRecur(manager,mtable,varSeen,
+                              Nv,n,max,index+1);
+        positive = 1;
     } else {
-	q = cuddSplitSetRecur(manager,mtable,varSeen,
-			      Nnv,n,max,index+1);
+        q = cuddSplitSetRecur(manager,mtable,varSeen,
+                              Nnv,n,max,index+1);
     }
 
     if (q == NULL) {
-	Cudd_RecursiveDeref(manager,v);
-	return(NULL);
+        Cudd_RecursiveDeref(manager,v);
+        return(NULL);
     }
     cuddRef(q);
 
     if (positive) {
-	result = cuddBddAndRecur(manager,v,q);
+        result = cuddBddAndRecur(manager,v,q);
     } else {
-	result = cuddBddAndRecur(manager,Cudd_Not(v),q);
+        result = cuddBddAndRecur(manager,Cudd_Not(v),q);
     }
     if (result == NULL) {
-	Cudd_RecursiveDeref(manager,q);
-	Cudd_RecursiveDeref(manager,v);
-	return(NULL);
+        Cudd_RecursiveDeref(manager,q);
+        Cudd_RecursiveDeref(manager,v);
+        return(NULL);
     }
     cuddRef(result);
     Cudd_RecursiveDeref(manager,q);
@@ -482,22 +515,22 @@ selectMintermsFromUniverse(
     ** cuddSplitSetRecur.
     */
     for (i = size-1; i >= 0; i--) {
-	if(varSeen[i] == 0)
-	    numVars++;
+        if(varSeen[i] == 0)
+            numVars++;
     }
-    vars = ALLOC(DdNode *, numVars);
+    vars = ABC_ALLOC(DdNode *, numVars);
     if (!vars) {
-	manager->errorCode = CUDD_MEMORY_OUT;
-	return(NULL);
+        manager->errorCode = CUDD_MEMORY_OUT;
+        return(NULL);
     }
 
     j = 0;
     for (i = size-1; i >= 0; i--) {
-	if(varSeen[i] == 0) {
-	    vars[j] = cuddUniqueInter(manager,manager->perm[i],one,zero);
-	    cuddRef(vars[j]);
-	    j++;
-	}
+        if(varSeen[i] == 0) {
+            vars[j] = cuddUniqueInter(manager,manager->perm[i],one,zero);
+            cuddRef(vars[j]);
+            j++;
+        }
     }
 
     /* Compute a function which has n minterms and depends on at most
@@ -505,11 +538,11 @@ selectMintermsFromUniverse(
     */
     result = mintermsFromUniverse(manager,vars,numVars,n, 0);
     if (result) 
-	cuddRef(result);
+        cuddRef(result);
 
     for (i = 0; i < numVars; i++)
-	Cudd_RecursiveDeref(manager,vars[i]);
-    FREE(vars);
+        Cudd_RecursiveDeref(manager,vars[i]);
+    ABC_FREE(vars);
 
     return(result);
 
@@ -545,37 +578,37 @@ mintermsFromUniverse(
     max2 = max / 2.0;
 
     if (n == max)
-	return(one);
+        return(one);
     if (n == 0.0)
-	return(zero);
+        return(zero);
     /* if n == 2^(numVars-1), return a single variable */
     if (n == max2)
-	return vars[index];
+        return vars[index];
     else if (n > max2) {
-	/* When n > 2^(numVars-1), a single variable vars[index]
-	** contains 2^(numVars-1) minterms. The rest are extracted
-	** from a constant with 1 less variable.
-	*/
-	q = mintermsFromUniverse(manager,vars,numVars-1,(n-max2),index+1);
-	if (q == NULL)
-	    return(NULL);
-	cuddRef(q);
-	result = cuddBddIteRecur(manager,vars[index],one,q);
+        /* When n > 2^(numVars-1), a single variable vars[index]
+        ** contains 2^(numVars-1) minterms. The rest are extracted
+        ** from a constant with 1 less variable.
+        */
+        q = mintermsFromUniverse(manager,vars,numVars-1,(n-max2),index+1);
+        if (q == NULL)
+            return(NULL);
+        cuddRef(q);
+        result = cuddBddIteRecur(manager,vars[index],one,q);
     } else {
-	/* When n < 2^(numVars-1), a literal of variable vars[index]
-	** is selected. The required n minterms are extracted from a
-	** constant with 1 less variable.
-	*/
-	q = mintermsFromUniverse(manager,vars,numVars-1,n,index+1);
-	if (q == NULL)
-	    return(NULL);
-	cuddRef(q);
-	result = cuddBddAndRecur(manager,vars[index],q);
+        /* When n < 2^(numVars-1), a literal of variable vars[index]
+        ** is selected. The required n minterms are extracted from a
+        ** constant with 1 less variable.
+        */
+        q = mintermsFromUniverse(manager,vars,numVars-1,n,index+1);
+        if (q == NULL)
+            return(NULL);
+        cuddRef(q);
+        result = cuddBddAndRecur(manager,vars[index],q);
     }
     
     if (result == NULL) {
-	Cudd_RecursiveDeref(manager,q);
-	return(NULL);
+        Cudd_RecursiveDeref(manager,q);
+        return(NULL);
     }
     cuddRef(result);
     Cudd_RecursiveDeref(manager,q);
@@ -601,7 +634,7 @@ bddAnnotateMintermCount(
   DdManager * manager,
   DdNode * node,
   double  max,
-  st_table * table)
+  st__table * table)
 {
 
     DdNode *N,*Nv,*Nnv;
@@ -613,45 +646,49 @@ bddAnnotateMintermCount(
     statLine(manager);
     N = Cudd_Regular(node);
     if (cuddIsConstant(N)) {
-	if (node == DD_ONE(manager)) {
-	    return(max);
-	} else {
-	    return(0.0);
-	}
+        if (node == DD_ONE(manager)) {
+            return(max);
+        } else {
+            return(0.0);
+        }
     }
 
-    if (st_lookup(table,(char *)node,(char **)&dummy)) {
-	return(*dummy);
-    }	
+    if ( st__lookup(table, (const char *)node, (char **)&dummy)) {
+        return(*dummy);
+    }   
   
     Nv = cuddT(N);
     Nnv = cuddE(N);
     if (N != node) {
-	Nv = Cudd_Not(Nv);
-	Nnv = Cudd_Not(Nnv);
+        Nv = Cudd_Not(Nv);
+        Nnv = Cudd_Not(Nnv);
     }
 
     /* Recur on the two branches. */
     min_v  = bddAnnotateMintermCount(manager,Nv,max,table) / 2.0;
     if (min_v == (double)CUDD_OUT_OF_MEM)
-	return ((double)CUDD_OUT_OF_MEM);
+        return ((double)CUDD_OUT_OF_MEM);
     min_nv = bddAnnotateMintermCount(manager,Nnv,max,table) / 2.0;
     if (min_nv == (double)CUDD_OUT_OF_MEM)
-	return ((double)CUDD_OUT_OF_MEM);
+        return ((double)CUDD_OUT_OF_MEM);
     min_N  = min_v + min_nv;
 
-    pmin = ALLOC(double,1);
+    pmin = ABC_ALLOC(double,1);
     if (pmin == NULL) {
-	manager->errorCode = CUDD_MEMORY_OUT;
-	return((double)CUDD_OUT_OF_MEM);
+        manager->errorCode = CUDD_MEMORY_OUT;
+        return((double)CUDD_OUT_OF_MEM);
     }
     *pmin = min_N;
 
-    if (st_insert(table,(char *)node, (char *)pmin) == ST_OUT_OF_MEM) {
-	FREE(pmin);
-	return((double)CUDD_OUT_OF_MEM);
+    if ( st__insert(table,(char *)node, (char *)pmin) == st__OUT_OF_MEM) {
+        ABC_FREE(pmin);
+        return((double)CUDD_OUT_OF_MEM);
     }
     
     return(min_N);
 
 } /* end of bddAnnotateMintermCount */
+
+
+ABC_NAMESPACE_IMPL_END
+

@@ -20,6 +20,9 @@
 
 #include "msatInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -45,7 +48,7 @@ static void            Msat_SolverReduceDB( Msat_Solver_t * p );
   SeeAlso     []
 
 ***********************************************************************/
-bool Msat_SolverAssume( Msat_Solver_t * p, Msat_Lit_t Lit )
+int  Msat_SolverAssume( Msat_Solver_t * p, Msat_Lit_t Lit )
 {
     assert( Msat_QueueReadSize(p->pQueue) == 0 );
     if ( p->fVerbose )
@@ -167,7 +170,7 @@ Msat_Clause_t * Msat_SolverRecord( Msat_Solver_t * p, Msat_IntVec_t * vLits )
   SeeAlso     []
 
 ***********************************************************************/
-bool Msat_SolverEnqueue( Msat_Solver_t * p, Msat_Lit_t Lit, Msat_Clause_t * pC )
+int  Msat_SolverEnqueue( Msat_Solver_t * p, Msat_Lit_t Lit, Msat_Clause_t * pC )
 {
     Msat_Var_t Var = MSAT_LIT2VAR(Lit);
 
@@ -276,7 +279,7 @@ Msat_Clause_t * Msat_SolverPropagate( Msat_Solver_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-bool Msat_SolverSimplifyDB( Msat_Solver_t * p )
+int  Msat_SolverSimplifyDB( Msat_Solver_t * p )
 {
     Msat_ClauseVec_t * vClauses;
     Msat_Clause_t ** pClauses;
@@ -626,4 +629,6 @@ Msat_Type_t Msat_SolverSearch( Msat_Solver_t * p, int nConfLimit, int nLearnedLi
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

@@ -20,6 +20,9 @@
 
 #include "ivy.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -196,14 +199,14 @@ void Ivy_ManCollectCone( Ivy_Obj_t * pObj, Vec_Ptr_t * vFront, Vec_Ptr_t * vCone
     assert( !Ivy_IsComplement(pObj) );
     assert( Ivy_ObjIsNode(pObj) );
     // mark the nodes
-    Vec_PtrForEachEntry( vFront, pTemp, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, i )
         Ivy_Regular(pTemp)->fMarkA = 1;
     assert( pObj->fMarkA == 0 );
     // collect the cone
     Vec_PtrClear( vCone );
     Ivy_ManCollectCone_rec( pObj, vCone );
     // unmark the nodes
-    Vec_PtrForEachEntry( vFront, pTemp, i )
+    Vec_PtrForEachEntry( Ivy_Obj_t *, vFront, pTemp, i )
         Ivy_Regular(pTemp)->fMarkA = 0;
 }
 
@@ -255,7 +258,7 @@ Vec_Int_t * Ivy_ManRequiredLevels( Ivy_Man_t * p )
     vLevelsR = Vec_IntStart( Ivy_ManObjIdMax(p) + 1 );
     // iterate through the nodes in the reverse order
     vNodes = Ivy_ManLevelize( p );
-    Vec_VecForEachEntryReverseReverse( vNodes, pObj, i, k )
+    Vec_VecForEachEntryReverseReverse( Ivy_Obj_t *, vNodes, pObj, i, k )
     {
         Level = Vec_IntEntry( vLevelsR, pObj->Id ) + 1 + Ivy_ObjIsExor(pObj);
         if ( Vec_IntEntry( vLevelsR, Ivy_ObjFaninId0(pObj) ) < Level )
@@ -382,7 +385,7 @@ int Ivy_ManIsAcyclic( Ivy_Man_t * p )
     Ivy_ManForEachCo( p, pObj, i )
     {
         // traverse the output logic cone
-        if ( fAcyclic = Ivy_ManIsAcyclic_rec(p, Ivy_ObjFanin0(pObj)) )
+        if ( (fAcyclic = Ivy_ManIsAcyclic_rec(p, Ivy_ObjFanin0(pObj))) )
             continue;
         // stop as soon as the first loop is detected
         fprintf( stdout, " (cone of %s \"%d\")\n", Ivy_ObjIsLatch(pObj)? "latch" : "PO", Ivy_ObjId(pObj) );
@@ -490,4 +493,6 @@ int Ivy_ManSetLevels( Ivy_Man_t * p, int fHaig )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

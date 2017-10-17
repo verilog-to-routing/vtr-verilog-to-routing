@@ -25,12 +25,32 @@
 
 ***********************************************************************/
 
-#ifndef __DSD_H__
-#define __DSD_H__
+#ifndef ABC__bdd__dsd__dsd_h
+#define ABC__bdd__dsd__dsd_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
+////////////////////////////////////////////////////////////////////////
+///                    STRUCTURE DEFINITIONS                         ///
+////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
+///                         PARAMETERS                               ///
+////////////////////////////////////////////////////////////////////////
+
+
+
+ABC_NAMESPACE_HEADER_START
+
+
+// types of DSD nodes
+enum Dsd_Type_t_ { 
+    DSD_NODE_NONE   = 0,
+    DSD_NODE_CONST1 = 1,
+    DSD_NODE_BUF    = 2,
+    DSD_NODE_OR     = 3,
+    DSD_NODE_EXOR   = 4,
+    DSD_NODE_PRIME  = 5,
+};
 
 ////////////////////////////////////////////////////////////////////////
 ///                      TYPEDEF DEFINITIONS                         ///
@@ -41,32 +61,14 @@ typedef struct Dsd_Node_t_      Dsd_Node_t;
 typedef enum   Dsd_Type_t_      Dsd_Type_t;
 
 ////////////////////////////////////////////////////////////////////////
-///                    STRUCTURE DEFINITIONS                         ///
-////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////
-///                         PARAMETERS                               ///
-////////////////////////////////////////////////////////////////////////
-
-// types of DSD nodes
-enum Dsd_Type_t_ { 
-	DSD_NODE_NONE   = 0,
-	DSD_NODE_CONST1 = 1,
-	DSD_NODE_BUF    = 2,
-	DSD_NODE_OR     = 3,
-	DSD_NODE_EXOR   = 4,
-	DSD_NODE_PRIME  = 5,
-};
-
-////////////////////////////////////////////////////////////////////////
 ///                       MACRO DEFINITIONS                          ///
 ////////////////////////////////////////////////////////////////////////
 
 // complementation and testing for pointers for decomposition entries
-#define Dsd_IsComplement(p)  (((int)((unsigned long) (p) & 01)))
-#define Dsd_Regular(p)       ((Dsd_Node_t *)((unsigned long)(p) & ~01)) 
-#define Dsd_Not(p)           ((Dsd_Node_t *)((unsigned long)(p) ^ 01)) 
-#define Dsd_NotCond(p,c)     ((Dsd_Node_t *)((unsigned long)(p) ^ (c)))
+#define Dsd_IsComplement(p)  (((int)((ABC_PTRUINT_T) (p) & 01)))
+#define Dsd_Regular(p)       ((Dsd_Node_t *)((ABC_PTRUINT_T)(p) & ~01)) 
+#define Dsd_Not(p)           ((Dsd_Node_t *)((ABC_PTRUINT_T)(p) ^ 01)) 
+#define Dsd_NotCond(p,c)     ((Dsd_Node_t *)((ABC_PTRUINT_T)(p) ^ (c)))
 
 ////////////////////////////////////////////////////////////////////////
 ///                         ITERATORS                                ///
@@ -114,13 +116,16 @@ extern int             Dsd_TreeCollectDecomposableVars( Dsd_Manager_t * dMan, in
 extern Dsd_Node_t **   Dsd_TreeCollectNodesDfs( Dsd_Manager_t * dMan, int * pnNodes );
 extern Dsd_Node_t **   Dsd_TreeCollectNodesDfsOne( Dsd_Manager_t * pDsdMan, Dsd_Node_t * pNode, int * pnNodes );
 extern void            Dsd_TreePrint( FILE * pFile, Dsd_Manager_t * dMan, char * pInputNames[], char * pOutputNames[], int fShortNames, int Output );
+extern void            Dsd_TreePrint2( FILE * pFile, Dsd_Manager_t * dMan, char * pInputNames[], char * pOutputNames[], int Output );
 extern void            Dsd_NodePrint( FILE * pFile, Dsd_Node_t * pNode );
 /*=== dsdLocal.c =======================================================*/
 extern DdNode *        Dsd_TreeGetPrimeFunction( DdManager * dd, Dsd_Node_t * pNode );
 
-#ifdef __cplusplus
-}
-#endif
+
+
+ABC_NAMESPACE_HEADER_END
+
+
 
 #endif
 

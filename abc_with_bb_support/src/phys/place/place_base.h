@@ -8,7 +8,11 @@
 /*===================================================================*/
 
 #if !defined(PLACE_BASE_H_)
-#define PLACE_BASE_H_
+#define ABC__phys__place__place_base_h
+
+
+ABC_NAMESPACE_HEADER_START
+
 
 // --------------------------------------------------------------------
 // Data structures
@@ -17,7 +21,7 @@
 
 // --- a C++ bool-like type
 //typedef char bool;
-#ifndef bool
+#ifndef ABC__phys__place__place_base_h
 #define bool int
 #endif
 
@@ -133,5 +137,9 @@ int    netSortByID(const void *a, const void *b);
 int    cellSortByX(const void *a, const void *b);
 int    cellSortByY(const void *a, const void *b);
 int    cellSortByID(const void *a, const void *b);
+
+
+
+ABC_NAMESPACE_HEADER_END
 
 #endif

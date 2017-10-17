@@ -18,9 +18,17 @@
 
 ***********************************************************************/
 
+#include "base/abc/abc.h"
 #include "mainInt.h"
-#include "abc.h"
-#include "dec.h"
+#include "bool/dec/dec.h"
+#include "map/if/if.h"
+
+#ifdef ABC_USE_CUDD
+#include "bdd/extrab/extraBdd.h"
+#endif
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -43,23 +51,62 @@ static Abc_Frame_t * s_GlobalFrame = NULL;
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_FrameReadNtkStore()                  { return s_GlobalFrame->pStored;      } 
-int         Abc_FrameReadNtkStoreSize()              { return s_GlobalFrame->nStored;      }
-void *      Abc_FrameReadLibLut()                    { return s_GlobalFrame->pLibLut;      } 
-void *      Abc_FrameReadLibGen()                    { return s_GlobalFrame->pLibGen;      } 
-void *      Abc_FrameReadLibSuper()                  { return s_GlobalFrame->pLibSuper;    } 
-void *      Abc_FrameReadLibVer()                    { return s_GlobalFrame->pLibVer;      } 
-void *      Abc_FrameReadManDd()                     { if ( s_GlobalFrame->dd == NULL )      s_GlobalFrame->dd = Cudd_Init( 0, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0 );  return s_GlobalFrame->dd;      } 
-void *      Abc_FrameReadManDec()                    { if ( s_GlobalFrame->pManDec == NULL ) s_GlobalFrame->pManDec = Dec_ManStart();                                        return s_GlobalFrame->pManDec; } 
-char *      Abc_FrameReadFlag( char * pFlag )        { return Cmd_FlagReadByName( s_GlobalFrame, pFlag );  } 
+Vec_Ptr_t * Abc_FrameReadStore()                             { return s_GlobalFrame->vStore;       } 
+int         Abc_FrameReadStoreSize()                         { return Vec_PtrSize(s_GlobalFrame->vStore); }
+void *      Abc_FrameReadLibLut()                            { return s_GlobalFrame->pLibLut;      } 
+void *      Abc_FrameReadLibBox()                            { return s_GlobalFrame->pLibBox;      } 
+void *      Abc_FrameReadLibGen()                            { return s_GlobalFrame->pLibGen;      } 
+void *      Abc_FrameReadLibGen2()                           { return s_GlobalFrame->pLibGen2;     } 
+void *      Abc_FrameReadLibSuper()                          { return s_GlobalFrame->pLibSuper;    } 
+void *      Abc_FrameReadLibScl()                            { return s_GlobalFrame->pLibScl;      } 
+#ifdef ABC_USE_CUDD
+void *      Abc_FrameReadManDd()                             { if ( s_GlobalFrame->dd == NULL )      s_GlobalFrame->dd = Cudd_Init( 0, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0 );  return s_GlobalFrame->dd;      } 
+#endif
+void *      Abc_FrameReadManDec()                            { if ( s_GlobalFrame->pManDec == NULL ) s_GlobalFrame->pManDec = Dec_ManStart();                                        return s_GlobalFrame->pManDec; } 
+void *      Abc_FrameReadManDsd()                            { return s_GlobalFrame->pManDsd;      } 
+void *      Abc_FrameReadManDsd2()                           { return s_GlobalFrame->pManDsd2;     }
+char *      Abc_FrameReadFlag( char * pFlag )                { return Cmd_FlagReadByName( s_GlobalFrame, pFlag );   }
 
-void        Abc_FrameSetNtkStore( Abc_Ntk_t * pNtk ) { s_GlobalFrame->pStored   = pNtk;    } 
-void        Abc_FrameSetNtkStoreSize( int nStored )  { s_GlobalFrame->nStored   = nStored; }
-void        Abc_FrameSetLibLut( void * pLib )        { s_GlobalFrame->pLibLut   = pLib;    } 
-void        Abc_FrameSetLibGen( void * pLib )        { s_GlobalFrame->pLibGen   = pLib;    } 
-void        Abc_FrameSetLibSuper( void * pLib )      { s_GlobalFrame->pLibSuper = pLib;    } 
-void        Abc_FrameSetLibVer( void * pLib )        { s_GlobalFrame->pLibVer   = pLib;    } 
-void        Abc_FrameSetFlag( char * pFlag, char * pValue )  { Cmd_FlagUpdateValue( s_GlobalFrame, pFlag, pValue );  } 
+int         Abc_FrameReadBmcFrames( Abc_Frame_t * p )        { return s_GlobalFrame->nFrames;      }               
+int         Abc_FrameReadProbStatus( Abc_Frame_t * p )       { return s_GlobalFrame->Status;       }               
+void *      Abc_FrameReadCex( Abc_Frame_t * p )              { return s_GlobalFrame->pCex;         }        
+Vec_Ptr_t * Abc_FrameReadCexVec( Abc_Frame_t * p )           { return s_GlobalFrame->vCexVec;      }        
+Vec_Int_t * Abc_FrameReadStatusVec( Abc_Frame_t * p )        { return s_GlobalFrame->vStatuses;    }        
+Vec_Ptr_t * Abc_FrameReadPoEquivs( Abc_Frame_t * p )         { return s_GlobalFrame->vPoEquivs;    }        
+Vec_Int_t * Abc_FrameReadPoStatuses( Abc_Frame_t * p )       { return s_GlobalFrame->vStatuses;    }        
+Vec_Int_t * Abc_FrameReadObjIds( Abc_Frame_t * p )           { return s_GlobalFrame->vAbcObjIds;   }        
+Abc_Nam_t * Abc_FrameReadJsonStrs( Abc_Frame_t * p )         { return s_GlobalFrame->pJsonStrs;    }     
+Vec_Wec_t * Abc_FrameReadJsonObjs( Abc_Frame_t * p )         { return s_GlobalFrame->vJsonObjs;    }   
+       
+int         Abc_FrameReadCexPiNum( Abc_Frame_t * p )         { return s_GlobalFrame->pCex->nPis;   }               
+int         Abc_FrameReadCexRegNum( Abc_Frame_t * p )        { return s_GlobalFrame->pCex->nRegs;  }               
+int         Abc_FrameReadCexPo( Abc_Frame_t * p )            { return s_GlobalFrame->pCex->iPo;    }               
+int         Abc_FrameReadCexFrame( Abc_Frame_t * p )         { return s_GlobalFrame->pCex->iFrame; }               
+
+void        Abc_FrameSetLibLut( void * pLib )                { s_GlobalFrame->pLibLut   = pLib;    } 
+void        Abc_FrameSetLibBox( void * pLib )                { s_GlobalFrame->pLibBox   = pLib;    } 
+void        Abc_FrameSetLibGen( void * pLib )                { s_GlobalFrame->pLibGen   = pLib;    } 
+void        Abc_FrameSetLibGen2( void * pLib )               { s_GlobalFrame->pLibGen2  = pLib;    } 
+void        Abc_FrameSetLibSuper( void * pLib )              { s_GlobalFrame->pLibSuper = pLib;    } 
+void        Abc_FrameSetFlag( char * pFlag, char * pValue )  { Cmd_FlagUpdateValue( s_GlobalFrame, pFlag, pValue );               } 
+void        Abc_FrameSetCex( Abc_Cex_t * pCex )              { ABC_FREE( s_GlobalFrame->pCex ); s_GlobalFrame->pCex = pCex;       }
+void        Abc_FrameSetNFrames( int nFrames )               { ABC_FREE( s_GlobalFrame->pCex ); s_GlobalFrame->nFrames = nFrames; }
+void        Abc_FrameSetStatus( int Status )                 { ABC_FREE( s_GlobalFrame->pCex ); s_GlobalFrame->Status = Status;   }
+void        Abc_FrameSetManDsd( void * pMan )                { if (s_GlobalFrame->pManDsd  && s_GlobalFrame->pManDsd  != pMan) If_DsdManFree((If_DsdMan_t *)s_GlobalFrame->pManDsd,  0); s_GlobalFrame->pManDsd = pMan;  }
+void        Abc_FrameSetManDsd2( void * pMan )               { if (s_GlobalFrame->pManDsd2 && s_GlobalFrame->pManDsd2 != pMan) If_DsdManFree((If_DsdMan_t *)s_GlobalFrame->pManDsd2, 0); s_GlobalFrame->pManDsd2 = pMan; }
+void        Abc_FrameSetInv( Vec_Int_t * vInv )              { Vec_IntFreeP(&s_GlobalFrame->pAbcWlcInv); s_GlobalFrame->pAbcWlcInv = vInv; }
+void        Abc_FrameSetJsonStrs( Abc_Nam_t * pStrs )        { Abc_NamDeref( s_GlobalFrame->pJsonStrs ); s_GlobalFrame->pJsonStrs = pStrs; }
+void        Abc_FrameSetJsonObjs( Vec_Wec_t * vObjs )        { Vec_WecFreeP(&s_GlobalFrame->vJsonObjs ); s_GlobalFrame->vJsonObjs = vObjs; }
+
+int         Abc_FrameIsBatchMode()                           { return s_GlobalFrame ? s_GlobalFrame->fBatchMode : 0;              } 
+
+int         Abc_FrameIsBridgeMode()                          { return s_GlobalFrame ? s_GlobalFrame->fBridgeMode : 0;             } 
+void        Abc_FrameSetBridgeMode()                         { if ( s_GlobalFrame ) s_GlobalFrame->fBridgeMode = 1;               } 
+
+char *      Abc_FrameReadDrivingCell()                       { return s_GlobalFrame->pDrivingCell;    }              
+float       Abc_FrameReadMaxLoad()                           { return s_GlobalFrame->MaxLoad;         }      
+void        Abc_FrameSetDrivingCell( char * pName )          { ABC_FREE(s_GlobalFrame->pDrivingCell); s_GlobalFrame->pDrivingCell   = pName; }      
+void        Abc_FrameSetMaxLoad( float Load )                { s_GlobalFrame->MaxLoad        = Load;  }      
 
 /**Function*************************************************************
 
@@ -72,7 +119,7 @@ void        Abc_FrameSetFlag( char * pFlag, char * pValue )  { Cmd_FlagUpdateVal
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_FrameIsFlagEnabled( char * pFlag )
+int Abc_FrameIsFlagEnabled( char * pFlag )
 {
     char * pValue;
     // if flag is not defined, it is not enabled
@@ -102,22 +149,27 @@ Abc_Frame_t * Abc_FrameAllocate()
     extern void define_cube_size( int n );
     extern void set_espresso_flags();
     // allocate and clean
-    p = ALLOC( Abc_Frame_t, 1 );
-    memset( p, 0, sizeof(Abc_Frame_t) );
+    p = ABC_CALLOC( Abc_Frame_t, 1 );
     // get version
     p->sVersion = Abc_UtilsGetVersion( p );
     // set streams
     p->Err = stderr;
     p->Out = stdout;
     p->Hst = NULL;
+    p->Status     = -1;
+    p->nFrames    = -1;
     // set the starting step
-    p->nSteps = 1;
-	p->fBatchMode = 0;
+    p->nSteps     =  1;
+	p->fBatchMode =  0;
+    // networks to be used by choice
+    p->vStore = Vec_PtrAlloc( 16 );
+    p->vAbcObjIds = Vec_IntAlloc( 0 );
     // initialize decomposition manager
-    define_cube_size(20);
-    set_espresso_flags();
+//    define_cube_size(20);
+//    set_espresso_flags();
     // initialize the trace manager
 //    Abc_HManStart();
+    p->vPlugInComBinPairs = Vec_PtrAlloc( 100 );
     return p;
 }
 
@@ -139,16 +191,52 @@ void Abc_FrameDeallocate( Abc_Frame_t * p )
     extern void undefine_cube_size();
 //    extern void Ivy_TruthManStop();
 //    Abc_HManStop();
-    undefine_cube_size();
+//    undefine_cube_size();
     Rwt_ManGlobalStop();
 //    Ivy_TruthManStop();
-    if ( p->pLibVer ) Abc_LibFree( p->pLibVer, NULL );
-    if ( p->pManDec ) Dec_ManStop( p->pManDec );
-    if ( p->dd )      Extra_StopManager( p->dd );
+    if ( p->vAbcObjIds)  Vec_IntFree( p->vAbcObjIds );
+    if ( p->vCexVec   )  Vec_PtrFreeFree( p->vCexVec );
+    if ( p->vPoEquivs )  Vec_VecFree( (Vec_Vec_t *)p->vPoEquivs );
+    if ( p->vStatuses )  Vec_IntFree( p->vStatuses );
+    if ( p->pManDec   )  Dec_ManStop( (Dec_Man_t *)p->pManDec );
+#ifdef ABC_USE_CUDD
+    if ( p->dd        )  Extra_StopManager( p->dd );
+#endif
+    if ( p->vStore    )  Vec_PtrFree( p->vStore );
+    if ( p->pSave1    )  Aig_ManStop( (Aig_Man_t *)p->pSave1 );
+    if ( p->pSave2    )  Aig_ManStop( (Aig_Man_t *)p->pSave2 );
+    if ( p->pSave3    )  Aig_ManStop( (Aig_Man_t *)p->pSave3 );
+    if ( p->pSave4    )  Aig_ManStop( (Aig_Man_t *)p->pSave4 );
+    if ( p->pManDsd   )  If_DsdManFree( (If_DsdMan_t *)p->pManDsd, 0 );
+    if ( p->pManDsd2  )  If_DsdManFree( (If_DsdMan_t *)p->pManDsd2, 0 );
+    if ( p->pNtkBackup)  Abc_NtkDelete( p->pNtkBackup );
+    if ( p->vPlugInComBinPairs ) 
+    {
+        char * pTemp;
+        int i;
+        Vec_PtrForEachEntry( char *, p->vPlugInComBinPairs, pTemp, i )
+            ABC_FREE( pTemp );
+        Vec_PtrFree( p->vPlugInComBinPairs );
+    }
+    Vec_IntFreeP( &p->vIndFlops );
+    Vec_PtrFreeP( &p->vLTLProperties_global );
     Abc_FrameDeleteAllNetworks( p );
-    free( p );
+    ABC_FREE( p->pDrivingCell );
+    ABC_FREE( p->pCex2 );
+    ABC_FREE( p->pCex );
+    Vec_IntFreeP( &p->pAbcWlcInv );
+    Abc_NamDeref( s_GlobalFrame->pJsonStrs );
+    Vec_WecFreeP(&s_GlobalFrame->vJsonObjs );    
+
+    Gia_ManStopP( &p->pGiaMiniAig );
+    Gia_ManStopP( &p->pGiaMiniLut );
+    Vec_IntFreeP( &p->vCopyMiniAig );
+    Vec_IntFreeP( &p->vCopyMiniLut );
+
+    ABC_FREE( p );
     s_GlobalFrame = NULL;
 }
+
 
 /**Function*************************************************************
 
@@ -176,7 +264,25 @@ void Abc_FrameRestart( Abc_Frame_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_FrameShowProgress( Abc_Frame_t * p )
+void Abc_FrameClearVerifStatus( Abc_Frame_t * p )
+{
+    p->nFrames = -1;
+    p->Status  = -1;
+    ABC_FREE( p->pCex );
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_FrameShowProgress( Abc_Frame_t * p )
 {
     return Abc_FrameIsFlagEnabled( "progressbar" );
 }
@@ -196,6 +302,22 @@ bool Abc_FrameShowProgress( Abc_Frame_t * p )
 Abc_Ntk_t * Abc_FrameReadNtk( Abc_Frame_t * p )
 {
     return p->pNtkCur;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Gia_Man_t * Abc_FrameReadGia( Abc_Frame_t * p )
+{
+    return p->pGia;
 }
 
 /**Function*************************************************************
@@ -264,10 +386,10 @@ int Abc_FrameReadMode( Abc_Frame_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-bool Abc_FrameSetMode( Abc_Frame_t * p, bool fNameMode )
+int Abc_FrameSetMode( Abc_Frame_t * p, int fNameMode )
 {
     char Buffer[2];
-    bool fNameModeOld;
+    int fNameModeOld;
     fNameModeOld = Abc_FrameReadMode( p );
     Buffer[0] = '0' + fNameMode;
     Buffer[1] = 0;
@@ -297,6 +419,9 @@ void Abc_FrameSetCurrentNetwork( Abc_Frame_t * p, Abc_Ntk_t * pNtkNew )
     int nNetsPresent;
     int nNetsToSave;
     char * pValue;
+
+    if ( p->pNtkCur == pNtkNew )
+        return;
 
     // link it to the previous network
     Abc_NtkSetBackup( pNtkNew, p->pNtkCur );
@@ -390,6 +515,9 @@ void Abc_FrameReplaceCurrentNetwork( Abc_Frame_t * p, Abc_Ntk_t * pNtk )
     if ( pNtk == NULL )
         return;
 
+    if ( Abc_NtkPoNum(pNtk) == 0 )
+        Abc_Print( 0, "The current network has no primary outputs. Some commands may not work correctly.\n" );
+
     // transfer the parameters to the new network
     if ( p->pNtkCur && Abc_FrameIsFlagEnabled( "backup" ) )
     {
@@ -453,6 +581,11 @@ void Abc_FrameDeleteAllNetworks( Abc_Frame_t * p )
     // set the current network empty
     p->pNtkCur = NULL;
 //    fprintf( p->Out, "All networks have been deleted.\n" );
+    Gia_ManStopP( &p->pGia );
+    Gia_ManStopP( &p->pGia2 );
+    Gia_ManStopP( &p->pGiaBest );
+    Gia_ManStopP( &p->pGiaBest2 );
+    Gia_ManStopP( &p->pGiaSaved );
 }
 
 /**Function*************************************************************
@@ -494,9 +627,112 @@ Abc_Frame_t * Abc_FrameGetGlobalFrame()
 	return s_GlobalFrame;
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Abc_Frame_t * Abc_FrameReadGlobalFrame()
+{
+	return s_GlobalFrame;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_FrameSetSave1( void * pAig )
+{
+    Abc_Frame_t * pFrame = Abc_FrameGetGlobalFrame();
+    if ( pFrame->pSave1 )
+        Aig_ManStop( (Aig_Man_t *)pFrame->pSave1 );
+    pFrame->pSave1 = pAig;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_FrameSetSave2( void * pAig )
+{
+    Abc_Frame_t * pFrame = Abc_FrameGetGlobalFrame();
+    if ( pFrame->pSave2 )
+        Aig_ManStop( (Aig_Man_t *)pFrame->pSave2 );
+    pFrame->pSave2 = pAig;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void * Abc_FrameReadSave1()  { void * pAig = Abc_FrameGetGlobalFrame()->pSave1; Abc_FrameGetGlobalFrame()->pSave1 = NULL; return pAig; }
+void * Abc_FrameReadSave2()  { void * pAig = Abc_FrameGetGlobalFrame()->pSave2; Abc_FrameGetGlobalFrame()->pSave2 = NULL; return pAig; }
+
+/**Function*************************************************************
+
+  Synopsis    [Returns 0/1 if pNtkCur is an AIG and PO is 0/1; -1 otherwise.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_FrameCheckPoConst( Abc_Frame_t * p, int iPoNum )
+{
+    Abc_Obj_t * pObj;
+    if ( p->pNtkCur == NULL )
+        return -1;
+    if ( !Abc_NtkIsStrash(p->pNtkCur) )
+        return -1;
+    if ( iPoNum < 0 || iPoNum >= Abc_NtkPoNum(p->pNtkCur) )
+        return -1;
+    pObj = Abc_NtkPo( p->pNtkCur, iPoNum );
+    if ( !Abc_AigNodeIsConst(Abc_ObjFanin0(pObj)) )
+        return -1;
+    return !Abc_ObjFaninC0(pObj);
+}
+void Abc_FrameCheckPoConstTest( Abc_Frame_t * p )
+{
+    Abc_Obj_t * pObj;
+    int i;
+    Abc_NtkForEachPo( p->pNtkCur, pObj, i )
+        printf( "%d = %d\n", i, Abc_FrameCheckPoConst(p, i) );
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

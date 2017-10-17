@@ -7,39 +7,70 @@
   Synopsis    [Functions that manipulate the reference counts.]
 
   Description [External procedures included in this module:
-		    <ul>
-		    <li> Cudd_Ref()
-		    <li> Cudd_RecursiveDeref()
-		    <li> Cudd_IterDerefBdd()
-		    <li> Cudd_DelayedDerefBdd()
-		    <li> Cudd_RecursiveDerefZdd()
-		    <li> Cudd_Deref()
-		    <li> Cudd_CheckZeroRef()
-		    </ul>
-	       Internal procedures included in this module:
-		    <ul>
-		    <li> cuddReclaim()
-		    <li> cuddReclaimZdd()
-		    <li> cuddClearDeathRow()
-		    <li> cuddShrinkDeathRow()
-		    <li> cuddIsInDeathRow()
-		    <li> cuddTimesInDeathRow()
-		    </ul>
-	      ]
+                    <ul>
+                    <li> Cudd_Ref()
+                    <li> Cudd_RecursiveDeref()
+                    <li> Cudd_IterDerefBdd()
+                    <li> Cudd_DelayedDerefBdd()
+                    <li> Cudd_RecursiveDerefZdd()
+                    <li> Cudd_Deref()
+                    <li> Cudd_CheckZeroRef()
+                    </ul>
+               Internal procedures included in this module:
+                    <ul>
+                    <li> cuddReclaim()
+                    <li> cuddReclaimZdd()
+                    <li> cuddClearDeathRow()
+                    <li> cuddShrinkDeathRow()
+                    <li> cuddIsInDeathRow()
+                    <li> cuddTimesInDeathRow()
+                    </ul>
+              ]
 
   SeeAlso     []
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include    "util_hack.h"
-#include    "cuddInt.h"
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -61,7 +92,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddRef.c,v 1.1.1.1 2003/02/24 22:23:53 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddRef.c,v 1.28 2004/08/13 18:04:50 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -131,35 +162,35 @@ Cudd_RecursiveDeref(
 
     unsigned int live = table->keys - table->dead;
     if (live > table->peakLiveNodes) {
-	table->peakLiveNodes = live;
+        table->peakLiveNodes = live;
     }
 
     N = Cudd_Regular(n);
 
     do {
 #ifdef DD_DEBUG
-	assert(N->ref != 0);
+        assert(N->ref != 0);
 #endif
 
-	if (N->ref == 1) {
-	    N->ref = 0;
-	    table->dead++;
+        if (N->ref == 1) {
+            N->ref = 0;
+            table->dead++;
 #ifdef DD_STATS
-	    table->nodesDropped++;
+            table->nodesDropped++;
 #endif
-	    if (cuddIsConstant(N)) {
-		table->constants.dead++;
-		N = stack[--SP];
-	    } else {
-		ord = table->perm[N->index];
-		stack[SP++] = Cudd_Regular(cuddE(N));
-		table->subtables[ord].dead++;
-		N = cuddT(N);
-	    }
-	} else {
-	    cuddSatDec(N->ref);
-	    N = stack[--SP];
-	}
+            if (cuddIsConstant(N)) {
+                table->constants.dead++;
+                N = stack[--SP];
+            } else {
+                ord = table->perm[N->index];
+                stack[SP++] = Cudd_Regular(cuddE(N));
+                table->subtables[ord].dead++;
+                N = cuddT(N);
+            }
+        } else {
+            cuddSatDec(N->ref);
+            N = stack[--SP];
+        }
     } while (SP != 0);
 
 } /* end of Cudd_RecursiveDeref */
@@ -194,30 +225,30 @@ Cudd_IterDerefBdd(
 
     unsigned int live = table->keys - table->dead;
     if (live > table->peakLiveNodes) {
-	table->peakLiveNodes = live;
+        table->peakLiveNodes = live;
     }
 
     N = Cudd_Regular(n);
 
     do {
 #ifdef DD_DEBUG
-	assert(N->ref != 0);
+        assert(N->ref != 0);
 #endif
 
-	if (N->ref == 1) {
-	    N->ref = 0;
-	    table->dead++;
+        if (N->ref == 1) {
+            N->ref = 0;
+            table->dead++;
 #ifdef DD_STATS
-	    table->nodesDropped++;
+            table->nodesDropped++;
 #endif
-	    ord = table->perm[N->index];
-	    stack[SP++] = Cudd_Regular(cuddE(N));
-	    table->subtables[ord].dead++;
-	    N = cuddT(N);
-	} else {
-	    cuddSatDec(N->ref);
-	    N = stack[--SP];
-	}
+            ord = table->perm[N->index];
+            stack[SP++] = Cudd_Regular(cuddE(N));
+            table->subtables[ord].dead++;
+            N = cuddT(N);
+        } else {
+            cuddSatDec(N->ref);
+            N = stack[--SP];
+        }
     } while (SP != 0);
 
 } /* end of Cudd_IterDerefBdd */
@@ -251,7 +282,7 @@ Cudd_DelayedDerefBdd(
 
     unsigned int live = table->keys - table->dead;
     if (live > table->peakLiveNodes) {
-	table->peakLiveNodes = live;
+        table->peakLiveNodes = live;
     }
 
     n = Cudd_Regular(n);
@@ -264,10 +295,10 @@ Cudd_DelayedDerefBdd(
 #else
     if (cuddIsConstant(n) || n->ref > 1) {
 #ifdef DD_DEBUG
-	assert(n->ref != 1 && (!cuddIsConstant(n) || n == DD_ONE(table)));
+        assert(n->ref != 1 && (!cuddIsConstant(n) || n == DD_ONE(table)));
 #endif
-	cuddSatDec(n->ref);
-	return;
+        cuddSatDec(n->ref);
+        return;
     }
 
     N = table->deathRow[table->nextDead];
@@ -275,29 +306,29 @@ Cudd_DelayedDerefBdd(
     if (N != NULL) {
 #endif
 #ifdef DD_DEBUG
-	assert(!Cudd_IsComplement(N));
+        assert(!Cudd_IsComplement(N));
 #endif
-	stack = table->stack;
-	SP = 1;
-	do {
+        stack = table->stack;
+        SP = 1;
+        do {
 #ifdef DD_DEBUG
-	    assert(N->ref != 0);
+            assert(N->ref != 0);
 #endif
-	    if (N->ref == 1) {
-		N->ref = 0;
-		table->dead++;
+            if (N->ref == 1) {
+                N->ref = 0;
+                table->dead++;
 #ifdef DD_STATS
-		table->nodesDropped++;
+                table->nodesDropped++;
 #endif
-		ord = table->perm[N->index];
-		stack[SP++] = Cudd_Regular(cuddE(N));
-		table->subtables[ord].dead++;
-		N = cuddT(N);
-	    } else {
-		cuddSatDec(N->ref);
-		N = stack[--SP];
-	    }
-	} while (SP != 0);
+                ord = table->perm[N->index];
+                stack[SP++] = Cudd_Regular(cuddE(N));
+                table->subtables[ord].dead++;
+                N = cuddT(N);
+            } else {
+                cuddSatDec(N->ref);
+                N = stack[--SP];
+            }
+        } while (SP != 0);
 #ifndef DD_NO_DEATH_ROW
     }
     table->deathRow[table->nextDead] = n;
@@ -307,29 +338,29 @@ Cudd_DelayedDerefBdd(
     table->nextDead &= table->deadMask;
 #if 0
     if (table->nextDead == table->deathRowDepth) {
-	if (table->deathRowDepth < table->looseUpTo / 2) {
-	    extern void (*MMoutOfMemory)(long);
-	    void (*saveHandler)(long) = MMoutOfMemory;
-	    DdNodePtr *newRow;
-	    MMoutOfMemory = Cudd_OutOfMem;
-	    newRow = REALLOC(DdNodePtr,table->deathRow,2*table->deathRowDepth);
-	    MMoutOfMemory = saveHandler;
-	    if (newRow == NULL) {
-		table->nextDead = 0;
-	    } else {
-		int i;
-		table->memused += table->deathRowDepth;
-		i = table->deathRowDepth;
-		table->deathRowDepth <<= 1;
-		for (; i < table->deathRowDepth; i++) {
-		    newRow[i] = NULL;
-		}
-		table->deadMask = table->deathRowDepth - 1;
-		table->deathRow = newRow;
-	    }
-	} else {
-	    table->nextDead = 0;
-	}
+        if (table->deathRowDepth < table->looseUpTo / 2) {
+            extern void (*MMoutOfMemory)(long);
+            void (*saveHandler)(long) = MMoutOfMemory;
+            DdNodePtr *newRow;
+            MMoutOfMemory = Cudd_OutOfMem;
+            newRow = ABC_REALLOC(DdNodePtr,table->deathRow,2*table->deathRowDepth);
+            MMoutOfMemory = saveHandler;
+            if (newRow == NULL) {
+                table->nextDead = 0;
+            } else {
+                int i;
+                table->memused += table->deathRowDepth;
+                i = table->deathRowDepth;
+                table->deathRowDepth <<= 1;
+                for (; i < table->deathRowDepth; i++) {
+                    newRow[i] = NULL;
+                }
+                table->deadMask = table->deathRowDepth - 1;
+                table->deathRow = newRow;
+            }
+        } else {
+            table->nextDead = 0;
+        }
     }
 #endif
 #endif
@@ -364,26 +395,26 @@ Cudd_RecursiveDerefZdd(
 
     do {
 #ifdef DD_DEBUG
-	assert(N->ref != 0);
+        assert(N->ref != 0);
 #endif
 
-	cuddSatDec(N->ref);
+        cuddSatDec(N->ref);
     
-	if (N->ref == 0) {
-	    table->deadZ++;
+        if (N->ref == 0) {
+            table->deadZ++;
 #ifdef DD_STATS
-	    table->nodesDropped++;
+            table->nodesDropped++;
 #endif
 #ifdef DD_DEBUG
-	    assert(!cuddIsConstant(N));
+            assert(!cuddIsConstant(N));
 #endif
-	    ord = table->permZ[N->index];
-	    stack[SP++] = cuddE(N);
-	    table->subtableZ[ord].dead++;
-	    N = cuddT(N);
-	} else {
-	    N = stack[--SP];
-	}
+            ord = table->permZ[N->index];
+            stack[SP++] = cuddE(N);
+            table->subtableZ[ord].dead++;
+            N = cuddT(N);
+        } else {
+            N = stack[--SP];
+        }
     } while (SP != 0);
 
 } /* end of Cudd_RecursiveDerefZdd */
@@ -437,7 +468,7 @@ Cudd_CheckZeroRef(
 {
     int size;
     int i, j;
-    int remain;	/* the expected number of remaining references to one */
+    int remain; /* the expected number of remaining references to one */
     DdNodePtr *nodelist;
     DdNode *node;
     DdNode *sentinel = &(manager->sentinel);
@@ -452,53 +483,53 @@ Cudd_CheckZeroRef(
     /* First look at the BDD/ADD subtables. */
     remain = 1; /* reference from the manager */
     size = manager->size;
-    remain += 2 * size;	/* reference from the BDD projection functions */
+    remain += 2 * size; /* reference from the BDD projection functions */
 
     for (i = 0; i < size; i++) {
-	subtable = &(manager->subtables[i]);
-	nodelist = subtable->nodelist;
-	for (j = 0; (unsigned) j < subtable->slots; j++) {
-	    node = nodelist[j];
-	    while (node != sentinel) {
-		if (node->ref != 0 && node->ref != DD_MAXREF) {
-		    index = (int) node->index;
-		    if (node != manager->vars[index]) {
-			count++;
-		    } else {
-			if (node->ref != 1) {
-			    count++;
-			}
-		    }
-		}
-		node = node->next;
-	    }
-	}
+        subtable = &(manager->subtables[i]);
+        nodelist = subtable->nodelist;
+        for (j = 0; (unsigned) j < subtable->slots; j++) {
+            node = nodelist[j];
+            while (node != sentinel) {
+                if (node->ref != 0 && node->ref != DD_MAXREF) {
+                    index = (int) node->index;
+                    if (node != manager->vars[index]) {
+                        count++;
+                    } else {
+                        if (node->ref != 1) {
+                            count++;
+                        }
+                    }
+                }
+                node = node->next;
+            }
+        }
     }
 
     /* Then look at the ZDD subtables. */
     size = manager->sizeZ;
     if (size) /* references from ZDD universe */
-	remain += 2;
+        remain += 2;
 
     for (i = 0; i < size; i++) {
-	subtable = &(manager->subtableZ[i]);
-	nodelist = subtable->nodelist;
-	for (j = 0; (unsigned) j < subtable->slots; j++) {
-	    node = nodelist[j];
-	    while (node != NULL) {
-		if (node->ref != 0 && node->ref != DD_MAXREF) {
-		    index = (int) node->index;
-		    if (node == manager->univ[manager->permZ[index]]) {
-			if (node->ref > 2) {
-			    count++;
-			}
-		    } else {
-			count++;
-		    }
-		}
-		node = node->next;
-	    }
-	}
+        subtable = &(manager->subtableZ[i]);
+        nodelist = subtable->nodelist;
+        for (j = 0; (unsigned) j < subtable->slots; j++) {
+            node = nodelist[j];
+            while (node != NULL) {
+                if (node->ref != 0 && node->ref != DD_MAXREF) {
+                    index = (int) node->index;
+                    if (node == manager->univ[manager->permZ[index]]) {
+                        if (node->ref > 2) {
+                            count++;
+                        }
+                    } else {
+                        count++;
+                    }
+                }
+                node = node->next;
+            }
+        }
     }
 
     /* Now examine the constant table. Plusinfinity, minusinfinity, and
@@ -508,25 +539,25 @@ Cudd_CheckZeroRef(
     */
     nodelist = manager->constants.nodelist;
     for (j = 0; (unsigned) j < manager->constants.slots; j++) {
-	node = nodelist[j];
-	while (node != NULL) {
-	    if (node->ref != 0 && node->ref != DD_MAXREF) {
-		if (node == manager->one) {
-		    if ((int) node->ref != remain) {
-			count++;
-		    }
-		} else if (node == manager->zero ||
-		node == manager->plusinfinity ||
-		node == manager->minusinfinity) {
-		    if (node->ref != 1) {
-			count++;
-		    }
-		} else {
-		    count++;
-		}
-	    }
-	    node = node->next;
-	}
+        node = nodelist[j];
+        while (node != NULL) {
+            if (node->ref != 0 && node->ref != DD_MAXREF) {
+                if (node == manager->one) {
+                    if ((int) node->ref != remain) {
+                        count++;
+                    }
+                } else if (node == manager->zero ||
+                node == manager->plusinfinity ||
+                node == manager->minusinfinity) {
+                    if (node->ref != 1) {
+                        count++;
+                    }
+                } else {
+                    count++;
+                }
+            }
+            node = node->next;
+        }
     }
     return(count);
 
@@ -567,22 +598,22 @@ cuddReclaim(
 #endif
 
     do {
-	if (N->ref == 0) {
-	    N->ref = 1;
-	    table->dead--;
-	    if (cuddIsConstant(N)) {
-		table->constants.dead--;
-		N = stack[--SP];
-	    } else {
-		ord = table->perm[N->index];
-		stack[SP++] = Cudd_Regular(cuddE(N));
-		table->subtables[ord].dead--;
-		N = cuddT(N);
-	    }
-	} else {
-	    cuddSatInc(N->ref);
-	    N = stack[--SP];
-	}
+        if (N->ref == 0) {
+            N->ref = 1;
+            table->dead--;
+            if (cuddIsConstant(N)) {
+                table->constants.dead--;
+                N = stack[--SP];
+            } else {
+                ord = table->perm[N->index];
+                stack[SP++] = Cudd_Regular(cuddE(N));
+                table->subtables[ord].dead--;
+                N = cuddT(N);
+            }
+        } else {
+            cuddSatInc(N->ref);
+            N = stack[--SP];
+        }
     } while (SP != 0);
 
     N = Cudd_Regular(n);
@@ -620,21 +651,21 @@ cuddReclaimZdd(
 #endif
 
     do {
-	cuddSatInc(N->ref);
+        cuddSatInc(N->ref);
 
-	if (N->ref == 1) {
-	    table->deadZ--;
-	    table->reclaimed++;
+        if (N->ref == 1) {
+            table->deadZ--;
+            table->reclaimed++;
 #ifdef DD_DEBUG
-	    assert(!cuddIsConstant(N));
+            assert(!cuddIsConstant(N));
 #endif
-	    ord = table->permZ[N->index];
-	    stack[SP++] = cuddE(N);
-	    table->subtableZ[ord].dead--;
-	    N = cuddT(N);
-	} else {
-	    N = stack[--SP];
-	}
+            ord = table->permZ[N->index];
+            stack[SP++] = cuddE(N);
+            table->subtableZ[ord].dead--;
+            N = cuddT(N);
+        } else {
+            N = stack[--SP];
+        }
     } while (SP != 0);
 
     cuddSatDec(n->ref);
@@ -661,18 +692,18 @@ cuddShrinkDeathRow(
     int i;
 
     if (table->deathRowDepth > 3) {
-	for (i = table->deathRowDepth/4; i < table->deathRowDepth; i++) {
-	    if (table->deathRow[i] == NULL) break;
-	    Cudd_IterDerefBdd(table,table->deathRow[i]);
-	    table->deathRow[i] = NULL;
-	}
-	table->deathRowDepth /= 4;
-	table->deadMask = table->deathRowDepth - 2;
-	if ((unsigned) table->nextDead > table->deadMask) {
-	    table->nextDead = 0;
-	}
-	table->deathRow = REALLOC(DdNodePtr, table->deathRow,
-				   table->deathRowDepth);
+        for (i = table->deathRowDepth/4; i < table->deathRowDepth; i++) {
+            if (table->deathRow[i] == NULL) break;
+            Cudd_IterDerefBdd(table,table->deathRow[i]);
+            table->deathRow[i] = NULL;
+        }
+        table->deathRowDepth /= 4;
+        table->deadMask = table->deathRowDepth - 1;
+        if ((unsigned) table->nextDead > table->deadMask) {
+            table->nextDead = 0;
+        }
+        table->deathRow = ABC_REALLOC(DdNodePtr, table->deathRow,
+                                   table->deathRowDepth);
     }
 #endif
 
@@ -699,13 +730,13 @@ cuddClearDeathRow(
     int i;
 
     for (i = 0; i < table->deathRowDepth; i++) {
-	if (table->deathRow[i] == NULL) break;
-	Cudd_IterDerefBdd(table,table->deathRow[i]);
-	table->deathRow[i] = NULL;
+        if (table->deathRow[i] == NULL) break;
+        Cudd_IterDerefBdd(table,table->deathRow[i]);
+        table->deathRow[i] = NULL;
     }
 #ifdef DD_DEBUG
     for (; i < table->deathRowDepth; i++) {
-	assert(table->deathRow[i] == NULL);
+        assert(table->deathRow[i] == NULL);
     }
 #endif
     table->nextDead = 0;
@@ -736,9 +767,9 @@ cuddIsInDeathRow(
     int i;
 
     for (i = 0; i < dd->deathRowDepth; i++) {
-	if (f == dd->deathRow[i]) {
-	    return(i);
-	}
+        if (f == dd->deathRow[i]) {
+            return(i);
+        }
     }
 #endif
 
@@ -768,7 +799,7 @@ cuddTimesInDeathRow(
     int i;
 
     for (i = 0; i < dd->deathRowDepth; i++) {
-	count += f == dd->deathRow[i];
+        count += f == dd->deathRow[i];
     }
 #endif
 
@@ -779,3 +810,7 @@ cuddTimesInDeathRow(
 /*---------------------------------------------------------------------------*/
 /* Definition of static functions                                            */
 /*---------------------------------------------------------------------------*/
+
+
+ABC_NAMESPACE_IMPL_END
+

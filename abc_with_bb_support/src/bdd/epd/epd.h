@@ -12,26 +12,54 @@
 
   Author      [In-Ho Moon]
 
-  Copyright [This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
 
-  Revision    [$Id: epd.h,v 1.1.1.1 2003/02/24 22:23:57 wjiang Exp $]
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
+
+  Revision    [$Id: epd.h,v 1.9 2004/08/13 18:20:30 fabio Exp $]
 
 ******************************************************************************/
 
-#ifndef _EPD
-#define _EPD
+#ifndef ABC__bdd__epd__epd_h
+#define ABC__bdd__epd__epd_h
 
+ABC_NAMESPACE_HEADER_START
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
 /*---------------------------------------------------------------------------*/
 
-#define	EPD_MAX_BIN	1023
-#define	EPD_MAX_DEC	308
-#define	EPD_EXP_INF	0x7ff
+#define EPD_MAX_BIN     1023
+#define EPD_MAX_DEC     308
+#define EPD_EXP_INF     0x7ff
 
 /*---------------------------------------------------------------------------*/
 /* Structure declarations                                                    */
@@ -46,15 +74,15 @@
   SeeAlso     []
 
 ******************************************************************************/
-#ifdef	EPD_BIG_ENDIAN
-struct IeeeDoubleStruct {	/* BIG_ENDIAN */
+#ifdef  EPD_BIG_ENDIAN
+struct IeeeDoubleStruct {       /* BIG_ENDIAN */
   unsigned int sign: 1;
   unsigned int exponent: 11;
   unsigned int mantissa0: 20;
   unsigned int mantissa1: 32;
 };
 #else
-struct IeeeDoubleStruct {	/* LITTLE_ENDIAN */
+struct IeeeDoubleStruct {       /* LITTLE_ENDIAN */
   unsigned int mantissa1: 32;
   unsigned int mantissa0: 20;
   unsigned int exponent: 11;
@@ -71,8 +99,8 @@ struct IeeeDoubleStruct {	/* LITTLE_ENDIAN */
   SeeAlso     []
 
 ******************************************************************************/
-#ifdef	EPD_BIG_ENDIAN
-struct IeeeNanStruct {	/* BIG_ENDIAN */
+#ifdef  EPD_BIG_ENDIAN
+struct IeeeNanStruct {  /* BIG_ENDIAN */
   unsigned int sign: 1;
   unsigned int exponent: 11;
   unsigned int quiet_bit: 1;
@@ -80,7 +108,7 @@ struct IeeeNanStruct {	/* BIG_ENDIAN */
   unsigned int mantissa1: 32;
 };
 #else
-struct IeeeNanStruct {	/* LITTLE_ENDIAN */
+struct IeeeNanStruct {  /* LITTLE_ENDIAN */
   unsigned int mantissa1: 32;
   unsigned int mantissa0: 19;
   unsigned int quiet_bit: 1;
@@ -98,13 +126,15 @@ struct IeeeNanStruct {	/* LITTLE_ENDIAN */
   SeeAlso     []
 
 ******************************************************************************/
+union EpTypeUnion {
+  double                        value;
+  struct IeeeDoubleStruct       bits;
+  struct IeeeNanStruct          nan;
+};
+
 struct EpDoubleStruct {
-  union {
-    double			value;
-    struct IeeeDoubleStruct	bits;
-    struct IeeeNanStruct	nan;
-  } type;
-  int		exponent;
+  union EpTypeUnion             type;
+  int                           exponent;
 };
 
 /*---------------------------------------------------------------------------*/
@@ -113,48 +143,54 @@ struct EpDoubleStruct {
 typedef struct EpDoubleStruct EpDouble;
 typedef struct IeeeDoubleStruct IeeeDouble;
 typedef struct IeeeNanStruct IeeeNan;
+typedef union EpTypeUnion EpType;
 
+/**AutomaticStart*************************************************************/
 
 /*---------------------------------------------------------------------------*/
 /* Function prototypes                                                       */
 /*---------------------------------------------------------------------------*/
 
-EpDouble *EpdAlloc();
-int EpdCmp(const char *key1, const char *key2);
-void EpdFree(EpDouble *epd);
-void EpdGetString(EpDouble *epd, char *str);
-void EpdConvert(double value, EpDouble *epd);
-void EpdMultiply(EpDouble *epd1, double value);
-void EpdMultiply2(EpDouble *epd1, EpDouble *epd2);
-void EpdMultiply2Decimal(EpDouble *epd1, EpDouble *epd2);
-void EpdMultiply3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
-void EpdMultiply3Decimal(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
-void EpdDivide(EpDouble *epd1, double value);
-void EpdDivide2(EpDouble *epd1, EpDouble *epd2);
-void EpdDivide3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
-void EpdAdd(EpDouble *epd1, double value);
-void EpdAdd2(EpDouble *epd1, EpDouble *epd2);
-void EpdAdd3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
-void EpdSubtract(EpDouble *epd1, double value);
-void EpdSubtract2(EpDouble *epd1, EpDouble *epd2);
-void EpdSubtract3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
-void EpdPow2(int n, EpDouble *epd);
-void EpdPow2Decimal(int n, EpDouble *epd);
-void EpdNormalize(EpDouble *epd);
-void EpdNormalizeDecimal(EpDouble *epd);
-void EpdGetValueAndDecimalExponent(EpDouble *epd, double *value, int *exponent);
-int EpdGetExponent(double value);
-int EpdGetExponentDecimal(double value);
-void EpdMakeInf(EpDouble *epd, int sign);
-void EpdMakeZero(EpDouble *epd, int sign);
-void EpdMakeNan(EpDouble *epd);
-void EpdCopy(EpDouble *from, EpDouble *to);
-int EpdIsInf(EpDouble *epd);
-int EpdIsZero(EpDouble *epd);
-int EpdIsNan(EpDouble *epd);
-int EpdIsNanOrInf(EpDouble *epd);
-int IsInfDouble(double value);
-int IsNanDouble(double value);
-int IsNanOrInfDouble(double value);
+extern EpDouble *EpdAlloc(void);
+extern int EpdCmp(const char *key1, const char *key2);
+extern void EpdFree(EpDouble *epd);
+extern void EpdGetString(EpDouble *epd, char *str);
+extern void EpdConvert(double value, EpDouble *epd);
+extern void EpdMultiply(EpDouble *epd1, double value);
+extern void EpdMultiply2(EpDouble *epd1, EpDouble *epd2);
+extern void EpdMultiply2Decimal(EpDouble *epd1, EpDouble *epd2);
+extern void EpdMultiply3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
+extern void EpdMultiply3Decimal(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
+extern void EpdDivide(EpDouble *epd1, double value);
+extern void EpdDivide2(EpDouble *epd1, EpDouble *epd2);
+extern void EpdDivide3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
+extern void EpdAdd(EpDouble *epd1, double value);
+extern void EpdAdd2(EpDouble *epd1, EpDouble *epd2);
+extern void EpdAdd3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
+extern void EpdSubtract(EpDouble *epd1, double value);
+extern void EpdSubtract2(EpDouble *epd1, EpDouble *epd2);
+extern void EpdSubtract3(EpDouble *epd1, EpDouble *epd2, EpDouble *epd3);
+extern void EpdPow2(int n, EpDouble *epd);
+extern void EpdPow2Decimal(int n, EpDouble *epd);
+extern void EpdNormalize(EpDouble *epd);
+extern void EpdNormalizeDecimal(EpDouble *epd);
+extern void EpdGetValueAndDecimalExponent(EpDouble *epd, double *value, int *exponent);
+extern int EpdGetExponent(double value);
+extern int EpdGetExponentDecimal(double value);
+extern void EpdMakeInf(EpDouble *epd, int sign);
+extern void EpdMakeZero(EpDouble *epd, int sign);
+extern void EpdMakeNan(EpDouble *epd);
+extern void EpdCopy(EpDouble *from, EpDouble *to);
+extern int EpdIsInf(EpDouble *epd);
+extern int EpdIsZero(EpDouble *epd);
+extern int EpdIsNan(EpDouble *epd);
+extern int EpdIsNanOrInf(EpDouble *epd);
+extern int IsInfDouble(double value);
+extern int IsNanDouble(double value);
+extern int IsNanOrInfDouble(double value);
+
+/**AutomaticEnd***************************************************************/
+
+ABC_NAMESPACE_HEADER_END
 
 #endif /* _EPD */

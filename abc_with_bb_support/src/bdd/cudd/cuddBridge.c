@@ -8,44 +8,75 @@
   different managers.]
 
   Description [External procedures included in this file:
-	    <ul>
-	    <li> Cudd_addBddThreshold()
-	    <li> Cudd_addBddStrictThreshold()
-	    <li> Cudd_addBddInterval()
-	    <li> Cudd_addBddIthBit()
-	    <li> Cudd_BddToAdd()
-	    <li> Cudd_addBddPattern()
-	    <li> Cudd_bddTransfer()
-	    </ul>
-	Internal procedures included in this file:
-	    <ul>
-	    <li> cuddBddTransfer()
-	    <li> cuddAddBddDoPattern()
-	    </ul>
-	Static procedures included in this file:
-	    <ul>
-	    <li> addBddDoThreshold()
-	    <li> addBddDoStrictThreshold()
-	    <li> addBddDoInterval()
-	    <li> addBddDoIthBit()
-	    <li> ddBddToAddRecur()
-	    <li> cuddBddTransferRecur()
-	    </ul>
-	    ]
+            <ul>
+            <li> Cudd_addBddThreshold()
+            <li> Cudd_addBddStrictThreshold()
+            <li> Cudd_addBddInterval()
+            <li> Cudd_addBddIthBit()
+            <li> Cudd_BddToAdd()
+            <li> Cudd_addBddPattern()
+            <li> Cudd_bddTransfer()
+            </ul>
+        Internal procedures included in this file:
+            <ul>
+            <li> cuddBddTransfer()
+            <li> cuddAddBddDoPattern()
+            </ul>
+        Static procedures included in this file:
+            <ul>
+            <li> addBddDoThreshold()
+            <li> addBddDoStrictThreshold()
+            <li> addBddDoInterval()
+            <li> addBddDoIthBit()
+            <li> ddBddToAddRecur()
+            <li> cuddBddTransferRecur()
+            </ul>
+            ]
 
   SeeAlso     []
 
   Author      [Fabio Somenzi]
 
-  Copyright [ This file was created at the University of Colorado at
-  Boulder.  The University of Colorado at Boulder makes no warranty
-  about the suitability of this software for any purpose.  It is
-  presented on an AS IS basis.]
+  Copyright   [Copyright (c) 1995-2004, Regents of the University of Colorado
+
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  Neither the name of the University of Colorado nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.]
 
 ******************************************************************************/
 
-#include	"util_hack.h"
-#include	"cuddInt.h"
+#include "misc/util/util_hack.h"
+#include "cuddInt.h"
+
+ABC_NAMESPACE_IMPL_START
+
+
 
 /*---------------------------------------------------------------------------*/
 /* Constant declarations                                                     */
@@ -67,7 +98,7 @@
 /*---------------------------------------------------------------------------*/
 
 #ifndef lint
-static char rcsid[] DD_UNUSED = "$Id: cuddBridge.c,v 1.1.1.1 2003/02/24 22:23:51 wjiang Exp $";
+static char rcsid[] DD_UNUSED = "$Id: cuddBridge.c,v 1.19 2008/04/25 06:42:55 fabio Exp $";
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -81,12 +112,12 @@ static char rcsid[] DD_UNUSED = "$Id: cuddBridge.c,v 1.1.1.1 2003/02/24 22:23:51
 /* Static function prototypes                                                */
 /*---------------------------------------------------------------------------*/
 
-static DdNode * addBddDoThreshold ARGS((DdManager *dd, DdNode *f, DdNode *val));
-static DdNode * addBddDoStrictThreshold ARGS((DdManager *dd, DdNode *f, DdNode *val));
-static DdNode * addBddDoInterval ARGS((DdManager *dd, DdNode *f, DdNode *l, DdNode *u));
-static DdNode * addBddDoIthBit ARGS((DdManager *dd, DdNode *f, DdNode *index));
-static DdNode * ddBddToAddRecur ARGS((DdManager *dd, DdNode *B));
-static DdNode * cuddBddTransferRecur ARGS((DdManager *ddS, DdManager *ddD, DdNode *f, st_table *table));
+static DdNode * addBddDoThreshold (DdManager *dd, DdNode *f, DdNode *val);
+static DdNode * addBddDoStrictThreshold (DdManager *dd, DdNode *f, DdNode *val);
+static DdNode * addBddDoInterval (DdManager *dd, DdNode *f, DdNode *l, DdNode *u);
+static DdNode * addBddDoIthBit (DdManager *dd, DdNode *f, DdNode *index);
+static DdNode * ddBddToAddRecur (DdManager *dd, DdNode *B);
+static DdNode * cuddBddTransferRecur (DdManager *ddS, DdManager *ddD, DdNode *f, st__table *table);
 
 /**AutomaticEnd***************************************************************/
 
@@ -125,13 +156,13 @@ Cudd_addBddThreshold(
     cuddRef(val);
 
     do {
-	dd->reordered = 0;
-	res = addBddDoThreshold(dd, f, val);
+        dd->reordered = 0;
+        res = addBddDoThreshold(dd, f, val);
     } while (dd->reordered == 1);
 
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, val);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, val);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDeref(dd, val);
@@ -170,13 +201,13 @@ Cudd_addBddStrictThreshold(
     cuddRef(val);
 
     do {
-	dd->reordered = 0;
-	res = addBddDoStrictThreshold(dd, f, val);
+        dd->reordered = 0;
+        res = addBddDoStrictThreshold(dd, f, val);
     } while (dd->reordered == 1);
 
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, val);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, val);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDeref(dd, val);
@@ -220,20 +251,20 @@ Cudd_addBddInterval(
     cuddRef(l);
     u = cuddUniqueConst(dd,upper);
     if (u == NULL) {
-	Cudd_RecursiveDeref(dd,l);
-	return(NULL);
+        Cudd_RecursiveDeref(dd,l);
+        return(NULL);
     }
     cuddRef(u);
 
     do {
-	dd->reordered = 0;
-	res = addBddDoInterval(dd, f, l, u);
+        dd->reordered = 0;
+        res = addBddDoInterval(dd, f, l, u);
     } while (dd->reordered == 1);
 
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, l);
-	Cudd_RecursiveDeref(dd, u);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, l);
+        Cudd_RecursiveDeref(dd, u);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDeref(dd, l);
@@ -277,13 +308,13 @@ Cudd_addBddIthBit(
     cuddRef(index);
 
     do {
-	dd->reordered = 0;
-	res = addBddDoIthBit(dd, f, index);
+        dd->reordered = 0;
+        res = addBddDoIthBit(dd, f, index);
     } while (dd->reordered == 1);
 
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd, index);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, index);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDeref(dd, index);
@@ -314,8 +345,8 @@ Cudd_BddToAdd(
     DdNode *res;
 
     do {
-	dd->reordered = 0;
-	res = ddBddToAddRecur(dd, B);
+        dd->reordered = 0;
+        res = ddBddToAddRecur(dd, B);
     } while (dd->reordered ==1);
     return(res);
 
@@ -344,8 +375,8 @@ Cudd_addBddPattern(
     DdNode *res;
     
     do {
-	dd->reordered = 0;
-	res = cuddAddBddDoPattern(dd, f);
+        dd->reordered = 0;
+        res = cuddAddBddDoPattern(dd, f);
     } while (dd->reordered == 1);
     return(res);
 
@@ -374,8 +405,8 @@ Cudd_bddTransfer(
 {
     DdNode *res;
     do {
-	ddDestination->reordered = 0;
-	res = cuddBddTransfer(ddSource, ddDestination, f);
+        ddDestination->reordered = 0;
+        res = cuddBddTransfer(ddSource, ddDestination, f);
     } while (ddDestination->reordered == 1);
     return(res);
 
@@ -407,11 +438,11 @@ cuddBddTransfer(
   DdNode * f)
 {
     DdNode *res;
-    st_table *table = NULL;
-    st_generator *gen = NULL;
+    st__table *table = NULL;
+    st__generator *gen = NULL;
     DdNode *key, *value;
 
-    table = st_init_table(st_ptrcmp,st_ptrhash);
+    table = st__init_table( st__ptrcmp, st__ptrhash);
     if (table == NULL) goto failure;
     res = cuddBddTransferRecur(ddS, ddD, f, table);
     if (res != NULL) cuddRef(res);
@@ -419,20 +450,20 @@ cuddBddTransfer(
     /* Dereference all elements in the table and dispose of the table.
     ** This must be done also if res is NULL to avoid leaks in case of
     ** reordering. */
-    gen = st_init_gen(table);
+    gen = st__init_gen(table);
     if (gen == NULL) goto failure;
-    while (st_gen(gen, (char **) &key, (char **) &value)) {
-	Cudd_RecursiveDeref(ddD, value);
+    while ( st__gen(gen, (const char **)&key, (char **)&value)) {
+        Cudd_RecursiveDeref(ddD, value);
     }
-    st_free_gen(gen); gen = NULL;
-    st_free_table(table); table = NULL;
+    st__free_gen(gen); gen = NULL;
+    st__free_table(table); table = NULL;
 
     if (res != NULL) cuddDeref(res);
     return(res);
 
 failure:
-    if (table != NULL) st_free_table(table);
-    if (gen != NULL) st_free_gen(gen);
+    /* No need to free gen because it is always NULL here. */
+    if (table != NULL) st__free_table(table);
     return(NULL);
 
 } /* end of cuddBddTransfer */
@@ -462,7 +493,7 @@ cuddAddBddDoPattern(
     statLine(dd);
     /* Check terminal case. */
     if (cuddIsConstant(f)) {
-	return(Cudd_NotCond(DD_ONE(dd),f == DD_ZERO(dd)));
+        return(Cudd_NotCond(DD_ONE(dd),f == DD_ZERO(dd)));
     }
 
     /* Check cache. */
@@ -479,25 +510,25 @@ cuddAddBddDoPattern(
 
     E = cuddAddBddDoPattern(dd,fvn);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        return(NULL);
     }
     cuddRef(E);
     if (Cudd_IsComplement(T)) {
-	res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
-	res = Cudd_Not(res);
+        res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
+        res = Cudd_Not(res);
     } else {
-	res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
+        res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -540,7 +571,7 @@ addBddDoThreshold(
     statLine(dd);
     /* Check terminal case. */
     if (cuddIsConstant(f)) {
-	return(Cudd_NotCond(DD_ONE(dd),cuddV(f) < cuddV(val)));
+        return(Cudd_NotCond(DD_ONE(dd),cuddV(f) < cuddV(val)));
     }
 
     /* Check cache. */
@@ -557,25 +588,25 @@ addBddDoThreshold(
 
     E = addBddDoThreshold(dd,fvn,val);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        return(NULL);
     }
     cuddRef(E);
     if (Cudd_IsComplement(T)) {
-	res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
-	res = Cudd_Not(res);
+        res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
+        res = Cudd_Not(res);
     } else {
-	res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
+        res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -613,7 +644,7 @@ addBddDoStrictThreshold(
     statLine(dd);
     /* Check terminal case. */
     if (cuddIsConstant(f)) {
-	return(Cudd_NotCond(DD_ONE(dd),cuddV(f) <= cuddV(val)));
+        return(Cudd_NotCond(DD_ONE(dd),cuddV(f) <= cuddV(val)));
     }
 
     /* Check cache. */
@@ -630,25 +661,25 @@ addBddDoStrictThreshold(
 
     E = addBddDoStrictThreshold(dd,fvn,val);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        return(NULL);
     }
     cuddRef(E);
     if (Cudd_IsComplement(T)) {
-	res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
-	res = Cudd_Not(res);
+        res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
+        res = Cudd_Not(res);
     } else {
-	res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
+        res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -687,7 +718,7 @@ addBddDoInterval(
     statLine(dd);
     /* Check terminal case. */
     if (cuddIsConstant(f)) {
-	return(Cudd_NotCond(DD_ONE(dd),cuddV(f) < cuddV(l) || cuddV(f) > cuddV(u)));
+        return(Cudd_NotCond(DD_ONE(dd),cuddV(f) < cuddV(l) || cuddV(f) > cuddV(u)));
     }
 
     /* Check cache. */
@@ -704,25 +735,25 @@ addBddDoInterval(
 
     E = addBddDoInterval(dd,fvn,l,u);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        return(NULL);
     }
     cuddRef(E);
     if (Cudd_IsComplement(T)) {
-	res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
-	res = Cudd_Not(res);
+        res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
+        res = Cudd_Not(res);
     } else {
-	res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
+        res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -761,9 +792,9 @@ addBddDoIthBit(
     statLine(dd);
     /* Check terminal case. */
     if (cuddIsConstant(f)) {
-	mask = 1 << ((int) cuddV(index));
-	value = (int) cuddV(f);
-	return(Cudd_NotCond(DD_ONE(dd),(value & mask) == 0));
+        mask = 1 << ((int) cuddV(index));
+        value = (int) cuddV(f);
+        return(Cudd_NotCond(DD_ONE(dd),(value & mask) == 0));
     }
 
     /* Check cache. */
@@ -780,25 +811,25 @@ addBddDoIthBit(
 
     E = addBddDoIthBit(dd,fvn,index);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        return(NULL);
     }
     cuddRef(E);
     if (Cudd_IsComplement(T)) {
-	res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
-	res = Cudd_Not(res);
+        res = (T == E) ? Cudd_Not(T) : cuddUniqueInter(dd,v,Cudd_Not(T),Cudd_Not(E));
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
+        res = Cudd_Not(res);
     } else {
-	res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
-	if (res == NULL) {
-	    Cudd_RecursiveDeref(dd, T);
-	    Cudd_RecursiveDeref(dd, E);
-	    return(NULL);
-	}
+        res = (T == E) ? T : cuddUniqueInter(dd,v,T,E);
+        if (res == NULL) {
+            Cudd_RecursiveDeref(dd, T);
+            Cudd_RecursiveDeref(dd, E);
+            return(NULL);
+        }
     }
     cuddDeref(T);
     cuddDeref(E);
@@ -836,24 +867,24 @@ ddBddToAddRecur(
     one = DD_ONE(dd);
 
     if (Cudd_IsConstant(B)) {
-	if (B == one) {
-	    res = one;
-	} else {
-	    res = DD_ZERO(dd);
-	}
-	return(res);
+        if (B == one) {
+            res = one;
+        } else {
+            res = DD_ZERO(dd);
+        }
+        return(res);
     }
     /* Check visited table */
     res = cuddCacheLookup1(dd,ddBddToAddRecur,B);
     if (res != NULL) return(res);
 
     if (Cudd_IsComplement(B)) {
-	complement = 1;
-	Bt = cuddT(Cudd_Regular(B));
-	Be = cuddE(Cudd_Regular(B));
+        complement = 1;
+        Bt = cuddT(Cudd_Regular(B));
+        Be = cuddE(Cudd_Regular(B));
     } else {
-	Bt = cuddT(B);
-	Be = cuddE(B);
+        Bt = cuddT(B);
+        Be = cuddE(B);
     }
 
     T = ddBddToAddRecur(dd, Bt);
@@ -862,32 +893,32 @@ ddBddToAddRecur(
 
     E = ddBddToAddRecur(dd, Be);
     if (E == NULL) {
-	Cudd_RecursiveDeref(dd, T);
-	return(NULL);
+        Cudd_RecursiveDeref(dd, T);
+        return(NULL);
     }
     cuddRef(E);
 
     /* No need to check for T == E, because it is guaranteed not to happen. */
     res = cuddUniqueInter(dd, (int) Cudd_Regular(B)->index, T, E);
     if (res == NULL) {
-	Cudd_RecursiveDeref(dd ,T);
-	Cudd_RecursiveDeref(dd ,E);
-	return(NULL);
+        Cudd_RecursiveDeref(dd ,T);
+        Cudd_RecursiveDeref(dd ,E);
+        return(NULL);
     }
     cuddDeref(T);
     cuddDeref(E);
 
     if (complement) {
-	cuddRef(res);
-	res1 = cuddAddCmplRecur(dd, res);
-	if (res1 == NULL) {
-	    Cudd_RecursiveDeref(dd, res);
-	    return(NULL);
-	}
-	cuddRef(res1);
-	Cudd_RecursiveDeref(dd, res);
-	res = res1;
-	cuddDeref(res);
+        cuddRef(res);
+        res1 = cuddAddCmplRecur(dd, res);
+        if (res1 == NULL) {
+            Cudd_RecursiveDeref(dd, res);
+            return(NULL);
+        }
+        cuddRef(res1);
+        Cudd_RecursiveDeref(dd, res);
+        res = res1;
+        cuddDeref(res);
     }
 
     /* Store result. */
@@ -915,11 +946,11 @@ cuddBddTransferRecur(
   DdManager * ddS,
   DdManager * ddD,
   DdNode * f,
-  st_table * table)
+  st__table * table)
 {
     DdNode *ft, *fe, *t, *e, *var, *res;
     DdNode *one, *zero;
-    int	   index;
+    int    index;
     int    comple = 0;
 
     statLine(ddD);
@@ -934,8 +965,13 @@ cuddBddTransferRecur(
     /* Now f is a regular pointer to a non-constant node. */
 
     /* Check the cache. */
-    if(st_lookup(table, (char *)f, (char **) &res))
-	return(Cudd_NotCond(res,comple));
+    if ( st__lookup(table, (const char *)f, (char **)&res))
+        return(Cudd_NotCond(res,comple));
+
+    if ( ddS->TimeStop && Abc_Clock() > ddS->TimeStop )
+        return NULL;
+    if ( ddD->TimeStop && Abc_Clock() > ddD->TimeStop )
+        return NULL;
     
     /* Recursive step. */
     index = f->index;
@@ -943,39 +979,43 @@ cuddBddTransferRecur(
 
     t = cuddBddTransferRecur(ddS, ddD, ft, table);
     if (t == NULL) {
-    	return(NULL);
+        return(NULL);
     }
     cuddRef(t);
 
     e = cuddBddTransferRecur(ddS, ddD, fe, table);
     if (e == NULL) {
-    	Cudd_RecursiveDeref(ddD, t);
-    	return(NULL);
+        Cudd_RecursiveDeref(ddD, t);
+        return(NULL);
     }
     cuddRef(e);
 
     zero = Cudd_Not(one);
     var = cuddUniqueInter(ddD,index,one,zero);
     if (var == NULL) {
-	Cudd_RecursiveDeref(ddD, t);
-	Cudd_RecursiveDeref(ddD, e);
-    	return(NULL);
+        Cudd_RecursiveDeref(ddD, t);
+        Cudd_RecursiveDeref(ddD, e);
+        return(NULL);
     }
     res = cuddBddIteRecur(ddD,var,t,e);
     if (res == NULL) {
-	Cudd_RecursiveDeref(ddD, t);
-	Cudd_RecursiveDeref(ddD, e);
-	return(NULL);
+        Cudd_RecursiveDeref(ddD, t);
+        Cudd_RecursiveDeref(ddD, e);
+        return(NULL);
     }
     cuddRef(res);
     Cudd_RecursiveDeref(ddD, t);
     Cudd_RecursiveDeref(ddD, e);
 
-    if (st_add_direct(table, (char *) f, (char *) res) == ST_OUT_OF_MEM) {
-	Cudd_RecursiveDeref(ddD, res);
-	return(NULL);
+    if ( st__add_direct(table, (char *) f, (char *) res) == st__OUT_OF_MEM) {
+        Cudd_RecursiveDeref(ddD, res);
+        return(NULL);
     }
     return(Cudd_NotCond(res,comple));
 
 } /* end of cuddBddTransferRecur */
+
+
+ABC_NAMESPACE_IMPL_END
+
 

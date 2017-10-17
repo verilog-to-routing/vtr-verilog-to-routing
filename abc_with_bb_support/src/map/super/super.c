@@ -17,8 +17,11 @@
 ***********************************************************************/
 
 #include "superInt.h"
-#include "mainInt.h"
-#include "mio.h"
+#include "base/main/mainInt.h"
+#include "map/mio/mio.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -59,7 +62,7 @@ void Super_Init( Abc_Frame_t * pAbc )
   SeeAlso     []
 
 ***********************************************************************/
-void Super_End()
+void Super_End( Abc_Frame_t * pAbc )
 {
 }
 
@@ -91,17 +94,17 @@ int Super_CommandSupergatesAnd( Abc_Frame_t * pAbc, int argc, char **argv )
     nLevels  = 3;
     fVerbose = 0;
     Extra_UtilGetoptReset();
-    while ( (c = Extra_UtilGetopt(argc, argv, "ilvh")) != EOF ) 
+    while ( (c = Extra_UtilGetopt(argc, argv, "ILvh")) != EOF ) 
     {
         switch (c) 
         {
-            case 'i':
+            case 'I':
                 nVarsMax = atoi(argv[globalUtilOptind]);
                 globalUtilOptind++;
                 if ( nVarsMax < 0 ) 
                     goto usage;
                 break;
-            case 'l':
+            case 'L':
                 nLevels = atoi(argv[globalUtilOptind]);
                 globalUtilOptind++;
                 if ( nLevels < 0 ) 
@@ -123,10 +126,10 @@ int Super_CommandSupergatesAnd( Abc_Frame_t * pAbc, int argc, char **argv )
     return 0;
 
 usage:
-    fprintf( pErr, "usage: super2 [-i num] [-l num] [-vh]\n");
+    fprintf( pErr, "usage: super2 [-IL num] [-vh]\n");
     fprintf( pErr, "\t         precomputes the supergates composed of AND2s and INVs\n" );  
-    fprintf( pErr, "\t-i num : the max number of inputs to the supergate [default = %d]\n", nVarsMax );
-    fprintf( pErr, "\t-l num : the max number of logic levels of gates [default = %d]\n", nLevels );
+    fprintf( pErr, "\t-I num : the max number of inputs to the supergate [default = %d]\n", nVarsMax );
+    fprintf( pErr, "\t-L num : the max number of logic levels of gates [default = %d]\n", nLevels );
     fprintf( pErr, "\t-v     : enable verbose output\n");
     fprintf( pErr, "\t-h     : print the help message\n");
     return 1;       /* error exit */
@@ -152,9 +155,9 @@ int Super_CommandSupergates( Abc_Frame_t * pAbc, int argc, char **argv )
     char * FileName, * ExcludeFile;
     float DelayLimit;
     float AreaLimit;
-    bool fSkipInvs;
-    bool fWriteOldFormat; 
-    int nVarsMax, nLevels, TimeLimit;
+    int fSkipInvs;
+    int fWriteOldFormat; 
+    int nVarsMax, nLevels, nGatesMax, TimeLimit;
     int fVerbose;
     int c;
 
@@ -163,56 +166,63 @@ int Super_CommandSupergates( Abc_Frame_t * pAbc, int argc, char **argv )
 
     // set the defaults
     nVarsMax   = 5;
-    nLevels    = 3;
-    DelayLimit = 3.5;
-    AreaLimit  = 9;
-    TimeLimit  = 10;
+    nLevels    = 2;
+    DelayLimit = 0;
+    AreaLimit  = 0;
+    nGatesMax  = 0;
+    TimeLimit  = 0;
     fSkipInvs  = 1;
     fVerbose   = 0;
     fWriteOldFormat = 0;
     ExcludeFile = 0;
 
     Extra_UtilGetoptReset();
-    while ( (c = Extra_UtilGetopt(argc, argv, "eiltdasovh")) != EOF ) 
+    while ( (c = Extra_UtilGetopt(argc, argv, "ILNTDAEsovh")) != EOF ) 
     {
         switch (c) 
         {
-            case 'e':
-                ExcludeFile = argv[globalUtilOptind];
-                if ( ExcludeFile == 0 )
-                    goto usage;
-                globalUtilOptind++;
-                break;
-            case 'i':
+            case 'I':
                 nVarsMax = atoi(argv[globalUtilOptind]);
                 globalUtilOptind++;
                 if ( nVarsMax < 0 ) 
                     goto usage;
                 break;
-            case 'l':
+            case 'L':
                 nLevels = atoi(argv[globalUtilOptind]);
                 globalUtilOptind++;
                 if ( nLevels < 0 ) 
                     goto usage;
                 break;
-            case 't':
+            case 'N':
+                nGatesMax = atoi(argv[globalUtilOptind]);
+                globalUtilOptind++;
+                if ( nGatesMax < 0 ) 
+                    goto usage;
+                break;
+            case 'T':
                 TimeLimit = atoi(argv[globalUtilOptind]);
                 globalUtilOptind++;
                 if ( TimeLimit < 0 ) 
                     goto usage;
                 break;
-			case 'd':
+			case 'D':
 				DelayLimit = (float)atof(argv[globalUtilOptind]);
 				globalUtilOptind++;
 				if ( DelayLimit <= 0.0 ) 
 					goto usage;
 				break;
-			case 'a':
+			case 'A':
 				AreaLimit = (float)atof(argv[globalUtilOptind]);
 				globalUtilOptind++;
 				if ( AreaLimit <= 0.0 ) 
 					goto usage;
 				break;
+            case 'E':
+                ExcludeFile = argv[globalUtilOptind];
+                if ( ExcludeFile == 0 )
+                    goto usage;
+                globalUtilOptind++;
+                break;
             case 's':
                 fSkipInvs ^= 1;
                 break;
@@ -233,7 +243,7 @@ int Super_CommandSupergates( Abc_Frame_t * pAbc, int argc, char **argv )
 
     if ( argc != globalUtilOptind + 1 )
     {
-        fprintf( pErr, "The GENLIB library file should be given on the command line.\n" );
+        fprintf( pErr, "The genlib library file should be given on the command line.\n" );
         goto usage;
     }
 
@@ -257,7 +267,7 @@ int Super_CommandSupergates( Abc_Frame_t * pAbc, int argc, char **argv )
     fclose( pFile );
 
     // set the new network
-    pLib = Mio_LibraryRead( pAbc, FileName, ExcludeFile, fVerbose );
+    pLib = Mio_LibraryRead( FileName, NULL, ExcludeFile, fVerbose );
     if ( pLib == NULL )
     {
         fprintf( pErr, "Reading library has failed.\n" );
@@ -265,41 +275,43 @@ int Super_CommandSupergates( Abc_Frame_t * pAbc, int argc, char **argv )
     }
 
     // compute the gates
-    Super_Precompute( pLib, nVarsMax, nLevels, DelayLimit, AreaLimit, TimeLimit, fSkipInvs, fWriteOldFormat, fVerbose );
+    FileName = Extra_FileNameGenericAppend(Mio_LibraryReadName(pLib), ".super");
+    Super_Precompute( pLib, nVarsMax, nLevels, nGatesMax, DelayLimit, AreaLimit, TimeLimit, fSkipInvs, fVerbose, FileName );
 
     // delete the library
     Mio_LibraryDelete( pLib );
     return 0;
 
 usage:
-    fprintf( pErr, "usage: super [-i num] [-l num] [-d float] [-a float] [-t num] [-sovh] <genlib_file>\n");
-    fprintf( pErr, "\t         precomputes the supergates for the given GENLIB library\n" );  
-    fprintf( pErr, "\t-i num   : the max number of supergate inputs [default = %d]\n", nVarsMax );
-    fprintf( pErr, "\t-l num   : the max number of levels of gates [default = %d]\n", nLevels );
-	fprintf( pErr, "\t-d float : the max delay of the supergates [default = %.2f]\n", DelayLimit );
-	fprintf( pErr, "\t-a float : the max area of the supergates [default = %.2f]\n", AreaLimit );
-    fprintf( pErr, "\t-t num   : the approximate runtime limit in seconds [default = %d]\n", TimeLimit );
+    fprintf( pErr, "usage: super [-ILNT num] [-DA float] [-E file] [-sovh] <genlib_file>\n");
+    fprintf( pErr, "\t         precomputes the supergates for the given genlib library\n" );  
+    fprintf( pErr, "\t-I num   : the max number of supergate inputs [default = %d]\n", nVarsMax );
+    fprintf( pErr, "\t-L num   : the max number of levels of gates [default = %d]\n", nLevels );
+    fprintf( pErr, "\t-N num   : the limit on the number of considered supergates [default = %d]\n", nGatesMax );
+    fprintf( pErr, "\t-T num   : the approximate runtime limit in seconds [default = %d]\n", TimeLimit );
+	fprintf( pErr, "\t-D float : the max delay of the supergates [default = %.2f]\n", DelayLimit );
+	fprintf( pErr, "\t-A float : the max area of the supergates [default = %.2f]\n", AreaLimit );
+    fprintf( pErr, "\t-E file  : file contains list of genlib gates to exclude\n" );
     fprintf( pErr, "\t-s       : toggle the use of inverters at the inputs [default = %s]\n", (fSkipInvs? "no": "yes") );
     fprintf( pErr, "\t-o       : toggle dumping the supergate library in old format [default = %s]\n", (fWriteOldFormat? "yes": "no") );
-    fprintf( pErr, "\t-e file  : file contains list of genlib gates to exclude\n" );
     fprintf( pErr, "\t-v       : enable verbose output [default = %s]\n", (fVerbose? "yes" : "no") );
     fprintf( pErr, "\t-h       : print the help message\n");
     fprintf( pErr, "\n");
     fprintf( pErr, "\tHere is a piece of advice on precomputing supergate libraries:\n");
     fprintf( pErr, "\t\n");
-    fprintf( pErr, "\tStart with the number of inputs equal to 5 (-i 5), the number of \n");
-    fprintf( pErr, "\tlevels equal to 3 (-l 3), the delay equal to 2-3 delays of inverter, \n");
-    fprintf( pErr, "\tthe area equal to 3-4 areas of two input NAND, and runtime limit equal \n");
-    fprintf( pErr, "\tto 10 seconds (-t 10). Run precomputation and learn from the result.\n");
+    fprintf( pErr, "\tStart with the number of inputs equal to 5 (-I 5), the number of \n");
+    fprintf( pErr, "\tlevels equal to 2 (-L 2), the delay equal to 2-3 delays of inverter, \n");
+    fprintf( pErr, "\tthe area equal to 2-3 areas of two input NAND, and runtime limit equal \n");
+    fprintf( pErr, "\tto 10 seconds (-T 10). Run precomputation and learn from the result.\n");
     fprintf( pErr, "\tDetermine what parameter is most constraining and try to increase \n");
     fprintf( pErr, "\tthe value of that parameter. The goal is to have a well-balanced\n");
     fprintf( pErr, "\tset of constraints and the resulting supergate library containing\n");
-    fprintf( pErr, "\tapproximately 100K-200K supergates. Typically, it is better to increase\n");
+    fprintf( pErr, "\tapproximately 5K-20K supergates. Typically, it is better to increase\n");
     fprintf( pErr, "\tdelay limit rather than area limit, because having large-area supergates\n");
     fprintf( pErr, "\tmay result in a considerable increase in area.\n");
     fprintf( pErr, "\t\n");
     fprintf( pErr, "\tNote that a good supergate library for experiments typically can be \n");
-    fprintf( pErr, "\tprecomputed in 30 sec. Increasing the runtime limit makes sense when\n");
+    fprintf( pErr, "\tprecomputed in 30 sec or less. Increasing runtime limit makes sense when\n");
     fprintf( pErr, "\tother parameters are well-balanced and it is needed to enumerate more\n");
     fprintf( pErr, "\tchoices to have a good result. In the end, to compute the final library\n");
     fprintf( pErr, "\tthe runtime can be set to 300 sec to ensure the ultimate quality.\n");
@@ -316,4 +328,6 @@ usage:
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

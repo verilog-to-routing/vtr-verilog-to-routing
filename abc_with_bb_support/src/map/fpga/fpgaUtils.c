@@ -18,6 +18,9 @@
 
 #include "fpgaInt.h"
 
+ABC_NAMESPACE_IMPL_START
+
+
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
@@ -31,7 +34,6 @@ static void  Fpga_MappingFindLatest( Fpga_Man_t * p, int * pNodes, int nNodesMax
 static void  Fpga_DfsLim_rec( Fpga_Node_t * pNode, int Level, Fpga_NodeVec_t * vNodes );
 static int   Fpga_CollectNodeTfo_rec( Fpga_Node_t * pNode, Fpga_Node_t * pPivot, Fpga_NodeVec_t * vVisited, Fpga_NodeVec_t * vTfo );
 static Fpga_NodeVec_t * Fpga_MappingOrderCosByLevel( Fpga_Man_t * pMan );
-static Fpga_Man_t * s_pMan = NULL;
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -182,7 +184,7 @@ float Fpga_MappingArea( Fpga_Man_t * pMan )
     for ( i = 0; i < pMan->vMapping->nSize; i++ )
     {
         pNode = pMan->vMapping->pArray[i];
-        aTotal += pMan->pLutLib->pLutAreas[pNode->pCutBest->nLeaves];
+        aTotal += pMan->pLutLib->pLutAreas[(int)pNode->pCutBest->nLeaves];
     }
     return aTotal;
 }
@@ -217,7 +219,7 @@ float Fpga_MappingArea_rec( Fpga_Man_t * pMan, Fpga_Node_t * pNode, Fpga_NodeVec
     // mark the node as visited
     pNode->fMark0 = 1;
     // add the node to the list
-    aArea += pMan->pLutLib->pLutAreas[pNode->pCutBest->nLeaves];
+    aArea += pMan->pLutLib->pLutAreas[(int)pNode->pCutBest->nLeaves];
     // add the node to the list
     Fpga_NodeVecPush( vNodes, pNode );
     return aArea;
@@ -276,7 +278,7 @@ float Fpga_MappingSetRefsAndArea_rec( Fpga_Man_t * pMan, Fpga_Node_t * pNode, Fp
     pNode->pData0 = (char *)ppStore[pNode->Level]; 
     ppStore[pNode->Level] = pNode;
     // visit the transitive fanin of the selected cut
-    aArea = pMan->pLutLib->pLutAreas[pNode->pCutBest->nLeaves];
+    aArea = pMan->pLutLib->pLutAreas[(int)pNode->pCutBest->nLeaves];
     for ( i = 0; i < pNode->pCutBest->nLeaves; i++ )
         aArea += Fpga_MappingSetRefsAndArea_rec( pMan, pNode->pCutBest->ppLeaves[i], ppStore );
     return aArea;
@@ -306,7 +308,7 @@ float Fpga_MappingSetRefsAndArea( Fpga_Man_t * pMan )
 
     // allocate place to store the nodes
     LevelMax = Fpga_MappingMaxLevel( pMan );
-    ppStore = ALLOC( Fpga_Node_t *, LevelMax + 1 );
+    ppStore = ABC_ALLOC( Fpga_Node_t *, LevelMax + 1 );
     memset( ppStore, 0, sizeof(Fpga_Node_t *) * (LevelMax + 1) );
 
     // collect nodes reachable from POs in the DFS order through the best cuts
@@ -325,7 +327,7 @@ float Fpga_MappingSetRefsAndArea( Fpga_Man_t * pMan )
     for ( i = LevelMax; i >= 0; i-- )
         for ( pNode = ppStore[i]; pNode; pNode = (Fpga_Node_t *)pNode->pData0 )
             Fpga_NodeVecPush( pMan->vMapping, pNode );
-    free( ppStore );
+    ABC_FREE( ppStore );
     return aArea;
 }
 
@@ -983,4 +985,6 @@ Fpga_NodeVec_t * Fpga_MappingOrderCosByLevel( Fpga_Man_t * pMan )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 

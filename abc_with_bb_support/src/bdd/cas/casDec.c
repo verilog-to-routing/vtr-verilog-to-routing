@@ -21,10 +21,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
-#include "extra.h"
+#include "bdd/extrab/extraBdd.h"
 #include "cas.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                      type definitions                            ///
@@ -94,7 +96,7 @@ long s_EncComputeTime;
 ///                      debugging macros                            ///
 ////////////////////////////////////////////////////////////////////////
 
-#define PRB(f)       printf( #f " = " ); Cudd_bddPrint(dd,f); printf( "\n" )
+#define PRB_(f)       printf( #f " = " ); Cudd_bddPrint(dd,f); printf( "\n" )
 #define PRK(f,n)     Cudd_PrintKMap(stdout,dd,(f),Cudd_Not(f),(n),NULL,0); printf( "K-map for function" #f "\n\n" )
 #define PRK2(f,g,n)  Cudd_PrintKMap(stdout,dd,(f),(g),(n),NULL,0); printf( "K-map for function <" #f ", " #g ">\n\n" ) 
 
@@ -126,14 +128,14 @@ int CreateDecomposedNetwork( DdManager * dd, DdNode * aFunc, char ** pNames, int
     int nLutOutputs = 0;
     int nLutOutputsOrig = 0;
 
-    long clk1;
+    abctime clk1;
 
     s_LutSize = nLutSize;
 
     s_nFuncVars = nNames;
 
     // get the profile
-    clk1 = clock();
+    clk1 = Abc_Clock();
     Extra_ProfileWidth( dd, aFunc, Profile, -1 );
 
 
@@ -151,7 +153,7 @@ int CreateDecomposedNetwork( DdManager * dd, DdNode * aFunc, char ** pNames, int
     nLuts     = 0;
     do
     {
-        p = (LUT*) malloc( sizeof(LUT) );
+        p = (LUT*) ABC_ALLOC( char, sizeof(LUT) );
         memset( p, 0, sizeof(LUT) );
 
         if ( nVarsRem + PrevMulti <= s_LutSize ) // this is the last LUT
@@ -172,7 +174,7 @@ int CreateDecomposedNetwork( DdManager * dd, DdNode * aFunc, char ** pNames, int
             p->nIns   = s_LutSize;
             p->nInsP  = PrevMulti;
             p->nCols  = Profile[nNames-(nVarsRem-(s_LutSize-PrevMulti))];
-            p->nMulti = Extra_Base2Log(p->nCols);
+            p->nMulti = Abc_Base2Log(p->nCols);
             p->Level  = nNames-nVarsRem;
 
             nVarsRem  = nVarsRem-(s_LutSize-PrevMulti);
@@ -194,9 +196,9 @@ int CreateDecomposedNetwork( DdManager * dd, DdNode * aFunc, char ** pNames, int
 
 
         // there should be as many columns, codes, and nodes, as there are columns on this level
-        p->pbCols  = (DdNode **) malloc( p->nCols * sizeof(DdNode *) );
-        p->pbCodes = (DdNode **) malloc( p->nCols * sizeof(DdNode *) );
-        p->paNodes = (DdNode **) malloc( p->nCols * sizeof(DdNode *) );
+        p->pbCols  = (DdNode **) ABC_ALLOC( char, p->nCols * sizeof(DdNode *) );
+        p->pbCodes = (DdNode **) ABC_ALLOC( char, p->nCols * sizeof(DdNode *) );
+        p->paNodes = (DdNode **) ABC_ALLOC( char, p->nCols * sizeof(DdNode *) );
 
         pLuts[nLuts] = p;
         nLuts++;
@@ -282,10 +284,10 @@ int CreateDecomposedNetwork( DdManager * dd, DdNode * aFunc, char ** pNames, int
         }
         else
         {
-            long clk2 = clock();
+            abctime clk2 = Abc_Clock();
 //          p->bRelation = PerformTheEncoding( dd, p->pbCols, p->nCols, bVarsCube, bCVars, p->nMulti, &p->nSimple );  Cudd_Ref( p->bRelation );
             p->bRelation = Extra_bddEncodingNonStrict( dd, p->pbCols, p->nCols, bVarsCube, bCVars, p->nMulti, &p->nSimple );  Cudd_Ref( p->bRelation );
-            s_EncodingTime += clock() - clk2;
+            s_EncodingTime += Abc_Clock() - clk2;
         }
 
         // update the number of LUT outputs
@@ -316,7 +318,7 @@ printf( "Stage %3d: In = %3d  InP = %3d  Cols = %5d  Multi = %2d  Simple = %2d  
             DdNode ** pbTemp;
             int k, v;
 
-            pbTemp = (DdNode **) malloc( p->nCols * sizeof(DdNode *) );
+            pbTemp = (DdNode **) ABC_ALLOC( char, p->nCols * sizeof(DdNode *) );
 
             // create the identical permutation
             for ( v = 0; v < dd->size; v++ )
@@ -336,14 +338,14 @@ printf( "Stage %3d: In = %3d  InP = %3d  Cols = %5d  Multi = %2d  Simple = %2d  
                 Cudd_RecursiveDeref( dd, p->pbCodes[k] );
                 p->pbCodes[k] = pbTemp[k];
             }
-            free( pbTemp );
+            ABC_FREE( pbTemp );
         }
     } 
     if ( fVerbose )
     printf( "LUTs: Total = %5d. Final = %5d. Simple = %5d. (%6.2f %%)  ", 
         nLutsTotal, nLutOutputs, nLutsTotal-nLutOutputs, 100.0*(nLutsTotal-nLutOutputs)/nLutsTotal );
     if ( fVerbose )
-    printf( "Memory = %6.2f Mb\n", 1.0*nLutOutputs*(1<<nLutSize)/(1<<20) );
+    printf( "Memory = %6.2f MB\n", 1.0*nLutOutputs*(1<<nLutSize)/(1<<20) );
 //  printf( "\n" );
 
 //fprintf( pTable, "%d ", nLutOutputsOrig );
@@ -351,7 +353,7 @@ printf( "Stage %3d: In = %3d  InP = %3d  Cols = %5d  Multi = %2d  Simple = %2d  
 
     if ( fVerbose )
     {
-    printf( "Pure decomposition time   = %.2f sec\n", (float)(clock() - clk1 - s_EncodingTime)/(float)(CLOCKS_PER_SEC) );
+    printf( "Pure decomposition time   = %.2f sec\n", (float)(Abc_Clock() - clk1 - s_EncodingTime)/(float)(CLOCKS_PER_SEC) );
     printf( "Encoding time             = %.2f sec\n", (float)(s_EncodingTime)/(float)(CLOCKS_PER_SEC) );
 //  printf( "Encoding search time      = %.2f sec\n", (float)(s_EncSearchTime)/(float)(CLOCKS_PER_SEC) );
 //  printf( "Encoding compute time     = %.2f sec\n", (float)(s_EncComputeTime)/(float)(CLOCKS_PER_SEC) );
@@ -359,13 +361,13 @@ printf( "Stage %3d: In = %3d  InP = %3d  Cols = %5d  Multi = %2d  Simple = %2d  
 
 
 //fprintf( pTable, "%.2f ", (float)(s_ReadingTime)/(float)(CLOCKS_PER_SEC) );
-//fprintf( pTable, "%.2f ", (float)(clock() - clk1 - s_EncodingTime)/(float)(CLOCKS_PER_SEC) );
+//fprintf( pTable, "%.2f ", (float)(Abc_Clock() - clk1 - s_EncodingTime)/(float)(CLOCKS_PER_SEC) );
 //fprintf( pTable, "%.2f ", (float)(s_EncodingTime)/(float)(CLOCKS_PER_SEC) );
 //fprintf( pTable, "%.2f ", (float)(s_RemappingTime)/(float)(CLOCKS_PER_SEC) );
 
 
     // write LUTs into the BLIF file
-    clk1 = clock();
+    clk1 = Abc_Clock();
     if ( fCheck )
     {
         FILE * pFile;
@@ -386,7 +388,7 @@ printf( "Stage %3d: In = %3d  InP = %3d  Cols = %5d  Multi = %2d  Simple = %2d  
         fprintf( pFile, ".end\n" );
         fclose( pFile );
         if ( fVerbose )
-        printf( "Output file writing time  = %.2f sec\n", (float)(clock() - clk1)/(float)(CLOCKS_PER_SEC) );
+        printf( "Output file writing time  = %.2f sec\n", (float)(Abc_Clock() - clk1)/(float)(CLOCKS_PER_SEC) );
     }
 
 
@@ -402,10 +404,10 @@ printf( "Stage %3d: In = %3d  InP = %3d  Cols = %5d  Multi = %2d  Simple = %2d  
         }
         Cudd_RecursiveDeref( dd, p->bRelation );
 
-        free( p->pbCols );
-        free( p->pbCodes );
-        free( p->paNodes );
-        free( p );
+        ABC_FREE( p->pbCols );
+        ABC_FREE( p->pbCodes );
+        ABC_FREE( p->paNodes );
+        ABC_FREE( p );
     }
 
     return 1;
@@ -490,11 +492,11 @@ void WriteLUTSintoBLIFfile( FILE * pFile, DdManager * dd, LUT ** pLuts, int nLut
         for ( v = 0; v < dd->size; v++ )
         {
             if ( pNamesLocalIn[v] )
-                free( pNamesLocalIn[v] );
+                ABC_FREE( pNamesLocalIn[v] );
             pNamesLocalIn[v] = NULL;
         }
         for ( v = 0; v < p->nMulti; v++ )
-            free( pNamesLocalOut[v] );
+            ABC_FREE( pNamesLocalOut[v] );
     }
 }
 
@@ -505,4 +507,6 @@ void WriteLUTSintoBLIFfile( FILE * pFile, DdManager * dd, LUT ** pLuts, int nLut
 
 
 
+
+ABC_NAMESPACE_IMPL_END
 

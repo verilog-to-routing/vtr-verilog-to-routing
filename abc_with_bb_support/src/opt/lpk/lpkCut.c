@@ -19,18 +19,22 @@
 ***********************************************************************/
 
 #include "lpkInt.h"
+#include "bool/kit/cloud.h"
+
+ABC_NAMESPACE_IMPL_START
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
-
+ 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
 /**Function*************************************************************
 
-  Synopsis    [Computes the truth able of one cut.]
+  Synopsis    [Computes the truth table of one cut.]
 
   Description []
                
@@ -39,27 +43,119 @@
   SeeAlso     []
 
 ***********************************************************************/
-unsigned * Lpk_CutTruth_rec( Hop_Man_t * pMan, Hop_Obj_t * pObj, int nVars, Vec_Ptr_t * vTtNodes, int * iCount )
+CloudNode * Lpk_CutTruthBdd_rec( CloudManager * dd, Hop_Man_t * pMan, Hop_Obj_t * pObj, int nVars )
+{
+    CloudNode * pTruth, * pTruth0, * pTruth1;
+    assert( !Hop_IsComplement(pObj) );
+    if ( pObj->pData )
+    {
+        assert( ((unsigned)(ABC_PTRUINT_T)pObj->pData) & 0xffff0000 );
+        return (CloudNode *)pObj->pData;
+    }
+    // get the plan for a new truth table
+    if ( Hop_ObjIsConst1(pObj) )
+        pTruth = dd->one;
+    else
+    {
+        assert( Hop_ObjIsAnd(pObj) );
+        // compute the truth tables of the fanins
+        pTruth0 = Lpk_CutTruthBdd_rec( dd, pMan, Hop_ObjFanin0(pObj), nVars );
+        pTruth1 = Lpk_CutTruthBdd_rec( dd, pMan, Hop_ObjFanin1(pObj), nVars );
+        pTruth0 = Cloud_NotCond( pTruth0, Hop_ObjFaninC0(pObj) );
+        pTruth1 = Cloud_NotCond( pTruth1, Hop_ObjFaninC1(pObj) );
+        // creat the truth table of the node
+        pTruth = Cloud_bddAnd( dd, pTruth0, pTruth1 );
+    }
+    pObj->pData = pTruth;
+    return pTruth;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Verifies that the factoring is correct.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+CloudNode * Lpk_CutTruthBdd( Lpk_Man_t * p, Lpk_Cut_t * pCut )
+{
+    CloudManager * dd = p->pDsdMan->dd;
+    Hop_Man_t * pManHop = (Hop_Man_t *)p->pNtk->pManFunc;
+    Hop_Obj_t * pObjHop;
+    Abc_Obj_t * pObj, * pFanin;
+    CloudNode * pTruth = NULL; // Suppress "might be used uninitialized"
+    int i, k;
+
+//    return NULL;
+//    Lpk_NodePrintCut( p, pCut );
+    // initialize the leaves
+    Lpk_CutForEachLeaf( p->pNtk, pCut, pObj, i )
+        pObj->pCopy = (Abc_Obj_t *)dd->vars[pCut->nLeaves-1-i];
+
+    // construct truth table in the topological order
+    Lpk_CutForEachNodeReverse( p->pNtk, pCut, pObj, i )
+    {
+        // get the local AIG
+        pObjHop = Hop_Regular((Hop_Obj_t *)pObj->pData);
+        // clean the data field of the nodes in the AIG subgraph
+        Hop_ObjCleanData_rec( pObjHop );
+        // set the initial truth tables at the fanins
+        Abc_ObjForEachFanin( pObj, pFanin, k )
+        {
+            assert( ((unsigned)(ABC_PTRUINT_T)pFanin->pCopy) & 0xffff0000 );
+            Hop_ManPi( pManHop, k )->pData = pFanin->pCopy;
+        }
+        // compute the truth table of internal nodes
+        pTruth = Lpk_CutTruthBdd_rec( dd, pManHop, pObjHop, pCut->nLeaves );
+        if ( Hop_IsComplement((Hop_Obj_t *)pObj->pData) )
+            pTruth = Cloud_Not(pTruth);
+        // set the truth table at the node
+        pObj->pCopy = (Abc_Obj_t *)pTruth;
+        
+    }
+
+//    Cloud_bddPrint( dd, pTruth );
+//    printf( "Bdd size = %d. Total nodes = %d.\n", Cloud_DagSize( dd, pTruth ), dd->nNodesCur-dd->nVars-1 );
+    return pTruth;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Computes the truth table of one cut.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+unsigned * Lpk_CutTruth_rec( Hop_Man_t * pMan, Hop_Obj_t * pObj, int nVars, Vec_Ptr_t * vTtNodes, int * piCount )
 {
     unsigned * pTruth, * pTruth0, * pTruth1;
     assert( !Hop_IsComplement(pObj) );
     if ( pObj->pData )
     {
-        assert( ((unsigned)pObj->pData) & 0xffff0000 );
-        return pObj->pData;
+        assert( ((unsigned)(ABC_PTRUINT_T)pObj->pData) & 0xffff0000 );
+        return (unsigned *)pObj->pData;
     }
     // get the plan for a new truth table
-    pTruth = Vec_PtrEntry( vTtNodes, (*iCount)++ );
+    pTruth = (unsigned *)Vec_PtrEntry( vTtNodes, (*piCount)++ );
     if ( Hop_ObjIsConst1(pObj) )
-        Extra_TruthFill( pTruth, nVars );
+        Kit_TruthFill( pTruth, nVars );
     else
     {
         assert( Hop_ObjIsAnd(pObj) );
         // compute the truth tables of the fanins
-        pTruth0 = Lpk_CutTruth_rec( pMan, Hop_ObjFanin0(pObj), nVars, vTtNodes, iCount );
-        pTruth1 = Lpk_CutTruth_rec( pMan, Hop_ObjFanin1(pObj), nVars, vTtNodes, iCount );
+        pTruth0 = Lpk_CutTruth_rec( pMan, Hop_ObjFanin0(pObj), nVars, vTtNodes, piCount );
+        pTruth1 = Lpk_CutTruth_rec( pMan, Hop_ObjFanin1(pObj), nVars, vTtNodes, piCount );
         // creat the truth table of the node
-        Extra_TruthAndPhase( pTruth, pTruth0, pTruth1, nVars, Hop_ObjFaninC0(pObj), Hop_ObjFaninC1(pObj) );
+        Kit_TruthAndPhase( pTruth, pTruth0, pTruth1, nVars, Hop_ObjFaninC0(pObj), Hop_ObjFaninC1(pObj) );
     }
     pObj->pData = pTruth;
     return pTruth;
@@ -76,42 +172,52 @@ unsigned * Lpk_CutTruth_rec( Hop_Man_t * pMan, Hop_Obj_t * pObj, int nVars, Vec_
   SeeAlso     []
 
 ***********************************************************************/
-unsigned * Lpk_CutTruth( Lpk_Man_t * p, Lpk_Cut_t * pCut )
+unsigned * Lpk_CutTruth( Lpk_Man_t * p, Lpk_Cut_t * pCut, int fInv )
 {
-    Hop_Man_t * pManHop = p->pNtk->pManFunc;
+    Hop_Man_t * pManHop = (Hop_Man_t *)p->pNtk->pManFunc;
     Hop_Obj_t * pObjHop;
-    Abc_Obj_t * pObj, * pFanin;
-    unsigned * pTruth;
+    Abc_Obj_t * pObj = NULL; // Suppress "might be used uninitialized"
+    Abc_Obj_t * pFanin;
+    unsigned * pTruth = NULL; // Suppress "might be used uninitialized"
     int i, k, iCount = 0;
 //    Lpk_NodePrintCut( p, pCut );
+    assert( pCut->nNodes > 0 );
 
     // initialize the leaves
     Lpk_CutForEachLeaf( p->pNtk, pCut, pObj, i )
-        pObj->pCopy = Vec_PtrEntry( p->vTtElems, i );
+        pObj->pCopy = (Abc_Obj_t *)Vec_PtrEntry( p->vTtElems, fInv? pCut->nLeaves-1-i : i );
 
     // construct truth table in the topological order
     Lpk_CutForEachNodeReverse( p->pNtk, pCut, pObj, i )
     {
         // get the local AIG
-        pObjHop = Hop_Regular(pObj->pData);
+        pObjHop = Hop_Regular((Hop_Obj_t *)pObj->pData);
         // clean the data field of the nodes in the AIG subgraph
         Hop_ObjCleanData_rec( pObjHop );
         // set the initial truth tables at the fanins
         Abc_ObjForEachFanin( pObj, pFanin, k )
         {
-            assert( ((unsigned)pFanin->pCopy) & 0xffff0000 );
+            assert( ((unsigned)(ABC_PTRUINT_T)pFanin->pCopy) & 0xffff0000 );
             Hop_ManPi( pManHop, k )->pData = pFanin->pCopy;
         }
         // compute the truth table of internal nodes
         pTruth = Lpk_CutTruth_rec( pManHop, pObjHop, pCut->nLeaves, p->vTtNodes, &iCount );
-        if ( Hop_IsComplement(pObj->pData) )
-            Extra_TruthNot( pTruth, pTruth, pCut->nLeaves );
+        if ( Hop_IsComplement((Hop_Obj_t *)pObj->pData) )
+            Kit_TruthNot( pTruth, pTruth, pCut->nLeaves );
         // set the truth table at the node
         pObj->pCopy = (Abc_Obj_t *)pTruth;
     }
 
+    // make sure direct truth table is stored elsewhere (assuming the first call for direct truth!!!)
+    if ( fInv == 0 )
+    {
+        pTruth = (unsigned *)Vec_PtrEntry( p->vTtNodes, iCount++ );
+        Kit_TruthCopy( pTruth, (unsigned *)(ABC_PTRUINT_T)pObj->pCopy, pCut->nLeaves );
+    }
+    assert( iCount <= Vec_PtrSize(p->vTtNodes) );
     return pTruth;
 }
+
 
 /**Function*************************************************************
 
@@ -128,7 +234,7 @@ void Lpk_NodeRecordImpact( Lpk_Man_t * p )
 {
     Lpk_Cut_t * pCut;
     Vec_Ptr_t * vNodes = Vec_VecEntry( p->vVisited, p->pObj->Id );
-    Abc_Obj_t * pNode;
+    Abc_Obj_t * pNode, * pNode2;
     int i, k;
     // collect the nodes that impact the given node
     Vec_PtrClear( vNodes );
@@ -141,16 +247,16 @@ void Lpk_NodeRecordImpact( Lpk_Man_t * p )
             if ( pNode->fMarkC )
                 continue;
             pNode->fMarkC = 1;
-            Vec_PtrPush( vNodes, (void *)pNode->Id );
-            Vec_PtrPush( vNodes, (void *)Abc_ObjFanoutNum(pNode) );
+            Vec_PtrPush( vNodes, (void *)(ABC_PTRUINT_T)pNode->Id );
+            Vec_PtrPush( vNodes, (void *)(ABC_PTRUINT_T)Abc_ObjFanoutNum(pNode) );
         }
     }
     // clear the marks
-    Vec_PtrForEachEntry( vNodes, pNode, i )
+    Vec_PtrForEachEntryDouble( Abc_Obj_t *, Abc_Obj_t *, vNodes, pNode, pNode2, i )
     {
-        pNode = Abc_NtkObj( p->pNtk, (int)pNode );
+        pNode = Abc_NtkObj( p->pNtk, (int)(ABC_PTRUINT_T)pNode );
         pNode->fMarkC = 0;
-        i++;
+//        i++;
     }
 //printf( "%d ", Vec_PtrSize(vNodes) );
 }
@@ -178,7 +284,7 @@ int Lpk_NodeCutsCheckDsd( Lpk_Man_t * p, Lpk_Cut_t * pCut )
     {
         assert( pObj->fMarkA == 0 );
         pObj->fMarkA = 1;
-        pObj->pCopy = (void *)i;
+        pObj->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)i;
     }
     // ref leaves pointed from the internal nodes
     nCands = 0;
@@ -187,7 +293,7 @@ int Lpk_NodeCutsCheckDsd( Lpk_Man_t * p, Lpk_Cut_t * pCut )
         fLeavesOnly = 1;
         Abc_ObjForEachFanin( pObj, pFanin, k )
             if ( pFanin->fMarkA )
-                p->pRefs[(int)pFanin->pCopy]++;
+                p->pRefs[(int)(ABC_PTRUINT_T)pFanin->pCopy]++;
             else
                 fLeavesOnly = 0;
         if ( fLeavesOnly )
@@ -201,7 +307,7 @@ int Lpk_NodeCutsCheckDsd( Lpk_Man_t * p, Lpk_Cut_t * pCut )
         Abc_ObjForEachFanin( pObj, pFanin, k )
         {
             assert( pFanin->fMarkA == 1 );
-            if ( p->pRefs[(int)pFanin->pCopy] > 1 )
+            if ( p->pRefs[(int)(ABC_PTRUINT_T)pFanin->pCopy] > 1 )
                 break;
         }
         if ( k == Abc_ObjFaninNum(pObj) )
@@ -387,7 +493,7 @@ void Lpk_NodeCutsOne( Lpk_Man_t * p, Lpk_Cut_t * pCut, int Node )
     if ( Abc_ObjIsCi(pObj) )
         return;
     assert( Abc_ObjIsNode(pObj) );
-    assert( Abc_ObjFaninNum(pObj) <= p->pPars->nLutSize );
+//    assert( Abc_ObjFaninNum(pObj) <= p->pPars->nLutSize );
 
     // if the node is not in the MFFC, check the limit
     if ( !Abc_NodeIsTravIdCurrent(pObj) )
@@ -410,14 +516,6 @@ void Lpk_NodeCutsOne( Lpk_Man_t * p, Lpk_Cut_t * pCut, int Node )
     // initialize the set of leaves to the nodes in the cut
     assert( p->nCuts < LPK_CUTS_MAX );
     pCutNew = p->pCuts + p->nCuts;
-/*
-if ( p->pObj->Id == 31 && Node == 38 && pCut->pNodes[0] == 31 && pCut->pNodes[1] == 34 && pCut->pNodes[2] == 35 )//p->nCuts == 48 )
-{
-    int x = 0;
-    printf( "Start:\n" );
-    Lpk_NodePrintCut( p, pCut );
-}
-*/
     pCutNew->nLeaves = 0;
     for ( i = 0; i < (int)pCut->nLeaves; i++ )
         if ( pCut->pLeaves[i] != Node )
@@ -443,47 +541,37 @@ if ( p->pObj->Id == 31 && Node == 38 && pCut->pNodes[0] == 31 && pCut->pNodes[1]
         assert( pCutNew->nLeaves <= LPK_SIZE_MAX );
 
     }
-/*
-    printf( "   Trying cut: " );
-    Lpk_NodePrintCut( p, pCutNew, 1 );
-    printf( "\n" );
-*/
     // skip the contained cuts
     Lpk_NodeCutSignature( pCutNew );
     if ( Lpk_NodeCutsOneFilter( p->pCuts, p->nCuts, pCutNew ) )
         return;
 
-
     // update the set of internal nodes
     assert( pCut->nNodes < LPK_SIZE_MAX );
     memcpy( pCutNew->pNodes, pCut->pNodes, pCut->nNodes * sizeof(int) );
     pCutNew->nNodes = pCut->nNodes;
-    pCutNew->pNodes[ pCutNew->nNodes++ ] = Node;
+    pCutNew->nNodesDup = pCut->nNodesDup;
 
-    // add the marked node
-    pCutNew->nNodesDup = pCut->nNodesDup + !Abc_NodeIsTravIdCurrent(pObj);
-/*
-if ( p->pObj->Id == 31 && Node == 38 )//p->nCuts == 48 )
-{
-    int x = 0;
-    printf( "Finish:\n" );
-    Lpk_NodePrintCut( p, pCutNew );
-}
-*/
+    // check if the node is already there
+    // if so, move the node to be the last
+    for ( i = 0; i < (int)pCutNew->nNodes; i++ )
+        if ( pCutNew->pNodes[i] == Node )
+        {
+            for ( k = i; k < (int)pCutNew->nNodes - 1; k++ )
+                pCutNew->pNodes[k] = pCutNew->pNodes[k+1];
+            pCutNew->pNodes[k] = Node;
+            break;
+        }
+    if ( i == (int)pCutNew->nNodes ) // new node
+    {
+        pCutNew->pNodes[ pCutNew->nNodes++ ] = Node;
+        pCutNew->nNodesDup += !Abc_NodeIsTravIdCurrent(pObj);
+    }
+    // the number of nodes does not exceed MFFC plus duplications
+    assert( pCutNew->nNodes <= p->nMffc + pCutNew->nNodesDup );
     // add the cut to storage
     assert( p->nCuts < LPK_CUTS_MAX );
     p->nCuts++;
-
-//    assert( pCut->nNodes <= p->nMffc + pCutNew->nNodesDup );
-
-/*
-    printf( "      Creating cut: " );
-    Lpk_NodePrintCut( p, pCutNew, 1 );
-    printf( "\n" );
-*/
-
-//    if ( !(pCut->nNodes <= p->nMffc + pCutNew->nNodesDup) )
-//        printf( "Assertion in line 477 failed.\n" );
 }
 
 /**Function*************************************************************
@@ -527,13 +615,6 @@ int Lpk_NodeCuts( Lpk_Man_t * p )
         // try to expand the fanins of this cut
         for ( k = 0; k < (int)pCut->nLeaves; k++ )
         {
-
-            if ( p->pObj->Id == 28 && i == 273 && k == 13 )
-            {
-                Abc_Obj_t * pFanin = Abc_NtkObj(p->pNtk, pCut->pLeaves[k]);
-                int s = 0;
-            }
-
             // create a new cut
             Lpk_NodeCutsOne( p, pCut, pCut->pLeaves[k] );
             // quit if the number of cuts has exceeded the limit
@@ -559,9 +640,11 @@ int Lpk_NodeCuts( Lpk_Man_t * p )
             continue;
         // compute the minimum number of LUTs needed to implement this cut
         // V = N * (K-1) + 1  ~~~~~  N = Ceiling[(V-1)/(K-1)] = (V-1)/(K-1) + [(V-1)%(K-1) > 0]
-        pCut->nLuts = (pCut->nLeaves-1)/(p->pPars->nLutSize-1) + ( (pCut->nLeaves-1)%(p->pPars->nLutSize-1) > 0 ); 
+        pCut->nLuts = Lpk_LutNumLuts( pCut->nLeaves, p->pPars->nLutSize ); 
+//        pCut->Weight = (float)1.0 * (pCut->nNodes - pCut->nNodesDup - 1) / pCut->nLuts; //p->pPars->nLutsMax;
         pCut->Weight = (float)1.0 * (pCut->nNodes - pCut->nNodesDup) / pCut->nLuts; //p->pPars->nLutsMax;
         if ( pCut->Weight <= 1.001 )
+//        if ( pCut->Weight <= 0.999 )
             continue;
         pCut->fHasDsd = Lpk_NodeCutsCheckDsd( p, pCut );
         if ( pCut->fHasDsd )
@@ -601,4 +684,6 @@ int Lpk_NodeCuts( Lpk_Man_t * p )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
+
+ABC_NAMESPACE_IMPL_END
 
