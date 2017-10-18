@@ -42,7 +42,11 @@
 void vpr_init(const int argc, const char **argv, t_options *options,
         t_vpr_setup *vpr_setup, t_arch *arch);
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch);
-void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Pack, load a previous packing or skips the packing stage
+void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Performs packing
+void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous packing
+
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch);

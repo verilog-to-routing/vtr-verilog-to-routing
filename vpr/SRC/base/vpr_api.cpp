@@ -264,9 +264,12 @@ void vpr_init(const int argc, const char **argv,
 
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
-    {
-        //Pack
-        vpr_pack(vpr_setup, arch);
+    { //Pack
+        bool pack_success = vpr_pack_flow(vpr_setup, arch);
+
+        if (!pack_success) {
+            return false; //Unimplementable
+        }
     }
 
     {
@@ -274,9 +277,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         vpr_init_pre_place_and_route(vpr_setup, arch);
         bool place_route_succeeded = vpr_place_and_route(&vpr_setup, arch);
 
-        /* Signal implementation failure */
         if (!place_route_succeeded) {
-            return false;
+            return false; //Unimplementable
         }
     }
 
@@ -292,25 +294,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 	/* Read in netlist file for placement and routing */
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
-	if (!vpr_setup.FileNameOpts.NetFile.empty()) {
-		cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &Arch, vpr_setup.FileNameOpts.verify_file_digests);
-
-        /* This is done so that all blocks have subblocks and can be treated the same */
-        check_netlist();
-
-		if(vpr_setup.gen_netlist_as_blif) {
-			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
-			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
-			output_blif(&Arch, name);
-			free(name);
-		}
-	}
-
-    /* Output the current settings to console. */
-    printClusteredNetlistStats();
 
     /*
      *Load the device grid
@@ -353,10 +338,49 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     device_ctx.chan_width.y_list = (int *) vtr::malloc(device_ctx.grid.width() * sizeof (int));
 }
 
-void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
-    if (vpr_setup.PackerOpts.doPacking != STAGE_DO) {
-        return;
+bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    auto& packer_opts = vpr_setup.PackerOpts;
+
+    if (packer_opts.doPacking == STAGE_SKIP) {
+        //pass
+    } else {
+        if (packer_opts.doPacking == STAGE_DO) {
+            //Do the actual packing
+            vpr_pack(vpr_setup, arch);
+
+            //TODO: to be consistent with placement/routing vpr_pack should really
+            //      load the netlist data structures itself, instead of re-loading
+            //      the netlist from the .net file
+
+            //Load the result from the .net file
+            vpr_load_packing(vpr_setup, arch);
+        } else {
+            VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
+            VTR_ASSERT_MSG(!vpr_setup.FileNameOpts.NetFile.empty(),
+                    "Must have valid .net filename to load packing");
+
+            //Load a previous packing from the .net file
+            vpr_load_packing(vpr_setup, arch);
+        }
+
+        /* Sanity check the resulting netlist */
+        check_netlist();
+
+        /* Output the netlist stats to console. */
+        printClusteredNetlistStats();
+
+        if(vpr_setup.gen_netlist_as_blif) {
+            char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
+            sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
+            output_blif(&arch, name);
+            free(name);
+        }
     }
+
+    return true;
+}
+
+void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     std::chrono::high_resolution_clock::time_point end, begin;
     begin = std::chrono::high_resolution_clock::now();
@@ -423,6 +447,16 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
     vtr::printf_info("Packing took %g seconds\n", time_span.count());
     fflush(stdout);
+}
+
+void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_ASSERT_MSG(!vpr_setup.FileNameOpts.NetFile.empty(),
+            "Must have valid .net filename to load packing");
+
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &arch, vpr_setup.FileNameOpts.verify_file_digests);
+
 }
 
 /* Since the parameters of a switch may change as a function of its fanin,
