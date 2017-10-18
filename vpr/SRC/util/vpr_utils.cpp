@@ -2057,3 +2057,17 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     //Mark the block as synced
     place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
 }
+
+int max_pins_per_grid_tile() {
+    auto& device_ctx = g_vpr_ctx.device();
+    int max_pins = 0;
+    for (int i = 0; i < device_ctx.num_block_types; i++) {
+        t_type_ptr type = &device_ctx.block_types[i];
+
+        int pins_per_grid_tile = type->num_pins / (type->width * type->height);
+        //Use the maximum number of pins normalized by block area
+        max_pins = max(max_pins, pins_per_grid_tile);
+    }
+    return max_pins;
+}
+

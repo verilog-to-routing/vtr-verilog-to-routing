@@ -276,6 +276,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
+    vpr_init_graphics(vpr_setup, arch);
+
     //TODO: convert to 'build device' operation
     vpr_init_pre_place_and_route(vpr_setup, arch);
 
@@ -299,6 +301,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         //Analysis
         vpr_analysis(vpr_setup, arch);
     }
+
+    vpr_close_graphics(vpr_setup);
     return true;
 }
 
@@ -568,15 +572,19 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         }
 
         //Post-implementation
+
         std::string graphics_msg;
         if (route_status.success()) {
+            //Sanity check the routing
             auto& device_ctx = g_vpr_ctx.device();
             check_route(router_opts.route_type, device_ctx.num_rr_switches, vpr_setup.Segments);
             get_serial_num();
 
+            //Update status
             vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());
         } else {
+            //Update status
             vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
         }
@@ -598,7 +606,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             print_switch_usage();
         }
 
-        //Update graphics
+        //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
 
         free_net_delay(net_delay, &net_delay_ch);
@@ -717,6 +725,23 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
             router_opts.read_rr_graph_name);
 }
 
+void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+    /* Startup X graphics */
+    init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
+            vpr_setup.RouterOpts.route_type);
+    if (vpr_setup.ShowGraphics) {
+        init_graphics("VPR: Versatile Place and Route for FPGAs", WHITE);
+        alloc_draw_structs(&arch);
+    }
+}
+
+void vpr_close_graphics(const t_vpr_setup& vpr_setup) {
+    /* Close down X Display */
+    if (vpr_setup.ShowGraphics)
+        close_graphics();
+    free_draw_structs();
+}
+
 /* Since the parameters of a switch may change as a function of its fanin,
    to get an estimation of inter-cluster delays we need a reasonable estimation
    of the fan-ins of switches that connect clusters together. These switches are
@@ -805,31 +830,6 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     } else {
         vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Unrecognized directionality: %d\n", (int) directionality);
     }
-}
-
-bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
-
-    /* Startup X graphics */
-    init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
-            vpr_setup->RouterOpts.route_type);
-    if (vpr_setup->ShowGraphics) {
-        init_graphics("VPR:  Versatile Place and Route for FPGAs", WHITE);
-        alloc_draw_structs(&arch);
-    }
-    /* Do placement and routing */
-    bool success = place_and_route(vpr_setup->PlacerOpts,
-            vpr_setup->FileNameOpts,
-            &arch,
-            vpr_setup->AnnealSched, vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
-            vpr_setup->Segments, vpr_setup->Timing);
-    fflush(stdout);
-
-    /* Close down X Display */
-    if (vpr_setup->ShowGraphics)
-        close_graphics();
-    free_draw_structs();
-
-    return (success);
 }
 
 /* Free architecture data structures */
