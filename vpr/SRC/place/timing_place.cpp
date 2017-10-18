@@ -19,7 +19,7 @@ using namespace std;
 
 static vtr::vector_map<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
-static vtr::t_chunk f_timing_place_crit_ch = {NULL, 0, NULL};
+static vtr::t_chunk f_timing_place_crit_ch;
 
 /******** prototypes ******************/
 static void alloc_crit(vtr::t_chunk *chunk_list_ptr);

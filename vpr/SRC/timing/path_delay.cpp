@@ -152,7 +152,7 @@ from the timing graph back to the netlist relies on this. */
 /* Variables for "chunking" the tedge memory.  If the head pointer in tedge_ch is NULL, *
  * no timing graph exists now.															*/
 
-static vtr::t_chunk tedge_ch = {NULL, 0, NULL};
+static vtr::t_chunk tedge_ch;
 
 static vector<size_t> f_num_timing_net_pins;
 

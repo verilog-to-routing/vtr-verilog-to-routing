@@ -49,7 +49,6 @@ public:
     void not_congested_this_iteration(ClusterNetId net_id);
 private:
     /*For allocating and freeing memory*/
-    void load_memory_chunks();
     void free_budgets();
     void alloc_budget_memory();
     void load_initial_budgets();

@@ -77,14 +77,6 @@ void route_budgets::free_budgets() {
     set = false;
 }
 
-void route_budgets::load_memory_chunks() {
-    min_budget_delay_ch = {NULL, 0, NULL};
-    max_budget_delay_ch = {NULL, 0, NULL};
-    target_budget_delay_ch = {NULL, 0, NULL};
-    lower_bound_delay_ch = {NULL, 0, NULL};
-    upper_bound_delay_ch = {NULL, 0, NULL};
-}
-
 void route_budgets::alloc_budget_memory() {
     /*All the budgets are allocated similar to the net delay in order to pass into the delay calculator*/
 
@@ -128,7 +120,6 @@ void route_budgets::load_route_budgets(vtr::vector_map<ClusterNetId, float *> &n
     }
 
     /*allocate and load memory for budgets*/
-    load_memory_chunks();
     alloc_budget_memory();
     load_initial_budgets();
 

@@ -50,12 +50,12 @@ static int heap_tail; /* Index of first unused slot in the heap array */
 /* For managing my own list of currently free heap data structures.     */
 static t_heap *heap_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the heap*/
-static vtr::t_chunk heap_ch = {NULL, 0, NULL};
+static vtr::t_chunk heap_ch;
 
 /* For managing my own list of currently free trace data structures.    */
 static t_trace *trace_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the trace*/
-static vtr::t_chunk trace_ch = {NULL, 0, NULL};
+static vtr::t_chunk trace_ch;
 
 static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
@@ -64,7 +64,7 @@ static int num_linked_f_pointer_allocated = 0;
 static t_linked_f_pointer *rr_modified_head = NULL;
 static t_linked_f_pointer *linked_f_pointer_free_head = NULL;
 
-static vtr::t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
+static vtr::t_chunk linked_f_pointer_ch;
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *

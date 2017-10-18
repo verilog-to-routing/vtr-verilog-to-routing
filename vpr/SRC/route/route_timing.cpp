@@ -1433,7 +1433,7 @@ static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *
     unsigned int ipin;
 	vtr::vector_map<ClusterNetId, float *> net_delay_check;
 
-    vtr::t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
+    vtr::t_chunk list_head_net_delay_check_ch;
 
     /*t_linked_vptr *ch_list_head_net_delay_check;*/
 
