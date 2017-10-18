@@ -43,9 +43,13 @@ void vpr_init(const int argc, const char **argv, t_options *options,
         t_vpr_setup *vpr_setup, t_arch *arch);
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch);
 
-bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Pack, load a previous packing or skips the packing stage
-void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Performs packing
+bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the packing stage
+void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform packing
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous packing
+
+bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the place stage
+void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform placement
+void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
 
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);

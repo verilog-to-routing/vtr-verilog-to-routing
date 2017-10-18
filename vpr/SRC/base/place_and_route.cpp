@@ -77,7 +77,6 @@ bool place_and_route(t_placer_opts placer_opts,
     clock_t begin, end;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& power_ctx = g_vpr_ctx.mutable_power();
 
     int max_pins_per_clb = 0;
@@ -85,30 +84,6 @@ bool place_and_route(t_placer_opts placer_opts,
         if (device_ctx.block_types[i].num_pins > max_pins_per_clb) {
             max_pins_per_clb = device_ctx.block_types[i].num_pins;
         }
-    }
-
-    bool place_success = true;
-    if (placer_opts.doPlacement == STAGE_LOAD || placer_opts.place_freq == PLACE_NEVER) {
-        /* Read the placement from a file */
-        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
-        sync_grid_to_blocks();
-        post_place_sync();
-    } else if (placer_opts.doPlacement == STAGE_DO) {
-        VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
-        begin = clock();
-        try_place(placer_opts, annealing_sched, arch->Chans, router_opts,
-                det_routing_arch, segment_inf,
-#ifdef ENABLE_CLASSIC_VPR_STA
-                timing_inf,
-#endif
-                arch->Directs, arch->num_directs);
-        print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(), filename_opts.PlaceFile.c_str());
-        post_place_sync();
-
-        end = clock();
-        vtr::printf_info("Placement took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
-    } else {
-        VTR_ASSERT(placer_opts.doPlacement == STAGE_SKIP);
     }
 
     begin = clock();
@@ -277,7 +252,7 @@ bool place_and_route(t_placer_opts placer_opts,
     delete [] device_ctx.switch_fanin_remap;
     device_ctx.switch_fanin_remap = NULL;
 
-    return (place_success && route_success);
+    return route_success;
 }
 
 static int binary_search_place_and_route(t_placer_opts placer_opts,

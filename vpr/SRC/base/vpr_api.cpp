@@ -35,6 +35,7 @@ using namespace std;
 #include "draw.h"
 #include "place_and_route.h"
 #include "pack.h"
+#include "place.h"
 #include "SetupGrid.h"
 #include "stats.h"
 #include "path_delay.h"
@@ -272,9 +273,19 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
+    //TODO: convert to 'build device' operation
+    vpr_init_pre_place_and_route(vpr_setup, arch);
+
+    { //Place
+        bool place_success = vpr_place_flow(vpr_setup, arch);
+
+        if (!place_success) {
+            return false; //Unimplementable
+        }
+    }
+
     {
         //Place & Route
-        vpr_init_pre_place_and_route(vpr_setup, arch);
         bool place_route_succeeded = vpr_place_and_route(&vpr_setup, arch);
 
         if (!place_route_succeeded) {
@@ -356,9 +367,6 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_load_packing(vpr_setup, arch);
         } else {
             VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
-            VTR_ASSERT_MSG(!vpr_setup.FileNameOpts.NetFile.empty(),
-                    "Must have valid .net filename to load packing");
-
             //Load a previous packing from the .net file
             vpr_load_packing(vpr_setup, arch);
         }
@@ -381,10 +389,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
-
-    std::chrono::high_resolution_clock::time_point end, begin;
-    begin = std::chrono::high_resolution_clock::now();
-    vtr::printf_info("Initialize packing.\n");
+    vtr::ScopedPrintTimer timer("Packing");
 
     /* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of
      a block through an opin switch to a length-4 wire, then through a wire switch to another
@@ -442,14 +447,11 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
             , vpr_setup.Timing
 #endif
             );
-
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
-    vtr::printf_info("Packing took %g seconds\n", time_span.count());
-    fflush(stdout);
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    vtr::ScopedPrintTimer timer("Load Packing");
+
     VTR_ASSERT_MSG(!vpr_setup.FileNameOpts.NetFile.empty(),
             "Must have valid .net filename to load packing");
 
@@ -457,6 +459,61 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &arch, vpr_setup.FileNameOpts.verify_file_digests);
 
+}
+
+bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    const auto& placer_opts = vpr_setup.PlacerOpts;
+    if (placer_opts.doPlacement == STAGE_SKIP) {
+        //pass
+    } else {
+        if (placer_opts.doPlacement == STAGE_DO) {
+            //Do the actual placement
+            vpr_place(vpr_setup, arch);
+
+        } else {
+            VTR_ASSERT(placer_opts.doPlacement == STAGE_LOAD);
+
+            //Load a previous placement
+            vpr_load_placement(vpr_setup, arch);
+        }
+
+        sync_grid_to_blocks();
+        post_place_sync();
+    }
+
+    return true;
+}
+
+void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    vtr::ScopedPrintTimer timer("Placement");
+
+    try_place(vpr_setup.PlacerOpts,
+              vpr_setup.AnnealSched,
+              arch.Chans,
+              vpr_setup.RouterOpts,
+              &vpr_setup.RoutingArch,
+              vpr_setup.Segments,
+#ifdef ENABLE_CLASSIC_VPR_STA
+              vpr_setup.Timing,
+#endif
+              arch.Directs, 
+              arch.num_directs);
+
+    auto& filename_opts = vpr_setup.FileNameOpts;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    print_place(filename_opts.NetFile.c_str(), 
+                cluster_ctx.clb_nlist.netlist_id().c_str(), 
+                filename_opts.PlaceFile.c_str());
+}
+
+void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
+    vtr::ScopedPrintTimer timer("Load Placement");
+
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& filename_opts = vpr_setup.FileNameOpts;
+
+    read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
 }
 
 /* Since the parameters of a switch may change as a function of its fanin,
