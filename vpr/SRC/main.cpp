@@ -66,25 +66,9 @@ int main(int argc, const char **argv) {
             return SUCCESS_EXIT_CODE;
         }
 
-        {
-            //Pack
-            vpr_pack(vpr_setup, Arch);
-        }
-
-        {
-            //Place & Route
-            vpr_init_pre_place_and_route(vpr_setup, Arch);
-            bool place_route_succeeded = vpr_place_and_route(&vpr_setup, Arch);
-
-            /* Signal implementation failure */
-            if (!place_route_succeeded) {
-                return UNIMPLEMENTABLE_EXIT_CODE;
-            }
-        }
-
-        {
-            //Analysis
-            vpr_analysis(vpr_setup, Arch);
+        bool flow_succeeded = vpr_flow(vpr_setup, Arch);
+        if (!flow_succeeded) {
+            return UNIMPLEMENTABLE_EXIT_CODE;
         }
 
         entire_flow_end = clock();

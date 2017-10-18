@@ -262,6 +262,31 @@ void vpr_init(const int argc, const char **argv,
     ShowSetup(*vpr_setup);
 }
 
+
+bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
+    {
+        //Pack
+        vpr_pack(vpr_setup, arch);
+    }
+
+    {
+        //Place & Route
+        vpr_init_pre_place_and_route(vpr_setup, arch);
+        bool place_route_succeeded = vpr_place_and_route(&vpr_setup, arch);
+
+        /* Signal implementation failure */
+        if (!place_route_succeeded) {
+            return false;
+        }
+    }
+
+    {
+        //Analysis
+        vpr_analysis(vpr_setup, arch);
+    }
+    return true;
+}
+
 /*
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
