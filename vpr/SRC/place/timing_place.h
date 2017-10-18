@@ -11,8 +11,6 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 
 void free_lookups_and_criticalities();
 
-void print_sink_delays(const char *fname);
-
 void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 float get_timing_place_crit(ClusterNetId net_id, int ipin);

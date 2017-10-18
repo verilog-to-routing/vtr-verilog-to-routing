@@ -28,8 +28,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, int num_switches,
-		const t_clb_opins_used& clb_opins_used_locally, const t_segment_inf* segment_inf) {
+void check_route(enum e_route_type route_type, int num_switches, const t_segment_inf* segment_inf) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -55,14 +54,14 @@ void check_route(enum e_route_type route_type, int num_switches,
 	 * resources.  This was already checked in order to determine that this  *
 	 * is a successful routing, but I want to double check it here.          */
 
-	recompute_occupancy_from_scratch(clb_opins_used_locally);
+	recompute_occupancy_from_scratch();
 	valid = feasible_routing();
 	if (valid == false) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 			"Error in check_route -- routing resources are overused.\n");
 	}
 
-	check_locally_used_clb_opins(clb_opins_used_locally, route_type, segment_inf);
+	check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type, segment_inf);
 
 	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
 
@@ -515,7 +514,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	return (1);
 }
 
-void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally) {
+void recompute_occupancy_from_scratch() {
 
 	/*
      * This routine updates the occ field in the route_ctx.rr_node_route_inf structure 
@@ -564,10 +563,10 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 	 * locally).                                                                */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type(blk_id)->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[blk_id][iclass].size();
+			num_local_opins = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[blk_id][iclass][ipin];
+				inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
 				route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
 			}
 		}

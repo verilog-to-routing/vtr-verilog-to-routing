@@ -92,7 +92,7 @@ void* chunk_malloc(size_t size, t_chunk *chunk_info) {
 	 * a long, but on 64-bit machines it might be a long long or a     *
 	 * double.  Change the typedef below if this is the case.          */
 
-	typedef long Align;
+	typedef size_t Align;
 
     constexpr int CHUNK_SIZE = 32768;
     constexpr int FRAGMENT_THRESHOLD = 100;

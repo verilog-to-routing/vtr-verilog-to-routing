@@ -42,19 +42,6 @@ using namespace std;
 
 /******************* Subroutines local to this module ************************/
 
-static int binary_search_place_and_route(t_placer_opts placer_opts,
-        t_file_name_opts filename_opts,
-        const t_arch* arch,
-        bool verify_binary_search, int min_chan_width_hint,
-        t_annealing_sched annealing_sched,
-        t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-        vtr::vector_map<ClusterNetId, float *> &net_delay,
-#ifdef ENABLE_CLASSIC_VPR_STA
-        const t_timing_inf& timing_inf,
-#endif
-        std::shared_ptr<SetupHoldTimingInfo> timing_info);
-
 static float comp_width(t_chan * chan, float x, float separation);
 
 
@@ -73,7 +60,6 @@ bool place_and_route(t_placer_opts placer_opts,
 
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
-    t_clb_opins_used clb_opins_used_locally; /* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1] */
     clock_t begin, end;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -177,9 +163,6 @@ bool place_and_route(t_placer_opts placer_opts,
             /* Other constraints can be left to rr_graph to check since this is one pass routing */
 
             /* Allocate the major routing structures. */
-
-            clb_opins_used_locally = alloc_route_structs();
-
 #ifdef ENABLE_CLASSIC_VPR_STA
             t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
@@ -191,7 +174,7 @@ bool place_and_route(t_placer_opts placer_opts,
 #endif
                     timing_info,
                     arch->Chans,
-                    clb_opins_used_locally, arch->Directs, arch->num_directs,
+                    arch->Directs, arch->num_directs,
                     ScreenUpdatePriority::MAJOR);
 
             if (timing_inf.timing_analysis_enabled) {
@@ -207,16 +190,12 @@ bool place_and_route(t_placer_opts placer_opts,
                 vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
                 sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
             } else {
-                check_route(router_opts.route_type, device_ctx.num_rr_switches, clb_opins_used_locally, segment_inf);
+                check_route(router_opts.route_type, device_ctx.num_rr_switches, segment_inf);
                 get_serial_num();
 
                 vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
                 print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
-
-                if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
-                    print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
-                }
 
                 sprintf(msg, "Routing succeeded with a channel width factor of %d.\n\n", width_fac);
             }
@@ -255,7 +234,7 @@ bool place_and_route(t_placer_opts placer_opts,
     return route_success;
 }
 
-static int binary_search_place_and_route(t_placer_opts placer_opts,
+int binary_search_place_and_route(t_placer_opts placer_opts,
         t_file_name_opts filename_opts,
         const t_arch* arch,
         bool verify_binary_search, int min_chan_width_hint,
@@ -283,8 +262,9 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
     bool using_minw_hint = false;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    t_clb_opins_used clb_opins_used_locally, saved_clb_opins_used_locally;
+    t_clb_opins_used saved_clb_opins_used_locally;
 
     int attempt_count;
     int udsd_multiplier;
@@ -307,7 +287,6 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
         max_pins_per_clb = max(max_pins_per_clb, type->num_pins) / (type->width * type->height);
     }
 
-    clb_opins_used_locally = alloc_route_structs();
     best_routing = alloc_saved_routing();
 
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -407,7 +386,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
                 timing_info,
                 arch->Chans,
-                clb_opins_used_locally, arch->Directs, arch->num_directs,
+                arch->Directs, arch->num_directs,
                 (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
         attempt_count++;
         fflush(stdout);
@@ -428,7 +407,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
             }
 
             /* Save routing in case it is best. */
-            save_routing(best_routing, clb_opins_used_locally, saved_clb_opins_used_locally);
+            save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
             //If the user gave us a minW hint (and we routed successfully at that width)
             //make the initial guess closer to the current value instead of the standard guess. 
@@ -524,12 +503,12 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
                     timing_inf,
 #endif
                     timing_info,
-                    arch->Chans, clb_opins_used_locally, arch->Directs, arch->num_directs,
+                    arch->Chans, arch->Directs, arch->num_directs,
                     ScreenUpdatePriority::MINOR);
 
             if (success && Fc_clipped == false) {
                 final = current;
-                save_routing(best_routing, clb_opins_used_locally,
+                save_routing(best_routing, route_ctx.clb_opins_used_locally,
                         saved_clb_opins_used_locally);
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
@@ -575,10 +554,8 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
             &warnings, router_opts.write_rr_graph_name,
             router_opts.read_rr_graph_name);
 
-    restore_routing(best_routing, clb_opins_used_locally,
-            saved_clb_opins_used_locally);
-    check_route(router_opts.route_type, device_ctx.num_rr_switches,
-            clb_opins_used_locally, segment_inf);
+    restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+    check_route(router_opts.route_type, device_ctx.num_rr_switches, segment_inf);
     get_serial_num();
 
     if (Fc_clipped) {
@@ -588,10 +565,6 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
     vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
 
     print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
-
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
-        print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
-    }
 
     init_draw_coords(max_pins_per_clb);
     sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);

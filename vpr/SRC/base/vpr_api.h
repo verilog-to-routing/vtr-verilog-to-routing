@@ -39,17 +39,26 @@
 #include "vpr_error.h"
 
 /* Main VPR Operations */
-void vpr_init(const int argc, const char **argv, t_options *options,
-        t_vpr_setup *vpr_setup, t_arch *arch);
+void vpr_init(const int argc, const char **argv, 
+              t_options *options,
+              t_vpr_setup *vpr_setup,
+              t_arch *arch);
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch);
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the packing stage
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform packing
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous packing
 
-bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the place stage
+bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the placement stage
 void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
+
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the routing stage
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Perform routing at a fixed channel width)
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
+RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width); //Loads a previous routing
+
+void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width); //Create routing graph at specified channel width
 
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);

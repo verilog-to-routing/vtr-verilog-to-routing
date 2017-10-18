@@ -33,8 +33,6 @@ struct t_heap {
 	int prev_edge;
 };
 
-typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
 /******* Subroutines in route_common used only by other router modules ******/
 
 void pathfinder_update_path_cost(t_trace *route_segment_start,
@@ -88,12 +86,10 @@ void alloc_and_load_rr_node_route_structs(void);
 
 void reset_rr_node_route_structs(void);
 
-void alloc_route_static_structs(void);
-
 void free_trace_structs(void);
 
-void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		t_clb_opins_used& clb_opins_used_locally);
+void init_heap(const DeviceGrid& grid);
+void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins);
 
 void free_chunk_memory_trace(void);
 

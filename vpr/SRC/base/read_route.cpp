@@ -91,7 +91,6 @@ void read_route(const char* route_file, const t_router_opts& router_opts, const 
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    t_clb_opins_used clb_opins_used_locally = alloc_route_structs();
     init_route_structs(router_opts.bb_factor);
 
     /*Check dimensions*/
@@ -112,21 +111,17 @@ void read_route(const char* route_file, const t_router_opts& router_opts, const 
     fp.close();
 
     /*Correctly set up the clb opins*/
-    recompute_occupancy_from_scratch(clb_opins_used_locally);
+    recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     pathfinder_update_cost(router_opts.initial_pres_fac, router_opts.acc_fac);
 
     reserve_locally_used_opins(router_opts.initial_pres_fac,
-            router_opts.acc_fac, true, clb_opins_used_locally);
+            router_opts.acc_fac, true);
 
     /* Finished loading in the routing, now check it*/
-    check_route(router_opts.route_type, device_ctx.num_rr_switches, clb_opins_used_locally, segment_inf);
+    check_route(router_opts.route_type, device_ctx.num_rr_switches, segment_inf);
     get_serial_num();
-
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
-        print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
-    }
 
     vtr::printf_info("Finished loading route file\n");
 }

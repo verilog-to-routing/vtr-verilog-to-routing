@@ -19,7 +19,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
         t_slack * slacks,
         const t_timing_inf &timing_inf,
 #endif
-        t_clb_opins_used& clb_opins_used_locally,
         ScreenUpdatePriority first_iteration_priority
         );
 bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,

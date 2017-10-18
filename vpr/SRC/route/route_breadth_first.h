@@ -3,8 +3,7 @@
 
 #include "route_common.h"
 
-bool try_breadth_first_route(t_router_opts router_opts,
-		t_clb_opins_used& clb_opins_used_locally);
+bool try_breadth_first_route(t_router_opts router_opts);
 bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, 
 		t_router_opts router_opts);
 

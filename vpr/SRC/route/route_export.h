@@ -18,7 +18,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
         const t_timing_inf& timing_inf,
 #endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
-		t_chan_width_dist chan_width_dist, t_clb_opins_used& clb_opins_used_locally,
+		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority);
 

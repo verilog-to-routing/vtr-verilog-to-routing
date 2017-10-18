@@ -49,32 +49,6 @@ static void free_crit(vtr::t_chunk *chunk_list_ptr){
 }
 
 /**************************************/
-void print_sink_delays(const char* fname) {
-    //TODO: re-implement with tatum timing analysis
-
-    int num_at_level, num_edges, inode, ilevel, i;
-    FILE *fp;
-
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-    fp = vtr::fopen(fname, "w");
-
-    for (ilevel = timing_ctx.num_tnode_levels - 1; ilevel >= 0; ilevel--) {
-        num_at_level = timing_ctx.tnodes_at_level[ilevel].size();
-
-        for (i = 0; i < num_at_level; i++) {
-            inode = timing_ctx.tnodes_at_level[ilevel][i];
-            num_edges = timing_ctx.tnodes[inode].num_edges;
-
-            if (num_edges == 0) { /* sink */
-                fprintf(fp, "%g\n", timing_ctx.tnodes[inode].T_arr);
-            }
-        }
-    }
-    fclose(fp);
-}
-
-/**************************************/
 void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup) {
 	/* Performs a 1-to-1 mapping from criticality to f_timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 

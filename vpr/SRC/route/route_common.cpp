@@ -272,7 +272,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
         const t_timing_inf& timing_inf,
 #endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
-		t_chan_width_dist chan_width_dist, t_clb_opins_used& clb_opins_used_locally,
+		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority) {
 
@@ -346,7 +346,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
 		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
-		success = try_breadth_first_route(router_opts, clb_opins_used_locally);
+		success = try_breadth_first_route(router_opts);
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
@@ -360,7 +360,6 @@ bool try_route(int width_fac, t_router_opts router_opts,
             slacks,
             timing_inf,
 #endif
-			clb_opins_used_locally,
             first_iteration_priority
             );
 
@@ -476,6 +475,13 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	}
 }
 
+void init_heap(const DeviceGrid& grid) {
+	heap_size = (grid.width() -1 ) * (grid.height() - 1);
+	heap = (t_heap **) vtr::malloc(heap_size * sizeof(t_heap *));
+	heap--; /* heap stores from [1..heap_size] */
+	heap_tail = 1;
+}
+
 /* Call this before you route any nets.  It frees any old traceback and   *
 	 * sets the list of rr_nodes touched to empty.                            */
 void init_route_structs(int bb_factor) {
@@ -483,14 +489,21 @@ void init_route_structs(int bb_factor) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    //Free any old tracebacks
 	for (auto net_id : cluster_ctx.clb_nlist.nets())
 		free_traceback(net_id);
 
+    //Allocate new tracebacks
+	route_ctx.trace_head.resize(cluster_ctx.clb_nlist.nets().size());
+	route_ctx.trace_tail.resize(cluster_ctx.clb_nlist.nets().size());
+
+    init_heap(device_ctx.grid);
+
+    //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
 	route_ctx.route_bb = load_route_bb(bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
-
-    //Allocate the routing status for each net
+	route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
 
 	/* Check that things that should have been emptied after the last routing *
@@ -681,6 +694,10 @@ void free_traceback(ClusterNetId net_id) {
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    if (route_ctx.trace_head.empty() && route_ctx.trace_tail.empty()) {
+        return;
+    }
+
 	if(route_ctx.trace_head[net_id] == NULL) {
 		return;
 	}
@@ -695,32 +712,6 @@ void free_traceback(ClusterNetId net_id) {
 
 	route_ctx.trace_head[net_id] = NULL;
 	route_ctx.trace_tail[net_id] = NULL;
-}
-
-t_clb_opins_used alloc_route_structs(void) {
-
-	/* Allocates the data structures needed for routing.    */
-
-	alloc_route_static_structs();
-	t_clb_opins_used clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
-
-	return (clb_opins_used_locally);
-}
-
-void alloc_route_static_structs(void) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-
-	route_ctx.trace_head.resize(cluster_ctx.clb_nlist.nets().size());
-	route_ctx.trace_tail.resize(cluster_ctx.clb_nlist.nets().size());
-
-	heap_size = (device_ctx.grid.width() -1 ) * (device_ctx.grid.height() - 1);
-	heap = (t_heap **) vtr::malloc(heap_size * sizeof(t_heap *));
-	heap--; /* heap stores from [1..heap_size] */
-	heap_tail = 1;
-
-	route_ctx.route_bb.resize(cluster_ctx.clb_nlist.nets().size());
 }
 
 /* Allocates data structures into which the key routing data can be saved,   *
@@ -1438,8 +1429,7 @@ void print_route(const char* placement_file, const char* route_file) {
 }
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
-void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		t_clb_opins_used& clb_opins_used_locally) {
+void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
 	 This was especially important for logical equivalence; however, now that we have a very general logic cluster,
@@ -1453,17 +1443,17 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
 	if (rip_up_local_opins) {
 		for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 			type = cluster_ctx.clb_nlist.block_type(blk_id);
 			for (iclass = 0; iclass < type->num_class; iclass++) {
-				num_local_opin = clb_opins_used_locally[blk_id][iclass].size();
+				num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
-					inode = clb_opins_used_locally[blk_id][iclass][ipin];
+					inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
 					adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
 				}
 			}
@@ -1473,7 +1463,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		type = cluster_ctx.clb_nlist.block_type(blk_id);
 		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opin = clb_opins_used_locally[blk_id][iclass].size();
+			num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
@@ -1489,7 +1479,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 					heap_head_ptr = get_heap_head();
 					inode = heap_head_ptr->index;
 					adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
-					clb_opins_used_locally[blk_id][iclass][ipin] = inode;
+					route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
 					free_heap_data(heap_head_ptr);
 				}
 

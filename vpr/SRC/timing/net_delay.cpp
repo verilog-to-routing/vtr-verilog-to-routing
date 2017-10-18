@@ -102,12 +102,12 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 vtr::vector_map<ClusterNetId, float *> alloc_net_delay(vtr::t_chunk *chunk_list_ptr){
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 	vtr::vector_map<ClusterNetId, float *> net_delay; /* [0..nets.size()-1][1..num_pins-1] */
-	float *tmp_ptr;
 
-	net_delay.resize(cluster_ctx.clb_nlist.nets().size());
+    auto nets = cluster_ctx.clb_nlist.nets();
+	net_delay.resize(nets.size());
 
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		tmp_ptr = (float *) vtr::chunk_malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float), chunk_list_ptr);
+	for (auto net_id : nets) {
+		float* tmp_ptr = (float *) vtr::chunk_malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float), chunk_list_ptr);
 
 		net_delay[net_id] = tmp_ptr - 1; /* [1..num_pins-1] */
 

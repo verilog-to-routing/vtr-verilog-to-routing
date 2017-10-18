@@ -31,6 +31,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1092,5 +1093,26 @@ struct t_vpr_setup {
 	t_power_opts PowerOpts;
     std::string device_layout;
 };
+
+class RouteStatus {
+    public:
+        RouteStatus() = default;
+        RouteStatus(bool status_val, int chan_width_val)
+            : success_(status_val)
+            , chan_width_(chan_width_val) {}
+
+        //Was routing successful?
+        operator bool() { return success(); }
+        bool success() { return success_; }
+
+        //What was the channel width?
+        int chan_width() { return chan_width_; }
+
+    private:
+        bool success_ = false;
+        int chan_width_ = -1;
+};
+
+typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 #endif

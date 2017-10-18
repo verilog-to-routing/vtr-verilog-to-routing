@@ -230,6 +230,8 @@ struct RoutingContext : public Context {
     //Limits area within which each net must be routed.
     vtr::vector_map<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
+    t_clb_opins_used clb_opins_used_locally; //[0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1]
+
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;
 };

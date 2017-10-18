@@ -63,6 +63,9 @@ using namespace std;
 #include "AnalysisDelayCalculator.h"
 #include "timing_info.h"
 #include "netlist_writer.h"
+#include "net_delay.h"
+#include "RoutingDelayCalculator.h"
+#include "check_route.h"
 
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
@@ -284,11 +287,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    {
-        //Place & Route
-        bool place_route_succeeded = vpr_place_and_route(&vpr_setup, arch);
+    { //Route
+        auto route_status = vpr_route_flow(vpr_setup, arch);
 
-        if (!place_route_succeeded) {
+        if (!route_status.success()) {
             return false; //Unimplementable
         }
     }
@@ -514,6 +516,205 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
+}
+
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+
+    RouteStatus route_status;
+    
+    const auto& router_opts = vpr_setup.RouterOpts;
+    const auto& filename_opts = vpr_setup.FileNameOpts;
+
+    if (router_opts.doRouting == STAGE_SKIP) {
+        //Assume successful
+        route_status = RouteStatus(true, -1);
+    } else { //Do or load
+        int chan_width = router_opts.fixed_channel_width;
+
+        //Initialize the delay calculator
+        vtr::t_chunk net_delay_ch;
+        vtr::vector_map<ClusterNetId, float *> net_delay = alloc_net_delay(&net_delay_ch);
+
+        std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
+        std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
+        if (vpr_setup.Timing.timing_analysis_enabled) {
+            auto& atom_ctx = g_vpr_ctx.atom();
+
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
+
+            timing_info = make_setup_hold_timing_info(routing_delay_calc);
+        }
+#ifdef ENABLE_CLASSIC_VPR_STA
+        t_slack *slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
+#endif
+
+        if (router_opts.doRouting == STAGE_DO) {
+            //Do the actual routing
+            if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
+                //Find minimum channel width
+                route_status = vpr_route_min_W(vpr_setup, arch, timing_info, net_delay);
+            } else {
+                //Route at specified channel width
+                route_status = vpr_route_fixed_W(vpr_setup, arch, chan_width, timing_info, net_delay);
+            }
+
+            //Save the routing in the .route file
+            print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
+        } else {
+            VTR_ASSERT(router_opts.doRouting == STAGE_LOAD);
+
+            //Load a previous routing
+            route_status = vpr_load_routing(vpr_setup, arch, chan_width);
+        }
+
+        //Post-implementation
+        std::string graphics_msg;
+        if (route_status.success()) {
+            auto& device_ctx = g_vpr_ctx.device();
+            check_route(router_opts.route_type, device_ctx.num_rr_switches, vpr_setup.Segments);
+            get_serial_num();
+
+            vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
+            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());
+        } else {
+            vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
+            graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
+        }
+
+        //Echo files
+        if (vpr_setup.Timing.timing_analysis_enabled) {
+            if (isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
+                auto& timing_ctx = g_vpr_ctx.timing();
+                tatum::write_echo(getEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH),
+                        *timing_ctx.graph, *timing_ctx.constraints, *routing_delay_calc, timing_info->analyzer());
+            }
+
+            if (isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
+                //TODO: implement
+            }
+        }
+
+        if (router_opts.switch_usage_analysis) {
+            print_switch_usage();
+        }
+
+        //Update graphics
+        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
+
+        free_net_delay(net_delay, &net_delay_ch);
+    }
+
+    return route_status;
+}
+
+RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
+    vtr::ScopedPrintTimer timer("Routing");
+
+    if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
+    }
+
+    bool status = try_route(fixed_channel_width, 
+                            vpr_setup.RouterOpts,
+                            &vpr_setup.RoutingArch,
+                            vpr_setup.Segments, 
+                            net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
+                            slacks,
+                            vpr_setup.Timing,
+#endif
+                            timing_info,
+                            arch.Chans,
+                            arch.Directs, arch.num_directs,
+                            ScreenUpdatePriority::MAJOR);
+
+
+    return RouteStatus(status, fixed_channel_width);
+}
+
+RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
+    vtr::ScopedPrintTimer timer("Routing");
+
+    auto& router_opts = vpr_setup.RouterOpts;
+    int min_W = binary_search_place_and_route(vpr_setup.PlacerOpts,
+                                              vpr_setup.FileNameOpts,
+                                              &arch,
+                                              router_opts.verify_binary_search,
+                                              router_opts.min_channel_width_hint,
+                                              vpr_setup.AnnealSched,
+                                              router_opts,
+                                              &vpr_setup.RoutingArch,
+                                              vpr_setup.Segments,
+                                              net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
+                                              timing_inf,
+#endif
+                                              timing_info);
+
+    bool status = (min_W > 0);
+    return RouteStatus(status, min_W);
+}
+
+RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width) {
+    vtr::ScopedPrintTimer timer("Load Routing");
+    if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)");
+    }
+
+    //Create the routing resource graph
+    vpr_create_rr_graph(vpr_setup, arch, fixed_channel_width);
+
+    auto& filename_opts = vpr_setup.FileNameOpts;
+
+    //Load the routing from a file
+    read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, vpr_setup.Segments, filename_opts.verify_file_digests);
+
+    return RouteStatus(true, fixed_channel_width);
+}
+
+
+void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto det_routing_arch = &vpr_setup.RoutingArch;
+    auto& router_opts = vpr_setup.RouterOpts;
+
+    init_chan(chan_width, arch.Chans);
+
+    t_graph_type graph_type;
+    if (router_opts.route_type == GLOBAL) {
+        graph_type = GRAPH_GLOBAL;
+    } else {
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+    }
+
+    int warnings = 0;
+
+    //Create the RR graph
+    create_rr_graph(graph_type, 
+            device_ctx.num_block_types, device_ctx.block_types, 
+            device_ctx.grid,
+            &device_ctx.chan_width, 
+            det_routing_arch->switch_block_type,
+            det_routing_arch->Fs, 
+            det_routing_arch->switchblocks,
+            det_routing_arch->num_segment,
+            device_ctx.num_arch_switches, 
+            vpr_setup.Segments,
+            det_routing_arch->global_route_switch,
+            det_routing_arch->delayless_switch,
+            det_routing_arch->wire_to_arch_ipin_switch,
+            det_routing_arch->R_minW_nmos,
+            det_routing_arch->R_minW_pmos,
+            router_opts.base_cost_type,
+            router_opts.trim_empty_channels,
+            router_opts.trim_obs_channels,
+            arch.Directs, arch.num_directs,
+            det_routing_arch->dump_rr_structs_file,
+            &det_routing_arch->wire_to_rr_ipin_switch,
+            &device_ctx.num_rr_switches,
+            &warnings, 
+            router_opts.write_rr_graph_name,
+            router_opts.read_rr_graph_name);
 }
 
 /* Since the parameters of a switch may change as a function of its fanin,

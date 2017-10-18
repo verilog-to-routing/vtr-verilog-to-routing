@@ -217,9 +217,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    /*calls routines that set up routing resource graph and associated structures */
-    alloc_route_static_structs();
-
     free_rr_graph();
 
     if (router_opts.route_type == GLOBAL) {
@@ -639,10 +636,12 @@ static bool calculate_delay(int source_node, int sink_node,
     bounding_box.ymax = device_ctx.grid.height() + 1;
 
     float target_criticality = 1;
-    // explore in order of decreasing criticality (no longer need sink_order array)
 
     route_budgets budgeting_inf;
-    
+
+
+    init_heap(device_ctx.grid);
+
     t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0);
 
