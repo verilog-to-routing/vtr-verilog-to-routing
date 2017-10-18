@@ -278,8 +278,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     vpr_init_graphics(vpr_setup, arch);
 
-    //TODO: convert to 'build device' operation
-    vpr_init_pre_place_and_route(vpr_setup, arch);
+    vpr_create_device_grid(vpr_setup, arch);
 
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
@@ -309,7 +308,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 /*
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
-void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 	/* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -696,6 +695,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     }
 
     int warnings = 0;
+
+    //Clean-up any previous RR graph
+    free_rr_graph();
 
     //Create the RR graph
     create_rr_graph(graph_type, 
