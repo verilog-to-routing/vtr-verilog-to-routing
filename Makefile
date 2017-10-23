@@ -24,7 +24,7 @@ override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
-MAKEFLAGS := -s --output-sync target
+MAKEFLAGS := -s
 
 BUILD_DIR=./build
 GENERATED_MAKEFILE := $(BUILD_DIR)/Makefile
