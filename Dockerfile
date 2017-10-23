@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:xenial
 
 RUN apt-get update
 RUN apt-get upgrade -y
