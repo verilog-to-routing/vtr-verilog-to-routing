@@ -547,9 +547,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             timing_info = make_setup_hold_timing_info(routing_delay_calc);
         }
-#ifdef ENABLE_CLASSIC_VPR_STA
-        t_slack *slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
-#endif
 
         if (router_opts.doRouting == STAGE_DO) {
             //Do the actual routing
@@ -621,6 +618,10 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
 
+#ifdef ENABLE_CLASSIC_VPR_STA
+    t_slack *slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
+#endif
+
     bool status = try_route(fixed_channel_width, 
                             vpr_setup.RouterOpts,
                             &vpr_setup.RoutingArch,
@@ -654,7 +655,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
                                               vpr_setup.Segments,
                                               net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
-                                              timing_inf,
+                                              vpr_setup.Timing,
 #endif
                                               timing_info);
 
