@@ -1,22 +1,24 @@
 #include "ace.h"
+#include "misc/vec/vecPtr.h"
 #include "bdd.h"
 #include "cube.h"
+#include "bdd/cudd/cuddInt.h"
 
 //#include "vecPtr.h"
 //#include "cudd.h"
 
-void ace_bdd_get_literals(Abc_Ntk_t * ntk, st_table ** lit_st_table,
+void ace_bdd_get_literals(Abc_Ntk_t * ntk, st__table ** lit_st_table,
 		Vec_Ptr_t ** literals) {
 	Abc_Obj_t * obj;
 	int i;
 
 	*literals = Vec_PtrAlloc(0);
-	*lit_st_table = st_init_table(st_ptrcmp, st_ptrhash);
+	*lit_st_table = st__init_table(st__ptrcmp, st__ptrhash);
 
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
 		if (Abc_ObjIsCi(obj)) {
-			st_insert(*lit_st_table, (char*) obj,
+			st__insert(*lit_st_table, (char*) obj,
 					(char*) Vec_PtrSize(*literals));
 			Vec_PtrPush(*literals, obj);
 		}
@@ -156,7 +158,7 @@ int ace_bdd_build_network_bdds(
 #endif
 
 double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
-		ace_cube_t * cube, Vec_Ptr_t * inputs, st_table * visited, int phase) {
+		ace_cube_t * cube, Vec_Ptr_t * inputs, st__table * visited, int phase) {
 	double * current_prob;
 	short i;
 	Abc_Obj_t * pi;
@@ -175,7 +177,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 			return (0.0);
 	}
 
-	if (st_lookup(visited, (char *) bdd, (char **) &current_prob)) {
+	if (st__lookup(visited, (char *) bdd, (char **) &current_prob)) {
 		return (*current_prob);
 	}
 
@@ -221,7 +223,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 		fail("Bad literal.");
 	}
 
-	st_insert(visited, (char *) bdd, (char *) current_prob);
+	st__insert(visited, (char *) bdd, (char *) current_prob);
 
 	assert(*current_prob + EPSILON >= 0 && *current_prob - EPSILON < 1.0);
 	return (*current_prob);
@@ -230,13 +232,13 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 double calc_cube_switch_prob(DdManager * mgr, DdNode * bdd, ace_cube_t * cube,
 		Vec_Ptr_t * inputs, int phase) {
 	double sp;
-	st_table * visited;
+	st__table * visited;
 
-	visited = st_init_table(st_ptrcmp, st_ptrhash);
+	visited = st__init_table(st__ptrcmp, st__ptrhash);
 
 	sp = calc_cube_switch_prob_recur(mgr, bdd, cube, inputs, visited, phase);
 
-	st_free_table(visited);
+	st__free_table(visited);
 
 	assert(sp + EPSILON >= 0. && sp - EPSILON <= 1.0);
 	return (sp);
@@ -335,7 +337,9 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 	n0 = n1 = 0;
 	ace_bdd_count_paths(mgr, bdd, &n1, &n0);
 
-	Vec_PtrForEachEntry(fanins, fanin, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, fanins, fanin, i)
+	//#define Vec_PtrForEachEntry( vVec, pEntry, i ) for ( i = 0; (i < Vec_PtrSize(vVec)) && (((pEntry) = Vec_PtrEntry(vVec, i)), 1); i++ )
+	//for ( i = 0; (i < Vec_PtrSize(fanins)) && (((fanin) = Vec_PtrEntry(fanins, i)), 1); i++ )
 	{
 		Ace_Obj_Info_t * fanin_info = Ace_ObjInfo(fanin);
 

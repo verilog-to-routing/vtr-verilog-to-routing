@@ -1,7 +1,7 @@
 #include "ace.h"
 #include "sim.h"
 
-#include "cudd.h"
+#include "bdd/cudd/cudd.h"
 
 void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int cycle) {
 	Abc_Obj_t * obj;
@@ -177,7 +177,7 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle) {
 	ace_status_t status;
 	DdNode * dd_node;
 
-	Vec_PtrForEachEntry(node_vec, obj, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, node_vec, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 

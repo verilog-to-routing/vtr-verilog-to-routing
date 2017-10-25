@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "abc.h"
+#include "base/abc/abc.h"
 
 #define bool	int
 #define TRUE 1
@@ -60,7 +60,7 @@ typedef struct {
 	double prob1to0;
 } Ace_Obj_Info_t; /* Activity info for each node */
 
-extern st_table * ace_info_hash_table;
+extern st__table * ace_info_hash_table;
 
 Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj);
 //static inline void 				Ace_InfoPtrSet(Abc_Obj_t * obj_ptr, Ace_Obj_Info_t* info_ptr)	{obj_ptr->pTemp = info_ptr;					}
