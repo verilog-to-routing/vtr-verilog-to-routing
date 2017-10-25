@@ -153,7 +153,7 @@ void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_des
         vtr::free(type_descriptors[i].pin_class);
 
         free_pb_type(type_descriptors[i].pb_type);
-        delete [] type_descriptors[i].pb_type;
+        delete type_descriptors[i].pb_type;
     }
     delete[] type_descriptors;
 }
