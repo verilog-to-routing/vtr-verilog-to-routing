@@ -22,10 +22,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include "misc/util/abc_namespaces.h"
+#include "misc/st/st.h"
+#include "bdd/cudd/cuddInt.h"
 #include "bdd/cudd/cudd.h"
 #include "ace.h"
-#include "misc/st/st.h"
-#include "misc/util/abc_namespaces.h"
 #include "vtr_memory.h"
 
 #define ACE_P0TO1(P1,PS)		((P1)==0.0)?0.0:(((P1)==1.0)?1.0:0.5*PS/(1.0-(P1)))

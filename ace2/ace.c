@@ -10,12 +10,12 @@
 #include "cube.h"
 
 // ABC Headers
-#include "abc.h"
-#include "main.h"
-#include "io.h"
+#include "base/abc/abc.h"
+#include "base/main/main.h"
+#include "base/io/ioAbc.h"
 //#include "vecInt.h"
 
-st_table * ace_info_hash_table;
+st__table * ace_info_hash_table;
 
 void print_status(Abc_Ntk_t * ntk) {
 	int i;
@@ -50,7 +50,7 @@ void alloc_and_init_activity_info(Abc_Ntk_t * ntk) {
 	int i;
 
 	node_vec = Abc_NtkDfsSeq(ntk);
-	Vec_PtrForEachEntry(node_vec, obj_ptr, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, node_vec, obj_ptr, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj_ptr);
 		info->values = NULL;
@@ -121,7 +121,7 @@ void print_nodes(Vec_Ptr_t * nodes) {
 	int i;
 
 	printf("Printing Nodes\n");
-	Vec_PtrForEachEntry(nodes, obj, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes, obj, i)
 	{
 		printf("\t%d. %d-%d-%s\n", i, Abc_ObjId(obj), Abc_ObjType(obj),
 				Abc_ObjName(obj));
@@ -147,7 +147,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 
 	//print_nodes(nodes_logic);
 
-	Vec_PtrForEachEntry(nodes_all, obj, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes_all, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 		info->status = ACE_UNDEF;
@@ -209,7 +209,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		ace_update_latch_static_probs(ntk);
 		ace_update_latch_switch_probs(ntk);
 	}
-	st_free_table(leaves);
+	st__free_table(leaves);
 	Vec_PtrFree(literals);
 #endif
 
@@ -234,7 +234,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	fflush(0);
 
 	/* Do latches first, then logic after */
-	Vec_PtrForEachEntry(nodes_all, obj, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes_all, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 
@@ -259,7 +259,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		}
 	}
 
-	Vec_PtrForEachEntry(nodes_logic, obj, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes_logic, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 		//Ace_Obj_Info_t * fanin_info;
@@ -294,7 +294,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj) {
 	Ace_Obj_Info_t * info;
 
-	if (st_lookup(ace_info_hash_table, (char *) obj, (char **) &info)) {
+	if (st__lookup(ace_info_hash_table, (char *) obj, (char **) &info)) {
 		return info;
 	}
 	assert(0);
@@ -338,7 +338,7 @@ int main(int argc, char * argv[]) {
 
 	pAbc = Abc_FrameGetGlobalFrame();
 
-	ntk = Io_Read(blif_file_name, IO_FILE_BLIF, 1);
+	ntk = Io_Read(blif_file_name, IO_FILE_BLIF, 1, 0);
 
     assert(ntk);
 
@@ -360,10 +360,10 @@ int main(int argc, char * argv[]) {
 
 	// Full Allocation
 	Ace_Obj_Info_t * info = calloc(Abc_NtkObjNum(ntk), sizeof(Ace_Obj_Info_t));
-	ace_info_hash_table = st_init_table(st_ptrcmp, st_ptrhash);
+	ace_info_hash_table = st__init_table(st__ptrcmp, st__ptrhash);
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
-		st_insert(ace_info_hash_table, (char *) obj, (char *) &info[i]);
+		st__insert(ace_info_hash_table, (char *) obj, (char *) &info[i]);
 		//Ace_InfoPtrSet(obj, & info[i]);
 	}
 
