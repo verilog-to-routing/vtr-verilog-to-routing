@@ -3351,7 +3351,11 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                             }
                             if(model_port != nullptr) break;
                         }
-                        VTR_ASSERT(model_port != nullptr);
+                        if (model_port == nullptr) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "Failed to find port '%s' on '%s' for sequential delay annotation",
+                                annot_port.port_name().c_str(), annot_port.instance_name().c_str());
+                        }
 
                         //Check that the clock matches the model definition
                         std::string model_clock = model_port->clock;
@@ -3386,7 +3390,12 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                                 break;
                             }
                         }
-                        VTR_ASSERT(model_port != nullptr);
+
+                        if (model_port == nullptr) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "Failed to find port '%s' on '%s' for combinational delay annotation",
+                                annot_in.port_name().c_str(), annot_in.instance_name().c_str());
+                        }
 
                         //Check that the output port is listed in the model's combinational sinks
                         auto b = model_port->combinational_sink_ports.begin();
