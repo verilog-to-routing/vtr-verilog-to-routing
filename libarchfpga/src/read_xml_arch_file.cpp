@@ -1538,8 +1538,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 
 	mode->num_pb_type_children = count_children(Parent, "pb_type", loc_data, OPTIONAL);
 	if (mode->num_pb_type_children > 0) {
-		mode->pb_type_children = (t_pb_type*) vtr::calloc(
-				mode->num_pb_type_children, sizeof(t_pb_type));
+		mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
 
 		i = 0;
 		Cur = get_first_child(Parent, "pb_type", loc_data);
@@ -2518,7 +2517,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		}
 
 		/* Load pb_type info */
-		Type->pb_type = (t_pb_type*) vtr::malloc(sizeof(t_pb_type));
+		Type->pb_type = new t_pb_type;
 		Type->pb_type->name = vtr::strdup(Type->name);
 		ProcessPb_Type(CurType, Type->pb_type, NULL, arch, loc_data);
 		Type->num_pins = Type->capacity

@@ -153,7 +153,7 @@ void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_des
         vtr::free(type_descriptors[i].pin_class);
 
         free_pb_type(type_descriptors[i].pb_type);
-        vtr::free(type_descriptors[i].pb_type);
+        delete [] type_descriptors[i].pb_type;
     }
     delete[] type_descriptors;
 }
@@ -285,7 +285,7 @@ static void free_pb_type(t_pb_type *pb_type) {
         for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
             free_pb_type(&pb_type->modes[i].pb_type_children[j]);
         }
-        vtr::free(pb_type->modes[i].pb_type_children);
+        delete[] pb_type->modes[i].pb_type_children;
         vtr::free(pb_type->modes[i].name);
         for (int j = 0; j < pb_type->modes[i].num_interconnect; ++j) {
             vtr::free(pb_type->modes[i].interconnect[j].input_string);
@@ -625,8 +625,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 	lut_pb_type->modes[1].num_pb_type_children = 1;
 	lut_pb_type->modes[1].mode_power = (t_mode_power*) vtr::calloc(1,
 			sizeof(t_mode_power));
-	lut_pb_type->modes[1].pb_type_children = (t_pb_type*) vtr::calloc(1,
-			sizeof(t_pb_type));
+	lut_pb_type->modes[1].pb_type_children = new t_pb_type[1];
 	alloc_and_load_default_child_for_pb_type(lut_pb_type, default_name,
 			lut_pb_type->modes[1].pb_type_children);
 	/* moved annotations to child so delete old annotations */
@@ -749,8 +748,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 	}
 
 	mem_pb_type->modes[0].num_pb_type_children = 1;
-	mem_pb_type->modes[0].pb_type_children = (t_pb_type*) vtr::calloc(1,
-			sizeof(t_pb_type));
+	mem_pb_type->modes[0].pb_type_children = new t_pb_type[1];
 	alloc_and_load_default_child_for_pb_type(mem_pb_type, default_name,
 			&mem_pb_type->modes[0].pb_type_children[0]);
 	mem_pb_type->modes[0].pb_type_children[0].depth = mem_pb_type->depth + 1;

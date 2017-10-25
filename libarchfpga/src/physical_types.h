@@ -522,30 +522,30 @@ typedef const t_type_descriptor* t_type_ptr;
  *      parent_mode: mode of the parent block
  */
 struct t_pb_type {
-	char* name;
-	int num_pb;
-	char* blif_model;
-	t_model *model;
-	enum e_pb_type_class class_type;
+	char* name = nullptr;
+	int num_pb = 0;
+	char* blif_model = nullptr;
+	t_model *model = nullptr;
+	enum e_pb_type_class class_type = UNKNOWN_CLASS;
 
-	t_mode *modes; /* [0..num_modes-1] */
-	int num_modes;
-	t_port *ports; /* [0..num_ports] */
-	int num_ports;
+	t_mode *modes = nullptr; /* [0..num_modes-1] */
+	int num_modes = 0;
+	t_port *ports = nullptr; /* [0..num_ports] */
+	int num_ports = 0;
 
-	int num_clock_pins;
-	int num_input_pins; /* inputs not including clock pins */
-	int num_output_pins;
+	int num_clock_pins = 0;
+	int num_input_pins = 0; /* inputs not including clock pins */
+	int num_output_pins = 0;
 
-	t_mode *parent_mode;
-	int depth; /* depth of pb_type */
+	t_mode *parent_mode = nullptr;
+	int depth = 0; /* depth of pb_type */
 
-	float max_internal_delay; //TODO: remove when VPR's classic timing analyzer is removed
-	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
-	int num_annotations;
+	float max_internal_delay = -1; //TODO: remove when VPR's classic timing analyzer is removed
+	t_pin_to_pin_annotation *annotations = nullptr; /* [0..num_annotations-1] */
+	int num_annotations = 0;
 
 	/* Power related members */
-	t_pb_type_power * pb_type_power;
+	t_pb_type_power * pb_type_power = nullptr;
 };
 
 /** Describes an operational mode of a clustered logic block
