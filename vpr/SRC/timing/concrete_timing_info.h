@@ -265,8 +265,8 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         //  twice).
         void update() override {
             setup_hold_analyzer_->update_timing(); 
-            setup_timing_.update_setup(); 
-            hold_timing_.update_hold();
+            setup_timing_.update_setup_slacks(); 
+            hold_timing_.update_hold_slacks();
 
             if(warn_unconstrained_) {
                 warn_unconstrained(analyzer());
