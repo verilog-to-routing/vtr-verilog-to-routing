@@ -31,7 +31,7 @@ class SetupSlackCrit {
 
         void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
-        void update_pin_criticality(AtomPinId pin, 
+        float calc_pin_criticality(AtomPinId pin, 
                                     const tatum::SetupTimingAnalyzer& analyzer, 
                                     const std::map<DomainPair,float>& max_req, 
                                     const std::map<DomainPair,float>& worst_slack);
@@ -71,7 +71,7 @@ class HoldSlackCrit {
 
         void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer);
 
-        void update_pin_criticality(AtomPinId pin, 
+        float calc_pin_criticality(AtomPinId pin, 
                                     const tatum::HoldTimingAnalyzer& analyzer, 
                                     const float scale,
                                     const float shift);

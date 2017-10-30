@@ -5,6 +5,7 @@
 #include "vpr_error.h"
 #include "atom_netlist.h"
 #include "vtr_log.h"
+#include "vtr_cilk.h"
 
 /*
  * SetupSlackCrit
@@ -79,12 +80,13 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     }
 
     //Update the criticalities of each pin
-    for(AtomPinId pin : netlist_.pins()) {
-        update_pin_criticality(pin, analyzer, max_req, worst_slack);
+    auto pins = netlist_.pins();
+    cilk_for(auto itr = pins.begin(); itr != pins.end(); ++itr) {
+        pin_criticalities_[*itr] = calc_pin_criticality(*itr, analyzer, max_req, worst_slack);
     }
 }
 
-void SetupSlackCrit::update_pin_criticality(AtomPinId pin, 
+float SetupSlackCrit::calc_pin_criticality(AtomPinId pin, 
                                             const tatum::SetupTimingAnalyzer& analyzer, 
                                             const std::map<DomainPair,float>& max_req, 
                                             const std::map<DomainPair,float>& worst_slack) {
@@ -92,7 +94,7 @@ void SetupSlackCrit::update_pin_criticality(AtomPinId pin,
     VTR_ASSERT(node);
 
     //Calculate maximum criticality over all domains
-    pin_criticalities_[pin] = calc_relaxed_criticality(max_req, worst_slack, analyzer.setup_slacks(node));
+    return calc_relaxed_criticality(max_req, worst_slack, analyzer.setup_slacks(node));
 }
 
 /*
@@ -162,12 +164,13 @@ void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
     float shift = -worst_slack;
 
     //Update the criticalities of each pin
-    for(AtomPinId pin : netlist_.pins()) {
-        update_pin_criticality(pin, analyzer, scale, shift);
+    auto pins = netlist_.pins();
+    cilk_for(auto itr = pins.begin(); itr != pins.end(); ++itr) {
+        pin_criticalities_[*itr] = calc_pin_criticality(*itr, analyzer, scale, shift);
     }
 }
 
-void HoldSlackCrit::update_pin_criticality(AtomPinId pin, 
+float HoldSlackCrit::calc_pin_criticality(AtomPinId pin, 
                                             const tatum::HoldTimingAnalyzer& analyzer, 
                                             const float scale,
                                             const float shift) {
@@ -187,5 +190,5 @@ void HoldSlackCrit::update_pin_criticality(AtomPinId pin,
     VTR_ASSERT(criticality >= 0.);
     VTR_ASSERT(criticality <= 1.);
 
-    pin_criticalities_[pin] = criticality;
+    return criticality;
 }
