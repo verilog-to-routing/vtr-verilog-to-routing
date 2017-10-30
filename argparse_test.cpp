@@ -475,6 +475,7 @@ int main(
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j", "3"},
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j3"}, //No-space for single letter arg
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j 3"}, //Space in short arg (but one string)
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j3", "--analysis"}, //Space in short arg (but one string)
     };
 
     int num_failed = 0;
