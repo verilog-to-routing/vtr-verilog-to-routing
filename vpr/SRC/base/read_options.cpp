@@ -694,25 +694,6 @@ static void set_conditional_defaults(t_options& args) {
     //These are resolved here.
 
     /*
-     * Stages
-     */
-    if(   !args.do_packing
-       && !args.do_placement
-       && !args.do_routing
-       && !args.do_analysis) {
-        //If no stage options are specified, run all
-        args.do_packing.set(true, Provenance::INFERRED);
-        args.do_placement.set(true, Provenance::INFERRED);
-        args.do_routing.set(true, Provenance::INFERRED);
-        args.do_analysis.set(true, Provenance::INFERRED);
-    }
-
-    //Always run analysis after routing
-    if(args.do_routing && !args.do_analysis) {
-        args.do_analysis.set(true, Provenance::INFERRED);
-    }
-
-    /*
      * Filenames
      */
 
