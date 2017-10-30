@@ -117,12 +117,12 @@ namespace argparse {
 
         //Process the arguments
         for (size_t i = 0; i < arg_strs.size(); i++) {
-            ShortArgInfo short_arg_info = starts_with_short_arg(arg_strs[i], str_to_option_arg);
+            ShortArgInfo short_arg_info = no_space_short_arg(arg_strs[i], str_to_option_arg);
 
             std::shared_ptr<Argument> arg;
 
-            if (short_arg_info.is_short_arg) {
-                //Short argument
+            if (short_arg_info.is_no_space_short_arg) {
+                //Short argument with no space between value
                 arg = short_arg_info.arg;
             } else { //Full argument
                 auto iter = str_to_option_arg.find(arg_strs[i]);
@@ -169,7 +169,7 @@ namespace argparse {
 
                     std::vector<std::string> values;
                     size_t nargs_read = 0;
-                    if (short_arg_info.is_short_arg) {
+                    if (short_arg_info.is_no_space_short_arg) {
                         //It is a short argument, we already have the first value
                         if (!short_arg_info.value.empty()) {
                             values.push_back(short_arg_info.value);
@@ -233,7 +233,9 @@ namespace argparse {
                         assert(false); //TODO: implement
                     }
 
-                    i += nargs_read; //Skip over the values
+                    if (!short_arg_info.is_no_space_short_arg) {
+                        i += nargs_read; //Skip over the values (don't need to for short args)
+                    }
                 }
 
             } else {
@@ -341,13 +343,14 @@ namespace argparse {
         }
     }
 
-    ArgumentParser::ShortArgInfo ArgumentParser::starts_with_short_arg(std::string str, const std::map<std::string, std::shared_ptr<Argument>>& str_to_option_arg) const {
+    ArgumentParser::ShortArgInfo ArgumentParser::no_space_short_arg(std::string str, const std::map<std::string, std::shared_ptr<Argument>>& str_to_option_arg) const {
 
         ShortArgInfo short_arg_info;
         for(auto kv : str_to_option_arg) {
             if (kv.first.size() == 2) {
                 //Is a short arg
                 
+                //String starts with short arg
                 bool match = true;
                 for (size_t i = 0; i < kv.first.size(); ++i) {
                     if (kv.first[i] != str[i]) {
@@ -356,8 +359,11 @@ namespace argparse {
                     }
                 }
 
-                if (match) {
-                    short_arg_info.is_short_arg = true;
+                bool no_space_between_short_arg_and_value = str.size() > kv.first.size();
+
+                if (match && no_space_between_short_arg_and_value) {
+                    //Only handles cases where there is no space between short arg and value
+                    short_arg_info.is_no_space_short_arg = true;
                     short_arg_info.arg = kv.second;
                     short_arg_info.value = std::string(str.begin() + kv.first.size(), str.end());
 
@@ -366,7 +372,7 @@ namespace argparse {
             }
         }
 
-        assert(!short_arg_info.is_short_arg);
+        assert(!short_arg_info.is_no_space_short_arg);
         return short_arg_info;
     }
 
