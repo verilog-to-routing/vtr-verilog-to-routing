@@ -1,11 +1,11 @@
 # VTR License
 
 The software package "VTR" includes the software tools ODIN II, ABC, and VPR as
-well as additional benchmarks, documentation, and scripts. The authors of the
-various components of VTR retain their ownership of their tools.
+well as additional benchmarks, documentation, libraries and scripts. The authors
+of the various components of VTR retain their ownership of their tools.
 
-* With the exception of ABC and the benchmark circuits, all software,
-documents, and scripts in VTR, follows the standard MIT license described
+* Unless otherwise noted (in particular ABC, the benchmark circuits and some libraries), 
+all software, documents, and scripts in VTR, follows the standard MIT license described
 [here](http://www.opensource.org/licenses/mit-license.php) copied below for
 your convenience:
 
