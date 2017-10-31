@@ -198,16 +198,11 @@ add_custom_target(get_titan_benchmarks
 #
 
 #Add the various sub-projects
-add_subdirectory(liblog)
-add_subdirectory(libpugixml)
-add_subdirectory(libpugiutil)
-add_subdirectory(libvtrutil)
 add_subdirectory(libargparse)
-add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
-add_subdirectory(libeasygl)
 add_subdirectory(libtatum)
+add_subdirectory(libs)
 add_subdirectory(vpr)
 add_subdirectory(abc_with_bb_support)
 add_subdirectory(ODIN_II)
