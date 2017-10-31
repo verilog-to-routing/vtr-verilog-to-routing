@@ -1,0 +1,9 @@
+build
+sdcparse_test
+libsdcparse.a
+obj/
+src/sdc_lexer.gen.c
+src/sdc_lexer.gen.h
+src/sdc_parser.gen.c
+src/sdc_parser.gen.h
+src/stack.hh
