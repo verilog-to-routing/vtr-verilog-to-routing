@@ -57,14 +57,6 @@ vtr_flow/benchmarks/titan_other_blif/*.blif
 *.out
 
 #
-#Generated intermediate results
-#
-ODIN_II/SRC/verilog_bison.c
-ODIN_II/SRC/verilog_bison.h
-ODIN_II/SRC/verilog_bison.output
-ODIN_II/SRC/verilog_flex.c
-
-#
 #Odin test outputs
 #
 ODIN_II/default_out.blif
