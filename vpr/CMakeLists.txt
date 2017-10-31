@@ -7,9 +7,9 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 include(CheckCXXSymbolExists)
 
 #Collect the source files
-file(GLOB_RECURSE EXEC_SOURCES SRC/main.cpp)
-file(GLOB_RECURSE LIB_SOURCES SRC/*/*.cpp)
-file(GLOB_RECURSE LIB_HEADERS SRC/*/*.h)
+file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
+file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
+file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Create the library
