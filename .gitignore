@@ -5,15 +5,7 @@
 ODIN_II/odin_II
 abc_with_bb_support/abc
 ace2/ace
-libarchfpga/read_arch
-liblog/test_log
-libsdcparse/sdcparse_test
 vpr/vpr
-libsdcparse/src/sdc_lexer.gen.c
-libsdcparse/src/sdc_lexer.gen.h
-libsdcparse/src/sdc_parser.gen.c
-libsdcparse/src/sdc_parser.gen.h
-libsdcparse/src/stack.hh
 
 #Install
 bin/
@@ -24,11 +16,6 @@ bin/
 CMakeCache.txt
 CMakeFiles
 build
-
-#
-# Make build system
-#
-libvtrutil/obj
 
 #
 #VTR Tasks
