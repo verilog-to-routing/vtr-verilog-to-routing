@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 TEST_DIR="REGRESSION_TESTS/BENCHMARKS/MICROBENCHMARKS"
-ARCH="../libarchfpga/arch/sample_arch.xml"
+ARCH="../libs/libarchfpga/arch/sample_arch.xml"
 
 
 while getopts a: flag; do

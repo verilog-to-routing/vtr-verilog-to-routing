@@ -21,7 +21,7 @@ trap finish INT
 
 TEST_DIR_REG="FULL_REGRESSION_TESTS"
 TEST_DIR="REGRESSION_TESTS/BENCHMARKS/MICROBENCHMARKS"
-ARCH="../libarchfpga/arch/sample_arch.xml"
+ARCH="../libs/libarchfpga/arch/sample_arch.xml"
 
 for benchmark in $TEST_DIR/*.v
 do 
