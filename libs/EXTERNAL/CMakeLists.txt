@@ -1,5 +1,6 @@
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
+add_subdirectory(libcatch)
 
 #External libraries synchronized with 'git subtree'
 add_subdirectory(libargparse)

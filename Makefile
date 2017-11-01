@@ -32,6 +32,8 @@ GENERATED_MAKEFILE := $(BUILD_DIR)/Makefile
 #Check for the cmake exectuable
 CMAKE := $(shell command -v cmake 2> /dev/null)
 
+#Show test log on failures with 'make test'
+export CTEST_OUTPUT_ON_FAILURE=TRUE
 
 #All targets in this make file are always out of date.
 # This ensures that any make target requests are forwarded to

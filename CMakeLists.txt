@@ -194,6 +194,11 @@ add_custom_target(get_titan_benchmarks
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
 
 #
+# Unit Testing
+#
+enable_testing()
+
+#
 # Sub-projects
 #
 

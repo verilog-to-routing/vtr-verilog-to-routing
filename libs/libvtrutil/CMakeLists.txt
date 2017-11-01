@@ -77,3 +77,15 @@ target_link_libraries(libvtrutil
                         liblog)
 
 install(TARGETS libvtrutil DESTINATION bin)
+
+#
+# Unit Tests
+#
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_vtrutil ${TEST_SOURCES})
+target_link_libraries(test_vtrutil 
+                        libvtrutil
+                        libcatch)
+
+add_test(NAME test_vtrutil COMMAND test_vtrutil --use-colour=yes)
+            
