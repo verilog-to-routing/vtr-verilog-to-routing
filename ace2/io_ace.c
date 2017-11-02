@@ -5,7 +5,7 @@
 #include "ace.h"
 #include "io_ace.h"
 
-#include "abc.h"
+#include "base/abc/abc.h"
 
 char * hdl_name_ptr = NULL;
 
@@ -206,7 +206,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 	node_vec = Abc_NtkDfsSeq(ntk);
 
 	// Initialize node information structure
-	Vec_PtrForEachEntry(node_vec, obj_ptr, i)
+	Vec_PtrForEachEntry(Vec_Ptr_t*, node_vec, obj_ptr, i)
 	{
 		info = Ace_ObjInfo(obj_ptr);
 		info->static_prob = ACE_OPEN;
