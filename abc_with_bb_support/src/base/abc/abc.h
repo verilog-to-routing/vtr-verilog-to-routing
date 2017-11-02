@@ -107,9 +107,25 @@ typedef enum {
     ABC_INIT_OTHER      // 4:  unused
 } Abc_InitType_t;
 
+// latch type
+typedef enum {
+  ABC_FALLING_EDGE = 0,
+  ABC_RISING_EDGE,
+  ABC_ACTIVE_HIGH,
+  ABC_ACTIVE_LOW,
+  ABC_ASYNC
+} Abc_LatchType_t;
+
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
+
+struct Abc_LatchInfo_t_
+{
+  Abc_InitType_t    InitValue;
+  Abc_LatchType_t   LatchType;
+  char              *pClkName;
+};
 
 typedef struct Abc_Des_t_       Abc_Des_t;
 typedef struct Abc_Ntk_t_       Abc_Ntk_t;
@@ -118,6 +134,7 @@ typedef struct Abc_Aig_t_       Abc_Aig_t;
 typedef struct Abc_ManTime_t_   Abc_ManTime_t;
 typedef struct Abc_ManCut_t_    Abc_ManCut_t;
 typedef struct Abc_Time_t_      Abc_Time_t;
+typedef struct Abc_LatchInfo_t_ Abc_LatchInfo_t;
 
 struct Abc_Time_t_
 {
