@@ -422,7 +422,6 @@
 #include "logic_types.h"
 
 #include "netlist_fwd.h"
-#include "netlist_utils.h"
 
 
 //Forward declaration for private methods

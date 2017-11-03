@@ -1,5 +1,5 @@
-#ifndef NETLIST_UTILS_H
-#define NETLIST_UTILS_H
+#ifndef GRAPH_UTILS_H
+#define GRAPH_UTILS_H
 
 #include "vtr_vector_map.h"
 
