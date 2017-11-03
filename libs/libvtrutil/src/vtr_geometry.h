@@ -40,6 +40,7 @@ bool operator!=(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 template<class T>
 class Point {
     public: //Constructors
+        Point() = default;
         Point(T x_val, T y_val);
 
     public: //Accessors
@@ -59,6 +60,7 @@ class Point {
 template<class T>
 class Rect {
     public: //Constructors
+        Rect() = default;
         Rect(T left_val, T bottom_val, T right_val, T top_val);
         Rect(Point<T> bottom_left_val, Point<T> top_right_val);
 
@@ -100,6 +102,7 @@ class Line {
         typedef vtr::Range<point_iter> point_range;
 
     public: //Constructors
+        Line() = default;
         Line(std::vector<Point<T>> line_points);
 
     public: //Accessors
@@ -122,6 +125,7 @@ class RectUnion {
         typedef vtr::Range<rect_iter> rect_range;
 
     public: //Constructors
+        RectUnion() = default;
 
         //Construct from a set of rectangles
         RectUnion(std::vector<Rect<T>> rects);
