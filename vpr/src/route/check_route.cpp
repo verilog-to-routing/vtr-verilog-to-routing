@@ -11,7 +11,7 @@ using namespace std;
 #include "globals.h"
 #include "route_export.h"
 #include "check_route.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 

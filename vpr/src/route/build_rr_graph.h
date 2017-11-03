@@ -1,5 +1,5 @@
-#ifndef RR_GRAPH_H
-#define RR_GRAPH_H
+#ifndef BUILD_RR_GRAPH_H
+#define BUILD_RR_GRAPH_H
 
 /* Include track buffers or not. Track buffers isolate the tracks from the
    input connection block. However, they are difficult to lay out in practice,

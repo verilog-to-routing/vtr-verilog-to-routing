@@ -21,8 +21,8 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 #include "globals.h"
-#include "rr_graph.h"
-#include "rr_graph2.h"
+#include "build_rr_graph.h"
+#include "build_rr_graph2.h"
 #include "rr_graph_indexed_data.h"
 #include "vtr_version.h"
 #include <sstream>

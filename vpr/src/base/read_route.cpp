@@ -21,7 +21,7 @@ using namespace std;
 
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "tatum/echo_writer.hpp"

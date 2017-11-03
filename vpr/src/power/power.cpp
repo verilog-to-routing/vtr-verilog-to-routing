@@ -44,7 +44,7 @@ using namespace std;
 
 #include "physical_types.h"
 #include "globals.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "vpr_utils.h"
 
 /************************* DEFINES **********************************/

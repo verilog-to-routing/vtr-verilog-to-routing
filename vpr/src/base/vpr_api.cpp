@@ -46,7 +46,7 @@ using namespace std;
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "pb_type_graph.h"
 #include "route_common.h"
 #include "timing_place_lookup.h"

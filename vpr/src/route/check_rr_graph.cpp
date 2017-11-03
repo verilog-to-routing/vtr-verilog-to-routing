@@ -5,7 +5,7 @@
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "check_rr_graph.h"
 
 /********************** Local defines and types *****************************/

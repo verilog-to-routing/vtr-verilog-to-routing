@@ -10,7 +10,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "rr_graph_util.h"
 #include "rr_graph_area.h"
 

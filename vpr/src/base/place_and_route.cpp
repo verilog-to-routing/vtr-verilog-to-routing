@@ -25,7 +25,7 @@ using namespace std;
 #include "draw.h"
 #include "stats.h"
 #include "check_route.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "path_delay.h"
 #include "net_delay.h"
 #include "timing_place.h"

@@ -49,7 +49,7 @@ using namespace std;
 #include <sys/time.h>
 #endif
 
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 
 /****************************** Define Macros *******************************/
 

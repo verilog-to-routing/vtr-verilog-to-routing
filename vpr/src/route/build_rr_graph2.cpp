@@ -11,7 +11,7 @@ using namespace std;
 
 #include "globals.h"
 #include "rr_graph_util.h"
-#include "rr_graph2.h"
+#include "build_rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "read_xml_arch_file.h"
 #include "rr_types.h"

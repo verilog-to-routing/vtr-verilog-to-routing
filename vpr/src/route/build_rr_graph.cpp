@@ -20,9 +20,9 @@ using namespace std;
 
 #include "globals.h"
 #include "rr_graph_util.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "rr_graph_area.h"
-#include "rr_graph2.h"
+#include "build_rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
 #include "rr_graph_indexed_data.h"

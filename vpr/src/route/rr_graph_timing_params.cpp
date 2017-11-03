@@ -6,9 +6,9 @@
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "rr_graph.h"
+#include "build_rr_graph.h"
 #include "rr_graph_util.h"
-#include "rr_graph2.h"
+#include "build_rr_graph2.h"
 #include "rr_graph_timing_params.h"
 
 using namespace std;
