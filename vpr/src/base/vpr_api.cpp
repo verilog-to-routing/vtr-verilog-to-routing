@@ -1123,6 +1123,12 @@ void vpr_print_error(const VprError& vpr_error){
             case VPR_ERROR_ATOM_NETLIST:
                 error_type = vtr::strdup("Atom Netlist");
                 break;
+            case VPR_ERROR_CLB_NETLIST:
+                error_type = vtr::strdup("Clustered Netlist");
+                break;
+            case VPR_ERROR_RR_GRAPH:
+                error_type = vtr::strdup("Routing Resource Graph");
+                break;
             case VPR_ERROR_POWER:
                 error_type = vtr::strdup("Power");
                 break;
