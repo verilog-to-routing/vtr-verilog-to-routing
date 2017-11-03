@@ -1,3 +1,4 @@
+#include <limits>
 namespace vtr {
     /*
      * Point
