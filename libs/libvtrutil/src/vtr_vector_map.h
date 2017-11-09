@@ -28,6 +28,8 @@ namespace vtr {
 //If you need a fully featured std::map like container without the above differences see 
 //vtr::linear_map.
 //
+//If you do not need std::map-like features see vtr::vector.
+//
 //Note that it is possible to use vector_map with sparse/non-contiguous keys, but this is typically
 //memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
 //where max_key is the largest key that has been inserted.
