@@ -28,13 +28,14 @@ float SetupSlackCrit::setup_pin_slack(AtomPinId pin) const { return pin_slacks_[
 float SetupSlackCrit::setup_pin_criticality(AtomPinId pin) const { return pin_criticalities_[pin]; }
 
 void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
-    update_slacks(analyzer);
+    cilk_spawn update_slacks(analyzer);
     update_criticalities(timing_graph, analyzer);
 }
 
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
-    for(AtomPinId pin : netlist_.pins()) {
-        update_pin_slack(pin, analyzer);
+    auto pins = netlist_.pins();
+    cilk_for(auto itr = pins.begin(); itr != pins.end(); ++itr) {
+        update_pin_slack(*itr, analyzer);
     }
 }
 
