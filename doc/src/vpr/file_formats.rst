@@ -459,15 +459,15 @@ An example placement file is:
     Array size: 2 x 2 logic blocks
 
     #block name	x	y	subblk	block number
-    #----------	--	--	------	------------
-    a		    0	1	0		#0  -- NB: block number is a comment.
-    b		    1	0	0		#1
-    c		    0	2	1		#2
-    d		    1	3	0		#3
-    e		    1	3	1		#4
-    out:xor5	0	2	0		#5
-    xor5		1	2	0		#6
-    [1]		    1	1	0		#7
+    #----------	--	--	-------	-----------
+    a		0	1	0	#0  -- NB: block number is a comment.
+    b		1	0	0	#1
+    c		0	2	1	#2
+    d		1	3	0	#3
+    e		1	3	1	#4
+    out:xor5	0	2	0	#5
+    xor5	1	2	0	#6
+    [1]		1	1	0	#7
 
 
 .. _vpr_route_file:
