@@ -48,6 +48,7 @@ void constrain_all_ios(const AtomNetlist& netlist,
 
 std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist);
 std::string orig_blif_name(std::string name);
+void print_netlist_clock_info(const AtomNetlist& netlist);
 
 std::regex glob_pattern_to_regex(const std::string& glob_pattern);
 
@@ -960,10 +961,9 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
             }
         }
     }
-
-    std::set<AtomNetId> netlist_clocks = find_netlist_clocks(netlist); 
-    vtr::printf("Netlist contains %zu clocks\n", netlist_clocks.size());
     vtr::printf("Timing constraints created %zu clocks\n", timing_constraints->clock_domains().size());
+    print_netlist_clock_info(netlist);
+
     vtr::printf("\n");
 
     return timing_constraints;
@@ -1172,6 +1172,26 @@ std::string orig_blif_name(std::string name) {
     return name;
 }
 
+//Print informatino about clocks
+void print_netlist_clock_info(const AtomNetlist& netlist) {
+
+    std::set<AtomNetId> netlist_clocks = find_netlist_clocks(netlist); 
+    vtr::printf("Netlist contains %zu clocks\n", netlist_clocks.size());
+
+    //Print out pin/block fanout info for each block
+    for (auto net_id : netlist_clocks) {
+        auto sinks = netlist.net_sinks(net_id);
+        size_t fanout = sinks.size();
+        std::set<AtomBlockId> clk_blks;
+        for (auto pin_id : sinks) {
+            auto blk_id = netlist.pin_block(pin_id);
+            clk_blks.insert(blk_id);
+        }
+        vtr::printf("  Netlist Clock '%s' Fanout: %zu pins (%.1f%), %zu blocks (%.1f%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
+    }
+
+}
+
 //Converts a glob pattern to a std::regex
 std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     //In glob (i.e. unix-shell style):
@@ -1190,3 +1210,4 @@ std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
 
     return std::regex(regex_str, std::regex::grep);
 }
+
