@@ -226,19 +226,20 @@ static void alloc_routing_structs(t_router_opts router_opts,
                 GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
-            device_ctx.grid,
-            &device_ctx.chan_width,
-            device_ctx.num_arch_switches,
-            det_routing_arch,
-            segment_inf,
-            router_opts.base_cost_type,
-            router_opts.trim_empty_channels,
-            router_opts.trim_obs_channels,
-            directs, num_directs,
-            &device_ctx.num_rr_switches,
-            &warnings);
+    device_ctx.rr_graph = create_rr_graph(
+                            graph_type,
+                            device_ctx.num_block_types, device_ctx.block_types,
+                            device_ctx.grid,
+                            &device_ctx.chan_width,
+                            device_ctx.num_arch_switches,
+                            det_routing_arch,
+                            segment_inf,
+                            router_opts.base_cost_type,
+                            router_opts.trim_empty_channels,
+                            router_opts.trim_obs_channels,
+                            directs, num_directs,
+                            &device_ctx.num_rr_switches,
+                            &warnings);
 
     alloc_and_load_rr_node_route_structs();
 

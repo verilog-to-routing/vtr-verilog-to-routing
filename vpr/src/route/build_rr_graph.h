@@ -7,6 +7,7 @@
 #define INCLUDE_TRACK_BUFFERS false
 
 #include "device_grid.h"
+#include "rr_graph.h"
 
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
@@ -25,20 +26,20 @@ enum {
     RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
 };
 
-void create_rr_graph(
-        const t_graph_type graph_type,
-        const int num_block_types, const t_type_ptr block_types,
-        const DeviceGrid& grid,
-        t_chan_width *nodes_per_chan,
-        const int num_arch_switches,
-        t_det_routing_arch* det_routing_arch,
-        const t_segment_inf * segment_inf,
-        const enum e_base_cost_type base_cost_type,
-        const bool trim_empty_channels,
-        const bool trim_obs_channels,
-        const t_direct_inf *directs, const int num_directs,
-        int *num_rr_switches,
-        int *Warnings);
+RRGraph create_rr_graph(
+            const t_graph_type graph_type,
+            const int num_block_types, const t_type_ptr block_types,
+            const DeviceGrid& grid,
+            t_chan_width *nodes_per_chan,
+            const int num_arch_switches,
+            t_det_routing_arch* det_routing_arch,
+            const t_segment_inf * segment_inf,
+            const enum e_base_cost_type base_cost_type,
+            const bool trim_empty_channels,
+            const bool trim_obs_channels,
+            const t_direct_inf *directs, const int num_directs,
+            int *num_rr_switches,
+            int *Warnings);
 
 void free_rr_graph(void);
 

@@ -339,19 +339,19 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
     free_rr_graph();
 
-	create_rr_graph(graph_type,
-            device_ctx.num_block_types, device_ctx.block_types,
-            device_ctx.grid,
-			&device_ctx.chan_width,
-			device_ctx.num_arch_switches, 
-            det_routing_arch,
-            segment_inf,
-			router_opts.base_cost_type, 
-			router_opts.trim_empty_channels,
-			router_opts.trim_obs_channels,
-			arch->Directs, arch->num_directs,
-			&device_ctx.num_rr_switches,
-			&warnings);
+	device_ctx.rr_graph = create_rr_graph(graph_type,
+                            device_ctx.num_block_types, device_ctx.block_types,
+                            device_ctx.grid,
+                            &device_ctx.chan_width,
+                            device_ctx.num_arch_switches, 
+                            det_routing_arch,
+                            segment_inf,
+                            router_opts.base_cost_type, 
+                            router_opts.trim_empty_channels,
+                            router_opts.trim_obs_channels,
+                            arch->Directs, arch->num_directs,
+                            &device_ctx.num_rr_switches,
+                            &warnings);
 
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 

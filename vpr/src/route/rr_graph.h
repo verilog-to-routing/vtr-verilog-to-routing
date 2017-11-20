@@ -136,6 +136,8 @@ class RRGraph {
         vtr::vector<RREdgeId,RRSwitchId> edge_switches_;
 
         //Switch related data
+        // Note that so far there has been no need to remove 
+        // switches, so no such facility exists
         vtr::vector<RRSwitchId,RRSwitchId> switch_ids_;
         vtr::vector<RRSwitchId,t_rr_switch_inf> switches_;
 
