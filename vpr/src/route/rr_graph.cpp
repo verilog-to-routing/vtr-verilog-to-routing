@@ -244,44 +244,61 @@ static void build_rr_graph(
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(
-        const t_graph_type graph_type, 
-        const int L_num_types,
-        const t_type_ptr types, 
+        const t_graph_type graph_type,
+        const int num_block_types, const t_type_ptr block_types,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
-        const enum e_switch_block_type sb_type, const int Fs,
-        const vector<t_switchblock_inf> switchblocks,
-        const int num_seg_types, const int num_arch_switches,
+        const int num_arch_switches,
+        t_det_routing_arch* det_routing_arch,
         const t_segment_inf * segment_inf,
-        const int global_route_switch, const int delayless_switch,
-        const int wire_to_arch_ipin_switch,
-        const float R_minW_nmos,
-        const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const char* dump_rr_structs_file,
-        int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings,
-        const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name) {
+        int *Warnings) {
 
-    if (!read_rr_graph_name.empty()) {
-        load_rr_file(graph_type, grid,
-                nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
-                wire_to_rr_ipin_switch, num_rr_switches,
-                read_rr_graph_name.c_str());
+    if (!det_routing_arch->read_rr_graph_filename.empty()) {
+        load_rr_file(
+                graph_type,
+                grid,
+                nodes_per_chan,
+                det_routing_arch->num_segment,
+                segment_inf,
+                base_cost_type,
+                &det_routing_arch->wire_to_rr_ipin_switch, 
+                num_rr_switches,
+                det_routing_arch->read_rr_graph_filename.c_str());
     } else {
-        build_rr_graph(graph_type, L_num_types, types, grid, nodes_per_chan, sb_type, Fs, switchblocks,
-                num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
-                R_minW_nmos, R_minW_pmos, base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
-                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings);
+        build_rr_graph(
+                graph_type, 
+                num_block_types, block_types, 
+                grid, 
+                nodes_per_chan, 
+                det_routing_arch->switch_block_type, 
+                det_routing_arch->Fs, 
+                det_routing_arch->switchblocks,
+                det_routing_arch->num_segment, 
+                num_arch_switches, 
+                segment_inf, 
+                det_routing_arch->global_route_switch, 
+                det_routing_arch->delayless_switch, 
+                det_routing_arch->wire_to_arch_ipin_switch,
+                det_routing_arch->R_minW_nmos,
+                det_routing_arch->R_minW_pmos,
+                base_cost_type,
+                trim_empty_channels,
+                trim_obs_channels,
+                directs, num_directs,
+                det_routing_arch->dump_rr_structs_file,
+                &det_routing_arch->wire_to_rr_ipin_switch,
+                num_rr_switches,
+                Warnings);
     }
+
     //Write out rr graph file if needed
-    if (!write_rr_graph_name.empty()) {
-        write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
+    if (!det_routing_arch->write_rr_graph_filename.empty()) {
+        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf, det_routing_arch->num_segment);
     }
 
 }

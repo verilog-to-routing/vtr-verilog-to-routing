@@ -238,26 +238,19 @@ void try_graph(int width_fac, t_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid,
-			&device_ctx.chan_width, det_routing_arch->switch_block_type,
-			det_routing_arch->Fs, det_routing_arch->switchblocks,
-			det_routing_arch->num_segment,
-			device_ctx.num_arch_switches, segment_inf,
-			det_routing_arch->global_route_switch,
-			det_routing_arch->delayless_switch,
-			det_routing_arch->wire_to_arch_ipin_switch,
-			det_routing_arch->R_minW_nmos, 
-			det_routing_arch->R_minW_pmos, 
+	create_rr_graph(graph_type,
+            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.grid,
+			&device_ctx.chan_width,
+			device_ctx.num_arch_switches, 
+            det_routing_arch,
+            segment_inf,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs,
-			det_routing_arch->dump_rr_structs_file,
-			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count,
-            router_opts.write_rr_graph_name.c_str(),
-            router_opts.read_rr_graph_name.c_str());
+			&warning_count);
 
 	clock_t end = clock();
 
@@ -305,26 +298,19 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
         
-	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid,
-			&device_ctx.chan_width, det_routing_arch->switch_block_type,
-			det_routing_arch->Fs, det_routing_arch->switchblocks,
-			det_routing_arch->num_segment,
-			device_ctx.num_arch_switches, segment_inf,
-			det_routing_arch->global_route_switch,
-			det_routing_arch->delayless_switch,
-			det_routing_arch->wire_to_arch_ipin_switch, 
-			det_routing_arch->R_minW_nmos, 
-			det_routing_arch->R_minW_pmos, 
+	create_rr_graph(graph_type,
+            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.grid,
+			&device_ctx.chan_width,
+			device_ctx.num_arch_switches, 
+            det_routing_arch,
+            segment_inf,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs,
-			det_routing_arch->dump_rr_structs_file,
-			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, 
-            router_opts.write_rr_graph_name.c_str(),
-            router_opts.read_rr_graph_name.c_str());
+			&warning_count);
 
 	clock_t end = clock();
 

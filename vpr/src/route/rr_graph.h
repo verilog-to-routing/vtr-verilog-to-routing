@@ -26,28 +26,19 @@ enum {
 };
 
 void create_rr_graph(
-        const t_graph_type graph_type, const int L_num_types,
-        const t_type_ptr types,
-        const DeviceGrid& L_grid,
+        const t_graph_type graph_type,
+        const int num_block_types, const t_type_ptr block_types,
+        const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
-        const enum e_switch_block_type sb_type, const int Fs,
-        const std::vector<t_switchblock_inf> switchblocks,
-        const int num_seg_types, const int num_arch_switches,
+        const int num_arch_switches,
+        t_det_routing_arch* det_routing_arch,
         const t_segment_inf * segment_inf,
-        const int global_route_switch, const int delayless_switch,
-        const int wire_to_arch_ipin_switch,
-        const float R_minW_nmos,
-        const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const char* dump_rr_structs_file,
-        int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings,
-        const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name);
+        int *Warnings);
 
 void free_rr_graph(void);
 

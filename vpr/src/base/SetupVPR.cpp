@@ -140,6 +140,8 @@ void SetupVPR(t_options *Options,
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
 	SetupPackerOpts(*Options, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
+	RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
+    RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
 
     //Setup the default flow, if no specific stages specified
     //do all
@@ -336,9 +338,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
         RouterOpts->doRouting = STAGE_DO;
     }
 	RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
-	RouterOpts->write_rr_graph_name = Options.write_rr_graph_file;
-        RouterOpts->read_rr_graph_name = Options.read_rr_graph_file;
-        RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
+    RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
 }
 
 static void SetupAnnealSched(const t_options& Options,

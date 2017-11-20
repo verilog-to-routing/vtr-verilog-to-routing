@@ -339,25 +339,19 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
     free_rr_graph();
 
-    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid,
-            &device_ctx.chan_width, det_routing_arch->switch_block_type,
-            det_routing_arch->Fs, det_routing_arch->switchblocks,
-            det_routing_arch->num_segment,
-            device_ctx.num_arch_switches, segment_inf,
-            det_routing_arch->global_route_switch,
-            det_routing_arch->delayless_switch,
-            det_routing_arch->wire_to_arch_ipin_switch,
-            det_routing_arch->R_minW_nmos,
-            det_routing_arch->R_minW_pmos,
-            router_opts.base_cost_type,
-            router_opts.trim_empty_channels,
-            router_opts.trim_obs_channels,
-            arch->Directs, arch->num_directs,
-            det_routing_arch->dump_rr_structs_file,
-            &det_routing_arch->wire_to_rr_ipin_switch,
-            &device_ctx.num_rr_switches,
-            &warnings, router_opts.write_rr_graph_name,
-            router_opts.read_rr_graph_name);
+	create_rr_graph(graph_type,
+            device_ctx.num_block_types, device_ctx.block_types,
+            device_ctx.grid,
+			&device_ctx.chan_width,
+			device_ctx.num_arch_switches, 
+            det_routing_arch,
+            segment_inf,
+			router_opts.base_cost_type, 
+			router_opts.trim_empty_channels,
+			router_opts.trim_obs_channels,
+			arch->Directs, arch->num_directs,
+			&device_ctx.num_rr_switches,
+			&warnings);
 
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 

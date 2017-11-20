@@ -701,31 +701,19 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     free_rr_graph();
 
     //Create the RR graph
-    create_rr_graph(graph_type, 
-            device_ctx.num_block_types, device_ctx.block_types, 
+	create_rr_graph(graph_type,
+            device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-            &device_ctx.chan_width, 
-            det_routing_arch->switch_block_type,
-            det_routing_arch->Fs, 
-            det_routing_arch->switchblocks,
-            det_routing_arch->num_segment,
-            device_ctx.num_arch_switches, 
+			&device_ctx.chan_width,
+			device_ctx.num_arch_switches, 
+            det_routing_arch,
             vpr_setup.Segments,
-            det_routing_arch->global_route_switch,
-            det_routing_arch->delayless_switch,
-            det_routing_arch->wire_to_arch_ipin_switch,
-            det_routing_arch->R_minW_nmos,
-            det_routing_arch->R_minW_pmos,
-            router_opts.base_cost_type,
-            router_opts.trim_empty_channels,
-            router_opts.trim_obs_channels,
-            arch.Directs, arch.num_directs,
-            det_routing_arch->dump_rr_structs_file,
-            &det_routing_arch->wire_to_rr_ipin_switch,
-            &device_ctx.num_rr_switches,
-            &warnings, 
-            router_opts.write_rr_graph_name,
-            router_opts.read_rr_graph_name);
+			router_opts.base_cost_type, 
+			router_opts.trim_empty_channels,
+			router_opts.trim_obs_channels,
+			arch.Directs, arch.num_directs,
+			&device_ctx.num_rr_switches,
+			&warnings);
 }
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {

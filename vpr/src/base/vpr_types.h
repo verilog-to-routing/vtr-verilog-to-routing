@@ -821,8 +821,6 @@ struct t_router_opts {
 	e_stage_action doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 	enum e_routing_budgets_algorithm routing_budgets_algorithm;
-	std::string write_rr_graph_name;
-    std::string read_rr_graph_name;
 };
 
 struct t_analysis_opts {
@@ -852,14 +850,21 @@ struct t_analysis_opts {
  * num_segment:  Number of distinct segment types in the FPGA.              *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
+ * wire_to_arch_ipin_switch: keeps track of the type of architecture switch *
+ *                           that connects wires to ipins                   *
+ * wire_to_rr_ipin_switch: keeps track of the type of RR graph switch that  *
+ *                         connects wires to ipins in the RR graph          *
  * R_minW_nmos:  Resistance (in Ohms) of a minimum width nmos transistor.   *
  *               Used only in the FPGA area model.                          *
  * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   *
+ *                                                                          *
  * dump_rr_structs_file: routing resource structures will be dumped in      *
  *                       build_rr_graph() to a file specified by this       *
  *                       variable                                           *
- * wire_to_rr_ipin_switch: keeps track of the type of switch that connects  *
- *                         wires to ipins                                   */
+ * read_rr_graph_filename: File to read the RR graph from (overrides        *
+ *                         architecture)                                    *
+ * write_rr_graph_filename: File to write the RR graph to after generation  *
+ *                                                                          */
 
 struct t_det_routing_arch {
 	enum e_directionality directionality; /* UDSD by AY */
@@ -876,6 +881,8 @@ struct t_det_routing_arch {
 	float R_minW_pmos;
 
 	char *dump_rr_structs_file;
+    std::string read_rr_graph_filename;
+    std::string write_rr_graph_filename;
 };
 
 enum e_direction : unsigned char {
