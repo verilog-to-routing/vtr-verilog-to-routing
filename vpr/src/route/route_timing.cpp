@@ -113,7 +113,7 @@ private:
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
-static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
+static bool timing_driven_route_sink(const RRGraph& rr_graph, int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
         float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets &budgeting_inf,
         float max_delay, float min_delay, float target_delay, float short_path_crit);
 
@@ -122,7 +122,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         float max_delay, float min_delay,
         float target_delay, float short_path_crit);
 
-static void timing_driven_expand_neighbours(t_heap *current,
+static void timing_driven_expand_neighbours(const RRGraph& rr_graph, t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
         float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
@@ -163,7 +163,9 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
 static int round_up(float x);
 
 /************************ Subroutine definitions *****************************/
-bool try_timing_driven_route(t_router_opts router_opts,
+bool try_timing_driven_route(
+        const RRGraph& rr_graph,
+        t_router_opts router_opts,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -272,6 +274,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
          */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             bool is_routable = try_timing_driven_route_net(
+                    rr_graph,
                     sorted_nets[net_id],
                     itry,
                     pres_fac,
@@ -450,7 +453,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
     return routing_is_successful;
 }
 
-bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
+bool try_timing_driven_route_net(
+        const RRGraph& rr_graph,
+        ClusterNetId net_id, int itry, float pres_fac,
         t_router_opts router_opts,
         CBRR& connections_inf,
         size_t& connections_routed,
@@ -476,7 +481,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         // track time spent vs fanout
         profiling::net_fanout_start();
 
-        is_routed = timing_driven_route_net(net_id, itry, pres_fac,
+        is_routed = timing_driven_route_net(rr_graph, net_id, itry, pres_fac,
                 router_opts.max_criticality, router_opts.criticality_exp,
                 router_opts.astar_fac, router_opts.bend_cost,
                 connections_inf,
@@ -602,7 +607,9 @@ struct Criticality_comp {
     }
 };
 
-bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
+bool timing_driven_route_net(
+        const RRGraph& rr_graph,
+        ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
         float criticality_exp, float astar_fac, float bend_cost,
         CBRR& connections_inf,
         size_t& connections_routed,
@@ -682,7 +689,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         }
 
         // build a branch in the route tree to the target
-        if (!timing_driven_route_sink(itry, net_id, itarget, target_pin, target_criticality,
+        if (!timing_driven_route_sink(rr_graph, itry, net_id, itarget, target_pin, target_criticality,
                 pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink, budgeting_inf,
                 max_delay, min_delay, target_delay, short_path_crit))
             return false;
@@ -714,7 +721,9 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     return (true);
 }
 
-static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
+static bool timing_driven_route_sink(
+        const RRGraph& rr_graph,
+        int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
         float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets &budgeting_inf,
         float max_delay, float min_delay, float target_delay, float short_path_crit) {
 
@@ -737,7 +746,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         rt_root->re_expand = false;
     }
 
-    t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
+    t_heap * cheapest = timing_driven_route_connection(rr_graph, source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, (int)cluster_ctx.clb_nlist.net_sinks(net_id).size(), budgeting_inf,
             max_delay, min_delay, target_delay, short_path_crit);
 
@@ -773,7 +782,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     return true;
 }
 
-t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
+t_heap * timing_driven_route_connection(const RRGraph& rr_graph, int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets &budgeting_inf,
         float max_delay, float min_delay, float target_delay, float short_path_crit) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -853,7 +862,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
             if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
                 add_to_mod_list(&route_ctx.rr_node_route_inf[inode].path_cost);
 
-            timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
+            timing_driven_expand_neighbours(rr_graph, cheapest, bounding_box, bend_cost,
                     target_criticality, num_sinks, sink_node, astar_fac,
                     highfanout_rlim, budgeting_inf, max_delay, min_delay,
                     target_delay, short_path_crit);
@@ -1045,7 +1054,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
     }
 }
 
-static void timing_driven_expand_neighbours(t_heap *current,
+static void timing_driven_expand_neighbours(const RRGraph& rr_graph, t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
         float astar_fac, int highfanout_rlim, route_budgets& budgeting_inf, float max_delay, float min_delay,

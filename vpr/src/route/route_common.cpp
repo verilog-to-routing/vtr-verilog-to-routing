@@ -339,15 +339,17 @@ bool try_route(int width_fac, t_router_opts router_opts,
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
 
 
-		success = try_timing_driven_route(router_opts, net_delay, 
-            intra_lb_pb_pin_lookup,
-            timing_info,
+		success = try_timing_driven_route(
+                    device_ctx.rr_graph, 
+                    router_opts,
+                    net_delay, 
+                    intra_lb_pb_pin_lookup,
+                    timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
-            slacks,
-            timing_inf,
+                    slacks,
+                    timing_inf,
 #endif
-            first_iteration_priority
-            );
+                    first_iteration_priority);
 
 		profiling::time_on_fanout_analysis();
 

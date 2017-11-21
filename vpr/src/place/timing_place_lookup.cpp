@@ -637,7 +637,7 @@ static bool calculate_delay(int source_node, int sink_node,
 
     init_heap(device_ctx.grid);
 
-    t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
+    t_heap* cheapest = timing_driven_route_connection(device_ctx.rr_graph, source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0);
 
     if (cheapest == NULL) {

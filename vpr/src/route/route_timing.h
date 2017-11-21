@@ -11,7 +11,9 @@
 
 int get_max_pins_per_net(void);
 
-bool try_timing_driven_route(t_router_opts router_opts,
+bool try_timing_driven_route(
+        const RRGraph& rr_graph,
+        t_router_opts router_opts,
 		vtr::vector_map<ClusterNetId, float *> &net_delay, 
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -21,7 +23,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 #endif
         ScreenUpdatePriority first_iteration_priority
         );
-bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
+bool try_timing_driven_route_net(const RRGraph& rr_graph, ClusterNetId net_id, int itry, float pres_fac,
 		t_router_opts router_opts,
 		CBRR& connections_inf,
         size_t& connections_routed,
@@ -30,7 +32,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
-bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
+bool timing_driven_route_net(const RRGraph& rr_graph, ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		CBRR& connections_inf,
         size_t& connections_routed,
@@ -45,7 +47,7 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
         t_rt_node ** rt_node_of_sink);
 
-t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
+t_heap * timing_driven_route_connection(const RRGraph& rr_graph, int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks,
         route_budgets &budgeting_inf, float max_delay, float min_delay, float target_delay, float short_path_crit);
 
