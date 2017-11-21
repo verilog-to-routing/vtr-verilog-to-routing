@@ -138,6 +138,36 @@ RREdgeId RRGraph::find_edge(RRNodeId src_node, RRNodeId sink_node) const {
     return RREdgeId::INVALID();
 }
 
+RRNodeId RRGraph::find_node(short x, short y, t_rr_type type, int ptc, e_side side) const {
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
+    size_t itype = type;
+    size_t iside = side;
+    return node_lookup_[x][y][itype][ptc][iside];
+}
+
+RRGraph::node_range RRGraph::find_nodes(short x, short y, t_rr_type type, int ptc) const {
+    if (!valid_fast_node_lookup()) {
+        build_fast_node_lookup();
+    }
+
+    const auto& matching_nodes = node_lookup_[x][y][type][ptc];
+
+    return vtr::make_range(matching_nodes.begin(), matching_nodes.end());
+}
+
+bool RRGraph::is_dirty() const {
+    return dirty_;
+}
+
+void RRGraph::set_dirty() {
+    dirty_ = true;
+}
+
+void RRGraph::clear_dirty() {
+    dirty_ = false;
+}
 
 //Mutators
 RRNodeId RRGraph::create_node(t_rr_type type) {
@@ -160,6 +190,8 @@ RRNodeId RRGraph::create_node(t_rr_type type) {
 
     node_in_edges_.emplace_back(); //Initially empty
     node_out_edges_.emplace_back(); //Initially empty
+
+    invalidate_fast_node_lookup();
 
     VTR_ASSERT(validate_sizes());
 
@@ -212,7 +244,10 @@ void RRGraph::remove_node(RRNodeId node) {
     //Mark node invalid
     node_ids_[node] = RRNodeId::INVALID();
 
-    dirty_ = true;
+    //Invalidate the node look-up
+    invalidate_fast_node_lookup();
+
+    set_dirty();
 }
 
 void RRGraph::remove_edge(RREdgeId edge) {
@@ -237,7 +272,7 @@ void RRGraph::remove_edge(RREdgeId edge) {
     //Mark edge invalid
     edge_ids_[edge] = RREdgeId::INVALID();
 
-    dirty_ = true;
+    set_dirty();
 }
 
 void RRGraph::set_node_xlow(RRNodeId node, short xlow) {
@@ -338,6 +373,54 @@ void RRGraph::set_node_C(RRNodeId node, float C) {
     VTR_ASSERT(valid_node_id(node));
 
     node_Cs_[node] = C;
+}
+
+void RRGraph::build_fast_node_lookup() const {
+    invalidate_fast_node_lookup();
+
+    for (auto node : nodes()) {
+        size_t x = node_xlow(node);
+        if (x < node_lookup_.size()) {
+            node_lookup_.resize(x + 1);
+        }
+
+        size_t y = node_ylow(node);
+        if (y < node_lookup_[x].size()) {
+            node_lookup_[x].resize(y + 1);
+        }
+
+        size_t itype = node_type(node);
+        if (itype < node_lookup_[x][y].size()) {
+            node_lookup_[x][y].resize(itype + 1);
+        }
+
+        size_t ptc = node_ptc_num(node);
+        if (ptc < node_lookup_[x][y][itype].size()) {
+            node_lookup_[x][y][itype].resize(ptc + 1);
+        }
+
+        size_t iside = -1;
+        if (node_type(node) == OPIN || node_type(node) == IPIN) {
+            iside = node_side(node); 
+        } else {
+            iside = NUM_SIDES;
+        }
+
+        if (iside < node_lookup_[x][y][itype][ptc].size()) {
+            node_lookup_[x][y][itype][ptc].resize(iside + 1);
+        }
+
+        //Save node in lookup
+        node_lookup_[x][y][itype][ptc][iside] = node;
+    }
+}
+
+void RRGraph::invalidate_fast_node_lookup() const {
+    node_lookup_.clear();
+}
+
+bool RRGraph::valid_fast_node_lookup() const {
+    return !node_lookup_.empty();
 }
 
 bool RRGraph::validate() {
@@ -495,7 +578,9 @@ void RRGraph::compress() {
 
     rebuild_node_refs(edge_id_map);
 
-    dirty_ = false;
+    invalidate_fast_node_lookup();
+
+    clear_dirty();
 }
 
 void RRGraph::build_id_maps(vtr::vector<RRNodeId,RRNodeId>& node_id_map,

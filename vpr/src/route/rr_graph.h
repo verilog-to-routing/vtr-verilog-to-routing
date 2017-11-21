@@ -60,6 +60,9 @@ class RRGraph {
 
         //Utilities
         RREdgeId find_edge(RRNodeId src_node, RRNodeId sink_node) const;
+        RRNodeId find_node(short x, short y, t_rr_type type, int ptc, e_side side=NUM_SIDES) const;
+        node_range find_nodes(short x, short y, t_rr_type type, int ptc) const;
+        bool is_dirty() const;
     public: //Mutators
         RRNodeId create_node(t_rr_type type);
         RREdgeId create_edge(RRNodeId source, RRNodeId sink, RRSwitchId switch_id);
@@ -90,6 +93,14 @@ class RRGraph {
         void compress();
         bool validate();
     private: //Internal
+        void set_dirty();
+        void clear_dirty();
+
+        //Fast look-up
+        void build_fast_node_lookup() const;
+        void invalidate_fast_node_lookup() const;
+        bool valid_fast_node_lookup() const;
+
         //Validation
         bool valid_node_id(RRNodeId node) const;
         bool valid_edge_id(RREdgeId edge) const;
@@ -143,6 +154,10 @@ class RRGraph {
 
         //Misc.
         bool dirty_ = false;
+
+        //Fast look-up 
+        typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
+        mutable NodeLookup node_lookup_; //[0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1]
 };
 
 #endif
