@@ -107,6 +107,11 @@ RRGraph::edge_range RRGraph::node_out_edges(RRNodeId node) const {
     return vtr::make_range(node_out_edges_[node].begin(), node_out_edges_[node].end());
 }
 
+RRGraph::edge_range RRGraph::node_in_edges(RRNodeId node) const {
+    VTR_ASSERT(valid_node_id(node));
+    return vtr::make_range(node_in_edges_[node].begin(), node_in_edges_[node].end());
+}
+
 //Edge attributes
 RRNodeId RRGraph::edge_src_node(RREdgeId edge) const {
     VTR_ASSERT(valid_edge_id(edge));

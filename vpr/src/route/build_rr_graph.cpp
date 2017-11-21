@@ -72,6 +72,8 @@ struct t_pin_loc {
 
 
 /********************* Subroutines local to this module. *******************/
+RRGraph convert_rr_graph();
+
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
         const vtr::Matrix<int>& Fc, const t_type_ptr Type, const std::vector<bool>& perturb_switch_pattern,
         const e_directionality directionality,
@@ -301,8 +303,83 @@ RRGraph create_rr_graph(
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf, det_routing_arch->num_segment);
     }
 
-    return RRGraph();
+    return convert_rr_graph();
 
+}
+
+//TODO: remove when this conversion (from traditional to new data structure) is no longer needed
+RRGraph convert_rr_graph() {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    RRGraph rr_graph;
+
+    //Create the switches
+    std::map<int,RRSwitchId> old_to_new_rr_switch;
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+        const auto& node = device_ctx.rr_nodes[inode];
+        for (int iedge = 0; iedge < node.num_edges(); ++iedge) {
+            short iswitch = node.edge_switch(iedge);
+
+            if (!old_to_new_rr_switch.count(iswitch)) { //Only create the switch once
+                RRSwitchId rr_switch = rr_graph.create_switch(device_ctx.rr_switch_inf[iswitch]);
+
+                VTR_ASSERT(!old_to_new_rr_switch.count(iswitch));
+                old_to_new_rr_switch[iswitch] = rr_switch;
+            }
+        }
+    }
+
+    //Create the nodes
+    std::map<int,RRNodeId> old_to_new_rr_node;
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+        auto& node = device_ctx.rr_nodes[inode];
+        RRNodeId rr_node = rr_graph.create_node(node.type());
+
+        rr_graph.set_node_xlow(rr_node, node.xlow());
+        rr_graph.set_node_ylow(rr_node, node.ylow());
+        rr_graph.set_node_xhigh(rr_node, node.xhigh());
+        rr_graph.set_node_yhigh(rr_node, node.yhigh());
+
+        rr_graph.set_node_capacity(rr_node, node.capacity());
+
+        rr_graph.set_node_ptc_num(rr_node, node.ptc_num());
+
+        rr_graph.set_node_cost_index(rr_node, node.cost_index());
+
+        if (node.type() == CHANX || node.type() == CHANY) {
+            rr_graph.set_node_direction(rr_node, node.direction());
+        }
+        if (node.type() == IPIN || node.type() == OPIN) {
+            rr_graph.set_node_side(rr_node, node.side());
+        }
+        rr_graph.set_node_R(rr_node, node.R());
+        rr_graph.set_node_C(rr_node, node.C());
+        
+        VTR_ASSERT(!old_to_new_rr_node.count(inode));
+        old_to_new_rr_node[inode] = rr_node;
+    }
+
+    //Create the edges
+    std::map<std::pair<int,int>,RREdgeId> old_to_new_rr_edge; //Key: {inode,iedge}
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+        const auto& node = device_ctx.rr_nodes[inode];
+        for (int iedge = 0; iedge < node.num_edges(); ++iedge) {
+
+            int isink_node = node.edge_sink_node(iedge);
+            int iswitch = node.edge_switch(iedge);
+
+            VTR_ASSERT(old_to_new_rr_node.count(inode));
+            VTR_ASSERT(old_to_new_rr_node.count(isink_node));
+            VTR_ASSERT(old_to_new_rr_switch.count(iswitch));
+            
+            RREdgeId rr_edge = rr_graph.create_edge(old_to_new_rr_node[inode], old_to_new_rr_node[isink_node], old_to_new_rr_switch[iswitch]);
+
+            auto key = std::make_pair(inode, iedge);
+            VTR_ASSERT(!old_to_new_rr_edge.count(key));
+            old_to_new_rr_edge[key] = rr_edge;
+        }
+    }
+    return rr_graph;
 }
 
 static void build_rr_graph(

@@ -10,5 +10,5 @@ struct rr_switch_id_tag;
 
 typedef vtr::StrongId<rr_node_id_tag> RRNodeId;
 typedef vtr::StrongId<rr_edge_id_tag> RREdgeId;
-typedef vtr::StrongId<rr_switch_id_tag> RRSwitchId;
+typedef vtr::StrongId<rr_switch_id_tag,short> RRSwitchId;
 #endif
