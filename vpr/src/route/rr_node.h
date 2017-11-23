@@ -2,7 +2,6 @@
 #define RR_NODE_H
 #include <memory>
 #include "vpr_types.h"
-
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
@@ -52,8 +51,9 @@ class t_rr_node {
         const char *type_string() const; /* Retrieve type as a string */
 
         short num_edges() const { return num_edges_; }
-        int edge_sink_node(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edge_sink_nodes_[iedge]; }
-        short edge_switch(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edge_switches_[iedge]; }
+        int edge_sink_node(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
+        short edge_switch(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_type; }
+        bool edge_is_configurable(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].is_configurable; }
         short fan_in() const;
 
         short xlow() const;
@@ -79,12 +79,14 @@ class t_rr_node {
         float R() const { return R_; }
         float C() const { return C_; }
 
+
     public: //Mutators
         void set_type(t_rr_type new_type);
 
-        void set_num_edges(short);
+        void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
+        void set_edge_is_configurable(short iedge, bool is_configurable);
         void set_fan_in(short);
 
         void set_coordinates(short x1, short y1, short x2, short y2);
@@ -105,6 +107,22 @@ class t_rr_node {
         void set_R(float new_R);
         void set_C(float new_C);
 
+    private: //Types
+        //The edge information is stored in a structure to economize on the number of pointers held
+        //by t_rr_node (to save memory), and is not exposed externally
+        struct t_rr_edge {
+            int sink_node = -1; //The ID of the sink RR node associated with this edge
+
+            short switch_type = -1; //The ID of the switch type this edge represents
+
+            bool is_configurable = true; //True if the edges switch is configurable (i.e. whether 
+                                         // the switch can be turned on or off). False indicates
+                                         // that this edge is a non-configurable 'switch'.
+                                         // This allows us to model non-optional switches (e.g. 
+                                         // fixed buffers, or shorted connections) which must be 
+                                         // expanded by the router.
+        };
+
     private: //Data
         short xlow_ = -1;
         short ylow_ = -1;
@@ -123,10 +141,9 @@ class t_rr_node {
         float R_ = 0.;
         float C_ = 0.;
 
-        //Note: we use plain arrays and a single size counter to save space vs std::vector
+        //Note: we use a plain array and a single size counter to save space vs std::vector
         //      (using two std::vector's nearly doubles the size of the class)
-        std::unique_ptr<int[]> edge_sink_nodes_ = nullptr;
-        std::unique_ptr<short[]> edge_switches_ = nullptr;
+        std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
         short num_edges_ = 0;
 
         union {

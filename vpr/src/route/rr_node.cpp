@@ -167,8 +167,7 @@ void t_rr_node::set_num_edges(short new_num_edges) {
     VTR_ASSERT(new_num_edges >= 0);
     num_edges_ = new_num_edges;
 
-    edge_sink_nodes_ = std::make_unique<int[]>(num_edges_);
-    edge_switches_ = std::make_unique<short[]>(num_edges_);
+    edges_ = std::make_unique<t_rr_edge[]>(num_edges_);
 }
 
 void t_rr_node::set_direction(e_direction new_direction) {
@@ -196,11 +195,16 @@ void t_rr_node::set_C(float new_C) {
 void t_rr_node::set_edge_sink_node(short iedge, int sink_node) { 
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(sink_node >= 0);
-    edge_sink_nodes_[iedge] = sink_node; 
+    edges_[iedge].sink_node = sink_node; 
 }
 
 void t_rr_node::set_edge_switch(short iedge, short switch_index) { 
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(switch_index >= 0);
-    edge_switches_[iedge] = switch_index; 
+    edges_[iedge].switch_type = switch_index; 
+}
+
+void t_rr_node::set_edge_is_configurable(short iedge, bool is_configurable) { 
+    VTR_ASSERT(iedge < num_edges());
+    edges_[iedge].is_configurable = is_configurable; 
 }
