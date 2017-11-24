@@ -389,6 +389,12 @@ enum class e_sb_type {
     TURNS       //Turning connections only
 };
 
+enum class e_sb_switch_override {
+    DEFAULT_SWITCH, //Use the default switch type (e.g. from the segment type)
+    SHORT_SWITCH, //Use the special 'short' type switch (e.g. electrically short two segments together)
+    NO_SWITCH //Do not create any switches
+};
+
 /* Describes the type for a physical logic block
  * name: unique identifier for type  
  * num_pins: Number of pins for the block
@@ -456,6 +462,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     std::vector<t_fc_specification> fc_specs;
 
     vtr::Matrix<e_sb_type> switchblock_locations;
+    vtr::Matrix<e_sb_switch_override> switchblock_switch_overrides;
 
 	/* Clustering info */
 	t_pb_type *pb_type = nullptr;

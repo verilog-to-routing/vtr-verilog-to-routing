@@ -1761,7 +1761,7 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
 static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_type_descriptor* type, const pugiutil::loc_data& loc_data) {
     VTR_ASSERT(type);
 
-    std::string pattern = get_attribute(switchblock_locations, "pattern", loc_data, OPTIONAL).as_string("external_full_internal_straight");
+    std::string pattern = get_attribute(switchblock_locations, "pattern", loc_data, OPTIONAL).as_string("external_full_internal_shorted");
 
     if (switchblock_locations) {
         expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
@@ -1771,6 +1771,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
     size_t width = type->width;
     size_t height = type->height;
     type->switchblock_locations = vtr::Matrix<e_sb_type>({{width, height}}, e_sb_type::NONE);
+    type->switchblock_switch_overrides = vtr::Matrix<e_sb_switch_override>({{width, height}}, e_sb_switch_override::DEFAULT_SWITCH);
 
     if (pattern == "custom") {
         //Load a custom pattern specified with <sb_loc> tags
@@ -1802,6 +1803,22 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
                         sb_type_str.c_str());
             }
 
+            //Determine the switch type
+            std::string sb_switch_override_str = get_attribute(sb_loc, "switch_override", loc_data, OPTIONAL).as_string("default");
+            e_sb_switch_override sb_switch_override = e_sb_switch_override::DEFAULT_SWITCH;
+            if (sb_switch_override_str == "default") {
+                sb_switch_override = e_sb_switch_override::DEFAULT_SWITCH;
+            } else if (sb_switch_override_str == "short") {
+                sb_switch_override = e_sb_switch_override::SHORT_SWITCH;
+            } else if (sb_switch_override_str == "none") {
+                sb_switch_override = e_sb_switch_override::NO_SWITCH;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                        "Invalid <sb_loc> 'switch_override' attribute '%s'\n",
+                        sb_switch_override_str.c_str());
+            }
+
+
             //Get the horizontal offset
             size_t xoffset = get_attribute(sb_loc, "xoffset", loc_data, OPTIONAL).as_uint(0);
             if (xoffset > width - 1) {
@@ -1827,6 +1844,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
 
             //Set the custom sb location and type
             type->switchblock_locations[xoffset][yoffset] = sb_type;
+            type->switchblock_switch_overrides[xoffset][yoffset] = sb_switch_override;
             assigned_locs[xoffset][yoffset] = true; //Mark the location as set for error detection
         }
     } else { //Non-custom patterns
@@ -1887,6 +1905,25 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             size_t xoffset = width - 1;
             for (yoffset = 0; yoffset < height; ++yoffset) {
                 type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+            }
+
+        } else if (pattern == "external_full_internal_shorted") {
+            //Fill all locations with straight shorted connections
+            type->switchblock_locations.fill(e_sb_type::STRAIGHT);
+            type->switchblock_switch_overrides.fill(e_sb_switch_override::SHORT_SWITCH);
+
+            //Mark top edge as full with default switches
+            size_t yoffset = height - 1;
+            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+                type->switchblock_switch_overrides[xoffset][yoffset] = e_sb_switch_override::DEFAULT_SWITCH;
+            }
+
+            //Mark right edge as full with default switches
+            size_t xoffset = width - 1;
+            for (yoffset = 0; yoffset < height; ++yoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+                type->switchblock_switch_overrides[xoffset][yoffset] = e_sb_switch_override::DEFAULT_SWITCH;
             }
 
         } else if (pattern == "none") {
