@@ -1131,6 +1131,19 @@ static void add_to_heap_expand_non_configurable(const float criticality_fac, con
 
     if (next) {
         add_to_heap(next);
+
+        //Consider any non-configurable edges which must be expanded for correctness
+        auto& device_ctx = g_vpr_ctx.device();
+        for (int iconn_next = 0; iconn_next < device_ctx.rr_nodes[to_node].num_edges(); ++iconn_next) {
+            bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
+            int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
+
+            if (!edge_configurable) { //Forced expansion
+                add_to_heap_expand_non_configurable(criticality_fac, bend_cost, astar_fac,
+                        budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                        next, to_node, to_to_node, iconn_next, target_node);
+            }
+        }
     }
 }
 
@@ -1190,7 +1203,9 @@ static t_heap* timing_driven_expand_node(const float criticality_fac, const floa
         new_tot_cost += pow(max(zero, min_delay - new_tot_cost), 2) / 100e-12;
     }
 
-	if (new_tot_cost >= route_ctx.rr_node_route_inf[to_node].path_cost) {
+    bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
+	if (new_tot_cost >= route_ctx.rr_node_route_inf[to_node].path_cost && edge_configurable) {
+        //Don't expand if the cost is higher, provided the edge is configurable (i.e. optional so we don't HAVE to expand it)
 		return nullptr;
     }
 
