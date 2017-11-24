@@ -276,9 +276,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    vpr_init_graphics(vpr_setup, arch);
-
     vpr_create_device_grid(vpr_setup, arch);
+
+    vpr_init_graphics(vpr_setup, arch);
 
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
