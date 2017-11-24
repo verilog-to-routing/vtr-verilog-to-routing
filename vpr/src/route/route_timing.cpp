@@ -128,10 +128,13 @@ static void timing_driven_expand_neighbours(t_heap *current,
         float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
         float target_delay, float short_path_crit);
 
-static bool timing_driven_update_expansion_costs(const float criticality_fac, const float bend_cost, const float astar_fac,
+static void add_to_heap_expand_non_configurable(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
-        t_heap* next);
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
+
+static t_heap* timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
         float criticality_fac, float R_upstream);
@@ -1111,26 +1114,31 @@ static void timing_driven_expand_neighbours(t_heap *current,
             }
         }
 
-        t_heap* next = alloc_heap_data();
-
-        bool add_node = timing_driven_update_expansion_costs(criticality_fac, bend_cost, astar_fac,
+        add_to_heap_expand_non_configurable(criticality_fac, bend_cost, astar_fac,
                 budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                current, inode, to_node, iconn, target_node,
-                next);
-
-        if (add_node) {
-            add_to_heap(next);
-        } else {
-            free_heap_data(next);
-        }
+                current, inode, to_node, iconn, target_node);
     } /* End for all neighbours */
 }
 
-//Updates the cost fields of 'next' based on expansion to 'node' from the node assicated with 'current'
-static bool timing_driven_update_expansion_costs(const float criticality_fac, const float bend_cost, const float astar_fac,
+//Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
+static void add_to_heap_expand_non_configurable(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
-        t_heap* next) {
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
+
+    t_heap* next = timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
+            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+            current, from_node, to_node, iconn, target_node);
+
+    if (next) {
+        add_to_heap(next);
+    }
+}
+
+//Updates the cost fields of 'next' based on expansion to 'node' from the node assicated with 'current'
+//Returns true if next should be added to the heap
+static t_heap* timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -1183,10 +1191,11 @@ static bool timing_driven_update_expansion_costs(const float criticality_fac, co
     }
 
 	if (new_tot_cost >= route_ctx.rr_node_route_inf[to_node].path_cost) {
-		return false;
+		return nullptr;
     }
 
     //Update next
+    t_heap* next = alloc_heap_data();
     next->index = to_node;
     next->cost = new_tot_cost;
     next->u.prev_node = from_node;
@@ -1200,8 +1209,9 @@ static bool timing_driven_update_expansion_costs(const float criticality_fac, co
     //route_ctx.rr_node_route_inf[to_node].path_cost = new_tot_cost;
     //route_ctx.rr_node_route_inf[to_node].backward_path_cost = new_back_pcost;
 
-    return true;
+    return next;
 }
+
 
 static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
 
