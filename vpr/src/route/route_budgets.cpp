@@ -669,7 +669,7 @@ void route_budgets::print_temporary_budgets_to_file(vtr::vector_map<ClusterNetId
     }
 }
 
-bool route_budgets::if_set() {
+bool route_budgets::if_set() const {
     /*Returns if the budgets have been loaded yet*/
     return set;
 }

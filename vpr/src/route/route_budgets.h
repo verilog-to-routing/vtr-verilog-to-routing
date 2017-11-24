@@ -32,7 +32,7 @@ public:
     float get_min_delay_budget(ClusterNetId net_id, int ipin);
     float get_max_delay_budget(ClusterNetId net_id, int ipin);
     float get_crit_short_path(ClusterNetId net_id, int ipin);
-    bool if_set();
+    bool if_set() const;
 
     /*main loader function*/
     void load_route_budgets(vtr::vector_map<ClusterNetId, float *> &net_delay,
