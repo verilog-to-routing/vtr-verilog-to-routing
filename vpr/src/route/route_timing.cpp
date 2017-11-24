@@ -128,6 +128,11 @@ static void timing_driven_expand_neighbours(t_heap *current,
         float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
         float target_delay, float short_path_crit);
 
+static bool timing_driven_update_expansion_costs(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
+        t_heap* next);
+
 static float get_timing_driven_expected_cost(int inode, int target_node,
         float criticality_fac, float R_upstream);
 
@@ -1057,12 +1062,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    float new_R_upstream;
-
     int inode = current->index;
-    float old_back_pcost = current->backward_path_cost;
-    float R_upstream = current->R_upstream;
-    int num_edges = device_ctx.rr_nodes[inode].num_edges();
 
     int target_xlow = device_ctx.rr_nodes[target_node].xlow();
     int target_ylow = device_ctx.rr_nodes[target_node].ylow();
@@ -1071,6 +1071,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
 
     bool high_fanout = num_sinks >= HIGH_FANOUT_NET_LIM;
 
+    int num_edges = device_ctx.rr_nodes[inode].num_edges();
     for (int iconn = 0; iconn < num_edges; iconn++) {
         int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
 
@@ -1110,53 +1111,96 @@ static void timing_driven_expand_neighbours(t_heap *current,
             }
         }
 
-        /* new_back_pcost stores the "known" part of the cost to this node -- the   *
-         * congestion cost of all the routing resources back to the existing route  *
-         * plus the known delay of the total path back to the source.  new_tot_cost *
-         * is this "known" backward cost + an expected cost to get to the target.   */
+        t_heap* next = alloc_heap_data();
 
-        float new_back_pcost = old_back_pcost
-                + (1. - criticality_fac) * get_rr_cong_cost(to_node);
+        bool add_node = timing_driven_update_expansion_costs(criticality_fac, bend_cost, astar_fac,
+                budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                current, inode, to_node, iconn, target_node,
+                next);
 
-        int iswitch = device_ctx.rr_nodes[inode].edge_switch(iconn);
-        if (device_ctx.rr_switch_inf[iswitch].buffered) {
-            new_R_upstream = device_ctx.rr_switch_inf[iswitch].R;
+        if (add_node) {
+            add_to_heap(next);
         } else {
-            new_R_upstream = R_upstream + device_ctx.rr_switch_inf[iswitch].R;
+            free_heap_data(next);
         }
-
-        float Tdel = device_ctx.rr_nodes[to_node].C() * (new_R_upstream + 0.5 * device_ctx.rr_nodes[to_node].R());
-        Tdel += device_ctx.rr_switch_inf[iswitch].Tdel;
-        new_R_upstream += device_ctx.rr_nodes[to_node].R();
-        new_back_pcost += criticality_fac * Tdel;
-
-        if (bend_cost != 0.) {
-            t_rr_type from_type = device_ctx.rr_nodes[inode].type();
-            to_type = device_ctx.rr_nodes[to_node].type();
-            if ((from_type == CHANX && to_type == CHANY)
-                    || (from_type == CHANY && to_type == CHANX))
-                new_back_pcost += bend_cost;
-        }
-
-        float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
-                criticality_fac, new_R_upstream);
-        float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
-
-        float zero = 0.0;
-        //after budgets are loaded, calculate delay cost as described by RCV paper        
-        /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
-         * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
-         * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
-        if (budgeting_inf.if_set()) {
-            new_tot_cost += (short_path_crit + criticality_fac) * max(zero, target_delay - new_tot_cost);
-            new_tot_cost += pow(max(zero, new_tot_cost - max_delay), 2) / 100e-12;
-            new_tot_cost += pow(max(zero, min_delay - new_tot_cost), 2) / 100e-12;
-        }
-
-        node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
-                new_R_upstream);
-
     } /* End for all neighbours */
+}
+
+//Updates the cost fields of 'next' based on expansion to 'node' from the node assicated with 'current'
+static bool timing_driven_update_expansion_costs(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
+        t_heap* next) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    float new_R_upstream;
+
+    int inode = current->index;
+    float old_back_pcost = current->backward_path_cost;
+    float R_upstream = current->R_upstream;
+    /* new_back_pcost stores the "known" part of the cost to this node -- the   *
+     * congestion cost of all the routing resources back to the existing route  *
+     * plus the known delay of the total path back to the source.  new_tot_cost *
+     * is this "known" backward cost + an expected cost to get to the target.   */
+
+    float new_back_pcost = old_back_pcost
+            + (1. - criticality_fac) * get_rr_cong_cost(to_node);
+
+    int iswitch = device_ctx.rr_nodes[inode].edge_switch(iconn);
+    if (device_ctx.rr_switch_inf[iswitch].buffered) {
+        new_R_upstream = device_ctx.rr_switch_inf[iswitch].R;
+    } else {
+        new_R_upstream = R_upstream + device_ctx.rr_switch_inf[iswitch].R;
+    }
+
+    float Tdel = device_ctx.rr_nodes[to_node].C() * (new_R_upstream + 0.5 * device_ctx.rr_nodes[to_node].R());
+    Tdel += device_ctx.rr_switch_inf[iswitch].Tdel;
+    new_R_upstream += device_ctx.rr_nodes[to_node].R();
+    new_back_pcost += criticality_fac * Tdel;
+
+    if (bend_cost != 0.) {
+        t_rr_type from_type = device_ctx.rr_nodes[inode].type();
+        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
+        if ((from_type == CHANX && to_type == CHANY)
+                || (from_type == CHANY && to_type == CHANX))
+            new_back_pcost += bend_cost;
+    }
+
+    float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
+            criticality_fac, new_R_upstream);
+    float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
+
+    float zero = 0.0;
+    //after budgets are loaded, calculate delay cost as described by RCV paper        
+    /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
+     * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
+     * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
+    if (budgeting_inf.if_set()) {
+        new_tot_cost += (short_path_crit + criticality_fac) * max(zero, target_delay - new_tot_cost);
+        new_tot_cost += pow(max(zero, new_tot_cost - max_delay), 2) / 100e-12;
+        new_tot_cost += pow(max(zero, min_delay - new_tot_cost), 2) / 100e-12;
+    }
+
+	if (new_tot_cost >= route_ctx.rr_node_route_inf[to_node].path_cost) {
+		return false;
+    }
+
+    //Update next
+    next->index = to_node;
+    next->cost = new_tot_cost;
+    next->u.prev_node = from_node;
+    next->prev_edge = iconn;
+    next->backward_path_cost = new_back_pcost;
+    next->R_upstream = new_R_upstream;
+
+    //Update route inf
+    //route_ctx.rr_node_route_inf[to_node].prev_node = from_node;
+    //route_ctx.rr_node_route_inf[to_node].prev_edge = iconn;
+    //route_ctx.rr_node_route_inf[to_node].path_cost = new_tot_cost;
+    //route_ctx.rr_node_route_inf[to_node].backward_path_cost = new_back_pcost;
+
+    return true;
 }
 
 static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
