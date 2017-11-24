@@ -22,15 +22,16 @@
  *             resistance to ground from this node, including the           *
  *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
 struct t_heap {
-	union {
-		int prev_node;
-		t_heap *next;
-	} u;
-	float cost;
-	float backward_path_cost;
-	float R_upstream;
-	int index;
-	int prev_edge;
+    struct U {
+		int prev_node = NO_PREVIOUS;
+		t_heap *next = nullptr;
+	};
+    U u;
+	float cost = 0.;
+	float backward_path_cost = 0.;
+	float R_upstream = 0.;
+	int index = OPEN;
+	int prev_edge = NO_PREVIOUS;
 };
 
 /******* Subroutines in route_common used only by other router modules ******/
@@ -50,6 +51,8 @@ float get_rr_cong_cost(int inode);
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
+void add_to_heap(t_heap *hptr);
+t_heap *alloc_heap_data(void);
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
 

@@ -98,8 +98,6 @@ static vtr::t_chunk linked_f_pointer_ch;
 /******************** Subroutines local to route_common.c *******************/
 
 
-static void add_to_heap(t_heap *hptr);
-static t_heap *alloc_heap_data(void);
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
@@ -792,6 +790,11 @@ void free_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	if(heap != NULL) {
+        //Free the individiaul heap elements (calls destructors)
+        for (int i = 1; i < num_heap_allocated; i++) {
+            chunk_delete(heap[i], &heap_ch);
+        }
+
         // coverity[offset_free : Intentional]
 		free(heap + 1);
 	}
@@ -1151,7 +1154,7 @@ namespace heap_ {
 	}
 }
 // adds to heap and maintains heap quality
-static void add_to_heap(t_heap *hptr) {
+void add_to_heap(t_heap *hptr) {
 	heap_::expand_heap_if_full();
 	// start with undefined hole
 	++heap_tail;	
@@ -1207,14 +1210,13 @@ void empty_heap(void) {
 	heap_tail = 1;
 }
 
-static t_heap *
+t_heap *
 alloc_heap_data(void) {
 
 	t_heap *temp_ptr;
 
 	if (heap_free_head == NULL) { /* No elements on the free list */
-		heap_free_head = (t_heap *) vtr::chunk_malloc(sizeof(t_heap),&heap_ch);
-		heap_free_head->u.next = NULL;
+		heap_free_head = vtr::chunk_new<t_heap>(&heap_ch);
 	}
 
 	temp_ptr = heap_free_head;
