@@ -26,6 +26,23 @@ namespace vtr {
     void* chunk_malloc(size_t size, t_chunk *chunk_info);
     void free_chunk_memory(t_chunk *chunk_info);
 
+    //Like chunk_malloc, but with proper C++ object initialization
+    template<typename T>
+    T* chunk_new(t_chunk *chunk_info) {
+        void* block = chunk_malloc(sizeof(T), chunk_info);
+
+        return new (block) T(); //Placement new
+    }
+
+    //Call the destructor of an obj which must have been allocated in the specified chunk
+    template<typename T>
+    void chunk_delete(T* obj, t_chunk * /*chunk_info*/) {
+        if (obj) {
+            obj->~T(); //Manually call destructor
+            //Currently we don't mark the unused memory as free
+        }
+    }
+
     //Cross platform wrapper around GNU's malloc_trim()
     // TODO: This is only used in one place within VPR, consider removing it
     int malloc_trim(size_t pad);
