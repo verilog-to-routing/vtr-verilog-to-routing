@@ -110,10 +110,13 @@ void check_rr_graph(const t_graph_type graph_type,
                     /* Between two wire segments.  Two connections are legal only if  *
                      * one connection is a buffer and the other is a pass transistor. */
 
-                else if (num_edges_from_current_to_node[to_node] != 2
-                        || switch_types_from_current_to_node[to_node] != BUF_AND_PTRANS_FLAG) {
+                else if (num_edges_from_current_to_node[to_node] != 2) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "in check_rr_graph: node %d connects to node %d %d times.\n", inode, to_node, num_edges_from_current_to_node[to_node]);
+                }
+                else if (switch_types_from_current_to_node[to_node] != BUF_AND_PTRANS_FLAG) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_graph: node %d connects to node %d %d times but not BUF_AND_PTRANS_FLAG.\n", inode, to_node, num_edges_from_current_to_node[to_node]);
                 }
             }
 
