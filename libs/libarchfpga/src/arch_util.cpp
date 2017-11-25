@@ -1115,8 +1115,16 @@ void SyncModelsPbTypes_rec(t_arch *arch,
 						model_port->min_size = pb_type->ports[p].num_pins;
 					}
 					pb_type->ports[p].model_port = model_port;
-					VTR_ASSERT(pb_type->ports[p].type == model_port->dir);
-					VTR_ASSERT(pb_type->ports[p].is_clock == model_port->is_clock);
+					if(pb_type->ports[p].type != model_port->dir) {
+						archfpga_throw(get_arch_file_name(), 0,
+								"Direction for port '%s' on model does not match port direction in pb_type '%s'\n",
+								pb_type->ports[p].name, pb_type->name);
+					}
+					if(pb_type->ports[p].is_clock != model_port->is_clock) {
+						archfpga_throw(get_arch_file_name(), 0,
+								"Port '%s' on model does not match is_clock in pb_type '%s'\n",
+								pb_type->ports[p].name, pb_type->name);
+					}
 					found = true;
 				}
 				model_port = model_port->next;
@@ -1131,8 +1139,13 @@ void SyncModelsPbTypes_rec(t_arch *arch,
 							|| model_port->min_size == -1) {
 						model_port->min_size = pb_type->ports[p].num_pins;
 					}
+
 					pb_type->ports[p].model_port = model_port;
-					VTR_ASSERT(pb_type->ports[p].type == model_port->dir);
+					if(pb_type->ports[p].type != model_port->dir) {
+						archfpga_throw(get_arch_file_name(), 0,
+								"Direction for port '%s' on model does not match port direction in pb_type '%s'\n",
+								pb_type->ports[p].name, pb_type->name);
+					}
 					found = true;
 				}
 				model_port = model_port->next;
