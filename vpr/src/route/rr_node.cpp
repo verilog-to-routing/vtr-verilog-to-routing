@@ -62,8 +62,12 @@ short t_rr_node::fan_in() const {
 	return fan_in_;
 }
 
+bool t_rr_node::has_direction() const {
+    return (type() == CHANX) || (type() == CHANY);
+
+}
 e_direction t_rr_node::direction() const {
-    if (type() != CHANX && type() != CHANY) {
+    if (!has_direction()) {
         VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", type_string());
     }
 	return dir_side_.direction;
