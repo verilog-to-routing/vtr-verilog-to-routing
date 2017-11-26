@@ -35,6 +35,7 @@
 #include "vtr_log.h"
 #include "rr_graph_writer.h"
 #include "check_rr_graph.h"
+#include "echo_files.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -175,6 +176,10 @@ void load_rr_file(const t_graph_type graph_type,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
 
         process_seg_id(next_component, loc_data);
+
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
+		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
+	}
 
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types, segment_inf);
 
