@@ -50,6 +50,8 @@ void dump_rr_structs( const char *filename ){
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "couldn't open file \"%s\" for dumping rr structs\n", filename);
 	}
 
+	cout << "Dumping to " << filename << endl;
+
 	/* dump rr nodes */
 	cout << "Dumping rr nodes" << endl;
 	dump_rr_nodes(fid);
