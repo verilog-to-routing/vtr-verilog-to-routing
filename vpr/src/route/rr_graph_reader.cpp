@@ -268,7 +268,6 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         auto& node = device_ctx.rr_nodes[i];
 
         const char* node_type = get_attribute(rr_node, "type", loc_data).as_string();
-        t_rr_type newType = NUM_RR_TYPES;
         if (strcmp(node_type, "CHANX") == 0) {
             node.set_type(CHANX);
         } else if (strcmp(node_type, "CHANY") == 0) {
@@ -286,7 +285,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
                     "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
         }
 
-        if (newType == CHANX || newType == CHANY) {
+        if (node.type() == CHANX || node.type() == CHANY) {
             const char* correct_direction = get_attribute(rr_node, "direction", loc_data).as_string();
             if (strcmp(correct_direction, "INC_DIR") == 0) {
                 node.set_direction(INC_DIRECTION);
@@ -311,7 +310,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         y1 = get_attribute(locSubnode, "ylow", loc_data).as_float();
         y2 = get_attribute(locSubnode, "yhigh", loc_data).as_float();
 
-        if (newType == IPIN || newType == OPIN) {
+        if (node.type() == IPIN || node.type() == OPIN) {
             e_side side;
             std::string side_str = get_attribute(locSubnode, "side", loc_data).as_string();
             if (side_str == "LEFT") {
