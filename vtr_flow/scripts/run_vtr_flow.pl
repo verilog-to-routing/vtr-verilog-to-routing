@@ -73,6 +73,7 @@ sub find_and_move_newest;
 sub exe_for_platform;
 
 my $temp_dir = "./temp";
+my $diff_exec = "diff";
 
 my $stage_idx_odin   = 1;
 my $stage_idx_abc    = 2;
@@ -671,7 +672,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 &find_and_move_newest("$benchmark_name", "place");
             }
         }
-        my $rr_graph_out_file = "RR_graph_result.xml";
+        my $rr_graph_out_file = "rr_graph.xml";
+        my $rr_graph_out_file2 = "rr_graph.2.xml";
 		my @vpr_args;
 		push( @vpr_args, $architecture_file_name );
 		push( @vpr_args, "$benchmark_name" );
@@ -776,6 +778,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 }
                 push( @vpr_args, "--read_rr_graph" );				  
                 push( @vpr_args, $rr_graph_out_file);
+                push( @vpr_args, "--write_rr_graph" );				  
+                push( @vpr_args, $rr_graph_out_file2);
             }
             push( @vpr_args, "--routing_budgets_algorithm" );
             push( @vpr_args, "$routing_budgets_algorithm");
@@ -796,6 +800,26 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                     $timeout,  $temp_dir,
                     @vpr_args
             );
+
+            if ($verify_rr_graph) {
+                #Sanity check that the RR graph produced after reading the
+                #previously dumped RR graph is identical
+
+                my @diff_args;
+                push(@diff_args, $rr_graph_out_file);
+                push(@diff_args, $rr_graph_out_file2);
+
+                my $diff_result = &system_with_timeout(
+                                    $diff_exec, "diff.rr_graph.out",
+                                    $timeout,  $temp_dir,
+                                    @diff_args
+                            );
+
+                if ($diff_result ne "success") {
+                    print(" RR Graph XML output not consistent when reloaded ");
+                    $error_code = 1;
+                }
+            }
         }
     }
 	
