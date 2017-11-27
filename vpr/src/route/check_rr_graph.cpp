@@ -18,7 +18,7 @@
 
 static bool rr_node_is_global_clb_ipin(int inode);
 
-static void check_pass_transistors(int from_node);
+static void check_unbuffered_edges(int from_node);
 
 static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid);
 
@@ -124,7 +124,7 @@ void check_rr_graph(const t_graph_type graph_type,
         }
 
         /* Slow test could leave commented out most of the time. */
-        check_pass_transistors(inode);
+        check_unbuffered_edges(inode);
 
     } /* End for all rr_nodes */
 
@@ -467,7 +467,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
 }
 
-static void check_pass_transistors(int from_node) {
+static void check_unbuffered_edges(int from_node) {
 
     /* This routine checks that all pass transistors in the routing truly are  *
      * bidirectional.  It may be a slow check, so don't use it all the time.   */
@@ -514,10 +514,10 @@ static void check_pass_transistors(int from_node) {
 
         if (trans_matched == false) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "in check_pass_transistors:\n"
-                    "connection from node %d to node %d uses a pass transistor (switch type %d)\n"
-                    "but there is no corresponding pass transistor edge in the other direction.\n",
-                    from_node, to_node, from_switch_type);
+                    "in check_unbuffered_edges:\n"
+                    "connection from node %d to node %d uses an unbuffered switch (switch type %d '%s')\n"
+                    "but there is no corresponding unbuffered switch edge in the other direction.\n",
+                    from_node, to_node, from_switch_type, device_ctx.rr_switch_inf[from_switch_type].name);
         }
 
     } /* End for all from_node edges */
