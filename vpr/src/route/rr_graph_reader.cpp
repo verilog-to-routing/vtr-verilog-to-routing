@@ -202,7 +202,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
     while (Switch) {
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
-        rr_switch.name = get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(NULL);
+        rr_switch.name = vtr::strdup(get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(NULL));
         rr_switch.buffered = get_attribute(Switch, "buffered", loc_data).as_bool();
         SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
         if (SwitchSubnode) {
