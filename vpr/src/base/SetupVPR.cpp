@@ -252,9 +252,8 @@ static void SetupSwitches(const t_arch& Arch,
     RoutingArch->wire_to_arch_ipin_switch = find_ipin_cblock_switch_index(Arch);
 
 	/* Depends on device_ctx.num_arch_switches */
-	RoutingArch->delayless_switch = device_ctx.num_arch_switches;
-	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
-	++device_ctx.num_arch_switches;
+	RoutingArch->delayless_switch = device_ctx.num_arch_switches++;
+	RoutingArch->shorted_switch = device_ctx.num_arch_switches++;
 
 	/* Alloc the list now that we know the final num_arch_switches value */
 	device_ctx.arch_switch_inf = new t_arch_switch_inf[device_ctx.num_arch_switches];
@@ -264,6 +263,7 @@ static void SetupSwitches(const t_arch& Arch,
 
 	/* Delayless switch for connecting sinks and sources with their pins. */
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_type(SwitchType::MUX);
+	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup("__vpr_delayless_switch__");
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
@@ -272,6 +272,22 @@ static void SetupSwitches(const t_arch& Arch,
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
 	device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size = 0.;
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
+
+	/* Shorted switch for connecting sinks and sources with their pins. */
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].set_type(SwitchType::SHORT);
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].name = vtr::strdup("__vpr_shorted_switch__");
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].R = 0.;
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].Cin = 0.;
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].Cout = 0.;
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].mux_trans_size = 0.;
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].buf_size_type = BufferSize::ABSOLUTE;
+	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].buf_size = 0.;
+    VTR_ASSERT_MSG(!device_ctx.arch_switch_inf[RoutingArch->shorted_switch].buffered(), "Shorted switch can not be buffered (isolating)");
+
+	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
 
     //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
     //VPR do not model the R/C's of block internal routing connectsion. 
