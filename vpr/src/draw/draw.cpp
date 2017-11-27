@@ -1187,6 +1187,7 @@ static void draw_rr_edges(int inode) {
 		to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 		to_type = device_ctx.rr_nodes[to_node].type();
 		to_ptc_num = device_ctx.rr_nodes[to_node].ptc_num();
+        bool edge_configurable = device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
 
 		switch (from_type) {
 
@@ -1254,6 +1255,8 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
+				} else if (!edge_configurable) {
+					setcolor(LIGHTGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
@@ -1267,6 +1270,8 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
+				} else if (!edge_configurable) {
+					setcolor(LIGHTGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
@@ -1314,6 +1319,8 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
+				} else if (!edge_configurable) {
+					setcolor(LIGHTGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
@@ -1327,6 +1334,8 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
+				} else if (!edge_configurable) {
+					setcolor(LIGHTGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
