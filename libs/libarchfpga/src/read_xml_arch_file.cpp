@@ -1809,7 +1809,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             if (sb_switch_override_str == "default") {
                 sb_switch_override = e_sb_switch_override::DEFAULT_SWITCH;
             } else if (sb_switch_override_str == "short") {
-                sb_switch_override = e_sb_switch_override::SHORT_SWITCH;
+                sb_switch_override = e_sb_switch_override::SHORTED_SWITCH;
             } else if (sb_switch_override_str == "none") {
                 sb_switch_override = e_sb_switch_override::NO_SWITCH;
             } else {
@@ -1910,7 +1910,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
         } else if (pattern == "external_full_internal_shorted") {
             //Fill all locations with straight shorted connections
             type->switchblock_locations.fill(e_sb_type::STRAIGHT);
-            type->switchblock_switch_overrides.fill(e_sb_switch_override::SHORT_SWITCH);
+            type->switchblock_switch_overrides.fill(e_sb_switch_override::SHORTED_SWITCH);
 
             //Mark top edge as full with default switches
             size_t yoffset = height - 1;

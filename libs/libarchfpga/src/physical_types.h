@@ -391,7 +391,7 @@ enum class e_sb_type {
 
 enum class e_sb_switch_override {
     DEFAULT_SWITCH, //Use the default switch type (e.g. from the segment type)
-    SHORT_SWITCH, //Use the special 'short' type switch (e.g. electrically short two segments together)
+    SHORTED_SWITCH, //Use the special 'short' type switch (e.g. electrically short two segments together)
     NO_SWITCH //Do not create any switches
 };
 
@@ -1004,9 +1004,10 @@ struct t_segment_inf {
 };
 
 enum class SwitchType {
-    TRISTATE,
-    MUX,
-    PASS_GATE
+    TRISTATE, //A tri-stateable buffer
+    MUX, //A (buffered) mux (uni-dir)
+    PASS_GATE, //A pass transitor switch (bi-dir)
+    SHORT //An electrically shorted connection (bi-dir)
 };
 
 enum class BufferSize {
