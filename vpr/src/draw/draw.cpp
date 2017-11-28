@@ -152,9 +152,11 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_
 									 short switch_type);
 static int get_track_num(int inode, const vtr::Matrix<int>& chanx_track, const vtr::Matrix<int>& chany_track);
 static bool draw_if_net_highlighted (ClusterNetId inet);
-static void draw_highlight_fan_in_fan_out(int hit_node);
+static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 static void highlight_nets(char *message, int hit_node);
 static int draw_check_rr_node_hit (float click_x, float click_y);
+static std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
+static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
 static bool highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_color(ClusterBlockId blk_id);
@@ -2062,12 +2064,13 @@ static void highlight_nets(char *message, int hit_node) {
  * fan_in into the node in blue and fan_out from the node in red. If de-highlighted,
  * de-highlight its fan_in and fan_out.
  */
-static void draw_highlight_fan_in_fan_out(int hit_node) {
+static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
 	int inode;
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
+#if 0
 	/* Highlight the fanout nodes in red. */
 	for (int iedge = 0, l = device_ctx.rr_nodes[hit_node].num_edges(); iedge < l; iedge++) {
 		int fanout_node = device_ctx.rr_nodes[hit_node].edge_sink_node(iedge);
@@ -2102,6 +2105,43 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 			}
 		}
 	}
+#else
+    for (auto node : nodes) {
+        /* Highlight the fanout nodes in red. */
+        for (int iedge = 0, l = device_ctx.rr_nodes[node].num_edges(); iedge < l; iedge++) {
+            int fanout_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+
+            if (draw_state->draw_rr_node[node].color == MAGENTA && draw_state->draw_rr_node[fanout_node].color != MAGENTA) {
+                // If node is highlighted, highlight its fanout
+                draw_state->draw_rr_node[fanout_node].color = DRIVES_IT_COLOR;
+                draw_state->draw_rr_node[fanout_node].node_highlighted = true;
+            } else if (draw_state->draw_rr_node[node].color == WHITE) {
+                // If node is de-highlighted, de-highlight its fanout
+                draw_state->draw_rr_node[fanout_node].color = DEFAULT_RR_NODE_COLOR;
+                draw_state->draw_rr_node[fanout_node].node_highlighted = false;
+            }
+        }
+
+        /* Highlight the nodes that can fanin to this node in blue. */
+        for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+            for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
+                int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+                if (fanout_node == node) { 
+                    if (draw_state->draw_rr_node[node].color == MAGENTA && draw_state->draw_rr_node[inode].color != MAGENTA) {
+                        // If node is highlighted, highlight its fanin
+                        draw_state->draw_rr_node[inode].color = BLUE;  
+                        draw_state->draw_rr_node[inode].node_highlighted = true;
+                    }
+                    else if (draw_state->draw_rr_node[node].color == WHITE) {
+                        // If node is de-highlighted, de-highlight its fanin
+                        draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+                        draw_state->draw_rr_node[inode].node_highlighted = false;
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
 
@@ -2174,6 +2214,26 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 	return hit_node;
 }
 
+static std::set<int> draw_expand_non_configurable_rr_nodes(int from_node) {
+    std::set<int> expanded_nodes;
+    draw_expand_non_configurable_rr_nodes_recurr(from_node, expanded_nodes);
+    return expanded_nodes;
+}
+
+static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    expanded_nodes.insert(from_node);
+
+    for (int iedge = 0; iedge < device_ctx.rr_nodes[from_node].num_edges(); ++iedge) {
+        bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iedge);
+        int to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
+
+        if (!edge_configurable && !expanded_nodes.count(to_node)) {
+            draw_expand_non_configurable_rr_nodes_recurr(to_node, expanded_nodes);
+        }
+    }
+}
 
 /* This routine is called when the routing resource graph is shown, and someone 
  * clicks outside a block. That click might represent a click on a wire -- we call
@@ -2185,7 +2245,6 @@ static bool highlight_rr_nodes(float x, float y) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	int hit_node = OPEN;  // i.e. -1, no node selected.
 	char message[250] = "";
 
 	if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
@@ -2195,39 +2254,42 @@ static bool highlight_rr_nodes(float x, float y) {
 	}
 
 	// Check which rr_node (if any) was clicked on.
-	hit_node = draw_check_rr_node_hit (x, y);
+	int hit_node = draw_check_rr_node_hit (x, y);
 
 	if (hit_node != OPEN) {
-		if (draw_state->draw_rr_node[hit_node].color != MAGENTA) {
-			/* If the node hasn't been clicked on before, highlight it
-			 * in magenta.
-			 */
-			draw_state->draw_rr_node[hit_node].color = MAGENTA;
-			draw_state->draw_rr_node[hit_node].node_highlighted = true;
+        auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
+        for (auto node : nodes) {
 
-            std::string info = describe_rr_node(hit_node);
+            if (draw_state->draw_rr_node[node].color != MAGENTA) {
+                /* If the node hasn't been clicked on before, highlight it
+                 * in magenta.
+                 */
+                draw_state->draw_rr_node[node].color = MAGENTA;
+                draw_state->draw_rr_node[node].node_highlighted = true;
 
-            sprintf(message, "Selected %s", info.c_str());
+            } else {
+                //Using white color to represent de-highlighting (or 
+                //de-selecting) of node.
+                draw_state->draw_rr_node[node].color = WHITE;
+                draw_state->draw_rr_node[node].node_highlighted = false;
+            }
 
-            rr_highlight_message = message;
-
-		} else {
-			/* Using white color to represent de-highlighting (or 
-			 * de-selecting) of node.
-			 */
-			draw_state->draw_rr_node[hit_node].color = WHITE;
-			draw_state->draw_rr_node[hit_node].node_highlighted = false;
-		}
-
-		print_rr_node(stdout, device_ctx.rr_nodes, hit_node);
-		if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-			// If rr_graph is shown, highlight the fan-in/fan-outs for
-			// this node.
-			draw_highlight_fan_in_fan_out(hit_node);
+            //Print info about all nodes to terminal
+            print_rr_node(stdout, device_ctx.rr_nodes, node);
         }
-   }
 
-	if (hit_node == OPEN) {
+        //Show info about hit node *only* to graphics
+        std::string info = describe_rr_node(hit_node);
+
+        sprintf(message, "Selected %s", info.c_str());
+        rr_highlight_message = message;
+
+        if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
+            // If rr_graph is shown, highlight the fan-in/fan-outs for
+            // this node.
+            draw_highlight_fan_in_fan_out(nodes);
+        }
+   } else {
 		update_message(draw_state->default_message);
         rr_highlight_message = "";
 		drawscreen();
