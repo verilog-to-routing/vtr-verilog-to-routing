@@ -2032,8 +2032,10 @@ static void get_switch_type(
         /* Take the smaller index unless the other 
          * pass_trans is bigger (smaller R). */
         if (used < 2) {
-            VPR_THROW(VPR_ERROR_ROUTE, "Used %d (min: %d max: %d)", used, min_switch, max_switch);
-	}
+            VPR_THROW(VPR_ERROR_ROUTE, 
+                    "Expected 2 switches (forward and back) between RR nodes (found %d switches, min switch index: %d max switch index: %d)",
+                    used, min_switch, max_switch);
+        }
         switch_types[used] = min_switch;
         if (device_ctx.arch_switch_inf[max_switch].R < device_ctx.arch_switch_inf[min_switch].R) {
             switch_types[used] = max_switch;
