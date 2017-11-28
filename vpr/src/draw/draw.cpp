@@ -1256,7 +1256,7 @@ static void draw_rr_edges(int inode) {
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else if (!edge_configurable) {
-					setcolor(LIGHTGREY);
+					setcolor(DARKGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
@@ -1271,7 +1271,7 @@ static void draw_rr_edges(int inode) {
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else if (!edge_configurable) {
-					setcolor(LIGHTGREY);
+					setcolor(DARKGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
@@ -1320,7 +1320,7 @@ static void draw_rr_edges(int inode) {
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else if (!edge_configurable) {
-					setcolor(LIGHTGREY);
+					setcolor(DARKGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
@@ -1335,7 +1335,7 @@ static void draw_rr_edges(int inode) {
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else if (!edge_configurable) {
-					setcolor(LIGHTGREY);
+					setcolor(DARKGREY);
 				} else {
 					setcolor(DARKGREEN);
                 }
