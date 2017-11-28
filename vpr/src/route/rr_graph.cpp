@@ -130,8 +130,11 @@ static void alloc_and_load_rr_graph(
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
-        const int delayless_switch, const enum e_directionality directionality,
-        const int wire_to_ipin_switch, bool * Fc_clipped,
+        const int wire_to_ipin_switch, 
+        const int delayless_switch,
+        const int shorted_switch,
+        const enum e_directionality directionality,
+        bool * Fc_clipped,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void load_uniform_connection_block_pattern(
@@ -181,7 +184,9 @@ static void build_rr_chan(
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
-        const int wire_to_ipin_switch, const enum e_directionality directionality);
+        const int wire_to_ipin_switch,
+        const int shorted_switch,
+        const enum e_directionality directionality);
 
 static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
                                         const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch);
@@ -227,8 +232,10 @@ static void build_rr_graph(
         const vector<t_switchblock_inf> switchblocks,
         const int num_seg_types, const int num_arch_switches,
         const t_segment_inf * segment_inf,
-        const int global_route_switch, const int delayless_switch,
+        const int global_route_switch,
         const int wire_to_arch_ipin_switch,
+        const int delayless_switch,
+        const int shorted_switch,
         const float R_minW_nmos,
         const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
@@ -280,8 +287,9 @@ void create_rr_graph(
                 num_arch_switches, 
                 segment_inf, 
                 det_routing_arch->global_route_switch, 
-                det_routing_arch->delayless_switch, 
                 det_routing_arch->wire_to_arch_ipin_switch,
+                det_routing_arch->delayless_switch, 
+                det_routing_arch->shorted_switch, 
                 det_routing_arch->R_minW_nmos,
                 det_routing_arch->R_minW_pmos,
                 base_cost_type,
@@ -312,9 +320,10 @@ static void build_rr_graph(
         const int num_seg_types, 
         const int num_arch_switches,
         const t_segment_inf * segment_inf,
-        const int global_route_switch, 
-        const int delayless_switch,
+        const int global_route_switch,
         const int wire_to_arch_ipin_switch,
+        const int delayless_switch,
+        const int shorted_switch,
         const float R_minW_nmos,
         const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
@@ -564,7 +573,11 @@ static void build_rr_graph(
             L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
             switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
             Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices, max_chan_width,
-            delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped,
+            wire_to_arch_ipin_switch,
+            delayless_switch,
+            shorted_switch,
+            directionality,
+            &Fc_clipped,
             directs, num_directs, clb_to_clb_directs);
 
     /* Update rr_nodes capacities if global routing */
@@ -1038,8 +1051,11 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
-        const int delayless_switch, const enum e_directionality directionality,
-        const int wire_to_ipin_switch, bool * Fc_clipped,
+        const int wire_to_ipin_switch,
+        const int delayless_switch,
+        const int shorted_switch,
+        const enum e_directionality directionality,
+        bool * Fc_clipped,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs) {
 
@@ -1096,7 +1112,9 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         max_chan_width, grid, device_ctx.chan_width.x_list[j],
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, L_rr_edge_done, L_rr_node,
-                        wire_to_ipin_switch, directionality);
+                        wire_to_ipin_switch,
+                        shorted_switch,
+                        directionality);
             }
             if (j > 0) {
                 build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
@@ -1104,7 +1122,9 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         max_chan_width, grid, device_ctx.chan_width.y_list[i],
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, L_rr_edge_done, L_rr_node,
-                        wire_to_ipin_switch, directionality);
+                        wire_to_ipin_switch,
+                        shorted_switch,
+                        directionality);
             }
         }
     }
@@ -1364,7 +1384,9 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
-        const int wire_to_ipin_switch, const enum e_directionality directionality) {
+        const int wire_to_ipin_switch,
+        const int shorted_switch,
+        const enum e_directionality directionality) {
 
     /* this function builds both x and y-directed channel segments, so set up our 
        coordinates based on channel type */
@@ -1441,7 +1463,9 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                         opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
-                        directionality, L_rr_node_indices, L_rr_edge_done,
+                        directionality,
+                        shorted_switch,
+                        L_rr_node_indices, L_rr_edge_done,
                         switch_block_conn, sb_conn_map);
             }
         }
@@ -1458,7 +1482,9 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                         opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
-                        directionality, L_rr_node_indices, L_rr_edge_done,
+                        directionality, 
+                        shorted_switch,
+                        L_rr_node_indices, L_rr_edge_done,
                         switch_block_conn, sb_conn_map);
             }
         }
@@ -1488,7 +1514,9 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                             chan_type, seg_dimension, max_chan_width, grid,
                             Fs_per_side, sblock_pattern, &edge_list,
                             from_seg_details, to_seg_details, from_chan_details,
-                            directionality, L_rr_node_indices, L_rr_edge_done,
+                            directionality,
+                            shorted_switch,
+                            L_rr_node_indices, L_rr_edge_done,
                             switch_block_conn, sb_conn_map);
                 }
             }
@@ -1541,16 +1569,21 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
     t_linked_edge *list_ptr;
     int i;
 
-    /* Check we aren't overwriting edges */
-    VTR_ASSERT(L_rr_node[inode].num_edges() == 0);
-
-    L_rr_node[inode].set_num_edges(num_edges);
-
     i = 0;
     list_ptr = edge_list_head;
     while (list_ptr && (i < num_edges)) {
-        L_rr_node[inode].set_edge_sink_node(i, list_ptr->edge);
-        L_rr_node[inode].set_edge_switch(i, list_ptr->iswitch);
+        int from_node = OPEN;
+        int to_node = OPEN;
+        if (list_ptr->edge_dir == t_rr_edge_dir::FORWARD) {
+            from_node = inode; 
+            to_node = list_ptr->edge;
+        } else {
+            VTR_ASSERT(list_ptr->edge_dir == t_rr_edge_dir::BACKWARD);
+            from_node = list_ptr->edge; 
+            to_node = inode;
+        }
+
+        L_rr_node[from_node].add_edge(to_node, list_ptr->iswitch, list_ptr->is_configurable);
 
         /* Unmark the edge since we are done considering fanout from node. */
         L_rr_edge_done[list_ptr->edge] = false;
@@ -2520,6 +2553,7 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
     curr_type = device_ctx.grid[x][y].type;
     edge_list_head = *edge_list_ptr;
     new_edges = 0;
+    bool is_configurable = true; //Direct connects are assumed configurable
 
     int width_offset = device_ctx.grid[x][y].width_offset;
     int height_offset = device_ctx.grid[x][y].height_offset;
@@ -2583,7 +2617,7 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         VTR_ASSERT(inodes.size() > 0);
                         int inode = inodes[0];
 
-                        edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);
+                        edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index, is_configurable, t_rr_edge_dir::FORWARD);
                         new_edges++;
                     }
                 }

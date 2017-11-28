@@ -163,6 +163,19 @@ void t_rr_node::set_fan_in(short new_fan_in) {
 	fan_in_ = new_fan_in;
 }
 
+short t_rr_node::add_edge(int sink_node, int iswitch, bool is_configurable) {
+    auto edges = std::make_unique<t_rr_edge[]>(num_edges_ + 1);
+    std::copy_n(edges_.get(), num_edges_, edges.get());
+
+    edges[num_edges_].sink_node = sink_node;
+    edges[num_edges_].switch_type = iswitch;
+    edges[num_edges_].is_configurable = is_configurable;
+
+    edges_ = std::move(edges);
+    ++num_edges_;
+    return num_edges_;
+}
+
 void t_rr_node::set_num_edges(short new_num_edges) {
     VTR_ASSERT(new_num_edges >= 0);
     num_edges_ = new_num_edges;

@@ -168,6 +168,7 @@ int get_track_to_tracks(
 		const t_seg_details *to_seg_details,
 		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
+        const int shorted_switch_index,
 		const t_rr_node_indices& L_rr_node_indices,
 		bool *L_rr_edge_done,
 		const vtr::NdMatrix<std::vector<int>,3>& switch_block_conn,

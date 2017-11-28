@@ -286,19 +286,6 @@ static void load_rr_indexed_data_T_values(int index_start,
                 avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
                 avg_switch_T += device_ctx.rr_switch_inf[switch_index].Tdel;
 
-                /* make sure all wire switches leaving this track segment have the same 'buffered' value */
-                if (buffered == UNDEFINED) {
-                    buffered = device_ctx.rr_switch_inf[switch_index].buffered;
-                    if (buffered == UNDEFINED) {
-                        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                                "rr switch at index %d has an UNDEFINED 'buffered' property\n", switch_index);
-                    }
-                } else {
-                    if (buffered != (short) (device_ctx.rr_switch_inf[switch_index].buffered)) {
-                        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                                "Expecting all wire-to-wire switches of a given track segment to have same 'buffered' property\n");
-                    }
-                }
                 num_switches++;
             }
         }

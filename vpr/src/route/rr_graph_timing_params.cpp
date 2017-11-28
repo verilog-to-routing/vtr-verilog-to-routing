@@ -180,19 +180,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			if (to_rr_type == CHANX || to_rr_type == CHANY) {
 				if (device_ctx.rr_nodes[to_node].direction() != BI_DIRECTION) {
 					/* Cout was not added in these cases */
-					if (Couts_to_add[to_node] != 0) {
-						/* We've already found a Cout to add to this node
-						 * We could take the max of all possibilities but
-						 * instead I will fail if there are conflicting Couts */
-						if (Couts_to_add[to_node]
-								!= device_ctx.rr_switch_inf[switch_index].Cout) {
-							vpr_throw(VPR_ERROR_ROUTE, __FILE__,__LINE__,
-								"A single driver resource (%i) is driven by different Cout's (%e!=%e)\n",
-									to_node, Couts_to_add[to_node],
-									device_ctx.rr_switch_inf[switch_index].Cout);
-						}
-					}
-					Couts_to_add[to_node] = device_ctx.rr_switch_inf[switch_index].Cout;
+					Couts_to_add[to_node] = std::max(Couts_to_add[to_node], device_ctx.rr_switch_inf[switch_index].Cout);
 
 				}
 			}

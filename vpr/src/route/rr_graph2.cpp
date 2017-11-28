@@ -20,9 +20,12 @@ using namespace std;
 
 /************************** Subroutines local to this module ****************/
 
-static void get_switch_type(
+static bool get_switch_type(
         bool is_from_sb, bool is_to_sb,
-        short from_node_switch, short to_node_switch, short switch_types[2]);
+        short from_node_switch, short to_node_switch,
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,
+        short switch_types[2]);
 
 static void load_chan_rr_indices(
         const int max_chan_width, const int chan_len,
@@ -40,6 +43,8 @@ static int get_bidir_track_to_chan_seg(
         const t_rr_node_indices& L_rr_node_indices, const int to_chan, const int to_seg,
         const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
         const bool from_is_sblock, const int from_switch,
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,        
         bool * L_rr_edge_done,
         const enum e_directionality directionality,
         t_linked_edge **edge_list);
@@ -49,7 +54,10 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width,
         const DeviceGrid& grid, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
+        short ******sblock_pattern, 
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,        
+        const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
         bool * Fs_clipped, t_linked_edge **edge_list);
 
@@ -57,6 +65,8 @@ static int get_track_to_chan_seg(
         const int from_track, const int to_chan, const int to_seg,
         const t_rr_type to_chan_type,
         const e_side from_side, const e_side to_side,
+        const e_sb_switch_override swtich_override,
+        const int shorted_switch_index,
         const t_rr_node_indices&L_rr_node_indices,
         t_sb_connection_map *sb_conn_map,
         bool * L_rr_edge_done,
@@ -95,13 +105,13 @@ void dump_seg_details(
 //  chan_type: The channel type
 bool is_block_internal_switchblock(const DeviceGrid& grid, int x_coord, int y_coord);
 
-//Returns true if the switch block at the specified location should be created
+//Returns how the switch type for the switch block at the specified location should be created
 //  grid: The device grid
 //  from_chan_coord: The horizontal or vertical channel index (i.e. x-coord for CHANY, y-coord for CHANX)
 //  from_seg_coord: The horizontal or vertical location along the channel (i.e. y-coord for CHANY, x-coord for CHANX)
 //  from_chan_type: The from channel type
 //  to_chan_type: The to channel type
-bool should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type);
+e_sb_switch_override should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type);
 
 /******************** Subroutine definitions *******************************/
 
@@ -783,8 +793,9 @@ int get_bidir_opin_connections(
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch;
                 to_node = get_rr_node_index(L_rr_node_indices, tr_i, tr_j, to_type, to_track);
+                bool is_configurable = true; //CB edges are always assumed configurable
 
-                *edge_list = insert_in_edge_list(*edge_list, to_node, to_switch);
+                *edge_list = insert_in_edge_list(*edge_list, to_node, to_switch, is_configurable, t_rr_edge_dir::FORWARD);
                 L_rr_edge_done[to_node] = true;
                 ++num_conn;
             }
@@ -814,6 +825,7 @@ int get_unidir_opin_connections(
     int inc_track, dec_track;
     int x, y;
     int num_edges;
+    bool is_configurable = true; //Opin connections are always assumed configurable
 
     *Fc_clipped = false;
 
@@ -860,13 +872,15 @@ int get_unidir_opin_connections(
         if (false == L_rr_edge_done[inc_inode_index]) {
             L_rr_edge_done[inc_inode_index] = true;
             *edge_list_ptr = insert_in_edge_list(*edge_list_ptr, inc_inode_index,
-                    seg_details[inc_track].arch_opin_switch);
+                    seg_details[inc_track].arch_opin_switch, is_configurable,
+                    t_rr_edge_dir::FORWARD);
             ++num_edges;
         }
         if (false == L_rr_edge_done[dec_inode_index]) {
             L_rr_edge_done[dec_inode_index] = true;
             *edge_list_ptr = insert_in_edge_list(*edge_list_ptr, dec_inode_index,
-                    seg_details[dec_track].arch_opin_switch);
+                    seg_details[dec_track].arch_opin_switch, is_configurable,
+                    t_rr_edge_dir::FORWARD);
             ++num_edges;
         }
     }
@@ -1453,6 +1467,7 @@ int get_track_to_pins(
     t_linked_edge *edge_list_head;
     int j, pass, iconn, phy_track, end, max_conn, ipin, x, y, num_conn;
     t_type_ptr type;
+    bool is_configurable = true; //Pin connections are always assumed configurable
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1501,7 +1516,8 @@ int get_track_to_pins(
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                     int to_node = get_rr_node_index(L_rr_node_indices, x, y, IPIN, ipin, side);
                     if (to_node >= 0) {
-                        edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch);
+                        edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch, 
+                                            is_configurable, t_rr_edge_dir::FORWARD);
                         ++num_conn;
                     }
                 }
@@ -1541,6 +1557,7 @@ int get_track_to_tracks(
         const t_seg_details * to_seg_details,
         const t_chan_details& to_chan_details,
         const enum e_directionality directionality,
+        const int shorted_switch_index,
         const t_rr_node_indices& L_rr_node_indices, bool * L_rr_edge_done,
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map) {
@@ -1608,7 +1625,8 @@ int get_track_to_tracks(
             from_is_sblock = true;
         }
 
-        if (!should_create_switchblock(grid, from_chan, sb_seg, from_type, to_type)) {
+        auto switch_override = should_create_switchblock(grid, from_chan, sb_seg, from_type, to_type);
+        if (switch_override == e_sb_switch_override::NO_SWITCH) {
             continue; //Do not create an SB here
         }
 
@@ -1674,7 +1692,9 @@ int get_track_to_tracks(
                 if (DEC_DIRECTION == from_seg_details[from_track].direction ||
                         BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
-                            to_type, from_side_a, to_side, L_rr_node_indices,
+                            to_type, from_side_a, to_side,
+                            switch_override, shorted_switch_index,
+                            L_rr_node_indices,
                             sb_conn_map, L_rr_edge_done, edge_list);
                 }
             } else {
@@ -1684,7 +1704,9 @@ int get_track_to_tracks(
                     conn_tracks = switch_block_conn[from_side_a][to_side][from_track];
                     num_conn += get_bidir_track_to_chan_seg(conn_tracks,
                             L_rr_node_indices, to_chan, to_seg, to_sb, to_type,
-                            to_seg_details, from_is_sblock, from_switch, L_rr_edge_done,
+                            to_seg_details, from_is_sblock, from_switch,
+                            switch_override, shorted_switch_index,
+                            L_rr_edge_done,
                             directionality, edge_list);
                 }
                 if (UNI_DIRECTIONAL == directionality) {
@@ -1697,7 +1719,9 @@ int get_track_to_tracks(
                                 from_track, to_chan,
                                 to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_a, to_side, Fs_per_side,
-                                sblock_pattern, L_rr_node_indices, to_seg_details,
+                                sblock_pattern, 
+                                switch_override, shorted_switch_index,
+                                L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
                     }
                 }
@@ -1711,7 +1735,9 @@ int get_track_to_tracks(
                 if (INC_DIRECTION == from_seg_details[from_track].direction ||
                         BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
-                            to_type, from_side_b, to_side, L_rr_node_indices,
+                            to_type, from_side_b, to_side, 
+                            switch_override, shorted_switch_index,
+                            L_rr_node_indices,
                             sb_conn_map, L_rr_edge_done, edge_list);
                 }
             } else {
@@ -1721,7 +1747,9 @@ int get_track_to_tracks(
                     conn_tracks = switch_block_conn[from_side_b][to_side][from_track];
                     num_conn += get_bidir_track_to_chan_seg(conn_tracks,
                             L_rr_node_indices, to_chan, to_seg, to_sb, to_type,
-                            to_seg_details, from_is_sblock, from_switch, L_rr_edge_done,
+                            to_seg_details, from_is_sblock, from_switch,
+                            switch_override, shorted_switch_index,
+                            L_rr_edge_done,
                             directionality, edge_list);
                 }
                 if (UNI_DIRECTIONAL == directionality) {
@@ -1734,7 +1762,9 @@ int get_track_to_tracks(
                                 from_track, to_chan,
                                 to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_b, to_side, Fs_per_side,
-                                sblock_pattern, L_rr_node_indices, to_seg_details,
+                                sblock_pattern,
+                                switch_override, shorted_switch_index,
+                                L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
                     }
                 }
@@ -1750,6 +1780,8 @@ static int get_bidir_track_to_chan_seg(
         const t_rr_node_indices& L_rr_node_indices, const int to_chan, const int to_seg,
         const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
         const bool from_is_sblock, const int from_switch,
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,
         bool * L_rr_edge_done,
         const enum e_directionality directionality,
         t_linked_edge **edge_list) {
@@ -1784,7 +1816,8 @@ static int get_bidir_track_to_chan_seg(
 
         to_is_sblock = is_sblock(to_chan, to_seg, to_sb, to_track, seg_details,
                 directionality);
-        get_switch_type(from_is_sblock, to_is_sblock, from_switch, to_switch,
+        bool edge_configurable = get_switch_type(from_is_sblock, to_is_sblock, from_switch, to_switch,
+                switch_override, shorted_switch_index,
                 switch_types);
 
         /* There are up to two switch edges allowed from track to track */
@@ -1794,9 +1827,16 @@ static int get_bidir_track_to_chan_seg(
                 continue;
             }
 
+            t_rr_edge_dir edge_dir;
+            if (i == 0) {
+                edge_dir = t_rr_edge_dir::FORWARD;
+            } else {
+                edge_dir = t_rr_edge_dir::BACKWARD;
+            }
+
             /* Add the edge to the list */
             *edge_list = insert_in_edge_list(*edge_list, to_node,
-                    switch_types[i]);
+                    switch_types[i], edge_configurable, edge_dir);
             /* Mark the edge as now done */
             L_rr_edge_done[to_node] = true;
             ++num_conn;
@@ -1815,7 +1855,9 @@ static int get_track_to_chan_seg(
         const int from_wire, const int to_chan, const int to_seg,
         const t_rr_type to_chan_type,
         const e_side from_side, const e_side to_side,
-        const t_rr_node_indices&L_rr_node_indices,
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,
+        const t_rr_node_indices& L_rr_node_indices,
         t_sb_connection_map *sb_conn_map,
         bool * L_rr_edge_done,
         t_linked_edge **edge_list) {
@@ -1857,14 +1899,33 @@ static int get_track_to_chan_seg(
             /* Get the index of the switch connecting the two wires */
             int src_switch = conn_vector[iconn].switch_ind;
 
+            //Apply any switch overrides
+            bool is_configurable = true;
+            if (switch_override == e_sb_switch_override::NO_SWITCH) {
+                continue;
+            } else if (switch_override == e_sb_switch_override::SHORTED_SWITCH) {
+                src_switch = shorted_switch_index;
+                is_configurable = false;
+            } else {
+                VTR_ASSERT(switch_override == e_sb_switch_override::DEFAULT_SWITCH);
+                VTR_ASSERT(is_configurable);
+            }
+
             /* Skip edge if already done */
             if (L_rr_edge_done[to_node]) {
                 continue;
             }
 
-            *edge_list = insert_in_edge_list(*edge_list, to_node, src_switch);
-            L_rr_edge_done[to_node] = true;
+            *edge_list = insert_in_edge_list(*edge_list, to_node, src_switch, is_configurable, t_rr_edge_dir::FORWARD);
             ++edge_count;
+
+            if (src_switch == shorted_switch_index) {
+                //Add reverse edge since shorts are bi-directional
+                *edge_list = insert_in_edge_list(*edge_list, to_node, src_switch, is_configurable, t_rr_edge_dir::BACKWARD);
+                ++edge_count;
+            }
+
+            L_rr_edge_done[to_node] = true;
         }
     } else {
         /* specified sb_conn_map entry does not exist -- do nothing */
@@ -1877,7 +1938,10 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width, const DeviceGrid& grid,
         const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
+        short ******sblock_pattern,
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,
+        const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
         bool * Fs_clipped, t_linked_edge **edge_list) {
 
@@ -1939,10 +2003,31 @@ static int get_unidir_track_to_chan_seg(
             if (L_rr_edge_done[to_node])
                 continue;
 
+            //Determine which switch to use
+            int iswitch = OPEN;
+            bool is_configurable = true;
+            if (switch_override == e_sb_switch_override::NO_SWITCH) {
+                continue;
+            } else if (switch_override == e_sb_switch_override::SHORTED_SWITCH) {
+                iswitch = shorted_switch_index;
+                is_configurable = false;
+            } else {
+                VTR_ASSERT(switch_override == e_sb_switch_override::DEFAULT_SWITCH);
+                iswitch = seg_details[to_track].arch_wire_switch;
+                VTR_ASSERT(is_configurable);
+            }
+            VTR_ASSERT(iswitch != OPEN);
+
             /* Add edge to list. */
             L_rr_edge_done[to_node] = true;
-            *edge_list = insert_in_edge_list(*edge_list, to_node, seg_details[to_track].arch_wire_switch);
+            *edge_list = insert_in_edge_list(*edge_list, to_node, iswitch, is_configurable, t_rr_edge_dir::FORWARD);
             ++count;
+
+            if (iswitch == shorted_switch_index) {
+                //Add reverse edge since shorts are bi-directional
+                *edge_list = insert_in_edge_list(*edge_list, to_node, iswitch, is_configurable, t_rr_edge_dir::BACKWARD);
+                ++count;
+            }
         }
     }
 
@@ -1982,9 +2067,12 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track,
     return seg_details[track].sb[ofs];
 }
 
-static void get_switch_type(
+static bool get_switch_type(
         bool is_from_sblock, bool is_to_sblock,
-        short from_node_switch, short to_node_switch, short switch_types[2]) {
+        short from_node_switch, short to_node_switch, 
+        const e_sb_switch_override switch_override,
+        const int shorted_switch_index,
+        short switch_types[2]) {
     /* This routine looks at whether the from_node and to_node want a switch,  *
      * and what type of switch is used to connect *to* each type of node       *
      * (from_node_switch and to_node_switch).  It decides what type of switch, *
@@ -2002,46 +2090,61 @@ static void get_switch_type(
 
     switch_types[0] = OPEN; /* No switch */
     switch_types[1] = OPEN;
-    used = 0;
-    forward_pass_trans = false;
-    backward_pass_trans = false;
+    bool is_configurable = true;
+    if (switch_override == e_sb_switch_override::NO_SWITCH) {
+        is_configurable = false; //No switches
+    } else if (switch_override == e_sb_switch_override::SHORTED_SWITCH) {
+        switch_types[0] = shorted_switch_index;
+        switch_types[1] = shorted_switch_index;
+        is_configurable = false;
+    } else {
+        VTR_ASSERT(switch_override == e_sb_switch_override::DEFAULT_SWITCH);
+        is_configurable = true;
 
-    /* Connect forward if we are a sblock */
-    if (is_from_sblock) {
-        switch_types[used] = to_node_switch;
-        if (false == device_ctx.arch_switch_inf[to_node_switch].buffered()) {
-            forward_pass_trans = true;
+        used = 0;
+        forward_pass_trans = false;
+        backward_pass_trans = false;
+
+        /* Connect forward if we are a sblock */
+        if (is_from_sblock) {
+            switch_types[used] = to_node_switch;
+            if (false == device_ctx.arch_switch_inf[to_node_switch].buffered()) {
+                forward_pass_trans = true;
+            }
+            ++used;
         }
-        ++used;
-    }
 
-    /* Check for pass_trans coming backwards */
-    if (is_to_sblock) {
-        if (false == device_ctx.arch_switch_inf[from_node_switch].buffered()) {
-            switch_types[used] = from_node_switch;
-            backward_pass_trans = true;
+        /* Check for pass_trans coming backwards */
+        if (is_to_sblock) {
+            if (false == device_ctx.arch_switch_inf[from_node_switch].buffered()) {
+                switch_types[used] = from_node_switch;
+                backward_pass_trans = true;
+                ++used;
+            }
+        }
+
+        /* Take the larger pass trans if there are two */
+        if (forward_pass_trans && backward_pass_trans) {
+            min_switch = min(to_node_switch, from_node_switch);
+            max_switch = max(to_node_switch, from_node_switch);
+
+            /* Take the smaller index unless the other 
+             * pass_trans is bigger (smaller R). */
+
+            if (used < 2) {
+                VPR_THROW(VPR_ERROR_ROUTE, 
+                        "Expected 2 switches (forward and back) between RR nodes (found %d switches, min switch index: %d max switch index: %d)",
+                        used, min_switch, max_switch);
+            }
+
+            switch_types[used] = min_switch;
+            if (device_ctx.arch_switch_inf[max_switch].R < device_ctx.arch_switch_inf[min_switch].R) {
+                switch_types[used] = max_switch;
+            }
             ++used;
         }
     }
-
-    /* Take the larger pass trans if there are two */
-    if (forward_pass_trans && backward_pass_trans) {
-        min_switch = min(to_node_switch, from_node_switch);
-        max_switch = max(to_node_switch, from_node_switch);
-
-        /* Take the smaller index unless the other 
-         * pass_trans is bigger (smaller R). */
-        if (used < 2) {
-            VPR_THROW(VPR_ERROR_ROUTE, 
-                    "Expected 2 switches (forward and back) between RR nodes (found %d switches, min switch index: %d max switch index: %d)",
-                    used, min_switch, max_switch);
-        }
-        switch_types[used] = min_switch;
-        if (device_ctx.arch_switch_inf[max_switch].R < device_ctx.arch_switch_inf[min_switch].R) {
-            switch_types[used] = max_switch;
-        }
-        ++used;
-    }
+    return is_configurable;
 }
 
 static int vpr_to_phy_track(
@@ -2608,7 +2711,7 @@ bool is_block_internal_switchblock(const DeviceGrid& grid, int x_coord, int y_co
     return false;
 }
 
-bool should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
+e_sb_switch_override should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
     //Convert the chan/seg indicies to real x/y coordinates
     int y_coord;
     int x_coord;
@@ -2626,14 +2729,15 @@ bool should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int 
     int height_offset = grid[x_coord][y_coord].height_offset;
 
     e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
+    auto switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];
+
     if (sb_type == e_sb_type::FULL) {
-        return true;
-    } else if (sb_type == e_sb_type::STRAIGHT) {
-        return from_chan_type == to_chan_type;
-    } else if (sb_type == e_sb_type::TURNS) {
-        return from_chan_type != to_chan_type;
+        return switch_override;
+    } else if (sb_type == e_sb_type::STRAIGHT && from_chan_type == to_chan_type) {
+        return switch_override;
+    } else if (sb_type == e_sb_type::TURNS && from_chan_type != to_chan_type) {
+        return switch_override;
     }
 
-    VTR_ASSERT(sb_type == e_sb_type::NONE);
-    return false;
+    return e_sb_switch_override::NO_SWITCH;
 }

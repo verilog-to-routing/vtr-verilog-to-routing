@@ -1,13 +1,20 @@
 #ifndef RR_GRAPH_UTIL_H
 #define RR_GRAPH_UTIL_H
+enum class t_rr_edge_dir {
+    FORWARD,
+    BACKWARD,
+};
+
 struct t_linked_edge {
 	int edge;
 	short iswitch;
+    bool is_configurable;
+    t_rr_edge_dir edge_dir;
 	t_linked_edge *next;
 };
 
 t_linked_edge *insert_in_edge_list(t_linked_edge * head, int edge,
-		short iswitch);
+		short iswitch, bool edge_is_configurable, t_rr_edge_dir edge_dir);
 
 void free_linked_edge_soft(t_linked_edge * edge_ptr,
 		t_linked_edge ** free_list_head_ptr);

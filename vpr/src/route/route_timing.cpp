@@ -132,6 +132,10 @@ static void add_to_heap_expand_non_configurable(const float criticality_fac, con
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
 
+static void add_to_heap_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited);
+
 static t_heap* timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
@@ -1125,6 +1129,16 @@ static void add_to_heap_expand_non_configurable(const float criticality_fac, con
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
 
+    std::set<int> visited;
+    add_to_heap_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
+            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+            current, from_node, to_node, iconn, target_node, visited);
+}
+
+static void add_to_heap_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited) {
+
     t_heap* next = timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
             budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
             current, from_node, to_node, iconn, target_node);
@@ -1138,10 +1152,17 @@ static void add_to_heap_expand_non_configurable(const float criticality_fac, con
             bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
             int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 
+
             if (!edge_configurable) { //Forced expansion
-                add_to_heap_expand_non_configurable(criticality_fac, bend_cost, astar_fac,
+                if (visited.count(to_to_node)) {
+                    continue;
+                } else {
+                    visited.insert(to_to_node);
+                }
+
+                add_to_heap_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
                         budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                        next, to_node, to_to_node, iconn_next, target_node);
+                        next, to_node, to_to_node, iconn_next, target_node, visited);
             }
         }
     }

@@ -83,6 +83,8 @@ class t_rr_node {
     public: //Mutators
         void set_type(t_rr_type new_type);
 
+        short add_edge(int sink_node, int iswitch, bool is_configurable);
+
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
