@@ -142,14 +142,14 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
 static void draw_pin_to_pin(int opin, int ipin);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
-						   bool buffered);
+						   bool buffered, bool switch_configurable);
 static void draw_chany_to_chany_edge(int from_node, int to_node,
-									 int to_track, short switch_type);
+									 int to_track, short switch_type, bool configurable);
 static void draw_chanx_to_chanx_edge(int from_node, int to_node,
-									 int to_track, short switch_type);
+									 int to_track, short switch_type, bool configurable);
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, 
 									 int chany_track, enum e_edge_dir edge_dir,
-									 short switch_type);
+									 short switch_type, bool configurable);
 static int get_track_num(int inode, const vtr::Matrix<int>& chanx_track, const vtr::Matrix<int>& chany_track);
 static bool draw_if_net_highlighted (ClusterNetId inet);
 static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
@@ -174,7 +174,7 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
 static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
 static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
-static short find_switch(int prev_inode, int inode);
+static int find_edge(int prev_inode, int inode);
 
 t_color to_t_color(vtr::Color<float> color);
 static void draw_color_map_legend(const vtr::ColorMap& cmap);
@@ -1264,7 +1264,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chanx_edge(inode, to_node,
-						to_ptc_num, switch_type);
+						to_ptc_num, switch_type, edge_configurable);
 				break;
 
 			case CHANY:
@@ -1279,7 +1279,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
-						to_ptc_num, FROM_X_TO_Y, switch_type);
+						to_ptc_num, FROM_X_TO_Y, switch_type, edge_configurable);
 				break;
 
 			default:
@@ -1328,7 +1328,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
-						from_ptc_num, FROM_Y_TO_X, switch_type);
+						from_ptc_num, FROM_Y_TO_X, switch_type, edge_configurable);
 				break;
 
 			case CHANY:
@@ -1343,7 +1343,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chany_to_chany_edge(inode, to_node,
-						to_ptc_num, switch_type);
+						to_ptc_num, switch_type, edge_configurable);
 				break;
 
 			default:
@@ -1375,7 +1375,7 @@ static void draw_x(float x, float y, float size) {
 
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		int chany_node, int chany_track, enum e_edge_dir edge_dir,
-		short switch_type) {
+		short switch_type, bool configurable) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1438,16 +1438,16 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[chanx_node].node_highlighted) {
         if (edge_dir == FROM_X_TO_Y) {
-            draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered);
+            draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
         } else {
-            draw_rr_switch(x2, y2, x1, y1, device_ctx.rr_switch_inf[switch_type].buffered);
+            draw_rr_switch(x2, y2, x1, y1, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
         }
     }
 }
 
 
 static void draw_chanx_to_chanx_edge(int from_node, int to_node,
-		int to_track, short switch_type) {
+		int to_track, short switch_type, bool configurable) {
 
 	/* Draws a connection between two x-channel segments.  Passing in the track *
 	 * numbers allows this routine to be used for both rr_graph and routing     *
@@ -1528,13 +1528,13 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
-		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered);
+		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
 	}
 }
 
 
 static void draw_chany_to_chany_edge(int from_node, int to_node,
-		int to_track, short switch_type) {
+		int to_track, short switch_type, bool configurable) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1614,7 +1614,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
-		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered);
+		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
 	}
 }
 
@@ -1663,18 +1663,23 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 }
 
 
-static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered) {
+static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool configurable) {
 
 	/* Draws a buffer (triangle) or pass transistor (circle) on the edge        *
 	 * connecting from to to, depending on the status of buffered.  The drawing *
 	 * is closest to the from_node, since it reflects the switch type of from.  */
 
-	if (!buffered) { /* Draw a circle for a pass transistor */
-        float xcen = from_x + (to_x - from_x) / 10.;
-        float ycen = from_y + (to_y - from_y) / 10.;
-        const float switch_rad = 0.15;
-		drawarc(xcen, ycen, switch_rad, 0., 360.);
-	} else { /* Buffer */
+
+    if (!buffered) {
+        if (configurable) { /* Draw a circle for a pass transistor */
+            float xcen = from_x + (to_x - from_x) / 10.;
+            float ycen = from_y + (to_y - from_y) / 10.;
+            const float switch_rad = 0.15;
+            drawarc(xcen, ycen, switch_rad, 0., 360.);
+        } else {
+            //Pass, nothing to draw
+        }
+    } else { /* Buffer */
         if(from_x == to_x || from_y == to_y) {
             //Straight connection
             draw_triangle_along_line(t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_STRAIGHT_ARROW_POSITION);
@@ -1682,7 +1687,7 @@ static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, b
             //Turn connection
             draw_triangle_along_line(t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_TURN_ARROW_POSITION);
         }
-	}
+    }
 }
 
 static void draw_rr_pin(int inode, const t_color& color) {
@@ -1888,7 +1893,9 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
         int prev_node = rr_nodes_to_draw[i-1];
         auto prev_type = device_ctx.rr_nodes[prev_node].type();
 
-        auto switch_type = find_switch(prev_node, inode);
+        int iedge = find_edge(prev_node, inode);
+        auto switch_type = device_ctx.rr_nodes[prev_node].edge_switch(iedge);
+        bool edge_configurable = device_ctx.rr_nodes[prev_node].edge_is_configurable(iedge);
 
         switch (rr_type) {
 
@@ -1916,14 +1923,14 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
                     case CHANX: {
                         draw_chanx_to_chanx_edge(prev_node, inode,
-                                itrack, switch_type);
+                                itrack, switch_type, edge_configurable);
                         break;
                     }
                     case CHANY: {
                         int prev_track = get_track_num(prev_node, chanx_track,
                                 chany_track);
                         draw_chanx_to_chany_edge(inode, itrack, prev_node,
-                                prev_track, FROM_Y_TO_X, switch_type);
+                                prev_track, FROM_Y_TO_X, switch_type, edge_configurable);
                         break;
                     }
                     case OPIN: {
@@ -1952,12 +1959,12 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
                         int prev_track = get_track_num(prev_node, chanx_track,
                                 chany_track);
                         draw_chanx_to_chany_edge(prev_node, prev_track, inode,
-                                itrack, FROM_X_TO_Y, switch_type);
+                                itrack, FROM_X_TO_Y, switch_type, edge_configurable);
                         break;
                     }
                     case CHANY: {
                         draw_chany_to_chany_edge(prev_node, inode,
-                                itrack, switch_type);
+                                itrack, switch_type, edge_configurable);
                         break;
                     }
                     case OPIN: {
@@ -3041,16 +3048,16 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_
     return false; //Not on path to sink
 }
 
-//Find the switch between two rr nodes
-static short find_switch(int prev_inode, int inode) {
+//Find the edge between two rr nodes
+static int find_edge(int prev_inode, int inode) {
     auto& device_ctx = g_vpr_ctx.device();
-    for (int i = 0; i < device_ctx.rr_nodes[prev_inode].num_edges(); ++i) {
-        if (device_ctx.rr_nodes[prev_inode].edge_sink_node(i) == inode) {
-            return device_ctx.rr_nodes[prev_inode].edge_switch(i);
+    for (int iedge = 0; iedge < device_ctx.rr_nodes[prev_inode].num_edges(); ++iedge) {
+        if (device_ctx.rr_nodes[prev_inode].edge_sink_node(iedge) == inode) {
+            return iedge;
         }
     }
     VTR_ASSERT(false);
-    return -1;
+    return OPEN;
 }
 
 t_color to_t_color(vtr::Color<float> color) {
