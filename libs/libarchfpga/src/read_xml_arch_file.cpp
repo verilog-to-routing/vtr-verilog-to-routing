@@ -1784,7 +1784,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
         auto assigned_locs = vtr::Matrix<bool>({{width, height}}, false);
 
         for (pugi::xml_node sb_loc : switchblock_locations.children("sb_loc")) {
-            expect_only_attributes(sb_loc, {"type", "xoffset", "yoffset"}, loc_data);
+            expect_only_attributes(sb_loc, {"type", "xoffset", "yoffset", "switch_override"}, loc_data);
 
             //Determine the type
             std::string sb_type_str = get_attribute(sb_loc, "type", loc_data, OPTIONAL).as_string("full");
