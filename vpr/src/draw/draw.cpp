@@ -2248,7 +2248,7 @@ static bool highlight_rr_nodes(float x, float y) {
             print_rr_node(stdout, device_ctx.rr_nodes, node);
         }
 
-        //Show info about hit node *only* to graphics
+        //Show info about *only* hit node to graphics
         std::string info = describe_rr_node(hit_node);
 
         sprintf(message, "Selected %s", info.c_str());
