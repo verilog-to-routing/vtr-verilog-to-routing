@@ -19,6 +19,15 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 static void breadth_first_expand_neighbours(int inode, float pcost, 
 	ClusterNetId net_id, float bend_cost);
 
+static void breadth_first_add_to_heap_expand_non_configurable(const float path_cost, const float bend_cost,
+        const int from_node, const int to_node, const int iconn);
+
+static void breadth_first_add_to_heap_expand_non_configurable_recurr(const float path_cost, const float bend_cost,
+        const int from_node, const int to_node, const int iconn, std::set<int>& visited);
+
+static t_heap* breadth_first_expand_node(const float path_cost, const float bend_cost,
+        const int from_node, const int to_node, const int iconn);
+
 static void breadth_first_add_source_to_heap(ClusterNetId net_id);
 
 /************************ Subroutine definitions ****************************/
@@ -133,7 +142,6 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 	 * routing is impossible on this architecture.  Otherwise it returns true.   */
 
 	int inode, prev_node, remaining_connections_to_sink;
-	unsigned int i;
 	float pcost, new_pcost;
 	t_heap *current;
 	t_trace *tptr;
@@ -149,13 +157,13 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (i = 1; i < cluster_ctx.clb_nlist.net_pins(net_id).size(); i++) { /* Need n-1 wires to connect n pins */
+	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) { /* Need n-1 wires to connect n pins */
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink);
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-			vtr::printf_info("Cannot route net #%lu (%s) to sink #%d -- no possible path.\n",
-					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), i);
+			vtr::printf_info("Cannot route net #%zu (%s) to sink pin (%s) -- no possible path.\n",
+					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id));
 			reset_path_costs(); /* Clean up before leaving. */
 			return (false);
 		}
@@ -182,8 +190,8 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
-				vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), i);
+                vtr::printf_info("Cannot route net #%zu (%s) to sink pin (%s) -- no possible path.\n",
+                        size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id));
 				reset_path_costs();
 				return (false);
 			}
@@ -299,8 +307,6 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	 * heap.  pcost is the path_cost to get to inode.                           */
 
 	int iconn, to_node, num_edges;
-	t_rr_type from_type, to_type;
-	float tot_cost;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -315,19 +321,74 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 				|| device_ctx.rr_nodes[to_node].ylow() > route_ctx.route_bb[net_id].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
-
-		tot_cost = pcost + get_rr_cong_cost(to_node);
-
-		if (bend_cost != 0.) {
-			from_type = device_ctx.rr_nodes[inode].type();
-			to_type = device_ctx.rr_nodes[to_node].type();
-			if ((from_type == CHANX && to_type == CHANY)
-					|| (from_type == CHANY && to_type == CHANX))
-				tot_cost += bend_cost;
-		}
-
-		node_to_heap(to_node, tot_cost, inode, iconn, OPEN, OPEN);
+        breadth_first_add_to_heap_expand_non_configurable(pcost, bend_cost, inode, to_node, iconn);
 	}
+}
+
+//Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
+static void breadth_first_add_to_heap_expand_non_configurable(const float path_cost, const float bend_cost,
+        const int from_node, const int to_node, const int iconn) {
+
+    std::set<int> visited;
+    breadth_first_add_to_heap_expand_non_configurable_recurr(path_cost, bend_cost,
+            from_node, to_node, iconn, visited);
+}
+
+static void breadth_first_add_to_heap_expand_non_configurable_recurr(const float path_cost, const float bend_cost,
+        const int from_node, const int to_node, const int iconn, std::set<int>& visited) {
+
+    t_heap* next = breadth_first_expand_node(path_cost, bend_cost,
+                    from_node, to_node, iconn);
+
+    if (next) {
+        add_to_heap(next);
+
+        //Consider any non-configurable edges which must be expanded for correctness
+        auto& device_ctx = g_vpr_ctx.device();
+        for (int iconn_next = 0; iconn_next < device_ctx.rr_nodes[to_node].num_edges(); ++iconn_next) {
+            bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
+            int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
+
+
+            if (!edge_configurable) { //Forced expansion
+                if (visited.count(to_to_node)) {
+                    continue;
+                } else {
+                    visited.insert(to_to_node);
+                }
+
+                breadth_first_add_to_heap_expand_non_configurable_recurr(next->cost, bend_cost,
+                        to_node, to_to_node, iconn_next, visited);
+            }
+        }
+    }
+}
+
+//Updates a t_heap storing the cost of expanding to 'node'
+static t_heap* breadth_first_expand_node(const float path_cost, const float bend_cost,
+        const int from_node, const int to_node, const int iconn) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    float tot_cost = path_cost + get_rr_cong_cost(to_node);
+
+    if (bend_cost != 0.) {
+        t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
+        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
+        if ((from_type == CHANX && to_type == CHANY)
+                || (from_type == CHANY && to_type == CHANX))
+            tot_cost += bend_cost;
+    }
+
+    //Update next
+    t_heap* next = alloc_heap_data();
+    next->index = to_node;
+    next->cost = tot_cost;
+    next->u.prev_node = from_node;
+    next->prev_edge = iconn;
+    next->backward_path_cost = OPEN;
+    next->R_upstream = OPEN;
+
+    return next;
 }
 
 static void breadth_first_add_source_to_heap(ClusterNetId net_id) {
