@@ -41,6 +41,12 @@ using namespace std;
 #include "path_delay.h"
  
 
+/**************** Types local to route_common.c ******************/
+struct t_trace_branch {
+    t_trace* head;
+    t_trace* tail;
+};
+
 /**************** Static variables local to route_common.c ******************/
 
 static t_heap **heap; /* Indexed from [1..heap_size] */
@@ -97,6 +103,7 @@ static vtr::t_chunk linked_f_pointer_ch;
 
 /******************** Subroutines local to route_common.c *******************/
 
+static t_trace_branch traceback_branch(int node, int from_node, int from_edge);
 
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
@@ -523,59 +530,53 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	 * predecesser of each node to make traceback easy -- this sacrificies some *
 	 * memory for easier code maintenance.  This routine returns a pointer to   *
 	 * the first "new" node in the traceback (node not previously in trace).    */
-
-	t_trace *tptr, *prevptr, *temptail, *ret_ptr;
-	int inode;
-	short iedge;
-
-	t_rr_type rr_type;
-
-    auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	// hptr points to the end of a connection
-	inode = hptr->index;
-       
-	rr_type = device_ctx.rr_nodes[inode].type();
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->u.prev_node, hptr->prev_edge);
+
+    t_trace* ret_ptr = nullptr;
+	if (route_ctx.trace_tail[net_id] != NULL) {
+		route_ctx.trace_tail[net_id]->next = branch.head; /* Traceback ends with tptr */
+		ret_ptr = branch.head->next; /* First new segment.       */
+	} else { /* This was the first "chunk" of the net's routing */
+		route_ctx.trace_head[net_id] = branch.head;
+		ret_ptr = branch.head; /* Whole traceback is new. */
+	}
+
+	route_ctx.trace_tail[net_id] = branch.tail;
+	return (ret_ptr);
+}
+
+static t_trace_branch traceback_branch(int node, int from_node, int from_edge) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+	auto rr_type = device_ctx.rr_nodes[node].type();
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-			"in update_traceback. Expected type = SINK (%d).\n"
-			"\tGot type = %d while tracing back net %zu.\n", SINK, rr_type, size_t(net_id));
+			"in traceback_branch: Expected type = SINK (%d).\n");
 	}
 
-	tptr = alloc_trace_data(); /* SINK on the end of the connection */
-	tptr->index = inode;
-	tptr->iswitch = OPEN;
-	tptr->next = NULL;
-	temptail = tptr; /* This will become the new tail at the end */
-	/* of the routine.                          */
+    t_trace* branch_head = alloc_trace_data();
+    t_trace* branch_tail = branch_head;
+    branch_head->index = node;
+    branch_head->iswitch = OPEN;
+    branch_head->next = nullptr;
 
-	/* Now do it's predecessor. */
+    int inode = from_node;
+    int iedge = from_edge;
 
-	inode = hptr->u.prev_node;
-	iedge = hptr->prev_edge;
+    while (inode != NO_PREVIOUS) {
+        t_trace* prev_ptr = alloc_trace_data();
+        prev_ptr->index = inode;
+        prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        prev_ptr->next = branch_head;
+        branch_head = prev_ptr;
 
-	while (inode != NO_PREVIOUS) {
-		prevptr = alloc_trace_data();
-		prevptr->index = inode;
-		prevptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
-		prevptr->next = tptr;
-		tptr = prevptr;
-
-		iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
-		inode = route_ctx.rr_node_route_inf[inode].prev_node;
-	}
-
-	if (route_ctx.trace_tail[net_id] != NULL) {
-		route_ctx.trace_tail[net_id]->next = tptr; /* Traceback ends with tptr */
-		ret_ptr = tptr->next; /* First new segment.       */
-	} else { /* This was the first "chunk" of the net's routing */
-		route_ctx.trace_head[net_id] = tptr;
-		ret_ptr = tptr; /* Whole traceback is new. */
-	}
-
-	route_ctx.trace_tail[net_id] = temptail;
-	return (ret_ptr);
+        iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+        inode = route_ctx.rr_node_route_inf[inode].prev_node;
+    }
+    return {branch_head, branch_tail}; 
 }
 
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
