@@ -440,7 +440,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 
 	if ( !$error_code ) {
 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-			"-c", $odin_config_file_name );
+			"-c", $odin_config_file_name, "-black_box_latches");
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
@@ -463,7 +463,7 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
-    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
+    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; strash; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
     
@@ -847,13 +847,13 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }
 
 
-            #First try ABC's Sequential Equivalence Check (SEC)
+            #First try ABC's Unbounded Sequential Equivalence Check (DSEC)
 			$q = &system_with_timeout($abc_path, 
 							"abc.sec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"sec $reference_netlist $vpr_postsynthesis_netlist"
+							"dsec $reference_netlist $vpr_postsynthesis_netlist"
 			);
 
             # Parse ABC verification output
@@ -893,7 +893,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                     $error_code = 1;
                 }
             } else {
-                print("failed: no SEC output");
+                print("failed: no DSEC output");
                 $error_code = 1;
             }
         }
