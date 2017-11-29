@@ -980,16 +980,11 @@ constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename { {
  *          net's routing).                                                *
  * iblock:  Index of block that this trace applies to if applicable, OPEN  *
  *          otherwise                                                      *
- * num_siblings: Number of traceback sibling nodes (including self). This  *
- *               count is used to help extract individual route paths for  *
- *               each net. A '0' indicates a terminal node, '1' means a    *
- *               single child, '+1' defines branch with 2 or more children.*
  * next:    Pointer to the next traceback element in this route.           */
 struct t_trace {
 	t_trace *next;
 	int index;
 	int iblock;
-	int num_siblings;
 	short iswitch;
 };
 
