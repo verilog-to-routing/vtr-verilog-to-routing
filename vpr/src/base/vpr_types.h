@@ -978,13 +978,10 @@ constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename { {
  *          the next one in the routing.  OPEN if there is no next node    *
  *          (i.e. this node is the last one (a SINK) in a branch of the    *
  *          net's routing).                                                *
- * iblock:  Index of block that this trace applies to if applicable, OPEN  *
- *          otherwise                                                      *
  * next:    Pointer to the next traceback element in this route.           */
 struct t_trace {
 	t_trace *next;
 	int index;
-	int iblock;
 	short iswitch;
 };
 
