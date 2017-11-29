@@ -2077,42 +2077,6 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-#if 0
-	/* Highlight the fanout nodes in red. */
-	for (int iedge = 0, l = device_ctx.rr_nodes[hit_node].num_edges(); iedge < l; iedge++) {
-		int fanout_node = device_ctx.rr_nodes[hit_node].edge_sink_node(iedge);
-
-		if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
-			// If node is highlighted, highlight its fanout
-			draw_state->draw_rr_node[fanout_node].color = DRIVES_IT_COLOR;
-			draw_state->draw_rr_node[fanout_node].node_highlighted = true;
-		}
-		else if (draw_state->draw_rr_node[hit_node].color == WHITE) {
-			// If node is de-highlighted, de-highlight its fanout
-			draw_state->draw_rr_node[fanout_node].color = DEFAULT_RR_NODE_COLOR;
-			draw_state->draw_rr_node[fanout_node].node_highlighted = false;
-		}
-	}
-
-	/* Highlight the nodes that can fanin to this node in blue. */
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-		for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
-			int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-			if (fanout_node == hit_node) { 
-				if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
-					// If hit_node is highlighted, highlight its fanin
-					draw_state->draw_rr_node[inode].color = BLUE;  
-					draw_state->draw_rr_node[inode].node_highlighted = true;
-				}
-				else if (draw_state->draw_rr_node[hit_node].color == WHITE) {
-					// If hit_node is de-highlighted, de-highlight its fanin
-					draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-					draw_state->draw_rr_node[inode].node_highlighted = false;
-				}
-			}
-		}
-	}
-#else
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
         for (int iedge = 0, l = device_ctx.rr_nodes[node].num_edges(); iedge < l; iedge++) {
@@ -2148,7 +2112,6 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
             }
         }
     }
-#endif
 }
 
 
