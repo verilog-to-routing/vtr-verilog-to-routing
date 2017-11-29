@@ -996,9 +996,12 @@ struct t_trace {
 /* Extra information about each rr_node needed only during routing (i.e.    *
  * during the maze expansion).                                              *
  *                                                                          *
- * prev_node:  Index of the previous node used to reach this one;           *
- *             used to generate the traceback.  If there is no              *
- *             predecessor, prev_node = NO_PREVIOUS.                        *
+ * prev_node:  Index of the previous node (on the lowest cost path known to *
+ *             reach this node); used to generate the traceback.  If there  *
+ *             is no predecessor, prev_node = NO_PREVIOUS.                  *
+ * prev_edge:  Index of the edge (from 0 to num_edges-1 of prev_node) that  *
+ *             was used to reach this node from the previous node.  If      *
+ *             there is no predecessor, prev_edge = NO_PREVIOUS.            *
  * pres_cost:  Present congestion cost term for this node.                  *
  * acc_cost:   Accumulated cost term from previous Pathfinder iterations.   *
  * path_cost:  Total cost of the path up to and including this node +       *
@@ -1006,19 +1009,18 @@ struct t_trace {
  *             is being used.                                               *
  * backward_path_cost:  Total cost of the path up to and including this     *
  *                      node.  Not used by breadth-first router.            *
- * prev_edge:  Index of the edge (from 0 to num_edges-1) that was used      *
- *             to reach this node from the previous node.  If there is      *
- *             no predecessor, prev_edge = NO_PREVIOUS.                     *
  * target_flag:  Is this node a target (sink) for the current routing?      *
  *               Number of times this node must be reached to fully route.  *
  * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
 	int prev_node;
+	short prev_edge;
+
 	float pres_cost;
 	float acc_cost;
 	float path_cost;
 	float backward_path_cost;
-	short prev_edge;
+
 	short target_flag;
 
     public: //Accessors
