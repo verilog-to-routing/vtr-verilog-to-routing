@@ -102,8 +102,10 @@ static vtr::t_chunk linked_f_pointer_ch;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
+void print_traceback(t_trace* trace);
 
 static t_trace_branch traceback_branch(int node, int from_node, int from_edge);
+static t_trace* trace_non_configurable(t_trace* branch_head, t_trace* branch_tail);
 
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
@@ -401,7 +403,7 @@ void pathfinder_update_path_cost(t_trace *route_segment_start,
 	for (;;) {
 		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
 
-		if (device_ctx.rr_nodes[tptr->index].type() == SINK) {
+		if (tptr->iswitch == OPEN) { //End of branch
 			tptr = tptr->next; /* Skip next segment. */
 			if (tptr == NULL)
 				break;
@@ -434,6 +436,7 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 	}
 }
+
 void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	/* This routine recomputes the pres_cost and acc_cost of each routing        *
@@ -454,7 +457,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 		if (occ > capacity) {
 			route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
-                        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+            route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 		}
 
 		/* If occ == capacity, we don't need to increase acc_cost, but a change    *
@@ -573,12 +576,53 @@ static t_trace_branch traceback_branch(int node, int from_node, int from_edge) {
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
+        branch_tail = trace_non_configurable(branch_head, branch_tail);
+
         iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
         inode = route_ctx.rr_node_route_inf[inode].prev_node;
     }
     return {branch_head, branch_tail}; 
 }
 
+//Traces any non-configurable subtrees from branch_head, returning the new branch_head
+//
+//This effectively does a depth-first traversal
+static t_trace* trace_non_configurable(t_trace* branch_head, t_trace* branch_tail) {
+
+    t_trace* tail = branch_tail;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    int node = branch_head->index;
+    for (int iedge = 0; iedge < device_ctx.rr_nodes[node].num_edges(); ++iedge) {
+        bool edge_configurable = device_ctx.rr_nodes[node].edge_is_configurable(iedge);
+
+        if (!edge_configurable) {
+
+            int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+            int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
+            
+            //Duplicate the original head as the new tail (for the new branch)
+            t_trace* new_head = alloc_trace_data();
+            new_head->index = branch_head->index;
+            new_head->iswitch = iswitch;
+            new_head->next = nullptr;
+
+            //Hook-up the subtree (TODO: recursively construct)
+            t_trace* subtree = alloc_trace_data();
+            subtree->index = to_node;
+            subtree->iswitch = OPEN;
+            subtree->next = nullptr;
+
+            new_head->next = subtree; //Add the new head before the subtree
+
+            tail->next = new_head; //Add the headed-subtree to the existing end
+
+            tail = subtree; //Update the tail
+        }
+    }
+
+    return tail;
+}
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
 * all channel segments touched by previous routing phases.    */
 void reset_path_costs(void) {
@@ -1530,6 +1574,16 @@ void print_traceback(ClusterNetId net_id) {
 		else 
 			vtr::printf_info("%d(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
 		head = head->next;
+	}
+	vtr::printf_info("\n");
+}
+
+void print_traceback(t_trace* trace) {
+    auto& device_ctx = g_vpr_ctx.device();
+	while (trace) {
+		int inode = trace->index;
+        vtr::printf("%d (%s)\n", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
+		trace = trace->next;
 	}
 	vtr::printf_info("\n");
 }

@@ -1838,10 +1838,11 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
             rr_nodes_to_draw.push_back(inode);
 
-			if (rr_type == SINK) { /* Skip the next segment */
+			if (tptr->iswitch == OPEN) { //End of branch
                 draw_partial_route(rr_nodes_to_draw);
                 rr_nodes_to_draw.clear();
 
+                /* Skip the next segment */
 				tptr = tptr->next;
 				if (tptr == NULL)
 					break;
