@@ -1791,12 +1791,16 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             e_sb_type sb_type = e_sb_type::FULL;
             if (sb_type_str == "none") {
                 sb_type = e_sb_type::NONE;
-            } else if (sb_type_str == "full") {
-                sb_type = e_sb_type::FULL;
-            } else if (sb_type_str == "straight") {
-                sb_type = e_sb_type::STRAIGHT;
+            } else if (sb_type_str == "horizontal") {
+                sb_type = e_sb_type::HORIZONTAL;
+            } else if (sb_type_str == "vertical") {
+                sb_type = e_sb_type::VERTICAL;
             } else if (sb_type_str == "turns") {
                 sb_type = e_sb_type::TURNS;
+            } else if (sb_type_str == "straight") {
+                sb_type = e_sb_type::STRAIGHT;
+            } else if (sb_type_str == "full") {
+                sb_type = e_sb_type::FULL;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
                         "Invalid <sb_loc> 'type' attribute '%s'\n",

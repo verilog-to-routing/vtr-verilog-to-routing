@@ -58,6 +58,7 @@ struct t_pb_graph_pin;
 struct t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
+enum class e_sb_type;
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -383,10 +384,13 @@ struct t_fc_specification {
 };
 
 enum class e_sb_type {
-    NONE,       //No SB at this location
-    FULL,       //Full SB at this location (i.e. turns + straight)
-    STRAIGHT,   //Straight-through connections only
-    TURNS       //Turning connections only
+    NONE,          //No SB at this location
+    HORIZONTAL,    //Horizontal straight-through connections
+    VERTICAL,      //Vertical straight-through connections
+    TURNS,         //Turning connections only
+    STRAIGHT,      //Straight-through connections (i.e. vertical + horizontal)
+    FULL           //Full SB at this location (i.e. turns + straight)
+
 };
 
 enum class e_sb_switch_override {

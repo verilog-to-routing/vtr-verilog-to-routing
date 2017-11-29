@@ -2737,6 +2737,10 @@ e_sb_switch_override should_create_switchblock(const DeviceGrid& grid, int from_
         return switch_override;
     } else if (sb_type == e_sb_type::TURNS && from_chan_type != to_chan_type) {
         return switch_override;
+    } else if (sb_type == e_sb_type::HORIZONTAL && from_chan_type == CHANX && to_chan_type == CHANX) {
+        return switch_override;
+    } else if (sb_type == e_sb_type::VERTICAL && from_chan_type == CHANY && to_chan_type == CHANY) {
+        return switch_override;
     }
 
     return e_sb_switch_override::NO_SWITCH;
