@@ -398,8 +398,6 @@ void pathfinder_update_path_cost(t_trace *route_segment_start,
 	if (tptr == NULL) /* No routing yet. */
 		return;
 
-    auto& device_ctx = g_vpr_ctx.device();
-
 	for (;;) {
 		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
 

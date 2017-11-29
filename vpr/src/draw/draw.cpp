@@ -1796,9 +1796,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	int inode;
 	t_trace *tptr;
-	t_rr_type rr_type;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
 	setlinestyle(SOLID);
@@ -1817,14 +1815,12 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 		tptr = route_ctx.trace_head[net_id]; /* SOURCE to start */
 		inode = tptr->index;
-		rr_type = device_ctx.rr_nodes[inode].type();
 
         std::vector<int> rr_nodes_to_draw;
         rr_nodes_to_draw.push_back(inode);
 		for (;;) {
 			tptr = tptr->next;
 			inode = tptr->index;
-			rr_type = device_ctx.rr_nodes[inode].type();
 
 			if (draw_if_net_highlighted(net_id)) {
 				/* If a net has been highlighted, highlight the whole net in *
