@@ -345,6 +345,16 @@ if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
 	copy( $abc_rc_path, $temp_dir );
 }
 
+# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
+# my $odin2_restore_blackboxed_latches_from_blif_file_py_path;
+# if (    $stage_idx_odin >= $starting_stage
+# 	and $stage_idx_odin <= $ending_stage )
+# {
+# 	$odin2_restore_blackboxed_latches_from_blif_file_py_path = exe_for_platform("$vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py");
+# 	( -e $odin2_path )
+# 	  or die "Cannot find ODIN_II executable ($odin2_path)";
+# }
+
 my $ace_path;
 if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $do_power) {
 	$ace_path = "$vtr_flow_path/../ace2/ace";
@@ -440,7 +450,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 
 	if ( !$error_code ) {
 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-			"-c", $odin_config_file_name, "-black_box_latches");
+			"-c", $odin_config_file_name, "--black_box_latches");
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
@@ -481,6 +491,9 @@ if (    $starting_stage <= $stage_idx_abc
 
 	if ( -e $abc_output_file_path and $q eq "success") {
 
+		# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
+		system "$vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py --inplace $abc_output_file_path";
+
 		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
 			system "rm -f $odin_output_file_path";
@@ -492,6 +505,30 @@ if (    $starting_stage <= $stage_idx_abc
 		$error_code = 1;
 	}
 }
+
+#################################################################################
+################### Restore Black Boxed Latches From Blif File #######################
+#################################################################################
+# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
+# if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
+# $vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py
+# 	system " $abc_output_file_name";
+# 	if ( !$error_code ) {
+# 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+# 			"-c", $odin_config_file_name);
+# 		if ( -e $odin_output_file_path and $q eq "success") {
+# 			if ( !$keep_intermediate_files ) {
+# 				system "rm -f ${temp_dir}*.dot";
+# 				system "rm -f ${temp_dir}*.v";
+# 				system "rm -f $odin_config_file_path";
+# 			}
+# 		}
+# 		else {
+# 			print "failed: odin";
+# 			$error_code = 1;
+# 		}
+# 	}
+# }
 
 #################################################################################
 ################################## ACE ##########################################

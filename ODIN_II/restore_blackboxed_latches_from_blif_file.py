@@ -58,11 +58,18 @@ def main():
     if args.inplace:
         args.restoredBlifFile = "restored.blif.tmp"
 
-    replacements = {'.subckt bb_latch':'.latch ', 'i[0]=':'', 'o[0]=':'', 'bbl_type_':'', 'bbl_control_':'', 'bbl_init_val_':''}
     with open(args.blifFileToRestore) as infile, open(args.restoredBlifFile, 'w') as outfile:
         for line in infile:
-            for src, target in replacements.iteritems():
-                line = line.replace(src, target)
+            
+            if '.subckt bb_latch@' in line:
+                line = line.replace('.subckt bb_latch@', '')
+                line = line.replace('i[0]=', '')
+                line = line.replace('o[0]=', '')
+                line = line.replace('@', ' ')
+                line = line.strip()
+                tokens = line.split(" ",3)
+                line = ".latch " + tokens[3] + ' ' + tokens[0] + ' ' + tokens[1] + ' ' + tokens[2] + '\n'  
+                
             outfile.write(line)
 
     print "Removing BlackBoxed Latch Model:"
