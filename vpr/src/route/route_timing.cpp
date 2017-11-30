@@ -1512,9 +1512,9 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
     }
     return rlim;
 }
-#define ERROR_TOL 0.0001
 
 static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
+    constexpr float ERROR_TOL = 0.0001;
 
     /* Checks that the net delays computed incrementally during timing driven    *
      * routing match those computed from scratch by the net_delay.c module.      */
@@ -1524,8 +1524,6 @@ static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *
 	vtr::vector_map<ClusterNetId, float *> net_delay_check;
 
     vtr::t_chunk list_head_net_delay_check_ch;
-
-    /*t_linked_vptr *ch_list_head_net_delay_check;*/
 
     net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch);
     load_net_delay_from_routing(net_delay_check);
@@ -1540,7 +1538,8 @@ static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *
 							size_t(net_id), ipin, net_delay[net_id][ipin], net_delay_check[net_id][ipin]);
                 }
             } else {
-                if (fabs(1.0 - net_delay[net_id][ipin] / net_delay_check[net_id][ipin]) > ERROR_TOL) {
+                float error = fabs(1.0 - net_delay[net_id][ipin] / net_delay_check[net_id][ipin]);
+                if (error > ERROR_TOL) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "in timing_driven_check_net_delays: net %d pin %lu.\n"
                             "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
