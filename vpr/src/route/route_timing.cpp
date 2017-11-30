@@ -1239,12 +1239,6 @@ static t_heap* timing_driven_expand_node(const float criticality_fac, const floa
     next->backward_path_cost = new_back_pcost;
     next->R_upstream = new_R_upstream;
 
-    //Update route inf
-    //route_ctx.rr_node_route_inf[to_node].prev_node = from_node;
-    //route_ctx.rr_node_route_inf[to_node].prev_edge = iconn;
-    //route_ctx.rr_node_route_inf[to_node].path_cost = new_tot_cost;
-    //route_ctx.rr_node_route_inf[to_node].backward_path_cost = new_back_pcost;
-
     return next;
 }
 
