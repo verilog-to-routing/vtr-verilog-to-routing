@@ -98,6 +98,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 		tptr = tptr->next;
 
 		/* Check the rest of the net */
+        size_t num_sinks = 0;
 		while (tptr != NULL) {
 			inode = tptr->index;
 			check_node_and_range(inode, route_type);
@@ -117,32 +118,29 @@ void check_route(enum e_route_type route_type, int num_switches) {
 						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", size_t(net_id));
 				}
 
-				if (connected_to_route[inode] && device_ctx.rr_nodes[inode].type() != SINK) {
-					/* Note:  Can get multiple connections to the same logically-equivalent *
-					 * SINK in some logic blocks.                                           */
-					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: net %d routing is not a tree.\n", size_t(net_id));
-				}
-
 				connected_to_route[inode] = true; /* Mark as in path. */
 
-				if (device_ctx.rr_nodes[inode].type() == SINK)
+				if (device_ctx.rr_nodes[inode].type() == SINK) {
 					check_sink(inode, net_id, pin_done);
+                    num_sinks += 1;
+                }
 
 			} /* End of prev_node type != SINK */
 			prev_node = inode;
 			tptr = tptr->next;
 		} /* End while */
 
-		if (device_ctx.rr_nodes[prev_node].type() != SINK) {
+		if (num_sinks != cluster_ctx.clb_nlist.net_sinks(net_id).size()) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_route: net %d does not end with a SINK.\n", size_t(net_id));
+				"in check_route: net %zu (%s) has %zu SINKs (expected %zu).\n",
+                size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
+                num_sinks, cluster_ctx.clb_nlist.net_sinks(net_id).size());
 		}
 
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 			if (pin_done[ipin] == false) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
-					"in check_route: net %d does not connect to pin %d.\n", size_t(net_id), ipin);
+					"in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
 			}
 		}
 
@@ -263,7 +261,7 @@ static void check_switch(t_trace *tptr, int num_switch) {
 	switch_type = tptr->iswitch;
 
 	if (device_ctx.rr_nodes[inode].type() != SINK) {
-		if (switch_type < 0 || switch_type >= num_switch) {
+		if (switch_type >= num_switch) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_switch: rr_node %d left via switch type %d.\n"
 				"\tSwitch type is out of range.\n", inode, switch_type);
@@ -548,7 +546,7 @@ void recompute_occupancy_from_scratch() {
 			inode = tptr->index;
 			route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
 
-			if (device_ctx.rr_nodes[inode].type() == SINK) {
+			if (tptr->iswitch == OPEN) {
 				tptr = tptr->next; /* Skip next segment. */
 				if (tptr == NULL)
 					break;

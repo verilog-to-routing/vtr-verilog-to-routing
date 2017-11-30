@@ -105,7 +105,8 @@ static vtr::t_chunk linked_f_pointer_ch;
 void print_traceback(t_trace* trace);
 
 static t_trace_branch traceback_branch(int node, int from_node, int from_edge);
-static t_trace* trace_non_configurable(t_trace* branch_head, t_trace* branch_tail);
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited);
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth=0);
 
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
@@ -558,6 +559,8 @@ static t_trace_branch traceback_branch(int node, int from_node, int from_edge) {
 			"in traceback_branch: Expected type = SINK (%d).\n");
 	}
 
+    //We construct the main traceback by walking from the given node back to the source,
+    //according to the previous edges/nodes recorded in rr_node_route_inf by the router.
     t_trace* branch_head = alloc_trace_data();
     t_trace* branch_tail = branch_head;
     branch_head->index = node;
@@ -567,60 +570,128 @@ static t_trace_branch traceback_branch(int node, int from_node, int from_edge) {
     int inode = from_node;
     int iedge = from_edge;
 
+    std::set<int> main_branch_visited;
     while (inode != NO_PREVIOUS) {
+        //Add the current node to the head of traceback
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
         prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
-        branch_tail = trace_non_configurable(branch_head, branch_tail);
+        main_branch_visited.insert(inode); //Record this node as visited
 
         iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
         inode = route_ctx.rr_node_route_inf[inode].prev_node;
     }
+
+    //We next re-expand all the main-branch nodes to add any non-configurably connected side branches
+    // We are careful to do this *after* the main branch is constructed to ensure nodes which are both
+    // non-configurably connected *and* part of the main branch are only added to the traceback once.
+    std::set<int> all_visited = main_branch_visited; //Make a copy since it will be updated by add_trace_non_configurable()
+    for (int main_branch_node : main_branch_visited) {
+        //Expand each main branch node
+        std::tie(branch_head, branch_tail) = add_trace_non_configurable(branch_head, branch_tail, main_branch_node, all_visited);
+    }
+
     return {branch_head, branch_tail}; 
 }
 
 //Traces any non-configurable subtrees from branch_head, returning the new branch_head
 //
 //This effectively does a depth-first traversal
-static t_trace* trace_non_configurable(t_trace* branch_head, t_trace* branch_tail) {
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited) {
+    //Trace any non-configurable subtrees
+    t_trace* subtree_head = nullptr;
+    t_trace* subtree_tail = nullptr;
+    std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(node, visited);
 
-    t_trace* tail = branch_tail;
+    //Add any non-empty subtree to tail of traceback
+    if (subtree_head && subtree_tail) {
+        if (!head) { //First subtree becomes head
+            head = subtree_head;
+        } else { //Later subtrees added to tail
+            VTR_ASSERT(tail);
+            tail->next = subtree_head;
+        }
 
-    auto& device_ctx = g_vpr_ctx.device();
-    int node = branch_head->index;
-    for (int iedge = 0; iedge < device_ctx.rr_nodes[node].num_edges(); ++iedge) {
-        bool edge_configurable = device_ctx.rr_nodes[node].edge_is_configurable(iedge);
+        tail = subtree_tail;
+    } else {
+        VTR_ASSERT(subtree_head == nullptr && subtree_tail == nullptr);
+    }
 
-        if (!edge_configurable) {
+    return {head, tail};
+}
 
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth) {
+    t_trace* head = nullptr;
+    t_trace* tail = nullptr;
+
+    if (!visited.count(node) || depth == 0) { //Unvisted or initial expansion from node
+        visited.insert(node); //Mark visited
+
+        //Record the non-configurable out-going edges
+        std::vector<int> unvisited_non_configurable_edges;
+        auto& device_ctx = g_vpr_ctx.device();
+        for (int iedge = 0; iedge < device_ctx.rr_nodes[node].num_edges(); ++iedge) {
+            bool edge_configurable = device_ctx.rr_nodes[node].edge_is_configurable(iedge);
             int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
-            int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
-            
-            //Duplicate the original head as the new tail (for the new branch)
-            t_trace* new_head = alloc_trace_data();
-            new_head->index = branch_head->index;
-            new_head->iswitch = iswitch;
-            new_head->next = nullptr;
 
-            //Hook-up the subtree (TODO: recursively construct)
-            t_trace* subtree = alloc_trace_data();
-            subtree->index = to_node;
-            subtree->iswitch = OPEN;
-            subtree->next = nullptr;
+            if (!edge_configurable && !visited.count(to_node)) {
+                unvisited_non_configurable_edges.push_back(iedge);
+            }
+        }
 
-            new_head->next = subtree; //Add the new head before the subtree
+        if (unvisited_non_configurable_edges.size() == 0) {
+            //Base case: leaf node with no non-configurable edges
+            if (depth > 0) { //Arrived via non-configurable edge
+                head = alloc_trace_data();
+                head->index = node;
+                head->iswitch = -1;
+                head->next = nullptr;
+                tail = head;
+            }
 
-            tail->next = new_head; //Add the headed-subtree to the existing end
+        } else {
+            //Recursive case: intermediate node with non-configurable edges
+            for (int iedge : unvisited_non_configurable_edges) {
+                int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+                int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
 
-            tail = subtree; //Update the tail
+                //Recurse
+                t_trace* subtree_head = nullptr;
+                t_trace* subtree_tail = nullptr;
+                std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(to_node, visited, depth + 1);
+
+                if (subtree_head && subtree_tail) {
+                    //Add the non-empty sub-tree
+
+                    //Duplicate the original head as the new tail (for the new branch)
+                    t_trace* intermediate_head = alloc_trace_data();
+                    intermediate_head->index = node;
+                    intermediate_head->iswitch = iswitch;
+                    intermediate_head->next = nullptr;
+
+                    intermediate_head->next = subtree_head;
+
+                    if (!head) { //First subtree becomes head
+                        head = intermediate_head;
+                    } else { //Later subtrees added to tail
+                        VTR_ASSERT(tail);
+                        tail->next = intermediate_head;
+                    }
+
+                    tail = subtree_tail;
+                } else {
+                    VTR_ASSERT(subtree_head == nullptr && subtree_tail == nullptr);
+                }
+            }
         }
     }
 
-    return tail;
+    return {head, tail};
 }
+
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
 * all channel segments touched by previous routing phases.    */
 void reset_path_costs(void) {
