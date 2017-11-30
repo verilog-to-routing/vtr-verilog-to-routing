@@ -178,11 +178,10 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 
 	t_rc_node *curr_rc, *prev_rc, *root_rc;
 	t_trace *tptr;
-	int inode, prev_node;
+	int inode;
 	short iswitch;
 	t_linked_rc_ptr *linked_rc_ptr;
 
-    auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
 	root_rc = alloc_rc_node(rc_node_free_list_ptr);
@@ -210,19 +209,11 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 
 		if (rr_node_to_rc_node[inode].rc_node == NULL) { /* Part of current "arm" */
 			curr_rc = alloc_rc_node(rc_node_free_list_ptr);
-			add_to_rc_tree(prev_rc, curr_rc, iswitch, inode,
-					rc_edge_free_list_ptr);
+			add_to_rc_tree(prev_rc, curr_rc, iswitch, inode, rc_edge_free_list_ptr);
 			rr_node_to_rc_node[inode].rc_node = curr_rc;
 			prev_rc = curr_rc;
 
-		} else if (device_ctx.rr_nodes[inode].type() != SINK) { /* Connection to old stuff. */
-
-			prev_node = prev_rc->inode;
-			if (device_ctx.rr_nodes[prev_node].type() != SINK) {
-				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, device_ctx.rr_nodes[prev_node].type());
-				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-						"in alloc_and_load_rc_tree: Routing of net %lu is not a tree.\n", size_t(net_id));
-			}
+		} else if (iswitch == OPEN) { /* Connection to old stuff. */
 
 			prev_rc = rr_node_to_rc_node[inode].rc_node;
 
@@ -236,11 +227,9 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 			 * associated with the rr_node (inode) associated with that SINK.           */
 
 			curr_rc = alloc_rc_node(rc_node_free_list_ptr);
-			add_to_rc_tree(prev_rc, curr_rc, iswitch, inode,
-					rc_edge_free_list_ptr);
+			add_to_rc_tree(prev_rc, curr_rc, iswitch, inode, rc_edge_free_list_ptr);
 
-			linked_rc_ptr = (t_linked_rc_ptr *) vtr::malloc(
-					sizeof(t_linked_rc_ptr));
+			linked_rc_ptr = (t_linked_rc_ptr *) vtr::malloc(sizeof(t_linked_rc_ptr));
 			linked_rc_ptr->next = rr_node_to_rc_node[inode].next;
 			rr_node_to_rc_node[inode].next = linked_rc_ptr;
 			linked_rc_ptr->rc_node = curr_rc;
