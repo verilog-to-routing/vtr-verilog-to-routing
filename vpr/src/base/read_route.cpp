@@ -203,7 +203,6 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
     /*remember the position of the last line in order to go back*/
     streampos oldpos = fp.tellg();
     int inode, x, y, x2, y2, ptc, switch_id, offset;
-    bool last_node_sink = false;
     int node_count = 0;
     string input;
     std::vector<std::string> tokens;
@@ -223,10 +222,6 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
             /*End of the nodes list,
              *  return by moving the position of next char of input stream to be before net*/
             fp.seekg(oldpos);
-            if (!last_node_sink) {
-                vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                        "Last node in routing has to be a sink type");
-            }
             return;
         } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
             if (cluster_ctx.clb_nlist.net_sinks(inet).size() != 0) {
@@ -249,13 +244,6 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
             if (tokens[2] != node.type_string()) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                         "Node %d has a type that does not match the RR graph", inode);
-            }
-
-            /*Keep track of the sink since last node has to be sink type*/
-            if (tokens[2] == "SINK") {
-                last_node_sink = true;
-            } else {
-                last_node_sink = false;
             }
 
             format_coordinates(x, y, tokens[3], inet, filename, lineno);
