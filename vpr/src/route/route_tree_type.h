@@ -24,9 +24,8 @@ struct t_linked_rt_edge {
  *          node on the free list.                                           *
  * parent_node:  Pointer to the rt_node that is this node's parent (used to  *
  *               make bottom to top traversals).                             *
- * re_expand:  (really bool).  Should this node be put on the heap as        *
- *             part of the partial routing to act as a source for subsequent *
- *             connections?  true->yes, false-> no.                          *
+ * re_expand:  Should this node be put on the heap as part of the partial    *
+ *             routing to act as a source for subsequent connections?        *
  * parent_switch:  Index of the switch type driving this node (by its        *
  *                 parent).                                                  *
  * inode:  index (ID) of the rr_node that corresponds to this rt_node.       *
@@ -44,7 +43,7 @@ struct t_rt_node {
 	} u;
 	t_rt_node *parent_node;
 	short parent_switch;
-	short re_expand;
+	bool re_expand;
 	int inode;
 	float C_downstream;
 	float R_upstream;
