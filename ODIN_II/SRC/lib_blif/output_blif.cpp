@@ -52,6 +52,7 @@ void output_blif_pin_connect(nnode_t *node, FILE *out);
 void output_blif(char *file_name, netlist_t *netlist);
 
 std::unordered_set<std::string> blackboxed_latch_names;
+long bb_latch_counter = 0;
 
 std::string make_bb_latch_name(std::string edge_type, std::string pin_name, std::string initial_value);
 std::string make_pin_name(nnode_t *node);
@@ -60,7 +61,7 @@ std::string make_hb_driver(std::string next_name, int index, std::string name);
 std::string make_pin_name(nnode_t *node)
 {
 	std::stringstream bb_latch_name;
-	bb_latch_name << node->name << "^^" << std::to_string(node->related_ast_node->far_tag) << "-" << std::to_string(node->related_ast_node->high_number) ;
+	bb_latch_name << node->name << "^^" << std::to_string(node->related_ast_node->far_tag) << "-" << std::to_string(node->related_ast_node->high_number);
 	return bb_latch_name.str();
 }
 
@@ -84,7 +85,7 @@ std::string make_hb_driver(std::string next_name, int index, std::string name)
 std::string make_bb_latch_name(std::string edge_type, std::string pin_name, std::string initial_value)
 {
 	std::stringstream bb_latch_name;
-	bb_latch_name << "bb_latch" << "@" << edge_type << "@" << pin_name << "@" << initial_value;
+	bb_latch_name << "bb_latch_@" << pin_name << "@" << edge_type << "@" << initial_value << "@";
 	return bb_latch_name.str();
 }
 
@@ -260,12 +261,6 @@ void output_blif(char *file_name, netlist_t *netlist)
 	add_the_blackbox_for_adds(out);
 
 	/* Add the Black Box(es) for Latches */
-	printf("DEBUG: output_blif.cpp: output_blif(): blackboxed_latch_names size: %lu\n", blackboxed_latch_names.size());
-	// for(int j = 0; j < blackboxed_latch_names.size(); ++j)
-	// {
-	// 	printf("DEBUG: output_blif.cpp: output_blif(): blackboxed_latch_name[%d]: %s\n", j, blackboxed_latch_names[j].c_str());
-	// }
-	printf("\n");
 	if(!blackboxed_latch_names.empty())
 		for(std::string bb_latch_name : blackboxed_latch_names)
 		{
@@ -737,12 +732,10 @@ void define_ff(nnode_t *node, FILE *out_f)
 	else if(global_args.sim_initial_value == 0 || global_args.sim_initial_value == 1)
 		initial_value = std::to_string(global_args.sim_initial_value);
 	
-	std::stringstream output_ff;
-	
 	/* 
 	 *	TODO: Implement other control signal triggers? (control triggers are one of 
-	 *	{fe, re, ah, al, as}, 
-	 *	which correspond to “falling edge,” “rising edge,” “active high,” “active low,” or “asynchronous.”) 
+	 *	{fe, re, ah, al, as}, which correspond to “falling edge,” “rising edge,” 
+	 *  “active high,” “active low,” or “asynchronous.”) 
 	 */
 	std::string edge_type("re");
 	
@@ -770,30 +763,18 @@ void define_ff(nnode_t *node, FILE *out_f)
 							node->input_pins[1]->net->driver_pin->node->name;
 	}
 	
+	std::string bb_obfuscated_input = input_pin;
 	
 	if(global_args.black_box_latches)
 	{
-		printf("DEBUG: output_blif.cpp: define_ff(): edge_type: %s, clk_pin: %s, initial_value: %s\n", edge_type.c_str(), clk_pin.c_str(), initial_value.c_str());
 		std::string bb_latch_name = make_bb_latch_name(edge_type, clk_pin, initial_value);
-		printf("DEBUG: output_blif.cpp: define_ff(): bb_latch_name: %s\n", bb_latch_name.c_str());
-		printf("DEBUG: output_blif.cpp: define_ff(): blackboxed_latch_names: size (before): %lu\n", blackboxed_latch_names.size());
-		// for(int i = 0; i < blackboxed_latch_names.size(); ++i)
-		// {
-		// 	printf("DEBUG: output_blif.cpp: define_ff(): blackboxed_latch_name[%d] (before): %s\n", i, blackboxed_latch_names[i].c_str());
-		// }
+		bb_obfuscated_input = bb_latch_name + input_pin + "@" + std::to_string(++bb_latch_counter);
 		blackboxed_latch_names.insert(bb_latch_name);
-		printf("DEBUG: output_blif.cpp: define_ff(): blackboxed_latch_names: size (after): %lu\n", blackboxed_latch_names.size());
-		// for(int i = 0; i < blackboxed_latch_names.size(); ++i)
-		// {
-		// 	printf("DEBUG: output_blif.cpp: define_ff(): blackboxed_latch_name[%d] (after): %s\n", i, blackboxed_latch_names[i].c_str());
-		// }
-		printf("\n");
-		out << ".subckt " << bb_latch_name << " i[0]=" << input_pin << " o[0]=" << output_pin << "\n";
+		
+		out << ".subckt " << bb_latch_name << " i[0]=" << input_pin << " o[0]=" << bb_obfuscated_input << "\n\n";
 	}
-	else
-	{
-		out << ".latch " << input_pin << " " << output_pin << " " << edge_type << " " << clk_pin << " " << initial_value << "\n\n"; 
-	}
+
+	out << ".latch " << bb_obfuscated_input << " " << output_pin << " " << edge_type << " " << clk_pin << " " << initial_value << "\n\n"; 
 	fprintf(out_f,"%s",out.str().c_str());
 }
 
