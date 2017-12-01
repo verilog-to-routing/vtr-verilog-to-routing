@@ -769,9 +769,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
      * traceback and the route_tree.  The route_tree enables fast recomputation *
      * of the Elmore delay to each node in the partial routing.  The traceback  *
      * lets me reuse all the routines written for breadth-first routing, which  *
-     * all take a traceback structure as input.  Before this routine exits the  *
-     * route_tree structure is destroyed; only the traceback is needed at that  *
-     * point.                                                                   */
+     * all take a traceback structure as input.                                 */
 
     int inode = cheapest->index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */

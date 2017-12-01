@@ -31,7 +31,7 @@ using namespace std;
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                                              */
 
-static t_rt_node **rr_node_to_rt_node = NULL; /* [0..device_ctx.num_rr_nodes-1] */
+static std::vector<t_rt_node *> rr_node_to_rt_node; /* [0..device_ctx.num_rr_nodes-1] */
 
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -49,13 +49,15 @@ static t_linked_rt_edge *alloc_linked_rt_edge(void);
 
 static void free_linked_rt_edge(t_linked_rt_edge * rt_edge);
 
-static t_rt_node *add_path_to_route_tree(t_heap *hptr,
+static t_rt_node *add_subtree_to_route_tree(t_heap *hptr,
 		t_rt_node ** sink_rt_node_ptr);
 
-static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node);
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::set<int>& visited);
+
+static void load_new_subtree_R_upstream(t_rt_node * start_of_new_subtree_rt_node);
 
 static t_rt_node *update_unbuffered_ancestors_C_downstream(
-		t_rt_node * start_of_new_path_rt_node);
+		t_rt_node * start_of_new_subtree_rt_node);
 
 // preceeding_edge_to_subtree->next is the edge to be removed
 static t_linked_rt_edge* free_route_subtree(t_rt_node* parent, t_linked_rt_edge* preceeding_edge_to_subtree);
@@ -72,7 +74,9 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
 
 	/* Allocates any structures needed to build the routing trees. */
 
-    bool route_tree_structs_are_allocated = (rr_node_to_rt_node != NULL 
+    auto& device_ctx = g_vpr_ctx.device();
+
+    bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.num_rr_nodes)
                                              || rt_node_free_list != NULL
 			                                 || rt_node_free_list != NULL);
     if (route_tree_structs_are_allocated) {
@@ -84,9 +88,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         }
 	}
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(device_ctx.num_rr_nodes * sizeof(t_rt_node *));
+	rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.num_rr_nodes, nullptr);
 
     return true;
 }
@@ -99,8 +101,7 @@ void free_route_tree_timing_structs(void) {
 	t_rt_node *rt_node, *next_node;
 	t_linked_rt_edge *rt_edge, *next_edge;
 
-	free(rr_node_to_rt_node);
-	rr_node_to_rt_node = NULL;
+	rr_node_to_rt_node.clear();
 
 	rt_node = rt_node_free_list;
 
@@ -208,17 +209,17 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 * is the heap pointer of the SINK that was reached.  This routine returns
 * a pointer to the rt_node of the SINK that it adds to the routing.        */
 t_rt_node* update_route_tree(t_heap * hptr) {
-	t_rt_node *start_of_new_path_rt_node, *sink_rt_node;
+	t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
 	t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
 	float Tdel_start;
 	short iswitch;
 
     auto& device_ctx = g_vpr_ctx.device();
 
-	start_of_new_path_rt_node = add_path_to_route_tree(hptr, &sink_rt_node);
-	load_new_path_R_upstream(start_of_new_path_rt_node);
+	start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, &sink_rt_node);
+	load_new_subtree_R_upstream(start_of_new_subtree_rt_node);
 	unbuffered_subtree_rt_root = update_unbuffered_ancestors_C_downstream(
-			start_of_new_path_rt_node);
+			start_of_new_subtree_rt_node);
 
 	subtree_parent_rt_node = unbuffered_subtree_rt_root->parent_node;
 
@@ -237,7 +238,7 @@ t_rt_node* update_route_tree(t_heap * hptr) {
 }
 
 static t_rt_node*
-add_path_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
+add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	/* Adds the most recent wire segment, ending at the SINK indicated by hptr,
 	 * to the routing tree.  It returns the first (most upstream) new rt_node,
@@ -256,7 +257,7 @@ add_path_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	if (device_ctx.rr_nodes[inode].type() != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-			"in add_path_to_route_tree. Expected type = SINK (%d).\n"
+			"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
 			"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
 	}
 
@@ -280,11 +281,13 @@ add_path_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	iedge = hptr->prev_edge;
 	iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
-	/* For all "new" nodes in the path */
+	/* For all "new" nodes in the main path */
 	// inode is node index of previous node
 	// NO_PREVIOUS tags a previously routed node
 
+    std::set<int> main_branch_visited;
 	while (route_ctx.rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
+        main_branch_visited.insert(inode);
 
 		linked_rt_edge = alloc_linked_rt_edge();
 		linked_rt_edge->child = downstream_rt_node;
@@ -298,18 +301,20 @@ add_path_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->u.child_list = linked_rt_edge;
 		rt_node->inode = inode;
 
-		if (device_ctx.rr_switch_inf[iswitch].buffered == false)
+		if (device_ctx.rr_switch_inf[iswitch].buffered == false) {
 			C_downstream += device_ctx.rr_nodes[inode].C();
-		else
+        } else {
 			C_downstream = device_ctx.rr_nodes[inode].C();
+        }
 
 		rt_node->C_downstream = C_downstream;
 		rr_node_to_rt_node[inode] = rt_node;
 
-        if (device_ctx.rr_nodes[inode].type() == IPIN)
+        if (device_ctx.rr_nodes[inode].type() == IPIN) {
             rt_node->re_expand = false;
-        else
+        } else {
             rt_node->re_expand = true;
+        }
 
 		downstream_rt_node = rt_node;
 		iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
@@ -317,73 +322,126 @@ add_path_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 	}
 
-	/* Inode is the branch point to the old routing */
-	// do not need to alloc another node since the old routing has done so already
+	//Inode is now the branch point to the old routing; do not need 
+    //to alloc another node since the old routing has done so already
 	rt_node = rr_node_to_rt_node[inode];
 
 	linked_rt_edge = alloc_linked_rt_edge();
 	linked_rt_edge->child = downstream_rt_node;
 	linked_rt_edge->iswitch = iswitch;
-	linked_rt_edge->next = rt_node->u.child_list;
+	linked_rt_edge->next = rt_node->u.child_list; //Add to head
 	rt_node->u.child_list = linked_rt_edge;
 
 	downstream_rt_node->parent_node = rt_node;
 	downstream_rt_node->parent_switch = iswitch;
 
+    //Expand (recursively) each of the main-branch nodes adding any 
+    //non-configurably connected nodes
+    std::set<int> all_visited = main_branch_visited;
+    for (int rr_node : main_branch_visited) {
+        add_non_configurable_to_route_tree(rr_node, false, all_visited);
+    }
+
 	*sink_rt_node_ptr = sink_rt_node;
 	return (downstream_rt_node);
 }
 
-static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::set<int>& visited) {
+    t_rt_node* rt_node = nullptr;
+
+    if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
+        visited.insert(rr_node);
+
+        auto& device_ctx = g_vpr_ctx.device();
+
+        rt_node = rr_node_to_rt_node[rr_node];
+
+        float C_downstream = 0;
+        if (!reached_by_non_configurable_edge) { //An existing main branch node
+            VTR_ASSERT(rt_node);
+            C_downstream = rt_node->C_downstream; 
+        } else { //A new node
+            VTR_ASSERT_MSG(!rt_node, "Non-configurably connected route tree node should not exist");
+
+            rt_node = alloc_rt_node();
+            rt_node->u.child_list = nullptr;
+            rt_node->inode = rr_node;
+
+            C_downstream = device_ctx.rr_nodes[rr_node].C();
+
+            if (device_ctx.rr_nodes[rr_node].type() == IPIN) {
+                rt_node->re_expand = false;
+            } else {
+                rt_node->re_expand = true;
+            }
+        }
+        
+        for (int iedge = 0; iedge < device_ctx.rr_nodes[rr_node].num_edges(); ++iedge) {
+            bool edge_configurable = device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge);
+
+            if (!edge_configurable) { //Recursive case: expand children
+                int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
+
+                //Recurse
+                t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
+
+                if (!child_rt_node) continue;
+
+                //Update downstream C
+                int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
+                if (!device_ctx.rr_switch_inf[iswitch].buffered) {
+                    C_downstream += child_rt_node->C_downstream;
+                }
+
+                //Create the edge
+                t_linked_rt_edge* linked_rt_edge = alloc_linked_rt_edge();
+                linked_rt_edge->child = child_rt_node;
+                linked_rt_edge->iswitch = iswitch;
+
+                //Add edge at head of parent linked list
+                linked_rt_edge->next = rt_node->u.child_list;
+                rt_node->u.child_list = linked_rt_edge;
+
+                //Update child to parent ref
+                child_rt_node->parent_node = rt_node;
+                child_rt_node->parent_switch = iswitch;
+            }
+        }
+
+        rt_node->C_downstream = C_downstream;
+        rr_node_to_rt_node[rr_node] = rt_node;
+    }
+
+    return rt_node;
+}
+
+static void load_new_subtree_R_upstream(t_rt_node* rt_node) {
 
 	/* Sets the R_upstream values of all the nodes in the new path to the
 	 * correct value by traversing down to SINK from the start of the new path. */
 
-	float R_upstream;
-	int inode;
-	short iswitch;
-	t_rt_node *rt_node, *parent_rt_node;
-	t_linked_rt_edge *linked_rt_edge;
-
     auto& device_ctx = g_vpr_ctx.device();
 
-	rt_node = start_of_new_path_rt_node;
-	iswitch = rt_node->parent_switch;
-	inode = rt_node->inode;
-	parent_rt_node = rt_node->parent_node;
+    t_rt_node* parent_rt_node = rt_node->parent_node;
+    int inode = rt_node->inode;
 
-	R_upstream = device_ctx.rr_switch_inf[iswitch].R + device_ctx.rr_nodes[inode].R();
+    int iswitch = rt_node->parent_switch;
+    bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
 
-	if (device_ctx.rr_switch_inf[iswitch].buffered == false)
-		R_upstream += parent_rt_node->R_upstream;
+    //Calculate upstream resistance
+    float R_upstream = 0.;
+    if (!switch_buffered) {
+        R_upstream += parent_rt_node->R_upstream; //Parent upstream R
+    }
+    R_upstream += device_ctx.rr_switch_inf[iswitch].R; //Parent switch R
+    R_upstream += device_ctx.rr_nodes[inode].R(); //Current node R
 
-	rt_node->R_upstream = R_upstream;
+    rt_node->R_upstream = R_upstream;
 
-	/* Note:  the traversal below makes use of the fact that this new path
-	 * really is a path (not a tree with branches) to do a traversal without
-	 * recursion, etc.                                                          */
-
-	linked_rt_edge = rt_node->u.child_list;
-
-	while (linked_rt_edge != NULL) { /* While SINK not reached. */
-
-		if (linked_rt_edge->next != NULL) {
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in load_new_path_R_upstream: new routing addition is a tree (not a path).\n");
-		}
-
-		rt_node = linked_rt_edge->child;
-		iswitch = linked_rt_edge->iswitch;
-		inode = rt_node->inode;
-
-		if (device_ctx.rr_switch_inf[iswitch].buffered)
-			R_upstream = device_ctx.rr_switch_inf[iswitch].R + device_ctx.rr_nodes[inode].R();
-		else
-			R_upstream += device_ctx.rr_switch_inf[iswitch].R + device_ctx.rr_nodes[inode].R();
-
-		rt_node->R_upstream = R_upstream;
-		linked_rt_edge = rt_node->u.child_list;
-	}
+    //Update children
+    for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
+        load_new_subtree_R_upstream(edge->child); //Recurse
+    }
 }
 
 static t_rt_node*
@@ -539,6 +597,7 @@ void free_route_tree(t_rt_node * rt_node) {
 		rt_edge = next_edge;
 	}
 
+    rr_node_to_rt_node[rt_node->inode] = nullptr;
 	free_rt_node(rt_node);
 }
 
