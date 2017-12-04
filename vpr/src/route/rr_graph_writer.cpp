@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string.h>
 #include <iomanip>
+#include <limits>
 #include "vpr_error.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
@@ -17,12 +18,11 @@
 
 using namespace std;
 
-/*All values are printed with this precision value. The higher the
-value, the more accurate the read in rr graph is.
-Through experimentation, 30 is high precision enough for
-an accurate rr graph read in*/
-
-#define FLOAT_PRECISION 30
+/* All values are printed with this precision value. The higher the
+ * value, the more accurate the read in rr graph is. Using numeric_limits
+ * max_digits10 guarentees that no values change during a sequence of 
+ * float -> string -> float conversions */
+constexpr int FLOAT_PRECISION = std::numeric_limits<float>::max_digits10;
 /*********************** Subroutines local to this module *******************/
 void write_rr_channel(fstream &fp);
 void write_rr_node(fstream &fp);
