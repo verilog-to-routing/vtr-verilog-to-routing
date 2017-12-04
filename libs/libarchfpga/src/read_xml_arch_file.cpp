@@ -1762,6 +1762,8 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
 static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data) {
     VTR_ASSERT(type);
 
+    expect_only_attributes(switchblock_locations, {"pattern", "internal_switch"}, loc_data);
+
     std::string pattern = get_attribute(switchblock_locations, "pattern", loc_data, OPTIONAL).as_string("external_full_internal_straight");
 
     //Initialize the location specs
@@ -1851,99 +1853,69 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             assigned_locs[xoffset][yoffset] = true; //Mark the location as set for error detection
         }
     } else { //Non-custom patterns
-        expect_only_children(switchblock_locations, {}, loc_data); //No child tags
+        //Initialize defaults
+        int internal_switch = DEFAULT_SWITCH;
+        int external_switch = DEFAULT_SWITCH;
+        e_sb_type internal_type = e_sb_type::FULL;
+        e_sb_type external_type = e_sb_type::FULL;
 
-        //Fill in all the entries of the switchblock locations
+        //Determine any internal switch override
+        auto internal_switch_attr = get_attribute(switchblock_locations, "internal_switch", loc_data, OPTIONAL);
+        if (internal_switch_attr) {
+            std::string internal_switch_name = internal_switch_attr.as_string();
+            //Use the specified switch
+            internal_switch = find_switch_by_name(arch, internal_switch_name);
+
+            if (internal_switch == OPEN) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                        "Invalid <switchblock_locations> 'internal_switch' attribute '%s' (no matching switch named '%s' found)\n",
+                        internal_switch_name.c_str(), internal_switch_name.c_str());
+            }
+        }
+
+        //Identify switch block types
         if (pattern == "all") {
-            expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
-
-            //SBs at all locations
-            type->switchblock_locations.fill(e_sb_type::FULL);
+            internal_type = e_sb_type::FULL;
+            external_type = e_sb_type::FULL;
 
         } else if (pattern == "external") {
-            //SBs only 'outside' blocks (note: SBs located to top/right of grid tile locations)
-
-            expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
-
-            //Mark all locations as NONE
-            type->switchblock_locations.fill(e_sb_type::NONE);
-
-            //Mark top edge as FULL
-            size_t yoffset = height - 1;
-            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-            }
-
-            //Mark right edge as FULL
-            size_t xoffset = width - 1;
-            for (yoffset = 0; yoffset < height; ++yoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-            }
+            internal_type = e_sb_type::NONE;
+            external_type = e_sb_type::FULL;
 
         } else if (pattern == "internal") {
-            //SBs only 'inside' blocks (note: SBs located to top/right of grid tile locations)
-
-            expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
-
-            //Fill all locations
-            type->switchblock_locations.fill(e_sb_type::FULL);
-
-            //Mark top edge as NONE
-            size_t yoffset = height - 1;
-            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::NONE;
-            }
-
-            //Mark right edge as NONE
-            size_t xoffset = width - 1;
-            for (yoffset = 0; yoffset < height; ++yoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::NONE;
-            }
+            internal_type = e_sb_type::FULL;
+            external_type = e_sb_type::NONE;
 
         } else if (pattern == "external_full_internal_straight") {
-            expect_only_attributes(switchblock_locations, {"pattern", "internal_switch"}, loc_data);
-
-            //Determine the internal switch
-            int internal_switch = DEFAULT_SWITCH;
-            auto internal_switch_attr = get_attribute(switchblock_locations, "internal_switch", loc_data, OPTIONAL);
-            if (internal_switch_attr) {
-                std::string internal_switch_name = internal_switch_attr.as_string();
-                //Use the specified switch
-                internal_switch = find_switch_by_name(arch, internal_switch_name);
-
-                if (internal_switch == OPEN) {
-                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
-                            "Invalid <switchblock_locations> 'internal_switch' attribute '%s' (no matching switch named '%s' found)\n",
-                            internal_switch_name.c_str(), internal_switch_name.c_str());
-                }
-            }
-
-            //Fill all locations
-            type->switchblock_locations.fill(e_sb_type::STRAIGHT);
-            type->switchblock_switch_overrides.fill(internal_switch);
-
-            //Mark top edge as NONE
-            size_t yoffset = height - 1;
-            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-                type->switchblock_switch_overrides[xoffset][yoffset] = DEFAULT_SWITCH;
-            }
-
-            //Mark right edge as NONE
-            size_t xoffset = width - 1;
-            for (yoffset = 0; yoffset < height; ++yoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-                type->switchblock_switch_overrides[xoffset][yoffset] = DEFAULT_SWITCH;
-            }
+            internal_type = e_sb_type::STRAIGHT;
+            external_type = e_sb_type::FULL;
 
         } else if (pattern == "none") {
-            //No SBs
-            type->switchblock_locations.fill(e_sb_type::NONE);
+            internal_type = e_sb_type::NONE;
+            external_type = e_sb_type::NONE;
 
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
                     "Invalid <switchblock_locations> 'pattern' attribute '%s'\n",
                     pattern.c_str());
+        }
+
+        //Fill in all locations (sets internal)
+        type->switchblock_locations.fill(internal_type);
+        type->switchblock_switch_overrides.fill(internal_switch);
+
+        //Fill in top edge external
+        size_t yoffset = height - 1;
+        for (size_t xoffset = 0; xoffset < width; ++xoffset) {
+            type->switchblock_locations[xoffset][yoffset] = external_type;
+            type->switchblock_switch_overrides[xoffset][yoffset] = external_switch;
+        }
+
+        //Fill in right edge external
+        size_t xoffset = width - 1;
+        for (yoffset = 0; yoffset < height; ++yoffset) {
+            type->switchblock_locations[xoffset][yoffset] = external_type;
+            type->switchblock_switch_overrides[xoffset][yoffset] = external_switch;
         }
     }
 }
@@ -2952,7 +2924,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		arch_switch.name = vtr::strdup(switch_name);
 
 		/* Figure out the type of switch. */
-        SwitchType type;
+        SwitchType type = SwitchType::MUX;
 		if (0 == strcmp(type_name, "mux")) {
             type = SwitchType::MUX;
 
