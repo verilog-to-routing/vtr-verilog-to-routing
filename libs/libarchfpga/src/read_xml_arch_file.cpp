@@ -97,7 +97,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
-static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const pugiutil::loc_data& loc_data);
+static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistr(pugi::xml_node Node,
@@ -149,6 +149,7 @@ static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiutil::loc_data& loc_data);
 bool is_library_model(const t_model* model);
+int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 /*
  *
@@ -1758,22 +1759,20 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
 }
 
 //Process any custom switchblock locations
-static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_type_descriptor* type, const pugiutil::loc_data& loc_data) {
+static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data) {
     VTR_ASSERT(type);
 
-    std::string pattern = get_attribute(switchblock_locations, "pattern", loc_data, OPTIONAL).as_string("external_full_internal_shorted");
-
-    if (switchblock_locations) {
-        expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
-    }
+    std::string pattern = get_attribute(switchblock_locations, "pattern", loc_data, OPTIONAL).as_string("external_full_internal_straight");
 
     //Initialize the location specs
     size_t width = type->width;
     size_t height = type->height;
     type->switchblock_locations = vtr::Matrix<e_sb_type>({{width, height}}, e_sb_type::NONE);
-    type->switchblock_switch_overrides = vtr::Matrix<e_sb_switch_override>({{width, height}}, e_sb_switch_override::DEFAULT_SWITCH);
+    type->switchblock_switch_overrides = vtr::Matrix<int>({{width, height}}, DEFAULT_SWITCH);
 
     if (pattern == "custom") {
+        expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
+
         //Load a custom pattern specified with <sb_loc> tags
         expect_only_children(switchblock_locations, {"sb_loc"}, loc_data); //Only sb_loc child tags
 
@@ -1808,20 +1807,20 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             }
 
             //Determine the switch type
-            std::string sb_switch_override_str = get_attribute(sb_loc, "switch_override", loc_data, OPTIONAL).as_string("default");
-            e_sb_switch_override sb_switch_override = e_sb_switch_override::DEFAULT_SWITCH;
-            if (sb_switch_override_str == "default") {
-                sb_switch_override = e_sb_switch_override::DEFAULT_SWITCH;
-            } else if (sb_switch_override_str == "short") {
-                sb_switch_override = e_sb_switch_override::SHORTED_SWITCH;
-            } else if (sb_switch_override_str == "none") {
-                sb_switch_override = e_sb_switch_override::NO_SWITCH;
-            } else {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
-                        "Invalid <sb_loc> 'switch_override' attribute '%s'\n",
-                        sb_switch_override_str.c_str());
-            }
+            int sb_switch_override = DEFAULT_SWITCH;
+                
+            auto sb_switch_override_attr = get_attribute(sb_loc, "switch_override", loc_data, OPTIONAL);
+            if (sb_switch_override_attr) {
+                std::string sb_switch_override_str = sb_switch_override_attr.as_string();
+                //Use the specified switch
+                sb_switch_override = find_switch_by_name(arch, sb_switch_override_str);
 
+                if (sb_switch_override == OPEN) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                            "Invalid <sb_loc> 'switch_override' attribute '%s' (no matching switch named '%s' found)\n",
+                            sb_switch_override_str.c_str(), sb_switch_override_str.c_str());
+                }
+            }
 
             //Get the horizontal offset
             size_t xoffset = get_attribute(sb_loc, "xoffset", loc_data, OPTIONAL).as_uint(0);
@@ -1856,11 +1855,15 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
 
         //Fill in all the entries of the switchblock locations
         if (pattern == "all") {
+            expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
+
             //SBs at all locations
             type->switchblock_locations.fill(e_sb_type::FULL);
 
         } else if (pattern == "external") {
             //SBs only 'outside' blocks (note: SBs located to top/right of grid tile locations)
+
+            expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
 
             //Mark all locations as NONE
             type->switchblock_locations.fill(e_sb_type::NONE);
@@ -1880,6 +1883,8 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
         } else if (pattern == "internal") {
             //SBs only 'inside' blocks (note: SBs located to top/right of grid tile locations)
 
+            expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
+
             //Fill all locations
             type->switchblock_locations.fill(e_sb_type::FULL);
 
@@ -1896,38 +1901,39 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
             }
 
         } else if (pattern == "external_full_internal_straight") {
+            expect_only_attributes(switchblock_locations, {"pattern", "internal_switch"}, loc_data);
+
+            //Determine the internal switch
+            int internal_switch = DEFAULT_SWITCH;
+            auto internal_switch_attr = get_attribute(switchblock_locations, "internal_switch", loc_data, OPTIONAL);
+            if (internal_switch_attr) {
+                std::string internal_switch_name = internal_switch_attr.as_string();
+                //Use the specified switch
+                internal_switch = find_switch_by_name(arch, internal_switch_name);
+
+                if (internal_switch == OPEN) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                            "Invalid <switchblock_locations> 'internal_switch' attribute '%s' (no matching switch named '%s' found)\n",
+                            internal_switch_name.c_str(), internal_switch_name.c_str());
+                }
+            }
+
             //Fill all locations
             type->switchblock_locations.fill(e_sb_type::STRAIGHT);
+            type->switchblock_switch_overrides.fill(internal_switch);
 
             //Mark top edge as NONE
             size_t yoffset = height - 1;
             for (size_t xoffset = 0; xoffset < width; ++xoffset) {
                 type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+                type->switchblock_switch_overrides[xoffset][yoffset] = DEFAULT_SWITCH;
             }
 
             //Mark right edge as NONE
             size_t xoffset = width - 1;
             for (yoffset = 0; yoffset < height; ++yoffset) {
                 type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-            }
-
-        } else if (pattern == "external_full_internal_shorted") {
-            //Fill all locations with straight shorted connections
-            type->switchblock_locations.fill(e_sb_type::STRAIGHT);
-            type->switchblock_switch_overrides.fill(e_sb_switch_override::SHORTED_SWITCH);
-
-            //Mark top edge as full with default switches
-            size_t yoffset = height - 1;
-            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-                type->switchblock_switch_overrides[xoffset][yoffset] = e_sb_switch_override::DEFAULT_SWITCH;
-            }
-
-            //Mark right edge as full with default switches
-            size_t xoffset = width - 1;
-            for (yoffset = 0; yoffset < height; ++yoffset) {
-                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
-                type->switchblock_switch_overrides[xoffset][yoffset] = e_sb_switch_override::DEFAULT_SWITCH;
+                type->switchblock_switch_overrides[xoffset][yoffset] = DEFAULT_SWITCH;
             }
 
         } else if (pattern == "none") {
@@ -2589,7 +2595,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
         //Load switchblock type and location overrides
         Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);
-        ProcessSwitchblockLocations(Cur, Type, loc_data);
+        ProcessSwitchblockLocations(Cur, Type, arch, loc_data);
 
 		Type->index = i;
 
@@ -2914,6 +2920,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 	int i, j;
 	const char *type_name;
 	const char *switch_name;
+    ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
 
 	pugi::xml_node Node;
 
@@ -2929,6 +2936,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 	/* Load the switches. */
 	Node = get_first_child(Parent, "switch", loc_data);
 	for (i = 0; i < *NumSwitches; ++i) {
+        t_arch_switch_inf& arch_switch = (*Switches)[i];
 
 		switch_name = get_attribute(Node, "name", loc_data).value();
 		type_name = get_attribute(Node, "type", loc_data).value();
@@ -2941,48 +2949,77 @@ static void ProcessSwitches(pugi::xml_node Parent,
 						switch_name);
 			}
 		}
-		(*Switches)[i].name = vtr::strdup(switch_name);
+		arch_switch.name = vtr::strdup(switch_name);
 
 		/* Figure out the type of switch. */
+        SwitchType type;
 		if (0 == strcmp(type_name, "mux")) {
-			(*Switches)[i].set_type(SwitchType::MUX);
+            type = SwitchType::MUX;
+
 		} else if (0 == strcmp(type_name, "tristate")) {
-			(*Switches)[i].set_type(SwitchType::TRISTATE);
+			type = SwitchType::TRISTATE;
+
 		} else if (0 == strcmp(type_name, "pass_gate")) {
-			(*Switches)[i].set_type(SwitchType::PASS_GATE);
+			type = SwitchType::PASS_GATE;
+
 		} else if (0 == strcmp(type_name, "short")) {
-			(*Switches)[i].set_type(SwitchType::SHORT);
+			type = SwitchType::SHORT;
+            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Tdel"}, loc_data);
+
 		} else if (0 == strcmp(type_name, "buffer")) {
-			(*Switches)[i].set_type(SwitchType::BUFFER);
+			type = SwitchType::BUFFER;
+            expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel", "buf_size", "power_buf_size"}, loc_data);
+
 		} else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", type_name);
 		}
-		
-		ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
-		(*Switches)[i].R = get_attribute(Node, "R", loc_data,TIMING_ENABLE_REQD).as_float(0);
-		(*Switches)[i].Cin = get_attribute(Node, "Cin", loc_data, TIMING_ENABLE_REQD).as_float(0);
-		(*Switches)[i].Cout = get_attribute(Node, "Cout", loc_data, TIMING_ENABLE_REQD).as_float(0);
-		(*Switches)[i].mux_trans_size = get_attribute(Node, "mux_trans_size", loc_data, OPTIONAL).as_float(1);
+        arch_switch.set_type(type);
 
-        auto buf_size_attrib = get_attribute(Node, "buf_size", loc_data, OPTIONAL);
-        if (!buf_size_attrib || buf_size_attrib.as_string() == std::string("auto")) {
-            (*Switches)[i].buf_size_type = BufferSize::AUTO;
-            (*Switches)[i].buf_size = 0.;
+		
+		arch_switch.R = get_attribute(Node, "R", loc_data,TIMING_ENABLE_REQD).as_float(0);
+		arch_switch.Cin = get_attribute(Node, "Cin", loc_data, TIMING_ENABLE_REQD).as_float(0);
+
+        if (arch_switch.type() == SwitchType::SHORT) {
+            //Shorted switches don't have separte cin/cout
+            arch_switch.Cout = 0.;
         } else {
-            (*Switches)[i].buf_size_type = BufferSize::ABSOLUTE;
-            (*Switches)[i].buf_size = buf_size_attrib.as_float();
+            arch_switch.Cout = get_attribute(Node, "Cout", loc_data, TIMING_ENABLE_REQD).as_float(0);
         }
-				
-		auto power_buf_size = get_attribute(Node, "power_buf_size", loc_data, OPTIONAL).as_string(NULL);
-		if (power_buf_size == NULL) {
-			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
-		} else if (strcmp(power_buf_size, "auto") == 0) {
-			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_AUTO;
-		} else {
-			(*Switches)[i].power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
-			(*Switches)[i].power_buffer_size = (float) vtr::atof(power_buf_size);
-		}
+
+        if (arch_switch.type() == SwitchType::SHORT || arch_switch.type() == SwitchType::BUFFER) {
+            //Shorts and raw buffers don't have mux transistors
+            arch_switch.mux_trans_size = 0.;
+        } else {
+            arch_switch.mux_trans_size = get_attribute(Node, "mux_trans_size", loc_data, OPTIONAL).as_float(1);
+        }
+
+        if (arch_switch.type() == SwitchType::SHORT) {
+            //Short has no buffers
+            arch_switch.buf_size_type = BufferSize::ABSOLUTE;
+            arch_switch.buf_size = 0.;
+			arch_switch.power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+			arch_switch.power_buffer_size = 0.;
+        } else {
+            auto buf_size_attrib = get_attribute(Node, "buf_size", loc_data, OPTIONAL);
+            if (!buf_size_attrib || buf_size_attrib.as_string() == std::string("auto")) {
+                arch_switch.buf_size_type = BufferSize::AUTO;
+                arch_switch.buf_size = 0.;
+            } else {
+                arch_switch.buf_size_type = BufferSize::ABSOLUTE;
+                arch_switch.buf_size = buf_size_attrib.as_float();
+            }
+                    
+            auto power_buf_size = get_attribute(Node, "power_buf_size", loc_data, OPTIONAL).as_string(NULL);
+            if (power_buf_size == NULL) {
+                arch_switch.power_buffer_type = POWER_BUFFER_TYPE_AUTO;
+            } else if (strcmp(power_buf_size, "auto") == 0) {
+                arch_switch.power_buffer_type = POWER_BUFFER_TYPE_AUTO;
+            } else {
+                arch_switch.power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+                arch_switch.power_buffer_size = (float) vtr::atof(power_buf_size);
+            }
+        }
 
         //Load the Tdel (which may be specfied with sub-tags)
 		ProcessSwitchTdel(Node, timing_enabled, i, (*Switches), loc_data);
@@ -3663,4 +3700,16 @@ bool is_library_model(const t_model* model) {
         return true;
     }
     return false;
+}
+
+int find_switch_by_name(const t_arch& arch, std::string switch_name) {
+
+    for (int iswitch = 0; iswitch < arch.num_switches; ++iswitch) {
+        const t_arch_switch_inf& arch_switch = arch.Switches[iswitch];
+        if (arch_switch.name == switch_name) {
+            return iswitch;
+        }
+    }
+
+    return OPEN;
 }

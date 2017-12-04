@@ -424,7 +424,7 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
 	type->pb_type = NULL;
 	type->area = UNDEFINED;
     type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
-    type->switchblock_switch_overrides = vtr::Matrix<e_sb_switch_override>({{size_t(type->width), size_t(type->height)}}, e_sb_switch_override::DEFAULT_SWITCH);
+    type->switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type->width), size_t(type->height)}}, DEFAULT_SWITCH);
 }
 
 void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,

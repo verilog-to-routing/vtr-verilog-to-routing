@@ -132,7 +132,6 @@ static void alloc_and_load_rr_graph(
         const int max_chan_width,
         const int wire_to_ipin_switch, 
         const int delayless_switch,
-        const int shorted_switch,
         const enum e_directionality directionality,
         bool * Fc_clipped,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
@@ -185,7 +184,6 @@ static void build_rr_chan(
         const t_rr_node_indices& L_rr_node_indices,
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
         const int wire_to_ipin_switch,
-        const int shorted_switch,
         const enum e_directionality directionality);
 
 static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
@@ -235,7 +233,6 @@ static void build_rr_graph(
         const int global_route_switch,
         const int wire_to_arch_ipin_switch,
         const int delayless_switch,
-        const int shorted_switch,
         const float R_minW_nmos,
         const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
@@ -289,7 +286,6 @@ void create_rr_graph(
                 det_routing_arch->global_route_switch, 
                 det_routing_arch->wire_to_arch_ipin_switch,
                 det_routing_arch->delayless_switch, 
-                det_routing_arch->shorted_switch, 
                 det_routing_arch->R_minW_nmos,
                 det_routing_arch->R_minW_pmos,
                 base_cost_type,
@@ -323,7 +319,6 @@ static void build_rr_graph(
         const int global_route_switch,
         const int wire_to_arch_ipin_switch,
         const int delayless_switch,
-        const int shorted_switch,
         const float R_minW_nmos,
         const float R_minW_pmos,
         const enum e_base_cost_type base_cost_type,
@@ -575,7 +570,6 @@ static void build_rr_graph(
             Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices, max_chan_width,
             wire_to_arch_ipin_switch,
             delayless_switch,
-            shorted_switch,
             directionality,
             &Fc_clipped,
             directs, num_directs, clb_to_clb_directs);
@@ -774,6 +768,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 
             /* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */
             device_ctx.rr_switch_inf[i_rr_switch].buffered = device_ctx.arch_switch_inf[i_arch_switch].buffered();
+            device_ctx.rr_switch_inf[i_rr_switch].configurable = device_ctx.arch_switch_inf[i_arch_switch].configurable();
             device_ctx.rr_switch_inf[i_rr_switch].R = device_ctx.arch_switch_inf[i_arch_switch].R;
             device_ctx.rr_switch_inf[i_rr_switch].Cin = device_ctx.arch_switch_inf[i_arch_switch].Cin;
             device_ctx.rr_switch_inf[i_rr_switch].Cout = device_ctx.arch_switch_inf[i_arch_switch].Cout;
@@ -1053,7 +1048,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         const int max_chan_width,
         const int wire_to_ipin_switch,
         const int delayless_switch,
-        const int shorted_switch,
         const enum e_directionality directionality,
         bool * Fc_clipped,
         const t_direct_inf *directs, const int num_directs,
@@ -1113,7 +1107,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, L_rr_edge_done, L_rr_node,
                         wire_to_ipin_switch,
-                        shorted_switch,
                         directionality);
             }
             if (j > 0) {
@@ -1123,7 +1116,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, L_rr_edge_done, L_rr_node,
                         wire_to_ipin_switch,
-                        shorted_switch,
                         directionality);
             }
         }
@@ -1385,7 +1377,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const t_rr_node_indices& L_rr_node_indices,
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
         const int wire_to_ipin_switch,
-        const int shorted_switch,
         const enum e_directionality directionality) {
 
     /* this function builds both x and y-directed channel segments, so set up our 
@@ -1464,7 +1455,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
                         directionality,
-                        shorted_switch,
                         L_rr_node_indices, L_rr_edge_done,
                         switch_block_conn, sb_conn_map);
             }
@@ -1483,7 +1473,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
                         directionality, 
-                        shorted_switch,
                         L_rr_node_indices, L_rr_edge_done,
                         switch_block_conn, sb_conn_map);
             }
@@ -1515,7 +1504,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                             Fs_per_side, sblock_pattern, &edge_list,
                             from_seg_details, to_seg_details, from_chan_details,
                             directionality,
-                            shorted_switch,
                             L_rr_node_indices, L_rr_edge_done,
                             switch_block_conn, sb_conn_map);
                 }
@@ -2553,7 +2541,6 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
     curr_type = device_ctx.grid[x][y].type;
     edge_list_head = *edge_list_ptr;
     new_edges = 0;
-    bool is_configurable = true; //Direct connects are assumed configurable
 
     int width_offset = device_ctx.grid[x][y].width_offset;
     int height_offset = device_ctx.grid[x][y].height_offset;
@@ -2617,7 +2604,7 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         VTR_ASSERT(inodes.size() > 0);
                         int inode = inodes[0];
 
-                        edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index, is_configurable, t_rr_edge_dir::FORWARD);
+                        edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index, t_rr_edge_dir::FORWARD);
                         new_edges++;
                     }
                 }

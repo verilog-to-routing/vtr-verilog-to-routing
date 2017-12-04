@@ -872,7 +872,6 @@ struct t_det_routing_arch {
 
 	short global_route_switch;
 	short delayless_switch;
-	short shorted_switch;
 	int wire_to_arch_ipin_switch;
 	int wire_to_rr_ipin_switch;
 	float R_minW_nmos;
