@@ -286,6 +286,7 @@ static void SetupSwitches(const t_arch& Arch,
 	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].buf_size_type = BufferSize::ABSOLUTE;
 	device_ctx.arch_switch_inf[RoutingArch->shorted_switch].buf_size = 0.;
     VTR_ASSERT_MSG(!device_ctx.arch_switch_inf[RoutingArch->shorted_switch].buffered(), "Shorted switch can not be buffered (isolating)");
+    VTR_ASSERT_MSG(!device_ctx.arch_switch_inf[RoutingArch->shorted_switch].configurable(), "Shorted switch can not be configurable");
 
 	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
 

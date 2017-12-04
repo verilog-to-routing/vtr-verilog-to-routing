@@ -2950,6 +2950,10 @@ static void ProcessSwitches(pugi::xml_node Parent,
 			(*Switches)[i].set_type(SwitchType::TRISTATE);
 		} else if (0 == strcmp(type_name, "pass_gate")) {
 			(*Switches)[i].set_type(SwitchType::PASS_GATE);
+		} else if (0 == strcmp(type_name, "short")) {
+			(*Switches)[i].set_type(SwitchType::SHORT);
+		} else if (0 == strcmp(type_name, "buffer")) {
+			(*Switches)[i].set_type(SwitchType::BUFFER);
 		} else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", type_name);

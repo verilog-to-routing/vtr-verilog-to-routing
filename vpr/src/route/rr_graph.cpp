@@ -1583,7 +1583,7 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
             to_node = inode;
         }
 
-        L_rr_node[from_node].add_edge(to_node, list_ptr->iswitch, list_ptr->is_configurable);
+        L_rr_node[from_node].add_edge(to_node, list_ptr->iswitch);
 
         /* Unmark the edge since we are done considering fanout from node. */
         L_rr_edge_done[list_ptr->edge] = false;

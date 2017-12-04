@@ -51,9 +51,9 @@ class t_rr_node {
         const char *type_string() const; /* Retrieve type as a string */
 
         short num_edges() const { return num_edges_; }
-        int edge_sink_node(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
-        short edge_switch(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_type; }
-        bool edge_is_configurable(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].is_configurable; }
+        int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
+        short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_type; }
+        bool edge_is_configurable(short iedge) const;
         short fan_in() const;
 
         short xlow() const;
@@ -83,7 +83,7 @@ class t_rr_node {
     public: //Mutators
         void set_type(t_rr_type new_type);
 
-        short add_edge(int sink_node, int iswitch, bool is_configurable);
+        short add_edge(int sink_node, int iswitch);
 
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
@@ -116,13 +116,6 @@ class t_rr_node {
             int sink_node = -1; //The ID of the sink RR node associated with this edge
 
             short switch_type = -1; //The ID of the switch type this edge represents
-
-            bool is_configurable = true; //True if the edges switch is configurable (i.e. whether 
-                                         // the switch can be turned on or off). False indicates
-                                         // that this edge is a non-configurable 'switch'.
-                                         // This allows us to model non-optional switches (e.g. 
-                                         // fixed buffers, or shorted connections) which must be 
-                                         // expanded by the router.
         };
 
     private: //Data

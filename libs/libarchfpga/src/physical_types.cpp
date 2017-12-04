@@ -2,6 +2,7 @@
 #include "vtr_math.h"
 
 static bool switch_type_is_buffered(SwitchType type);
+static bool switch_type_is_configurable(SwitchType type);
 
 //Ensure the constant has external linkage to avoid linking errors
 constexpr int t_arch_switch_inf::UNDEFINED_FANIN;
@@ -12,6 +13,10 @@ SwitchType t_arch_switch_inf::type() const {
 
 bool t_arch_switch_inf::buffered() const {
     return switch_type_is_buffered(type());
+}
+
+bool t_arch_switch_inf::configurable() const {
+    return switch_type_is_configurable(type());
 }
 
 float t_arch_switch_inf::Tdel(int fanin) const {
@@ -42,4 +47,11 @@ static bool switch_type_is_buffered(SwitchType type) {
     //seperate DC connected sub-circuits
     return type == SwitchType::MUX 
         || type == SwitchType::TRISTATE;
+}
+
+static bool switch_type_is_configurable(SwitchType type) {
+    //Muxes and Tristates isolate thier input and output into
+    //seperate DC connected sub-circuits
+    return !(   type == SwitchType::SHORT 
+             || type == SwitchType::BUFFER);
 }

@@ -5,6 +5,7 @@
 /* Member function of "t_rr_node" used to retrieve a routing *
  * resource type string by its index, which is defined by           *
  * "t_rr_type type".												*/
+
 const char *t_rr_node::type_string() const {
 	return rr_node_typename[type()];
 }
@@ -99,6 +100,14 @@ short t_rr_node::length() const {
 	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
+bool t_rr_node::edge_is_configurable(short iedge) const {
+    auto iswitch =  edge_switch(iedge);
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    return device_ctx.rr_switch_inf[iswitch].configurable;
+}
+
 void t_rr_node::set_type(t_rr_type new_type) { 
     type_ = new_type; 
 }
@@ -163,13 +172,12 @@ void t_rr_node::set_fan_in(short new_fan_in) {
 	fan_in_ = new_fan_in;
 }
 
-short t_rr_node::add_edge(int sink_node, int iswitch, bool is_configurable) {
+short t_rr_node::add_edge(int sink_node, int iswitch) {
     auto edges = std::make_unique<t_rr_edge[]>(num_edges_ + 1);
     std::copy_n(edges_.get(), num_edges_, edges.get());
 
     edges[num_edges_].sink_node = sink_node;
     edges[num_edges_].switch_type = iswitch;
-    edges[num_edges_].is_configurable = is_configurable;
 
     edges_ = std::move(edges);
     ++num_edges_;
@@ -215,9 +223,4 @@ void t_rr_node::set_edge_switch(short iedge, short switch_index) {
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(switch_index >= 0);
     edges_[iedge].switch_type = switch_index; 
-}
-
-void t_rr_node::set_edge_is_configurable(short iedge, bool is_configurable) { 
-    VTR_ASSERT(iedge < num_edges());
-    edges_[iedge].is_configurable = is_configurable; 
 }

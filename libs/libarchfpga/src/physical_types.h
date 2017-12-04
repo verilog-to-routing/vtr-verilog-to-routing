@@ -1011,7 +1011,8 @@ enum class SwitchType {
     TRISTATE, //A tri-stateable buffer
     MUX, //A (buffered) mux (uni-dir)
     PASS_GATE, //A pass transitor switch (bi-dir)
-    SHORT //An electrically shorted connection (bi-dir)
+    SHORT, //A non-configurable electrically shorted connection (bi-dir)
+    BUFFER //A non-configurable buffer (uni-dir)
 };
 
 enum class BufferSize {
@@ -1055,6 +1056,9 @@ struct t_arch_switch_inf {
         //seperate DC-connected subcircuits
         bool buffered() const;
 
+        //Returns true if this switch type is configurable
+        bool configurable() const;
+
         //Returns the intrinsic delay of this switch
         float Tdel(int fanin=UNDEFINED_FANIN) const;
 
@@ -1074,7 +1078,13 @@ struct t_arch_switch_inf {
  * The s_rr_switch_inf describes a switch derived from a switch described    *
  * by s_arch_switch_inf. This indirection allows us to vary properties of a  *
  * given switch, such as varying delay with switch fan-in.                   * 
- * buffered:  Does this switch include a buffer?                             *
+ * buffered:  Does this switch isolate it's input/output into separate       *
+ *            DC-connected sub-circuits?
+ * configurable: Is this switch is configurable (i.e. can the switch can be  *
+ *               turned on or off)?. This allows modelling of non-optional   *
+ *               switches (e.g. fixed buffers, or shorted connections) which *
+ *               must be used (e.g. expanded by the router) if a connected   *
+ *               segment is used.                                            *
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
  * Cout:  Output capacitance.                                                *
@@ -1086,6 +1096,7 @@ struct t_arch_switch_inf {
  *            calculated from R                                              */
 struct t_rr_switch_inf {
 	bool buffered = false;
+    bool configurable = true;
 	float R = 0.;
 	float Cin = 0.;
 	float Cout = 0.;
