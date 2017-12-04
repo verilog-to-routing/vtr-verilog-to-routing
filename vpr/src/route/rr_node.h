@@ -70,6 +70,7 @@ class t_rr_node {
         short class_num() const; //Same as ptc_num() but checks that type() is consistent
 
         short cost_index() const;
+        bool has_direction() const;
         e_direction direction() const;
         const char *direction_string() const;
 

@@ -50,6 +50,8 @@ void dump_rr_structs( const char *filename ){
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "couldn't open file \"%s\" for dumping rr structs\n", filename);
 	}
 
+	cout << "Dumping to " << filename << endl;
+
 	/* dump rr nodes */
 	cout << "Dumping rr nodes" << endl;
 	dump_rr_nodes(fid);
@@ -93,7 +95,9 @@ static void dump_rr_nodes( fstream &file ){
 		file << "yhigh(" << node.yhigh() << ") ";
 		file << "ptc_num(" << node.ptc_num() << ") ";
 		file << "fan_in(" << node.fan_in() << ") ";
-		file << "direction(" << (int)node.direction() << ") ";
+		if (node.has_direction()) {
+			file << "direction(" << (int)node.direction() << ") ";
+		}
 		file << "R(" << node.R() << ") ";
 		file << "C(" << node.C() << ") ";
 

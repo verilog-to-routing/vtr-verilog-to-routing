@@ -137,9 +137,13 @@ void SetupVPR(t_options *Options,
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
+	if (Options->dump_rr_structs_file.value() != "") {
+		RoutingArch->dump_rr_structs_file = strdup(Options->dump_rr_structs_file.value().c_str());
+	} else {
+		RoutingArch->dump_rr_structs_file = nullptr;
+	}
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
 	SetupPackerOpts(*Options, PackerOpts);
-	RoutingArch->dump_rr_structs_file = nullptr;
 	RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
     RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
 
