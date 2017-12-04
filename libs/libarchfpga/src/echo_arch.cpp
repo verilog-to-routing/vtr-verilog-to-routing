@@ -246,24 +246,25 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	fprintf(Echo, "*************************************************\n");
 	fprintf(Echo, "Segment List:\n");
 	for (i = 0; i < arch->num_segments; i++) {
+		struct t_segment_inf seg = arch->Segments[i];
 		fprintf(Echo,
 				"\tSegment[%d]: frequency %d length %d R_metal %e C_metal %e\n",
-				i + 1, arch->Segments[i].frequency, arch->Segments[i].length,
-				arch->Segments[i].Rmetal, arch->Segments[i].Cmetal);
+				i + 1, seg.frequency, seg.length,
+				seg.Rmetal, seg.Cmetal);
 
-		if (arch->Segments[i].directionality == UNI_DIRECTIONAL) {
+		if (seg.directionality == UNI_DIRECTIONAL) {
 			//wire_switch == arch_opin_switch
 			fprintf(Echo, "\t\t\t\ttype unidir mux_name %s\n",
-					arch->Switches[arch->Segments[i].arch_wire_switch].name);
+					arch->Switches[seg.arch_wire_switch].name);
 		} else { //Should be bidir
 			fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
-					arch->Switches[arch->Segments[i].arch_wire_switch].name,
-					arch->Switches[arch->Segments[i].arch_opin_switch].name);
+					arch->Switches[seg.arch_wire_switch].name,
+					arch->Switches[seg.arch_opin_switch].name);
 		}
 
 		fprintf(Echo, "\t\t\t\tcb ");
-		for (j = 0; j < arch->Segments->cb_len; j++) {
-			if (arch->Segments->cb[j]) {
+		for (j = 0; j < seg.cb_len; j++) {
+			if (seg.cb[j]) {
 				fprintf(Echo, "1 ");
 			} else {
 				fprintf(Echo, "0 ");
@@ -272,8 +273,8 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 		fprintf(Echo, "\n");
 
 		fprintf(Echo, "\t\t\t\tsb ");
-		for (j = 0; j < arch->Segments->sb_len; j++) {
-			if (arch->Segments->sb[j]) {
+		for (j = 0; j < seg.sb_len; j++) {
+			if (seg.sb[j]) {
 				fprintf(Echo, "1 ");
 			} else {
 				fprintf(Echo, "0 ");
