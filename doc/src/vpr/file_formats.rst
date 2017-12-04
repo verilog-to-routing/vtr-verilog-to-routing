@@ -16,7 +16,7 @@ BLIF Netlist (.blif)
 The technology mapped circuit to be implement on the target FPGA is specified as a Berkely Logic Interchange Format (BLIF) netlist.
 The netlist must be flattened and consist of only primitives (e.g. ``.names``, ``.latch``, ``.subckt``).
 
-For a detailed description of the BLIF file format see the :download:`BLIF Format Description <../../../libblifparse/doc/blif.pdf>`.
+For a detailed description of the BLIF file format see the :download:`BLIF Format Description <../../../libs/EXTERNAL/libblifparse/doc/blif.pdf>`.
 
 Note that VPR supports only the structural subset of BLIF, and does not support the following BLIF features:
 

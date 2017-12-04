@@ -547,29 +547,6 @@ The tags within the ``<device>`` tag are:
     :req_param switch_name:
         Specifies the name of the ``<switch>`` in the ``<switchlist>`` used to connect routing tracks to block input pins (i.e. the input connection block switch).
 
-        **Input Capacitance**
-
-        The ``<switch>``'s input capacitance (``Cin``) represents the capacitive load such connections put on their source routing track.
-
-        If the switch is *buffered* this represents the input capacitance of the buffers isolating the routing track from the connection boxes (multiplexers) that select the track to connect to a logic block input pin.
-        One of these buffers is inserted in the FPGA for each track at each location at which it connects to a connection box.
-        For example, a routing segment that spans three logic blocks, and connects to logic blocks at two of these three possible locations would have two isolation buffers attached to it.
-        If a routing track connects to the logic blocks both above and below it at some point, only one isolation buffer is inserted at that point.
-
-        If the switch is *not buffered* this represents to the capacitive loading a track would see at each point where it connects to a logic block or blocks.
-
-        **Delay**
-
-        The ``<switch>``'s intrinsic delay (``Tdel``) represents the delay to go from a routing track through the isolation buffer (if applicable) and the connection block (typically a multiplexer) to a logic block input pin.
-
-        .. note:: The ``<switch>``'s resistance (``R``) and output capacitance (``Cout``) have no effect on delay when used for the input connection block, since VPR does not model the resistance/capacitance of block internal wires.
-
-        **Area**
-
-        The ``<switch>``'s ``mux_trans_size`` specifies the size of transitors in the two-level mux used to implement the switch, given in minimum transitor units.
-
-        The ``<switch>``'s ``buf_size`` specifies the size of transitors in the isolation buffer (if applicable), given in minimum transitor units.
-
     :required: Yes
 
 
@@ -617,6 +594,108 @@ The tags within the ``<device>`` tag are:
 
     Content inside this tag is only used when VPR is in global routing mode.
     The contents of this tag are described in :ref:`global_routing_info`.
+
+.. _arch_switches:
+
+.. _arch_switches:
+ 
+Switches
+--------
+The tags within the ``<switchlist>`` tag specifies the switches used to connect wires and pins together.
+
+.. arch:tag:: 
+    <switch type="{mux|tristate|pass_gate|short|buffer}" name="string" R="float" Cin="float" Cout="float" Tdel="float" buf_size="{auto|float}" mux_trans_size="float", power_buf_size="int"/>
+
+    Describes a switch in the routing architecture.
+
+    **Example:**
+
+    .. code-block:: xml
+
+        <switch type="mux" name="my_awsome_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+
+
+    :req_param type:
+    
+        The type of switch:
+
+        * ``mux``: An isolating, configurable multiplexer
+
+        * ``tristate``: An isolating, configurable tristate-able buffer
+
+        * ``pass_gate``: A *non-isolating*, configurable pass gate
+
+        * ``short``: A *non-isolating*, *non-configurable* electrical short (e.g. between two segments).
+
+        * ``buffer``: An isolating, *non-configurable* non-tristate-able buffer (e.g. in-line along a segment).
+
+        **Isolation**
+
+        Isolating switches include a buffer which partition their input and output into separate DC-connected sub-circuits. 
+        This helps reduce RC wire delays.
+
+        *Non-isolating* switch do **not** isolate thier input and output, which can increase RC wire delays.
+
+        **Configurablity**
+
+        Configurable switches can be turned on/off at configuration time.
+
+        *Non-configurable* switches can **not** be controlled at configuration time. 
+        These are typically used to model non-optional connections such as electrical shorts and in-line buffers.
+
+    :req_param name: A unique name identifying the switch
+    :req_param R: Resistance of the switch.
+    :req_param Cin:  Input capacitance of the switch.
+    :req_param Cout:  Output capacitance of the switch.
+
+
+    :opt_param Tdel:  
+
+        Intrinsic delay through the switch.
+        If this switch was driven by a zero resistance source, and drove a zero capacitance load, its delay would be: :math:`T_{del} + R \cdot C_{out}`.
+
+        The ‘switch’ includes both the mux and buffer ``mux`` type switches. 
+
+        .. note:: Required if no ``<Tdel>`` tags are specified
+
+        .. note:: A ``<switch>``'s resistance (``R``) and output capacitance (``Cout``) have no effect on delay when used for the input connection block, since VPR does not model the resistance/capacitance of block internal wires.
+
+    :opt_param buf_size:  
+
+        Specifies the buffer size in minimum-width transistor area units.
+
+        If set to ``auto``, sized automatically from the R value.
+        This allows you to use timing models without R’s and C’s and still be able to measure area.
+
+        .. note:: Required for all **isolating** switch types.
+
+        **Default:** ``auto``
+
+    :opt_param mux_trans_size: 
+        Specifies the size (in minimum width transistors) of each transistor in the two-level mux used by ``mux`` type switches.
+
+        .. note:: Valid only for ``mux`` type switches.
+
+    :opt_param power_buf_size: *Used for power estimation.* The size is the drive strength of the buffer, relative to a minimum-sized inverter.
+
+    .. arch:tag:: <Tdel num_inputs="int" delay="float"/>
+
+        Instead of specifying a single Tdel value, a list of Tdel values may be specified for different values of switch fan-in.
+        Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
+        
+
+        :req_param num_inputs: The number of switch inputs (fan-in)
+        :req_param delay: The intrinsic switch delay when the switch topology has the specified number of switch inputs
+
+        **Example:**
+
+        .. code-block:: xml
+
+            <switch type="mux" name="my_mux" R="522" Cin="3.1e-15" Cout="3e-15" mux_trans_size="1.7" buf_size="23">
+                <Tdel num_inputs="12" delay="8.00e-11"/>
+                <Tdel num_inputs="15" delay="8.4e-11"/>
+                <Tdel num_inputs="20" delay="9.4e-11"/>
+            </switch>
 
 
 .. _global_routing_info:
@@ -1011,13 +1090,15 @@ They describe how a complex block interfaces with the inter-block world.
     Physical equivalence for a pin is specified by listing a pin more than once for different locations.
     For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
-.. arch:tag:: <switchblock_locations pattern="{all|external|internal|none|custom}">
+.. arch:tag:: <switchblock_locations pattern="{external_full_internal_straight|all|external|internal|none|custom}" internal_switch="string">
         
     Describes where global routing switchblocks are created in relation to the complex block.
 
     .. note:: If the ``<switchblock_locations>`` tag is left unspecified the default pattern is assumed.
 
     :opt_param pattern:
+
+        * ``external_full_internal_straight``: creates *full* switchblocks outside and *straight* switchblocks inside the complex block
 
         * ``all``: creates switchblocks wherever routing channels cross
 
@@ -1027,21 +1108,51 @@ They describe how a complex block interfaces with the inter-block world.
 
         * ``none``: denotes that no switchblocks are created for the complex block
 
-        * ``external_full_internal_straight``: creates *full* switchblocks outside and *straight* switchblocks inside the complex block
-
         * ``custom``: allows the architect to specify custom switchblock locations and types using ``<sb_loc>`` tags
 
         **Default:** ``external_full_internal_straight``
 
-        .. figure:: sb_locations.*
-        
-            Switchblock Location Patterns for a width = 2, height = 3 complex block
 
-    .. arch:tag:: <sb_loc type="{full|straight|turns|none}" xoffset="int" yoffset="int">
+    .. _fig_sb_locations:
+
+    .. figure:: sb_locations.*
+    
+        Switchblock Location Patterns for a width = 2, height = 3 complex block
+
+    :opt_param internal_switch:
+
+        The name of a switch (from ``<switchlist>``) which should be used for internal switch blocks.
+
+        **Default:** The default switch for the wire ``<segment>``
+
+        .. note:: This is typically used to specify that internal wire segments are electrically shorted together using a ``short`` type ``<switch>``.
+
+
+    **Example: Electrically Shorted Internal Straight Connections**
+
+    In some architectures there are no switch blocks located 'within' a block, and the wires crossing over the block are instead electrcially shorted to their 'straight-through' connections.
+
+    To model this we first define a special ``short`` type switch to electrically short such segments together:
+
+    .. code-block:: xml
+
+        <switchlist>
+            <switch type="short" name="electrical_short" R="0" Cin="0" Tdel="0"/>
+        </switchlist>
+
+    Next, we use the pre-defined ``external_full_internal_straight`` pattern, and that such connections should use our ``electrical_short`` switch.
+
+    .. code-block:: xml
+
+        <switchblock_locations pattern="external_full_internal_straight" internal_switch="electrical_short"/>
+
+
+
+    .. arch:tag:: <sb_loc type="{full|straight|turns|none}" xoffset="int" yoffset="int", switch_override="string">
 
         Specifies the type of switchblock to create at a particular location relative to a complex block for the ``custom`` switchblock location pattern.
 
-        :opt_param type:
+        :req_param type:
             Specifies the type of switchblock to be created at this location:
 
             * ``full``: denotes that a full switchblock will be created (i.e. both ``staight`` and ``turns``)
@@ -1068,7 +1179,31 @@ They describe how a complex block interfaces with the inter-block world.
 
             **Default:** ``0``
 
+        :opt_param switch_override: 
+            The name of a switch (from ``<switchlist>``) which should be used to construct the switch block at this location.
+
+            **Default:** The default switch for the wire ``<segment>``
+
         .. note:: The switchblock associated with a grid tile is located to the top-right of the grid tile
+
+        
+        **Example: Custom Description of Electrically Shorted Internal Straight Connections**
+
+        If we assume a width=2, height=3 block (e.g. :numref:`fig_sb_locations`), we can use a custom pattern to specify an architecture equivalent to the 'Electrically Shorted Internal Straight Connections' example:
+
+        .. code-block:: xml
+
+            <switchblock_locations pattern="custom">
+                <!-- Internal: using straight electrical shorts -->
+                <sb_loc type="straight" xoffset="0" yoffset="0" switch_override="electrical_short">
+                <sb_loc type="straight" xoffset="0" yoffset="1" switch_override="electrical_short">
+
+                <!-- External: using default switches -->
+                <sb_loc type="full" xoffset="0" yoffset="2"> <!-- Top edge -->
+                <sb_loc type="full" xoffset="1" yoffset="0"> <!-- Right edge -->
+                <sb_loc type="full" xoffset="1" yoffset="1"> <!-- Right edge -->
+                <sb_loc type="full" xoffset="1" yoffset="2"> <!-- Top Right -->
+            <switchblock_locations/>
 
 Interconnect
 ~~~~~~~~~~~~
@@ -1503,80 +1638,6 @@ The ``<segment>`` tag and its contents are described below.
 
     .. note::
         The switch used in unidirectional segment mode must be buffered.
- 
-Switches
---------
-The content within the ``<switchlist>`` tag consists of a group of ``<switch>`` tags.
-The ``<switch>`` tag and its contents are described below.
-
-.. arch:tag:: 
-    <switch type="{mux|tristate|pass_gate}" name="unique name" R="float" Cin="float" Cout="float" Tdel=" float" buf_size="auto|float" mux_trans_size="float", power_buf_size="int"/>
-
-    :req_param type:
-    
-        The type of switch:
-
-        * ``mux``: An isolating non-tristate-able multiplexer
-
-        * ``tristate``: An isolating tristate-able buffer
-
-        * ``pass_gate``: A *non-isolating* pass gate
-
-        Isolating switches partition their input and output into separate DC-connected sub-circuits.
-
-    :req_param name: A unique alphanumeric string which needs to match the segment definition (see above)
-    :req_param R: Resistance of the switch.
-    :req_param Cin:  Input capacitance of the switch.
-    :req_param Cout:  Output capacitance of the switch.
-
-    :opt_param Tdel:  
-        Intrinsic delay through the switch.
-        If this switch was driven by a zero resistance source, and drove a zero capacitance load, its delay would be Tdel + R * Cout.
-        The ‘switch’ includes both the mux and buffer when in unidirectional mode. 
-        *Required if no <Tdel/> tags are specified*
-
-    :opt_param buf_size:  
-        *Only for unidirectional routing.*
-        This is an optional parameter that specifies area of the buffer in minimum-width transistor area units.
-        If set to ``auto``, this value will be determined automatically from the R value.
-        This allows you to use timing models without R’s and C’s and still be able to measure area.
-
-        **Default:** ``auto``
-
-    :opt_param mux_trans_size: 
-        *Only for unidirectional routing.*
-        This parameter must be used if and only if unidirectional segments are used since bidirectional mode switches don’t have muxes.
-        The value controls the size of each transistor in the mux, measured in minimum width transistors.
-        The mux is a two-level mux.
-
-    :opt_param power_buf_size: *Used for power estimation.* The size is the drive strength of the buffer, relative to a minimum-sized inverter.
-
-    Describes a type of switch.
-    This statement defines what a certain type of switch is -- segment statements refer to a switch types by their name.
-
-    **Example:**
-
-    .. code-block:: xml
-
-        <switch type="mux" name="my_awsome_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
-
-.. arch:tag:: <Tdel num_inputs="int" delay="float"/>
-
-    :req_param num_inputs: The number of switch inputs
-    :req_param delay: The intrinsic switch delay when the switch topology has the specified number of switch inputs
-
-    Instead of specifying a single Tdel value, a list of Tdel values may be specified for different values of switch fan-in.
-    Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
-    
-    **Example:**
-
-    .. code-block:: xml
-
-        <switch type="mux" name="my_mux" R="522" Cin="3.1e-15" Cout="3e-15" mux_trans_size="1.7" buf_size="23">
-            <Tdel num_inputs="12" delay="8.00e-11"/>
-            <Tdel num_inputs="15" delay="8.4e-11"/>
-            <Tdel num_inputs="20" delay="9.4e-11"/>
-        </switch>
 
 Clocks
 ------
