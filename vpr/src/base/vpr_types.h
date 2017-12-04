@@ -858,9 +858,6 @@ struct t_analysis_opts {
  *               Used only in the FPGA area model.                          *
  * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   *
  *                                                                          *
- * dump_rr_structs_file: routing resource structures will be dumped in      *
- *                       build_rr_graph() to a file specified by this       *
- *                       variable                                           *
  * read_rr_graph_filename: File to read the RR graph from (overrides        *
  *                         architecture)                                    *
  * write_rr_graph_filename: File to write the RR graph to after generation  *
@@ -880,7 +877,6 @@ struct t_det_routing_arch {
 	float R_minW_nmos;
 	float R_minW_pmos;
 
-	char *dump_rr_structs_file;
     std::string read_rr_graph_filename;
     std::string write_rr_graph_filename;
 };

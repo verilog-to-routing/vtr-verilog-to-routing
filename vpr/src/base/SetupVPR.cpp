@@ -139,7 +139,6 @@ void SetupVPR(t_options *Options,
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
 	SetupPackerOpts(*Options, PackerOpts);
-	RoutingArch->dump_rr_structs_file = nullptr;
 	RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
     RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
 

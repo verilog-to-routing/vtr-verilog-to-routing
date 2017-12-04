@@ -29,7 +29,6 @@ using namespace std;
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
 #include "rr_graph_writer.h"
@@ -236,7 +235,6 @@ static void build_rr_graph(
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings);
@@ -290,7 +288,6 @@ void create_rr_graph(
                 trim_empty_channels,
                 trim_obs_channels,
                 directs, num_directs,
-                det_routing_arch->dump_rr_structs_file,
                 &det_routing_arch->wire_to_rr_ipin_switch,
                 num_rr_switches,
                 Warnings);
@@ -325,7 +322,6 @@ static void build_rr_graph(
         const bool trim_obs_channels,
         const t_direct_inf *directs, 
         const int num_directs,
-        const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings) {
@@ -597,11 +593,6 @@ static void build_rr_graph(
 
 
     check_rr_graph(graph_type, grid, *num_rr_switches, types, segment_inf);
-
-    /* dump out rr structs if requested */
-    if (dump_rr_structs_file) {
-        dump_rr_structs(dump_rr_structs_file);
-    }
 
 #ifdef USE_MAP_LOOKAHEAD
     compute_router_lookahead(num_seg_types);

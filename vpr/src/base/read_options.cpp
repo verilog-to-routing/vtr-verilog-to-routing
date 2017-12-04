@@ -365,10 +365,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    file_grp.add_argument(args.dump_rr_structs_file, "--dump_rr_structs_file")
-            .help("Dumps RR graph related structures to a file")
-            .show_in(argparse::ShowIn::HELP_ONLY);
-
 	file_grp.add_argument(args.hmetis_input_file, "--hmetis_input_file")
 			.help("Reads in a filename to write packing stats for input to hmetis")
 			.show_in(argparse::ShowIn::HELP_ONLY);
@@ -843,13 +839,6 @@ static bool verify_args(const t_options& args) {
     /*
      * Check for conflicting paramaters
      */
-    if(args.dump_rr_structs_file.provenance() == Provenance::SPECIFIED
-       && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"--route_chan_width option must be specified if dumping rr structs is requested (%s)\n",
-                args.dump_rr_structs_file.argument_name().c_str());
-    }
-
     if(args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
        && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
