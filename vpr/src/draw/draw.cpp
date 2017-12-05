@@ -654,7 +654,6 @@ static void drawplace(void) {
 			}
 
 			for (int k = 0; k < num_sub_tiles; ++k) {
-				/* TODO: Graphics may look unusual for multiple height and capacity */
 
 				/* Look at the tile at start of large block */
 				bnum = place_ctx.grid_blocks[i][j].blocks[k];
