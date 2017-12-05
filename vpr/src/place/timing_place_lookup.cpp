@@ -29,6 +29,10 @@ using namespace std;
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h" 
 
+constexpr float UNINITIALIZED_DELTA = -1; //Indicates the delta delay value has not been calculated
+constexpr float EMPTY_DELTA = -2; //Indicates delta delay from/to an EMPTY block
+constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Indicates there is no valid delta delay
+
 /*To compute delay between blocks we calculate the delay between */
 /*different nodes in the FPGA.  From this procedure we generate 
  * a lookup table which tells us the delay between different locations in*/
@@ -38,9 +42,6 @@ using namespace std;
 /*between different locations on the FPGA. */
 
 static vtr::Matrix<float> f_delta_delay;
-
-//These store the coordinates of the empty blocks in the delta matrix
-static vector <pair<int, int>> empty_blocks;
 
 /*** Function Prototypes *****/
 static void setup_chan_width(t_router_opts router_opts,
@@ -258,7 +259,7 @@ static float route_connection_delay(int source_x, int source_y,
         int sink_x, int sink_y, t_router_opts router_opts) {
     //Routes between the source and sink locations and calculates the delay
 
-    float net_delay_value = IMPOSSIBLE; /*set to known value for debug purposes */
+    float net_delay_value = IMPOSSIBLE_DELTA; /*set to known value for debug purposes */
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -275,11 +276,8 @@ static float route_connection_delay(int source_x, int source_y,
 
     if (!successfully_routed) {
         vtr::printf_warning(__FILE__, __LINE__,
-                "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to inf)\n",
-                source_x, source_y, sink_x, sink_y);
-
-        //We set the delay to +inf, since this architecture will likely be unroutable
-        net_delay_value = std::numeric_limits<float>::infinity();
+                "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
+                source_x, source_y, sink_x, sink_y, net_delay_value);
     }
 
     return (net_delay_value);
@@ -290,7 +288,7 @@ static void alloc_delta_arrays(void) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /*initialize all of the array locations to -1 */
-    f_delta_delay.resize({device_ctx.grid.width(), device_ctx.grid.height()}, IMPOSSIBLE);
+    f_delta_delay.resize({device_ctx.grid.width(), device_ctx.grid.height()}, UNINITIALIZED_DELTA);
 }
 
 static void free_delta_arrays(void) {
@@ -314,30 +312,45 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
             delta_x = abs(sink_x - source_x);
             delta_y = abs(sink_y - source_y);
 
-            if (   device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE
-                || device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-                matrix[delta_x][delta_y] = EMPTY_DELTA;
-                pair<int, int> empty_cell(delta_x, delta_y);
-                empty_blocks.push_back(empty_cell);
+            t_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
+            t_type_ptr sink_type = device_ctx.grid[sink_x][sink_y].type;
+
+            bool src_or_target_empty = ( src_type == device_ctx.EMPTY_TYPE
+                                        || sink_type == device_ctx.EMPTY_TYPE);
+
+            if (src_or_target_empty) {
+                
+                if (matrix[delta_x][delta_y] == UNINITIALIZED_DELTA) {
+                    //Only set empty target if we don't already have a valid delta delay
+                    matrix[delta_x][delta_y] = EMPTY_DELTA;
 #ifdef VERBOSE
-                vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
-                                "EMPTY",
-                                delta_x, delta_y,
-                                source_x, source_y,
-                                sink_x, sink_y);
+                    vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                                    "EMPTY",
+                                    delta_x, delta_y,
+                                    source_x, source_y,
+                                    sink_x, sink_y);
 #endif
-                continue;
+                } 
+            } else {
+                //Valid start/end
+
+                float delay = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
+
+#ifdef VERBOSE
+                vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n", 
+                        delay,
+                        delta_x, delta_y,
+                        source_x, source_y,
+                        sink_x, sink_y);
+#endif
+                if (matrix[delta_x][delta_y] >= 0.) { //Current is valid
+                    //Keep the smallest delay
+                    matrix[delta_x][delta_y] = std::min(matrix[delta_x][delta_y], delay);
+                } else {
+                    //First valid delay
+                    matrix[delta_x][delta_y] = delay;
+                }
             }
-
-
-            matrix[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-#ifdef VERBOSE
-            vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n", 
-                    matrix[delta_x][delta_y],
-                    delta_x, delta_y,
-                    source_x, source_y,
-                    sink_x, sink_y);
-#endif
         }
     }
 }
@@ -487,7 +500,7 @@ static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y)
             if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) {
                 continue;
             }
-            if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE) {
+            if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE_DELTA) {
                 continue;
             }
             counter++;
@@ -506,7 +519,7 @@ static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y)
                 if ((delx == x && dely == y) || delx < 0 || dely < 0 || delx >= endx || dely >= endy) {
                     continue;
                 }
-                if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE) {
+                if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE_DELTA) {
                     continue;
                 }
                 counter++;
@@ -523,20 +536,37 @@ static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y)
     }
 }
 
-static void fix_empty_coordinates(void) {
-    unsigned i;
-    for (i = 0; i < empty_blocks.size(); i++) {
-        f_delta_delay[empty_blocks[i].first][empty_blocks[i].second] = find_neightboring_average(f_delta_delay, empty_blocks[i].first, empty_blocks[i].second);
+static void fix_empty_coordinates() {
+    //Set any empty delta's to the average of it's neighbours
+    for (size_t delta_x = 0; delta_x < f_delta_delay.dim_size(0); ++delta_x) {
+        for (size_t delta_y = 0; delta_y < f_delta_delay.dim_size(1); ++delta_y) {
+            if (f_delta_delay[delta_x][delta_y] == EMPTY_DELTA) {
+                f_delta_delay[delta_x][delta_y] = find_neightboring_average(f_delta_delay, delta_x, delta_y);
+            }
+        }
     }
-    
-    if (!empty_blocks.empty()) {
-        empty_blocks.clear();
+}
+
+static void fix_uninitialized_coordinates() {
+    //Set any empty delta's to the average of it's neighbours
+    for (size_t delta_x = 0; delta_x < f_delta_delay.dim_size(0); ++delta_x) {
+        for (size_t delta_y = 0; delta_y < f_delta_delay.dim_size(1); ++delta_y) {
+            if (f_delta_delay[delta_x][delta_y] == UNINITIALIZED_DELTA) {
+                f_delta_delay[delta_x][delta_y] = IMPOSSIBLE_DELTA;
+            }
+        }
     }
 }
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
     vtr::printf_info("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
     compute_delta_delays(router_opts, longest_length);
+
+    if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
+        print_delta_delays_echo("place_delay.pre_fix_empty.echo");
+    }
+
+    fix_uninitialized_coordinates();
 
     fix_empty_coordinates();
 
@@ -554,17 +584,13 @@ static bool verify_delta_delays() {
 
     for(size_t x = 0; x < grid.width(); ++x) {
         for(size_t y = 0; y < grid.height(); ++y) {
-            auto type = grid[x][y].type;
-
-            if (type != device_ctx.EMPTY_TYPE) {
                 
-                float delta_delay = get_delta_delay(x, y);
+            float delta_delay = get_delta_delay(x, y);
 
-                if (delta_delay < 0.) {
-                    VPR_THROW(VPR_ERROR_PLACE, 
-                            "Found negative delay %g for delta (%d,%d), but this is a valid delta between non-EMPTY blocks",
-                            delta_delay, x, y);
-                }
+            if (delta_delay < 0.) {
+                VPR_THROW(VPR_ERROR_PLACE, 
+                        "Found invaild negative delay %g for delta (%d,%d)",
+                        delta_delay, x, y);
             }
         }
     }
@@ -618,7 +644,7 @@ static bool calculate_delay(int source_node, int sink_node,
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
-    
+
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
 
@@ -642,6 +668,8 @@ static bool calculate_delay(int source_node, int sink_node,
     if (cheapest == NULL) {
         return false;
     }
+    VTR_ASSERT(cheapest->index == sink_node);
+
     t_rt_node* rt_node_of_sink = update_route_tree(cheapest);
     free_heap_data(cheapest);
     empty_heap();

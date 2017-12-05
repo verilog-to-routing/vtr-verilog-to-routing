@@ -1,7 +1,5 @@
-#define IMPOSSIBLE -1		/*indicator of an array location that    */
-/*should never be accessed */
-#define EMPTY_DELTA -2		/*indicator of an array location that  */
-/*has an empty block */
+#ifndef TIMING_PLACE_LOOKUP_H
+#define TIMING_PLACE_LOOKUP_H
 
 void compute_delay_lookup_tables(t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -10,3 +8,5 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
 void free_place_lookup_structs(void);
 
 float get_delta_delay(int delta_x, int delta_y);
+
+#endif
