@@ -346,7 +346,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
 
     //To avoid edge effects we place the source at least 'longest_length' away
     //from the device edge 
-    //and route from there for all possible delta values < dimension2
+    //and route from there for all possible delta values < dimension
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
@@ -380,7 +380,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     //   * = (low_x, low_y)
     //   + = device edge
 
-    //Pick the lowest y location on the left
+    //Find the lowest y location on the left edge with a non-empty block
     size_t y = 0;
     size_t x = 0;
     t_type_ptr src_type = nullptr;
@@ -408,7 +408,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
             grid.width() - 1, grid.height() - 1,
             router_opts);
 
-    //Pick the lowest x location on the bottom
+    //Find the lowest x location on the bottom edge with a non-empty block
     src_type = nullptr;
     for (y = 0; y < grid.height(); ++y) {
         for (x = 0; x < grid.width(); ++x) {
@@ -434,8 +434,8 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
             router_opts);
 
 
-    //Since the other delta delay values may have suffered from edge effects, we recalculate
-    //withing region D
+    //Since the other delta delay values may have suffered from edge effects, 
+    //we recalculate deltas within region B
 #ifdef VERBOSE
     vtr::printf("Computing from mid:\n");
 #endif
