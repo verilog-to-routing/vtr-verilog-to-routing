@@ -77,7 +77,6 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     auto& device_ctx = g_vpr_ctx.device();
 
     bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.num_rr_nodes)
-                                             || rt_node_free_list != NULL
 			                                 || rt_node_free_list != NULL);
     if (route_tree_structs_are_allocated) {
         if (exists_ok) {
@@ -325,6 +324,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	//Inode is now the branch point to the old routing; do not need 
     //to alloc another node since the old routing has done so already
 	rt_node = rr_node_to_rt_node[inode];
+    VTR_ASSERT(rt_node);
 
 	linked_rt_edge = alloc_linked_rt_edge();
 	linked_rt_edge->child = downstream_rt_node;
