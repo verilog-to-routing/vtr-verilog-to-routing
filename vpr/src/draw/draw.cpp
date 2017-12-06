@@ -2152,7 +2152,6 @@ static bool highlight_rr_nodes(float x, float y) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
 
 	int hit_node = OPEN;  // i.e. -1, no node selected.
 	char message[250] = "";
@@ -2167,13 +2166,6 @@ static bool highlight_rr_nodes(float x, float y) {
 	hit_node = draw_check_rr_node_hit (x, y);
 
 	if (hit_node != OPEN) {
-		int xlow = device_ctx.rr_nodes[hit_node].xlow();
-		int xhigh = device_ctx.rr_nodes[hit_node].xhigh();
-		int ylow = device_ctx.rr_nodes[hit_node].ylow();
-		int yhigh = device_ctx.rr_nodes[hit_node].yhigh();
-		int ptc_num = device_ctx.rr_nodes[hit_node].ptc_num();
-        t_rr_type type = device_ctx.rr_nodes[hit_node].type();
-
 		if (draw_state->draw_rr_node[hit_node].color != MAGENTA) {
 			/* If the node hasn't been clicked on before, highlight it
 			 * in magenta.
@@ -2181,26 +2173,9 @@ static bool highlight_rr_nodes(float x, float y) {
 			draw_state->draw_rr_node[hit_node].color = MAGENTA;
 			draw_state->draw_rr_node[hit_node].node_highlighted = true;
 
-            if (type == CHANX || type == CHANY) {
-                sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, dir: %s, out_edges: %d, occ: %d, capacity: %d",
-                        hit_node, device_ctx.rr_nodes[hit_node].type_string(),
-                        xlow, ylow, xhigh, yhigh, ptc_num, 
-                        DIRECTIONS_STRING[device_ctx.rr_nodes[hit_node].direction()],
-                        device_ctx.rr_nodes[hit_node].num_edges(), 
-                        route_ctx.rr_node_route_inf[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
-            } else if (type == IPIN || type == OPIN) {
-                sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) pin: %d, side: %s, out_edges: %d, occ: %d, capacity: %d",
-                        hit_node, device_ctx.rr_nodes[hit_node].type_string(),
-                        xlow, ylow, xhigh, yhigh, ptc_num, 
-                        SIDE_STRING[device_ctx.rr_nodes[hit_node].side()],
-                        device_ctx.rr_nodes[hit_node].num_edges(), 
-                        route_ctx.rr_node_route_inf[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
-            } else {
-                sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) ptc: %d, %d edges, occ: %d, capacity: %d",
-                        hit_node, device_ctx.rr_nodes[hit_node].type_string(),
-                        xlow, ylow, xhigh, yhigh, ptc_num, device_ctx.rr_nodes[hit_node].num_edges(), 
-                        route_ctx.rr_node_route_inf[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
-            }
+            std::string info = describe_rr_node(hit_node);
+
+            sprintf(message, "Selected %s", info.c_str());
 
             rr_highlight_message = message;
 
@@ -2336,39 +2311,14 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 	if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
 
-        auto& device_ctx = g_vpr_ctx.device();
-
         int hit_node = draw_check_rr_node_hit(mouse_x, mouse_y);
 
         if(hit_node != OPEN) {
             //Update message
 
-            std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", 
-                    hit_node, device_ctx.rr_nodes[hit_node].type_string());
-
-            if (device_ctx.rr_nodes[hit_node].type() == CHANX || device_ctx.rr_nodes[hit_node].type() == CHANY) {
-                int cost_index = device_ctx.rr_nodes[hit_node].cost_index();
-
-                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-
-                msg += vtr::string_fmt(" track: %d len: %d seg_type: %s dir: %s", 
-                            device_ctx.rr_nodes[hit_node].ptc_num(), 
-                            device_ctx.rr_nodes[hit_node].length(),
-                            draw_state->arch_info->Segments[seg_index].name,
-                            DIRECTIONS_STRING[device_ctx.rr_nodes[hit_node].direction()]
-                        );
-                update_message(msg.c_str());
-            } else if (device_ctx.rr_nodes[hit_node].type() == IPIN || device_ctx.rr_nodes[hit_node].type() == OPIN) {
-                auto& node = device_ctx.rr_nodes[hit_node];
-
-                t_type_ptr type = device_ctx.grid[node.xlow()][node.ylow()].type;
-                std::string pin_name = block_type_pin_index_to_name(type, node.pin_num());
-
-                msg += vtr::string_fmt(" pin: %d pin_name: %s",
-                        node.pin_num(),
-                        pin_name.c_str());
-                update_message(msg.c_str());
-            }
+            std::string info = describe_rr_node(hit_node);
+            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
+            update_message(msg.c_str());
         } else {
             //No rr node moused over, reset message
             if(!rr_highlight_message.empty()) {

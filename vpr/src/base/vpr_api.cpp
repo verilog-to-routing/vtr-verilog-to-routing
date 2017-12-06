@@ -314,6 +314,11 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /*
+     * Keep a copy of the architecture
+     */
+    device_ctx.arch = Arch;
+
+    /*
      *Load the device grid
      */
 
@@ -327,7 +332,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
-    //Report on the device
+    /*
+     *Report on the device
+     */
     vtr::printf_info("FPGA sized to %zu x %zu (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");

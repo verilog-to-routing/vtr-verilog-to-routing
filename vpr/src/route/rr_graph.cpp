@@ -2197,26 +2197,8 @@ void dump_rr_graph(const char *file_name) {
 /* Prints all the data about node inode to file fp.                    */
 void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
-    t_rr_type rr_type = L_rr_node[inode].type();
-
-    fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].type_string());
-    if ((L_rr_node[inode].xlow() == L_rr_node[inode].xhigh())
-            && (L_rr_node[inode].ylow() == L_rr_node[inode].yhigh())) {
-        fprintf(fp, "(%d, %d) ",
-                L_rr_node[inode].xlow(), L_rr_node[inode].ylow());
-    } else {
-        fprintf(fp, "(%d, %d) to (%d, %d) ",
-                L_rr_node[inode].xlow(), L_rr_node[inode].ylow(),
-                L_rr_node[inode].xhigh(), L_rr_node[inode].yhigh());
-    }
-    fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num());
-    fprintf(fp, "Length: %d ", L_rr_node[inode].length());
-    if (rr_type == CHANX || rr_type == CHANY) {
-        fprintf(fp, "Direction: %s ", DIRECTIONS_STRING[L_rr_node[inode].direction()]);
-    } else if (rr_type == IPIN || rr_type == OPIN) {
-        fprintf(fp, "Side: %s ", SIDE_STRING[L_rr_node[inode].side()]);
-    }
-    fprintf(fp, "\n");
+    std::string info = describe_rr_node(inode);
+    fprintf(fp, "%s\n", info.c_str());
 
     fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges());
     for (int iconn = 0; iconn < L_rr_node[inode].num_edges(); ++iconn)
@@ -2229,9 +2211,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
     fprintf(fp, "\n");
 
     fprintf(fp, "Capacity: %d\n", L_rr_node[inode].capacity());
-    if (rr_type != INTRA_CLUSTER_EDGE) {
-        fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
-    }
+    fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
     fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
 }
 
@@ -2253,6 +2233,44 @@ void print_rr_indexed_data(FILE * fp, int index) {
     fprintf(fp, "C_load: %g\n", device_ctx.rr_indexed_data[index].C_load);
 }
 
+std::string describe_rr_node(int inode) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::string msg = vtr::string_fmt("RR node: %d ", inode);
+
+    const auto& rr_node = device_ctx.rr_nodes[inode];
+
+    msg += vtr::string_fmt(" type: %s", rr_node.type_string());
+
+    msg += vtr::string_fmt(" location: (%d,%d) -> (%d,%d)", rr_node.xlow(), rr_node.ylow(), rr_node.xhigh(), rr_node.yhigh());
+
+    if (rr_node.type() == CHANX || rr_node.type() == CHANY) {
+        int cost_index = rr_node.cost_index();
+
+        int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+
+        msg += vtr::string_fmt(" track: %d len: %d seg_type: %s dir: %s", 
+                    rr_node.track_num(), 
+                    rr_node.length(),
+                    device_ctx.arch.Segments[seg_index].name,
+                    rr_node.direction_string()
+                );
+    } else if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
+
+        t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        std::string pin_name = block_type_pin_index_to_name(type, rr_node.pin_num());
+
+        msg += vtr::string_fmt(" pin: %d pin_name: %s",
+                rr_node.pin_num(),
+                pin_name.c_str());
+    } else {
+        VTR_ASSERT(rr_node.type() == SOURCE || rr_node.type() == SINK);
+
+        msg += vtr::string_fmt(" class: %d", rr_node.class_num());
+    }
+
+    return msg;
+}
 static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>&Fc_out, const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
