@@ -3316,7 +3316,11 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
             break;
         }
     }
-    VTR_ASSERT(model != nullptr);
+    if (model == nullptr) {
+        archfpga_throw(get_arch_file_name(), -1,
+            "Unable to find model for blif_model '%s' found on pb_type '%s'",
+            blif_model.c_str(), pb_type->name);
+    }
 
     //Now that we have the model we can compare the timing annotations
      
