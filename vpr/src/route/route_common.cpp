@@ -1698,3 +1698,40 @@ void print_traceback(t_trace* trace) {
 	}
 	vtr::printf_info("\n");
 }
+
+//Print information about an invalid routing, caused by overused routing resources
+void print_invalid_routing_info() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+
+    //Build a look-up of nets using each RR node
+    std::multimap<int,ClusterNetId> rr_node_nets;
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        t_trace* tptr = route_ctx.trace_head[net_id];
+
+        while (tptr != nullptr) {
+            rr_node_nets.emplace(tptr->index, net_id); 
+            tptr = tptr->next;
+        }
+    }
+
+	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+        int occ = route_ctx.rr_node_route_inf[inode].occ();
+        int cap = device_ctx.rr_nodes[inode].capacity();
+		if (occ > cap) {
+
+            vtr::printf("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
+
+            auto range = rr_node_nets.equal_range(inode);
+            for (auto itr = range.first; itr != range.second; ++itr) {
+                auto net_id = itr->second;
+                vtr::printf("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id)); 
+            }
+
+		}
+	}
+}
+

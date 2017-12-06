@@ -99,6 +99,9 @@ bool try_breadth_first_route(t_router_opts router_opts) {
 	}
 
 	vtr::printf_info("Routing failed.\n");
+
+    print_invalid_routing_info();
+
 	return (false);
 }
 

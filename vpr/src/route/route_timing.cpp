@@ -457,6 +457,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
     } else {
         vtr::printf_info("Routing failed.\n");
+        print_invalid_routing_info();
     }
 
     return routing_is_successful;
