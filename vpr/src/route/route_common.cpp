@@ -104,7 +104,7 @@ static vtr::t_chunk linked_f_pointer_ch;
 /******************** Subroutines local to route_common.c *******************/
 void print_traceback(t_trace* trace);
 
-static t_trace_branch traceback_branch(int node, int from_node, int from_edge);
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth=0);
 
@@ -534,7 +534,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	 * the first "new" node in the traceback (node not previously in trace).    */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    t_trace_branch branch = traceback_branch(hptr->index, hptr->u.prev_node, hptr->prev_edge);
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous);
 
     t_trace* ret_ptr = nullptr;
 	if (route_ctx.trace_tail[net_id] != NULL) {
@@ -549,7 +549,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	return (ret_ptr);
 }
 
-static t_trace_branch traceback_branch(int node, int from_node, int from_edge) {
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -567,22 +567,24 @@ static t_trace_branch traceback_branch(int node, int from_node, int from_edge) {
     branch_head->iswitch = OPEN;
     branch_head->next = nullptr;
 
-    int inode = from_node;
-    int iedge = from_edge;
-
     std::set<int> main_branch_visited;
-    while (inode != NO_PREVIOUS) {
-        //Add the current node to the head of traceback
-        t_trace* prev_ptr = alloc_trace_data();
-        prev_ptr->index = inode;
-        prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
-        prev_ptr->next = branch_head;
-        branch_head = prev_ptr;
+    for (t_heap_prev prev : previous) {
+        int inode = prev.from_node;
+        int iedge = prev.from_edge;
 
-        main_branch_visited.insert(inode); //Record this node as visited
+        while (inode != NO_PREVIOUS) {
+            //Add the current node to the head of traceback
+            t_trace* prev_ptr = alloc_trace_data();
+            prev_ptr->index = inode;
+            prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+            prev_ptr->next = branch_head;
+            branch_head = prev_ptr;
 
-        iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
-        inode = route_ctx.rr_node_route_inf[inode].prev_node;
+            main_branch_visited.insert(inode); //Record this node as visited
+
+            iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            inode = route_ctx.rr_node_route_inf[inode].prev_node;
+        }
     }
 
     //We next re-expand all the main-branch nodes to add any non-configurably connected side branches
@@ -694,6 +696,24 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, 
 
 /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
 * all channel segments touched by previous routing phases.    */
+void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    for (auto node : visited_rr_nodes) {
+        route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[node].prev_node = NO_PREVIOUS;;
+        route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;;
+    }
+
+#if 0
+    //Sanity check that all path costs have been reset
+    for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
+        VTR_ASSERT(std::isinf(route_ctx.rr_node_route_inf[inode].path_cost));
+    }
+#endif
+
+}
+
 void reset_path_costs(void) {
 	t_linked_f_pointer *mod_ptr;
 	int num_mod_ptrs;
@@ -780,8 +800,8 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	t_heap* hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
-	hptr->u.prev_node = prev_node;
-	hptr->prev_edge = prev_edge;
+    VTR_ASSERT(hptr->previous.empty());
+	hptr->previous.emplace_back(inode, prev_node, prev_edge);
 	hptr->backward_path_cost = backward_path_cost;
 	hptr->R_upstream = R_upstream;
 	add_to_heap(hptr);
@@ -963,7 +983,7 @@ void reset_rr_node_route_structs(void) {
 		route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
 		route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
-		route_ctx.rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
+		route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
 		route_ctx.rr_node_route_inf[inode].target_flag = 0;
 		route_ctx.rr_node_route_inf[inode].set_occ(0);
 	}
@@ -1121,6 +1141,14 @@ static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     return route_bb;
 }
 
+void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    if (std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
+        modified_rr_node_inf.push_back(inode);
+    }
+}
+
 void add_to_mod_list(float *fptr) {
 
 	/* This routine adds the floating point pointer (fptr) into a  *
@@ -1219,8 +1247,7 @@ namespace heap_ {
 		t_heap* hptr = alloc_heap_data();
 		hptr->index = inode;
 		hptr->cost = total_cost;
-		hptr->u.prev_node = prev_node;
-		hptr->prev_edge = prev_edge;
+        hptr->previous.emplace_back(inode, prev_node, prev_edge);
 		hptr->backward_path_cost = backward_path_cost;
 		hptr->R_upstream = R_upstream;
 		push_back(hptr);
@@ -1334,6 +1361,15 @@ alloc_heap_data(void) {
 	}
 
 	temp_ptr = heap_free_head;
+
+    //Reset
+    temp_ptr->u.next = nullptr;
+    temp_ptr->cost = 0.;
+    temp_ptr->backward_path_cost = 0.;
+    temp_ptr->R_upstream = 0.;
+    temp_ptr->index = OPEN;
+    temp_ptr->previous.clear();
+
 	heap_free_head = heap_free_head->u.next;
 	num_heap_allocated++;
 	return (temp_ptr);
@@ -1353,8 +1389,14 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 	 * and even then only in rare circumstances.                                */
 
 	for (int i = 1; i < heap_tail; i++) {
-		if (heap[i]->index == sink_node && heap[i]->u.prev_node == ipin_node)
-			heap[i]->index = OPEN; /* Invalid. */
+		if (heap[i]->index == sink_node) {
+            for (t_heap_prev prev : heap[i]->previous) {
+                if (prev.from_node == ipin_node) {
+                    heap[i]->index = OPEN; /* Invalid. */
+                    break;
+                }
+            }
+        }
 	}
 }
 

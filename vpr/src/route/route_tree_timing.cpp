@@ -276,50 +276,53 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	/* Now do it's predecessor. */
 
 	downstream_rt_node = sink_rt_node;
-	inode = hptr->u.prev_node;
-	iedge = hptr->prev_edge;
-	iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
-
-	/* For all "new" nodes in the main path */
-	// inode is node index of previous node
-	// NO_PREVIOUS tags a previously routed node
 
     std::set<int> main_branch_visited;
-	while (route_ctx.rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
-        main_branch_visited.insert(inode);
+    for (t_heap_prev prev : hptr->previous) {
+        inode = prev.from_node;
+        iedge = prev.from_edge;
+        iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
-		linked_rt_edge = alloc_linked_rt_edge();
-		linked_rt_edge->child = downstream_rt_node;
-		linked_rt_edge->iswitch = iswitch;
-		linked_rt_edge->next = NULL;
+        /* For all "new" nodes in the main path */
+        // inode is node index of previous node
+        // NO_PREVIOUS tags a previously routed node
 
-		rt_node = alloc_rt_node();
-		downstream_rt_node->parent_node = rt_node;
-		downstream_rt_node->parent_switch = iswitch;
+        while (route_ctx.rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
+            main_branch_visited.insert(inode);
 
-		rt_node->u.child_list = linked_rt_edge;
-		rt_node->inode = inode;
+            linked_rt_edge = alloc_linked_rt_edge();
+            linked_rt_edge->child = downstream_rt_node;
+            linked_rt_edge->iswitch = iswitch;
+            linked_rt_edge->next = NULL;
 
-		if (device_ctx.rr_switch_inf[iswitch].buffered == false) {
-			C_downstream += device_ctx.rr_nodes[inode].C();
-        } else {
-			C_downstream = device_ctx.rr_nodes[inode].C();
+            rt_node = alloc_rt_node();
+            downstream_rt_node->parent_node = rt_node;
+            downstream_rt_node->parent_switch = iswitch;
+
+            rt_node->u.child_list = linked_rt_edge;
+            rt_node->inode = inode;
+
+            if (device_ctx.rr_switch_inf[iswitch].buffered == false) {
+                C_downstream += device_ctx.rr_nodes[inode].C();
+            } else {
+                C_downstream = device_ctx.rr_nodes[inode].C();
+            }
+
+            rt_node->C_downstream = C_downstream;
+            rr_node_to_rt_node[inode] = rt_node;
+
+            if (device_ctx.rr_nodes[inode].type() == IPIN) {
+                rt_node->re_expand = false;
+            } else {
+                rt_node->re_expand = true;
+            }
+
+            downstream_rt_node = rt_node;
+            iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            inode = route_ctx.rr_node_route_inf[inode].prev_node;
+            iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
         }
-
-		rt_node->C_downstream = C_downstream;
-		rr_node_to_rt_node[inode] = rt_node;
-
-        if (device_ctx.rr_nodes[inode].type() == IPIN) {
-            rt_node->re_expand = false;
-        } else {
-            rt_node->re_expand = true;
-        }
-
-		downstream_rt_node = rt_node;
-		iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
-		inode = route_ctx.rr_node_route_inf[inode].prev_node;
-		iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
-	}
+    }
 
 	//Inode is now the branch point to the old routing; do not need 
     //to alloc another node since the old routing has done so already

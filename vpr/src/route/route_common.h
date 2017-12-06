@@ -3,6 +3,16 @@
 #include <vector>
 #include "clustered_netlist.h"
 
+
+struct t_heap_prev {
+    t_heap_prev(int to, int from, short edge)
+        : to_node(to), from_node(from), from_edge(edge) {}
+    int to_node = NO_PREVIOUS; //The target node
+    int from_node = NO_PREVIOUS; //The previous node used to connect to 'to_node'
+    short from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
+};
+
+
 /* Used by the heap as its fundamental data structure.                      * 
  * index:   Index (ID) of this routing resource node.                       * 
  * cost:    Cost up to and including this node.                             * 
@@ -23,15 +33,16 @@
  *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
 struct t_heap {
     struct U {
-		int prev_node = NO_PREVIOUS;
 		t_heap *next = nullptr;
 	};
     U u;
+
 	float cost = 0.;
 	float backward_path_cost = 0.;
 	float R_upstream = 0.;
 	int index = OPEN;
-	int prev_edge = NO_PREVIOUS;
+
+    std::vector<t_heap_prev> previous;
 };
 
 /******* Subroutines in route_common used only by other router modules ******/
@@ -44,6 +55,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac);
 
 t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 
+void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 void reset_path_costs(void);
 
 float get_rr_cong_cost(int inode);
@@ -60,6 +72,7 @@ bool is_empty_heap(void);
 
 void free_traceback(ClusterNetId net_id);
 
+void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 void add_to_mod_list(float *fptr);
 
 namespace heap_ {

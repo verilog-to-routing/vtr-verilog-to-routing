@@ -853,15 +853,18 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
          * re-expansion based on a higher total cost.                          */
 
         if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
-            route_ctx.rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
-            route_ctx.rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
-            route_ctx.rr_node_route_inf[inode].path_cost = new_total_cost;
-            route_ctx.rr_node_route_inf[inode].backward_path_cost = new_back_cost;
 
-            // tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
-            // path_cost is specific for each sink (different expected cost)
-            if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-                add_to_mod_list(&route_ctx.rr_node_route_inf[inode].path_cost);
+            for (t_heap_prev prev : cheapest->previous) {
+                route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
+                route_ctx.rr_node_route_inf[prev.to_node].prev_edge = prev.from_edge;
+                route_ctx.rr_node_route_inf[prev.to_node].path_cost = new_total_cost;
+                route_ctx.rr_node_route_inf[prev.to_node].backward_path_cost = new_back_cost;
+
+                // tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
+                // path_cost is specific for each sink (different expected cost)
+                if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+                    add_to_mod_list(&route_ctx.rr_node_route_inf[prev.to_node].path_cost);
+            }
 
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
                     target_criticality, num_sinks, sink_node, astar_fac,
@@ -1232,10 +1235,14 @@ static t_heap* timing_driven_expand_node(const float criticality_fac, const floa
     t_heap* next = alloc_heap_data();
     next->index = to_node;
     next->cost = new_tot_cost;
-    next->u.prev_node = from_node;
-    next->prev_edge = iconn;
     next->backward_path_cost = new_back_pcost;
     next->R_upstream = new_R_upstream;
+
+    if (!edge_configurable) {
+        //Via a non-configurabl edge, must get connectivty of all non-configurably connected nodes
+        next->previous = current->previous;
+    }
+    next->previous.emplace_back(to_node, from_node, iconn);
 
     return next;
 }
