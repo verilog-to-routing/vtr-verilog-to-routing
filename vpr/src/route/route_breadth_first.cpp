@@ -53,6 +53,10 @@ bool try_breadth_first_route(t_router_opts router_opts) {
 
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 
+#ifdef ROUTER_DEBUG
+        vtr::printf("Routing Iteration %d\n", itry);
+#endif
+
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 			route_ctx.net_status[net_id].is_routed = false;
@@ -149,6 +153,10 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+#ifdef ROUTER_DEBUG
+    vtr::printf("Routing Net %zu (%zu sinks)\n", size_t(net_id), cluster_ctx.clb_nlist.net_sinks(net_id).size());
+#endif
+
 	free_traceback(net_id);
 	breadth_first_add_source_to_heap(net_id);
 	mark_ends(net_id);
@@ -173,6 +181,10 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 		}
 
 		inode = current->index;
+
+#ifdef ROUTER_DEBUG
+        vtr::printf("  Popped node %d\n", inode);
+#endif
 
 		while (route_ctx.rr_node_route_inf[inode].target_flag == 0) {
 			pcost = route_ctx.rr_node_route_inf[inode].path_cost;
@@ -202,7 +214,15 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			}
 
 			inode = current->index;
+
+#ifdef ROUTER_DEBUG
+            vtr::printf("  Popped node %d\n", inode);
+#endif
+
 		}
+#ifdef ROUTER_DEBUG
+        vtr::printf("  Found target node %d\n", inode);
+#endif
 
 		route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
 		remaining_connections_to_sink = route_ctx.rr_node_route_inf[inode].target_flag;
@@ -248,6 +268,9 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 
 	if (remaining_connections_to_sink == 0) { /* Usual case. */
 		while (tptr != NULL) {
+#ifdef ROUTER_DEBUG
+            vtr::printf("  Adding previous routing node %d to heap\n", tptr->index);
+#endif
 			node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 			tptr = tptr->next;
 		}
@@ -273,6 +296,9 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 
 		while (next_ptr != NULL) {
 			inode = tptr->index;
+#ifdef ROUTER_DEBUG
+            vtr::printf("  Adding previous routing node %d to heap*\n", tptr->index);
+#endif
 			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
 			if (device_ctx.rr_nodes[inode].type() == IPIN)
@@ -346,6 +372,9 @@ static void breadth_first_add_to_heap_expand_non_configurable_recurr(const float
                     from_node, to_node, iconn);
 
     if (next) {
+#ifdef ROUTER_DEBUG
+        vtr::printf("      Expanding node %d\n", to_node);
+#endif
         add_to_heap(next);
 
         //Consider any non-configurable edges which must be expanded for correctness
@@ -407,6 +436,10 @@ static void breadth_first_add_source_to_heap(ClusterNetId net_id) {
 
 	inode = route_ctx.net_rr_terminals[net_id][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);
+
+#ifdef ROUTER_DEBUG
+    vtr::printf("  Adding Source node %d to heap\n", inode);
+#endif
 
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 }
