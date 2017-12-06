@@ -104,7 +104,7 @@ static vtr::t_chunk linked_f_pointer_ch;
 /******************** Subroutines local to route_common.c *******************/
 void print_traceback(t_trace* trace);
 
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous);
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::set<int>& main_branch_visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth=0);
 
@@ -534,7 +534,14 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	 * the first "new" node in the traceback (node not previously in trace).    */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous);
+    //Load up the existing route nodes
+    // This ensures we do not add nodes multiple times when expanding non-configurable edges
+    std::set<int> traced_nodes;
+    for (t_trace* tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
+        traced_nodes.insert(tptr->index);
+    }
+
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, traced_nodes);
 
     t_trace* ret_ptr = nullptr;
 	if (route_ctx.trace_tail[net_id] != NULL) {
@@ -549,7 +556,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	return (ret_ptr);
 }
 
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous) {
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::set<int>& main_branch_visited) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -567,7 +574,6 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
     branch_head->iswitch = OPEN;
     branch_head->next = nullptr;
 
-    std::set<int> main_branch_visited;
     for (t_heap_prev prev : previous) {
         int inode = prev.from_node;
         int iedge = prev.from_edge;

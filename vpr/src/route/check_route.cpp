@@ -95,6 +95,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 		pin_done[0] = true;
 
 		prev_node = inode;
+        int prev_switch = tptr->iswitch;
 		tptr = tptr->next;
 
 		/* Check the rest of the net */
@@ -104,18 +105,21 @@ void check_route(enum e_route_type route_type, int num_switches) {
 			check_node_and_range(inode, route_type);
 			check_switch(tptr, num_switches);
 
-			if (device_ctx.rr_nodes[prev_node].type() == SINK) {
+			if (prev_switch == OPEN) { //Start of a new branch
 				if (connected_to_route[inode] == false) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_route: node %d does not link into existing routing for net %d.\n", inode, size_t(net_id));
 				}
-			}
-
-			else {
+			} else { //Continuing along existing branch
 				connects = check_adjacent(prev_node, inode);
 				if (!connects) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", size_t(net_id));
+						"in check_route: found non-adjacent segments in traceback while checking net %d:\n"
+                        "  %s\n"
+                        "  %s\n", 
+                        size_t(net_id),
+                        describe_rr_node(prev_node).c_str(),
+                        describe_rr_node(inode).c_str());
 				}
 
 				connected_to_route[inode] = true; /* Mark as in path. */
@@ -127,6 +131,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 
 			} /* End of prev_node type != SINK */
 			prev_node = inode;
+            prev_switch = tptr->iswitch;
 			tptr = tptr->next;
 		} /* End while */
 
@@ -329,12 +334,12 @@ static bool check_adjacent(int from_node, int to_node) {
 		}
 	}
 
-	VTR_ASSERT(reached==1);
 	if (!reached)
 		return (false);
 
 	/* Now we know the rr graph says these two nodes are adjacent.  Double  *
 	 * check that this makes sense, to verify the rr graph.                 */
+	VTR_ASSERT(reached);
 
 	num_adj = 0;
 
