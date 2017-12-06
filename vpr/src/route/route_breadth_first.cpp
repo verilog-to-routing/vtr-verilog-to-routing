@@ -157,13 +157,17 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
+    auto src_pin_id = cluster_ctx.clb_nlist.net_driver(net_id);
+
 	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) { /* Need n-1 wires to connect n pins */
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink);
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-			vtr::printf_info("Cannot route net #%zu (%s) to sink pin (%s) -- no possible path.\n",
-					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id));
+			vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
+					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
+                    cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(),
+                    cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 			reset_path_costs(); /* Clean up before leaving. */
 			return (false);
 		}
@@ -190,8 +194,9 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
-                vtr::printf_info("Cannot route net #%zu (%s) to sink pin (%s) -- no possible path.\n",
-                        size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id));
+                vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
+                        size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), 
+                        cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 				reset_path_costs();
 				return (false);
 			}
