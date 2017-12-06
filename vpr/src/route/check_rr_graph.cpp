@@ -436,6 +436,10 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
             if (check_for_out_edges) {
 
+                std::string info = describe_rr_node(inode);
+                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: %s has no out-going edges.\n", info.c_str());
+
+#if 0
                 int ptc = device_ctx.rr_nodes[inode].ptc_num();
                 if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
                     int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
@@ -452,6 +456,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                     vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
                             inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, ptc);
                 }
+#endif
             }
         }
     }

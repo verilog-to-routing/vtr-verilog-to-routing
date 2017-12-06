@@ -2236,13 +2236,16 @@ void print_rr_indexed_data(FILE * fp, int index) {
 std::string describe_rr_node(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    std::string msg = vtr::string_fmt("RR node: %d ", inode);
+    std::string msg = vtr::string_fmt("RR node: %d", inode);
 
     const auto& rr_node = device_ctx.rr_nodes[inode];
 
     msg += vtr::string_fmt(" type: %s", rr_node.type_string());
 
-    msg += vtr::string_fmt(" location: (%d,%d) -> (%d,%d)", rr_node.xlow(), rr_node.ylow(), rr_node.xhigh(), rr_node.yhigh());
+    msg += vtr::string_fmt(" location: (%d,%d)", rr_node.xlow(), rr_node.ylow());
+    if (rr_node.xlow() != rr_node.xhigh() || rr_node.ylow() != rr_node.yhigh()) {
+        msg += vtr::string_fmt(" <-> (%d,%d)", rr_node.xhigh(), rr_node.yhigh());
+    }
 
     if (rr_node.type() == CHANX || rr_node.type() == CHANY) {
         int cost_index = rr_node.cost_index();
@@ -2253,8 +2256,7 @@ std::string describe_rr_node(int inode) {
                     rr_node.track_num(), 
                     rr_node.length(),
                     device_ctx.arch.Segments[seg_index].name,
-                    rr_node.direction_string()
-                );
+                    rr_node.direction_string());
     } else if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
 
         t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
