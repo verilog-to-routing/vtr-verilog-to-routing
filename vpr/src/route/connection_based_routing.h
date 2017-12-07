@@ -106,8 +106,12 @@ public:
 
 	// get whether the connection to rr_sink_node of current_inet should be forcibly rerouted (can either assign or just read)
 	bool should_force_reroute_connection(int rr_sink_node) const {
-		auto force_flag = forcible_reroute_connection_flag[current_inet].find(rr_sink_node);
-		return force_flag->second;
+		auto itr = forcible_reroute_connection_flag[current_inet].find(rr_sink_node);
+
+        if (itr == forcible_reroute_connection_flag[current_inet].end()) {
+            return false; //A non-SINK end of a branch
+        }
+		return itr->second;
 	}
 	void clear_force_reroute_for_connection(int rr_sink_node); 
 	void clear_force_reroute_for_net();

@@ -662,14 +662,16 @@ static bool calculate_delay(int source_node, int sink_node,
 
     init_heap(device_ctx.grid);
 
+    std::vector<int> modified_rr_node_inf;
     t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0);
+            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0, modified_rr_node_inf);
 
     if (cheapest == NULL) {
         return false;
     }
     VTR_ASSERT(cheapest->index == sink_node);
 
+    std::set<int> used_rr_nodes;
     t_rt_node* rt_node_of_sink = update_route_tree(cheapest);
     free_heap_data(cheapest);
     empty_heap();

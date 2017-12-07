@@ -14,6 +14,7 @@ void free_route_tree_timing_structs(void);
 t_rt_node *init_route_tree_to_source(ClusterNetId inet);
 
 void free_route_tree(t_rt_node * rt_node);
+void print_route_tree(t_rt_node* rt_node, int depth=0);
 
 t_rt_node *update_route_tree(t_heap *hptr);
 
@@ -26,6 +27,8 @@ void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);	
 
 t_rt_node* init_route_tree_to_source_no_net(int inode);
+
+bool verify_route_tree(t_rt_node* root);
 
 /********** Incremental reroute ***********/
 // instead of ripping up a net that has some congestion, cut the branches

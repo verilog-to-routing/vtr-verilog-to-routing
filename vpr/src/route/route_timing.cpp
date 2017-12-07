@@ -107,6 +107,12 @@ private:
     size_t worst_overuse_;
 };
 
+struct t_timing_driven_node_costs {
+    float backward_cost = 0.;
+    float total_cost = 0.;
+    float R_upstream = 0.;
+};
+
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -132,13 +138,14 @@ static void timing_driven_add_to_heap_expand_non_configurable(const float critic
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
 
-static void timing_driven_add_to_heap_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+static void timing_driven_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited);
+        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited);
 
-static t_heap* timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
+t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
+    const float criticality_fac, const float bend_cost, const float astar_fac,
+    const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+    const int from_node, const int to_node, const int iconn, const int target_node);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
         float criticality_fac, float R_upstream);
@@ -599,6 +606,7 @@ int get_max_pins_per_net(void) {
         if (!cluster_ctx.clb_nlist.net_is_global(net_id))
             max_pins_per_net = max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
+#4  0x0000000000a87aac in timing_driven_route_net (net_id=ClusterNetId(10), itry=3, pres_fac=0.649999976, max_criticality=0.99000001, 
 
     return (max_pins_per_net);
 }
@@ -633,6 +641,8 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     auto& route_ctx = g_vpr_ctx.routing();
 
     unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
+
+    vtr::printf("Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
     // after this point the route tree is correct
@@ -723,6 +733,8 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
+    vtr::printf("Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
+    print_route_tree(rt_root);
     free_route_tree(rt_root);
     return (true);
 }
@@ -744,15 +756,23 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
+    vtr::printf("Net %zu Target %d\n", size_t(net_id), itarget);
+
+    if (size_t(net_id) == 10 && itarget == 0) {
+        vtr::printf("FOUND\n");
+    }
+
     if (itarget > 0 && itry > 5) {
         /* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
         VTR_ASSERT(device_ctx.rr_nodes[rt_root->inode].type() == SOURCE);
         rt_root->re_expand = false;
     }
 
+    std::vector<int> modified_rr_node_inf;
+
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, (int)cluster_ctx.clb_nlist.net_sinks(net_id).size(), budgeting_inf,
-            max_delay, min_delay, target_delay, short_path_crit);
+            max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf);
 
     if (cheapest == NULL) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -776,9 +796,12 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
     rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+    print_route_tree(rt_root);
+    verify_route_tree(rt_root);
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
     empty_heap();
+    reset_path_costs(modified_rr_node_inf);
 
     // routed to a sink successfully
     return true;
@@ -786,7 +809,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets &budgeting_inf,
-        float max_delay, float min_delay, float target_delay, float short_path_crit) {
+        float max_delay, float min_delay, float target_delay, float short_path_crit, std::vector<int>& modified_rr_node_inf) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
@@ -832,18 +855,15 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         return NULL;
     }
 
-    float old_total_cost, new_total_cost, old_back_cost, new_back_cost;
+
     int inode = cheapest->index;
+    //vtr::printf("  Popping node %d\n", inode);
     while (inode != sink_node) {
-        old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
-        new_total_cost = cheapest->cost;
+        float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
+        float old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
 
-        if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-            old_back_cost = HUGE_POSITIVE_FLOAT;
-        else
-            old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
-
-        new_back_cost = cheapest->backward_path_cost;
+        float new_total_cost = cheapest->cost;
+        float new_back_cost = cheapest->backward_path_cost;
 
         /* I only re-expand a node if both the "known" backward cost is lower  *
          * in the new expansion (this is necessary to prevent loops from       *
@@ -855,16 +875,15 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
         if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
+            //vtr::printf("    Better cost to %d\n", inode);
             for (t_heap_prev prev : cheapest->previous) {
+                //vtr::printf("      Setting path costs for assicated node %d\n", inode);
+                add_to_mod_list(prev.to_node, modified_rr_node_inf);
+
                 route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
                 route_ctx.rr_node_route_inf[prev.to_node].prev_edge = prev.from_edge;
                 route_ctx.rr_node_route_inf[prev.to_node].path_cost = new_total_cost;
                 route_ctx.rr_node_route_inf[prev.to_node].backward_path_cost = new_back_cost;
-
-                // tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
-                // path_cost is specific for each sink (different expected cost)
-                if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-                    add_to_mod_list(&route_ctx.rr_node_route_inf[prev.to_node].path_cost);
             }
 
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
@@ -907,7 +926,10 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         }
 
         inode = cheapest->index;
+        //vtr::printf("  Popping node %d\n", inode);
     }
+    //vtr::printf("  Found target %d\n", inode);
+
     return cheapest;
 }
 
@@ -1131,123 +1153,147 @@ static void timing_driven_add_to_heap_expand_non_configurable(const float critic
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
 
+    t_heap* next = alloc_heap_data();
+    next->index = to_node;
+
+    //Costs initialized to current
+    next->cost = std::numeric_limits<float>::infinity(); //Not used directly
+    next->backward_path_cost = current->backward_path_cost;
+    next->R_upstream = current->R_upstream;
+
     std::set<int> visited;
-    timing_driven_add_to_heap_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
+    timing_driven_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
             budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-            current, from_node, to_node, iconn, target_node, visited);
+            next, from_node, to_node, iconn, target_node, visited);
+
+    add_to_heap(next);
 }
 
-static void timing_driven_add_to_heap_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+static void timing_driven_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited) {
+        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited) {
 
-    t_heap* next = timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
-            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-            current, from_node, to_node, iconn, target_node);
+    VTR_ASSERT(current);
 
-    if (next) {
-        add_to_heap(next);
+    if (!visited.count(to_node)) {
+        visited.insert(to_node);
+
+        auto& device_ctx = g_vpr_ctx.device();
+
+        //bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
+        //if (reached_via_non_configurable_edge) {
+            //vtr::printf("        Force Expanding to node %d", to_node);
+        //} else {
+            //vtr::printf("      Expanding to node %d", to_node);
+        //}
+        //vtr::printf("\n");
+
+        t_timing_driven_node_costs old_costs;
+        old_costs.backward_cost = current->backward_path_cost;
+        old_costs.total_cost = current->cost;
+        old_costs.R_upstream = current->R_upstream;
+
+        auto new_costs = evaluate_timing_driven_node_costs(old_costs,
+                            criticality_fac, bend_cost, astar_fac,
+                            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                            from_node, to_node, iconn, target_node);
+
+        //Record how we reached this node
+        current->previous.emplace_back(to_node, from_node, iconn);
+
+        //Since this heap element may represent multiple (non-configurably connected) nodes,
+        //keep the minimum cost to the target
+        if (new_costs.total_cost < current->cost) {
+            current->cost = new_costs.total_cost;
+            current->backward_path_cost = new_costs.backward_cost;
+            current->R_upstream = new_costs.R_upstream;
+        }
 
         //Consider any non-configurable edges which must be expanded for correctness
-        auto& device_ctx = g_vpr_ctx.device();
         for (int iconn_next = 0; iconn_next < device_ctx.rr_nodes[to_node].num_edges(); ++iconn_next) {
             bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
-            int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 
 
             if (!edge_configurable) { //Forced expansion
-                if (visited.count(to_to_node)) {
-                    continue;
-                } else {
-                    visited.insert(to_to_node);
-                }
+                int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 
-                timing_driven_add_to_heap_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
+                timing_driven_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
                         budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                        next, to_node, to_to_node, iconn_next, target_node, visited);
+                        current, to_node, to_to_node, iconn_next, target_node, visited);
             }
         }
     }
 }
 
-//Updates the cost fields of 'next' based on expansion to 'node' from the node assicated with 'current'
-//Returns true if next should be added to the heap
-static t_heap* timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
+t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
+    const float criticality_fac, const float bend_cost, const float astar_fac,
+    const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+    const int from_node, const int to_node, const int iconn, const int target_node) {
+    /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
+     * congestion cost of all the routing resources back to the existing route
+     * plus the known delay of the total path back to the source.
+     *
+     * new_costs.total_cost: is this "known" backward cost + an expected cost to get to the target.   
+     *
+     * new_costs.R_upstream: is the upstream resistance at the end of this node
+     */
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
 
-    float new_R_upstream;
+    t_timing_driven_node_costs new_costs;
 
-    int inode = current->index;
-    float old_back_pcost = current->backward_path_cost;
-    float R_upstream = current->R_upstream;
-    /* new_back_pcost stores the "known" part of the cost to this node -- the   *
-     * congestion cost of all the routing resources back to the existing route  *
-     * plus the known delay of the total path back to the source.  new_tot_cost *
-     * is this "known" backward cost + an expected cost to get to the target.   */
+    //Switch info
+    int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
+    bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
+    float switch_R = device_ctx.rr_switch_inf[iswitch].R;
+    float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
 
-    float new_back_pcost = old_back_pcost
-            + (1. - criticality_fac) * get_rr_cong_cost(to_node);
+    //Node info
+    float node_C = device_ctx.rr_nodes[to_node].C();
+    float node_R = device_ctx.rr_nodes[to_node].R();
 
-    int iswitch = device_ctx.rr_nodes[inode].edge_switch(iconn);
-    if (device_ctx.rr_switch_inf[iswitch].buffered) {
-        new_R_upstream = device_ctx.rr_switch_inf[iswitch].R;
+    //Update R_upstream
+    if (switch_buffered) {
+        new_costs.R_upstream = 0.; //No upstream resistance
     } else {
-        new_R_upstream = R_upstream + device_ctx.rr_switch_inf[iswitch].R;
+        new_costs.R_upstream = old_costs.R_upstream; //Upstream resistance
     }
+    new_costs.R_upstream += switch_R; //Switch resistance
+    new_costs.R_upstream += node_R; //Node resistance
 
-    float Tdel = device_ctx.rr_nodes[to_node].C() * (new_R_upstream + 0.5 * device_ctx.rr_nodes[to_node].R());
-    Tdel += device_ctx.rr_switch_inf[iswitch].Tdel;
-    new_R_upstream += device_ctx.rr_nodes[to_node].R();
-    new_back_pcost += criticality_fac * Tdel;
+    //Calculate delay
+    float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
+    float Tdel = switch_Tdel + Rdel * node_C;
 
+    //Update the backward cost
+    new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
+    new_costs.backward_cost += (1. - criticality_fac) * get_rr_cong_cost(to_node); //Congestion cost
+    new_costs.backward_cost += criticality_fac * Tdel; //Delay cost
     if (bend_cost != 0.) {
-        t_rr_type from_type = device_ctx.rr_nodes[inode].type();
+        t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
-        if ((from_type == CHANX && to_type == CHANY)
-                || (from_type == CHANY && to_type == CHANX))
-            new_back_pcost += bend_cost;
+        if ((from_type == CHANX && to_type == CHANY) || (from_type == CHANY && to_type == CHANX)) {
+            new_costs.backward_cost += bend_cost; //Bend cost
+        }
     }
 
-    float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
-            criticality_fac, new_R_upstream);
-    float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
-
-    float zero = 0.0;
-    //after budgets are loaded, calculate delay cost as described by RCV paper        
-    /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
-     * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
-     * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
     if (budgeting_inf.if_set()) {
-        new_tot_cost += (short_path_crit + criticality_fac) * max(zero, target_delay - new_tot_cost);
-        new_tot_cost += pow(max(zero, new_tot_cost - max_delay), 2) / 100e-12;
-        new_tot_cost += pow(max(zero, min_delay - new_tot_cost), 2) / 100e-12;
+        //If budgets specified calculate cost as described by RCV paper:
+        //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
+        //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
+        //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
+
+        //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
+        new_costs.total_cost += (short_path_crit + criticality_fac) * max(0.f, target_delay - new_costs.total_cost);
+        new_costs.total_cost += pow(max(0.f, new_costs.total_cost - max_delay), 2) / 100e-12;
+        new_costs.total_cost += pow(max(0.f, min_delay - new_costs.total_cost), 2) / 100e-12;
     }
 
-    bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
-	if (new_tot_cost >= route_ctx.rr_node_route_inf[to_node].path_cost && edge_configurable) {
-        //Don't expand if the cost is higher, provided the edge is configurable (i.e. optional so we don't HAVE to expand it)
-		return nullptr;
-    }
+    //Update total cost
+    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream);
+    new_costs.total_cost = new_costs.backward_cost + astar_fac * expected_cost;
 
-    //Update next
-    t_heap* next = alloc_heap_data();
-    next->index = to_node;
-    next->cost = new_tot_cost;
-    next->backward_path_cost = new_back_pcost;
-    next->R_upstream = new_R_upstream;
-
-    if (!edge_configurable) {
-        //Via a non-configurabl edge, must get connectivty of all non-configurably connected nodes
-        next->previous = current->previous;
-    }
-    next->previous.emplace_back(to_node, from_node, iconn);
-
-    return next;
+    return new_costs;
 }
-
 
 static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
 
@@ -1574,14 +1620,14 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
             return true; /* overuse detected */
         }
 
-        if (device_ctx.rr_nodes[inode].type() == SINK) {
+        if (tptr->iswitch == OPEN) { //End of a branch
             // even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
             if (if_force_reroute) {
                 if (connections_inf.should_force_reroute_connection(inode)) {
                     return true;
                 }
             }
-            tptr = tptr->next; /* Skip next segment. */
+            tptr = tptr->next; /* Skip next segment (duplicate of original branch node). */
             if (tptr == NULL)
                 break;
         }

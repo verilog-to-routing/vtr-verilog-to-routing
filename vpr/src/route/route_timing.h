@@ -47,7 +47,8 @@ void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks,
-        route_budgets &budgeting_inf, float max_delay, float min_delay, float target_delay, float short_path_crit);
+        route_budgets &budgeting_inf, float max_delay, float min_delay, float target_delay, float short_path_crit,
+        std::vector<int>& modified_rr_node_inf);
 
 struct timing_driven_route_structs {
     // data while timing driven route is active 
