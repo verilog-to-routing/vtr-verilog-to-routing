@@ -38,6 +38,7 @@ using namespace std;
 #include "intra_logic_block.h"
 #include "atom_netlist.h"
 #include "tatum/report/TimingPathCollector.hpp"
+#include "hsl.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
@@ -58,7 +59,9 @@ using namespace std;
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.9;
+constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+
+constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
 
 //Kelly's maximum contrast colors (Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943)
 const std::array<t_color,21> kelly_max_contrast_colors = {
@@ -84,6 +87,24 @@ const std::array<t_color,21> kelly_max_contrast_colors = {
     t_color(101,  69,  34), //yellowish brown
     t_color(226,  88,  34), //reddish orange
     t_color( 43,  61,  38)  //olive green
+};
+
+const std::vector<color_types> block_type_colors = {
+    BISQUE,
+    LIGHTGREY,
+    LIGHTSKYBLUE,
+    THISTLE,
+    KHAKI,
+    CORAL,
+    TURQUOISE,
+    MEDIUMPURPLE,
+    DARKSLATEBLUE,
+    DARKKHAKI,
+    LIGHTMEDIUMBLUE,
+    SADDLEBROWN,
+    FIREBRICK,
+    LIMEGREEN,
+    PLUM,
 };
 
 /************************** File Scope Variables ****************************/
@@ -156,6 +177,9 @@ static short find_switch(int prev_inode, int inode);
 t_color to_t_color(vtr::Color<float> color);
 static void draw_color_map_legend(const vtr::ColorMap& cmap);
 std::vector<std::set<ClusterNetId>> collect_rr_node_nets();
+
+t_color get_block_type_color(t_type_ptr type);
+t_color lighten_color(t_color color, float amount);
 
 /********************** Subroutine definitions ******************************/
 
@@ -630,29 +654,28 @@ static void drawplace(void) {
 			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* TODO: Graphics may look unusual for multiple height and capacity */
 
-				/* Get coords of current sub_tile */
-				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
-
 				/* Look at the tile at start of large block */
 				bnum = place_ctx.grid_blocks[i][j].blocks[k];
 
 				/* Fill background for the clb. Do not fill if "show_blk_internal" 
 				 * is toggled. 
 				 */
-				if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-					setcolor(draw_state->block_color[bnum]);
-					fillrect(abs_clb_bbox);
-				} else {
-					/* colour empty blocks a particular colour depending on type  */
-					if (device_ctx.grid[i][j].type->index < 3) {
-						setcolor(WHITE);
-					} else if (device_ctx.grid[i][j].type->index < 3 + MAX_BLOCK_COLOURS) {
-						setcolor(BISQUE + device_ctx.grid[i][j].type->index - 3);
-					} else {
-						setcolor(BISQUE + MAX_BLOCK_COLOURS - 1);
-					}
-					fillrect(abs_clb_bbox);
-				}
+                if (bnum == INVALID_BLOCK_ID) continue;
+
+                //Determine the block color
+                t_color block_color;
+                if (bnum != EMPTY_BLOCK_ID) {
+                    block_color = draw_state->block_color[bnum];
+                } else {
+                    block_color = get_block_type_color(device_ctx.grid[i][j].type);
+                    block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+                }
+                setcolor(block_color);
+
+				/* Get coords of current sub_tile */
+				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
+
+                fillrect(abs_clb_bbox);
 
 				setcolor(BLACK);
 
@@ -2424,13 +2447,7 @@ static void draw_reset_blk_color(ClusterBlockId blk_id) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	if (cluster_ctx.clb_nlist.block_type(blk_id)->index < 3) {
-			draw_state->block_color[blk_id] = LIGHTGREY;
-	} else if (cluster_ctx.clb_nlist.block_type(blk_id)->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state->block_color[blk_id] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.clb_nlist.block_type(blk_id)->index - 3);
-	} else {
-			draw_state->block_color[blk_id] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
-	}
+    draw_state->block_color[blk_id] = get_block_type_color(cluster_ctx.clb_nlist.block_type(blk_id));
 }
 
 /**
@@ -3040,3 +3057,19 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     return rr_node_nets;
 }
 
+t_color get_block_type_color(t_type_ptr type) {
+    
+    t_color color = block_type_colors[type->index];
+
+    return color;
+}
+
+//Lightens a color's luminance [0, 1] by an aboslute 'amount'
+t_color lighten_color(t_color color, float amount) {
+    constexpr double MAX_LUMINANCE = 0.95; //Clip luminance so it doesn't go full white
+    auto hsl = color2hsl(color);
+
+    hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
+
+    return hsl2color(hsl);
+}
