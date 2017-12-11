@@ -592,7 +592,7 @@ static void build_rr_graph(
     }
 
 
-    check_rr_graph(graph_type, grid, *num_rr_switches, types, segment_inf);
+    check_rr_graph(graph_type, grid, *num_rr_switches, types);
 
 #ifdef USE_MAP_LOOKAHEAD
     compute_router_lookahead(num_seg_types);

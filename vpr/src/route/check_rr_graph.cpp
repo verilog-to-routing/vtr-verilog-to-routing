@@ -26,8 +26,7 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid);
 
 void check_rr_graph(const t_graph_type graph_type,
         const DeviceGrid& grid,
-        const int num_rr_switches, const t_type_ptr types,
-        const t_segment_inf* segment_inf) {
+        const int num_rr_switches, const t_type_ptr types) {
 
     int *num_edges_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
     int *total_edges_to_node; /* [0..device_ctx.num_rr_nodes-1] */

@@ -181,7 +181,7 @@ void load_rr_file(const t_graph_type graph_type,
 		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
 	}
 
-        check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types, segment_inf);
+        check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
 
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(num_seg_types);
