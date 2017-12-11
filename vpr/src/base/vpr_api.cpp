@@ -580,7 +580,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (route_status.success()) {
             //Sanity check the routing
             auto& device_ctx = g_vpr_ctx.device();
-            check_route(router_opts.route_type, device_ctx.num_rr_switches, vpr_setup.Segments);
+            check_route(router_opts.route_type, device_ctx.num_rr_switches);
             get_serial_num();
 
             //Update status
@@ -682,7 +682,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
     auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Load the routing from a file
-    read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, vpr_setup.Segments, filename_opts.verify_file_digests);
+    read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests);
 
     return RouteStatus(true, fixed_channel_width);
 }

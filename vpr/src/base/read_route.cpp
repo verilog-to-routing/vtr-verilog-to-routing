@@ -52,7 +52,7 @@ static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_nu
 static string format_name(string name);
 
 /*************Global Functions****************************/
-void read_route(const char* route_file, const t_router_opts& router_opts, const t_segment_inf* segment_inf, bool verify_file_digests) {
+void read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests) {
 
     /* Reads in the routing file to fill in the trace_head and t_clb_opins_used data structure. 
      * Perform a series of verification tests to ensure the netlist, placement, and routing
@@ -120,7 +120,7 @@ void read_route(const char* route_file, const t_router_opts& router_opts, const 
             router_opts.acc_fac, true);
 
     /* Finished loading in the routing, now check it*/
-    check_route(router_opts.route_type, device_ctx.num_rr_switches, segment_inf);
+    check_route(router_opts.route_type, device_ctx.num_rr_switches);
     get_serial_num();
 
     vtr::printf_info("Finished loading route file\n");

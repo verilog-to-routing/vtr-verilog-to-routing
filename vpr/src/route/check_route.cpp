@@ -16,7 +16,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 
 /******************** Subroutines local to this module **********************/
-static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
+static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, ClusterNetId net_id);
 static void check_sink(int inode, ClusterNetId net_id, bool * pin_done);
 static void check_switch(t_trace *tptr, int num_switch);
@@ -24,11 +24,11 @@ static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(ClusterNetId inet, bool * connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
-		enum e_route_type route_type, const t_segment_inf* segment_inf);
+		enum e_route_type route_type);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, int num_switches, const t_segment_inf* segment_inf) {
+void check_route(enum e_route_type route_type, int num_switches) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -61,7 +61,7 @@ void check_route(enum e_route_type route_type, int num_switches, const t_segment
 			"Error in check_route -- routing resources are overused.\n");
 	}
 
-	check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type, segment_inf);
+	check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
 
 	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
 
@@ -87,7 +87,7 @@ void check_route(enum e_route_type route_type, int num_switches, const t_segment
 		}
 
 		inode = tptr->index;
-		check_node_and_range(inode, route_type, segment_inf);
+		check_node_and_range(inode, route_type);
 		check_switch(tptr, num_switches);
 		connected_to_route[inode] = true; /* Mark as in path. */
 
@@ -100,7 +100,7 @@ void check_route(enum e_route_type route_type, int num_switches, const t_segment
 		/* Check the rest of the net */
 		while (tptr != NULL) {
 			inode = tptr->index;
-			check_node_and_range(inode, route_type, segment_inf);
+			check_node_and_range(inode, route_type);
 			check_switch(tptr, num_switches);
 
 			if (device_ctx.rr_nodes[prev_node].type() == SINK) {
@@ -574,7 +574,7 @@ void recompute_occupancy_from_scratch() {
 }
 
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
-		enum e_route_type route_type, const t_segment_inf* segment_inf) {
+		enum e_route_type route_type) {
 
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
 	 * legal routing if subblocks connect to OPINs directly.                    */
@@ -592,7 +592,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
 				inode = clb_opins_used_locally[blk_id][iclass][ipin];
-				check_node_and_range(inode, route_type, segment_inf); /* Node makes sense? */
+				check_node_and_range(inode, route_type); /* Node makes sense? */
 
 				/* Now check that node is an OPIN of the right type. */
 
@@ -616,7 +616,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 	}
 }
 
-static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf) {
+static void check_node_and_range(int inode, enum e_route_type route_type) {
 
 	/* Checks that inode is within the legal range, then calls check_node to    *
 	 * check that everything else about the node is OK.                         */
@@ -627,5 +627,5 @@ static void check_node_and_range(int inode, enum e_route_type route_type, const 
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.num_rr_nodes - 1);
 	}
-	check_rr_node(inode, route_type, device_ctx, segment_inf);
+	check_rr_node(inode, route_type, device_ctx);
 }
