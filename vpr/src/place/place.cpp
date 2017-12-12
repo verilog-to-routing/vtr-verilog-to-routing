@@ -2219,7 +2219,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
 
 	x = max(min<int>(x, grid.width() - 2), 1);
-	y = max(min<int>(y, grid.width() - 2), 1);
+	y = max(min<int>(y, grid.height() - 2), 1);
 
 	xmin = x;
 	ymin = y;
@@ -2415,9 +2415,9 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 	 * is 0).  See route_common.cpp for a channel diagram.               */
 
 	bb_coord_new->xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
-	bb_coord_new->ymin = max(min<int>(ymin, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	bb_coord_new->ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 	bb_coord_new->xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
-	bb_coord_new->ymax = max(min<int>(ymax, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	bb_coord_new->ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 }
 
 static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
@@ -2442,9 +2442,9 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
     auto& device_ctx = g_vpr_ctx.device();
 		
 	xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
-	ynew = max(min<int>(ynew, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	ynew = max(min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 	xold = max(min<int>(xold, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
-	yold = max(min<int>(yold, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	yold = max(min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
 	/* Check if the net had been updated before. */
 	if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
