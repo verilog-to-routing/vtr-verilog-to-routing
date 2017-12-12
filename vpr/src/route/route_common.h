@@ -109,7 +109,12 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 void free_chunk_memory_trace(void);
 
+bool validate_traceback(t_trace* trace);
 void print_traceback(ClusterNetId net_id);
+void print_traceback(const t_trace* trace);
+
+void print_rr_node_route_inf();
+void print_rr_node_route_inf_dot();
 void print_invalid_routing_info();
 
 t_trace* alloc_trace_data(void);

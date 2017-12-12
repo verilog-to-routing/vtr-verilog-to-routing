@@ -102,8 +102,6 @@ static vtr::t_chunk linked_f_pointer_ch;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-void print_traceback(t_trace* trace);
-
 static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::set<int>& main_branch_visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth=0);
@@ -118,6 +116,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 		float pres_fac, float acc_fac);
 
+bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 /************************** Subroutine definitions ***************************/
 
 void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
@@ -579,12 +578,17 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
         int iedge = prev.from_edge;
 
         while (inode != NO_PREVIOUS) {
+
             //Add the current node to the head of traceback
             t_trace* prev_ptr = alloc_trace_data();
             prev_ptr->index = inode;
             prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
             prev_ptr->next = branch_head;
             branch_head = prev_ptr;
+
+            if (main_branch_visited.count(inode)) {
+                break; //Connected to existing routing
+            }
 
             main_branch_visited.insert(inode); //Record this node as visited
 
@@ -1697,14 +1701,93 @@ void print_traceback(ClusterNetId net_id) {
 	vtr::printf_info("\n");
 }
 
-void print_traceback(t_trace* trace) {
+void print_traceback(const t_trace* trace) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    const t_trace* prev = nullptr;
 	while (trace) {
 		int inode = trace->index;
-        vtr::printf("%d (%s)\n", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
+        vtr::printf("%d (%s)", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
+
+        if (trace->iswitch == OPEN) {
+            vtr::printf(" !"); //End of branch
+        }
+
+        if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable) {
+            vtr::printf("*"); //Reached non-configurably
+        }
+
+        if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
+            vtr::printf(" x"); //Overused
+        }
+        vtr::printf("\n");
+        prev = trace;
 		trace = trace->next;
 	}
 	vtr::printf_info("\n");
+}
+
+bool validate_traceback(t_trace* trace) {
+
+    std::set<int> seen_rr_nodes;
+
+    return validate_traceback_recurr(trace, seen_rr_nodes);
+}
+
+bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
+    if (!trace) {
+        return true;
+    }
+
+    seen_rr_nodes.insert(trace->index);
+
+    t_trace* next = trace->next;
+
+    if (next) {
+        if (trace->iswitch == OPEN) { //End of a branch
+            
+            //Verify that the next element (branch point) has been already seen in the traceback so far
+            if (!seen_rr_nodes.count(next->index)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+            } else {
+                //Recurse along the new branch
+                return validate_traceback_recurr(next, seen_rr_nodes);
+            }
+        } else { //Midway along branch
+
+            //Check there is an edge connecting trace and next
+
+            auto& device_ctx = g_vpr_ctx.device();
+
+            bool found = false;
+            for (int iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
+                int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
+
+                if (to_node == next->index) {
+                    found = true;
+
+                    //Verify that the switch matches
+                    int rr_iswitch = device_ctx.rr_nodes[trace->index].edge_switch(iedge);
+                    if (trace->iswitch != rr_iswitch) {
+                        VPR_THROW(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
+                                trace->iswitch, rr_iswitch,
+                                trace->index, to_node);
+                    }
+                    break;
+                }
+            }
+
+            if (!found) {
+                VPR_THROW(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
+            }
+
+            //Recurse
+            return validate_traceback_recurr(next, seen_rr_nodes);
+        }
+    }
+
+    VTR_ASSERT(!next);
+    return true; //End of traceback
 }
 
 //Print information about an invalid routing, caused by overused routing resources
@@ -1743,3 +1826,59 @@ void print_invalid_routing_info() {
 	}
 }
 
+void print_rr_node_route_inf() {
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
+        if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
+            int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
+            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            vtr::printf ("rr_node: %d prev_node: %d prev_edge: %d",
+                    inode, prev_node, prev_edge);
+
+
+            if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+                vtr::printf("*");
+            }
+                    
+            vtr::printf(" pcost: %g back_pcost: %g\n",
+                    route_ctx.rr_node_route_inf[inode].path_cost, route_ctx.rr_node_route_inf[inode].backward_path_cost);
+        }
+    }
+}
+
+void print_rr_node_route_inf_dot() {
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    vtr::printf("digraph G {\n");
+    vtr::printf("\tnode[shape=record]\n");
+    for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
+        if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
+
+            vtr::printf("\tnode%zu[label=\"{%zu (%s)", inode, inode, device_ctx.rr_nodes[inode].type_string());
+            if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
+                vtr::printf(" x");
+            }
+            vtr::printf("}\"]\n");
+        }
+    }
+    for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
+        if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
+
+            int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
+            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+
+            if (prev_node != OPEN && prev_edge != OPEN) {
+                vtr::printf("\tnode%d -> node%zu [", prev_node, inode);
+                if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+                    vtr::printf("label=\"*\"");
+                }
+
+                vtr::printf("];\n");
+            }
+        }
+    }
+
+    vtr::printf("}\n");
+}
