@@ -937,17 +937,30 @@ void free_route_structs() {
 	if(heap != NULL) {
         //Free the individiaul heap elements (calls destructors)
         for (int i = 1; i < num_heap_allocated; i++) {
-            chunk_delete(heap[i], &heap_ch);
+            vtr::chunk_delete(heap[i], &heap_ch);
         }
 
         // coverity[offset_free : Intentional]
 		free(heap + 1);
+
+        heap = NULL; /* Defensive coding:  crash hard if I use these. */
 	}
+
+    if (heap_free_head != nullptr) {
+        t_heap* curr = heap_free_head;
+        while(curr) {
+            t_heap* next = curr->u.next;
+
+            vtr::chunk_delete(curr, &heap_ch);
+
+            curr = next;
+        }
+
+        heap_free_head = nullptr;
+    }
 	if(route_ctx.route_bb.size() != 0) {
 		route_ctx.route_bb.clear();
 	}
-
-	heap = NULL; /* Defensive coding:  crash hard if I use these. */
 
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
