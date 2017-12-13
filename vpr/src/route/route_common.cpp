@@ -716,13 +716,6 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;;
     }
 
-#if 0
-    //Sanity check that all path costs have been reset
-    for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
-        VTR_ASSERT(std::isinf(route_ctx.rr_node_route_inf[inode].path_cost));
-    }
-#endif
-
 }
 
 void reset_path_costs(void) {
