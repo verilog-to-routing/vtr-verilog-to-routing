@@ -939,8 +939,10 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
         } else {
             VTR_ASSERT(force_prune);
 
+            //Record as not reached
             connections_inf.toreach_rr_sink(node->inode);
 
+            free_rt_node(node);
             return true; //Pruned
         }
 
@@ -996,7 +998,6 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
             return false; //Not pruned
         } else {
             free_rt_node(node);
-
             return true; //Pruned
         }
     } else {
