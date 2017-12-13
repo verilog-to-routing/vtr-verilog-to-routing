@@ -268,7 +268,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	 * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
 	int inode;
-	short iedge, iswitch;
+	short iedge, iswitch = -1;
 	t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
 	t_linked_rt_edge *linked_rt_edge;
 
@@ -442,12 +442,12 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
     t_rt_node* parent_rt_node = rt_node->parent_node;
     int inode = rt_node->inode;
 
-    int iswitch = rt_node->parent_switch;
-    bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
-
     //Calculate upstream resistance
     float R_upstream = 0.;
     if (parent_rt_node) {
+        int iswitch = rt_node->parent_switch;
+        bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
+
         if (!switch_buffered) {
                 R_upstream += parent_rt_node->R_upstream; //Parent upstream R
         }
@@ -979,7 +979,10 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
         //      they would uselessly consume routing resources).
         VTR_ASSERT(node->u.child_list == nullptr);
 
-        bool reached_non_configurably = !device_ctx.rr_switch_inf[node->parent_switch].configurable;
+        bool reached_non_configurably = false;
+        if (node->parent_node) {
+            reached_non_configurably = !device_ctx.rr_switch_inf[node->parent_switch].configurable;
+        }
 
         if (reached_non_configurably && !force_prune) {
             return false; //Not pruned
