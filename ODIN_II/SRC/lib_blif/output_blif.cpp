@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 #include <unordered_set>
+#include <limits.h>
 #include "types.h"
 #include "globals.h"
 
@@ -40,6 +41,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "subtractions.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+
+#define  IO_WRITE_LINE_LENGTH INT_MAX    // the output line length
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -60,9 +63,9 @@ std::string make_hb_driver(std::string next_name, int index, std::string name);
 
 std::string make_pin_name(nnode_t *node)
 {
-	std::stringstream bb_latch_name;
-	bb_latch_name << node->name << "^^" << std::to_string(node->related_ast_node->far_tag) << "-" << std::to_string(node->related_ast_node->high_number);
-	return bb_latch_name.str();
+	std::stringstream name;
+	name << node->name << "^^" << std::to_string(node->related_ast_node->far_tag) << "-" << std::to_string(node->related_ast_node->high_number);
+	return name.str();
 }
 
 std::string make_hb_driver(std::string next_name, int index, std::string name)
@@ -75,8 +78,8 @@ std::string make_hb_driver(std::string next_name, int index, std::string name)
 /*-------------------------------------------------------------------------
  * make a black box latch naming convention for further parsing after it is put through ABC
  * use @ as boundaries for information to parse
- * i.e "bb_latch$edgeType@name^^farTag-highNb@initialValue$"
- * "bb_latch$re@Mul^^8-10#3$"
+ * e.g. "bb_latch_@edgeType@name^^farTag-highNb@initialValue@"
+ * "bb_latch_@re@Mul^^8-10@3@"
  * 
  * replace '@' with spaces and the output is already formated to be padded outside the
  * latch name like so:
@@ -132,7 +135,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 
 		if (global_args.high_level_block != NULL)
 		{
-			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
+			if (strlen(netlist->top_input_nodes[i]->name) + count < IO_WRITE_LINE_LENGTH)
 				count = count + fprintf(out, " %s^^%i-%i", netlist->top_input_nodes[i]->name, netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
 			else
 			{
@@ -143,7 +146,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 		}
 		else
 		{
-			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
+			if (strlen(netlist->top_input_nodes[i]->name) + count < IO_WRITE_LINE_LENGTH)
 			{
 				count = count + fprintf(out, " %s", netlist->top_input_nodes[i]->name);
 			}
@@ -175,7 +178,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 
 			if (global_args.high_level_block != NULL)
 			{
-				if ((strlen(netlist->top_output_nodes[i]->name) + count) < 79)
+				if ((strlen(netlist->top_output_nodes[i]->name) + count) < IO_WRITE_LINE_LENGTH)
 					count = count + fprintf(out, " %s^^%i-%i", netlist->top_output_nodes[i]->name,netlist->top_output_nodes[i]->related_ast_node->far_tag, netlist->top_output_nodes[i]->related_ast_node->high_number);
 				else
 				{
@@ -186,7 +189,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 			}
 			else
 			{
-				if ((strlen(netlist->top_output_nodes[i]->name) + count) < 79)
+				if ((strlen(netlist->top_output_nodes[i]->name) + count) < IO_WRITE_LINE_LENGTH)
 					count = count + fprintf(out, " %s", netlist->top_output_nodes[i]->name);
 				else
 				{
@@ -754,12 +757,12 @@ void define_ff(nnode_t *node, FILE *out_f)
 	{
 		output_pin	= node->name;
 		
-		input_pin	= (node->input_pins[0]->net->driver_pin->name)?
-							node->input_pins[0]->net->driver_pin->name:
+		input_pin	= (node->input_pins[0]->net->driver_pin->name) ?
+							node->input_pins[0]->net->driver_pin->name :
 							node->input_pins[0]->net->driver_pin->node->name;
 
-		clk_pin 	= (node->input_pins[1]->net->driver_pin->name)?
-							node->input_pins[1]->net->driver_pin->name:
+		clk_pin 	= (node->input_pins[1]->net->driver_pin->name) ?
+							node->input_pins[1]->net->driver_pin->name :
 							node->input_pins[1]->net->driver_pin->node->name;
 	}
 	
@@ -770,7 +773,7 @@ void define_ff(nnode_t *node, FILE *out_f)
 		std::string bb_latch_name = make_bb_latch_name(edge_type, clk_pin, initial_value);
 		bb_obfuscated_input = bb_latch_name + input_pin + "@" + std::to_string(++bb_latch_counter);
 		blackboxed_latch_names.insert(bb_latch_name);
-		
+\
 		out << ".subckt " << bb_latch_name << " i[0]=" << input_pin << " o[0]=" << bb_obfuscated_input << "\n\n";
 	}
 

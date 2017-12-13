@@ -26,6 +26,7 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
+#include <limits.h>
 #include "base/abc/abc.h"
 #include "misc/extra/extra.h"
 #include "misc/util/utilNam.h"
@@ -71,7 +72,7 @@ typedef enum {
 ///                      MACRO DEFINITIONS                           ///
 ////////////////////////////////////////////////////////////////////////
 
-#define  IO_WRITE_LINE_LENGTH    78    // the output line length
+#define  IO_WRITE_LINE_LENGTH INT_MAX    // the output line length
 
 ////////////////////////////////////////////////////////////////////////
 ///                    FUNCTION DECLARATIONS                         ///

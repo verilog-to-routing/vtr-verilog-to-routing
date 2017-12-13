@@ -434,6 +434,8 @@ my $q         = "not_run";
 ################################## ODIN #########################################
 #################################################################################
 
+$keep_intermediate_files = 1;
+
 if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 
 	#system "sed 's/XXX/$benchmark_name.v/g' < $odin2_base_config > temp1.xml";
@@ -451,6 +453,12 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	if ( !$error_code ) {
 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 			"-c", $odin_config_file_name, "--black_box_latches");
+
+		print "\n\nDEBUG: run_vtr_flow.pl: odin: $q\n";
+		print "DEBUG: run_vtr_flow.pl: odin: $odin_output_file_path";
+
+		# print "\n\nDEBUG: run_vtr_flow.pl: Exiting Early After ODIN, to check Blif File.\n\n";
+		# exit -1;
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
@@ -489,10 +497,19 @@ if (    $starting_stage <= $stage_idx_abc
             $abc_commands);
     }
 
+	print "\n\nDEBUG: run_vtr_flow.pl: abc: $q\n";
+	print "DEBUG: run_vtr_flow.pl: abc: $abc_output_file_path\n\n";
+
 	if ( -e $abc_output_file_path and $q eq "success") {
 
+		# print "\n\nDEBUG: run_vtr_flow.pl: Exiting Early After ABC, before Python Script, to check Blif File.\n\n";
+		# exit -1;
+
 		# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
-		system "$vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py --inplace $abc_output_file_path";
+		system "$vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py $abc_output_file_path";
+
+		# print "\n\nDEBUG: run_vtr_flow.pl: Exiting Early After ABC and Python Script to check Blif File.\n\n";
+		# exit -1;
 
 		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
