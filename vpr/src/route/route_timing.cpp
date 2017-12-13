@@ -1022,12 +1022,11 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 
         // prune the branches of the tree that don't legally lead to sinks
         // destroyed is set true if the entire tree is pruned
-        bool destroyed = prune_route_tree(rt_root, connections_inf);
+        prune_route_tree(rt_root, connections_inf);
 
         //Update R/C
         load_new_subtree_R_upstream(rt_root);
         load_new_subtree_C_downstream(rt_root);
-
 
         VTR_ASSERT(reached_rt_sinks.size() + remaining_targets.size() == num_sinks);
 
@@ -1035,21 +1034,13 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
         free_traceback(net_id);
 
-        // if entirely pruned, have just the source (not removed from pathfinder costs)
-        if (destroyed) {
-            profiling::route_tree_pruned();
-            // traceback remains empty for just the root and no need to update pathfinder costs
-        } else {
-            profiling::route_tree_preserved();
+        // sync traceback into a state that matches the route tree
+        traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
 
-            // sync traceback into a state that matches the route tree
-            traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
+        VTR_ASSERT_SAFE(validate_traceback(route_ctx.trace_head[net_id]));
 
-            validate_traceback(route_ctx.trace_head[net_id]);
-
-            // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
-        }
+        // put the updated costs of the route tree nodes back into pathfinder
+        pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
 
         //Santiy check that route tree and traceback are equivalent after pruning
         VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));

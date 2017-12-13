@@ -437,6 +437,8 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
 	/* Sets the R_upstream values of all the nodes in the new path to the
 	 * correct value by traversing down to SINK from the start of the new path. */
 
+    VTR_ASSERT(rt_node);
+
     auto& device_ctx = g_vpr_ctx.device();
 
     t_rt_node* parent_rt_node = rt_node->parent_node;
@@ -942,6 +944,12 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
             return true; //Pruned
         }
 
+    } else if (device_ctx.rr_nodes[node->inode].type() == SOURCE) {
+        VTR_ASSERT_MSG(node->parent_node == nullptr, "Should be only one SOURCE");
+        VTR_ASSERT_MSG(!congested, "SOURCE should not be congested");
+
+        //Never prune the source
+        return false; //Not pruned
     } else if (all_children_pruned) {
         //This node has no children
         //
