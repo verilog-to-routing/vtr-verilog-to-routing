@@ -1022,7 +1022,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 
         // prune the branches of the tree that don't legally lead to sinks
         // destroyed is set true if the entire tree is pruned
-        prune_route_tree(rt_root, connections_inf);
+        rt_root = prune_route_tree(rt_root, connections_inf);
 
         //Update R/C
         load_new_subtree_R_upstream(rt_root);

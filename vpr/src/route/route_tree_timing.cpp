@@ -59,7 +59,7 @@ static t_rt_node *update_unbuffered_ancestors_C_downstream(
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
-bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested);
+t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested);
 
 t_rt_node* traceback_to_route_tree(t_trace* head);
 static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int,t_rt_node*>& rr_node_to_rt);
@@ -437,7 +437,9 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
 	/* Sets the R_upstream values of all the nodes in the new path to the
 	 * correct value by traversing down to SINK from the start of the new path. */
 
-    VTR_ASSERT(rt_node);
+    if (!rt_node) {
+        return;
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -467,19 +469,23 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
 
 
 float load_new_subtree_C_downstream(t_rt_node* rt_node) {
-    auto& device_ctx = g_vpr_ctx.device();
+    float C_downstream = 0.;
 
-    float C_downstream = device_ctx.rr_nodes[rt_node->inode].C();
-    for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
+    if (rt_node) {
+        auto& device_ctx = g_vpr_ctx.device();
 
-        float C_downstream_child = load_new_subtree_C_downstream(edge->child);
+        C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
+        for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
 
-        if (!device_ctx.rr_switch_inf[edge->iswitch].buffered) {
-            C_downstream += C_downstream_child;
+            float C_downstream_child = load_new_subtree_C_downstream(edge->child);
+
+            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered) {
+                C_downstream += C_downstream_child;
+            }
         }
-    }
 
-    rt_node->C_downstream = C_downstream;
+        rt_node->C_downstream = C_downstream;
+    }
 
     return C_downstream;
 }
@@ -872,7 +878,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 //Prunes a route tree (recursively) based on congestion and the 'force_prune' argument
 //
 //Returns true if the current node was pruned
-bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune) {
+t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune) {
 
     //Recursively traverse the route tree rooted at node and remove any congested
     //sub-trees
@@ -900,13 +906,11 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
     t_linked_rt_edge* prev_edge = nullptr;
     t_linked_rt_edge* edge = node->u.child_list;
     while (edge) {
-        bool child_pruned = prune_route_tree_recurr(edge->child, connections_inf, force_prune); 
+        t_rt_node* child = prune_route_tree_recurr(edge->child, connections_inf, force_prune); 
 
-        all_children_pruned &= child_pruned;
+        if (!child) { //Child was pruned
 
-        if (child_pruned) {
             //Remove the edge
-
             if (edge == node->u.child_list) { //Was Head
                 node->u.child_list = edge->next;
             } else { //Was intermediate
@@ -919,8 +923,11 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
 
             free_linked_rt_edge(old_edge);
 
-            //Note prev_edge not changed
-        } else {
+            //Note prev_edge is unchanged
+
+        } else { //Child not pruned
+            all_children_pruned = false;
+
             //Edge not removed
             prev_edge = edge;
             edge = edge->next;
@@ -935,7 +942,7 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
             //Record sink as reachable
             connections_inf.reached_rt_sink(node);
 
-            return false; //Not pruned
+            return node; //Not pruned
         } else {
             VTR_ASSERT(force_prune);
 
@@ -943,15 +950,14 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
             connections_inf.toreach_rr_sink(node->inode);
 
             free_rt_node(node);
-            return true; //Pruned
+            return nullptr; //Pruned
         }
-
     } else if (device_ctx.rr_nodes[node->inode].type() == SOURCE) {
         VTR_ASSERT_MSG(node->parent_node == nullptr, "Should be only one SOURCE");
         VTR_ASSERT_MSG(!congested, "SOURCE should not be congested");
 
         //Never prune the source
-        return false; //Not pruned
+        return node; //Not pruned
     } else if (all_children_pruned) {
         //This node has no children
         //
@@ -995,21 +1001,22 @@ bool prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_
         }
 
         if (reached_non_configurably && !force_prune) {
-            return false; //Not pruned
+            return node; //Not pruned
         } else {
             free_rt_node(node);
-            return true; //Pruned
+            return nullptr; //Pruned
         }
+
     } else {
         //An unpruned intermediate node
         VTR_ASSERT(!force_prune);
 
-        return false; //Not pruned
+        return node; //Not pruned
     }
 }
 
 
-bool prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
+t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
 	/* Prune a skeleton route tree of illegal branches - when there is at least 1 congested node on the path to a sink
 	 * This is the top level function to be called with the SOURCE node as root.
 	 * Returns true if the entire tree has been pruned.
