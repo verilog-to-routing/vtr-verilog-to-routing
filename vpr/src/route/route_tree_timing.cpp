@@ -952,12 +952,14 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
             free_rt_node(node);
             return nullptr; //Pruned
         }
+#if 0
     } else if (device_ctx.rr_nodes[node->inode].type() == SOURCE) {
         VTR_ASSERT_MSG(node->parent_node == nullptr, "Should be only one SOURCE");
         VTR_ASSERT_MSG(!congested, "SOURCE should not be congested");
 
         //Never prune the source
         return node; //Not pruned
+#endif
     } else if (all_children_pruned) {
         //This node has no children
         //

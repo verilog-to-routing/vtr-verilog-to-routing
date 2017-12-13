@@ -1020,30 +1020,49 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
         VTR_ASSERT_SAFE(should_route_net(net_id, connections_inf, true));
 
-        // prune the branches of the tree that don't legally lead to sinks
-        // destroyed is set true if the entire tree is pruned
+        //Prune the branches of the tree that don't legally lead to sinks
         rt_root = prune_route_tree(rt_root, connections_inf);
+
+        //Now that the tree has been pruned, we can free the old traceback
+        // NOTE: this must happen *after* pruning since it changes the 
+        //       recorded congestion
+        pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
+        free_traceback(net_id);
+
+        if (rt_root) { //Partially pruned
+            profiling::route_tree_preserved();
+
+            //Since we have a valid partial routing (to at least one SINK)
+            //we need to make sure the traceback is synchronized to the route tree
+            traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
+
+            //Sanity check the traceback for self-consistency
+            VTR_ASSERT_SAFE(validate_traceback(route_ctx.trace_head[net_id]));
+
+            //Santiy check that route tree and traceback are equivalent after pruning
+            VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+
+            // put the updated costs of the route tree nodes back into pathfinder
+            pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
+
+        } else { //Fully destroyed
+            profiling::route_tree_pruned();
+
+            //Initialize only to source
+            rt_root = init_route_tree_to_source(net_id);
+
+            //NOTE: We leave the traceback uninitiailized, so update_traceback()
+            //      will correctly add the SOURCE node when the branch to
+            //      the first SINK is found.
+            VTR_ASSERT(route_ctx.trace_head[net_id] == nullptr);
+            VTR_ASSERT(route_ctx.trace_tail[net_id] == nullptr);
+        }
 
         //Update R/C
         load_new_subtree_R_upstream(rt_root);
         load_new_subtree_C_downstream(rt_root);
 
         VTR_ASSERT(reached_rt_sinks.size() + remaining_targets.size() == num_sinks);
-
-        // entire traceback is still freed since the pruned tree will need to have its pres_cost updated
-        pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
-        free_traceback(net_id);
-
-        // sync traceback into a state that matches the route tree
-        traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
-
-        VTR_ASSERT_SAFE(validate_traceback(route_ctx.trace_head[net_id]));
-
-        // put the updated costs of the route tree nodes back into pathfinder
-        pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
-
-        //Santiy check that route tree and traceback are equivalent after pruning
-        VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
         //Record current routing
         add_route_tree_to_rr_node_lookup(rt_root);
