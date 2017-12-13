@@ -676,9 +676,9 @@ static bool calculate_delay(int source_node, int sink_node,
     free_heap_data(cheapest);
     empty_heap();
 
-    // need to gurantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
-    // do this by resetting all the path_costs that have been touched while routing to the current sink
-    reset_path_costs();
+    //Reset path costs for the next router call
+    reset_path_costs(modified_rr_node_inf);
+
     // finished all sinks
 
     //find delay
