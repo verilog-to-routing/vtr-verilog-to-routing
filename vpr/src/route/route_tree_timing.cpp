@@ -288,8 +288,6 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	sink_rt_node->inode = inode;
 	rr_node_to_rt_node[inode] = sink_rt_node;
 
-    //vtr::printf("Traceback Node %d (%s)\n", inode, device_ctx.rr_nodes[inode].type_string());
-
 	/* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
 	 * It makes the code more efficient (though not vastly) to prune this way
 	 * when there aren't route-throughs or ipin doglegs.                        */
@@ -312,8 +310,6 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
         while (rr_node_to_rt_node[inode] == nullptr) { //Not connected to existing routing
             main_branch_visited.insert(inode);
-
-            //vtr::printf("Traceback Node %d (%s)\n", inode, device_ctx.rr_nodes[inode].type_string());
 
             linked_rt_edge = alloc_linked_rt_edge();
             linked_rt_edge->child = downstream_rt_node;
@@ -346,8 +342,6 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
     //to alloc another node since the old routing has done so already
 	rt_node = rr_node_to_rt_node[inode];
     VTR_ASSERT_MSG(rt_node, "Previous routing branch should exist");
-
-    //vtr::printf("Traceback Node %d (%s) -- Existing\n", inode, device_ctx.rr_nodes[inode].type_string());
 
 	linked_rt_edge = alloc_linked_rt_edge();
 	linked_rt_edge->child = downstream_rt_node;
@@ -657,8 +651,6 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     if (route_ctx.rr_node_route_inf[rt_node->inode].occ() > device_ctx.rr_nodes[rt_node->inode].capacity()) {
         vtr::printf(" x");
     }
-
-    //vtr::printf("\tC_downstream: %g C_node %g", rt_node->C_downstream, device_ctx.rr_nodes[rt_node->inode].C());
 
     vtr::printf("\n");
 

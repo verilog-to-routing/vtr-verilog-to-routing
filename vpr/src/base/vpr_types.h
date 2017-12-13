@@ -45,6 +45,8 @@
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
 /*#define DUMP_BLIF_ECHO*//*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
 
+//#define ROUTER_DEBUG //Prints out very detailed routing progress information if defined
+
 #define TOKENS " \t\n"		/* Input file parsing. */
 
 //#define VERBOSE //Prints additional intermediate data

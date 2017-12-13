@@ -35,10 +35,9 @@
 
 #define CONGESTED_SLOPE_VAL -0.04
 
-//#define ROUTER_DEBUG
-
 #ifdef ROUTER_DEBUG
-bool debug = false;
+//Run-time flag to control when router debug information is printed
+bool router_debug = true;
 #endif
 
 class WirelengthInfo {
@@ -472,7 +471,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
         vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
     } else {
         vtr::printf_info("Routing failed.\n");
+#ifdef ROUTER_DEBUG
         print_invalid_routing_info();
+#endif
     }
 
     return routing_is_successful;
@@ -764,18 +765,6 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
 #ifdef ROUTER_DEBUG
     vtr::printf("Net %zu Target %d\n", size_t(net_id), itarget);
-
-    if (size_t(net_id) == 390) {
-        vtr::printf("FOUND\n");
-        debug = true;
-    } else {
-        debug = false;
-    }
-
-    if (debug) {
-        print_traceback(route_ctx.trace_head[net_id]);
-        print_route_tree(rt_root, 0);
-    }
 #endif
 
     if (itarget > 0 && itry > 5) {
@@ -813,14 +802,10 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     int inode = cheapest->index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
-#ifdef ROUTER_DEBUG
-    validate_traceback(route_ctx.trace_head[net_id]);
-#endif
+    VTR_ASSERT_SAFE(validate_traceback(route_ctx.trace_head[net_id]));
+
     rt_node_of_sink[target_pin] = update_route_tree(cheapest);
-#ifdef ROUTER_DEBUG
-    if (debug) print_route_tree(rt_root, 0);
-    verify_route_tree(rt_root);
-#endif
+    VTR_ASSERT_SAFE(verify_route_tree(rt_root));
     VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
     free_heap_data(cheapest);
@@ -883,7 +868,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
     int inode = cheapest->index;
 #ifdef ROUTER_DEBUG
-    if (debug) vtr::printf("  Popping node %d\n", inode);
+    if (router_debug) vtr::printf("  Popping node %d\n", inode);
 #endif
     while (inode != sink_node) {
         float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
@@ -903,11 +888,11 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
 #ifdef ROUTER_DEBUG
-            if (debug) vtr::printf("    Better cost to %d\n", inode);
+            if (router_debug) vtr::printf("    Better cost to %d\n", inode);
 #endif
             for (t_heap_prev prev : cheapest->previous) {
 #ifdef ROUTER_DEBUG
-                if (debug) vtr::printf("      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
+                if (router_debug) vtr::printf("      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
 #endif
                 add_to_mod_list(prev.to_node, modified_rr_node_inf);
 
@@ -958,11 +943,11 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
         inode = cheapest->index;
 #ifdef ROUTER_DEBUG
-        if (debug) vtr::printf("  Popping node %d\n", inode);
+        if (router_debug) vtr::printf("  Popping node %d\n", inode);
 #endif
     }
 #ifdef ROUTER_DEBUG
-    if (debug) vtr::printf("  Found target %d\n", inode);
+    if (router_debug) vtr::printf("  Found target %d\n", inode);
 #endif
 
     return cheapest;
@@ -1130,7 +1115,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         }
 
 #ifdef ROUTER_DEBUG
-        if (debug) vtr::printf("Adding node %d to heap from init route tree\n", inode);
+        if (router_debug) vtr::printf("Adding node %d to heap from init route tree\n", inode);
 #endif
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
@@ -1249,7 +1234,7 @@ static void timing_driven_expand_non_configurable_recurr(const float criticality
         auto& device_ctx = g_vpr_ctx.device();
 
 #ifdef ROUTER_DEBUG
-        if (debug) {
+        if (router_debug) {
             bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
             if (reached_via_non_configurable_edge) {
                 vtr::printf("        Force Expanding to node %d", to_node);
