@@ -949,11 +949,10 @@ void free_route_structs() {
     if (heap_free_head != nullptr) {
         t_heap* curr = heap_free_head;
         while(curr) {
-            t_heap* next = curr->u.next;
+            t_heap* tmp = curr;
+            curr = curr->u.next;
 
-            vtr::chunk_delete(curr, &heap_ch);
-
-            curr = next;
+            vtr::chunk_delete(tmp, &heap_ch);
         }
 
         heap_free_head = nullptr;
@@ -965,7 +964,6 @@ void free_route_structs() {
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
 	free_chunk_memory(&linked_f_pointer_ch);
-	heap_free_head = NULL;
 	linked_f_pointer_free_head = NULL;
 }
 
@@ -1379,13 +1377,15 @@ void empty_heap(void) {
 t_heap *
 alloc_heap_data(void) {
 
-	t_heap *temp_ptr;
-
 	if (heap_free_head == NULL) { /* No elements on the free list */
 		heap_free_head = vtr::chunk_new<t_heap>(&heap_ch);
 	}
 
-	temp_ptr = heap_free_head;
+    //Extract the head
+	t_heap* temp_ptr = heap_free_head;
+	heap_free_head = heap_free_head->u.next;
+
+	num_heap_allocated++;
 
     //Reset
     temp_ptr->u.next = nullptr;
@@ -1394,14 +1394,10 @@ alloc_heap_data(void) {
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
     temp_ptr->previous.clear();
-
-	heap_free_head = heap_free_head->u.next;
-	num_heap_allocated++;
 	return (temp_ptr);
 }
 
 void free_heap_data(t_heap *hptr) {
-
 	hptr->u.next = heap_free_head;
 	heap_free_head = hptr;
 	num_heap_allocated--;
