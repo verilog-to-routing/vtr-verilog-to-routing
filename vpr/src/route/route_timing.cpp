@@ -36,6 +36,7 @@
 #define CONGESTED_SLOPE_VAL -0.04
 
 //#define ROUTER_DEBUG
+
 #ifdef ROUTER_DEBUG
 bool debug = false;
 #endif
@@ -158,7 +159,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 static int get_expected_segs_to_target(int inode, int target_node,
         int *num_segs_ortho_dir_ptr);
 
-static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
+static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
 
 static int mark_node_expansion_by_bin(int source_node, int target_node,
         t_rt_node * rt_node, t_bb bounding_box, int num_sinks);
@@ -353,6 +354,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9 * critical_path.delay());
             }
 #endif
+            VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_delay));
         }
 
         //Output progress
@@ -463,6 +465,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     if (routing_is_successful) {
         if (timing_info) {
             timing_driven_check_net_delays(net_delay);
+            vtr::printf_info("Completed net delay value cross check successfully.\n");
             vtr::printf_info("Critical path: %g ns\n", 1e9 * critical_path.delay());
         }
 
@@ -762,7 +765,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 #ifdef ROUTER_DEBUG
     vtr::printf("Net %zu Target %d\n", size_t(net_id), itarget);
 
-    if (size_t(net_id) == 205) {
+    if (size_t(net_id) == 390) {
         vtr::printf("FOUND\n");
         debug = true;
     } else {
@@ -1619,7 +1622,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
     return rlim;
 }
 
-static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
+static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
     constexpr float ERROR_TOL = 0.0001;
 
     /* Checks that the net delays computed incrementally during timing driven    *
@@ -1656,7 +1659,7 @@ static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *
     }
 
     free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
-    vtr::printf_info("Completed net delay value cross check successfully.\n");
+    return true;
 }
 
 /* Detect if net should be routed or not */
