@@ -29,7 +29,7 @@
 #define ACE_PI_SWITCH_PROB		0.2	/* Assumed switching probability of the PIs */
 #define ACE_PI_SWITCH_ACT		0.2	/* Assumed tx activity of the primary inputs */
 
-#define ACE_CHAR_BUFFER_SIZE 	4096
+#define ACE_CHAR_BUFFER_SIZE 	4096000
 #define ACE_NUM_VECTORS			5000
 
 typedef enum {

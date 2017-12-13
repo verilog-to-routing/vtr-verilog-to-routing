@@ -489,7 +489,7 @@ void Io_NtkWriteNodeFanins( FILE * pFile, Abc_Obj_t * pNode )
     pName = Abc_ObjName(Abc_ObjFanout0(pNode));
     // get the line length after the output name is written
     AddedLength = strlen(pName) + 1;
-    if ( NameCounter && LineLength + AddedLength > 75 )
+    if ( NameCounter && LineLength + AddedLength > IO_WRITE_LINE_LENGTH )
     { // write the line extender
         fprintf( pFile, " \\\n" );
         // reset the line length
@@ -551,7 +551,7 @@ void Io_NtkWriteSubcktFanins( FILE * pFile, Abc_Obj_t * pNode )
     pName = Abc_ObjName(Abc_ObjFanout0(pNode));
     // get the line length after the output name is written
     AddedLength = strlen(pName) + 3;
-    if ( NameCounter && LineLength + AddedLength > 75 )
+    if ( NameCounter && LineLength + AddedLength > IO_WRITE_LINE_LENGTH )
     { // write the line extender
         fprintf( pFile, " \\\n" );
         // reset the line length
