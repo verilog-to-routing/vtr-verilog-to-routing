@@ -15,6 +15,27 @@ using namespace std;
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 
+struct t_node_edge {
+    t_node_edge(int fnode, int tnode) {
+        from_node = fnode;
+        to_node = tnode;
+    }
+
+    int from_node;
+    int to_node;
+
+    //For std::set
+    friend bool operator<(const t_node_edge& lhs, const t_node_edge& rhs) {
+        return std::tie(lhs.from_node, lhs.to_node) < std::tie(rhs.from_node, rhs.to_node);
+    }
+};
+
+struct t_non_configurable_rr_sets {
+
+    std::set<std::set<int>> node_sets;
+    std::set<std::set<t_node_edge>> edge_sets;
+};
+
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, ClusterNetId net_id);
@@ -25,6 +46,10 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(ClusterNetId inet, bool * connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
 		enum e_route_type route_type);
+
+static t_non_configurable_rr_sets identify_non_configurable_rr_sets();
+static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set);
+static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
 
 /************************ Subroutine definitions ****************************/
 
@@ -62,6 +87,8 @@ void check_route(enum e_route_type route_type, int num_switches) {
 	}
 
 	check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
+
+    auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
 	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
 
@@ -148,6 +175,8 @@ void check_route(enum e_route_type route_type, int num_switches) {
 					"in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
 			}
 		}
+
+        check_non_configurable_edges(net_id, non_configurable_rr_sets);
 
 		reset_flags(net_id, connected_to_route);
 
@@ -631,4 +660,221 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.num_rr_nodes - 1);
 	}
 	check_rr_node(inode, route_type, device_ctx);
+}
+
+//Collects the sets of connected non-configurable edges in the RR graph
+static t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
+    std::set<std::set<t_node_edge>> edge_sets;
+
+    //Walk through the RR graph and recursively expand non-configurable edges
+    //to collect the sets of non-configurably connected nodes
+    auto& device_ctx = g_vpr_ctx.device();
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+        std::set<t_node_edge> edge_set;
+
+        expand_non_configurable(inode, edge_set);
+
+        if (!edge_set.empty()) {
+            edge_sets.insert(edge_set);
+        }
+    }
+
+    std::set<std::set<int>> node_sets;
+    for (auto& edge_set : edge_sets) {
+        std::set<int> node_set;
+
+        for (const auto& edge : edge_set) {
+            node_set.insert(edge.from_node);
+            node_set.insert(edge.to_node);
+        }
+
+        VTR_ASSERT(!node_set.empty());
+
+        node_sets.insert(node_set);
+    }
+
+    t_non_configurable_rr_sets non_configurable_rr_sets;
+    non_configurable_rr_sets.edge_sets = edge_sets;
+    non_configurable_rr_sets.node_sets = node_sets;
+
+    return non_configurable_rr_sets;
+}
+
+//Builds a set of non-configurably connected RR graph edges
+static void expand_non_configurable(int inode, std::set<t_node_edge>& edge_set) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (int iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
+        bool edge_non_configurable = !device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
+
+        if (edge_non_configurable) {
+            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+
+            t_node_edge edge = {inode, to_node};
+
+            if (edge_set.count(edge)) {
+                continue; //Already seen don't re-expand to avoid loops
+            }
+
+            edge_set.emplace(edge);
+
+            expand_non_configurable(to_node, edge_set);
+        }
+    }
+}
+
+//Checks that the specified routing is legal with respect to non-configurable edges
+//
+//For routing to be legal if *any* non-configurable edge is used, so must *all* 
+//other non-configurable edges in the same set
+static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets) {
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    t_trace* head = route_ctx.trace_head[net];
+
+    //Collect all the edges used by this net's routing
+    std::set<t_node_edge> routing_edges;
+    std::set<int> routing_nodes;
+    for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
+        int inode = trace->index;
+
+        routing_nodes.insert(inode);
+
+        if (trace->iswitch == OPEN) {
+            continue; //End of branch
+        } else if (trace->next) {
+            int inode_next = trace->next->index;
+
+            t_node_edge edge = {inode, inode_next};
+
+            routing_edges.insert(edge);
+        }
+    }
+
+    //We need to perform two types of checks:
+    //
+    // 1) That all nodes in a non-configurable set are included
+    // 2) That all (required) non-configurable edges are used
+    //
+    //We need to check (2) in addition to (1) to ensure that (1) did not pass 
+    //because the nodes 'happend' to be connected together by configurable 
+    //routing (to be legal, by definition, they must be connected by 
+    //non-configurable routing).
+
+    //Check that all nodes in each non-configurable set are full included if any element
+    //within a set is used by the routing
+    for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
+
+        //Compute the intersection of the routing and current non-configurable nodes set
+        std::vector<int> intersection;
+        std::set_intersection(routing_nodes.begin(), routing_nodes.end(),
+                              rr_nodes.begin(), rr_nodes.end(),
+                              std::back_inserter(intersection));
+
+        //If the intersection is non-empty then the current routing uses
+        //at least one non-configurable edge in this set
+        if (!intersection.empty()) {
+
+            //To be legal *all* the nodes must be included in the routing
+            if (intersection.size() != rr_nodes.size()) {
+                //Illegal
+
+                //Compute the difference to identify the missing nodes
+                //for detailed error reporting -- the nodes
+                //which are in rr_nodes but not in routing_nodes.
+                std::vector<int> difference;
+                std::set_difference(rr_nodes.begin(), rr_nodes.end(),
+                                    routing_nodes.begin(), routing_nodes.end(),
+                                    std::back_inserter(difference));
+
+                VTR_ASSERT(difference.size() > 0);
+                std::string msg = vtr::string_fmt("Illegal routing for net '%s' (#%zu) some "
+                                                  "required non-configurably connected nodes are missing:\n",
+                                                  cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+
+                for (auto inode : difference) {
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode).c_str());
+                }
+
+                VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+            }
+        }
+    }
+
+    //Check that any sets of non-configurable RR graph edges are fully included
+    //in the routing, if any of a set's edges are used
+    for (const auto& rr_edges : non_configurable_rr_sets.edge_sets) {
+
+        //Compute the intersection of the routing and current non-configurable edge set
+        std::vector<t_node_edge> intersection;
+        std::set_intersection(routing_edges.begin(), routing_edges.end(),
+                              rr_edges.begin(), rr_edges.end(),
+                              std::back_inserter(intersection));
+
+        //If the intersection is non-empty then the current routing uses
+        //at least one non-configurable edge in this set
+        if (!intersection.empty()) {
+
+            //Since at least one non-configurable edge is used, to be legal
+            //the full set of non-configurably connected edges must be used.
+            //
+            //This is somewhat complicted by the fact that non-configurable edges 
+            //are sometimes bi-directional (e.g. electrical shorts) and so appear
+            //in rr_edges twice (once forward, once backward). Only one of the 
+            //paired edges need appear to be correct.
+
+            //To figure out which edges are missing we compute 
+            //the difference from rr_edges to routing_edges -- the nodes
+            //which are in rr_edges but not in routing_edges.
+            std::vector<t_node_edge> difference;
+            std::set_difference(rr_edges.begin(), rr_edges.end(),
+                                routing_edges.begin(), routing_edges.end(),
+                                std::back_inserter(difference));
+
+            //Next we remove edges in the difference if there is a reverse
+            //edge in rr_edges and the forward edge is found in routing (or vice-versa).
+            //It is OK if there is an unused reverse/forward edge provided the 
+            //forward/reverse edge is used.
+            std::vector<t_node_edge> dedupped_difference;
+            std::copy_if(difference.begin(), difference.end(),
+                         std::back_inserter(dedupped_difference),
+                        [&](t_node_edge forward_edge) {
+
+                            VTR_ASSERT_MSG(!routing_edges.count(forward_edge), "Difference should not contain used routing edges");
+
+                            t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
+
+                            //Check whether the reverse edge was used
+                            if (rr_edges.count(reverse_edge) && routing_edges.count(reverse_edge)) {
+                                //The reverse edge exists in the set of rr_edges, and was used
+                                //by the routing.
+                                //
+                                //We can therefore safely ignore the fact that this (forward) edge is un-used
+                                return false; //Drop from difference
+                            } else {
+                                return true; //Keep, this edge should have been used
+                            }
+                        }); 
+
+            //At this point only valid missing node pairs are in the set
+            if (!dedupped_difference.empty()) {
+                std::string msg = vtr::string_fmt("Illegal routing for net '%s' (#%zu) some required non-configurable edges are missing:\n",
+                                    cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+
+                for (t_node_edge missing_edge : dedupped_difference) {
+                    msg += vtr::string_fmt("  Expected RR Node: %d and RR Node: %d to be non-configurably connected, but edge missing from routing:\n", 
+                                missing_edge.from_node, missing_edge.to_node);
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.from_node).c_str()); 
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node).c_str()); 
+                }
+
+                VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+            }
+
+            //TODO: verify that the switches used in trace are actually non-configurable
+        }
+    }
+
+    return true;
 }
