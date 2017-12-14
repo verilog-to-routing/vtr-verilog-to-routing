@@ -153,6 +153,21 @@ void write_rr_switches(fstream &fp) {
         t_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iSwitch];
 
         fp << "\t\t<switch id=\"" << iSwitch;
+
+        if (rr_switch.type() == SwitchType::TRISTATE) {
+            fp << "\" type=\"tristate";
+        } else if (rr_switch.type() == SwitchType::MUX) {
+            fp << "\" type=\"mux";
+        } else if (rr_switch.type() == SwitchType::PASS_GATE) {
+            fp << "\" type=\"pass_gate";
+        } else if (rr_switch.type() == SwitchType::SHORT) {
+            fp << "\" type=\"short";
+        } else if (rr_switch.type() == SwitchType::BUFFER) {
+            fp << "\" type=\"buffer";
+        } else {
+            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d\n", rr_switch.type());
+        }
+
         if (rr_switch.name) {
             fp << "\" name=\"" << rr_switch.name;
         }

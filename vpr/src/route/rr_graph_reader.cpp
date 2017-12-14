@@ -208,6 +208,23 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
         rr_switch.name = vtr::strdup(get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(NULL));
+
+        std::string switch_type_str = get_attribute(Switch, "type", loc_data).as_string();
+        SwitchType switch_type = SwitchType::INVALID;
+        if (switch_type_str == "tristate") {
+            switch_type = SwitchType::TRISTATE;
+        } else if (switch_type_str == "mux") {
+            switch_type = SwitchType::MUX;
+        } else if (switch_type_str == "pass_gate") {
+            switch_type = SwitchType::PASS_GATE;
+        } else if (switch_type_str == "short") {
+            switch_type = SwitchType::SHORT;
+        } else if (switch_type_str == "buffer") {
+            switch_type = SwitchType::BUFFER;
+        } else {
+            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type '%s'\n", switch_type_str.c_str());
+        }
+        rr_switch.set_type(switch_type);
         rr_switch.buffered = get_attribute(Switch, "buffered", loc_data).as_bool();
         rr_switch.configurable = get_attribute(Switch, "configurable", loc_data, OPTIONAL).as_bool(true);
         SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
@@ -407,8 +424,9 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         //set edge in correct rr_node data structure
         device_ctx.rr_nodes[source_node].set_edge_sink_node(num_edges_for_node[source_node], sink_node);
         device_ctx.rr_nodes[source_node].set_edge_switch(num_edges_for_node[source_node], switch_id);
-        edges = edges.next_sibling(edges.name());
         num_edges_for_node[source_node]++;
+
+        edges = edges.next_sibling(edges.name()); //Next edge
     }
     *wire_to_rr_ipin_switch = most_frequent_switch.first;
     num_edges_for_node.clear();
