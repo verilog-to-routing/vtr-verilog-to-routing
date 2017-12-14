@@ -7,6 +7,10 @@ static bool switch_type_is_configurable(SwitchType type);
 //Ensure the constant has external linkage to avoid linking errors
 constexpr int t_arch_switch_inf::UNDEFINED_FANIN;
 
+/*
+ * t_arch_switch_inf
+ */
+
 SwitchType t_arch_switch_inf::type() const {
     return type_;
 }
@@ -39,6 +43,18 @@ void t_arch_switch_inf::set_Tdel(int fanin, float delay) {
 }
 
 void t_arch_switch_inf::set_type(SwitchType type_val) {
+    type_ = type_val;
+}
+
+/*
+ * t_rr_switch_inf
+ */
+
+SwitchType t_rr_switch_inf::type() const {
+    return type_;
+}
+
+void t_rr_switch_inf::set_type(SwitchType type_val) {
     type_ = type_val;
 }
 

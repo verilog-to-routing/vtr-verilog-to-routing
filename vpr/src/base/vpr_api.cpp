@@ -571,13 +571,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             VTR_ASSERT(router_opts.doRouting == STAGE_LOAD);
 
             //Load a previous routing
-            try {
-                route_status = vpr_load_routing(vpr_setup, arch, chan_width);
-            } catch (VprError& error) {
-                vtr::printf_error(__FILE__, __LINE__, "%s\n", error.what());
-                update_screen(ScreenUpdatePriority::MAJOR, error.what(), ROUTING, timing_info);
-                throw error;
-            }
+            route_status = vpr_load_routing(vpr_setup, arch, chan_width);
         }
 
         //Post-implementation

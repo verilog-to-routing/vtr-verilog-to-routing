@@ -388,16 +388,38 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 				case CHANY:
 					if (!chan_node_switch_done[to_node]){
 						int switch_index = device_ctx.rr_nodes[from_node].edge_switch(iedge);
-						/* Each wire segment begins with a multipexer followed by a driver for unidirectional */
-						/* Each multiplexer contains all the fan-in to that routing node */
-						/* Add up area of multiplexer */
-						ntrans += trans_per_mux(device_ctx.rr_nodes[to_node].fan_in(), trans_sram_bit,
-								device_ctx.rr_switch_inf[switch_index].mux_trans_size);			
+                        auto switch_type = device_ctx.rr_switch_inf[switch_index].type();
 
-						/* Add up area of buffer */
-						/* The buffer size should already have been auto-sized (if required) when 
-                         * the rr switches were created from the arch switches */
-                        ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
+                        int fan_in = device_ctx.rr_nodes[to_node].fan_in();
+
+                        if (device_ctx.rr_switch_inf[switch_index].type() == SwitchType::MUX) {
+                            /* Each wire segment begins with a multipexer followed by a driver for unidirectional */
+                            /* Each multiplexer contains all the fan-in to that routing node */
+                            /* Add up area of multiplexer */
+                            ntrans += trans_per_mux(fan_in, trans_sram_bit,
+                                    device_ctx.rr_switch_inf[switch_index].mux_trans_size);			
+
+                            /* Add up area of buffer */
+                            /* The buffer size should already have been auto-sized (if required) when 
+                             * the rr switches were created from the arch switches */
+                            ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
+                        } else if (switch_type == SwitchType::SHORT) {
+                            ntrans += 0.; //Electrical shorts contribute no transisitor area
+                        } else if (switch_type == SwitchType::BUFFER) {
+                            if (fan_in != 1) {
+                                std::string msg = vtr::string_fmt("Uni-directional RR node driven by non-configurable "
+                                                                  "BUFFER has fan in %d (expected 1)\n", 
+                                                                  fan_in);
+                                msg += "  " + describe_rr_node(to_node);
+                                VPR_THROW(VPR_ERROR_OTHER, msg.c_str());
+                            }
+
+                            //This is a non-configurable buffer, so there are no mux transistors,
+                            //only the buffer area
+                            ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
+                        } else {
+                            VPR_THROW(VPR_ERROR_OTHER, "Unexpected switch type %d while calculating area of uni-directional routing", switch_type);
+                        }
 						chan_node_switch_done[to_node] = true;
 					}
 					
@@ -521,14 +543,24 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 
 	for (i = 0; i < num_switch; i++) {
 
-		if (device_ctx.rr_switch_inf[i].buffered == false) {
-			Rpass = device_ctx.rr_switch_inf[i].R;
-		} else { /* Buffer.  Set Rpass = Rbuf = 1/2 Rtotal. */
-			Rpass = device_ctx.rr_switch_inf[i].R / 2.;
-		}
+        if (device_ctx.rr_switch_inf[i].type() == SwitchType::SHORT) {
+            //Electrical shorts do not use any transistors
+            unsharable_switch_trans[i] = 0.;
+        } else {
 
-		unsharable_switch_trans[i] = trans_per_R(Rpass, R_minW_nmos)
-				+ trans_sram_bit;
+            if (device_ctx.rr_switch_inf[i].buffered == false) {
+                Rpass = device_ctx.rr_switch_inf[i].R;
+            } else { /* Buffer.  Set Rpass = Rbuf = 1/2 Rtotal. */
+                Rpass = device_ctx.rr_switch_inf[i].R / 2.;
+            }
+
+            unsharable_switch_trans[i] = trans_per_R(Rpass, R_minW_nmos);
+
+            if (device_ctx.rr_switch_inf[i].configurable) {
+                //Configurable switches use SRAM
+                unsharable_switch_trans[i] += trans_sram_bit;
+            }
+        }
 	}
 
 	return (unsharable_switch_trans);

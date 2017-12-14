@@ -1005,11 +1005,13 @@ struct t_segment_inf {
 };
 
 enum class SwitchType {
-    TRISTATE, //A tri-stateable buffer
-    MUX, //A (buffered) mux (uni-dir)
-    PASS_GATE, //A pass transitor switch (bi-dir)
-    SHORT, //A non-configurable electrically shorted connection (bi-dir)
-    BUFFER //A non-configurable buffer (uni-dir)
+    TRISTATE,   //A tri-stateable buffer
+    MUX,        //A (buffered) mux (uni-dir)
+    PASS_GATE,  //A pass transitor switch (bi-dir)
+    SHORT,      //A non-configurable electrically shorted connection (bi-dir)
+    BUFFER,     //A non-configurable buffer (uni-dir)
+    INVALID,    //Unspecified, usually an error
+    NUM_SWITCH_TYPES = INVALID
 };
 
 enum class BufferSize {
@@ -1065,7 +1067,7 @@ struct t_arch_switch_inf {
         void set_Tdel(int fanin, float delay);
         void set_type(SwitchType type_val);
     private:
-        SwitchType type_ = SwitchType::MUX;
+        SwitchType type_ = SwitchType::INVALID;
         std::map<int, double> Tdel_map_;
 
         friend void PrintArchInfo(FILE*, const t_arch*);
@@ -1103,6 +1105,12 @@ struct t_rr_switch_inf {
 	const char *name = nullptr;
 	e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
 	float power_buffer_size = 0.;
+    public:
+        SwitchType type() const;
+    public:
+        void set_type(SwitchType type_val);
+    private:
+        SwitchType type_ = SwitchType::INVALID;
 };
 
 /* Lists all the important information about a direct chain connection.     *
