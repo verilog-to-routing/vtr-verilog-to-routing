@@ -822,7 +822,7 @@
       </mode>
 
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <pinlocations pattern="spread_inputs_perimeter_outputs"/>
       <switchblock_locations pattern="custom">
         <!--Full outside of block-->
         <sb_loc type="full" xoffset="0" yoffset="2"/>
@@ -1499,7 +1499,7 @@
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <pinlocations pattern="spread_inputs_perimeter_outputs"/>
       <switchblock_locations pattern="external_full_internal_straight" internal_switch="inline_buffer"/>
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->
