@@ -89,7 +89,8 @@ constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = { {"TOP", "RIGHT", "B
 /* pin location distributions */
 enum e_pin_location_distr {
 	E_SPREAD_PIN_DISTR,
-	E_SPREAD_PERIMETER_PIN_DISTR,
+	E_PERIMETER_PIN_DISTR,
+	E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR,
     E_CUSTOM_PIN_DISTR
 };
 

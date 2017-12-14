@@ -1054,16 +1054,20 @@ They describe how a complex block interfaces with the inter-block world.
         specifies that port ``my_input`` use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``, while the port ``my_output`` uses a fractional :math:`F_c` of ``0.2`` when connecting to segments of type ``L4``.
         All other port/segment combinations would use the default :math:`F_c` values.
 
-.. arch:tag:: <pinlocations pattern="{spread|spread_perimeter|custom}">
+.. arch:tag:: <pinlocations pattern="{spread|perimeter|custom}">
 
     :req_param pattern:
         * ``spread`` denotes that the pins are to be spread evenly on all sides of the complex block.
 
             .. note:: *Includes* internal sides of blocks with width > 1 and/or height > 1.
 
-        * ``spread_perimeter`` denotes that the pins are to be spread evenly on perimeter sides of the complex block.
+        * ``perimeter`` denotes that the pins are to be spread evenly on perimeter sides of the complex block.
 
             .. note:: *Excludes* the internal sides of blocks with width > 1 and/or height > 1.
+
+        * ``spread_inputs_perimeter_outputs`` denotes that inputs pins are to be spread on all sides of the complex block, but output pins are to be spread only on perimeter sides of the block.
+
+            .. note:: This is useful for ensuring outputs do not connect to wires which fly-over a width > 1 and height > 1 block (e.g. if using ``short`` or ``buffer`` connections instead of a fully configurable switch block within the block).
 
         * ``custom`` allows the architect to specify specifically where the pins are to be placed using ``<loc>`` tags.
         

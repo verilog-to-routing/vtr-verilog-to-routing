@@ -324,8 +324,10 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	Prop = get_attribute(Locations, "pattern", loc_data).value();
 	if (strcmp(Prop, "spread") == 0) {
 		Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
-    } else if (strcmp(Prop, "spread_perimeter") == 0) {
-		Type->pin_location_distribution = E_SPREAD_PERIMETER_PIN_DISTR;
+    } else if (strcmp(Prop, "perimeter") == 0) {
+		Type->pin_location_distribution = E_PERIMETER_PIN_DISTR;
+    } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
+		Type->pin_location_distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
 	} else if (strcmp(Prop, "custom") == 0) {
 		Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
 	} else {

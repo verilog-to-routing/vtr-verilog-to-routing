@@ -1899,7 +1899,7 @@ static int get_track_to_chan_seg(
 
             auto& device_ctx = g_vpr_ctx.device();
 
-            if (!(device_ctx.arch_switch_inf[src_switch].buffered())) {
+            if (!device_ctx.arch_switch_inf[src_switch].buffered()) {
                 //Add reverse edge since shorts are bi-directional
                 *edge_list = insert_in_edge_list(*edge_list, to_node, src_switch, t_rr_edge_dir::BACKWARD);
                 ++edge_count;

@@ -1260,16 +1260,16 @@ static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
 
 static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) {
 
-	int num_sides = 4 * (type->width * type->height);
-	int side_index = 0;
-	int count = 0;
-
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
 	if (type->pin_location_distribution == E_SPREAD_PIN_DISTR) {
 		/* evenly distribute pins starting at bottom left corner */
+
+        int num_sides = 4 * (type->width * type->height);
+        int side_index = 0;
+        int count = 0;
         for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
@@ -1289,7 +1289,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 		}
 		VTR_ASSERT(side_index == num_sides);
 		VTR_ASSERT(count == type->num_pins);
-    } else if (type->pin_location_distribution == E_SPREAD_PERIMETER_PIN_DISTR) {
+    } else if (type->pin_location_distribution == E_PERIMETER_PIN_DISTR) {
         //Add one pin at-a-time to perimeter sides in round-robin order
         int ipin = 0;
         while (ipin < type->num_pins) {
@@ -1304,6 +1304,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
                             && ipin < type->num_pins) {
                             //On a side, with pins still to allocate
 
+							type->pinloc[width][height][side][ipin] = true;
 							type->pin_width_offset[ipin] += width;
 							type->pin_height_offset[ipin] += height;
                             physical_pin_counts[ipin] += 1;
@@ -1315,8 +1316,76 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
         }
         VTR_ASSERT(ipin == type->num_pins);
 
+    } else if (type->pin_location_distribution == E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR) {
+        //Collect the sets of block input/output pins
+        std::vector<int> input_pins;
+        std::vector<int> output_pins;
+        for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
+            int iclass = type->pin_class[pin_num];
+            
+            if (type->class_inf[iclass].type == RECEIVER) {
+                input_pins.push_back(pin_num);
+            } else {
+                VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
+                output_pins.push_back(pin_num);
+            }
+        }
+
+        //Allocate the inputs one pin at-a-time in a round-robin order
+        //to all sides
+        size_t ipin = 0;
+        while (ipin < input_pins.size()) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        if (ipin < input_pins.size()) {
+                            //Pins still to allocate
+
+                            int pin_num = input_pins[ipin];
+
+							type->pinloc[width][height][side][pin_num] = true;
+							type->pin_width_offset[pin_num] += width;
+							type->pin_height_offset[pin_num] += height;
+                            physical_pin_counts[pin_num] += 1;
+                            ++ipin;
+                        }
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(ipin == input_pins.size());
+
+        //Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
+        ipin = 0;
+        while (ipin < output_pins.size()) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+
+                        if ((   (width == 0 && side == LEFT)
+                             || (height == type->height - 1 && side == TOP) 
+                             || (width == type->width - 1 && side == RIGHT) 
+                             || (height == 0 && side == BOTTOM))
+                            && ipin < output_pins.size()) {
+                            //On a perimeter side, with pins still to allocate
+
+                            int pin_num = output_pins[ipin];
+
+							type->pinloc[width][height][side][pin_num] = true;
+							type->pin_width_offset[pin_num] += width;
+							type->pin_height_offset[pin_num] += height;
+                            physical_pin_counts[pin_num] += 1;
+                            ++ipin;
+                        }
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(ipin == output_pins.size());
+
 	} else {
 		VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
+        int count = 0;
 		for (int width = 0; width < type->width; ++width) {
 			for (int height = 0; height < type->height; ++height) {
                 for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
