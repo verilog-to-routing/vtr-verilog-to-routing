@@ -12,7 +12,9 @@ hsl color2hsl(t_color color) {
     float xmax = std::max(std::max(r, g), b);    //Max. value of RGB
     float range = xmax - xmin;             
 
-    float H, S, L;
+    float H = 0.;
+    float S = 0.;
+    float L = 0.;;
 
     L = (xmax + xmin) / 2;
 
