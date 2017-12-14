@@ -22,6 +22,8 @@ static void check_unbuffered_edges(int from_node);
 
 static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid);
 
+static void check_rr_edge(int from_node, int from_edge, int to_node);
+
 /************************ Subroutine definitions ****************************/
 
 void check_rr_graph(const t_graph_type graph_type,
@@ -69,6 +71,8 @@ void check_rr_graph(const t_graph_type graph_type,
 
         for (iedge = 0; iedge < num_edges; iedge++) {
             to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+
+            check_rr_edge(inode, iedge, to_node);
 
             if (to_node < 0 || to_node >= device_ctx.num_rr_nodes) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -532,4 +536,33 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
         return false;
     }
     return true; //All other blocks will be surrounded on all sides by channels
+}
+
+static void check_rr_edge(int from_node, int iedge, int to_node) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    //Check that to to_node's fan-in is correct, given the switch type
+    int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+    auto switch_type = device_ctx.rr_switch_inf[iswitch].type();
+
+    int to_fanin = device_ctx.rr_nodes[to_node].fan_in();
+    switch (switch_type) {
+        case SwitchType::BUFFER:
+            //Buffer switches are non-configurable, and uni-directional -- they must have only one driver
+            if (to_fanin != 1) {
+                std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
+                msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
+                msg += "  Possible cause is complex block output pins connecting to:\n";
+                msg += "    " + describe_rr_node(to_node);
+
+                VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+            }
+        case SwitchType::TRISTATE:  //Fallthrough
+        case SwitchType::MUX:       //Fallthrough
+        case SwitchType::PASS_GATE: //Fallthrough
+        case SwitchType::SHORT:     //Fallthrough
+            break; //pass 
+        default:
+            VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
+    }
 }
