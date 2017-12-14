@@ -62,7 +62,8 @@ static bool switch_type_is_buffered(SwitchType type) {
     //Muxes and Tristates isolate thier input and output into
     //seperate DC connected sub-circuits
     return type == SwitchType::MUX 
-        || type == SwitchType::TRISTATE;
+        || type == SwitchType::TRISTATE
+        || type == SwitchType::BUFFER;
 }
 
 static bool switch_type_is_configurable(SwitchType type) {
