@@ -30,6 +30,12 @@ placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sW
 routed_wirelength;vpr.out;Total wirelength: (.*), average
 crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
 
+#Area Metrics
+logic_block_area_total;vpr.out;Total logic block area .*: (.*)
+logic_block_area_used;vpr.out;Total used logic block area: (.*)
+routing_area_total;vpr.out;Total routing area: (.*), per logic tile: .*
+routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
+
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.out;Final critical path: (.*) ns
 setup_TNS;vpr.out;Setup Total Negative Slack \(sTNS\): (.*) ns

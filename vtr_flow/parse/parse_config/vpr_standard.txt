@@ -42,6 +42,14 @@ setup_WNS;vpr.crit_path.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
 hold_TNS;vpr.crit_path.out;Hold Total Negative Slack \(hTNS\): (.*) ns
 hold_WNS;vpr.crit_path.out;Hold Worst Negative Slack \(hWNS\): (.*) ns
 
+#Area Metrics
+logic_block_area_total;vpr.out;Total logic block area .*: (.*)
+logic_block_area_used;vpr.out;Total used logic block area: (.*)
+min_chan_width_routing_area_total;vpr.out;Total routing area: (.*), per logic tile: .*
+min_chan_width_routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
+crit_path_routing_area_total;vpr.crit_path.out;Total routing area: (.*), per logic tile: .*
+crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per logic tile: (.*)
+
 #VPR Run-time Metrics
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
