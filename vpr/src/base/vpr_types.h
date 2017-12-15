@@ -37,7 +37,7 @@
  * Global data types and constants
  ******************************************************************************/
 /*#define CREATE_ECHO_FILES*//* prints echo files */
-/*#define DEBUG_FAILED_PACKING_CANDIDATES*//*Displays candidates during packing that failed */
+#define DEBUG_FAILED_PACKING_CANDIDATES /*Displays candidates during packing that failed */
 /*#define PRINT_SINK_DELAYS*//*prints the sink delays to files */
 /*#define PRINT_SLACKS*//*prints out all slacks in the circuit */
 /*#define PRINT_PLACE_CRIT_PATH*//*prints out placement estimated critical path */
