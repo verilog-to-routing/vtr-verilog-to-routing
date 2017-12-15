@@ -1414,9 +1414,11 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
         t_linked_edge *edge_list = NULL;
 
-        t_seg_details * from_seg_details = chan_details_x[start][y_coord];
+        t_seg_details * from_seg_details = nullptr;
         if (chan_type == CHANY) {
             from_seg_details = chan_details_y[x_coord][start];
+        } else {
+            from_seg_details = chan_details_x[start][y_coord];
         }
 
         /* Add the edges from this track to all it's connected pins into the list */
