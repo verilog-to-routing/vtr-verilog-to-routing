@@ -163,7 +163,7 @@ public:
     bool operator==(color_types rhs) const;
     bool operator!=(color_types rhs) const;
     
-    static const std::array<t_color,29> predef_colors;
+    static const std::array<t_color,NUM_COLOR> predef_colors;
 };
 
 #endif /* GRAPHICS_TYPES_H */
