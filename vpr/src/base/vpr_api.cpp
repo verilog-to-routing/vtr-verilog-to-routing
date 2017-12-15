@@ -82,7 +82,7 @@ using namespace std;
 /* Local subroutines */
 static void free_complex_block_types(void);
 
-static void free_device();
+static void free_device(const t_det_routing_arch& routing_arch);
 static void free_circuit(void);
 
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
@@ -835,7 +835,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 }
 
 /* Free architecture data structures */
-void free_device() {
+void free_device(const t_det_routing_arch& routing_arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     vtr::free(device_ctx.chan_width.x_list);
@@ -844,6 +844,12 @@ void free_device() {
     device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = NULL;
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
+    for (int iswitch : {routing_arch.delayless_switch, routing_arch.global_route_switch}) {
+        if (device_ctx.arch_switch_inf[iswitch].name) {
+            vtr::free(device_ctx.arch_switch_inf[iswitch].name);
+            device_ctx.arch_switch_inf[iswitch].name = nullptr;
+        }
+    }
     delete[] device_ctx.arch_switch_inf;
     device_ctx.arch_switch_inf = NULL;
     free_complex_block_types();
@@ -873,7 +879,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
     free_circuit();
     free_arch(&Arch);
-    free_device();
+    free_device(vpr_setup.RoutingArch);
     free_echo_file_info();
     free_timing_stats();
     free_sdc_related_structs();
