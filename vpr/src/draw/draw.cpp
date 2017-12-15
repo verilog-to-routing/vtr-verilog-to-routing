@@ -3095,7 +3095,7 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
 }
 
 t_color get_block_type_color(t_type_ptr type) {
-    
+    VTR_ASSERT(type->index < block_type_colors.size());
     t_color color = block_type_colors[type->index];
 
     return color;
