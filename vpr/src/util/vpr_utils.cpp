@@ -665,6 +665,10 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
         t_type_ptr type = &device_ctx.block_types[itype];
 
+	if (type->fc_specs.size() == 0) {
+		continue;
+	}
+
         size_t inst_cnt = grid.num_instances(type);
         if (max_count < inst_cnt) {
             max_count = inst_cnt;
