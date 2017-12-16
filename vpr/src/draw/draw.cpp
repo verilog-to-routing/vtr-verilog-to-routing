@@ -3095,8 +3095,11 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
 }
 
 t_color get_block_type_color(t_type_ptr type) {
-    
-    t_color color = block_type_colors[type->index];
+
+    //Wrap around if there are too many blocks
+    // This ensures we support an arbitrary number of types,
+    // although the colours may repeat
+    t_color color = block_type_colors[type->index % block_type_colors.size()];
 
     return color;
 }
