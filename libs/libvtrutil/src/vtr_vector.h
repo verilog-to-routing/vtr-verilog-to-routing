@@ -66,10 +66,22 @@ class vector : private std::vector<V> {
 
         //Don't include operator[] and at() from std::vector,
         //since we redine them to take K instead of size_t
-        reference operator[](const K id) { return std::vector<V>::operator[](size_t(id)); }
-        const_reference operator[](const K id) const { return std::vector<V>::operator[](size_t(id)); }
-        reference at(const K id) { return std::vector<V>::at(size_t(id)); }
-        const_reference at(const K id) const { return std::vector<V>::at(size_t(id)); }
+        reference operator[](const K id) { 
+            auto i = size_t(id);
+            return std::vector<V>::operator[](i); 
+        }
+        const_reference operator[](const K id) const { 
+            auto i = size_t(id);
+            return std::vector<V>::operator[](i); 
+        }
+        reference at(const K id) { 
+            auto i = size_t(id);
+            return std::vector<V>::at(i); 
+        }
+        const_reference at(const K id) const {
+            auto i = size_t(id);
+            return std::vector<V>::at(i); 
+        }
 };
 
 
