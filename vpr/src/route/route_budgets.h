@@ -37,7 +37,7 @@ public:
     /*main loader function*/
     void load_route_budgets(vtr::vector_map<ClusterNetId, float *> &net_delay,
             std::shared_ptr<SetupTimingInfo> timing_info,
-            const IntraLbPbPinLookup& pb_gpin_lookup,
+            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
             t_router_opts router_opts);
 
     /*debugging tools*/
@@ -56,36 +56,36 @@ private:
     /*different ways to set route budgets*/
     void allocate_slack_using_delays_and_criticalities(vtr::vector_map<ClusterNetId, float *> &net_delay,
             std::shared_ptr<SetupTimingInfo> timing_info,
-            const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts);
-    void allocate_slack_using_weights(vtr::vector_map<ClusterNetId, float *> &net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
+            const ClusteredPinAtomPinsLookup& netlist_pin_lookup, t_router_opts router_opts);
+    void allocate_slack_using_weights(vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     /*Sometimes want to allocate only positive or negative slack.
      By default, allocate both*/
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *> &temp_budgets,
-		vtr::vector_map<ClusterNetId, float *> &net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
+		vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type,
             bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
-    void process_negative_slack_using_minimax(vtr::vector_map<ClusterNetId, float *> &net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
+    void process_negative_slack_using_minimax(vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
     /*Perform static timing analysis*/
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(vtr::vector_map<ClusterNetId, float *> &temp_budgets);
 
     /*checks*/
     void keep_budget_in_bounds(vtr::vector_map<ClusterNetId, float *> &temp_budgets);
-    void keep_budget_in_bounds(vtr::vector_map<ClusterNetId, float *> &temp_budgets, ClusterNetId net_id, int ipin);
+    void keep_budget_in_bounds(vtr::vector_map<ClusterNetId, float *> &temp_budgets, ClusterNetId net_id, ClusterPinId ipin);
     void keep_min_below_max_budget();
     void check_if_budgets_in_bounds();
-    void check_if_budgets_in_bounds(ClusterNetId net_id, int ipin);
+    void check_if_budgets_in_bounds(ClusterNetId net_id, ClusterPinId pin_id);
     void keep_budget_above_value(vtr::vector_map<ClusterNetId, float *> &temp_budgets, float bottom_range);
 
 
     /*helper functions*/
     float calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info,
-            const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type, AtomPinId &atom_pin);
+            const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId &atom_pin);
     float get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
             analysis_type analysis_type, tatum::NodeId timing_node);
     void set_min_max_budgets_equal();
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(vtr::vector_map<ClusterNetId, float *> &net_delay);
     void calculate_delay_targets();
-    void calculate_delay_targets(ClusterNetId net_id, int ipin);
+    void calculate_delay_targets(ClusterNetId net_id, ClusterPinId pin_id);
     tatum::EdgeId get_edge_from_nets(ClusterNetId net_id, int ipin);
 
     /*debugging tools*/

@@ -120,7 +120,7 @@ public:
 	// and if so, mark them to be rerouted
 	bool forcibly_reroute_connections(float max_criticality, 
             std::shared_ptr<const SetupTimingInfo> timing_info,
-            const IntraLbPbPinLookup& pb_gpin_lookup,
+            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
             vtr::vector_map<ClusterNetId, float *> &net_delay);
 
 };

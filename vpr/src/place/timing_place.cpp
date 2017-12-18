@@ -49,7 +49,7 @@ static void free_crit(vtr::t_chunk *chunk_list_ptr){
 }
 
 /**************************************/
-void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup) {
+void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup) {
 	/* Performs a 1-to-1 mapping from criticality to f_timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), f_timing_place_crit = criticality^(criticality exponent) */
@@ -58,14 +58,17 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (cluster_ctx.clb_nlist.net_is_global(net_id))
 			continue;
-		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, net_id, ipin);
+
+        for (auto clb_pin : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            int ipin = cluster_ctx.clb_nlist.pin_net_index(clb_pin);
+
+            float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pin_lookup, clb_pin);
 
             /* The placer likes a great deal of contrast between criticalities. 
             Since path criticality varies much more than timing, we "sharpen" timing 
             criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
             f_timing_place_crit[net_id][ipin] = pow(clb_pin_crit, crit_exponent);
-		}
+        }
 	}
 }
 

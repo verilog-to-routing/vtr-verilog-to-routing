@@ -561,6 +561,7 @@ class Netlist {
         //Returns the net associated with the specified pin
         NetId       pin_net(const PinId pin_id) const;
 
+        //Returns the index of the specified pin within it's connected net
         int         pin_net_index(const PinId pin_id) const;
 
         //Returns the port associated with the specified pin

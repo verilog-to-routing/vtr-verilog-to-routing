@@ -189,7 +189,7 @@ static int round_up(float x);
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
@@ -305,7 +305,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     route_structs.pin_criticality,
                     route_structs.rt_node_of_sink,
                     net_delay,
-                    pb_gpin_lookup,
+                    netlist_pin_lookup,
                     route_timing_info, budgeting_inf);
 
             if (!is_routable) {
@@ -419,7 +419,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 connections_inf.set_lower_bound_connection_delays(net_delay);
 
                 //load budgets using information from uncongested delay information
-                budgeting_inf.load_route_budgets(net_delay, timing_info, pb_gpin_lookup, router_opts);
+                budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
                 /*for debugging purposes*/
                 //                if (budgeting_inf.if_set()) {
                 //                    budgeting_inf.print_route_budget();
@@ -431,7 +431,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay()))
                     stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality,
                         timing_info,
-                        pb_gpin_lookup,
+                        netlist_pin_lookup,
                         net_delay);
 
                 // not stable if any connection needs to be forcibly rerouted
@@ -485,7 +485,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         size_t& connections_routed,
         float* pin_criticality,
         t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -513,7 +513,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 pin_criticality, router_opts.min_incremental_reroute_fanout,
                 rt_node_of_sink,
                 net_delay[net_id],
-                pb_gpin_lookup,
+                netlist_pin_lookup,
                 timing_info, budgeting_inf);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
@@ -637,7 +637,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         size_t& connections_routed,
         float *pin_criticality, int min_incremental_reroute_fanout,
         t_rt_node ** rt_node_of_sink, float *net_delay,
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
 
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -662,7 +662,8 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     // calculate criticality of remaining target pins
     for (int ipin : remaining_targets) {
         if (timing_info) {
-            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, net_id, ipin);
+            auto clb_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
+            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, clb_pin);
 
             /* Pin criticality is between 0 and 1. 
              * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
@@ -1845,7 +1846,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::
                     2. the connection is suboptimal, in comparison to lower_bound_connection_delay  */
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
         std::shared_ptr<const SetupTimingInfo> timing_info,
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         vtr::vector_map<ClusterNetId, float *> &net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -1853,7 +1854,9 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
     bool any_connection_rerouted = false; // true if any connection has been marked for rerouting
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+        for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+
             // rr sink node index corresponding to this connection terminal
             auto rr_sink_node = route_ctx.net_rr_terminals[net_id][ipin];
 
@@ -1872,7 +1875,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
             }
 
             // skip if connection criticality is too low (not a problem connection)
-            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, net_id, ipin);
+            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id);
             if (pin_criticality < (max_criticality * connection_criticality_tolerance))
                 continue;
 

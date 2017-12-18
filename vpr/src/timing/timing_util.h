@@ -10,6 +10,7 @@
 #include "DomainPair.h"
 
 #include "vpr_utils.h"
+#include "clustered_netlist_utils.h"
 
 double sec_to_nanosec(double seconds); 
 
@@ -75,7 +76,7 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
  */
 
 //Return the criticality of a net's pin in the CLB netlist
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, ClusterNetId inet, int ipin);
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);
 
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags

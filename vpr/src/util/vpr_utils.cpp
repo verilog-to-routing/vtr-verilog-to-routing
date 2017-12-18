@@ -302,13 +302,12 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int clb_pin, const In
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
-
-    int pb_pin_id = pb_routes[clb_pin].driver_pb_pin_id;
+    int pb_pin_id = find_clb_pb_pin(clb, clb_pin);
     if(pb_pin_id < 0) {
         //CLB output pin has no internal driver
         return AtomPinId::INVALID();
     }
+    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
     AtomNetId atom_net = pb_routes[pb_pin_id].atom_net_id;
 
     //Trace back until the driver is reached
@@ -338,14 +337,6 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int clb_p
 
     VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type(clb)->num_pins, "Must be a valid top-level pin");
 
-    //Note that a CLB pin index does not (neccessarily) map directly to the pb_route index representing the first stage
-    //of internal routing in the block, since a block may have capacity > 1 (e.g. IOs)
-    //
-    //In the clustered netlist blocks with capacity > 1 may have their 'z' position > 0, and their clb pin indicies offset
-    //by the number of pins on the type (c.f. post_place_sync()).
-    //
-    //This offset is not mirrored in the t_pb or pb graph, so we need to recover the basic pin index before processing
-    //further
     int pb_pin = find_clb_pb_pin(clb, clb_pin);
 
     VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb));

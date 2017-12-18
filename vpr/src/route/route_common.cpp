@@ -344,10 +344,11 @@ bool try_route(int width_fac, t_router_opts router_opts,
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
+        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
 
 		success = try_timing_driven_route(router_opts, net_delay, 
-            intra_lb_pb_pin_lookup,
+            netlist_pin_lookup,
             timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,

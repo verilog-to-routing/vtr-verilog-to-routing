@@ -13,7 +13,7 @@ int get_max_pins_per_net(void);
 
 bool try_timing_driven_route(t_router_opts router_opts,
 		vtr::vector_map<ClusterNetId, float *> &net_delay, 
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
@@ -27,7 +27,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         size_t& connections_routed,
 		float* pin_criticality, 
 		t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
 bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
@@ -36,7 +36,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         size_t& connections_routed,
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 
 		float *net_delay,
-        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
 

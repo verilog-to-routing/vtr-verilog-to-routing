@@ -1,6 +1,7 @@
 #ifndef VTR_VECTOR
 #define VTR_VECTOR
 #include <vector>
+#include <cstddef>
 
 namespace vtr {
 
