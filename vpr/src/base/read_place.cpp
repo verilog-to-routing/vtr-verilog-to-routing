@@ -160,7 +160,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		
 	hash_table = alloc_hash_table();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
+		if (is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
 			place_ctx.block_locs[blk_id].x = OPEN; /* Mark as not seen yet. */
 		}
@@ -168,8 +168,9 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
-				for (int k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
+            auto type = device_ctx.grid[i][j].type;
+			if (is_io_type(type)) {
+				for (int k = 0; k < type->capacity; k++) {
 					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
 						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID; /* Flag for err. check */
 					}
@@ -248,12 +249,13 @@ void read_user_pad_loc(const char *pad_loc_file) {
         place_ctx.block_locs[bnum].z = k;
         place_ctx.block_locs[bnum].is_fixed = true;
 
-		if (device_ctx.grid[i][j].type != device_ctx.IO_TYPE) {
+        auto type = device_ctx.grid[i][j].type;
+		if (!is_io_type(type)) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Attempt to place IO block %s at illegal location (%d, %d).\n", bname, i, j);
 		}
 
-		if (k >= device_ctx.IO_TYPE->capacity || k < 0) {
+		if (k >= type->capacity || k < 0) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
@@ -264,7 +266,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	}
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && place_ctx.block_locs[blk_id].x == OPEN) {
+        auto type = cluster_ctx.clb_nlist.block_type(blk_id);
+		if (is_io_type(type) && place_ctx.block_locs[blk_id].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 		}

@@ -82,13 +82,14 @@ void printClusteredNetlistStats() {
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
-			for (j = 0; j < device_ctx.IO_TYPE->num_pins; j++) {
+        auto type = cluster_ctx.clb_nlist.block_type(blk_id); 
+		if (is_io_type(type)) {
+			for (j = 0; j < type->num_pins; j++) {
 				if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
-					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type == DRIVER) {
+					if (type->class_inf[type->pin_class[j]].type == DRIVER) {
 						L_num_p_inputs++;
 					} else {
-						VTR_ASSERT(device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE-> pin_class[j]]. type == RECEIVER);
+						VTR_ASSERT(type->class_inf[type-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}
 				}
@@ -97,9 +98,7 @@ void printClusteredNetlistStats() {
 	}
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
-		if (device_ctx.IO_TYPE != &device_ctx.block_types[i]) {
-			vtr::printf_info("Netlist %s blocks: %d.\n", device_ctx.block_types[i].name, num_blocks_type[i]);
-		}
+        vtr::printf_info("Netlist %s blocks: %d.\n", device_ctx.block_types[i].name, num_blocks_type[i]);
 	}
 
 	/* Print out each block separately instead */

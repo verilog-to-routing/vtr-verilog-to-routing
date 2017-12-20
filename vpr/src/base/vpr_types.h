@@ -523,7 +523,7 @@ struct t_net_power {
 };
 
 /* s_grid_tile is the minimum tile of the fpga                         
- * type:  Pointer to type descriptor, NULL for illegal, IO_TYPE for io 
+ * type:  Pointer to type descriptor, NULL for illegal
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block */
 struct t_grid_tile {

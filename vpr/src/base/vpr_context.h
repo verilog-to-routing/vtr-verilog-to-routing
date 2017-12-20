@@ -109,7 +109,8 @@ struct DeviceContext : public Context {
     DeviceGrid grid; /* FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1] */
 
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
-    t_type_ptr IO_TYPE;
+    std::set<t_type_ptr> input_types;
+    std::set<t_type_ptr> output_types;
     t_type_ptr EMPTY_TYPE;
 
     /* block_types are blocks that can be moved by the placer

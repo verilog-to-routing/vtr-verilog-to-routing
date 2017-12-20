@@ -17,6 +17,11 @@ bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 
 bool is_opin(int ipin, t_type_ptr type);
 
+bool is_input_type(t_type_ptr type);
+bool is_output_type(t_type_ptr type);
+bool is_io_type(t_type_ptr type);
+bool is_empty_type(t_type_ptr type);
+
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 
 void get_class_range_for_block(const ClusterBlockId blk_id, int *class_low,

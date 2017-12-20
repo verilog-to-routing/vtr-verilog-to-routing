@@ -863,7 +863,6 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
 
 	clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
@@ -878,7 +877,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 
 		for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
 			// another hack to avoid I/Os, whole function needs a rethink
-			if(type == device_ctx.IO_TYPE)
+			if(is_io_type(type))
 				continue;
 			
 			if ((cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) != ClusterNetId::INVALID()
@@ -1506,7 +1505,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					case IPIN:
 					case OPIN:
-						if (device_ctx.grid[ilow][jlow].type == device_ctx.IO_TYPE) {
+						if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
 							fprintf(fp, " Pad: ");
 						} else { /* IO Pad. */
 							fprintf(fp, " Pin: ");
@@ -1520,7 +1519,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					case SOURCE:
 					case SINK:
-						if (device_ctx.grid[ilow][jlow].type == device_ctx.IO_TYPE) {
+						if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
 							fprintf(fp, " Pad: ");
 						} else { /* IO Pad. */
 							fprintf(fp, " Class: ");
@@ -1536,7 +1535,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
 
-					if (device_ctx.grid[ilow][jlow].type != device_ctx.IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
+					if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
 						int pin_num = device_ctx.rr_nodes[inode].ptc_num();
 						int xoffset = device_ctx.grid[ilow][jlow].width_offset;
 						int yoffset = device_ctx.grid[ilow][jlow].height_offset;

@@ -504,26 +504,26 @@ void obstruct_chan_details(
             if (!trim_empty_channels)
                 continue;
 
-            if (grid[x][y].type == device_ctx.IO_TYPE) {
+            if (is_io_type(grid[x][y].type)) {
                 if ((x == 0) || (y == 0))
                     continue;
             }
             if (grid[x][y].type == device_ctx.EMPTY_TYPE) {
-                if ((x == grid.width() - 2) && (grid[x + 1][y].type == device_ctx.IO_TYPE)) //-2 for no perim channels
+                if ((x == grid.width() - 2) && is_io_type(grid[x + 1][y].type)) //-2 for no perim channels
                     continue;
-                if ((y == grid.height() - 2) && (grid[x][y + 1].type == device_ctx.IO_TYPE)) //-2 for no perim channels
+                if ((y == grid.height() - 2) && is_io_type(grid[x][y + 1].type)) //-2 for no perim channels
                     continue;
             }
 
-            if ((grid[x][y].type == device_ctx.IO_TYPE) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if ((grid[x][y + 1].type == device_ctx.IO_TYPE) || (grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
+            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                if (is_io_type(grid[x][y + 1].type) || (grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_x[x][y][track].length = 0;
                     }
                 }
             }
-            if ((grid[x][y].type == device_ctx.IO_TYPE) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if ((grid[x + 1][y].type == device_ctx.IO_TYPE) || (grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
+            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                if (is_io_type(grid[x + 1][y].type) || (grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_y[x][y][track].length = 0;
                     }
@@ -1426,7 +1426,7 @@ int find_average_rr_node_index(
 
                 if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
                     continue;
-                if (device_ctx.grid[x][y].type == device_ctx.IO_TYPE)
+                if (is_io_type(device_ctx.grid[x][y].type))
                     continue;
 
                 inode = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc);

@@ -105,7 +105,6 @@ void check_netlist() {
 * global or non-global nets are allowed to connect to pads.                  */
 static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
 	
 	unsigned int error = 0;
 	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
@@ -119,7 +118,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
 		int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 
 		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
-			&& cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.IO_TYPE) {
+			&& !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 
 			//Allow a CLB output pin to drive a global net (warning only).
 			if (pin_id == cluster_ctx.clb_nlist.net_driver(net_id) && is_global_net) {
@@ -155,22 +154,11 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
 
 	error = 0;
 	type = cluster_ctx.clb_nlist.block_type(iblk);
 
-	if (type == device_ctx.IO_TYPE) {
-	    /*
-		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
-		if (num_conn != 1) {
-			vtr::printf_error(__FILE__, __LINE__, 
-					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
-			error++;
-		}
-        */
-	}
-	else if (num_conn < 2) {
+	if (num_conn < 2) {
 		vtr::printf_warning(__FILE__, __LINE__,
 			"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
 

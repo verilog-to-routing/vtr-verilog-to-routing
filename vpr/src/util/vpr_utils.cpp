@@ -566,6 +566,28 @@ bool is_opin(int ipin, t_type_ptr type) {
 		return false;
 }
 
+bool is_input_type(t_type_ptr type) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    return device_ctx.input_types.count(type);
+}
+
+bool is_output_type(t_type_ptr type) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    return device_ctx.output_types.count(type);
+}
+
+bool is_io_type(t_type_ptr type) {
+    return is_input_type(type)
+        || is_output_type(type);
+}
+
+bool is_empty_type(t_type_ptr type) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    return type == device_ctx.EMPTY_TYPE;
+}
 
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified 
  * by its pins. Since the pins in a cluster of a certain type are densely indexed,

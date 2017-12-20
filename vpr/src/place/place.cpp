@@ -2854,7 +2854,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 		}
 
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-		if (!(cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && pad_loc_type == USER)) {
+		if (!(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == USER)) {
 
 		    /* Randomly select a free location of the appropriate type for blk_id.
 			 * We have a linearized list of all the free locations that can 
@@ -2883,7 +2883,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			place_ctx.block_locs[blk_id].z = z;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
-            if(cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && pad_loc_type == RANDOM) {
+            if(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == RANDOM) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
  			}
 

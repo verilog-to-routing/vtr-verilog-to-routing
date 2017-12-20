@@ -73,7 +73,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
             auto type = device_ctx.grid[i][j].type;
 			if (   device_ctx.grid[i][j].width_offset == 0 
                 && device_ctx.grid[i][j].height_offset == 0
-                && type != device_ctx.IO_TYPE
+                && !is_io_type(type)
                 && type != device_ctx.EMPTY_TYPE) {
 				if (type->area == UNDEFINED) {
 					area += grid_logic_tile_area * type->width * type->height;
@@ -88,7 +88,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 
 	used_area = 0;
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.IO_TYPE) {
+		if (!is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 			if (cluster_ctx.clb_nlist.block_type(blk_id)->area == UNDEFINED) {
 				used_area += grid_logic_tile_area * cluster_ctx.clb_nlist.block_type(blk_id)->width * cluster_ctx.clb_nlist.block_type(blk_id)->height;
 			} else {
@@ -464,12 +464,11 @@ void print_lambda(void) {
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		type = cluster_ctx.clb_nlist.block_type(blk_id);
 		VTR_ASSERT(type != NULL);
-		if (type != device_ctx.IO_TYPE) {
+		if (!is_io_type(type)) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
 				if (type->class_inf[iclass].type == RECEIVER) {

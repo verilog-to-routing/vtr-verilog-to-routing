@@ -107,29 +107,31 @@ void SetupVPR(t_options *Options,
 
 	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
 	device_ctx.EMPTY_TYPE = NULL;
-	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
         t_type_ptr type = &device_ctx.block_types[i];
 		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
+            VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
 			device_ctx.EMPTY_TYPE = type;
-		} else if (block_type_contains_blif_model(type, ".input") && block_type_contains_blif_model(type, ".output")) {
-            if (device_ctx.IO_TYPE != nullptr) {
-                //Already set
-                VPR_THROW(VPR_ERROR_ARCH, 
-                        "Architecture contains multiple top-level block types containing both"
-                        " '.input' and '.output' BLIF models (expected one block type)");
+		} else {
+            if (block_type_contains_blif_model(type, ".input")) {
+                device_ctx.input_types.insert(type);
             }
-			device_ctx.IO_TYPE = type;
-		}
+            if (block_type_contains_blif_model(type, ".output")) {
+                device_ctx.output_types.insert(type);
+            }
+        }
     }
 
 	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL);
 
-    if (device_ctx.IO_TYPE == nullptr) {
-        //Already set
+    if (device_ctx.input_types.empty()) {
         VPR_THROW(VPR_ERROR_ARCH, 
-                "Architecture contains no top-level block type containing both"
-                " '.input' and '.output' BLIF models (expected one block type)");
+                "Architecture contains no top-level block type containing '.input' models");
+    }
+
+    if (device_ctx.output_types.empty()) {
+        VPR_THROW(VPR_ERROR_ARCH, 
+                "Architecture contains no top-level block type containing '.output' models");
     }
 
 	*Segments = Arch->Segments;

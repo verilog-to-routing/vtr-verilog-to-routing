@@ -229,7 +229,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool * pin_done) {
 		}
 	}
 
-	if (ifound > 1 && type == device_ctx.IO_TYPE) {
+	if (ifound > 1 && is_io_type(type)) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 			"in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, size_t(net_id), ptc_num, i, j);
 	}

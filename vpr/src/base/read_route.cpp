@@ -265,7 +265,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
 
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
-                if (tokens[4 + offset] == "Pad:" && device_ctx.grid[x][y].type != device_ctx.IO_TYPE) {
+                if (tokens[4 + offset] == "Pad:" && !is_io_type(device_ctx.grid[x][y].type)) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                             "Node %d is of the wrong type", inode);
                 }
@@ -285,7 +285,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
             /*Process switches and pb pin info if it is ipin or opin type*/
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
-                if (device_ctx.grid[x][y].type != device_ctx.IO_TYPE && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
+                if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
                     int height_offset = device_ctx.grid[x][y].height_offset;
                     ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
