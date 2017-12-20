@@ -19,6 +19,7 @@ arch_list_add=non_column.xml
 arch_list_add=non_column_tall_aspect_ratio.xml
 arch_list_add=non_column_wide_aspect_ratio.xml
 arch_list_add=custom_sbloc.xml
+arch_list_add=multiple_io_types.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
