@@ -347,8 +347,17 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                 device_ctx.grid.num_instances(type), type->name);
     }
     vtr::printf_info("\n");
+
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     vtr::printf_info("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    for (int i = 0; i < device_ctx.num_block_types; ++i) {
+        auto type = &device_ctx.block_types[i];
+        float util = 0.;
+        if (num_type_instances[type] != 0) {
+            util = float(num_type_instances[type]) / device_ctx.grid.num_instances(type);
+        }
+        vtr::printf("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
+    }
     vtr::printf_info("\n");
 
 
