@@ -123,8 +123,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     for(auto blk_id : netlist.blocks()) {
         if(netlist.block_type(blk_id) == AtomBlockType::BLOCK) {
             const t_model* blk_model = netlist.block_model(blk_id);
-            if(blk_model->name != std::string("latch")) continue;
-
+            if(blk_model->name != std::string(MODEL_LATCH)) continue;
 
             //Nets
             std::string d_net;
@@ -199,7 +198,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     for(auto blk_id : netlist.blocks()) {
         if(netlist.block_type(blk_id) == AtomBlockType::BLOCK) {
             const t_model* blk_model = netlist.block_model(blk_id);
-            if(blk_model->name != std::string("names")) continue;
+            if(blk_model->name != std::string(MODEL_NAMES)) continue;
 
 
             std::vector<AtomNetId> nets;
@@ -260,10 +259,10 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     std::set<const t_model*> subckt_models;
     for(auto blk_id : netlist.blocks()) {
         const t_model* blk_model = netlist.block_model(blk_id);
-        if (   blk_model->name == std::string("latch")
-            || blk_model->name == std::string("names")
-            || blk_model->name == std::string("input")
-            || blk_model->name == std::string("output")) {
+        if (   blk_model->name == std::string(MODEL_LATCH)
+            || blk_model->name == std::string(MODEL_NAMES)
+            || blk_model->name == std::string(MODEL_INPUT)
+            || blk_model->name == std::string(MODEL_OUTPUT)) {
             continue;
         }
 
@@ -397,7 +396,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     if(netlist.block_type(blk) == AtomBlockType::BLOCK) {
         const t_model* blk_model = netlist.block_model(blk);
 
-        if(blk_model->name != std::string("names")) return false;
+        if(blk_model->name != std::string(MODEL_NAMES)) return false;
             
         auto input_ports = netlist.block_input_ports(blk);
         auto output_ports = netlist.block_output_ports(blk);
@@ -591,7 +590,7 @@ void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_
     auto clock_data_pins = find_clock_used_as_data_pins(netlist);
 
     //Use the latch D port to generate the data version fo the clock
-    const t_model* model = find_model(library_models, "latch");
+    const t_model* model = find_model(library_models, MODEL_LATCH);
     VTR_ASSERT(model);
     const t_model_ports* clock_port = find_model_port(model, "clk");
     VTR_ASSERT(clock_port);

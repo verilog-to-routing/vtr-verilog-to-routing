@@ -823,13 +823,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
 
-            if(model->name == std::string("input")) {
+            if(model->name == std::string(MODEL_INPUT)) {
                 inputs_.emplace_back(make_io(atom, PortType::INPUT));
-            } else if(model->name == std::string("output")) {
+            } else if(model->name == std::string(MODEL_OUTPUT)) {
                 outputs_.emplace_back(make_io(atom, PortType::OUTPUT));
-            } else if(model->name == std::string("names")) {
+            } else if(model->name == std::string(MODEL_NAMES)) {
                 cell_instances_.push_back(make_lut_instance(atom));
-            } else if(model->name == std::string("latch")) {
+            } else if(model->name == std::string(MODEL_LATCH)) {
                 cell_instances_.push_back(make_latch_instance(atom));
             } else if(model->name == std::string("single_port_ram")) {
                 cell_instances_.push_back(make_ram_instance(atom));
@@ -1646,7 +1646,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto& atom_ctx = g_vpr_ctx.atom();
 
             const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
-            VTR_ASSERT(model->name == std::string("names"));
+            VTR_ASSERT(model->name == std::string(MODEL_NAMES));
 
 #ifdef DEBUG_LUT_MASK
             std::cout << "Loading LUT mask for: " << atom->name << std::endl;

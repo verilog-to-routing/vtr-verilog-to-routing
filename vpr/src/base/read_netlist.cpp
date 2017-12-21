@@ -948,7 +948,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 				}
 			}
 		}
-	} else if (strcmp(pb->pb_graph_node->pb_type->blif_model, ".input") != 0) {
+	} else if (strcmp(pb->pb_graph_node->pb_type->blif_model, MODEL_INPUT) != 0) {
 		const_gen = true;
 		for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true; i++) {
 			for (j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {

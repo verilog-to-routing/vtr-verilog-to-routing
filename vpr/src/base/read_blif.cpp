@@ -89,7 +89,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         void inputs(std::vector<std::string> input_names) override {
-            const t_model* blk_model = find_model("input");
+            const t_model* blk_model = find_model(MODEL_INPUT);
 
             VTR_ASSERT_MSG(!blk_model->inputs, "Inpad model has an input port");
             VTR_ASSERT_MSG(blk_model->outputs, "Inpad model has no output port");
@@ -106,7 +106,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         void outputs(std::vector<std::string> output_names) override { 
-            const t_model* blk_model = find_model("output");
+            const t_model* blk_model = find_model(MODEL_OUTPUT);
 
             VTR_ASSERT_MSG(!blk_model->outputs, "Outpad model has an output port");
             VTR_ASSERT_MSG(blk_model->inputs, "Outpad model has no input port");
@@ -125,7 +125,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> so_cover) override { 
-            const t_model* blk_model = find_model("names");
+            const t_model* blk_model = find_model(MODEL_NAMES);
 
             VTR_ASSERT_MSG(nets.size() > 0, "BLIF .names has no connections");
             
@@ -207,7 +207,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
             }
             
-            const t_model* blk_model = find_model("latch");
+            const t_model* blk_model = find_model(MODEL_LATCH);
 
             VTR_ASSERT_MSG(blk_model->inputs, "Has one input port");
             VTR_ASSERT_MSG(blk_model->inputs->next, "Has two input port");
@@ -590,7 +590,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             //We look for combinational blocks which are not .names (i.e.
             //combinational .subckts)
             if(curr_model().block_is_combinational(blk_id)
-               && arch_model->name != std::string("names")) {
+               && arch_model->name != std::string(MODEL_NAMES)) {
 
                 //A subckt is a constant generator if all its input nets are either:
                 //  1) Constant nets (i.e. driven by constant pins), or
@@ -765,7 +765,7 @@ static void show_blif_stats(const AtomNetlist& netlist) {
     for(auto blk_id : netlist.blocks()) {
 
         const t_model* blk_model = netlist.block_model(blk_id);
-        if(blk_model->name == std::string("names")) {
+        if(blk_model->name == std::string(MODEL_NAMES)) {
             //LUT
             size_t lut_size = 0;
             auto in_ports = netlist.block_input_ports(blk_id);

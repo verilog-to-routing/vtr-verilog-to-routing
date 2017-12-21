@@ -29,10 +29,10 @@ AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
     const t_model* blk_model = block_model(id);
 
     AtomBlockType type = AtomBlockType::BLOCK;
-    if (blk_model->name == std::string("input")) {
+    if (blk_model->name == std::string(MODEL_INPUT)) {
         type = AtomBlockType::INPAD;
     }
-    else if (blk_model->name == std::string("output")) {
+    else if (blk_model->name == std::string(MODEL_OUTPUT)) {
         type = AtomBlockType::OUTPAD;
     }
     else {

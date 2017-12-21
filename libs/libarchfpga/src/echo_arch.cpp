@@ -395,9 +395,9 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type * pb_type,
 		 I/O has no annotations to be displayed
 		 All other library or user models may have delays specificied, e.g. Tsetup and Tcq
 		 Display the additional information*/
-		if (strcmp(pb_type->model->name, "names")
-				&& strcmp(pb_type->model->name, "input")
-				&& strcmp(pb_type->model->name, "output")) {
+		if (strcmp(pb_type->model->name, MODEL_NAMES)
+				&& strcmp(pb_type->model->name, MODEL_INPUT)
+				&& strcmp(pb_type->model->name, MODEL_OUTPUT)) {
 			for (k = 0; k < pb_type->num_annotations; k++) {
 				fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs,
 						pb_type->annotations[k].clock,

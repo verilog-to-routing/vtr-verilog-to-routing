@@ -120,7 +120,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 			fprintf(fpout, "1 1\n\n");
 		}
 	}
-	else if(strcmp(atom_ctx.nlist.block_model(atom_blk)->name, "names") == 0) {
+	else if(strcmp(atom_ctx.nlist.block_model(atom_blk)->name, MODEL_NAMES) == 0) {
 		/* Print a LUT, a LUT has K input pins and one output pin */
 		fprintf(fpout, ".names ");
 
@@ -216,7 +216,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 				fprintf(fpout, "1 1\n");
 			}
 		}
-	} else if (strcmp(atom_ctx.nlist.block_model(atom_blk)->name, "latch") == 0) {
+	} else if (strcmp(atom_ctx.nlist.block_model(atom_blk)->name, MODEL_LATCH) == 0) {
 		/* Print a flip-flop.  A flip-flop has a D input, a Q output, and a clock input */
 		fprintf(fpout, ".latch ");
 		VTR_ASSERT(pb_type->num_ports == 3);

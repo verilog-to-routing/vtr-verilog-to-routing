@@ -290,12 +290,6 @@ struct t_cluster_placement_stats {
 	t_cluster_placement_primitive *invalid; /* ptrs to primitives that are invalid */
 };
 
-/* Built-in library models */
-#define MODEL_LOGIC "names"
-#define MODEL_LATCH "latch"
-#define MODEL_INPUT "input"
-#define MODEL_OUTPUT "output"
-
 /******************************************************************
  * Timing data types
  *******************************************************************/

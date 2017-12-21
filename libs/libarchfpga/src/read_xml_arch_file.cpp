@@ -148,7 +148,6 @@ std::string inst_port_to_port_name(std::string inst_port);
 static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiutil::loc_data& loc_data);
-bool is_library_model(const t_model* model);
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 /*
@@ -3348,10 +3347,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
     // by removing the leading '.subckt'
     VTR_ASSERT(pb_type->blif_model);
     std::string blif_model = pb_type->blif_model;
-    if(blif_model[0] == '.') {
-        blif_model = blif_model.substr(1);
-    }
-    std::string subckt = "subckt ";
+    std::string subckt = ".subckt ";
     auto pos = blif_model.find(subckt);
     if(pos != std::string::npos) {
         blif_model = blif_model.substr(pos + subckt.size());
@@ -3666,13 +3662,6 @@ static bool attribute_to_bool(const pugi::xml_node node,
         bad_attribute_value(attr, node, loc_data, {"0", "1"});
     }
 
-    return false;
-}
-
-bool is_library_model(const t_model* model) {
-    if (model->name == std::string("names") || model->name == std::string("latch")) {
-        return true;
-    }
     return false;
 }
 

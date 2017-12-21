@@ -243,7 +243,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
 				pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
-					if (strcmp(pb_graph_node->pb_type->blif_model, ".output") == 0) {
+					if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_OUTPUT) == 0) {
 						pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
 					} else if (pb_graph_node->num_clock_ports != 0) {
 						pb_graph_node->input_pins[i_input][j].type = PB_PIN_SEQUENTIAL;
@@ -263,7 +263,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
 				pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
-					if (strcmp(pb_graph_node->pb_type->blif_model, ".input") == 0) {
+					if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_INPUT) == 0) {
 						pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
 					} else if (pb_graph_node->num_clock_ports != 0) {
 						pb_graph_node->output_pins[i_output][j].type = PB_PIN_SEQUENTIAL;

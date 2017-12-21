@@ -136,7 +136,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
     auto& device_ctx = g_vpr_ctx.device();
     auto& power_ctx = g_vpr_ctx.power();
 
-	if (strcmp(pb_graph_node->pb_type->blif_model, ".names") == 0) {
+	if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_NAMES) == 0) {
 		/* LUT */
 
 		char * SRAM_values;
@@ -173,7 +173,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		free(SRAM_values);
 		free(input_probabilities);
 		free(input_densities);
-	} else if (strcmp(pb_graph_node->pb_type->blif_model, ".latch") == 0) {
+	} else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
 		/* Flip-Flop */
 
 		t_pb_graph_pin * D_pin = &pb_graph_node->input_pins[0][0];

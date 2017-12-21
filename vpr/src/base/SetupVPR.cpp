@@ -113,10 +113,10 @@ void SetupVPR(t_options *Options,
             VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
 			device_ctx.EMPTY_TYPE = type;
 		} else {
-            if (block_type_contains_blif_model(type, ".input")) {
+            if (block_type_contains_blif_model(type, MODEL_INPUT)) {
                 device_ctx.input_types.insert(type);
             }
-            if (block_type_contains_blif_model(type, ".output")) {
+            if (block_type_contains_blif_model(type, MODEL_OUTPUT)) {
                 device_ctx.output_types.insert(type);
             }
         }

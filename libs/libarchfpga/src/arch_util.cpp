@@ -940,7 +940,7 @@ void CreateModelLibrary(t_arch *arch) {
 	model_library = new t_model[4];
 
     //INPAD
-	model_library[0].name = vtr::strdup("input");
+	model_library[0].name = vtr::strdup(MODEL_INPUT);
 	model_library[0].index = 0;
 	model_library[0].inputs = NULL;
 	model_library[0].instances = NULL;
@@ -955,7 +955,7 @@ void CreateModelLibrary(t_arch *arch) {
 	model_library[0].outputs->is_clock = false;
 
     //OUTPAD
-	model_library[1].name = vtr::strdup("output");
+	model_library[1].name = vtr::strdup(MODEL_OUTPUT);
 	model_library[1].index = 1;
 	model_library[1].inputs = new t_model_ports[1];
 	model_library[1].inputs->dir = IN_PORT;
@@ -970,7 +970,7 @@ void CreateModelLibrary(t_arch *arch) {
 	model_library[1].outputs = NULL;
 
     //LATCH
-	model_library[2].name = vtr::strdup("latch");
+	model_library[2].name = vtr::strdup(MODEL_LATCH);
 	model_library[2].index = 2;
 	model_library[2].inputs = new t_model_ports[2];
 
@@ -1005,7 +1005,7 @@ void CreateModelLibrary(t_arch *arch) {
 	model_library[2].outputs[0].clock = "clk";
 
     //NAMES
-	model_library[3].name = vtr::strdup("names");
+	model_library[3].name = vtr::strdup(MODEL_NAMES);
 	model_library[3].index = 3;
 
 	model_library[3].inputs = new t_model_ports[1];
@@ -1049,31 +1049,26 @@ void SyncModelsPbTypes_rec(t_arch *arch,
 	t_model *model_match_prim, *cur_model;
 	t_model_ports *model_port;
     vtr::t_linked_vptr *old;
-	char* blif_model_name;
+	char* blif_model_name = nullptr;
 
 	bool found;
 
 	if (pb_type->blif_model != NULL) {
 
 		/* get actual name of subckt */
-		if (strstr(pb_type->blif_model, ".subckt ") == pb_type->blif_model) {
-			blif_model_name = strchr(pb_type->blif_model, ' ');
-		} else {
-			blif_model_name = strchr(pb_type->blif_model, '.');
+        blif_model_name = pb_type->blif_model;
+		if (strstr(blif_model_name, ".subckt ") == blif_model_name) {
+			blif_model_name = strchr(blif_model_name, ' ');
+            ++blif_model_name; //Advance past space
 		}
-		if (blif_model_name) {
-			blif_model_name++; /* get character after the '.' or ' ' */
-		} else {
+		if (!blif_model_name) {
 			archfpga_throw(get_arch_file_name(), 0,
 					"Unknown blif model %s in pb_type %s\n",
 					pb_type->blif_model, pb_type->name);
 		}
 
 		/* There are two sets of models to consider, the standard library of models and the user defined models */
-		if ((strcmp(blif_model_name, "input") == 0)
-				|| (strcmp(blif_model_name, "output") == 0)
-				|| (strcmp(blif_model_name, "names") == 0)
-				|| (strcmp(blif_model_name, "latch") == 0)) {
+		if (is_library_model(blif_model_name)) {
 			cur_model = arch->model_library;
 		} else {
 			cur_model = arch->models;
@@ -1252,5 +1247,19 @@ t_segment_inf* find_segment(const t_arch* arch, std::string name) {
 
 bool segment_exists(const t_arch* arch, std::string name) {
     return find_segment(arch, name) != nullptr;
+}
+
+bool is_library_model(const char* model_name) {
+    if (model_name == std::string(MODEL_NAMES)
+        || model_name == std::string(MODEL_LATCH)
+        || model_name == std::string(MODEL_INPUT)
+        || model_name == std::string(MODEL_OUTPUT)) {
+        return true;
+    }
+    return false;
+}
+
+bool is_library_model(const t_model* model) {
+    return is_library_model(model->name);
 }
 

@@ -683,10 +683,15 @@ bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name
 
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name) {
+    if (!pb_type) {
+        return false;
+    }
+
     if (pb_type->blif_model != nullptr) {
         //Leaf pb_type
         VTR_ASSERT(pb_type->num_modes == 0);
-        if (blif_model_name == pb_type->blif_model) {
+        if (blif_model_name == pb_type->blif_model
+            || ".subckt " + blif_model_name == pb_type->blif_model) {
             return true;
         } else {
             return false;

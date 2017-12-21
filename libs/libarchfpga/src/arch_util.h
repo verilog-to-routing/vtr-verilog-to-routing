@@ -40,4 +40,6 @@ void primitives_annotation_clock_match(
 
 bool segment_exists(const t_arch* arch, std::string name);
 t_segment_inf* find_segment(const t_arch* arch, std::string name);
+bool is_library_model(const char* model_name);
+bool is_library_model(const t_model* model);
 #endif

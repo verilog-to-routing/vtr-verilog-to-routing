@@ -250,7 +250,8 @@ static void start_new_cluster(
 	vector<t_lb_type_rr_node> *lb_type_rr_graphs,
 	t_lb_router_data **router_data,
 	const int detailed_routing_stage,
-	ClusteredNetlist *clb_nlist);
+	ClusteredNetlist *clb_nlist,
+    const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types);
 
 static t_pack_molecule* get_highest_gain_molecule(
 		t_pb *cur_pb,
@@ -286,6 +287,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
 											  t_pb_stats *pb_stats,
 											  vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets);
 
+static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
 /*****************************************/
 /*globally accessible function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
@@ -404,6 +406,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	alloc_and_init_clustering(max_molecule_inputs,
 			&cluster_placement_stats, &primitives_list, molecule_head,
 			num_molecules);
+    
+    auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
 	blocks_since_last_analysis = 0;
 	early_exit = false;
@@ -542,7 +546,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					num_models, max_cluster_size,
 					arch, device_layout_name,
 					lb_type_rr_graphs, &router_data, 
-					detailed_routing_stage, &cluster_ctx.clb_nlist);
+					detailed_routing_stage, &cluster_ctx.clb_nlist,
+                    primitive_candidate_block_types);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
             vtr::printf("."); //Progress dot for seed-block
@@ -1901,100 +1906,101 @@ static void start_new_cluster(
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, 
 		t_lb_router_data **router_data, 
 		const int detailed_routing_stage,
-		ClusteredNetlist *clb_nlist) {
+		ClusteredNetlist *clb_nlist,
+        const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
 	 */
-	int i, j, count;
-	bool success = false;
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
-	const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
+    AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
+	const std::string& root_atom_name = atom_ctx.nlist.block_name(root_atom);
+	const t_model* root_model = atom_ctx.nlist.block_model(root_atom);
 
-	t_pb* pb = NULL;
-	t_type_ptr type = NULL;
+    auto itr = primitive_candidate_block_types.find(root_model);
+    VTR_ASSERT(itr != primitive_candidate_block_types.end());
+    std::vector<t_type_ptr> candidate_types = itr->second;
 
-	while (!success) {
-		count = 0;
-		for (i = 0; i < device_ctx.num_block_types; i++) {
-			type = &device_ctx.block_types[i];
-			if (&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE) {
-				continue;
-			}
+    //We sort the candidate types in ascending order by their current utilization.
+    //This means that the packer will prefer to use types with lower utilization.
+    //This is a naive approach to try balancing utilization when multiple types can 
+    //support the same primitive(s).
+    std::sort(candidate_types.begin(), candidate_types.end(),
+        [&](t_type_ptr lhs, t_type_ptr rhs) {
+            float lhs_util = float(num_used_type_instances[lhs]) / device_ctx.grid.num_instances(lhs);
+            float rhs_util = float(num_used_type_instances[rhs]) / device_ctx.grid.num_instances(rhs);
+            
+            //Lower util first
+            return lhs_util < rhs_util;
+        }
+    );
 
-			pb = new t_pb;
-			pb->pb_graph_node = type->pb_graph_head;
-			alloc_and_load_pb_stats(pb);
-			pb->parent_pb = NULL;
+    //Try packing into each candidate type
+	bool success = false;
+    for (size_t i = 0; i < candidate_types.size(); i++) {
+        auto type = candidate_types[i];
 
-			*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &device_ctx.block_types[i]);
-			for (j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
-				pb->mode = j;
-					
-				reset_cluster_placement_stats(&cluster_placement_stats[i]);
-				set_mode_cluster_placement_stats(pb->pb_graph_node, j);
+        t_pb* pb = new t_pb;
+        pb->pb_graph_node = type->pb_graph_head;
+        alloc_and_load_pb_stats(pb);
+        pb->parent_pb = NULL;
 
-				success = (BLK_PASSED == try_pack_molecule(&cluster_placement_stats[i],
-												atom_molecules,
-												molecule, primitives_list, pb,
-												num_models, max_cluster_size, clb_index,
-												detailed_routing_stage, *router_data));
-			}
+        *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
 
-			if (success) {
-				/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
-				//Once clustering succeeds, add it to the clb netlist
-                if (pb->name != nullptr) {
-                    free(pb->name);
-                }
-				pb->name = vtr::strdup(root_atom_name.c_str());
-				clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, &device_ctx.block_types[i]);
-				break;
-			} else {
-				free_router_data(*router_data);
-				free_pb(pb);
-				delete pb;
-				*router_data = NULL;
-			}
-			count++;
-		}
-		if (count == device_ctx.num_block_types - 1) {
-			if (molecule->type == MOLECULE_FORCED_PACK) {
-				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Can not find any logic block that can implement molecule.\n"
-						"\tPattern %s %s\n", 
-						molecule->pack_pattern->name,
-						root_atom_name.c_str());
-			} else {
-				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Can not find any logic block that can implement molecule.\n"
-						"\tAtom %s\n",
-						root_atom_name.c_str());
-			}
-		}
+        //Try packing into each mode
+        for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
+            pb->mode = j;
+                
+            reset_cluster_placement_stats(&cluster_placement_stats[type->index]);
+            set_mode_cluster_placement_stats(pb->pb_graph_node, j);
 
-		/* Expand FPGA size and recalculate number of available cluster types*/
-		if (!success) {
-			if (count == device_ctx.num_block_types - 1) {
-				if (molecule->type == MOLECULE_FORCED_PACK) {
-					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Can not find any logic block that can implement molecule.\n"
-						"\tPattern %s %s\n",
-						molecule->pack_pattern->name,
-						root_atom_name.c_str());
-				}
-				else {
-					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Can not find any logic block that can implement molecule.\n"
-						"\tAtom %s\n",
-						root_atom_name.c_str());
-				}
-			}
-		}
-	}
+            auto pack_result = try_pack_molecule(&cluster_placement_stats[type->index],
+                                            atom_molecules,
+                                            molecule, primitives_list, pb,
+                                            num_models, max_cluster_size, clb_index,
+                                            detailed_routing_stage, *router_data);
+
+            success = (pack_result == BLK_PASSED);
+        }
+
+        if (success) {
+            //Once clustering succeeds, add it to the clb netlist
+            if (pb->name != nullptr) {
+                free(pb->name);
+            }
+            pb->name = vtr::strdup(root_atom_name.c_str());
+            clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
+            break;
+        } else {
+            //Free failed clustering and try again
+            free_router_data(*router_data);
+            free_pb(pb);
+            delete pb;
+            *router_data = NULL;
+        }
+    }
+
+    if (!success) {
+        //Explored all candidates
+        if (molecule->type == MOLECULE_FORCED_PACK) {
+            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+                    "Can not find any logic block that can implement molecule.\n"
+                    "\tPattern %s %s\n", 
+                    molecule->pack_pattern->name,
+                    root_atom_name.c_str());
+        } else {
+            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+                    "Can not find any logic block that can implement molecule.\n"
+                    "\tAtom %s (%s)\n",
+                    root_atom_name.c_str(), root_model->name);
+        }
+    }
+
+    VTR_ASSERT(success);
+
 	//Successfully create cluster
 	num_used_type_instances[clb_nlist->block_type(clb_index)]++;
 
@@ -2853,3 +2859,28 @@ static void print_block_criticalities(const char * fname) {
 	fclose(fp);
 }
 
+static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types() {
+    std::map<const t_model*,std::vector<t_type_ptr>> model_candidates;
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_nlist = atom_ctx.nlist; 
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::set<const t_model*> unique_models;
+    for(auto blk : atom_nlist.blocks()) {
+        auto model = atom_nlist.block_model(blk);
+        unique_models.insert(model);
+    }
+
+    for (auto model : unique_models) {
+        model_candidates[model] = {};
+
+        for (int itype = 0; itype < device_ctx.num_block_types; ++itype ) {
+            t_type_ptr type = &device_ctx.block_types[itype];
+            if (block_type_contains_blif_model(type, model->name)) {
+                model_candidates[model].push_back(type);
+            }
+        }
+    }
+
+    return model_candidates;
+}
