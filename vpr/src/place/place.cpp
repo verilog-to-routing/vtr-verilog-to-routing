@@ -1800,7 +1800,6 @@ static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin) {
 		delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
 		delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
 
-        /* TODO low priority: Could be merged into one look-up table */
         /* Note: This heuristic is terrible on Quality of Results.  
          * A much better heuristic is to create a more comprehensive lookup table
          */
