@@ -635,7 +635,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 {
 	
-	int skip_size = strtol(global_args.carry_skip_size,NULL,10);
+	//int skip_size = strtol(global_args.carry_skip_size,NULL,10);
 	int width;
 	int width_a;
 	int width_b;
@@ -652,13 +652,14 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 	
+	/*
 	int nb_of_parralel_adders = (skip_size)? 2: 1;
 	// find out how many muxes we need for carry skip
 	// if none ripple carry adder is used, keep it at 0
 	int nb_of_carry_mux = (skip_size)? width - skip_size: 0;
 	//first bit block does not need a selector mux for individual pinout
 	int nb_of_selector_mux = (skip_size)? ceil((double)width / double(skip_size)) -1: 0;
-
+	*/
 	new_add_cells  = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
 	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
 
