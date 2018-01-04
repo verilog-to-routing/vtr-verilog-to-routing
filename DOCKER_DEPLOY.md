@@ -16,11 +16,11 @@ Install docker (Community Edition is free and sufficient for VTR): https://docs.
 Clone the VTR project:
 git clone https://github.com/verilog-to-routing/vtr-verilog-to-routing
 
-CD to the VTR folder and create the docker image:
+CD to the VTR folder and build the docker image:
 docker build . -t vtrimg
 
-Start docker with the new image and connect the current volume with the workspace volume of the container (you might need to switch ports, if some are occupied in your machine):
-sudo docker run -it -d -p 8080:8080 -p 80:80 -v <absolute-path-to-VTR-folder>:/workspace vtrimg
+Start docker with the new image and connect the current volume with the workspace volume of the container:
+sudo docker run -it -d -p <port-to-open-on-host>:8080 -v <absolute-path-to-VTR-folder>:/workspace vtrimg
 
 
 Running
