@@ -342,26 +342,18 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 
 	for(j = 0; j < num_ports - 1; j++)
 	{
-		if (j == 0)
+		for(i = 0; i < width_of_one_hot_logic; i++)
 		{
-			for(i = 0; i < width_of_one_hot_logic; i++)
-			{
-				/* map the inputs to the muxt */
-				remap_pin_to_new_node(node->input_pins[i+(j+1)*port_offset], muxes[j], width_of_one_hot_logic+i);
-				/* map the one hot logic control */
+			/* map the inputs to the muxt */
+			remap_pin_to_new_node(node->input_pins[i+(j+1)*port_offset], muxes[j], width_of_one_hot_logic+i);
+			
+			/* map the one hot logic control */
+			if (j == 0)
 				remap_pin_to_new_node(node->input_pins[i], muxes[j], i);
-			}
-		}
-		else
-		{
-			for(i = 0; i < width_of_one_hot_logic; i++)
-			{
-				/* map the inputs to the muxt */
-				remap_pin_to_new_node(node->input_pins[i+(j+1)*port_offset], muxes[j], width_of_one_hot_logic+i);
-				/* map the one hot logic control */
+			else
 				add_input_pin_to_node(muxes[j], copy_input_npin(muxes[0]->input_pins[i]), i);
-			}
 		}
+
 		/* now hookup outputs */
 		remap_pin_to_new_node(node->output_pins[j], muxes[j], 0);
 	}
@@ -639,8 +631,11 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
  *	multi-output logic functions (BLIF).  We use one function for the 
  *	add, and one for the carry.
  *------------------------------------------------------------------------*/
+ 
 void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 {
+	
+	int skip_size = strtol(global_args.carry_skip_size,NULL,10);
 	int width;
 	int width_a;
 	int width_b;
@@ -656,6 +651,13 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		width = node->num_output_pins;
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
+	
+	int nb_of_parralel_adders = (skip_size)? 2: 1;
+	// find out how many muxes we need for carry skip
+	// if none ripple carry adder is used, keep it at 0
+	int nb_of_carry_mux = (skip_size)? width - skip_size: 0;
+	//first bit block does not need a selector mux for individual pinout
+	int nb_of_selector_mux = (skip_size)? ceil((double)width / double(skip_size)) -1: 0;
 
 	new_add_cells  = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
 	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);

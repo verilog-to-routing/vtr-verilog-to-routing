@@ -19,6 +19,7 @@ echo "@ $benchmark"
 }
 trap finish INT
 
+SKIP_SIZE=4
 TEST_DIR_REG="FULL_REGRESSION_TESTS"
 TEST_DIR="REGRESSION_TESTS/BENCHMARKS/MICROBENCHMARKS"
 ARCH="../libs/libarchfpga/arch/sample_arch.xml"
@@ -36,14 +37,14 @@ do
 	############################
 	# With the arch file
 	rm output_vectors
-	echo ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors"
-	./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+	echo ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" --carryskip "$SKIP_SIZE"
+	./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" --carryskip "$SKIP_SIZE" 2> log || exit 1
 	[ -e "output_vectors" ] || exit 1
 
 	# Without the arch file
 	rm output_vectors
-	echo ./odin_II -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors"
-	./odin_II -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+	echo ./odin_II -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors" --carryskip "$SKIP_SIZE"
+	./odin_II -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors" --carryskip "$SKIP_SIZE" 2> log || exit 1
 	[ -e "output_vectors" ] || exit 1
 
 	############################
@@ -51,8 +52,8 @@ do
 	############################
 	# With the arch file. 	
 	rm "temp.blif"
-	echo ./odin_II -E -a $ARCH -V "$benchmark" -o "temp.blif"
-	./odin_II -E -a $ARCH -V "$benchmark" -o "temp.blif" 2> log || exit 1
+	echo ./odin_II -E -a $ARCH -V "$benchmark" -o "temp.blif" --carryskip "$SKIP_SIZE"
+	./odin_II -E -a $ARCH -V "$benchmark" -o "temp.blif" --carryskip "$SKIP_SIZE" 2> log || exit 1
 	[ -e "temp.blif" ] || exit 1
 
 	rm output_vectors
@@ -62,8 +63,8 @@ do
 
 	# Without the arch file. 	
 	rm "temp.blif"
-	echo ./odin_II -E -V "$benchmark" -o "temp.blif"
-	./odin_II -E -V "$benchmark" -o "temp.blif" 2> log || exit 1
+	echo ./odin_II -E -V "$benchmark" -o "temp.blif" --carryskip "$SKIP_SIZE"
+	./odin_II -E -V "$benchmark" -o "temp.blif" --carryskip "$SKIP_SIZE" 2> log || exit 1
 	[ -e "temp.blif" ] || exit 1
 
 	rm output_vectors
@@ -83,7 +84,7 @@ do
 	echo $benchmark
 
 	rm output_vectors
-    ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+    ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" --carryskip "$SKIP_SIZE" 2> log || exit 1
     [ -e "output_vectors" ] || exit 1
 done
 

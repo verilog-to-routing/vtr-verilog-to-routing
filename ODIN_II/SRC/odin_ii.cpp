@@ -244,6 +244,7 @@ void print_usage()
 			"  -A Output AST graph in .dot format.\n"
 			"  -W Print all warnings. (Can be substantial.) \n"
 			"  -h Print help\n"
+			"  --carryskip <skip size>"
 			"\n"
 			" SIMULATION: Always produces input_vectors, output_vectors,\n"
 			"             and ModelSim test.do file.\n"
@@ -359,6 +360,13 @@ void get_options(int argc, char** argv) {
             .help("Output all Latches as Black Boxes")
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
+
+    other_grp.add_argument(global_args.carry_skip_size, "--carryskip")
+            .help("use carry skip adders with skip size of <input length>")
+	        .default_value("0")
+	        .metavar("SKIP_SIZE")
+	        //.choices({"0", "1", "2"})
+	        ;   
 
     auto& rand_sim_grp = parser.add_argument_group("random simulation options");
 
