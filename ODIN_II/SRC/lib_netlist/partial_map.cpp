@@ -752,7 +752,10 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		if (i < width[out] - 1)
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 	}
-
+	for(i = 0; i < 3; i++)
+		vtr::free(pins[i]);
+	vtr::free(pins);
+	
 	vtr::free(new_add_cells);
 	vtr::free(new_carry_cells);
 }
