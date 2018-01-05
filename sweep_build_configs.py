@@ -14,7 +14,7 @@ DEFAULT_MINGW_COMPILER_VERSIONS=["5"]
 DEFAULT_CLANG_COMPILER_VERSIONS=["3.6", "3.8"]
 
 DEFAULT_EASYGL_CONFIGS = ["ON", "OFF"]
-DEFAULT_TATUM_PARALLEL_CONFIGS = ["ON", "OFF"]
+DEFAULT_TATUM_EXECUTION_ENGINE_CONFIGS = ["auto", "serial"]
 DEFAULT_VTR_ASSERT_LEVELS= ["2", "3"]#, "1", "0"]
 
 MINGW_TOOLCHAIN_FILE="cmake/toolchains/mingw-linux-cross-compile-to-windows.cmake"
@@ -69,10 +69,10 @@ def parse_args():
                         default=DEFAULT_EASYGL_CONFIGS,
                         metavar="EASYGL_CONFIG",
                         help="What EaysGL configurations to test (default: %(default)s)")
-    config_args.add_argument("--tatum_parallel_configs", 
+    config_args.add_argument("--tatum_execution_engine_configs", 
                         nargs="*",
-                        default=DEFAULT_TATUM_PARALLEL_CONFIGS,
-                        metavar="TATUM_PARALLEL_CONFIG",
+                        default=DEFAULT_TATUM_EXECUTION_ENGINE_CONFIGS,
+                        metavar="TATUM_EXECUTION_ENGINE_CONFIG",
                         help="What parallel tatum configurations to test (default: %(default)s)")
     config_args.add_argument("--vtr_assert_levels", 
                         nargs="*",
@@ -116,11 +116,11 @@ def main():
     num_configs = 0
     for vtr_assert_level in args.vtr_assert_levels: 
         for easygl_config in args.easygl_configs: 
-            for tatum_parallel_config in args.tatum_parallel_configs: 
+            for tatum_execution_engine_config in args.tatum_execution_engine_configs: 
                 for cc, cxx, config in compilers_to_test:
                     num_configs += 1
                     config["EASYGL_ENABLE_GRAPHICS"] = easygl_config
-                    config["TATUM_ENABLE_PARALLEL_ANALYSIS"] = tatum_parallel_config
+                    config["TATUM_EXECUTION_ENGINE"] = tatum_execution_engine_config
                     config["VTR_ASSERT_LEVEL"] = vtr_assert_level
 
                     success = build_config(args, config, cc, cxx)
