@@ -634,131 +634,129 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
  
 void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 {
-	
+	/* define locations in array when fetching pins */
+	const int out = 0, input_a = 1, input_b = 2;
 	//int skip_size = strtol(global_args.carry_skip_size,NULL,10);
-	int width;
-	int width_a;
-	int width_b;
 	int i;
-	nnode_t **new_add_cells;
-	nnode_t **new_carry_cells;
 
 	oassert(node->num_input_pins > 0);
+	
 	//oassert(node->num_input_port_sizes == 2);
+	int width[3];
+	
 	if(node->num_input_port_sizes == 2)
-		width = node->output_port_sizes[0];
+		width[out] = node->output_port_sizes[0];
 	else
-		width = node->num_output_pins;
-	width_a = node->input_port_sizes[0];
-	width_b = node->input_port_sizes[1];
+		width[out] = node->num_output_pins;
+		
+	width[input_a] = node->input_port_sizes[0];
+	width[input_b] = node->input_port_sizes[1];
 	
 	/*
 	int nb_of_parralel_adders = (skip_size)? 2: 1;
 	// find out how many muxes we need for carry skip
 	// if none ripple carry adder is used, keep it at 0
-	int nb_of_carry_mux = (skip_size)? width - skip_size: 0;
+	int nb_of_carry_mux = (skip_size)? width[out] - skip_size: 0;
 	//first bit block does not need a selector mux for individual pinout
-	int nb_of_selector_mux = (skip_size)? ceil((double)width / double(skip_size)) -1: 0;
+	int nb_of_selector_mux = (skip_size)? ceil((double)width[out] / double(skip_size)) -1: 0;
 	*/
-	new_add_cells  = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
-	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
-
+	
 	/* create the adder units and the zero unit */
-	for (i = 0; i < width; i++)
+	nnode_t **new_add_cells  = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width[out]);
+	nnode_t **new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width[out]);
+	for (i = 0; i < width[out]; i++)
 	{
 		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
 		// The last carry cell will be connected to an output pin, if one is available
 		new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+	}
+
+	/* map the I/O and prep them */
+	npin_t ***pins = (npin_t ***)calloc(3,sizeof(npin_t **));
+	for(i = 0; i < 3; i++)
+		pins[i] = (npin_t **)calloc(width[out],sizeof(npin_t *));
+
+	/* get the ios */
+	for(i = 0; i < width[out]; i++)
+	{
+		/* join the A port up to adder */
+		if (i < width[input_a])
+		{
+			pins[input_a][i] = node->input_pins[i];
+			pins[input_a][i]->node->input_pins[pins[input_a][i]->pin_node_idx] = NULL;
+		}
+		else 
+			pins[input_a][i] = get_zero_pin(netlist);
+
+		
+		/* join the B port up to adder */
+		if (i < width[input_b])
+		{
+			pins[input_b][i] = node->input_pins[i+width[input_a]];
+			pins[input_b][i]->node->input_pins[pins[input_b][i]->pin_node_idx] = NULL;
+		}
+		else
+			pins[input_b][i] = get_zero_pin(netlist);
+
+		
+		/* join that gate to the output */
+		npin_t *node_pin_select = node->output_pins[(node->num_input_port_sizes == 2)? i : (i< width[out]-1)? i+1 : 0];
+		if(node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2))
+		{
+			node_pin_select->node->output_pins[node_pin_select->pin_node_idx] = NULL;
+			pins[out][i] = node_pin_select;
+		}
 
 	}
 
     /* ground first carry in */
 	if(node->num_input_port_sizes == 2)
-	{
 		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
-		if (i > 1)
-		{
-			add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
-		}
-	}
+
 	else
 	{
-		remap_pin_to_new_node(node->input_pins[width_a + width_b], new_add_cells[0], 0);
-		if (i > 1)
-		{
-			add_input_pin_to_node(new_carry_cells[0], copy_input_npin(new_add_cells[0]->input_pins[0]), 0);
-			//remap_pin_to_new_node(node->input_pins[width_a + width_b], new_carry_cells[0], 0);
-		}
+		npin_t *pin = node->input_pins[width[input_a] + width[input_b]];
+		pin->node->input_pins[pin->pin_node_idx] = NULL;
+		add_input_pin_to_node(new_add_cells[0], pin, 0);
 	}
+	if (width[out] > 1)
+		add_input_pin_to_node(new_carry_cells[0], copy_input_npin(new_add_cells[0]->input_pins[0]), 0);
 
-	/* connect inputs */
-	for(i = 0; i < width; i++)
+	/* connect inputs and output */
+	for(i = 0; i < width[out]; i++)
 	{
-		if (i < width_a)
+		/* join the A and B port up to adder */
+		add_input_pin_to_node(new_add_cells[i], pins[input_a][i], 1);
+		add_input_pin_to_node(new_add_cells[i], pins[input_b][i], 2);
+		
+		if (i < width[out] - 1)
 		{
-			/* join the A port up to adder */
-			remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
-			if (i < width - 1)
-				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
 		}
-		else 
-		{
-			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
-			if (i < width - 1)
-				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
-		}
-
-		if (i < width_b)
-		{
-			/* join the B port up to adder */
-			remap_pin_to_new_node(node->input_pins[i+width_a], new_add_cells[i], 2);
-			if (i < width - 1)
-				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-		}
-		else
-		{
-			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
-			if (i < width - 1)
-				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
-		}
-
+		
 		/* join that gate to the output */
-		if(node->num_input_port_sizes == 2)
-			remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+		if(pins[out][i])
+			add_output_pin_to_node(new_add_cells[i], pins[out][i], 0);
 		else
 		{
-			if(i != width - 1)
-			{
-				if(node->output_pins[i + 1]->type != NO_ID)
-					remap_pin_to_new_node(node->output_pins[i + 1], new_add_cells[i], 0);
-				else
-				{
-					new_add_cells[i]->output_pins[0] = allocate_npin();
-					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
-				}
-			}
-			else
-				if(node->output_pins[0]->type != NO_ID)
-					remap_pin_to_new_node(node->output_pins[0], new_add_cells[i], 0);
-				else
-				{
-					new_add_cells[i]->output_pins[0] = allocate_npin();
-					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
-				}
+			new_add_cells[i]->output_pins[0] = allocate_npin();
+			new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
 		}
 	}
 	
 	/* connect carry outs with carry ins */
-	for(i = 1; i < width; i++)
+	for(i = 1; i < width[out]; i++)
 	{
 		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
-		if (i < width - 1)
+		if (i < width[out] - 1)
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 	}
 
 	vtr::free(new_add_cells);
 	vtr::free(new_carry_cells);
 }
+
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_sub_w_carry )
