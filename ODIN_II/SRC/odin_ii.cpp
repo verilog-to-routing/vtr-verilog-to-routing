@@ -68,7 +68,7 @@ void print_usage();
 
 int main(int argc, char **argv)
 {
-	int num_types;
+	int num_types=0;
 
 	/* Some initialization */
 	one_string = vtr::strdup("ONE_VCC_CNS");
@@ -361,11 +361,10 @@ void get_options(int argc, char** argv) {
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
 
-    other_grp.add_argument(global_args.carry_skip_size, "--carryskip")
+    other_grp.add_argument(global_args.adder_def, "--adder_type")
             .help("use carry skip adders with skip size of <input length>")
-	        .default_value("0")
+	        .default_value("ripple")
 	        .metavar("SKIP_SIZE")
-	        //.choices({"0", "1", "2"})
 	        ;   
 
     auto& rand_sim_grp = parser.add_argument_group("random simulation options");
