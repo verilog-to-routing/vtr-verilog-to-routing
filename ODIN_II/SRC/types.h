@@ -156,7 +156,7 @@ struct global_args_t_t
     argparse::ArgValue<bool> show_help;
 
     argparse::ArgValue<bool> black_box_latches; //Weather or not to treat and output latches as black boxes
-	argparse::ArgValue<char*> carry_skip_size; //carry skip adder skip size
+	argparse::ArgValue<char*> adder_def; //carry skip adder skip size
 
 	/////////////////////
 	// For simulation.
