@@ -3,8 +3,8 @@
 #ripple, log, fixed
 
 ADDER_TYPE="ripple"
-INITIAL_SIZE="0"
-SKIP_SIZE="0"
+INITIAL_SIZE="4"
+SKIP_SIZE="4"
 
 ADDER_DEF="--adder_type $ADDER_TYPE,$INITIAL_SIZE,$SKIP_SIZE"
 

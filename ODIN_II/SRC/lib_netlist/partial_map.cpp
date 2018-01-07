@@ -39,6 +39,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_memory.h"
+#include "vtr_util.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -644,8 +645,9 @@ adder_def_t *get_adder_type()
 	adder_def_t *out = (adder_def_t*)vtr::calloc(1,sizeof(adder_def_t));
 	out->inital_size =0;
 	out->step_size =0;
+	char *input_def = vtr::strdup(global_args.adder_def);
 
-	std::string type = strtok(global_args.adder_def,",");
+	std::string type = strtok(input_def,",");
 	if(type == "ripple")
 		out->type_of_adder = adder_def_t::ripple;
 	else
@@ -685,9 +687,11 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 		// The last carry cell will be connected to an output pin, if one is available
 		new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 	}
+	
+	// fetch the output carry node
 	nnode_t *output_carry = new_carry_cells[blk_size-1];
 	
-	
+	// make parralel carry cells using assumed input carry of 1 and one of 0
 	nnode_t **vcc_carry_cells = NULL;
 	nnode_t **gnd_carry_cells = NULL;
 	if(paralelized)
@@ -707,22 +711,26 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 		//make MUX
 		output_carry = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
 		//TODO check if right pin
+		
+		//driver
+		connect_nodes(input_carry,0,output_carry,2);
+
 		//inputs
 		connect_nodes(gnd_carry_cells[blk_size-1],0,output_carry,0);
 		connect_nodes(vcc_carry_cells[blk_size-1],0,output_carry,1);
-		//driver
-		connect_nodes(input_carry,0,output_carry,2);
-		connect_nodes(input_carry,0,output_carry,3);
+
 	}
 	
+	// if there is an input carry cell link it
 	if(input_carry)
 		connect_nodes(input_carry, 0, new_add_cells[0], 0);
-		
-	else if(node->num_input_port_sizes != 2)
-		remap_pin_to_new_node(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], new_add_cells[0], 0);
+	
+	// if it is the first block and the input port size is 2, ground it	
+	else if(node->num_input_port_sizes == 2)
+		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
 		
 	else
-		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
+		remap_pin_to_new_node(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], new_add_cells[0], 0);
 	
 	/* link initial carry in */
 	if (blk_size > 1)
@@ -775,6 +783,12 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 				connect_nodes(vcc_carry_cells[i-1], 0, vcc_carry_cells[i], 0);
 			}
 		}
+	}
+	
+	if(paralelized)
+	{
+		vtr::free(vcc_carry_cells);
+		vtr::free(gnd_carry_cells);
 	}
 		
 	vtr::free(new_add_cells);
@@ -845,10 +859,16 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	
 	//now that we have the IOs decide wether to mux them if parralelized additon or not
 	
-	
+	// initial carry node is a buffer node with gnd input (since we use node a buffer needed to be used)
+	// TODO is the buffer node removed in the blif file ?
 	nnode_t *current_out = NULL;
+	
+	
+	
 	adder_def_t *definition = get_adder_type();
-	int blk_size = definition->inital_size, current =1, start_pin =0;
+	int blk_size = definition->inital_size;
+	int current =1; 
+	int start_pin =0;
 	
 	do
 	{
@@ -873,10 +893,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		}
 		
 		//first and last block dont need paralelism
-		int parralel = 1;
-		
-		if(start_pin == 0 || (blk_size+start_pin == width[out]))
-			parralel = 0;
+		short parralel = (start_pin > 0 && start_pin < (width[out] - blk_size));
 			
 		current_out = instantiate_add_w_carry_block(node, current_out, start_pin, pins, blk_size, mark, parralel, netlist);
 		start_pin += blk_size;
@@ -885,9 +902,8 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	
 	for(i=0;i<pinout_count;i++)
 		vtr::free(pins[i]);
-	
-	//shouldnt we use it ?
-	vtr::free(current_out);	
+
+	vtr::free(definition);
 	vtr::free(pins);
 	vtr::free(width);
 }
