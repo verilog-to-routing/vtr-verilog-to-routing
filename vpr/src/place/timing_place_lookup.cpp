@@ -288,7 +288,7 @@ static void alloc_delta_arrays() {
     auto& device_ctx = g_vpr_ctx.device();
 
     /*initialize all of the array locations to -1 */
-    f_delta_delay.resize({device_ctx.grid.width(), device_ctx.grid.height()}, UNINITIALIZED_DELTA);
+    f_delta_delay.resize({{device_ctx.grid.width(), device_ctx.grid.height()}}, UNINITIALIZED_DELTA);
 }
 
 static void free_delta_arrays() {
