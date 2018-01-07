@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("tatum")
 
-option(TATUM_ENABLE_PARALLEL_ANALYSIS "Enable parallel timing analysis" ON)
+set(TATUM_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
+set_property(CACHE TATUM_EXECUTION_ENGINE PROPERTY STRINGS auto serial cilk tbb)
 
-
-
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     #Set the default build type if not specified

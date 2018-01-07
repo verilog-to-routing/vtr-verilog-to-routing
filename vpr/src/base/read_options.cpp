@@ -297,8 +297,10 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
             .help("Controls how many workers VPR may use."
-                  " Values > 1 imply VPR may execute in parallel."
-                  " Can also be controlled with the 'VPR_NUM_WORKERS' environment variable.")
+                  " A value of 1 implies VPR will execute serially."
+                  " Values > 1 imply VPR may execute with up to the specified concurrency."
+                  " A value of 0 implies VPR may use up to the maximum machine concurrency."
+                  " If this option is not specified it may be set from the 'VPR_NUM_WORKERS' environment variable; otherwise the default is used.")
             .default_value("1");
 
     gen_grp.add_argument<bool,ParseOnOff>(args.timing_analysis, "--timing_analysis")

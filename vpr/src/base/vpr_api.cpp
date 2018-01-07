@@ -79,6 +79,14 @@ using namespace std;
 
 #include "log.h"
 
+#if defined(TBB_INTERFACE_VERSION)
+# include <tbb/task_scheduler_init.h>
+
+//We need to store the scheduler object so any concurrency
+//setting is persistent
+std::unique_ptr<tbb::task_scheduler_init> tbb_scheduler;
+#endif
+
 /* Local subroutines */
 static void free_complex_block_types(void);
 
@@ -160,12 +168,26 @@ void vpr_init(const int argc, const char **argv,
             num_workers = options->num_workers.value();
         }
     }
-#ifdef __cilk
-    //Using cilk set the number off workers for the run-time
+
+#if defined(TBB_INTERFACE_VERSION)
+    //Using Thread Building Blocks
     if (num_workers == 0) {
-        VPR_THROW(VPR_ERROR_OTHER, "Number of workers must be > 0");
+        //Use default concurrency (i.e. maximum conccurency)
+        num_workers = tbb::task_scheduler_init::default_num_threads();
     }
-    std::string num_workers_str = std::to_string(options->num_workers.value());
+
+    vtr::printf("Using up to %zu parallel worker(s)\n", num_workers);
+    tbb_scheduler = std::make_unique<tbb::task_scheduler_init>(num_workers);
+
+#elif defined(__cilk)
+    //Using cilk, set the number of workers for the run-time
+
+    if (num_workers == 0) {
+        //Use default concurrency (i.e. maximum conccurency)
+        num_workers = __cilkrts_get_nworkers();
+    }
+
+    std::string num_workers_str = std::to_string(num_workers);
     vtr::printf("Using up to %zu parallel worker(s)\n", num_workers);
     if (__cilkrts_set_param("nworkers", num_workers_str.c_str()) != 0) {
         VPR_THROW(VPR_ERROR_OTHER, "Failed to set the number of workers for cilkrts");

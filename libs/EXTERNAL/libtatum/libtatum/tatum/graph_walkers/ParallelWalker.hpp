@@ -4,5 +4,5 @@
 #include "tatum/graph_walkers_fwd.hpp"
 
 
-//Include the def'n of ParallelLevelizedCilkWalker
-#include "ParallelLevelizedCilkWalker.hpp"
+//Include the def'n of ParallelLevelizedWalker
+#include "ParallelLevelizedWalker.hpp"
