@@ -671,6 +671,7 @@ adder_def_t *get_adder_type()
  *	multi-output logic functions (BLIF).  We use one function for the 
  *	add, and one for the carry.
  *------------------------------------------------------------------------*/
+ 
 
 nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int start_pin, npin_t ***pins, int blk_size, short mark, int paralelized, netlist_t *netlist)
 {
@@ -690,36 +691,6 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 	
 	// fetch the output carry node
 	nnode_t *output_carry = new_carry_cells[blk_size-1];
-	
-	// make parralel carry cells using assumed input carry of 1 and one of 0
-	nnode_t **vcc_carry_cells = NULL;
-	nnode_t **gnd_carry_cells = NULL;
-	if(paralelized)
-	{
-		vcc_carry_cells = (nnode_t**)vtr::calloc(blk_size,sizeof(nnode_t*));
-		gnd_carry_cells = (nnode_t**)vtr::calloc(blk_size,sizeof(nnode_t*));
-		for (i = 0; i < blk_size; i++)
-		{
-			vcc_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
-			gnd_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
-		}
-		
-		//init them at both possible values
-		add_input_pin_to_node(gnd_carry_cells[0], get_zero_pin(netlist), 0);
-		add_input_pin_to_node(vcc_carry_cells[0], get_one_pin(netlist), 0);
-			
-		//make MUX
-		output_carry = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
-		//TODO check if right pin
-		
-		//driver
-		connect_nodes(input_carry,0,output_carry,2);
-
-		//inputs
-		connect_nodes(gnd_carry_cells[blk_size-1],0,output_carry,0);
-		connect_nodes(vcc_carry_cells[blk_size-1],0,output_carry,1);
-
-	}
 	
 	// if there is an input carry cell link it
 	if(input_carry)
@@ -748,14 +719,6 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 		{
 			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
 			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-			if(paralelized)
-			{
-				add_input_pin_to_node(gnd_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-				add_input_pin_to_node(gnd_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-			
-				add_input_pin_to_node(vcc_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-				add_input_pin_to_node(vcc_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-			}
 		}
 		
 		// build output pins
@@ -775,18 +738,51 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 	{
 		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
 		if(i < blk_size-1)
-		{
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
-			if(paralelized)
-			{
-				connect_nodes(gnd_carry_cells[i-1], 0, gnd_carry_cells[i], 0);
-				connect_nodes(vcc_carry_cells[i-1], 0, vcc_carry_cells[i], 0);
-			}
-		}
+		
 	}
 	
 	if(paralelized)
 	{
+		// make parralel carry cells using assumed input carry of 1 and one of 0
+		nnode_t **vcc_carry_cells = (nnode_t**)vtr::calloc(blk_size,sizeof(nnode_t*));
+		nnode_t **gnd_carry_cells = (nnode_t**)vtr::calloc(blk_size,sizeof(nnode_t*));
+		for (i = 0; i < blk_size; i++)
+		{
+			vcc_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+			gnd_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+		}
+		
+		//init them at both possible values
+		add_input_pin_to_node(gnd_carry_cells[0], get_zero_pin(netlist), 0);
+		add_input_pin_to_node(vcc_carry_cells[0], get_one_pin(netlist), 0);
+			
+		//make MUX
+		output_carry = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
+		//TODO check if right pin
+		
+		//driver
+		connect_nodes(input_carry,0,output_carry,2);
+
+		//inputs
+		connect_nodes(gnd_carry_cells[blk_size-1],0,output_carry,0);
+		connect_nodes(vcc_carry_cells[blk_size-1],0,output_carry,1);
+	
+		/* connect the ios */
+		for(i = 0; i < blk_size; i++)
+		{
+			add_input_pin_to_node(gnd_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+			add_input_pin_to_node(gnd_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
+		
+			add_input_pin_to_node(vcc_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+			add_input_pin_to_node(vcc_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
+		}
+		/* connect carry outs with carry ins */
+		for(i = 1; i < blk_size; i++)
+		{
+			connect_nodes(gnd_carry_cells[i-1], 0, gnd_carry_cells[i], 0);
+			connect_nodes(vcc_carry_cells[i-1], 0, vcc_carry_cells[i], 0);
+		}
 		vtr::free(vcc_carry_cells);
 		vtr::free(gnd_carry_cells);
 	}
@@ -862,9 +858,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	// initial carry node is a buffer node with gnd input (since we use node a buffer needed to be used)
 	// TODO is the buffer node removed in the blif file ?
 	nnode_t *current_out = NULL;
-	
-	
-	
+
 	adder_def_t *definition = get_adder_type();
 	int blk_size = definition->inital_size;
 	int current =1; 
