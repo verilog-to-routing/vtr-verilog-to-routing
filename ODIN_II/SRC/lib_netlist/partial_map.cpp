@@ -656,7 +656,6 @@ adder_def_t *get_adder_type()
 			out->type_of_adder = adder_def_t::fixed_step;
 		else if(type == "log")
 			out->type_of_adder = adder_def_t::log_step;
-		else
 			
 		out->inital_size = strtol(strtok(NULL,","),NULL,10);
 		out->step_size = strtol(strtok(NULL,","),NULL,10);
@@ -664,6 +663,16 @@ adder_def_t *get_adder_type()
 	return out;
 }
 
+int fetch_blk_size(adder_def_t* definition, int full_width, int start_pin, int current_counter)
+{
+	switch(definition->type_of_adder)
+	{
+		case adder_def_t::ripple:		return full_width;
+		case adder_def_t::fixed_step:	return std::min(full_width - start_pin, definition->step_size);
+		case adder_def_t::log_step:		return std::min(full_width - start_pin, (definition->inital_size + (int)std::pow(definition->step_size,current_counter)));
+		default:						return -1;
+	}
+}
 
 /*--------------------------------------------------------------------------
  * (function: instantiate_add_w_carry )
@@ -673,8 +682,16 @@ adder_def_t *get_adder_type()
  *------------------------------------------------------------------------*/
  
 
-nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int start_pin, npin_t ***pins, int blk_size, short mark, int paralelized, netlist_t *netlist)
+nnode_t *instantiate_add_w_carry_block(adder_def_t* definition, int full_width, nnode_t *node, nnode_t *initial_carry, int start_pin, npin_t ***pins, short mark, netlist_t *netlist, int current_counter)
 {
+	//last node
+	if(start_pin >= full_width)
+		return initial_carry;
+	
+	int blk_size = fetch_blk_size(definition, full_width, start_pin, current_counter);
+
+	// printf("blk_size %d and starting at %d\n",blk_size,start_pin);
+	// fflush(stdout);
 	// define locations in array when fetching pins
 	const int out = 0, input_a = 1, input_b = 2;
 	int i;
@@ -689,60 +706,52 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 		new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 	}
 	
-	// fetch the output carry node
-	nnode_t *output_carry = new_carry_cells[blk_size-1];
-	
-	// if there is an input carry cell link it
-	if(input_carry)
-		connect_nodes(input_carry, 0, new_add_cells[0], 0);
-	
-	// if it is the first block and the input port size is 2, ground it	
-	else if(node->num_input_port_sizes == 2)
-		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
-		
-	else
-		remap_pin_to_new_node(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], new_add_cells[0], 0);
-	
-	/* link initial carry in */
-	if (blk_size > 1)
-		add_input_pin_to_node(new_carry_cells[0], copy_input_npin(new_add_cells[0]->input_pins[0]), 0);
-	
-
-
+	nnode_t *previous_carry = initial_carry;
+	nnode_t *current_adder = NULL;
+	nnode_t *output_carry = NULL;
 	/* connect the ios */
 	for(i = 0; i < blk_size; i++)
 	{
-		add_input_pin_to_node(new_add_cells[i], pins[input_a][start_pin+i], 1);
-		add_input_pin_to_node(new_add_cells[i], pins[input_b][start_pin+i], 2);
-		//build carry
-		if (i < blk_size-1)
-		{
-			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-		}
+		output_carry = new_carry_cells[i];
+		current_adder = new_add_cells[i];
 		
-		// build output pins
+		//connect input_a
+		add_input_pin_to_node(current_adder, pins[input_a][start_pin+i], 1);
+		add_input_pin_to_node(output_carry, copy_input_npin(current_adder->input_pins[1]), 1);
+		
+		//connect input_B
+		add_input_pin_to_node(current_adder, pins[input_b][start_pin+i], 2);
+		add_input_pin_to_node(output_carry, copy_input_npin(current_adder->input_pins[2]), 2);
+
+		// connect output pins
 		if(pins[out][start_pin+i])
 		{
-			add_output_pin_to_node(new_add_cells[i], pins[out][start_pin+i], 0);
+			add_output_pin_to_node(current_adder, pins[out][start_pin+i], 0);
 		}
 		else
 		{
-			new_add_cells[i]->output_pins[0] = allocate_npin();
-			new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+			current_adder->output_pins[0] = allocate_npin();
+			current_adder->output_pins[0]->name = append_string("", "%s~dummy_output~%d", current_adder->name, 0);
 		}
-	}
-	
-	/* connect carry outs with carry ins */
-	for(i = 1; i < blk_size; i++)
-	{
-		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
-		if(i < blk_size-1)
-			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 		
+		/* connect carry outs with carry ins */
+		if(!previous_carry)
+		{
+			add_input_pin_to_node(current_adder, get_zero_pin(netlist), 0);
+			add_input_pin_to_node(output_carry, get_zero_pin(netlist), 0);
+		}
+		else
+		{
+			connect_nodes(previous_carry, 0, current_adder, 0);
+			connect_nodes(previous_carry, 0, output_carry, 0);
+		}
+		
+		previous_carry = output_carry;
 	}
 	
-	if(paralelized)
+	//first and last block dont need paralelism
+	// make paralel carry
+	if(start_pin > 0 && start_pin+blk_size < full_width)
 	{
 		// make parralel carry cells using assumed input carry of 1 and one of 0
 		nnode_t **vcc_carry_cells = (nnode_t**)vtr::calloc(blk_size,sizeof(nnode_t*));
@@ -752,47 +761,67 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 			vcc_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 			gnd_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 		}
+	
+		nnode_t *previous_carry_gnd = NULL;
+		nnode_t *output_carry_gnd = NULL;
+		nnode_t *previous_carry_vcc = NULL;
+		nnode_t *output_carry_vcc = NULL;
 		
-		//init them at both possible values
-		add_input_pin_to_node(gnd_carry_cells[0], get_zero_pin(netlist), 0);
-		add_input_pin_to_node(vcc_carry_cells[0], get_one_pin(netlist), 0);
+		// connect the ios
+		for(i = 0; i < blk_size; i++)
+		{
+			output_carry_gnd = gnd_carry_cells[i];
+			output_carry_vcc = vcc_carry_cells[i];
+			current_adder = new_add_cells[i];
 			
+			//connect input_a
+			add_input_pin_to_node(output_carry_gnd, copy_input_npin(current_adder->input_pins[1]), 1);
+			add_input_pin_to_node(output_carry_vcc, copy_input_npin(current_adder->input_pins[1]), 1);
+			
+			//connect input_b
+			add_input_pin_to_node(output_carry_gnd, copy_input_npin(current_adder->input_pins[2]), 2);
+			add_input_pin_to_node(output_carry_vcc, copy_input_npin(current_adder->input_pins[2]), 2);
+			
+			//no individual output pin to link
+			
+			/* connect carry outs with carry ins (we force an input carry to both possible value to do carry skip)*/
+			if(!previous_carry_gnd && !previous_carry_vcc)
+			{
+				add_input_pin_to_node(output_carry_gnd, get_zero_pin(netlist), 0);
+				add_input_pin_to_node(output_carry_vcc, get_one_pin(netlist), 0);
+			}
+			else
+			{
+				connect_nodes(previous_carry_gnd, 0, output_carry_gnd, 0);
+				connect_nodes(previous_carry_vcc, 0, output_carry_vcc, 0);
+			}
+			previous_carry_gnd = output_carry_gnd;
+			previous_carry_vcc = output_carry_vcc;
+		}
+		
 		//make MUX
 		output_carry = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
 		//TODO check if right pin
 		
 		//driver
-		nnode_t *not_gated_driver = make_not_gate(node, mark);
-		connect_nodes(input_carry,0,not_gated_driver,0);
-		connect_nodes(not_gated_driver,0,output_carry,0);
-		connect_nodes(input_carry,0,output_carry,1);
-
-		//inputs
-		connect_nodes(gnd_carry_cells[blk_size-1],0,output_carry,0);
-		connect_nodes(vcc_carry_cells[blk_size-1],0,output_carry,1);
-	
-		/* connect the ios */
-		for(i = 0; i < blk_size; i++)
-		{
-			add_input_pin_to_node(gnd_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-			add_input_pin_to_node(gnd_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
+		//workaround 2 select switch for mux is to NOT the first select and kepp second the same
+		nnode_t *notted_gate = make_not_gate(node,mark);
+		connect_nodes(initial_carry,0,notted_gate,0);
+		connect_nodes(notted_gate,0,output_carry,0);
 		
-			add_input_pin_to_node(vcc_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-			add_input_pin_to_node(vcc_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
-		}
-		/* connect carry outs with carry ins */
-		for(i = 1; i < blk_size; i++)
-		{
-			connect_nodes(gnd_carry_cells[i-1], 0, gnd_carry_cells[i], 0);
-			connect_nodes(vcc_carry_cells[i-1], 0, vcc_carry_cells[i], 0);
-		}
+		connect_nodes(initial_carry,0,output_carry,1);
+		
+		//connect carry skip to mux
+		connect_nodes(previous_carry_gnd,0,output_carry,2);
+		connect_nodes(previous_carry_vcc,0,output_carry,3);
+
 		vtr::free(vcc_carry_cells);
 		vtr::free(gnd_carry_cells);
 	}
 		
 	vtr::free(new_add_cells);
 	vtr::free(new_carry_cells);
-	return output_carry;
+	return instantiate_add_w_carry_block(definition, full_width, node, output_carry, start_pin+blk_size, pins, mark, netlist, current_counter+1);
 }
 
 
@@ -803,6 +832,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	int i;
 
 	oassert(node->num_input_pins > 0);
+	oassert(node->num_input_port_sizes == 2);
 	
 	// oassert(node->num_input_port_sizes == 2);
 	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
@@ -814,8 +844,6 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		
 	width[input_a] = node->input_port_sizes[0];
 	width[input_b] = node->input_port_sizes[1];
-	
-
 
 	//build pinout
 	npin_t ***pins = (npin_t ***)vtr::malloc(pinout_count*sizeof(npin_t**));
@@ -856,47 +884,12 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		}
 	}
 	
-	//now that we have the IOs decide wether to mux them if parralelized additon or not
-	
-	// initial carry node is a buffer node with gnd input (since we use node a buffer needed to be used)
-	// TODO is the buffer node removed in the blif file ?
-	nnode_t *current_out = NULL;
-
-	adder_def_t *definition = get_adder_type();
-	int blk_size = definition->inital_size;
-	int current =1; 
+	adder_def_t* definition = get_adder_type();
 	int start_pin =0;
-	
-	do
-	{
-		switch(definition->type_of_adder)
-		{
-			case adder_def_t::ripple:
-				blk_size = width[out];
-				break;
-			
-			case adder_def_t::fixed_step:
-				blk_size = std::min(width[out] - start_pin, definition->step_size);
-				break;
-
-			case adder_def_t::log_step:
-				blk_size = std::min(width[out] - start_pin, (blk_size + (int)std::pow(definition->step_size,current++)));
-				break;
-				
-			default:
-				//never gets here;
-				break;
-			
-		}
-		
-		//first and last block dont need paralelism
-		short parralel = (start_pin > 0 && start_pin < (width[out] - blk_size));
-			
-		current_out = instantiate_add_w_carry_block(node, current_out, start_pin, pins, blk_size, mark, parralel, netlist);
-		start_pin += blk_size;
-	}
-	while(start_pin != width[out]);
-	
+	int counter =1;
+	nnode_t *carry_node_in = NULL;
+	nnode_t *current_out = instantiate_add_w_carry_block(definition, width[out], node, carry_node_in, start_pin, pins, mark, netlist, counter);
+	current_out = NULL;
 	for(i=0;i<pinout_count;i++)
 		vtr::free(pins[i]);
 
