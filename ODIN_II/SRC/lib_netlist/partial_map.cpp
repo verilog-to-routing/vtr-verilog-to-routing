@@ -762,7 +762,10 @@ nnode_t *instantiate_add_w_carry_block(nnode_t *node, nnode_t *input_carry, int 
 		//TODO check if right pin
 		
 		//driver
-		connect_nodes(input_carry,0,output_carry,2);
+		nnode_t *not_gated_driver = make_not_gate(node, mark);
+		connect_nodes(input_carry,0,not_gated_driver,0);
+		connect_nodes(not_gated_driver,0,output_carry,0);
+		connect_nodes(input_carry,0,output_carry,1);
 
 		//inputs
 		connect_nodes(gnd_carry_cells[blk_size-1],0,output_carry,0);
