@@ -912,106 +912,76 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	int i;
 	nnode_t **new_add_cells;
 	nnode_t **new_carry_cells;
-	nnode_t **new_not_cells;
 
 	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 2);
 	width = node->output_port_sizes[0];
-	width_a = node->input_port_sizes[0];
-	width_b = node->input_port_sizes[1];
+	
+	if(node->num_input_port_sizes == 1)
+	{
+		width_a = 0;
+		width_b = node->input_port_sizes[0];
+	}
+	else if(node->num_input_port_sizes == 2)
+	{
+		width_a = node->input_port_sizes[0];
+		width_b = node->input_port_sizes[1];
+	}
 
 	new_add_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
 	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
-	new_not_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
 
 	/* create the adder units and the zero unit */
 	for (i = 0; i < width; i++)
 	{
 		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
-		new_not_cells[i] = make_not_gate(node, mark);
-		if (i < width - 1)
-		{
+		
+		if(i<width-1)
 			new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
-		}
 	}
 
     	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
 	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
-	if (i > 1)
-	{
+	if(width > 1)
 		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
-	}
 
 	/* connect inputs */
 	for(i = 0; i < width; i++)
 	{
+		/* join the A port up to adder */
 		if (i < width_a)
-		{
-			/* join the A port up to adder */
 			remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
-			if (i < width - 1)
-				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
-		}
 		else
-		{
 			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
-			if (i < width - 1)
-				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
-		}
-
+		
+		npin_t *input_pinned = node->input_pins[i+width_a];
+		/* join the B port up to adder */
 		if (i < width_b)
 		{
-			/* join the B port up to adder */
-			remap_pin_to_new_node(node->input_pins[i+width_a], new_not_cells[i], 0);
-		}
-		else 
-		{
-			add_input_pin_to_node(new_not_cells[i], get_zero_pin(netlist), 0);
-		}
-
-		/* now hookup not to adder parts */
-		/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
-		 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
-		if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
-		{
-			connect_nodes(netlist->vcc_node, 0, new_add_cells[i], 2);
-			if(i == width - 1)
+			
+			if(input_pinned->net->driver_pin->node->type == GND_NODE)
 			{
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
+				add_input_pin_to_node(new_add_cells[i], get_one_pin(netlist), 2);
+				remove_fanout_pins_from_net(input_pinned->net, input_pinned, input_pinned->pin_net_idx);
 			}
-
-		}
-		else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
-		{
-			connect_nodes(netlist->gnd_node, 0, new_add_cells[i], 2);
-			if(i == width - 1)
+			else if(input_pinned->net->driver_pin->node->type == VCC_NODE)
 			{
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
-			}
-		}
-		else
-			connect_nodes(new_not_cells[i], 0, new_add_cells[i], 2);
-
-		if (i < width - 1)
-		{
-			/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
-			 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
-			if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
-			{
-				connect_nodes(netlist->vcc_node, 0, new_carry_cells[i], 2);
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
-			}
-			else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
-			{
-				connect_nodes(netlist->gnd_node, 0, new_carry_cells[i], 2);
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
+				add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
+				remove_fanout_pins_from_net(input_pinned->net, input_pinned, input_pinned->pin_net_idx);
 			}
 			else
-				connect_nodes(new_not_cells[i], 0, new_carry_cells[i], 2);
+			{
+				nnode_t *new_not_cells = make_not_gate(node, mark);
+				remap_pin_to_new_node(input_pinned, new_not_cells[i], 0);
+				connect_nodes(new_not_cells[i], 0, new_add_cells[i], 2);
+			}
+		}
+		else 
+			add_input_pin_to_node(new_add_cells[i], get_one_pin(netlist), 2);
+		
+		if(i<width-1)
+		{
+			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+			add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
 		}
 
 		/* join that gate to the output */
@@ -1022,13 +992,12 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	for(i = 1; i < width; i++)
 	{
 		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
-		if (i < width - 1)
+		if(i<width-1)
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 	}
 
 	vtr::free(new_add_cells);
 	vtr::free(new_carry_cells);
-	vtr::free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1037,108 +1006,117 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 {
-	int width;
-	int i;
-	nnode_t **new_add_cells;
-	nnode_t **new_carry_cells;
-	nnode_t **new_not_cells;
-
-	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 1);
-	width = node->output_port_sizes[0];
-
-	new_add_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
-	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
-	new_not_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
-
-	/* create the adder units and the zero unit */
-	for (i = 0; i < width; i++)
-	{
-		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
-		new_not_cells[i] = make_not_gate(node, mark);
-		if (i < width - 1)
-		{
-			new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
-		}
-	}
-
-    	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
-	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
-	if (i > 1)
-	{
-		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
-	}
-
-	/* connect inputs */
-	for(i = 0; i < width; i++)
-	{
-		/* join the A port up to adder */
-		remap_pin_to_new_node(node->input_pins[i], new_not_cells[i], 0);
-		/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
-		 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
-		if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
-		{
-			connect_nodes(netlist->vcc_node, 0, new_add_cells[i], 1);
-			if(i == width - 1)
-			{
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
-			}
-
-		}
-		else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
-		{
-			connect_nodes(netlist->gnd_node, 0, new_add_cells[i], 1);
-			if(i == width - 1)
-			{
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
-			}
-		}
-		else
-			connect_nodes(new_not_cells[i], 0, new_add_cells[i], 1);
-
-
-		if (i < width - 1)
-		{
-			/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
-			 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
-			if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
-			{
-				connect_nodes(netlist->vcc_node, 0, new_carry_cells[i], 1);
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
-			}
-			else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
-			{
-				connect_nodes(netlist->gnd_node, 0, new_carry_cells[i], 1);
-				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
-				free_nnode(new_not_cells[i]);
-			}
-			else
-				connect_nodes(new_not_cells[i], 0, new_carry_cells[i], 1);
-		}
-
-		add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
-		if (i < width - 1)
-			add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
-
-		/* join that gate to the output */
-		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
-	}
-	
-	/* connect carry outs with carry ins */
-	for(i = 1; i < width; i++)
-	{
-		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
-		if (i < width - 1)
-			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
-	}
-
-	vtr::free(new_add_cells);
-	vtr::free(new_carry_cells);
-	vtr::free(new_not_cells);
+	instantiate_sub_w_carry(node, mark, netlist);	
 }
+
+// /*---------------------------------------------------------------------------------------------
+//  * (function:  instantiate_unary_sub )
+//  *	Does 2's complement which is the equivalent of a unary subtraction as a HW implementation.	
+//  *-------------------------------------------------------------------------------------------*/
+// void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
+// {
+// 	int width;
+// 	int i;
+// 	nnode_t **new_add_cells;
+// 	nnode_t **new_carry_cells;
+// 	nnode_t **new_not_cells;
+
+// 	oassert(node->num_input_pins > 0);
+// 	oassert(node->num_input_port_sizes == 1);
+// 	width = node->output_port_sizes[0];
+
+// 	new_add_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+// 	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+// 	new_not_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+
+// 	/* create the adder units and the zero unit */
+// 	for (i = 0; i < width; i++)
+// 	{
+// 		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
+// 		new_not_cells[i] = make_not_gate(node, mark);
+// 		if (i < width - 1)
+// 		{
+// 			new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+// 		}
+// 	}
+
+//     	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
+// 	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
+// 	if (i > 1)
+// 	{
+// 		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
+// 	}
+
+// 	/* connect inputs */
+// 	for(i = 0; i < width; i++)
+// 	{
+// 		/* join the A port up to adder */
+// 		remap_pin_to_new_node(node->input_pins[i], new_not_cells[i], 0);
+// 		/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+// 		 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+// 		if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+// 		{
+// 			connect_nodes(netlist->vcc_node, 0, new_add_cells[i], 1);
+// 			if(i == width - 1)
+// 			{
+// 				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+// 				free_nnode(new_not_cells[i]);
+// 			}
+
+// 		}
+// 		else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+// 		{
+// 			connect_nodes(netlist->gnd_node, 0, new_add_cells[i], 1);
+// 			if(i == width - 1)
+// 			{
+// 				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+// 				free_nnode(new_not_cells[i]);
+// 			}
+// 		}
+// 		else
+// 			connect_nodes(new_not_cells[i], 0, new_add_cells[i], 1);
+
+
+// 		if (i < width - 1)
+// 		{
+// 			/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+// 			 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+// 			if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+// 			{
+// 				connect_nodes(netlist->vcc_node, 0, new_carry_cells[i], 1);
+// 				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+// 				free_nnode(new_not_cells[i]);
+// 			}
+// 			else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+// 			{
+// 				connect_nodes(netlist->gnd_node, 0, new_carry_cells[i], 1);
+// 				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+// 				free_nnode(new_not_cells[i]);
+// 			}
+// 			else
+// 				connect_nodes(new_not_cells[i], 0, new_carry_cells[i], 1);
+// 		}
+
+// 		add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
+// 		if (i < width - 1)
+// 			add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
+
+// 		/* join that gate to the output */
+// 		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+// 	}
+	
+// 	/* connect carry outs with carry ins */
+// 	for(i = 1; i < width; i++)
+// 	{
+// 		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
+// 		if (i < width - 1)
+// 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
+// 	}
+
+// 	vtr::free(new_add_cells);
+// 	vtr::free(new_carry_cells);
+// 	vtr::free(new_not_cells);
+// }
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_EQUAL )
