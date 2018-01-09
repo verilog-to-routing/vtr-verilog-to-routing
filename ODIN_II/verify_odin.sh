@@ -2,7 +2,7 @@
 
 #ripple, log, fixed
 
-ADDER_TYPE="fixed"
+ADDER_TYPE="ripple"
 INITIAL_SIZE="4"
 SKIP_SIZE="4"
 
