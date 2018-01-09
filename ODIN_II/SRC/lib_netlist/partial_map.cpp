@@ -971,8 +971,8 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 			else
 			{
 				nnode_t *new_not_cells = make_not_gate(node, mark);
-				remap_pin_to_new_node(input_pinned, new_not_cells[i], 0);
-				connect_nodes(new_not_cells[i], 0, new_add_cells[i], 2);
+				remap_pin_to_new_node(input_pinned, new_not_cells, 0);
+				connect_nodes(new_not_cells, 0, new_add_cells[i], 2);
 			}
 		}
 		else 
