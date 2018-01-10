@@ -2,9 +2,9 @@
 
 #ripple, log, fixed
 
-ADDER_TYPE="ripple"
-INITIAL_SIZE="4"
-SKIP_SIZE="4"
+ADDER_TYPE="increasing"
+INITIAL_SIZE="1"
+SKIP_SIZE="2"
 
 ADDER_DEF="--adder_type $ADDER_TYPE,$INITIAL_SIZE,$SKIP_SIZE"
 
