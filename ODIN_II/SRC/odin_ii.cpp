@@ -55,7 +55,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
+std::vector<adder_def_t*> list_of_adder_def;
 size_t current_parse_file;
 t_arch Arch;
 global_args_t global_args;
@@ -65,6 +67,7 @@ int block_tag;
 void set_default_config();
 void get_options(int argc, char **argv);
 void print_usage();
+void parse_adder_def_file();
 
 int main(int argc, char **argv)
 {
@@ -107,6 +110,9 @@ int main(int argc, char **argv)
             return 1;
         }
 	}
+	
+	/* get odin soft_logic adder definition file */
+	parse_adder_def_file();
 
 	/* do High level Synthesis */
 	if (!global_args.blif_file)
@@ -278,6 +284,70 @@ void print_usage()
 	);
 	fflush(stdout);
 }
+// tab separated values for adder_def
+void parse_adder_def_file()
+{
+	const char* input_file_name = global_args.adder_def;
+	
+	if(strcmp(input_file_name,"ripple")!=0)
+	{
+		adder_def_t *out = (adder_def_t*)malloc(sizeof(adder_def_t));
+		out->inital_size =0;
+		out->step_size =0;
+		out->type_of_adder = adder_def_t::ripple;
+	
+		FILE *input_file = fopen(input_file_name,"r");
+		
+		const size_t line_size = 128;
+		char line_buf[line_size];
+		char *line = line_buf;
+
+		while (fgets(line, line_size, input_file) != NULL)
+		{
+			std::string type(strtok(line,","));
+			if(type == "skip")					
+			{
+			    out->type_of_adder = adder_def_t::carry_skip;
+			}
+			else if(type == "parallel")			
+			{
+			    out->type_of_adder = adder_def_t::parralel_adder;
+			}
+			else 								
+			{
+			    list_of_adder_def.push_back(out);	
+			    continue;
+			}
+			
+			std::string skip_type(strtok(NULL,","));
+			
+			if (skip_type == "fixed")		
+			{
+			    out->step_type = adder_def_t::fixed_step;
+			}
+			else if (skip_type == "log")			
+			{
+			    out->step_type = adder_def_t::log_step;
+			}
+			else if	(skip_type == "increasing")	
+			{
+			    out->step_type = adder_def_t::increasing_step;
+			}
+			else	
+			{
+			    list_of_adder_def.push_back(out);	
+			    continue;
+			}
+			
+			out->inital_size = strtol(strtok(NULL,","),NULL,10);
+			out->step_size = strtol(strtok(NULL,","),NULL,10);
+			
+			list_of_adder_def.push_back(out);
+		}
+		fclose(input_file);
+	}
+}
+
 
 struct ParseInitRegState {
     int from_str(std::string str) {
@@ -362,9 +432,9 @@ void get_options(int argc, char** argv) {
             .action(argparse::Action::STORE_TRUE);
 
     other_grp.add_argument(global_args.adder_def, "--adder_type")
-            .help("use carry skip adders with skip size of <input length>")
+            .help("input file defining adder_type")
 	        .default_value("ripple")
-	        .metavar("SKIP_SIZE")
+	        .metavar("INPUT_FILE")
 	        ;   
 
     auto& rand_sim_grp = parser.add_argument_group("random simulation options");

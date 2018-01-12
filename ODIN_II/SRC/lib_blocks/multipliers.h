@@ -41,7 +41,6 @@ extern void init_mult_distribution();
 extern void report_mult_distribution();
 extern void declare_hard_multiplier(nnode_t *node);
 extern void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t *netlist);
-extern void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *netlist);
 extern void find_hard_multipliers();
 extern void add_the_blackbox_for_mults(FILE *out);
 extern void define_mult_function(nnode_t *node, short type, FILE *out);

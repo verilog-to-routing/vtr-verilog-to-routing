@@ -4,6 +4,7 @@
 #include "types.h"
 #include "string_cache.h"
 #include "read_xml_arch_file.h"
+#include <vector>
 
 extern t_type_descriptor* type_descriptors;
 
@@ -14,6 +15,7 @@ extern short to_view_parse;
 extern global_args_t global_args;
 extern config_t configuration;
 extern size_t current_parse_file;
+extern std::vector<adder_def_t*> list_of_adder_def;
 
 extern size_t num_modules;
 extern ast_node_t **ast_modules;

@@ -2666,6 +2666,7 @@ void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
  */
 int compare_test_vectors(test_vector *v1, test_vector *v2)
 {
+	int equivalent = TRUE;
 	if (v1->count != v2->count)
 	{
 		warning_message(SIMULATION_ERROR, 0, -1, "Vector lengths differ.");
@@ -2677,8 +2678,15 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 	{	// Compare bit by bit.
 		int i;
 		for (i = 0; i < v1->counts[l] && i < v2->counts[l]; i++)
-			if (v1->values[l][i] != v2->values[l][i])
-				return FALSE;
+		{
+			if (v1->values[l][i] != v2->values[l][i])		
+			{
+				if (v1->values[l][i] == -1)	
+					equivalent = -1;	
+				else
+					return FALSE;
+			}
+		}		
 
 		/*
 		 *  If one value has more bits than the other, they are still
@@ -2690,11 +2698,11 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 			test_vector *v = v1->counts[l] < v2->counts[l] ? v2 : v1;
 			int j;
 			for (j = i; j < v->counts[l]; j++)
-				if (v->values[l][j] != 0)
+				if (v->values[l][j] != 0)	
 					return FALSE;
 		}
 	}
-	return TRUE;
+	return equivalent;
 }
 
 /*
@@ -3057,9 +3065,11 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 				// Parse both vectors.
 				test_vector *v1 = parse_test_vector(buffer1);
 				test_vector *v2 = parse_test_vector(buffer2);
-
+				
+				int equivalent = compare_test_vectors(v1,v2);
 				// Compare them and print an appropriate message if they differ.
-				if (!compare_test_vectors(v1,v2))
+				
+				if (!equivalent)
 				{
 					trim_string(buffer1, "\n\t");
 					trim_string(buffer2, "\n\t");
@@ -3070,6 +3080,17 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
 					);
 				}
+				else if (equivalent == -1)
+				{
+					trim_string(buffer1, "\n\t");
+					trim_string(buffer2, "\n\t");
+					warning_message(SIMULATION_ERROR, 0, -1, "Vector %d equivalent but output vector has bits set when expecting don't care :\n"
+							"\t%s in %s\n"
+							"\t%s in %s\n",
+							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
+					);
+				}
+				
 				free_test_vector(v1);
 				free_test_vector(v2);
 			}
