@@ -58,6 +58,9 @@ typedef struct netlist_t_t netlist_t;
 typedef struct netlist_stats_t_t netlist_stats_t;
 typedef struct chain_information_t_t chain_information_t;
 
+// to define type of adder in cmd line
+typedef struct adder_def_t_t adder_def_t;
+
 /* for parsing and AST creation errors */
 #define PARSE_ERROR -3
 /* for netlist creation oerrors */
@@ -421,6 +424,23 @@ struct chain_information_t_t
 	char *name;//unique name of the chain
 	int count;//the number of hard blocks in this chain
 	int num_bits;
+};
+
+// to define type of adder in cmd line
+struct adder_def_t_t
+{
+	enum{
+		ripple,
+		carry_skip,
+		parralel_adder,
+	}type_of_adder;
+	enum{
+		fixed_step,
+		log_step,
+		increasing_step
+	}step_type;
+	int inital_size;
+	int step_size;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version

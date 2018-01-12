@@ -1,21 +1,6 @@
 #!/bin/bash 
-
-#ripple, log, fixed
-
-ADDER_TYPE="increasing"
-INITIAL_SIZE="1"
-SKIP_SIZE="2"
-
-ADDER_DEF="--adder_type $ADDER_TYPE,$INITIAL_SIZE,$SKIP_SIZE"
-
-ADDER=$ADDER_DEF
-case $ADDER_TYPE in
-  "ripple") ADDER="" ;;
-  "log") ;;
-  "fixed") ;;
-  *) echo 'wrong type of $ADDER in your script, one of ripple, log or fixed' ;;
-esac
-
+#ADDER="--adder_type $2"
+ADDER=""
 function finish() {
 	echo "=============================================================================="
 	echo "..%%%%..%%%%%..%%%%%%.%%..%%........%%%%%%..%%%%..%%%%%%.%%.....%%%%%%.%%%%%.."

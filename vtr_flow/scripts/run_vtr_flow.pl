@@ -124,6 +124,7 @@ my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $routing_budgets_algorithm = "disable";
+my $odin_adder_config_path = "ripple";
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -232,6 +233,10 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-routing_budgets_algorithm"){
             $routing_budgets_algorithm = shift(@ARGV);
+    }
+    elsif ( $token eq "-adder_type"){
+            $odin_adder_config_path = $vtr_flow_path;
+            $odin_adder_config_path .= shift(@ARGV);
     }
     # else forward the argument
 	else {
@@ -440,7 +445,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 
 	if ( !$error_code ) {
 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-			"-c", $odin_config_file_name );
+			"-c", $odin_config_file_name, "--adder_type", $odin_adder_config_path);
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
