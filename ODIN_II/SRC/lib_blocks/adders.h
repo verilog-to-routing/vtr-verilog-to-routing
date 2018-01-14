@@ -75,5 +75,7 @@ extern void reallocate_pins(nnode_t *node, nnode_t *next_node);
 extern void free_op_nodes(nnode_t *node);
 extern int match_pins(nnode_t *node, nnode_t *next_node);
 
+nnode_t *instantiate_add_w_carry_block(int *width, nnode_t *node, nnode_t *initial_carry, int start_pin, short mark, netlist_t *netlist, int current_counter, short subtraction);
+
 #endif // ADDERS_H
 

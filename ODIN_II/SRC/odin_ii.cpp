@@ -294,7 +294,7 @@ void parse_adder_def_file()
 		adder_def_t *out = (adder_def_t*)malloc(sizeof(adder_def_t));
 		out->inital_size =0;
 		out->step_size =0;
-		out->type_of_adder = adder_def_t::ripple;
+		out->type_of_adder = ripple;
 	
 		FILE *input_file = fopen(input_file_name,"r");
 		
@@ -307,11 +307,11 @@ void parse_adder_def_file()
 			std::string type(strtok(line,","));
 			if(type == "skip")					
 			{
-			    out->type_of_adder = adder_def_t::carry_skip;
+			    out->type_of_adder = carry_skip;
 			}
 			else if(type == "parallel")			
 			{
-			    out->type_of_adder = adder_def_t::parralel_adder;
+			    out->type_of_adder = parralel_adder;
 			}
 			else 								
 			{
@@ -323,15 +323,15 @@ void parse_adder_def_file()
 			
 			if (skip_type == "fixed")		
 			{
-			    out->step_type = adder_def_t::fixed_step;
+			    out->step_type = fixed_step;
 			}
 			else if (skip_type == "log")			
 			{
-			    out->step_type = adder_def_t::log_step;
+			    out->step_type = log_step;
 			}
 			else if	(skip_type == "increasing")	
 			{
-			    out->step_type = adder_def_t::increasing_step;
+			    out->step_type = increasing_step;
 			}
 			else	
 			{
