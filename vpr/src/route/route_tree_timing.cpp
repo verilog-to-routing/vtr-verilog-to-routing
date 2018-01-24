@@ -844,29 +844,24 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 
     t_trace* head;
     t_trace* tail;
-    std::unordered_set<int> nodes;
-
     std::tie(head, tail) = traceback_from_route_tree_recurr(nullptr, nullptr, root);
 
 	VTR_ASSERT(head);
 	VTR_ASSERT(tail);
 	VTR_ASSERT(tail->next == nullptr);
 
+    //Sanity check that number of sinks match expected
     int num_trace_sinks = 0;
     for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
         if (device_ctx.rr_nodes[trace->index].type() == SINK) {
-            //Sanity check that number of sinks match expected
             num_trace_sinks += 1;
         }
-
-        nodes.insert(trace->index);
     }
 	VTR_ASSERT(num_routed_sinks == num_trace_sinks);
 
 
 	route_ctx.trace_tail[inet] = tail;
 	route_ctx.trace_head[inet] = head;
-	route_ctx.trace_nodes[inet] = nodes;
 
 	return head;
 }

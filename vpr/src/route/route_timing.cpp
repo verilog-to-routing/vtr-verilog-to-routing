@@ -1042,7 +1042,6 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
             //      the first SINK is found.
             VTR_ASSERT(route_ctx.trace_head[net_id] == nullptr);
             VTR_ASSERT(route_ctx.trace_tail[net_id] == nullptr);
-            VTR_ASSERT(route_ctx.trace_nodes[net_id].empty());
         }
 
         //Update R/C
