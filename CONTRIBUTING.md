@@ -23,7 +23,7 @@ This ensures we know about the problem and can work towards fixing it.
 VTR has many features and is highly flexible.
 Make sure you've checkout out all our [Support Resources](SUPPORT.md) to see if VTR already supports what you want.
 
-If VTR does not support your use case, consider [filling an enhancement](#filling-enhacement-requests).
+If VTR does not support your use case, consider [filling an enhancement](#filling-enhancement-requests).
 
 ### I have a bug-fix/feature I'd like to include in VTR
 Great! Submitting bug-fixes and features is a great way to improve VTR.
@@ -34,7 +34,7 @@ See the guidlines for [submitting code](#submitting-code-to-vtr).
 ### Enhancing Documentation
 Enhancing documentation is a great way to start contributing to VTR.
 
-You can edit the [documentation](https://docs.verilogtorouting.org) directly by clicking the `Edit on GitHub` link of the relevant page, or by editing the re-structured text (`.rst`) files under the `doc/src` folder.
+You can edit the [documentation](https://docs.verilogtorouting.org) directly by clicking the `Edit on GitHub` link of the relevant page, or by editing the re-structured text (`.rst`) files under `doc/src`.
 
 Generally it is best to make small incremental changes.
 If you are considering larger changes its best to discuss them first (e.g. file a [bug](#filling-bug-reports) or [enhancement](#filling-enhancement-requests)).
@@ -43,7 +43,7 @@ Once you've made your enhancements [open a pull request](#making-pull-requests) 
 
 
 ### Filling Bug Reports
-First, search for [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues) to see if the bug has already been reported.
+First, search for [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues?&=) to see if the bug has already been reported.
 
 If no bug exists you will need to collect key pieces of information.
 This information helps us to quickly reproduce (and hopefully fix) the issue:
@@ -80,7 +80,7 @@ If you know how to fix the issue, or already have it coded-up, please also consi
 This is likely the fastest way to get bugs fixed!
 
 ### Filling Enhancement Requests
-First, search [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues) to see if your enhancement request overlaps with an existing Issue.
+First, search [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues?&=) to see if your enhancement request overlaps with an existing Issue.
 
 If not feature request exists you will need to describe your enhancement:
 
