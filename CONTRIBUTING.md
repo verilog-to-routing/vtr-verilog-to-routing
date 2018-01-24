@@ -8,14 +8,14 @@ Here are some helpful guidelines to follow.
 ### I have a question
 If you have questions about VTR take a look at our [Support Resources](SUPPORT.md).
 
-If the answer to your question wasn't in the documentation (and you think it should have been), consider [enhancing the documentation](#enhancing-docs).
+If the answer to your question wasn't in the documentation (and you think it should have been), consider [enhancing the documentation](#enhancing-documentation).
 That way someone (perhaps your future self!) will be able to quickly find the answer in the future.
 
 
 ### I found a bug!
 While we strive to make VTR reliable and robust, bugs are inevitable in large-scale software projects.
 
-Please file a [detailed bug report](#filling-bugs). 
+Please file a [detailed bug report](#filling-bug-reports). 
 This ensures we know about the problem and can work towards fixing it.
 
 
@@ -23,26 +23,26 @@ This ensures we know about the problem and can work towards fixing it.
 VTR has many features and is highly flexible.
 Make sure you've checkout out all our [Support Resources](SUPPORT.md) to see if VTR already supports what you want.
 
-If VTR does not support your use case, consider [filling an enhancement](#filling-enhacements).
+If VTR does not support your use case, consider [filling an enhancement](#filling-enhacement-requests).
 
 ### I have a bug-fix/feature I'd like to include in VTR
 Great! Submitting bug-fixes and features is a great way to improve VTR.
-See the guidlines for [submitting code](#submitting-code).
+See the guidlines for [submitting code](#submitting-code-to-vtr).
 
 ## The Details
 
-### [Enhancing Documentation](#enhancing-docs)
+### Enhancing Documentation
 Enhancing documentation is a great way to start contributing to VTR.
 
 You can edit the [documentation](https://docs.verilogtorouting.org) directly by clicking the `Edit on GitHub` link of the relevant page, or by editing the re-structured text (`.rst`) files under the `doc/src` folder.
 
 Generally it is best to make small incremental changes.
-If you are considering larger changes its best to discuss them first (e.g. file a [bug](#filling-bugs) or [enhancement](#filling-enhancements)).
+If you are considering larger changes its best to discuss them first (e.g. file a [bug](#filling-bug-reports) or [enhancement](#filling-enhancement-requests)).
 
-Once you've made your enhancements [open a pull request](#pull-requests) to get your changes considered for inclusion in the documentation.
+Once you've made your enhancements [open a pull request](#making-pull-requests) to get your changes considered for inclusion in the documentation.
 
 
-### [Filling Bug Reports](#filling-bugs)
+### Filling Bug Reports
 First, search for [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues) to see if the bug has already been reported.
 
 If no bug exists you will need to collect key pieces of information.
@@ -76,10 +76,10 @@ This information helps us to quickly reproduce (and hopefully fix) the issue:
 
 Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new) on our issue tracker.
 
-If you know how to fix the issue, or already have it coded-up, please also consider [submitting the fix](#submitting-code).
+If you know how to fix the issue, or already have it coded-up, please also consider [submitting the fix](#submitting-code-to-vtr).
 This is likely the fastest way to get bugs fixed!
 
-### [Filling Enhancement Requests](#filling-enhancements)
+### Filling Enhancement Requests
 First, search [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues) to see if your enhancement request overlaps with an existing Issue.
 
 If not feature request exists you will need to describe your enhancement:
@@ -105,21 +105,21 @@ If not feature request exists you will need to describe your enhancement:
 Typically, simple enhancements, and those which are broadly useful to a wide group of users get higher priority.
 
 Features which are not generally useful, or useful to only a small group of users will tend to get lower priority.
-(Of course [coding the enhancement yourself](submitting-code) is an easy way to bypass this challenge).
+(Of course [coding the enhancement yourself](#submitting-code-to-vtr) is an easy way to bypass this challenge).
 
 Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new) on our issue tracker.
 
-### [Submitting Code to VTR](#submitting-code)
+### Submitting Code to VTR
 VTR welcomes external contributions.
 
 In general changes that are narrowly focused (e.g. small bug fixes) are easier to review and include in the code base.
 
 Large changes, such as substantial new features or significant code-refactoring are more challenging to review.
-It is probably best to file an [enhancement](#filling-enhancements) first to discuss your approach.
+It is probably best to file an [enhancement](#filling-enhancement-requests) first to discuss your approach.
 
 Additionally, new features which are generally useful are much easier to justify adding to the code base, whereas features useful in only a few specialized cases are more difficult to justify.
 
-### [Making Pull Requests](#pull-requests)
+### Making Pull Requests
 It is assumed that by opening a pull request to VTR you have permission to do so, and the changes are under the relevant [License](LICENSE.md).
 
 Each pull request should describe it's motivation and context (linking to a relevant Issue for non-trivial changes).
