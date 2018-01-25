@@ -80,7 +80,7 @@ If you know how to fix the issue, or already have it coded-up, please also consi
 This is likely the fastest way to get bugs fixed!
 
 ### Filling Enhancement Requests
-First, search [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues?&=) to see if your enhancement request overlaps with an existing Issue.
+First, search [existing issues](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues) to see if your enhancement request overlaps with an existing Issue.
 
 If not feature request exists you will need to describe your enhancement:
 
@@ -119,12 +119,14 @@ It is probably best to file an [enhancement](#filling-enhancement-requests) firs
 
 Additionally, new features which are generally useful are much easier to justify adding to the code base, whereas features useful in only a few specialized cases are more difficult to justify.
 
+Once your fix/enahcement is ready to go, [start a pull request](#making-pull-requests).
+
 ### Making Pull Requests
 It is assumed that by opening a pull request to VTR you have permission to do so, and the changes are under the relevant [License](LICENSE.md).
 
 Each pull request should describe it's motivation and context (linking to a relevant Issue for non-trivial changes).
 
-It should also describe:
+Code-changes should also describe:
 
 * The type of change (e.g. bug-fix, feature)
 
@@ -142,6 +144,7 @@ It should also describe:
 
     Any new user-facing features should be documented in the public documentation, which is in `.rst` format under `doc/src`, and served at https://docs.verilogtorouting.org
 
+Once everything is ready to go [create a pull request](https://github.com/verilog-to-routing/vtr-verilog-to-routing/pulls).
 
 **Tips for Pull Requests**
 The following are general tips for making your pull requests easy to review (and hence more likely to be merged):
@@ -149,7 +152,7 @@ The following are general tips for making your pull requests easy to review (and
 * Keep changes small
 
     Large change sets are difficult and time-consuming to review.
-    If a change set is becoming too large, consider splitting it into smaller pieces; you'll probably want to file an issue to discuss things first.
+    If a change set is becoming too large, consider splitting it into smaller pieces; you'll probably want to [file an issue](#filling-feature-requests) to discuss things first.
 
 * Do one thing only
 
@@ -160,4 +163,4 @@ The following are general tips for making your pull requests easy to review (and
 
 * Match existing code style
     When modifying existing code, try match the existing coding style.
-    This helps to keep the code consistent and reduces noise in the pull request by avoiding re-formatting changes.
+    This helps to keep the code consistent and reduces noise in the pull request (e.g. by avoiding re-formatting changes), which makes it easier to review and more likely to be merged.
