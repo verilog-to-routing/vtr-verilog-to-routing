@@ -125,7 +125,30 @@ You can also run multiple regression tests together:
 $ ./run_reg_test.pl vtr_reg_basic vtr_reg_strong -j4
 ```
 
-### Debugging Failed Tests
+## Odin Functionality Tests
+
+Odin has its own set of tests to verify the correctness of its synthesis results:
+
+* `odin_reg_micro`: ~2 minutes serial
+* `odin_reg_full`: ~6 minutes serial
+
+These can be run with:
+```shell
+#From the VTR root directory
+$ ./run_reg_test.pl odin_reg_micro
+$ ./run_reg_test.pl odin_reg_full
+```
+and should be used when makeing changes to Odin.
+
+## Unit Tests
+
+VTR also has a limited set of unit tests, which can be run with:
+```shell
+#From the VTR root directory
+$ make && make test
+```
+
+# Debugging Failed Tests
 
 If a test fails you probably want to look at the log files to determine the cause.
 
@@ -150,9 +173,10 @@ Here we can see that `vpr` failed, which caused subsequent QoR failures (`[Fail]
 
 To see the log files we need to find the run directory.
 We can see from the output that  the specific test which failed was `regression_tests/vtr_reg_basic/basic_no_timing`.
-All the regression test take place under `vtr_flow/tasks`, so the test directory is `vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_no_timing`.
+All the regression tests take place under `vtr_flow/tasks`, so the test directory is `vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_no_timing`.
 Lets move to that directory:
 ```shell
+#From the VTR root directory
 $ cd vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_no_timing
 $ ls
 config  run002  run004
@@ -177,28 +201,6 @@ ch_intrinsics.route         parse_results.txt
 
 Here we can see the individual log files produced by each tool (e.g. `vpr.out`), which we can use to guide our debugging.
 We could also manually re-run the tools (e.g. with a debugger) using files in this directory.
-
-## Odin Functionality Tests
-
-Odin has its own set of tests to verify the correctness of its synthesis results:
-
-* `odin_reg_micro`: ~2 minutes serial
-* `odin_reg_full`: ~6 minutes serial
-
-These can be run with:
-```shell
-#From the VTR root directory
-$ ./run_reg_test.pl odin_reg_micro
-$ ./run_reg_test.pl odin_reg_full
-```
-
-## Unit Tests
-
-VTR also has a limited set of unit tests, which can be run with:
-```shell
-#From the VTR root directory
-$ make && make test
-```
 
 # Adding Tests
 
@@ -307,6 +309,30 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     $ git commit
     ```
 
+# Debugging Aids
+VTR has support for several additional tools/features to aid debugging.
+
+## Sanitizers
+VTR can be compiled using *sanitizers* which will detect invalid memory accesses, memory leaks and undefined behaviour (supported by both GCC and LLVM):
+```shell
+#From the VTR root directory
+$ cmake -D VTR_ENABLE_SANITIZE=ON build
+$ make
+```
+
+## Assertion Levels
+VTR supports configurable assertion levels.
+
+The default level (`2`) which turns on most assertions which don't cause significant run-time penalties.
+
+This level can be increased:
+```shell
+#From the VTR root directory
+$ cmake -D VTR_ASSERT_LEVEL=3 build
+$ make
+```
+this turns on more extensive assertion checking and re-builds VTR.
+
 # External Libraries Using Subtrees
 Some libraries used by VTR are developed in other repositories and integrated using git subtrees.
 
@@ -350,7 +376,7 @@ For more details see [here](https://blogs.atlassian.com/2013/05/alternatives-to-
 # Finding Bugs with Coverity
 [Coverity Scan](https://scan.coverity.com) is a static code analysis service which can be used to detect bugs.
 
-## Browsing Defects
+### Browsing Defects
 To view defects detected do the following:
 
 1. Get a coverity scan account
@@ -360,7 +386,7 @@ To view defects detected do the following:
 2. Browse the existing defects through the coverity web interface
 
 
-## Submitting a build
+### Submitting a build
 To submit a build to coverity do the following:
 
 1. [Download](https://scan.coverity.com/download) the coverity build tool
@@ -393,7 +419,7 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 
 Once the build has been analyzed you can browse the latest results throught the coverity web interface
 
-## No files emitted
+### No files emitted
 If you get the following warning from cov-build:
 
     [WARNING] No files were emitted.
@@ -404,20 +430,13 @@ You may need to configure coverity to 'know' about your compiler. For example:
     cov-configure --compiler `which gcc-7`
     ```
     
-## Debugging with clang static analyser
+On unix-like systems run `scan-build make` from the root VTR directory.
+to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
+
+# Debugging with clang static analyser
 First make sure you have clang installed.
 define clang as the default compiler:
   `export CC=clang`
   `export CXX=clang++`
 
-set to `debug` in makefile
-
-On unix-like systems run `scan-build make` from the root VTR directory.
-to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
-
-## Commit with changes on ODIN
-make sure all test passes:
-microbechmark, full regression an vtr strong regression test.
-
-ODIN_II/verify_full.sh takes care of running all of them at once.
-verify they are all successfull.
+set the build type to `debug` in makefile
