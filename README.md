@@ -1,5 +1,4 @@
-Introduction
-============
+# Introduction
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development. 
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
 It then perfoms:
@@ -10,34 +9,27 @@ It then perfoms:
 to generate FPGA speed and area results.
 VTR also includes a set of benchmark designs known to work with the design flow.
 
-License
-=======
+# License
 
 Generally most code is under MIT license, with the exception of ABC which is distributed under its own (permissive) terms.
 Full license details can be found [here](LICENSE.md).
 
-Download
-========
+# Download
 For most users of VTR (rather than active developers) you should download the latest packaged (and regression tested) version of VTR from [here](https://verilogtorouting.org/download).
 
-Building
-========
+# Building
 On unix-like systems run `make` from the root VTR directory.
 
 For more details see [here](BUILDING.md).
 
-Docker Cloud9 Deployment
-========================
-We provide a Dockerfile that sets up all the necessary packages for VTR to run. Also, the Dockerfile sets up Cloud9, a workspace management system that runs on your browser and allows you to run (and modify) VTR remotely.
+### Docker
+We provide a Dockerfile that sets up all the necessary packages for VTR to run.
+For more details see [here](dev/DOCKER_DEPLOY.md).
 
-For more details see [here](DOCKER_DEPLOY.md).
-
-Documentation
-=============
+# Documentation
 VTR's full documentation is available [here](https://docs.verilogtorouting.org).
 
-Mailing Lists
-=============
+# Mailing Lists
 If you have questions, or want to keep up-to-date with VTR, consider joining our mailing lists:
 
 [VTR-Announce](https://groups.google.com/forum/#!forum/vtr-announce): VTR release announcements (low traffic)
@@ -48,8 +40,7 @@ If you have questions, or want to keep up-to-date with VTR, consider joining our
 
 [VTR-Commits](https://groups.google.com/forum/#!forum/vtr-commits): VTR revision control commits
 
-How to Cite
-===========
+# How to Cite
 The following paper may be used as a general citation for VTR:
 
 J. Luu, J. Goeders, M. Wainberg, A. Somerville, T. Yu, K. Nasartschuk, M. Nasr, S. Wang, T. Liu, N. Ahmed, K. B. Kent, J. Anderson, J. Rose and V. Betz "VTR 7.0: Next Generation Architecture and CAD System for FPGAs," ACM TRETS, Vol. 7, No. 2, June 2014, pp. 6:1 - 6:30.
@@ -68,18 +59,17 @@ Bibtex:
 }
 ```
 
-Development
-===========
+# Development
 This is the development trunk for the Verilog-to-Routing project. 
 Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux. 
 You should expect that the tools are not always stable and that more work is needed to get the flow to run.
 
-For new developers, please do the tutorial in `tutorial/NewDeveloperTutorial.txt`. 
+For new developers, please [do the tutorial](dev/tutorial/NewDeveloperTutorial.txt). 
 You will be directed back here once you ramp up.
 
 VTR development follows a classic centralized repository (svn-like) workflow. 
 The 'master' branch is supposed to be the most current stable version of the project. 
-Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull`) to keep in sync with the GitHub master. 
+Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull --rebase`) to keep in sync with the GitHub master. 
 When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation.
 Unstable code should remain in the developer's local copy.
 
@@ -91,8 +81,7 @@ We do automated testing of the trunk using BuildBot to verify functionality and 
 
 For additional information see the [developer README](README.developers.md).
 
-Contributors
-============
+# Contributors
 *Please keep this up-to-date*
 
 Professors: Kenneth Kent, Vaughn Betz, Jonathan Rose, Jason Anderson, Peter Jamieson
