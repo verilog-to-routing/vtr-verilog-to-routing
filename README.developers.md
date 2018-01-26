@@ -14,18 +14,17 @@ We have some guidelines in place to help catch most of these problems:
     The check-in regression test is a quick way to test if any part of the VTR flow is broken.
 
     At a minimum you must run:
-```shell
-#From the VTR root directory
-$ ./run_reg_test vtr_reg_basic
-
-```
+    ```shell
+    #From the VTR root directory
+    $ ./run_reg_test vtr_reg_basic
+    ```
     You may push if all the tests return `All tests passed`.
 
     However you are strongly encouraged to run both the *basic* and *strong* regression tests:
-```shell
-#From the VTR root directory
-$ ./run_reg_test vtr_reg_basic vtr_reg_strong
-```
+    ```shell
+    #From the VTR root directory
+    $ ./run_reg_test vtr_reg_basic vtr_reg_strong
+    ```
     since it performs much more thorough testing.
 
     It is typically a good idea to run tests regularily as you make changes.
@@ -88,7 +87,7 @@ There are 4 main regression tests:
 
     * MCNC20 benchmarks
     * VTR benchmarks
-    * Titan 'other' benchmarks
+    * Titan 'other' benchmarks (smaller than Titan23)
     
     **Architectures:** A wider variety of architectures
     
@@ -220,33 +219,31 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
 1. Create a configuration file
 
     First move to the vtr_reg_strong directory:
-```shell
-#From the VTR root directory
-$ cd vtr_flow/tasks/regression_tests/vtr_reg_strong
-$ ls
-qor_geomean.txt             strong_flyover_wires        strong_pack_and_place
-strong_analysis_only        strong_fpu_hard_block_arch  strong_power
-strong_bounding_box         strong_fracturable_luts     strong_route_only
-strong_breadth_first        strong_func_formal_flow     strong_scale_delay_budgets
-strong_constant_outputs     strong_func_formal_vpr      strong_sweep_constant_outputs
-strong_custom_grid          strong_global_routing       strong_timing
-strong_custom_pin_locs      strong_manual_annealing     strong_titan
-strong_custom_switch_block  strong_mcnc                 strong_valgrind
-strong_echo_files           strong_minimax_budgets      strong_verify_rr_graph
-strong_fc_abs               strong_multiclock           task_list.txt
-strong_fix_pins_pad_file    strong_no_timing            task_summary
-strong_fix_pins_random      strong_pack
-```
-
+    ```shell
+    #From the VTR root directory
+    $ cd vtr_flow/tasks/regression_tests/vtr_reg_strong
+    $ ls
+    qor_geomean.txt             strong_flyover_wires        strong_pack_and_place
+    strong_analysis_only        strong_fpu_hard_block_arch  strong_power
+    strong_bounding_box         strong_fracturable_luts     strong_route_only
+    strong_breadth_first        strong_func_formal_flow     strong_scale_delay_budgets
+    strong_constant_outputs     strong_func_formal_vpr      strong_sweep_constant_outputs
+    strong_custom_grid          strong_global_routing       strong_timing
+    strong_custom_pin_locs      strong_manual_annealing     strong_titan
+    strong_custom_switch_block  strong_mcnc                 strong_valgrind
+    strong_echo_files           strong_minimax_budgets      strong_verify_rr_graph
+    strong_fc_abs               strong_multiclock           task_list.txt
+    strong_fix_pins_pad_file    strong_no_timing            task_summary
+    strong_fix_pins_random      strong_pack
+    ```
     Each folder (prefixed with `strong_` in this case) defines a task (sub-test).
 
     Let's make a new task named `strong_mytest`.
     An easy way is to copy an existing configuration file such as `strong_timing/config/config.txt`
-```shell
-$ mkdir -p strong_mytest/config
-$ cp strong_timing/config/config.txt strong_mytest/config/.
-```
-
+    ```shell
+    $ mkdir -p strong_mytest/config
+    $ cp strong_timing/config/config.txt strong_mytest/config/.
+    ```
     You can now edit `strong_mytest/config/config.txt` to customize your test.
     
 2. Generate golden reference results
@@ -255,60 +252,60 @@ $ cp strong_timing/config/config.txt strong_mytest/config/.
     These will be used to compare future runs of our test to detect any changes in behaviour (e.g. bugs).
 
     From the VTR root, we move to the `vtr_flow/tasks` directory, and then run our new test:
-```shell
-#From the VTR root
-$ cd vtr_flow/tasks
-$ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest
+    ```shell
+    #From the VTR root
+    $ cd vtr_flow/tasks
+    $ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest
 
-regression_tests/vtr_reg_strong/strong_mytest
------------------------------------------
-Current time: Jan-25 06:51 PM.  Expected runtime of next benchmark: Unknown
-k6_frac_N10_mem32K_40nm/ch_intrinsics...OK
-```
+    regression_tests/vtr_reg_strong/strong_mytest
+    -----------------------------------------
+    Current time: Jan-25 06:51 PM.  Expected runtime of next benchmark: Unknown
+    k6_frac_N10_mem32K_40nm/ch_intrinsics...OK
+    ```
 
     Next we can generate the golden reference results using `parse_vtr_task.pl` with the `-create_golden` option:
-```shell
-$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest -create_golden
-```
+    ```shell
+    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest -create_golden
+    ```
 
     And check that everything matches with `-check_golden`:
-```shell
-$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest -check_golden
-regression_tests/vtr_reg_strong/strong_mytest...[Pass]
-```
+    ```shell
+    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest -check_golden
+    regression_tests/vtr_reg_strong/strong_mytest...[Pass]
+    ```
 
 3. Add it to the task list
 
     We now need to add our new `strong_mytest` task to the task list, so it is run whenever `vtr_reg_strong` is run.
     We do this by adding the line `regression_tests/vtr_reg_strong/strong_mytest` to the end of `vtr_reg_strong`'s `task_list.txt`:
-```shell
-#From the VTR root directory
-$ vim vtr_flow/tasks/regression_tests/vtr_reg_strong/task_list.txt
-# Add a new line 'regression_tests/vtr_reg_strong/strong_mytest' to the end of the file
-```
+    ```shell
+    #From the VTR root directory
+    $ vim vtr_flow/tasks/regression_tests/vtr_reg_strong/task_list.txt
+    # Add a new line 'regression_tests/vtr_reg_strong/strong_mytest' to the end of the file
+    ```
 
     Now, when we run `vtr_reg_strong`:
-```shell
-#From the VTR root directory
-$ ./run_reg_test.pl vtr_reg_strong
-#Output trimmed...
-regression_tests/vtr_reg_strong/strong_mytest
------------------------------------------
-#Output trimmed...
-```
+    ```shell
+    #From the VTR root directory
+    $ ./run_reg_test.pl vtr_reg_strong
+    #Output trimmed...
+    regression_tests/vtr_reg_strong/strong_mytest
+    -----------------------------------------
+    #Output trimmed...
+    ```
     we see our test is run.
 
 4. Commit the new test
 
     Finally you need to commit your test:
-```shell
-#Add the config.txt and golden_results.txt for the test
-$ git add vtr_flow/tasks/regression_tests/vtr_reg_strong/strong_mytest/
-#Add the change to the task_list.txt
-$ git add vtr_flow/tasks/regression_tests/vtr_reg_strong/task_list.txt
-#Commit the changes, when pushed the test will automatically be picked up by BuildBot
-$ git commit
-```
+    ```shell
+    #Add the config.txt and golden_results.txt for the test
+    $ git add vtr_flow/tasks/regression_tests/vtr_reg_strong/strong_mytest/
+    #Add the change to the task_list.txt
+    $ git add vtr_flow/tasks/regression_tests/vtr_reg_strong/task_list.txt
+    #Commit the changes, when pushed the test will automatically be picked up by BuildBot
+    $ git commit
+    ```
 
 # External Libraries Using Subtrees
 Some libraries used by VTR are developed in other repositories and integrated using git subtrees.
