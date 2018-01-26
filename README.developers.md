@@ -1,7 +1,7 @@
 # Commit Proceedures
 
 ## For external developers
-See [Submitting Code to VTR](CONTRIBUTING.md#submitting-code-to-VTR).
+See [Submitting Code to VTR](CONTRIBUTING.md#submitting-code-to-vtr).
 
 ## For developers with commit rights
 The guiding principle in internal development is to submit your work into the repository without breaking other people's work.
@@ -17,6 +17,7 @@ We have some guidelines in place to help catch most of these problems:
 ```shell
 #From the VTR root directory
 $ ./run_reg_test vtr_reg_basic
+
 ```
     You may push if all the tests return `All tests passed`.
 
@@ -55,44 +56,52 @@ There are 4 main regression tests:
 
 * `vtr_reg_basic`: ~3 minutes serial
 
-    **Goal:** Check basic VTR flow correctness, quickly.
+    **Goal:** Quickly check basic VTR flow correctness
 
     **Feature Coverage:** Low
+
     **Benchmarks:** A few small and simple circuits
+
     **Architectures:** A few simple architectures
 
-    To run quickly, it uses small benchmarks, and is not suitable for evaluating QoR.
+    Not suitable for evaluating QoR or performance.
 
-* `vtr_reg_strong`: ~30 minutes serial, ~15 minutes with -j4
+* `vtr_reg_strong`: ~30 minutes serial, ~15 minutes with `-j4`
 
-    **Goal:** Exercise most of VTRs features, quickly.
+    **Goal:** Exercise most of VTR's features, moderately fast.
 
     **Feature Coverage:** High
+
     **Benchmarks:** A few small circuits, with some special benchmarks to exercise specific features
+
     **Architectures:** A variety of architectures, including special architectures to exercise specific features
 
-    To run quickly, it uses small benchmarks, and is not suitable for evaluating QoR.
+    Not suitable for evaluating QoR or performance.
 
-* `vtr_reg_nightly`: ~15 hours with -j2
+* `vtr_reg_nightly`: ~15 hours with `-j2`
 
     **Goal:** Basic QoR and Performance evaluation.
 
     **Feature Coverage:** Medium
+
     **Benchmarks:** Small-medium size, diverse. Includes:
-      * MCNC20 benchmarks
-      * VTR benchmarks
-      * Titan 'other' benchmarks
+
+    * MCNC20 benchmarks
+    * VTR benchmarks
+    * Titan 'other' benchmarks
     
     **Architectures:** A wider variety of architectures
     
-* `vtr_reg_weekly`: ~30 hours with -j2
+* `vtr_reg_weekly`: ~30 hours with `-j2`
 
-    **Goal:** QoR and Performance evaluation.
+    **Goal:** Full QoR and Performance evaluation.
 
     **Feature Coverage:** Medium
+
     **Benchmarks:** Medium-Large size, diverse. Includes:
-      * VTR benchmarks
-      * Titan23 benchmarks
+
+    * VTR benchmarks
+    * Titan23 benchmarks
     
     **Architectures:** A wide variety of architectures
 
@@ -137,6 +146,7 @@ regression_tests/vtr_reg_basic/basic_no_timing...[Fail]
 #Output trimmed...
 Error: 10 tests failed!
 ```
+
 Here we can see that `vpr` failed, which caused subsequent QoR failures (`[Fail]`), and resulted in 10 total errors.
 
 To see the log files we need to find the run directory.
@@ -149,6 +159,7 @@ $ ls
 config  run002  run004
 run001  run003  run005
 ```
+
 There we see there is a `config` directory (which defines the test), and a set of run-directories.
 Each time a test is run it creates a new `runXXX` directory (where `XXX` is an incrementing number).
 From the above we can tell that our last run was `run005`.
@@ -164,6 +175,7 @@ ch_intrinsics.place         output.log                         vpr.out
 ch_intrinsics.pre-vpr.blif  output.txt                         vpr_stdout.log
 ch_intrinsics.route         parse_results.txt
 ```
+
 Here we can see the individual log files produced by each tool (e.g. `vpr.out`), which we can use to guide our debugging.
 We could also manually re-run the tools (e.g. with a debugger) using files in this directory.
 
@@ -192,9 +204,9 @@ $ make && make test
 # Adding Tests
 
 Any time you add a feature to VTR you **must** add a test which exercies the feature.
-This ensures that regression tests will detect if feature breaks in the future.
+This ensures that regression tests will detect if the feature breaks in the future.
 
-Consider which regression test set the test should be added to (see [Running Tests](#running-tests) for a description).
+Consider which regression test suite your test should be added to (see [Running Tests](#running-tests) descriptions).
 
 Typically, test which exercise new features should be added to `vtr_reg_strong`.
 These tests should use small benchmarks to ensure they:
@@ -203,6 +215,7 @@ These tests should use small benchmarks to ensure they:
 If your test will take more than ~2 mintues it should probably go in a longer running regression test (but see first if you can create a smaller testcase first).
 
 ## Adding a test to vtr_reg_strong
+This describes adding a test to `vtr_reg_strong`, but the process is similar for the other regression tests.
 
 1. Create a configuration file
 
@@ -224,6 +237,7 @@ strong_fc_abs               strong_multiclock           task_list.txt
 strong_fix_pins_pad_file    strong_no_timing            task_summary
 strong_fix_pins_random      strong_pack
 ```
+
     Each folder (prefixed with `strong_` in this case) defines a task (sub-test).
 
     Let's make a new task named `strong_mytest`.
@@ -292,7 +306,7 @@ regression_tests/vtr_reg_strong/strong_mytest
 $ git add vtr_flow/tasks/regression_tests/vtr_reg_strong/strong_mytest/
 #Add the change to the task_list.txt
 $ git add vtr_flow/tasks/regression_tests/vtr_reg_strong/task_list.txt
-#Commit it
+#Commit the changes, when pushed the test will automatically be picked up by BuildBot
 $ git commit
 ```
 

@@ -123,7 +123,7 @@ Once your fix/enahcement is ready to go, [start a pull request](#making-pull-req
 
 ### Making Pull Requests
 It is assumed that by opening a pull request to VTR you have permission to do so, and the changes are under the relevant [License](LICENSE.md).
-VTR does not require a Contributor License Agreement (CLA) or formal Developer Certificate of Origin (DCO) to accept contributions.
+VTR does not require a Contributor License Agreement (CLA) or formal Developer Certificate of Origin (DCO) for contributions.
 
 Each pull request should describe it's motivation and context (linking to a relevant Issue for non-trivial changes).
 
