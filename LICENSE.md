@@ -9,10 +9,9 @@ all software, documents, and scripts in VTR, follows the standard MIT license de
 [here](http://www.opensource.org/licenses/mit-license.php) copied below for
 your convenience:
 
-> The MIT License (MIT) Copyright (c) 2012 copyright Jason Luu, Jeffrey Goeders,
-> Chi Wai Yu, Opal Densmore, Andrew Somerville, Kenneth Kent, Peter Jamieson,
-> Jason Anderson, Ian Kuon, Alexander Marquardt, Andy Ye, Ted Campbell, Wei Mark
-> Fang, Vaughn Betz, Jonathan Rose
+> The MIT License (MIT) 
+>
+> Copyright 2012 VTR Developers
 > 
 > Permission is hereby granted, free of charge, to any person obtaining a copy of
 > this software and associated documentation files (the "Software"), to deal in
