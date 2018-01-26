@@ -9,36 +9,17 @@ It then perfoms:
 to generate FPGA speed and area results.
 VTR also includes a set of benchmark designs known to work with the design flow.
 
-# License
+# Documentation
+VTR's [full documentation](https://docs.verilogtorouting.org) includes tutorials, descriptions of the VTR design flow, and tool options.
 
+Also check out our [additional support resources](SUPPORT.md).
+
+# License
 Generally most code is under MIT license, with the exception of ABC which is distributed under its own (permissive) terms.
-Full license details can be found [here](LICENSE.md).
+See the [full license](LICENSE.md) for details.
 
 # Download
-For most users of VTR (rather than active developers) you should download the latest packaged (and regression tested) version of VTR from [here](https://verilogtorouting.org/download).
-
-# Building
-On unix-like systems run `make` from the root VTR directory.
-
-For more details see [here](BUILDING.md).
-
-### Docker
-We provide a Dockerfile that sets up all the necessary packages for VTR to run.
-For more details see [here](dev/DOCKER_DEPLOY.md).
-
-# Documentation
-VTR's full documentation is available [here](https://docs.verilogtorouting.org).
-
-# Mailing Lists
-If you have questions, or want to keep up-to-date with VTR, consider joining our mailing lists:
-
-[VTR-Announce](https://groups.google.com/forum/#!forum/vtr-announce): VTR release announcements (low traffic)
-
-[VTR-Users](https://groups.google.com/forum/#!forum/vtr-users): Discussions about using VTR
-
-[VTR-Devel](https://groups.google.com/forum/#!forum/vtr-devel): Discussions about VTR development
-
-[VTR-Commits](https://groups.google.com/forum/#!forum/vtr-commits): VTR revision control commits
+For most users of VTR (rather than active developers) you should download the [latest offical VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
 
 # How to Cite
 The following paper may be used as a general citation for VTR:
@@ -58,6 +39,26 @@ Bibtex:
   year={2014}
 }
 ```
+
+# Building
+On unix-like systems run `make` from the root VTR directory.
+
+For more details see the [building instructions](BUILDING.md).
+
+### Docker
+We provide a Dockerfile that sets up all the necessary packages for VTR to run.
+For more details see [here](dev/DOCKER_DEPLOY.md).
+
+# Mailing Lists
+If you have questions, or want to keep up-to-date with VTR, consider joining our mailing lists:
+
+[VTR-Announce](https://groups.google.com/forum/#!forum/vtr-announce): VTR release announcements (low traffic)
+
+[VTR-Users](https://groups.google.com/forum/#!forum/vtr-users): Discussions about using VTR
+
+[VTR-Devel](https://groups.google.com/forum/#!forum/vtr-devel): Discussions about VTR development
+
+[VTR-Commits](https://groups.google.com/forum/#!forum/vtr-commits): VTR revision control commits
 
 # Development
 This is the development trunk for the Verilog-to-Routing project. 
@@ -80,6 +81,9 @@ We do automated testing of the trunk using BuildBot to verify functionality and 
 *IMPORTANT*: A broken build must be fixed at top priority. You break the build if your commit breaks any of the automated regression tests.
 
 For additional information see the [developer README](README.developers.md).
+
+## Contributing to VTR
+If you'd like to contribute to VTR see our [Contribution Guidelines](CONTRIBUTING.md).
 
 # Contributors
 *Please keep this up-to-date*
