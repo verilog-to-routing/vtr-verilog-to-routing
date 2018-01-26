@@ -109,6 +109,14 @@ These can be run with `run_reg_test.pl`:
 #From the VTR root directory
 $ ./run_reg_test.pl vtr_reg_basic
 $ ./run_reg_test.pl vtr_reg_strong
+```
+
+The *nightly* and *weekly* regressions require the Titan benchmarks which can be integrated into your VTR tree with:
+```shell
+make get_titan_benchmarks
+```
+They can then be run using `run_reg_test.pl`:
+```shell
 $ ./run_reg_test.pl vtr_reg_nightly
 $ ./run_reg_test.pl vtr_reg_weekly
 ```
