@@ -139,13 +139,14 @@ Code-changes should also describe:
     This ensures any future changes which break your feature will be detected.
     It is also best to add tests when fixing bugs, for the same reason
 
-    If you aren't sure what tests are needed, or how they should be added ask a developer.
+    See [Adding Tests](README.developer.md#adding-tests) for details on how to create new regression tests. 
+    If you aren't sure what tests are needed, ask a maintainer.
 
 * How the feature has been documented
 
     Any new user-facing features should be documented in the public documentation, which is in `.rst` format under `doc/src`, and served at https://docs.verilogtorouting.org
 
-Once everything is ready to go [create a pull request](https://github.com/verilog-to-routing/vtr-verilog-to-routing/pulls).
+Once everything is ready [create a pull request](https://github.com/verilog-to-routing/vtr-verilog-to-routing/pulls).
 
 **Tips for Pull Requests**
 The following are general tips for making your pull requests easy to review (and hence more likely to be merged):
