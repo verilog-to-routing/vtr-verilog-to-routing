@@ -139,7 +139,7 @@ Code-changes should also describe:
     This ensures any future changes which break your feature will be detected.
     It is also best to add tests when fixing bugs, for the same reason
 
-    See [Adding Tests](README.developer.md#adding-tests) for details on how to create new regression tests. 
+    See [Adding Tests](README.developers.md#adding-tests) for details on how to create new regression tests. 
     If you aren't sure what tests are needed, ask a maintainer.
 
 * How the feature has been documented
