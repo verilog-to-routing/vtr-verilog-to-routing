@@ -149,7 +149,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
 
     **Default:** ``off``
 
-.. option:: --gen_postsynthesis_netlist { on | off }
+.. option:: --gen_post_synthesis_netlist { on | off }
 
     Generates the Verilog and SDF files for the post-synthesized circuit. 
     The Verilog file can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
