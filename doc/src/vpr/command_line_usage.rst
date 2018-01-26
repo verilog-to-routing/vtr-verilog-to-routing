@@ -159,6 +159,8 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
     The Verilog description of these primitives are in the primitives.v file.
     To simulate the post-synthesized circuit, one must include the generated Verilog file and also the primitives.v Verilog file, in the simulation directory.
 
+    .. seealso:: :ref:`timing_simulation_tutorial`
+
     If one wants to generate the post-synthesized Verilog file of a circuit that contains a primitive other than those mentioned above, he/she should contact the VTR team to have the source code updated.
     Furthermore to perform simulation on that circuit the Verilog description of that new primitive must be appended to the primitives.v file as a separate module.
 
