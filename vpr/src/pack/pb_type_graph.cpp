@@ -793,25 +793,24 @@ static void alloc_and_load_direct_interc_edges(
 		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
 		const int num_output_sets, const int *num_output_ptrs) {
 
-	int i;
-	t_pb_graph_edge *edges;
-	vtr::t_linked_vptr *cur;
+	if (num_input_sets != 1) {
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
+			"Direct interconnect only allows connections from one set of input pins to one-or-more output sets. "
+			"There are %d input sets.", num_input_sets);
+	}
+
+    int pins_per_set = num_input_ptrs[0];
+    for (int i = 0; i < num_output_sets; ++i) {
+        if (pins_per_set != num_output_ptrs[i]) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
+                "Direct interconnect sets must have an equal number of input pins and output pins. "
+                "Input set has %d input pins but output set %d has %d output pins\n", pins_per_set, i, num_output_ptrs[i]);
+        }
+    }
 
 	/* Allocate memory for edges */
-	if (!(num_input_sets == 1 && num_output_sets == 1)) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
-			"Direct interconnect only allows connections from one set of pins to one other set. "
-			"There are %d input sets and %d output sets.", num_input_sets, num_output_sets);
-	}
-	if (!(num_input_ptrs[0] == num_output_ptrs[0])) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
-			"Direct interconnect must have an equal number of input and otput pins. "
-			"There are %d input and %d output pins\n", num_input_ptrs[0], num_output_ptrs[0]);
-	}
-
-	edges = (t_pb_graph_edge*) vtr::calloc(num_input_ptrs[0],
-			sizeof(t_pb_graph_edge));
-	cur = (vtr::t_linked_vptr*) vtr::malloc(sizeof(vtr::t_linked_vptr));
+	t_pb_graph_edge* edges = (t_pb_graph_edge*) vtr::calloc(pins_per_set * num_output_sets, sizeof(t_pb_graph_edge));
+	vtr::t_linked_vptr* cur = (vtr::t_linked_vptr*) vtr::malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = edges_head;
 	edges_head = cur;
 	cur->data_vptr = (void *) edges;
@@ -821,37 +820,55 @@ static void alloc_and_load_direct_interc_edges(
 	cur->data_vptr = (void *) ((intptr_t) num_input_ptrs[0]);
 
 	/* Reallocate memory for pins and load connections between pins and record these updates in the edges */
-	for (i = 0; i < num_input_ptrs[0]; i++) {
-		input_pb_graph_node_pin_ptrs[0][i]->output_edges =
-				(t_pb_graph_edge **) vtr::realloc(
-						input_pb_graph_node_pin_ptrs[0][i]->output_edges,
-						(input_pb_graph_node_pin_ptrs[0][i]->num_output_edges
-								+ 1) * sizeof(t_pb_graph_edge *));
-		input_pb_graph_node_pin_ptrs[0][i]->output_edges[input_pb_graph_node_pin_ptrs[0][i]->num_output_edges] =
-				&edges[i];
-		input_pb_graph_node_pin_ptrs[0][i]->num_output_edges++;
+    for (int ipin = 0; ipin < pins_per_set; ++ipin) {
+        t_pb_graph_pin* input_pin = input_pb_graph_node_pin_ptrs[0][ipin];
 
-		output_pb_graph_node_pin_ptrs[0][i]->input_edges =
-				(t_pb_graph_edge **) vtr::realloc(
-						output_pb_graph_node_pin_ptrs[0][i]->input_edges,
-						(output_pb_graph_node_pin_ptrs[0][i]->num_input_edges
-								+ 1) * sizeof(t_pb_graph_edge *));
-		output_pb_graph_node_pin_ptrs[0][i]->input_edges[output_pb_graph_node_pin_ptrs[0][i]->num_input_edges] =
-				&edges[i];
-		output_pb_graph_node_pin_ptrs[0][i]->num_input_edges++;
+        //Allocate space for input pin set's out-going edges (one to each out-set)
+        input_pin->output_edges = (t_pb_graph_edge**) vtr::realloc(input_pin->output_edges,
+                                                                   (input_pin->num_output_edges + num_output_sets) * sizeof(t_pb_graph_edge*));
 
-		edges[i].num_input_pins = 1;
-		edges[i].input_pins = (t_pb_graph_pin **) vtr::malloc(sizeof(t_pb_graph_pin *));
-		edges[i].input_pins[0] = input_pb_graph_node_pin_ptrs[0][i];
-		edges[i].num_output_pins = 1;
-		edges[i].output_pins = (t_pb_graph_pin **) vtr::malloc(sizeof(t_pb_graph_pin *));
-		edges[i].output_pins[0] = output_pb_graph_node_pin_ptrs[0][i];
+        //Associate each input pin with it's new out-going edges
+        for (int iset = 0; iset < num_output_sets; ++iset) {
+            int iedge = iset * pins_per_set + ipin;
+            int ipin_edge = input_pin->num_output_edges + iset;
+            input_pin->output_edges[ipin_edge] = &edges[iedge];
+        }
+		input_pin->num_output_edges += num_output_sets;
+    }
 
-		edges[i].interconnect = interconnect;
-		edges[i].driver_set = 0;
-		edges[i].driver_pin = i;
-		edges[i].infer_pattern = interconnect->infer_annotations;
-	}
+    for (int iset = 0; iset < num_output_sets; ++iset) {
+        for (int ipin = 0; ipin < pins_per_set; ++ipin) {
+            t_pb_graph_pin* output_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
+            
+            //Allocate space for output pin set's in-coming edge (one edge per pin)
+            output_pin->input_edges = (t_pb_graph_edge**) vtr::realloc(output_pin->input_edges,
+                                                   (output_pin->num_input_edges + 1) * sizeof(t_pb_graph_edge*));
+
+            int ipin_edge = output_pin->num_input_edges; 
+            int iedge = iset * pins_per_set + ipin;
+            output_pin->input_edges[ipin_edge] = &edges[iedge];
+            output_pin->num_input_edges += 1;
+        }
+    }
+
+    //Set-up the edges
+    for (int iset = 0; iset < num_output_sets; ++iset) {
+        for (int ipin = 0; ipin < pins_per_set; ++ipin) {
+            int iedge = iset * pins_per_set + ipin;
+
+            edges[iedge].num_input_pins = 1;
+            edges[iedge].input_pins = (t_pb_graph_pin **) vtr::malloc(sizeof(t_pb_graph_pin *));
+            edges[iedge].input_pins[0] = input_pb_graph_node_pin_ptrs[0][ipin];
+            edges[iedge].num_output_pins = 1;
+            edges[iedge].output_pins = (t_pb_graph_pin **) vtr::malloc(sizeof(t_pb_graph_pin *));
+            edges[iedge].output_pins[0] = output_pb_graph_node_pin_ptrs[iset][ipin];
+
+            edges[iedge].interconnect = interconnect;
+            edges[iedge].driver_set = 0;
+            edges[iedge].driver_pin = ipin;
+            edges[iedge].infer_pattern = interconnect->infer_annotations;
+        }
+    }
 }
 
 static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
