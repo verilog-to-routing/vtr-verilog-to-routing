@@ -1771,7 +1771,20 @@ int Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_net(const PinId p
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_port(const PinId pin_id, const PortId port_id) {
-    port_pins_[port_id].push_back(pin_id);
+    //A ports pins are stored in ascending order of port bit index, to allow for fast look-ups.
+    //As a result we need to ensure that even if pins are created out-of-order (with respect 
+    //to port bit) they are still inserted in the port in sorted order.
+    //
+    //As a result we find the correct position using std::lower_bound and insert there.
+    //Note that in the typical case (when port pins are created in order) this will be 
+    //the end of the port's pins and the insertion will be efficient. Only in the (more 
+    //unusual) case where the pins are created out-of-order will we need to do a slow
+    //insert in the middle of the vector.
+    auto port_bit_cmp = [&](const PinId pin, BitIndex bit_index) {
+        return pin_port_bit(pin) < bit_index;
+    };
+    auto iter = std::lower_bound(port_pins_[port_id].begin(), port_pins_[port_id].end(), pin_port_bit(pin_id), port_bit_cmp);
+    port_pins_[port_id].insert(iter, pin_id);
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
