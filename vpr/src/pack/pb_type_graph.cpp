@@ -629,10 +629,10 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 			in_squig_bracket = true;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if (!in_squig_bracket) {
-				(*num_sets)++;
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No matching '{' for '}' in port %s\n", port_string);
 			}
+            (*num_sets)++;
 			in_squig_bracket = false;
 		} else if (tokens[i].type == TOKEN_DOT) {
 			if (!in_squig_bracket) {
@@ -666,10 +666,10 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 					"No data contained in {} in port %s\n", port_string);
 			}
 			if (!in_squig_bracket) {
-				curr_set++;
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No matching '{' for '}' in port %s\n", port_string);
 			}
+            curr_set++;
 			in_squig_bracket = false;
 		} else if (tokens[i].type == TOKEN_STRING) {
 
@@ -970,6 +970,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 	int max_pb_node_array;
 	const t_pb_graph_node *pb_node_array;
 	char *port_name;
+    const char* pb_name = tokens[*token_index].data;
 	t_port *iport;
 	int add_or_subtract_pb, add_or_subtract_pin;
 	bool found;
@@ -1096,11 +1097,11 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 			}
 		}
 	}
-
+    
 	if (!found) {
 		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 			"Unknown pb_type name %s, not defined in namespace of mode %s", 
-			tokens[*token_index].data, mode->name);
+			pb_name, mode->name);
 	}
 
 	found = false;
@@ -1155,8 +1156,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		}
 	} else {
 
-		iport =
-				get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0)->port;
+		iport = get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0)->port;
 		pin_msb = iport->num_pins - 1;
 		pin_lsb = 0;
 	}
@@ -1173,9 +1173,10 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 	} else {
 		add_or_subtract_pin = 1;
 	}
+
+    int prev_num_pins = *num_pins;
 	*num_pins += (abs(pb_msb - pb_lsb) + 1) * (abs(pin_msb - pin_lsb) + 1);
-	*pb_graph_pins = (t_pb_graph_pin**) vtr::calloc(*num_pins,
-			sizeof(t_pb_graph_pin *));
+	*pb_graph_pins = (t_pb_graph_pin**) vtr::realloc(*pb_graph_pins, *num_pins * sizeof(t_pb_graph_pin *));
 	i = j = 0;
 
 	ipb = pb_lsb;
@@ -1184,16 +1185,14 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		ipin = pin_lsb;
 		j = 0;
 		while (ipin != pin_msb + add_or_subtract_pin) {
-			(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] =
-					get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb],
-							ipin);
-			if ((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL ) {
+            int idx = prev_num_pins + i * (abs(pin_msb - pin_lsb) + 1) + j;
+			(*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb], ipin);
+			if ((*pb_graph_pins)[idx] == NULL ) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"Pin %s.%s[%d] cannot be found",
 						pb_node_array[ipb].pb_type->name, port_name, ipin);
 			}
-			iport =
-					(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j]->port;
+			iport = (*pb_graph_pins)[idx]->port;
 			if (!iport) {
 				return false;
 			}
