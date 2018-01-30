@@ -125,6 +125,7 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
 static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float maximum_device_utilization) {
     VTR_ASSERT(grid_layouts.size() > 0);
 
+    DeviceGrid grid;
     if (grid_layouts[0].grid_type == GridDefType::AUTO) {
         //Automatic grid layout, find the smallest height/width
         VTR_ASSERT_MSG(grid_layouts.size() == 1, "Only one grid definitions is valid if using an auto grid layout");
@@ -148,7 +149,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
             //Build the device
             // Don't warn about out-of-range specifications since these can
             // occur (harmlessly) at small device dimensions
-            auto grid = build_device_grid(grid_def, width, height, false);
+            grid = build_device_grid(grid_def, width, height, false);
 
             //Check if it satisfies the block counts
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
@@ -184,7 +185,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         for (const auto& grid_def : grid_layouts) {
 
             //Build the grid
-            auto grid = build_device_grid(grid_def, grid_def.width, grid_def.height);        
+            grid = build_device_grid(grid_def, grid_def.width, grid_def.height);        
 
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
                 return grid;
@@ -194,15 +195,19 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
 
     //No suitable device found
     std::string resource_reqs;
+    std::string resource_avail;
     for (auto iter = minimum_instance_counts.begin(); iter != minimum_instance_counts.end(); ++iter) {
         if (iter != minimum_instance_counts.begin()) {
             resource_reqs += ", ";
+            resource_avail += ", ";
         }
 
         resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
+        resource_avail += std::string(iter->first->name) + ": " + std::to_string(grid.num_instances(iter->first));
     }
-    VPR_THROW(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements (required %s)", resource_reqs.c_str());
-    return DeviceGrid(); //Unreachable
+
+    VPR_THROW(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
+    return grid; //Unreachable
 }
 
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts, float maximum_utilization) {
