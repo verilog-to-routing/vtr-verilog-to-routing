@@ -1316,6 +1316,12 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 	port->is_non_clock_global = get_attribute(Parent,
 			"is_non_clock_global", loc_data, OPTIONAL).as_bool(false);
 
+    if (port->num_pins <= 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                "Invalid number of pins %d for %s port.", port->num_pins, Parent.name());
+
+    }
+
 	if (0 == strcmp(Parent.name(), "input")) {
 		port->type = IN_PORT;
 		port->is_clock = false;
