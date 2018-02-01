@@ -215,7 +215,7 @@
  *
  * Creating the netlist
  * --------------------
- * The netlist can be created by using the create_*() member functions to create individual Blocks/Ports/Pins/Nets
+ * The netlist can be created by using the create_*() member functions to create individual Blocks/Ports/Pins/Nets.
  *
  * For instance to create the following netlist (where each block is the same type, and has an input port 'A'
  * and output port 'B'):

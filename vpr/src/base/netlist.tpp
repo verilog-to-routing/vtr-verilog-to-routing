@@ -1450,10 +1450,10 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
 
     //Check that we have neither orphaned ports (i.e. that aren't referenced by a block) 
     //nor shared ports (i.e. referenced by multiple blocks)
-    if (!std::all_of(seen_port_ids.begin(), seen_port_ids.end(),
-        [](unsigned val) {
+    auto is_one = [](unsigned val) {
         return val == 1;
-    })) {
+    };
+    if (!std::all_of(seen_port_ids.begin(), seen_port_ids.end(), is_one)) {
         VPR_THROW(VPR_ERROR_NETLIST, "Port not referenced by a single block");
     }
 
@@ -1543,9 +1543,10 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_port_pin_refs() const {
 
     //Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
     //nor shared pins (i.e. referenced by multiple ports)
-    if (!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),[](unsigned val) {
+    auto is_one = [](unsigned val) {
         return val == 1;
-    })) {
+    };
+    if (!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(), is_one)) {
         VPR_THROW(VPR_ERROR_NETLIST, "Pins referenced by zero or multiple ports");
     }
 
@@ -1605,12 +1606,12 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
         }
     }
 
-    //Check that we have niether orphaned pins (i.e. that aren't referenced by a port) 
+    //Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
     //nor shared pins (i.e. referenced by multiple ports)
-    if (!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
-        [](unsigned val) {
+    auto is_one = [](unsigned val) {
         return val == 1;
-    })) {
+    };
+    if (!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(), is_one)) {
         VPR_THROW(VPR_ERROR_NETLIST, "Found pins referenced by zero or multiple nets");
     }
 
