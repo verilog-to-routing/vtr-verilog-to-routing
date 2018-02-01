@@ -583,7 +583,7 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::create_block(const std::string n
     StringId name_id = create_string(name);
     BlockId blk_id = find_block(name_id);
 
-    if(blk_id == BlockId::INVALID()) {
+    if (blk_id == BlockId::INVALID()) {
         //Not found, create it
 
         //Reserve an id
@@ -1300,48 +1300,60 @@ void Netlist<BlockId, PortId, PinId, NetId>::shrink_to_fit() {
  */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_block_id(BlockId block_id) const {
-    if (block_id == BlockId::INVALID()) return false;
-    else if (!block_ids_.contains(block_id)) return false;
-    else if (block_ids_[block_id] != block_id) return false;
+    if (block_id == BlockId::INVALID()
+        || !block_ids_.contains(block_id)
+        || block_ids_[block_id] != block_id) { 
+        return false;
+    }
     return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_port_id(PortId port_id) const {
-    if (port_id == PortId::INVALID()) return false;
-    else if (!port_ids_.contains(port_id)) return false;
-    else if (port_ids_[port_id] != port_id) return false;
+    if (port_id == PortId::INVALID()
+        || !port_ids_.contains(port_id)
+        || port_ids_[port_id] != port_id) {
+        return false;
+    }
     return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_port_bit(PortId port_id, BitIndex port_bit) const {
     VTR_ASSERT(valid_port_id(port_id));
-    if (port_bit >= port_width(port_id)) return false;
+    if (port_bit >= port_width(port_id)) {
+        return false;
+    }
     return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_pin_id(PinId pin_id) const {
-    if (pin_id == PinId::INVALID()) return false;
-    else if (!pin_ids_.contains(pin_id)) return false;
-    else if (pin_ids_[pin_id] != pin_id) return false;
+    if (pin_id == PinId::INVALID()
+        || !pin_ids_.contains(pin_id)
+        || pin_ids_[pin_id] != pin_id) {
+        return false;
+    }
     return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_net_id(NetId net_id) const {
-    if (net_id == NetId::INVALID()) return false;
-    else if (!net_ids_.contains(net_id)) return false;
-    else if (net_ids_[net_id] != net_id) return false;
+    if (net_id == NetId::INVALID()
+        || !net_ids_.contains(net_id)
+        || net_ids_[net_id] != net_id) {
+        return false;
+    }
     return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool Netlist<BlockId, PortId, PinId, NetId>::valid_string_id(typename Netlist<BlockId, PortId, PinId, NetId>::StringId string_id) const {
-    if (string_id == StringId::INVALID()) return false;
-    else if (!string_ids_.contains(string_id)) return false;
-    else if (string_ids_[string_id] != string_id) return false;
+    if (string_id == StringId::INVALID()
+        || !string_ids_.contains(string_id)
+        || string_ids_[string_id] != string_id) {
+        return false;
+    }
     return true;
 }
 
