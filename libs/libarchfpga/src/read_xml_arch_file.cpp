@@ -3589,8 +3589,8 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                         std::stringstream msg;
                         msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
                         msg << " port '" << model_port->name << "' of model '" << model->name << "',";
-                        msg << " input port '" << model_port->name << "' has combinational connections to ";
-                        msg << " port '" << sink_port.c_str() << " specified in model, but no combinational delays found on pb_type";
+                        msg << " input port '" << model_port->name << "' has combinational connections to";
+                        msg << " port '" << sink_port.c_str() << "; specified in model, but no combinational delays found on pb_type";
 
                         if (is_library_model(model)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
