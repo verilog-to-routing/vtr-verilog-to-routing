@@ -519,27 +519,27 @@ class Netlist {
          * Ports
          */
         //Returns the name of the specified port
-        const std::string&      port_name(const PortId port_id) const;
+        const std::string&  port_name(const PortId port_id) const;
 
         //Returns the block associated with the specified port
-        BlockId                 port_block(const PortId port_id) const;
+        BlockId             port_block(const PortId port_id) const;
 
         //Returns the set of valid pins associated with the port
-        pin_range               port_pins(const PortId port_id) const;
+        pin_range           port_pins(const PortId port_id) const;
 
         //Returns the pin (potentially invalid) associated with the specified port and port bit index
         //  port_id : The ID of the associated port
         //  port_bit: The bit index of the pin in the port
         //Note: this function is a synonym for find_pin()
-        PinId                   port_pin(const PortId port_id, const BitIndex port_bit) const;
+        PinId               port_pin(const PortId port_id, const BitIndex port_bit) const;
 
         //Returns the net (potentially invalid) associated with the specified port and port bit index
         //  port_id : The ID of the associated port
         //  port_bit: The bit index of the pin in the port
-        NetId                   port_net(const PortId port_id, const BitIndex port_bit) const;
+        NetId               port_net(const PortId port_id, const BitIndex port_bit) const;
 
         //Returns the width (number of bits) in the specified port
-        BitIndex                port_width(const PortId port_id) const;
+        BitIndex            port_width(const PortId port_id) const;
 
         //Returns the type of the specified port
         PortType            port_type(const PortId port_id) const;
