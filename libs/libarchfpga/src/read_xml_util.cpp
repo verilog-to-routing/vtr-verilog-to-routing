@@ -25,7 +25,9 @@ InstPort::InstPort(std::string str) {
         instance_ = parse_name_index(inst_port[0]);
         port_ = parse_name_index(inst_port[1]);
     } else {
-        throw ArchFpgaError("Failed to parse instance port specification '%s'");
+        std::string msg = vtr::string_fmt("Failed to parse instance port specification '%s'",
+                                str.c_str());
+        throw ArchFpgaError(msg);
     }
 }
 
