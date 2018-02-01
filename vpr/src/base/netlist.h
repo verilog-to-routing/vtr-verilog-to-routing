@@ -448,18 +448,18 @@ class Netlist {
 
     public: //Public Accessors
         /*
-        * Netlist
-        */
+         * Netlist
+         */
         //Retrieve the name of the netlist
-        const std::string&  netlist_name() const;
+        const std::string& netlist_name() const;
 
         //Retrieve the unique identifier for this netlist
         //This is typically a secure digest of the input file.
-        const std::string&  netlist_id() const;
+        const std::string& netlist_id() const;
 
         /*
-        * Utility
-        */
+         * Utility
+         */
         //Sanity check for internal consistency (throws an exception on failure)
         bool verify() const;
 
@@ -474,8 +474,8 @@ class Netlist {
         void print_stats() const;
 
         /*
-        * Blocks
-        */
+         * Blocks
+         */
         //Returns the name of the specified block
         const std::string&  block_name(const BlockId blk_id) const;
 
@@ -516,8 +516,8 @@ class Netlist {
         void remove_block(const BlockId blk_id);
 
         /*
-        * Ports
-        */
+         * Ports
+         */
         //Returns the name of the specified port
         const std::string&      port_name(const PortId port_id) const;
 
@@ -550,8 +550,8 @@ class Netlist {
         void remove_port(const PortId port_id);
 
         /*
-        * Pins
-        */
+         * Pins
+         */
         //Returns the constructed name (derived from block and port) for the specified pin
         std::string pin_name(const PinId pin_id) const;
 
@@ -585,8 +585,8 @@ class Netlist {
         void remove_pin(const PinId pin_id);
 
         /*
-        * Nets
-        */
+         * Nets
+         */
         //Returns the name of the specified net
         const std::string&  net_name(const NetId net_id) const;
 
@@ -625,8 +625,8 @@ class Netlist {
         void remove_net_pin(const NetId net_id, const PinId pin_id);
 
         /* 
-        * Aggregates
-        */
+         * Aggregates
+         */
         //Returns a range consisting of all blocks in the netlist
         block_range blocks() const;
 
@@ -640,8 +640,8 @@ class Netlist {
         pin_range   pins() const;
 
         /*
-        * Lookups
-        */
+         * Lookups
+         */
         //Returns the BlockId of the specified block or BlockId::INVALID() if not found
         //  name: The name of the block
         BlockId find_block(const std::string& name) const;
@@ -775,8 +775,8 @@ class Netlist {
         void associate_port_with_block(const PortId port_id, const PortType type, const BlockId blk_id);
 
         /*
-        * Netlist compression/optimization
-        */
+         * Netlist compression/optimization
+         */
         //Builds the new mappings from old to new IDs.
         //The various IdMap's should be initialized with invalid mappings
         //for all current ID's before being called.
@@ -818,8 +818,8 @@ class Netlist {
         void shrink_to_fit();
 
         /*
-        * Sanity Checks
-        */
+         * Sanity Checks
+         */
         //Verify the internal data structure sizes match
         bool verify_sizes() const;
         bool validate_block_sizes() const;
