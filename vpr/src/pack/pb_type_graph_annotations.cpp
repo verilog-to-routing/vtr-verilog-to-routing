@@ -360,46 +360,6 @@ static void load_delay_annotations(const int line_num,
             }
 		} else {
 			/* Primitive, annotate combinational delay */
-#if 0
-			k = 0;
-			for (i = 0; i < num_in_sets; i++) {
-				for (j = 0; j < num_in_ptrs[i]; j++) {
-					count = p = 0;
-					for (m = 0; m < num_out_sets; m++) {
-						for (n = 0; n < num_out_ptrs[m]; n++) {
-							/* OPEN indicates that connection does not exist */
-							if (delay_matrix[k][p] != OPEN) {
-								count++;
-							}
-							p++;
-						}
-					}
-					prior_offset = in_port[i][j]->num_pin_timing;
-					in_port[i][j]->num_pin_timing = prior_offset + count;
-					in_port[i][j]->pin_timing_del_max = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_max,
-							sizeof(float) * in_port[i][j]->num_pin_timing);
-					in_port[i][j]->pin_timing_del_min = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_min,
-							sizeof(float) * in_port[i][j]->num_pin_timing);
-					in_port[i][j]->pin_timing = (t_pb_graph_pin**)vtr::realloc(in_port[i][j]->pin_timing,
-							sizeof(t_pb_graph_pin*) * in_port[i][j]->num_pin_timing);
-					p = 0;
-					count = 0;
-					for (m = 0; m < num_out_sets; m++) {
-						for (n = 0; n < num_out_ptrs[m]; n++) {
-							if (delay_matrix[k][p] != OPEN) {
-								in_port[i][j]->pin_timing_del_max[prior_offset + count] = delay_matrix[k][p];
-								in_port[i][j]->pin_timing_del_min[prior_offset + count] = delay_matrix[k][p]; //TODO: annotate correctly
-								in_port[i][j]->pin_timing[prior_offset + count] = out_port[m][n];
-								count++;
-							}
-							p++;
-						}
-					}
-					VTR_ASSERT(in_port[i][j]->num_pin_timing == prior_offset + count);
-					k++;
-				}
-			}
-#else
             //Record the existing src/sink pairs
             std::set<std::pair<t_pb_graph_pin*,t_pb_graph_pin*>> existing_edges;
 			for (i = 0; i < num_in_sets; i++) {
@@ -488,7 +448,6 @@ static void load_delay_annotations(const int line_num,
 
                 }
             }
-#endif
 		}
 	}
 
