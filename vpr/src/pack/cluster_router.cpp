@@ -92,6 +92,7 @@ static void reset_explored_node_tb(t_lb_router_data *router_data);
 static void save_and_reset_lb_route(t_lb_router_data *router_data);
 static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace);
 
+static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node);
 /*****************************************************************************************
 * Debug functions declarations
 ******************************************************************************************/
@@ -287,6 +288,24 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 					if(pq.empty()) {
 						/* No connection possible */
 						is_impossible = true;
+
+                        //Print detailed debug info
+                        auto& atom_nlist = g_vpr_ctx.atom().nlist;
+                        AtomNetId net_id = lb_nets[inet].atom_net_id;
+                        AtomPinId driver_pin = lb_nets[inet].atom_pins[0];
+                        AtomPinId sink_pin = lb_nets[inet].atom_pins[itarget];
+                        int driver_rr_node = lb_nets[inet].terminals[0];
+                        int sink_rr_node = lb_nets[inet].terminals[itarget];
+
+                        vtr::printf("No routing path from %s to %s: needed for net '%s' from pin '%s'",
+                                    describe_lb_type_rr_node(lb_type_graph[driver_rr_node]).c_str(),
+                                    describe_lb_type_rr_node(lb_type_graph[sink_rr_node]).c_str(),
+                                    atom_nlist.net_name(net_id).c_str(),
+                                    atom_nlist.pin_name(driver_pin).c_str());
+                        if (sink_pin) {
+                            vtr::printf(" to pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
+                        }
+                        vtr::printf("\n");
 					} else {
 						exp_node = pq.top();
 						pq.pop();
@@ -488,8 +507,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	*/	
 	if(lb_nets[ipos].terminals.empty()) {
 		/* Add terminals */
-		int source_terminal;
-		source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
+		int source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
 		lb_nets[ipos].terminals.push_back(source_terminal);
 		lb_nets[ipos].atom_pins.push_back(pin_id);
 		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
@@ -513,15 +531,15 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 			if(lb_nets[ipos].terminals.size() == 1) {
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals.push_back(sink_terminal);
-				lb_nets[ipos].atom_pins.push_back(pin_id);
+				lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
 			} else {
 				sink_terminal = lb_nets[ipos].terminals[1];
 				lb_nets[ipos].terminals.push_back(sink_terminal);
-				lb_nets[ipos].atom_pins.push_back(pin_id);
+				lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
 
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals[1] = sink_terminal;
-				lb_nets[ipos].atom_pins[1] = pin_id;
+				lb_nets[ipos].atom_pins[1] = AtomPinId::INVALID();
 			}
 			VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[1]].type == LB_SINK);
 		}
@@ -1071,4 +1089,28 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 }
 
 
+
+static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node) {
+    std::string description;
+
+    auto pb_graph_pin = rr_node.pb_graph_pin;
+
+    if (pb_graph_pin) {
+        description += "'";
+        description += pb_graph_pin->parent_node->pb_type->name;
+        description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
+        description += '.';
+        description += pb_graph_pin->port->name;
+        description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
+        description += "'";
+    } else if (rr_node.type == LB_SINK) {
+        description = "cluster external sink (LB_SINK)";
+    } else if (rr_node.type == LB_SOURCE) {
+        description = "cluster external source (LB_SOURCE)";
+    } else {
+        description = "<unkown lb_type_rr_node>";
+    }
+
+    return description;
+}
 
