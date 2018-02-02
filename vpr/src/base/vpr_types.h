@@ -190,6 +190,31 @@ struct t_pb {
         return nullptr; //Not found
     }
 
+    const t_pb* find_pb_for_model(const std::string& blif_model) const {
+        //Base case
+        const t_model* model = pb_graph_node->pb_type->model;
+        if (model && model->name == blif_model) {
+            return this;
+        }
+
+        //Search recursively
+        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+
+            if(child_pbs[ichild_type] == nullptr) continue;
+
+            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
+
+                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
+
+                const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
+                if (matching_pb) {
+                    return this;
+                }
+            }
+        }
+        return nullptr; //Not found
+    }
+
     //Returns the root pb containing this pb
     const t_pb* root_pb() const {
         

@@ -57,6 +57,19 @@ ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phy
     return block_logical_pins_[blk][phys_pin_index];
 }
 
+bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk) const {
+    const t_pb* pb = block_pb(blk);
+    const t_pb* primary_input_pb =  pb->find_pb_for_model(".input");
+    return primary_input_pb != nullptr;
+}
+
+//Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
+bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) const {
+    const t_pb* pb = block_pb(blk);
+    const t_pb* primary_output_pb =  pb->find_pb_for_model(".output");
+    return primary_output_pb != nullptr;
+}
+
 /*
  *
  * Pins
