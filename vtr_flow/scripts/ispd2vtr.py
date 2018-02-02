@@ -213,8 +213,7 @@ def bookshelf2blif(aux_info, out_filepath, merge_ports=False):
             print >>f, '#{}'.format(node_name)
             print >>f, '.subckt {} \\'.format(type)
 
-            #pins = sorted(node_pins[node_name], key=lambda x: x.pin_name)
-            pins = node_pins[node_name]
+            pins = sorted(node_pins[node_name], key=lambda x: x.pin_name)
             for i, node_pin in enumerate(pins):
 
                 print >>f, '    {}={}'.format(node_pin.pin_name, node_pin.net_name),
