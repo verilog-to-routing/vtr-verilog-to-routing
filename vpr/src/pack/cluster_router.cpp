@@ -93,6 +93,13 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data);
 static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace);
 
 static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node);
+
+static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                                const t_lb_rr_node_stats* lb_rr_node_stats);
+static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
+                                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                               const t_lb_rr_node_stats* lb_rr_node_stats,
+                                               const std::vector<t_intra_lb_net>& lb_nets);
 /*****************************************************************************************
 * Debug functions declarations
 ******************************************************************************************/
@@ -356,6 +363,15 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 	if (is_routed) {
 		save_and_reset_lb_route(router_data);
 	} else {
+        //Unroutable
+
+        //Report the congested nodes and associated nets
+        auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
+        if (!congested_rr_nodes.empty()) {
+            vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, lb_type_graph, router_data->lb_rr_node_stats, lb_nets).c_str());
+        }
+
+        //Clean-up
 		for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 			free_lb_net_rt(lb_nets[inet].rt_tree);
 			lb_nets[inet].rt_tree = NULL;
@@ -1088,7 +1104,20 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 	}
 }
 
+static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                                const t_lb_rr_node_stats* lb_rr_node_stats) {
+    std::vector<int> congested_rr_nodes;
+    for (size_t inode = 0; inode < lb_type_graph.size(); ++inode) {
+        const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
+        const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats[inode];
+        
+        if (rr_node_stats.occ > rr_node.capacity) {
+            congested_rr_nodes.push_back(inode);
+        }
+    }
 
+    return congested_rr_nodes;
+}
 
 static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node) {
     std::string description;
@@ -1114,3 +1143,57 @@ static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node) {
     return description;
 }
 
+static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
+                                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                               const t_lb_rr_node_stats* lb_rr_node_stats,
+                                               const std::vector<t_intra_lb_net>& lb_nets) {
+    std::string description;
+
+    std::multimap<size_t,AtomNetId> congested_rr_node_to_nets; //From rr_node to net
+    for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
+        AtomNetId atom_net = lb_nets[inet].atom_net_id;
+        
+        //Walk the traceback to find congested RR nodes for each net
+        std::queue<t_lb_trace> q;
+        q.push(*lb_nets[inet].rt_tree);
+        while (!q.empty()) {
+            t_lb_trace curr = q.front();
+            q.pop();
+
+            for (t_lb_trace next_trace : curr.next_nodes) {
+                q.push(next_trace);
+            }
+
+            int inode = curr.current_node;
+            const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
+            const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats[inode];
+            
+            if (rr_node_stats.occ > rr_node.capacity) {
+                //Congested
+                congested_rr_node_to_nets.insert({inode, atom_net});
+            }
+        }
+    }
+
+    VTR_ASSERT(!congested_rr_node_to_nets.empty());
+    VTR_ASSERT(!congested_rr_nodes.empty());
+    auto& atom_ctx = g_vpr_ctx.atom();
+    for (int inode : congested_rr_nodes) {
+        const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
+        const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats[inode];
+        description += vtr::string_fmt("RR Node %d (%s) is congested (occ: %d > capacity: %d) with the following nets:\n",
+                inode,
+                describe_lb_type_rr_node(rr_node).c_str(),
+                rr_node_stats.occ,
+                rr_node.capacity);
+        auto range = congested_rr_node_to_nets.equal_range(inode);
+        for (auto itr = range.first; itr != range.second; ++itr) {
+            AtomNetId net = itr->second;
+            description += vtr::string_fmt("\tNet: %s\n",
+                    atom_ctx.nlist.net_name(net).c_str());
+        }
+
+    }
+
+    return description;
+}
