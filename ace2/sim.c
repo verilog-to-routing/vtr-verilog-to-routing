@@ -2,6 +2,7 @@
 #include "sim.h"
 
 #include "bdd/cudd/cudd.h"
+#include "bdd/cudd/cuddInt.h"
 
 void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int cycle) {
 	Abc_Obj_t * obj;
