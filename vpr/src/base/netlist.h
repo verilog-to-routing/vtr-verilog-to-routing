@@ -677,10 +677,21 @@ class Netlist {
         //  value   : The boolean value to set the pin_is_constant attribute
         void set_pin_is_constant(const PinId pin_id, const bool value);
 
+        //Re-name a block
+        //  blk_id   : The block to be renamed
+        //  new_name : The new name for the specified block
+        void set_block_name(const BlockId blk_id, const std::string new_name);
+
+        //Merges sink_net into driver_net
+        //After merging driver_net will contain all the sinks of sink_net
+        //  driver_net: The net which includes the driver pin 
+        //  sink_net: The target net to be merged into driver_net (must have no driver pin)
+        void merge_nets(const NetId driver_net, const NetId sink_net);
+
         /*
-        * Note: all remove_*() will mark the associated items as invalid, but the items
-        * will not be removed until compress() is called.
-        */
+         * Note: all remove_*() will mark the associated items as invalid, but the items
+         * will not be removed until compress() is called.
+         */
         //Wrapper for remove_unused() & compress()
         // This function should be used in the case where a netlist is fully modified
         void remove_and_compress();

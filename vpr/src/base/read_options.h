@@ -1,5 +1,6 @@
 #ifndef READ_OPTIONS_H
 #define READ_OPTIONS_H
+#include "read_blif.h"
 
 #include "vpr_types.h"
 #include "argparse_value.hpp"
@@ -15,8 +16,11 @@ struct t_options {
 	argparse::ArgValue<std::string> ActFile;
 	argparse::ArgValue<std::string> PowerFile;
 	argparse::ArgValue<std::string> CmosTechFile;
-	argparse::ArgValue<std::string> out_file_prefix;
 	argparse::ArgValue<std::string> SDCFile;
+
+    argparse::ArgValue<e_circuit_format> circuit_format;
+
+	argparse::ArgValue<std::string> out_file_prefix;
 	argparse::ArgValue<std::string> pad_loc_file;
 	argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;

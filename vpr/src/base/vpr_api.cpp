@@ -207,7 +207,7 @@ void vpr_init(const int argc, const char **argv,
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());
-    vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName.value().c_str());
+    vtr::printf_info("Circuit name: %s\n", options->CircuitName.value().c_str());
     vtr::printf_info("\n");
 
     /* Determine whether echo is on or off */
@@ -251,7 +251,9 @@ void vpr_init(const int argc, const char **argv,
 
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name.c_str(),
+    atom_ctx.nlist = read_and_process_circuit(
+            options->circuit_format,
+            vpr_setup->PackerOpts.blif_file_name.c_str(),
             vpr_setup->user_models,
             vpr_setup->library_models,
             vpr_setup->NetlistOpts.absorb_buffer_luts,

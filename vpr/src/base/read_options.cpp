@@ -1,12 +1,11 @@
 #include "read_options.h"
+#include "vpr_error.h"
 
 #include "argparse.hpp"
 
 #include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
-
-#include "vpr_error.h"
 
 using argparse::Provenance;
 
@@ -48,6 +47,27 @@ struct ParseOnOff {
     }
 };
 
+struct ParseCircuitFormat {
+    e_circuit_format from_str(std::string str) {
+        if      (str == "auto")  return e_circuit_format::AUTO;
+        else if (str == "blif") return e_circuit_format::BLIF;
+        else if (str == "eblif") return e_circuit_format::EBLIF;
+        std::stringstream msg;
+        msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+        throw argparse::ArgParseConversionError(msg.str());
+    }
+
+    std::string to_str(e_circuit_format val) {
+        if (val == e_circuit_format::AUTO) return "auto";
+        else if (val == e_circuit_format::BLIF) return "blif";
+        VTR_ASSERT(val == e_circuit_format::EBLIF);
+        return "eblif";
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"auto", "blif", "eblif"};
+    }
+};
 struct ParseRoutePredictor {
     e_routing_failure_predictor from_str(std::string str) {
         if      (str == "safe")  return SAFE;
@@ -337,10 +357,22 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("1.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    auto& file_grp = parser.add_argument_group("filename options");
+    auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument(args.BlifFile, "--blif_file")
-            .help("Path to technology mapped circuit in BLIF format")
+            .help("Path to technology mapped circuit")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument<e_circuit_format,ParseCircuitFormat>(args.circuit_format, "--circuit_format")
+            .help("File format for the input atom-level circuit/netlist.\n"
+                  " * auto: infer from file extension\n"
+                  " * blif: Strict structural BLIF format\n"
+                  " * eblif: Structure BLIF format with the extensions:\n"
+                  "           .conn  - Connection between two wires\n"
+                  "           .cname - Custom name for atom primitives\n"
+                  "           .param - Parameters on atom primitives\n"
+                  "           .attr  - Attributes on atom primitives\n")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.NetFile, "--net_file")
@@ -714,7 +746,7 @@ static void set_conditional_defaults(t_options& args) {
 	if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
         //Use the full path specified in the original circuit name,
         //and append the expected .blif extension
-        std::string blif_file = name_ext[0] + ".blif";
+        std::string blif_file = name_ext[0] + name_ext[1];
 		args.BlifFile.set(blif_file, Provenance::INFERRED);
 	}
 

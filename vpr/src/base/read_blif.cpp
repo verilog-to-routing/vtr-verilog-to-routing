@@ -43,11 +43,12 @@ using namespace std;
 #include "echo_files.h"
 #include "hash.h"
 
-static AtomNetlist read_blif(const char *blif_file, 
+static AtomNetlist read_blif(e_circuit_format circuit_format,
+                             const char *blif_file, 
                              const t_model *user_models, 
                              const t_model *library_models);
 
-static void process_blif(AtomNetlist& netlist,
+static void process_circuit(AtomNetlist& netlist,
                          const t_model *library_models,
                          bool should_absorb_buffers, 
                          bool should_sweep_dangling_primary_ios, 
@@ -61,11 +62,15 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifAllocCallback : public blifparse::Callback {
     public:
-        BlifAllocCallback(AtomNetlist& main_netlist, const std::string netlist_id, const t_model* user_models, const t_model* library_models)
+        BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, const std::string netlist_id, const t_model* user_models, const t_model* library_models)
             : main_netlist_(main_netlist)
             , netlist_id_(netlist_id)
             , user_arch_models_(user_models) 
-            , library_arch_models_(library_models) {}
+            , library_arch_models_(library_models)
+            , blif_format_(blif_format) {
+            VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
+                       || blif_format_ == e_circuit_format::EBLIF);
+        }
 
         static constexpr const char* OUTPAD_NAME_PREFIX = "out:";
 
@@ -86,6 +91,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             blif_models_.emplace_back(model_name, netlist_id_);
             blif_models_black_box_.emplace_back(false);
             ended_ = false;
+            set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
         }
 
         void inputs(std::vector<std::string> input_names) override {
@@ -103,6 +109,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 AtomNetId net_id = curr_model().create_net(input);
                 curr_model().create_pin(port_id, 0, net_id, PinType::DRIVER);
             }
+            set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
         }
 
         void outputs(std::vector<std::string> output_names) override { 
@@ -122,6 +129,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 AtomNetId net_id = curr_model().create_net(output);
                 curr_model().create_pin(port_id, 0, net_id, PinType::SINK);
             }
+            set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
         }
 
         void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> so_cover) override { 
@@ -150,6 +158,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
 
             AtomBlockId blk_id = curr_model().create_block(nets[nets.size()-1], blk_model, truth_table);
+            set_curr_block(blk_id);
 
             //Create inputs
             AtomPortId input_port_id = curr_model().create_port(blk_id, blk_model->inputs);
@@ -232,6 +241,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             truth_table[0].push_back(to_vtr_logic_value(init));
 
             AtomBlockId blk_id = curr_model().create_block(output, blk_model, truth_table);
+            set_curr_block(blk_id);
 
             //The input
             AtomPortId d_port_id = curr_model().create_port(blk_id, d_model_port);
@@ -288,6 +298,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             //Create the block
             blk_id = curr_model().create_block(subckt_name, blk_model);
+            set_curr_block(blk_id);
 
             for(size_t i = 0; i < ports.size(); ++i) {
                 //Check for consistency between model and ports
@@ -327,6 +338,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
             }
             set_curr_model_blackbox(true);
+            set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
         }
 
         void end_model() override {
@@ -341,8 +353,69 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             //Mark as ended
             ended_ = true;
+
+            set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
         }
 
+        //BLIF Extensions
+        void conn(std::string src, std::string dst) override {
+            if (blif_format_ != e_circuit_format::EBLIF) {
+                parse_error(lineno_, ".conn", "Supported only in extended BLIF format");
+            }
+
+            AtomNetId driver_net = curr_model().find_net(src);
+            if (!driver_net) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "No net named '%s' found for .conn's driver net",
+                        src.c_str());
+            }
+
+            AtomNetId sink_net = curr_model().find_net(dst);
+            if (!driver_net) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "No net named '%s' found for .conn's sink net",
+                        dst.c_str());
+            }
+
+            curr_model().merge_nets(driver_net, sink_net);
+
+            set_curr_block(AtomBlockId::INVALID());
+        }
+
+        void cname(std::string cell_name) override {
+            if (blif_format_ != e_circuit_format::EBLIF) {
+                parse_error(lineno_, ".cname", "Supported only in extended BLIF format");
+            }
+            
+            //Re-name the block
+            curr_model().set_block_name(curr_block(), cell_name);
+        }
+
+        void attr(std::string name, std::string value) override {
+            if (blif_format_ != e_circuit_format::EBLIF) {
+                parse_error(lineno_, ".attr", "Supported only in extended BLIF format");
+            }
+
+            //Currently VPR doesn't track attributes, so warn user
+            vtr::printf_warning(__FILE__, __LINE__, "Ignoring attribute (%s: %s) set on block '%s'\n",
+                    name.c_str(),
+                    value.c_str(),
+                    curr_model().block_name(curr_block()).c_str());
+        }
+
+        void param(std::string name, std::string value) override {
+            if (blif_format_ != e_circuit_format::EBLIF) {
+                parse_error(lineno_, ".param", "Supported only in extended BLIF format");
+            }
+
+            //Currently VPR doesn't track params, so warn user
+            vtr::printf_warning(__FILE__, __LINE__, "Ignoring parameter (%s: %s) set on block '%s'\n",
+                    name.c_str(),
+                    value.c_str(),
+                    curr_model().block_name(curr_block()).c_str());
+        }
+
+
+
+        //Utilities
         void filename(std::string fname) override { filename_ = fname; }
 
         void lineno(int line_num) override { lineno_ = line_num; }
@@ -615,6 +688,17 @@ struct BlifAllocCallback : public blifparse::Callback {
             return "unnamed_subckt" + std::to_string(unique_subckt_name_counter_++);
         }
 
+        //Sets the current block which is being processed
+        // Used to determine which block a .cname, .param, .attr apply to
+        void set_curr_block(AtomBlockId blk) {
+            curr_block_ = blk;
+        }
+
+        //Gets the current block which is being processed
+        AtomBlockId curr_block() const {
+            return curr_block_;
+        }
+
     private:
         bool ended_ = true; //Initially no active .model
         std::string filename_ = "";
@@ -629,6 +713,10 @@ struct BlifAllocCallback : public blifparse::Callback {
         const t_model* library_arch_models_ = nullptr;
 
         size_t unique_subckt_name_counter_ = 0;
+
+        AtomBlockId curr_block_;
+
+        e_circuit_format blif_format_ = e_circuit_format::BLIF;
 
 };
 
@@ -645,7 +733,8 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
     return new_val;
 }
 
-static AtomNetlist read_blif(const char *blif_file, 
+static AtomNetlist read_blif(const e_circuit_format circuit_format,
+                             const char *blif_file, 
                              const t_model *user_models, 
                              const t_model *library_models) {
 
@@ -653,40 +742,56 @@ static AtomNetlist read_blif(const char *blif_file,
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(netlist, netlist_id, user_models, library_models);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
-
-    netlist.verify();
 
     return netlist;
 }
 
-AtomNetlist read_and_process_blif(const char *blif_file, 
-                                  const t_model *user_models, 
-                                  const t_model *library_models,
-                                  bool should_absorb_buffers, 
-                                  bool should_sweep_dangling_primary_ios, 
-                                  bool should_sweep_dangling_nets,
-                                  bool should_sweep_dangling_blocks,
-                                  bool should_sweep_constant_primary_outputs) {
+AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
+                                     const char *circuit_file, 
+                                     const t_model *user_models, 
+                                     const t_model *library_models,
+                                     bool should_absorb_buffers, 
+                                     bool should_sweep_dangling_primary_ios, 
+                                     bool should_sweep_dangling_nets,
+                                     bool should_sweep_dangling_blocks,
+                                     bool should_sweep_constant_primary_outputs) {
+
+    if (circuit_format == e_circuit_format::AUTO) {
+        auto name_ext = vtr::split_ext(circuit_file);
+
+        if (name_ext[1] == ".blif") {
+            circuit_format = e_circuit_format::BLIF;
+        } else if (name_ext[1] == ".eblif") {
+            circuit_format = e_circuit_format::EBLIF;
+        } else {
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to determine file format for '%s' expected .blif or .eblif extension",
+                    circuit_file);
+        }
+    }
+
     AtomNetlist netlist;
     {
-        vtr::ScopedPrintTimer t("Load BLIF");
+        vtr::ScopedPrintTimer t("Load circuit");
+
+        VTR_ASSERT(circuit_format == e_circuit_format::BLIF
+                   || circuit_format == e_circuit_format::EBLIF); 
         
-        netlist = read_blif(blif_file, user_models, library_models);
+        netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_ORIG), netlist);
     }
 
-    process_blif(netlist,
-                 library_models,
-                 should_absorb_buffers, 
-                 should_sweep_dangling_primary_ios, 
-                 should_sweep_dangling_nets,
-                 should_sweep_dangling_blocks,
-                 should_sweep_constant_primary_outputs);
+    process_circuit(netlist,
+                    library_models,
+                    should_absorb_buffers, 
+                    should_sweep_dangling_primary_ios, 
+                    should_sweep_dangling_nets,
+                    should_sweep_dangling_blocks,
+                    should_sweep_constant_primary_outputs);
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
@@ -698,17 +803,17 @@ AtomNetlist read_and_process_blif(const char *blif_file,
     return netlist;
 }
 
-static void process_blif(AtomNetlist& netlist,
-                         const t_model *library_models,
-                         bool should_absorb_buffers, 
-                         bool should_sweep_dangling_primary_ios, 
-                         bool should_sweep_dangling_nets,
-                         bool should_sweep_dangling_blocks,
-                         bool should_sweep_constant_primary_outputs) {
+static void process_circuit(AtomNetlist& netlist,
+                            const t_model *library_models,
+                            bool should_absorb_buffers, 
+                            bool should_sweep_dangling_primary_ios, 
+                            bool should_sweep_dangling_nets,
+                            bool should_sweep_dangling_blocks,
+                            bool should_sweep_constant_primary_outputs) {
 
 
     {
-        vtr::ScopedPrintTimer t("Clean BLIF");
+        vtr::ScopedPrintTimer t("Clean circuit");
         
         //Clean-up lut buffers
         if(should_absorb_buffers) {
@@ -746,13 +851,13 @@ static void process_blif(AtomNetlist& netlist,
     }
 
     {
-        vtr::ScopedPrintTimer t("Compress BLIF");
+        vtr::ScopedPrintTimer t("Compress circuit");
 
         //Compress the netlist to clean-out invalid entries
         netlist.remove_and_compress();
     }
     {
-        vtr::ScopedPrintTimer t("Verify BLIF");
+        vtr::ScopedPrintTimer t("Verify circuit");
 
         netlist.verify();
     }

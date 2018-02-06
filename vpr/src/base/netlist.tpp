@@ -768,7 +768,8 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, PinTyp
     VTR_ASSERT(valid_pin_id(pin));
 
     VTR_ASSERT((type == PinType::DRIVER && pin_port_type(pin) == PortType::OUTPUT)
-        || (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT || pin_port_type(pin) == PortType::CLOCK)));
+                || (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT
+                || pin_port_type(pin) == PortType::CLOCK)));
 
     NetId orig_net = pin_net(pin);
     if (orig_net) {
@@ -784,6 +785,72 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, PinTyp
 
     //Save the pin's index within the net
     pin_net_indices_[pin] = pins_net_index;
+
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+void Netlist<BlockId, PortId, PinId, NetId>::set_block_name(const BlockId blk_id, const std::string new_name) {
+    VTR_ASSERT(valid_block_id(blk_id));
+
+    //Names must be unique -- no duplicates allowed
+    BlockId existing_blk_id = find_block(new_name);
+    if (existing_blk_id) {
+        VPR_THROW(VPR_ERROR_NETLIST, "Can not re-name block '%s' to '%s' (a block named '%s' already exists).",
+                    block_name(blk_id).c_str(), 
+                    new_name.c_str(),
+                    new_name.c_str());
+    }
+
+    //Remove old name-look-up
+    {
+        StringId old_string = find_string(block_name(blk_id));
+        block_name_to_block_id_[old_string] = BlockId::INVALID();
+    }
+
+    //Re-name the block
+    StringId new_string = create_string(new_name);
+    block_names_[blk_id] = new_string;
+
+    //Update name-look-up
+    block_name_to_block_id_.insert(new_string, blk_id);
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+void Netlist<BlockId, PortId, PinId, NetId>::merge_nets(const NetId driver_net, const NetId sink_net) {
+    VTR_ASSERT(valid_net_id(driver_net));
+    VTR_ASSERT(valid_net_id(sink_net));
+
+    //Sink net must not have a driver pin
+    PinId sink_driver = net_driver(sink_net);
+    if (sink_driver) {
+        VPR_THROW(VPR_ERROR_NETLIST, "Can not merge nets '%s' and '%s' (sink net '%s' should have no driver, but is driven by pin '%s')",
+                net_name(driver_net).c_str(),
+                net_name(sink_net).c_str(),
+                net_name(sink_net).c_str(),
+                pin_name(sink_driver).c_str());
+    }
+
+    //We allow the driver net to (potentially) have no driver yet,
+    //so we don't check to ensure it exists
+    
+    //
+    //Merge the nets
+    //
+
+    //Move the sinks to the driver net
+    for (PinId sink_pin : net_sinks(sink_net)) {
+
+        //Update pin -> net references, also adds pins to driver_net
+        set_pin_net(sink_pin, pin_type(sink_pin), driver_net);
+    }
+
+
+    //Remove the sink net
+    // Note that we drop the sink net's pin references first,
+    // this ensures remove_net() will only clean-up the net 
+    // data, and will not modify the (already moved) pins
+    net_pins_[sink_net].clear(); //Drop sink_net's pin references
+    remove_net(sink_net);
 
 }
 
