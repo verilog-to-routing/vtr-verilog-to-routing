@@ -45,7 +45,7 @@
 %option prefix="blifparse_" 
 
 /* Common character classes */
-ALPHA_SYMBOLS [-a-zA-Z_~|:*/\[\]\.\{\}^+$]
+ALPHA_SYMBOLS [-a-zA-Z_~|:*/\[\]\.\{\}^+$;'"]
 DIGITS [0-9]
 ALPHA_NUM_SYMBOLS ({ALPHA_SYMBOLS}|{DIGITS})
 BACK_SLASH [\\]
@@ -101,6 +101,12 @@ ENDL (\n|\n\r|\r\n)
 <*>\.outputs                    { BEGIN(INITIAL); return blifparse::Parser::make_DOT_OUTPUTS(); }
 <*>\.end                        { BEGIN(INITIAL); return blifparse::Parser::make_DOT_END(); }
 <*>\.blackbox                   { BEGIN(INITIAL); return blifparse::Parser::make_DOT_BLACKBOX(); }
+
+<*>\.conn                       { BEGIN(INITIAL); return blifparse::Parser::make_DOT_CONN(); /*BLIF extension */}
+<*>\.attr                       { BEGIN(INITIAL); return blifparse::Parser::make_DOT_ATTR(); /*BLIF extension */}
+<*>\.param                      { BEGIN(INITIAL); return blifparse::Parser::make_DOT_PARAM(); /*BLIF extension */}
+<*>\.cname                      { BEGIN(INITIAL); return blifparse::Parser::make_DOT_CNAME(); /*BLIF extension */}
+
 =                               { return blifparse::Parser::make_EQ();}
 <LATCH>fe                       { return blifparse::Parser::make_LATCH_FE(); }
 <LATCH>re                       { return blifparse::Parser::make_LATCH_RE(); }
