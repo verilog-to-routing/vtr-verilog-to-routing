@@ -119,6 +119,12 @@ using namespace blifparse;
 %token EOL "end-of-line"
 %token EOF 0 "end-of-file"
 
+/*BLIF extensions */
+%token DOT_CONN ".conn"
+%token DOT_ATTR ".attr"
+%token DOT_PARAM ".param"
+%token DOT_CNAME ".cname"
+
 /* declare variable tokens */
 %token <std::string> STRING
 
@@ -131,6 +137,12 @@ using namespace blifparse;
 %type <LogicValue> latch_init
 %type <std::string> latch_control
 %type <LatchType> latch_type
+
+/* BLIF Extensions */
+%type <Conn> conn
+%type <Cname> cname
+%type <Attr> attr
+%type <Param> param
 
 /* Top level rule */
 %start blif_data
@@ -151,9 +163,13 @@ blif_data: /*empty*/ { }
                                               callback.lineno(lexer.lineno()-1); 
                                               callback.subckt($2.model, $2.ports, $2.nets);
                                             }
-    | blif_data latch EOL                   { }
+    | blif_data latch EOL                   { /*callback already called */ }
     | blif_data DOT_BLACKBOX EOL            { callback.lineno(lexer.lineno()-1); callback.blackbox(); }
     | blif_data DOT_END EOL                 { callback.lineno(lexer.lineno()-1); callback.end_model(); }
+    | blif_data conn EOL                    { callback.lineno(lexer.lineno()-1); callback.conn($2.src, $2.dst); }
+    | blif_data cname EOL                   { callback.lineno(lexer.lineno()-1); callback.cname($2.name); }
+    | blif_data attr EOL                    { callback.lineno(lexer.lineno()-1); callback.attr($2.name, $2.value); }
+    | blif_data param EOL                   { callback.lineno(lexer.lineno()-1); callback.param($2.name, $2.value); }
     | blif_data EOL                         { /* eat end-of-lines */}
     ;
 
@@ -226,8 +242,15 @@ string_list: /*empty*/ { $$ = std::vector<std::string>(); }
     | string_list STRING { $$ = std::move($1); $$.push_back($2); }
     ;
 
-%%
+/*
+ * BLIF Extensions
+ */
+conn: DOT_CONN STRING STRING { $$ = Conn(); $$.src = $2; $$.dst = $3; }
+cname: DOT_CNAME STRING { $$ = Cname(); $$.name = $2; }
+attr: DOT_ATTR STRING STRING { $$ = Attr(); $$.name = $2; $$.value = $3; }
+param: DOT_PARAM STRING STRING { $$ = Param(); $$.name = $2; $$.value = $3; }
 
+%%
 
 void blifparse::Parser::error(const std::string& msg) {
     blif_error_wrap(callback, lexer.lineno(), lexer.text(), msg.c_str());

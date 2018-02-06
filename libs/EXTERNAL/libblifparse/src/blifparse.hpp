@@ -72,6 +72,18 @@ class Callback {
         //.end (of a .model)
         virtual void end_model() = 0;
 
+        //.conn [Extended BLIF, produces an error if not overriden]
+        virtual void conn(std::string src, std::string dst);
+
+        //.cname [Extended BLIF, produces an error if not overriden]
+        virtual void cname(std::string cell_name);
+
+        //.attr [Extended BLIF, produces an error if not overriden]
+        virtual void attr(std::string name, std::string value);
+
+        //.param [Extended BLIF, produces an error if not overriden]
+        virtual void param(std::string name, std::string value);
+
         //End of parsing
         virtual void finish_parse() = 0;
 
