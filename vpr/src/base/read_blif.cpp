@@ -363,17 +363,10 @@ struct BlifAllocCallback : public blifparse::Callback {
                 parse_error(lineno_, ".conn", "Supported only in extended BLIF format");
             }
 
-            AtomNetId driver_net = curr_model().find_net(src);
-            if (!driver_net) {
-                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "No net named '%s' found for .conn's driver net",
-                        src.c_str());
-            }
-
-            AtomNetId sink_net = curr_model().find_net(dst);
-            if (!driver_net) {
-                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "No net named '%s' found for .conn's sink net",
-                        dst.c_str());
-            }
+            //We allow the .conn to create the nets if they don't exist,
+            //however typically they will have already been defined.
+            AtomNetId driver_net = curr_model().create_net(src);
+            AtomNetId sink_net = curr_model().create_net(dst);
 
             curr_model().merge_nets(driver_net, sink_net);
 
