@@ -27,6 +27,8 @@ Note that VPR supports only the structural subset of BLIF, and does not support 
 
 Clock and delay constraints can be specified with an :ref:`SDC File <vpr_sdc_file>`.
 
+.. note:: By default VPR assumes file with ``.blif`` are in structural BLIF format. The format can be controlled with :option:`vpr --circuit_format`.
+
 Black Box Primitives
 ~~~~~~~~~~~~~~~~~~~~
 Black-box architectural primitives (RAMs, Multipliers etc.) should be instantiated in the netlist using BLIF's ``.subckt`` directive.
@@ -154,6 +156,124 @@ Also note that the last ``.subckt adder`` has it's ``cout`` output left implicit
     .inputs a b cin
     .outputs cout sumout
     .blackbox
+    .end
+
+.. _vpr_eblif_file:
+
+Extended BLIF (.eblif)
+----------------------
+VPR also supports several extentions to :ref:`structural BLIF <vpr_blif_file>` to address some of its limitations.
+
+.. note:: By default VPR assumes file with ``.eblif`` are in extneded BLIF format. The format can be controlled with :option:`vpr --circuit_format`.
+
+.conn
+~~~~~
+The ``.conn`` statement allows direct connections between two wires.
+
+For example:
+
+.. code-block:: none
+
+    .model top
+    .input a
+    .output b
+
+    #Direct connection
+    .conn a b
+
+    .end
+
+specifies that 'a' and 'b' are direct connected together. 
+This is analogous to Verilog's ``assign b = a;``.
+
+This avoids the insertion of a ``.names`` buffer which is required in standard BLIF, for example:
+
+.. code-block:: none
+
+    .model top
+    .input a
+    .output b
+
+    #Buffer LUT required in standard BLIF
+    .names a b
+    1 1
+
+    .end
+
+
+.cname
+~~~~~~
+The ``.cname`` statement allows names to be specified for BLIF primitives (e.g. ``.latch``, ``.names``, ``.subckt``).
+
+
+.. note:: ``.cname`` statements apply to the previous primitive instantiation.
+
+For example:
+
+.. code-block:: none
+
+    .names a b c
+    11 1
+    .cname my_and_gate
+
+Would name of the above ``.names`` instance ``my_and_gate``.
+
+.param
+~~~~~~
+The ``.param`` statement allows parameters (e.g. primitive modes) to be tagged on BLIF primitives.
+
+.. note:: ``.param`` statements apply to the previous primitive instantiation.
+
+For example:
+
+.. code-block:: none
+
+    .subckt dsp a=a_in b=b_in cin=c_in cout=c_out s=sum_out
+    .param mode adder
+
+Would set the parameter ``mode`` of the above ``dsp`` ``.subckt`` to ``adder``.
+
+.. warning:: VPR currently ignores ``.param`` statements
+
+.attr
+~~~~~
+The ``.attr`` statement allows attributes (e.g. source file/line) to be tagged on BLIF primitives.
+
+.. note:: ``.attr`` statements apply to the previous primitive instantiation.
+
+For example:
+
+.. code-block:: none
+
+    .latch a_and_b dff_q re clk 0
+    .attr src my_design.v:42
+
+Would set the attribute ``src`` of the above ``.latch`` to ``my_design.v:42``.
+
+.. warning:: VPR currently ignores ``.attr`` statements
+
+Extended BLIF File Format Example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: none
+
+    .model top
+    .inputs a b clk
+    .outputs o_dff
+
+    .names a b a_and_b
+    11 1
+    .cname lut_a_and_b
+    .param test_names_param "test_names_param_value"
+    .attr test_names_attrib "test_names_param_attrib"
+
+    .latch a_and_b dff_q re clk 0
+    .cname my_dff
+    .param test_latch_param "test_latch_param_value"
+    .attr test_latch_attrib "test_latch_param_attrib"
+
+    .conn dff_q o_dff
+
     .end
 
 .. _vpr_sdc_file:

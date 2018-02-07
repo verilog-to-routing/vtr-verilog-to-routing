@@ -40,11 +40,23 @@ Filename Options
 VPR by default appends .blif, .net, .place, and .route to the circuit name provided by the user, and looks for an SDC file in the working directory with the same name as the circuit.
 Use the options below to override this default naming behaviour.
 
-.. option:: --blif_file <file>
+.. option:: --circuit_file <file>
 
     Path to technology mapped user circuit in blif format.
 
     .. note:: If specified the ``circuit`` positional argument is treated as the circuit name.
+
+    .. seealso:: :option:`--circuit_format`
+
+.. option:: --circuit_format {auto | blif | eblif}
+
+    File format of the input technology mapped user circuit.
+
+    * ``auto``: File format inferred from file extension (e.g. ``.blif`` or ``.eblif``)
+    * ``blif``: Strict :ref:`structural BLIF <vpr_blif_file>`
+    * ``eblif``: Structural :ref:`BLIF with extensions <vpr_eblif_file>`
+
+    **Default:** ``auto``
 
 .. option:: --net_file <file>
 
