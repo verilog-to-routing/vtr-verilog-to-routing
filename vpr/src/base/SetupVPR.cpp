@@ -398,6 +398,7 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	PackerOpts->alpha = Options.alpha_clustering;
 	PackerOpts->beta = Options.beta_clustering;
+	PackerOpts->debug_clustering = Options.debug_clustering;
     PackerOpts->target_device_utilization = Options.target_device_utilization;
 
     //TODO: document?

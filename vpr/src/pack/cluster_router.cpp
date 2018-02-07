@@ -248,7 +248,8 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
 /* Attempt to route routing driver/targets on the current architecture 
    Follows pathfinder negotiated congestion algorithm
 */
-bool try_intra_lb_route(t_lb_router_data *router_data) {
+bool try_intra_lb_route(t_lb_router_data *router_data,
+                        bool debug_clustering) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	bool is_routed = false;
@@ -304,15 +305,17 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
                         int driver_rr_node = lb_nets[inet].terminals[0];
                         int sink_rr_node = lb_nets[inet].terminals[itarget];
 
-                        vtr::printf("No routing path from %s to %s: needed for net '%s' from pin '%s'",
-                                    describe_lb_type_rr_node(lb_type_graph[driver_rr_node]).c_str(),
-                                    describe_lb_type_rr_node(lb_type_graph[sink_rr_node]).c_str(),
-                                    atom_nlist.net_name(net_id).c_str(),
-                                    atom_nlist.pin_name(driver_pin).c_str());
-                        if (sink_pin) {
-                            vtr::printf(" to pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
+                        if (debug_clustering) {
+                            vtr::printf("No routing path from %s to %s: needed for net '%s' from pin '%s'",
+                                        describe_lb_type_rr_node(lb_type_graph[driver_rr_node]).c_str(),
+                                        describe_lb_type_rr_node(lb_type_graph[sink_rr_node]).c_str(),
+                                        atom_nlist.net_name(net_id).c_str(),
+                                        atom_nlist.pin_name(driver_pin).c_str());
+                            if (sink_pin) {
+                                vtr::printf(" to pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
+                            }
+                            vtr::printf("\n");
                         }
-                        vtr::printf("\n");
 					} else {
 						exp_node = pq.top();
 						pq.pop();
@@ -365,10 +368,15 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 	} else {
         //Unroutable
 
-        //Report the congested nodes and associated nets
-        auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
-        if (!congested_rr_nodes.empty()) {
-            vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, lb_type_graph, router_data->lb_rr_node_stats, lb_nets).c_str());
+        if (debug_clustering) {
+
+            if (!is_impossible) {
+                //Report the congested nodes and associated nets
+                auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
+                if (!congested_rr_nodes.empty()) {
+                    vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, lb_type_graph, router_data->lb_rr_node_stats, lb_nets).c_str());
+                }
+            }
         }
 
         //Clean-up

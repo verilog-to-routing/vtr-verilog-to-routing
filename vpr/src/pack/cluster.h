@@ -24,7 +24,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
-        std::string device_layout_name
+        std::string device_layout_name,
+        bool debug_clustering
 #ifdef USE_HMETIS
 		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif

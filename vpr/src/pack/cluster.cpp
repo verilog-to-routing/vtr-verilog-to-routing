@@ -72,8 +72,6 @@ using namespace std;
 
 #include "read_sdc.h"
 
-/*#define DEBUG_FAILED_PACKING_CANDIDATES*/
-
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
@@ -196,7 +194,8 @@ static enum e_block_pack_status try_pack_molecule(
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
-		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data);
+		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
+        bool debug_clustering);
 static enum e_block_pack_status try_place_atom_block_rec(
 		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
@@ -251,7 +250,8 @@ static void start_new_cluster(
 	t_lb_router_data **router_data,
 	const int detailed_routing_stage,
 	ClusteredNetlist *clb_nlist,
-    const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types);
+    const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
+    bool debug_clustering);
 
 static t_pack_molecule* get_highest_gain_molecule(
 		t_pb *cur_pb,
@@ -302,7 +302,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool allow_unrelated_clustering,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
-        std::string device_layout_name
+        std::string device_layout_name,
+        bool debug_clustering
 #ifdef USE_HMETIS
 		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif
@@ -547,10 +548,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					arch, device_layout_name,
 					lb_type_rr_graphs, &router_data, 
 					detailed_routing_stage, &cluster_ctx.clb_nlist,
-                    primitive_candidate_block_types);
+                    primitive_candidate_block_types,
+                    debug_clustering);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            vtr::printf("."); //Progress dot for seed-block
+            if (debug_clustering) {
+                vtr::printf("\n");
+            } else {
+                vtr::printf("."); //Progress dot for seed-block
+            }
 			fflush(stdout);
 			update_cluster_stats(istart, clb_index,
                     is_clock, //Set of clock nets
@@ -582,34 +588,33 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                         atom_molecules,
                         next_molecule,
 						primitives_list, cluster_ctx.clb_nlist.block_pb(clb_index), num_models,
-						max_cluster_size, clb_index, detailed_routing_stage, router_data);
+						max_cluster_size, clb_index, detailed_routing_stage, router_data,
+                        debug_clustering);
 				prev_molecule = next_molecule;
 
-#ifdef DEBUG_FAILED_PACKING_CANDIDATES
                 auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
                 VTR_ASSERT(blk_id);
 
                 std::string blk_name = atom_ctx.nlist.block_name(blk_id);
                 const t_model* blk_model = atom_ctx.nlist.block_model(blk_id);
-#endif
 
 				if (block_pack_status != BLK_PASSED) {
 					if (next_molecule != NULL) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
-#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-							vtr::printf_direct("\tNO_ROUTE:%s type %s/n", 
-									blk_name.c_str(), 
-									blk_model->name);
-							fflush(stdout);
-#endif
+                            if (debug_clustering) {
+                                vtr::printf_direct("\tNO_ROUTE: %s type %s/n", 
+                                        blk_name.c_str(), 
+                                        blk_model->name);
+                                fflush(stdout);
+                            }
 						} else {
-#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-							vtr::printf_direct("\tFAILED_CHECK:%s type %s check %d\n", 
-									blk_name.c_str(), 
-									blk_model->name, 
-									block_pack_status);
-							fflush(stdout);
-#endif
+                            if (debug_clustering) {
+                                vtr::printf_direct("\tFAILED_CHECK: %s type %s check %d\n", 
+                                        blk_name.c_str(), 
+                                        blk_model->name, 
+                                        block_pack_status);
+                                fflush(stdout);
+                            }
 						}
 					}
 
@@ -624,15 +629,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
-#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
-					vtr::printf_direct("\tPASSED:%s type %s\n", 
-							blk_name.c_str(), 
-							blk_model->name);
+                    if (debug_clustering) {
+                        vtr::printf_direct("\tPASSED: %s type %s\n", 
+                                blk_name.c_str(), 
+                                blk_model->name);
+                    } else {
+                        vtr::printf(".");
+                    }
 					fflush(stdout);
-#else
-					vtr::printf(".");
-					fflush(stdout);
-#endif
 				}
 				update_cluster_stats(next_molecule, clb_index,
                         is_clock, //Set of all clocks
@@ -655,14 +659,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						clb_index);
 			}
 
-			vtr::printf("\n");
+            if (!debug_clustering) {
+                vtr::printf("\n");
+            }
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
-				is_cluster_legal = try_intra_lb_route(router_data);
+				is_cluster_legal = try_intra_lb_route(router_data, debug_clustering);
 				if (is_cluster_legal == true) {
-#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-					vtr::printf_info("Passed route at end.\n");
-#endif
+                    if (debug_clustering) {
+                        vtr::printf_info("Passed route at end.\n");
+                    }
 				} else {
 					vtr::printf_info("Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
@@ -1230,7 +1236,8 @@ static enum e_block_pack_status try_pack_molecule(
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
-		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data) {
+		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
+        bool debug_clustering) {
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
@@ -1282,7 +1289,7 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/							
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data) == false) {
+				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data, debug_clustering) == false) {
 					/* Cannot pack */
 					block_pack_status = BLK_FAILED_ROUTE;
 				} else {
@@ -1907,7 +1914,8 @@ static void start_new_cluster(
 		t_lb_router_data **router_data, 
 		const int detailed_routing_stage,
 		ClusteredNetlist *clb_nlist,
-        const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types) {
+        const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
+        bool debug_clustering) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
 	 */
@@ -1961,7 +1969,7 @@ static void start_new_cluster(
                                             atom_molecules,
                                             molecule, primitives_list, pb,
                                             num_models, max_cluster_size, clb_index,
-                                            detailed_routing_stage, *router_data);
+                                            detailed_routing_stage, *router_data, debug_clustering);
 
             success = (pack_result == BLK_PASSED);
         }

@@ -37,7 +37,6 @@
  * Global data types and constants
  ******************************************************************************/
 /*#define CREATE_ECHO_FILES*//* prints echo files */
-/*#define DEBUG_FAILED_PACKING_CANDIDATES*//*Displays candidates during packing that failed */
 /*#define PRINT_SINK_DELAYS*//*prints the sink delays to files */
 /*#define PRINT_SLACKS*//*prints out all slacks in the circuit */
 /*#define PRINT_PLACE_CRIT_PATH*//*prints out placement estimated critical path */
@@ -103,7 +102,10 @@ enum e_cluster_seed {
 };
 
 enum e_block_pack_status {
-	BLK_PASSED, BLK_FAILED_FEASIBLE, BLK_FAILED_ROUTE, BLK_STATUS_UNDEFINED
+	BLK_PASSED,
+    BLK_FAILED_FEASIBLE,
+    BLK_FAILED_ROUTE,
+    BLK_STATUS_UNDEFINED
 };
 
 /* these are defined later, but need to declare here because it is used */
@@ -689,6 +691,7 @@ struct t_packer_opts {
 	bool auto_compute_inter_cluster_net_delay;
 	bool allow_unrelated_clustering;
 	bool connection_driven;
+	bool debug_clustering;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
