@@ -1155,7 +1155,10 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
         
         //Walk the traceback to find congested RR nodes for each net
         std::queue<t_lb_trace> q;
-        q.push(*lb_nets[inet].rt_tree);
+
+        if (lb_nets[inet].rt_tree) {
+            q.push(*lb_nets[inet].rt_tree);
+        }
         while (!q.empty()) {
             t_lb_trace curr = q.front();
             q.pop();
