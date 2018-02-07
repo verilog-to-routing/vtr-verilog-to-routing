@@ -571,7 +571,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		my @vpr_args;
 		push( @vpr_args, $architecture_file_name );
 		push( @vpr_args, "$benchmark_name" );
-		push( @vpr_args, "--blif_file"	);
+		push( @vpr_args, "--circuit_file"	);
 		push( @vpr_args, "$prevpr_output_file_name");
 		push( @vpr_args, "--timing_analysis" );   
 		push( @vpr_args, "$timing_driven");
@@ -636,7 +636,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "$benchmark_name" );
 				push( @vpr_args, "--route" );
                 push( @vpr_args, "--analysis" );
-				push( @vpr_args, "--blif_file"	);
+				push( @vpr_args, "--circuit_file"	);
 				push( @vpr_args, "$prevpr_output_file_name");
 				push( @vpr_args, "--route_chan_width" );   
 				push( @vpr_args, "$min_chan_width" );
@@ -677,7 +677,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		my @vpr_args;
 		push( @vpr_args, $architecture_file_name );
 		push( @vpr_args, "$benchmark_name" );
-		push( @vpr_args, "--blif_file"	);
+		push( @vpr_args, "--circuit_file"	);
 		push( @vpr_args, "$prevpr_output_file_name");
 		push( @vpr_args, "--timing_analysis" );   
 		push( @vpr_args, "$timing_driven");
@@ -748,7 +748,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "--verify_file_digests" );
                 push( @vpr_args, "off" );
 			}
-            push( @vpr_args, "--blif_file"	);
+            push( @vpr_args, "--circuit_file"	);
             push( @vpr_args, "$prevpr_output_file_name");
             push( @vpr_args, "--timing_analysis" );   
             push( @vpr_args, "$timing_driven");

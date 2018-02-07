@@ -359,7 +359,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     auto& file_grp = parser.add_argument_group("file options");
 
-    file_grp.add_argument(args.BlifFile, "--blif_file")
+    file_grp.add_argument(args.BlifFile, "--circuit_file")
             .help("Path to technology mapped circuit")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
