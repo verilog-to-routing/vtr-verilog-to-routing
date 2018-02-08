@@ -92,14 +92,15 @@ static void reset_explored_node_tb(t_lb_router_data *router_data);
 static void save_and_reset_lb_route(t_lb_router_data *router_data);
 static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace);
 
-static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node);
+static std::string describe_lb_type_rr_node(int inode,
+                                            const t_lb_router_data* router_data);
 
 static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
                                                 const t_lb_rr_node_stats* lb_rr_node_stats);
+static std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin);
+static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_data* router_data);
 static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
-                                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
-                                               const t_lb_rr_node_stats* lb_rr_node_stats,
-                                               const std::vector<t_intra_lb_net>& lb_nets);
+                                               const t_lb_router_data* router_data);
 /*****************************************************************************************
 * Debug functions declarations
 ******************************************************************************************/
@@ -306,13 +307,13 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
                         int sink_rr_node = lb_nets[inet].terminals[itarget];
 
                         if (debug_clustering) {
-                            vtr::printf("No routing path from %s to %s: needed for net '%s' from pin '%s'",
-                                        describe_lb_type_rr_node(lb_type_graph[driver_rr_node]).c_str(),
-                                        describe_lb_type_rr_node(lb_type_graph[sink_rr_node]).c_str(),
+                            vtr::printf("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
+                                        describe_lb_type_rr_node(driver_rr_node, router_data).c_str(),
+                                        describe_lb_type_rr_node(sink_rr_node, router_data).c_str(),
                                         atom_nlist.net_name(net_id).c_str(),
                                         atom_nlist.pin_name(driver_pin).c_str());
                             if (sink_pin) {
-                                vtr::printf(" to pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
+                                vtr::printf(" to net pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
                             }
                             vtr::printf("\n");
                         }
@@ -369,12 +370,11 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
         //Unroutable
 
         if (debug_clustering) {
-
             if (!is_impossible) {
                 //Report the congested nodes and associated nets
                 auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
                 if (!congested_rr_nodes.empty()) {
-                    vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, lb_type_graph, router_data->lb_rr_node_stats, lb_nets).c_str());
+                    vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
                 }
             }
         }
@@ -501,7 +501,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
     AtomNetId net_id = atom_ctx.nlist.pin_net(pin_id);
 
 	if(!net_id) {
-		/* This is not a valid net */
+        //No net connected to this pin, so nothing to route
 		return;
 	}
 
@@ -531,36 +531,53 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	*/	
 	if(lb_nets[ipos].terminals.empty()) {
 		/* Add terminals */
+
+        //Default assumption is that the source is outside the current cluster (will be overriden later if required)
 		int source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
 		lb_nets[ipos].terminals.push_back(source_terminal);
-		lb_nets[ipos].atom_pins.push_back(pin_id);
-		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
 
+        AtomPinId net_driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+		lb_nets[ipos].atom_pins.push_back(net_driver_pin_id);
+
+		VTR_ASSERT_MSG(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE, "Driver must be a source");
 	}
 
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	if(atom_ctx.nlist.port_type(port_id) == PortType::OUTPUT) {
-		/* Net driver pin takes 0th position in terminals */
-		int sink_terminal;
-		VTR_ASSERT(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type));
+        //The current pin is the net driver, overwrite the default driver at index 0
+		VTR_ASSERT_MSG(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type), "Default driver must be external source");
+
+        VTR_ASSERT(atom_ctx.nlist.pin_type(pin_id) == PinType::DRIVER);
+
+        //Override the default since this is the driver, and it is within the cluster
 		lb_nets[ipos].terminals[0] = pb_graph_pin->pin_count_in_cluster;
 		lb_nets[ipos].atom_pins[0] = pin_id;
 
-		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
+		VTR_ASSERT_MSG(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE, "Driver must be a source");
 		
 
+		int sink_terminal = OPEN;
 		if(lb_nets[ipos].terminals.size() < atom_ctx.nlist.net_pins(net_id).size()) {
-			/* Must route out of cluster, put out of cluster sink terminal as first terminal */
+            //Not all of the pins are within the cluster
 			if(lb_nets[ipos].terminals.size() == 1) {
+                //Only the source has been specified so far, must add cluster-external sink
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals.push_back(sink_terminal);
 				lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
 			} else {
-				sink_terminal = lb_nets[ipos].terminals[1];
-				lb_nets[ipos].terminals.push_back(sink_terminal);
-				lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
+                VTR_ASSERT(lb_nets[ipos].terminals.size() > 1);
 
+                //TODO: Figure out why we swap terminal 1 here (although it appears to work correctly, 
+                //      it's not clear why this is needed...)
+                
+                //Move current terminal 1 to end
+				sink_terminal = lb_nets[ipos].terminals[1];
+				AtomPinId sink_atom_pin = lb_nets[ipos].atom_pins[1];
+				lb_nets[ipos].terminals.push_back(sink_terminal);
+				lb_nets[ipos].atom_pins.push_back(sink_atom_pin);
+
+                //Create external sink at terminal 1
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals[1] = sink_terminal;
 				lb_nets[ipos].atom_pins[1] = AtomPinId::INVALID();
@@ -571,6 +588,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
         //This is an input to a primitive
         VTR_ASSERT(atom_ctx.nlist.port_type(port_id) == PortType::INPUT
                    || atom_ctx.nlist.port_type(port_id) == PortType::CLOCK);
+        VTR_ASSERT(atom_ctx.nlist.pin_type(pin_id) == PinType::SINK);
 
         //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
@@ -586,7 +604,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 			lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
 
 		    /* If all sinks of net are all contained in the logic block, then the net does 
-             * not need to route out of the logic block, so the external sink can be removed */
+             * not need to route out of the logic block, so can replace the external sink 
+             * with this last sink terminal */
 			lb_nets[ipos].terminals[1] = sink_index;
 			lb_nets[ipos].atom_pins[1] = pin_id;
 		} else {
@@ -600,6 +619,39 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	int num_lb_terminals = lb_nets[ipos].terminals.size();
 	VTR_ASSERT(num_lb_terminals <= (int) atom_ctx.nlist.net_pins(net_id).size());
 	VTR_ASSERT(num_lb_terminals >= 0);
+
+#ifdef VTR_ASSERT_SAFE_ENABLED
+    //Sanity checks
+    int num_extern_sources = 0;
+    int num_extern_sinks = 0;
+    for (size_t iterm = 0; iterm < lb_nets[ipos].terminals.size(); ++iterm) {
+        int inode = lb_nets[ipos].terminals[iterm];
+        AtomPinId atom_pin = lb_nets[ipos].atom_pins[iterm];
+        if (iterm == 0) {
+            //Net driver
+            VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SOURCE, "Driver must be a source RR node");
+            VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an assoicated atom pin");
+            VTR_ASSERT_SAFE_MSG(atom_ctx.nlist.pin_type(atom_pin) == PinType::DRIVER, "Source RR must be associated with a driver pin in atom netlist");
+            if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
+                ++num_extern_sources;
+            }
+        } else {
+            //Net sink
+            VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SINK, "Non-driver must be a sink");
+
+            if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+                //External sink may have multiple potentially matching atom pins, so it's atom pin is left invalid
+                VTR_ASSERT_SAFE_MSG(!atom_pin, "Cluster external sink should have no valid atom pin");
+                ++num_extern_sinks;
+            } else {
+                VTR_ASSERT_SAFE_MSG(atom_pin, "Intra-cluster sink must have an assoicated atom pin");
+                VTR_ASSERT_SAFE_MSG(atom_ctx.nlist.pin_type(atom_pin) == PinType::SINK, "Intra-cluster Sink RR must be associated with a sink pin in atom netlist");
+            }
+        }
+    }
+    VTR_ASSERT_SAFE_MSG(num_extern_sinks >= 0 && num_extern_sinks <= 1, "Net must have at most one external sink");
+    VTR_ASSERT_SAFE_MSG(num_extern_sources >= 0 && num_extern_sources <= 1, "Net must have at most one external source");
+#endif
 }
 
 
@@ -1127,23 +1179,41 @@ static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_n
     return congested_rr_nodes;
 }
 
-static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node) {
+static std::string describe_lb_type_rr_node(int inode,
+                                            const t_lb_router_data* router_data) {
     std::string description;
 
-    auto pb_graph_pin = rr_node.pb_graph_pin;
+    const t_lb_type_rr_node& rr_node = (*router_data->lb_type_graph)[inode];
+    t_type_ptr lb_type = router_data->lb_type;
+
+    const t_pb_graph_pin* pb_graph_pin = rr_node.pb_graph_pin;
 
     if (pb_graph_pin) {
-        description += "'";
-        description += pb_graph_pin->parent_node->pb_type->name;
-        description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
-        description += '.';
-        description += pb_graph_pin->port->name;
-        description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
-        description += "'";
+        description += "'" + describe_pb_graph_pin(pb_graph_pin) + "'";
+    } else if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
+        VTR_ASSERT(rr_node.type == LB_SOURCE);
+        description = "cluster-external source (LB_SOURCE)";
+    } else if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+        VTR_ASSERT(rr_node.type == LB_SINK);
+        description = "cluster-external sink (LB_SINK)";
     } else if (rr_node.type == LB_SINK) {
-        description = "cluster external sink (LB_SINK)";
+        description = "cluster-internal sink (LB_SINK accessible via architecture pins: ";
+
+        //To account for equivalent pins multiple pins may route to a single sink.
+        //As a result we need to fin all the nodes which connect to this sink in order
+        //to give user-friendly pin names
+        std::vector<std::string> pin_descriptions;
+        std::vector<int> pin_rrs = find_incoming_rr_nodes(inode, router_data);
+        for (int pin_rr_idx : pin_rrs) {
+            const t_pb_graph_pin* pin_pb_gpin = (*router_data->lb_type_graph)[pin_rr_idx].pb_graph_pin;
+            pin_descriptions.push_back(describe_pb_graph_pin(pin_pb_gpin));
+        }
+
+        description += vtr::join(pin_descriptions, ", ");
+        description += ")";
+
     } else if (rr_node.type == LB_SOURCE) {
-        description = "cluster external source (LB_SOURCE)";
+        description = "cluster-internal source (LB_SOURCE)";
     } else {
         description = "<unkown lb_type_rr_node>";
     }
@@ -1151,11 +1221,44 @@ static std::string describe_lb_type_rr_node(const t_lb_type_rr_node& rr_node) {
     return description;
 }
 
-static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
-                                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
-                                               const t_lb_rr_node_stats* lb_rr_node_stats,
-                                               const std::vector<t_intra_lb_net>& lb_nets) {
+static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_data* router_data) {
+    std::vector<int> incoming_rr_nodes;
+    const auto& lb_rr_node_stats = router_data->lb_rr_node_stats;
+    const auto& lb_rr_graph = *router_data->lb_type_graph;
+    for (size_t inode = 0; inode < lb_rr_graph.size(); ++inode) {
+        const t_lb_type_rr_node& rr_node = lb_rr_graph[inode];
+        int mode = lb_rr_node_stats[inode].mode;
+
+        for (int iedge = 0; iedge < rr_node.num_fanout[mode]; ++iedge) {
+            const t_lb_type_rr_node_edge& rr_edge = rr_node.outedges[mode][iedge];
+
+            if (rr_edge.node_index == dst_node) {
+                //The current node connects to the destination node
+                incoming_rr_nodes.push_back(inode);
+            }
+        }
+    }
+    return incoming_rr_nodes;
+}
+
+static std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin) {
+    VTR_ASSERT(pb_graph_pin);
     std::string description;
+    description += pb_graph_pin->parent_node->pb_type->name;
+    description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
+    description += '.';
+    description += pb_graph_pin->port->name;
+    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
+    return description;
+}
+
+static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
+                                               const t_lb_router_data* router_data) {
+    std::string description;
+
+    const auto& lb_nets = *router_data->intra_lb_nets;
+    const auto& lb_type_graph = *router_data->lb_type_graph;
+    const auto& lb_rr_node_stats = router_data->lb_rr_node_stats;
 
     std::multimap<size_t,AtomNetId> congested_rr_node_to_nets; //From rr_node to net
     for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
@@ -1194,7 +1297,7 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
         const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats[inode];
         description += vtr::string_fmt("RR Node %d (%s) is congested (occ: %d > capacity: %d) with the following nets:\n",
                 inode,
-                describe_lb_type_rr_node(rr_node).c_str(),
+                describe_lb_type_rr_node(inode, router_data).c_str(),
                 rr_node_stats.occ,
                 rr_node.capacity);
         auto range = congested_rr_node_to_nets.equal_range(inode);
