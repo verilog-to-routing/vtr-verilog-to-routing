@@ -477,6 +477,16 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .choices({"blend", "timing", "max_inputs"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool,ParseOnOff>(args.enable_clustering_pin_feasibility_filter, "--clustering_pin_feasibility_filter")
+            .help("Controls whether the pin counting feasibility filter is used during clustering."
+                  " When enabled the clustering engine counts the number of available pins in"
+                  " groups/classes of mutually connected pins within a cluster."
+                  " These counts are used to quickly filter out candidate primitives/atoms/molecules"
+                  " for which the cluster has insufficient pins to route (without performing a full routing)."
+                  " This reduces run-time, but should have no impact on quality.")
+            .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")
             .help("Controls verbose clustering output (useful for debugging architecture packing problems)")
             .default_value("off")

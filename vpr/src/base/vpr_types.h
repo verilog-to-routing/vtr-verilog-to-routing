@@ -692,6 +692,7 @@ struct t_packer_opts {
 	bool allow_unrelated_clustering;
 	bool connection_driven;
 	bool debug_clustering;
+    bool enable_pin_feasibility_filter;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

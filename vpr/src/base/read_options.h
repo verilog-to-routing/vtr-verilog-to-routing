@@ -62,6 +62,7 @@ struct t_options {
     argparse::ArgValue<float> beta_clustering;
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
+    argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
     argparse::ArgValue<bool> debug_clustering;
 
     /* Placement options */

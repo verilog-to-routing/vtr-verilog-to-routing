@@ -195,7 +195,8 @@ static enum e_block_pack_status try_pack_molecule(
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
-        bool debug_clustering);
+        bool debug_clustering,
+        bool enable_pin_feasibility_filter);
 static enum e_block_pack_status try_place_atom_block_rec(
 		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
@@ -251,7 +252,8 @@ static void start_new_cluster(
 	const int detailed_routing_stage,
 	ClusteredNetlist *clb_nlist,
     const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
-    bool debug_clustering);
+    bool debug_clustering,
+    bool enable_pin_feasibility_filter);
 
 static t_pack_molecule* get_highest_gain_molecule(
 		t_pb *cur_pb,
@@ -303,7 +305,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name,
-        bool debug_clustering
+        bool debug_clustering,
+        bool enable_pin_feasibility_filter
 #ifdef USE_HMETIS
 		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif
@@ -549,7 +552,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					lb_type_rr_graphs, &router_data, 
 					detailed_routing_stage, &cluster_ctx.clb_nlist,
                     primitive_candidate_block_types,
-                    debug_clustering);
+                    debug_clustering,
+                    enable_pin_feasibility_filter);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
             if (debug_clustering) {
@@ -589,7 +593,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                         next_molecule,
 						primitives_list, cluster_ctx.clb_nlist.block_pb(clb_index), num_models,
 						max_cluster_size, clb_index, detailed_routing_stage, router_data,
-                        debug_clustering);
+                        debug_clustering,
+                        enable_pin_feasibility_filter);
 				prev_molecule = next_molecule;
 
                 auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
@@ -1237,7 +1242,8 @@ static enum e_block_pack_status try_pack_molecule(
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
-        bool debug_clustering) {
+        bool debug_clustering,
+        bool enable_pin_feasibility_filter) {
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
@@ -1277,7 +1283,7 @@ static enum e_block_pack_status try_pack_molecule(
 							cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
 				}
 			}
-			if (block_pack_status == BLK_PASSED) {
+			if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
 				/* Check if pin usage is feasible for the current packing assigment */
 				reset_lookahead_pins_used(pb);
 				try_update_lookahead_pins_used(pb);
@@ -1915,7 +1921,8 @@ static void start_new_cluster(
 		const int detailed_routing_stage,
 		ClusteredNetlist *clb_nlist,
         const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
-        bool debug_clustering) {
+        bool debug_clustering,
+        bool enable_pin_feasibility_filter) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
 	 */
@@ -1969,7 +1976,9 @@ static void start_new_cluster(
                                             atom_molecules,
                                             molecule, primitives_list, pb,
                                             num_models, max_cluster_size, clb_index,
-                                            detailed_routing_stage, *router_data, debug_clustering);
+                                            detailed_routing_stage, *router_data,
+                                            debug_clustering,
+                                            enable_pin_feasibility_filter);
 
             success = (pack_result == BLK_PASSED);
         }
