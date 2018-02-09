@@ -908,6 +908,12 @@ class Netlist {
         vtr::vector_map<BlockId, unsigned>                  block_num_output_pins_;    //Number of output pins on each block
         vtr::vector_map<BlockId, unsigned>                  block_num_clock_pins_;     //Number of clock pins on each block
 
+        vtr::vector_map<BlockId, std::vector<StringId>>     block_param_names_;        //Parameter names of each block
+        vtr::vector_map<BlockId, std::vector<StringId>>     block_param_values_;       //Parameter values of each block
+        
+        vtr::vector_map<BlockId, std::vector<StringId>>     block_attr_names_;         //Attribute names of each block
+        vtr::vector_map<BlockId, std::vector<StringId>>     block_attr_values_;        //Attribute values of each block
+
         //Port data
         vtr::vector_map<PortId, PortId>                 port_ids_;      //Valid port ids
         vtr::vector_map<PortId, StringId>               port_names_;    //Name of each port
