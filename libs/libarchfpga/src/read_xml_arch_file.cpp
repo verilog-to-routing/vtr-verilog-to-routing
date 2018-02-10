@@ -1539,7 +1539,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 
 	if (0 == strcmp(Parent.name(), "pb_type")) {
 		/* implied mode */
-		mode->name = vtr::strdup(mode->parent_pb_type->name);
+		mode->name = vtr::strdup("default");
 	} else {
 		Prop = get_attribute(Parent, "name", loc_data).value();
 		mode->name = vtr::strdup(Prop);
