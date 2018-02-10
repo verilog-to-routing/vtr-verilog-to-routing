@@ -73,6 +73,20 @@ bool Netlist<BlockId, PortId, PinId, NetId>::block_is_combinational(const BlockI
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
+typename Netlist<BlockId, PortId, PinId, NetId>::attr_range Netlist<BlockId, PortId, PinId, NetId>::block_attrs(const BlockId blk_id) const {
+    VTR_ASSERT_SAFE(valid_block_id(blk_id));
+
+    return vtr::make_range(block_attrs_[blk_id].begin(), block_attrs_[blk_id].end());
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+typename Netlist<BlockId, PortId, PinId, NetId>::param_range Netlist<BlockId, PortId, PinId, NetId>::block_params(const BlockId blk_id) const {
+    VTR_ASSERT_SAFE(valid_block_id(blk_id));
+
+    return vtr::make_range(block_params_[blk_id].begin(), block_params_[blk_id].end());
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::block_pins(const BlockId blk_id) const {
     VTR_ASSERT_SAFE(valid_block_id(blk_id));
 
@@ -592,6 +606,8 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::create_block(const std::string n
 
         //Initialize the data
         block_names_.push_back(name_id);
+        block_attrs_.emplace_back();
+        block_params_.emplace_back();
 
         //Initialize the look-ups
         block_name_to_block_id_.insert(name_id, blk_id);
@@ -813,6 +829,20 @@ void Netlist<BlockId, PortId, PinId, NetId>::set_block_name(const BlockId blk_id
 
     //Update name-look-up
     block_name_to_block_id_.insert(new_string, blk_id);
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+void Netlist<BlockId, PortId, PinId, NetId>::set_block_attr(const BlockId blk_id, const std::string &name, const std::string &value) {
+    VTR_ASSERT(valid_block_id(blk_id));
+
+    block_attrs_[blk_id][name] = value;
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+void Netlist<BlockId, PortId, PinId, NetId>::set_block_param(const BlockId blk_id, const std::string &name, const std::string &value) {
+    VTR_ASSERT(valid_block_id(blk_id));
+
+    block_params_[blk_id][name] = value;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
