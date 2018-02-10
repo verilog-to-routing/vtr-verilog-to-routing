@@ -105,7 +105,7 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
 * Debug functions declarations
 ******************************************************************************************/
 #ifdef PRINT_INTRA_LB_ROUTE
-static void print_route(char *filename, t_lb_router_data *router_data);
+static void print_route(const char *filename, t_lb_router_data *router_data);
 static void print_trace(FILE *fp, t_lb_trace *trace);
 #endif
 
@@ -1082,12 +1082,12 @@ static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index) {
 
 #ifdef PRINT_INTRA_LB_ROUTE
 /* Debug routine, print out current intra logic block route */
-static void print_route(char *filename, t_lb_router_data *router_data) {
+static void print_route(const char *filename, t_lb_router_data *router_data) {
 	FILE *fp;
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 
-	fp = my_fopen(filename, "w", 0);
+	fp = fopen(filename, "w");
 	
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
 		fprintf(fp, "node %d occ %d cap %d\n", inode, router_data->lb_rr_node_stats[inode].occ, lb_type_graph[inode].capacity);
