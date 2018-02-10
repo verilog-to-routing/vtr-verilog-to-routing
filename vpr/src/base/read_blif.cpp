@@ -371,11 +371,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 parse_error(lineno_, ".attr", "Supported only in extended BLIF format");
             }
 
-            //Currently VPR doesn't track attributes, so warn user
-            vtr::printf_warning(__FILE__, __LINE__, "Ignoring attribute (%s: %s) set on block '%s'\n",
-                    name.c_str(),
-                    value.c_str(),
-                    curr_model().block_name(curr_block()).c_str());
+            curr_model().set_block_attr(curr_block(), name, value);
         }
 
         void param(std::string name, std::string value) override {
@@ -383,11 +379,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 parse_error(lineno_, ".param", "Supported only in extended BLIF format");
             }
 
-            //Currently VPR doesn't track params, so warn user
-            vtr::printf_warning(__FILE__, __LINE__, "Ignoring parameter (%s: %s) set on block '%s'\n",
-                    name.c_str(),
-                    value.c_str(),
-                    curr_model().block_name(curr_block()).c_str());
+            curr_model().set_block_param(curr_block(), name, value);
         }
 
 

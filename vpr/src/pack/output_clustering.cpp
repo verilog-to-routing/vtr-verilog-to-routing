@@ -238,6 +238,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 		VTR_ASSERT(mode != nullptr && mode_of_edge != UNDEFINED);
 
 		block_node.append_attribute("mode") = mode->name;
+		block_node.append_attribute("pb_type_num_modes") = pb_type->num_modes;
 
 
 		pugi::xml_node inputs_node = block_node.append_child("inputs");
@@ -353,6 +354,22 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 
 	if (pb_type->num_modes > 0) {
 		block_node.append_attribute("mode") = mode->name;
+	} else {
+		const auto& atom_ctx = g_vpr_ctx.atom();
+		AtomBlockId atom_blk = atom_ctx.nlist.find_block(pb->name);
+		VTR_ASSERT(atom_blk);
+
+		for (const auto& attr : atom_ctx.nlist.block_attrs(atom_blk)) {
+			pugi::xml_node attr_node = parent_node.append_child("attribute");
+			attr_node.append_attribute("name") = attr.first.c_str();
+			attr_node.text().set(attr.second.c_str());
+		}
+		
+		for (const auto& param : atom_ctx.nlist.block_params(atom_blk)) {
+			pugi::xml_node param_node = parent_node.append_child("parameter");
+			param_node.append_attribute("name") = param.first.c_str();
+			param_node.text().set(param.second.c_str());
+		}
 	}
 
 	pugi::xml_node inputs_node = block_node.append_child("inputs");
