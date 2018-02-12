@@ -477,16 +477,17 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, con
 
         if (grid_tile.type->index != get_attribute(grid_node, "block_type_id", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's block_type_id");
+                    "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
+                     (grid_tile.type->index), (int)get_attribute(grid_node, "block_type_id", loc_data).as_float(0));
         }
         if (grid_tile.width_offset != get_attribute(grid_node, "width_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's width_offset");
+                    "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
         }
 
         if (grid_tile.height_offset != get_attribute(grid_node, "height_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's height_offset");
+                    "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
         }
         grid_node = grid_node.next_sibling(grid_node.name());
     }
@@ -508,7 +509,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
         if (strcmp(block_info.name, name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's block name");
+                    "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s", block_info.name, name);
         }
 
         if (block_info.width != get_attribute(Block, "width", loc_data).as_float(0)) {
@@ -577,7 +578,7 @@ void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         const char* name = get_attribute(Segment, "name", loc_data).as_string();
         if (strcmp(segment_inf[segNum].name, name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's segment name");
+                    "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name, name);
         }
 
         subnode = get_single_child(parent, "timing", loc_data, OPTIONAL);
