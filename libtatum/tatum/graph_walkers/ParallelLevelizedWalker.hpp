@@ -41,7 +41,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
             }
             num_unconstrained_startpoints_ = unconstrained_reducer.get_value();
 #elif defined(TATUM_USE_TBB)
-            tbb::combinable<size_t> unconstrained_counter(0);
+            tbb::combinable<size_t> unconstrained_counter(zero);
 
             tbb::parallel_for_each(nodes, [&](auto node) {
                 bool constrained = visitor.do_arrival_pre_traverse_node(tg, tc, node);
@@ -80,7 +80,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
 
             num_unconstrained_endpoints_ = unconstrained_reducer.get_value();
 #elif defined(TATUM_USE_TBB)
-            tbb::combinable<size_t> unconstrained_counter(0);
+            tbb::combinable<size_t> unconstrained_counter(zero);
 
             tbb::parallel_for_each(po, [&](auto node) {
                 bool constrained = visitor.do_required_pre_traverse_node(tg, tc, node);
@@ -188,6 +188,17 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
         size_t num_unconstrained_startpoints_impl() const override { return num_unconstrained_startpoints_; }
         size_t num_unconstrained_endpoints_impl() const override { return num_unconstrained_endpoints_; }
     private:
+
+#if defined(TATUM_USE_TBB)
+        //Function to initialize tbb:combinable<size_t> to zero
+        // In earlier versions of TBB (e.g. v4.4) an explicit constant could be
+        // used as the initializer. However later versions (e.g. v2018.0) 
+        // require that the initializer be a (thread-safe) callable.
+        // We therefore use an explicit function, which should work for all 
+        // versions.
+        static size_t zero() { return 0; }
+#endif
+
         size_t num_unconstrained_startpoints_ = 0;
         size_t num_unconstrained_endpoints_ = 0;
 };
