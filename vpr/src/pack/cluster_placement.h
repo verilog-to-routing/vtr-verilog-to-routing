@@ -11,8 +11,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void);
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
 		const t_pack_molecule *molecule,
-		t_pb_graph_node **primitives_list, 
-		const ClusterBlockId clb_index);
+		t_pb_graph_node **primitives_list);
 void commit_primitive(t_cluster_placement_stats *cluster_placement_stats,
 		const t_pb_graph_node *primitive);
 void set_mode_cluster_placement_stats(const t_pb_graph_node *complex_block,

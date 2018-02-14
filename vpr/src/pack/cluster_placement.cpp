@@ -39,7 +39,7 @@ static void requeue_primitive(
 static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node,
 		const float incremental_cost, const bool valid);
 static float try_place_molecule(const t_pack_molecule *molecule,
-		t_pb_graph_node *root, t_pb_graph_node **primitives_list, const ClusterBlockId clb_index);
+		t_pb_graph_node *root, t_pb_graph_node **primitives_list);
 static bool expand_forced_pack_molecule_placement(
 		const t_pack_molecule *molecule,
 		const t_pack_pattern_block *pack_pattern_block,
@@ -95,7 +95,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  */
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
-		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list, const ClusterBlockId clb_index) {
+		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list) {
 	t_cluster_placement_primitive *cur, *next, *best, *before_best, *prev;
 	int i;
 	float cost, lowest_cost;
@@ -155,7 +155,7 @@ bool get_next_primitive_list(
 				}
 				/* try place molecule at root location cur */
 				cost = try_place_molecule(molecule, cur->pb_graph_node,
-						primitives_list, clb_index);
+						primitives_list);
 				if (cost < lowest_cost) {
 					lowest_cost = cost;
 					best = cur;
@@ -173,7 +173,7 @@ bool get_next_primitive_list(
 		}
 	} else {
 		/* populate primitive list with best */
-		cost = try_place_molecule(molecule, best->pb_graph_node, primitives_list, clb_index);
+		cost = try_place_molecule(molecule, best->pb_graph_node, primitives_list);
 		VTR_ASSERT(cost == lowest_cost);
 
 		/* take out best node and put it in flight */
@@ -453,7 +453,7 @@ static void update_primitive_cost_or_status(const t_pb_graph_node *pb_graph_node
  * Try place molecule at root location, populate primitives list with locations of placement if successful
  */
 static float try_place_molecule(const t_pack_molecule *molecule,
-		t_pb_graph_node *root, t_pb_graph_node **primitives_list, const ClusterBlockId clb_index) {
+		t_pb_graph_node *root, t_pb_graph_node **primitives_list) {
 	int list_size, i;
 	float cost = HUGE_POSITIVE_FLOAT;
 	list_size = get_array_size_of_molecule(molecule);

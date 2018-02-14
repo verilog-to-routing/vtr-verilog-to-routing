@@ -1262,7 +1262,7 @@ static enum e_block_pack_status try_pack_molecule(
 
 	while (block_pack_status != BLK_PASSED) {
 		if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
-				primitives_list, clb_index)) {
+				primitives_list)) {
 			block_pack_status = BLK_PASSED;
 			
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
