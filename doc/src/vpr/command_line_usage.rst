@@ -187,7 +187,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
 
     **Default:** ``on``
 
-.. option:: --constant_net_method {global, route}
+.. option:: --constant_net_method {global | route}
 
     Specifies how constant nets (i.e. those driven to a constant value) are handled:
 
@@ -301,6 +301,20 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``blend`` if timing_driven_clustering is on; ``max_inputs`` otherwise.
 
+.. option:: --clustering_pin_feasibility_filter {on | off}
+
+    Controls whether the pin counting feasibility filter is used during clustering.
+    When enabled the clustering engine counts the number of available pins in groups/classes of mutually connected pins within a cluster.
+    These counts are used to quickly filter out candidate primitives/atoms/molecules for which the cluster has insufficient pins to route (without performing a full routing).
+    This reduces run-time, but should have no impact on quality.
+    
+    **Default:** ``on``
+
+.. option:: --debug_clustering {on | off}
+
+    Controls verbose clustering output (useful for debugging architecture packing problems).
+    
+    **Default:** ``off``
 
 .. _placer_options:
 
