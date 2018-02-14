@@ -837,7 +837,13 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 				if (atom_net_id) {
 					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin);
+
+                    AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
+                    bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
+
+					clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
+
+                    VTR_ASSERT(clb_nlist.net_is_constant(clb_net_id) == driver_is_constant);
 				}
 				ipin++;
 			}
