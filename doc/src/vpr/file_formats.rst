@@ -611,7 +611,7 @@ The channel information is contained within the ``channels`` subtag. This descri
 
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each switch tag has a ``switch`` subtag.
 
-.. arch:tag:: <switch id="int" name="unique_identifier" buffered="int">
+.. arch:tag:: <switch id="int" name="unique_identifier" buffered="int" configurable="int">
 
     :req_param id:
         A unique identifier for that type of switch.
@@ -621,6 +621,13 @@ A ``switches`` tag contains all the switches and its information within the FPGA
         
     :req_param buffered:
         An integer value that describes whether the switch includes a buffer. 1 means a buffer is included.
+
+    :opt_param configurable:
+        Indicates whether the switch is configurable (``1``) or non-configurable (``0``).
+
+        **Default**: ``1``
+
+        .. seealso:: :ref:`Architecture Switches <arch_switches>`
 
 .. arch:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
 

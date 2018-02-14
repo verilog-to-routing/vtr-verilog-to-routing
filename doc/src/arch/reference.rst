@@ -596,8 +596,6 @@ The tags within the ``<device>`` tag are:
     The contents of this tag are described in :ref:`global_routing_info`.
 
 .. _arch_switches:
-
-.. _arch_switches:
  
 Switches
 --------
