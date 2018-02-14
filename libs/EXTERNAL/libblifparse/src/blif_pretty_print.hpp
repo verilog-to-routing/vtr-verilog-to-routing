@@ -29,6 +29,12 @@ class BlifPrettyPrinter : public Callback {
 
         void end_model() override;
 
+        //BLIF Extensions
+        void conn(std::string src, std::string dst) override;
+        void cname(std::string cell_name) override;
+        void attr(std::string name, std::string value) override;
+        void param(std::string name, std::string value) override;
+
         void finish_parse() override;
 
         void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {

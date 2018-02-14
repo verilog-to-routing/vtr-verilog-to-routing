@@ -150,41 +150,36 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
 
 /* Checks that the connections into and out of the clb make sense.  */
 static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
-	int iclass, error;
-	t_type_ptr type;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
 
-	error = 0;
-	type = cluster_ctx.clb_nlist.block_type(iblk);
+	int error = 0;
+	t_type_ptr type = clb_nlist.block_type(iblk);
 
-	if (num_conn < 2) {
-		vtr::printf_warning(__FILE__, __LINE__,
-			"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
+    if (num_conn == 1) {
+        for (auto pin_id : clb_nlist.block_pins(iblk)) {
+            auto pin_type = clb_nlist.pin_type(pin_id);
 
-		/* Allow the case where we have only one OUTPUT pin connected to continue. *
-		 * This is used sometimes as a constant generator for a primary output,    *
-		 * but I will still warn the user.  If the only pin connected is an input, *
-		 * abort.                                                                  */
+            if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk)) {
+                //Input only and not a Primary-Output block
+                vtr::printf_warning(__FILE__, __LINE__,
+                    "Logic block #%d (%s) has only 1 input pin '%s'"
+                    " -- the whole block is hanging logic that should be swept.\n",
+                    iblk, clb_nlist.block_name(iblk).c_str(),
+                    clb_nlist.pin_name(pin_id).c_str());
+            }
+            if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
+                //Output only and not a Primary-Input block
+                vtr::printf_warning(__FILE__, __LINE__,
+                    "Logic block #%d (%s) has only 1 output pin '%s'."
+                    " It may be a constant generator.\n",
+                    iblk, clb_nlist.block_name(iblk).c_str(),
+                    clb_nlist.pin_name(pin_id).c_str());
+            }
 
-		if (num_conn == 1) {
-			for (auto pin_id : cluster_ctx.clb_nlist.block_pins(iblk)) {
-				auto pin_port_bit = cluster_ctx.clb_nlist.pin_port_bit(pin_id);
-				iclass = type->pin_class[pin_port_bit];
-
-				if (type->class_inf[iclass].type != DRIVER) {
-					vtr::printf_info("Pin is an input -- this whole block is hanging logic that should be swept in logic synthesis.\n");
-					vtr::printf_info("\tNon-fatal, but check this.\n");
-				}
-				else {
-					vtr::printf_info("Pin is an output -- may be a constant generator.\n");
-					vtr::printf_info("\tNon-fatal, but check this.\n");
-				}
-
-				break;
-			}
-		}
-	}
+            break;
+        }
+    }
 
 	/* This case should already have been flagged as an error -- this is *
 	 * just a redundant double check.                                    */

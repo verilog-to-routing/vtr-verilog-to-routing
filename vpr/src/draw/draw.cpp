@@ -766,10 +766,19 @@ void init_draw_coords(float width_val) {
 	/* Load coordinates of sub-blocks inside the clbs */
 	draw_internal_init_blk();
 
+    //Margin beyond edge of the drawn device to extend the visible world
+    //Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white 
+    //space around the device edges
+    constexpr float VISIBLE_MARGIN = 0.01; 
+
+    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
+    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
+
 	set_visible_world(
-		0.0, 0.0,
-		draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width(), 
-		draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width()
+		-VISIBLE_MARGIN * draw_width,
+		-VISIBLE_MARGIN * draw_height,
+		(1. + VISIBLE_MARGIN) * draw_width,
+		(1. + VISIBLE_MARGIN) * draw_height
 	);
 }
 

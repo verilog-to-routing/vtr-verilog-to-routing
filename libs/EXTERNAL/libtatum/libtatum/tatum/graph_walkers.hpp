@@ -6,5 +6,5 @@
  */
 
 #include "graph_walkers/SerialWalker.hpp"
-#include "graph_walkers/ParallelLevelizedCilkWalker.hpp"
+#include "graph_walkers/ParallelLevelizedWalker.hpp"
 #include "graph_walkers/ParallelWalker.hpp"

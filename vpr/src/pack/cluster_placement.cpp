@@ -48,7 +48,6 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 		const t_pb_graph_pin *cur_pin, const bool forward);
 static void flush_intermediate_queues(
 		t_cluster_placement_stats *cluster_placement_stats);
-static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const ClusterBlockId clb_index);
 
 /****************************************/
 /*Function Definitions					*/
@@ -463,31 +462,29 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 			molecule->atom_block_ids[molecule->root],
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == true) {
-			if(root_passes_early_filter(root, molecule, clb_index)) {
-				for (i = 0; i < list_size; i++) {
-					primitives_list[i] = NULL;
-				}
-				cost = root->cluster_placement_primitive->base_cost
-						+ root->cluster_placement_primitive->incremental_cost;
-				primitives_list[molecule->root] = root;
-				if (molecule->type == MOLECULE_FORCED_PACK) {
-					if (!expand_forced_pack_molecule_placement(molecule,
-							molecule->pack_pattern->root_block, primitives_list,
-							&cost)) {
-						return HUGE_POSITIVE_FLOAT;
-					}
-				}
-				for (i = 0; i < list_size; i++) {
-					VTR_ASSERT( (primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
-					for (int j = 0; j < list_size; j++) {
-						if(i != j) {
-							if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
-								return HUGE_POSITIVE_FLOAT;
-							}
-						}
-					}
-				}
-			}
+            for (i = 0; i < list_size; i++) {
+                primitives_list[i] = NULL;
+            }
+            cost = root->cluster_placement_primitive->base_cost
+                    + root->cluster_placement_primitive->incremental_cost;
+            primitives_list[molecule->root] = root;
+            if (molecule->type == MOLECULE_FORCED_PACK) {
+                if (!expand_forced_pack_molecule_placement(molecule,
+                        molecule->pack_pattern->root_block, primitives_list,
+                        &cost)) {
+                    return HUGE_POSITIVE_FLOAT;
+                }
+            }
+            for (i = 0; i < list_size; i++) {
+                VTR_ASSERT( (primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
+                for (int j = 0; j < list_size; j++) {
+                    if(i != j) {
+                        if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
+                            return HUGE_POSITIVE_FLOAT;
+                        }
+                    }
+                }
+            }
 		}
 	}
 	return cost;
@@ -755,72 +752,5 @@ bool exists_free_primitive_for_atom_block(
 void reset_tried_but_unused_cluster_placements(
 		t_cluster_placement_stats *cluster_placement_stats) {
 	flush_intermediate_queues(cluster_placement_stats);
-}
-
-
-/* Quick, additional filter to see if root is feasible for molecule 
- *
- * Limitation: This code can absorb a single atom by a "forced connection".  
- * A forced connection is one where there is no interconnect flexibility connecting
- * two primitives so if one primitive is used, then the other must also be used.
- *
- * TODO: jluu - Many ways to make this either more efficient or more robust.
- *      1.  For forced connections, I can get the packer to try forced connections first 
- *          thus avoid trying out other locations that I know are bad thus saving runtime 
- *          and potentially improving robustness because the placement cost function is 
- *          not always 100%.
- *      2.  I need to extend this so that molecules can be pulled in instead of just atoms.
- */
-static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const ClusterBlockId clb_index) {
-	int i, j;
-	bool feasible;
-	t_model_ports *model_port;
-
-	feasible = true;
-
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    AtomBlockId blk_id = molecule->atom_block_ids[molecule->root];
-
-	for(i = 0; feasible && i < root->num_output_ports; i++) {
-		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
-			if(root->output_pins[i][j].is_forced_connection) {
-
-				model_port = root->output_pins[i][j].port->model_port;
-
-                AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, model_port);
-                if(port_id) {
-                    AtomNetId net_id = atom_ctx.nlist.port_net(port_id, j);
-    
-                    if(net_id) {
-                        /* This output pin has a dedicated connection to one output, make sure that molecule works */
-                        if(molecule->type == MOLECULE_SINGLE_ATOM) {
-                            feasible = false; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
-                            auto sinks = atom_ctx.nlist.net_sinks(net_id);
-                            if(sinks.size() == 1) {
-                                AtomPinId sink_pin = *sinks.begin();
-                                AtomBlockId sink_blk = atom_ctx.nlist.pin_block(sink_pin);
-    
-                                if(atom_ctx.lookup.atom_clb(sink_blk) == clb_index) {
-                                    const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, sink_pin);
-                                    while(sink_pb_graph_pin->num_output_edges != 0) {
-                                        VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
-                                        VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
-                                        sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
-                                    }
-                                    const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(sink_blk);
-                                    if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
-                                        /* There is a atom block mapped to the physical position that pulls in the atom in question */
-                                        feasible = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-			}
-		}
-	}
-	return feasible;
 }
 

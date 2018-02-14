@@ -138,6 +138,12 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //Returns the logical pin Id associated with the specified block and physical pin index
         ClusterPinId block_pin(const ClusterBlockId blk, const int phys_pin_index) const;
 
+        //Returns true if the specified block contains a primary input (e.g. BLIF .input primitive)
+        bool block_contains_primary_input(const ClusterBlockId blk) const;
+
+        //Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
+        bool block_contains_primary_output(const ClusterBlockId blk) const;
+
         /*
          * Pins
          */

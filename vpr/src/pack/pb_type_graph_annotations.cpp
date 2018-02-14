@@ -68,13 +68,8 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 						VTR_ASSERT(false);
 					}
 				}
-			} else {
-				/* Todo:
-				 load_hold_time_constraints_annotations(pb_graph_node); 
-				 load_power_annotations(pb_graph_node);
-				 */
-			}
-		}
+            }
+        }
 	} else {
 		/* Load interconnect delays */
 		for (i = 0; i < pb_type->num_modes; i++) {
@@ -360,46 +355,6 @@ static void load_delay_annotations(const int line_num,
             }
 		} else {
 			/* Primitive, annotate combinational delay */
-#if 0
-			k = 0;
-			for (i = 0; i < num_in_sets; i++) {
-				for (j = 0; j < num_in_ptrs[i]; j++) {
-					count = p = 0;
-					for (m = 0; m < num_out_sets; m++) {
-						for (n = 0; n < num_out_ptrs[m]; n++) {
-							/* OPEN indicates that connection does not exist */
-							if (delay_matrix[k][p] != OPEN) {
-								count++;
-							}
-							p++;
-						}
-					}
-					prior_offset = in_port[i][j]->num_pin_timing;
-					in_port[i][j]->num_pin_timing = prior_offset + count;
-					in_port[i][j]->pin_timing_del_max = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_max,
-							sizeof(float) * in_port[i][j]->num_pin_timing);
-					in_port[i][j]->pin_timing_del_min = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_min,
-							sizeof(float) * in_port[i][j]->num_pin_timing);
-					in_port[i][j]->pin_timing = (t_pb_graph_pin**)vtr::realloc(in_port[i][j]->pin_timing,
-							sizeof(t_pb_graph_pin*) * in_port[i][j]->num_pin_timing);
-					p = 0;
-					count = 0;
-					for (m = 0; m < num_out_sets; m++) {
-						for (n = 0; n < num_out_ptrs[m]; n++) {
-							if (delay_matrix[k][p] != OPEN) {
-								in_port[i][j]->pin_timing_del_max[prior_offset + count] = delay_matrix[k][p];
-								in_port[i][j]->pin_timing_del_min[prior_offset + count] = delay_matrix[k][p]; //TODO: annotate correctly
-								in_port[i][j]->pin_timing[prior_offset + count] = out_port[m][n];
-								count++;
-							}
-							p++;
-						}
-					}
-					VTR_ASSERT(in_port[i][j]->num_pin_timing == prior_offset + count);
-					k++;
-				}
-			}
-#else
             //Record the existing src/sink pairs
             std::set<std::pair<t_pb_graph_pin*,t_pb_graph_pin*>> existing_edges;
 			for (i = 0; i < num_in_sets; i++) {
@@ -407,6 +362,8 @@ static void load_delay_annotations(const int line_num,
                     t_pb_graph_pin* src_pin = in_port[i][j];
                     for (k = 0; k < src_pin->num_pin_timing; ++k) {
                         t_pb_graph_pin* sink_pin = src_pin->pin_timing[k];
+                        auto edge_pair = std::make_pair(src_pin, sink_pin);
+                        VTR_ASSERT_MSG(!existing_edges.count(edge_pair), "No duplicates");
                         existing_edges.emplace(src_pin, sink_pin);
                     }
                 }
@@ -459,7 +416,12 @@ static void load_delay_annotations(const int line_num,
 					for (m = 0; m < num_out_sets; m++) {
 						for (n = 0; n < num_out_ptrs[m]; n++) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
-                                VTR_ASSERT(src_pin->num_pin_timing_del_max_annotated < src_pin->num_pin_timing);
+                                if (src_pin->num_pin_timing_del_max_annotated >= src_pin->num_pin_timing) {
+                                    vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                                            "Max delay already appears annotated on '%s' port '%s' (duplicate delay annotations?)",
+                                            src_pin->parent_node->pb_type->name,
+                                            src_pin->port->name);
+                                }
 
                                 if (!std::isnan(src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated])) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
@@ -471,7 +433,12 @@ static void load_delay_annotations(const int line_num,
 
                             } else {
                                 VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
-                                VTR_ASSERT(src_pin->num_pin_timing_del_min_annotated < src_pin->num_pin_timing);
+                                if (src_pin->num_pin_timing_del_min_annotated >= src_pin->num_pin_timing) {
+                                    vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                                            "Min delay already appears annotated on '%s' port '%s' (duplicate delay annotations?)",
+                                            src_pin->parent_node->pb_type->name,
+                                            src_pin->port->name);
+                                }
 
                                 if (!std::isnan(src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated])) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
@@ -485,10 +452,8 @@ static void load_delay_annotations(const int line_num,
                         }
                     }
                     k++;
-
                 }
             }
-#endif
 		}
 	}
 

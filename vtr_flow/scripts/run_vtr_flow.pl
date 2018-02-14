@@ -384,19 +384,19 @@ if ( $lut_size < 1 ) {
 # Get memory size
 $mem_size = xml_find_mem_size($xml_tree);
 
-my $odin_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
+my $odin_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_odin, $circuit_suffix);
 my $odin_output_file_path = "$temp_dir$odin_output_file_name";
 
-my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
+my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc, $circuit_suffix);
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
-my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace);
+my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
 my $ace_output_act_name = "$benchmark_name" . ".act";
 my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 
-my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr);
+my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr, $circuit_suffix);
 my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
 my $vpr_route_output_file_name = "$benchmark_name.route";
@@ -412,7 +412,7 @@ my $architecture_file_path_new = "$temp_dir$architecture_file_name";
 copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
-my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage( $starting_stage - 1 );
+my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage($starting_stage - 1, $circuit_suffix);
 copy( $circuit_file_path, $circuit_file_path_new );
 $circuit_file_path = $circuit_file_path_new;
 
@@ -571,7 +571,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		my @vpr_args;
 		push( @vpr_args, $architecture_file_name );
 		push( @vpr_args, "$benchmark_name" );
-		push( @vpr_args, "--blif_file"	);
+		push( @vpr_args, "--circuit_file"	);
 		push( @vpr_args, "$prevpr_output_file_name");
 		push( @vpr_args, "--timing_analysis" );   
 		push( @vpr_args, "$timing_driven");
@@ -636,7 +636,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "$benchmark_name" );
 				push( @vpr_args, "--route" );
                 push( @vpr_args, "--analysis" );
-				push( @vpr_args, "--blif_file"	);
+				push( @vpr_args, "--circuit_file"	);
 				push( @vpr_args, "$prevpr_output_file_name");
 				push( @vpr_args, "--route_chan_width" );   
 				push( @vpr_args, "$min_chan_width" );
@@ -677,7 +677,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		my @vpr_args;
 		push( @vpr_args, $architecture_file_name );
 		push( @vpr_args, "$benchmark_name" );
-		push( @vpr_args, "--blif_file"	);
+		push( @vpr_args, "--circuit_file"	);
 		push( @vpr_args, "$prevpr_output_file_name");
 		push( @vpr_args, "--timing_analysis" );   
 		push( @vpr_args, "$timing_driven");
@@ -748,7 +748,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "--verify_file_digests" );
                 push( @vpr_args, "off" );
 			}
-            push( @vpr_args, "--blif_file"	);
+            push( @vpr_args, "--circuit_file"	);
             push( @vpr_args, "$prevpr_output_file_name");
             push( @vpr_args, "--timing_analysis" );   
             push( @vpr_args, "$timing_driven");
@@ -1095,6 +1095,12 @@ sub stage_index {
 
 sub file_ext_for_stage {
 	my $stage_idx = $_[0];
+	my $circuit_suffix = $_[1];
+
+    my $vpr_netlist_suffix = ".blif";
+    if ($circuit_suffix eq ".eblif") {
+        $vpr_netlist_suffix = $circuit_suffix;
+    }
 
 	if ( $stage_idx == 0 ) {
 		return ".v";
@@ -1109,7 +1115,7 @@ sub file_ext_for_stage {
 		return ".ace.blif";
 	}
 	elsif ( $stage_idx == $stage_idx_prevpr ) {
-		return ".pre-vpr.blif";
+		return ".pre-vpr" . $vpr_netlist_suffix;
 	}
 }
 

@@ -51,11 +51,10 @@ void BlifPrettyPrinter::outputs(std::vector<std::string> output_conns) {
         printf("\n");
     }
     --indent_level_;
-
-    printf("\n");
 }
 
 void BlifPrettyPrinter::names(std::vector<std::string> nets, std::vector<std::vector<LogicValue>> so_cover) {
+    printf("\n");
     if(print_file_line_) {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
     }
@@ -82,10 +81,10 @@ void BlifPrettyPrinter::names(std::vector<std::string> nets, std::vector<std::ve
         }
         printf("\n");
     }
-    printf("\n");
 }
 
 void BlifPrettyPrinter::latch(std::string input, std::string output, LatchType type, std::string control, LogicValue init) {
+    printf("\n");
     if(print_file_line_) {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
     }
@@ -116,13 +115,11 @@ void BlifPrettyPrinter::latch(std::string input, std::string output, LatchType t
         case LogicValue::UNKOWN:    printf("%s3", indent().c_str()); break;
         default: assert(false);
     }
-    printf("\n");
     --indent_level_;
-
-    printf("\n");
 }
 
 void BlifPrettyPrinter::subckt(std::string model, std::vector<std::string> ports, std::vector<std::string> nets) {
+    printf("\n");
     if(print_file_line_) {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
     }
@@ -140,8 +137,6 @@ void BlifPrettyPrinter::subckt(std::string model, std::vector<std::string> ports
         printf("\n");
     }
     --indent_level_;
-
-    printf("\n");
 }
 
 void BlifPrettyPrinter::blackbox() {
@@ -149,7 +144,6 @@ void BlifPrettyPrinter::blackbox() {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
     }
     printf(".blackbox\n");
-    printf("\n");
 }
 
 void BlifPrettyPrinter::end_model() {
@@ -157,9 +151,36 @@ void BlifPrettyPrinter::end_model() {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
     }
     printf(".end\n");
-    printf("\n");
 }
 
+void BlifPrettyPrinter::conn(std::string src, std::string dst) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
+    printf(".conn %s %s\n", src.c_str(), dst.c_str());
+
+}
+
+void BlifPrettyPrinter::cname(std::string cell_name) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
+    printf(".cname %s\n", cell_name.c_str());
+}
+
+void BlifPrettyPrinter::attr(std::string name, std::string value) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
+    printf(".attr %s %s\n", name.c_str(), value.c_str());
+}
+
+void BlifPrettyPrinter::param(std::string name, std::string value) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
+    printf(".param %s %s\n", name.c_str(), value.c_str());
+}
 
 void BlifPrettyPrinter::filename(std::string fname) {
     filename_ = fname;

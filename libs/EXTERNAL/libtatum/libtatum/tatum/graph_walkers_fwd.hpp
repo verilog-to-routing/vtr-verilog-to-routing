@@ -4,10 +4,10 @@ namespace tatum {
 
 class SerialWalker;
 
-class ParallelLevelizedCilkWalker;
+class ParallelLevelizedWalker;
 
 ///The default parallel graph walker
-using ParallelWalker = ParallelLevelizedCilkWalker;
+using ParallelWalker = ParallelLevelizedWalker;
 
 } //namespace
 

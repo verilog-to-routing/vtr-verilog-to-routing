@@ -43,6 +43,9 @@ namespace vtr {
     template<typename Iter>
     std::string join(Iter begin, Iter end, std::string delim);
 
+    template<typename Container>
+    std::string join(Container container, std::string delim);
+
     /*
      * Legacy c-style function replacements, typically these add extra error checking
      * and/or correct 'unexpected' behaviour of the standard c-functions
@@ -89,6 +92,11 @@ namespace vtr {
             }
         }
         return joined_str;
+    }
+
+    template<typename Container>
+    std::string join(Container container, std::string delim) {
+        return join(std::begin(container), std::end(container), delim);
     }
 }
 

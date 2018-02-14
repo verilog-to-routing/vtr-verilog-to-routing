@@ -37,7 +37,6 @@
  * Global data types and constants
  ******************************************************************************/
 /*#define CREATE_ECHO_FILES*//* prints echo files */
-/*#define DEBUG_FAILED_PACKING_CANDIDATES*//*Displays candidates during packing that failed */
 /*#define PRINT_SINK_DELAYS*//*prints the sink delays to files */
 /*#define PRINT_SLACKS*//*prints out all slacks in the circuit */
 /*#define PRINT_PLACE_CRIT_PATH*//*prints out placement estimated critical path */
@@ -80,6 +79,9 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 
+/*
+ * Files
+ */
 /*******************************************************************************
  * Packing specific data types and constants
  * Packing takes the circuit described in the technology mapped user netlist
@@ -100,7 +102,10 @@ enum e_cluster_seed {
 };
 
 enum e_block_pack_status {
-	BLK_PASSED, BLK_FAILED_FEASIBLE, BLK_FAILED_ROUTE, BLK_STATUS_UNDEFINED
+	BLK_PASSED,
+    BLK_FAILED_FEASIBLE,
+    BLK_FAILED_ROUTE,
+    BLK_STATUS_UNDEFINED
 };
 
 /* these are defined later, but need to declare here because it is used */
@@ -184,6 +189,31 @@ struct t_pb {
                 if(found_pb != nullptr) {
                     VTR_ASSERT(found_pb->pb_graph_node == gnode);
                     return found_pb; //Found
+                }
+            }
+        }
+        return nullptr; //Not found
+    }
+
+    const t_pb* find_pb_for_model(const std::string& blif_model) const {
+        //Base case
+        const t_model* model = pb_graph_node->pb_type->model;
+        if (model && model->name == blif_model) {
+            return this;
+        }
+
+        //Search recursively
+        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+
+            if(child_pbs[ichild_type] == nullptr) continue;
+
+            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
+
+                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
+
+                const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
+                if (matching_pb) {
+                    return this;
                 }
             }
         }
@@ -661,6 +691,8 @@ struct t_packer_opts {
 	bool auto_compute_inter_cluster_net_delay;
 	bool allow_unrelated_clustering;
 	bool connection_driven;
+	bool debug_clustering;
+    bool enable_pin_feasibility_filter;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

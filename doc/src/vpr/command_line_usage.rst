@@ -40,11 +40,23 @@ Filename Options
 VPR by default appends .blif, .net, .place, and .route to the circuit name provided by the user, and looks for an SDC file in the working directory with the same name as the circuit.
 Use the options below to override this default naming behaviour.
 
-.. option:: --blif_file <file>
+.. option:: --circuit_file <file>
 
     Path to technology mapped user circuit in blif format.
 
     .. note:: If specified the ``circuit`` positional argument is treated as the circuit name.
+
+    .. seealso:: :option:`--circuit_format`
+
+.. option:: --circuit_format {auto | blif | eblif}
+
+    File format of the input technology mapped user circuit.
+
+    * ``auto``: File format inferred from file extension (e.g. ``.blif`` or ``.eblif``)
+    * ``blif``: Strict :ref:`structural BLIF <vpr_blif_file>`
+    * ``eblif``: Structural :ref:`BLIF with extensions <vpr_eblif_file>`
+
+    **Default:** ``auto``
 
 .. option:: --net_file <file>
 
@@ -149,7 +161,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
 
     **Default:** ``off``
 
-.. option:: --gen_postsynthesis_netlist { on | off }
+.. option:: --gen_post_synthesis_netlist { on | off }
 
     Generates the Verilog and SDF files for the post-synthesized circuit. 
     The Verilog file can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
@@ -158,6 +170,8 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
     Currently VPR can generate Verilog files for circuits that only contain LUTs, Flip Flops, IOs, Multipliers, and BRAMs.
     The Verilog description of these primitives are in the primitives.v file.
     To simulate the post-synthesized circuit, one must include the generated Verilog file and also the primitives.v Verilog file, in the simulation directory.
+
+    .. seealso:: :ref:`timing_simulation_tutorial`
 
     If one wants to generate the post-synthesized Verilog file of a circuit that contains a primitive other than those mentioned above, he/she should contact the VTR team to have the source code updated.
     Furthermore to perform simulation on that circuit the Verilog description of that new primitive must be appended to the primitives.v file as a separate module.
