@@ -686,14 +686,14 @@ void process_rr_node_indices(const DeviceGrid& grid) {
             for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     count = node.ptc_num();
-                    indices[CHANX][iy][ix][0][count] = inode;
+                    indices[CHANX][iy][ix][0].at(count) = inode;
                 }
             }
         } else if (node.type() == CHANY) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     count = node.ptc_num();
-                    indices[CHANY][ix][iy][0][count] = inode;
+                    indices[CHANY][ix][iy][0].at(count) = inode;
                 }
             }
         }
