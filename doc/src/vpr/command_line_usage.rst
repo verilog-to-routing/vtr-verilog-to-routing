@@ -187,6 +187,15 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
 
     **Default:** ``on``
 
+.. option:: --constant_net_method {global, route}
+
+    Specifies how constant nets (i.e. those driven to a constant value) are handled:
+
+     * ``global``: Treat constant nets as globals (not routed)
+     * ``route``: Treat constant nets as normal nets (routed)
+
+     **Default:** ``global``
+
 .. _netlist_options:
 
 Netlist Options
