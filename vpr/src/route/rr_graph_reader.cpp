@@ -475,10 +475,10 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, con
 
         const t_grid_tile& grid_tile = grid[x][y];
 
-        if (grid_tile.type->index != get_attribute(grid_node, "block_type_id", loc_data).as_float(0)) {
+        if (grid_tile.type->index != get_attribute(grid_node, "block_type_id", loc_data).as_int(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
-                     (grid_tile.type->index), (int)get_attribute(grid_node, "block_type_id", loc_data).as_float(0));
+                     (grid_tile.type->index), get_attribute(grid_node, "block_type_id", loc_data).as_int(0));
         }
         if (grid_tile.width_offset != get_attribute(grid_node, "width_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
