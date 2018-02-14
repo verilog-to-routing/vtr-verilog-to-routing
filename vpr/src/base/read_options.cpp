@@ -1,4 +1,5 @@
 #include "read_options.h"
+#include "constant_nets.h"
 #include "vpr_error.h"
 
 #include "argparse.hpp"
@@ -214,6 +215,26 @@ struct ParseClusterSeed {
     }
 };
 
+struct ParseConstantNetMethod {
+    e_constant_net_method from_str(std::string str) {
+        if      (str == "global") return CONSTANT_NET_GLOBAL;
+        else if (str == "route")  return CONSTANT_NET_ROUTE;
+        std::stringstream msg;
+        msg << "Invalid conversion from '" << str << "' to e_constant_net_method (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+        throw argparse::ArgParseConversionError(msg.str());
+    }
+
+    std::string to_str(e_constant_net_method val) {
+        if (val == CONSTANT_NET_GLOBAL) return "global";
+        VTR_ASSERT(val == CONSTANT_NET_ROUTE);
+        return "route";
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"global", "route"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -357,6 +378,15 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("1.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<e_constant_net_method,ParseConstantNetMethod>(args.constant_net_method, "--constant_net_method")
+            .help("Specifies how constant nets (i.e. those driven to a constant\n"
+                  "value) are handled:\n"
+                  " * global: Treat constant nets as globals (not routed)\n"
+                  " * route : Treat constant nets as normal nets (routed)\n")
+            .default_value("global")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument(args.BlifFile, "--circuit_file")
@@ -369,9 +399,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " * blif: Strict structural BLIF format\n"
                   " * eblif: Structure BLIF format with the extensions:\n"
                   "           .conn  - Connection between two wires\n"
-                  "           .cname - Custom name for atom primitives\n"
-                  "           .param - Parameters on atom primitives\n"
-                  "           .attr  - Attributes on atom primitives\n")
+                  "           .cname - Custom name for atom primitive\n"
+                  "           .param - Parameter on atom primitive\n"
+                  "           .attr  - Attribute on atom primitive\n")
             .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 

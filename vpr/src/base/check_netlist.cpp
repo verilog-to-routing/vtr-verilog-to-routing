@@ -21,7 +21,7 @@ using namespace std;
 
 /**************** Subroutines local to this module **************************/
 
-static int check_connections_to_global_clb_pins(ClusterNetId net_id);
+static void check_connections_to_global_clb_pins(ClusterNetId net_id);
 
 static int check_for_duplicated_names(void);
 
@@ -49,7 +49,7 @@ void check_netlist() {
 					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			error++;
 		}
-		error += check_connections_to_global_clb_pins(net_id);
+		check_connections_to_global_clb_pins(net_id);
 		if (error >= ERROR_THRESHOLD) {
 			vtr::printf_error(__FILE__, __LINE__, 
 					"Too many errors in netlist, exiting.\n");
@@ -74,39 +74,14 @@ void check_netlist() {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 				"Found %d fatal Errors in the input netlist.\n", error);
 	}
-
-	/* 
-     * Enhanced HACK: July 2017 
-     *     Do not route constant nets (e.g. gnd/vcc). Identifying these nets as constants 
-     *     is more robust than the previous approach (exact name match to gnd/vcc).
-     *     Note that by not routing constant nets we are implicitly assuming that all pins 
-     *     in the FPGA can be tied to gnd/vcc, and hence we do not need to route them.
-	 * 
-     * TODO: We should ultimately make this architecture driven (e.g. specify which
-     *       pins which can be tied to gnd/vcc), and then route from those pins to
-     *       deliver any constants to those primitive input pins which can not be directly 
-     *       tied directly to gnd/vcc.
-	 */
-    auto& atom_ctx = g_vpr_ctx.atom();
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        AtomNetId atom_net = atom_ctx.lookup.atom_net(net_id);
-        VTR_ASSERT(atom_net);
-
-        if (atom_ctx.nlist.net_is_constant(atom_net)) {
-            //Mark net as global, so that it is not routed
-            vtr::printf_warning(__FILE__, __LINE__, "Treating constant net '%s' as global, so it will not be routed\n", atom_ctx.nlist.net_name(atom_net).c_str());
-            cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
-        }
-	}
 }
 
 /* Checks that a global net (net_id) connects only to global CLB input pins  *
 * and that non-global nets never connects to a global CLB pin.  Either       *
 * global or non-global nets are allowed to connect to pads.                  */
-static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
+static void check_connections_to_global_clb_pins(ClusterNetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
-	unsigned int error = 0;
 	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
@@ -120,32 +95,13 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
 		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
 			&& !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 
-			//Allow a CLB output pin to drive a global net (warning only).
-			if (pin_id == cluster_ctx.clb_nlist.net_driver(net_id) && is_global_net) {
-				vtr::printf_warning(__FILE__, __LINE__,
-					"in check_connections_to_global_clb_pins:\n");
-				vtr::printf_warning(__FILE__, __LINE__,
-					"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n",
-					net_id, cluster_ctx.clb_nlist.net_name(net_id).c_str(), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-			}
-			else { //Otherwise -> Error
-				vtr::printf_error(__FILE__, __LINE__,
-					"in check_connections_to_global_clb_pins:\n");
-				vtr::printf_error(__FILE__, __LINE__,
-					"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n",
-					pin_id, net_id, cluster_ctx.clb_nlist.net_name(net_id).c_str(), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-				error++;
-			}
-
-			if (is_global_net)
-				vtr::printf_info("Net is global, but CLB pin is not.\n");
-			else
-				vtr::printf_info("CLB pin is global, but net is not.\n");
-			vtr::printf_info("\n");
+            vtr::printf_warning(__FILE__, __LINE__,
+                    "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
+                    cluster_ctx.clb_nlist.net_name(net_id).c_str(),
+                    block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(blk_id), pin_index).c_str(),
+                    cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 		}
 	}
-
-	return error;
 }
 
 /* Checks that the connections into and out of the clb make sense.  */

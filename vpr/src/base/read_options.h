@@ -3,6 +3,7 @@
 #include "read_blif.h"
 
 #include "vpr_types.h"
+#include "constant_nets.h"
 #include "argparse_value.hpp"
 
 struct t_options {
@@ -47,6 +48,7 @@ struct t_options {
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<std::string> device_layout;
     argparse::ArgValue<float> target_device_utilization;
+    argparse::ArgValue<e_constant_net_method> constant_net_method;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;

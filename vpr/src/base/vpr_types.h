@@ -28,6 +28,7 @@
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
+#include "constant_nets.h"
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -1117,6 +1118,7 @@ struct t_vpr_setup {
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
     std::string device_layout;
+    e_constant_net_method constant_net_method; //How constant nets should be handled
 };
 
 class RouteStatus {

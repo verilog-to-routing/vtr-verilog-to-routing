@@ -66,6 +66,7 @@ using namespace std;
 #include "net_delay.h"
 #include "RoutingDelayCalculator.h"
 #include "check_route.h"
+#include "constant_nets.h"
 
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
@@ -201,9 +202,9 @@ void vpr_init(const int argc, const char **argv,
     }
 #endif
 
-    /* Timing option priorities */
     vpr_setup->TimingEnabled = options->timing_analysis;
     vpr_setup->device_layout = options->device_layout;
+    vpr_setup->constant_net_method = options->constant_net_method;
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -502,8 +503,11 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &arch, vpr_setup.FileNameOpts.verify_file_digests);
+    cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), 
+                                         &arch,
+                                         vpr_setup.FileNameOpts.verify_file_digests);
 
+    process_constant_nets(cluster_ctx.clb_nlist, vpr_setup.constant_net_method);
 }
 
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
