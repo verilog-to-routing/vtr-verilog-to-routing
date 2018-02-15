@@ -2444,7 +2444,9 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
                 break;
             }
         }
-        VTR_ASSERT(j < device_ctx.num_block_types);
+        if (j >= device_ctx.num_block_types) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find block %s.\n", pb_type_name);
+        }
         clb_to_clb_directs[i].from_clb_type = &device_ctx.block_types[j];
         pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
 
@@ -2453,7 +2455,9 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
                 break;
             }
         }
-        VTR_ASSERT(j < pb_type->num_ports);
+        if (j >= pb_type->num_ports) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find port %s (on block %s).\n", port_name, pb_type_name);
+        }
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -2473,7 +2477,9 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
                 break;
             }
         }
-        VTR_ASSERT(j < device_ctx.num_block_types);
+        if (j >= device_ctx.num_block_types) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find block %s.\n", pb_type_name);
+        }
         clb_to_clb_directs[i].to_clb_type = &device_ctx.block_types[j];
         pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
 
@@ -2482,7 +2488,9 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
                 break;
             }
         }
-        VTR_ASSERT(j < pb_type->num_ports);
+        if (j >= pb_type->num_ports) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find port %s (on block %s).\n", port_name, pb_type_name);
+        }
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
