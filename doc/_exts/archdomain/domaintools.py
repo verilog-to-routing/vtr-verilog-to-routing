@@ -56,16 +56,55 @@ class GenericObject(ObjectDescription):
     def handle_signature(self, sig, signode):
         sigid = nodes.make_id(sig)
         if self.parse_node:
-            sigid = self.parse_node(self.env, sigid, signode)
+            return self.parse_node(self.env, sigid, signode)
         else:
             signode.clear()
             signode += addnodes.desc_name(sigid, sig)
-        return sigid
+
+            name = sig
+
+            # For tags, we extract just the tag name
+            n = re.match('<([^ >/]*)', name)
+            if n:
+                name = n.group(1)
+
+            # For attributes, we extract the attribute
+            n = re.match('([^=]*)="([^"]*)"', name)
+            if n:
+                name = "%s-%s" % (n.group(1), n.group(2))
+
+            return name
+
+    def find_last_title(self):
+        class visitor:
+            def __init__(self, d):
+                self.title = ''
+                self.document = d
+            def dispatch_visit(self, node):
+                if isinstance(node, nodes.Titular):
+                    self.title = node.astext()
+        v = visitor(self.state.document)
+        self.state.document.walk(v)
+        return nodes.make_id(v.title)
+
+    def note_explicit_target_resolve(self, node):
+        while node['ids']:
+            id = node['ids'][-1]
+            if id not in self.state.document.ids:
+                break
+            oldnode = self.state.document.ids[id]
+            if oldnode is not None:
+                self.state.document.ids[id] = None
+                self.note_explicit_target_resolve(oldnode)
+            node['ids'].pop(-1)
+        self.state.document.note_explicit_target(node)
 
     def add_target_and_index(self, name, sig, signode):
-        targetname = '%s-%s' % (self.objtype, name)
-        signode['ids'].append(targetname)
-        self.state.document.note_explicit_target(signode)
+        signode['ids'].append('%s-%s-%s' % (self.objtype, self.find_last_title(), name))
+        signode['ids'].append('%s-%s' % (self.objtype, name))
+        self.note_explicit_target_resolve(signode)
+        targetname = signode['ids'][-1]
+
         if self.indextemplate:
             colon = self.indextemplate.find(':')
             if colon != -1:
@@ -78,6 +117,7 @@ class GenericObject(ObjectDescription):
                                               targetname, ''))
         self.env.domaindata[self.domain]['objects'][self.objtype, name] = \
             self.env.docname, targetname
+
 
 class CustomDomain(Domain):
     """
