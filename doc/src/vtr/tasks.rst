@@ -81,24 +81,24 @@ Example configuration file:
 Required Fields
 ~~~~~~~~~~~~~~~
 
-* **circuit_dir**: Directory path of the benchmark circuits. 
-    
+* **circuit_dir**: Directory path of the benchmark circuits.
+
     Absolute path or relative to ``$VTR_ROOT/vtr_flow/``.
 
-* **arch_dir**: Directory path of the architecture XML files. 
-  
+* **arch_dir**: Directory path of the architecture XML files.
+
     Absolute path or relative to ``$VTR_ROOT/vtr_flow/``.
 
-* **circuit_list_add**: Name of a benchmark circuit file. 
-  
+* **circuit_list_add**: Name of a benchmark circuit file.
+
     Use multiple lines to add multiple circuits.
 
-* **arch_list_add**: Name of an architecture XML file. 
-  
+* **arch_list_add**: Name of an architecture XML file.
+
     Use multiple lines to add multiple architectures.
 
-* **parse_file**: :ref:`vtr_parse_config` file used for parsing and extracting the statistics. 
-  
+* **parse_file**: :ref:`vtr_parse_config` file used for parsing and extracting the statistics.
+
     Absolute path or relative to ``$VTR_ROOT/vtr_flow/parse/parse_config``.
 
 Optional Fields
@@ -110,17 +110,17 @@ Optional Fields
 
     **Default:** :ref:`run_vtr_flow`
 
-    Users can set this option to use their own script instead of the default. 
-    The circuit path will be provided as the first argument, and architecture path as the second argument to the user script. 
+    Users can set this option to use their own script instead of the default.
+    The circuit path will be provided as the first argument, and architecture path as the second argument to the user script.
 
-* **script_params**: Parameters to be passed to the script. 
-  
+* **script_params**: Parameters to be passed to the script.
+
     This can be used to run partial VTR flows, or to preserve intermediate files.
 
     **Default:** none
 
-* **pass_requirements_file**: :ref:`vtr_pass_requirements` file. 
-  
+* **pass_requirements_file**: :ref:`vtr_pass_requirements` file.
+
     Absolute path or relative to ``$VTR_ROOT/vtr_flow/parse/pass_requirements/`` or ``$VTR_ROOT/vtr_flow/tasks/<task_name>/config/``
 
     **Default:** none

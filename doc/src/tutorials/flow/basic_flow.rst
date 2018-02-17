@@ -11,8 +11,8 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
         ../scripts/run_vtr_task.pl basic_flow
 
-    This command will run the VTR flow on a single circuit and a single architecture.  
-    The files generated from the run are stored in ``basic_flow/run[#]`` where ``[#]`` is the number of runs you have done.  
+    This command will run the VTR flow on a single circuit and a single architecture.
+    The files generated from the run are stored in ``basic_flow/run[#]`` where ``[#]`` is the number of runs you have done.
     If this is your first time running the flow, the results will be stored in basic_flow/run001.
     When the script completes, enter the following command:
 
@@ -34,7 +34,7 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
     It should return: ``basic_flow...[Pass]``
 
-    .. note:: 
+    .. note::
 
         Due to the nature of the algorithms employed, the measurements that you get may not match exactly with the golden measurements.
         We included margins in our scripts to account for that noise during the check.
@@ -44,8 +44,8 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 #.  To see precisely which circuits, architecture, and CAD flow was employed by the run, look at ``vtr_flow/tasks/basic_flow/config/config.txt``.
     Inside this directory, the ``config.txt`` file contains the circuits and architecture file employed in the run.
 
-    Some also contain a ``golden_results.txt`` file that is used by the scripts to check for correctness.  
-    
+    Some also contain a ``golden_results.txt`` file that is used by the scripts to check for correctness.
+
     The ``vtr_release/vtr_flow/scripts/run_vtr_flow.pl`` script describes the CAD flow employed in the test.
     You can modify the flow by editing this script.
 

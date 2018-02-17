@@ -23,7 +23,7 @@ Note that VPR supports only the structural subset of BLIF, and does not support 
  * Subfile References (``.search``).
  * Finite State Machine Descriptions (``.start_kiss``, ``.end_kiss`` etc.).
  * Clock Constraints (``.cycle``, ``.clock_event``).
- * Delay Constraints (``.delay`` etc.). 
+ * Delay Constraints (``.delay`` etc.).
 
 Clock and delay constraints can be specified with an :ref:`SDC File <vpr_sdc_file>`.
 
@@ -43,7 +43,7 @@ Unconnected primitive pins can be specified through several methods.
 #. The ``unconn`` net (input pins only).
 
     VPR treats any **input pin** connected to a net named ``unconn`` as disconnected.
-    
+
     For example:
 
     .. code-block:: none
@@ -58,7 +58,7 @@ Unconnected primitive pins can be specified through several methods.
 #. Implicitly disconnected ``.subckt`` pins.
 
     For ``.subckt`` instantiations VPR treats unlisted primitive pins as implicitly disconnected.
-    This works for both input and output pins. 
+    This works for both input and output pins.
 
     For example the following ``.subckt`` instantiations are equivalent:
 
@@ -84,7 +84,7 @@ Unconnected primitive pins can be specified through several methods.
             addr[14]=unconn \
             we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
             out=top.memory_controller+memtroll.single_port_ram+str^out~0
-    
+
     .. code-block:: none
 
         .subckt single_port_ram \
@@ -118,7 +118,7 @@ BLIF File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~
 The following is an example BLIF file. It implements a 4-bit ripple-carry ``adder`` and some simple logic.
 
-The main ``.model`` is named ``top``, and its input and output pins are listed using the ``.inputs`` and ``.outputs`` directives. 
+The main ``.model`` is named ``top``, and its input and output pins are listed using the ``.inputs`` and ``.outputs`` directives.
 
 The 4-bit ripple-cary adder is built of 1-bit ``adder`` primitives which are instantiated using the ``.subckt`` directive.
 Note that the adder primitive is defined as its own ``.model`` (which describes its pins), and is marked as ``.blackbox`` to indicate it is an architectural primitive.
@@ -183,7 +183,7 @@ For example:
 
     .end
 
-specifies that 'a' and 'b' are direct connected together. 
+specifies that 'a' and 'b' are direct connected together.
 This is analogous to Verilog's ``assign b = a;``.
 
 This avoids the insertion of a ``.names`` buffer which is required in standard BLIF, for example:
@@ -296,7 +296,7 @@ Packed Netlist Format (.net)
 ----------------------------
 The circuit .net file is an xml file that describes a post-packed user circuit.
 It represents the user netlist in terms of the complex logic blocks of the target architecture.
-This file is generated from the packing stage and used as input to the placement stage in VPR.  
+This file is generated from the packing stage and used as input to the placement stage in VPR.
 
 The .net file is constructed hierarchically using ``block`` tags.
 The top level ``block`` tag contains the I/Os and complex logic blocks used in the user circuit.
@@ -305,19 +305,19 @@ The ``block`` tags within a complex logic block tag describes, hierarchically, t
 
 A ``block`` tag has the following attributes:
 
- * ``name`` 
+ * ``name``
     A name to identify this component of the FPGA.
     This name can be completely arbitrary except in two situations.
     First, if this is a primitive (leaf) block that implements an atom in the input technology-mapped netlist (eg. LUT, FF, memory slice, etc), then the name of this block must match exactly with the name of the atom in that netlist so that one can later identify that mapping.
     Second, if this block is not used, then it should be named with the keyword open.
     In all other situations, the name is arbitrary.
 
- * ``instance`` 
+ * ``instance``
     The phyiscal block in the FPGA architecture that the current block represents.
     Should be of format: architecture_instance_name[instance #].
     For example, the 5th index BLE in a CLB should have ``instance="ble[5]"``
 
- * ``mode`` 
+ * ``mode``
     The mode the block is operating in.
 
 A block connects to other blocks via pins which are organized based on a hierarchy.
@@ -325,14 +325,14 @@ All block tags contains the children tags: inputs, outputs, clocks.
 Each of these tags in turn contain port tags.
 Each port tag has an attribute name that matches with the name of a corresponding port in the FPGA architecture.
 Within each port tag is a list of named connections where the first name corresponds to pin 0, the next to pin 1, and so forth.
-The names of these connections use the following format: 
+The names of these connections use the following format:
 
-#. Unused pins are identified with the keyword open.  
+#. Unused pins are identified with the keyword open.
 #. The name of an input pin to a complex logic block is the same as the name of the net using that pin.
 #. The name of an output pin of a primitve (leaf block) is the same as the name of the net using that pin.
 #. The names of all other pins are specified by describing their immediate drivers.  This format is ``[name_of_immediate_driver_block].[port_name][pin#]->interconnect_name``.
 
-For primitives with equivalent inputs VPR may rotate the input pins.  
+For primitives with equivalent inputs VPR may rotate the input pins.
 The resulting rotation is specified with the ``<port_rotation_map>`` tag.
 For example, consider a netlist contains a 2-input LUT named ``c``, which is implemented in a 5-LUT:
 
@@ -373,7 +373,7 @@ The io pad is set to inpad mode and is driven by the inpad:
 
     <block name="b1.net" instance="FPGA_packed_netlist[0]">
         <inputs>
-                pa pb pc 
+                pa pb pc
         </inputs>
 
         <outputs>
@@ -519,7 +519,7 @@ An example routing for one net is listed below:
     Node:  10  CHANX (13,4) to (16,4)  Track: 1  Switch: 1
     Node:  11  IPIN (16,4)  Pad: 1  clb.I[1]  Switch: 2
     Node:  12  SINK (16,4)  Pad: 1  Switch: -1      # This sink is an output pad at (16,4), subblock 1.
- 
+
 
 Nets which are specified to be global in the netlist file (generally clocks) are not routed.
 Instead, a list of the blocks (name and internal index) which this net must connect is printed out.
@@ -537,16 +537,16 @@ An example listing for a global net is given below.
     Block pksi_17_ (#431) at (3,26), pinclass 2
     Block pksi_185_ (#432) at (5,48), pinclass 2
     Block n_n2879 (#433) at (49,23), pinclass 2
-    
+
 .. _vpr_route_resource_file:
 
 Routing Resource Graph File Format (.xml)
 -----------------------------------------
-The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA. 
-This file is generated through the last stage of the rr graph generation during routing with the final channel width. 
+The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA.
+This file is generated through the last stage of the rr graph generation during routing with the final channel width.
 When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
-The file is constructed using tags. The top level is the ``rr_graph`` tag. 
-This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA. 
+The file is constructed using tags. The top level is the ``rr_graph`` tag.
+This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA.
 It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
 
@@ -588,10 +588,10 @@ The channel information is contained within the ``channels`` subtag. This descri
 .. arch:tag:: <channel chan_width_max="int" x_min="int" y_min="int" x_max="int" y_max="int"/>
 
     This is a required subtag that contains information about the general channel width information. This stores the channel width between x or y directed channels.
-    
+
     :req_param chan_width_max:
         Stores the maximum channel width value of x or y channels.
-        
+
     :req_param x_min y_min x_max y_max:
         Stores the minimum and maximum value of x and y coordinate within the lists.
 
@@ -601,10 +601,10 @@ The channel information is contained within the ``channels`` subtag. This descri
 	
     :req_param index:
         Describes the index within the array.
-        
+
     :req_param info:
-        The width of each channel. The minimum is one track per channel. 
-        The input and output channels are io_rat * maximum in interior tracks wide. 
+        The width of each channel. The minimum is one track per channel.
+        The input and output channels are io_rat * maximum in interior tracks wide.
         The channel distributions read from the architecture file are scaled by a constant factor.
     	
 **Switches**
@@ -615,10 +615,10 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
     :req_param id:
         A unique identifier for that type of switch.
-        
+
     :req_param name:
         An optional general identifier for the switch.
-        
+
     :req_param buffered:
         An integer value that describes whether the switch includes a buffer. 1 means a buffer is included.
 
@@ -635,7 +635,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
   	
     :opt_param R, Cin, Cout:
         The resistance, input capacitance and output capacitance of the switch.
-        
+
     :opt_param Tdel:
         Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout.
 		
@@ -645,7 +645,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 	
     :req_param mux_trans_size:
         The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units.
-        
+
     :req_param buf_size:
         The area of the buffer. If this is set to zero, the area is calculated from the resistance.
 
@@ -671,17 +671,17 @@ The ``segments`` tag contains all the segments and its information. Note again t
 **Blocks**
 
 The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. Information here is checked to make sure it corresponds with the architecture. It contains the following subtags:
-  
+
 .. arch:tag:: <block_type id="int" name="unique_identifier" width="int" height="int">
 
 	This describes generation information about the block using the following attributes:
 
     :req_param id:
         The index of the type of the descriptor in the array. This is used for index referencing
-        
+
     :req_param name:
         A unique identifier for this type of block. Note that an empty block type must be denoted ``"EMPTY"`` without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
-        
+
     :req_param width, height:
         The width and height of a large block in grid tiles.
 
@@ -691,45 +691,45 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
 	
     :req_param type:
         This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``.
-        
+
     :req_param content:
         A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
-        
+
 **Grid**
 
 The ``grid`` tag contains information about the grid of the FPGA. Information here is checked to make sure it corresponds with the architecture. Each grid tag has one subtag as outlined below:
- 
+
 .. arch:tag:: <grid_loc x="int" y="int" block_type_id="int" width_offset="int" height_offset="int">
 
     :req_param x, y:
         The x and y  coordinate location of this grid tile.
-        
+
     :req_param block_type_id:
         The index of the type of logic block that resides here.
-        
+
     :req_param width_offset, height_offset:
         The number of grid tiles reserved based on the width and height of a block.
-        
+
 **Nodes**
 
 The ``rr_nodes`` tag stores information about each node for the routing resource graph. These nodes describe each wire and each logic block pin as represented by nodes.
 
 .. arch:tag:: <node id="int" type="unique_type" direction="unique_direction" capacity="int">
-   
-    :req_param id: 
+
+    :req_param id:
     	The index of the particular routing resource node
-        
+
     :req_param type:
-    	Indicates whether the node is a wire or a logic block. 
-        Valid inputs for class types are { ``CHANX`` | ``CHANY`` | ``SOURCE`` | ``SINK`` | ``OPIN`` | ``IPIN`` }. 
-        Where ``CHANX`` and ``CHANY`` describe a horizontal and vertical channel. 
-        Sources and sinks describes where nets begin and end. 
+    	Indicates whether the node is a wire or a logic block.
+        Valid inputs for class types are { ``CHANX`` | ``CHANY`` | ``SOURCE`` | ``SINK`` | ``OPIN`` | ``IPIN`` }.
+        Where ``CHANX`` and ``CHANY`` describe a horizontal and vertical channel.
+        Sources and sinks describes where nets begin and end.
         ``OPIN`` represents an output pin and ``IPIN`` representd an input pin
-        
+
     :opt_param direction:
-    	If the node represents a track (``CHANX`` or ``CHANY``), this field represents its direction as {``INC_DIR`` | ``DEC_DIR`` | ``BI_DIR``}. 
+    	If the node represents a track (``CHANX`` or ``CHANY``), this field represents its direction as {``INC_DIR`` | ``DEC_DIR`` | ``BI_DIR``}.
         In other cases this attribute should not be specified.
-       
+
     :req_param capacity:
     	The number of routes that can use this node.
 
@@ -744,7 +744,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
         For ``IPIN`` and ``OPIN`` nodes specifies the side of the grid tile on which the node is located.
         Valid values are { ``LEFT`` | ``RIGHT`` | ``TOP`` | ``BOTTOM`` }.
         In other cases this attribute should not be specified.
-        
+
     :req_param ptc:
         This is the pin, track, or class number that depends on the rr_node type.
 
@@ -754,7 +754,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
 
     :req_param R:
         The resistance that goes through this node. This is only the metal resistance, it does not include the resistance of the switch that leads to another routing resource node.
-        
+
     :req_param C:
         The total capacitance of this node. This includes the metal capacitance, input capacitance of all the switches hanging off the node, the output capacitance of all the switches to the node, and the connection box buffer capacitances that hangs off it.
 
@@ -772,10 +772,10 @@ The final subtag is the ``rr_edges`` tag that encloses information about all the
 .. arch:tag:: <edge src_node="int" sink_node="int" switch_id="int"/>
 
     This subtag repeats every edge that connects nodes together in the graph.
-    
+
     :req_param src_node, sink_node:
         The index for the source and sink node that this edge connects to.
-        
+
     :req_param switch_id:
         The type of switch that connects the two nodes.
 
@@ -832,8 +832,8 @@ An example of what a generated routing resource graph file would look like is sh
         	</node>
     	</rr_nodes>
      	<rr_edges>
-        	<edge src_node="0" sink_node="1" switch_id="0"/> 
-        	<edge src_node="1" sink_node="2" switch_id="0"/> 
+        	<edge src_node="0" sink_node="1" switch_id="0"/>
+        	<edge src_node="1" sink_node="2" switch_id="0"/>
     	</rr_edges>
     </rr_graph>
 .. _end:

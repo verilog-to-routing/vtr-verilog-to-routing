@@ -12,7 +12,7 @@ It then perfoms:
  * Logic Optimization & Technology Mapping (:ref:`abc`)
  * Packing, Placement, Routing & Timing Analysis (:ref:`vpr`)
 
-Generating FPGA speed and area results. 
+Generating FPGA speed and area results.
 
 VTR also includes a set of benchmark designs known to work with the design flow.
 

@@ -42,11 +42,11 @@ Multi-Clock Circuits
 ~~~~~~~~~~~~~~~~~~~~~
 Constrain all I/Os a virtual clock ``virtual_io_clock``.
 Does not analyse paths between netlist clock domains, but analyses all paths from I/Os to any netlist domain.
-Optimizes all clocks, including I/O clocks, to run as fast as possible. 
+Optimizes all clocks, including I/O clocks, to run as fast as possible.
 
 .. warning:: By default VPR does not analyze paths between netlist clock domains.
 
-*Equivalent SDC File:* 
+*Equivalent SDC File:*
 
 .. code-block:: tcl
 

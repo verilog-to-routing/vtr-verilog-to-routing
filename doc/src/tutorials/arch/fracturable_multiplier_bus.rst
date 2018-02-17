@@ -9,12 +9,12 @@ Fracturable Multiplier Bus-Based Tutorial
 
 Configurable multipliers are found in today's commercial FPGAs for two primary reasons:
 
-#. Multipliers are found in a variety of different applications including DSP, soft processors, scientific computing, etc and 
+#. Multipliers are found in a variety of different applications including DSP, soft processors, scientific computing, etc and
 #. Implementing multipliers in soft logic is very area expensive.
-   
+
 Thus it is important for modern FPGA architects be able to describe the specific properties of the configurable multiplier that they want to investigate.
 The following is an example on how to use the VPR architecture description langauge to describe a common type of configurable multiplier called a fracturable multiplier shown in :numref:`fig_fracturable_multiplier`.
-We first give a step-by-step description on how to construct the multiplier block followed by a complete example. 
+We first give a step-by-step description on how to construct the multiplier block followed by a complete example.
 
 .. _fig_fracturable_multiplier:
 
@@ -27,15 +27,15 @@ A divisible 18x18 multiplier can implement a 18x18 multiplier cluster called a `
 :numref:`fig_fracturable_multiplier_slice` shows a multiplier slice.
 Pins belonging to the same input or output port of a multiplier slice must be either all registered or none registered.
 Pins belonging to different ports or different slices may have different register configurations.
-A multiplier primitive itself has two input ports (``A`` and ``B``) and one output port (``OUT``). 
+A multiplier primitive itself has two input ports (``A`` and ``B``) and one output port (``OUT``).
 
 .. _fig_fracturable_multiplier_slice:
 
 .. figure:: fracturable_multiplier_slice.*
-    
+
     Multiplier slice
 
-First, we describe the ``block_mult`` complex block as follows: 
+First, we describe the ``block_mult`` complex block as follows:
 
 .. code-block:: xml
 
@@ -61,7 +61,7 @@ The mode and slice is declared here:
 This is followed by a description of the primitives within the slice.
 There are two sets of 36 flip-flops for the input ports and one set of 64 flip-flops for the output port.
 There is one 36x36 multiplier primitive.
-These primitives are described by four *pb_types* as follows: 
+These primitives are described by four *pb_types* as follows:
 
 .. code-block:: xml
 
@@ -90,7 +90,7 @@ These primitives are described by four *pb_types* as follows:
 The slice description finishes with a specification of the interconnection.
 Using the same technique as in the memory example, bus-based multiplexers are used to register the ports.
 Clocks are connected using the complete tag because there is a one-to-many relationship.
-Direct tags are used to make simple, one-to-one connections. 
+Direct tags are used to make simple, one-to-one connections.
 
 .. code-block:: xml
 
@@ -133,7 +133,7 @@ After the mode containing the 36x36 multiplier slice is described, the mode cont
           <clock name="clk"/>
 
 This mode has two additional modes which are the actual 18x18 multiply block or two 9x9 mulitplier blocks.
-Both follow a similar description as the ``mult_36x36_slice`` with just the number of pins halved so the details are not repeated. 
+Both follow a similar description as the ``mult_36x36_slice`` with just the number of pins halved so the details are not repeated.
 
 .. code-block:: xml
 
@@ -160,7 +160,7 @@ Both follow a similar description as the ``mult_36x36_slice`` with just the numb
 The interconnect for the divisible 18x18 mode is shown in :numref:`fig_fracturable_multiplier_cluster`.
 The unique characteristic of this interconnect is that the input and output ports of the parent is split in half, one half for each child.
 A convenient way to specify this is to use the syntax divisible_mult_18x18[1:0] which will append the pins of the ports of the children together.
-The interconnect for the fracturable 18x18 mode is described here: 
+The interconnect for the fracturable 18x18 mode is described here:
 
 .. _fig_fracturable_multiplier_cluster:
 
@@ -185,7 +185,7 @@ Fracturable Multiplier Bus-Based Complete Example
 
 .. code-block:: xml
 
-    <!-- Example of a fracturable mutliplier whose inputs and outputs may be optionally registered 
+    <!-- Example of a fracturable mutliplier whose inputs and outputs may be optionally registered
          The multiplier hard logic block can implement one 36x36, two 18x18, or four 9x9 multiplies
      -->
     <pb_type name="block_mult">
@@ -244,7 +244,7 @@ Fracturable Multiplier Bus-Based Complete Example
           <direct input="block_mult.clk" output="mult_36x36_slice.clk"/>
         </interconnect>
       </mode>
-      
+
       <mode  name="two_divisible_mult_18x18">
         <pb_type name="divisible_mult_18x18" num_pb="2">
           <input name="A" num_pins="18"/>

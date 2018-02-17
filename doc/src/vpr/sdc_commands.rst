@@ -34,9 +34,9 @@ If a virtual clock is assigned using a create_clock command, it must be referenc
     .. sdc:option:: -period <float>
 
         Specifies the clock period.
-        
+
         **Required:** Yes
-        
+
     .. sdc:option:: -waveform {<float> <float>}
 
         Overrides the default clock waveform.
@@ -109,12 +109,12 @@ and
 set_false_path
 --------------
 Cuts timing paths unidirectionally from each clock in :sdc:option:`-from` to each clock in :sdc:option:`–to`.
-Otherwise equivalent to :sdc:command:`set_clock_groups`. 
+Otherwise equivalent to :sdc:command:`set_clock_groups`.
 
 *Example Usage:*
 
 .. code-block:: tcl
-    
+
     #Do not analyze paths launched from clk and captured by clk2 or clk3
     set_false_path -from [get_clocks {clk}] -to [get_clocks {clk2 clk3}]
 
@@ -126,13 +126,13 @@ Otherwise equivalent to :sdc:command:`set_clock_groups`.
 .. sdc:command:: set_false_path
 
     .. sdc:option:: -from [get_clocks <clock list or regexes>]
-        
+
         Specifies the source clock domain(s).
 
         **Required:** No
 
         **Default:** All clocks
-    
+
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
@@ -166,13 +166,13 @@ Overrides the default setup (max) or hold (min) timing constraint calculated usi
         **Required:** Yes
 
     .. sdc:option:: -from [get_clocks <clock list or regexes>]
-        
+
         Specifies the source clock domain(s).
 
         **Required:** No
 
         **Default:** All clocks
-    
+
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
@@ -187,7 +187,7 @@ Sets how many clock cycles elapse between the launch and capture edges for setup
 
 The default the setup mutlicycle value is 1 (i.e. the capture setup check is performed against the edge one cycle after the launch edge).
 
-The default hold multicycle is one less than the setup multicycle path (e.g. the capture hold check occurs in the same cycle as the launch edge for the default setup multicycle). 
+The default hold multicycle is one less than the setup multicycle path (e.g. the capture hold check occurs in the same cycle as the launch edge for the default setup multicycle).
 
 *Example Usage:*
 
@@ -201,7 +201,7 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
     set_multicycle_path -setup -from [get_clocks {clk}] -to [get_clocks {clk2}] 3
 
     #Create a 0 cycle hold check from clk to clk2
-    # Note that this moves the default hold check back to it's original 
+    # Note that this moves the default hold check back to it's original
     # position before the previous setup setup_multicycle_path was applied
     set_multicycle_path -hold -from [get_clocks {clk}] -to [get_clocks {clk2}] 2
 
@@ -210,25 +210,25 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
 .. sdc:command:: set_multicycle_path
 
     .. sdc:option:: -setup
-        
+
         Indicates that the multicycle-path applies to setup analysis.
 
         **Required:** No
 
     .. sdc:option:: -hold
-        
+
         Indicates that the multicycle-path applies to hold analysis.
 
         **Required:** No
-    
+
     .. sdc:option:: -from [get_clocks <clock list or regexes>]
-        
+
         Specifies the source clock domain(s).
 
         **Required:** No
 
         **Default:** All clocks
-    
+
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
@@ -236,7 +236,7 @@ The default hold multicycle is one less than the setup multicycle path (e.g. the
         **Required:** No
 
         **Default:** All clocks
-    
+
     .. sdc:option:: <path_multiplier>
 
         The number of cycles that apply to the specified path(s).
@@ -308,13 +308,13 @@ This allows a single SDC command to constrain I/Os in all single-clock circuits.
 
         **Required:** Yes
 
-    .. note:: 
-        
+    .. note::
+
         If neither ``-min`` nor ``-max`` are specified the delay value is applied to both.
 
 set_clock_uncertainty
 ---------------------
-Sets the clock uncertainty between clock domains. 
+Sets the clock uncertainty between clock domains.
 This is typically used to model uncertainty in the clock arrival times due to clock jitter.
 
 *Example Usage:*
@@ -333,13 +333,13 @@ This is typically used to model uncertainty in the clock arrival times due to cl
 .. sdc:command:: set_clock_uncertainty
 
     .. sdc:option:: -from [get_clocks <clock list or regexes>]
-        
+
         Specifies the source clock domain(s).
 
         **Required:** No
 
         **Default:** All clocks
-    
+
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
@@ -359,20 +359,20 @@ This is typically used to model uncertainty in the clock arrival times due to cl
         Specifies the clock uncertainty for hold analysis.
 
         **Required:** No
-    
+
     .. sdc:option:: <uncertainty>
 
         The clock uncertainty value between the from and to clocks.
 
         **Required:** Yes
 
-    .. note:: 
-        
+    .. note::
+
         If neither ``-setup`` nor ``-hold`` are specified the uncertainty value is applied to both.
 
 set_clock_latency
 -----------------
-Sets the latency of a clock. 
+Sets the latency of a clock.
 VPR automatically calculates on-chip clock network delay, and so only source latency is supported.
 
 Source clock latency corresponds to the delay from the true clock source (e.g. off-chip clock generator) to the on-chip clock definition point.
@@ -409,13 +409,13 @@ Source clock latency corresponds to the delay from the true clock source (e.g. o
         **Required:** Yes
 
     .. sdc:option:: [get_clocks <clock list or regexes>]
-        
+
         Specifies the clock domain(s).
 
         **Required:** Yes
-    
-    .. note:: 
-        
+
+    .. note::
+
         If neither ``-early`` nor ``-late`` are specified the latency value is applied to both.
 
 set_disable_timing
@@ -425,18 +425,18 @@ This is typically used to manually break combinational loops.
 
 .. code-block:: tcl
 
-    #Disables the timing edge between the pins 'in[0]' and 'out[0]' on 
+    #Disables the timing edge between the pins 'in[0]' and 'out[0]' on
     #the netlist primitive named 'blk1'
     set_disable_timing -from [get_pins {blk1.in[0]}] -to [get_pins {blk1.out[0]}]
 
 .. sdc:command:: set_disable_timing
 
     .. sdc:option:: -from [get_pins <pin list or regexes>]
-        
+
         Specifies the source netlist pins.
 
         **Required:** Yes
-    
+
     .. sdc:option:: -to [get_pins <pin list or regexes>]
 
         Specifies the sink netlist pins.
@@ -453,7 +453,7 @@ Special Characters
     ``\`` at the end of a line indicates that a command wraps to the next line.
 
     ``*`` is used in a ``get_clocks``/``get_ports`` command or at the end of ``create_clock`` to match all netlist clocks.
-    Partial wildcarding (e.g. ``clk*`` to match ``clk`` and ``clk2``) is also supported.  
+    Partial wildcarding (e.g. ``clk*`` to match ``clk`` and ``clk2``) is also supported.
     As mentioned above, ``*`` can be used in set_input_delay and set_output delay to refer to the netlist clock for single-clock circuits only, although this is not supported in standard SDC.
 
     ``{}`` escapes strings, e.g. ``{top^clk}`` matches a clock called ``top^clk``, while ``top^clk`` without braces gives an error because of the special ``^`` character.
@@ -486,7 +486,7 @@ Same as :ref:`sdc_example_A`, but with paths between clock domains cut.  Separat
 
 .. code-block:: tcl
 
-    create_clock -period 2 clk     
+    create_clock -period 2 clk
     create_clock -period 3 clk2
     set_clock_groups -exclusive -group {clk} -group {clk2}
 
@@ -503,7 +503,7 @@ This is the same as the multi-clock default, but with custom period constraints.
     create_clock -period 2 clk
     create_clock -period 3 clk2
     create_clock -period 3.5 -name virtual_io_clock
-    set_clock_groups -exclusive -group {clk} -group {clk2} 
+    set_clock_groups -exclusive -group {clk} -group {clk2}
     set_input_delay -clock virtual_io_clock -max 0 [get_ports {*}]
     set_output_delay -clock virtual_io_clock -max 0 [get_ports {*}]
 

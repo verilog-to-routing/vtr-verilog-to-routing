@@ -3,7 +3,7 @@
 run_vtr_flow
 ---------------
 
-This script runs the VTR flow for a single benchmark circuit and architecture file. 
+This script runs the VTR flow for a single benchmark circuit and architecture file.
 
 The script is located at::
 
@@ -19,7 +19,7 @@ At a minimum ``run_vtr_flow.pl`` requires two command-line arguments::
     run_vtr_flow.pl <circuit_file> <architecture_file>
 
 where:
-  
+
   * ``<circuit_file>`` is the circuit to be processed
   * ``<architecture_file>`` is the target :ref:`FPGA architecture <fpga_architecture_description>`
 
@@ -58,11 +58,11 @@ Detailed Command-line Options
       * ``abc``
       * ``scripts``
       * ``vpr``
-    
+
     **Default:** ``odin``
 
 .. option:: -ending_stage <stage>
-    
+
     End the VTR flow at the specified stage.
 
 
@@ -72,7 +72,7 @@ Detailed Command-line Options
       * ``abc``
       * ``scripts``
       * ``vpr``
-    
+
     **Default:** ``vpr``
 
 .. option:: -specific_vpr_stage <vpr_stage>
@@ -92,13 +92,13 @@ Detailed Command-line Options
     .. note:: Specifying the routing stage requires a channel width to also be specified.
 
 .. option:: -power
-    
+
     Enables power estimation.
 
     See :ref:`power_estimation`
 
 .. option:: -cmos_tech <file>
-    
+
     CMOS technology XML file.
 
     See :ref:`power_technology_properties`
@@ -112,11 +112,11 @@ Detailed Command-line Options
     Do not delete the result files (i.e. VPR's ``.net``, ``.place``, ``.route`` outputs)
 
 .. option:: -track_memory_usage
-    
+
     Record peak memory usage and additional statistics for each stage.
-    
-    .. note:: 
-        Requires ``/usr/bin/time -v`` command. 
+
+    .. note::
+        Requires ``/usr/bin/time -v`` command.
         Some operating systems do not report peak memory.
 
     **Default:** off

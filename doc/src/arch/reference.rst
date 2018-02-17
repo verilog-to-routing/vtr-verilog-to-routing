@@ -31,7 +31,7 @@ The ``<models>`` tag contains ``<model name="string">`` tags.
 Each ``<model>`` tag describes the BLIF ``.subckt`` model names that are accepted by the FPGA architecture.
 The name of the model must match the corresponding name of the BLIF model.
 
-.. note:: 
+.. note::
     Standard blif structures (``.names``, ``.latch``, ``.input``, ``.output``) are accepted by default, so these models should not be described in the <models> tag.
 
 Each model tag must contain 2 tags: ``<input_ports>`` and ``<output_ports>``.
@@ -44,7 +44,7 @@ Each of these contains ``<port>`` tags:
     :opt_param clock: Indicates the port is sequential and controlled by the specified clock (which must be another port on the model marked with ``is_clock=1``). Default: port is treated as combinational (if unspecified)
     :opt_param combinational_sink_ports: A space-separated list of output ports which are combinationally connected to the current input port. Default: No combinational connections (if unspecified)
 
-    Defines the port for a model. 
+    Defines the port for a model.
 
 An example models section containing a combinational primitive ``adder`` and a sequential primitive ``single_port_ram`` follows:
 
@@ -111,7 +111,7 @@ Global FPGA Information
 .. arch:tag:: <complexblocklist>content</complexblocklist>
 
     Content inside this tag contains a group of <pb_type> tags that specify the types of functional blocks and their properties.
-    
+
 .. _arch_grid_layout:
 
 FPGA Grid Layout
@@ -185,13 +185,13 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     Fills the device grid with the specified block type.
 
     Example:
-    
+
     .. code-block:: xml
 
         <!-- Fill the device with CLB blocks -->
@@ -207,7 +207,7 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     Sets the perimeter of the device (i.e. edges) to the specified block type.
@@ -231,7 +231,7 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     Sets the corners of the device to the specified block type.
@@ -253,7 +253,7 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     :req_param x:
@@ -268,7 +268,7 @@ Grid Location Tags
 
     .. code-block:: xml
 
-        <!-- Create a single instance of a PCIE block (width 3, height 5) 
+        <!-- Create a single instance of a PCIE block (width 3, height 5)
              at location (1,1)-->
         <single type="PCIE" x="1" y="1" priority="20"/>
 
@@ -282,7 +282,7 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     :req_param startx:
@@ -311,7 +311,7 @@ Grid Location Tags
 
     .. code-block:: xml
 
-        <!-- Create a column of RAMs starting at column 2, and 
+        <!-- Create a column of RAMs starting at column 2, and
              repeating every 3 columns -->
         <col type="RAM" startx="2" repeatx="3" priority="3"/>
 
@@ -326,8 +326,8 @@ Grid Location Tags
         <!-- Create IO's around the device perimeter -->
         <perimeter type="io" priority=10"/>
 
-        <!-- Create a column of RAMs starting at column 2, and 
-             repeating every 3 columns. Note that a vertical offset 
+        <!-- Create a column of RAMs starting at column 2, and
+             repeating every 3 columns. Note that a vertical offset
              of 1 is needed to avoid overlapping the IOs-->
         <col type="RAM" startx="2" repeatx="3" starty="1" priority="3"/>
 
@@ -341,7 +341,7 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     :req_param starty:
@@ -370,7 +370,7 @@ Grid Location Tags
 
     .. code-block:: xml
 
-        <!-- Create a row of DSPs (width 1, height 3) at 
+        <!-- Create a row of DSPs (width 1, height 3) at
              row 1 and repeating every 7th row -->
         <row type="DSP" starty="1" repeaty="7" priority="3"/>
 
@@ -384,7 +384,7 @@ Grid Location Tags
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
 
     :req_param priority:
-        The priority of this layout specification. 
+        The priority of this layout specification.
         Tags with higher priority override those with lower priority.
 
     :opt_param startx:
@@ -448,7 +448,7 @@ Grid Location Tags
 
     .. code-block:: xml
 
-        <!-- Create RAMs every 2nd column withing the rectangular region bounded 
+        <!-- Create RAMs every 2nd column withing the rectangular region bounded
              by (1,1) and (5,4) -->
         <region type="RAM" startx="1" endx="5" starty="1" endy="4" incrx="2" priority="4"/>
 
@@ -460,7 +460,7 @@ Grid Location Tags
 
     .. code-block:: xml
 
-        <!-- Fill RAMs within a rectangular 2x4 region and repeat every 3 horizontal 
+        <!-- Fill RAMs within a rectangular 2x4 region and repeat every 3 horizontal
              and 5 vertical units -->
         <region type="RAM" startx="1" endx="2" starty="1" endy="4" repeatx="3" repeaty="5" priority="4"/>
 
@@ -486,7 +486,7 @@ Grid Layout Example
 .. code-block:: xml
 
     <layout>
-        <!-- Specifies an auto-scaling square FPGA floorplan --> 
+        <!-- Specifies an auto-scaling square FPGA floorplan -->
         <auto_layout aspect_ratio="1.0">
             <!-- Create I/Os around the device perimeter -->
             <perimeter type="io" priority=10"/>
@@ -494,12 +494,12 @@ Grid Layout Example
             <!-- Nothing in the corners -->
             <corners type="EMPTY" priority="100"/>
 
-            <!-- Create a column of RAMs starting at column 2, and 
+            <!-- Create a column of RAMs starting at column 2, and
                  repeating every 3 columns. Note that a vertical offset (starty)
                  of 1 is needed to avoid overlapping the IOs-->
             <col type="RAM" startx="2" repeatx="3" starty="1" priority="3"/>
 
-            <!-- Create a single PCIE block along the bottom, overriding 
+            <!-- Create a single PCIE block along the bottom, overriding
                  I/O and RAM slots -->
             <single type="PCIE" x="3" y="0" priority="20"/>
 
@@ -514,7 +514,7 @@ Grid Layout Example
 
 .. figure:: fpga_grid_example.*
 
-    Example FPGA grid 
+    Example FPGA grid
 
 .. _arch_device_info:
 
@@ -524,12 +524,12 @@ The tags within the ``<device>`` tag are:
 
 .. arch:tag:: <sizing R_minW_nmos="float" R_minW_pmos="float"/>
 
-    :req_param R_minW_nmos: 
-        The resistance of minimum-width nmos transistor.  
+    :req_param R_minW_nmos:
+        The resistance of minimum-width nmos transistor.
         This data is used only by the area model built into VPR.
 
-    :req_param R_minW_pmos: 
-        The resistance of minimum-width pmos transistor.  
+    :req_param R_minW_pmos:
+        The resistance of minimum-width pmos transistor.
         This data is used only by the area model built into VPR.
 
     :required: Yes
@@ -559,10 +559,10 @@ The tags within the ``<device>`` tag are:
 
 
 .. arch:tag:: <switch_block type="{wilton | subset | universal | custom}" fs="int"/>
-    
+
     :req_param type: The type of switch block to use.
     :req_param fs: The value of :math:`F_s`
-    
+
 
     :required: Yes
 
@@ -588,7 +588,7 @@ The tags within the ``<device>`` tag are:
     **Custom Switch Blocks:**
 
     Specifying ``custom`` allows custom switch blocks to be described under the ``<switchblocklist>`` XML node, the format for which is described in :ref:`custom_switch_blocks`.
-    If the switch block is specified as ``custom``, the ``fs`` field does not have to be specified, and will be ignored if present. 
+    If the switch block is specified as ``custom``, the ``fs`` field does not have to be specified, and will be ignored if present.
 
 .. arch:tag:: <chan_width_distr>content</chan_width_distr>
 
@@ -596,12 +596,12 @@ The tags within the ``<device>`` tag are:
     The contents of this tag are described in :ref:`global_routing_info`.
 
 .. _arch_switches:
- 
+
 Switches
 --------
 The tags within the ``<switchlist>`` tag specifies the switches used to connect wires and pins together.
 
-.. arch:tag:: 
+.. arch:tag::
     <switch type="{mux|tristate|pass_gate|short|buffer}" name="string" R="float" Cin="float" Cout="float" Tdel="float" buf_size="{auto|float}" mux_trans_size="float", power_buf_size="int"/>
 
     Describes a switch in the routing architecture.
@@ -614,7 +614,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
 
     :req_param type:
-    
+
         The type of switch:
 
         * ``mux``: An isolating, configurable multiplexer
@@ -629,7 +629,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
         **Isolation**
 
-        Isolating switches include a buffer which partition their input and output into separate DC-connected sub-circuits. 
+        Isolating switches include a buffer which partition their input and output into separate DC-connected sub-circuits.
         This helps reduce RC wire delays.
 
         *Non-isolating* switch do **not** isolate thier input and output, which can increase RC wire delays.
@@ -638,7 +638,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
         Configurable switches can be turned on/off at configuration time.
 
-        *Non-configurable* switches can **not** be controlled at configuration time. 
+        *Non-configurable* switches can **not** be controlled at configuration time.
         These are typically used to model non-optional connections such as electrical shorts and in-line buffers.
 
     :req_param name: A unique name identifying the switch
@@ -647,18 +647,18 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
     :req_param Cout:  Output capacitance of the switch.
 
 
-    :opt_param Tdel:  
+    :opt_param Tdel:
 
         Intrinsic delay through the switch.
         If this switch was driven by a zero resistance source, and drove a zero capacitance load, its delay would be: :math:`T_{del} + R \cdot C_{out}`.
 
-        The ‘switch’ includes both the mux and buffer ``mux`` type switches. 
+        The ‘switch’ includes both the mux and buffer ``mux`` type switches.
 
         .. note:: Required if no ``<Tdel>`` tags are specified
 
         .. note:: A ``<switch>``'s resistance (``R``) and output capacitance (``Cout``) have no effect on delay when used for the input connection block, since VPR does not model the resistance/capacitance of block internal wires.
 
-    :opt_param buf_size:  
+    :opt_param buf_size:
 
         Specifies the buffer size in minimum-width transistor area units.
 
@@ -669,7 +669,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
         **Default:** ``auto``
 
-    :opt_param mux_trans_size: 
+    :opt_param mux_trans_size:
         Specifies the size (in minimum width transistors) of each transistor in the two-level mux used by ``mux`` type switches.
 
         .. note:: Valid only for ``mux`` type switches.
@@ -680,7 +680,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
         Instead of specifying a single Tdel value, a list of Tdel values may be specified for different values of switch fan-in.
         Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
-        
+
 
         :req_param num_inputs: The number of switch inputs (fan-in)
         :req_param delay: The intrinsic switch delay when the switch topology has the specified number of switch inputs
@@ -725,7 +725,7 @@ This is specified in the content within the ``<chan_width_distr>`` tag.
     .. _fig_arch_channel_distribution:
 
     .. figure:: channel_distribution.*
-        
+
         Channel Distribution
 
     The delta function is used to specify a channel width distribution in which all the channels have the same width except one.
@@ -771,7 +771,7 @@ PB Type
     For example:
 
     .. code-block:: xml
-        
+
         <complexblocklist>
             <pb_type name="CLB"/> <!-- Top level -->
                 ...
@@ -794,8 +794,8 @@ PB Type
 
     **General:**
 
-    :req_param name: The name of this pb_type. 
-    
+    :req_param name: The name of this pb_type.
+
         The name must be unique with respect to any parent, sibling, or child ``<pb_type>``.
 
     **Top Level Only:**
@@ -833,7 +833,7 @@ PB Type
         **Default:** ``1``
 
         For example:
-        
+
         .. code-block:: xml
 
             <pb_type name="CLB">
@@ -860,10 +860,10 @@ PB Type
 
         * ``.latch``: A BLIF .latch (DFF) primitive
 
-        * ``.subckt <custom_type>``: A user defined black-box primitive. 
-          
+        * ``.subckt <custom_type>``: A user defined black-box primitive.
+
         For example:
-        
+
         .. code-block:: xml
 
             <pb_type name="my_adder" blif_model=".subckt adder"/>
@@ -875,7 +875,7 @@ PB Type
         .. note:: The input/output/clock ports for primitive pb_types must match the ports specified in the ``<models>`` section.
 
     :opt_param class: Specifies that this primitive is of a specialized type which should be treated specially.
-        
+
         .. seealso:: :ref:`arch_classes` for more details.
 
 The following tags are common to all <pb_type> tags:
@@ -885,19 +885,19 @@ The following tags are common to all <pb_type> tags:
     :req_param name: Name of the input port.
     :req_param num_pins: Number of pins the input port has.
 
-    :opt_param equivalent: 
-        *Applies only to top-level pb_type.* 
+    :opt_param equivalent:
+        *Applies only to top-level pb_type.*
         Describes if the pins of the port are logically equivalent.
         Input logical equivalence means that the pin order can be swapped without changing functionality.
         For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
 
-    :opt_param is_non_clock_global: 
+    :opt_param is_non_clock_global:
         *Applies only to top-level pb_type.*
         Describes if this input pin is a global signal that is not a clock.
         Very useful for signals such as FPGA-wide asychronous resets.
         These signals have their own dedicated routing channels and so should not use the general interconnect fabric on the FPGA.
 
-    Defines an input port.  
+    Defines an input port.
     Multple input ports are described using multiple <input> tags.
 
 .. arch:tag:: <output name="string" num_pins="int" equivalent="{true|false}"/>
@@ -905,24 +905,24 @@ The following tags are common to all <pb_type> tags:
     :req_param name: Name of the output port.
     :req_param num_pins: Number of pins the output port has.
 
-    :opt_param equivalent: 
+    :opt_param equivalent:
         *Applies only to top-level pb_type.*
         Describes if the pins of the port are logically equivalent.
         *See above description for inputs.*
-    
+
 
     Defines an output port.
     Multple output ports are described using multiple <output> tags
 
 .. arch:tag:: <clock name="string" num_pins="int" equivalent="{true|false}"/>
 
-    Describes a clock port.  
+    Describes a clock port.
     Multple clock ports are described using multiple <clock> tags.
     *See above descriptions on inputs/outputs*
 
 .. arch:tag:: <mode name="string">
-    
-    :req_param name: 
+
+    :req_param name:
         Name for this mode.
         Must be unique compared to other modes.
 
@@ -1068,7 +1068,7 @@ They describe how a complex block interfaces with the inter-block world.
             .. note:: This is useful for ensuring outputs do not connect to wires which fly-over a width > 1 and height > 1 block (e.g. if using ``short`` or ``buffer`` connections instead of a fully configurable switch block within the block).
 
         * ``custom`` allows the architect to specify specifically where the pins are to be placed using ``<loc>`` tags.
-        
+
     Describes the locations where the input, output, and clock pins are distributed in a complex logic block.
 
     .. arch:tag:: <loc side="{left|right|bottom|top}" xoffset="int" yoffset="int">name_of_complex_logic_block.port_name[int:int] ... </loc>
@@ -1077,13 +1077,13 @@ They describe how a complex block interfaces with the inter-block world.
 
         :req_param side: Specifies which of the four sides of a grid location the pins in the contents are located.
 
-        :opt_param xoffset: 
+        :opt_param xoffset:
             Specifies the horizontal offset (in grid units) from block origin (bottom left corner).
             The offset value must be less than the width of the block.
 
             **Default:** ``0``
 
-        :opt_param yoffset: 
+        :opt_param yoffset:
             Specifies the vertical offset (in grid units) from block origin (bottom left corner).
             The offset value must be less than the height of the block.
 
@@ -1093,7 +1093,7 @@ They describe how a complex block interfaces with the inter-block world.
     For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
 .. arch:tag:: <switchblock_locations pattern="{external_full_internal_straight|all|external|internal|none|custom}" internal_switch="string">
-        
+
     Describes where global routing switchblocks are created in relation to the complex block.
 
     .. note:: If the ``<switchblock_locations>`` tag is left unspecified the default pattern is assumed.
@@ -1118,7 +1118,7 @@ They describe how a complex block interfaces with the inter-block world.
     .. _fig_sb_locations:
 
     .. figure:: sb_locations.*
-    
+
         Switchblock Location Patterns for a width = 2, height = 3 complex block
 
     :opt_param internal_switch:
@@ -1165,30 +1165,30 @@ They describe how a complex block interfaces with the inter-block world.
             **Default:** ``full``
 
             .. figure:: sb_types.*
-            
+
                 Switchblock Types
 
 
-        :opt_param xoffset: 
+        :opt_param xoffset:
             Specifies the horizontal offset (in grid units) from block origin (bottom left corner).
             The offset value must be less than the width of the block.
 
             **Default:** ``0``
 
-        :opt_param yoffset: 
+        :opt_param yoffset:
             Specifies the vertical offset (in grid units) from block origin (bottom left corner).
             The offset value must be less than the height of the block.
 
             **Default:** ``0``
 
-        :opt_param switch_override: 
+        :opt_param switch_override:
             The name of a switch (from ``<switchlist>``) which should be used to construct the switch block at this location.
 
             **Default:** The default switch for the wire ``<segment>``
 
         .. note:: The switchblock associated with a grid tile is located to the top-right of the grid tile
 
-        
+
         **Example: Custom Description of Electrically Shorted Internal Straight Connections**
 
         If we assume a width=2, height=3 block (e.g. :numref:`fig_sb_locations`), we can use a custom pattern to specify an architecture equivalent to the 'Electrically Shorted Internal Straight Connections' example:
@@ -1225,7 +1225,7 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
     **Example:**
 
     .. code-block:: xml
-        
+
         <complete input="Top.in" output="Child.in"/>
 
     .. figure:: complete_example.*
@@ -1256,8 +1256,8 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
     :req_param input: Pins that are inputs to this interconnect. Different data lines are separated by a space.
     :req_param output: Pins that are outputs of this interconnect.
 
-    Describes a bus-based multiplexer.  
-    
+    Describes a bus-based multiplexer.
+
     .. note:: Buses are not yet supported so all muxes must use one bit wide data only!
 
     **Example:**
@@ -1283,7 +1283,7 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
 
     :req_param name: The name of the pattern.
     :req_param in_port: The input pins of the edges for this pattern.
-    :req_param out_port: Which output pins of the edges for this pattern.  
+    :req_param out_port: Which output pins of the edges for this pattern.
 
     This tag gives a hint to the CAD tool that certain architectural structures should stay together during packing.
     The tag labels interconnect edges with a pack pattern name.
@@ -1348,11 +1348,11 @@ The classes we offer are:
 
 .. arch:tag:: class="memory"
 
-    Describes a memory.  
-    
+    Describes a memory.
+
     Memories are unique in that a single memory physical primitive can hold multiple, smaller, logical memories as long as:
 
-    #. The address, clock, and control inputs are identical and 
+    #. The address, clock, and control inputs are identical and
     #. There exists sufficient physical data pins to satisfy the netlist memories when the different netlist memories are merged together into one physical memory.
 
     Different types of memeories require different attributes.
@@ -1428,7 +1428,7 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
         </delay>
 
     .. note:: To specify both ``max`` and ``min`` delays two ``<delay_matrix>`` should be used.
-    
+
 .. arch:tag:: <T_setup value="float" port="string" clock="string"/>
 
     :req_param value: The setup time value.
@@ -1457,8 +1457,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
 
 .. arch:tag:: <T_clock_to_Q max="float" min="float" port="string" clock="string"/>
 
-    :opt_param max: The maximum clock-to-Q delay value. 
-    :opt_param min: The minimum clock-to-Q delay value. 
+    :opt_param max: The maximum clock-to-Q delay value.
+    :opt_param min: The minimum clock-to-Q delay value.
     :req_param port: The port name the delay value applies to.
     :req_param clock: The port name of the clock the clock-to-Q delay is specified relative to.
 
@@ -1479,7 +1479,7 @@ Modeling Sequential Primitive Internal Timing Paths
 .. seealso:: For examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
 
 By default, if only ``<T_setup>`` and ``<T_clock_to_Q>`` are specified on a primitive ``pb_type`` no internal timing paths are modeled.
-However, such paths can be modeled by using ``<delay_constant>`` and/or ``<delay_matrix>`` can be used in conjunction with ``<T_setup>`` and ``<T_clock_to_Q>``.  
+However, such paths can be modeled by using ``<delay_constant>`` and/or ``<delay_matrix>`` can be used in conjunction with ``<T_setup>`` and ``<T_clock_to_Q>``.
 This is useful for modeling the speed-limiting path of an FPGA hard block like a RAM or DSP.
 
 As an example, consider a sequential black-box primitive named ``seq_foo`` which has an input port ``in``, output port ``out``, and clock ``clk``:
@@ -1489,7 +1489,7 @@ As an example, consider a sequential black-box primitive named ``seq_foo`` which
     <pb_type name="seq_foo" blif_model=".subckt seq_foo" num_pb="1">
         <input name="in" num_pins="4"/>
         <output name="out" num_pins="1"/>
-        <clock name="clk" num_pins="1"/> 
+        <clock name="clk" num_pins="1"/>
 
         <!-- external -->
         <T_setup value="80e-12" port="seq_foo.in" clock="clk"/>
@@ -1512,7 +1512,7 @@ Power
 
 .. arch:tag:: <power method="string">contents</power>
 
-    :opt_param method: 
+    :opt_param method:
 
         Indicates the method of power estimation used for the given pb_type.
 
@@ -1525,15 +1525,15 @@ Power
             * ``absolute``
             * ``ignore``
             * ``sum-of-children``
-        
+
         **Default:** ``auto-size``.
 
         .. seealso:: :ref:`Power Architecture Modelling <power_arch_modeling>` for a detailed description of the various power estimation methods.
 
     The ``contents`` of the tag can consist of the following tags:
-    
+
       * ``<dynamic_power>``
-      * ``<static_power>`` 
+      * ``<static_power>``
       * ``<pin>``
 
 
@@ -1561,27 +1561,27 @@ The ``<segment>`` tag and its contents are described below.
 
 .. arch:tag:: <segment name="unique_name" length="int" type="{bidir|unidir}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
-    :req_param name:  
+    :req_param name:
         A unique alphanumeric name to identify this segment type.
 
-    :req_param length:  
+    :req_param length:
         Either the number of logic blocks spanned by each segment, or the keyword longline.
         Longline means segments of this type span the entire FPGA array.
 
-    :req_param freq:  
+    :req_param freq:
         The supply of routing tracks composed of this type of segment.
         VPR automatically determines the percentage of tracks for each segment type by taking the frequency for the type specified and dividing with the sum of all frequencies.
         It is recommended that the sum of all segment frequencies be in the range 1 to 100.
 
-    :req_param Rmetal:  
+    :req_param Rmetal:
         Resistance per unit length (in terms of logic blocks) of this wiring track, in Ohms.
         For example, a segment of length 5 with Rmetal = 10 Ohms / logic block would have an end-to-end resistance of 50 Ohms.
 
-    :req_param Cmetal:  
+    :req_param Cmetal:
         Capacitance per unit length (in terms of logic blocks) of this wiring track, in Farads.
         For example, a segment of length 5 with Cmetal = 2e-14 F / logic block would have a total metal capacitance of 10e-13F.
 
-    :req_param directionality:  
+    :req_param directionality:
         This is either unidirectional or bidirectional and indicates whether a segment has multiple drive points (bidirectional), or a single driver at one end of the wire segment (unidirectional).
         All segments must have the same directionality value.
         See :cite:`lemieux_directional_and_singale_driver_wires` for a description of unidirectional single-driver wire segments.
@@ -1615,14 +1615,14 @@ The ``<segment>`` tag and its contents are described below.
 
 .. arch:tag:: <mux name="string"/>
 
-    .. warning:: Option for UNIDIRECTIONAL only.  
+    .. warning:: Option for UNIDIRECTIONAL only.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
 
 .. arch:tag:: <wire_switch name="string"/>
 
     .. warning:: Option for BIDIRECTIONAL only.
-    
+
     Tag must be included and the name must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the wire switch in your architecture.
 
 .. arch:tag:: <opin_switch name="string"/>
@@ -1633,7 +1633,7 @@ The ``<segment>`` tag and its contents are described below.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the output pin switch in your architecture.
 
-    .. note:: 
+    .. note::
         In unidirectional segment mode, there is only a single buffer on the segment.
         Its type is specified by assigning the same switch index to both wire_switch and opin_switch.
         VPR will error out if these two are not the same.
@@ -1670,7 +1670,7 @@ Additional power options are specified within the ``<architecture>`` level ``<po
 .. arch:tag:: <buffers logical_effort_factor="float"/>
 
     :req_param logical_effort_factor: **Default:** ``4``.
-    
+
 
 Direct Inter-block Connections
 ------------------------------
@@ -1679,12 +1679,12 @@ The content within the ``<directlist>`` tag consists of a group of ``<direct>`` 
 The ``<direct>`` tag and its contents are described below.
 
 .. arch:tag:: <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string"/>
-    
+
     :req_param name: is a unique alphanumeric string to name the connection.
     :req_param from_pin: pin of complex block that drives the connection.
     :req_param to_pin: pin of complex block that receives the connection.
     :req_param x_offset:  The x location of the receiving CLB relative to the driving CLB.
-    :req_param y_offset: The y location of the receiving CLB relative to the driving CLB. 
+    :req_param y_offset: The y location of the receiving CLB relative to the driving CLB.
     :req_param z_offset: The z location of the receiving CLB relative to the driving CLB.
     :req_param switch_name: [Optional, defaults to delay-less switch if not specified] The name of the <switch> from <switchlist> to be used for this direct connection.
 
@@ -1726,9 +1726,9 @@ The content under the ``<switchblocklist>`` tag consists of one or more ``<switc
               <func type="tb" formula="t"/>
             </switchfuncs>
             <wireconn from_type="l4" to_type="l4" from_switchpoint="0,1,2,3" to_switchpoint="0"/>
-            <wireconn from_type="l8_global" to_type="l8_global" from_switchpoint="0,4" 
+            <wireconn from_type="l8_global" to_type="l8_global" from_switchpoint="0,4"
                   to_switchpoint="0"/>
-            <wireconn from_type="l8_global" to_type="l4" from_switchpoint="0,4" 
+            <wireconn from_type="l8_global" to_type="l4" from_switchpoint="0,4"
                   to_switchpoint="0"/>
           </switchblock>
 
@@ -1740,7 +1740,7 @@ The content under the ``<switchblocklist>`` tag consists of one or more ``<switc
 This switch block format allows a user to specify mathematical permutation functions that describe how different types of segments (defined in the architecture file under the ``<segmentlist>`` tag) will connect to each other at different switch points.
 The concept of a switch point is illustrated below for a length-4 unidirectional wire heading in the "left" direction.
 The switch point at the start of the wire is given an index of 0 and is incremented by 1 at each subsequent switch block until the last switch point.
-The last switch point has an index of 0 because it is shared between the end of the current segment and the start of the next one (similarly to how switch point 3 is shared by the two wire subsegments on each side).    
+The last switch point has an index of 0 because it is shared between the end of the current segment and the start of the next one (similarly to how switch point 3 is shared by the two wire subsegments on each side).
 
 .. figure:: switch_point_diagram.*
 
@@ -1767,7 +1767,7 @@ The full format is documented below.
     ``<switchblock>`` is the top-level XML node used to describe connections between different segment types.
 
 .. arch:tag:: <switchblock_location type="string"/>
-    
+
     :req_param type:
         Can be one of the following strings:
 
@@ -1784,15 +1784,15 @@ The full format is documented below.
     The switchfuncs XML node contains one or more entries that specify the permutation functions with which different switch block sides should be connected, as described below.
 
 .. arch:tag:: <func type="string" formula="string"/>
-    
 
-    :req_param type: 
+
+    :req_param type:
         Specifies which switch block sides this function should connect.
         With the switch block sides being left, top, right and bottom, the allowed entries are one of {``lt``, ``lr``, ``lb``, ``tr``, ``tb``, ``tl``, ``rb``, ``rl``, ``rt``, ``bl``, ``bt``, ``br``} where ``lt`` means that the specified permutation formula will be used to connect the left-top sides of the switch block.
 
         .. note:: In a bidirectional architecture the reverse connection is implicit.
 
-    :req_param formula: 
+    :req_param formula:
         Specifies the mathematical permutation function that determines the pattern with which the source/destination sets of wires (defined using the <wireconn> entries) at the two switch block sides will be connected.
         For example, ``W-t`` specifies a connection where the ``t``’th wire in the source set will connect to the ``W-t`` wire in the destination set where ``W`` is the number of wires in the destination set and the formula is implicitly treated as modulo ``W``.
 
@@ -1813,19 +1813,19 @@ The full format is documented below.
 
 
 .. arch:tag:: <wireconn num_conns_type="{from,to,min,max}" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..."/>
-    
-    :req_param num_conns_type: 
+
+    :req_param num_conns_type:
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
 
-        * ``from`` -- Creates number of switchblock edges equal to the 'from' set size. 
+        * ``from`` -- Creates number of switchblock edges equal to the 'from' set size.
 
-            This ensures that each element in the 'from' set is connected to an element of the 'to' set. 
+            This ensures that each element in the 'from' set is connected to an element of the 'to' set.
             However it may leave some elements of the 'to' set either multiply-connected or disconnected.
 
             .. figure:: wireconn_num_conns_type_from.*
                 :width: 100%
 
-        * ``to`` -- Creates number of switchblock edges equal to the 'to' set size size. 
+        * ``to`` -- Creates number of switchblock edges equal to the 'to' set size size.
 
             This ensures that each element of the 'to' set is connected to precisely one element of the 'from' set.
             However it may leave some elements of the 'from' set either multiply-connected or disconnected.
@@ -1833,7 +1833,7 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_to.*
                 :width: 100%
 
-        * ``min`` --  Creates number of switchblock edges equal to the minimum of the 'from' and 'to' set sizes. 
+        * ``min`` --  Creates number of switchblock edges equal to the minimum of the 'from' and 'to' set sizes.
 
             This ensures *no* element of the 'from' or 'to' sets is connected to multiple elements in the opposing set.
             However it may leave some elements in the larger set disconnected.
@@ -1841,7 +1841,7 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_min.*
                 :width: 100%
 
-        * ``max`` -- Creates number of switchblock edges equal to the maximum of the 'from' and 'to' set sizes. 
+        * ``max`` -- Creates number of switchblock edges equal to the maximum of the 'from' and 'to' set sizes.
 
             This ensures *all* elements of the 'from' or 'to' sets are connected to at least one element in the opposing set.
             However some elements in the smaller set may be multiply-connected.
@@ -1849,21 +1849,21 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_max.*
                 :width: 100%
 
-    :opt_param from_type: 
+    :opt_param from_type:
         A comma-separated list segment names that defines which segment types will be a source of a connection.
         The segment names specified must match the names of the segments defined under the ``<segmentlist>`` XML node.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
-    :opt_param to_type:     
+    :opt_param to_type:
         A comma-separated list of segment names that defines which segment types will be the destination of the connections specified.
         Each segment name must match an entry in the ``<segmentlist>`` XML node.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
-    :opt_param from_switchpoint: 
+    :opt_param from_switchpoint:
         A comma-separated list of integers that defines which switchpoints will be a source of a connection.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
-    :opt_param to_switchpoint: 
+    :opt_param to_switchpoint:
         A comma-separated list of integers that defines which switchpoints will be the destination of the connections specified.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
@@ -1871,8 +1871,8 @@ The full format is documented below.
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 
-        :req_param type: 
-        
+        :req_param type:
+
             The name of a segment specified in the ``<segmentlist>``.
 
         :req_param switchpoint:
@@ -1897,7 +1897,7 @@ The full format is documented below.
 
 
     As an example, consider the following ``<wireconn>`` specification:
-        
+
     .. code-block:: xml
 
         <wireconn num_conns_type="to"/>
@@ -1905,8 +1905,8 @@ The full format is documented below.
             <from type="L16" switchpoint="0,4,8,12"/>
             <to type="L4" switchpoint="0/>
         </wireconn>
-        
-    This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12. 
+
+    This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
 

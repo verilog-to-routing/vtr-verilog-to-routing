@@ -7,11 +7,11 @@ Configurable Memory Bus-Based Tutorial
 
 .. seealso:: :ref:`configurable_memory_block_example` for a supported version.
 
-Configurable memories are found in today's commercial FPGAs for two primary reasons: 
+Configurable memories are found in today's commercial FPGAs for two primary reasons:
 
-#. Memories are found in a variety of different applications including image processing, soft processors, etc and 
+#. Memories are found in a variety of different applications including image processing, soft processors, etc and
 #. Implementing memories in soft logic (LUTs and flip-flops) is very costly in terms of area.
-   
+
 Thus it is important for modern FPGA architects be able to describe the specific properties of the configurable memory that they want to investigate.
 The following is an example on how to use the langauge to describe a configurable memory block.
 First we provide a step-by-step explanation on how to construct the memory block.
@@ -30,7 +30,7 @@ Similarly, the outputs can be either registered or combinational.
 Also, each memory configuration has groups of pins called ports that share common properties.
 Examples of these ports include address ports, data ports, write enable, and clock.
 In this example, the block memory has the following three configurations: 2048x1, 1024x2, and 512x4, which will be modeled using modes.
-We begin by declaring the reconfigurable block RAM along with its I/O as follows: 
+We begin by declaring the reconfigurable block RAM along with its I/O as follows:
 
 .. code-block:: xml
 
@@ -59,7 +59,7 @@ There are 4 output bits that can also be registered, so 4 flip-flops (named ``ff
       </pb_type>
 
 Each aspect ratio of the memory is declared as a mode within the memory physical block type as shown below.
-Also, observe that since memories are one of the special (common) primitives, they each have a ``class`` attribute: 
+Also, observe that since memories are one of the special (common) primitives, they each have a ``class`` attribute:
 
 .. _configurable_memory_modes_fig:
 
@@ -106,7 +106,7 @@ Also, observe that since memories are one of the special (common) primitives, th
 The top-level interconnect structure of the memory SPCB is shown in :numref:`configurable_block_ram_routing`.
 The inputs of the SPCB can connect to input registers or bypass the registers and connect to the combinational memory directly.
 Similarly, the outputs of the combinational memory can either be registered or connect directly to the outputs.
-The description of the interconnect is as follows: 
+The description of the interconnect is as follows:
 
 .. _configurable_block_ram_routing:
 
@@ -138,7 +138,7 @@ A similar scheme is used at the outputs to ensure that either all outputs are re
 Finally, we model the relationship of the memory block with the general FPGA fabric.
 The ratio of tracks that a particular input/output pin of the CLB connects to is defined by fc_in/fc_out.
 The pinlocations describes which side of the logic block pins reside on where the pattern spread describes evenly spreading out the pins on all sides of the CLB in a round-robin fashion.
-The columns occupied by complex blocks of type CLB is defined by gridlocations where ``type="col" start="2" repeat="5"`` means that every fifth column starting from the second column type memory CLB unless that column is taken up by a block with higher priority (where a bigger number means a higher priority). 
+The columns occupied by complex blocks of type CLB is defined by gridlocations where ``type="col" start="2" repeat="5"`` means that every fifth column starting from the second column type memory CLB unless that column is taken up by a block with higher priority (where a bigger number means a higher priority).
 
 .. code-block:: xml
 

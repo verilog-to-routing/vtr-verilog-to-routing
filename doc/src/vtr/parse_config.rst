@@ -12,7 +12,7 @@ The configuration file contains one line for each value to be searched for.
 Each line contains a semicolon delimited triple in the following format::
 
     <field_name>;<file_to_search_within>;<regex_expression>
-    
+
 * ``<field_name>``: The name of the value to be searched for.
 
     This name is used when generating the output files of :ref:`parse_vtr_task` and :ref:`parse_vtr_flow`.

@@ -17,13 +17,13 @@ The following paper may be used as a general citation for VTR:
 Release
 ~~~~~~~
 
-The VTR |version| release provides the following: 
+The VTR |version| release provides the following:
 
 * benchmark circuits,
 * sample FPGA architecture description files,
 * the full CAD flow, and
-* scripts to run that flow. 
-      
+* scripts to run that flow.
+
 The FPGA CAD flow takes as input, a user circuit (coded in Verilog) and a description of the FPGA architecture.
 The CAD flow then maps the circuit to the FPGA architecture to produce, as output, a placed-and-routed FPGA.
 Here are some highlights of the |version| full release:
@@ -36,12 +36,12 @@ Here are some highlights of the |version| full release:
 
   Seven of the 19 circuits contain more than 10,000 6-LUTs. The largest of which is just under 100,000 6-LUTs.
 
-* Sample architecture files of a wide range of different FPGA architectures including: 
+* Sample architecture files of a wide range of different FPGA architectures including:
 
-    #. Timing annotated architectures 
-    #. Various fracturable LUTs (dual-output LUTs that can function as one large LUT or two smaller LUTs with some shared inputs) 
-    #. Various configurable embedded memories and multiplier hard blocks 
-    #. One architecture containing embedded floating-point cores, and 
+    #. Timing annotated architectures
+    #. Various fracturable LUTs (dual-output LUTs that can function as one large LUT or two smaller LUTs with some shared inputs)
+    #. Various configurable embedded memories and multiplier hard blocks
+    #. One architecture containing embedded floating-point cores, and
     #. One architecture with carry chains.
 
 * A front-end Verilog elaborator that has support for hard blocks.

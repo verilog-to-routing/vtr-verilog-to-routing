@@ -67,7 +67,7 @@ The primitives contained in the BLE are specified as:
 :numref:`classic_ble_fig` shows the ports of the BLE with the input and output pin sets.
 The inputs to the LUT and flip-flop are direct connections.
 The multiplexer allows the BLE output to be either the LUT output or the flip-flop output.
-The code to specify the interconnect is: 
+The code to specify the interconnect is:
 
 .. _classic_ble_fig:
 
@@ -125,9 +125,9 @@ Classic Soft Logic Block Complete Example
 
 .. code-block:: xml
 
-    <!-- 
-    Example of a classical FPGA soft logic block with 
-    N = 10, K = 4, I = 22, O = 10 
+    <!--
+    Example of a classical FPGA soft logic block with
+    N = 10, K = 4, I = 22, O = 10
     BLEs consisting of a single LUT followed by a flip-flop that can be bypassed
     -->
 
@@ -164,7 +164,7 @@ Classic Soft Logic Block Complete Example
         <complete input="clb.clk" output="ble[9:0].clk"/>
         <direct input="ble[9:0].out" output="clb.O"/>
       </interconnect>
-      
+
       <!-- Describe complex block relation with FPGA -->
 
       <fc_in type="frac">0.150000</fc_in>

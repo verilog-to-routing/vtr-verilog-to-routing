@@ -11,7 +11,7 @@ This involves two key steps:
      * what the timing dependancies are between the pins.
 
  #. Specifying the physical delay values
-     
+
 These two steps separatate the logical timing characteristics of a primitive, from the physically dependant delays.
 This enables a single logical netlist primitive type (e.g. Flip-Flop) to be mapped into different physical locations with different timing characteristics.
 
@@ -55,7 +55,7 @@ For example:
     <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
       <input name="a" num_pins="1"/>
       <input name="b" num_pins="1"/>
-      <input name="cin" num_pins="1"/>                      
+      <input name="cin" num_pins="1"/>
       <output name="cout" num_pins="1"/>
       <output name="sum" num_pins="1"/>
 
