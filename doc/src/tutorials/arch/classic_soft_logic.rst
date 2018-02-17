@@ -31,7 +31,7 @@ Logical equivalence is labelled at ports where it applies:
     <pb_type name="clb">
       <input name="I" num_pins="22" equivalent="true"/>
       <output name="O" num_pins="10" equivalent="true"/>
-      <clock name="clk" equivalent="false"/>	
+      <clock name="clk" equivalent="false"/>
 
 A CLB contains 10 BLEs.
 Each BLE has 4 inputs, one output, and one clock.
@@ -134,7 +134,7 @@ Classic Soft Logic Block Complete Example
     <pb_type name="clb">
       <input name="I" num_pins="22" equivalent="true"/>
       <output name="O" num_pins="10" equivalent="true"/>
-      <clock name="clk" equivalent="false"/>	
+      <clock name="clk" equivalent="false"/>
 
       <pb_type name="ble" num_pb="10">
         <input name="in" num_pins="4"/>

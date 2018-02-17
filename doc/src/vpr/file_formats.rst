@@ -575,7 +575,7 @@ The ``rr_graph`` tag contains the following tags:
 	* ``<node>``content``</node>``
 * ``<rr_edges>``
 	* ``<edge>``content``</edge>``
-	
+
 .. note:: The rr graph is based on the architecture, so more detailed description of each section of the rr graph can be found at :ref:`FPGA architecture description <fpga_architecture_description>`
 
 Detailed Tag Information
@@ -598,7 +598,7 @@ The channel information is contained within the ``channels`` subtag. This descri
 .. arch:tag:: <x_list index="int" info="int"/>  <y_list index="int" info="int"/>
 
 	These are a required subtags that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array.
-	
+
     :req_param index:
         Describes the index within the array.
 
@@ -606,7 +606,7 @@ The channel information is contained within the ``channels`` subtag. This descri
         The width of each channel. The minimum is one track per channel.
         The input and output channels are io_rat * maximum in interior tracks wide.
         The channel distributions read from the architecture file are scaled by a constant factor.
-    	
+
 **Switches**
 
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each switch tag has a ``switch`` subtag.
@@ -632,17 +632,17 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 .. arch:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
 
   	This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
-  	
+
     :opt_param R, Cin, Cout:
         The resistance, input capacitance and output capacitance of the switch.
 
     :opt_param Tdel:
         Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout.
-		
+
 .. arch:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
 	The sizing information contains all the information needed for area calculation.
-	
+
     :req_param mux_trans_size:
         The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units.
 
@@ -657,14 +657,14 @@ The ``segments`` tag contains all the segments and its information. Note again t
 
     :req_param id:
 	The index of this segment.
-	
+
     :req_param name:
 	The name of this segment.
 
 .. arch:tag:: <timing R_per_meter="float" C_per_meter="float">
 
 	This optional tag defines the timing information of this segment.
-	
+
     :opt_param R_per_meter, C_per_meter:
         The resistance and capacitance of a routing track, per unit logic block length.
 
@@ -688,7 +688,7 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
 .. arch:tag:: <pin_class type="unique_type">content</pin_class>
 
 	This optional subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
-	
+
     :req_param type:
         This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``.
 
