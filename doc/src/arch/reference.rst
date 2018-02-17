@@ -967,20 +967,20 @@ They describe how a complex block interfaces with the inter-block world.
 
     :req_param default_in_type:
         Indicates how the default :math:`F_c` values for input pins should be interpreted.
-        
+
         ``frac``: The fraction of tracks in the channel from which each input pin connects.
 
-        ``abs``: Inpterpretted as the absolute number of tracks from which each input pin connects.
+        ``abs``: Interpreted as the absolute number of tracks from which each input pin connects.
 
     :req_param default_in_val:
         Fraction or number of tracks in a channel from which each input pin connects.
 
     :req_param default_out_type:
         Indicates how the default :math:`F_c` values for output pins should be interpreted.
-        
+
         ``frac``: The fraction of tracks in the channel to which each output pin connects.
 
-        ``abs``: Inpterpretted as the absolute number of tracks to which each output pin connects.
+        ``abs``: Interpreted as the absolute number of tracks to which each output pin connects.
 
     :req_param default_out_val:
         Fraction or number of tracks in a channel to which each output pin connects.
@@ -997,10 +997,10 @@ They describe how a complex block interfaces with the inter-block world.
 
         :req_param fc_type:
             Indicates how the override :math:`F_c` value should be interpreted.
-            
+
             ``frac``: The fraction of tracks in the channel from which each pin connects.
 
-            ``abs``: Inpterpretted as the absolute number of tracks from which each connects.
+            ``abs``: Interpreted as the absolute number of tracks from which each connects.
 
         :req_param fc_val:
             Fraction or number of tracks in a channel.
