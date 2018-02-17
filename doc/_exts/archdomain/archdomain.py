@@ -4,13 +4,13 @@ from sphinx.util.docfields import *
 def setup(app):
     app.add_domain(custom_domain('ArchDomain',
         name  = 'arch',
-        label = "FPGA Architecture", 
+        label = "FPGA Architecture",
 
         elements = dict(
             tag = dict(
                 objname       = "Attribute",
                 indextemplate = "pair: %s; Tag Attribute",
-                fields        = [ 
+                fields        = [
                     GroupedField('required_parameter',
                         label = "Required Attributes",
                         names = [ 'req_param' ]),

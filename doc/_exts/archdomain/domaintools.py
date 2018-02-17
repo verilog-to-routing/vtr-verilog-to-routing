@@ -3,7 +3,7 @@
     sphinxcontrib.domaintools
     =========================
 
-    Code is taken from `sphinx.domains.std`_ and is 
+    Code is taken from `sphinx.domains.std`_ and is
     parameterized for easy domain creation.
 
     :copyright: Kay-Uwe (Kiwi) Lorenz, ModuleWorks GmbH
@@ -47,7 +47,7 @@ class GenericObject(ObjectDescription):
             domain = 'my-domain-name', indextemplate=(
 
         class MyDescriptionObject(GenericObject):
-    
+
     """
     indextemplate = ''
     parse_node = None
@@ -106,7 +106,7 @@ class CustomDomain(Domain):
 
     def clear_doc(self, docname):
       if 'objects' in self.data:
-       
+
         for key, (fn, _) in self.data['objects'].items():
             if fn == docname:
                 del self.data['objects'][key]
@@ -153,8 +153,8 @@ def custom_domain(class_name, name='', label='', elements = {}):
 
         - `role` - role name, defaults to entry's key
 
-        - `indextemplate` - e.g. ``pair: %s; Make Target``, where %s will be 
-          the matched part of your role.  You may leave this empty, defaults 
+        - `indextemplate` - e.g. ``pair: %s; Make Target``, where %s will be
+          the matched part of your role.  You may leave this empty, defaults
           to ``pair: %s; <objname>``
 
         - `parse_node` - a function with signature ``(env, sig, signode)``,
