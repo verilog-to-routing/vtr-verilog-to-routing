@@ -581,7 +581,8 @@ The ``rr_graph`` tag contains the following tags:
 Detailed Tag Information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Channel**
+Channel
+^^^^^^^
 
 The channel information is contained within the ``channels`` subtag. This describes the minimum and maximum channel width within the architecture. Each ``channels`` tag has the following subtags:
 
@@ -607,7 +608,8 @@ The channel information is contained within the ``channels`` subtag. This descri
         The input and output channels are io_rat * maximum in interior tracks wide.
         The channel distributions read from the architecture file are scaled by a constant factor.
 
-**Switches**
+Switches
+^^^^^^^^
 
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each switch tag has a ``switch`` subtag.
 
@@ -649,7 +651,8 @@ A ``switches`` tag contains all the switches and its information within the FPGA
     :req_param buf_size:
         The area of the buffer. If this is set to zero, the area is calculated from the resistance.
 
-**Segments**
+Segments
+^^^^^^^^
 
 The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision. Each segment is then enclosed in its own ``segment`` tag.
 
@@ -668,7 +671,8 @@ The ``segments`` tag contains all the segments and its information. Note again t
     :opt_param R_per_meter, C_per_meter:
         The resistance and capacitance of a routing track, per unit logic block length.
 
-**Blocks**
+Blocks
+^^^^^^
 
 The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. Information here is checked to make sure it corresponds with the architecture. It contains the following subtags:
 
@@ -695,7 +699,8 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
     :req_param content:
         A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
 
-**Grid**
+Grid
+^^^^
 
 The ``grid`` tag contains information about the grid of the FPGA. Information here is checked to make sure it corresponds with the architecture. Each grid tag has one subtag as outlined below:
 
@@ -710,7 +715,8 @@ The ``grid`` tag contains information about the grid of the FPGA. Information he
     :req_param width_offset, height_offset:
         The number of grid tiles reserved based on the width and height of a block.
 
-**Nodes**
+Nodes
+^^^^^
 
 The ``rr_nodes`` tag stores information about each node for the routing resource graph. These nodes describe each wire and each logic block pin as represented by nodes.
 
@@ -765,7 +771,8 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
     :req_param segment_id:
         This describes the index of the segment type. This value only applies to horizontal and vertical channel types. It can be left empty, or as -1 for other types of nodes.
 
-**Edges**
+Edges
+^^^^^
 
 The final subtag is the ``rr_edges`` tag that encloses information about all the edges between nodes. Each ``rr_edges`` tag contains multiple subtags:
 
