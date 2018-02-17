@@ -9,8 +9,8 @@ VTR provides transistor-level dynamic and static power estimates for a given arc
 The actual power estimation is performed within the :ref:`VPR` executable; however, additional files must be provided.
 In addition to the circuit and architecture files, power estimation requires files detailing the signal activities and technology properties.
 
-:ref:`vtr_running_power` details how to run power estimation for VTR. 
-:ref:`power_support_tools` provides details on the supporting tools that are used to generate the signal activities and technology properties files. 
+:ref:`vtr_running_power` details how to run power estimation for VTR.
+:ref:`power_support_tools` provides details on the supporting tools that are used to generate the signal activities and technology properties files.
 :ref:`power_arch_modeling` provides details about how the tool models architectures, including different modelling methods and options.
 :ref:`power_advanced_usage` provides more advanced configuration options.
 
@@ -36,7 +36,7 @@ In order to perform power estimation, you must add the following options:
   * :option:`run_vtr_flow.pl -power`
   * :option:`run_vtr_flow.pl -cmos_tech` ``<cmos_tech_properties_file>``
 
-The CMOS technology properties file is an XML file that contains relevant process-dependent information needed for power estimation. 
+The CMOS technology properties file is an XML file that contains relevant process-dependent information needed for power estimation.
 XML files for 22nm, 45nm, and 130nm PTM models can be found here::
 
 $VTR_ROOT/vtrflow/tech/*
@@ -75,7 +75,7 @@ Some of these technology XML files are included with the release, and are locate
 If the user wishes to use a different CMOS technology file, they must run the following script:
 
 .. note:: HSPICE must be available on the users path
-    
+
 .. code-block:: none
 
     $VTR_ROOT/vtr_flow/scripts/generate_cmos_tech_data.pl <tech_file> <tech_size> <vdd> <temp>
@@ -85,11 +85,11 @@ where:
 
     * ``<tech_file>``: Is a SPICE technology file, containing a ``pmos`` and ``nmos`` models.
 
-    * ``<tech_size>``: The technology size, in meters. 
+    * ``<tech_size>``: The technology size, in meters.
 
         **Example:**
-        
-        A 90nm technology would have the value ``90e-9``. 
+
+        A 90nm technology would have the value ``90e-9``.
 
     * ``<vdd>``: Supply voltage in Volts.
 
@@ -104,16 +104,16 @@ ACE 2.0 Activity Estimation
 Power estimation requires activity information for the entire netlist.
 This ativity information consists of two values:
 
-#. *The Signal Probability*, :math:`P_1`, is the long-term probability that a signal is logic-high. 
-   
+#. *The Signal Probability*, :math:`P_1`, is the long-term probability that a signal is logic-high.
+
    **Example:**
-   
+
    A clock signal with a 50% duty cycle will have :math:`P_1(clk) = 0.5`.
 
-#. *The Transition Density* (or switching activity), :math:`A_S`, is the average number of times the signal will switch during each clock cycle. 
-   
+#. *The Transition Density* (or switching activity), :math:`A_S`, is the average number of times the signal will switch during each clock cycle.
+
    **Example:**
-   
+
    A clock has :math:`A_S(clk)=2`.
 
 The default tool used to perform activity estimation in VTR is ACE 2.0 :cite:`lamoureux_activity_estimation`.
@@ -129,12 +129,12 @@ The tool can be run using the following command-line arguments::
 where
 
     * ``<abc.blif>``: Is the input BLIF file produced by ABC.
-    * ``<activities.act>``: Is the activity file to be created. 
-    * ``<new.blif>``: The new BLIF file. 
+    * ``<activities.act>``: Is the activity file to be created.
+    * ``<new.blif>``: The new BLIF file.
 
         This will be functionally identical in function to the ABC blif; however, since ABC does not maintain internal node names, a new BLIF must be produced with node names that match the activity file.
 
-User’s may with to use their own activity estimation tool. 
+User’s may with to use their own activity estimation tool.
 The produced activity file must contain one line for each net in the BLIF file, in the following format::
 
     <net name> <signal probability> <transistion density>
@@ -149,9 +149,9 @@ The following section describes the architectural assumptions made by the power 
 Complex Blocks
 ~~~~~~~~~~~~~~
 
-The VTR architecture description language supports a hierarchichal description of blocks. In the architecture file, each block is described as a ``pb_type``, which may includes one or more children of type ``pb_type``, and interconnect structures to connect them. 
+The VTR architecture description language supports a hierarchichal description of blocks. In the architecture file, each block is described as a ``pb_type``, which may includes one or more children of type ``pb_type``, and interconnect structures to connect them.
 
-The power estimation algorithm traverses this hierarchy recursively, and performs power estimation for each ``pb_type``. 
+The power estimation algorithm traverses this hierarchy recursively, and performs power estimation for each ``pb_type``.
 The power model supports multiple power estimation methods, and the user specifies the desired method in the architecture file:
 
 .. code-block:: xml
@@ -160,31 +160,31 @@ The power model supports multiple power estimation methods, and the user specifi
         <power method="<estimation-method>"/>
     </pb_type>
 
-The following is a list of valid estimation methods. 
+The following is a list of valid estimation methods.
 Detailed descriptions of each type are provided in the following sections.
 The methods are listed in order from most accurate to least accurate.
 
-#. ``specify-size``: Detailed transistor level modelleling. 
-   
-   The user supplies all buffer sizes and wire-lengths. 
+#. ``specify-size``: Detailed transistor level modelleling.
+
+   The user supplies all buffer sizes and wire-lengths.
    Any not provided by the user are ignored.
 
-#. ``auto-size``: Detailed transistor level modelleling. 
-   
+#. ``auto-size``: Detailed transistor level modelleling.
+
    The user can supply buffer sizes and wire-lengths; however, they will be automatically inserted when not provided.
 
-#. ``pin-toggle``: Higher-level modelling. 
-   
-   The user specifies energy per toggle of the pins. 
+#. ``pin-toggle``: Higher-level modelling.
+
+   The user specifies energy per toggle of the pins.
    Static power provided as an absolute.
 
-#. ``C-internal``: Higher-level modelling. 
-   
-   The user supplies the internal capacitance of the block. 
+#. ``C-internal``: Higher-level modelling.
+
+   The user supplies the internal capacitance of the block.
    Static power provided as an absolute.
 
-#. ``absolute``: Highest-level modelling. 
-   
+#. ``absolute``: Highest-level modelling.
+
    The user supplies both dynamic and static power as absolutes.
 
 Other methods of estimation:
@@ -192,10 +192,10 @@ Other methods of estimation:
 #. ``ignore``: The power of the ``pb_type`` is ignored, including any children.
 
 #. ``sum-of-children``: Power of ``pb_type`` is solely the sum of all children ``pb_types``.
-   
+
     Interconnect between the ``pb_type`` and its children is ignored.
 
-.. note:: If no estimation method is provided, it is inherited from the parent ``pb_type``. 
+.. note:: If no estimation method is provided, it is inherited from the parent ``pb_type``.
 
 .. note:: If the top-level ``pb_type`` has no estimation method, ``auto-size`` is assumed.
 
@@ -218,7 +218,7 @@ For each ``pb_type``, power estimation accounts for the following components (se
 
     Sample Block
 
-**Multiplexers:** 
+**Multiplexers:**
 Interconnect multiplexers are modelled as 2-level pass-transistor multiplexers, comprised of minimum-size NMOS transistors.
 Their size is determined automatically from the ``<interconnect/>`` structures in the architecture description file.
 
@@ -275,7 +275,7 @@ Although not as accurate as user-provided buffer and wire sizes, it is capable o
 ``pin-toggle``
 ~~~~~~~~~~~~~~
 This method allows users to specify the dynamic power of a block in terms of the energy per toggle (in Joules) of each input, output or clock pin for the ``pb_type``.
-The static power is provided as an absolute (in Watts). 
+The static power is provided as an absolute (in Watts).
 This is done using the following construct:
 
 .. code-block:: xml
@@ -293,13 +293,13 @@ This is done using the following construct:
 
 Keep in mind that the port construct allows for multiple pins per port.
 Unless an subset index is provided, the energy per toggle will be applied to each pin in the port.
-The energy per toggle can be scaled by another signal using the ``scaled_by_static_prob``. 
+The energy per toggle can be scaled by another signal using the ``scaled_by_static_prob``.
 For example, you could scale the energy of a memory block by the read enable pin.
 If the read enable were high 80% of the time, then the energy would be scaled by the :math:`signal\_probability`, 0.8.
 Alternatively ``scaled_by_static_prob_n`` can be used for active low signals, and the energy will be scaled by :math:`(1-signal\_probability)`.
 
 This method does not perform any transistor-level estimations; the entire power estimation is performed using the above values.
-It is assumed that the power usage specified here includes power of all child ``pb_types``. 
+It is assumed that the power usage specified here includes power of all child ``pb_types``.
 No further recursive power estimation will be performed.
 
 ``C-internal``
@@ -309,7 +309,7 @@ The activity will be averaged across all of the input pins, and will be supplied
 
 .. math::
     P_{dyn}=\frac{1}{2}\alpha CV^2.
-    
+
 Again, the static power is provided as an absolute (in Watts).
 This is done using the following construct:
 
@@ -322,13 +322,13 @@ This is done using the following construct:
         </power>
     </pb_type>
 
-It is assumed that the power usage specified here includes power of all child ``pb_types``. 
+It is assumed that the power usage specified here includes power of all child ``pb_types``.
 No further recursive power estimation will be performed.
 
 ``absolute``
 ~~~~~~~~~~~~
 This method is the most basic power estimation method, and allows users to specify both the dynamic and static power of a block as absolute
-values (in Watts). 
+values (in Watts).
 This is done using the following construct:
 
 .. code-block:: xml
@@ -340,7 +340,7 @@ This is done using the following construct:
         </power>
     </pb_type>
 
-It is assumed that the power usage specified here includes power of all child ``pb_types``. 
+It is assumed that the power usage specified here includes power of all child ``pb_types``.
 No further recursive power estimation will be performed.
 
 Global Routing
@@ -363,11 +363,11 @@ Switch boxes are modelled as the following components (:numref:`fig_power_sb`):
 
     Switch Box
 
-**Multiplexer:** 
+**Multiplexer:**
 The multiplexer is modelled as 2-level pass-transistor multiplexer, comprised of minimum-size NMOS transistors.
 The number of inputs to the multiplexer is automatically determined.
 
-**Buffer:** 
+**Buffer:**
 The buffer is a multistage CMOS buffer.
 The buffer size is determined based upon output capacitance provided in the architecture file:
 
@@ -420,13 +420,13 @@ The following clock options are supported:
 
 * ``C_wire=1e-16``: The absolute capacitance, in fards, of the wire between each clock buffer.
 
-* ``C_wire_per_m=1e-12``: The wire capacitance, in fards per m. 
+* ``C_wire_per_m=1e-12``: The wire capacitance, in fards per m.
 
     The capacitance is calculated using an automatically determined wirelength, based on the area of a tile in the FPGA.
 
-* ``buffer_size=2.0``: The size of each clock buffer. 
+* ``buffer_size=2.0``: The size of each clock buffer.
 
-    This can be replaced with the ``auto`` keyword. 
+    This can be replaced with the ``auto`` keyword.
     See :ref:`power_buffer_sizing` for more information on buffer sizing.
 
 
@@ -455,10 +455,10 @@ This function should be called from within ``power_count_transistors_primitive()
 
 In order to determine the wire length that connects a parent entity to its children, the following assumptions are made:
 
-*  Assumption 1: 
+*  Assumption 1:
     All components (CLB entities, multiplexers, crossbars) are assumed to be contained in a square-shaped area.
 
-*  Assumption 2: 
+*  Assumption 2:
     All wires connecting a parent entity to its child pass through the *interconnect square*, which is the sum area of all interconnect multiplexers belonging to the parent entity.
 
 :numref:`fig_power_local_interconnect` provides an illustration of a parent entity connected to its child entities, containing one of each interconnect type (direct, many-to-1, and complete).
@@ -489,7 +489,7 @@ Unfortuantely, a more rigorous estimation would require some information about t
     ==============================  ===========================================  =======================
 
 :numref:`table_power_inerconnect_wire_cap` details how local wire lengths are determined as a function of entity and interconnect areas.
-It is assumed that each wire connecting a pin of a ``pb_type`` to an interconnect structure is of length :math:`0.5 \cdot L_{interc}`. 
+It is assumed that each wire connecting a pin of a ``pb_type`` to an interconnect structure is of length :math:`0.5 \cdot L_{interc}`.
 In reality, this length depends on the actual transistor layout, and may be much larger or much smaller than the estimated value.
 If desired, the user can override the 0.5 constant in the architecture file:
 
@@ -517,9 +517,9 @@ Generally, buffers are sized depending on the load capacitance, using the follow
        \text{Buffer Size} = \frac{1}{2 \cdot f_{LE}} * \frac{C_{Load}}{C_{INV}}
 
 In this equation, :math:`C_{INV}` is the input capacitance of a minimum-sized inverter, and :math:`f_{LE}` is the logical effort factor.
-The logical effort factor is the gain between stages of the multi-stage buffer, which by default is 4 (minimal delay). 
+The logical effort factor is the gain between stages of the multi-stage buffer, which by default is 4 (minimal delay).
 The term :math:`(2\cdot f_{LE})` is used so that the ratio of the final stage to the driven capacitance is smaller.
-This produces a much lower-area, lower-power buffer that is still close to the optimal delay, more representative of common design practises. 
+This produces a much lower-area, lower-power buffer that is still close to the optimal delay, more representative of common design practises.
 The logical effort factor can be modified in the architecture file:
 
 .. code-block:: xml
@@ -535,7 +535,7 @@ The logical effort factor can be modified in the architecture file:
 Local Interconnect Capacitance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If using the ``auto-size`` or ``wire-length`` options (:ref:`power_arch_modeling`), the local interconnect capacitance must be specified. 
+If using the ``auto-size`` or ``wire-length`` options (:ref:`power_arch_modeling`), the local interconnect capacitance must be specified.
 This is specified in the units of Farads/meter.
 
 .. code-block:: xml

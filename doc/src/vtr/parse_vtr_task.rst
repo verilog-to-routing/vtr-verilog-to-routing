@@ -51,13 +51,13 @@ Detailed Command-line Options
 
     The results will be stored as golden results.
     If previous golden results exist they will be overwritten.
-    
+
     The golden results are located here::
 
         $VTR_ROOT/vtr_flow/tasks/<task_name>/config/golden_results.txt
 
 .. option:: -check_golden
-    
+
     The results will be compared to the golden results using the :ref:`vtr_pass_requirements` file specified in the task configuration.
     A ``Pass`` or ``Fail`` will be output for each task (see below).
     In order to compare against the golden results, they must already exist, and have the same architectures, circuits and parse fields, otherwise the script will report ``Error``.

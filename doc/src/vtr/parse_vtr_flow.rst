@@ -26,7 +26,7 @@ where:
 
 Output
 ~~~~~~
-The script will produce no standard output. 
+The script will produce no standard output.
 A single file named ``parse_results.txt`` will be produced in the ``<parse_path>`` folder.
 The file is tab delimited and contains two lines.
 The first line is a list of field names that were searched for, and the second line contains the associated values.

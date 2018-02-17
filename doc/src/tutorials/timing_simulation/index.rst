@@ -12,7 +12,7 @@ Post-Implementation Timing Simulation
 This tutorial describes how to simulate a circuit which has been implemented by :ref:`VPR` with back-annotated timing delays.
 
 Back-annotated timing simulation is useful for a variety of reasons:
- * Checking that the circuit logic is correctly implemented 
+ * Checking that the circuit logic is correctly implemented
  * Checking that the circuit behaves correctly at speed with realistic delays
  * Generating VCD (Value Change Dump) files with realistic delays (e.g. for power estimation)
 
@@ -86,8 +86,8 @@ First is a snippet of the verilog netlist:
     DFF #(
         .INITIAL_VALUE(1'b0)
     ) \latch_top^FF_NODE~387  (
-        .D(\latch_top^FF_NODE~387_input_0_0 ), 
-        .Q(\latch_top^FF_NODE~387_output_0_0 ), 
+        .D(\latch_top^FF_NODE~387_input_0_0 ),
+        .Q(\latch_top^FF_NODE~387_output_0_0 ),
         .clock(\latch_top^FF_NODE~387_clock_0_0 )
     );
 
@@ -96,11 +96,11 @@ Here we see three primitives instantiated:
 * ``fpga_interconnect`` represent connections between netlist primitives
 * ``LUT_K`` represent look-up tables (LUTs) (corresponding to ``.names`` in the BLIF netlist). Two parameters define the LUTs functionality:
 
-     * ``K`` the number of inputs, and 
+     * ``K`` the number of inputs, and
      * ``LUT_MASK`` which defines the logic function.
 
 * ``DFF`` represents a D-Flip-Flop (corresponding to ``.latch`` in the BLIF netlist).
-   
+
     * The ``INITIAL_VALUE`` parameter defines the Flip-Flop's initial state.
 
 Different circuits may produce other types of netlist primitives corresponding to hardened primitive blocks in the FPGA such as adders, multipliers and single or dual port RAM blocks.
@@ -138,7 +138,7 @@ Lets now take a look at the Standard Delay Fromat (SDF) file:
             )
         )
     )
-    
+
     (CELL
         (CELLTYPE "DFF")
         (INSTANCE latch_top\^FF_NODE\~387)

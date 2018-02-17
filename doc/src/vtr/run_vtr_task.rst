@@ -6,7 +6,7 @@ This script is used to execute one or more *tasks* (i.e. collections of benchmar
 
 .. seealso:: See :ref:`vtr_tasks` for creation and configuration of tasks.
 
-This script runs the VTR flow for a single benchmark circuit and architecture file. 
+This script runs the VTR flow for a single benchmark circuit and architecture file.
 
 The script is located at::
 
@@ -55,11 +55,11 @@ Detailed Command-line Options
         Be sure you have allocated a sufficiently large swap memory or errors may result.
 
 .. option:: -l <task_list_file>
-    
+
     A file containing a list of tasks to execute.
-    
+
     Each task name should be on a separate line, e.g.::
-        
+
         <task_name1>
         <task_name2>
         <task_name3>

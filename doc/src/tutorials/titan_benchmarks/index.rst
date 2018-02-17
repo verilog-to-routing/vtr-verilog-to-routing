@@ -13,7 +13,7 @@ The Titan benchmarks take up a large amount of disk space and are not distribute
 The Titan benchmarks can be automatically integrated into the VTR source tree by running the following from the root of the VTR source tree:
 
 .. code-block:: console
-    
+
     $ make get_titan_benchmarks
 
 which downloads and extracts the benchmarks into the VTR source tree:
@@ -71,5 +71,5 @@ Once the benchmarks have been integrated into VTR they can be run manually.
 For example, the follow uses :ref:`VPR` to implement the ``neuron`` benchmark onto the ``startixiv_arch.timing.xml`` architecture at a :option:`channel width <vpr --route_chan_width>` of 300 tracks:
 
 .. code-block:: console
-    
+
     $ vpr $VTR_ROOT/vtr_flow/arch/titan/stratixiv_arch.timing.xml $VTR_ROOT/vtr_flow/benchmarks/titan_blif/neuron_stratixiv_arch_timing.blif --route_chan_width 300

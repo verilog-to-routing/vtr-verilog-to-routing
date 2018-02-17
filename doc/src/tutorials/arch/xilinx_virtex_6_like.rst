@@ -9,7 +9,7 @@ In this example, we describe the Xilinx Virtex-6 FPGA logic slice :cite:`xilinx_
 .. _fig_v6_slice:
 
 .. figure:: v6_logic_slice.*
-    
+
     Commercial FPGA logic block slice (Xilinx Virtex-6)
 
 .. code-block:: xml
@@ -48,9 +48,9 @@ In this example, we describe the Xilinx Virtex-6 FPGA logic slice :cite:`xilinx_
 
       <clock name="CLK"/>
 
-      <!-- 
+      <!--
         For the purposes of this example, the Virtex-6 fracturable LUT will be specified as a primitive.
-        If the architect wishes to explore the Xilinx Virtex-6 further, add more detail into this pb_type. 
+        If the architect wishes to explore the Xilinx Virtex-6 further, add more detail into this pb_type.
         Similar convention for flip-flops
       -->
       <pb_type name="fraclut" num_pb="4" blif_model=".subckt vfraclut">
@@ -63,7 +63,7 @@ In this example, we describe the Xilinx Virtex-6 FPGA logic slice :cite:`xilinx_
         <output name="O5" num_pins="1"/>
       </pb_type>
       <pb_type name="carry" num_pb="4" blif_model=".subckt carry">
-        <!-- This is actually the carry-chain but we don't have a special way to specify chain logic yet in UTFAL 
+        <!-- This is actually the carry-chain but we don't have a special way to specify chain logic yet in UTFAL
              so it needs to be specified as regular gate logic, the xor gate and the two muxes to the left of it that are shaded grey
              comprise the logic gates representing the carry logic -->
         <input name="xor" num_pins="1"/>
@@ -81,7 +81,7 @@ In this example, we describe the Xilinx Virtex-6 FPGA logic slice :cite:`xilinx_
         <input name="CE" num_pins="1"/>
         <input name="SR" num_pins="1"/>
         <output name="Q" num_pins="1"/>
-        <clock name="CK" num_pins="1"/>      
+        <clock name="CK" num_pins="1"/>
       </pb_type>
       <pb_type name="ff_big" num_pb="4" blif_model=".subckt vffb">
         <input name="D" num_pins="1"/>
@@ -120,7 +120,7 @@ In this example, we describe the Xilinx Virtex-6 FPGA logic slice :cite:`xilinx_
         <mux name="AMUX" input="fraclut[0].O5 fraclut[0].O6 carry[0].cmux_out carry[0].mmux_out carry[0].xor_out ff_small[0].Q" output="AMUX"/>
         <mux name="BMUX" input="fraclut[1].O5 fraclut[1].O6 carry[1].cmux_out carry[1].mmux_out carry[1].xor_out ff_small[1].Q" output="BMUX"/>
         <mux name="CMUX" input="fraclut[2].O5 fraclut[2].O6 carry[2].cmux_out carry[2].mmux_out carry[2].xor_out ff_small[2].Q" output="CMUX"/>
-        <mux name="DMUX" input="fraclut[3].O5 fraclut[3].O6 carry[3].cmux_out carry[3].mmux_out carry[3].xor_out ff_small[3].Q" output="DMUX"/>      
+        <mux name="DMUX" input="fraclut[3].O5 fraclut[3].O6 carry[3].cmux_out carry[3].mmux_out carry[3].xor_out ff_small[3].Q" output="DMUX"/>
 
         <mux name="CfraclutDI1" input="v6_lslice.CI v6_lslice.DI fraclut[3].MC31" output="fraclut[2].DI1"/>
         <mux name="BfraclutDI1" input="v6_lslice.BI v6_lslice.DI fraclut[2].MC31" output="fraclut[1].DI1"/>

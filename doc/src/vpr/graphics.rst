@@ -55,7 +55,7 @@ Once a circuit has been routed the true path of each net will be shown.
 
 Again, you can click on Toggle Nets to make net routings visible or invisible.
 If the nets routing are shown, click on a clb or pad to highlight its fanins and fanouts, or click on a pin or channel wire to highlight a whole net in magenta.
-Multiple nets can be highlighted by pressing ctrl + mouse click. 
+Multiple nets can be highlighted by pressing ctrl + mouse click.
 
 Visualizing Routing Architecture
 --------------------------------
@@ -75,13 +75,13 @@ Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
 Visualizing Routing Congestion
 ------------------------------
-When a routing is shown on-screen, clicking on the **Congestion** button will show a heat map of any overused routing resources (wires or pins). 
+When a routing is shown on-screen, clicking on the **Congestion** button will show a heat map of any overused routing resources (wires or pins).
 Lighter colours (e.g. yellow) correspond to highly overused resources, while darker colours (e.g. blue) correspond to lower overuse.
 The overuse range shown at the bottom of the window.
 
 Visualizing the Critical Path
 -----------------------------
-During placement and routing you can click on the **Crit. Path** button to visualize the critical path. 
+During placement and routing you can click on the **Crit. Path** button to visualize the critical path.
 Each stage between primitive pins is shown in a different colour.
 Cliking the **Crit. Path** button again will toggle through the various visualizations:
 * During placement the critical path is shown only as flylines.
