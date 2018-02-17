@@ -54,14 +54,13 @@ class GenericObject(ObjectDescription):
     domain = 'std'
 
     def handle_signature(self, sig, signode):
+        sigid = nodes.make_id(sig)
         if self.parse_node:
-            name = self.parse_node(self.env, sig, signode)
+            sigid = self.parse_node(self.env, sigid, signode)
         else:
             signode.clear()
-            signode += addnodes.desc_name(sig, sig)
-            # normalize whitespace like XRefRole does
-            name = ws_re.sub('', sig)
-        return name
+            signode += addnodes.desc_name(sigid, sig)
+        return sigid
 
     def add_target_and_index(self, name, sig, signode):
         targetname = '%s-%s' % (self.objtype, name)
