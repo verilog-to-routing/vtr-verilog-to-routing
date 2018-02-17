@@ -222,11 +222,14 @@ void write_rr_block_types(fstream &fp) {
             }
 
             //the pin list is printed out as the child values
-            fp << "\t\t\t<pin_class type=\"" << pin_type << "\">";
+            fp << "\t\t\t<pin_class type=\"" << pin_type << "\">\n";
             for (int iPin = 0; iPin < class_inf.num_pins; iPin++) {
-                fp << class_inf.pinlist[iPin] << " ";
+                auto pin = class_inf.pinlist[iPin];
+                fp << vtr::string_fmt(
+                    "\t\t\t\t<pin index=\"%d\" ptc=\"%d\">%s</pin>\n",
+                    iPin, pin, block_type_pin_index_to_name(&btype, pin).c_str());
             }
-            fp << "</pin_class>" << endl;
+            fp << "\t\t\t</pin_class>" << endl;
         }
         fp << "\t\t</block_type>" << endl;
 

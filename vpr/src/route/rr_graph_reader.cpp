@@ -504,6 +504,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
     pugi::xml_node Block;
     pugi::xml_node pin_class;
+    pugi::xml_node pin;
     Block = get_first_child(parent, "block_type", loc_data);
     auto& device_ctx = g_vpr_ctx.mutable_device();
     while (Block) {
@@ -553,19 +554,25 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
                         "Architecture file does not match RR graph's block type");
             }
 
-            //Go through each pin of the pin list
-            string temp = pin_class.child_value();
-            std::vector<std::string> tokens;
-            tokens = vtr::split(temp);
-            if (!tokens.empty()) {
-                for (unsigned ipin = 0; ipin < tokens.size(); ipin++) {
-                    if (class_inf.pinlist[ipin] != atoi(tokens[ipin].c_str())) {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                "Architecture file does not match RR graph's block pin list");
-                    }
-                }
+            if (class_inf.num_pins != count_children(pin_class, "pin", loc_data)) {
+                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        "Incorrect number of pins in %d pin_class in block %s", classNum, block_info.name);
             }
-            tokens.clear();
+
+            pin = get_first_child(pin_class, "pin", loc_data, OPTIONAL);
+            while(pin) {
+                auto index = get_attribute(pin, "index", loc_data).as_uint();
+                auto num = get_attribute(pin, "ptc", loc_data).as_uint();
+                if (num != class_inf.pinlist[index]) {
+                    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                            "Architecture file does not match RR graph's block pin list");
+                }
+                if (pin.child_value() != block_type_pin_index_to_name(&block_info, class_inf.pinlist[index])) {
+                    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                            "Architecture file does not match RR graph's block pin list");
+                }
+                pin = pin.next_sibling("pin");
+            }
             pin_class = pin_class.next_sibling(pin_class.name());
         }
         Block = Block.next_sibling(Block.name());
@@ -639,6 +646,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
      * Note that CHANX and CHANY 's x and y are swapped due to the chan and seg convention.
      * Push back temporary incorrect nodes for CHANX and CHANY to set the length of the vector*/
 
+    std::cout << "\nStage 1\n\n";
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         if (node.type() == SOURCE || node.type() == SINK) {
@@ -669,38 +677,51 @@ void process_rr_node_indices(const DeviceGrid& grid) {
                 }
             }
         } else if (node.type() == CHANX) {
+            std::cout << "CHANX ";
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    std::cout << "(" << ix << "," << iy << ") ";
                     indices[CHANX][iy][ix][0].push_back(inode);
                 }
             }
+            std::cout << "\n";
         } else if (node.type() == CHANY) {
+            std::cout << "CHANY ";
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    std::cout << "(" << ix << "," << iy << ") ";
                     indices[CHANY][ix][iy][0].push_back(inode);
                 }
             }
+            std::cout << "\n";
         }
     }
 
+    std::cout << "\nStage 2\n\n";
     int count;
     /* CHANX and CHANY need to reevaluated with its ptc num as the correct index*/
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         if (node.type() == CHANX) {
+            std::cout << "CHANX ";
             for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     count = node.ptc_num();
+                    std::cout << " (" << ix << "," << iy << "@" << count << ") ";
                     indices[CHANX][iy][ix][0].at(count) = inode;
                 }
             }
+            std::cout << "\n";
         } else if (node.type() == CHANY) {
+            std::cout << "CHANY ";
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     count = node.ptc_num();
+                    std::cout << " (" << ix << "," << iy << "@" << count << ") ";
                     indices[CHANY][ix][iy][0].at(count) = inode;
                 }
             }
+            std::cout << "\n";
         }
     }
     //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
