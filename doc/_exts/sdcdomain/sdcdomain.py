@@ -4,7 +4,7 @@ from sphinx.util.docfields import *
 def setup(app):
     app.add_domain(custom_domain('SdcDomain',
         name  = 'sdc',
-        label = "SDC", 
+        label = "SDC",
 
         elements = dict(
             command = dict(
