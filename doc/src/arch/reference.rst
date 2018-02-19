@@ -1326,7 +1326,7 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
 Classes
 ~~~~~~~
 Using these structures, we believe that one can describe any digital complex logic block.
-However, we believe that certain kinds of logic structuers are common enough in FPGAs that special shortcuts should be available to make their specification easier.
+However, we believe that certain kinds of logic structures are common enough in FPGAs that special shortcuts should be available to make their specification easier.
 These logic structures are: flip-flops, LUTs, and memories.
 These structures are described using a ``class=string`` attribute in the ``<pb_type>`` primitive.
 The classes we offer are:
@@ -1355,7 +1355,7 @@ The classes we offer are:
     #. The address, clock, and control inputs are identical and
     #. There exists sufficient physical data pins to satisfy the netlist memories when the different netlist memories are merged together into one physical memory.
 
-    Different types of memeories require different attributes.
+    Different types of memories require different attributes.
 
     **Single Port Memories Require:**
 
