@@ -79,7 +79,7 @@ An example models section containing a combinational primitive ``adder`` and a s
 Note that for ``single_port_ram`` above, the ports ``we``, ``addr``, ``data``, and ``out`` are sequential since they have a clock specified.
 Additionally ``addr`` and ``data`` are shown to be combinationally connected to ``out``; this corresponds to an internal timing path between the ``addr`` and ``data`` input registers, and the ``out`` output registers.
 
-For the ``adder`` the input ports ``a``, ``b`` and ``cin`` are each combintionally connected to the output ports ``cout`` and ``sumout`` (the adder is a purley combinational primitive).
+For the ``adder`` the input ports ``a``, ``b`` and ``cin`` are each combinationally connected to the output ports ``cout`` and ``sumout`` (the adder is a purely combinational primitive).
 
 .. seealso:: For more examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
 
@@ -148,7 +148,7 @@ Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid lo
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Each grid location specification has an associated numeric *priority*.
-Larger priority location specifications override those with lower prioriry.
+Larger priority location specifications override those with lower priority.
 
 .. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed from the grid.
 
@@ -174,7 +174,7 @@ Expressions may contain numeric constants (e.g. ``7``) and the following special
 .. warning:: All expressions are evaluated as integers, so operations such as division may have their result truncated.
 
 As an example consider the expression ``W/2 - w/2``.
-For a device width of 10 and a block type of width 3, this would be evaluted as :math:`\lfloor \frac{W}{2} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
+For a device width of 10 and a block type of width 3, this would be evaluated as :math:`\lfloor \frac{W}{1} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
 
 Grid Location Tags
 ~~~~~~~~~~~~~~~~~~
@@ -262,7 +262,7 @@ Grid Location Tags
     :req_param y:
         The vertical position of the block type instance.
 
-    Specifies a single instace of the block type at a single grid location.
+    Specifies a single instance of the block type at a single grid location.
 
     Example:
 
@@ -303,7 +303,7 @@ Grid Location Tags
 
     Creates a column of the specified block type at ``startx``.
 
-    If ``repeatx`` is specified the column will be repeated wherever :math:`x = startx + k \cdot repeatx`, is satisified for any positive integer :math:`k`.
+    If ``repeatx`` is specified the column will be repeated wherever :math:`x = startx + k \cdot repeatx`, is satisfied for any positive integer :math:`k`.
 
     A non-zero ``starty`` is typically used if a ``<perimeter>`` tag is specified to adjust the starting position of blocks with height > 1.
 
@@ -362,7 +362,7 @@ Grid Location Tags
 
     Creates a row of the specified block type at ``starty``.
 
-    If ``repeaty`` is specified the column will be repeated wherever :math:`y = starty + k \cdot repeaty`, is satisified for any positive integer :math:`k`.
+    If ``repeaty`` is specified the column will be repeated wherever :math:`y = starty + k \cdot repeaty`, is satisfied for any positive integer :math:`k`.
 
     A non-zero ``startx`` is typically used if a ``<perimeter>`` tag is specified to adjust the starting position of blocks with width > 1.
 
@@ -581,7 +581,7 @@ The tags within the ``<device>`` tag are:
     When using unidirectional segments, one can specify an :math:`F_s` that is any multiple of 3.
     We use a modified wilton switch block pattern regardless of the specified switch_block_type.
     For all segments that start/end at that switch block, we follow the wilton switch block pattern.
-    For segments that pass through the switch block that can also turn there, we cannot use the wilton pattern because a undirectional segment cannot be driven at an intermediate point, so we assign connections to starting segments following a round robin scheme (to balance mux size).
+    For segments that pass through the switch block that can also turn there, we cannot use the wilton pattern because a unidirectional segment cannot be driven at an intermediate point, so we assign connections to starting segments following a round robin scheme (to balance mux size).
 
     .. note:: The round robin scheme is not tileable.
 
@@ -632,7 +632,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
         Isolating switches include a buffer which partition their input and output into separate DC-connected sub-circuits.
         This helps reduce RC wire delays.
 
-        *Non-isolating* switch do **not** isolate thier input and output, which can increase RC wire delays.
+        *Non-isolating* switch do **not** isolate their input and output, which can increase RC wire delays.
 
         **Configurablity**
 
@@ -828,7 +828,7 @@ PB Type
 
     **Intermediate or Primitive:**
 
-    :opt_param num_pb: The number of instances of this pb_type at the current heirarchy level.
+    :opt_param num_pb: The number of instances of this pb_type at the current hierarchy level.
 
         **Default:** ``1``
 
@@ -894,7 +894,7 @@ The following tags are common to all <pb_type> tags:
     :opt_param is_non_clock_global:
         *Applies only to top-level pb_type.*
         Describes if this input pin is a global signal that is not a clock.
-        Very useful for signals such as FPGA-wide asychronous resets.
+        Very useful for signals such as FPGA-wide asynchronous resets.
         These signals have their own dedicated routing channels and so should not use the general interconnect fabric on the FPGA.
 
     Defines an input port.
@@ -1451,7 +1451,7 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
     Specifies a port's hold constraint.
 
     * If ``port`` is an input specifies the external hold time of the primitive's input register (i.e. for paths terminating at the input register).
-    * If ``port`` is an output specifies the internal hol time of the primitive's output register (i.e. for paths terminating at the output register) .
+    * If ``port`` is an output specifies the internal hold time of the primitive's output register (i.e. for paths terminating at the output register) .
 
     .. note:: Applies only to primitive ``<pb_type>`` tags
 
@@ -1598,20 +1598,20 @@ The ``<segment>`` tag and its contents are described below.
 .. arch:tag:: <sb type="pattern">int list</sb>
 
     This tag describes the switch block depopulation (as illustrated in :numref:`fig_sb_pattern`) for this particular wire segment.
-    For example, the firsth length 6 wire in the figure below has an sb pattern of ``1 0 1 0 1 0 1``.
+    For example, the first length 6 wire in the figure below has an sb pattern of ``1 0 1 0 1 0 1``.
     The second wire has a pattern of ``0 1 0 1 0 1 0``.
-    A ``1`` indicates the existance of a switch block and a ``0`` indicates that there is no switch box at that point.
+    A ``1`` indicates the existence of a switch block and a ``0`` indicates that there is no switch box at that point.
     Note that there a 7 entries in the integer list for a length 6 wire.
-    For a length L wire there must be L+1 entries seperated by spaces.
+    For a length L wire there must be L+1 entries separated by spaces.
 
 .. arch:tag:: <cb type="pattern">int list</cb>
 
     This tag describes the connection block depopulation (as illustrated by the circles in :numref:`fig_sb_pattern`) for this particular wire segment.
-    For example, the firsth length 6 wire in the figure below has an sb pattern of ``1 1 1 1 1 1``.
+    For example, the first length 6 wire in the figure below has an sb pattern of ``1 1 1 1 1 1``.
     The third wire has a pattern of ``1 0 0 1 1 0``.
-    A ``1`` indicates the existance of a connection block and a ``0`` indicates that there is no connection box at that point.
+    A ``1`` indicates the existence of a connection block and a ``0`` indicates that there is no connection box at that point.
     Note that there a 6 entries in the integer list for a length 6 wire.
-    For a length L wire there must be L entries seperated by spaces.
+    For a length L wire there must be L entries separated by spaces.
 
 .. arch:tag:: <mux name="string"/>
 
