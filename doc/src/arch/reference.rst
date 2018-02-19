@@ -174,7 +174,7 @@ Expressions may contain numeric constants (e.g. ``7``) and the following special
 .. warning:: All expressions are evaluated as integers, so operations such as division may have their result truncated.
 
 As an example consider the expression ``W/2 - w/2``.
-For a device width of 10 and a block type of width 3, this would be evaluated as :math:`\lfloor \frac{W}{1} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
+For a device width of 10 and a block type of width 3, this would be evaluated as :math:`\lfloor \frac{W}{2} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
 
 Grid Location Tags
 ~~~~~~~~~~~~~~~~~~
