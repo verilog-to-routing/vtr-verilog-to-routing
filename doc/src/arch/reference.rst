@@ -1342,9 +1342,9 @@ The classes we offer are:
 
     Describes a flipflop.
 
-    Input port must have a port_class="D" attribute added.
-    Output port must have a port_class="Q" attribute added.
-    Clock port must have a port_class="clock" attribute added.
+    Input port must have a ``port_class="D"`` attribute added.
+    Output port must have a ``port_class="Q"`` attribute added.
+    Clock port must have a ``port_class="clock"`` attribute added.
 
 .. arch:tag:: class="memory"
 
