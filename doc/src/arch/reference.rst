@@ -110,7 +110,7 @@ Global FPGA Information
 
 .. arch:tag:: <complexblocklist>content</complexblocklist>
 
-    Content inside this tag contains a group of <pb_type> tags that specify the types of functional blocks and their properties.
+    Content inside this tag contains a group of ``<pb_type>`` tags that specify the types of functional blocks and their properties.
 
 .. _arch_grid_layout:
 
@@ -160,7 +160,7 @@ Empty grid locations can be specified using the special block type ``EMPTY``.
 
 Grid Location Expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-Some grid location tags have attributes (e.g. ``startx``) which take an *expression* as thier argument.
+Some grid location tags have attributes (e.g. ``startx``) which take an *expression* as their argument.
 An *expression* can be an integer constant, or simple mathematical formula evaluated when constructing the device grid.
 
 Supported operators include: ``+``, ``-``, ``*``, ``/``, along with ``(`` and ``)`` to override the default evaluation order.
@@ -1686,14 +1686,14 @@ The ``<direct>`` tag and its contents are described below.
     :req_param x_offset:  The x location of the receiving CLB relative to the driving CLB.
     :req_param y_offset: The y location of the receiving CLB relative to the driving CLB.
     :req_param z_offset: The z location of the receiving CLB relative to the driving CLB.
-    :req_param switch_name: [Optional, defaults to delay-less switch if not specified] The name of the <switch> from <switchlist> to be used for this direct connection.
+    :req_param switch_name: [Optional, defaults to delay-less switch if not specified] The name of the ``<switch>`` from ``<switchlist>`` to be used for this direct connection.
 
 
     Describes a dedicated connection between two complex block pins that skips general interconnect.
     This is useful for describing structures such as carry chains as well as adjacent neighbour connections.
 
     **Example:**
-    Consider a carry chain where the cout of each CLB drives the cin of the CLB immediately below it, using the delay-less switch one would enter the following:
+    Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
 
     .. code-block:: xml
 
