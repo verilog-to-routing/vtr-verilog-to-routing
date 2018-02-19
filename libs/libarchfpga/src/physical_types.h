@@ -586,11 +586,11 @@ struct t_mode {
 /** Describes an interconnect edge inside a cluster
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
- *  It corresponds to <interconnect/> tags in the FPGA archtiecture description
+ *  It corresponds to <interconnect/> tags in the FPGA architecture description
  *  
  *  Data members:
  *      type: type of the interconnect
- *      name: indentifier for interconnect
+ *      name: identifier for interconnect
  *      input_string: input string verbatim to parse later
  *      output_string: input string output to parse later
  *      annotations: Annotations for delay, power, etc
