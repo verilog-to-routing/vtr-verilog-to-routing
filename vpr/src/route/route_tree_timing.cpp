@@ -52,7 +52,7 @@ static void free_linked_rt_edge(t_linked_rt_edge * rt_edge);
 static t_rt_node *add_subtree_to_route_tree(t_heap *hptr,
 		t_rt_node ** sink_rt_node_ptr);
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::set<int>& visited);
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
 
 static t_rt_node *update_unbuffered_ancestors_C_downstream(
 		t_rt_node * start_of_new_subtree_rt_node);
@@ -298,7 +298,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	downstream_rt_node = sink_rt_node;
 
-    std::set<int> main_branch_visited;
+    std::unordered_set<int> main_branch_visited;
     for (t_heap_prev prev : hptr->previous) {
         inode = prev.from_node;
         iedge = prev.from_edge;
@@ -354,7 +354,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
     //Expand (recursively) each of the main-branch nodes adding any 
     //non-configurably connected nodes
-    std::set<int> all_visited = main_branch_visited;
+    std::unordered_set<int> all_visited = main_branch_visited;
     for (int rr_node : main_branch_visited) {
         add_non_configurable_to_route_tree(rr_node, false, all_visited);
     }
@@ -363,7 +363,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	return (downstream_rt_node);
 }
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::set<int>& visited) {
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited) {
     t_rt_node* rt_node = nullptr;
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
