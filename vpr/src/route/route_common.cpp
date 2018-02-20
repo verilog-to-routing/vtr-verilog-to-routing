@@ -493,6 +493,7 @@ void init_route_structs(int bb_factor) {
     //Allocate new tracebacks
 	route_ctx.trace_head.resize(cluster_ctx.clb_nlist.nets().size());
 	route_ctx.trace_tail.resize(cluster_ctx.clb_nlist.nets().size());
+	route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
     init_heap(device_ctx.grid);
 
@@ -536,12 +537,12 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 
     //Load up the existing route nodes
     // This ensures we do not add nodes multiple times when expanding non-configurable edges
-    std::set<int> traced_nodes;
-    for (t_trace* tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
-        traced_nodes.insert(tptr->index);
-    }
+    //std::set<int> traced_nodes;
+    //for (t_trace* tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
+        //traced_nodes.insert(tptr->index);
+    //}
 
-    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, traced_nodes);
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, route_ctx.trace_nodes[net_id]);
 
     t_trace* ret_ptr = nullptr;
 	if (route_ctx.trace_tail[net_id] != NULL) {
@@ -839,6 +840,7 @@ void free_traceback(ClusterNetId net_id) {
 
 	route_ctx.trace_head[net_id] = NULL;
 	route_ctx.trace_tail[net_id] = NULL;
+	route_ctx.trace_nodes[net_id].clear();
 }
 
 /* Allocates data structures into which the key routing data can be saved,   *
