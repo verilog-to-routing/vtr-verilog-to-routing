@@ -212,4 +212,7 @@ void dump_sblock_pattern(
 		const DeviceGrid& grid,
 		const char *fname);
 
+//Partitions RR graph edges to allow fast access to configurable/non-configurabe edge subsets
+void partition_rr_graph_edges(const DeviceContext& device_ctx);
+
 #endif

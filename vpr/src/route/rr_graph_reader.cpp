@@ -164,6 +164,10 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_single_child(rr_graph, "rr_edges", loc_data);
         process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
 
+        //Partition the rr graph edges for efficient access to configurable/non-configurable
+        //edge subsets. Must be done after RR switches have been allocated
+        partition_rr_graph_edges(device_ctx);
+
         process_rr_node_indices(grid);
 
         init_fan_in(device_ctx.rr_nodes, device_ctx.num_rr_nodes);

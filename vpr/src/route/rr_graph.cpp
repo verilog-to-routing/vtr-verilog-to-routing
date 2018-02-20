@@ -592,8 +592,14 @@ static void build_rr_graph(
        based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
     (*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
+    //Partition the rr graph edges for efficient access to configurable/non-configurable
+    //edge subsets. Must be done after RR switches have been allocated
+    partition_rr_graph_edges(device_ctx);
+
     rr_graph_externals(segment_inf, num_seg_types, max_chan_width,
             *wire_to_rr_ipin_switch, base_cost_type);
+
+
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
         dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
     }
