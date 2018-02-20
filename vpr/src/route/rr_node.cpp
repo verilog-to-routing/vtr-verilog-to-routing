@@ -177,11 +177,33 @@ short t_rr_node::add_edge(int sink_node, int iswitch) {
     std::copy_n(edges_.get(), num_edges_, edges.get());
 
     edges[num_edges_].sink_node = sink_node;
-    edges[num_edges_].switch_type = iswitch;
+    edges[num_edges_].switch_id = iswitch;
 
     edges_ = std::move(edges);
     ++num_edges_;
+
+#ifdef VTR_ASSERT_SAFE_ENABLED
+    edges_partitioned_ = false;
+#endif
+
     return num_edges_;
+}
+
+void t_rr_node::partition_edges() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto is_configurable = [&](const t_rr_edge& edge) {
+        auto iswitch =  edge.switch_id;
+        return device_ctx.rr_switch_inf[iswitch].configurable;
+    };
+
+    //Partition the edges so the first set of edges are all configurable, and the later are not
+    auto first_non_config_edge = std::partition(edges_.get(), edges_.get() + num_edges_, is_configurable);
+
+    num_configurable_edges_ = std::distance(edges_.get(), first_non_config_edge);
+
+#ifdef VTR_ASSERT_SAFE_ENABLED
+    edges_partitioned_ = true;
+#endif
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {
@@ -222,5 +244,5 @@ void t_rr_node::set_edge_sink_node(short iedge, int sink_node) {
 void t_rr_node::set_edge_switch(short iedge, short switch_index) { 
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(switch_index >= 0);
-    edges_[iedge].switch_type = switch_index; 
+    edges_[iedge].switch_id = switch_index; 
 }

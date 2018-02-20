@@ -1,7 +1,10 @@
 #ifndef RR_NODE_H
 #define RR_NODE_H
-#include <memory>
 #include "vpr_types.h"
+
+#include "vtr_range.h"
+
+#include <memory>
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
@@ -46,13 +49,38 @@
  *       otherwise.                                                          */
 
 class t_rr_node {
+    public: //Types
+        
+        class edge_idx_iterator : public std::iterator<std::random_access_iterator_tag, short> {
+            public:
+            edge_idx_iterator(value_type init): value_(init) {}
+            iterator operator++() { value_ += 1; return *this; }
+            iterator operator--() { value_ -= 1; return *this; }
+            reference operator*() { return value_; }
+            pointer operator->() { return &value_; }
+
+            friend bool operator== (const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
+            friend bool operator!= (const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
+            
+            private:
+                value_type value_;
+        };
+
+        typedef vtr::Range<edge_idx_iterator> edge_idx_range;
     public: //Accessors
         t_rr_type type() const { return type_; }
         const char *type_string() const; /* Retrieve type as a string */
 
+        edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
+        edge_idx_range configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
+        edge_idx_range non_configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
+
         short num_edges() const { return num_edges_; }
+        short num_configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return num_configurable_edges_; }
+        short num_non_configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return num_edges() - num_configurable_edges(); }
+
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
-        short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_type; }
+        short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
 
@@ -85,6 +113,14 @@ class t_rr_node {
 
         short add_edge(int sink_node, int iswitch);
 
+        //Partitions all edges so that configurable and non-configurable edges
+        //are organized for efficient access.
+        //
+        //Must be called before configurable_edges(), non_configurable_edges(), 
+        //num_configurable_edges(), num_non_configurable_edges() to ensure they
+        //are correct.
+        void partition_edges(); 
+
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
@@ -114,8 +150,7 @@ class t_rr_node {
         //by t_rr_node (to save memory), and is not exposed externally
         struct t_rr_edge {
             int sink_node = -1; //The ID of the sink RR node associated with this edge
-
-            short switch_type = -1; //The ID of the switch type this edge represents
+            short switch_id = -1; //The ID of the switch type this edge represents
         };
 
     private: //Data
@@ -137,15 +172,20 @@ class t_rr_node {
         float C_ = 0.;
 
         //Note: we use a plain array and a single size counter to save space vs std::vector
-        //      (using two std::vector's nearly doubles the size of the class)
+        //      (using std::vector's nearly doubles the size of the class)
         std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
         short num_edges_ = 0;
+        short num_configurable_edges_ = 0;
 
         union {
             e_direction direction; //Valid only for CHANX/CHANY
             e_side side; //Valid only for IPINs/OPINs
         } dir_side_;
         t_rr_type type_ = NUM_RR_TYPES;
+
+#ifdef VTR_ASSERT_SAFE_ENABLED
+        bool edges_partitioned_ = false;
+#endif
 };
 
 
