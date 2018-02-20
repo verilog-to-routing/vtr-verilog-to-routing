@@ -424,16 +424,14 @@ static void breadth_first_expand_non_configurable_recurr(const float path_cost, 
 
         //Consider any non-configurable edges which must be expanded for correctness
         auto& device_ctx = g_vpr_ctx.device();
-        for (int iconn_next = 0; iconn_next < device_ctx.rr_nodes[to_node].num_edges(); ++iconn_next) {
+        for (int iconn_next : device_ctx.rr_nodes[to_node].non_configurable_edges()) {
             bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
+            VTR_ASSERT(!edge_configurable); //Forced expansion
 
+            int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 
-            if (!edge_configurable) { //Forced expansion
-                int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
-
-                breadth_first_expand_non_configurable_recurr(new_path_cost, bend_cost,
-                            current, to_node, to_to_node, iconn_next, visited);
-            }
+            breadth_first_expand_non_configurable_recurr(new_path_cost, bend_cost,
+                        current, to_node, to_to_node, iconn_next, visited);
         }
     }
 }

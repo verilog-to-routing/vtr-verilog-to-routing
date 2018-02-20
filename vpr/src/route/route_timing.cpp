@@ -1269,17 +1269,15 @@ static void timing_driven_expand_non_configurable_recurr(const float criticality
         }
 
         //Consider any non-configurable edges which must be expanded for correctness
-        for (int iconn_next = 0; iconn_next < device_ctx.rr_nodes[to_node].num_edges(); ++iconn_next) {
+        for (int iconn_next : device_ctx.rr_nodes[to_node].non_configurable_edges()) {
             bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
+            VTR_ASSERT(!edge_configurable); //Forced expansion
 
+            int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 
-            if (!edge_configurable) { //Forced expansion
-                int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
-
-                timing_driven_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
-                        budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                        current, to_node, to_to_node, iconn_next, target_node, visited);
-            }
+            timing_driven_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
+                    budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                    current, to_node, to_to_node, iconn_next, target_node, visited);
         }
     }
 }

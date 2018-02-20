@@ -393,32 +393,32 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
             }
         }
 
-        for (int iedge = 0; iedge < device_ctx.rr_nodes[rr_node].num_edges(); ++iedge) {
+        for (int iedge : device_ctx.rr_nodes[rr_node].non_configurable_edges()) {
             bool edge_configurable = device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge);
 
-            if (!edge_configurable) { //Recursive case: expand children
-                int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
+            VTR_ASSERT (!edge_configurable); //Recursive case: expand children
 
-                //Recurse
-                t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
+            int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
 
-                if (!child_rt_node) continue;
+            //Recurse
+            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
 
-                int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
+            if (!child_rt_node) continue;
 
-                //Create the edge
-                t_linked_rt_edge* linked_rt_edge = alloc_linked_rt_edge();
-                linked_rt_edge->child = child_rt_node;
-                linked_rt_edge->iswitch = iswitch;
+            int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
 
-                //Add edge at head of parent linked list
-                linked_rt_edge->next = rt_node->u.child_list;
-                rt_node->u.child_list = linked_rt_edge;
+            //Create the edge
+            t_linked_rt_edge* linked_rt_edge = alloc_linked_rt_edge();
+            linked_rt_edge->child = child_rt_node;
+            linked_rt_edge->iswitch = iswitch;
 
-                //Update child to parent ref
-                child_rt_node->parent_node = rt_node;
-                child_rt_node->parent_switch = iswitch;
-            }
+            //Add edge at head of parent linked list
+            linked_rt_edge->next = rt_node->u.child_list;
+            rt_node->u.child_list = linked_rt_edge;
+
+            //Update child to parent ref
+            child_rt_node->parent_node = rt_node;
+            child_rt_node->parent_switch = iswitch;
         }
         rr_node_to_rt_node[rr_node] = rt_node;
     }
