@@ -102,9 +102,9 @@ static vtr::t_chunk linked_f_pointer_ch;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::set<int>& main_branch_visited);
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited);
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth=0);
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& main_branch_visited);
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
@@ -557,7 +557,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	return (ret_ptr);
 }
 
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::set<int>& main_branch_visited) {
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& main_branch_visited) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -602,7 +602,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
     //We next re-expand all the main-branch nodes to add any non-configurably connected side branches
     // We are careful to do this *after* the main branch is constructed to ensure nodes which are both
     // non-configurably connected *and* part of the main branch are only added to the traceback once.
-    std::set<int> all_visited = main_branch_visited; //Make a copy since it will be updated by add_trace_non_configurable()
+    auto all_visited = main_branch_visited; //Make a copy since it will be updated by add_trace_non_configurable()
     for (int main_branch_node : main_branch_visited) {
         //Expand each main branch node
         std::tie(branch_head, branch_tail) = add_trace_non_configurable(branch_head, branch_tail, main_branch_node, all_visited);
@@ -614,7 +614,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 //Traces any non-configurable subtrees from branch_head, returning the new branch_head
 //
 //This effectively does a depth-first traversal
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::set<int>& visited) {
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited) {
     //Trace any non-configurable subtrees
     t_trace* subtree_head = nullptr;
     t_trace* subtree_tail = nullptr;
@@ -637,7 +637,7 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_
     return {head, tail};
 }
 
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::set<int>& visited, int depth) {
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth) {
     t_trace* head = nullptr;
     t_trace* tail = nullptr;
 

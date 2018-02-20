@@ -224,7 +224,7 @@ struct PlacementContext : public Context {
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
     vtr::vector_map<ClusterNetId, t_trace*> trace_head, trace_tail;
-    vtr::vector_map<ClusterNetId, std::set<int>> trace_nodes;
+    vtr::vector_map<ClusterNetId, std::unordered_set<int>> trace_nodes;
 
 	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
