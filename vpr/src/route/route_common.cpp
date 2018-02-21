@@ -155,6 +155,7 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 
 		route_ctx.trace_head[net_id] = NULL;
 		route_ctx.trace_tail[net_id] = NULL;
+		route_ctx.trace_nodes[net_id].clear();
 	}
 
 	/* Save which OPINs are locally used.                           */
