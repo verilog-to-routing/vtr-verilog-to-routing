@@ -52,42 +52,57 @@
 # define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL(expr, nullptr)
 # define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-# define VTR_ASSERT_DEBUG(expr) static_cast<void>(0)
-# define VTR_ASSERT_DEBUG_MSG(expr, msg) static_cast<void>(0)
+# define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+# define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
 # define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL(expr, nullptr)
 # define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-# define VTR_ASSERT_SAFE(expr) static_cast<void>(0)
-# define VTR_ASSERT_SAFE_MSG(expr, msg) static_cast<void>(0)
+# define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+# define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 #ifdef VTR_ASSERT_ENABLED
 # define VTR_ASSERT(expr) VTR_ASSERT_IMPL(expr, nullptr)
 # define VTR_ASSERT_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-# define VTR_ASSERT(expr) static_cast<void>(0)
-# define VTR_ASSERT_MSG(expr, msg) static_cast<void>(0)
+# define VTR_ASSERT(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+# define VTR_ASSERT_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 #ifdef VTR_ASSERT_OPT_ENABLED
 # define VTR_ASSERT_OPT(expr) VTR_ASSERT_IMPL(expr, nullptr)
 # define VTR_ASSERT_OPT_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-# define VTR_ASSERT_OPT(expr) static_cast<void>(0)
-# define VTR_ASSERT_OPT_MSG(expr, msg) static_cast<void>(0)
+# define VTR_ASSERT_OPT(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+# define VTR_ASSERT_OPT_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 
 //Define the assertion implementation macro
 // We wrap the check in a do {} while() to ensure the function-like
 // macro can be always be followed by a ';'
-#define VTR_ASSERT_IMPL(expr, msg) do {\
+#define VTR_ASSERT_IMPL(expr, msg) do { \
         if(!(expr)) { \
             vtr::Assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); \
         } \
+    } while(false)
+
+//Define the no-op assertion implementation macro
+// We wrap the check in a do {} while() to ensure the function-like
+// macro can be always be followed by a ';'
+//
+// Note that to avoid 'unused' variable warnings when assertions are
+// disabled, we pass the expr and msg to sizeof(). We use sizeof specifically
+// since it accepts expressions, and the C++ standard gaurentees sizeof's arguments
+// are never evaluated (ensuring any expensive expressions are not evaluated when 
+// assertions are disabled). To avoid warnings about the unused result of sizeof()
+// we cast it to void.
+#define VTR_ASSERT_IMPL_NOP(expr, msg) do { \
+        static_cast<void>(sizeof(expr)); \
+        static_cast<void>(sizeof(msg)); \
     } while(false)
 
 //Figure out what macro to use to get the name of the current function
