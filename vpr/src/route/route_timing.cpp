@@ -1270,8 +1270,7 @@ static void timing_driven_expand_non_configurable_recurr(const float criticality
 
         //Consider any non-configurable edges which must be expanded for correctness
         for (int iconn_next : device_ctx.rr_nodes[to_node].non_configurable_edges()) {
-            bool edge_configurable = device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next);
-            VTR_ASSERT(!edge_configurable); //Forced expansion
+            VTR_ASSERT_SAFE(!device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next)); //Forced expansion
 
             int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 

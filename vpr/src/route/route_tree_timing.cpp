@@ -394,9 +394,8 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
         }
 
         for (int iedge : device_ctx.rr_nodes[rr_node].non_configurable_edges()) {
-            bool edge_configurable = device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge);
-
-            VTR_ASSERT (!edge_configurable); //Recursive case: expand children
+            //Recursive case: expand children
+            VTR_ASSERT (!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge)); 
 
             int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
 

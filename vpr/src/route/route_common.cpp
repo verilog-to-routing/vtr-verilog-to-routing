@@ -652,11 +652,12 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, 
     //Record the non-configurable out-going edges
     std::vector<int> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
-    for (int iedge = 0; iedge < device_ctx.rr_nodes[node].num_edges(); ++iedge) {
-        bool edge_configurable = device_ctx.rr_nodes[node].edge_is_configurable(iedge);
+    for (int iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
+        VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
+
         int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
 
-        if (!edge_configurable && !trace_nodes.count(to_node)) {
+        if (!trace_nodes.count(to_node)) {
             unvisited_non_configurable_edges.push_back(iedge);
         }
     }
