@@ -1345,10 +1345,10 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
         if (prev_switch != OPEN) {
             //Not end of branch
             if (!route_tree_connections.count(conn)) {
-                VPR_THROW(VPR_ERROR_ROUTE, "Traceback missing route tree connection: node %d -> %d (switch %d)\n",
+                VPR_THROW(VPR_ERROR_ROUTE, "Route tree missing traceback connection: node %d -> %d (switch %d)\n",
                     prev_node, to_node, prev_switch);
             } else {
-                route_tree_connections.erase(conn);
+                route_tree_connections.erase(conn); //Remove found connections
             }
         }
 
