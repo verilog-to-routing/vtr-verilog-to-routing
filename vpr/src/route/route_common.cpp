@@ -117,6 +117,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 		float pres_fac, float acc_fac);
 
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
+static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 /************************** Subroutine definitions ***************************/
 
 void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
@@ -535,14 +536,13 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	 * the first "new" node in the traceback (node not previously in trace).    */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    //Load up the existing route nodes
-    // This ensures we do not add nodes multiple times when expanding non-configurable edges
-    //std::set<int> traced_nodes;
-    //for (t_trace* tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
-        //traced_nodes.insert(tptr->index);
-    //}
+    auto& trace_nodes = route_ctx.trace_nodes[net_id];
 
-    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, route_ctx.trace_nodes[net_id]);
+    VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace_head[net_id], trace_nodes));
+
+    t_trace_branch branch = traceback_branch(hptr->index, hptr->previous, trace_nodes);
+
+    VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
     t_trace* ret_ptr = nullptr;
 	if (route_ctx.trace_tail[net_id] != NULL) {
@@ -557,7 +557,9 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
 	return (ret_ptr);
 }
 
-static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& main_branch_visited) {
+//Traces back a new routing branch starting from the specified 'node' and working backwards to any existing routing.
+//Returns the new branch, and also updates trace_nodes for any new nodes which are included in the branches traceback.
+static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& trace_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -567,6 +569,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 			"in traceback_branch: Expected type = SINK (%d).\n");
 	}
 
+
     //We construct the main traceback by walking from the given node back to the source,
     //according to the previous edges/nodes recorded in rr_node_route_inf by the router.
     t_trace* branch_head = alloc_trace_data();
@@ -574,6 +577,10 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
     branch_head->index = node;
     branch_head->iswitch = OPEN;
     branch_head->next = nullptr;
+
+    trace_nodes.insert(node);
+
+    std::vector<int> new_nodes_added_to_traceback = {node};
 
     for (t_heap_prev prev : previous) {
         int inode = prev.from_node;
@@ -588,11 +595,12 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
             prev_ptr->next = branch_head;
             branch_head = prev_ptr;
 
-            if (main_branch_visited.count(inode)) {
+            if (trace_nodes.count(inode)) {
                 break; //Connected to existing routing
             }
 
-            main_branch_visited.insert(inode); //Record this node as visited
+            trace_nodes.insert(inode); //Record this node as visited
+            new_nodes_added_to_traceback.push_back(inode);
 
             iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
             inode = route_ctx.rr_node_route_inf[inode].prev_node;
@@ -602,23 +610,22 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
     //We next re-expand all the main-branch nodes to add any non-configurably connected side branches
     // We are careful to do this *after* the main branch is constructed to ensure nodes which are both
     // non-configurably connected *and* part of the main branch are only added to the traceback once.
-    auto all_visited = main_branch_visited; //Make a copy since it will be updated by add_trace_non_configurable()
-    for (int main_branch_node : main_branch_visited) {
+    for (int new_node : new_nodes_added_to_traceback) {
         //Expand each main branch node
-        std::tie(branch_head, branch_tail) = add_trace_non_configurable(branch_head, branch_tail, main_branch_node, all_visited);
+        std::tie(branch_head, branch_tail) = add_trace_non_configurable(branch_head, branch_tail, new_node, trace_nodes);
     }
 
     return {branch_head, branch_tail}; 
 }
 
-//Traces any non-configurable subtrees from branch_head, returning the new branch_head
+//Traces any non-configurable subtrees from branch_head, returning the new branch_head and updating trace_nodes
 //
 //This effectively does a depth-first traversal
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited) {
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& trace_nodes) {
     //Trace any non-configurable subtrees
     t_trace* subtree_head = nullptr;
     t_trace* subtree_tail = nullptr;
-    std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(node, visited);
+    std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(node, trace_nodes);
 
     //Add any non-empty subtree to tail of traceback
     if (subtree_head && subtree_tail) {
@@ -637,68 +644,71 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_
     return {head, tail};
 }
 
-static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth) {
+//Recursive helper function for add_trace_non_configurable()
+static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& trace_nodes, int depth) {
     t_trace* head = nullptr;
     t_trace* tail = nullptr;
 
-    if (!visited.count(node) || depth == 0) { //Unvisted or initial expansion from node
-        visited.insert(node); //Mark visited
+    //Record the non-configurable out-going edges
+    std::vector<int> unvisited_non_configurable_edges;
+    auto& device_ctx = g_vpr_ctx.device();
+    for (int iedge = 0; iedge < device_ctx.rr_nodes[node].num_edges(); ++iedge) {
+        bool edge_configurable = device_ctx.rr_nodes[node].edge_is_configurable(iedge);
+        int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
 
-        //Record the non-configurable out-going edges
-        std::vector<int> unvisited_non_configurable_edges;
-        auto& device_ctx = g_vpr_ctx.device();
-        for (int iedge = 0; iedge < device_ctx.rr_nodes[node].num_edges(); ++iedge) {
-            bool edge_configurable = device_ctx.rr_nodes[node].edge_is_configurable(iedge);
-            int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+        if (!edge_configurable && !trace_nodes.count(to_node)) {
+            unvisited_non_configurable_edges.push_back(iedge);
+        }
+    }
 
-            if (!edge_configurable && !visited.count(to_node)) {
-                unvisited_non_configurable_edges.push_back(iedge);
-            }
+    if (unvisited_non_configurable_edges.size() == 0) {
+        //Base case: leaf node with no non-configurable edges
+        if (depth > 0) { //Arrived via non-configurable edge
+            VTR_ASSERT(!trace_nodes.count(node));
+            head = alloc_trace_data();
+            head->index = node;
+            head->iswitch = -1;
+            head->next = nullptr;
+            tail = head;
+
+            trace_nodes.insert(node);
         }
 
-        if (unvisited_non_configurable_edges.size() == 0) {
-            //Base case: leaf node with no non-configurable edges
-            if (depth > 0) { //Arrived via non-configurable edge
-                head = alloc_trace_data();
-                head->index = node;
-                head->iswitch = -1;
-                head->next = nullptr;
-                tail = head;
-            }
+    } else {
+        //Recursive case: intermediate node with non-configurable edges
+        for (int iedge : unvisited_non_configurable_edges) {
+            int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+            int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
 
-        } else {
-            //Recursive case: intermediate node with non-configurable edges
-            for (int iedge : unvisited_non_configurable_edges) {
-                int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
-                int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
+            VTR_ASSERT(!trace_nodes.count(to_node));
+            trace_nodes.insert(node);
 
-                //Recurse
-                t_trace* subtree_head = nullptr;
-                t_trace* subtree_tail = nullptr;
-                std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(to_node, visited, depth + 1);
+            //Recurse
+            t_trace* subtree_head = nullptr;
+            t_trace* subtree_tail = nullptr;
+            std::tie(subtree_head, subtree_tail) = add_trace_non_configurable_recurr(to_node, trace_nodes, depth + 1);
 
-                if (subtree_head && subtree_tail) {
-                    //Add the non-empty sub-tree
+            if (subtree_head && subtree_tail) {
+                //Add the non-empty sub-tree
 
-                    //Duplicate the original head as the new tail (for the new branch)
-                    t_trace* intermediate_head = alloc_trace_data();
-                    intermediate_head->index = node;
-                    intermediate_head->iswitch = iswitch;
-                    intermediate_head->next = nullptr;
+                //Duplicate the original head as the new tail (for the new branch)
+                t_trace* intermediate_head = alloc_trace_data();
+                intermediate_head->index = node;
+                intermediate_head->iswitch = iswitch;
+                intermediate_head->next = nullptr;
 
-                    intermediate_head->next = subtree_head;
+                intermediate_head->next = subtree_head;
 
-                    if (!head) { //First subtree becomes head
-                        head = intermediate_head;
-                    } else { //Later subtrees added to tail
-                        VTR_ASSERT(tail);
-                        tail->next = intermediate_head;
-                    }
-
-                    tail = subtree_tail;
-                } else {
-                    VTR_ASSERT(subtree_head == nullptr && subtree_tail == nullptr);
+                if (!head) { //First subtree becomes head
+                    head = intermediate_head;
+                } else { //Later subtrees added to tail
+                    VTR_ASSERT(tail);
+                    tail->next = intermediate_head;
                 }
+
+                tail = subtree_tail;
+            } else {
+                VTR_ASSERT(subtree_head == nullptr && subtree_tail == nullptr);
             }
         }
     }
@@ -1885,4 +1895,31 @@ void print_rr_node_route_inf_dot() {
     }
 
     vtr::printf("}\n");
+}
+
+static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes) {
+    //Verifies that all nodes in the traceback 'head' are conatined in 'trace_nodes'
+
+    if (!head) {
+        return true;
+    }
+
+    std::vector<int> missing_from_trace_nodes;
+    for (t_trace* tptr = head; tptr != nullptr; tptr = tptr->next) {
+        if (!trace_nodes.count(tptr->index)) {
+            missing_from_trace_nodes.push_back(tptr->index);
+        }
+    }
+
+    if (!missing_from_trace_nodes.empty()) {
+        std::string msg = vtr::string_fmt("The following %zu nodes were found in traceback"
+                                          " but were missing from trace_nodes: %s\n",
+                                          missing_from_trace_nodes.size(),
+                                          vtr::join(missing_from_trace_nodes, ", ").c_str());
+
+        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+        return false;
+    }
+
+    return true;
 }
