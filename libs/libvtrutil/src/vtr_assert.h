@@ -6,9 +6,10 @@
  * The header defines useful assertion macros for VTR projects.
  *
  * Three types of assertions are defined:
- *      VTR_ASSERT_OPT  - low overhead assertions that should always be enabled
- *      VTR_ASSERT      - medium overhead assertions that may be enabled
- *      VTR_ASSERT_SAFE - high overhead assertions typically enabled only for debugging
+ *      VTR_ASSERT_OPT   - low overhead assertions that should always be enabled
+ *      VTR_ASSERT       - medium overhead assertions that are usually be enabled
+ *      VTR_ASSERT_SAFE  - high overhead assertions typically enabled only for debugging
+ *      VTR_ASSERT_DEBUG - very high overhead assertions typically enabled only for extreme debugging
  * Each of the above assertions also have a *_MSG variants (e.g. VTR_ASSERT_MSG(expr, msg) 
  * which takes an additional argument specifying additional message text to be shown.
  * By convention the message should state the condition *being checked* (and not the failure condition),
@@ -16,6 +17,7 @@
  *
  * The macro VTR_ASSERT_LEVEL specifies the level of assertion checking desired:
  *
+ *      VTR_ASSERT_LEVEL == 4: VTR_ASSERT_OPT, VTR_ASSERT, VTR_ASSERT_SAFE, VTR_ASSERT_DEBUG enabled
  *      VTR_ASSERT_LEVEL == 3: VTR_ASSERT_OPT, VTR_ASSERT, VTR_ASSERT_SAFE enabled
  *      VTR_ASSERT_LEVEL == 2: VTR_ASSERT_OPT, VTR_ASSERT enabled
  *      VTR_ASSERT_LEVEL == 1: VTR_ASSERT_OPT enabled
@@ -29,6 +31,10 @@
 #endif
 
 //Enable the assertions based on the specified level
+#if VTR_ASSERT_LEVEL >= 4
+# define VTR_ASSERT_DEBUG_ENABLED
+#endif
+
 #if VTR_ASSERT_LEVEL >= 3
 # define VTR_ASSERT_SAFE_ENABLED
 #endif
@@ -42,6 +48,14 @@
 #endif
 
 //Define the user assertion macros
+#ifdef VTR_ASSERT_DEBUG_ENABLED
+# define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL(expr, nullptr)
+# define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
+#else
+# define VTR_ASSERT_DEBUG(expr) static_cast<void>(0)
+# define VTR_ASSERT_DEBUG_MSG(expr, msg) static_cast<void>(0)
+#endif
+
 #ifdef VTR_ASSERT_SAFE_ENABLED
 # define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL(expr, nullptr)
 # define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
