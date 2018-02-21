@@ -182,9 +182,7 @@ short t_rr_node::add_edge(int sink_node, int iswitch) {
     edges_ = std::move(edges);
     ++num_edges_;
 
-#ifdef VTR_ASSERT_SAFE_ENABLED
     edges_partitioned_ = false;
-#endif
 
     return num_edges_;
 }
@@ -201,9 +199,7 @@ void t_rr_node::partition_edges() {
 
     num_configurable_edges_ = std::distance(edges_.get(), first_non_config_edge);
 
-#ifdef VTR_ASSERT_SAFE_ENABLED
     edges_partitioned_ = true;
-#endif
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {

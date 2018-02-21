@@ -183,11 +183,9 @@ class t_rr_node {
         } dir_side_;
         t_rr_type type_ = NUM_RR_TYPES;
 
-#ifdef VTR_ASSERT_SAFE_ENABLED
         //Extra sanity check to ensure edges are partitioned when partitioning 
         //is required for correct results
         bool edges_partitioned_ = false;
-#endif
 };
 
 
