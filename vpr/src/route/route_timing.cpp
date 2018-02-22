@@ -118,7 +118,6 @@ struct t_timing_driven_node_costs {
     float R_upstream = 0.;
 };
 
-
 /******************** Subroutines local to route_timing.c ********************/
 
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
@@ -126,12 +125,12 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
         float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets &budgeting_inf,
-        float max_delay, float min_delay, float target_delay, float short_path_crit);
+        float max_delay, float min_delay, float target_delay, float short_path_crit, RouterStats& router_stats);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         float target_criticality, float astar_fac, route_budgets& budgeting_inf,
         float max_delay, float min_delay,
-        float target_delay, float short_path_crit);
+        float target_delay, float short_path_crit, RouterStats& router_stats);
 
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
@@ -180,10 +179,11 @@ static WirelengthInfo calculate_wirelength_info();
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
-static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
+static void print_route_status(int itry, double elapsed_sec, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
+static void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
 static int round_up(float x);
 
 /************************ Subroutine definitions *****************************/
@@ -289,7 +289,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
             route_timing_info = make_constant_timing_info(0.);
         }
 
-        size_t connections_routed = 0;
+        RouterStats router_stats;
 
         /*
          * Route each net
@@ -301,7 +301,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     pres_fac,
                     router_opts,
                     connections_inf,
-                    connections_routed,
+                    router_stats,
                     route_structs.pin_criticality,
                     route_structs.rt_node_of_sink,
                     net_delay,
@@ -356,7 +356,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, time, connections_routed, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, time, router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         //Update graphics
         if (itry == 1) {
@@ -481,7 +481,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         t_router_opts router_opts,
         CBRR& connections_inf,
-        size_t& connections_routed,
+        RouterStats& router_stats,
         float* pin_criticality,
         t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
@@ -508,7 +508,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 router_opts.max_criticality, router_opts.criticality_exp,
                 router_opts.astar_fac, router_opts.bend_cost,
                 connections_inf,
-                connections_routed,
+                router_stats,
                 pin_criticality, router_opts.min_incremental_reroute_fanout,
                 rt_node_of_sink,
                 net_delay[net_id],
@@ -633,7 +633,7 @@ struct Criticality_comp {
 bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
         float criticality_exp, float astar_fac, float bend_cost,
         CBRR& connections_inf,
-        size_t& connections_routed,
+        RouterStats& router_stats,
         float *pin_criticality, int min_incremental_reroute_fanout,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
@@ -713,15 +713,17 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(itry, net_id, itarget, target_pin, target_criticality,
                 pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink, budgeting_inf,
-                max_delay, min_delay, target_delay, short_path_crit))
+                max_delay, min_delay, target_delay, short_path_crit, router_stats))
             return false;
 
         // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
         // do this by resetting all the path_costs that have been touched while routing to the current sink
         reset_path_costs();
 
-        ++connections_routed;
+        ++router_stats.connections_routed;
     } // finished all sinks
+
+    ++router_stats.nets_routed;
 
     /* For later timing analysis. */
 
@@ -748,7 +750,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
         float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets &budgeting_inf,
-        float max_delay, float min_delay, float target_delay, float short_path_crit) {
+        float max_delay, float min_delay, float target_delay, float short_path_crit, RouterStats& router_stats) {
 
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
@@ -779,7 +781,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, (int)cluster_ctx.clb_nlist.net_sinks(net_id).size(), budgeting_inf,
-            max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf);
+            max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf, router_stats);
 
     if (cheapest == NULL) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -819,7 +821,8 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets &budgeting_inf,
-        float max_delay, float min_delay, float target_delay, float short_path_crit, std::vector<int>& modified_rr_node_inf) {
+        float max_delay, float min_delay, float target_delay, float short_path_crit, std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
@@ -827,13 +830,14 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
     add_route_tree_to_heap(rt_root, sink_node, target_criticality, astar_fac, budgeting_inf,
-            max_delay, min_delay, target_delay, short_path_crit);
+            max_delay, min_delay, target_delay, short_path_crit, router_stats);
     heap_::build_heap(); // via sifting down everything
 
     VTR_ASSERT_SAFE(heap_::is_valid());
 
     // cheapest s_heap (gives index to device_ctx.rr_nodes) in current route tree to be expanded on
     t_heap * cheapest{get_heap_head()};
+    ++router_stats.heap_pops;
 
     if (cheapest == NULL) {
         auto& device_ctx = g_vpr_ctx.device();
@@ -910,6 +914,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
         free_heap_data(cheapest);
         cheapest = get_heap_head();
+        ++router_stats.heap_pops;
 
         if (cheapest == NULL) { /* Impossible routing.  No path for net. */
             auto& device_ctx = g_vpr_ctx.device();
@@ -1081,7 +1086,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         float target_criticality, float astar_fac, route_budgets& budgeting_inf,
         float max_delay, float min_delay,
-        float target_delay, float short_path_crit) {
+        float target_delay, float short_path_crit, RouterStats& router_stats) {
 
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
@@ -1122,6 +1127,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream);
 
+        ++router_stats.heap_pushes;
     }
 
     linked_rt_edge = rt_node->u.child_list;
@@ -1130,7 +1136,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         child_node = linked_rt_edge->child;
         add_route_tree_to_heap(child_node, target_node, target_criticality,
                 astar_fac, budgeting_inf, max_delay, min_delay,
-                target_delay, short_path_crit);
+                target_delay, short_path_crit, router_stats);
         linked_rt_edge = linked_rt_edge->next;
     }
 }
@@ -1961,13 +1967,13 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ------------------\n");
-    vtr::printf("Iter   Time  Re-Rtd   Overused RR Nodes        Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ    Est Overused RR\n");
-    vtr::printf("      (sec)   Conns                                           (ns)       (ns)       (ns)       (ns)       (ns)     Iter              Slope\n");
-    vtr::printf("---- ------ ------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- -------- ------------------\n");
+    vtr::printf("---- ------ ------- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    vtr::printf("Iter   Time    Heap    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    vtr::printf("      (sec)    push     pop    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    vtr::printf("---- ------ ------- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
+static void print_route_status(int itry, double elapsed_sec, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
@@ -1978,19 +1984,38 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
     //Elapsed Time
     vtr::printf(" %6.1f", elapsed_sec);
 
+    //Heap push/pop
+    constexpr int HEAP_OP_DIGITS = 7;
+    constexpr int HEAP_OP_SCI_PRECISION = 2;
+    pretty_print_uint(" ", router_stats.heap_pushes, HEAP_OP_DIGITS, HEAP_OP_SCI_PRECISION);
+    pretty_print_uint(" ", router_stats.heap_pops, HEAP_OP_DIGITS, HEAP_OP_SCI_PRECISION);
+
+    //Rerouted nets
+    constexpr int NET_ROUTED_DIGITS = 7;
+    constexpr int NET_ROUTED_SCI_PRECISION = 2;
+    pretty_print_uint(" ", router_stats.nets_routed, NET_ROUTED_DIGITS, NET_ROUTED_SCI_PRECISION);
+
     //Rerouted connections
-    vtr::printf(" %7.2g", float(connections_routed));
+    constexpr int CONN_ROUTED_DIGITS = 7;
+    constexpr int CONN_ROUTED_SCI_PRECISION = 2;
+    pretty_print_uint(" ", router_stats.connections_routed, CONN_ROUTED_DIGITS, CONN_ROUTED_SCI_PRECISION);
 
     //Overused RR nodes
-    vtr::printf(" %8.3g (%7.4f%)", float(overuse_info.overused_nodes()), overuse_info.overused_node_ratio()*100);
+    constexpr int OVERUSE_DIGITS = 7;
+    constexpr int OVERUSE_SCI_PRECISION = 2;
+    pretty_print_uint(" ", overuse_info.overused_nodes(), OVERUSE_DIGITS, OVERUSE_SCI_PRECISION);
+    vtr::printf(" (%6.3f%)", overuse_info.overused_node_ratio()*100);
 
     //Wirelength
-    vtr::printf(" %9.4g (%4.1f%)", float(wirelength_info.used_wirelength()), wirelength_info.used_wirelength_ratio()*100);
+    constexpr int WL_DIGITS = 7;
+    constexpr int WL_SCI_PRECISION = 2;
+    pretty_print_uint(" ", wirelength_info.used_wirelength(), WL_DIGITS, WL_SCI_PRECISION);
+    vtr::printf(" (%4.1f%)", wirelength_info.used_wirelength_ratio()*100);
 
     //CPD
     if (timing_info) {
         float cpd = timing_info->least_slack_critical_path().delay();
-        vtr::printf(" %8.3f", 1e9 * cpd);
+        vtr::printf(" %#8.3f", 1e9 * cpd);
     } else {
         vtr::printf(" %8s", "N/A");
     }
@@ -1998,7 +2023,7 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
     //sTNS
     if (timing_info) {
         float sTNS = timing_info->setup_total_negative_slack();
-        vtr::printf(" % 10.4g", 1e9 * sTNS);
+        vtr::printf(" % #10.4g", 1e9 * sTNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
@@ -2006,7 +2031,7 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
     //sWNS
     if (timing_info) {
         float sWNS = timing_info->setup_worst_negative_slack();
-        vtr::printf(" % 10.3f", 1e9 * sWNS);
+        vtr::printf(" % #10.3f", 1e9 * sWNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
@@ -2014,7 +2039,7 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
     //hTNS
     if (timing_info) {
         float hTNS = timing_info->hold_total_negative_slack();
-        vtr::printf(" % 10.4g", 1e9 * hTNS);
+        vtr::printf(" % #10.4g", 1e9 * hTNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
@@ -2022,7 +2047,7 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
     //hWNS
     if (timing_info) {
         float hWNS = timing_info->hold_worst_negative_slack();
-        vtr::printf(" % 10.3f", 1e9 * hWNS);
+        vtr::printf(" % #10.3f", 1e9 * hWNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
@@ -2038,3 +2063,15 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
 
     fflush(stdout);
 }
+
+static void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
+    //Print as integer if it will fit in the width, other wise scientific
+    if (value <= std::pow(10, num_digits) - 1) {
+        //Direct
+        vtr::printf("%s%*zu", prefix, num_digits, value);
+    } else {
+        //Scientific
+        vtr::printf("%s%#*.*g", prefix, num_digits, scientific_precision, float(value));
+    }
+}
+
