@@ -183,7 +183,7 @@ static void print_route_status_header();
 static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
-        float est_success_iteration, float overuse_slope);
+        float est_success_iteration);
 static int round_up(float x);
 
 /************************ Subroutine definitions *****************************/
@@ -324,7 +324,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
          */
         bool routing_is_feasible = feasible_routing();
         float est_success_iteration = routing_predictor.estimate_success_iteration();
-        float est_overuse_slope = routing_predictor.estimate_overuse_slope();
 
         overuse_info = calculate_overuse_info();
         wirelength_info = calculate_wirelength_info();
@@ -357,7 +356,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, time, connections_routed, overuse_info, wirelength_info, timing_info, est_success_iteration, est_overuse_slope);
+        print_route_status(itry, time, connections_routed, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         //Update graphics
         if (itry == 1) {
@@ -1971,7 +1970,7 @@ static void print_route_status_header() {
 static void print_route_status(int itry, double elapsed_sec, size_t connections_routed,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
-        float est_success_iteration, float overuse_slope) {
+        float est_success_iteration) {
 
     //Iteration
     vtr::printf("%4d", itry);
@@ -2033,14 +2032,6 @@ static void print_route_status(int itry, double elapsed_sec, size_t connections_
         vtr::printf(" %8s", "N/A");
     } else {
         vtr::printf(" %8.0f", est_success_iteration);
-    }
-
-    //Overuse Slope
-    float overuse_slope_fraction = overuse_slope / overuse_info.overused_nodes();
-    if (std::isnan(overuse_slope)) {
-        vtr::printf(" %18s", "N/A");
-    } else {
-        vtr::printf(" % 8.2g (% 6.1f%)", overuse_slope, overuse_slope_fraction*100);
     }
 
     vtr::printf("\n");
