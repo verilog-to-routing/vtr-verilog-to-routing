@@ -35,11 +35,6 @@
 
 #define CONGESTED_SLOPE_VAL -0.04
 
-#ifdef ROUTER_DEBUG
-//Run-time flag to control when router debug information is printed
-bool router_debug = true;
-#endif
-
 class WirelengthInfo {
 public:
 
@@ -118,6 +113,16 @@ struct t_timing_driven_node_costs {
     float R_upstream = 0.;
 };
 
+/*
+ * File-scope variables
+ */
+
+#ifdef ROUTER_DEBUG
+//Run-time flag to control when router debug information is printed
+bool router_debug = true;
+
+#endif
+
 /******************** Subroutines local to route_timing.c ********************/
 
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
@@ -138,13 +143,18 @@ static void timing_driven_expand_neighbours(t_heap *current,
         float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
         float target_delay, float short_path_crit);
 
-static void timing_driven_add_to_heap_expand_non_configurable(const float criticality_fac, const float bend_cost, const float astar_fac,
+static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
 
-static void timing_driven_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+static void timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited);
+        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
+
+static void timing_driven_expand_node_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
+        std::set<int>& visited);
 
 t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
     const float criticality_fac, const float bend_cost, const float astar_fac,
@@ -1202,14 +1212,14 @@ static void timing_driven_expand_neighbours(t_heap *current,
             }
         }
 
-        timing_driven_add_to_heap_expand_non_configurable(criticality_fac, bend_cost, astar_fac,
+        timing_driven_add_to_heap(criticality_fac, bend_cost, astar_fac,
                 budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
                 current, inode, to_node, iconn, target_node);
     } /* End for all neighbours */
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
-static void timing_driven_add_to_heap_expand_non_configurable(const float criticality_fac, const float bend_cost, const float astar_fac,
+static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
 
@@ -1221,72 +1231,110 @@ static void timing_driven_add_to_heap_expand_non_configurable(const float critic
     next->backward_path_cost = current->backward_path_cost;
     next->R_upstream = current->R_upstream;
 
-    std::set<int> visited;
-    timing_driven_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
-            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-            next, from_node, to_node, iconn, target_node, visited);
+    auto& device_ctx = g_vpr_ctx.device();
+    if (device_ctx.rr_nodes[to_node].num_non_configurable_edges() == 0) {
+        //The common case where there are no non-configurable edges
+        timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
+                budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                next, from_node, to_node, iconn, target_node);
+    } else {
+        //The 'to_node' which we just expanded to has non-configurable 
+        //out-going edges which must also be expanded.
+        //
+        //Note that we only call the recursive version if there *are* non-configurable
+        //edges since creating/destroying the 'visited' tracker is very expensive (since 
+        //it is in the router's inner loop). Since non-configurable edges are relatively
+        //rare this is reasonable.
+        //
+        //TODO: use a more efficient method of tracking visited nodes (e.g. if 
+        //      non-configurable edges become more common)
+        std::set<int> visited;
+        timing_driven_expand_node_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
+                budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                next, from_node, to_node, iconn, target_node,
+                visited);
+    }
 
     add_to_heap(next);
 }
 
-static void timing_driven_expand_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+//Updates current (path step and costs) to account for the step taken to reach to_node
+static void timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, std::set<int>& visited) {
+        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
 
-    VTR_ASSERT(current);
-
-    if (!visited.count(to_node)) {
-        visited.insert(to_node);
-
-        auto& device_ctx = g_vpr_ctx.device();
 
 #ifdef ROUTER_DEBUG
-        if (router_debug) {
-            bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
-            if (reached_via_non_configurable_edge) {
-                vtr::printf("        Force Expanding to node %d", to_node);
-            } else {
-                vtr::printf("      Expanding to node %d", to_node);
-            }
-            vtr::printf("\n");
+    if (router_debug) {
+        auto& device_ctx = g_vpr_ctx.device();
+        bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
+        if (reached_via_non_configurable_edge) {
+            vtr::printf("        Force Expanding to node %d", to_node);
+        } else {
+            vtr::printf("      Expanding to node %d", to_node);
         }
+        vtr::printf("\n");
+    }
 #endif
 
-        t_timing_driven_node_costs old_costs;
-        old_costs.backward_cost = current->backward_path_cost;
-        old_costs.total_cost = current->cost;
-        old_costs.R_upstream = current->R_upstream;
+    t_timing_driven_node_costs old_costs;
+    old_costs.backward_cost = current->backward_path_cost;
+    old_costs.total_cost = current->cost;
+    old_costs.R_upstream = current->R_upstream;
 
-        auto new_costs = evaluate_timing_driven_node_costs(old_costs,
-                            criticality_fac, bend_cost, astar_fac,
-                            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                            from_node, to_node, iconn, target_node);
+    auto new_costs = evaluate_timing_driven_node_costs(old_costs,
+                        criticality_fac, bend_cost, astar_fac,
+                        budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                        from_node, to_node, iconn, target_node);
 
-        //Record how we reached this node
-        current->previous.emplace_back(to_node, from_node, iconn);
+    //Record how we reached this node
+    current->previous.emplace_back(to_node, from_node, iconn);
 
-        //Since this heap element may represent multiple (non-configurably connected) nodes,
-        //keep the minimum cost to the target
-        if (new_costs.total_cost < current->cost) {
-            current->cost = new_costs.total_cost;
-            current->backward_path_cost = new_costs.backward_cost;
-            current->R_upstream = new_costs.R_upstream;
-            current->index = to_node;
-        }
-
-        //Consider any non-configurable edges which must be expanded for correctness
-        for (int iconn_next : device_ctx.rr_nodes[to_node].non_configurable_edges()) {
-            VTR_ASSERT_SAFE(!device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next)); //Forced expansion
-
-            int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
-
-            timing_driven_expand_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
-                    budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                    current, to_node, to_to_node, iconn_next, target_node, visited);
-        }
+    //Since this heap element may represent multiple (non-configurably connected) nodes,
+    //keep the minimum cost to the target
+    if (new_costs.total_cost < current->cost) {
+        current->cost = new_costs.total_cost;
+        current->backward_path_cost = new_costs.backward_cost;
+        current->R_upstream = new_costs.R_upstream;
+        current->index = to_node;
     }
 }
 
+//Updates current (path stage and costs) to account for the step taken to reach to_node,
+//and any of it's non-configurably connected nodes
+static void timing_driven_expand_node_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
+        const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
+        t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
+        std::set<int>& visited
+        ) {
+
+    VTR_ASSERT(current);
+
+    if (visited.count(to_node)) {
+        return;
+    }
+
+    visited.insert(to_node);
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
+            budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+            current, from_node, to_node, iconn, target_node);
+
+    //Consider any non-configurable edges which must be expanded for correctness
+    for (int iconn_next : device_ctx.rr_nodes[to_node].non_configurable_edges()) {
+        VTR_ASSERT_SAFE(!device_ctx.rr_nodes[to_node].edge_is_configurable(iconn_next)); //Forced expansion
+
+        int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
+
+        timing_driven_expand_node_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
+                budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
+                current, to_node, to_to_node, iconn_next, target_node, visited);
+    }
+}
+
+//Calculates the cost of reaching to_node
 t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
     const float criticality_fac, const float bend_cost, const float astar_fac,
     const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
