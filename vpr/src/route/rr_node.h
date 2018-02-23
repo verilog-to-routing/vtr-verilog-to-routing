@@ -51,6 +51,9 @@
 class t_rr_node {
     public: //Types
         
+        //An iterator that dereferences to an edge index
+        //
+        //Used inconjunction with vtr::Range to return ranges of edge indices
         class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, short> {
             public:
             edge_idx_iterator(value_type init): value_(init) {}
