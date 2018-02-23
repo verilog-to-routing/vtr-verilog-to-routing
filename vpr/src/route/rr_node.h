@@ -107,8 +107,8 @@ class t_rr_node {
         e_side side() const;
         const char *side_string() const;
 
-        float R() const { return R_; }
-        float C() const { return C_; }
+        float R() const;
+        float C() const;
 
 
     public: //Mutators

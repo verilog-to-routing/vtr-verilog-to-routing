@@ -108,9 +108,18 @@ bool t_rr_node::edge_is_configurable(short iedge) const {
     return device_ctx.rr_switch_inf[iswitch].configurable;
 }
 
+float t_rr_node::R() const {
+    return R_;
+}
+
+float t_rr_node::C() const {
+    return C_;
+}
+
 void t_rr_node::set_type(t_rr_type new_type) { 
     type_ = new_type; 
 }
+
 /*
 	Pass in two coordinate variables describing location of node.
 	They do not have to be in any particular order.
@@ -182,8 +191,6 @@ short t_rr_node::add_edge(int sink_node, int iswitch) {
     edges_ = std::move(edges);
     ++num_edges_;
 
-    edges_partitioned_ = false;
-
     return num_edges_;
 }
 
@@ -198,8 +205,6 @@ void t_rr_node::partition_edges() {
     auto first_non_config_edge = std::partition(edges_.get(), edges_.get() + num_edges_, is_configurable);
 
     num_configurable_edges_ = std::distance(edges_.get(), first_non_config_edge);
-
-    edges_partitioned_ = true;
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {
