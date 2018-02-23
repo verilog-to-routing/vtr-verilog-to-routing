@@ -51,7 +51,7 @@
 class t_rr_node {
     public: //Types
         
-        class edge_idx_iterator : public std::iterator<std::random_access_iterator_tag, short> {
+        class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, short> {
             public:
             edge_idx_iterator(value_type init): value_(init) {}
             iterator operator++() { value_ += 1; return *this; }
