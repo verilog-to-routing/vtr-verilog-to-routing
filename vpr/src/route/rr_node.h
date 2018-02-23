@@ -220,12 +220,6 @@ struct t_rr_indexed_data {
 	float T_linear;
 	float T_quadratic;
 	float C_load;
-
-	/* Power Estimation: Wire capacitance in (Farads * tiles / meter)
-	 * This is used to calculate capacitance of this segment, by
-	 * multiplying it by the length per tile (meters/tile).
-	 * This is only the wire capacitance, not including any switches */
-	float C_tile_per_m;
 };
 
 #endif
