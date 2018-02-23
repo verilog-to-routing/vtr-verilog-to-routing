@@ -55,6 +55,10 @@ short t_rr_node::cost_index() const {
 	return cost_index_;
 }
 
+short t_rr_node::rc_index() const {
+	return rc_index_;
+}
+
 short t_rr_node::capacity() const {
 	return capacity_;
 }
@@ -109,11 +113,13 @@ bool t_rr_node::edge_is_configurable(short iedge) const {
 }
 
 float t_rr_node::R() const {
-    return R_;
+    auto& device_ctx = g_vpr_ctx.device();
+    return device_ctx.rr_rc_data[rc_index()].R;
 }
 
 float t_rr_node::C() const {
-    return C_;
+    auto& device_ctx = g_vpr_ctx.device();
+    return device_ctx.rr_rc_data[rc_index()].C;
 }
 
 void t_rr_node::set_type(t_rr_type new_type) { 
@@ -169,6 +175,9 @@ void t_rr_node::set_class_num(short new_class_num) {
 
 void t_rr_node::set_cost_index(short new_cost_index) {
 	cost_index_ = new_cost_index;
+}
+void t_rr_node::set_rc_index(short new_rc_index) {
+	rc_index_ = new_rc_index;
 }
 
 void t_rr_node::set_capacity(short new_capacity) {
@@ -228,14 +237,6 @@ void t_rr_node::set_side(e_side new_side) {
 	dir_side_.side = new_side;
 }
 
-void t_rr_node::set_R(float new_R) { 
-    R_ = new_R; 
-}
-
-void t_rr_node::set_C(float new_C) { 
-    C_ = new_C; 
-}
-
 void t_rr_node::set_edge_sink_node(short iedge, int sink_node) { 
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(sink_node >= 0);
@@ -246,4 +247,33 @@ void t_rr_node::set_edge_switch(short iedge, short switch_index) {
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(switch_index >= 0);
     edges_[iedge].switch_id = switch_index; 
+}
+
+t_rr_rc_data::t_rr_rc_data(float Rval, float Cval)
+    : R(Rval)
+    , C(Cval)
+    {}
+
+
+short find_create_rr_rc_data(const float R, const float C) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    auto match = [&](const t_rr_rc_data& val) {
+        return val.R == R
+            && val.C == C;
+    };
+
+    //Just a linear search for now
+    auto itr = std::find_if(device_ctx.rr_rc_data.begin(), 
+                            device_ctx.rr_rc_data.end(),
+                            match);
+
+    if (itr == device_ctx.rr_rc_data.end()) {
+        //Note found -> create it
+        device_ctx.rr_rc_data.emplace_back(R, C); 
+
+        itr = --device_ctx.rr_rc_data.end(); //Iterator to inserted value
+    }
+
+    return std::distance(device_ctx.rr_rc_data.begin(), itr);
 }

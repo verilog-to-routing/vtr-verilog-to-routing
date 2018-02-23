@@ -32,14 +32,6 @@
  * switches[0..num_edges-1]:  Array of switch indexes for each of the        *
  *                            edges leaving this node.                       *
  *                                                                           *
- * The following parameters are only needed for timing analysis.             *
- * R:  Resistance to go through this node.  This is only metal               *
- *     resistance (end to end, so conservative) -- it doesn't include the    *
- *     switch that leads to another rr_node.                                 *
- * C:  Total capacitance of this node.  Includes metal capacitance, the      *
- *     input capacitance of all switches hanging off the node, the           *
- *     output capacitance of all switches to the node, and the connection    *
- *     box buffer capacitances hanging off it.                               *
  * direction: if the node represents a track, this field                     *
  *            indicates the direction of the track. Otherwise                *
  *            the value contained in the field should be                     *
@@ -75,12 +67,12 @@ class t_rr_node {
         const char *type_string() const; /* Retrieve type as a string */
 
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
-        edge_idx_range configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
-        edge_idx_range non_configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
+        edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
+        edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
 
         short num_edges() const { return num_edges_; }
-        short num_configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return num_configurable_edges_; }
-        short num_non_configurable_edges() const { VTR_ASSERT_SAFE(edges_partitioned_); return num_edges() - num_configurable_edges(); }
+        short num_configurable_edges() const { return num_configurable_edges_; }
+        short num_non_configurable_edges() const { return num_edges() - num_configurable_edges(); }
 
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
@@ -101,6 +93,7 @@ class t_rr_node {
         short class_num() const; //Same as ptc_num() but checks that type() is consistent
 
         short cost_index() const;
+        short rc_index() const;
         e_direction direction() const;
         const char *direction_string() const;
 
@@ -141,12 +134,10 @@ class t_rr_node {
 
 
         void set_cost_index(short);
+        void set_rc_index(short);
 
         void set_direction(e_direction);
         void set_side(e_side);
-
-        void set_R(float new_R);
-        void set_C(float new_C);
 
     private: //Types
         //The edge information is stored in a structure to economize on the number of pointers held
@@ -171,24 +162,19 @@ class t_rr_node {
         short fan_in_ = 0;
         short capacity_ = -1;
 
-        float R_ = 0.;
-        float C_ = 0.;
-
         //Note: we use a plain array and a single size counter to save space vs std::vector
         //      (using std::vector's nearly doubles the size of the class)
         std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
         short num_edges_ = 0;
         short num_configurable_edges_ = 0;
 
+        short rc_index_ = -1;
+
         union {
             e_direction direction; //Valid only for CHANX/CHANY
             e_side side; //Valid only for IPINs/OPINs
         } dir_side_;
         t_rr_type type_ = NUM_RR_TYPES;
-
-        //Extra sanity check to ensure edges are partitioned when partitioning 
-        //is required for correct results
-        bool edges_partitioned_ = false;
 };
 
 
@@ -224,5 +210,37 @@ struct t_rr_indexed_data {
 	float T_quadratic;
 	float C_load;
 };
+
+/* 
+ * Reistance/Capacitance data for an RR Nodes
+ *
+ * In practice many RR nodes have the same values, so they are fly-weighted
+ * to keep t_rr_node small. Each RR node holds an rc_index which allows 
+ * retrieval of it's RC data.
+ *
+ * R:  Resistance to go through an RR node.  This is only metal             
+ *     resistance (end to end, so conservative) -- it doesn't include the  
+ *     switch that leads to another rr_node.                               
+ * C:  Total capacitance of an RR node.  Includes metal capacitance, the    
+ *     input capacitance of all switches hanging off the node, the         
+ *     output capacitance of all switches to the node, and the connection  
+ *     box buffer capacitances hanging off it.                             
+ */
+struct t_rr_rc_data {
+    t_rr_rc_data(float Rval, float Cval);
+
+    float R;
+    float C;
+};
+
+/*
+ * Returns the index to a t_rr_rc_data matching the specified values.
+ *
+ * If an existing t_rr_rc_data matches the specified R/C it's index
+ * is returned, otherwise the t_rr_rc_data is created.
+ *
+ * The returned indicies index into DeviceContext.rr_rc_data.
+ */
+short find_create_rr_rc_data(const float R, const float C);
 
 #endif

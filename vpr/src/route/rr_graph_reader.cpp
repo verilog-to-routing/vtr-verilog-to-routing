@@ -359,13 +359,14 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         //-------
         timingSubnode = get_single_child(rr_node, "timing", loc_data, OPTIONAL);
 
+        float R = 0.;
+        float C = 0.;
         if (timingSubnode) {
-            node.set_R(get_attribute(timingSubnode, "R", loc_data).as_float());
-            node.set_C(get_attribute(timingSubnode, "C", loc_data).as_float());
-        } else {
-            node.set_R(0);
-            node.set_C(0);
+            R = get_attribute(timingSubnode, "R", loc_data).as_float();
+            C = get_attribute(timingSubnode, "C", loc_data).as_float();
         }
+        node.set_rc_index(find_create_rr_rc_data(R, C));
+
         //clear each node edge
         node.set_num_edges(0);
 

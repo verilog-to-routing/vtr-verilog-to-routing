@@ -134,6 +134,9 @@ struct DeviceContext : public Context {
     int num_rr_indexed_data;
     t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */
 
+    //Fly-weighted Resistance/Capacitance data for RR Nodes
+    std::vector<t_rr_rc_data> rr_rc_data;
+
     //The indicies of rr nodes of a given type at a specific x,y grid location
     t_rr_node_indices rr_node_indices; //[0..NUM_RR_TYPES-1][0..grid.width()-1][0..grid.width()-1][0..size-1]
 

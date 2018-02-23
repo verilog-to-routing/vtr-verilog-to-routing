@@ -44,7 +44,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) vtr::calloc(maxlen, sizeof(float));
 
+    std::vector<float> rr_node_C(device_ctx.num_rr_nodes, 0.); //Stores the final C
+
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+
+        //The C may have already been partly initialized (e.g. with metal capacitance)
+        rr_node_C[inode] = device_ctx.rr_nodes[inode].C();
 
 		from_rr_type = device_ctx.rr_nodes[inode].type();
 
@@ -80,8 +85,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 					 * input capacitance of the largest one.                        */
 
 					if (!buffered && inode < to_node) { /* Pass transistor. */
-						device_ctx.rr_nodes[inode].set_C(device_ctx.rr_nodes[inode].C() + Cin);
-						device_ctx.rr_nodes[to_node].set_C(device_ctx.rr_nodes[to_node].C() + Cout);
+						rr_node_C[inode] += Cin;
+						rr_node_C[to_node] += Cout;
 					}
 
 					else if (buffered) {
@@ -89,7 +94,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						if (device_ctx.rr_nodes[to_node].direction() == BI_DIRECTION) {
 							/* For multiple-driver architectures the output capacitance can
 							 * be added now since each edge is actually a driver */
-							device_ctx.rr_nodes[to_node].set_C(device_ctx.rr_nodes[to_node].C() + Cout);
+							rr_node_C[to_node] += Cout;
 						}
 						isblock = seg_index_of_sblock(inode, to_node);
 						buffer_Cin[isblock] = max(buffer_Cin[isblock], Cin);
@@ -105,12 +110,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						   at least one logic block input connects. */
 						icblock = seg_index_of_cblock(from_rr_type, to_node);
 						if (cblock_counted[icblock] == false) {
-							device_ctx.rr_nodes[inode].set_C(device_ctx.rr_nodes[inode].C() + C_ipin_cblock);
+							rr_node_C[inode] += C_ipin_cblock;
 							cblock_counted[icblock] = true;
 						}
 					} else {
 						/* No track buffer. Simply add the capacitance onto the wire */
-						device_ctx.rr_nodes[inode].set_C(device_ctx.rr_nodes[inode].C() + C_ipin_cblock);
+						rr_node_C[inode] += C_ipin_cblock;
 					}
 				}
 			} /* End loop over all edges of a node. */
@@ -141,7 +146,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			}
 
 			for (isblock = iseg_low - 1; isblock <= iseg_high; isblock++) {
-				device_ctx.rr_nodes[inode].set_C(device_ctx.rr_nodes[inode].C() + buffer_Cin[isblock]); /* Biggest buf Cin at loc */
+				rr_node_C[inode] += buffer_Cin[isblock]; /* Biggest buf Cin at loc */
 				buffer_Cin[isblock] = 0.;
 			}
 
@@ -160,7 +165,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				if (device_ctx.rr_nodes[to_node].direction() == BI_DIRECTION) {
 					Cout = device_ctx.rr_switch_inf[switch_index].Cout;
 					to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge); /* Will be CHANX or CHANY */
-					device_ctx.rr_nodes[to_node].set_C(device_ctx.rr_nodes[to_node].C() + Cout);
+					rr_node_C[to_node] += Cout;
 				}
 			}
 		}
@@ -187,8 +192,14 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		}
 	}
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-		device_ctx.rr_nodes[inode].set_C(device_ctx.rr_nodes[inode].C() + Couts_to_add[inode]);
+		rr_node_C[inode] += Couts_to_add[inode];
 	}
+
+    //Create the final flywieghted t_rr_rc_data
+	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+        device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(device_ctx.rr_nodes[inode].R(), rr_node_C[inode]));
+    }
+
 	free(Couts_to_add);
 	free(cblock_counted);
 	free(buffer_Cin);

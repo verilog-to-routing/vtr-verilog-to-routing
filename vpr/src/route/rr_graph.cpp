@@ -1292,8 +1292,9 @@ static void build_rr_sinks_sources(const int i, const int j,
         /* Things common to both SOURCEs and SINKs.   */
         L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
         L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
-        L_rr_node[inode].set_R(0);
-        L_rr_node[inode].set_C(0);
+        float R = 0.;
+        float C = 0.;
+        L_rr_node[inode].set_rc_index(find_create_rr_rc_data(R, C));
         L_rr_node[inode].set_ptc_num(iclass);
     }
 
@@ -1335,8 +1336,9 @@ static void build_rr_sinks_sources(const int i, const int j,
 
                         /* Common to both DRIVERs and RECEIVERs */
                         L_rr_node[inode].set_capacity(1);
-                        L_rr_node[inode].set_C(0);
-                        L_rr_node[inode].set_R(0);
+                        float R = 0.;
+                        float C = 0.;
+                        L_rr_node[inode].set_rc_index(find_create_rr_rc_data(R, C));
                         L_rr_node[inode].set_ptc_num(ipin);
 
                         //Note that we store the grid tile location and side where the pin is located,
@@ -1541,8 +1543,9 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         }
 
         int length = end - start + 1;
-        L_rr_node[node].set_R(length * seg_details[track].Rmetal);
-        L_rr_node[node].set_C(length * seg_details[track].Cmetal);
+        float R = length * seg_details[track].Rmetal;
+        float C = length * seg_details[track].Cmetal;
+        L_rr_node[node].set_rc_index(find_create_rr_rc_data(R, C));
 
         L_rr_node[node].set_ptc_num(track);
         L_rr_node[node].set_type(chan_type);
