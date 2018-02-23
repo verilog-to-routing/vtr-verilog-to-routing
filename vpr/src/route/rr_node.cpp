@@ -191,13 +191,13 @@ void t_rr_node::set_fan_in(short new_fan_in) {
 }
 
 short t_rr_node::add_edge(int sink_node, int iswitch) {
-    auto edges = std::make_unique<t_rr_edge[]>(num_edges_ + 1);
-    std::copy_n(edges_.get(), num_edges_, edges.get());
+    auto new_edges = std::make_unique<t_rr_edge[]>(num_edges_ + 1);
+    std::copy_n(edges_.get(), num_edges_, new_edges.get());
 
-    edges[num_edges_].sink_node = sink_node;
-    edges[num_edges_].switch_id = iswitch;
+    new_edges[num_edges_].sink_node = sink_node;
+    new_edges[num_edges_].switch_id = iswitch;
 
-    edges_ = std::move(edges);
+    edges_ = std::move(new_edges);
     ++num_edges_;
 
     return num_edges_;
