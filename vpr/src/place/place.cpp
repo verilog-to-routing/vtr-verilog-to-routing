@@ -1781,24 +1781,21 @@ static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin) {
 	if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
 		//Only estimate delay for signals routed through the inter-block
 		//routing network. Global signals are assumed to have zero delay.
-		ClusterBlockId source_block, sink_block;
-		int delta_x, delta_y;
-		t_type_ptr source_type, sink_type;
 
-		source_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin()));
-		source_type = cluster_ctx.clb_nlist.block_type(source_block);
+		ClusterBlockId source_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
+		ClusterBlockId sink_block = cluster_ctx.clb_nlist.net_pin_block(net_id, ipin);
 
-		sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + ipin));
-		sink_type = cluster_ctx.clb_nlist.block_type(sink_block);
+		VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.block_type(source_block) != NULL);
+		VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.block_type(sink_block) != NULL);
 
-		VTR_ASSERT(source_type != NULL);
-		VTR_ASSERT(sink_type != NULL);
+		int delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
+		int delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
 
-		delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
-		delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
-
-        /* Note: This heuristic is terrible on Quality of Results.  
-         * A much better heuristic is to create a more comprehensive lookup table
+        /* Note: This heuristic only considers delta_x and delta_y, a much better heuristic 
+         *       would be to to create a more comprehensive lookup table.
+         *
+         *       In particular this aproach does not accurately capture the effect of fast 
+         *       carry-chain connections.
          */
         delay_source_to_sink = get_delta_delay(delta_x, delta_y);
         if (delay_source_to_sink < 0) {
