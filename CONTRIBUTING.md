@@ -1,4 +1,4 @@
-# VTR Contribution Guidelines
+# Contribution Guidelines
 
 Thanks for considering contributing to VTR!
 Here are some helpful guidelines to follow.
