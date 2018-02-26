@@ -49,7 +49,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 
         //The C may have already been partly initialized (e.g. with metal capacitance)
-        rr_node_C[inode] = device_ctx.rr_nodes[inode].C();
+        rr_node_C[inode] += device_ctx.rr_nodes[inode].C();
 
 		from_rr_type = device_ctx.rr_nodes[inode].type();
 
