@@ -2,13 +2,117 @@
 
 
 ## Overview ##
+
 VTR uses [CMake](https://cmake.org) as it's build system.
-CMake provides a protable cross-platform build systems with many useful features.
+
+CMake provides a portable cross-platform build systems with many useful features.
 
 
 ## Unix-like ##
 For unix-like systems we provide a wrapper Makefile which supports the traditional `make` and `make clean` commands, but calls CMake behind the scenes.
 
+### Dependencies ###
+
+For the basic tools you need;
+ * Bison & Flex
+ * cmake, make and automake
+ * A modern C++ compiler supporting C++14 (such as GCC >6.0 or clang >3.6)
+ * libxml++
+ * Python
+
+For the GUI you need;
+ * Cairo
+ * FreeType
+ * Xft (libXft + libX11)
+ * fontconfig
+
+For the [regression testing and benchmarking](http://docs.verilogtorouting.org/en/latest/tutorials/titan_benchmarks/) you will need;
+ * Git
+ * Curl
+ * Perl + List::MoreUtils
+ * time
+ * zip
+
+It is also recommended you install the following development tools;
+ * ctags
+ * gdb
+ * valgrind
+ * curl
+
+For Docs generation you will need;
+ * Doxygen
+ * python-sphinx
+ * python-sphinx-rtd-theme
+ * python-recommonmark
+
+#### Debian & Ubuntu ####
+
+The following should be enough to get the basic tools + GUI going on a modern Debian or Ubuntu system;
+
+```shell
+
+apt-get install \
+	build-essential \
+	automake \
+	bison \
+	clang \
+	cmake \
+	ctags \
+	curl \
+	doxygen \
+	flex \
+	fontconfig \
+	gdb \
+	git \
+	libcairo2-dev \
+	libevent-dev \
+	libfontconfig1-dev \
+	libncurses5-dev \
+	libx11-dev \
+	libxft-dev \
+	libxml++2.6-dev \
+	perl \
+	liblist-moreutils-perl \
+	python \
+	time \
+	valgrind \
+	zip
+
+```
+
+#### Fedora ####
+
+
+The following should be enough to get the basic tools + GUI going on a modern Fedora system;
+
+```shell
+
+dnf install \
+	@development-tools \
+	automake \
+	bison \
+	clang \
+	cmake \
+	ctags \
+	curl \
+	flex \
+	fontconfig \
+	gdb \
+	git \
+	cairo-devel \
+	libevent-devel \
+	ncurses-devel \
+	libX11-devel \
+	libXft-devel \
+	libxml++-devel \
+	perl \
+	perl-List-MoreUtils \
+	python \
+	time \
+	valgrind \
+	zip
+
+```
 
 ### Building using the Makefile wrapper ###
 Run `make` from the root of the VTR source tree
