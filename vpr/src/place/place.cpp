@@ -93,7 +93,7 @@ large enough to be on the order of timing costs for normal constraints. */
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 //static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..cluster_ctx.clb_nlist.nets().size()-1] */
-static vtr::vector_map<ClusterNetId, float> net_cost, temp_net_cost;
+static vtr::vector<ClusterNetId, float> net_cost, temp_net_cost;
 
 static t_legal_pos **legal_pos = NULL; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
@@ -110,14 +110,14 @@ static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
  * particular bounding box cannot be updated incrementally before, hence the     *
  * bounding box is got from scratch, so the bounding box would definitely be     *
  * right, DO NOT update again.                                                   */
-static vtr::vector_map<ClusterNetId, char> bb_updated_before;
+static vtr::vector<ClusterNetId, char> bb_updated_before;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the timing   */
 /* driven portion of the cost function. These arrays will be set to  */
 /* (criticality * delay) for each point to point connection. */
 
-static vtr::vector_map<ClusterNetId, float *> point_to_point_timing_cost;
-static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_timing_cost;
+static vtr::vector<ClusterNetId, float *> point_to_point_timing_cost;
+static vtr::vector<ClusterNetId, float *> temp_point_to_point_timing_cost;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
@@ -128,13 +128,13 @@ static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_delay_cost;
 /* this block corresponds to, this is only required during timing-driven */
 /* placement. It is used to allow us to update individual connections on */
 /* each net */
-static vtr::vector_map<ClusterBlockId,std::vector<int>> net_pin_indices;
+static vtr::vector<ClusterBlockId,std::vector<int>> net_pin_indices;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
  * respectively.                                                             */
 
-static vtr::vector_map<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
+static vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
 /* Store the information on the blocks to be moved in a swap during     *
  * placement, in the form of array of structs instead of struct with    *
@@ -155,7 +155,7 @@ static float** chany_place_cost_fac; //[0...device_ctx.grid.height()-2]
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
-static vtr::vector_map<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
+static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
 /* The pl_macros array stores all the carry chains placement macros.   *
@@ -2077,6 +2077,8 @@ static void alloc_and_load_placement_structs(
 	auto& device_ctx = g_vpr_ctx.device();
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    size_t num_nets = cluster_ctx.clb_nlist.nets().size();
+
     init_placement_context();
 
 	alloc_legal_placements();
@@ -2091,25 +2093,26 @@ static void alloc_and_load_placement_structs(
 		|| placer_opts.enable_timing_computations) {
 		/* Allocate structures associated with timing driven placement */
 		/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
-		point_to_point_delay_cost.resize(cluster_ctx.clb_nlist.nets().size());
-		temp_point_to_point_delay_cost.resize(cluster_ctx.clb_nlist.nets().size());
+		point_to_point_delay_cost.resize(num_nets);
+		temp_point_to_point_delay_cost.resize(num_nets);
 
-		point_to_point_timing_cost.resize(cluster_ctx.clb_nlist.nets().size());
-		temp_point_to_point_timing_cost.resize(cluster_ctx.clb_nlist.nets().size());
+		point_to_point_timing_cost.resize(num_nets);
+		temp_point_to_point_timing_cost.resize(num_nets);
 
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+            size_t num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
 			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
-			point_to_point_delay_cost[net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
+			point_to_point_delay_cost[net_id] = (float *)vtr::malloc(num_sinks * sizeof(float));
 			point_to_point_delay_cost[net_id]--;
 
-			temp_point_to_point_delay_cost[net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
+			temp_point_to_point_delay_cost[net_id] = (float *)vtr::malloc(num_sinks * sizeof(float));
 			temp_point_to_point_delay_cost[net_id]--;
 
-			point_to_point_timing_cost[net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
+			point_to_point_timing_cost[net_id] = (float *)vtr::malloc(num_sinks * sizeof(float));
 			point_to_point_timing_cost[net_id]--;
 
-			temp_point_to_point_timing_cost[net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
+			temp_point_to_point_timing_cost[net_id] = (float *)vtr::malloc(num_sinks * sizeof(float));
 			temp_point_to_point_timing_cost[net_id]--;
 		}
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -2120,17 +2123,15 @@ static void alloc_and_load_placement_structs(
 		}
 	}
 
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		net_cost.insert(net_id, -1.);
-		temp_net_cost.insert(net_id, -1.);
-		bb_coords.insert(net_id, t_bb());
-		bb_num_on_edges.insert(net_id, t_bb());
+    net_cost.resize(num_nets, -1.);
+    temp_net_cost.resize(num_nets, -1.);
+    bb_coords.resize(num_nets, t_bb());
+    bb_num_on_edges.resize(num_nets, t_bb());
 
-		/* Used to store costs for moves not yet made and to indicate when a net's   *
-		* cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
-		* been recomputed.                                                          */
-		bb_updated_before.insert(net_id, NOT_UPDATED_YET);
-	}
+    /* Used to store costs for moves not yet made and to indicate when a net's   *
+    * cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
+    * been recomputed.                                                          */
+    bb_updated_before.resize(num_nets, NOT_UPDATED_YET);
 
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
@@ -2180,14 +2181,12 @@ static void alloc_and_load_try_swap_structs() {
 	/* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		ts_bb_coord_new.insert(net_id, t_bb());
-		ts_bb_edge_new.insert(net_id, t_bb());
-		ts_nets_to_update.push_back(ClusterNetId::INVALID());
-	}
+    size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
-//	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(int));
-		
+    ts_bb_coord_new.resize(num_nets, t_bb());
+    ts_bb_edge_new.resize(num_nets, t_bb());
+    ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
+
 	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
 	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));
 	blocks_affected.num_moved_blocks = 0;
@@ -3099,7 +3098,7 @@ static void check_place(float bb_cost, float timing_cost,
 	 * the final placement cost from scratch and makes sure it is      *
 	 * within roundoff of what we think the cost is.                   */
 
-	static vtr::vector_map<ClusterBlockId, int> bdone;
+	vtr::vector<ClusterBlockId, int> bdone;
 	int error = 0;
 	ClusterBlockId bnum, head_iblk, member_iblk;
 	float bb_cost_check;
@@ -3138,9 +3137,7 @@ static void check_place(float bb_cost, float timing_cost,
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-	bdone.resize(cluster_ctx.clb_nlist.blocks().size());
-	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-		bdone[blk_id] = 0;
+	bdone.resize(cluster_ctx.clb_nlist.blocks().size(), 0);
 
 	/* Step through device grid and placement. Check it against blocks */
 	for (size_t i = 0; i < device_ctx.grid.width(); i++)
