@@ -16,6 +16,11 @@ import sys
 import os
 import shlex
 
+# Markdown support
+import recommonmark
+from recommonmark.transform import AutoStructify
+
+# Cool looking ReadTheDocs theme
 import sphinx_rtd_theme
 
 html_theme = "sphinx_rtd_theme"
@@ -314,3 +319,11 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+# See https://recommonmark.readthedocs.io/en/latest/index.html#autostructify
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+            'url_resolver': lambda url: github_doc_root + url,
+            'auto_toc_tree_section': 'Contents',
+            }, True)
+    app.add_transform(AutoStructify)
