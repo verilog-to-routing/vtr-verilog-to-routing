@@ -1,4 +1,4 @@
-# Commit Proceedures
+# Commit Procedures
 
 ## For external developers
 See [Submitting Code to VTR](CONTRIBUTING.md#submitting-code-to-vtr).
