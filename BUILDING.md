@@ -13,33 +13,29 @@ For unix-like systems we provide a wrapper Makefile which supports the tradition
 
 ### Dependencies ###
 
-For the basic tools you need;
+For the basic tools you need:
  * Bison & Flex
- * cmake, make and automake
+ * cmake, make
  * A modern C++ compiler supporting C++14 (such as GCC >= 4.9 or clang >= 3.6)
- * libxml++
- * Python
 
-For the GUI you need;
+For the VPR GUI you need:
  * Cairo
  * FreeType
  * Xft (libXft + libX11)
  * fontconfig
 
-For the [regression testing and benchmarking](http://docs.verilogtorouting.org/en/latest/tutorials/titan_benchmarks/) you will need;
- * Git
- * Curl
+For the [regression testing and benchmarking](README.developers.md#running-tests) you will need:
  * Perl + List::MoreUtils
+ * Python
  * time
- * zip
 
-It is also recommended you install the following development tools;
+It is also recommended you install the following development tools:
+ * git
  * ctags
  * gdb
  * valgrind
- * curl
 
-For Docs generation you will need;
+For Docs generation you will need:
  * Doxygen
  * python-sphinx
  * python-sphinx-rtd-theme
@@ -47,71 +43,44 @@ For Docs generation you will need;
 
 #### Debian & Ubuntu ####
 
-The following should be enough to get the basic tools + GUI going on a modern Debian or Ubuntu system;
+The following should be enough to get the tools, VPR GUI and tests going on a modern Debian or Ubuntu system:
 
 ```shell
-
 apt-get install \
 	build-essential \
-	automake \
-	bison \
-	clang \
-	cmake \
-	ctags \
-	curl \
-	doxygen \
 	flex \
+	bison \
+	cmake \
 	fontconfig \
-	gdb \
-	git \
 	libcairo2-dev \
-	libevent-dev \
 	libfontconfig1-dev \
-	libncurses5-dev \
 	libx11-dev \
 	libxft-dev \
-	libxml++2.6-dev \
 	perl \
 	liblist-moreutils-perl \
 	python \
-	time \
-	valgrind \
-	zip
-
+	time
 ```
 
-#### Fedora ####
-
-
-The following should be enough to get the basic tools + GUI going on a modern Fedora system;
+For documentation generation these additional packages are required:
 
 ```shell
+apt-get install \
+	doxygen \
+	python-sphinx \
+	python-sphinx-rtd-theme \
+	python-recommonmark
+```
 
-dnf install \
-	@development-tools \
-	automake \
-	bison \
-	clang \
-	cmake \
-	ctags \
-	curl \
-	flex \
-	fontconfig \
-	gdb \
+
+For development the following additional packages are useful:
+
+```shell
+apt-get install \
 	git \
-	cairo-devel \
-	libevent-devel \
-	ncurses-devel \
-	libX11-devel \
-	libXft-devel \
-	libxml++-devel \
-	perl \
-	perl-List-MoreUtils \
-	python \
-	time \
 	valgrind \
-	zip
-
+	gdb \
+	ctags
 ```
 
 ### Building using the Makefile wrapper ###
