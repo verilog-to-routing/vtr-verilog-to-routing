@@ -10,7 +10,7 @@ In the event that you are responsible for "breaking the build", fix the build at
 
 We have some guidelines in place to help catch most of these problems:
 
-1.  Before you push code to the central repository, your code MUST pass the check-in regression test.  
+1.  Before you push code to the central repository, your code MUST pass the check-in regression test. 
     The check-in regression test is a quick way to test if any part of the VTR flow is broken.
 
     At a minimum you must run:
@@ -37,9 +37,9 @@ We have some guidelines in place to help catch most of these problems:
     See [Adding Tests](#adding-tests) for details.
 
 4.  In the event a regression test is broken, the one responsible for having the test pass is in charge of determining:
-    * If there is a bug in the source code, in which case the source code needs to be updated to fix the bug, or 
-    * If there is a problem with the test (perhaps the quality of the tool did in fact get better or perhaps there is a bug with the test itself), in which case the test needs to be updated to reflect the new changes.  
-    
+    * If there is a bug in the source code, in which case the source code needs to be updated to fix the bug, or
+    * If there is a problem with the test (perhaps the quality of the tool did in fact get better or perhaps there is a bug with the test itself), in which case the test needs to be updated to reflect the new changes. 
+   
     If the golden results need to be updated and you are sure that the new golden results are better, use the command `../scripts/parse_vtr_task.pl -create_golden your_regression_test_name_here`
 
 5.  Keep in sync with the master branch as regularly as you can (i.e. `git pull` or `git pull --rebase`).
@@ -88,9 +88,9 @@ There are 4 main regression tests:
     * MCNC20 benchmarks
     * VTR benchmarks
     * Titan 'other' benchmarks (smaller than Titan23)
-    
+   
     **Architectures:** A wider variety of architectures
-    
+   
 * `vtr_reg_weekly`: ~30 hours with `-j2`
 
     **Goal:** Full QoR and Performance evaluation.
@@ -101,7 +101,7 @@ There are 4 main regression tests:
 
     * VTR benchmarks
     * Titan23 benchmarks
-    
+   
     **Architectures:** A wide variety of architectures
 
 These can be run with `run_reg_test.pl`:
@@ -171,7 +171,7 @@ regression_tests/vtr_reg_basic/basic_no_timing
 k4_N10_memSize16384_memData64/ch_intrinsics...failed: vpr
 k4_N10_memSize16384_memData64/diffeq1...failed: vpr
 #Output trimmed...
-regression_tests/vtr_reg_basic/basic_no_timing...[Fail] 
+regression_tests/vtr_reg_basic/basic_no_timing...[Fail]
  k4_N10_memSize16384_memData64.xml/ch_intrinsics.v vpr_status: golden = success result = exited
 #Output trimmed...
 Error: 10 tests failed!
@@ -255,7 +255,7 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     $ cp strong_timing/config/config.txt strong_mytest/config/.
     ```
     You can now edit `strong_mytest/config/config.txt` to customize your test.
-    
+   
 2. Generate golden reference results
 
     Now we need to test our new test and generate 'golden' reference results.
@@ -411,7 +411,7 @@ To submit a build to coverity do the following:
 Note that we explicitly asked for gcc and g++, the coverity build tool defaults to these compilers, and may not like the default 'cc' or 'c++' (even if they are linked to gcc/g++).
 
 3. Run the coverity build tool
-    
+   
     ```shell
     #From the build directory where we ran cmake
     cov-build --dir cov-int make -j8
@@ -437,7 +437,7 @@ You may need to configure coverity to 'know' about your compiler. For example:
     ```shell
     cov-configure --compiler `which gcc-7`
     ```
-    
+   
 On unix-like systems run `scan-build make` from the root VTR directory.
 to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
 
