@@ -16,7 +16,7 @@ For unix-like systems we provide a wrapper Makefile which supports the tradition
 For the basic tools you need;
  * Bison & Flex
  * cmake, make and automake
- * A modern C++ compiler supporting C++14 (such as GCC >6.0 or clang >3.6)
+ * A modern C++ compiler supporting C++14 (such as GCC >= 4.9 or clang >= 3.6)
  * libxml++
  * Python
 
