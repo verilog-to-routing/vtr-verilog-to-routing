@@ -20,11 +20,9 @@ VTR also includes a set of benchmark designs known to work with the design flow.
    :maxdepth: 2
 
    get_vtr
-   build_vtr
    install_vtr
    cad_flow
    running_vtr
-   developing
    benchmarks
    power_estimation/index.rst
    tasks
