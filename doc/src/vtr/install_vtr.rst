@@ -13,6 +13,9 @@ Install VTR
 
 The complete VTR flow has been tested on 64-bit Linux systems.
 The flow should work in other platforms (32-bit Linux, Windows with cygwin) but this is untested.
+
+.. seealso:: More information about building VTR can be found in the :ref:`developer_guide`
+
 Please :ref:`let us know <contact>` your experience with building VTR so that we can improve the experience for others.
 
 The tools included official VTR releases have been tested for compatibility.
