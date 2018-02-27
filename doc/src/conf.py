@@ -18,7 +18,9 @@ import shlex
 
 # Markdown support
 import recommonmark
-from recommonmark.transform import AutoStructify
+
+sys.path.append(".")
+from markdown_code_symlinks import MarkdownCodeSymlinks
 
 # Cool looking ReadTheDocs theme
 import sphinx_rtd_theme
@@ -320,10 +322,10 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-# See https://recommonmark.readthedocs.io/en/latest/index.html#autostructify
 def setup(app):
-    app.add_config_value('recommonmark_config', {
-            'url_resolver': lambda url: github_doc_root + url,
-            'auto_toc_tree_section': 'Contents',
-            }, True)
-    app.add_transform(AutoStructify)
+    MarkdownCodeSymlinks.find_links()
+    app.add_config_value(
+        'recommonmark_config', {
+            'github_code_repo': 'https://github.com/verilog-to-routing/vtr-verilog-to-routing',
+        }, True)
+    app.add_transform(MarkdownCodeSymlinks)
