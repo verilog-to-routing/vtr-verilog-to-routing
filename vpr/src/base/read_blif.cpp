@@ -699,13 +699,13 @@ struct BlifAllocCallback : public blifparse::Callback {
 
 
 vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
-    vtr::LogicValue new_val;
+    vtr::LogicValue new_val = vtr::LogicValue::UNKOWN;
     switch(val) {
         case blifparse::LogicValue::TRUE: new_val = vtr::LogicValue::TRUE; break;
         case blifparse::LogicValue::FALSE: new_val = vtr::LogicValue::FALSE; break;
         case blifparse::LogicValue::DONT_CARE: new_val = vtr::LogicValue::DONT_CARE; break;
         case blifparse::LogicValue::UNKOWN: new_val = vtr::LogicValue::UNKOWN; break;
-        default: VTR_ASSERT_MSG(false, "Unkown logic value");
+        default: VTR_ASSERT_OPT_MSG(false, "Unkown logic value");
     }
     return new_val;
 }

@@ -292,12 +292,12 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                 } else {
                     PortType port_type = netlist.port_type(ports[i]);
 
-                    PinType pin_type;
+                    PinType pin_type = PinType::OPEN;
                     switch(port_type) {
                         case PortType::INPUT: //fallthrough
                         case PortType::CLOCK: pin_type = PinType::SINK; break;
                         case PortType::OUTPUT: pin_type = PinType::DRIVER; break;
-                        default: VTR_ASSERT(false);
+                        default: VTR_ASSERT_OPT_MSG(false, "Invalid port type");
                     }
                     fprintf(f, "%s", make_unconn(unconn_count, pin_type).c_str());
                 }

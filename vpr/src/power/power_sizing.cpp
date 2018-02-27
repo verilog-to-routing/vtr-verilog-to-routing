@@ -684,8 +684,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	float wirelength_out = 0;
 	float wirelength_in = 0;
 
-	int fanout_tmp;
-	float wirelength_tmp;
+	int fanout_tmp = 0;
+	float wirelength_tmp = 0;
 
 	float this_pb_interc_sidelength = 0;
 	float parent_pb_interc_sidelength = 0;

@@ -240,12 +240,12 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 PinType Netlist<BlockId, PortId, PinId, NetId>::pin_type(const PinId pin_id) const {
     auto port_id = pin_port(pin_id);
 
-    PinType type;
+    PinType type = PinType::OPEN;
     switch (port_type(port_id)) {
         case PortType::INPUT: /*fallthrough */;
         case PortType::CLOCK: type = PinType::SINK; break;
         case PortType::OUTPUT: type = PinType::DRIVER; break;
-        default: VTR_ASSERT_MSG(false, "Valid port type");
+        default: VTR_ASSERT_OPT_MSG(false, "Valid port type");
     }
     return type;
 }
