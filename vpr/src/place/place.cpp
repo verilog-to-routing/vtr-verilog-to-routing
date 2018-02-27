@@ -128,7 +128,7 @@ static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_delay_cost;
 /* this block corresponds to, this is only required during timing-driven */
 /* placement. It is used to allow us to update individual connections on */
 /* each net */
-static vtr::vector_map<ClusterBlockId,std::vector<int>> net_pin_index;
+static vtr::vector_map<ClusterBlockId,std::vector<int>> net_pin_indices;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
@@ -192,7 +192,7 @@ static void alloc_and_load_placement_structs(
 		float place_cost_exp, t_placer_opts placer_opts,
 		t_direct_inf *directs, int num_directs);
 
-static void alloc_and_load_net_pin_index();
+static void alloc_and_load_net_pin_indices();
 
 static void alloc_and_load_try_swap_structs();
 
@@ -1839,7 +1839,7 @@ static void update_td_cost(void) {
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
-			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.pin_physical_index(pin_id)];
+			net_pin = net_pin_indices[bnum][cluster_ctx.clb_nlist.pin_physical_index(pin_id)];
 
 			if (net_pin != 0) {
 				driven_by_moved_block = false;
@@ -1896,7 +1896,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
-			net_pin = net_pin_index[bnum][iblk_pin];
+			net_pin = net_pin_indices[bnum][iblk_pin];
 
 			if (net_pin != 0) { 
 				/* If this net is being driven by a block that has moved, we do not    *
@@ -2047,7 +2047,7 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 		temp_point_to_point_timing_cost.clear();
 		temp_point_to_point_delay_cost.clear();
 
-		net_pin_index.clear();
+		net_pin_indices.clear();
 	}
 
 	free_placement_macros_structs();
@@ -2134,17 +2134,17 @@ static void alloc_and_load_placement_structs(
 
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
-	alloc_and_load_net_pin_index();
+	alloc_and_load_net_pin_indices();
 
 	alloc_and_load_try_swap_structs();
 
 	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
 }
 
-/* Allocates and loads net_pin_index array, this array allows us to quickly   *
+/* Allocates and loads net_pin_indices array, this array allows us to quickly   *
 * find what pin on the net a block pin corresponds to. Returns the pointer   *
-* to the 2D net_pin_index array.                                             */
-static void alloc_and_load_net_pin_index() {
+* to the 2D net_pin_indices array.                                             */
+static void alloc_and_load_net_pin_indices() {
 	unsigned int netpin;
 	int itype, max_pins_per_clb = 0;
 
@@ -2156,10 +2156,10 @@ static void alloc_and_load_net_pin_index() {
 		max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
 
 	/* Allocate for maximum size. */
-	net_pin_index.resize(cluster_ctx.clb_nlist.blocks().size());
+	net_pin_indices.resize(cluster_ctx.clb_nlist.blocks().size());
 	
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-		net_pin_index[blk_id].resize(max_pins_per_clb);
+		net_pin_indices[blk_id].resize(max_pins_per_clb);
 
 	/* Load the values */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -2169,7 +2169,7 @@ static void alloc_and_load_net_pin_index() {
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 			int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 			ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-			net_pin_index[block_id][pin_index] = netpin;
+			net_pin_indices[block_id][pin_index] = netpin;
 			netpin++;
 		}
 	}
