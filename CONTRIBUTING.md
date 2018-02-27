@@ -15,7 +15,7 @@ That way someone (perhaps your future self!) will be able to quickly find the an
 ### I found a bug!
 While we strive to make VTR reliable and robust, bugs are inevitable in large-scale software projects.
 
-Please file a [detailed bug report](#filling-bug-reports). 
+Please file a [detailed bug report](#filling-bug-reports).
 This ensures we know about the problem and can work towards fixing it.
 
 
@@ -61,7 +61,7 @@ This information helps us to quickly reproduce (and hopefully fix) the issue:
     *This is key to getting your bug fixed.*
 
     Provided *detailed steps* to reproduce the bug, including the exact commands to reproduce the bug.
-    Attach all relevant files (e.g. FPGA architecture files, benchmark circuits, log files). 
+    Attach all relevant files (e.g. FPGA architecture files, benchmark circuits, log files).
 
     If we can't re-produce the issue it is very difficult to fix.
 
@@ -89,7 +89,7 @@ If not feature request exists you will need to describe your enhancement:
     How your proposed enhancement will work (from a user's perspective).
 
 * Contrast with current behaviour
- 
+
     How will your enhancement differ from the current behaviour (from a user's perspective).
 
 * Potential Implementation
@@ -139,7 +139,7 @@ Code-changes should also describe:
     This ensures any future changes which break your feature will be detected.
     It is also best to add tests when fixing bugs, for the same reason
 
-    See [Adding Tests](README.developers.md#adding-tests) for details on how to create new regression tests. 
+    See [Adding Tests](README.developers.md#adding-tests) for details on how to create new regression tests.
     If you aren't sure what tests are needed, ask a maintainer.
 
 * How the feature has been documented

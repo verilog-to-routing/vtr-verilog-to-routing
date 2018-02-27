@@ -1,5 +1,5 @@
 # Introduction
-The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development. 
+The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
 It then perfoms:
   * Elaboration & Synthesis (ODIN II)
@@ -33,9 +33,9 @@ Bibtex:
   author={Luu, Jason and Goeders, Jeff and Wainberg, Michael and Somerville, Andrew and Yu, Thien and Nasartschuk, Konstantin and Nasr, Miad and Wang, Sen and Liu, Tim and Ahmed, Norrudin and Kent, Kenneth B. and Anderson, Jason and Rose, Jonathan and Betz, Vaughn},
   journal = {ACM Trans. Reconfigurable Technol. Syst.},
   month={June},
-  volume={7}, 
-  number={2}, 
-  pages={6:1--6:30}, 
+  volume={7},
+  number={2},
+  pages={6:1--6:30},
   year={2014}
 }
 ```
@@ -61,16 +61,16 @@ If you have questions, or want to keep up-to-date with VTR, consider joining our
 [VTR-Commits](https://groups.google.com/forum/#!forum/vtr-commits): VTR revision control commits
 
 # Development
-This is the development trunk for the Verilog-to-Routing project. 
-Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux. 
+This is the development trunk for the Verilog-to-Routing project.
+Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux.
 You should expect that the tools are not always stable and that more work is needed to get the flow to run.
 
-For new developers, please [do the tutorial](dev/tutorial/NewDeveloperTutorial.txt). 
+For new developers, please [do the tutorial](dev/tutorial/NewDeveloperTutorial.txt).
 You will be directed back here once you ramp up.
 
-VTR development follows a classic centralized repository (svn-like) workflow. 
-The 'master' branch is supposed to be the most current stable version of the project. 
-Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull --rebase`) to keep in sync with the GitHub master. 
+VTR development follows a classic centralized repository (svn-like) workflow.
+The 'master' branch is supposed to be the most current stable version of the project.
+Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull --rebase`) to keep in sync with the GitHub master.
 When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation.
 Unstable code should remain in the developer's local copy.
 
