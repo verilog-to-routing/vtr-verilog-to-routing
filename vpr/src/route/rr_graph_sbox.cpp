@@ -39,7 +39,7 @@ vtr::NdMatrix<std::vector<int>,3> alloc_and_load_switch_block_conn(const size_t 
 	/* Currently Fs must be 3 since each track maps once to each other side */
 	VTR_ASSERT(3 == Fs);
 
-    vtr::NdMatrix<std::vector<int>,3> switch_block_conn({{{0, 4}, {0, 4}, {0, nodes_per_chan}}});
+    vtr::NdMatrix<std::vector<int>,3> switch_block_conn({4, 4, nodes_per_chan});
 
 	for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 		for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
