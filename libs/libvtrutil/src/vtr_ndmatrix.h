@@ -130,12 +130,8 @@ class NdMatrixBase {
     public: //Accessors
         //Returns the size of the matrix (number of elements) 
         size_t size() const {
-            //Size is the product of all dimension sizes
-            size_t cnt = dim_size(0);
-            for (size_t idim = 1; idim < ndims(); ++idim) {
-                cnt *= dim_size(idim);
-            }
-            return cnt;
+            VTR_ASSERT_DEBUG_MSG(calc_size() == size_, "Calculated and current matrix size must be consistent");
+            return size_;
         }
 
         //Returns true if there are no elements in the matrix
@@ -182,6 +178,7 @@ class NdMatrixBase {
         //otherwise they will be default constructed.
         void resize(std::array<size_t,N> dim_sizes, T value=T()) {
             dim_sizes_ = dim_sizes;
+            size_ = calc_size();
             alloc();
             fill(value);
         }
@@ -189,9 +186,8 @@ class NdMatrixBase {
         //Reset the matrix to size zero
         void clear() {
             data_.reset(nullptr);
-            for(size_t i = 0; i < dim_sizes_.size(); ++i) {
-                dim_sizes_[i] = 0;
-            }
+            dim_sizes_.fill(0);
+            size_ = 0;
         }
     public: //Lifetime management
         //Copy constructor
@@ -217,6 +213,7 @@ class NdMatrixBase {
         //Swap two NdMatrixBase objects
         friend void swap(NdMatrixBase<T,N>& m1, NdMatrixBase<T,N>& m2) {
             using std::swap;
+            swap(m1.size_, m2.size_);
             swap(m1.dim_sizes_, m2.dim_sizes_);
             swap(m1.data_, m2.data_);
         }
@@ -227,7 +224,18 @@ class NdMatrixBase {
             data_.reset(new T[size()]);
         }
 
+        //Returns the size of the matrix (number of elements) calucated
+        //from the current dimensions
+        size_t calc_size() const {
+            //Size is the product of all dimension sizes
+            size_t cnt = dim_size(0);
+            for (size_t idim = 1; idim < ndims(); ++idim) {
+                cnt *= dim_size(idim);
+            }
+            return cnt;
+        }
     protected:
+        size_t size_ = 0;
         std::array<size_t,N> dim_sizes_;
         std::unique_ptr<T[]> data_ = nullptr;
 };
