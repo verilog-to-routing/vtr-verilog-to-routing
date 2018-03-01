@@ -1857,23 +1857,17 @@ static void update_td_cost(void) {
 /*must only have the timing cost on the connection driving the input */
 /*pin computed */
 static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
-	ClusterNetId net_id;
-	ClusterBlockId bnum;
-	unsigned int ipin;
-	float delta_timing_cost, delta_delay_cost, temp_delay;
-	int net_pin, iblk, iblk2;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	delta_timing_cost = 0.;
-	delta_delay_cost = 0.;
+	float delta_timing_cost = 0.;
+	float delta_delay_cost = 0.;
 
 	/* Go through all the blocks moved */
-	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)	{
-		bnum = blocks_affected.moved_blocks[iblk].block_num;
+	for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)	{
+		ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 		/* Go through all the pins in the moved block */
-		for (ClusterPinId pin : cluster_ctx.clb_nlist.block_pins(bnum)) {
-			net_id = cluster_ctx.clb_nlist.pin_net(pin);
+		for (ClusterPinId pin : cluster_ctx.clb_nlist.block_pins(blk)) {
+			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin);
 
             VTR_ASSERT_SAFE(net_id);
 
@@ -1883,8 +1877,8 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
             if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
 			    //This pin is a net driver on a moved block.
 				//Re-compute all point to point connections for this net.
-				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-					temp_delay = comp_td_point_to_point_delay(net_id, ipin);
+				for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+					float temp_delay = comp_td_point_to_point_delay(net_id, ipin);
 					temp_point_to_point_delay_cost[net_id][ipin] = temp_delay;
 
 					temp_point_to_point_timing_cost[net_id][ipin] = get_timing_place_crit(net_id, ipin) * temp_delay;
@@ -1903,15 +1897,16 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
                 //Computing it here would double count the change, and mess up the
 				//delta_timing_cost value.
 				bool driven_by_moved_block = false;
-				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
+				for (int iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
                     if (cluster_ctx.clb_nlist.net_driver_block(net_id) == blocks_affected.moved_blocks[iblk2].block_num) {
 						driven_by_moved_block = true;
                     }
                 }
 				
 				if (driven_by_moved_block == false) {
-                    net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
-					temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
+                    int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
+
+					float temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
 					temp_point_to_point_delay_cost[net_id][net_pin] = temp_delay;
 
 					temp_point_to_point_timing_cost[net_id][net_pin] = get_timing_place_crit(net_id, net_pin) * temp_delay;
