@@ -1326,18 +1326,10 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 		float *delay_cost) {
 
 	/* Picks some block and moves it to another spot.  If this spot is   *
-	 * occupied, switch the blocks.  Assess the change in cost function  *
-	 * and accept or reject the move.  If rejected, return 0.  If        *
-	 * accepted return 1.  Pass back the new value of the cost function. * 
-	 * rlim is the range limiter.                                        */
-
-	int x_from, y_from, z_from, x_to, y_to, z_to;
-	ClusterBlockId b_from, bnum;
-	ClusterNetId net_id;
-	int num_nets_affected;
-	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	int iblk, inet_affected;
-	int abort_swap = false;
+	 * occupied, switch the blocks.  Assess the change in cost function. *
+	 * rlim is the range limiter.                                        *
+     * Returns whether the swap is accepted, rejected or aborted.        *
+	 * Passes back the new value of the cost functions.                  */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -1352,13 +1344,13 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
 	 * use cost functions that can go negative.                          */
 
-	delta_c = 0; /* Change in cost due to this swap. */
-	bb_delta_c = 0;
-	timing_delta_c = 0;
-	delay_delta_c = 0.0;
+	float delta_c = 0; /* Change in cost due to this swap. */
+	float bb_delta_c = 0;
+	float timing_delta_c = 0;
+	float delay_delta_c = 0.0;
 	
 	/* Pick a random block to be swapped with another random block    */
-	b_from = (ClusterBlockId)vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1);
+	auto b_from = ClusterBlockId(vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1));
 
 	/* If the pins are fixed we never move them from their initial    *
 	 * random locations.  The code below could be made more efficient *
@@ -1370,9 +1362,13 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 		b_from = (ClusterBlockId)vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1);
 	}
 
-	x_from = place_ctx.block_locs[b_from].x;
-	y_from = place_ctx.block_locs[b_from].y;
-	z_from = place_ctx.block_locs[b_from].z;
+	int x_from = place_ctx.block_locs[b_from].x;
+	int y_from = place_ctx.block_locs[b_from].y;
+	int z_from = place_ctx.block_locs[b_from].z;
+
+    int x_to = OPEN;
+    int y_to = OPEN;
+    int z_to = OPEN;
 
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[x_from][y_from].type;
@@ -1403,18 +1399,18 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	 * of the blocks. Abort the swap if the to_block is part of a  *
 	 * macro (not supported yet).                                  */
 	
-	abort_swap = find_affected_blocks(b_from, x_to, y_to, z_to);
+	bool abort_swap = find_affected_blocks(b_from, x_to, y_to, z_to);
 
 	if (abort_swap == false) {
 
 		// Find all the nets affected by this swap and update thier bounding box
-		num_nets_affected = find_affected_nets_and_update_bb();
+		int num_nets_affected = find_affected_nets_and_update_bb();
 			
 		/* Now update the cost function (since the net bounding boxes are up-to-date).
          * The cost is only updated once for every net.
          */
-		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-			net_id = ts_nets_to_update[inet_affected];
+		for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+			ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
 			temp_net_cost[net_id] = get_net_cost(net_id, &ts_bb_coord_new[net_id]);
 			bb_delta_c += temp_net_cost[net_id] - net_cost[net_id];
@@ -1450,8 +1446,8 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 			}
 
 			/* update net cost functions and reset flags. */
-			for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-				net_id = ts_nets_to_update[inet_affected];
+			for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+				ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
 				bb_coords[net_id] = ts_bb_coord_new[net_id];
 				if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
@@ -1466,7 +1462,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 			/* Update clb data structures since we kept the move. */
 			/* Swap physical location */
-			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+			for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 
 				x_to = blocks_affected.moved_blocks[iblk].xnew;
 				y_to = blocks_affected.moved_blocks[iblk].ynew;
@@ -1493,14 +1489,14 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 		} else { /* Move was rejected.  */
 
 			/* Reset the net cost function flags first. */
-			for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-				net_id = ts_nets_to_update[inet_affected];
+			for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
+				ClusterNetId net_id = ts_nets_to_update[inet_affected];
 				temp_net_cost[net_id] = -1;
 				bb_updated_before[net_id] = NOT_UPDATED_YET;
 			}
 
 			/* Restore the place_ctx.block_locs data structures to their state before the move. */
-			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+			for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
 				place_ctx.block_locs[b_from].x = blocks_affected.moved_blocks[iblk].xold;
@@ -1521,7 +1517,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	} else {
 
 		/* Restore the place_ctx.block_locs data structures to their state before the move. */
-		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+		for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 			b_from = blocks_affected.moved_blocks[iblk].block_num;
 
 			place_ctx.block_locs[b_from].x = blocks_affected.moved_blocks[iblk].xold;
