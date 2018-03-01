@@ -285,6 +285,10 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		
 static int find_affected_nets_and_update_bb(void);
 
+static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
+
+static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
+
 static float get_net_cost(ClusterNetId net_id, t_bb *bb_ptr);
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
@@ -1555,38 +1559,54 @@ static int find_affected_nets_and_update_bb() {
 				continue; //Global nets are assumed to span the whole chip, and do not effect costs
 			
             //Record effected nets
-			if (temp_net_cost[net_id] < 0.) { 
-				//Net not marked yet.
-				ts_nets_to_update[num_affected_nets] = net_id;
-				num_affected_nets++;
-
-				//Flag to say we've marked this net.
-				temp_net_cost[net_id] = 1.;
-			}
+            record_affected_net(net_id, num_affected_nets);
 
             //Update the net bounding boxes.
-            //
-            //Do not update the net cost here since it should only be updated 
-            //once per net, not once per pin.
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
-                if(bb_updated_before[net_id] == NOT_UPDATED_YET)
-                    //Brute force bounding box recomputation, once only for speed.
-                    get_non_updateable_bb(net_id, &ts_bb_coord_new[net_id]);
-            } else {
-                int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
-
-                //Incremental bounding box update
-                update_bb(net_id, &ts_bb_coord_new[net_id],
-                        &ts_bb_edge_new[net_id], 
-                        blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(blk)->pin_width_offset[iblk_pin],
-                        blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type(blk)->pin_height_offset[iblk_pin],
-                        blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type(blk)->pin_width_offset[iblk_pin],
-                        blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type(blk)->pin_height_offset[iblk_pin]);
-            }
-
+            update_net_bb(net_id, iblk, blk, blk_pin);
 		}
 	}
 	return num_affected_nets;
+}
+
+static void record_affected_net(const ClusterNetId net, int& num_affected_nets) {
+    //Record effected nets
+    if (temp_net_cost[net] < 0.) { 
+        //Net not marked yet.
+        ts_nets_to_update[num_affected_nets] = net;
+        num_affected_nets++;
+
+        //Flag to say we've marked this net.
+        temp_net_cost[net] = 1.;
+    }
+}
+
+static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //Update the net bounding boxes.
+    //
+    //Do not update the net cost here since it should only be updated 
+    //once per net, not once per pin.
+    if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
+        if(bb_updated_before[net] == NOT_UPDATED_YET)
+            //Brute force bounding box recomputation, once only for speed.
+            get_non_updateable_bb(net, &ts_bb_coord_new[net]);
+    } else {
+        int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
+
+        t_type_ptr blk_type = cluster_ctx.clb_nlist.block_type(blk);
+        int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
+        int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
+
+        //Incremental bounding box update
+        update_bb(net, &ts_bb_coord_new[net],
+                &ts_bb_edge_new[net], 
+                blocks_affected.moved_blocks[iblk].xold + pin_width_offset,
+                blocks_affected.moved_blocks[iblk].yold + pin_height_offset,
+                blocks_affected.moved_blocks[iblk].xnew + pin_width_offset,
+                blocks_affected.moved_blocks[iblk].ynew + pin_height_offset);
+    }
+
 }
 
 static bool find_to(t_type_ptr type, float rlim, 
