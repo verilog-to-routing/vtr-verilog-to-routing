@@ -66,14 +66,14 @@ using namespace std;
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
  * costs.                                                                 */
-enum cost_methods {
+enum e_cost_methods {
 	NORMAL, CHECK
 };
 
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
-enum swap_result {
+enum e_swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
@@ -220,13 +220,13 @@ static void initial_placement_location(int * free_locations, ClusterBlockId blk_
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		const char *pad_loc_file);
 
-static float comp_bb_cost(enum cost_methods method);
+static float comp_bb_cost(e_cost_methods method);
 
 static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
-static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
+static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim,
         enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -267,7 +267,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay);
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
-static enum swap_result assess_swap(float delta_c, float t);
+static e_swap_result assess_swap(float delta_c, float t);
 
 static bool find_to(t_type_ptr type, float rlim, 
 		int x_from, int y_from, 
@@ -925,7 +925,6 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	SetupTimingInfo& timing_info) {
 
 	int inner_crit_iter_count, inner_iter;
-	int swap_result;
 
 	stats->av_cost = 0.;
 	stats->av_bb_cost = 0.;
@@ -938,7 +937,7 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 
 	/* Inner loop begins */
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-		swap_result = try_swap(t, cost, bb_cost, timing_cost, rlim,
+		e_swap_result swap_result = try_swap(t, cost, bb_cost, timing_cost, rlim,
 			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 			inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost);
 
@@ -1108,7 +1107,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 	/* Finds the starting temperature (hot condition).              */
 
-	int i, num_accepted, move_lim, swap_result;
+	int i, num_accepted, move_lim;
 	double std_dev, av, sum_of_squares; /* Double important to avoid round off */
 
 	if (annealing_sched.type == USER_SCHED)
@@ -1125,7 +1124,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	/* Try one move per block.  Set t high so essentially all accepted. */
 
 	for (i = 0; i < move_lim; i++) {
-		swap_result = try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
+		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
 				place_algorithm, timing_tradeoff,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr);
 		
@@ -1320,7 +1319,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
 }
 
-static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
+static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
 		float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -1332,7 +1331,6 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * accepted return 1.  Pass back the new value of the cost function. * 
 	 * rlim is the range limiter.                                        */
 
-	enum swap_result keep_switch;
 	int x_from, y_from, z_from, x_to, y_to, z_to;
 	ClusterBlockId b_from, bnum;
 	ClusterNetId net_id;
@@ -1436,7 +1434,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		}
 
 		/* 1 -> move accepted, 0 -> rejected. */
-		keep_switch = assess_swap(delta_c, t);
+		e_swap_result keep_switch = assess_swap(delta_c, t);
 		
 		if (keep_switch == ACCEPTED) {
 			*cost = *cost + delta_c;
@@ -1712,20 +1710,20 @@ static void find_to_location(t_type_ptr type, float rlim,
 	}
 }
 
-static enum swap_result assess_swap(float delta_c, float t) {
+static e_swap_result assess_swap(float delta_c, float t) {
 
 	/* Returns: 1 -> move accepted, 0 -> rejected. */
 
-	enum swap_result accept;
+	e_swap_result accept;
 	float prob_fac, fnum;
 
 	if (delta_c <= 0) {
 
-/* Reduce variation in final solution due to round off */
-fnum = vtr::frand();
+        /* Reduce variation in final solution due to round off */
+        fnum = vtr::frand();
 
-accept = ACCEPTED;
-return (accept);
+        accept = ACCEPTED;
+        return (accept);
 	}
 
 	if (t == 0.)
@@ -1972,7 +1970,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 * are found via the non_updateable_bb routine, to provide a    *
 * cost which can be used to check the correctness of the       *
 * other routine.                                               */
-static float comp_bb_cost(enum cost_methods method) {
+static float comp_bb_cost(e_cost_methods method) {
 	float cost = 0;
 	double expected_wirelength = 0.0;
 	auto& cluster_ctx = g_vpr_ctx.clustering();
