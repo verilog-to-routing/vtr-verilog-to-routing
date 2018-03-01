@@ -1919,8 +1919,8 @@ static bool driven_by_moved_block(const ClusterNetId net) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     ClusterBlockId net_driver_block = cluster_ctx.clb_nlist.net_driver_block(net);
-    for (int iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
-        if (net_driver_block == blocks_affected.moved_blocks[iblk2].block_num) {
+    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+        if (net_driver_block == blocks_affected.moved_blocks[iblk].block_num) {
             return true;
         }
     }
