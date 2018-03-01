@@ -265,6 +265,8 @@ static void update_td_cost(void);
 
 static void comp_delta_td_cost(float *delta_timing, float *delta_delay);
 
+static bool driven_by_moved_block(const ClusterNetId net);
+
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
 static e_swap_result assess_swap(float delta_c, float t);
@@ -1896,14 +1898,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
                 //
                 //Computing it here would double count the change, and mess up the
 				//delta_timing_cost value.
-				bool driven_by_moved_block = false;
-				for (int iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
-                    if (cluster_ctx.clb_nlist.net_driver_block(net_id) == blocks_affected.moved_blocks[iblk2].block_num) {
-						driven_by_moved_block = true;
-                    }
-                }
-				
-				if (driven_by_moved_block == false) {
+				if (!driven_by_moved_block(net_id)) {
                     int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
 					float temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
@@ -1919,6 +1914,18 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	
 	*delta_timing = delta_timing_cost;
 	*delta_delay = delta_delay_cost;
+}
+
+static bool driven_by_moved_block(const ClusterNetId net) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    ClusterBlockId net_driver_block = cluster_ctx.clb_nlist.net_driver_block(net);
+    for (int iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
+        if (net_driver_block == blocks_affected.moved_blocks[iblk2].block_num) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
