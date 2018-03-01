@@ -1935,20 +1935,23 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_connection_delay_sum = 0.;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
-		if (!cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
-			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-				temp_delay_cost = comp_td_point_to_point_delay(net_id, ipin);
-				temp_timing_cost = temp_delay_cost * get_timing_place_crit(net_id, ipin);
 
-				loc_connection_delay_sum += temp_delay_cost;
-				point_to_point_delay_cost[net_id][ipin] = temp_delay_cost;
-				temp_point_to_point_delay_cost[net_id][ipin] = -1; /* Undefined */
+		if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Do only if not global. */
+            continue;
+        }
 
-				point_to_point_timing_cost[net_id][ipin] = temp_timing_cost;
-				temp_point_to_point_timing_cost[net_id][ipin] = -1; /* Undefined */
-				loc_timing_cost += temp_timing_cost;
-			}
-		}
+        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            temp_delay_cost = comp_td_point_to_point_delay(net_id, ipin);
+            temp_timing_cost = temp_delay_cost * get_timing_place_crit(net_id, ipin);
+
+            loc_connection_delay_sum += temp_delay_cost;
+            point_to_point_delay_cost[net_id][ipin] = temp_delay_cost;
+            temp_point_to_point_delay_cost[net_id][ipin] = -1; /* Undefined */
+
+            point_to_point_timing_cost[net_id][ipin] = temp_timing_cost;
+            temp_point_to_point_timing_cost[net_id][ipin] = -1; /* Undefined */
+            loc_timing_cost += temp_timing_cost;
+        }
 	}
 
 	/* Make sure timing cost does not go above MIN_TIMING_COST. */
