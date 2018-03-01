@@ -263,8 +263,6 @@ static void comp_td_point_to_point_delays();
 
 static void update_td_cost(void);
 
-static void comp_delta_td_cost(float *delta_timing, float *delta_delay);
-
 static bool driven_by_moved_block(const ClusterNetId net);
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
@@ -283,11 +281,12 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new);
 static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
 		
-static int find_affected_nets_and_update_bb(void);
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, float& bb_delta_c, float& timing_delta_c, float& delay_delta_c);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
 static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin);
+static void update_td_delta_costs(const ClusterNetId net, const ClusterPinId pin, float& delta_timing_cost, float& delta_delay_cost);
 
 static float get_net_cost(ClusterNetId net_id, t_bb *bb_ptr);
 
@@ -1410,24 +1409,12 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	if (abort_swap == false) {
 
 		// Find all the nets affected by this swap and update thier bounding box
-		int num_nets_affected = find_affected_nets_and_update_bb();
+		int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, bb_delta_c, timing_delta_c, delay_delta_c);
 			
-		/* Now update the cost function (since the net bounding boxes are up-to-date).
-         * The cost is only updated once for every net.
-         */
-		for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-			ClusterNetId net_id = ts_nets_to_update[inet_affected];
-
-			temp_net_cost[net_id] = get_net_cost(net_id, &ts_bb_coord_new[net_id]);
-			bb_delta_c += temp_net_cost[net_id] - net_cost[net_id];
-		}
-
 		if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			/*in this case we redefine delta_c as a combination of timing and bb.  *
 			 *additionally, we normalize all values, therefore delta_c is in       *
 			 *relation to 1*/
-
-			comp_delta_td_cost(&timing_delta_c, &delay_delta_c);
 
 			delta_c = (1 - timing_tradeoff) * bb_delta_c * inverse_prev_bb_cost
 					+ timing_tradeoff * timing_delta_c * inverse_prev_timing_cost;
@@ -1542,9 +1529,13 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 //and updates their bounding box.
 //
 //Returns the number of affected nets.
-static int find_affected_nets_and_update_bb() {
-	int num_affected_nets = 0;
+static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, float& bb_delta_c, float& timing_delta_c, float& delay_delta_c) {
+    VTR_ASSERT_SAFE(bb_delta_c == 0.);
+    VTR_ASSERT_SAFE(timing_delta_c == 0.);
+    VTR_ASSERT_SAFE(delay_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	int num_affected_nets = 0;
 
 	//Go through all the blocks moved
 	for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
@@ -1561,10 +1552,29 @@ static int find_affected_nets_and_update_bb() {
             //Record effected nets
             record_affected_net(net_id, num_affected_nets);
 
-            //Update the net bounding boxes.
+            //Update the net bounding boxes
+            //
+            //Do not update the net cost here since it should only be updated 
+            //once per net, not once per pin.
             update_net_bb(net_id, iblk, blk, blk_pin);
+
+            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+                //Determine the change in timing costs if required
+                update_td_delta_costs(net_id, blk_pin, timing_delta_c, delay_delta_c);
+            }
 		}
 	}
+
+    /* Now update the bounding box costs (since the net bounding boxes are up-to-date).
+     * The cost is only updated once per net.
+     */
+    for (int inet_affected = 0; inet_affected < num_affected_nets; inet_affected++) {
+        ClusterNetId net_id = ts_nets_to_update[inet_affected];
+
+        temp_net_cost[net_id] = get_net_cost(net_id, &ts_bb_coord_new[net_id]);
+        bb_delta_c += temp_net_cost[net_id] - net_cost[net_id];
+    }
+
 	return num_affected_nets;
 }
 
@@ -1583,15 +1593,14 @@ static void record_affected_net(const ClusterNetId net, int& num_affected_nets) 
 static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId blk, const ClusterPinId blk_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    //Update the net bounding boxes.
-    //
-    //Do not update the net cost here since it should only be updated 
-    //once per net, not once per pin.
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
-        if(bb_updated_before[net] == NOT_UPDATED_YET)
-            //Brute force bounding box recomputation, once only for speed.
+        //For small nets brute-force bounding box update is faster
+
+        if(bb_updated_before[net] == NOT_UPDATED_YET) { //Only once per-net
             get_non_updateable_bb(net, &ts_bb_coord_new[net]);
+        }
     } else {
+        //For large nets, update bounding box incrementally
         int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
 
         t_type_ptr blk_type = cluster_ctx.clb_nlist.block_type(blk);
@@ -1607,6 +1616,44 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
                 blocks_affected.moved_blocks[iblk].ynew + pin_height_offset);
     }
 
+}
+
+static void update_td_delta_costs(const ClusterNetId net, const ClusterPinId pin, float& delta_timing_cost, float& delta_delay_cost) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
+        //This pin is a net driver on a moved block.
+        //Re-compute all point to point connections for this net.
+        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
+            float temp_delay = comp_td_point_to_point_delay(net, ipin);
+            temp_point_to_point_delay_cost[net][ipin] = temp_delay;
+
+            temp_point_to_point_timing_cost[net][ipin] = get_timing_place_crit(net, ipin) * temp_delay;
+            delta_timing_cost += temp_point_to_point_timing_cost[net][ipin] - point_to_point_timing_cost[net][ipin];
+            delta_delay_cost += temp_point_to_point_delay_cost[net][ipin] - point_to_point_delay_cost[net][ipin];
+
+        }
+    } else {
+        //This pin is a net sink on a moved block
+        VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
+
+        //If this net is being driven by a moved block, we do not
+        //need to compute the change in the timing cost (here) since it will
+        //be computed by the net's driver pin (since the driver block moved).
+        //
+        //Computing it here would double count the change, and mess up the
+        //delta_timing_cost value.
+        if (!driven_by_moved_block(net)) {
+            int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
+
+            float temp_delay = comp_td_point_to_point_delay(net, net_pin);
+            temp_point_to_point_delay_cost[net][net_pin] = temp_delay;
+
+            temp_point_to_point_timing_cost[net][net_pin] = get_timing_place_crit(net, net_pin) * temp_delay;
+            delta_timing_cost += temp_point_to_point_timing_cost[net][net_pin] - point_to_point_timing_cost[net][net_pin];
+            delta_delay_cost += temp_point_to_point_delay_cost[net][net_pin] - point_to_point_delay_cost[net][net_pin];
+        }
+    }
 }
 
 static bool find_to(t_type_ptr type, float rlim, 
@@ -1872,68 +1919,6 @@ static void update_td_cost(void) {
 			}
 		} /* Finished going through all the pins in the moved block */
 	} /* Finished going through all the blocks moved */
-}
-
-/*a net that is being driven by a moved block must have all of its  */
-/*sink timing costs recomputed. A net that is driving a moved block */
-/*must only have the timing cost on the connection driving the input */
-/*pin computed */
-static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	float delta_timing_cost = 0.;
-	float delta_delay_cost = 0.;
-
-	/* Go through all the blocks moved */
-	for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)	{
-		ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
-		/* Go through all the pins in the moved block */
-		for (ClusterPinId pin : cluster_ctx.clb_nlist.block_pins(blk)) {
-			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin);
-
-            VTR_ASSERT_SAFE(net_id);
-
-			if (cluster_ctx.clb_nlist.net_is_global(net_id))
-				continue;
-
-            if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
-			    //This pin is a net driver on a moved block.
-				//Re-compute all point to point connections for this net.
-				for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-					float temp_delay = comp_td_point_to_point_delay(net_id, ipin);
-					temp_point_to_point_delay_cost[net_id][ipin] = temp_delay;
-
-					temp_point_to_point_timing_cost[net_id][ipin] = get_timing_place_crit(net_id, ipin) * temp_delay;
-					delta_timing_cost += temp_point_to_point_timing_cost[net_id][ipin] - point_to_point_timing_cost[net_id][ipin];
-					delta_delay_cost += temp_point_to_point_delay_cost[net_id][ipin] - point_to_point_delay_cost[net_id][ipin];
-
-				}
-            } else {
-                //This pin is a net sink on a moved block
-                VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
-
-				//If this net is being driven by a moved block, we do not
-				//need to compute the change in the timing cost (here) since it will
-				//be computed by the net's driver pin (since the driver block moved).
-                //
-                //Computing it here would double count the change, and mess up the
-				//delta_timing_cost value.
-				if (!driven_by_moved_block(net_id)) {
-                    int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
-
-					float temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
-					temp_point_to_point_delay_cost[net_id][net_pin] = temp_delay;
-
-					temp_point_to_point_timing_cost[net_id][net_pin] = get_timing_place_crit(net_id, net_pin) * temp_delay;
-					delta_timing_cost += temp_point_to_point_timing_cost[net_id][net_pin] - point_to_point_timing_cost[net_id][net_pin];
-					delta_delay_cost += temp_point_to_point_delay_cost[net_id][net_pin] - point_to_point_delay_cost[net_id][net_pin];
-				}
-            }
-		}
-	}
-	
-	*delta_timing = delta_timing_cost;
-	*delta_delay = delta_delay_cost;
 }
 
 static bool driven_by_moved_block(const ClusterNetId net) {
