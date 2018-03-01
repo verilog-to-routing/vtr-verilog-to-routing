@@ -92,7 +92,6 @@ large enough to be on the order of timing costs for normal constraints. */
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
-//static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..cluster_ctx.clb_nlist.nets().size()-1] */
 static vtr::vector<ClusterNetId, float> net_cost, temp_net_cost;
 
 static t_legal_pos **legal_pos = NULL; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
