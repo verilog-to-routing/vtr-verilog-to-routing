@@ -1338,7 +1338,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	ClusterNetId net_id;
 	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	int iblk, iblk_pin, inet_affected;
+	int iblk, inet_affected;
 	int abort_swap = false;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1419,10 +1419,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 			bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 			/* Go through all the pins in the moved block */
-			for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type(bnum)->num_pins; iblk_pin++) {
-				net_id = cluster_ctx.clb_nlist.block_net(bnum, iblk_pin);
-				if (net_id == ClusterNetId::INVALID())
-					continue;
+			for (ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(bnum)) {
+				net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
+                VTR_ASSERT_SAFE(net_id);
+
 				if (cluster_ctx.clb_nlist.net_is_global(net_id))
 					continue;
 			
@@ -1431,6 +1431,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 						/* Brute force bounding box recomputation, once only for speed. */
 						get_non_updateable_bb(net_id, &ts_bb_coord_new[net_id]);
 				} else {
+                    int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
 					update_bb(net_id, &ts_bb_coord_new[net_id],
 							&ts_bb_edge_new[net_id], 
 							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[iblk_pin],
