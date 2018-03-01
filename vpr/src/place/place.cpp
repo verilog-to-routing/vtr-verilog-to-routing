@@ -1877,45 +1877,39 @@ static void comp_td_point_to_point_delays() {
 /* Update the point_to_point_timing_cost values from the temporary *
 * values for all connections that have changed.                   */
 static void update_td_cost(void) {
-	unsigned int ipin;
-	int iblk, iblk2, driven_by_moved_block, net_pin;
-	ClusterBlockId bnum;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	/* Go through all the blocks moved. */
-	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-		bnum = blocks_affected.moved_blocks[iblk].block_num;
-		for (auto pin_id : cluster_ctx.clb_nlist.block_pins(bnum)) {
+	for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+		ClusterBlockId bnum = blocks_affected.moved_blocks[iblk].block_num;
+		for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(bnum)) {
 			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
-			net_pin = net_pin_indices[bnum][cluster_ctx.clb_nlist.pin_physical_index(pin_id)];
-
-			if (net_pin != 0) {
-				driven_by_moved_block = false;
-				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-					if (cluster_ctx.clb_nlist.net_driver_block(net_id) == blocks_affected.moved_blocks[iblk2].block_num)
-						driven_by_moved_block = true;
+			if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
+                //This net is being driven by a moved block, recompute
+                //all point to point connections on this net.
+				for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+					point_to_point_delay_cost[net_id][ipin] = temp_point_to_point_delay_cost[net_id][ipin];
+					temp_point_to_point_delay_cost[net_id][ipin] = -1;
+					point_to_point_timing_cost[net_id][ipin] = temp_point_to_point_timing_cost[net_id][ipin];
+					temp_point_to_point_timing_cost[net_id][ipin] = -1;
+				}
+			} else {
+                //This pin is a net sink on a moved block
+                VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK);
 
 				/* The following "if" prevents the value from being updated twice. */
-				if (driven_by_moved_block == false) {
+				if (!driven_by_moved_block(net_id)) {
+                    int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+
 					point_to_point_delay_cost[net_id][net_pin] = temp_point_to_point_delay_cost[net_id][net_pin];
 					temp_point_to_point_delay_cost[net_id][net_pin] = -1;
 					point_to_point_timing_cost[net_id][net_pin] = temp_point_to_point_timing_cost[net_id][net_pin];
 					temp_point_to_point_timing_cost[net_id][net_pin] = -1;
 				}
-			}
-			else { /* This net is being driven by a moved block, recompute */
-				   /* All point to point connections on this net. */
-				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-					point_to_point_delay_cost[net_id][ipin] = temp_point_to_point_delay_cost[net_id][ipin];
-					temp_point_to_point_delay_cost[net_id][ipin] = -1;
-					point_to_point_timing_cost[net_id][ipin] = temp_point_to_point_timing_cost[net_id][ipin];
-					temp_point_to_point_timing_cost[net_id][ipin] = -1;
-				} /* Finished updating the pin */
 			}
 		} /* Finished going through all the pins in the moved block */
 	} /* Finished going through all the blocks moved */
