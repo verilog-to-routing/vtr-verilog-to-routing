@@ -1861,7 +1861,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	ClusterBlockId bnum;
 	unsigned int ipin;
 	float delta_timing_cost, delta_delay_cost, temp_delay;
-	int net_pin, iblk, iblk2, iblk_pin, driven_by_moved_block;
+	int net_pin, iblk, iblk2;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -1872,37 +1872,17 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)	{
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type(bnum)->num_pins; iblk_pin++) {
-			net_id = cluster_ctx.clb_nlist.block_net(bnum, iblk_pin);
+		for (ClusterPinId pin : cluster_ctx.clb_nlist.block_pins(bnum)) {
+			net_id = cluster_ctx.clb_nlist.pin_net(pin);
 
-			if (net_id == ClusterNetId::INVALID())
-				continue;
+            VTR_ASSERT_SAFE(net_id);
+
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue;
 
-			net_pin = net_pin_indices[bnum][iblk_pin];
-
-			if (net_pin != 0) { 
-				/* If this net is being driven by a block that has moved, we do not    *
-				 * need to compute the change in the timing cost (here) since it will  *
-				 * be computed in the fanout of the net on  the driving block, also    *
-				 * computing it here would double count the change, and mess up the    *
-				 * delta_timing_cost value.                                            */
-				driven_by_moved_block = false;
-				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-                    if (cluster_ctx.clb_nlist.net_driver_block(net_id) == blocks_affected.moved_blocks[iblk2].block_num)
-						driven_by_moved_block = true;
-				
-				if (driven_by_moved_block == false) {
-					temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
-					temp_point_to_point_delay_cost[net_id][net_pin] = temp_delay;
-
-					temp_point_to_point_timing_cost[net_id][net_pin] = get_timing_place_crit(net_id, net_pin) * temp_delay;
-					delta_timing_cost += temp_point_to_point_timing_cost[net_id][net_pin] - point_to_point_timing_cost[net_id][net_pin];
-					delta_delay_cost += temp_point_to_point_delay_cost[net_id][net_pin] - point_to_point_delay_cost[net_id][net_pin];
-				}
-			} else { /* This net is being driven by a moved block, recompute */
-				/* All point to point connections on this net. */
+            if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
+			    //This pin is a net driver on a moved block.
+				//Re-compute all point to point connections for this net.
 				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 					temp_delay = comp_td_point_to_point_delay(net_id, ipin);
 					temp_point_to_point_delay_cost[net_id][ipin] = temp_delay;
@@ -1911,10 +1891,36 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 					delta_timing_cost += temp_point_to_point_timing_cost[net_id][ipin] - point_to_point_timing_cost[net_id][ipin];
 					delta_delay_cost += temp_point_to_point_delay_cost[net_id][ipin] - point_to_point_delay_cost[net_id][ipin];
 
-				} /* Finished updating the pin */
-			}
-		} /* Finished going through all the pins in the moved block */
-	} /* Finished going through all the blocks moved */
+				}
+            } else {
+                //This pin is a net sink on a moved block
+                VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
+
+				//If this net is being driven by a moved block, we do not
+				//need to compute the change in the timing cost (here) since it will
+				//be computed by the net's driver pin (since the driver block moved).
+                //
+                //Computing it here would double count the change, and mess up the
+				//delta_timing_cost value.
+				bool driven_by_moved_block = false;
+				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
+                    if (cluster_ctx.clb_nlist.net_driver_block(net_id) == blocks_affected.moved_blocks[iblk2].block_num) {
+						driven_by_moved_block = true;
+                    }
+                }
+				
+				if (driven_by_moved_block == false) {
+                    net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
+					temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
+					temp_point_to_point_delay_cost[net_id][net_pin] = temp_delay;
+
+					temp_point_to_point_timing_cost[net_id][net_pin] = get_timing_place_crit(net_id, net_pin) * temp_delay;
+					delta_timing_cost += temp_point_to_point_timing_cost[net_id][net_pin] - point_to_point_timing_cost[net_id][net_pin];
+					delta_delay_cost += temp_point_to_point_delay_cost[net_id][net_pin] - point_to_point_delay_cost[net_id][net_pin];
+				}
+            }
+		}
+	}
 	
 	*delta_timing = delta_timing_cost;
 	*delta_delay = delta_delay_cost;
