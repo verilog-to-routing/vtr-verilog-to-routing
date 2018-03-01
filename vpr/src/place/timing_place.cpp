@@ -17,7 +17,7 @@ using namespace std;
 
 #include "timing_info.h"
 
-static vtr::vector_map<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+static vtr::vector<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
 static vtr::t_chunk f_timing_place_crit_ch;
 
