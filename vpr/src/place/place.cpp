@@ -281,7 +281,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new);
 static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
 		
-static int find_affected_nets(void);
+static int find_affected_nets_and_update_bb(void);
 
 static float get_net_cost(ClusterNetId net_id, t_bb *bb_ptr);
 
@@ -1409,41 +1409,12 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 	if (abort_swap == false) {
 
-		// Find all the nets affected by this swap
-		num_nets_affected = find_affected_nets();
-
-		/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
-		 * Do not update the net cost here since it should only be updated once per net,   *
-		 * not once per pin                                                                */
-		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-			bnum = blocks_affected.moved_blocks[iblk].block_num;
-
-			/* Go through all the pins in the moved block */
-			for (ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(bnum)) {
-				net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
-                VTR_ASSERT_SAFE(net_id);
-
-				if (cluster_ctx.clb_nlist.net_is_global(net_id))
-					continue;
+		// Find all the nets affected by this swap and update thier bounding box
+		num_nets_affected = find_affected_nets_and_update_bb();
 			
-				if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
-					if(bb_updated_before[net_id] == NOT_UPDATED_YET)
-						/* Brute force bounding box recomputation, once only for speed. */
-						get_non_updateable_bb(net_id, &ts_bb_coord_new[net_id]);
-				} else {
-                    int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
-					update_bb(net_id, &ts_bb_coord_new[net_id],
-							&ts_bb_edge_new[net_id], 
-							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[iblk_pin],
-							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[iblk_pin],
-							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[iblk_pin]);
-				}
-			}
-		}
-			
-		/* Now update the cost function. The cost is only updated once for every net  *
-		 * May have to do major optimizations here later.                             */
+		/* Now update the cost function (since the net bounding boxes are up-to-date).
+         * The cost is only updated once for every net.
+         */
 		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
 			net_id = ts_nets_to_update[inet_affected];
 
@@ -1567,38 +1538,56 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	}
 }
 
-/* Puts a list of all the nets that are changed by the swap into          *
-* nets_to_update.  Returns the number of affected nets.                  */
-static int find_affected_nets() {
-	int iblk, iblk_pin, num_affected_nets;
-	ClusterBlockId bnum;
-	ClusterNetId net_id;
+//Puts all the nets changed by the current swap into nets_to_update,
+//and updates their bounding box.
+//
+//Returns the number of affected nets.
+static int find_affected_nets_and_update_bb() {
+	int num_affected_nets = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	num_affected_nets = 0;
-	/* Go through all the blocks moved */
-	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-		bnum = blocks_affected.moved_blocks[iblk].block_num;
+	//Go through all the blocks moved
+	for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+		ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type(bnum)->num_pins; iblk_pin++) {
-			/* Updates the pins_to_nets array, set to -1 if   *
-			 * that pin is not connected to any net or it is a  *
-			 * global pin that does not need to be updated      */
-			net_id = cluster_ctx.clb_nlist.block_net(bnum, iblk_pin);
-			if (net_id == ClusterNetId::INVALID())
-				continue;
+		//Go through all the pins in the moved block
+        for (ClusterPinId blk_pin : cluster_ctx.clb_nlist.block_pins(blk)) {
+			ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(blk_pin);
+            VTR_ASSERT_SAFE_MSG(net_id, "Only valid nets should be found in compressed netlist block pins");
+
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
-				continue;
+				continue; //Global nets are assumed to span the whole chip, and do not effect costs
 			
+            //Record effected nets
 			if (temp_net_cost[net_id] < 0.) { 
-				/* Net not marked yet. */
+				//Net not marked yet.
 				ts_nets_to_update[num_affected_nets] = net_id;
 				num_affected_nets++;
 
-				/* Flag to say we've marked this net. */
+				//Flag to say we've marked this net.
 				temp_net_cost[net_id] = 1.;
 			}
+
+            //Update the net bounding boxes.
+            //
+            //Do not update the net cost here since it should only be updated 
+            //once per net, not once per pin.
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
+                if(bb_updated_before[net_id] == NOT_UPDATED_YET)
+                    //Brute force bounding box recomputation, once only for speed.
+                    get_non_updateable_bb(net_id, &ts_bb_coord_new[net_id]);
+            } else {
+                int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
+
+                //Incremental bounding box update
+                update_bb(net_id, &ts_bb_coord_new[net_id],
+                        &ts_bb_edge_new[net_id], 
+                        blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(blk)->pin_width_offset[iblk_pin],
+                        blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type(blk)->pin_height_offset[iblk_pin],
+                        blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type(blk)->pin_width_offset[iblk_pin],
+                        blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type(blk)->pin_height_offset[iblk_pin]);
+            }
+
 		}
 	}
 	return num_affected_nets;
