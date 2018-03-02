@@ -14,8 +14,8 @@
  */
 class t_point {
 public:
-    float x;
-    float y;
+    float x = 0;
+    float y = 0;
 
     /**
      * Behaves like a 2 argument plusequals (modifies the calling object).
@@ -140,10 +140,10 @@ private:
  */
 class t_color {
 public:
-    uint_fast8_t red;   // 8-bits per colour component
-    uint_fast8_t green;
-    uint_fast8_t blue;
-    uint_fast8_t alpha;
+    uint_fast8_t red = 0;   // 8-bits per colour component
+    uint_fast8_t green = 0;
+    uint_fast8_t blue = 0;
+    uint_fast8_t alpha = 255;
 
     // Constructors and equality operations have the obvious meaning.
     t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a = 255);

@@ -211,8 +211,7 @@ t_point& t_point::operator*=(float rhs) {
 
 t_point& t_point::operator=(const t_point&) = default;
 
-t_point::t_point() : x(0), y(0) {
-}
+t_point::t_point() = default;
 
 t_point::t_point(const t_point&) = default;
 
@@ -379,12 +378,7 @@ t_color::t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a)
 
 t_color::t_color(const t_color&) = default;
 
-t_color::t_color() :
-        red(0),
-        green(0),
-        blue(0),
-        alpha(255)
-{}
+t_color::t_color() = default;
 
 t_color::t_color(color_types src) {
     *this = src;
