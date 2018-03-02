@@ -4,7 +4,7 @@
 
 #include "log.h"
 
-int main(void) {
+int main() {
 	int x = 10, y = 20;
 	float a = 1.5f, b = -2.01f;
 	log_print_info("Testing logger\n\n");
