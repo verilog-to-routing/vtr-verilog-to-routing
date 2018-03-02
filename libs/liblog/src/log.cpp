@@ -14,7 +14,7 @@
 
 static int log_warning = 0;
 static int log_error = 0;
-FILE *log_stream = NULL;
+FILE *log_stream = nullptr;
 
 
 static void check_init();
@@ -23,11 +23,11 @@ static void check_init();
    If different than current log file, close current log file and reopen to new log file
 */
 void log_set_output_file(const char *filename) {
-	if(log_stream != NULL) {
+	if(log_stream != nullptr) {
 		fclose(log_stream);
 	}
 	log_stream = fopen(filename, "w");
-	if(log_stream == NULL) {
+	if(log_stream == nullptr) {
 		printf("Error writing to file %s\n\n", filename);
 	}
 	fprintf(log_stream, "filename\n");
@@ -99,9 +99,9 @@ void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const 
  * Check if output log file setup, if not, then this function also sets it up 
  */
 static void check_init() {
-	if(log_stream == NULL) {
+	if(log_stream == nullptr) {
 		log_stream = fopen(LOG_DEFAULT_FILE_NAME, "w");
-		if(log_stream == NULL) {
+		if(log_stream == nullptr) {
 			printf("Error writing to file %s\n", LOG_DEFAULT_FILE_NAME);
 		}
 		fprintf(log_stream, "%s\n\n", LOG_DEFAULT_FILE_NAME);
