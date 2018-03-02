@@ -1169,7 +1169,7 @@ static void setpoly(int bnum, int xc, int yc, int r, float theta) {
 
 /* Maps a button onto the screen and set it up for input, etc.        */
 static void map_button(int bnum) {
-    button_state.button[bnum].ispressed = 0;
+    button_state.button[bnum].ispressed = false;
 
     if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
@@ -3226,7 +3226,7 @@ build_default_menu(void) {
     for (i = 0; i < NUM_ARROW_BUTTONS; i++) {
         button_state.button[i].width = bwid;
         button_state.button[i].height = bwid;
-        button_state.button[i].enabled = 1;
+        button_state.button[i].enabled = true;
     }
 
     /* Rectangular buttons */
@@ -3241,7 +3241,7 @@ build_default_menu(void) {
         button_state.button[i].ytop = y1;
         button_state.button[i].type = BUTTON_TEXT;
         button_state.button[i].width = bwid;
-        button_state.button[i].enabled = 1;
+        button_state.button[i].enabled = true;
         if (i != SEPARATOR_BUTTON_INDEX) {
             button_state.button[i].height = bheight;
             y1 += bheight + space;
@@ -3778,11 +3778,11 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                     printf("Button number is %d\n", bnum);
 #endif
                     if (button_state.button[bnum].enabled) {
-                        button_state.button[bnum].ispressed = 1;
+                        button_state.button[bnum].ispressed = true;
                         x11_drawbut(bnum);
                         XFlush(x11_state.display); /* Flash the button */
                         button_state.button[bnum].fcn(drawscreen);
-                        button_state.button[bnum].ispressed = 0;
+                        button_state.button[bnum].ispressed = false;
                         x11_drawbut(bnum);
                         if (button_state.button[bnum].fcn == proceed) {
                             x11_turn_on_off(OFF);
