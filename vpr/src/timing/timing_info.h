@@ -34,7 +34,7 @@ std::unique_ptr<SetupHoldTimingInfo> make_no_op_timing_info();
 class TimingInfo {
     public:
         //Constructors
-        virtual ~TimingInfo() {}
+        virtual ~TimingInfo() = default;
     public:
         //Mutators
 

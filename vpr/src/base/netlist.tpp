@@ -18,7 +18,7 @@ Netlist<BlockId, PortId, PinId, NetId>::Netlist(std::string name, std::string id
     , dirty_(false) {}
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-Netlist<BlockId, PortId, PinId, NetId>::~Netlist() {}
+Netlist<BlockId, PortId, PinId, NetId>::~Netlist() = default;
 
 /*
  *

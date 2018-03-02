@@ -202,7 +202,7 @@ class Arc {
 //see BlackBoxInst for a general implementation for a black box primitive)
 class Instance {
     public:
-        virtual ~Instance() {};
+        virtual ~Instance() = default;
 
         //Print the current instance in blif format
         //

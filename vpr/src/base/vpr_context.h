@@ -30,7 +30,7 @@ struct Context {
     Context() = default;
     Context(Context&) = delete;
     Context& operator=(Context&) = delete;
-    virtual ~Context() {};
+    virtual ~Context() = default;
 };
 
 //State relating to the atom-level netlist
