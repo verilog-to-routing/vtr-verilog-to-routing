@@ -59,7 +59,7 @@ font_ptr FontCache::do_font_loading(
 #if defined X11 || defined WIN32
     bool success = false;
 #endif
-    font_ptr retval = NULL;
+    font_ptr retval = nullptr;
 
 #ifdef X11
     for (int ifont = 0; ifont < NUM_FONT_TYPES; ifont++) {
@@ -83,7 +83,7 @@ font_ptr FontCache::do_font_loading(
             NULL // (sentinel)
             );
 
-        if (retval == NULL) {
+        if (retval == nullptr) {
 #ifdef VERBOSE
             fprintf(stderr, "Cannot open font %s", fontname_config[ifont]);
             if (degrees != 0) {

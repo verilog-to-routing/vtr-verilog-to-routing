@@ -402,7 +402,7 @@ static t_gl_state gl_state;
 
 // Stores all the menu buttons created. Initialize the button pointer 
 // and num_buttons for safety.
-static t_button_state button_state = {NULL, 0};
+static t_button_state button_state = {nullptr, 0};
 
 // Contains all coordinates useful for graphics transformation
 static t_transform_coordinates trans_coord;
@@ -652,7 +652,7 @@ static void *my_malloc(int ibytes) {
     void *mem;
 
     mem = static_cast<void*> (malloc(ibytes));
-    if (mem == NULL) {
+    if (mem == nullptr) {
         printf("memory allocation failed!");
         exit(-1);
     }
@@ -665,7 +665,7 @@ static void *my_realloc(void *memblk, int ibytes) {
     void *mem;
 
     mem = static_cast<void*> (realloc(memblk, ibytes));
-    if (mem == NULL) {
+    if (mem == nullptr) {
         printf("memory allocation failed!");
         exit(-1);
     }
@@ -1542,7 +1542,7 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
     void (*act_on_keypress)(char key_pressed, int keysym),
     void (*drawscreen) (void)) {
 
-    if (drawscreen == NULL) {
+    if (drawscreen == nullptr) {
         cerr << "Error in event_loop: drawscreen is NULL, but it is a mandatory callback.\n";
         exit(1);
     }
@@ -2624,7 +2624,7 @@ handle_zoom_in(float x, float y, void (*drawscreen) (void)) {
     trans_coord.ybot = y + (trans_coord.ybot - y) / ZOOM_FACTOR;
 
     update_transform();
-    if (drawscreen != NULL) {
+    if (drawscreen != nullptr) {
         drawscreen();
     }
 }
@@ -2639,7 +2639,7 @@ handle_zoom_out(float x, float y, void (*drawscreen) (void)) {
     trans_coord.ybot = y + (trans_coord.ybot - y)* ZOOM_FACTOR;
 
     update_transform();
-    if (drawscreen != NULL) {
+    if (drawscreen != nullptr) {
         drawscreen();
     }
 }
@@ -2925,7 +2925,7 @@ close_graphics(void) {
         unmap_button(i);
     }
     free(button_state.button);
-    button_state.button = NULL;
+    button_state.button = nullptr;
     button_state.num_buttons = 0;
 
 #ifdef X11
@@ -2947,8 +2947,8 @@ close_graphics(void) {
 	// Destroy cairo things
 	cairo_destroy(x11_state.ctx);
 	cairo_surface_destroy(x11_state.cairo_surface);
-	x11_state.ctx = NULL;      // Important to NULL these pointers in case init_cairo is called again
-	x11_state.cairo_surface = NULL;
+	x11_state.ctx = nullptr;      // Important to NULL these pointers in case init_cairo is called again
+	x11_state.cairo_surface = nullptr;
 #elif defined WIN32
     // Destroy the window
     if (!DestroyWindow(win32_state.hMainWnd))
@@ -2976,7 +2976,7 @@ close_graphics(void) {
  * not be opened, the routine returns 0; otherwise it returns 1. */
 int init_postscript(const char *fname) {
     gl_state.ps = fopen(fname, "w");
-    if (gl_state.ps == NULL) {
+    if (gl_state.ps == nullptr) {
         printf("Error: could not open %s for PostScript output.\n", fname);
         printf("Drawing to screen instead.\n");
         return (0);
@@ -3265,7 +3265,7 @@ build_default_menu(void) {
     button_state.button[5].fcn = zoom_out;
     button_state.button[6].fcn = zoom_fit;
     button_state.button[7].fcn = adjustwin; // see 'adjustButton' below in WIN32 section
-    button_state.button[8].fcn = NULL;
+    button_state.button[8].fcn = nullptr;
     button_state.button[9].fcn = postscript;
     button_state.button[10].fcn = proceed;
     button_state.button[11].fcn = quit;
@@ -3464,7 +3464,7 @@ Surface load_png_from_file(const char* file_path) {
 
 void draw_surface(const Surface& surface, float x, float y) {
     cairo_surface_t* cairo_surface = surface.impl_->getSurface();
-    if (cairo_surface != NULL) {
+    if (cairo_surface != nullptr) {
         cairo_set_source_surface(x11_state.ctx, cairo_surface,
                 xworld_to_scrn(x), yworld_to_scrn(y));
         cairo_paint(x11_state.ctx);
@@ -3523,7 +3523,7 @@ void set_redirect_to_postscript (bool new_setting) {
 
 /* Helper function called by init_graphics(). Not visible to client program. */
 static void x11_init_graphics(const char *window_name) {
-    char *display_name = NULL;
+    char *display_name = nullptr;
     int x, y; /* window position */
     unsigned int border_width = 2; /* ignored by OpenWindows */
     XTextProperty windowName;
@@ -3533,7 +3533,7 @@ static void x11_init_graphics(const char *window_name) {
     XEvent event;
 
     /* connect to X server */
-    if ((x11_state.display = XOpenDisplay(display_name)) == NULL) {
+    if ((x11_state.display = XOpenDisplay(display_name)) == nullptr) {
         fprintf(stderr, "Cannot connect to X server %s\n",
             XDisplayName(display_name));
         exit(-1);
@@ -3659,7 +3659,7 @@ static void x11_init_graphics(const char *window_name) {
     strncpy(window_name_copy, window_name, BUFSIZE);
     XStringListToTextProperty(&window_name_copy, 1, &windowName);
     free(window_name_copy);
-    window_name_copy = NULL;
+    window_name_copy = nullptr;
 
     XSetWMName(x11_state.display, x11_state.toplevel, &windowName);
     /* XSetWMIconName (x11_state.display, x11_state.toplevel, &windowName); */
@@ -3679,7 +3679,7 @@ static void x11_init_graphics(const char *window_name) {
      * the top-level window up and running.  Thus the user can start drawing  *
      * into this window immediately, and there's no danger of the window not  *
      * being ready and output being lost.                                     */
-    XPeekIfEvent(x11_state.display, &event, x11_test_if_exposed, NULL);
+    XPeekIfEvent(x11_state.display, &event, x11_test_if_exposed, nullptr);
     force_settextattrs(gl_state.currentfontsize, gl_state.currentfontrotation);
 }
 
@@ -3755,7 +3755,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                         case Button1: /* Left mouse click; pass back to client program */
                         case Button3: /* Right mouse click; pass back to client program */
                             /* Pass information about the button press to client program */
-                            if (act_on_mousebutton != NULL) // If callback was set
+                            if (act_on_mousebutton != nullptr) // If callback was set
                                 act_on_mousebutton(x, y, button_info);
                             break;
                         case Button2: /* Scroll wheel pressed; start panning */
@@ -3818,7 +3818,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                 if (pan_state.panning_enabled)
                     panning_execute(report.xmotion.x, report.xmotion.y, drawscreen);
                 else if (gl_state.get_mouse_move_input &&
-                        act_on_mousemove != NULL && 
+                        act_on_mousemove != nullptr && 
                         report.xmotion.x <= trans_coord.top_width - MWIDTH &&
                         report.xmotion.y <= trans_coord.top_height - T_AREA_HEIGHT)
                     act_on_mousemove(xscrn_to_world(report.xmotion.x), yscrn_to_world(report.xmotion.y));
@@ -3843,7 +3843,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
 #endif            
 
                     keyb_buffer[length] = '\0'; /* terminating NULL */
-                    if (act_on_keypress != NULL)
+                    if (act_on_keypress != nullptr)
                         act_on_keypress(keyb_buffer[0], keysym);
                 }
 
@@ -3909,10 +3909,10 @@ static bool x11_drop_redundant_panning (const XEvent& report,
                 float y = yscrn_to_world(report.xbutton.y);
                 switch (report.xbutton.button) {
                     case Button4:
-                        handle_zoom_in(x, y, NULL); // (same function as normal event logic)
+                        handle_zoom_in(x, y, nullptr); // (same function as normal event logic)
                         break;
                     case Button5:
-                        handle_zoom_out(x, y, NULL); // (same function as normal event logic)
+                        handle_zoom_out(x, y, nullptr); // (same function as normal event logic)
                         break;
                     default:
                         // do nothing, also should be impossible

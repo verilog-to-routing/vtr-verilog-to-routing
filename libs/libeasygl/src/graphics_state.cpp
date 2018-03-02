@@ -1,7 +1,7 @@
 #include "graphics_state.h"
 
 #ifdef X11
-t_x11_state *t_x11_state::instance = NULL;
+t_x11_state *t_x11_state::instance = nullptr;
 
 t_x11_state::t_x11_state()
 {
@@ -10,7 +10,7 @@ t_x11_state::t_x11_state()
 
 t_x11_state::~t_x11_state()
 {
-	instance = NULL;
+	instance = nullptr;
 }
 
 t_x11_state *t_x11_state::getInstance()
