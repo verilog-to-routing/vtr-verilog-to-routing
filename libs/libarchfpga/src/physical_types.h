@@ -1184,19 +1184,15 @@ struct t_wireconn_inf {
 class SB_Side_Connection{
 public:
 	/* specify the two SB sides that form a connection */
-	enum e_side from_side;
-	enum e_side to_side;
+	enum e_side from_side = TOP;
+	enum e_side to_side = TOP;
 
 	void set_sides( enum e_side from, enum e_side to ){
 		from_side = from;
 		to_side = to;
 	}
 
-	SB_Side_Connection()
-        : from_side(TOP)
-        , to_side(TOP) {
-		/* do nothing */
-	}
+	SB_Side_Connection() = default;
 
 	SB_Side_Connection(enum e_side from, enum e_side to)
         : from_side(from)
