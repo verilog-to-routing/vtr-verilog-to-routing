@@ -51,7 +51,7 @@ int irand(int imax) {
 	return (ival);
 }
 
-float frand(void) {
+float frand() {
 
 	/* Creates a random float between 0 and 1.  i.e. [0..1).        */
 
