@@ -892,7 +892,7 @@ class Netlist {
     private: //Data
         std::string netlist_name_;  //Name of the top-level netlist
         std::string netlist_id_;    //Unique identifier for the netlist
-        bool dirty_;                //Indicates the netlist has invalid entries from remove_*() functions
+        bool dirty_ = false;        //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
         vtr::vector_map<BlockId, BlockId>                   block_ids_;                //Valid block ids

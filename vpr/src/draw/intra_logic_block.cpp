@@ -825,11 +825,6 @@ bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& r
  * Begin definition of t_selected_sub_block_info::gnode_clb_pair functions
  */
 
-t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair() :
-	pb_gnode(nullptr),
-	clb_index(ClusterBlockId::INVALID()) {
-}
-
 t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node* pb_gnode_, const ClusterBlockId clb_index_) :
 	pb_gnode(pb_gnode_),
 	clb_index(clb_index_) {

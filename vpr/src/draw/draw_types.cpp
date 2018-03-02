@@ -8,25 +8,6 @@
  * begin t_draw_state function definitions *
  *******************************************/
 
-t_draw_state::t_draw_state() :
-	pic_on_screen(NO_PICTURE),
-	show_nets(DRAW_NO_NETS),
-    show_crit_path(DRAW_NO_CRIT_PATH),
-	show_congestion(DRAW_NO_CONGEST),
-	draw_rr_toggle(DRAW_NO_RR),
-	max_sub_blk_lvl(0),
-	show_blk_internal(0),
-	show_graphics(false),
-	gr_automode(0),
-	draw_route_type(GLOBAL),
-	net_color(NULL),
-	block_color(NULL),
-	draw_rr_node(nullptr),
-    setup_timing_info(nullptr),
-    arch_info(nullptr) { 
-
-}
-
 void t_draw_state::reset_nets_congestion_and_rr() {
 	show_nets = DRAW_NO_NETS;
 	draw_rr_toggle = DRAW_NO_RR;

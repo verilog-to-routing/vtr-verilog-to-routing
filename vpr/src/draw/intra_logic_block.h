@@ -25,10 +25,10 @@ struct t_selected_sub_block_info {
 	};
 
 	struct gnode_clb_pair {
-		const t_pb_graph_node* pb_gnode;
+		const t_pb_graph_node* pb_gnode = nullptr;
 		const ClusterBlockId clb_index;
+		gnode_clb_pair() = default;
 		gnode_clb_pair(const t_pb_graph_node* pb_gnode, const ClusterBlockId clb_index);
-		gnode_clb_pair();
 		bool operator==(const gnode_clb_pair &) const;
 	};
 

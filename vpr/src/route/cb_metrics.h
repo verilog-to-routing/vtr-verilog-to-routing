@@ -88,18 +88,16 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
 
 class Wire_Counting{
 public:
-    Wire_Counting()
-        : num_wires(0)
-        , expectation_available(0.) {}
+    Wire_Counting() = default;
 
 	/* number of wires in this wire group (here, wires are grouped by the number of switches they carry) */
-	int num_wires;
+	int num_wires = 0;
 	/* map key is number of wires used. element represents how many times, over all possible configurations of the switches
 	   in the channel, 'map key' wires from this wire group is used */
 	std::map<int, long double> configs_used;
 
 	/* the probabilistic expectation of how many wires will actually be used */
-	float expectation_available;
+	float expectation_available = 0.;
 };
 
 

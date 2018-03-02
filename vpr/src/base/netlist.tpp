@@ -15,7 +15,7 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 Netlist<BlockId, PortId, PinId, NetId>::Netlist(std::string name, std::string id)
     : netlist_name_(name)
     , netlist_id_(id) 
-    , dirty_(false) {}
+    {}
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 Netlist<BlockId, PortId, PinId, NetId>::~Netlist() = default;

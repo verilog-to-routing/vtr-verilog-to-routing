@@ -122,25 +122,25 @@ typedef struct {
  *				 [0..device_ctx.num_rr_nodes-1]
  */
 struct t_draw_state {
-	pic_type pic_on_screen;
-	e_draw_nets show_nets;
-    e_draw_crit_path show_crit_path;
-	e_draw_congestion show_congestion;
+	pic_type pic_on_screen = NO_PICTURE;
+	e_draw_nets show_nets = DRAW_NO_NETS;
+    e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
+	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
 	e_draw_routing_costs show_routing_costs;
-	e_draw_rr_toggle draw_rr_toggle;
-	int max_sub_blk_lvl;
-	int show_blk_internal;
-	bool show_graphics;
-	int gr_automode;
-	e_route_type draw_route_type;
+	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
+	int max_sub_blk_lvl = 0;
+	int show_blk_internal = 0;
+	bool show_graphics = false;
+	int gr_automode = 0;
+	e_route_type draw_route_type = GLOBAL;
 	char default_message[vtr::bufsize];
 	vtr::vector_map<ClusterNetId, t_color> net_color;
 	vtr::vector_map<ClusterBlockId, t_color> block_color;
-	t_draw_rr_node *draw_rr_node;
+	t_draw_rr_node *draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
-    const t_arch* arch_info;
+    const t_arch* arch_info = nullptr;
 
-	t_draw_state();
+	t_draw_state() = default;
 
 	void reset_nets_congestion_and_rr();
 
