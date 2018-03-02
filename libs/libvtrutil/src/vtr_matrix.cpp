@@ -37,7 +37,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 	if (num_items == 0) { /* Empty list. */
             ivec->clear();
 
-		if (list_head != NULL ) {
+		if (list_head != nullptr ) {
             throw VtrError(vtr::string_fmt("alloc_ivector_and_copy_int_list: Copied %d elements, "
                                            "but list at %p contains more.", num_items, (void *) list_head), 
                             __FILE__, __LINE__);
@@ -55,7 +55,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 
 	(*ivec)[num_items - 1] = linked_int->data;
 
-	if (linked_int->next != NULL ) {
+	if (linked_int->next != nullptr ) {
         throw VtrError(vtr::string_fmt("alloc_ivector_and_copy_int_list: Copied %d elements, "
                                        "but list at %p contains more.", num_items, (void *) list_head), 
                         __FILE__, __LINE__);
@@ -63,7 +63,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 
 	linked_int->next = *free_list_head_ptr;
 	*free_list_head_ptr = list_head;
-	*list_head_ptr = NULL;
+	*list_head_ptr = nullptr;
 }
 
 

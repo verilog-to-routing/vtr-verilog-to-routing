@@ -209,8 +209,8 @@ char* strncpy(char *dest, const char *src, size_t size) {
 
 char* strdup(const char *str) {
     
-    if (str == NULL ) {
-        return NULL ;
+    if (str == nullptr ) {
+        return nullptr ;
     }
 
     size_t Len = std::strlen(str);
@@ -269,12 +269,12 @@ char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 
     val = std::strtok(ptr, tokens);
     for (;;) {
-        if (val != NULL || cont == 0)
+        if (val != nullptr || cont == 0)
             return (val);
 
         /* return unless we have a null value and a continuation line */
-        if (vtr::fgets(buf, bufsize, fp) == NULL )
-            return (NULL );
+        if (vtr::fgets(buf, bufsize, fp) == nullptr )
+            return (nullptr );
 
         val = std::strtok(buf, tokens);
     }
@@ -283,7 +283,7 @@ char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 FILE* fopen(const char *fname, const char *flag) {
     FILE *fp;
     size_t Len;
-    char *new_fname = NULL;
+    char *new_fname = nullptr;
     file_line_number = 0;
 
     /* Appends a prefix string for output files */
@@ -299,7 +299,7 @@ FILE* fopen(const char *fname, const char *flag) {
         }
     }
 
-    if (NULL == (fp = std::fopen(fname, flag))) {
+    if (nullptr == (fp = std::fopen(fname, flag))) {
         throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__, __LINE__);        
     }
 
@@ -333,7 +333,7 @@ char* fgets(char *buf, int max_size, FILE * fp) {
 
         if (std::feof(fp)) { /* end of file */
             if (i == 0) {
-                return NULL ; /* required so we can write while (vtr::fgets(...) != NULL) */
+                return nullptr ; /* required so we can write while (vtr::fgets(...) != NULL) */
             } else { /* no newline before end of file - last line must be returned */
                 buf[i] = '\0';
                 return buf;
@@ -367,7 +367,7 @@ char* fgets(char *buf, int max_size, FILE * fp) {
     throw VtrError(string_fmt("Error on line %d -- line is too long for input buffer.\n"
                               "All lines must be at most %d characters long.\n", bufsize - 2),
                     __FILE__, __LINE__);
-    return NULL;
+    return nullptr;
 }
 
 /*
@@ -381,7 +381,7 @@ int get_file_line_number_of_last_opened_file() {
 bool file_exists(const char* filename) {
     FILE * file;
 
-    if (filename == NULL ) {
+    if (filename == nullptr ) {
         return false;
     }
 
@@ -411,7 +411,7 @@ bool check_file_name_extension(const char* file_name,
 
     len_extension = std::strlen(file_extension);
     str = std::strstr(file_name, file_extension);
-    if(str == NULL || (*(str + len_extension) != '\0')){
+    if(str == nullptr || (*(str + len_extension) != '\0')){
         return false;
     }
 

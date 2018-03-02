@@ -24,8 +24,8 @@ t_linked_vptr *insert_in_vptr_list(t_linked_vptr *head, void *vptr_to_add) {
 t_linked_vptr *delete_in_vptr_list(t_linked_vptr *head) {
 	t_linked_vptr *linked_vptr;
 
-	if (head == NULL )
-		return NULL ;
+	if (head == nullptr )
+		return nullptr ;
 	linked_vptr = head->next;
 	free(head);
 	return linked_vptr; /* New head of the list */
@@ -41,7 +41,7 @@ t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 
 	t_linked_int *linked_int;
 
-	if (*free_list_head_ptr != NULL ) {
+	if (*free_list_head_ptr != nullptr ) {
 		linked_int = *free_list_head_ptr;
 		*free_list_head_ptr = linked_int->next;
 	} else {
@@ -62,13 +62,13 @@ void free_int_list(t_linked_int ** int_list_head_ptr) {
 
 	linked_int = *int_list_head_ptr;
 
-	while (linked_int != NULL ) {
+	while (linked_int != nullptr ) {
 		next_linked_int = linked_int->next;
 		free(linked_int);
 		linked_int = next_linked_int;
 	}
 
-	*int_list_head_ptr = NULL;
+	*int_list_head_ptr = nullptr;
 }
 
 } //namespace

@@ -30,18 +30,18 @@ int malloc_trim(size_t pad) {
 void* free(void *some){
 	if(some){
 		std::free(some);
-		some = NULL;
+		some = nullptr;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void* calloc(size_t nelem, size_t size) {
 	void *ret;
 	if (nelem == 0) {
-		return NULL ;
+		return nullptr ;
 	}
 
-	if ((ret = std::calloc(nelem, size)) == NULL ) {
+	if ((ret = std::calloc(nelem, size)) == nullptr ) {
 		throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
 	}
 	return (ret);
@@ -50,10 +50,10 @@ void* calloc(size_t nelem, size_t size) {
 void* malloc(size_t size) {
 	void *ret;
 	if (size == 0) {
-		return NULL ;
+		return nullptr ;
 	}
 
-	if ((ret = std::malloc(size)) == NULL && size != 0) {
+	if ((ret = std::malloc(size)) == nullptr && size != 0) {
 		throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
 	}
 	return (ret);
@@ -63,7 +63,7 @@ void* realloc(void *ptr, size_t size) {
 	void *ret;
 
 	ret = std::realloc(ptr, size);
-	if (NULL == ret && size != 0) {
+	if (nullptr == ret && size != 0) {
 		throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
                         __FILE__, __LINE__);
 	}
@@ -113,7 +113,7 @@ void* chunk_malloc(size_t size, t_chunk *chunk_info) {
 			// vtr_printf("You should consider using vtr::malloc for such big requests.\n");
 			// #endif
 
-			VTR_ASSERT(chunk_info != NULL);
+			VTR_ASSERT(chunk_info != nullptr);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
@@ -122,7 +122,7 @@ void* chunk_malloc(size_t size, t_chunk *chunk_info) {
 		if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
 			chunk_info->next_mem_loc_ptr = (char *) vtr::malloc(CHUNK_SIZE);
 			chunk_info->mem_avail = CHUNK_SIZE;
-			VTR_ASSERT(chunk_info != NULL);
+			VTR_ASSERT(chunk_info != nullptr);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
 		}
@@ -133,7 +133,7 @@ void* chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 		else {
 			tmp_ptr = (char *) vtr::malloc(size);
-			VTR_ASSERT(chunk_info != NULL);
+			VTR_ASSERT(chunk_info != nullptr);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
@@ -163,15 +163,15 @@ void free_chunk_memory(t_chunk *chunk_info) {
 
 	curr_ptr = chunk_info->chunk_ptr_head;
 
-	while (curr_ptr != NULL ) {
+	while (curr_ptr != nullptr ) {
 		free(curr_ptr->data_vptr); /* Free memory "chunk". */
 		prev_ptr = curr_ptr;
 		curr_ptr = curr_ptr->next;
 		free(prev_ptr); /* Free memory used to track "chunk". */
 	}
-	chunk_info->chunk_ptr_head = NULL;
+	chunk_info->chunk_ptr_head = nullptr;
 	chunk_info->mem_avail = 0;
-	chunk_info->next_mem_loc_ptr = NULL;
+	chunk_info->next_mem_loc_ptr = nullptr;
 }
 
 } //namespace
