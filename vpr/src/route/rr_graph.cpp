@@ -942,7 +942,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
     VTR_ASSERT((max_chan_width % fac) == 0);
 
     for (int itype = 1; itype < L_num_types; ++itype) { //Skip EMPTY
-        for (const t_fc_specification fc_spec : types[itype].fc_specs) {
+        for (const t_fc_specification& fc_spec : types[itype].fc_specs) {
 
             if (fc_type != fc_spec.fc_type) continue;
 

@@ -149,7 +149,7 @@ void check_rr_graph(const t_graph_type graph_type,
                 bool is_chain = false;
                 if (rr_type == IPIN) {
                     type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
-                    for (const t_fc_specification fc_spec : types[type->index].fc_specs) {
+                    for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
                         if (fc_spec.fc_value == 0 && fc_spec.seg_index == 0) {
                             is_chain = true;
                         }

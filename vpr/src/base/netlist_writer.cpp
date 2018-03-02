@@ -278,7 +278,7 @@ class LutInst : public Instance {
             os << indent(depth) << ".names ";
 
             //Input nets
-            for(auto net : port_conns_["in"]) {
+            for(const auto& net : port_conns_["in"]) {
                 if(net == "") {
                     //Disconnected
                     os << create_unconn_net(unconn_count) << " ";
@@ -656,7 +656,7 @@ class BlackBoxInst : public Instance {
                 os << indent(depth+2) << "(ABSOLUTE\n";
 
                 //Combinational paths
-                for(auto arc : timing_arcs_) {
+                for(const auto& arc : timing_arcs_) {
                     double delay_ps = get_delay_ps(arc.delay());
 
                     std::stringstream delay_triple;
@@ -1022,7 +1022,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
 
             //Cells
-            for(auto inst : cell_instances_) {
+            for(const auto& inst : cell_instances_) {
                 inst->print_sdf(sdf_os_, depth+1);
             }
 

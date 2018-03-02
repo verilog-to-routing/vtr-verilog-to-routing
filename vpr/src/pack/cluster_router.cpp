@@ -1274,7 +1274,7 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
             t_lb_trace curr = q.front();
             q.pop();
 
-            for (t_lb_trace next_trace : curr.next_nodes) {
+            for (const t_lb_trace& next_trace : curr.next_nodes) {
                 q.push(next_trace);
             }
 

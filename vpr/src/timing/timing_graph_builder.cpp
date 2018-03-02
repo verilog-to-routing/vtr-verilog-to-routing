@@ -286,7 +286,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             AtomPortId src_port = netlist_.pin_port(src_pin);
             const t_model_ports* model_port = netlist_.port_model(src_port);
 
-            for(std::string sink_port_name : model_port->combinational_sink_ports) {
+            for(const std::string& sink_port_name : model_port->combinational_sink_ports) {
                 AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
                 if(!sink_port) continue; //Port may not be connected
 
@@ -356,7 +356,7 @@ void TimingGraphBuilder::fix_comb_loops() {
     //multiple edges, so repeatedly break edges until there are no SCCs left
     while(!sccs.empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "Detected %zu strongly connected component(s) forming combinational loop(s) in timing graph\n", sccs.size());
-        for(auto scc : sccs) {
+        for(const auto& scc : sccs) {
             EdgeId edge_to_break = find_scc_edge_to_break(scc);
             VTR_ASSERT(edge_to_break);
 
