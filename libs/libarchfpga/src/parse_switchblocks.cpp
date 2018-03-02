@@ -180,7 +180,7 @@ t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiu
     wire_switchpoints.segment_name = get_attribute(node, "type", loc_data).value();
 
     auto points_str = get_attribute(node, "switchpoint", loc_data).value();
-    for (auto point_str : vtr::split(points_str, ",")) {
+    for (const auto& point_str : vtr::split(points_str, ",")) {
         int switchpoint = vtr::atoi(point_str);
         wire_switchpoints.switchpoints.push_back(switchpoint);
     }
@@ -202,7 +202,7 @@ static void parse_comma_separated_wire_types(const char *ch, std::vector<t_wire_
         archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_types: found empty wireconn wire type entry\n");
     }
 
-    for (auto type : types) {
+    for (const auto& type : types) {
         t_wire_switchpoints wsp;
         wsp.segment_name = type;
 
@@ -218,7 +218,7 @@ static void parse_comma_separated_wire_points(const char *ch, std::vector<t_wire
         archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
     }
 
-    for(auto point_str : points) {
+    for(const auto& point_str : points) {
         int point = vtr::atoi(point_str);
 
         for(auto& wire_switchpoint : wire_switchpoints) {

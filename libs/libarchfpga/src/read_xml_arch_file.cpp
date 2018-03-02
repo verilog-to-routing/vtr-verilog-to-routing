@@ -3309,7 +3309,7 @@ bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::l
 
     //Check that the input port combinational sinks are all outputs
     for(t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
-        for(std::string sink_port_name : port->combinational_sink_ports) {
+        for(const std::string& sink_port_name : port->combinational_sink_ports) {
             if(!output_ports.count(sink_port_name)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
                         "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
@@ -3396,10 +3396,10 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                 //Annotations always put the pin in the input_pins field
                 VTR_ASSERT(annot->input_pins);
-                for(std::string input_pin : vtr::split(annot->input_pins)) {
+                for(const std::string& input_pin : vtr::split(annot->input_pins)) {
                     InstPort annot_port(input_pin);
-                    for(std::string clock : vtr::split(annot->clock)) {
-                        InstPort annot_clock(annot->clock);
+                    for(const std::string& clock : vtr::split(annot->clock)) {
+                        InstPort annot_clock(clock);
 
                         //Find the model port
                         const t_model_ports* model_port = nullptr;
@@ -3438,9 +3438,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
             } else if (annot->input_pins && annot->output_pins) {
                 //Combinational annotation
                 VTR_ASSERT_MSG(!annot->clock, "Combinational annotations should have no clock");
-                for(std::string input_pin : vtr::split(annot->input_pins)) {
+                for(const std::string& input_pin : vtr::split(annot->input_pins)) {
                     InstPort annot_in(input_pin);
-                    for(std::string output_pin : vtr::split(annot->output_pins)) {
+                    for(const std::string& output_pin : vtr::split(annot->output_pins)) {
                         InstPort annot_out(output_pin);
 
                         //Find the input model port
@@ -3584,7 +3584,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
             //Check that combinationally connected inputs/outputs have combinational delays between them
             if (model_port->dir == IN_PORT) {
-                for (auto sink_port : model_port->combinational_sink_ports) {
+                for (const auto& sink_port : model_port->combinational_sink_ports) {
                     if (find_combinational_annotation(pb_type, model_port->name, sink_port) == nullptr) {
                         std::stringstream msg;
                         msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
@@ -3631,9 +3631,9 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
 const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
     for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
-        for (auto annot_in_str : vtr::split(annot->input_pins)) {
+        for (const auto& annot_in_str : vtr::split(annot->input_pins)) {
             InstPort in_pins(annot_in_str);
-            for (auto annot_out_str : vtr::split(annot->output_pins)) {
+            for (const auto& annot_out_str : vtr::split(annot->output_pins)) {
                 InstPort out_pins(annot_out_str);
                 if(in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
                     for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
