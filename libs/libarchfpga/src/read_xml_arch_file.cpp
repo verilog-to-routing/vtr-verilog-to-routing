@@ -343,7 +343,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
             for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 				Type->pinloc[width][height][side] = (bool *) vtr::malloc(Type->num_pins * sizeof(int));
 				for (int pin = 0; pin < Type->num_pins; ++pin) {
-					Type->pinloc[width][height][side][pin] = 0;
+					Type->pinloc[width][height][side][pin] = false;
 				}
 			}
 		}

@@ -269,7 +269,7 @@ static void formula_to_rpn( const char* formula, const t_formula_data &mydata,
 	int ichar = 0;
 	const char *ch = nullptr;
 	/* go through formula and build rpn_output along with op_stack until \0 character is hit */
-	while(1) {
+	while(true) {
 		ch = &formula[ichar];
 
 		if ('\0' == (*ch)){
