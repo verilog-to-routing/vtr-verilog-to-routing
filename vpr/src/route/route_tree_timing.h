@@ -9,7 +9,7 @@
 //Returns true if allocated
 bool alloc_route_tree_timing_structs(bool exists_ok = false);
 
-void free_route_tree_timing_structs(void);
+void free_route_tree_timing_structs();
 
 t_rt_node *init_route_tree_to_source(ClusterNetId inet);
 

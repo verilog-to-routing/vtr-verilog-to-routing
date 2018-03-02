@@ -68,7 +68,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
-void vpr_print_title(void);
+void vpr_print_title();
 void vpr_print_args(int argc, const char** argv);
 
 /****************************************************************************************************

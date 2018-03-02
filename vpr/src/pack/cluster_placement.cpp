@@ -56,7 +56,7 @@ static void flush_intermediate_queues(
 /**
  * [0..num_pb_types-1] array of cluster placement stats, one for each device_ctx.block_types 
  */
-t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
+t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
 	t_cluster_placement_stats *cluster_placement_stats_list;
 	int i;
 

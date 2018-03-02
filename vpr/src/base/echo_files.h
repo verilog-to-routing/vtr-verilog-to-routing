@@ -64,7 +64,7 @@ enum e_output_files {
 	E_FILE_END_TOKEN
 };
 
-bool getEchoEnabled(void);
+bool getEchoEnabled();
 void setEchoEnabled(bool echo_enabled);
 
 void setAllEchoFileEnabled(bool value);

@@ -171,7 +171,7 @@ of the driver tnode. */
 
 /***************** Subroutines local to this module *************************/
 
-static t_slack * alloc_slacks(void);
+static t_slack * alloc_slacks();
 
 static void update_slacks(t_slack * slacks, float criticality_denom,
     bool update_slack, bool is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf);
@@ -183,7 +183,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
 static void mark_max_block_delay(const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode);
 
-static void alloc_timing_stats(void);
+static void alloc_timing_stats();
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
@@ -225,7 +225,7 @@ static int find_cf_constraint(const char * source_clock_name, const char * sink_
 
 static void propagate_clock_domain_and_skew(int inode);
 
-static void process_constraints(void);
+static void process_constraints();
 
 static void print_global_criticality_stats(FILE * fp, float ** criticality, const char * singular_name, const char * capitalized_plural_name);
 
@@ -365,7 +365,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 	return slacks;
 }
 
-static t_slack * alloc_slacks(void) {
+static t_slack * alloc_slacks() {
 
 	/* Allocates the slack, criticality and path_criticality structures 
 	([0..net.size()-1][1..num_pins-1]). Chunk allocated to save space. */
@@ -459,7 +459,7 @@ void free_timing_graph(t_slack * slacks) {
 	slacks = nullptr;
 }
 
-void free_timing_stats(void) {
+void free_timing_stats() {
 	int i;
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -1808,7 +1808,7 @@ void print_timing_graph(const char *fname) {
 
 	fclose(fp);
 }
-static void process_constraints(void) {
+static void process_constraints() {
 	/* Removes all constraints between domains which never intersect. We need to do this 
 	so that criticality_denom in do_timing_analysis is not affected	by unused constraints. 
 	BFS through the levelized graph once for each source domain. Whenever we get to a sink, 
@@ -1932,7 +1932,7 @@ static void process_constraints(void) {
 	free_override_constraint(timing_ctx.sdc->cc_constraints, timing_ctx.sdc->num_cc_constraints);
 }
 
-static void alloc_timing_stats(void) {
+static void alloc_timing_stats() {
 
 	/* Allocate f_timing_stats data structure. */
 
@@ -3564,7 +3564,7 @@ bool has_valid_normalized_T_arr(int inode) {
 }
 #endif
 
-float get_critical_path_delay(void) {
+float get_critical_path_delay() {
 	/* Finds the critical path delay, which is the minimum clock period required to meet the constraint
 	corresponding to the pair of source and sink clock domains with the least slack in the design. */
 	
@@ -3591,7 +3591,7 @@ float get_critical_path_delay(void) {
 	return critical_path_delay * 1e9; /* Convert to nanoseconds */
 }
 
-void print_timing_stats(void) {
+void print_timing_stats() {
 
 	/* Prints critical path delay/fmax, least slack in design, and, for multiple-clock designs, 
 	minimum required clock period to meet each constraint, least slack per constraint,

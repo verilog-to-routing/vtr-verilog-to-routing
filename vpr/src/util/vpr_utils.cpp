@@ -56,11 +56,11 @@ static int *** f_blk_pin_from_port_pin = nullptr;
 /* Allocates and loads f_port_from_blk_pin and f_port_pin_from_blk_pin   *
  * arrays.                                                               *
  * The arrays are freed in free_placement_structs()                      */
-static void alloc_and_load_port_pin_from_blk_pin(void);
+static void alloc_and_load_port_pin_from_blk_pin();
 
 /* Allocates and loads blk_pin_from_port_pin array.                      *
  * The arrays are freed in free_placement_structs()                      */
-static void alloc_and_load_blk_pin_from_port_pin(void);
+static void alloc_and_load_blk_pin_from_port_pin();
 
 /* Go through all the ports in all the blocks to find the port that has the same   *
  * name as port_name and belongs to the block type that has the name pb_type_name. *
@@ -1406,7 +1406,7 @@ void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
 
 }
 
-void free_port_pin_from_blk_pin(void) {
+void free_port_pin_from_blk_pin() {
 
 	/* Frees the f_port_from_blk_pin and f_port_pin_from_blk_pin arrays.     *
 	 *                                                                       *
@@ -1436,7 +1436,7 @@ void free_port_pin_from_blk_pin(void) {
 
 }
 
-static void alloc_and_load_port_pin_from_blk_pin(void) {
+static void alloc_and_load_port_pin_from_blk_pin() {
 	
 	/* Allocates and loads f_port_from_blk_pin and f_port_pin_from_blk_pin   *
 	 * arrays.                                                               *
@@ -1512,7 +1512,7 @@ void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin,
 
 }
 
-void free_blk_pin_from_port_pin(void) {
+void free_blk_pin_from_port_pin() {
 
 	/* Frees the f_blk_pin_from_port_pin array.               *
 	 *                                                        *
@@ -1538,7 +1538,7 @@ void free_blk_pin_from_port_pin(void) {
 
 }
 
-static void alloc_and_load_blk_pin_from_port_pin(void) {
+static void alloc_and_load_blk_pin_from_port_pin() {
 
 	/* Allocates and loads blk_pin_from_port_pin array.                      *
 	 *                                                                       *

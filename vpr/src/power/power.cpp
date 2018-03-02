@@ -75,7 +75,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		t_pb_graph_node * pb_node, ClusterBlockId iblk);
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 	t_pb_graph_node * pb_graph_node, ClusterBlockId iblk);
-static void power_reset_tile_usage(void);
+static void power_reset_tile_usage();
 static void power_reset_pb_type(t_pb_type * pb_type);
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
 		t_pb * pb, t_pb_graph_node * pb_node, ClusterBlockId iblk);
@@ -590,7 +590,7 @@ static void power_reset_pb_type(t_pb_type * pb_type) {
 /**
  * Resets the power usage for all tile types
  */
-static void power_reset_tile_usage(void) {
+static void power_reset_tile_usage() {
 	int type_idx;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1342,7 +1342,7 @@ bool power_init(const char * power_out_filepath,
 /**
  * Uninitialize power module
  */
-bool power_uninit(void) {
+bool power_uninit() {
 	int mux_size;
 	int log_idx;
 	int rr_node_idx;

@@ -103,9 +103,9 @@ static std::string sdc_file_name = "<default_SDC>.sdc"; /* Name of SDC file */
 
 /***************** Subroutines local to this module *************************/
 
-static void alloc_and_load_netlist_clocks_and_ios(void);
-static void use_default_timing_constraints(void);
-static void count_netlist_clocks_as_constrained_clocks(void);
+static void alloc_and_load_netlist_clocks_and_ios();
+static void use_default_timing_constraints();
+static void count_netlist_clocks_as_constrained_clocks();
 static void add_clock(std::string net_name);
 static int find_constrained_clock(char * ptr);
 static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
@@ -699,7 +699,7 @@ static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_l
     return true;
 }
 
-static void use_default_timing_constraints(void) {
+static void use_default_timing_constraints() {
 
 	int source_clock_domain, sink_clock_domain;
 
@@ -772,7 +772,7 @@ static void use_default_timing_constraints(void) {
 	}
 }
 
-static void alloc_and_load_netlist_clocks_and_ios(void) {
+static void alloc_and_load_netlist_clocks_and_ios() {
     std::map<const t_model*,std::vector<const t_model_ports*>> clock_gen_ports; //Records info about clock generating ports
 
 	/* Count how many clocks and I/Os are in the netlist. 
@@ -869,7 +869,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	}
 }
 
-static void count_netlist_clocks_as_constrained_clocks(void) {
+static void count_netlist_clocks_as_constrained_clocks() {
 	/* Counts how many clocks are in the netlist, and adds them to the array timing_ctx.sdc->constrained_clocks. */
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1169,7 +1169,7 @@ static bool regex_match (const char * string, const char * regular_expression) {
 	}
 }
 
-void free_sdc_related_structs(void) {
+void free_sdc_related_structs() {
     auto& timing_ctx = g_vpr_ctx.mutable_timing();
 
 	if (!timing_ctx.sdc) return;

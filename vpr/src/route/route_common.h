@@ -56,7 +56,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac);
 t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
-void reset_path_costs(void);
+void reset_path_costs();
 
 float get_rr_cong_cost(int inode);
 
@@ -64,11 +64,11 @@ void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
 void add_to_heap(t_heap *hptr);
-t_heap *alloc_heap_data(void);
+t_heap *alloc_heap_data();
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
 
-bool is_empty_heap(void);
+bool is_empty_heap();
 
 void free_traceback(ClusterNetId net_id);
 
@@ -88,9 +88,9 @@ namespace heap_ {
 	void verify_extract_top();
 }
 
-t_heap *get_heap_head(void);
+t_heap *get_heap_head();
 
-void empty_heap(void);
+void empty_heap();
 
 void free_heap_data(t_heap *hptr);
 
@@ -98,16 +98,16 @@ void invalidate_heap_entries(int sink_node, int ipin_node);
 
 void init_route_structs(int bb_factor);
 
-void alloc_and_load_rr_node_route_structs(void);
+void alloc_and_load_rr_node_route_structs();
 
-void reset_rr_node_route_structs(void);
+void reset_rr_node_route_structs();
 
-void free_trace_structs(void);
+void free_trace_structs();
 
 void init_heap(const DeviceGrid& grid);
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins);
 
-void free_chunk_memory_trace(void);
+void free_chunk_memory_trace();
 
 bool validate_traceback(t_trace* trace);
 void print_traceback(ClusterNetId net_id);
@@ -117,6 +117,6 @@ void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
 void print_invalid_routing_info();
 
-t_trace* alloc_trace_data(void);
+t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
 

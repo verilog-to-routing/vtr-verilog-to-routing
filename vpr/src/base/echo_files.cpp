@@ -20,7 +20,7 @@ static char **echoFileNames = nullptr;
 
 static char **outputFileNames = nullptr;
 
-bool getEchoEnabled(void) {
+bool getEchoEnabled() {
     return EchoEnabled;
 }
 

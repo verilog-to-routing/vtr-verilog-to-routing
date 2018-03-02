@@ -40,7 +40,7 @@ void create_rr_graph(
         int *num_rr_switches,
         int *Warnings);
 
-void free_rr_graph(void);
+void free_rr_graph();
 
 void dump_rr_graph(const char *file_name);
 void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */

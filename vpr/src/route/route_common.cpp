@@ -106,13 +106,13 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
-static t_linked_f_pointer *alloc_linked_f_pointer(void);
+static t_linked_f_pointer *alloc_linked_f_pointer();
 
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
-static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void);
+static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 		float pres_fac, float acc_fac);
 
@@ -191,7 +191,7 @@ void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 /* This routine finds a "magic cookie" for the routing and prints it.    *
 * Use this number as a routing serial number to ensure that programming *
 * changes do not break the router.                                      */
-void get_serial_num(void) {
+void get_serial_num() {
 	int serial_num, inode;
 	t_trace *tptr;
 
@@ -366,7 +366,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	return (success);
 }
 
-bool feasible_routing(void) {
+bool feasible_routing() {
 
 	/* This routine checks to see if this is a resource-feasible routing.      *
 	 * That is, are all rr_node capacity limitations respected?  It assumes    *
@@ -732,7 +732,7 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
 
 }
 
-void reset_path_costs(void) {
+void reset_path_costs() {
 	t_linked_f_pointer *mod_ptr;
 	int num_mod_ptrs;
 
@@ -866,7 +866,7 @@ vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing() {
 }
 
 /* TODO: super hacky, jluu comment, I need to rethink this whole function, without it, logically equivalent output pins incorrectly use more pins than needed.  I force that CLB output pin uses at most one output pin  */
-static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
+static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
 	/* Allocates and loads the data needed to make the router reserve some CLB  *
 	 * output pins for connections made locally within a CLB (if the netlist    *
@@ -915,7 +915,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 /*the trace lists are only freed after use by the timing-driven placer */
 	/*Do not  free them after use by the router, since stats, and draw  */
 	/*routines use the trace values */
-void free_trace_structs(void) {
+void free_trace_structs() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -985,7 +985,7 @@ void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing) 
 	}
 }
 
-void alloc_and_load_rr_node_route_structs(void) {
+void alloc_and_load_rr_node_route_structs() {
 
 	/* Allocates some extra information about each rr_node that is used only   *
 	 * during routing.                                                         */
@@ -997,7 +997,7 @@ void alloc_and_load_rr_node_route_structs(void) {
     reset_rr_node_route_structs();
 }
 
-void reset_rr_node_route_structs(void) {
+void reset_rr_node_route_structs() {
 
 	/* Resets some extra information about each rr_node that is used only   *
 	 * during routing.                                                         */
@@ -1333,12 +1333,12 @@ void add_to_heap(t_heap *hptr) {
 }
 
 /*WMF: peeking accessor :) */
-bool is_empty_heap(void) {
+bool is_empty_heap() {
 	return (bool)(heap_tail == 1);
 }
 
 t_heap *
-get_heap_head(void) {
+get_heap_head() {
 
 	/* Returns a pointer to the smallest element on the heap, or NULL if the     *
 	 * heap is empty.  Invalid (index == OPEN) entries on the heap are never     *
@@ -1373,7 +1373,7 @@ get_heap_head(void) {
 	return (cheapest);
 }
 
-void empty_heap(void) {
+void empty_heap() {
 
 	for (int i = 1; i < heap_tail; i++)
 		free_heap_data(heap[i]);
@@ -1382,7 +1382,7 @@ void empty_heap(void) {
 }
 
 t_heap *
-alloc_heap_data(void) {
+alloc_heap_data() {
 
 	if (heap_free_head == nullptr) { /* No elements on the free list */
 		heap_free_head = vtr::chunk_new<t_heap>(&heap_ch);
@@ -1429,7 +1429,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 }
 
 t_trace *
-alloc_trace_data(void) {
+alloc_trace_data() {
 
 	t_trace *temp_ptr;
 
@@ -1453,7 +1453,7 @@ void free_trace_data(t_trace *tptr) {
 }
 
 static t_linked_f_pointer *
-alloc_linked_f_pointer(void) {
+alloc_linked_f_pointer() {
 
 	/* This routine returns a linked list element with a float pointer as *
 	 * the node data.                                                     */
@@ -1690,7 +1690,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 	}
 }
 
-void free_chunk_memory_trace(void) {
+void free_chunk_memory_trace() {
 	if (trace_ch.chunk_ptr_head != nullptr) {
 		free_chunk_memory(&trace_ch);
 	}

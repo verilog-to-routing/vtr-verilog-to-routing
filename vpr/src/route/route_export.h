@@ -22,9 +22,9 @@ bool try_route(int width_fac, t_router_opts router_opts,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority);
 
-bool feasible_routing(void);
+bool feasible_routing();
 
-t_clb_opins_used alloc_route_structs(void);
+t_clb_opins_used alloc_route_structs();
 
 void free_route_structs();
 
@@ -40,6 +40,6 @@ void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used& clb_opins_used_locally,
 		const t_clb_opins_used& saved_clb_opins_used_locally);
 
-void get_serial_num(void);
+void get_serial_num();
 
 void print_route(const char* place_file, const char* route_file);

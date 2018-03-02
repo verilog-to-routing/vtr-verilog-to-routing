@@ -1196,7 +1196,7 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
     }
 }
 
-void free_rr_graph(void) {
+void free_rr_graph() {
     /* Frees all the routing graph data structures, if they have been       *
      * allocated.  I use rr_mem_chunk_list_head as a flag to indicate       *
      * whether or not the graph has been allocated -- if it is not NULL,    *

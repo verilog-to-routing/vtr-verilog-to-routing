@@ -35,9 +35,9 @@ using namespace std;
 
 static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ);
 
-static void length_and_bends_stats(void);
+static void length_and_bends_stats();
 
-static void get_channel_occupancy_stats(void);
+static void get_channel_occupancy_stats();
 
 /************************* Subroutine definitions ****************************/
 
@@ -144,7 +144,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 
 /* Figures out maximum, minimum and average number of bends and net length   *
 * in the routing.                                                           */
-void length_and_bends_stats(void) {
+void length_and_bends_stats() {
 	int bends, total_bends, max_bends;
 	int length, total_length, max_length;
 	int segments, total_segments, max_segments;
@@ -200,7 +200,7 @@ void length_and_bends_stats(void) {
 	vtr::printf_info("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
 }
 
-static void get_channel_occupancy_stats(void) {
+static void get_channel_occupancy_stats() {
 
 	/* Determines how many tracks are used in each channel.                    */
     auto& device_ctx = g_vpr_ctx.device();
@@ -364,7 +364,7 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 	*segments_ptr = segments;
 }
 
-void print_wirelen_prob_dist(void) {
+void print_wirelen_prob_dist() {
 
 	/* Prints out the probability distribution of the wirelength / number   *
 	 * input pins on a net -- i.e. simulates 2-point net length probability *
@@ -452,7 +452,7 @@ void print_wirelen_prob_dist(void) {
 	free(prob_dist);
 }
 
-void print_lambda(void) {
+void print_lambda() {
 
 	/* Finds the average number of input pins used per clb.  Does not    *
 	 * count inputs which are hooked to global nets (i.e. the clock     *
@@ -485,7 +485,7 @@ void print_lambda(void) {
 	vtr::printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
-int count_netlist_clocks(void) {
+int count_netlist_clocks() {
 	/* Count how many clocks are in the netlist. */
 
     auto& atom_ctx = g_vpr_ctx.atom();

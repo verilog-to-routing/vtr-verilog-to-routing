@@ -77,8 +77,8 @@ public:
 	void sort_me();
 
 //	void update_scale_factor(float (*fn)(float size));
-	void callibrate(void);
-	bool is_done_callibration(void);
+	void callibrate();
+	bool is_done_callibration();
 	void print(FILE * fp);
 };
 

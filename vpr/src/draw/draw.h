@@ -17,7 +17,7 @@ void init_draw_coords(float clb_width);
 void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 		enum e_route_type route_type);
 
-void free_draw_structs(void);
+void free_draw_structs();
 
 void draw_get_rr_pin_coords(int inode, float *xcen, float *ycen);
 void draw_get_rr_pin_coords(t_rr_node* node, float *xcen, float *ycen);

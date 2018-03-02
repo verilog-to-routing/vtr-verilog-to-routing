@@ -23,7 +23,7 @@ using namespace std;
 
 static void check_connections_to_global_clb_pins(ClusterNetId net_id);
 
-static int check_for_duplicated_names(void);
+static int check_for_duplicated_names();
 
 static int check_clb_conn(ClusterBlockId iblk, int num_conn);
 
@@ -191,7 +191,7 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
 	return error;
 }
 
-static int check_for_duplicated_names(void) {
+static int check_for_duplicated_names() {
 	int error, clb_count;
 	t_hash **clb_hash_table, *clb_h_ptr;
 	

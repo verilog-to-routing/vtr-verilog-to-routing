@@ -89,17 +89,17 @@ std::unique_ptr<tbb::task_scheduler_init> tbb_scheduler;
 #endif
 
 /* Local subroutines */
-static void free_complex_block_types(void);
+static void free_complex_block_types();
 
 static void free_device(const t_det_routing_arch& routing_arch);
-static void free_circuit(void);
+static void free_circuit();
 
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
         int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 /* Local subroutines end */
 
 /* Display general VPR information */
-void vpr_print_title(void) {
+void vpr_print_title() {
 
     vtr::printf_info("\n");
     vtr::printf_info("VPR FPGA Placement and Routing.\n");
@@ -893,7 +893,7 @@ void free_device(const t_det_routing_arch& routing_arch) {
     free_chunk_memory_trace();
 }
 
-static void free_complex_block_types(void) {
+static void free_complex_block_types() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 

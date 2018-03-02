@@ -40,7 +40,7 @@ static char binary_not(char c);
 /* This function prints high-activitiy and zero-activity single-cycle
  * energy estimations for a variety of components and sizes.
  */
-void power_print_spice_comparison(void) {
+void power_print_spice_comparison() {
 //
 	t_power_usage sub_power_usage;
 //
@@ -398,7 +398,7 @@ float power_usage_ff_for_callibration(int num_inputs, float transistor_size) {
 	return power_sum_usage(&power_usage);
 }
 
-void power_callibrate(void) {
+void power_callibrate() {
 	/* Buffers and Mux must be done before LUT/FF */
     auto& power_ctx = g_vpr_ctx.power();
 
@@ -409,7 +409,7 @@ void power_callibrate(void) {
 	power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF]->callibrate();
 }
 
-void power_print_callibration(void) {
+void power_print_callibration() {
     auto& power_ctx = g_vpr_ctx.power();
 
 	power_print_title(power_ctx.output->out, "Callibration Data");

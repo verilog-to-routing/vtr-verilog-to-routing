@@ -73,8 +73,8 @@ struct t_power_breakdown {
 typedef t_power_breakdown t_power_components;
 /************************* FUNCTION DECLARATIONS ********************/
 
-void power_components_init(void);
-void power_components_uninit(void);
+void power_components_init();
+void power_components_uninit();
 void power_component_get_usage(t_power_usage * power_usage,
 		e_power_component_type component_idx);
 void power_component_add_usage(t_power_usage * power_usage,

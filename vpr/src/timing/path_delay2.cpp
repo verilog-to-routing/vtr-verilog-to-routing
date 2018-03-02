@@ -99,7 +99,7 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 	return (tnode_num_fanin);
 }
 
-int alloc_and_load_timing_graph_levels(void) {
+int alloc_and_load_timing_graph_levels() {
 
 	/* Does a breadth-first search through the timing graph in order to levelize  *
 	 * it.  This allows subsequent traversals to be done topologically for speed. *

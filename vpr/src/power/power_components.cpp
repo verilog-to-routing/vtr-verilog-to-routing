@@ -49,7 +49,7 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 /**
  * Module initializer function, called by power_init
  */
-void power_components_init(void) {
+void power_components_init() {
 	int i;
     auto& power_ctx = g_vpr_ctx.mutable_power();
 
@@ -63,7 +63,7 @@ void power_components_init(void) {
 /**
  * Module un-initializer function, called by power_uninit
  */
-void power_components_uninit(void) {
+void power_components_uninit() {
     auto& power_ctx = g_vpr_ctx.mutable_power();
 	free(power_ctx.by_component.components);
 }

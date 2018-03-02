@@ -40,13 +40,13 @@ typedef enum {
 } e_power_callib_component;
 
 /************************* FUNCTION DECLARATIONS ********************/
-void power_print_spice_comparison(void);
-void power_callibrate(void);
+void power_print_spice_comparison();
+void power_callibrate();
 float power_usage_buf_for_callibration(int num_inputs, float transistor_size);
 float power_usage_buf_levr_for_callibration(int num_inputs,
 		float transistor_size);
 float power_usage_mux_for_callibration(int num_inputs, float transistor_size);
 float power_usage_lut_for_callibration(int num_inputs, float transistor_size);
 float power_usage_ff_for_callibration(int num_inputs, float transistor_size);
-void power_print_callibration(void);
+void power_print_callibration();
 #endif

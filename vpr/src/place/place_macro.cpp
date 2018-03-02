@@ -284,7 +284,7 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro *macros, int num_macros) 
 	}
 }
 
-void free_placement_macros_structs(void) {
+void free_placement_macros_structs() {
 
 	/* This function frees up all the static data structures used. */
 

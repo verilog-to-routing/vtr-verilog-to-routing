@@ -304,7 +304,7 @@ bool power_init(const char * power_out_filepath,
 		const char * cmos_tech_behavior_filepath, const t_arch * arch,
 		const t_det_routing_arch * routing_arch);
 
-bool power_uninit(void);
+bool power_uninit();
 
 /* Top-Level Function */
 e_power_ret_code power_total(float * run_time_s, const t_vpr_setup& vpr_setup,

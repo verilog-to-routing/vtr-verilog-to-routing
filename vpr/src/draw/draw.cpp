@@ -260,27 +260,27 @@ std::string rr_highlight_message;
 
 /********************** Subroutines local to this module ********************/
 
-static void toggle_nets(void (*drawscreen)(void));
-static void toggle_rr(void (*drawscreen)(void));
-static void toggle_congestion(void (*drawscreen)(void));
-static void toggle_routing_congestion_cost(void (*drawscreen)(void));
-static void toggle_crit_path(void (*drawscreen_ptr)(void));
+static void toggle_nets(void (*drawscreen)());
+static void toggle_rr(void (*drawscreen)());
+static void toggle_congestion(void (*drawscreen)());
+static void toggle_routing_congestion_cost(void (*drawscreen)());
+static void toggle_crit_path(void (*drawscreen_ptr)());
 
-static void drawscreen(void);
-static void redraw_screen(void);
-static void drawplace(void);
-static void drawnets(void);
+static void drawscreen();
+static void redraw_screen();
+static void drawplace();
+static void drawnets();
 static void drawroute(enum e_draw_net_type draw_net_type);
-static void draw_congestion(void);
+static void draw_congestion();
 static void draw_routing_costs();
 static void draw_crit_path();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
 static void act_on_mouse_over(float x, float y);
-static void deselect_all(void);
+static void deselect_all();
 
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
-static void draw_rr(void);
+static void draw_rr();
 static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, const t_color& color);
 static void draw_rr_chan(int inode, const t_color color);
@@ -526,7 +526,7 @@ static void redraw_screen() {
 	draw_logical_connections();
 }
 
-static void toggle_nets(void (*drawscreen_ptr)(void)) {
+static void toggle_nets(void (*drawscreen_ptr)()) {
 
 	/* Enables/disables drawing of nets when a the user clicks on a button.    *
 	 * Also disables drawing of routing resources.  See graphics.c for details *
@@ -555,7 +555,7 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void toggle_rr(void (*drawscreen_ptr)(void)) {
+static void toggle_rr(void (*drawscreen_ptr)()) {
 
 	/* Cycles through the options for viewing the routing resources available   *
 	 * in an FPGA.  If a routing isn't on screen, the routing graph hasn't been *
@@ -575,7 +575,7 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void toggle_congestion(void (*drawscreen_ptr)(void)) {
+static void toggle_congestion(void (*drawscreen_ptr)()) {
 
 	/* Turns the congestion display on and off.   */
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -592,7 +592,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void toggle_routing_congestion_cost(void (*drawscreen_ptr)(void)) {
+static void toggle_routing_congestion_cost(void (*drawscreen_ptr)()) {
     //Turns routing congestion costs on and off
 	t_draw_state* draw_state = get_draw_state_vars();
 	e_draw_routing_costs new_state = (enum e_draw_routing_costs) (((int)draw_state->show_routing_costs + 1) 
@@ -607,7 +607,7 @@ static void toggle_routing_congestion_cost(void (*drawscreen_ptr)(void)) {
     drawscreen_ptr();
 }
 
-void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
+void toggle_blk_internal(void (*drawscreen_ptr)()) {
 	t_draw_state *draw_state;
 
 	/* Call accessor function to retrieve global variables. */
@@ -624,7 +624,7 @@ void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void toggle_crit_path(void (*drawscreen_ptr)(void)) {
+static void toggle_crit_path(void (*drawscreen_ptr)()) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->pic_on_screen == PLACEMENT) {
@@ -695,7 +695,7 @@ void alloc_draw_structs(const t_arch* arch) {
 	deselect_all(); /* Set initial colors */
 }
 
-void free_draw_structs(void) {
+void free_draw_structs() {
 
 	/* Free everything allocated by alloc_draw_structs. Called after close_graphics() *
 	 * in vpr_api.c.
@@ -785,7 +785,7 @@ void init_draw_coords(float width_val) {
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
 * while empty ones are lighter colours and have a dashed border.      */
-static void drawplace(void) {
+static void drawplace() {
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -855,7 +855,7 @@ static void drawplace(void) {
 	}
 }
 
-static void drawnets(void) {
+static void drawnets() {
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 	/* This routine draws the nets on the placement.  The nets have not *
@@ -890,7 +890,7 @@ static void drawnets(void) {
 	}
 }
 
-static void draw_congestion(void) {
+static void draw_congestion() {
 
 	/* Draws all the overused routing resources (i.e. congestion) in RED.   */
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -1106,7 +1106,7 @@ static void draw_routing_costs() {
     draw_color_map_legend(cmap);
 }
 
-void draw_rr(void) {
+void draw_rr() {
 
 	/* Draws the routing resources that exist in the FPGA, if the user wants *
 	 * them drawn.                                                           */
@@ -2607,7 +2607,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) 
 }
 
 
-static void deselect_all(void) {
+static void deselect_all() {
 	// Sets the color of all clbs, nets and rr_nodes to the default.
 	// as well as clearing the highlighed sub-block
 

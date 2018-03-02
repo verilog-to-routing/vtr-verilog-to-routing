@@ -124,11 +124,11 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
 void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
 		int * port_pin);
-void free_port_pin_from_blk_pin(void);
+void free_port_pin_from_blk_pin();
 
 void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin, 
 		int * blk_pin);
-void free_blk_pin_from_port_pin(void);
+void free_blk_pin_from_port_pin();
 
 void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 		int *** idirect_from_blk_pin, int *** direct_type_from_blk_pin);

@@ -38,7 +38,7 @@ using namespace std;
 static double f_MTA_area;
 
 /************************* FUNCTION DELCARATIONS ********************/
-static double power_count_transistors_connectionbox(void);
+static double power_count_transistors_connectionbox();
 static double power_count_transistors_mux(t_mux_arch * mux_arch);
 static double power_count_transistors_mux_node(t_mux_node * mux_node,
 		float transistor_size);
@@ -51,7 +51,7 @@ static double power_count_transistors_primitive(t_pb_type * pb_type);
 static double power_count_transistors_LUT(int LUT_inputs,
 		float transistor_size);
 static double power_count_transistors_FF(float size);
-static double power_count_transistor_SRAM_bit(void);
+static double power_count_transistor_SRAM_bit();
 static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate(float size);
 static double power_count_transistors_levr();
@@ -59,7 +59,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		bool pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
 static double power_transistors_per_tile(const t_arch * arch);
-static void power_size_pb(void);
+static void power_size_pb();
 static void power_size_pb_rec(t_pb_graph_node * pb_node);
 static void power_size_pin_to_interconnect(t_interconnect * interc,
 		int * fanout, float * wirelength);
@@ -70,7 +70,7 @@ static double power_MTAs_L(float L_size);
 /**
  *  Counts the number of transistors in the largest connection box
  */
-static double power_count_transistors_connectionbox(void) {
+static double power_count_transistors_connectionbox() {
 	double transistor_cnt = 0.;
 	int inputs;
 	float buffer_size;
@@ -429,7 +429,7 @@ static double power_count_transistors_primitive(t_pb_type * pb_type) {
 /**
  * Returns the transistor count of an SRAM cell
  */
-static double power_count_transistor_SRAM_bit(void) {
+static double power_count_transistor_SRAM_bit() {
     auto& power_ctx = g_vpr_ctx.power();
 	return power_ctx.arch->transistors_per_SRAM_bit;
 }
@@ -535,7 +535,7 @@ static double power_MTAs_L(float L_size) {
 	return 1 + (L_size - 1) * (POWER_DRC_MIN_L / POWER_MTA_L);
 }
 
-static void power_size_pb(void) {
+static void power_size_pb() {
 	int type_idx;
 
     auto& device_ctx = g_vpr_ctx.device();

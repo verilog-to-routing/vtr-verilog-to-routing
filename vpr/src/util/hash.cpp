@@ -8,7 +8,7 @@ using namespace std;
 #include "hash.h"
 
 t_hash **
-alloc_hash_table(void) {
+alloc_hash_table() {
 
 	/* Creates a hash table with HASHSIZE different locations (hash values).   */
 
@@ -39,7 +39,7 @@ void free_hash_table(t_hash **hash_table) {
 	free(hash_table);
 }
 
-t_hash_iterator start_hash_table_iterator(void) {
+t_hash_iterator start_hash_table_iterator() {
 
 	/* Call this routine before you start going through all the elements in    *
 	 * a hash table.  It sets the internal indices to the start of the table.  */

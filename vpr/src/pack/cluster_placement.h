@@ -7,7 +7,7 @@
 #define CLUSTER_PLACEMENT_H
 #include "arch_types.h"
 
-t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void);
+t_cluster_placement_stats *alloc_and_load_cluster_placement_stats();
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
 		const t_pack_molecule *molecule,

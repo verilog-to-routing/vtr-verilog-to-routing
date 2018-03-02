@@ -10,7 +10,7 @@
 #include "route_common.h"
 #include "router_stats.h"
 
-int get_max_pins_per_net(void);
+int get_max_pins_per_net();
 
 bool try_timing_driven_route(t_router_opts router_opts,
 		vtr::vector_map<ClusterNetId, float *> &net_delay, 

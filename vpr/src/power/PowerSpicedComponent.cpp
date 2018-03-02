@@ -209,7 +209,7 @@ bool sorter_PowerCallibInputs(PowerCallibInputs * a, PowerCallibInputs * b) {
 	return a->num_inputs < b->num_inputs;
 }
 
-void PowerSpicedComponent::sort_me(void) {
+void PowerSpicedComponent::sort_me() {
 	sort(entries.begin(), entries.end(), sorter_PowerCallibInputs);
 
 	for (vector<PowerCallibInputs*>::iterator it = entries.begin();
@@ -219,7 +219,7 @@ void PowerSpicedComponent::sort_me(void) {
 	sorted = true;
 }
 
-void PowerSpicedComponent::callibrate(void) {
+void PowerSpicedComponent::callibrate() {
 	sort_me();
 
 	for (vector<PowerCallibInputs*>::iterator it = entries.begin();
@@ -229,7 +229,7 @@ void PowerSpicedComponent::callibrate(void) {
 	done_callibration = true;
 }
 
-bool PowerSpicedComponent::is_done_callibration(void) {
+bool PowerSpicedComponent::is_done_callibration() {
 	return done_callibration;
 }
 

@@ -42,7 +42,7 @@ static vtr::t_linked_vptr *num_edges_head;
 
  */
 
-static int check_pb_graph(void);
+static int check_pb_graph();
 static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 		t_pb_graph_node *parent_pb_graph_node, t_pb_type *pb_type,
 		const int index, bool load_power_structures, int& pin_count_in_cluster);
@@ -168,7 +168,7 @@ void echo_pb_graph(char * filename) {
 /**
  * check pb_type graph and return the number of errors
  */
-static int check_pb_graph(void) {
+static int check_pb_graph() {
 
 	int i, num_errors;
 	/* TODO: Error checks to do 

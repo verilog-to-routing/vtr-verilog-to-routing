@@ -2,7 +2,7 @@
 #define PATH_DELAY2_H
 /***************** Subroutines exported by this module ***********************/
 
-int alloc_and_load_timing_graph_levels(void);
+int alloc_and_load_timing_graph_levels();
 
 void check_timing_graph();
 

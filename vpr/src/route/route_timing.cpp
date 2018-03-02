@@ -615,7 +615,7 @@ void reduce_budgets_if_congested(route_budgets &budgeting_inf,
     }
 }
 
-int get_max_pins_per_net(void) {
+int get_max_pins_per_net() {
 	int max_pins_per_net = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();

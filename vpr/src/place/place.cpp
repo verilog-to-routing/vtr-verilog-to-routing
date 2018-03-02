@@ -199,7 +199,7 @@ static void free_placement_structs(t_placer_opts placer_opts);
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
-static void free_fast_cost_update(void);
+static void free_fast_cost_update();
 
 static void alloc_legal_placements();
 static void load_legal_placements();
@@ -250,17 +250,17 @@ static void update_rlim(float *rlim, float success_rat, const DeviceGrid& grid);
 static int exit_crit(float t, float cost,
 		t_annealing_sched annealing_sched);
 
-static int count_connections(void);
+static int count_connections();
 
 static double get_std_dev(int n, double sum_x_squared, double av_x);
 
-static float recompute_bb_cost(void);
+static float recompute_bb_cost();
 
 static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin);
 
 static void comp_td_point_to_point_delays();
 
-static void update_td_cost(void);
+static void update_td_cost();
 
 static bool driven_by_moved_block(const ClusterNetId net);
 
@@ -294,7 +294,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
 
 static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb *bbptr);
 
-static void free_try_swap_arrays(void);
+static void free_try_swap_arrays();
 
 static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	int num_connections, float crit_exponent, float bb_cost,
@@ -1804,7 +1804,7 @@ static e_swap_result assess_swap(float delta_c, float t) {
 	return (accept);
 }
 
-static float recompute_bb_cost(void) {
+static float recompute_bb_cost() {
 	/* Recomputes the cost to eliminate roundoff that may have accrued.  *
 	 * This routine does as little work as possible to compute this new  *
 	 * cost.                                                             */
@@ -1875,7 +1875,7 @@ static void comp_td_point_to_point_delays() {
 
 /* Update the point_to_point_timing_cost values from the temporary *
 * values for all connections that have changed.                   */
-static void update_td_cost(void) {
+static void update_td_cost() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	/* Go through all the blocks moved. */
@@ -2981,7 +2981,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	free(free_locations);
 }
 
-static void free_fast_cost_update(void) {
+static void free_fast_cost_update() {
     auto& device_ctx = g_vpr_ctx.device();
 
 	for (size_t i = 0; i < device_ctx.grid.height(); i++) {
@@ -3246,7 +3246,7 @@ static void print_clb_placement(const char *fname) {
 }
 #endif
 
-static void free_try_swap_arrays(void) {
+static void free_try_swap_arrays() {
 	if(blocks_affected.moved_blocks != nullptr) {
 		free(blocks_affected.moved_blocks);
 

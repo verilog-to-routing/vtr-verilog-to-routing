@@ -41,11 +41,11 @@ static t_linked_rt_edge *rt_edge_free_list = nullptr;
 
 /********************** Subroutines local to this module *********************/
 
-static t_rt_node *alloc_rt_node(void);
+static t_rt_node *alloc_rt_node();
 
 static void free_rt_node(t_rt_node * rt_node);
 
-static t_linked_rt_edge *alloc_linked_rt_edge(void);
+static t_linked_rt_edge *alloc_linked_rt_edge();
 
 static void free_linked_rt_edge(t_linked_rt_edge * rt_edge);
 
@@ -96,7 +96,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     return true;
 }
 
-void free_route_tree_timing_structs(void) {
+void free_route_tree_timing_structs() {
 
 	/* Frees the structures needed to build routing trees, and really frees
 	 * (i.e. calls free) all the data on the free lists.                         */
@@ -128,7 +128,7 @@ void free_route_tree_timing_structs(void) {
 }
 
 static t_rt_node*
-alloc_rt_node(void) {
+alloc_rt_node() {
 
 	/* Allocates a new rt_node, from the free list if possible, from the free
 	 * store otherwise.                                                         */
@@ -155,7 +155,7 @@ static void free_rt_node(t_rt_node * rt_node) {
 }
 
 static t_linked_rt_edge*
-alloc_linked_rt_edge(void) {
+alloc_linked_rt_edge() {
 
 	/* Allocates a new linked_rt_edge, from the free list if possible, from the
 	 * free store otherwise.                                                     */

@@ -16,13 +16,13 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 #endif
         );
 
-void print_wirelen_prob_dist(void);
+void print_wirelen_prob_dist();
 
-void print_lambda(void);
+void print_lambda();
 
 void get_num_bends_and_length(ClusterNetId inet, int *bends, int *length, int *segments);
 
-int count_netlist_clocks(void);
+int count_netlist_clocks();
 
 // template functions must be defined in header, or explicitely instantiated in definition file (defeats the point of template)
 template <typename T>

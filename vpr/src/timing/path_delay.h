@@ -45,7 +45,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 
 void free_timing_graph(t_slack * slacks);
 
-void free_timing_stats(void);
+void free_timing_stats();
 
 void print_timing_graph(const char *fname);
 
@@ -65,9 +65,9 @@ void print_clustering_timing_info(const char *fname);
 bool has_valid_normalized_T_arr(int inode);
 #endif
 
-void print_timing_stats(void);
+void print_timing_stats();
 
-float get_critical_path_delay(void);
+float get_critical_path_delay();
 
 void print_critical_path(const char *fname, const t_timing_inf &timing_inf);
 

@@ -58,9 +58,9 @@ static float route_connection_delay(int source_x_loc, int source_y_loc,
         int sink_x_loc, int sink_y_loc,
         t_router_opts router_opts);
 
-static void alloc_delta_arrays(void);
+static void alloc_delta_arrays();
 
-static void free_delta_arrays(void);
+static void free_delta_arrays();
 
 static void generic_compute_matrix(vtr::Matrix<float>& matrix, 
         int source_x, int source_y, 
@@ -76,13 +76,13 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(
         t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
-static void reset_placement(void);
+static void reset_placement();
 
 static void print_delta_delays_echo(const char* filename);
 
 static void print_matrix(std::string filename, const vtr::Matrix<float>& array_to_print);
 
-static void fix_empty_coordinates(void);
+static void fix_empty_coordinates();
 
 static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y);
 
@@ -126,7 +126,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
     vtr::printf_info("Placement delay look-up took %g seconds\n", time);
 }
 
-void free_place_lookup_structs(void) {
+void free_place_lookup_structs() {
 
     free_delta_arrays();
 
@@ -181,7 +181,7 @@ static int get_longest_segment_length(
     return (length);
 }
 
-static void reset_placement(void) {
+static void reset_placement() {
     init_placement_context();
 }
 
@@ -283,7 +283,7 @@ static float route_connection_delay(int source_x, int source_y,
     return (net_delay_value);
 }
 
-static void alloc_delta_arrays(void) {
+static void alloc_delta_arrays() {
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -291,7 +291,7 @@ static void alloc_delta_arrays(void) {
     f_delta_delay.resize({device_ctx.grid.width(), device_ctx.grid.height()}, UNINITIALIZED_DELTA);
 }
 
-static void free_delta_arrays(void) {
+static void free_delta_arrays() {
     //Reclaim memory
     f_delta_delay.clear();
 }
