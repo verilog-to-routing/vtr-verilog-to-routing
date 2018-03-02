@@ -271,7 +271,7 @@ class NdOffsetMatrixBase {
     private:
         //Allocate space for all the elements
         void alloc() {
-            data_.reset(new T[size()]);
+            data_ = std::make_unique<T[]>(size());
         }
 
     protected:

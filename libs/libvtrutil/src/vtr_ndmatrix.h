@@ -221,7 +221,7 @@ class NdMatrixBase {
     private:
         //Allocate space for all the elements
         void alloc() {
-            data_.reset(new T[size()]);
+            data_ = std::make_unique<T[]>(size());
         }
 
         //Returns the size of the matrix (number of elements) calucated
