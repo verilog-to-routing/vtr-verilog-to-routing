@@ -352,7 +352,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations(
 void free_switchblock_permutations(t_sb_connection_map *sb_conns){
 	sb_conns->clear();
 	delete sb_conns;
-	sb_conns = NULL;
+	sb_conns = nullptr;
 	/* the switch block unordered_map can get quite large and it doesn't seem like the program
 	   is interested in releasing the memory back to the OS after the map is cleared. 
 	   calling malloc_trim forces the program to give unused heap space back to the OS. 

@@ -45,16 +45,16 @@ std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netli
 	}
 
 	act_file_hdl = vtr::fopen(activity_file, "r");
-	if (act_file_hdl == NULL) {
+	if (act_file_hdl == nullptr) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"Error: could not open activity file: %s\n", activity_file);
 	}
 
 	ptr = vtr::fgets(buf, vtr::bufsize, act_file_hdl);
-	while (ptr != NULL) {
+	while (ptr != nullptr) {
 		word1 = strtok(buf, TOKENS);
-		word2 = strtok(NULL, TOKENS);
-		word3 = strtok(NULL, TOKENS);
+		word2 = strtok(nullptr, TOKENS);
+		word3 = strtok(nullptr, TOKENS);
 		add_activity_to_net(netlist, atom_net_power, word1, vtr::atof(word2), vtr::atof(word3));
 
 		ptr = vtr::fgets(buf, vtr::bufsize, act_file_hdl);

@@ -94,8 +94,8 @@ large enough to be on the order of timing costs for normal constraints. */
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static vtr::vector<ClusterNetId, float> net_cost, temp_net_cost;
 
-static t_legal_pos **legal_pos = NULL; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
-static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
+static t_legal_pos **legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
+static int *num_legal_pos = nullptr; /* [0..num_legal_pos-1] */
 
 /* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
  * A flag array to indicate whether the specific bounding box has been updated   *
@@ -159,7 +159,7 @@ static std::vector<ClusterNetId> ts_nets_to_update;
 
 /* The pl_macros array stores all the carry chains placement macros.   *
  * [0...num_pl_macros-1]                                               */
-static t_pl_macro * pl_macros = NULL;
+static t_pl_macro * pl_macros = nullptr;
 static int num_pl_macros;
 
 /* These file-scoped variables keep track of the number of swaps       *
@@ -1837,8 +1837,8 @@ static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin) {
 		ClusterBlockId source_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
 		ClusterBlockId sink_block = cluster_ctx.clb_nlist.net_pin_block(net_id, ipin);
 
-		VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.block_type(source_block) != NULL);
-		VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.block_type(sink_block) != NULL);
+		VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.block_type(source_block) != nullptr);
+		VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.block_type(sink_block) != nullptr);
 
 		int delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
 		int delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
@@ -2050,7 +2050,7 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 	free(pl_macros);
 
 	/* Defensive coding. */
-	pl_macros = NULL;
+	pl_macros = nullptr;
 
 	/* Frees up all the data structure used in vpr_utils. */
 	free_port_pin_from_blk_pin();
@@ -2988,13 +2988,13 @@ static void free_fast_cost_update(void) {
 		free(chanx_place_cost_fac[i]);
     }
 	free(chanx_place_cost_fac);
-	chanx_place_cost_fac = NULL;
+	chanx_place_cost_fac = nullptr;
 
 	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
 		free(chany_place_cost_fac[i]);
     }
 	free(chany_place_cost_fac);
-	chany_place_cost_fac = NULL;
+	chany_place_cost_fac = nullptr;
 }
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
@@ -3247,10 +3247,10 @@ static void print_clb_placement(const char *fname) {
 #endif
 
 static void free_try_swap_arrays(void) {
-	if(blocks_affected.moved_blocks != NULL) {
+	if(blocks_affected.moved_blocks != nullptr) {
 		free(blocks_affected.moved_blocks);
 
-		blocks_affected.moved_blocks = NULL;
+		blocks_affected.moved_blocks = nullptr;
 		blocks_affected.num_moved_blocks = 0;
 	}
 }

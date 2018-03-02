@@ -49,7 +49,7 @@ t_seg_details *alloc_and_load_seg_details(
 		const bool use_full_seg_groups,
 		const bool is_global_graph,
 		const enum e_directionality directionality,
-		int *num_seg_details = 0);
+		int *num_seg_details = nullptr);
 
 void alloc_and_load_chan_details( 
         const DeviceGrid& grid,

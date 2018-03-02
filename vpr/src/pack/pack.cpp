@@ -193,7 +193,7 @@ void try_pack(t_packer_opts *packer_opts,
 	free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
 
 	cur_pack_molecule = list_of_pack_molecules;
-	while (cur_pack_molecule != NULL){
+	while (cur_pack_molecule != nullptr){
 		cur_pack_molecule = list_of_pack_molecules->next;
 		delete list_of_pack_molecules;
 		list_of_pack_molecules = cur_pack_molecule;

@@ -133,7 +133,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 	int i, j, k, m, n, p, iedge;
 	t_pb_graph_pin ***in_port, ***out_port;
 	int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
-	t_pb_graph_node **children = NULL;
+	t_pb_graph_node **children = nullptr;
 
 	children = pb_graph_node->child_pb_graph_nodes[mode];
 	in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
@@ -169,14 +169,14 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 		}
 	}
 
-	if (in_port != NULL) {
+	if (in_port != nullptr) {
 		for (i = 0; i < num_in_sets; i++) {
 			free(in_port[i]);
 		}
 		free(in_port);
 		free(num_in_ptrs);
 	}
-	if (out_port != NULL) {
+	if (out_port != nullptr) {
 		for (i = 0; i < num_out_sets; i++) {
 			free(out_port[i]);
 		}
@@ -195,14 +195,14 @@ static void load_delay_annotations(const int line_num,
 	t_pb_graph_pin ***in_port, ***out_port;
 	int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
 	float **delay_matrix;
-	t_pb_graph_node **children = NULL;
+	t_pb_graph_node **children = nullptr;
 
 	int num_inputs, num_outputs;
 	int num_entries_in_matrix;
 
-	in_port = out_port = NULL;
+	in_port = out_port = nullptr;
 	num_out_sets = num_in_sets = 0;
-	num_out_ptrs = num_in_ptrs = NULL;
+	num_out_ptrs = num_in_ptrs = nullptr;
 
 	/* Primarily 3 kinds of delays that affect critical path:
 	 1.  Intrablock interconnect delays
@@ -223,7 +223,7 @@ static void load_delay_annotations(const int line_num,
 	/* Determine what pins to read based on delay type */
 	num_inputs = num_outputs = 0;
 	if (mode == OPEN) {
-		children = NULL;
+		children = nullptr;
 	} else {
 		children = pb_graph_node->child_pb_graph_nodes[mode];
 	}
@@ -231,7 +231,7 @@ static void load_delay_annotations(const int line_num,
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
-		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
+		VTR_ASSERT(pb_graph_node->pb_type->blif_model != nullptr);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
@@ -251,7 +251,7 @@ static void load_delay_annotations(const int line_num,
 		num_inputs += num_in_ptrs[i];
 	}
 
-	if (out_port != NULL) {
+	if (out_port != nullptr) {
 		num_outputs = 0;
 		for (i = 0; i < num_out_sets; i++) {
 			num_outputs += num_out_ptrs[i];
@@ -458,14 +458,14 @@ static void load_delay_annotations(const int line_num,
 	}
 
     //Clean-up
-	if (in_port != NULL) {
+	if (in_port != nullptr) {
 		for (i = 0; i < num_in_sets; i++) {
 			free(in_port[i]);
 		}
 		free(in_port);
 		free(num_in_ptrs);
 	}
-	if (out_port != NULL) {
+	if (out_port != nullptr) {
 		for (i = 0; i < num_out_sets; i++) {
 			free(out_port[i]);
 		}

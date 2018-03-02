@@ -27,14 +27,14 @@ using namespace std;
  * as specified in the arch file, OPEN (-1) is stored for pins that could not be    *
  * part of a direct chain conneciton.                                               *
  * [0...device_ctx.num_block_types-1][0...num_pins-1]                               */
-static int ** f_idirect_from_blk_pin = NULL;
+static int ** f_idirect_from_blk_pin = nullptr;
 
 /* f_direct_type_from_blk_pin array stores the value SOURCE if the pin is the       *
  * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
  * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
  * chain conneciton.                                                                *
  * [0...device_ctx.num_block_types-1][0...num_pins-1]                               */
-static int ** f_direct_type_from_blk_pin = NULL;
+static int ** f_direct_type_from_blk_pin = nullptr;
 
 /* f_imacro_from_blk_pin maps a blk_num to the corresponding macro index.           *
  * If the block is not part of a macro, the value OPEN (-1) is stored.              *
@@ -198,7 +198,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
 	std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
 	
-	t_pl_macro * macro = NULL;
+	t_pl_macro * macro = nullptr;
 	
 	/* Sets up the required variables. */
 	alloc_and_load_idirect_from_blk_pin(directs, num_directs, 
@@ -291,20 +291,20 @@ void free_placement_macros_structs(void) {
 	// This frees up the two arrays and set the pointers to NULL
     auto& device_ctx = g_vpr_ctx.device();
 	int itype;
-	if ( f_idirect_from_blk_pin != NULL ) {
+	if ( f_idirect_from_blk_pin != nullptr ) {
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_idirect_from_blk_pin[itype]);
 		}
 		free(f_idirect_from_blk_pin);
-		f_idirect_from_blk_pin = NULL;
+		f_idirect_from_blk_pin = nullptr;
 	}
 
-	if ( f_direct_type_from_blk_pin != NULL ) {
+	if ( f_direct_type_from_blk_pin != nullptr ) {
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_direct_type_from_blk_pin[itype]);
 		}
 		free(f_direct_type_from_blk_pin);
-		f_direct_type_from_blk_pin = NULL;
+		f_direct_type_from_blk_pin = nullptr;
 	}
 }
 

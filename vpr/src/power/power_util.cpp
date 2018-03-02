@@ -357,7 +357,7 @@ void power_print_title(FILE * fp, const char * title) {
 t_mux_arch * power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 	int i;
 
-	t_power_mux_info * mux_info = NULL;
+	t_power_mux_info * mux_info = nullptr;
     auto& power_ctx = g_vpr_ctx.power();
 
 	/* Find the mux archs for the given transistor size */
@@ -367,7 +367,7 @@ t_mux_arch * power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 
 	if (it == power_ctx.commonly_used->mux_info.end()) {
 		mux_info = new t_power_mux_info;
-		mux_info->mux_arch = NULL;
+		mux_info->mux_arch = nullptr;
 		mux_info->mux_arch_max_size = 0;
 		power_ctx.commonly_used->mux_info[transistor_size] = mux_info;
 	} else {

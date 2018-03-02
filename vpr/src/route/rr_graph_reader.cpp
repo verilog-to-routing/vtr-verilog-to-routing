@@ -98,8 +98,8 @@ void load_rr_file(const t_graph_type graph_type,
         auto rr_graph = get_single_child(doc, "rr_graph", loc_data);
 
         //Check for errors
-        Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(NULL);
-        if (Prop != NULL) {
+        Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(nullptr);
+        if (Prop != nullptr) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
                 vtr::printf("\n");
                 vtr::printf_warning(__FILE__, __LINE__,
@@ -108,10 +108,10 @@ void load_rr_file(const t_graph_type graph_type,
                 vtr::printf("\n");
             }
         }
-        Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(NULL);
+        Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(nullptr);
         string correct_string = "Generated from arch file ";
         correct_string += get_arch_file_name();
-        if (Prop != NULL) {
+        if (Prop != nullptr) {
             if (Prop != correct_string) {
                 vtr::printf("\n");
                 vtr::printf_warning(__FILE__, __LINE__,
@@ -211,7 +211,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
     while (Switch) {
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
-        rr_switch.name = vtr::strdup(get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(NULL));
+        rr_switch.name = vtr::strdup(get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr));
 
         std::string switch_type_str = get_attribute(Switch, "type", loc_data).as_string();
         SwitchType switch_type = SwitchType::INVALID;
@@ -510,7 +510,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
         auto block_info = device_ctx.block_types[get_attribute(Block, "id", loc_data).as_int(0)];
 
-        const char* name = get_attribute(Block, "name", loc_data).as_string(NULL);
+        const char* name = get_attribute(Block, "name", loc_data).as_string(nullptr);
 
         if (strcmp(block_info.name, name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,

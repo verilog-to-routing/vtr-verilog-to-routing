@@ -343,7 +343,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
 	t_pb_graph_node **primitives_list;
-	t_lb_router_data *router_data = NULL;
+	t_lb_router_data *router_data = nullptr;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -362,7 +362,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	(eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
 	vtr::vector_map<ClusterBlockId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
 
-	istart = NULL;
+	istart = nullptr;
 
 	/* determine bound on cluster size and primitive input size */
 	max_cluster_size = 0;
@@ -373,7 +373,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	cur_molecule = molecule_head;
 	num_molecules = 0;
-	while (cur_molecule != NULL) {
+	while (cur_molecule != nullptr) {
 		cur_molecule->valid = true;
 		if (cur_molecule->num_ext_inputs > max_molecule_inputs) {
 			max_molecule_inputs = cur_molecule->num_ext_inputs;
@@ -400,7 +400,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = (int *) vtr::calloc(max_cluster_size + 1,
 				sizeof(int));
 	} else {
-		hill_climbing_inputs_avail = NULL; /* if used, die hard */
+		hill_climbing_inputs_avail = nullptr; /* if used, die hard */
 	}
 
 	check_clocks(is_clock);
@@ -536,7 +536,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	* Clustering
 	*****************************************************************/
 
-	while (istart != NULL) {
+	while (istart != nullptr) {
 		is_cluster_legal = false;
 		savedseedindex = seedindex;
 		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
@@ -586,7 +586,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					clb_inter_blk_nets,
 					clb_index);
 			prev_molecule = istart;
-			while (next_molecule != NULL && prev_molecule != next_molecule) {
+			while (next_molecule != nullptr && prev_molecule != next_molecule) {
 				block_pack_status = try_pack_molecule(
 						cur_cluster_placement_stats_ptr, 
                         atom_molecules,
@@ -604,7 +604,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                 const t_model* blk_model = atom_ctx.nlist.block_model(blk_id);
 
 				if (block_pack_status != BLK_PASSED) {
-					if (next_molecule != NULL) {
+					if (next_molecule != nullptr) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
                             if (debug_clustering) {
                                 vtr::printf_direct("\tNO_ROUTE: %s type %s/n", 
@@ -683,7 +683,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			if (is_cluster_legal == true) {
 				intra_lb_routing.push_back(router_data->saved_lb_nets);
 				VTR_ASSERT((int)intra_lb_routing.size() == num_clb);
-				router_data->saved_lb_nets = NULL;
+				router_data->saved_lb_nets = nullptr;
 				if (timing_driven) {
 					if (num_blocks_hill_added > 0 && !early_exit) {
 						blocks_since_last_analysis += num_blocks_hill_added;
@@ -721,7 +721,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				seedindex = savedseedindex;
 			}
 			free_router_data(router_data);
-			router_data = NULL;
+			router_data = nullptr;
 		}
 	}
 
@@ -873,18 +873,18 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	unclustered_list_head_size = max_molecule_inputs + 1;
 
 	for (i = 0; i <= max_molecule_inputs; i++) {
-		unclustered_list_head[i].next = NULL;
+		unclustered_list_head[i].next = nullptr;
 	}
 
 	molecule_array = (t_pack_molecule **) vtr::malloc(
 			num_molecules * sizeof(t_pack_molecule*));
 	cur_molecule = molecules_head;
 	for (i = 0; i < num_molecules; i++) {
-		VTR_ASSERT(cur_molecule != NULL);
+		VTR_ASSERT(cur_molecule != nullptr);
 		molecule_array[i] = cur_molecule;
 		cur_molecule = cur_molecule->next;
 	}
-	VTR_ASSERT(cur_molecule == NULL);
+	VTR_ASSERT(cur_molecule == nullptr);
 	qsort((void*) molecule_array, num_molecules, sizeof(t_pack_molecule*),
 			compare_molecule_gain);
 
@@ -926,7 +926,7 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	 */
 	max_molecule_size = 1;
 	cur_molecule = molecules_head;
-	while (cur_molecule != NULL) {
+	while (cur_molecule != nullptr) {
 		if (cur_molecule->num_blocks > max_molecule_size) {
 			max_molecule_size = cur_molecule->num_blocks;
 		}
@@ -941,7 +941,7 @@ static void free_pb_stats_recursive(t_pb *pb) {
 	int i, j;
 	/* Releases all the memory used by clustering data structures.   */
 	if (pb) {
-		if (pb->pb_graph_node != NULL) {
+		if (pb->pb_graph_node != nullptr) {
 			if (pb->pb_graph_node->pb_type->num_modes != 0) {
 				for (i = 0; i < pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
 					for (j = 0; j < pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
@@ -1084,7 +1084,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 
 	prev_ptr = &unclustered_list_head[ext_inps];
 	ptr = unclustered_list_head[ext_inps].next;
-	while (ptr != NULL) {
+	while (ptr != nullptr) {
 		/* TODO: Get better candidate atom block in future, eg. return most timing critical or some other smarter metric */
 		if (ptr->moleculeptr->valid) {
 			success = true;
@@ -1114,7 +1114,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 		ptr = ptr->next;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /*****************************************/
@@ -1144,7 +1144,7 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 		}
 	}
 
-	molecule = NULL;
+	molecule = nullptr;
 
 	if (inputs_avail >= unclustered_list_head_size) {
 		inputs_avail = unclustered_list_head_size - 1;
@@ -1153,7 +1153,7 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 	for (ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
 		molecule = get_molecule_by_num_ext_inputs(
 				ext_inps, LEAVE_CLUSTERED, cluster_placement_stats_ptr);
-		if (molecule != NULL) {
+		if (molecule != nullptr) {
 			break;
 		}
 	}
@@ -1175,14 +1175,14 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 	for (ext_inps = max_molecule_inputs; ext_inps >= 0; ext_inps--) {
 		ptr = unclustered_list_head[ext_inps].next;
 
-		while (ptr != NULL) {
+		while (ptr != nullptr) {
 			if (ptr->moleculeptr->valid) {
 				return ptr->moleculeptr;
 			}
 			ptr = ptr->next;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 /*****************************************/
@@ -1229,7 +1229,7 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	pb->pb_stats->num_child_blocks_in_pb = 0;
 
 	pb->pb_stats->explore_transitive_fanout = true;
-	pb->pb_stats->transitive_fanout_candidates = NULL;
+	pb->pb_stats->transitive_fanout_candidates = nullptr;
 }
 /*****************************************/
 
@@ -1253,7 +1253,7 @@ static enum e_block_pack_status try_pack_molecule(
 	t_pb_graph_pin *chain_root_pin;
     auto& atom_ctx = g_vpr_ctx.atom();
 
-	parent = NULL;
+	parent = nullptr;
 	
 	block_pack_status = BLK_STATUS_UNDEFINED;
 
@@ -1266,14 +1266,14 @@ static enum e_block_pack_status try_pack_molecule(
 			block_pack_status = BLK_PASSED;
 			
 			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
-				VTR_ASSERT((primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
+				VTR_ASSERT((primitives_list[i] == nullptr) == (!molecule->atom_block_ids[i]));
 				failed_location = i + 1;
 				if (molecule->atom_block_ids[i]) {
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
 						chain_root_pin = molecule->pack_pattern->chain_root_pin;
 						is_root_of_chain = true;
 					} else {
-						chain_root_pin = NULL;
+						chain_root_pin = nullptr;
 						is_root_of_chain = false;
 					}
 					block_pack_status = try_place_atom_block_rec(
@@ -1308,7 +1308,7 @@ static enum e_block_pack_status try_pack_molecule(
                          * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
 						cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
-						while(cur_pb != NULL) {
+						while(cur_pb != nullptr) {
 						    free(cur_pb->name);
 						    cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
 						    cur_pb = cur_pb->parent_pb;
@@ -1372,7 +1372,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
-	my_parent = NULL;
+	my_parent = nullptr;
 
 	block_pack_status = BLK_PASSED;
 
@@ -1388,10 +1388,10 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	}
 
 	/* Create siblings if siblings are not allocated */
-	if (parent_pb->child_pbs == NULL) {
+	if (parent_pb->child_pbs == nullptr) {
         atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
 
-		VTR_ASSERT(parent_pb->name == NULL);
+		VTR_ASSERT(parent_pb->name == nullptr);
 		parent_pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
@@ -1424,7 +1424,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
 	*parent = pb; /* this pb is parent of it's child that called this function */
 	VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
-	if (pb->pb_stats == NULL) {
+	if (pb->pb_stats == nullptr) {
 		alloc_and_load_pb_stats(pb);
 	}
 	pb_type = pb_graph_node->pb_type;
@@ -1433,7 +1433,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 
 	if (is_primitive) {
 		VTR_ASSERT(!atom_ctx.lookup.pb_atom(pb)
-                    && atom_ctx.lookup.atom_pb(blk_id) == NULL 
+                    && atom_ctx.lookup.atom_pb(blk_id) == nullptr 
                     && atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID());
 		/* try pack to location */
         VTR_ASSERT(pb->name == nullptr);
@@ -1469,7 +1469,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 
     if (block_pack_status != BLK_PASSED) {
         free(pb->name);
-        pb->name = NULL;
+        pb->name = nullptr;
     }
 
 	return block_pack_status;
@@ -1491,9 +1491,9 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *
 
     //Update the atom netlist mapping
     atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
-    atom_ctx.lookup.set_atom_pb(blk_id, NULL);
+    atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-	if (pb != NULL) {
+	if (pb != nullptr) {
 		/* When freeing molecules, the current block might already have been freed by a prior revert 
 		 When this happens, no need to do anything beyond basic book keeping at the atom block
 		 */
@@ -1503,16 +1503,16 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *
 		free_pb(pb);
 		pb = next;
 
-		while (pb != NULL) {
+		while (pb != nullptr) {
 			/* If this is pb is created only for the purposes of holding new molecule, remove it
 			 Must check if cluster is already freed (which can be the case)
 			 */
 			next = pb->parent_pb;
 			
-			if (pb->child_pbs != NULL && pb->pb_stats != NULL
+			if (pb->child_pbs != nullptr && pb->pb_stats != nullptr
 					&& pb->pb_stats->num_child_blocks_in_pb == 0) {
 				set_reset_pb_modes(router_data, pb, false);
-				if (next != NULL) {
+				if (next != nullptr) {
 					/* If the code gets here, then that means that placing the initial seed molecule 
                      * failed, don't free the actual complex block itself as the seed needs to find 
                      * another placement */
@@ -1677,7 +1677,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		if(!is_global.count(net_id)) {
 			/* If no low/medium fanout nets, we may need to consider 
              * high fan-out nets for packing, so select one and store it */ 
-			while(cur_pb->parent_pb != NULL) {
+			while(cur_pb->parent_pb != nullptr) {
 				cur_pb = cur_pb->parent_pb;
 			}
 			AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
@@ -1827,7 +1827,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 	molecule_size = get_array_size_of_molecule(molecule);
-	cb = NULL;
+	cb = nullptr;
 
 	for (iblock = 0; iblock < molecule_size; iblock++) {
         auto blk_id = molecule->atom_block_ids[iblock];
@@ -1843,7 +1843,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 			/* reset list of feasible blocks */
 			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
 			cur_pb->pb_stats->num_child_blocks_in_pb++;
-			if (cur_pb->parent_pb == NULL) {
+			if (cur_pb->parent_pb == nullptr) {
 				cb = cur_pb;
 			}
 			cur_pb = cur_pb->parent_pb;
@@ -1961,7 +1961,7 @@ static void start_new_cluster(
         t_pb* pb = new t_pb;
         pb->pb_graph_node = type->pb_graph_head;
         alloc_and_load_pb_stats(pb);
-        pb->parent_pb = NULL;
+        pb->parent_pb = nullptr;
 
         *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
 
@@ -1996,7 +1996,7 @@ static void start_new_cluster(
             free_router_data(*router_data);
             free_pb(pb);
             delete pb;
-            *router_data = NULL;
+            *router_data = nullptr;
         }
     }
 
@@ -2053,7 +2053,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	bool success;
 
 	t_pack_molecule *molecule;
-	molecule = NULL;
+	molecule = nullptr;
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	if (gain_mode == HILL_CLIMBING) {
@@ -2148,7 +2148,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	   !cur_pb->pb_stats->tie_break_high_fanout_net &&
 	   cur_pb->pb_stats->explore_transitive_fanout == true
 	   ) {
-		if(cur_pb->pb_stats->transitive_fanout_candidates == NULL) {
+		if(cur_pb->pb_stats->transitive_fanout_candidates == nullptr) {
 			/* First time finding transitive fanout candidates therefore alloc and load them */
 			cur_pb->pb_stats->transitive_fanout_candidates = new vector<t_pack_molecule *>;
 			load_transitive_fanout_candidates(cluster_index,
@@ -2182,13 +2182,13 @@ static t_pack_molecule *get_highest_gain_molecule(
 		} else {
 			/* Clean up, no more candidates in transitive fanout to consider */
 			delete cur_pb->pb_stats->transitive_fanout_candidates;
-			cur_pb->pb_stats->transitive_fanout_candidates = NULL;
+			cur_pb->pb_stats->transitive_fanout_candidates = nullptr;
 			cur_pb->pb_stats->explore_transitive_fanout = false;
 		}
 	}
 
 	/* Grab highest gain molecule */
-	molecule = NULL;
+	molecule = nullptr;
 	for (j = 0; j < cur_pb->pb_stats->num_feasible_blocks; j++) {
 		if (cur_pb->pb_stats->num_feasible_blocks != 0) {
 			cur_pb->pb_stats->num_feasible_blocks--;
@@ -2229,7 +2229,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	 * common with the cluster may still be inserted into the cluster.   */
 
 	if (allow_unrelated_clustering) {
-		if (best_molecule == NULL) {
+		if (best_molecule == nullptr) {
 			if (*num_unrelated_clustering_attempts == 0) {
 				best_molecule =
 						get_free_molecule_with_most_ext_inputs_for_cluster(
@@ -2341,8 +2341,8 @@ static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>&
 		/* this is a container pb, all container pbs must contain children */
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
 			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
-				if (pb->child_pbs[i] != NULL) {
-					if (pb->child_pbs[i][j].name != NULL) {
+				if (pb->child_pbs[i] != nullptr) {
+					if (pb->child_pbs[i][j].name != nullptr) {
 						has_child = true;
 						check_cluster_atom_blocks(&pb->child_pbs[i][j], blocks_checked);
 					}
@@ -2359,7 +2359,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 	 * if block belongs to multiple molecules, return the biggest molecule. */
 
 	AtomBlockId blk_id;
-	t_pack_molecule *molecule = NULL, *best = NULL;
+	t_pack_molecule *molecule = nullptr, *best = nullptr;
     auto& atom_ctx = g_vpr_ctx.atom();
 
     VTR_ASSERT(seed_blend_index_array.size() == critindexarray.size());
@@ -2378,19 +2378,19 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 molecule = kv.second;
 				if (molecule->valid) {
-					if (best == NULL || (best->base_gain) < (molecule->base_gain)) {
+					if (best == nullptr || (best->base_gain) < (molecule->base_gain)) {
 						best = molecule;
 					}
 				}
 
             }
-			VTR_ASSERT(best != NULL);
+			VTR_ASSERT(best != nullptr);
 			return best;
 		}
 	}
 
 	/*if it makes it to here , there are no more blocks available*/
-	return NULL;
+	return nullptr;
 }
 
 /* get gain of packing molecule into current cluster 
@@ -2469,10 +2469,10 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 	int i, j;
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 
-	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
-		if (cur_pb->child_pbs != NULL) {
+	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
+		if (cur_pb->child_pbs != nullptr) {
 			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (cur_pb->child_pbs[i] != NULL) {
+				if (cur_pb->child_pbs[i] != nullptr) {
 					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						try_update_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}
@@ -2483,7 +2483,7 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 
         auto& atom_ctx = g_vpr_ctx.atom();
         AtomBlockId blk_id = atom_ctx.lookup.pb_atom(cur_pb);
-		if (pb_type->blif_model != NULL && blk_id) {
+		if (pb_type->blif_model != nullptr && blk_id) {
 			compute_and_mark_lookahead_pins_used(blk_id);
 		}
 	}
@@ -2493,11 +2493,11 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 static void reset_lookahead_pins_used(t_pb *cur_pb) {
 	int i, j;
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
-	if (cur_pb->pb_stats == NULL) {
+	if (cur_pb->pb_stats == nullptr) {
 		return; /* No pins used, no need to continue */
 	}
 
-	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
+	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 			cur_pb->pb_stats->lookahead_input_pins_used[i].clear();
 		}
@@ -2506,9 +2506,9 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 			cur_pb->pb_stats->lookahead_output_pins_used[i].clear();			
 		}
 
-		if (cur_pb->child_pbs != NULL) {
+		if (cur_pb->child_pbs != nullptr) {
 			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (cur_pb->child_pbs[i] != NULL) {
+				if (cur_pb->child_pbs[i] != nullptr) {
 					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						reset_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}
@@ -2523,7 +2523,7 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	const t_pb* cur_pb = atom_ctx.lookup.atom_pb(blk_id);
-    VTR_ASSERT(cur_pb != NULL);
+    VTR_ASSERT(cur_pb != nullptr);
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
     for(auto pin_id : atom_ctx.nlist.block_pins(blk_id)) {
@@ -2564,7 +2564,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 
             const t_pb* driver_pb = atom_ctx.lookup.atom_pb(driver_blk_id);
 
-			output_pb_graph_pin = NULL;
+			output_pb_graph_pin = nullptr;
 			if (atom_ctx.lookup.atom_clb(driver_blk_id) == atom_ctx.lookup.atom_clb(prim_blk_id)) {
 				pb_type = driver_pb->pb_graph_node->pb_type;
 				output_port = 0;
@@ -2589,12 +2589,12 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 
 			/* check if driving pin for input is contained within the currently 
              * investigated cluster, if yes, do nothing since no input needs to be used */
-			if (output_pb_graph_pin != NULL) {
+			if (output_pb_graph_pin != nullptr) {
 				const t_pb* check_pb = driver_pb;
-				while (check_pb != NULL && check_pb != cur_pb) {
+				while (check_pb != nullptr && check_pb != cur_pb) {
 					check_pb = check_pb->parent_pb;
 				}
-				if (check_pb != NULL) {
+				if (check_pb != nullptr) {
 					for (int i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primitive_input_pins[depth]; i++) {
 						if (pb_graph_pin == output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
 							skip = true;
@@ -2719,7 +2719,7 @@ static bool check_lookahead_pins_used(t_pb *cur_pb) {
 
 	success = true;
 
-	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
+	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success; i++) {
 			if (cur_pb->pb_stats->lookahead_input_pins_used[i].size() > (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]) {
 				success = false;
@@ -2733,9 +2733,9 @@ static bool check_lookahead_pins_used(t_pb *cur_pb) {
 			}
 		}
 
-		if (success && cur_pb->child_pbs != NULL) {
+		if (success && cur_pb->child_pbs != nullptr) {
 			for (i = 0; success && i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (cur_pb->child_pbs[i] != NULL) {
+				if (cur_pb->child_pbs[i] != nullptr) {
 					for (j = 0; success && j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						success = check_lookahead_pins_used(
 								&cur_pb->child_pbs[i][j]);
@@ -2753,7 +2753,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 	int ipin;
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 
-	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
+	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 			ipin = 0;
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]);
@@ -2774,10 +2774,10 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 			}
 		}
 
-		if (cur_pb->child_pbs != NULL) {
+		if (cur_pb->child_pbs != nullptr) {
 			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children;
 					i++) {
-				if (cur_pb->child_pbs[i] != NULL) {
+				if (cur_pb->child_pbs[i] != nullptr) {
 					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
 						commit_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}

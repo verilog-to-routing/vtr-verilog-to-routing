@@ -411,7 +411,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             g_vpr_ctx.set_forced_pause(false); //Reset pause flag
         }
         set_mouse_move_input(true); //Enable act_on_mouse_over callback
-		event_loop(highlight_blocks, act_on_mouse_over, NULL, drawscreen);
+		event_loop(highlight_blocks, act_on_mouse_over, nullptr, drawscreen);
 	} else {
 		flushinput();
 	}
@@ -705,16 +705,16 @@ void free_draw_structs(void) {
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	if(draw_coords != NULL) {
+	if(draw_coords != nullptr) {
 		free(draw_coords->tile_x);  
-		draw_coords->tile_x = NULL;
+		draw_coords->tile_x = nullptr;
 		free(draw_coords->tile_y);  
-		draw_coords->tile_y = NULL;		
+		draw_coords->tile_y = nullptr;		
 	}
 
-	if(draw_state != NULL) {
+	if(draw_state != nullptr) {
 		free(draw_state->draw_rr_node);	
-		draw_state->draw_rr_node = NULL;
+		draw_state->draw_rr_node = nullptr;
 	}
 }
 
@@ -1962,7 +1962,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 		if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Don't draw global nets. */
 			continue;
 
-		if (route_ctx.trace_head[net_id] == NULL) /* No routing.  Skip.  (Allows me to draw */
+		if (route_ctx.trace_head[net_id] == nullptr) /* No routing.  Skip.  (Allows me to draw */
 			continue; /* partially complete routes).            */
 
 		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == BLACK)
@@ -1995,7 +1995,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
                 /* Skip the next segment */
 				tptr = tptr->next;
-				if (tptr == NULL)
+				if (tptr == nullptr)
 					break;
 				inode = tptr->index;
                 rr_nodes_to_draw.push_back(inode);
@@ -2199,7 +2199,7 @@ static void highlight_nets(char *message, int hit_node) {
 	t_draw_state* draw_state = get_draw_state_vars();
 	
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		for (tptr = route_ctx.trace_head[net_id]; tptr != NULL; tptr = tptr->next) {
+		for (tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {

@@ -28,7 +28,7 @@ void free_hash_table(t_hash **hash_table) {
 
 	for (i = 0; i < HASHSIZE; i++) {
 		h_ptr = hash_table[i];
-		while (h_ptr != NULL) {
+		while (h_ptr != nullptr) {
 			free(h_ptr->name);
 			temp_ptr = h_ptr->next;
 			free(h_ptr);
@@ -47,7 +47,7 @@ t_hash_iterator start_hash_table_iterator(void) {
 	t_hash_iterator hash_iterator;
 
 	hash_iterator.i = -1;
-	hash_iterator.h_ptr = NULL;
+	hash_iterator.h_ptr = nullptr;
 	return (hash_iterator);
 }
 
@@ -63,10 +63,10 @@ get_next_hash(t_hash **hash_table, t_hash_iterator *hash_iterator) {
 	i = hash_iterator->i;
 	h_ptr = hash_iterator->h_ptr;
 
-	while (h_ptr == NULL) {
+	while (h_ptr == nullptr) {
 		i++;
 		if (i >= HASHSIZE)
-			return (NULL); /* End of table */
+			return (nullptr); /* End of table */
 
 		h_ptr = hash_table[i];
 	}
@@ -90,10 +90,10 @@ insert_in_hash_table(t_hash **hash_table, const char *name,
 	t_hash *h_ptr, *prev_ptr;
 
 	i = hash_value(name);
-	prev_ptr = NULL;
+	prev_ptr = nullptr;
 	h_ptr = hash_table[i];
 
-	while (h_ptr != NULL) {
+	while (h_ptr != nullptr) {
 		if (strcmp(h_ptr->name, name) == 0) {
 			h_ptr->count++;
 			return (h_ptr);
@@ -106,12 +106,12 @@ insert_in_hash_table(t_hash **hash_table, const char *name,
 	/* Name string wasn't in the hash table.  Add it. */
 
 	h_ptr = (t_hash *) vtr::malloc(sizeof(t_hash));
-	if (prev_ptr == NULL) {
+	if (prev_ptr == nullptr) {
 		hash_table[i] = h_ptr;
 	} else {
 		prev_ptr->next = h_ptr;
 	}
-	h_ptr->next = NULL;
+	h_ptr->next = nullptr;
 	h_ptr->index = next_free_index;
 	h_ptr->count = 1;
 	h_ptr->name = (char *) vtr::malloc((strlen(name) + 1) * sizeof(char));
@@ -131,14 +131,14 @@ get_hash_entry(t_hash **hash_table, const char *name) {
 	i = hash_value(name);
 	h_ptr = hash_table[i];
 
-	while (h_ptr != NULL) {
+	while (h_ptr != nullptr) {
 		if (strcmp(h_ptr->name, name) == 0)
 			return (h_ptr);
 
 		h_ptr = h_ptr->next;
 	}
 
-	return (NULL);
+	return (nullptr);
 }
 
 int hash_value(const char *name) {
@@ -177,10 +177,10 @@ void get_hash_stats(t_hash **hash_table, char *hash_table_name){
 	h_ptr = hash_table[i];
 	curr_num = 0;
 	
-	if (h_ptr == NULL)
+	if (h_ptr == nullptr)
 		num_NULL++;		
 	else{
-		while (h_ptr != NULL){
+		while (h_ptr != nullptr){
 			curr_num ++;		
 			h_ptr = h_ptr->next;
 		}

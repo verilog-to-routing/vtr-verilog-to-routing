@@ -158,7 +158,7 @@ void route_budgets::allocate_slack_using_weights(vtr::vector_map<ClusterNetId, f
      * slack_allocated(c) = (slack(c)*weight(c)/max_weight_of_all_path_through(c)).
      * Weights here are defined as the delay for the connections
      * Values for conditions in the while loops are pulled from the RCV paper*/
-    std::shared_ptr<SetupHoldTimingInfo> timing_info = NULL;
+    std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
 
     unsigned iteration;
     float max_budget_change;
@@ -222,7 +222,7 @@ void route_budgets::process_negative_slack_using_minimax(vtr::vector_map<Cluster
      Can be unnecessary for not so strict budgets*/
     unsigned iteration;
     float max_budget_change;
-    std::shared_ptr<SetupHoldTimingInfo> timing_info = NULL;
+    std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
 
     iteration = 0;
     max_budget_change = 900e-12;

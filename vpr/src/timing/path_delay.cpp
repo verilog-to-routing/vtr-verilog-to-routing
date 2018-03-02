@@ -156,7 +156,7 @@ static vtr::t_chunk tedge_ch;
 
 static vector<size_t> f_num_timing_net_pins;
 
-static t_timing_stats * f_timing_stats = NULL; /* Critical path delay and worst-case slack per constraint. */
+static t_timing_stats * f_timing_stats = nullptr; /* Critical path delay and worst-case slack per constraint. */
 
 static int * f_net_to_driver_tnode; 
 /* [0..net.size() - 1]. Gives the index of the tnode that drives each net. 
@@ -256,12 +256,12 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	 * output of pad is second).  For CLBs, all OPEN pins on the cb have their 
 	 * mapping set to OPEN so I won't use it by mistake.                          */
 
-	t_slack * slacks = NULL;
+	t_slack * slacks = nullptr;
 	bool do_process_constraints = false;
 	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
 	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
-	if (tedge_ch.chunk_ptr_head != NULL) {
+	if (tedge_ch.chunk_ptr_head != nullptr) {
 		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
 	}
@@ -280,7 +280,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	if (timing_ctx.sdc == NULL) {
+	if (timing_ctx.sdc == nullptr) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf);
@@ -294,7 +294,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	if (do_process_constraints) 
 		process_constraints();
 	
-	if (f_timing_stats == NULL)
+	if (f_timing_stats == nullptr)
 		alloc_timing_stats();
 
 	free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);
@@ -316,12 +316,12 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 	 * output of pad is second).  For CLBs, all OPEN pins on the cb have their 
 	 * mapping set to OPEN so I won't use it by mistake.                          */
 	
-	t_slack * slacks = NULL;
+	t_slack * slacks = nullptr;
 	bool do_process_constraints = false;
 	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
 	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
-	if (tedge_ch.chunk_ptr_head != NULL) {
+	if (tedge_ch.chunk_ptr_head != nullptr) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
 	}
@@ -344,7 +344,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	if (timing_ctx.sdc == NULL) {
+	if (timing_ctx.sdc == nullptr) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf);
@@ -356,7 +356,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 	if (do_process_constraints) 
 		process_constraints();
 	
-	if (f_timing_stats == NULL)
+	if (f_timing_stats == nullptr)
 		alloc_timing_stats();
 
 	free_pin_id_to_pb_mapping(pin_id_to_pb_mapping);
@@ -427,7 +427,7 @@ void free_timing_graph(t_slack * slacks) {
 
     auto& timing_ctx = g_vpr_ctx.mutable_timing();
 
-	if (tedge_ch.chunk_ptr_head == NULL) {
+	if (tedge_ch.chunk_ptr_head == nullptr) {
         vtr::printf_warning(__FILE__, __LINE__, "in free_timing_graph: No timing graph to free.\n");
 	}
 
@@ -451,19 +451,19 @@ void free_timing_graph(t_slack * slacks) {
 #endif
 	free(slacks);
 	
-	timing_ctx.tnodes = NULL;
+	timing_ctx.tnodes = nullptr;
 	timing_ctx.num_tnodes = 0;
-	f_net_to_driver_tnode = NULL;
+	f_net_to_driver_tnode = nullptr;
 	//timing_ctx.tnodes_at_level = NULL;
 	timing_ctx.num_tnode_levels = 0;
-	slacks = NULL;
+	slacks = nullptr;
 }
 
 void free_timing_stats(void) {
 	int i;
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	if(f_timing_stats != NULL) {
+	if(f_timing_stats != nullptr) {
 		for (i = 0; i < timing_ctx.sdc->num_constrained_clocks; i++) {
 			free(f_timing_stats->cpd[i]);
 			free(f_timing_stats->least_slack[i]);
@@ -472,7 +472,7 @@ void free_timing_stats(void) {
 		free(f_timing_stats->least_slack);
 		free(f_timing_stats);
 	}
-	f_timing_stats = NULL;
+	f_timing_stats = nullptr;
 }
 
 void print_slack(float ** slack, bool slack_is_normalized, const char *fname) {
@@ -824,7 +824,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		int itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
 		for (j = 0; j < cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->total_pb_pins; j++) {
 			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[j].atom_net_id) {
-				VTR_ASSERT(timing_ctx.tnodes[inode].pb_graph_pin == NULL);
+				VTR_ASSERT(timing_ctx.tnodes[inode].pb_graph_pin == nullptr);
 				load_tnode(intra_lb_pb_pin_lookup[itype][j], blk_id, &inode);
 			}
 		}
@@ -840,7 +840,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
     std::set<int> const_gen_tnodes;
 	for (int i = 0; i < timing_ctx.num_tnodes; i++) {
 		timing_ctx.tnodes[i].clock_domain = OPEN;
-		timing_ctx.tnodes[i].prepacked_data = NULL;
+		timing_ctx.tnodes[i].prepacked_data = nullptr;
 
 		/* 3 primary scenarios for edge delays
 		 1.  Point-to-point delays inside block
@@ -1220,7 +1220,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                 timing_ctx.tnodes[inode + 1].type = TN_OUTPAD_SINK;
                 timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
                 timing_ctx.tnodes[inode + 1].num_edges = 0;
-                timing_ctx.tnodes[inode + 1].out_edges = NULL;
+                timing_ctx.tnodes[inode + 1].out_edges = nullptr;
 
                 inode += 2;
             } else {
@@ -1425,7 +1425,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     //Initialize the FF_SINK node
                                     timing_ctx.tnodes[inode + 1].type = TN_FF_SINK;
                                     timing_ctx.tnodes[inode + 1].num_edges = 0;
-                                    timing_ctx.tnodes[inode + 1].out_edges = NULL;
+                                    timing_ctx.tnodes[inode + 1].out_edges = nullptr;
                                     timing_ctx.tnodes[inode + 1].block = ClusterBlockId::INVALID();
 
                                     inode += 2;
@@ -1451,7 +1451,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                             timing_ctx.tnodes[inode].prepacked_data->model_port = 0;
                             timing_ctx.tnodes[inode].prepacked_data->model_port_ptr = model_port;
                             timing_ctx.tnodes[inode].num_edges = 0;
-                            timing_ctx.tnodes[inode].out_edges = NULL;
+                            timing_ctx.tnodes[inode].out_edges = nullptr;
 
                             inode++;
                         }
@@ -1583,9 +1583,9 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock
 	timing_ctx.tnodes[i].block = iblock;
 
 
-	if (timing_ctx.tnodes[i].pb_graph_pin->parent_node->pb_type->blif_model == NULL) {
+	if (timing_ctx.tnodes[i].pb_graph_pin->parent_node->pb_type->blif_model == nullptr) {
 		VTR_ASSERT(timing_ctx.tnodes[i].pb_graph_pin->type == PB_PIN_NORMAL);
-		if (timing_ctx.tnodes[i].pb_graph_pin->parent_node->parent_pb_graph_node == NULL) {
+		if (timing_ctx.tnodes[i].pb_graph_pin->parent_node->parent_pb_graph_node == nullptr) {
 			if (timing_ctx.tnodes[i].pb_graph_pin->port->type == IN_PORT) {
 				timing_ctx.tnodes[i].type = TN_CB_IPIN;
 			} else {
@@ -1626,7 +1626,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock
 			timing_ctx.tnodes[i + 1].type = TN_OUTPAD_SINK;
 			timing_ctx.tnodes[i + 1].block = iblock;
 			timing_ctx.tnodes[i + 1].num_edges = 0;
-			timing_ctx.tnodes[i + 1].out_edges = NULL;
+			timing_ctx.tnodes[i + 1].out_edges = nullptr;
 
             atom_ctx.lookup.set_atom_pin_classic_tnode(atom_pin, i + 1);
 			(*inode)++;
@@ -1642,7 +1642,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock
 				timing_ctx.tnodes[i + 1].type = TN_FF_SINK;
 				timing_ctx.tnodes[i + 1].block = iblock;
 				timing_ctx.tnodes[i + 1].num_edges = 0;
-				timing_ctx.tnodes[i + 1].out_edges = NULL;
+				timing_ctx.tnodes[i + 1].out_edges = nullptr;
 
                 atom_ctx.lookup.set_atom_pin_classic_tnode(atom_pin, i + 1);
 			} else {
@@ -1682,7 +1682,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock
 		} else if (timing_ctx.tnodes[i].pb_graph_pin->type == PB_PIN_CLOCK) {
 			timing_ctx.tnodes[i].type = TN_FF_CLOCK;
 			timing_ctx.tnodes[i].num_edges = 0;
-			timing_ctx.tnodes[i].out_edges = NULL;
+			timing_ctx.tnodes[i].out_edges = nullptr;
 
             atom_ctx.lookup.set_atom_pin_classic_tnode(atom_pin, i);
 		} else {
@@ -1731,7 +1731,7 @@ void print_timing_graph(const char *fname) {
 		itype = timing_ctx.tnodes[inode].type;
 		fprintf(fp, "%-15.15s\t", tnode_type_names[itype]);
 
-		if (timing_ctx.tnodes[inode].pb_graph_pin != NULL) {
+		if (timing_ctx.tnodes[inode].pb_graph_pin != nullptr) {
 			fprintf(fp, "%d\t%zu\t",
 					timing_ctx.tnodes[inode].pb_graph_pin->pin_count_in_cluster,
 					size_t(timing_ctx.tnodes[inode].block));
@@ -3036,7 +3036,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 	total_net_delay = 0.;
 	total_logic_delay = 0.;
 
-	while (critical_path_node != NULL) {
+	while (critical_path_node != nullptr) {
 		Tdel = print_critical_path_node(fp, critical_path_node, pin_id_to_pb_mapping);
 		inode = critical_path_node->data;
 		type = timing_ctx.tnodes[inode].type;
@@ -3115,7 +3115,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 		Set is_prepacked to false since we don't care about the clusterer's normalized values. 
 		Set is_final_analysis to false to get actual, rather than relaxed, slacks.
 		Set max critical input/output paths to NULL since they aren't used unless is_prepacked is true. */
-		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, NULL, NULL, empty_pin_id_to_pb_mapping, timing_inf);
+		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, nullptr, nullptr, empty_pin_id_to_pb_mapping, timing_inf);
 	}
 
 	/* Start at the source (level-0) tnode with the least slack (T_req-T_arr). 
@@ -3165,7 +3165,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 		num_edges = timing_ctx.tnodes[crit_node].num_edges;
 	}
 
-	prev_crit_node->next = NULL;
+	prev_crit_node->next = nullptr;
 	return (critical_path_head);
 }
 
@@ -3480,7 +3480,7 @@ static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector_m
 		VTR_ASSERT(ff_tnode != OPEN);
 		ff_clock_tnode = &timing_ctx.tnodes[ff_tnode];
 	}
-	VTR_ASSERT(ff_clock_tnode != NULL);
+	VTR_ASSERT(ff_clock_tnode != nullptr);
 	VTR_ASSERT(ff_clock_tnode->type == TN_FF_CLOCK);
 	return ff_clock_tnode;
 }
@@ -3887,7 +3887,7 @@ vtr::vector_map<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_fr
 	}
 
 	for (int i = 0; i < timing_ctx.num_tnodes; i++) {
-		if (timing_ctx.tnodes[i].pb_graph_pin != NULL) {
+		if (timing_ctx.tnodes[i].pb_graph_pin != nullptr) {
 			if (timing_ctx.tnodes[i].type != TN_CLOCK_SOURCE &&
 				timing_ctx.tnodes[i].type != TN_FF_SOURCE &&
 				timing_ctx.tnodes[i].type != TN_INPAD_SOURCE &&

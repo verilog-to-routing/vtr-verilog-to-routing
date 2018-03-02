@@ -254,12 +254,12 @@ static void power_calc_transistor_capacitance(float *C_d, float *C_s,
 		return;
 	}
 
-	if (tx_info_lower == NULL) {
+	if (tx_info_lower == nullptr) {
 		/* No lower bound */
 		*C_d = tx_info_upper->C_d;
 		*C_s = tx_info_upper->C_s;
 		*C_g = tx_info_upper->C_g;
-	} else if (tx_info_upper == NULL) {
+	} else if (tx_info_upper == nullptr) {
 		/* No upper bound */
 		*C_d = tx_info_lower->C_d;
 		*C_s = tx_info_lower->C_s;
@@ -297,11 +297,11 @@ static float power_calc_leakage_st(e_tx_type transistor_type, float size) {
 		return 0;
 	}
 
-	if (tx_info_lower == NULL) {
+	if (tx_info_lower == nullptr) {
 		/* No lower bound */
 		current = tx_info_upper->leakage_subthreshold;
 
-	} else if (tx_info_upper == NULL) {
+	} else if (tx_info_upper == nullptr) {
 		/* No upper bound */
 		current = tx_info_lower->leakage_subthreshold;
 	} else {
@@ -333,11 +333,11 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
 		return 0;
 	}
 
-	if (tx_info_lower == NULL) {
+	if (tx_info_lower == nullptr) {
 		/* No lower bound */
 		current = tx_info_upper->leakage_gate;
 
-	} else if (tx_info_upper == NULL) {
+	} else if (tx_info_upper == nullptr) {
 		/* No upper bound */
 		current = tx_info_lower->leakage_gate;
 	} else {
@@ -359,8 +359,8 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
  * - v_ds: Drain-source voltage
  */
 static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
-	t_power_nmos_leakage_inf * nmos_low = NULL;
-	t_power_nmos_leakage_inf * nmos_high = NULL;
+	t_power_nmos_leakage_inf * nmos_low = nullptr;
+	t_power_nmos_leakage_inf * nmos_high = nullptr;
 
 	t_power_nmos_leakage_pair * lower;
 	t_power_nmos_leakage_pair * upper;
@@ -396,7 +396,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 				section of the technology file.");
 	}
 	
-	VTR_ASSERT(nmos_low != NULL);
+	VTR_ASSERT(nmos_low != nullptr);
 	power_find_nmos_leakage(nmos_low, &lower, &upper, v_ds);
 	if (lower->v_ds == v_ds || !upper) {
 		i_ds = lower->i_ds;
@@ -409,7 +409,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
     if (over_range) {
         return power_low;
     } else {
-		VTR_ASSERT(nmos_high != NULL);
+		VTR_ASSERT(nmos_high != nullptr);
 		power_find_nmos_leakage(nmos_high, &lower, &upper, v_ds);
 		if (lower->v_ds == v_ds || !upper) {
 			i_ds = lower->i_ds;
@@ -602,8 +602,8 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 
 	VTR_ASSERT(transistor_size >= 1.0);
 
-	t_power_nmos_mux_inf * mux_nmos_inf_lower = NULL;
-	t_power_nmos_mux_inf * mux_nmos_inf_upper = NULL;
+	t_power_nmos_mux_inf * mux_nmos_inf_lower = nullptr;
+	t_power_nmos_mux_inf * mux_nmos_inf_upper = nullptr;
 
     auto& power_ctx = g_vpr_ctx.power();
 
@@ -766,7 +766,7 @@ void power_usage_level_restorer(t_power_usage * power_usage,
     auto& power_ctx = g_vpr_ctx.power();
 
 	/* Pull-up PMOS */
-	if (power_ctx.tech->PMOS_inf.long_trans_inf == NULL) {
+	if (power_ctx.tech->PMOS_inf.long_trans_inf == nullptr) {
 		power_log_msg(POWER_LOG_ERROR,
 				"No long transistor information exists.  Cannot determine transistor properties.");
 		return;

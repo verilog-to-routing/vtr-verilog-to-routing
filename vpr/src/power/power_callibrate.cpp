@@ -56,9 +56,9 @@ void power_print_spice_comparison(void) {
 //	unsigned int mux_sizes[5] = { 4, 8, 12, 16, 20 };
 //
 	unsigned int i, j;
-	float * dens = NULL;
-	float * prob = NULL;
-	char * SRAM_bits = NULL;
+	float * dens = nullptr;
+	float * prob = nullptr;
+	char * SRAM_bits = nullptr;
 	int sram_idx;
     auto& power_ctx = g_vpr_ctx.mutable_power();
 //

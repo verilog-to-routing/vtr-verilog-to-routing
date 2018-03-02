@@ -318,7 +318,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
 
 	/* Get transistor type: NMOS or PMOS */
     auto prop = get_attribute(parent, "type", loc_data);
-	trans_inf = NULL;
+	trans_inf = nullptr;
 	if (strcmp(prop.value(), "nmos") == 0) {
 		trans_inf = &power_ctx.tech->NMOS_inf;
 	} else if (strcmp(prop.value(), "pmos") == 0) {
@@ -392,7 +392,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	key.size = size;
 
 	/* Find the appropriate global transistor records */
-	trans_info = NULL;
+	trans_info = nullptr;
 	if (type == NMOS) {
 		trans_info = &power_ctx.tech->NMOS_inf;
 	} else if (type == PMOS) {
@@ -402,7 +402,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	}
 
 	/* No transistor data exists */
-	if (trans_info->size_inf == NULL) {
+	if (trans_info->size_inf == nullptr) {
 		power_log_msg(POWER_LOG_ERROR,
 				"No transistor information exists.  Cannot determine transistor properties.");
 		error = true;
@@ -426,7 +426,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 				"Using %s transistor of size '%f', which is smaller than the smallest modeled transistor (%f) in the technology behavior file.",
 				transistor_type_name(type), size, min_size);
 		power_log_msg(POWER_LOG_WARNING, msg);
-		*lower = NULL;
+		*lower = nullptr;
 		*upper = found;
 	} else if (size > max_size) {
 		/* Too large */
@@ -439,7 +439,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 				transistor_type_name(type), size, max_size);
 		power_log_msg(POWER_LOG_WARNING, msg);
 		*lower = found;
-		*upper = NULL;
+		*upper = nullptr;
 	} else {
 		*lower = found;
 		*upper = found + 1;
@@ -474,7 +474,7 @@ void power_find_nmos_leakage(t_power_nmos_leakage_inf * nmos_leakage_info,
 	if (found == &nmos_leakage_info->leakage_pairs[nmos_leakage_info->num_leakage_pairs - 1]) {
 		/* The results equal to the max voltage (Vdd) */
 		*lower = found;
-		*upper = NULL;
+		*upper = nullptr;
 	} else {
 		*lower = found;
 		*upper = found + 1;
@@ -509,7 +509,7 @@ void power_find_buffer_strength_inf(t_power_buffer_strength_inf ** lower,
 
 	if (stage_gain == max_size) {
 		*lower = found;
-		*upper = NULL;
+		*upper = nullptr;
 	} else {
 		*lower = found;
 		*upper = found + 1;
@@ -554,7 +554,7 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf ** lower,
 				input_mux_size, max_size);
 		power_log_msg(POWER_LOG_WARNING, msg);
 		*lower = found;
-		*upper = NULL;
+		*upper = nullptr;
 	} else {
 		*lower = found;
 		*upper = found + 1;
@@ -614,7 +614,7 @@ void power_find_mux_volt_inf(t_power_mux_volt_pair ** lower,
 	if (found
 			== &volt_inf->mux_voltage_pairs[volt_inf->num_voltage_pairs - 1]) {
 		*lower = found;
-		*upper = NULL;
+		*upper = nullptr;
 	} else {
 		*lower = found;
 		*upper = found + 1;

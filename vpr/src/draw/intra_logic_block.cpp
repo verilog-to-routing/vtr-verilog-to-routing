@@ -162,7 +162,7 @@ void draw_internal_draw_subblk() {
 				/* Get block ID */
 				ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (cluster_ctx.clb_nlist.block_pb(bnum) == NULL)
+				if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
 					continue;
 
 				draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type(bnum));
@@ -345,7 +345,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 			drawrect(abs_bbox);
 		}
 	} else {
-		if (pb->name != NULL) {
+		if (pb->name != nullptr) {
 			// If block is used, draw it in colour with solid border.
 
 			setlinestyle(SOLID);
@@ -360,7 +360,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 				setcolor(DRIVES_IT_COLOR);
 			} else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
 				setcolor(DRIVEN_BY_IT_COLOR);
-			} else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != NULL) {
+			} else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
 				setcolor(WHITE); // draw anthing else that will have a child as white
 			} else if (type_index < 3) {
 				setcolor(LIGHTGREY);
@@ -385,9 +385,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 
 	/// then draw text ///
 
-	if (pb->name != NULL) {
+	if (pb->name != nullptr) {
 		setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
-		if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == NULL) {
+		if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
 			// If this pb is at the lowest displayed level, or has no more children, then
 			// label it in the center with its type and name
 
@@ -430,7 +430,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 
 	// return if no children, or this is an unusused pb,
 	// or if going down will be too far down (this one is redundant, but for optimazition)
-	if(pb->child_pbs == NULL || pb->name == NULL
+	if(pb->child_pbs == nullptr || pb->name == nullptr
 		|| pb_type->depth == draw_state->show_blk_internal) {
 
 		return;
@@ -439,7 +439,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 	int num_child_types = pb->get_num_child_types();
 	for (int i = 0; i < num_child_types; ++i) {
 
-		if (pb->child_pbs[i] == NULL) {
+		if (pb->child_pbs[i] == nullptr) {
 			continue;
 		}
 
@@ -448,12 +448,12 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 
 			t_pb* child_pb = &pb->child_pbs[i][j];
 
-			VTR_ASSERT(child_pb != NULL);
+			VTR_ASSERT(child_pb != nullptr);
 
 			t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
 			// don't go farther if 0 modes
-			if (pb_child_type == NULL && pb_child_type->num_modes == 0) {
+			if (pb_child_type == nullptr && pb_child_type->num_modes == 0) {
 				continue;
 			}
 
@@ -619,7 +619,7 @@ int highlight_sub_block(const t_point& point_in_clb, ClusterBlockId clb_index, t
 
 	t_pb* new_selected_sub_block = 
 		highlight_sub_block_helper(clb_index, pb, point_in_clb, max_depth);
-	if (new_selected_sub_block == NULL) {
+	if (new_selected_sub_block == nullptr) {
 		get_selected_sub_block_info().clear();
 		return 1;
 	} else {
@@ -643,9 +643,9 @@ t_pb* highlight_sub_block_helper(
 	// if pb has children,
 	// and if pb is dud
 	if (pb_type->depth + 1 > max_depth
-	 || pb->child_pbs == NULL
+	 || pb->child_pbs == nullptr
 	 || pb_type->num_modes == 0) {
-		return NULL;
+		return nullptr;
 	}
 
 	int num_child_types = pb->get_num_child_types();
@@ -656,7 +656,7 @@ t_pb* highlight_sub_block_helper(
 
 		for (int j = 0; j < num_children_of_type; ++j) {
 
-			if (pb->child_pbs[i] == NULL) {
+			if (pb->child_pbs[i] == nullptr) {
 				continue;
 			}
 
@@ -667,14 +667,14 @@ t_pb* highlight_sub_block_helper(
 			const t_bound_box& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
 			// If child block is being used, check if it intersects
-			if (child_pb->name != NULL && bbox.intersects(local_pt)) {
+			if (child_pb->name != nullptr && bbox.intersects(local_pt)) {
 
 				// check farther down the graph, see if we can find
 				// something more specific.
 				t_pb* subtree_result =
 					highlight_sub_block_helper(
 						clb_index, child_pb, local_pt - bbox.bottom_left(), max_depth);
-				if (subtree_result != NULL) {
+				if (subtree_result != nullptr) {
 					// we found something more specific.
 					return subtree_result;
 				} else {
@@ -684,7 +684,7 @@ t_pb* highlight_sub_block_helper(
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 t_selected_sub_block_info& get_selected_sub_block_info() {
@@ -706,7 +706,7 @@ template<typename HashType>
 void add_all_children(const t_pb* pb, const ClusterBlockId clb_index,
 	std::unordered_set< t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
 
-	if (pb == NULL) {
+	if (pb == nullptr) {
 		return;
 	}
 
@@ -723,7 +723,7 @@ void add_all_children(const t_pb* pb, const ClusterBlockId clb_index,
 
 void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterBlockId new_containing_block_index) {
 	selected_pb = new_selected_sub_block;
-    selected_pb_gnode = (selected_pb == NULL) ? NULL : selected_pb->pb_graph_node;
+    selected_pb_gnode = (selected_pb == nullptr) ? nullptr : selected_pb->pb_graph_node;
 	containing_block_index = new_containing_block_index;
 	sinks.clear();
 	sources.clear();
@@ -771,7 +771,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
 }
 
 void t_selected_sub_block_info::clear() {
-	set(NULL, ClusterBlockId::INVALID());
+	set(nullptr, ClusterBlockId::INVALID());
 }
 
 t_pb* t_selected_sub_block_info::get_selected_pb() const { return selected_pb; }
@@ -781,7 +781,7 @@ t_pb_graph_node* t_selected_sub_block_info::get_selected_pb_gnode() const { retu
 ClusterBlockId t_selected_sub_block_info::get_containing_block() const { return containing_block_index; }
 
 bool t_selected_sub_block_info::has_selection() const {
-	return get_selected_pb_gnode() != NULL && get_containing_block() != ClusterBlockId::INVALID();
+	return get_selected_pb_gnode() != nullptr && get_containing_block() != ClusterBlockId::INVALID();
 }
 
 bool t_selected_sub_block_info::is_selected(const t_pb_graph_node* test, const ClusterBlockId clb_index) const {
@@ -826,7 +826,7 @@ bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& r
  */
 
 t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair() :
-	pb_gnode(NULL),
+	pb_gnode(nullptr),
 	clb_index(ClusterBlockId::INVALID()) {
 }
 

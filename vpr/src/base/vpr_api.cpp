@@ -878,7 +878,7 @@ void free_device(const t_det_routing_arch& routing_arch) {
     vtr::free(device_ctx.chan_width.x_list);
     vtr::free(device_ctx.chan_width.y_list);
 
-    device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = NULL;
+    device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = nullptr;
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
     for (int iswitch : {routing_arch.delayless_switch, routing_arch.global_route_switch}) {
@@ -888,7 +888,7 @@ void free_device(const t_det_routing_arch& routing_arch) {
         }
     }
     delete[] device_ctx.arch_switch_inf;
-    device_ctx.arch_switch_inf = NULL;
+    device_ctx.arch_switch_inf = nullptr;
     free_complex_block_types();
     free_chunk_memory_trace();
 }
@@ -1138,7 +1138,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
 
 void vpr_print_error(const VprError& vpr_error){
 	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-    char* error_type = NULL;
+    char* error_type = nullptr;
     try {
         switch (vpr_error.type()) {
             case VPR_ERROR_UNKNOWN:
@@ -1194,7 +1194,7 @@ void vpr_print_error(const VprError& vpr_error){
                 break;
         }
     } catch (const vtr::VtrError& e) {
-        error_type = NULL;
+        error_type = nullptr;
     }
 
     //We can't pass std::string's through va_args functions,

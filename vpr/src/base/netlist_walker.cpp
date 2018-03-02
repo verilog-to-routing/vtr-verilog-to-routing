@@ -24,12 +24,12 @@ void NetlistWalker::walk_atoms(const t_pb* pb) {
     //Recursively travers this pb calling visitor_.visit_atom()
     //on any of its primitive pb's
 
-    if(pb == nullptr || pb->name == NULL) {
+    if(pb == nullptr || pb->name == nullptr) {
         //Empty pb
         return;
     }
 
-    if(pb->child_pbs == NULL) {
+    if(pb->child_pbs == nullptr) {
         //Primitive pb
         visitor_.visit_atom(pb);
         return;

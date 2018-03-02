@@ -45,8 +45,8 @@ t_token *GetTokensFromString(const char* inString, int * num_tokens) {
 	*num_tokens = i = 0;
 	cur_token_type = TOKEN_NULL;
 
-	if (inString == NULL) {
-		return NULL;
+	if (inString == nullptr) {
+		return nullptr;
 	};
 
 	cur = inString;
@@ -67,7 +67,7 @@ t_token *GetTokensFromString(const char* inString, int * num_tokens) {
 	if (*num_tokens > 0) {
 		tokens = (t_token*)vtr::calloc(*num_tokens + 1, sizeof(t_token));
 	} else {
-		return NULL;
+		return nullptr;
 	}
 
 	/* populate tokens */
@@ -104,7 +104,7 @@ t_token *GetTokensFromString(const char* inString, int * num_tokens) {
 	VTR_ASSERT(i == *num_tokens);
 
 	tokens[*num_tokens].type = TOKEN_NULL;
-	tokens[*num_tokens].data = NULL;
+	tokens[*num_tokens].data = nullptr;
 
 	/* Return the list */
 	return tokens;

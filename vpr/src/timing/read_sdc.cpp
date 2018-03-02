@@ -91,7 +91,7 @@ command set_clock_groups -exclusive. */
 /****************** Variables local to this module **************************/
 
 static FILE *sdc;
-t_sdc_clock * sdc_clocks = NULL; /* List of clock periods and offsets from create_clock commands */
+t_sdc_clock * sdc_clocks = nullptr; /* List of clock periods and offsets from create_clock commands */
 
 int num_netlist_clocks = 0; /* number of clocks in netlist */
 char ** netlist_clocks; /* [0..num_netlist_clocks - 1] array of names of clocks in netlist */
@@ -237,7 +237,7 @@ void read_sdc(t_timing_inf timing_inf) {
 		return;
 	}
 	
-	if ((sdc = fopen(timing_inf.SDCFile.c_str(), "r")) == NULL) {
+	if ((sdc = fopen(timing_inf.SDCFile.c_str(), "r")) == nullptr) {
 		vtr::printf_info("\n");
 		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile.c_str());
 		use_default_timing_constraints();
@@ -429,7 +429,7 @@ static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock
 
     int iclock;
     int num_exclusive_groups = 0;
-	t_sdc_exclusive_group *exclusive_groups = NULL;
+	t_sdc_exclusive_group *exclusive_groups = nullptr;
 
     VTR_ASSERT(sdc_set_clock_groups.clock_groups.size() >= 2); //Should have already been caught by parser
     VTR_ASSERT(sdc_set_clock_groups.type == sdcparse::ClockGroupsType::EXCLUSIVE); //Currently only form supported
@@ -440,7 +440,7 @@ static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock
         /* Create a new entry in exclusive groups */
         exclusive_groups = (t_sdc_exclusive_group *) vtr::realloc(
             exclusive_groups, ++num_exclusive_groups * sizeof(t_sdc_exclusive_group));
-        exclusive_groups[num_exclusive_groups - 1].clock_names = NULL;
+        exclusive_groups[num_exclusive_groups - 1].clock_names = nullptr;
         exclusive_groups[num_exclusive_groups - 1].num_clock_names = 0;
 
         for(size_t iclk_name = 0; iclk_name < clock_group.strings.size(); iclk_name++) {
@@ -505,7 +505,7 @@ static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock
 static bool apply_set_false_path(const sdcparse::SetFalsePath& sdc_set_false_path) {
 	bool domain_level_from = false, domain_level_to = false;
     int num_from = 0, num_to = 0;
-    char **from_list = NULL, **to_list = NULL;
+    char **from_list = nullptr, **to_list = nullptr;
 
     build_from_to_lists(&from_list, &num_from, &domain_level_from,
                         &to_list, &num_to, &domain_level_to,
@@ -518,7 +518,7 @@ static bool apply_set_false_path(const sdcparse::SetFalsePath& sdc_set_false_pat
     
     /* Finally, set from_list and to_list to NULL since they're both 
     being pointed to by the override constraint entry we just created. */
-    from_list = NULL, to_list = NULL;
+    from_list = nullptr, to_list = nullptr;
 
     return true;
 }
@@ -528,7 +528,7 @@ static bool apply_set_min_max_delay(const sdcparse::SetMinMaxDelay& sdc_set_min_
 
 	bool domain_level_from = false, domain_level_to = false;
     int num_from = 0, num_to = 0;
-    char **from_list = NULL, **to_list = NULL;
+    char **from_list = nullptr, **to_list = nullptr;
 
     if(sdc_set_min_max_delay.type != sdcparse::MinMaxType::MAX) {
         vpr_sdc_error(-1, "", "Only set_max_delay currently supported");
@@ -544,7 +544,7 @@ static bool apply_set_min_max_delay(const sdcparse::SetMinMaxDelay& sdc_set_min_
     
     /* Finally, set from_list and to_list to NULL since they're both 
     being pointed to by the override constraint entry we just created. */
-    from_list = NULL, to_list = NULL;
+    from_list = nullptr, to_list = nullptr;
 
     return true;
 }
@@ -552,7 +552,7 @@ static bool apply_set_min_max_delay(const sdcparse::SetMinMaxDelay& sdc_set_min_
 static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set_multicycle_path) {
 	bool domain_level_from = false, domain_level_to = false;
     int num_from = 0, num_to = 0;
-    char **from_list = NULL, **to_list = NULL;
+    char **from_list = nullptr, **to_list = nullptr;
 
     VTR_ASSERT(sdc_set_multicycle_path.is_setup && !sdc_set_multicycle_path.is_hold); //Currently only form supported
 
@@ -567,7 +567,7 @@ static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set
     
     /* Finally, set from_list and to_list to NULL since they're both 
     being pointed to by the override constraint entry we just created. */
-    from_list = NULL, to_list = NULL;
+    from_list = nullptr, to_list = nullptr;
 
     return true;
 }
@@ -1184,7 +1184,7 @@ void free_sdc_related_structs(void) {
 	free_io_constraint(timing_ctx.sdc->constrained_outputs, timing_ctx.sdc->num_constrained_outputs);
 	free_clock_constraint(timing_ctx.sdc->constrained_clocks, timing_ctx.sdc->num_constrained_clocks);
 	free(timing_ctx.sdc);
-	timing_ctx.sdc = NULL;
+	timing_ctx.sdc = nullptr;
 }
 
 void free_override_constraint(t_override_constraint *& constraint_array, int num_constraints) {
@@ -1195,17 +1195,17 @@ void free_override_constraint(t_override_constraint *& constraint_array, int num
 	for (i = 0; i < num_constraints; i++) {
 		for (j = 0; j < constraint_array[i].num_source; j++) {
 			free(constraint_array[i].source_list[j]);
-			constraint_array[i].source_list[j] = NULL;
+			constraint_array[i].source_list[j] = nullptr;
 		}
 		for (j = 0; j < constraint_array[i].num_sink; j++) {
 			free(constraint_array[i].sink_list[j]);
-			constraint_array[i].sink_list[j] = NULL;
+			constraint_array[i].sink_list[j] = nullptr;
 		}
 		free(constraint_array[i].source_list);
 		free(constraint_array[i].sink_list);
 	}
 	free(constraint_array);
-	constraint_array = NULL;
+	constraint_array = nullptr;
 }
 
 static void free_io_constraint(t_io *& io_array, int num_ios) {
@@ -1216,7 +1216,7 @@ static void free_io_constraint(t_io *& io_array, int num_ios) {
 		free(io_array[i].clock_name);
 	}
 	free(io_array);
-	io_array = NULL;
+	io_array = nullptr;
 }
 
 static void free_clock_constraint(t_clock *& clock_array, int num_clocks) {
@@ -1226,7 +1226,7 @@ static void free_clock_constraint(t_clock *& clock_array, int num_clocks) {
 		free(clock_array[i].name);
 	}
 	free(clock_array);
-	clock_array = NULL;
+	clock_array = nullptr;
 }
 
 const char * get_sdc_file_name(){

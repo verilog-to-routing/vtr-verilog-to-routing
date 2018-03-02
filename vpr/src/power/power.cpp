@@ -532,7 +532,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 						pb_idx
 								< pb_node->pb_type->modes[pb_mode].pb_type_children[pb_type_idx].num_pb;
 						pb_idx++) {
-					t_pb * child_pb = NULL;
+					t_pb * child_pb = nullptr;
 					t_pb_graph_node * child_pb_graph_node;
 
 					if (pb && pb->child_pbs[pb_type_idx][pb_idx].name) {
@@ -625,7 +625,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 			}
 
 			for (int z = 0; z < device_ctx.grid[x][y].type->capacity; z++) {
-				t_pb * pb = NULL;
+				t_pb * pb = nullptr;
 				t_power_usage pb_power;
 
                 ClusterBlockId iblk = place_ctx.grid_blocks[x][y].blocks[z];
@@ -812,7 +812,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		t_trace * trace;
 
-		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
+		for (trace = route_ctx.trace_head[net_id]; trace != nullptr; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
 			rr_node_power[trace->index].net_num = net_id;
 		}
@@ -822,7 +822,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		t_trace * trace;
 
-		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
+		for (trace = route_ctx.trace_head[net_id]; trace != nullptr; trace = trace->next) {
 			t_rr_node * node = &device_ctx.rr_nodes[trace->index];
 			t_rr_node_power * node_power = &rr_node_power[trace->index];
 
@@ -848,7 +848,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 						if (next_node_power->num_inputs > next_node->fan_in()) {
                             vtr::printf_info("%d %d\n", next_node_power->num_inputs,
 									next_node->fan_in());
-							fflush(0);
+							fflush(nullptr);
 							VTR_ASSERT(0);
 						}
 						break;
@@ -1054,7 +1054,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin) {
 			sizeof(t_pb_graph_pin_power));
 	pin->pin_power->C_wire = 0.;
 	pin->pin_power->buffer_size = 0.;
-	pin->pin_power->scaled_by_pin = NULL;
+	pin->pin_power->scaled_by_pin = nullptr;
 
 	if (pin->port->port_power->scaled_by_port) {
 
@@ -1305,7 +1305,7 @@ bool power_init(const char * power_out_filepath,
 
 	/* Initialize output file */
 	if (!error) {
-		power_ctx.output->out = NULL;
+		power_ctx.output->out = nullptr;
 		power_ctx.output->out = vtr::fopen(power_out_filepath, "w");
 		if (!power_ctx.output->out) {
 			error = true;
@@ -1612,7 +1612,7 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 		power_print_breakdown_entry(fp, indent + 1,
 				POWER_BREAKDOWN_ENTRY_TYPE_BUFS_WIRES, "Bufs/Wires",
 				power_sum_usage(&pb_power->power_usage_bufs_wires), total_power,
-				power_perc_dynamic(&pb_power->power_usage_bufs_wires), NULL);
+				power_perc_dynamic(&pb_power->power_usage_bufs_wires), nullptr);
 	}
 
 	if (power_method_is_recursive(est_method)) {
@@ -1631,7 +1631,7 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 						power_sum_usage(&mode->mode_power->power_usage),
 						total_power,
 						power_perc_dynamic(&mode->mode_power->power_usage),
-						NULL);
+						nullptr);
 			}
 
 			/* Interconnect Power */
@@ -1648,7 +1648,7 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 					power_print_breakdown_entry(fp, child_indent,
 							POWER_BREAKDOWN_ENTRY_TYPE_INTERC, "Interc:",
 							power_sum_usage(&interc_usage), total_power,
-							power_perc_dynamic(&interc_usage), NULL);
+							power_perc_dynamic(&interc_usage), nullptr);
 				}
 
 				/* Print Interconnect Breakdown */
@@ -1665,7 +1665,7 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 								total_power,
 								power_perc_dynamic(
 										&interc->interconnect_power->power_usage),
-								NULL);
+								nullptr);
 					}
 				}
 			}
@@ -1779,8 +1779,8 @@ e_power_ret_code power_total(float * run_time_s, const t_vpr_setup& vpr_setup,
  * - fp: File descripter to print out to
  */
 static void power_print_breakdown_summary(FILE * fp) {
-	power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, NULL,
-			0., 0., 0., NULL);
+	power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr,
+			0., 0., 0., nullptr);
 	power_print_breakdown_component(fp, "Total", POWER_COMPONENT_TOTAL, 0);
 	fprintf(fp, "\n");
 }
@@ -1816,8 +1816,8 @@ static void power_print_breakdown_pb(FILE * fp) {
 					"\t\tbetween the PB and its children is ignored.\n"
 					"\tIgnore: Power of PB is ignored.\n\n\n");
 
-	power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, NULL,
-			0., 0., 0., NULL);
+	power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr,
+			0., 0., 0., nullptr);
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& power_ctx = g_vpr_ctx.power();
@@ -1842,7 +1842,7 @@ static void power_print_breakdown_component(FILE * fp, const char * name,
 			power_sum_usage(&power_ctx.by_component.components[type]),
 			power_sum_usage(
 					&power_ctx.by_component.components[POWER_COMPONENT_TOTAL]),
-			power_perc_dynamic(&power_ctx.by_component.components[type]), NULL);
+			power_perc_dynamic(&power_ctx.by_component.components[type]), nullptr);
 
 	switch (type) {
 	case (POWER_COMPONENT_TOTAL):

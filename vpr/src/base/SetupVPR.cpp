@@ -106,7 +106,7 @@ void SetupVPR(t_options *Options,
 	*library_models = Arch->model_library;
 
 	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
-	device_ctx.EMPTY_TYPE = NULL;
+	device_ctx.EMPTY_TYPE = nullptr;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
         t_type_ptr type = &device_ctx.block_types[i];
 		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
@@ -122,7 +122,7 @@ void SetupVPR(t_options *Options,
         }
     }
 
-	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL);
+	VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
 
     if (device_ctx.input_types.empty()) {
         VPR_THROW(VPR_ERROR_ARCH, 
@@ -478,9 +478,9 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 			Arch->clocks = (t_clock_arch*) vtr::malloc(sizeof(t_clock_arch));
 		device_ctx.clock_arch = Arch->clocks;
 	} else {
-		Arch->power = NULL;
-		Arch->clocks = NULL;
-		device_ctx.clock_arch = NULL;
+		Arch->power = nullptr;
+		Arch->clocks = nullptr;
+		device_ctx.clock_arch = nullptr;
 	}
 }
 

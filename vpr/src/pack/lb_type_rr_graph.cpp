@@ -80,15 +80,15 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node> *lb_type_rr_graphs
 			for(int inode = 0; inode < graph_size; inode++) {				
 				t_lb_type_rr_node *node = &lb_type_rr_graphs[itype][inode];
 				int num_modes = get_num_modes_of_lb_type_rr_node(*node);	
-				if(node->outedges != NULL) {
+				if(node->outedges != nullptr) {
 					for(int imode = 0; imode < num_modes; imode++) {
-						if(node->outedges[imode] != NULL) {
+						if(node->outedges[imode] != nullptr) {
 							free(node->outedges[imode]);
 						}
 					}					
 					free(node->outedges);
 				}
-				if(node->num_fanout != NULL) {
+				if(node->num_fanout != nullptr) {
 					free(node->num_fanout);
 				}
 			}
@@ -117,10 +117,10 @@ int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
 	int num_modes = 1;
 	t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
-	if(lb_type_rr_node.pb_graph_pin != NULL) {
+	if(lb_type_rr_node.pb_graph_pin != nullptr) {
 		if(lb_type_rr_node.pb_graph_pin->port->type == OUT_PORT) {
 			pb_graph_node = lb_type_rr_node.pb_graph_pin->parent_node->parent_pb_graph_node;
-			if (pb_graph_node == NULL) {
+			if (pb_graph_node == nullptr) {
 				/* Top level logic block output pins connect to external routing */
 				num_modes = 1;
 			} else {
@@ -243,7 +243,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_sink_index].capacity = pb_type->num_output_pins;
 	lb_type_rr_node_graph[ext_sink_index].num_fanout = (short*)vtr::malloc(sizeof (short));
 	lb_type_rr_node_graph[ext_sink_index].num_fanout[0] = 0; /* Terminal point */
-	lb_type_rr_node_graph[ext_sink_index].outedges = NULL;
+	lb_type_rr_node_graph[ext_sink_index].outedges = nullptr;
 	lb_type_rr_node_graph[ext_sink_index].type = LB_SINK;
 
 	/*******************************************************************************
@@ -489,7 +489,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 		}
 
 		/* alloc and load output pins that drive other output pins */
-		if(parent_node == NULL) {
+		if(parent_node == nullptr) {
 			/* Top level output pins go to other CLBs, represented different */
 			for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
 				for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
@@ -624,7 +624,7 @@ static float get_cost_of_pb_edge(t_pb_graph_edge* /*edge*/) {
 static void print_lb_type_rr_graph(FILE *fp, const std::vector<t_lb_type_rr_node> &lb_type_rr_graph) {
 	for(unsigned int inode = 0; inode < lb_type_rr_graph.size(); inode++) {
 		fprintf(fp, "Node %d\n", inode);
-		if(lb_type_rr_graph[inode].pb_graph_pin != NULL) {
+		if(lb_type_rr_graph[inode].pb_graph_pin != nullptr) {
 			t_pb_graph_node *pb_graph_node = lb_type_rr_graph[inode].pb_graph_pin->parent_node;
 			fprintf(fp, "\t%s[%d].%s[%d]\n", pb_graph_node->pb_type->name,
 											 pb_graph_node->placement_index,
@@ -637,7 +637,7 @@ static void print_lb_type_rr_graph(FILE *fp, const std::vector<t_lb_type_rr_node
 		fprintf(fp, "\tCapacity: %d\n", lb_type_rr_graph[inode].capacity);
 		fprintf(fp, "\tIntrinsic Cost: %g\n", lb_type_rr_graph[inode].intrinsic_cost);
 		for(int imode = 0; imode < get_num_modes_of_lb_type_rr_node(lb_type_rr_graph[inode]); imode++) {
-			if(lb_type_rr_graph[inode].num_fanout != NULL) {
+			if(lb_type_rr_graph[inode].num_fanout != nullptr) {
 				fprintf(fp, "\tMode: %d   # Outedges: %d\n\t\t", imode, lb_type_rr_graph[inode].num_fanout[imode]);
 				int count = 0;
 				for(int iedge = 0; iedge < lb_type_rr_graph[inode].num_fanout[imode]; iedge++) {

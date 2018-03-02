@@ -793,7 +793,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
             astar_fac, bend_cost, rt_root, bounding_box, (int)cluster_ctx.clb_nlist.net_sinks(net_id).size(), budgeting_inf,
             max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf, router_stats);
 
-    if (cheapest == NULL) {
+    if (cheapest == nullptr) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
 		ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + target_pin));
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
@@ -849,7 +849,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
     t_heap * cheapest{get_heap_head()};
     ++router_stats.heap_pops;
 
-    if (cheapest == NULL) {
+    if (cheapest == nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
         const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
         const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
@@ -876,7 +876,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
         reset_path_costs();
         free_route_tree(rt_root);
-        return NULL;
+        return nullptr;
     }
 
 
@@ -926,7 +926,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         cheapest = get_heap_head();
         ++router_stats.heap_pops;
 
-        if (cheapest == NULL) { /* Impossible routing.  No path for net. */
+        if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
             auto& device_ctx = g_vpr_ctx.device();
             const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
             const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
@@ -953,7 +953,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
             reset_path_costs();
             free_route_tree(rt_root);
-            return NULL;
+            return nullptr;
         }
 
         inode = cheapest->index;
@@ -1142,7 +1142,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 
     linked_rt_edge = rt_node->u.child_list;
 
-    while (linked_rt_edge != NULL) {
+    while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
         add_route_tree_to_heap(child_node, target_node, target_criticality,
                 astar_fac, budgeting_inf, max_delay, min_delay,
@@ -1595,7 +1595,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
         /* This algorithm only applies to high fanout nets */
         return 1;
     }
-    if (rt_node == NULL || rt_node->u.child_list == NULL) {
+    if (rt_node == nullptr || rt_node->u.child_list == nullptr) {
         /* If unknown traceback, set radius of bin to be size of chip */
         rlim = max_grid_dim;
         return rlim;
@@ -1616,8 +1616,8 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
      this is necessary to prevent super long runtimes for high fanout nets; in best case, a reduction in complexity from O(N^2logN) to O(NlogN) (Swartz fast router)
      */
     linked_rt_edge = rt_node->u.child_list;
-    while (success == false && linked_rt_edge != NULL) {
-        while (linked_rt_edge != NULL && success == false) {
+    while (success == false && linked_rt_edge != nullptr) {
+        while (linked_rt_edge != nullptr && success == false) {
             child_node = linked_rt_edge->child;
             inode = child_node->inode;
             if (!(device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == SINK)) {
@@ -1651,7 +1651,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
 
     /* redetermine expansion based on rlim */
     linked_rt_edge = rt_node->u.child_list;
-    while (linked_rt_edge != NULL) {
+    while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
         inode = child_node->inode;
         if (!(device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == SINK)) {
@@ -1716,7 +1716,7 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
 
     t_trace * tptr = route_ctx.trace_head[net_id];
 
-    if (tptr == NULL) {
+    if (tptr == nullptr) {
         /* No routing yet. */
         return true;
     }
@@ -1738,7 +1738,7 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
                 }
             }
             tptr = tptr->next; /* Skip next segment (duplicate of original branch node). */
-            if (tptr == NULL)
+            if (tptr == nullptr)
                 break;
         }
 

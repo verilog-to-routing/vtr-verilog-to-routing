@@ -316,7 +316,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
                 route_ctx.trace_head[inet] = alloc_trace_data();
                 route_ctx.trace_head[inet]->index = inode;
                 route_ctx.trace_head[inet]->iswitch = switch_id;
-                route_ctx.trace_head[inet]->next = NULL;
+                route_ctx.trace_head[inet]->next = nullptr;
                 tptr = route_ctx.trace_head[inet];
                 node_count++;
             } else {
@@ -324,7 +324,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
                 tptr = tptr -> next;
                 tptr->index = inode;
                 tptr->iswitch = switch_id;
-                tptr->next = NULL;
+                tptr->next = nullptr;
                 node_count++;
             }
         }
@@ -433,6 +433,6 @@ static string format_name(string name) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                 "%s should be enclosed by parenthesis",
                 name.c_str());
-        return NULL;
+        return nullptr;
     }
 }

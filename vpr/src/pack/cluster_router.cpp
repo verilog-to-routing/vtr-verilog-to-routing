@@ -133,17 +133,17 @@ t_lb_router_data *alloc_and_load_router_data(vector<t_lb_type_rr_node> *lb_type_
 
 /* free data used by router */
 void free_router_data(t_lb_router_data *router_data) {
-	if(router_data != NULL && router_data->lb_type_graph != NULL) {
+	if(router_data != nullptr && router_data->lb_type_graph != nullptr) {
 		delete [] router_data->lb_rr_node_stats;
-		router_data->lb_rr_node_stats = NULL;
+		router_data->lb_rr_node_stats = nullptr;
 		delete [] router_data->explored_node_tb;
-		router_data->explored_node_tb = NULL;
-		router_data->lb_type_graph = NULL;
+		router_data->explored_node_tb = nullptr;
+		router_data->lb_type_graph = nullptr;
 		delete router_data->atoms_added;
-		router_data->atoms_added = NULL;
+		router_data->atoms_added = nullptr;
 		free_intra_lb_nets(router_data->intra_lb_nets);
 		free_intra_lb_nets(router_data->saved_lb_nets);
-		router_data->intra_lb_nets = NULL;
+		router_data->intra_lb_nets = nullptr;
 		delete router_data;
 	}
 }
@@ -265,7 +265,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 	/* Reset current routing */
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		free_lb_net_rt(lb_nets[inet].rt_tree);
-		lb_nets[inet].rt_tree = NULL;
+		lb_nets[inet].rt_tree = nullptr;
 	}
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
 		router_data->lb_rr_node_stats[inode].historical_usage = 0;
@@ -285,7 +285,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 			}
 			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_REMOVE);
 			free_lb_net_rt(lb_nets[idx].rt_tree);
-			lb_nets[idx].rt_tree = NULL;
+			lb_nets[idx].rt_tree = nullptr;
 			add_source_to_rt(router_data, idx);
 
 			/* Route each sink of net */
@@ -382,7 +382,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
         //Clean-up
 		for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 			free_lb_net_rt(lb_nets[inet].rt_tree);
-			lb_nets[inet].rt_tree = NULL;
+			lb_nets[inet].rt_tree = nullptr;
 		}
 #ifdef PRINT_INTRA_LB_ROUTE
 		print_route("intra_lb_failed_route.echo", router_data);
@@ -417,20 +417,20 @@ t_pb_route *alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets
 
 /* Free pin-to-atomic_net array lookup */
 void free_pb_route(t_pb_route *pb_route) {
-	if(pb_route != NULL) {
+	if(pb_route != nullptr) {
 		delete []pb_route;
 	}
 }
 
 void free_intra_lb_nets(vector <t_intra_lb_net> *intra_lb_nets) {
-	if(intra_lb_nets == NULL) {
+	if(intra_lb_nets == nullptr) {
 		return;
 	}
 	vector <t_intra_lb_net> &lb_nets = *intra_lb_nets;
 	for(unsigned int i = 0; i < lb_nets.size(); i++) {
 		lb_nets[i].terminals.clear();
 		free_lb_net_rt(lb_nets[i].rt_tree);
-		lb_nets[i].rt_tree = NULL;
+		lb_nets[i].rt_tree = nullptr;
 	}		
 	delete intra_lb_nets;
 }
@@ -463,7 +463,7 @@ static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, c
 
 /* Free route tree for intra-logic block routing */
 static void free_lb_net_rt(t_lb_trace *lb_trace) {
-	if(lb_trace != NULL) {
+	if(lb_trace != nullptr) {
 		for(unsigned int i = 0; i < lb_trace->next_nodes.size(); i++) {
 			free_lb_trace(&lb_trace->next_nodes[i]);
 		}
@@ -474,7 +474,7 @@ static void free_lb_net_rt(t_lb_trace *lb_trace) {
 
 /* Free trace for intra-logic block routing */
 static void free_lb_trace(t_lb_trace *lb_trace) {
-	if(lb_trace != NULL) {
+	if(lb_trace != nullptr) {
 		for(unsigned int i = 0; i < lb_trace->next_nodes.size(); i++) {
 			free_lb_trace(&lb_trace->next_nodes[i]);
 		}
@@ -857,7 +857,7 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_co
 	lb_rr_node_stats = router_data->lb_rr_node_stats;
 	explored_node_tb = router_data->explored_node_tb;
 
-	if(rt == NULL) {
+	if(rt == nullptr) {
 		return;
 	}
 
@@ -891,7 +891,7 @@ static bool is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) {
 	
 	lb_rr_node_stats = router_data->lb_rr_node_stats;
 	
-	if (rt == NULL) {
+	if (rt == nullptr) {
 		return false; /* Net is not routed, therefore must route net */
 	}
 
@@ -917,7 +917,7 @@ static bool is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) {
 
 /* At source mode as starting point to existing route tree */
 static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
-	VTR_ASSERT((*router_data->intra_lb_nets)[inet].rt_tree == NULL);
+	VTR_ASSERT((*router_data->intra_lb_nets)[inet].rt_tree == nullptr);
 	(*router_data->intra_lb_nets)[inet].rt_tree = new t_lb_trace;
 	(*router_data->intra_lb_nets)[inet].rt_tree->current_node = (*router_data->intra_lb_nets)[inet].terminals[0];
 }
@@ -1039,7 +1039,7 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 
 	/* Find rt_index on the route tree */
 	link_node = find_node_in_rt(rt, rt_index);
-	VTR_ASSERT(link_node != NULL);
+	VTR_ASSERT(link_node != nullptr);
 
 	/* Add path to root tree */
 	while(!trace_forward.empty()) {
@@ -1072,12 +1072,12 @@ static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index) {
 	} else {
 		for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
 			cur = find_node_in_rt(&rt->next_nodes[i], rt_index);
-			if(cur != NULL) {
+			if(cur != nullptr) {
 				return cur;
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 #ifdef PRINT_INTRA_LB_ROUTE
@@ -1141,9 +1141,9 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 
 	/* Free old saved lb nets if exist */
-	if(router_data->saved_lb_nets != NULL) {		
+	if(router_data->saved_lb_nets != nullptr) {		
 		free_intra_lb_nets(router_data->saved_lb_nets);
-		router_data->saved_lb_nets = NULL;
+		router_data->saved_lb_nets = nullptr;
 	}
 
 	/* Save current routed solution */
@@ -1160,7 +1160,7 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 			saved_lb_nets[inet].terminals[iterm] = lb_nets[inet].terminals[iterm];
 		}
 		saved_lb_nets[inet].rt_tree = lb_nets[inet].rt_tree;
-		lb_nets[inet].rt_tree = NULL;
+		lb_nets[inet].rt_tree = nullptr;
 	}
 }
 

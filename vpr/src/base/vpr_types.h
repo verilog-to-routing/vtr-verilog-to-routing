@@ -146,7 +146,7 @@ struct t_pb {
 
 
 	int get_num_child_types() const {
-		if (child_pbs != NULL && has_modes()) {
+		if (child_pbs != nullptr && has_modes()) {
 			return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
 		} else {
 			return 0;
@@ -161,7 +161,7 @@ struct t_pb {
 		if (has_modes()) {
 			return &pb_graph_node->pb_type->modes[mode];
 		} else {
-			return NULL;
+			return nullptr;
 		}
 	}
 

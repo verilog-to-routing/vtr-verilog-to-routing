@@ -32,7 +32,7 @@ using namespace std;
 #include "pb_type_graph.h"
 #include "token.h"
 
-static const char* netlist_file_name = NULL;
+static const char* netlist_file_name = nullptr;
 
 static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
         const pugiutil::loc_data& loc_data);
@@ -177,7 +177,7 @@ ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool ver
 
         //Reset atom/pb mapping (it is reloaded from the packed netlist file)
         for(auto blk_id : atom_ctx.nlist.blocks())
-            atom_ctx.lookup.set_atom_pb(blk_id, NULL);
+            atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
         //Count the number of blocks for allocation
         bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
@@ -197,7 +197,7 @@ ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool ver
 
         /* Error check */
         for(auto blk_id : atom_ctx.nlist.blocks()) {
-            if (atom_ctx.lookup.atom_pb(blk_id) == NULL) {
+            if (atom_ctx.lookup.atom_pb(blk_id) == nullptr) {
                 vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
                         ".blif file and .net file do not match, .net file missing atom %s.\n",
                         atom_ctx.nlist.block_name(blk_id).c_str());
@@ -252,7 +252,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
 	bool found;
 	int i, num_tokens = 0;
 	t_token *tokens;
-	const t_pb_type *pb_type = NULL;
+	const t_pb_type *pb_type = nullptr;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -345,7 +345,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 	pb_type = pb->pb_graph_node->pb_type;
 
 	//Create the ports in the clb_nlist for the top-level pb
-	if (pb->parent_pb == NULL) {
+	if (pb->parent_pb == nullptr) {
 		VTR_ASSERT(num_in_ports <= num_out_ports);
 
 		for (i = 0; i < num_in_ports; i++) {
@@ -409,7 +409,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
                                 "Instance number exceeds # of pb available for instance %s in %s.\n",
                                 instance_type.value(), child.name());
                     }
-                    if (pb->child_pbs[i][pb_index].pb_graph_node != NULL) {
+                    if (pb->child_pbs[i][pb_index].pb_graph_node != nullptr) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                 "node is used by two different blocks %s and %s.\n",
                                 instance_type.value(),
@@ -451,7 +451,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
                 processPb(child, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
             } else {
                 /* physical block has no used primitives but it may have used routing */
-                pb->child_pbs[i][pb_index].name = NULL;
+                pb->child_pbs[i][pb_index].name = nullptr;
                 atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
@@ -576,7 +576,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 
         //Process the input and clock ports
         if (0 == strcmp(Parent.name(), "inputs") || 0 == strcmp(Parent.name(), "clocks")) {
-            if (pb->parent_pb == NULL) {
+            if (pb->parent_pb == nullptr) {
                 //We are processing a top-level pb, so these pins connect to inter-block nets
                 for (i = 0; i < num_tokens; i++) {
                     //Set rr_node_index to the pb_route for the appropriate port
@@ -944,12 +944,12 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-	if (pb->pb_graph_node->pb_type->blif_model == NULL) {
+	if (pb->pb_graph_node->pb_type->blif_model == nullptr) {
 		// Check the model name to see if it exists, iterate through children if it does
 		for (i = 0; i < pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
 			pb_type = &(pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i]);
 			for (j = 0; j < pb_type->num_pb; j++) {
-				if (pb->child_pbs[i][j].name != NULL) {
+				if (pb->child_pbs[i][j].name != nullptr) {
 					mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route);
 				}
 			}
@@ -992,7 +992,7 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
 	t_pb_route *pb_route;
 	int num_pins = pb_graph_node->total_pb_pins;
 
-	VTR_ASSERT(pb_graph_node->parent_pb_graph_node == NULL); /* This function only operates on top-level pb_graph_node */
+	VTR_ASSERT(pb_graph_node->parent_pb_graph_node == nullptr); /* This function only operates on top-level pb_graph_node */
 
 	pb_route = new t_pb_route[num_pins];
 

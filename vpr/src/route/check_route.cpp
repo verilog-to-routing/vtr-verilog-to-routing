@@ -108,7 +108,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 
 		/* Check the SOURCE of the net. */
 		tptr = route_ctx.trace_head[net_id];
-		if (tptr == NULL) {
+		if (tptr == nullptr) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_route: net %d has no routing.\n", size_t(net_id));
 		}
@@ -127,7 +127,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 
 		/* Check the rest of the net */
         size_t num_sinks = 0;
-		while (tptr != NULL) {
+		while (tptr != nullptr) {
 			inode = tptr->index;
 			check_node_and_range(inode, route_type);
 			check_switch(tptr, num_switches);
@@ -328,7 +328,7 @@ static void reset_flags(ClusterNetId inet, bool * connected_to_route) {
 
 	tptr = route_ctx.trace_head[inet];
 
-	while (tptr != NULL) {
+	while (tptr != nullptr) {
 		inode = tptr->index;
 		connected_to_route[inode] = false; /* Not in routed path now. */
 		tptr = tptr->next;
@@ -573,7 +573,7 @@ void recompute_occupancy_from_scratch() {
 			continue;
 
 		tptr = route_ctx.trace_head[net_id];
-		if (tptr == NULL)
+		if (tptr == nullptr)
 			continue;
 
 		for (;;) {
@@ -582,7 +582,7 @@ void recompute_occupancy_from_scratch() {
 
 			if (tptr->iswitch == OPEN) {
 				tptr = tptr->next; /* Skip next segment. */
-				if (tptr == NULL)
+				if (tptr == nullptr)
 					break;
 			}
 

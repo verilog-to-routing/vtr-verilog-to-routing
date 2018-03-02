@@ -583,7 +583,7 @@ static void CheckGrid(const DeviceGrid& grid) {
 	for (size_t i = 0; i < grid.width(); ++i) {
 		for (size_t j = 0; j < grid.height(); ++j) {
             auto type = grid[i][j].type;
-			if (NULL == type) {
+			if (nullptr == type) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has no type.\n", i, j);
 			}
 

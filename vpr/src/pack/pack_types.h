@@ -108,10 +108,10 @@ struct t_lb_type_rr_node {
 	
 	t_lb_type_rr_node() {
 		capacity = 0;
-		num_fanout = NULL;
+		num_fanout = nullptr;
 		type = NUM_LB_RR_TYPES;
-		outedges = NULL;
-		pb_graph_pin = NULL;
+		outedges = nullptr;
+		pb_graph_pin = nullptr;
 		intrinsic_cost = 0;
 	}
 };
@@ -170,7 +170,7 @@ struct t_intra_lb_net {
 	
 	t_intra_lb_net() {
         atom_net_id = AtomNetId::INVALID();
-		rt_tree = NULL;
+		rt_tree = nullptr;
 	}
 };
 
@@ -254,14 +254,14 @@ struct t_lb_router_data {
 	float pres_con_fac;
 
 	t_lb_router_data() {
-		lb_type_graph = NULL;	
-		lb_rr_node_stats = NULL;	
-		intra_lb_nets = NULL;
-		saved_lb_nets = NULL;
+		lb_type_graph = nullptr;	
+		lb_rr_node_stats = nullptr;	
+		intra_lb_nets = nullptr;
+		saved_lb_nets = nullptr;
 		is_routed = false;
-		lb_type = NULL;
-		atoms_added = NULL;
-		explored_node_tb = NULL;
+		lb_type = nullptr;
+		atoms_added = nullptr;
+		explored_node_tb = nullptr;
 		explore_id_index = 1;
 
 		params.max_iterations = 50;

@@ -181,7 +181,7 @@ int *get_seg_track_counts(
     /* Free temps */
     if (demand) {
         vtr::free(demand);
-        demand = NULL;
+        demand = nullptr;
     }
 
     /* This must be freed by caller */
@@ -207,8 +207,8 @@ t_seg_details *alloc_and_load_seg_details(
     int i, cur_track, ntracks, itrack, length, j, index;
     int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
     int group_start, first_track;
-    int *sets_per_seg_type = NULL;
-    t_seg_details *seg_details = NULL;
+    int *sets_per_seg_type = nullptr;
+    t_seg_details *seg_details = nullptr;
     bool longline;
 
     /* Unidir tracks are assigned in pairs, and bidir tracks individually */
@@ -389,7 +389,7 @@ t_chan_details init_chan_details(
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
 
-            t_seg_details* p_seg_details = 0;
+            t_seg_details* p_seg_details = nullptr;
             p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof (t_seg_details));
             for (int i = 0; i < num_seg_details; ++i) {
 
@@ -807,8 +807,8 @@ int get_unidir_opin_connections(
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect 
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
-    int *inc_muxes = NULL;
-    int *dec_muxes = NULL;
+    int *inc_muxes = nullptr;
+    int *dec_muxes = nullptr;
     int num_inc_muxes, num_dec_muxes, iconn;
     int inc_inode_index, dec_inode_index;
     int inc_mux, dec_mux;
@@ -848,10 +848,10 @@ int get_unidir_opin_connections(
         ++Fc_ofs[chan][seg][seg_type_index];
 
         /* Figure out the track it corresponds to. */
-        VTR_ASSERT(inc_muxes != NULL);
+        VTR_ASSERT(inc_muxes != nullptr);
         inc_track = inc_muxes[inc_mux];
 
-        VTR_ASSERT(dec_muxes != NULL);
+        VTR_ASSERT(dec_muxes != nullptr);
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
@@ -876,11 +876,11 @@ int get_unidir_opin_connections(
 
     if (inc_muxes) {
         vtr::free(inc_muxes);
-        inc_muxes = NULL;
+        inc_muxes = nullptr;
     }
     if (dec_muxes) {
         vtr::free(dec_muxes);
-        dec_muxes = NULL;
+        dec_muxes = nullptr;
     }
 
     return num_edges;
@@ -1925,7 +1925,7 @@ static int get_unidir_track_to_chan_seg(
         bool * Fs_clipped, t_linked_edge **edge_list) {
 
     int num_labels = 0;
-    int *mux_labels = NULL;
+    int *mux_labels = nullptr;
 
     /* x, y coords for get_rr_node lookups */
     int to_x = (CHANX == to_type ? to_seg : to_chan);
@@ -1950,7 +1950,7 @@ static int get_unidir_track_to_chan_seg(
     if (num_labels < 1) {
         if (mux_labels) {
             vtr::free(mux_labels);
-            mux_labels = NULL;
+            mux_labels = nullptr;
         }
         return 0;
     }
@@ -2007,7 +2007,7 @@ static int get_unidir_track_to_chan_seg(
 
     if (mux_labels) {
         vtr::free(mux_labels);
-        mux_labels = NULL;
+        mux_labels = nullptr;
     }
     return count;
 }
@@ -2298,8 +2298,8 @@ void load_sblock_pattern_lookup(
     /* "Label" the wires around the switch block by connectivity. */
     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* Assume the channel segment doesn't exist. */
-        wire_mux_on_track[side] = NULL;
-        incoming_wire_label[side] = NULL;
+        wire_mux_on_track[side] = nullptr;
+        incoming_wire_label[side] = nullptr;
         num_incoming_wires[side] = 0;
         num_ending_wires[side] = 0;
         num_wire_muxes[side] = 0;
@@ -2492,7 +2492,7 @@ static int *label_wire_muxes(
      * only looks at segments that belong to the specified segment type. */
 
     int itrack, start, end, num_labels, num_labels_restricted, pass;
-    int *labels = NULL;
+    int *labels = nullptr;
     bool is_endpoint;
 
     /* COUNT pass then a LOAD pass */

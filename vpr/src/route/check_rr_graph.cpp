@@ -241,7 +241,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     capacity = device_ctx.rr_nodes[inode].capacity();
     cost_index = device_ctx.rr_nodes[inode].cost_index();
-    type = NULL;
+    type = nullptr;
 
     const auto& grid = device_ctx.grid;
     if (xlow > xhigh || ylow > yhigh) {
@@ -271,7 +271,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
         case SOURCE:
         case SINK:
-            if (type == NULL) {
+            if (type == nullptr) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
@@ -282,7 +282,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             break;
         case IPIN:
         case OPIN:
-            if (type == NULL) {
+            if (type == nullptr) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }

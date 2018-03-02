@@ -169,7 +169,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 	breadth_first_add_source_to_heap(net_id);
 	mark_ends(net_id);
 
-	tptr = NULL;
+	tptr = nullptr;
 	remaining_connections_to_sink = 0;
 
     auto src_pin_id = cluster_ctx.clb_nlist.net_driver(net_id);
@@ -181,7 +181,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink, modified_rr_node_inf);
 		current = get_heap_head();
 
-		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+		if (current == nullptr) { /* Infeasible routing.  No possible path for net. */
 			vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
 					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                     cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(),
@@ -225,7 +225,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			free_heap_data(current);
 			current = get_heap_head();
 
-			if (current == NULL) { /* Impossible routing. No path for net. */
+			if (current == nullptr) { /* Impossible routing. No path for net. */
                 vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
                         size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), 
                         cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
@@ -286,13 +286,13 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	tptr = start_ptr;
-	if(tptr != NULL && device_ctx.rr_nodes[tptr->index].type() == SINK) {
+	if(tptr != nullptr && device_ctx.rr_nodes[tptr->index].type() == SINK) {
 		/* During logical equivalence case, only use one opin */
 		tptr = tptr->next;
 	}
 
 	if (remaining_connections_to_sink == 0) { /* Usual case. */
-		while (tptr != NULL) {
+		while (tptr != nullptr) {
 #ifdef ROUTER_DEBUG
             vtr::printf("  Adding previous routing node %d to heap\n", tptr->index);
 #endif
@@ -307,7 +307,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		 * 0., and expand till you hit the next SINK.  That would be slow, so I      *
 		 * do some hacks to enable incremental wavefront expansion instead.          */
 
-		if (tptr == NULL)
+		if (tptr == nullptr)
 			return; /* No route yet */
 
 		next_ptr = tptr->next;
@@ -317,7 +317,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		 * us reach it again.  Instead, leave the last traceback element (SINK) off *
 		 * the heap.                                                                */
 
-		while (next_ptr != NULL) {
+		while (next_ptr != nullptr) {
 			inode = tptr->index;
 #ifdef ROUTER_DEBUG
             vtr::printf("  Adding previous routing node %d to heap*\n", tptr->index);

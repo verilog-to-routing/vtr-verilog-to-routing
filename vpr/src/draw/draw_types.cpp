@@ -21,7 +21,7 @@ t_draw_state::t_draw_state() :
 	draw_route_type(GLOBAL),
 	net_color(NULL),
 	block_color(NULL),
-	draw_rr_node(NULL),
+	draw_rr_node(nullptr),
     setup_timing_info(nullptr),
     arch_info(nullptr) { 
 
@@ -55,8 +55,8 @@ t_bound_box& t_draw_pb_type_info::get_pb_bbox_ref(const t_pb_graph_node& pb_grap
 t_draw_coords::t_draw_coords() {
 	tile_width = 0;
 	pin_size = 0;
-	tile_x = NULL;
-	tile_y = NULL;
+	tile_x = nullptr;
+	tile_y = nullptr;
 }
 
 float t_draw_coords::get_tile_width() {
@@ -81,7 +81,7 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	t_bound_box result = blk_type_info.get_pb_bbox(pb_gnode);
 
 	// if getting clb bbox, apply location info.
-	if (pb_gnode.parent_pb_graph_node == NULL) {
+	if (pb_gnode.parent_pb_graph_node == nullptr) {
 		float sub_blk_offset = this->tile_width * (sub_block_index/(float)device_ctx.grid[grid_x][grid_y].type->capacity);
 
 		result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
@@ -98,7 +98,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_index, 
 
 	// go up the graph, adding the parent bboxes to the result,
 	// ie. make it relative to one level higher each time.
-	while (pb_gnode->parent_pb_graph_node != NULL) {
+	while (pb_gnode->parent_pb_graph_node != nullptr) {
 		t_bound_box parents_bbox = this->get_pb_bbox(clb_index, *pb_gnode->parent_pb_graph_node);
 		result += parents_bbox.bottom_left();
 		pb_gnode = pb_gnode->parent_pb_graph_node;

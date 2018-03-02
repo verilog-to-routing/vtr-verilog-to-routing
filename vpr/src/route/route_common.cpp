@@ -54,12 +54,12 @@ static int heap_size; /* Number of slots in the heap array */
 static int heap_tail; /* Index of first unused slot in the heap array */
 
 /* For managing my own list of currently free heap data structures.     */
-static t_heap *heap_free_head = NULL;
+static t_heap *heap_free_head = nullptr;
 /* For keeping track of the sudo malloc memory for the heap*/
 static vtr::t_chunk heap_ch;
 
 /* For managing my own list of currently free trace data structures.    */
-static t_trace *trace_free_head = NULL;
+static t_trace *trace_free_head = nullptr;
 /* For keeping track of the sudo malloc memory for the trace*/
 static vtr::t_chunk trace_ch;
 
@@ -67,8 +67,8 @@ static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
-static t_linked_f_pointer *rr_modified_head = NULL;
-static t_linked_f_pointer *linked_f_pointer_free_head = NULL;
+static t_linked_f_pointer *rr_modified_head = nullptr;
+static t_linked_f_pointer *linked_f_pointer_free_head = nullptr;
 
 static vtr::t_chunk linked_f_pointer_ch;
 
@@ -141,7 +141,7 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 
 		/* Free any previously saved routing.  It is no longer best. */
 		tptr = best_routing[net_id];
-		while (tptr != NULL) {
+		while (tptr != nullptr) {
 			tempptr = tptr->next;
 			free_trace_data(tptr);
 			tptr = tempptr;
@@ -153,8 +153,8 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		/* Set the current (working) routing to NULL so the current trace       *
 		 * elements won't be reused by the memory allocator.                    */
 
-		route_ctx.trace_head[net_id] = NULL;
-		route_ctx.trace_tail[net_id] = NULL;
+		route_ctx.trace_head[net_id] = nullptr;
+		route_ctx.trace_tail[net_id] = nullptr;
 		route_ctx.trace_nodes[net_id].clear();
 	}
 
@@ -181,7 +181,7 @@ void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 
 		/* Set the current routing to the saved one. */
 		route_ctx.trace_head[net_id] = best_routing[net_id];
-		best_routing[net_id] = NULL; /* No stored routing. */
+		best_routing[net_id] = nullptr; /* No stored routing. */
 	}
 
 	/* Restore which OPINs are locally used.                           */
@@ -207,7 +207,7 @@ void get_serial_num(void) {
 		 * are not included in the serial number calculation.            */
 
 		tptr = route_ctx.trace_head[net_id];
-		while (tptr != NULL) {
+		while (tptr != nullptr) {
 			inode = tptr->index;
 			serial_num += (size_t(net_id) + 1)
 					* (device_ctx.rr_nodes[inode].xlow() * (device_ctx.grid.width()) - device_ctx.rr_nodes[inode].yhigh());
@@ -398,7 +398,7 @@ void pathfinder_update_path_cost(t_trace *route_segment_start,
 	t_trace *tptr;
 
 	tptr = route_segment_start;
-	if (tptr == NULL) /* No routing yet. */
+	if (tptr == nullptr) /* No routing yet. */
 		return;
 
 	for (;;) {
@@ -406,7 +406,7 @@ void pathfinder_update_path_cost(t_trace *route_segment_start,
 
 		if (tptr->iswitch == OPEN) { //End of branch
 			tptr = tptr->next; /* Skip next segment. */
-			if (tptr == NULL)
+			if (tptr == nullptr)
 				break;
 		}
 
@@ -509,7 +509,7 @@ void init_route_structs(int bb_factor) {
 	/* Check that things that should have been emptied after the last routing *
 	 * really were.                                                           */
 
-	if (rr_modified_head != NULL) {
+	if (rr_modified_head != nullptr) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in init_route_structs. List of modified rr nodes is not empty.\n");
 	}
@@ -546,7 +546,7 @@ update_traceback(t_heap *hptr, ClusterNetId net_id) {
     VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
     t_trace* ret_ptr = nullptr;
-	if (route_ctx.trace_tail[net_id] != NULL) {
+	if (route_ctx.trace_tail[net_id] != nullptr) {
 		route_ctx.trace_tail[net_id]->next = branch.head; /* Traceback ends with tptr */
 		ret_ptr = branch.head->next; /* First new segment.       */
 	} else { /* This was the first "chunk" of the net's routing */
@@ -737,12 +737,12 @@ void reset_path_costs(void) {
 	int num_mod_ptrs;
 
 	/* The traversal method below is slightly painful to make it faster. */
-	if (rr_modified_head != NULL) {
+	if (rr_modified_head != nullptr) {
 		mod_ptr = rr_modified_head;
 
 		num_mod_ptrs = 1;
 
-		while (mod_ptr->next != NULL) {
+		while (mod_ptr->next != nullptr) {
 			*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
 			mod_ptr = mod_ptr->next;
 			num_mod_ptrs++;
@@ -754,7 +754,7 @@ void reset_path_costs(void) {
 
 		mod_ptr->next = linked_f_pointer_free_head;
 		linked_f_pointer_free_head = rr_modified_head;
-		rr_modified_head = NULL;
+		rr_modified_head = nullptr;
 
 		num_linked_f_pointer_allocated -= num_mod_ptrs;
 	}
@@ -838,20 +838,20 @@ void free_traceback(ClusterNetId net_id) {
         return;
     }
 
-	if(route_ctx.trace_head[net_id] == NULL) {
+	if(route_ctx.trace_head[net_id] == nullptr) {
 		return;
 	}
 
 	tptr = route_ctx.trace_head[net_id];
 
-	while (tptr != NULL) {
+	while (tptr != nullptr) {
 		tempptr = tptr->next;
 		free_trace_data(tptr);
 		tptr = tempptr;
 	}
 
-	route_ctx.trace_head[net_id] = NULL;
-	route_ctx.trace_tail[net_id] = NULL;
+	route_ctx.trace_head[net_id] = nullptr;
+	route_ctx.trace_tail[net_id] = nullptr;
 	route_ctx.trace_nodes[net_id].clear();
 }
 
@@ -930,8 +930,8 @@ void free_trace_structs(void) {
 			free(route_ctx.trace_head[net_id]);
 			free(route_ctx.trace_tail[net_id]);
 		}
-		route_ctx.trace_head[net_id] = NULL;
-		route_ctx.trace_tail[net_id] = NULL;
+		route_ctx.trace_head[net_id] = nullptr;
+		route_ctx.trace_tail[net_id] = nullptr;
 	}
 }
 
@@ -941,7 +941,7 @@ void free_route_structs() {
 	 * final routing result is not freed.                                */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	if(heap != NULL) {
+	if(heap != nullptr) {
         //Free the individiaul heap elements (calls destructors)
         for (int i = 1; i < num_heap_allocated; i++) {
             vtr::chunk_delete(heap[i], &heap_ch);
@@ -950,7 +950,7 @@ void free_route_structs() {
         // coverity[offset_free : Intentional]
 		free(heap + 1);
 
-        heap = NULL; /* Defensive coding:  crash hard if I use these. */
+        heap = nullptr; /* Defensive coding:  crash hard if I use these. */
 	}
 
     if (heap_free_head != nullptr) {
@@ -971,16 +971,16 @@ void free_route_structs() {
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
 	free_chunk_memory(&linked_f_pointer_ch);
-	linked_f_pointer_free_head = NULL;
+	linked_f_pointer_free_head = nullptr;
 }
 
 /* Frees the data structures needed to save a routing.                     */
 void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing) {
 	auto &cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (best_routing[net_id] != NULL) {
+		if (best_routing[net_id] != nullptr) {
 			free(best_routing[net_id]);
-			best_routing[net_id] = NULL;
+			best_routing[net_id] = nullptr;
 		}
 	}
 }
@@ -1351,7 +1351,7 @@ get_heap_head(void) {
 		if (heap_tail == 1) { /* Empty heap. */
 			vtr::printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
 			vtr::printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
-			return (NULL);
+			return (nullptr);
 		}
 
 		cheapest = heap[1]; 
@@ -1384,7 +1384,7 @@ void empty_heap(void) {
 t_heap *
 alloc_heap_data(void) {
 
-	if (heap_free_head == NULL) { /* No elements on the free list */
+	if (heap_free_head == nullptr) { /* No elements on the free list */
 		heap_free_head = vtr::chunk_new<t_heap>(&heap_ch);
 	}
 
@@ -1433,9 +1433,9 @@ alloc_trace_data(void) {
 
 	t_trace *temp_ptr;
 
-	if (trace_free_head == NULL) { /* No elements on the free list */
+	if (trace_free_head == nullptr) { /* No elements on the free list */
 		trace_free_head = (t_trace *) vtr::chunk_malloc(sizeof(t_trace),&trace_ch);
-		trace_free_head->next = NULL;
+		trace_free_head->next = nullptr;
 	}
 	temp_ptr = trace_free_head;
 	trace_free_head = trace_free_head->next;
@@ -1461,10 +1461,10 @@ alloc_linked_f_pointer(void) {
 	/*int i;*/
 	t_linked_f_pointer *temp_ptr;
 
-	if (linked_f_pointer_free_head == NULL) {
+	if (linked_f_pointer_free_head == nullptr) {
 		/* No elements on the free list */	
 	linked_f_pointer_free_head = (t_linked_f_pointer *) vtr::chunk_malloc(sizeof(t_linked_f_pointer),&linked_f_pointer_ch);
-	linked_f_pointer_free_head->next = NULL;
+	linked_f_pointer_free_head->next = nullptr;
 	}
 
 	temp_ptr = linked_f_pointer_free_head;
@@ -1501,7 +1501,7 @@ void print_route(const char* placement_file, const char* route_file) {
 			} else {
 				tptr = route_ctx.trace_head[net_id];
 
-				while (tptr != NULL) {
+				while (tptr != nullptr) {
 					inode = tptr->index;
 					rr_type = device_ctx.rr_nodes[inode].type();
 					ilow = device_ctx.rr_nodes[inode].xlow();
@@ -1691,7 +1691,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 }
 
 void free_chunk_memory_trace(void) {
-	if (trace_ch.chunk_ptr_head != NULL) {
+	if (trace_ch.chunk_ptr_head != nullptr) {
 		free_chunk_memory(&trace_ch);
 	}
 }

@@ -38,17 +38,17 @@ using namespace std;
  * pin corresponds to.                                                   *
  * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                *
  *                                                                       */
-static int ** f_port_from_blk_pin = NULL;
+static int ** f_port_from_blk_pin = nullptr;
 
 /* f_port_pin_from_blk_pin array allow us to quickly find what port pin a*
  * block pin corresponds to.                                             *
  * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                */
-static int ** f_port_pin_from_blk_pin = NULL;
+static int ** f_port_pin_from_blk_pin = nullptr;
 
 /* f_port_pin_to_block_pin array allows us to quickly find what block    *
  * pin a port pin corresponds to.                                        *
  * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
-static int *** f_blk_pin_from_port_pin = NULL;
+static int *** f_blk_pin_from_port_pin = nullptr;
 
 
 /******************** Subroutine declarations ********************************/
@@ -600,7 +600,7 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 	t_pb_graph_pin first_output_pin;
 	int node_id;
 	
-	if (pb_graph_node->num_input_pins != 0) {
+	if (pb_graph_node->num_input_pins != nullptr) {
 		/* If input port exists on this node, return the index of the first
 		 * input pin as node_id.
 		 */
@@ -715,7 +715,7 @@ int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 
 	int i, j;
 	int max_size, temp_size;
-	if (pb_type->modes == 0) {
+	if (pb_type->modes == nullptr) {
 		max_size = 1;
 	} else {
 		max_size = 0;
@@ -739,7 +739,7 @@ int get_max_nets_in_pb_type(const t_pb_type *pb_type) {
 
 	int i, j;
 	int max_nets, temp_nets;
-	if (pb_type->modes == 0) {
+	if (pb_type->modes == nullptr) {
 		max_nets = pb_type->num_output_pins;
 	} else {
 		max_nets = 0;
@@ -755,7 +755,7 @@ int get_max_nets_in_pb_type(const t_pb_type *pb_type) {
 			}
 		}
 	}
-	if (pb_type->parent_mode == NULL) {
+	if (pb_type->parent_mode == nullptr) {
 		max_nets += pb_type->num_input_pins + pb_type->num_output_pins
 				+ pb_type->num_clock_pins;
 	}
@@ -784,7 +784,7 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
  */
 bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type) {
 
-	if (cur_pb_type == NULL) {
+	if (cur_pb_type == nullptr) {
 		return false;
 	}
 
@@ -861,7 +861,7 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
     for(int isibling = 0; isibling < pb_type->parent_mode->num_pb_type_children; ++isibling) {
         const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
 
-        if(sibling_pb->name != NULL) {
+        if(sibling_pb->name != nullptr) {
             return atom_ctx.lookup.pb_atom(sibling_pb);
         }
     }
@@ -883,7 +883,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 					if(pb_graph_node->num_input_pins[i] > model_pin) {
 						return &pb_graph_node->input_pins[i][model_pin];
 					} else {
-						return NULL;
+						return nullptr;
 					}
 				}
 			}
@@ -893,7 +893,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 					if(pb_graph_node->num_clock_pins[i] > model_pin) {
 						return &pb_graph_node->clock_pins[i][model_pin];
 					} else {
-						return NULL;
+						return nullptr;
 					}
 				}
 			}
@@ -905,12 +905,12 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 				if(pb_graph_node->num_output_pins[i] > model_pin) {
 					return &pb_graph_node->output_pins[i][model_pin];
 				} else {
-					return NULL;
+					return nullptr;
 				}
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 //Retrieves the atom pin associated with a specific CLB and pb_graph_pin
@@ -1009,7 +1009,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
 		}
 	}
 	VTR_ASSERT(0);
-	return NULL;
+	return nullptr;
 }
 
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
@@ -1059,21 +1059,21 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_p
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->input_pins[iport][ipin];
-			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->output_pins[iport][ipin];
-			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->clock_pins[iport][ipin];
-			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == nullptr);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
@@ -1089,11 +1089,11 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_p
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) {
-	t_pb_graph_pin** pb_graph_pin_lookup_from_type = NULL;
+	t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
 	t_pb_graph_node *pb_graph_head = type->pb_graph_head;
-	if(pb_graph_head == NULL) {
-		return NULL;
+	if(pb_graph_head == nullptr) {
+		return nullptr;
 	}
 	int num_pins = pb_graph_head->total_pb_pins;
 
@@ -1101,7 +1101,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) 
 
 	pb_graph_pin_lookup_from_type = new t_pb_graph_pin* [num_pins];
 	for(int id = 0; id < num_pins; id++) {
-		pb_graph_pin_lookup_from_type[id] = NULL;
+		pb_graph_pin_lookup_from_type[id] = nullptr;
 	}
 
     VTR_ASSERT(pb_graph_pin_lookup_from_type);
@@ -1109,7 +1109,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) 
 	load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
 
 	for(int id = 0; id < num_pins; id++) {
-		VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != NULL);
+		VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != nullptr);
 	}
 
 	return pb_graph_pin_lookup_from_type;
@@ -1117,7 +1117,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) 
 
 /* Free pb_graph_pin lookup array */
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
-	if(pb_graph_pin_lookup_from_type == NULL) {
+	if(pb_graph_pin_lookup_from_type == nullptr) {
 		return;
 	}
 	delete [] pb_graph_pin_lookup_from_type;
@@ -1134,7 +1134,7 @@ vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
 		for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
-			pin_id_to_pb_mapping[blk_id][j] = NULL;
+			pin_id_to_pb_mapping[blk_id][j] = nullptr;
 		}
 		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb(blk_id), pin_id_to_pb_mapping[blk_id]);
 	}
@@ -1166,7 +1166,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 		}
 	}
 
-	if (pb_type->num_modes == 0 || cur_pb->child_pbs == NULL) {
+	if (pb_type->num_modes == 0 || cur_pb->child_pbs == nullptr) {
 		return;
 	}
 
@@ -1236,7 +1236,7 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 }
 
 void free_pb(t_pb *pb) {
-    if(pb == NULL) {
+    if(pb == nullptr) {
         return;
     }
 
@@ -1252,14 +1252,14 @@ void free_pb(t_pb *pb) {
 
     if (pb->name) {
         free(pb->name);
-        pb->name = NULL;
+        pb->name = nullptr;
     }
 
-	if (pb_type->blif_model == NULL) {
+	if (pb_type->blif_model == nullptr) {
 		mode = pb->mode;
-		for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
-			for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != NULL; j++) {
-				if (pb->child_pbs[i][j].name != NULL || pb->child_pbs[i][j].child_pbs != NULL) {
+		for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
+			for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != nullptr; j++) {
+				if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
 					free_pb(&pb->child_pbs[i][j]);
 				}
 			}
@@ -1273,7 +1273,7 @@ void free_pb(t_pb *pb) {
 			delete[] pb->child_pbs;
         }
 
-		pb->child_pbs = NULL;
+		pb->child_pbs = nullptr;
 
 	} else {
 		/* Primitive */
@@ -1282,7 +1282,7 @@ void free_pb(t_pb *pb) {
 		if (blk_id) {
             //Update atom netlist mapping
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
-            atom_ctx.lookup.set_atom_pb(blk_id, NULL);
+            atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 		}
         atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
 	}
@@ -1292,11 +1292,11 @@ void free_pb(t_pb *pb) {
 void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
 	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
-	if (pb_type->blif_model == NULL) {
+	if (pb_type->blif_model == nullptr) {
 		int mode = pb->mode;
-		for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
-			for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != NULL; j++) {
-				if (pb->child_pbs[i][j].name != NULL || pb->child_pbs[i][j].child_pbs != NULL) {
+		for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
+			for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != nullptr; j++) {
+				if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
 					revalid_molecules(&pb->child_pbs[i][j], atom_molecules);
 				}
 			}
@@ -1311,7 +1311,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
 
             //Update atom netlist mapping
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
-            atom_ctx.lookup.set_atom_pb(blk_id, NULL);
+            atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
             auto rng = atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -1338,7 +1338,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
 void free_pb_stats(t_pb *pb) {
 
     if(pb) {
-        if(pb->pb_stats == NULL) {
+        if(pb->pb_stats == nullptr) {
             return;
         }
 
@@ -1352,11 +1352,11 @@ void free_pb_stats(t_pb *pb) {
         if(pb->pb_stats->feasible_blocks) {
             free(pb->pb_stats->feasible_blocks);
         }
-        if(pb->pb_stats->transitive_fanout_candidates != NULL) {
+        if(pb->pb_stats->transitive_fanout_candidates != nullptr) {
             delete pb->pb_stats->transitive_fanout_candidates;
         };
         delete pb->pb_stats;
-        pb->pb_stats = NULL;
+        pb->pb_stats = nullptr;
     }
 }
 
@@ -1390,13 +1390,13 @@ void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
 
 	/* If either one of the arrays is not allocated and loaded, it is        *
 	 * corrupted, so free both of them.                                      */ 
-	if ((f_port_from_blk_pin == NULL && f_port_pin_from_blk_pin != NULL)
-		|| (f_port_from_blk_pin != NULL && f_port_pin_from_blk_pin == NULL)){
+	if ((f_port_from_blk_pin == nullptr && f_port_pin_from_blk_pin != nullptr)
+		|| (f_port_from_blk_pin != nullptr && f_port_pin_from_blk_pin == nullptr)){
 		free_port_pin_from_blk_pin();
 	}
 	
 	/* If the arrays are not allocated and loaded, allocate it.              */ 
-	if (f_port_from_blk_pin == NULL && f_port_pin_from_blk_pin == NULL) {
+	if (f_port_from_blk_pin == nullptr && f_port_pin_from_blk_pin == nullptr) {
 		alloc_and_load_port_pin_from_blk_pin();
 	}
 	
@@ -1416,22 +1416,22 @@ void free_port_pin_from_blk_pin(void) {
 	int itype;
     auto& device_ctx = g_vpr_ctx.device();
 	
-	if (f_port_from_blk_pin != NULL) {
+	if (f_port_from_blk_pin != nullptr) {
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_port_from_blk_pin[itype]);
 		}
 		free(f_port_from_blk_pin);
 		
-		f_port_from_blk_pin = NULL;
+		f_port_from_blk_pin = nullptr;
 	}
 
-	if (f_port_pin_from_blk_pin != NULL) {
+	if (f_port_pin_from_blk_pin != nullptr) {
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_port_pin_from_blk_pin[itype]);
 		}
 		free(f_port_pin_from_blk_pin);
 		
-		f_port_pin_from_blk_pin = NULL;
+		f_port_pin_from_blk_pin = nullptr;
 	}
 
 }
@@ -1443,8 +1443,8 @@ static void alloc_and_load_port_pin_from_blk_pin(void) {
 	 *                                                                       *
 	 * The arrays are freed in free_placement_structs()                      */
 
-	int ** temp_port_from_blk_pin = NULL;
-	int ** temp_port_pin_from_blk_pin = NULL;
+	int ** temp_port_from_blk_pin = nullptr;
+	int ** temp_port_pin_from_blk_pin = nullptr;
 	int itype, iblk_pin, iport, iport_pin;
 	int blk_pin_count, num_port_pins, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
@@ -1503,7 +1503,7 @@ void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin,
 	 * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
 
 	/* If the array is not allocated and loaded, allocate it.                */ 
-	if (f_blk_pin_from_port_pin == NULL) {
+	if (f_blk_pin_from_port_pin == nullptr) {
 		alloc_and_load_blk_pin_from_port_pin();
 	}
 
@@ -1522,7 +1522,7 @@ void free_blk_pin_from_port_pin(void) {
 	int itype, iport, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
 	
-	if (f_blk_pin_from_port_pin != NULL) {
+	if (f_blk_pin_from_port_pin != nullptr) {
 		
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			num_ports = device_ctx.block_types[itype].pb_type->num_ports;
@@ -1533,7 +1533,7 @@ void free_blk_pin_from_port_pin(void) {
 		}
 		free(f_blk_pin_from_port_pin);
 		
-		f_blk_pin_from_port_pin = NULL;
+		f_blk_pin_from_port_pin = nullptr;
 	}
 
 }
@@ -1544,7 +1544,7 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
 	 *                                                                       *
 	 * The arrays are freed in free_placement_structs()                      */
 
-	int *** temp_blk_pin_from_port_pin = NULL;
+	int *** temp_blk_pin_from_port_pin = nullptr;
 	int itype, iport, iport_pin;
 	int blk_pin_count, num_port_pins, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
@@ -1607,12 +1607,12 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 	 * Return the values parsed by reference.                                 */
 
 	char source_string[MAX_STRING_LEN+1];
-	char * find_format = NULL;
+	char * find_format = nullptr;
 	int ichar, match_count;
 
 	// parse out the pb_type and port name, possibly pin_indices
 	find_format = strstr(src_string,"[");
-	if (find_format == NULL) {
+	if (find_format == nullptr) {
 		/* Format "pb_type_name.port_name" */
 		*start_pin_index = *end_pin_index = -1;
 			
@@ -1909,7 +1909,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
 void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (device_ctx.switch_fanin_remap == NULL) {
+    if (device_ctx.switch_fanin_remap == nullptr) {
         vtr::printf_warning(__FILE__, __LINE__, "Cannot print switch usage stats: device_ctx.switch_fanin_remap is NULL\n");
         return;
     }

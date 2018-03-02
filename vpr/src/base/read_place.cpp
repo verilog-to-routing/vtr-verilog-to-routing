@@ -181,9 +181,9 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 	ptr = vtr::fgets(buf, vtr::bufsize, fp);
 
-	while (ptr != NULL) {
+	while (ptr != nullptr) {
 		ptr = vtr::strtok(buf, TOKENS, fp, buf);
-		if (ptr == NULL) {
+		if (ptr == nullptr) {
 			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue; /* Skip blank or comment lines. */
 		}
@@ -195,36 +195,36 @@ void read_user_pad_loc(const char *pad_loc_file) {
 					"Block name exceeded buffer size of %zu characters", vtr::bufsize);
         }
 
-		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
-		if (ptr == NULL) {
+		ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
+		if (ptr == nullptr) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &xtmp);
 
-		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
-		if (ptr == NULL) {
+		ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
+		if (ptr == nullptr) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &ytmp);
 
-		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
-		if (ptr == NULL) {
+		ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
+		if (ptr == nullptr) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
         int k;
 		sscanf(ptr, "%d", &k);
 
-		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
-		if (ptr != NULL) {
+		ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
+		if (ptr != nullptr) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Extra characters at end of line.\n");
 		}
 
 		h_ptr = get_hash_entry(hash_table, bname);
-		if (h_ptr == NULL) {
+		if (h_ptr == nullptr) {
 			vtr::printf_warning(__FILE__, __LINE__, 
 					"[Line %d] Block %s invalid, no such IO pad.\n", vtr::get_file_line_number_of_last_opened_file(), bname);
 			ptr = vtr::fgets(buf, vtr::bufsize, fp);

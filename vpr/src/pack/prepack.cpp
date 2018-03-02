@@ -108,13 +108,13 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	for (i = 0; i < ncount; i++) {
 		for (j = 0; j < device_ctx.num_block_types; j++) {
 			expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.block_types[j].pb_graph_head);
-			if (expansion_edge == NULL) {
+			if (expansion_edge == nullptr) {
 				continue;
 			}
 			L_num_blocks = 0;
 			list_of_packing_patterns[i].base_cost = 0;
 			backward_expand_pack_pattern_from_edge(expansion_edge,
-					list_of_packing_patterns, i, NULL, NULL, &L_num_blocks);
+					list_of_packing_patterns, i, nullptr, nullptr, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
 			/* Default settings: A section of a netlist must match all blocks in a pack 
@@ -178,11 +178,11 @@ static void discover_pattern_names_in_pb_graph_node(
 	 If edge does, then record the name of the pattern in a hash table
 	 */
 
-	if (pb_graph_node == NULL) {
+	if (pb_graph_node == nullptr) {
 		return;
 	}
 
-	pb_graph_node->temp_scratch_pad = NULL;
+	pb_graph_node->temp_scratch_pad = nullptr;
 
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -199,7 +199,7 @@ static void discover_pattern_names_in_pb_graph_node(
 									pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
 									ncount);
 					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices
-							== NULL) {
+							== nullptr) {
 						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
 								vtr::malloc(
 										pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
@@ -231,7 +231,7 @@ static void discover_pattern_names_in_pb_graph_node(
 									pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
 									ncount);
 					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices
-							== NULL) {
+							== nullptr) {
 						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
 								vtr::malloc(
 										pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
@@ -263,7 +263,7 @@ static void discover_pattern_names_in_pb_graph_node(
 									pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
 									ncount);
 					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices
-							== NULL) {
+							== nullptr) {
 						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
 								vtr::malloc(
 										pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
@@ -329,10 +329,10 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 
 	hash_iter = start_hash_table_iterator();
 	curr_pattern = get_next_hash(nhash, &hash_iter);
-	while (curr_pattern != NULL) {
-		VTR_ASSERT(nlist[curr_pattern->index].name == NULL);
+	while (curr_pattern != nullptr) {
+		VTR_ASSERT(nlist[curr_pattern->index].name == nullptr);
 		nlist[curr_pattern->index].name = vtr::strdup(curr_pattern->name);
-		nlist[curr_pattern->index].root_block = NULL;
+		nlist[curr_pattern->index].root_block = nullptr;
 		nlist[curr_pattern->index].is_chain = false;
 		nlist[curr_pattern->index].index = curr_pattern->index;
 		curr_pattern = get_next_hash(nhash, &hash_iter);
@@ -343,7 +343,7 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 void free_list_of_pack_patterns(t_pack_patterns *list_of_pack_patterns, const int num_packing_patterns) {
 	int i, j, num_pack_pattern_blocks;
 	t_pack_pattern_block **pattern_block_list;
-	if (list_of_pack_patterns != NULL) {
+	if (list_of_pack_patterns != nullptr) {
 		for (i = 0; i < num_packing_patterns; i++) {
 			num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
 			pattern_block_list = (t_pack_pattern_block **)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block *));
@@ -370,8 +370,8 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 	 If edge does, then return that edge
 	 */
 
-	if (pb_graph_node == NULL) {
-		return NULL;
+	if (pb_graph_node == nullptr) {
+		return nullptr;
 	}
 
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
@@ -418,13 +418,13 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 				edge = find_expansion_edge_of_pattern(pattern_index,
 						&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-				if (edge != NULL) {
+				if (edge != nullptr) {
 					return edge;
 				}
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 /** 
@@ -439,8 +439,8 @@ static void forward_expand_pack_pattern_from_edge(
 	int i, j, k;
 	int iport, ipin, iedge;
 	bool found; /* Error checking, ensure only one fan-out for each pattern net */
-	t_pack_pattern_block *destination_block = NULL;
-	t_pb_graph_node *destination_pb_graph_node = NULL;
+	t_pack_pattern_block *destination_block = nullptr;
+	t_pb_graph_node *destination_pb_graph_node = nullptr;
 
 	found = expansion_edge->infer_pattern;
 	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
@@ -462,7 +462,7 @@ static void forward_expand_pack_pattern_from_edge(
 			found = true;
 
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
-			if (destination_pb_graph_node->temp_scratch_pad == NULL
+			if (destination_pb_graph_node->temp_scratch_pad == nullptr
 					|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index
 							!= curr_pattern_index) {
 				destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
@@ -564,9 +564,9 @@ static void backward_expand_pack_pattern_from_edge(
 	int i, j, k;
 	int iport, ipin, iedge;
 	bool found; /* Error checking, ensure only one fan-out for each pattern net */
-	t_pack_pattern_block *source_block = NULL;
-	t_pb_graph_node *source_pb_graph_node = NULL;
-	t_pack_pattern_connections *pack_pattern_connection = NULL;
+	t_pack_pattern_block *source_block = nullptr;
+	t_pb_graph_node *source_pb_graph_node = nullptr;
+	t_pack_pattern_connections *pack_pattern_connection = nullptr;
 
 	found = expansion_edge->infer_pattern;
 	for (i = 0;	!found && i < expansion_edge->num_pack_patterns; i++) {
@@ -591,7 +591,7 @@ static void backward_expand_pack_pattern_from_edge(
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
 			source_block =
 					(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
-			if (source_block == NULL
+			if (source_block == nullptr
 					|| source_block->pattern_index != curr_pattern_index) {
 				source_block = (t_pack_pattern_block *)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *L_num_blocks;
@@ -602,7 +602,7 @@ static void backward_expand_pack_pattern_from_edge(
 				source_block->pb_type = source_pb_graph_node->pb_type;
 
 				if (list_of_packing_patterns[curr_pattern_index].root_block
-						== NULL) {
+						== nullptr) {
 					list_of_packing_patterns[curr_pattern_index].root_block =
 							source_block;
 				}
@@ -660,7 +660,7 @@ static void backward_expand_pack_pattern_from_edge(
 					}
 				}
 			}
-			if (destination_pin != NULL) {
+			if (destination_pin != nullptr) {
 				VTR_ASSERT(
 						((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
 				source_block =
@@ -693,7 +693,7 @@ static void backward_expand_pack_pattern_from_edge(
 			}
 		} else {
 			if(expansion_edge->input_pins[i]->num_input_edges == 0) {
-				if(expansion_edge->input_pins[i]->parent_node->pb_type->parent_mode == NULL) {
+				if(expansion_edge->input_pins[i]->parent_node->pb_type->parent_mode == nullptr) {
 					/* This pack pattern extends to CLB input pin, thus it extends across multiple logic blocks, treat as a chain */
 					list_of_packing_patterns[curr_pattern_index].is_chain = true;
 					forward_expand_pack_pattern_from_edge(
@@ -750,7 +750,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 	is_used = (bool*)vtr::calloc(num_packing_patterns, sizeof(bool));
 
-	cur_molecule = list_of_molecules_head = NULL;
+	cur_molecule = list_of_molecules_head = nullptr;
 
 	/* Find forced pack patterns
 	 * Simplifying assumptions: Each atom can map to at most one molecule, 
@@ -774,7 +774,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
             auto blk_id = *blk_iter;
 
             cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id);
-            if (cur_molecule != NULL) {
+            if (cur_molecule != nullptr) {
                 cur_molecule->next = list_of_molecules_head;
                 /* In the event of multiple molecules with the same atom block pattern, 
                  * bias to use the molecule with less costly physical resources first */
@@ -821,8 +821,8 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_blocks = 1;
 			cur_molecule->root = 0;
 			cur_molecule->num_ext_inputs = atom_ctx.nlist.block_input_pins(blk_id).size();
-			cur_molecule->chain_pattern = NULL;
-			cur_molecule->pack_pattern = NULL;
+			cur_molecule->chain_pattern = nullptr;
+			cur_molecule->pack_pattern = nullptr;
 
             cur_molecule->atom_block_ids = {blk_id};
 
@@ -846,7 +846,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_pattern_block **pattern_block_list) {
 	t_pack_pattern_connections *connection, *next;
-	if (pattern_block == NULL || pattern_block->block_id == OPEN) {
+	if (pattern_block == nullptr || pattern_block->block_id == OPEN) {
 		/* already traversed, return */
 		return; 
 	}
@@ -890,14 +890,14 @@ static t_pack_molecule *try_create_molecule(
 		molecule->valid = true;
 		molecule->type = MOLECULE_FORCED_PACK;
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
-		if (molecule->pack_pattern == NULL) {failed = true; goto end_prolog;}
+		if (molecule->pack_pattern == nullptr) {failed = true; goto end_prolog;}
 
         molecule->atom_block_ids = std::vector<AtomBlockId>(molecule->pack_pattern->num_blocks); //Initializes invalid
 
 		molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
 		if (molecule->num_blocks == 0) {failed = true; goto end_prolog;}
 
-		if (list_of_pack_patterns[pack_pattern_index].root_block == NULL) {failed = true; goto end_prolog;}
+		if (list_of_pack_patterns[pack_pattern_index].root_block == nullptr) {failed = true; goto end_prolog;}
 		molecule->root = list_of_pack_patterns[pack_pattern_index].root_block->block_id;
 		molecule->num_ext_inputs = 0;
 
@@ -929,7 +929,7 @@ static t_pack_molecule *try_create_molecule(
 	if (failed == true) {
 		/* Does not match pattern, free molecule */
 		delete molecule;
-		molecule = NULL;
+		molecule = nullptr;
 	}
 	return molecule;
 }
@@ -987,7 +987,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		molecule->num_ext_inputs += atom_ctx.nlist.block_input_pins(blk_id).size();
 		
 		cur_pack_pattern_connection = current_pattern_block->connections;
-		while (cur_pack_pattern_connection != NULL && success == true) {
+		while (cur_pack_pattern_connection != nullptr && success == true) {
 			if (cur_pack_pattern_connection->from_block == current_pattern_block) {
 				/* find net corresponding to pattern */
                 AtomPortId port_id = atom_ctx.nlist.find_atom_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port);
@@ -1066,7 +1066,7 @@ static void print_pack_molecules(const char *fname,
 	}
 
 	list_of_molecules_current = list_of_molecules;
-	while (list_of_molecules_current != NULL) {
+	while (list_of_molecules_current != nullptr) {
 		if (list_of_molecules_current->type == MOLECULE_SINGLE_ATOM) {
 			fprintf(fp, "\nmolecule type: atom\n");
 			fprintf(fp, "\tpattern index %d: atom block %s\n", i,
@@ -1106,8 +1106,8 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
     auto& device_ctx = g_vpr_ctx.device();
 
 	best_cost = UNDEFINED;
-	best = NULL;
-	current = NULL;
+	best = nullptr;
+	current = nullptr;
 	for(i = 0; i < device_ctx.num_block_types; i++) {
 		cost = UNDEFINED;
 		current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, device_ctx.block_types[i].pb_graph_head, &cost);
@@ -1133,13 +1133,13 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 	float cur_cost, best_cost;
 	int i, j;
 
-	best = NULL;
+	best = nullptr;
 	best_cost = UNDEFINED;
-	if(curr_pb_graph_node == NULL) {
-		return NULL;
+	if(curr_pb_graph_node == nullptr) {
+		return nullptr;
 	}
 
-	if(curr_pb_graph_node->pb_type->blif_model != NULL) {
+	if(curr_pb_graph_node->pb_type->blif_model != nullptr) {
 		if(primitive_type_feasible(blk_id, curr_pb_graph_node->pb_type)) {
 			cur_cost = compute_primitive_base_cost(curr_pb_graph_node);
 			if(best_cost == UNDEFINED || best_cost > cur_cost) {
@@ -1152,8 +1152,8 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 			for(j = 0; j < curr_pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
 				*cost = UNDEFINED;
 				cur = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, &curr_pb_graph_node->child_pb_graph_nodes[i][j][0], cost);
-				if(cur != NULL) {
-					if(best == NULL || best_cost > *cost) {
+				if(cur != nullptr) {
+					if(best == nullptr || best_cost > *cost) {
 						best = cur;
 						best_cost = *cost;
 					}

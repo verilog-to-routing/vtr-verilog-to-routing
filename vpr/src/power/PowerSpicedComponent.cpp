@@ -73,7 +73,7 @@ PowerCallibSize * PowerCallibInputs::get_entry_bound(bool lower,
 		}
 		prev = *it;
 	}
-	return NULL;
+	return nullptr;
 }
 
 PowerSpicedComponent::PowerSpicedComponent(std::string component_name,
@@ -122,19 +122,19 @@ PowerCallibInputs * PowerSpicedComponent::get_entry_bound(bool lower,
 		if ((*it)->num_inputs > num_inputs) {
 			if (lower) {
 				if (prev == entries[0])
-					return NULL;
+					return nullptr;
 				else
 					return prev;
 			} else {
 				if (*it == entries[entries.size() - 1])
-					return NULL;
+					return nullptr;
 				else
 					return *it;
 			}
 		}
 		prev = *it;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void PowerSpicedComponent::add_data_point(int num_inputs, float transistor_size,

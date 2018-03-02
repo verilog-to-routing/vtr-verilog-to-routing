@@ -108,8 +108,8 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
 	int i, errors;
-	edges_head = NULL;
-	num_edges_head = NULL;
+	edges_head = nullptr;
+	num_edges_head = nullptr;
     auto& device_ctx = g_vpr_ctx.device();
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
@@ -117,14 +117,14 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 			device_ctx.block_types[i].pb_graph_head = (t_pb_graph_node*) vtr::calloc(1,
 					sizeof(t_pb_graph_node));
 			int pin_count_in_cluster = 0;
-            alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, NULL,
+            alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, nullptr,
 					device_ctx.block_types[i].pb_type, 0, load_power_structures, pin_count_in_cluster);
 			device_ctx.block_types[i].pb_graph_head->total_pb_pins = pin_count_in_cluster;
 			alloc_and_load_pin_locations_from_pb_graph(&device_ctx.block_types[i]);
 			load_pin_classes_in_pb_graph_head(
 					device_ctx.block_types[i].pb_graph_head);
 		} else {
-			device_ctx.block_types[i].pb_graph_head = NULL;
+			device_ctx.block_types[i].pb_graph_head = nullptr;
 			VTR_ASSERT(&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE);
 		}
 	}
@@ -242,7 +242,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->input_pins[i_input][j].port = &pb_type->ports[i];
 				pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
 				pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
-				if (pb_graph_node->pb_type->blif_model != NULL ) {
+				if (pb_graph_node->pb_type->blif_model != nullptr ) {
 					if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_OUTPUT) == 0) {
 						pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
 					} else if (pb_graph_node->num_clock_ports != 0) {
@@ -262,7 +262,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->output_pins[i_output][j].port = &pb_type->ports[i];
 				pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
 				pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
-				if (pb_graph_node->pb_type->blif_model != NULL ) {
+				if (pb_graph_node->pb_type->blif_model != nullptr ) {
 					if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_INPUT) == 0) {
 						pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
 					} else if (pb_graph_node->num_clock_ports != 0) {
@@ -283,7 +283,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->clock_pins[i_clockport][j].port = &pb_type->ports[i];
 				pb_graph_node->clock_pins[i_clockport][j].parent_node = pb_graph_node;
 				pb_graph_node->clock_pins[i_clockport][j].pin_count_in_cluster = pin_count_in_cluster;
-				if (pb_graph_node->pb_type->blif_model != NULL ) {
+				if (pb_graph_node->pb_type->blif_model != nullptr ) {
 					pb_graph_node->clock_pins[i_clockport][j].type = PB_PIN_CLOCK;
 				}
 				pin_count_in_cluster++;
@@ -336,7 +336,7 @@ void free_pb_graph_edges() {
 	t_pb_graph_edge *edges;
 	vtr::t_linked_vptr *cur, *cur_num;
 
-	while (edges_head != NULL ) {
+	while (edges_head != nullptr ) {
 		cur = edges_head;
 		cur_num = num_edges_head;
 		edges = (t_pb_graph_edge*) cur->data_vptr;
@@ -518,7 +518,7 @@ static void alloc_and_load_mode_interconnect(
 	t_pb_graph_pin *** input_pb_graph_node_pins, ***output_pb_graph_node_pins; /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
 
 	if (load_power_structures) {
-		VTR_ASSERT(pb_graph_parent_node->interconnect_pins[mode->index] == NULL);
+		VTR_ASSERT(pb_graph_parent_node->interconnect_pins[mode->index] == nullptr);
 		pb_graph_parent_node->interconnect_pins[mode->index] =
 				(t_interconnect_pins*) vtr::calloc(mode->num_interconnect,
 						sizeof(t_interconnect_pins));
@@ -974,10 +974,10 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 	t_port *iport;
 	int add_or_subtract_pb, add_or_subtract_pin;
 	bool found;
-	t_mode *mode = NULL;
+	t_mode *mode = nullptr;
 
 	VTR_ASSERT(tokens[*token_index].type == TOKEN_STRING);
-	pb_node_array = NULL;
+	pb_node_array = nullptr;
 	max_pb_node_array = 0;
 
 	if (pb_graph_children_nodes)
@@ -1041,7 +1041,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		}
 	} else {
 		//Children pb_types
-		if (mode == NULL ) {
+		if (mode == nullptr ) {
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 				"Parent pb node '%s' missing", pb_graph_parent_node->pb_type->name);
 		}
@@ -1119,7 +1119,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 	(*token_index)++;
 
 	if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
-				0) == NULL) {
+				0) == nullptr) {
 		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 			"Failed to find port name %s", port_name);
 	}
@@ -1187,7 +1187,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		while (ipin != pin_msb + add_or_subtract_pin) {
             int idx = prev_num_pins + i * (abs(pin_msb - pin_lsb) + 1) + j;
 			(*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb], ipin);
-			if ((*pb_graph_pins)[idx] == NULL ) {
+			if ((*pb_graph_pins)[idx] == nullptr ) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"Pin %s.%s[%d] cannot be found",
 						pb_node_array[ipb].pb_type->name, port_name, ipin);
@@ -1249,7 +1249,7 @@ static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
 			if (pin < pb->input_pins[i][0].port->num_pins) {
 				return &pb->input_pins[i][pin];
 			} else {
-				return NULL ;
+				return nullptr ;
 			}
 		}
 	}
@@ -1258,7 +1258,7 @@ static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
 			if (pin < pb->output_pins[i][0].port->num_pins) {
 				return &pb->output_pins[i][pin];
 			} else {
-				return NULL ;
+				return nullptr ;
 			}
 		}
 	}
@@ -1267,11 +1267,11 @@ static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
 			if (pin < pb->clock_pins[i][0].port->num_pins) {
 				return &pb->clock_pins[i][pin];
 			} else {
-				return NULL ;
+				return nullptr ;
 			}
 		}
 	}
-	return NULL ;
+	return nullptr ;
 }
 
 static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) {
@@ -1408,7 +1408,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 
 					for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
 
-						int *num_pb_graph_node_pins = 0; /* number of pins in a set [0..num_sets-1] */
+						int *num_pb_graph_node_pins = nullptr; /* number of pins in a set [0..num_sets-1] */
 						int num_pb_graph_node_sets = 0;
 
 						t_pb_graph_pin*** pb_graph_node_pins;

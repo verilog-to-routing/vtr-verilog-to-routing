@@ -118,8 +118,8 @@ int alloc_and_load_timing_graph_levels(void) {
 
 	tnode_fanin_left = alloc_and_load_tnode_fanin_and_check_edges(&num_sinks);
 
-	free_list_head = NULL;
-	nodes_at_level_head = NULL;
+	free_list_head = nullptr;
+	nodes_at_level_head = nullptr;
 
 	/* Very conservative -> max number of levels = timing_ctx.num_tnodes.  Realloc later.  *
 	 * Temporarily need one extra level on the end because I look at the first  *
@@ -260,12 +260,12 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	fprintf(fp, "Node: %d  %s Block #%zu (%s)\n", inode, tnode_type_names[type],
 		size_t(iblk), cluster_ctx.clb_nlist.block_name(iblk).c_str());
 
-	if (pb_graph_pin == NULL) {
+	if (pb_graph_pin == nullptr) {
 		VTR_ASSERT(
 				type == TN_INPAD_SOURCE || type == TN_OUTPAD_SINK || type == TN_FF_SOURCE || type == TN_FF_SINK);
 	}
 
-	if (pb_graph_pin != NULL) {
+	if (pb_graph_pin != nullptr) {
 		fprintf(fp, "Pin: %s.%s[%d] pb (%s)", pb_graph_pin->parent_node->pb_type->name,
 			pb_graph_pin->port->name, pb_graph_pin->pin_number, pin_id_to_pb_mapping[iblk][pb_graph_pin->pin_count_in_cluster]->name);
 	}
@@ -277,7 +277,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 			timing_ctx.tnodes[inode].T_req);
 
 	next_crit_node = critical_path_node->next;
-	if (next_crit_node != NULL) {
+	if (next_crit_node != nullptr) {
 		downstream_node = next_crit_node->data;
 		Tdel = timing_ctx.tnodes[downstream_node].T_arr - timing_ctx.tnodes[inode].T_arr;
 		fprintf(fp, "Tdel: %g\n", Tdel);
@@ -294,7 +294,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
         VTR_ASSERT(inet != ClusterNetId::INVALID());
 		fprintf(fp, "External-to-Block Net: #%zu (%s).  Pins on net: %zu.\n",
 			size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str(), cluster_ctx.clb_nlist.net_pins(inet).size());
-	} else if (pb_graph_pin != NULL) {
+	} else if (pb_graph_pin != nullptr) {
 		fprintf(fp, "Internal Net: %s.  Pins on net: %zu.\n",
 			atom_ctx.nlist.net_name(atom_net_id).c_str(), atom_ctx.nlist.net_pins(atom_net_id).size());
 	}
@@ -525,7 +525,7 @@ void print_comb_loop(std::vector<int>& loop_tnodes) {
     vtr::printf_info("Comb Loop:\n");
     for(std::vector<int>::iterator it = loop_tnodes.begin(); it != loop_tnodes.end(); it++) {
         int i_tnode = *it;
-        if(timing_ctx.tnodes[i_tnode].pb_graph_pin != NULL) {
+        if(timing_ctx.tnodes[i_tnode].pb_graph_pin != nullptr) {
             vtr::printf_info("\ttnode: %d %s.%s[%d]\n", i_tnode,
                             timing_ctx.tnodes[i_tnode].pb_graph_pin->parent_node->pb_type->name, 
                             timing_ctx.tnodes[i_tnode].pb_graph_pin->port->name, 

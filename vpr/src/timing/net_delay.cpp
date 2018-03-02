@@ -146,8 +146,8 @@ void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_del
 	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(device_ctx.num_rr_nodes,
 			sizeof(t_linked_rc_ptr));
 
-	rc_node_free_list = NULL;
-	rc_edge_free_list = NULL;
+	rc_node_free_list = nullptr;
+	rc_edge_free_list = nullptr;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
@@ -187,7 +187,7 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 	root_rc = alloc_rc_node(rc_node_free_list_ptr);
 	tptr = route_ctx.trace_head[net_id];
 
-	if (tptr == NULL) {
+	if (tptr == nullptr) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 				"in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", size_t(net_id));
 	}
@@ -195,19 +195,19 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 	inode = tptr->index;
 	iswitch = tptr->iswitch;
 	root_rc->inode = inode;
-	root_rc->u.child_list = NULL;
+	root_rc->u.child_list = nullptr;
 	rr_node_to_rc_node[inode].rc_node = root_rc;
 
 	prev_rc = root_rc;
 	tptr = tptr->next;
 
-	while (tptr != NULL) {
+	while (tptr != nullptr) {
 		inode = tptr->index;
 
 		/* Is this node a "stitch-in" point to part of the existing routing or a   *
 		 * new piece of routing along the current routing "arm?"                   */
 
-		if (rr_node_to_rc_node[inode].rc_node == NULL) { /* Part of current "arm" */
+		if (rr_node_to_rc_node[inode].rc_node == nullptr) { /* Part of current "arm" */
 			curr_rc = alloc_rc_node(rc_node_free_list_ptr);
 			add_to_rc_tree(prev_rc, curr_rc, iswitch, inode, rc_edge_free_list_ptr);
 			rr_node_to_rc_node[inode].rc_node = curr_rc;
@@ -260,7 +260,7 @@ static void add_to_rc_tree(t_rc_node * parent_rc, t_rc_node * child_rc,
 	linked_rc_edge->child = child_rc;
 	linked_rc_edge->iswitch = iswitch;
 
-	child_rc->u.child_list = NULL;
+	child_rc->u.child_list = nullptr;
 	child_rc->inode = inode;
 }
 
@@ -274,7 +274,7 @@ alloc_rc_node(t_rc_node ** rc_node_free_list_ptr) {
 
 	rc_node = *rc_node_free_list_ptr;
 
-	if (rc_node != NULL) {
+	if (rc_node != nullptr) {
 		*rc_node_free_list_ptr = rc_node->u.next;
 	} else {
 		rc_node = (t_rc_node *) vtr::malloc(sizeof(t_rc_node));
@@ -302,7 +302,7 @@ alloc_linked_rc_edge(t_linked_rc_edge ** rc_edge_free_list_ptr) {
 
 	linked_rc_edge = *rc_edge_free_list_ptr;
 
-	if (linked_rc_edge != NULL) {
+	if (linked_rc_edge != nullptr) {
 		*rc_edge_free_list_ptr = linked_rc_edge->next;
 	} else {
 		linked_rc_edge = (t_linked_rc_edge *) vtr::malloc(
@@ -339,7 +339,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 	inode = rc_node->inode;
 	C = device_ctx.rr_nodes[inode].C();
 
-	while (linked_rc_edge != NULL) { /* For all children */
+	while (linked_rc_edge != nullptr) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 		C_downstream = load_rc_tree_C(child_node);
@@ -392,7 +392,7 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 
 	linked_rc_edge = rc_node->u.child_list;
 
-	while (linked_rc_edge != NULL) { /* For all children */
+	while (linked_rc_edge != nullptr) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 
@@ -430,7 +430,7 @@ static void load_one_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay
 		 * when a net connect more than once to the same pin class on the same    *
 		 * logic block.  Only a weird architecture would allow this.              */
 
-		if (linked_rc_ptr != NULL) {
+		if (linked_rc_ptr != nullptr) {
 
 			/* The first time I hit a multiply-used SINK, I choose the largest delay  *
 			 * from this net to this SINK and use it for every connection to this     *
@@ -445,9 +445,9 @@ static void load_one_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay
 				next_ptr = linked_rc_ptr->next;
 				free(linked_rc_ptr);
 				linked_rc_ptr = next_ptr;
-			} while (linked_rc_ptr != NULL); /* End do while */
+			} while (linked_rc_ptr != nullptr); /* End do while */
 
-			rr_node_to_rc_node[inode].next = NULL;
+			rr_node_to_rc_node[inode].next = nullptr;
 		}
 		/* End of if multiply-used SINK */
 		net_delay[net_id][ipin] = Tmax;
@@ -477,7 +477,7 @@ static void free_rc_tree(t_rc_node * rc_root,
 	rc_node = rc_root;
 	rc_edge = rc_node->u.child_list;
 
-	while (rc_edge != NULL) { /* For all children */
+	while (rc_edge != nullptr) { /* For all children */
 		child_node = rc_edge->child;
 		free_rc_tree(child_node, rc_node_free_list_ptr, rc_edge_free_list_ptr);
 		next_edge = rc_edge->next;
@@ -502,9 +502,9 @@ static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node, Clust
 
 	tptr = route_ctx.trace_head[net_id];
 
-	while (tptr != NULL) {
+	while (tptr != nullptr) {
 		inode = tptr->index;
-		rr_node_to_rc_node[inode].rc_node = NULL;
+		rr_node_to_rc_node[inode].rc_node = nullptr;
 		tptr = tptr->next;
 	}
 }
@@ -517,7 +517,7 @@ static void free_rc_node_free_list(t_rc_node * rc_node_free_list) {
 
 	rc_node = rc_node_free_list;
 
-	while (rc_node != NULL) {
+	while (rc_node != nullptr) {
 		next_node = rc_node->u.next;
 		free(rc_node);
 		rc_node = next_node;
@@ -532,7 +532,7 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list) {
 
 	rc_edge = rc_edge_free_list;
 
-	while (rc_edge != NULL) {
+	while (rc_edge != nullptr) {
 		next_edge = rc_edge->next;
 		free(rc_edge);
 		rc_edge = next_edge;

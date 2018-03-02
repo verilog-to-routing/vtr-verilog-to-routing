@@ -703,7 +703,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	this_pb_interc_sidelength = sqrt(
 			power_transistor_area(
 					pin->parent_node->pb_node_power->transistor_cnt_interc));
-	if (pin->parent_node->parent_pb_graph_node == NULL) {
+	if (pin->parent_node->parent_pb_graph_node == nullptr) {
 		top_level_pb = true;
 		parent_pb_interc_sidelength = 0.;
 	} else {
@@ -729,7 +729,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	 * be higher)*/
 
 	/* Loop through all edges, building a list of interconnect that this pin drives */
-	list = NULL;
+	list = nullptr;
 	list_cnt = 0;
 	for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
 		/* Check if its already in the list */

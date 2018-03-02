@@ -95,7 +95,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 	VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
 	pb_route = cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route;
-	VTR_ASSERT(pb_route != NULL);
+	VTR_ASSERT(pb_route != nullptr);
 	pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(atom_blk);
 	pb_type = pb_graph_node->pb_type;
 
@@ -274,7 +274,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 		/* Print input ports */
 		t_model_ports *port = cur->inputs;
 		
-		while (port != NULL) {
+		while (port != nullptr) {
             AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
                 fprintf(fpout, "%s[%d]=", port->name, i);
@@ -308,7 +308,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 
 		/* Print output ports */
 		port = cur->outputs;
-		while (port != NULL) {
+		while (port != nullptr) {
             AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, i);
@@ -326,7 +326,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 				}
 			}
 			port = port->next;
-			if (port != NULL) {
+			if (port != nullptr) {
 				fprintf(fpout, "\\\n");
 			}
 		}
@@ -336,7 +336,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 
         /* Print output buffers */
         port = cur->outputs;
-        while (port != NULL) {
+        while (port != nullptr) {
             AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
             for (int ipin = 0; ipin < port->size; ipin++) {
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, ipin);
@@ -374,12 +374,12 @@ void print_routing_in_clusters(FILE *fpout, ClusterBlockId clb_index) {
 			/* Print interconnect */	
 			if(pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_route[i].driver_pb_pin_id == OPEN) {
 				/* Logic block input pin */
-				VTR_ASSERT(pb_graph_node_of_pin->parent_pb_graph_node == NULL);
+				VTR_ASSERT(pb_graph_node_of_pin->parent_pb_graph_node == nullptr);
 				fprintf(fpout, ".names ");
 				print_net_name(pb_route[i].atom_net_id, &column, fpout);
 				fprintf(fpout, " clb_%zu_rr_node_%d\n", size_t(clb_index), i);
 				fprintf(fpout, "1 1\n\n");
-			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_graph_node_of_pin->parent_pb_graph_node == NULL) {
+			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_graph_node_of_pin->parent_pb_graph_node == nullptr) {
 				/* Logic block output pin */
 				fprintf(fpout, ".names clb_%zu_rr_node_%d ", size_t(clb_index), pb_route[i].driver_pb_pin_id);
 				print_net_name(pb_route[i].atom_net_id, &column, fpout);
@@ -402,19 +402,19 @@ void print_models(FILE *fpout, t_model *user_models) {
 	t_model *cur;
 	cur = user_models;
 
-	while (cur != NULL) {
+	while (cur != nullptr) {
 		fprintf(fpout, "\n");
 		fprintf(fpout, ".model %s\n", cur->name);
 		
 		/* Print input ports */
 		t_model_ports *port = cur->inputs;
-		if (port == NULL) {
+		if (port == nullptr) {
 			fprintf(fpout, ".inputs \n");
 		}
 		else {
 			fprintf(fpout, ".inputs \\\n");
 		}
-		while (port != NULL) {
+		while (port != nullptr) {
 			for (int i = 0; i < port->size; i++) {
 				fprintf(fpout, "%s[%d] ", port->name, i);
 				if (i % 8 == 4) {
@@ -424,7 +424,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 				}
 			}
 			port = port->next;
-			if (port != NULL) {
+			if (port != nullptr) {
 				fprintf(fpout, "\\\n");
 			}
 			else {
@@ -433,13 +433,13 @@ void print_models(FILE *fpout, t_model *user_models) {
 		}
 		/* Print input ports */
 		port = cur->outputs;
-		if (port == NULL) {
+		if (port == nullptr) {
 			fprintf(fpout, ".outputs \n");
 		}
 		else {
 			fprintf(fpout, ".outputs \\\n");
 		}
-		while (port != NULL) {
+		while (port != nullptr) {
 			for (int i = 0; i < port->size; i++) {
 				fprintf(fpout, "%s[%d] ", port->name, i);
 				if (i % 8 == 4) {
@@ -449,7 +449,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 				}
 			}
 			port = port->next;
-			if (port != NULL) {
+			if (port != nullptr) {
 				fprintf(fpout, "\\\n");
 			}
 			else {
@@ -472,7 +472,7 @@ void output_blif(const t_arch *arch, const char *out_fname) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	// Check that there's at least one block that exists
-	if(cluster_ctx.clb_nlist.block_pb(ClusterBlockId(0))->pb_route == NULL) {
+	if(cluster_ctx.clb_nlist.block_pb(ClusterBlockId(0))->pb_route == nullptr) {
 		return;
 	}
 

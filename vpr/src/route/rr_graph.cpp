@@ -213,7 +213,7 @@ static void free_type_track_to_pin_map(
 
 static t_seg_details *alloc_and_load_global_route_seg_details(
         const int global_route_switch,
-        int * num_seg_details = 0);
+        int * num_seg_details = nullptr);
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
         const int num_seg_types, const int *sets_per_seg_type,
@@ -350,14 +350,14 @@ static void build_rr_graph(
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    t_clb_to_clb_directs *clb_to_clb_directs = NULL;
+    t_clb_to_clb_directs *clb_to_clb_directs = nullptr;
     if (num_directs > 0) {
         clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs, delayless_switch);
     }
 
     /* START SEG_DETAILS */
     int num_seg_details = 0;
-    t_seg_details *seg_details = NULL;
+    t_seg_details *seg_details = nullptr;
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
@@ -486,8 +486,8 @@ static void build_rr_graph(
     /* START SB LOOKUP */
     /* Alloc and load the switch block lookup */
     vtr::NdMatrix<std::vector<int>, 3> switch_block_conn;
-    short ******unidir_sb_pattern = NULL;
-    t_sb_connection_map *sb_conn_map = NULL; //for custom switch blocks
+    short ******unidir_sb_pattern = nullptr;
+    t_sb_connection_map *sb_conn_map = nullptr; //for custom switch blocks
 
     if (is_global_graph) {
         switch_block_conn = alloc_and_load_switch_block_conn(1, SUBSET, 3);
@@ -614,30 +614,30 @@ static void build_rr_graph(
     /* Free all temp structs */
     if (seg_details) {
         free_seg_details(seg_details, max_chan_width);
-        seg_details = NULL;
+        seg_details = nullptr;
     }
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
         free_chan_details(chan_details_x, chan_details_y, max_chan_width, grid);
     }
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
-        sb_conn_map = NULL;
+        sb_conn_map = nullptr;
     }
     if (L_rr_edge_done) {
         free(L_rr_edge_done);
-        L_rr_edge_done = NULL;
+        L_rr_edge_done = nullptr;
     }
     if (unidir_sb_pattern) {
         free_sblock_pattern_lookup(unidir_sb_pattern);
-        unidir_sb_pattern = NULL;
+        unidir_sb_pattern = nullptr;
     }
     if (sets_per_seg_type) {
         free(sets_per_seg_type);
-        sets_per_seg_type = NULL;
+        sets_per_seg_type = nullptr;
     }
 
     free_type_track_to_pin_map(track_to_pin_lookup, types, max_chan_width);
-    if (clb_to_clb_directs != NULL) {
+    if (clb_to_clb_directs != nullptr) {
         free(clb_to_clb_directs);
     }
 
@@ -752,7 +752,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int i_rr_switch = 0;
-    if (device_ctx.switch_fanin_remap != NULL) {
+    if (device_ctx.switch_fanin_remap != nullptr) {
         // at this stage, we rebuild the rr_graph (probably in binary search)
         // so old device_ctx.switch_fanin_remap is obsolete
         delete [] device_ctx.switch_fanin_remap;
@@ -1173,7 +1173,7 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         }
 
         int num_edges = 0;
-        t_linked_edge *edge_list = NULL;
+        t_linked_edge *edge_list = nullptr;
         if (total_pin_Fc > 0) {
                 num_edges += get_bidir_opin_connections(i + width_offset, j + height_offset, pin_index,
                         &edge_list, opin_to_track_map, total_pin_Fc, L_rr_edge_done,
@@ -1188,7 +1188,7 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         VTR_ASSERT(node_index >= 0);
         alloc_and_load_edges_and_switches(L_rr_node, node_index, num_edges,
                 L_rr_edge_done, edge_list);
-        while (edge_list != NULL) {
+        while (edge_list != nullptr) {
             t_linked_edge *next_edge = edge_list->next;
             free(edge_list);
             edge_list = next_edge;
@@ -1413,8 +1413,8 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
     /* figure out if we're generating switch block edges based on a custom switch block
        description */
     bool custom_switch_block = false;
-    if (sb_conn_map != NULL) {
-        VTR_ASSERT(sblock_pattern == NULL && switch_block_conn.empty());
+    if (sb_conn_map != nullptr) {
+        VTR_ASSERT(sblock_pattern == nullptr && switch_block_conn.empty());
         custom_switch_block = true;
     }
 
@@ -1434,7 +1434,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             continue; /* Only process segments which start at this location */
         VTR_ASSERT(seg_coord == start);
 
-        t_linked_edge *edge_list = NULL;
+        t_linked_edge *edge_list = nullptr;
 
         t_seg_details * from_seg_details = nullptr;
         if (chan_type == CHANY) {
@@ -1525,7 +1525,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         alloc_and_load_edges_and_switches(L_rr_node, node, num_edges,
                 L_rr_edge_done, edge_list);
 
-        while (edge_list != NULL) {
+        while (edge_list != nullptr) {
             t_linked_edge *next_edge = edge_list->next;
             free(edge_list);
             edge_list = next_edge;
@@ -1589,7 +1589,7 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
         list_ptr = list_ptr->next;
         ++i;
     }
-    VTR_ASSERT(list_ptr == NULL);
+    VTR_ASSERT(list_ptr == nullptr);
     VTR_ASSERT(i == num_edges);
 }
 
@@ -2340,7 +2340,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         }
 
         int num_edges = 0;
-        t_linked_edge *edge_list = NULL;
+        t_linked_edge *edge_list = nullptr;
 
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
 
@@ -2410,7 +2410,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
             VTR_ASSERT(opin_node_index >= 0);
             alloc_and_load_edges_and_switches(device_ctx.rr_nodes, opin_node_index, num_edges,
                     L_rr_edge_done, edge_list);
-            while (edge_list != NULL) {
+            while (edge_list != nullptr) {
                 t_linked_edge *next_edge = edge_list->next;
                 free(edge_list);
                 edge_list = next_edge;
@@ -2436,8 +2436,8 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 
     clb_to_clb_directs = (t_clb_to_clb_directs*) vtr::calloc(num_directs, sizeof (t_clb_to_clb_directs));
 
-    pb_type_name = NULL;
-    port_name = NULL;
+    pb_type_name = nullptr;
+    port_name = nullptr;
 
     for (i = 0; i < num_directs; i++) {
         pb_type_name = (char*) vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof (char));

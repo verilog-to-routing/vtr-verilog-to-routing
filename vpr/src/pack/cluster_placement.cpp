@@ -69,7 +69,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 			cluster_placement_stats_list[i].valid_primitives = (t_cluster_placement_primitive **) vtr::calloc(
 					get_max_primitives_in_pb_type(device_ctx.block_types[i].pb_type)
  							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
-			cluster_placement_stats_list[i].curr_molecule = NULL;
+			cluster_placement_stats_list[i].curr_molecule = nullptr;
 			load_cluster_placement_stats_for_pb_graph_node(
 					&cluster_placement_stats_list[i],
 					device_ctx.block_types[i].pb_graph_head);
@@ -99,8 +99,8 @@ bool get_next_primitive_list(
 	t_cluster_placement_primitive *cur, *next, *best, *before_best, *prev;
 	int i;
 	float cost, lowest_cost;
-	best = NULL;
-	before_best = NULL;
+	best = nullptr;
+	before_best = nullptr;
 
 	if (cluster_placement_stats->curr_molecule != molecule) {
 		/* New block, requeue tried primitives and in-flight primitives */
@@ -112,7 +112,7 @@ bool get_next_primitive_list(
          * I'm going to make the molecule selector more intelligent.
          * TODO: Remove later 
          */
-		if (cluster_placement_stats->in_flight != NULL) {
+		if (cluster_placement_stats->in_flight != nullptr) {
 			/* Hack end */
 
 			/* old block, put root primitive currently inflight to tried queue	*/
@@ -121,8 +121,8 @@ bool get_next_primitive_list(
 			cur->next_primitive = cluster_placement_stats->tried;
 			cluster_placement_stats->tried = cur;
 			/* should have only one block in flight at any point in time */
-			VTR_ASSERT(next == NULL);
-			cluster_placement_stats->in_flight = NULL;
+			VTR_ASSERT(next == nullptr);
+			cluster_placement_stats->in_flight = nullptr;
 		}
 	}
 
@@ -134,7 +134,7 @@ bool get_next_primitive_list(
 	 */
 	lowest_cost = HUGE_POSITIVE_FLOAT;
 	for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-		if (cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
+		if (cluster_placement_stats->valid_primitives[i]->next_primitive == nullptr) {
 			continue; /* no more primitives of this type available */
 		}
 		if (primitive_type_feasible(
@@ -150,7 +150,7 @@ bool get_next_primitive_list(
 					cluster_placement_stats->invalid = cur;
 					cur = prev->next_primitive;
 				}
-				if (cur == NULL) {
+				if (cur == nullptr) {
 					break;
 				}
 				/* try place molecule at root location cur */
@@ -166,10 +166,10 @@ bool get_next_primitive_list(
 			}
 		}
 	}
-	if (best == NULL) {
+	if (best == nullptr) {
 		/* failed to find a placement */
 		for (i = 0; i < molecule->num_blocks; i++) {
-			primitives_list[i] = NULL;
+			primitives_list[i] = nullptr;
 		}
 	} else {
 		/* populate primitive list with best */
@@ -179,10 +179,10 @@ bool get_next_primitive_list(
 		/* take out best node and put it in flight */
 		cluster_placement_stats->in_flight = best;
 		before_best->next_primitive = best->next_primitive;
-		best->next_primitive = NULL;
+		best->next_primitive = nullptr;
 	}
 
-	if (best == NULL) {
+	if (best == nullptr) {
 		return false;
 	}
 	return true;
@@ -199,24 +199,24 @@ void reset_cluster_placement_stats(
 	/* Requeue primitives */
 	flush_intermediate_queues(cluster_placement_stats);
 	cur = cluster_placement_stats->invalid;
-	while (cur != NULL) {
+	while (cur != nullptr) {
 		next = cur->next_primitive;
 		requeue_primitive(cluster_placement_stats, cur);
 		cur = next;
 	}
-	cur = cluster_placement_stats->invalid = NULL;
+	cur = cluster_placement_stats->invalid = nullptr;
 	/* reset flags and cost */
 	for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
 		VTR_ASSERT(
-				cluster_placement_stats->valid_primitives[i] != NULL && cluster_placement_stats->valid_primitives[i]->next_primitive != NULL);
+				cluster_placement_stats->valid_primitives[i] != nullptr && cluster_placement_stats->valid_primitives[i]->next_primitive != nullptr);
 		cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
-		while (cur != NULL) {
+		while (cur != nullptr) {
 			cur->incremental_cost = 0;
 			cur->valid = true;
 			cur = cur->next_primitive;
 		}
 	}
-	cluster_placement_stats->curr_molecule = NULL;
+	cluster_placement_stats->curr_molecule = nullptr;
 }
 
 /** 
@@ -230,19 +230,19 @@ void free_cluster_placement_stats(
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		cur = cluster_placement_stats_list[i].tried;
-		while (cur != NULL) {
+		while (cur != nullptr) {
 			next = cur->next_primitive;
 			free(cur);
 			cur = next;
 		}
 		cur = cluster_placement_stats_list[i].in_flight;
-		while (cur != NULL) {
+		while (cur != nullptr) {
 			next = cur->next_primitive;
 			free(cur);
 			cur = next;
 		}
 		cur = cluster_placement_stats_list[i].invalid;
-		while (cur != NULL) {
+		while (cur != nullptr) {
 			next = cur->next_primitive;
 			free(cur);
 			cur = next;
@@ -250,7 +250,7 @@ void free_cluster_placement_stats(
 		for (j = 0; j < cluster_placement_stats_list[i].num_pb_types; j++) {
 			cur =
 					cluster_placement_stats_list[i].valid_primitives[j]->next_primitive;
-			while (cur != NULL) {
+			while (cur != nullptr) {
 				next = cur->next_primitive;
 				free(cur);
 				cur = next;
@@ -276,7 +276,7 @@ static void requeue_primitive(
 
 	success = false;
 	for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-		if (cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
+		if (cluster_placement_stats->valid_primitives[i]->next_primitive == nullptr) {
 			null_index = i;
 			continue;
 		}
@@ -309,7 +309,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(
 	t_cluster_placement_primitive *placement_primitive;
 	const t_pb_type *pb_type = pb_graph_node->pb_type;
 	bool success;
-	if (pb_type->modes == 0) {
+	if (pb_type->modes == nullptr) {
 		placement_primitive = (t_cluster_placement_primitive *) vtr::calloc(1,
 				sizeof(t_cluster_placement_primitive));
 		placement_primitive->pb_graph_node = pb_graph_node;
@@ -320,10 +320,10 @@ static void load_cluster_placement_stats_for_pb_graph_node(
 		success = false;
 		i = 0;
 		while (success == false) {
-			if (cluster_placement_stats->valid_primitives[i] == NULL
+			if (cluster_placement_stats->valid_primitives[i] == nullptr
 					|| cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type
 							== pb_graph_node->pb_type) {
-				if (cluster_placement_stats->valid_primitives[i] == NULL) {
+				if (cluster_placement_stats->valid_primitives[i] == nullptr) {
 					cluster_placement_stats->valid_primitives[i] = (t_cluster_placement_primitive *) vtr::calloc(1,
 							sizeof(t_cluster_placement_primitive)); /* head of linked list is empty, makes it easier to remove nodes later */
 					cluster_placement_stats->num_pb_types++;
@@ -377,7 +377,7 @@ void commit_primitive(t_cluster_placement_stats *cluster_placement_stats,
 
 	pb_graph_node = cur->pb_graph_node;
 	/* walk up pb_graph_node and update primitives of children */
-	while (pb_graph_node->parent_pb_graph_node != NULL) {
+	while (pb_graph_node->parent_pb_graph_node != nullptr) {
 		skip = pb_graph_node; /* do not traverse stuff that's already traversed */
 		valid_mode = pb_graph_node->pb_type->parent_mode->index;
 		pb_graph_node = pb_graph_node->parent_pb_graph_node;
@@ -463,7 +463,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == true) {
             for (i = 0; i < list_size; i++) {
-                primitives_list[i] = NULL;
+                primitives_list[i] = nullptr;
             }
             cost = root->cluster_placement_primitive->base_cost
                     + root->cluster_placement_primitive->incremental_cost;
@@ -476,10 +476,10 @@ static float try_place_molecule(const t_pack_molecule *molecule,
                 }
             }
             for (i = 0; i < list_size; i++) {
-                VTR_ASSERT( (primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
+                VTR_ASSERT( (primitives_list[i] == nullptr) == (!molecule->atom_block_ids[i]));
                 for (int j = 0; j < list_size; j++) {
                     if(i != j) {
-                        if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
+                        if(primitives_list[i] != nullptr && primitives_list[i] == primitives_list[j]) {
                             return HUGE_POSITIVE_FLOAT;
                         }
                     }
@@ -512,7 +512,7 @@ static bool expand_forced_pack_molecule_placement(
 		} else {
 			next_block = cur->from_block;
 		}
-		if (primitives_list[next_block->block_id] == NULL && molecule->atom_block_ids[next_block->block_id]) {
+		if (primitives_list[next_block->block_id] == nullptr && molecule->atom_block_ids[next_block->block_id]) {
 			/* first time visiting location */
 
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
@@ -540,10 +540,10 @@ static bool expand_forced_pack_molecule_placement(
 						pack_pattern_block->pattern_index, cur_pin, false);
 			}
 			/* found next primitive */
-			if (next_pin != NULL) {
+			if (next_pin != nullptr) {
 				next_primitive = next_pin->parent_node;
 				/* Check for legality of placement, if legal, expand from legal placement, if not, return false */
-				if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == NULL) {
+				if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == nullptr) {
 					if (next_primitive->cluster_placement_primitive->valid
 							== true
 							&& primitive_type_feasible(
@@ -578,8 +578,8 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 		const t_pb_graph_pin *cur_pin, const bool forward) {
 	int i, j, k;
 	t_pb_graph_pin *temp_pin, *dest_pin;
-	temp_pin = NULL;
-	dest_pin = NULL;
+	temp_pin = nullptr;
+	dest_pin = nullptr;
 	if (forward) {
 		for (i = 0; i < cur_pin->num_output_edges; i++) {
 			/* one fanout assumption */
@@ -595,8 +595,8 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 								forward);
 					}
 				}
-				if (temp_pin != NULL) {
-					VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
+				if (temp_pin != nullptr) {
+					VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
 					dest_pin = temp_pin;
 				}
 			} else {
@@ -619,8 +619,8 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 												forward);
 							}
 						}
-						if (temp_pin != NULL) {
-							VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
+						if (temp_pin != nullptr) {
+							VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
 							dest_pin = temp_pin;
 						}
 					}
@@ -641,8 +641,8 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 								forward);
 					}
 				}
-				if (temp_pin != NULL) {
-					VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
+				if (temp_pin != nullptr) {
+					VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
 					dest_pin = temp_pin;
 				}
 			} else {
@@ -663,8 +663,8 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(const int pattern_id,
 										forward);
 							}
 						}
-						if (temp_pin != NULL) {
-							VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
+						if (temp_pin != nullptr) {
+							VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
 							dest_pin = temp_pin;
 						}
 					}
@@ -679,21 +679,21 @@ static void flush_intermediate_queues(
 		t_cluster_placement_stats *cluster_placement_stats) {
 	t_cluster_placement_primitive *cur, *next;
 	cur = cluster_placement_stats->tried;
-	while (cur != NULL) {
+	while (cur != nullptr) {
 		next = cur->next_primitive;
 		requeue_primitive(cluster_placement_stats, cur);
 		cur = next;
 	}
-	cluster_placement_stats->tried = NULL;
+	cluster_placement_stats->tried = nullptr;
 
 	cur = cluster_placement_stats->in_flight;
-	if (cur != NULL) {
+	if (cur != nullptr) {
 		next = cur->next_primitive;
 		requeue_primitive(cluster_placement_stats, cur);
 		/* should have at most one block in flight at any point in time */
-		VTR_ASSERT(next == NULL);
+		VTR_ASSERT(next == nullptr);
 	}
-	cluster_placement_stats->in_flight = NULL;
+	cluster_placement_stats->in_flight = nullptr;
 }
 
 /* Determine max index + 1 of molecule */
@@ -722,7 +722,7 @@ bool exists_free_primitive_for_atom_block(
 
 	/* Look through list of available primitives to see if any valid */
 	for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-		if (cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
+		if (cluster_placement_stats->valid_primitives[i]->next_primitive == nullptr) {
 			continue; /* no more primitives of this type available */
 		}
 		if (primitive_type_feasible(blk_id,
@@ -737,7 +737,7 @@ bool exists_free_primitive_for_atom_block(
 					cluster_placement_stats->invalid = cur;
 					cur = prev->next_primitive;
 				}
-				if (cur == NULL) {
+				if (cur == nullptr) {
 					break;
 				}
 				return true;

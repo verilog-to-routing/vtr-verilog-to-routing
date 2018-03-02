@@ -36,8 +36,8 @@ static std::vector<t_rt_node *> rr_node_to_rt_node; /* [0..device_ctx.num_rr_nod
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
 
-static t_rt_node *rt_node_free_list = NULL;
-static t_linked_rt_edge *rt_edge_free_list = NULL;
+static t_rt_node *rt_node_free_list = nullptr;
+static t_linked_rt_edge *rt_edge_free_list = nullptr;
 
 /********************** Subroutines local to this module *********************/
 
@@ -81,7 +81,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     auto& device_ctx = g_vpr_ctx.device();
 
     bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.num_rr_nodes)
-			                                 || rt_node_free_list != NULL);
+			                                 || rt_node_free_list != nullptr);
     if (route_tree_structs_are_allocated) {
         if (exists_ok) {
             return false;
@@ -108,23 +108,23 @@ void free_route_tree_timing_structs(void) {
 
 	rt_node = rt_node_free_list;
 
-	while (rt_node != NULL) {
+	while (rt_node != nullptr) {
 		next_node = rt_node->u.next;
 		free(rt_node);
 		rt_node = next_node;
 	}
 
-	rt_node_free_list = NULL;
+	rt_node_free_list = nullptr;
 
 	rt_edge = rt_edge_free_list;
 
-	while (rt_edge != NULL) {
+	while (rt_edge != nullptr) {
 		next_edge = rt_edge->next;
 		free(rt_edge);
 		rt_edge = next_edge;
 	}
 
-	rt_edge_free_list = NULL;
+	rt_edge_free_list = nullptr;
 }
 
 static t_rt_node*
@@ -137,7 +137,7 @@ alloc_rt_node(void) {
 
 	rt_node = rt_node_free_list;
 
-	if (rt_node != NULL) {
+	if (rt_node != nullptr) {
 		rt_node_free_list = rt_node->u.next;
 	} else {
 		rt_node = (t_rt_node *) vtr::malloc(sizeof(t_rt_node));
@@ -164,7 +164,7 @@ alloc_linked_rt_edge(void) {
 
 	linked_rt_edge = rt_edge_free_list;
 
-	if (linked_rt_edge != NULL) {
+	if (linked_rt_edge != nullptr) {
 		rt_edge_free_list = linked_rt_edge->next;
 	} else {
 		linked_rt_edge = (t_linked_rt_edge *) vtr::malloc(
@@ -191,8 +191,8 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	rt_root = alloc_rt_node();
-	rt_root->u.child_list = NULL;
-	rt_root->parent_node = NULL;
+	rt_root->u.child_list = nullptr;
+	rt_root->parent_node = nullptr;
 	rt_root->parent_switch = OPEN;
 	rt_root->re_expand = true;
 
@@ -234,7 +234,7 @@ t_rt_node* update_route_tree(t_heap * hptr) {
 
 	subtree_parent_rt_node = unbuffered_subtree_rt_root->parent_node;
 
-	if (subtree_parent_rt_node != NULL) { /* Parent exists. */
+	if (subtree_parent_rt_node != nullptr) { /* Parent exists. */
 		Tdel_start = subtree_parent_rt_node->Tdel;
 		iswitch = unbuffered_subtree_rt_root->parent_switch;
 		Tdel_start += device_ctx.rr_switch_inf[iswitch].R * unbuffered_subtree_rt_root->C_downstream;
@@ -284,7 +284,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	}
 
 	sink_rt_node = alloc_rt_node();
-	sink_rt_node->u.child_list = NULL;
+	sink_rt_node->u.child_list = nullptr;
 	sink_rt_node->inode = inode;
 	rr_node_to_rt_node[inode] = sink_rt_node;
 
@@ -314,7 +314,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
             linked_rt_edge = alloc_linked_rt_edge();
             linked_rt_edge->child = downstream_rt_node;
             linked_rt_edge->iswitch = iswitch;
-            linked_rt_edge->next = NULL;
+            linked_rt_edge->next = nullptr;
 
             rt_node = alloc_rt_node();
             downstream_rt_node->parent_node = rt_node;
@@ -502,7 +502,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	parent_rt_node = rt_node->parent_node;
 	iswitch = rt_node->parent_switch;
 
-	while (parent_rt_node != NULL && device_ctx.rr_switch_inf[iswitch].buffered == false) {
+	while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered == false) {
 		rt_node = parent_rt_node;
 		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;
@@ -541,7 +541,7 @@ void load_route_tree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 
 	linked_rt_edge = subtree_rt_root->u.child_list;
 
-	while (linked_rt_edge != NULL) {
+	while (linked_rt_edge != nullptr) {
 		iswitch = linked_rt_edge->iswitch;
 		child_node = linked_rt_edge->child;
 
@@ -617,7 +617,7 @@ void free_route_tree(t_rt_node * rt_node) {
 
 	rt_edge = rt_node->u.child_list;
 
-	while (rt_edge != NULL) { /* For all children */
+	while (rt_edge != nullptr) { /* For all children */
 		t_rt_node* child_node = rt_edge->child;
         free_route_tree(child_node);
 		next_edge = rt_edge->next;
@@ -1315,8 +1315,8 @@ init_route_tree_to_source_no_net(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
 
     rt_root = alloc_rt_node();
-    rt_root->u.child_list = NULL;
-    rt_root->parent_node = NULL;
+    rt_root->u.child_list = nullptr;
+    rt_root->parent_node = nullptr;
     rt_root->parent_switch = OPEN;
     rt_root->re_expand = true;
     rt_root->inode = inode;

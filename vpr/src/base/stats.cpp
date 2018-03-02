@@ -280,13 +280,13 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 			continue;
 
 		tptr = route_ctx.trace_head[net_id];
-		while (tptr != NULL) {
+		while (tptr != nullptr) {
 			inode = tptr->index;
 			rr_type = device_ctx.rr_nodes[inode].type();
 
 			if (rr_type == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
-				if (tptr == NULL)
+				if (tptr == nullptr)
 					break;
 			}
 
@@ -325,7 +325,7 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 	segments = 0;
 
 	prevptr = route_ctx.trace_head[inet]; /* Should always be SOURCE. */
-	if (prevptr == NULL) {
+	if (prevptr == nullptr) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"in get_num_bends_and_length: net #%lu has no traceback.\n", size_t(inet));
 	}
@@ -334,13 +334,13 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 
 	tptr = prevptr->next;
 
-	while (tptr != NULL) {
+	while (tptr != nullptr) {
 		inode = tptr->index;
 		curr_type = device_ctx.rr_nodes[inode].type();
 
 		if (curr_type == SINK) { /* Starting a new segment */
 			tptr = tptr->next; /* Link to existing path - don't add to len. */
-			if (tptr == NULL)
+			if (tptr == nullptr)
 				break;
 
 			curr_type = device_ctx.rr_nodes[tptr->index].type();
@@ -467,7 +467,7 @@ void print_lambda(void) {
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		type = cluster_ctx.clb_nlist.block_type(blk_id);
-		VTR_ASSERT(type != NULL);
+		VTR_ASSERT(type != nullptr);
 		if (!is_io_type(type)) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
