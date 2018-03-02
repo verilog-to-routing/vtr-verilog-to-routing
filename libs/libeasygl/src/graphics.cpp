@@ -330,7 +330,7 @@ typedef struct {
     int height;
     int xleft;
     int ytop;
-    void(*fcn) (void(*drawscreen) (void));
+    void(*fcn) (void(*drawscreen) ());
 #ifdef X11
     Window win;
     XftDraw* draw;
@@ -511,25 +511,25 @@ static bool use_cairo();
 #endif
 
 static void reset_common_state();
-static void build_default_menu(void);
+static void build_default_menu();
 
 /* Function declarations for button responses */
-static void translate_up(void (*drawscreen) (void));
-static void translate_left(void (*drawscreen) (void));
-static void translate_right(void (*drawscreen) (void));
-static void translate_down(void (*drawscreen) (void));
-static void panning_execute(int x, int y, void (*drawscreen) (void));
+static void translate_up(void (*drawscreen) ());
+static void translate_left(void (*drawscreen) ());
+static void translate_right(void (*drawscreen) ());
+static void translate_down(void (*drawscreen) ());
+static void panning_execute(int x, int y, void (*drawscreen) ());
 static void panning_on(int start_x, int start_y);
-static void panning_off(void);
-static void zoom_in(void (*drawscreen) (void));
-static void zoom_out(void (*drawscreen) (void));
-static void handle_zoom_in(float x, float y, void (*drawscreen) (void));
-static void handle_zoom_out(float x, float y, void (*drawscreen) (void));
-static void zoom_fit(void (*drawscreen) (void));
-static void adjustwin(void (*drawscreen) (void));
-static void postscript(void (*drawscreen) (void));
-static void proceed(void (*drawscreen) (void));
-static void quit(void (*drawscreen) (void));
+static void panning_off();
+static void zoom_in(void (*drawscreen) ());
+static void zoom_out(void (*drawscreen) ());
+static void handle_zoom_in(float x, float y, void (*drawscreen) ());
+static void handle_zoom_out(float x, float y, void (*drawscreen) ());
+static void zoom_fit(void (*drawscreen) ());
+static void adjustwin(void (*drawscreen) ());
+static void postscript(void (*drawscreen) ());
+static void proceed(void (*drawscreen) ());
+static void quit(void (*drawscreen) ());
 static void map_button(int bnum);
 static void unmap_button(int bnum);
 
@@ -562,23 +562,23 @@ static void x11_event_loop(void (*act_on_mousebutton)
     (float x, float y, t_event_buttonPressed button_info),
     void (*act_on_mousemove)(float x, float y),
     void (*act_on_keypress)(char key_pressed, int keysym),
-    void (*drawscreen) (void));
+    void (*drawscreen) ());
 
 static bool x11_drop_redundant_panning (const XEvent& report, 
                unsigned int& last_skipped_button_press_button);
-static void x11_redraw_all_if_needed (void (*drawscreen) (void));
+static void x11_redraw_all_if_needed (void (*drawscreen) ());
 static Bool x11_test_if_exposed(Display *disp, XEvent *event_ptr,
     XPointer dummy);
-static void x11_build_textarea(void);
+static void x11_build_textarea();
 static void x11_drawbut(int bnum);
 static int x11_which_button(Window win);
 
 static void x11_turn_on_off(int pressed);
-static void x11_drawmenu(void);
+static void x11_drawmenu();
 static void menutext(XftDraw* draw, int xc, int yc, const char *text);
 
-static void x11_handle_expose(const XEvent& report, void (*drawscreen) (void));
-static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen) (void));
+static void x11_handle_expose(const XEvent& report, void (*drawscreen) ());
+static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen) ());
 static void x11_handle_button_info(t_event_buttonPressed *button_info,
     int buttonNumber, int Xbutton_state);
 
@@ -1250,7 +1250,7 @@ static void unmap_button(int bnum) {
  * The text and button function are set according to button_text and        *
  * button_func, respectively.                                               */
 void create_button(const char *prev_button_text, const char *button_text,
-    void (*button_func) (void (*drawscreen) (void))) {
+    void (*button_func) (void (*drawscreen) ())) {
     int i, bnum, space, bheight;
     t_button_type button_type = BUTTON_TEXT;
 
@@ -1423,7 +1423,7 @@ static void reset_common_state() {
 
 
 static void
-update_transform(void) {
+update_transform() {
     /* Set up the factors for transforming from the user world to X/Win32 screen
      * (pixel) coordinates.                                                         */
 
@@ -1460,7 +1460,7 @@ update_transform(void) {
 
 
 static void
-update_ps_transform(void) {
+update_ps_transform() {
 
     /* Postscript coordinates start at (0,0) for the lower left hand corner *
      * of the page and increase upwards and to the right.  For 8.5 x 11     *
@@ -1540,7 +1540,7 @@ void
 event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed button_info),
     void (*act_on_mousemove)(float x, float y),
     void (*act_on_keypress)(char key_pressed, int keysym),
-    void (*drawscreen) (void)) {
+    void (*drawscreen) ()) {
 
     if (drawscreen == nullptr) {
         cerr << "Error in event_loop: drawscreen is NULL, but it is a mandatory callback.\n";
@@ -1612,7 +1612,7 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
 }
 
 void
-clearscreen(void) {
+clearscreen() {
     t_color savecolor;
     if (gl_state.disp_type == SCREEN) {
 #ifdef X11
@@ -2489,7 +2489,7 @@ set_coordinate_system(t_coordinate_system coord)
 }
 
 void
-flushinput(void) {
+flushinput() {
     if (gl_state.disp_type != SCREEN)
         return;
 #ifdef X11
@@ -2526,7 +2526,7 @@ void set_visible_world(const t_bound_box& bounds) {
 
 /* Draw the current message in the text area at the screen bottom. */
 void
-draw_message(void) {
+draw_message() {
     int savefontsize;
     t_color savecolor;
     float ylow;
@@ -2591,7 +2591,7 @@ update_message(const string& msg) {
  * of graphics area.
  */
 static void
-zoom_in(void (*drawscreen) (void)) {
+zoom_in(void (*drawscreen) ()) {
     float xcen, ycen;
 
     xcen = (trans_coord.xright + trans_coord.xleft) / 2;
@@ -2604,7 +2604,7 @@ zoom_in(void (*drawscreen) (void)) {
  * of graphics area.
  */
 static void
-zoom_out(void (*drawscreen) (void)) {
+zoom_out(void (*drawscreen) ()) {
     float xcen, ycen;
 
     xcen = (trans_coord.xright + trans_coord.xleft) / 2;
@@ -2615,7 +2615,7 @@ zoom_out(void (*drawscreen) (void)) {
 
 /* Zooms in by a factor of ZOOM_FACTOR */
 static void
-handle_zoom_in(float x, float y, void (*drawscreen) (void)) {
+handle_zoom_in(float x, float y, void (*drawscreen) ()) {
     //make xright - xleft = 0.6 of the original distance 
     trans_coord.xleft = x - (x - trans_coord.xleft) / ZOOM_FACTOR;
     trans_coord.xright = x + (trans_coord.xright - x) / ZOOM_FACTOR;
@@ -2631,7 +2631,7 @@ handle_zoom_in(float x, float y, void (*drawscreen) (void)) {
 
 /* Zooms out by a factor of ZOOM_FACTOR */
 static void
-handle_zoom_out(float x, float y, void (*drawscreen) (void)) {
+handle_zoom_out(float x, float y, void (*drawscreen) ()) {
     //restore the original distances before previous zoom in
     trans_coord.xleft = x - (x - trans_coord.xleft)* ZOOM_FACTOR;
     trans_coord.xright = x + (trans_coord.xright - x)* ZOOM_FACTOR;
@@ -2647,7 +2647,7 @@ handle_zoom_out(float x, float y, void (*drawscreen) (void)) {
 /* Sets the view back to the initial view set by set_visible_world (i.e. a full     *
  * view) of all the graphics.                                                */
 static void
-zoom_fit(void (*drawscreen) (void)) {
+zoom_fit(void (*drawscreen) ()) {
     trans_coord.xleft = trans_coord.init_xleft;
     trans_coord.xright = trans_coord.init_xright;
     trans_coord.ytop = trans_coord.init_ytop;
@@ -2659,7 +2659,7 @@ zoom_fit(void (*drawscreen) (void)) {
 
 /* Moves view 1/2 screen up. */
 static void
-translate_up(void (*drawscreen) (void)) {
+translate_up(void (*drawscreen) ()) {
     float ystep;
 
     ystep = (trans_coord.ybot - trans_coord.ytop) / 2;
@@ -2671,7 +2671,7 @@ translate_up(void (*drawscreen) (void)) {
 
 /* Moves view 1/2 screen down. */
 static void
-translate_down(void (*drawscreen) (void)) {
+translate_down(void (*drawscreen) ()) {
     float ystep;
 
     ystep = (trans_coord.ybot - trans_coord.ytop) / 2;
@@ -2683,7 +2683,7 @@ translate_down(void (*drawscreen) (void)) {
 
 /* Moves view 1/2 screen left. */
 static void
-translate_left(void (*drawscreen) (void)) {
+translate_left(void (*drawscreen) ()) {
 
     float xstep;
 
@@ -2696,7 +2696,7 @@ translate_left(void (*drawscreen) (void)) {
 
 /* Moves view 1/2 screen right. */
 static void
-translate_right(void (*drawscreen) (void)) {
+translate_right(void (*drawscreen) ()) {
     float xstep;
 
     xstep = (trans_coord.xright - trans_coord.xleft) / 2;
@@ -2710,7 +2710,7 @@ translate_right(void (*drawscreen) (void)) {
  * (or middle mouse button) 
  */
 static void
-panning_execute(int x, int y, void (*drawscreen) (void)) {
+panning_execute(int x, int y, void (*drawscreen) ()) {
     float x_change_world, y_change_world;
 
     x_change_world = xscrn_to_world(x) - xscrn_to_world(pan_state.previous_x);
@@ -2737,7 +2737,7 @@ panning_on(int start_x, int start_y) {
 
 /* Turn panning_enabled off */
 static void
-panning_off(void) {
+panning_off() {
     pan_state.panning_enabled = false;
 }
 
@@ -2747,7 +2747,7 @@ panning_off(void) {
 // the whole window area.
 
 static void
-update_win(int x[2], int y[2], void (*drawscreen)(void)) {
+update_win(int x[2], int y[2], void (*drawscreen)()) {
     float x1, x2, y1, y2;
 
     x[0] = min(x[0], trans_coord.top_width - MWIDTH); /* Can't go under menu */
@@ -2774,7 +2774,7 @@ update_win(int x[2], int y[2], void (*drawscreen)(void)) {
 /* The window button was pressed.  Let the user click on the two *
  * diagonally opposed corners, and zoom in on this area.         */
 static void
-adjustwin(void (*drawscreen) (void)) {
+adjustwin(void (*drawscreen) ()) {
 #ifdef X11	
 
     XEvent report;
@@ -2859,7 +2859,7 @@ adjustwin(void (*drawscreen) (void)) {
 }
 
 static void
-postscript(void (*drawscreen) (void)) {
+postscript(void (*drawscreen) ()) {
     /* Takes a snapshot of the screen and stores it in pic?.ps.  The *
      * first picture goes in pic1.ps, the second in pic2.ps, etc.    */
 
@@ -2900,13 +2900,13 @@ postscript(void (*drawscreen) (void)) {
 }
 
 static void
-proceed(void (*drawscreen) (void)) {
+proceed(void (*drawscreen) ()) {
     (void) drawscreen; // Suppress unused parameter warnings for Win32
     gl_state.ProceedPressed = true;
 }
 
 static void
-quit(void (*drawscreen) (void)) {
+quit(void (*drawscreen) ()) {
     (void) drawscreen; // Suppress unused parameter warnings for Win32
     close_graphics();
     exit(0);
@@ -2915,7 +2915,7 @@ quit(void (*drawscreen) (void)) {
 /* Release all my drawing structures (through the X server) and *
  * close down the connection.                                   */
 void
-close_graphics(void) {
+close_graphics() {
     if (!gl_state.initialized)
         return;
 
@@ -3113,7 +3113,7 @@ int init_postscript(const char *fname) {
 }
 
 /* Properly ends postscript output and redirects output to screen. */
-void close_postscript(void) {
+void close_postscript() {
 
     fprintf(gl_state.ps, "showpage\n");
     fprintf(gl_state.ps, "\n%%%%Trailer\n");
@@ -3137,7 +3137,7 @@ void close_postscript(void) {
 
 /* Sets up the default menu buttons on the right hand side of the window. */
 static void
-build_default_menu(void) {
+build_default_menu() {
     int i, xcen, x1, y1, bwid, bheight, space;
     const int NUM_ARROW_BUTTONS = 4, NUM_STANDARD_BUTTONS = 12, SEPARATOR_BUTTON_INDEX = 8;
 
@@ -3688,7 +3688,7 @@ static void
 x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed button_info),
     void (*act_on_mousemove)(float x, float y),
     void (*act_on_keypress)(char key_pressed, int keysym),
-    void (*drawscreen) (void)) {
+    void (*drawscreen) ()) {
     XEvent report;
     unsigned int last_skipped_button_press_button = -1;
     int bnum;
@@ -3928,7 +3928,7 @@ static bool x11_drop_redundant_panning (const XEvent& report,
 
 
 /* Creates a small window at the top of the graphics area for text messages */
-static void x11_build_textarea(void) {
+static void x11_build_textarea() {
     XSetWindowAttributes menu_attributes;
     unsigned long valuemask;
 
@@ -4138,7 +4138,7 @@ static void x11_turn_on_off(int pressed) {
     }
 }
 
-static void x11_drawmenu(void) {
+static void x11_drawmenu() {
     int i;
 
     XClearWindow(x11_state.display, x11_state.menu);
@@ -4158,7 +4158,7 @@ static void x11_drawmenu(void) {
     }
 }
 
-static void x11_handle_expose(const XEvent& report, void (*drawscreen) (void)) {
+static void x11_handle_expose(const XEvent& report, void (*drawscreen) ()) {
 #ifdef VERBOSE
     printf("Got an expose event.\n");
     printf("Count is: %d.\n", report.xexpose.count);
@@ -4173,7 +4173,7 @@ static void x11_handle_expose(const XEvent& report, void (*drawscreen) (void)) {
 }
 
 
-static void x11_redraw_all_if_needed (void (*drawscreen) (void)) {
+static void x11_redraw_all_if_needed (void (*drawscreen) ()) {
     // Only redraw if this is (the last Expose or ConfigureNotify 
     // in a series (we sometimes get a lot for a window expose or size
     // change, and some have a count of 0). We redraw everything for all 
@@ -4221,7 +4221,7 @@ static void x11_redraw_all_if_needed (void (*drawscreen) (void)) {
 }
 
 
-static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen) (void)) {
+static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen) ()) {
     trans_coord.top_width = report.xconfigure.width;
     trans_coord.top_height = report.xconfigure.height;
     update_transform();

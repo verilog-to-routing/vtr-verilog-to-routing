@@ -49,7 +49,7 @@
 void event_loop(void (*act_on_mousebutton) (float x, float y, t_event_buttonPressed button_info),
         void (*act_on_mousemove) (float x, float y),
         void (*act_on_keypress) (char key_pressed, int keysym),
-        void (*drawscreen) (void));
+        void (*drawscreen) ());
 
 /* Opens up the graphics; the window will have the UTF-8 string window_name
  * in its title bar and have the specified background colour.
@@ -92,7 +92,7 @@ t_bound_box get_visible_screen();
 
 
 /* Closes the graphics windows, frees all its memory and so on. */
-void close_graphics(void);
+void close_graphics();
 
 
 /************************* USER INTERACTION FUNCTIONS ******************/
@@ -110,7 +110,7 @@ void update_message(const std::string& msg);
  * as passed into the event loop.
  */
 void create_button(const char *prev_button_text, const char *button_text,
-        void (*button_func) (void (*drawscreen) (void)));
+        void (*button_func) (void (*drawscreen) ()));
 
 /* Destroys the button with the given text; i.e. removes it from
  * the display.
@@ -142,7 +142,7 @@ void enable_or_disable_button(int ibutton, bool enabled);
 /* Clears the screen. Should normally be the first call in your 
  * screen redrawing function.
  */
-void clearscreen(void);
+void clearscreen();
 
 /**
  * Set the current draw colour to the supplied index colour from color_types,
@@ -163,7 +163,7 @@ void setcolor(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a = 2
 void setcolor_by_name(std::string cname);
 
 /* Get the current color */
-t_color getcolor(void);
+t_color getcolor();
 
 /* Sets the line style to the specified line_style, SOLID or DASHED
  * capstyle can be BUTT or ROUND, default is BUTT
@@ -325,7 +325,7 @@ void set_coordinate_system(t_coordinate_system coord);
 /* Empties event queue. Can be useful with non-interactive graphics (animation)
  * to make sure things display.
  */
-void flushinput(void);
+void flushinput();
 
 /* DRAW_NORMAL is the default mode (overwrite, also known as copy_pen).
  * Can use DRAW_XOR for fast rubber-banding.
@@ -341,7 +341,7 @@ void change_button_text(const char *button_text, const char *new_button_text);
  * useful if using non-interactive graphics and you want to redraw  
  * yourself because of an expose.
  */
-void draw_message(void);
+void draw_message();
 
 /**
  * @brief Changes what all the drawX functions draws to.
@@ -453,7 +453,7 @@ t_bound_box scrn_to_world(const t_bound_box& box);
 int init_postscript(const char *fname); /* Returns 1 if successful */
 
 /* Closes file and directs output to screen again.       */
-void close_postscript(void);
+void close_postscript();
 
 /******************** DEBUGGING FUNCTIONS **********************************/
 
