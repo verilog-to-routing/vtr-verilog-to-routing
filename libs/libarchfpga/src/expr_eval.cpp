@@ -267,7 +267,7 @@ static void formula_to_rpn( const char* formula, const t_formula_data &mydata,
 	Formula_Object fobj;		 	/* for parsing formula objects */
 
 	int ichar = 0;
-	const char *ch = NULL;
+	const char *ch = nullptr;
 	/* go through formula and build rpn_output along with op_stack until \0 character is hit */
 	while(1) {
 		ch = &formula[ichar];

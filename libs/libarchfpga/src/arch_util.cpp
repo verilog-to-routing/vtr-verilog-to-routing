@@ -23,19 +23,19 @@ void free_arch(t_arch* arch) {
     }
 
     for (int i = 0; i < arch->num_switches; ++i) {
-        if (arch->Switches->name != NULL) {
+        if (arch->Switches->name != nullptr) {
             vtr::free(arch->Switches[i].name);
         }
     }
     delete[] arch->Switches;
-    arch->Switches = NULL;
+    arch->Switches = nullptr;
     for (int i = 0; i < arch->num_segments; ++i) {
         vtr::free(arch->Segments[i].cb);
-        arch->Segments[i].cb = NULL;
+        arch->Segments[i].cb = nullptr;
         vtr::free(arch->Segments[i].sb);
-        arch->Segments[i].sb = NULL;
+        arch->Segments[i].sb = nullptr;
         vtr::free(arch->Segments[i].name);
-        arch->Segments[i].name = NULL;
+        arch->Segments[i].name = nullptr;
     }
     vtr::free(arch->Segments);
     t_model *model = arch->models;
@@ -367,7 +367,7 @@ t_port * findPortByName(const char * name, t_pb_type * pb_type,
 	bracket_pos = strcspn(name, "[");
 
 	/* Find port by name */
-	port = NULL;
+	port = nullptr;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		char * compare_to = pb_type->ports[i].name;
 
@@ -378,7 +378,7 @@ t_port * findPortByName(const char * name, t_pb_type * pb_type,
 		}
 	}
 	if (i >= pb_type->num_ports) {
-		return NULL;
+		return nullptr;
 	}
 
 	/* Get indices */
@@ -416,12 +416,12 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
 	type->capacity = 0;
 	type->num_drivers = 0;
 	type->num_receivers = 0;
-	type->pinloc = NULL;
+	type->pinloc = nullptr;
 	type->num_class = 0;
-	type->class_inf = NULL;
-	type->pin_class = NULL;
-	type->is_global_pin = NULL;
-	type->pb_type = NULL;
+	type->class_inf = nullptr;
+	type->pin_class = nullptr;
+	type->is_global_pin = nullptr;
+	type->pb_type = nullptr;
 	type->area = UNDEFINED;
     type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
     type->switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type->width), size_t(type->height)}}, DEFAULT_SWITCH);
@@ -432,14 +432,14 @@ void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
 	int i, j;
 	char *dot;
 
-	VTR_ASSERT(pb_type->blif_model != NULL);
+	VTR_ASSERT(pb_type->blif_model != nullptr);
 
 	copy->name = vtr::strdup(new_name);
 	copy->blif_model = vtr::strdup(pb_type->blif_model);
 	copy->class_type = pb_type->class_type;
 	copy->depth = pb_type->depth;
 	copy->model = pb_type->model;
-	copy->modes = NULL;
+	copy->modes = nullptr;
 	copy->num_modes = 0;
 	copy->num_clock_pins = pb_type->num_clock_pins;
 	copy->num_input_pins = pb_type->num_input_pins;
@@ -490,7 +490,7 @@ void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
 		copy->annotations[i].input_pins[0] = '\0';
 		strcat(copy->annotations[i].input_pins, new_name);
 		strcat(copy->annotations[i].input_pins, dot);
-		if (pb_type->annotations[i].output_pins != NULL) {
+		if (pb_type->annotations[i].output_pins != nullptr) {
 			dot = strstr(pb_type->annotations[i].output_pins, ".");
 			copy->annotations[i].output_pins = (char*) vtr::malloc(
 					sizeof(char) * (strlen(new_name) + strlen(dot) + 1));
@@ -498,7 +498,7 @@ void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
 			strcat(copy->annotations[i].output_pins, new_name);
 			strcat(copy->annotations[i].output_pins, dot);
 		} else {
-			copy->annotations[i].output_pins = NULL;
+			copy->annotations[i].output_pins = nullptr;
 		}
 		copy->annotations[i].line_num = pb_type->annotations[i].line_num;
 		copy->annotations[i].format = pb_type->annotations[i].format;
@@ -648,7 +648,7 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 	}
 	lut_pb_type->num_annotations = 0;
 	free(lut_pb_type->annotations);
-	lut_pb_type->annotations = NULL;
+	lut_pb_type->annotations = nullptr;
 	lut_pb_type->modes[1].pb_type_children[0].depth = lut_pb_type->depth + 1;
 	lut_pb_type->modes[1].pb_type_children[0].parent_mode =
 			&lut_pb_type->modes[1];
@@ -710,8 +710,8 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
 	free(default_name);
 
 	free(lut_pb_type->blif_model);
-	lut_pb_type->blif_model = NULL;
-	lut_pb_type->model = NULL;
+	lut_pb_type->blif_model = nullptr;
+	lut_pb_type->model = nullptr;
 }
 
 /* populate special memory class */
@@ -734,7 +734,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 			sizeof(t_mode_power));
 	num_pb = OPEN;
 	for (i = 0; i < mem_pb_type->num_ports; i++) {
-		if (mem_pb_type->ports[i].port_class != NULL
+		if (mem_pb_type->ports[i].port_class != nullptr
 				&& strstr(mem_pb_type->ports[i].port_class, "data")
 						== mem_pb_type->ports[i].port_class) {
 			if (num_pb == OPEN) {
@@ -760,8 +760,8 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 	mem_pb_type->num_modes = 1;
 
 	free(mem_pb_type->blif_model);
-	mem_pb_type->blif_model = NULL;
-	mem_pb_type->model = NULL;
+	mem_pb_type->blif_model = nullptr;
+	mem_pb_type->model = nullptr;
 
 	mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
 	mem_pb_type->modes[0].interconnect = (t_interconnect*) vtr::calloc(
@@ -788,7 +788,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 			output_name = mem_pb_type->name;
 		}
 
-		if (mem_pb_type->ports[i].port_class != NULL
+		if (mem_pb_type->ports[i].port_class != nullptr
 				&& strstr(mem_pb_type->ports[i].port_class, "data")
 						== mem_pb_type->ports[i].port_class) {
 
@@ -942,13 +942,13 @@ void CreateModelLibrary(t_arch *arch) {
     //INPAD
 	model_library[0].name = vtr::strdup(MODEL_INPUT);
 	model_library[0].index = 0;
-	model_library[0].inputs = NULL;
-	model_library[0].instances = NULL;
+	model_library[0].inputs = nullptr;
+	model_library[0].instances = nullptr;
 	model_library[0].next = &model_library[1];
 	model_library[0].outputs = new t_model_ports[1];
 	model_library[0].outputs->dir = OUT_PORT;
 	model_library[0].outputs->name = vtr::strdup("inpad");
-	model_library[0].outputs->next = NULL;
+	model_library[0].outputs->next = nullptr;
 	model_library[0].outputs->size = 1;
 	model_library[0].outputs->min_size = 1;
 	model_library[0].outputs->index = 0;
@@ -960,14 +960,14 @@ void CreateModelLibrary(t_arch *arch) {
 	model_library[1].inputs = new t_model_ports[1];
 	model_library[1].inputs->dir = IN_PORT;
 	model_library[1].inputs->name = vtr::strdup("outpad");
-	model_library[1].inputs->next = NULL;
+	model_library[1].inputs->next = nullptr;
 	model_library[1].inputs->size = 1;
 	model_library[1].inputs->min_size = 1;
 	model_library[1].inputs->index = 0;
 	model_library[1].inputs->is_clock = false;
-	model_library[1].instances = NULL;
+	model_library[1].instances = nullptr;
 	model_library[1].next = &model_library[2];
-	model_library[1].outputs = NULL;
+	model_library[1].outputs = nullptr;
 
     //LATCH
 	model_library[2].name = vtr::strdup(MODEL_LATCH);
@@ -985,19 +985,19 @@ void CreateModelLibrary(t_arch *arch) {
 
 	model_library[2].inputs[1].dir = IN_PORT;
 	model_library[2].inputs[1].name = vtr::strdup("clk");
-	model_library[2].inputs[1].next = NULL;
+	model_library[2].inputs[1].next = nullptr;
 	model_library[2].inputs[1].size = 1;
 	model_library[2].inputs[1].min_size = 1;
 	model_library[2].inputs[1].index = 0;
 	model_library[2].inputs[1].is_clock = true;
 
-	model_library[2].instances = NULL;
+	model_library[2].instances = nullptr;
 	model_library[2].next = &model_library[3];
 
 	model_library[2].outputs = new t_model_ports[1];
 	model_library[2].outputs[0].dir = OUT_PORT;
 	model_library[2].outputs[0].name = vtr::strdup("Q");
-	model_library[2].outputs[0].next = NULL;
+	model_library[2].outputs[0].next = nullptr;
 	model_library[2].outputs[0].size = 1;
 	model_library[2].outputs[0].min_size = 1;
 	model_library[2].outputs[0].index = 0;
@@ -1011,20 +1011,20 @@ void CreateModelLibrary(t_arch *arch) {
 	model_library[3].inputs = new t_model_ports[1];
 	model_library[3].inputs[0].dir = IN_PORT;
 	model_library[3].inputs[0].name = vtr::strdup("in");
-	model_library[3].inputs[0].next = NULL;
+	model_library[3].inputs[0].next = nullptr;
 	model_library[3].inputs[0].size = 1;
 	model_library[3].inputs[0].min_size = 1;
 	model_library[3].inputs[0].index = 0;
 	model_library[3].inputs[0].is_clock = false;
 	model_library[3].inputs[0].combinational_sink_ports = {"out"};
 
-	model_library[3].instances = NULL;
-	model_library[3].next = NULL;
+	model_library[3].instances = nullptr;
+	model_library[3].next = nullptr;
 
 	model_library[3].outputs = new t_model_ports[1];
 	model_library[3].outputs[0].dir = OUT_PORT;
 	model_library[3].outputs[0].name = vtr::strdup("out");
-	model_library[3].outputs[0].next = NULL;
+	model_library[3].outputs[0].next = nullptr;
 	model_library[3].outputs[0].size = 1;
 	model_library[3].outputs[0].min_size = 1;
 	model_library[3].outputs[0].index = 0;
@@ -1037,7 +1037,7 @@ void SyncModelsPbTypes(t_arch *arch,
 		const t_type_descriptor * Types, const int NumTypes) {
 	int i;
 	for (i = 0; i < NumTypes; i++) {
-		if (Types[i].pb_type != NULL) {
+		if (Types[i].pb_type != nullptr) {
 			SyncModelsPbTypes_rec(arch, Types[i].pb_type);
 		}
 	}
@@ -1053,7 +1053,7 @@ void SyncModelsPbTypes_rec(t_arch *arch,
 
 	bool found;
 
-	if (pb_type->blif_model != NULL) {
+	if (pb_type->blif_model != nullptr) {
 
 		/* get actual name of subckt */
         blif_model_name = pb_type->blif_model;
@@ -1076,7 +1076,7 @@ void SyncModelsPbTypes_rec(t_arch *arch,
 
 		/* Determine the logical model to use */
 		found = false;
-		model_match_prim = NULL;
+		model_match_prim = nullptr;
 		while (cur_model && !found) {
 			/* blif model always starts with .subckt so need to skip first 8 characters */
 			if (strcmp(blif_model_name, cur_model->name) == 0) {
@@ -1168,7 +1168,7 @@ void UpdateAndCheckModels(t_arch *arch) {
 	int i, j;
 	cur_model = arch->models;
 	while (cur_model) {
-		if (cur_model->pb_types == NULL) {
+		if (cur_model->pb_types == nullptr) {
 			archfpga_throw(get_arch_file_name(), 0,
 					"No pb_type found for model %s\n", cur_model->name);
 		}

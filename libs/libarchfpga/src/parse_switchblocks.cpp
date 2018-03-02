@@ -269,10 +269,10 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 	for (int ifunc = 0; ifunc < num_funcs; ifunc++){
 
 		/* get function type */
-		func_type = get_attribute(SubElem, "type", loc_data).as_string(NULL);
+		func_type = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
 
 		/* get function formula */
-		func_formula = get_attribute(SubElem, "formula", loc_data).as_string(NULL);
+		func_formula = get_attribute(SubElem, "formula", loc_data).as_string(nullptr);
 
 		/* go through all the possible cases of func_type */
 		if (0 == strcmp(func_type, "lt")){
@@ -308,7 +308,7 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 		/* Here we load the specified switch function(s) */
 		func_ptr->push_back( string(func_formula) );
  
-		func_ptr = NULL;
+		func_ptr = nullptr;
 		/* get the next switchblock function */
 		SubElem = SubElem.next_sibling(SubElem.name());
 	}
@@ -448,7 +448,7 @@ int get_sb_formula_raw_result( const char* formula, const t_formula_data &mydata
 	int result = -1;
 
 	/* check formula */
-	if (NULL == formula){
+	if (nullptr == formula){
 		archfpga_throw( __FILE__, __LINE__, "in get_sb_formula_result: SB formula pointer NULL\n");
 	} else if ('\0' == formula[0]){
 		archfpga_throw( __FILE__, __LINE__, "in get_sb_formula_result: SB formula empty\n");

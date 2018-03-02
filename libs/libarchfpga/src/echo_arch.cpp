@@ -27,7 +27,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 	t_linked_vptr *cur_vptr;
 
 	Echo = vtr::fopen(EchoFile, "w");
-	cur_model = NULL;
+	cur_model = nullptr;
 
 	//Print all layout device switch/segment list info first
 	PrintArchInfo(Echo, arch);
@@ -60,7 +60,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 			}
 			cur_vptr = cur_model->pb_types;
 			i = 0;
-			while (cur_vptr != NULL) {
+			while (cur_vptr != nullptr) {
 				fprintf(Echo, "\tpb_type %d: \"%s\"\n", i,
 						((t_pb_type*) cur_vptr->data_vptr)->name);
 				cur_vptr = cur_vptr->next;
