@@ -122,8 +122,8 @@ private:
             return sizet_hasher(v.first) ^ int_hasher(v.second);
         }
     };
-    FontCache(const FontCache&);
-    FontCache& operator=(const FontCache&);
+    FontCache(const FontCache&) = delete;
+    FontCache& operator=(const FontCache&) = delete;
 
     static void close_font(font_ptr font);
     static font_ptr do_font_loading(int pointsize, int degrees);
