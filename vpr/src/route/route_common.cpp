@@ -957,7 +957,7 @@ void free_route_structs() {
         t_heap* curr = heap_free_head;
         while(curr) {
             t_heap* tmp = curr;
-            curr = curr->u.next;
+            curr = curr->next;
 
             vtr::chunk_delete(tmp, &heap_ch);
         }
@@ -1390,12 +1390,12 @@ alloc_heap_data() {
 
     //Extract the head
 	t_heap* temp_ptr = heap_free_head;
-	heap_free_head = heap_free_head->u.next;
+	heap_free_head = heap_free_head->next;
 
 	num_heap_allocated++;
 
     //Reset
-    temp_ptr->u.next = nullptr;
+    temp_ptr->next = nullptr;
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
@@ -1405,7 +1405,7 @@ alloc_heap_data() {
 }
 
 void free_heap_data(t_heap *hptr) {
-	hptr->u.next = heap_free_head;
+	hptr->next = heap_free_head;
 	heap_free_head = hptr;
 	num_heap_allocated--;
 }

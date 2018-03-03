@@ -32,10 +32,7 @@ struct t_heap_prev {
  *             resistance to ground from this node, including the           *
  *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
 struct t_heap {
-    struct U {
-		t_heap *next = nullptr;
-	};
-    U u;
+    t_heap *next = nullptr;
 
 	float cost = 0.;
 	float backward_path_cost = 0.;
