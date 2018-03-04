@@ -345,16 +345,6 @@ if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
 	copy( $abc_rc_path, $temp_dir );
 }
 
-# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
-# my $odin2_restore_blackboxed_latches_from_blif_file_py_path;
-# if (    $stage_idx_odin >= $starting_stage
-# 	and $stage_idx_odin <= $ending_stage )
-# {
-# 	$odin2_restore_blackboxed_latches_from_blif_file_py_path = exe_for_platform("$vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py");
-# 	( -e $odin2_path )
-# 	  or die "Cannot find ODIN_II executable ($odin2_path)";
-# }
-
 my $ace_path;
 if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $do_power) {
 	$ace_path = "$vtr_flow_path/../ace2/ace";
@@ -401,6 +391,9 @@ my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
 my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
+
+my $addMissingLatchInfoScript_path = "$vtr_flow_path/../ODIN_II/SRC/scripts/restore_multi_clock_latch_information.pl";
+
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
 my $ace_output_act_name = "$benchmark_name" . ".act";
@@ -434,6 +427,7 @@ my $q         = "not_run";
 ################################## ODIN #########################################
 #################################################################################
 
+# TODO: AG: Remove.
 $keep_intermediate_files = 1;
 
 if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
@@ -452,13 +446,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 
 	if ( !$error_code ) {
 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-			"-c", $odin_config_file_name, "--black_box_latches");
-
-		print "\n\nDEBUG: run_vtr_flow.pl: odin: $q\n";
-		print "DEBUG: run_vtr_flow.pl: odin: $odin_output_file_path";
-
-		# print "\n\nDEBUG: run_vtr_flow.pl: Exiting Early After ODIN, to check Blif File.\n\n";
-		# exit -1;
+			"-c", $odin_config_file_name);
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
@@ -481,7 +469,16 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
-    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; strash; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
+    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; time; strash; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; if -K $lut_size; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
+	# Strash:
+	# We had to add the strash command to near the beginning because the first scleanup command would fail with “Only works for structurally hashed networks”.
+	# From ABC’s Documentation (https://people.eecs.berkeley.edu/~alanmi/abc/abc.htm):
+	# strash – Transforms the current network into an AIG by one-level structural hashing. The resulting AIG is a logic network composed of two-input AND gates and inverters represented as complemented attributes on the edges. Structural hashing is a purely combinational transformation, which does not modify the number and positions of latches.
+
+	# if –K #:
+	# We had to move the if –K <#-LUT> command to the end as the new ABC doesn’t persist that you want it for packing with #-LUTs (e.g. 6-LUTs). This caused ABC to believe you wanted everything as only two-input and greatly increased the number of logic blocks (CLB’s, blocks, nets, etc.). So we have to tell it at the end before we ask for the output and It will give us what we want.
+	# From ABC’s Documentation (https://people.eecs.berkeley.edu/~alanmi/abc/abc.htm):
+	# if – An all-new integrated FPGA mapper based on the notion of priority cuts. Some of the underlying ideas used in this mapper are described in the recent technical report. The command line switches are similar to those of command fpga.
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
     
@@ -497,21 +494,12 @@ if (    $starting_stage <= $stage_idx_abc
             $abc_commands);
     }
 
-	print "\n\nDEBUG: run_vtr_flow.pl: abc: $q\n";
-	print "DEBUG: run_vtr_flow.pl: abc: $abc_output_file_path\n\n";
-
 	if ( -e $abc_output_file_path and $q eq "success") {
 
-		# print "\n\nDEBUG: run_vtr_flow.pl: Exiting Early After ABC, before Python Script, to check Blif File.\n\n";
-		# exit -1;
+		# Restore Multi-Clock Latch Information from ODIN II That was Striped out by ABC.
+		system("$addMissingLatchInfoScript_path ${temp_dir}$odin_output_file_name ${temp_dir}$abc_output_file_name > ${temp_dir}LatchInfo");
+		system("mv ${temp_dir}LatchInfo ${temp_dir}$abc_output_file_name");
 
-		# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
-		system "$vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py $abc_output_file_path";
-
-		# print "\n\nDEBUG: run_vtr_flow.pl: Exiting Early After ABC and Python Script to check Blif File.\n\n";
-		# exit -1;
-
-		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
 			system "rm -f $odin_output_file_path";
 			system "rm -f ${temp_dir}*.rc";
@@ -522,30 +510,6 @@ if (    $starting_stage <= $stage_idx_abc
 		$error_code = 1;
 	}
 }
-
-#################################################################################
-################### Restore Black Boxed Latches From Blif File #######################
-#################################################################################
-# TODO: Implement as a stage proper for restore_blackboxed_latches_from_blif_file.py
-# if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
-# $vtr_flow_path/../ODIN_II/restore_blackboxed_latches_from_blif_file.py
-# 	system " $abc_output_file_name";
-# 	if ( !$error_code ) {
-# 		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-# 			"-c", $odin_config_file_name);
-# 		if ( -e $odin_output_file_path and $q eq "success") {
-# 			if ( !$keep_intermediate_files ) {
-# 				system "rm -f ${temp_dir}*.dot";
-# 				system "rm -f ${temp_dir}*.v";
-# 				system "rm -f $odin_config_file_path";
-# 			}
-# 		}
-# 		else {
-# 			print "failed: odin";
-# 			$error_code = 1;
-# 		}
-# 	}
-# }
 
 #################################################################################
 ################################## ACE ##########################################
@@ -888,12 +852,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			find(\&find_postsynthesis_netlist, ".");
 
             #Pick the netlist to verify against
-            #
             #We pick the 'earliest' netlist of the stages that where run
             my $reference_netlist = "";
-            if($starting_stage <= $stage_idx_odin) {
-                $reference_netlist = $odin_output_file_name;
-            } elsif ($starting_stage <= $stage_idx_abc) {
+            if($starting_stage <= $stage_idx_abc) {
                 $reference_netlist = $abc_output_file_name;
             } else {
                 #VPR's input
@@ -902,6 +863,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 
             #First try ABC's Unbounded Sequential Equivalence Check (DSEC)
+            # We’ve changed ABC’s formal verification command from the old deprecated SEC (Sequential Equivalence Check) to their new DSEC (Unbounded Sequential Equivalence Check):
+			# DSEC checks equivalence of two networks before and after sequential synthesis.
+			# Compare VPR's output to that of ODIN II/ABC’s.
 			$q = &system_with_timeout($abc_path, 
 							"abc.sec.out",
 							$timeout,
