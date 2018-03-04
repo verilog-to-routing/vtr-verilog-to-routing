@@ -4,7 +4,7 @@ FROM fedora:latest
 RUN dnf -y update '*' --refresh && \
 dnf install -y glibc-static tmux python libevent-devel ncurses-devel clang perl-List-MoreUtils \
 time @development-tools zip clang curl git libxml++-devel libX11-devel libXft-devel fontconfig \
-cairo-devel automake cmake flex bison ctags gdb perl valgrind
+cairo-devel automake cmake flex bison readline-devel ctags gdb perl valgrind
 
 RUN ln -s /lib64 /usr/lib/x86_64-linux-gnu
 
