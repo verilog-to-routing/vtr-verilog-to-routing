@@ -335,11 +335,11 @@ if (    $stage_idx_odin >= $starting_stage
 my $abc_path;
 my $abc_rc_path;
 if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
-	$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
+	$abc_path = "$vtr_flow_path/../abc/abc";
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
 
-	$abc_rc_path = "$vtr_flow_path/../abc_with_bb_support/abc.rc";
+	$abc_rc_path = "$vtr_flow_path/../abc/abc.rc";
 	( -e $abc_rc_path ) or die "Cannot find ABC RC file ($abc_rc_path)";
 
 	copy( $abc_rc_path, $temp_dir );
@@ -426,10 +426,6 @@ my $q         = "not_run";
 #################################################################################
 ################################## ODIN #########################################
 #################################################################################
-
-# TODO: AG: Remove.
-$keep_intermediate_files = 1;
-
 if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 
 	#system "sed 's/XXX/$benchmark_name.v/g' < $odin2_base_config > temp1.xml";
@@ -846,7 +842,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	if ($q eq "success") {
 		if($check_equivalent eq "on") {
 			if($abc_path eq "") {
-				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
+				$abc_path = "$vtr_flow_path/../abc/abc";
 			}
 			
 			find(\&find_postsynthesis_netlist, ".");

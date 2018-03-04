@@ -205,7 +205,7 @@ enable_testing()
 #Add the various sub-projects
 add_subdirectory(libs)
 add_subdirectory(vpr)
-add_subdirectory(abc_with_bb_support)
+add_subdirectory(abc)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
@@ -271,9 +271,9 @@ set_target_properties(libtatum
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum")
 set_target_properties(libabc abc 
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support")
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc")
 set_target_properties(libvpr vpr
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr"
