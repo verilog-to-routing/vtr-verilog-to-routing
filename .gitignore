@@ -3,7 +3,7 @@
 #
 *.exe
 ODIN_II/odin_II
-abc_with_bb_support/abc
+abc/abc
 ace2/ace
 vpr/vpr
 
