@@ -466,14 +466,15 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                                     break;
                                 }
                             }
-                            if (!port) {
+
+                            if (port) {
+                                pin_low_idx = 0;
+                                pin_high_idx = port->num_pins - 1;
+                            } else {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                "Failed to find port named '%s' on block '%s'",
                                                inst_port.port_name().c_str(), Type->name);
                             }
-
-                            pin_low_idx = 0;
-                            pin_high_idx = port->num_pins - 1;
                         }
                         VTR_ASSERT(pin_low_idx >= 0);
                         VTR_ASSERT(pin_high_idx >= 0);
