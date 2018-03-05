@@ -453,7 +453,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 			t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
 			// don't go farther if 0 modes
-			if (pb_child_type == nullptr && pb_child_type->num_modes == 0) {
+			if (pb_child_type == nullptr || pb_child_type->num_modes == 0) {
 				continue;
 			}
 

@@ -9,6 +9,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 
+#include "vpr_error.h"
 #include "PowerSpicedComponent.h"
 
 bool sorter_PowerCallibSize(PowerCallibSize * a, PowerCallibSize * b);
@@ -171,10 +172,15 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
 		size_lower = inputs_lower->get_entry_bound(true, transistor_size);
 		size_upper = inputs_lower->get_entry_bound(false, transistor_size);
 
-		perc_upper = (transistor_size - size_lower->transistor_size)
-				/ (size_upper->transistor_size - size_lower->transistor_size);
-		factor_lower = perc_upper * size_upper->factor
-				+ (1 - perc_upper) * size_lower->factor;
+        if (size_lower && size_upper) {
+
+            perc_upper = (transistor_size - size_lower->transistor_size)
+                    / (size_upper->transistor_size - size_lower->transistor_size);
+            factor_lower = perc_upper * size_upper->factor
+                    + (1 - perc_upper) * size_lower->factor;
+        } else {
+            VPR_THROW(VPR_ERROR_POWER, "Failed to interpolate transitor size");
+        }
 	}
 
 	if (inputs_upper) {
@@ -183,10 +189,14 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
 		size_lower = inputs_upper->get_entry_bound(true, transistor_size);
 		size_upper = inputs_upper->get_entry_bound(false, transistor_size);
 
-		perc_upper = (transistor_size - size_lower->transistor_size)
-				/ (size_upper->transistor_size - size_lower->transistor_size);
-		factor_upper = perc_upper * size_upper->factor
-				+ (1 - perc_upper) * size_lower->factor;
+        if (size_lower && size_upper) {
+            perc_upper = (transistor_size - size_lower->transistor_size)
+                    / (size_upper->transistor_size - size_lower->transistor_size);
+            factor_upper = perc_upper * size_upper->factor
+                    + (1 - perc_upper) * size_lower->factor;
+        } else {
+            VPR_THROW(VPR_ERROR_POWER, "Failed to interpolate transitor size");
+        }
 	}
 
 	if (!inputs_lower) {

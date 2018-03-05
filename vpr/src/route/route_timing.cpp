@@ -1828,10 +1828,11 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
     for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
 
         auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
-        // should always expect it find a pin mapping for its own net
-        VTR_ASSERT_SAFE(mapping != node_to_pin_mapping.end());
-
-        rr_sink_nodes[s] = mapping->second;
+        if (mapping != node_to_pin_mapping.end()) {
+            rr_sink_nodes[s] = mapping->second;
+        } else {
+            VTR_ASSERT_SAFE_MSG(false, "Should always expect it find a pin mapping for its own net");
+        }
     }
 }
 
@@ -1848,10 +1849,12 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 
     for (t_rt_node* rt_node : sink_rt_nodes) {
         auto mapping = node_to_pin_mapping.find(rt_node->inode);
-        // element should be able to find itself
-        VTR_ASSERT_SAFE(mapping != node_to_pin_mapping.end());
 
-        rt_node_of_sink[mapping->second] = rt_node;
+        if (mapping != node_to_pin_mapping.end()) {
+            rt_node_of_sink[mapping->second] = rt_node;
+        } else {
+            VTR_ASSERT_SAFE_MSG(false, "element should be able to find itself");
+        }
     }
 }
 
