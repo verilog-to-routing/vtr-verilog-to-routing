@@ -458,16 +458,16 @@ An example placement file is:
     Netlist file: xor5.net   Architecture file: sample.xml
     Array size: 2 x 2 logic blocks
 
-    #block name	x	y	subblk	block number
-    #----------	--	--	-------	-----------
-    a		0	1	0	#0  -- NB: block number is a comment.
-    b		1	0	0	#1
-    c		0	2	1	#2
-    d		1	3	0	#3
-    e		1	3	1	#4
-    out:xor5	0	2	0	#5
-    xor5	1	2	0	#6
-    [1]		1	1	0	#7
+    #block name x       y       subblk  block number
+    #---------- --      --      ------- -----------
+    a           0       1       0       #0  -- NB: block number is a comment.
+    b           1       0       0       #1
+    c           0       2       1       #2
+    d           1       3       0       #3
+    e           1       3       1       #4
+    out:xor5    0       2       0       #5
+    xor5        1       2       0       #6
+    [1]         1       1       0       #7
 
 
 .. _vpr_route_file:
@@ -562,19 +562,19 @@ Each tag has their subsequent subtags that describes one entity. For example, ``
 The ``rr_graph`` tag contains the following tags:
 
 * ``<channels>``
-	* ``<channel>``content``</channel>``
+        * ``<channel>``content``</channel>``
 * ``<switches>``
-	* ``<switch>``content``</switch>``
+        * ``<switch>``content``</switch>``
 * ``<segments>``
-	* ``<segment>``content``</segment>``
+        * ``<segment>``content``</segment>``
 * ``<block_types>``
-	* ``<block_type>``content``</block_type>``
+        * ``<block_type>``content``</block_type>``
 * ``<grid>``
-	* ``<grid_loc>``content``</grid_loc>``
+        * ``<grid_loc>``content``</grid_loc>``
 * ``<rr_nodes>``
-	* ``<node>``content``</node>``
+        * ``<node>``content``</node>``
 * ``<rr_edges>``
-	* ``<edge>``content``</edge>``
+        * ``<edge>``content``</edge>``
 
 .. note:: The rr graph is based on the architecture, so more detailed description of each section of the rr graph can be found at :ref:`FPGA architecture description <fpga_architecture_description>`
 
@@ -598,7 +598,7 @@ The channel information is contained within the ``channels`` subtag. This descri
 
 .. arch:tag:: <x_list index="int" info="int"/>  <y_list index="int" info="int"/>
 
-	These are a required subtags that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array.
+        These are a required subtags that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array.
 
     :req_param index:
         Describes the index within the array.
@@ -633,7 +633,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
 .. arch:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
 
-  	This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
+        This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
 
     :opt_param R, Cin, Cout:
         The resistance, input capacitance and output capacitance of the switch.
@@ -643,7 +643,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
 .. arch:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
-	The sizing information contains all the information needed for area calculation.
+        The sizing information contains all the information needed for area calculation.
 
     :req_param mux_trans_size:
         The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units.
@@ -659,14 +659,14 @@ The ``segments`` tag contains all the segments and its information. Note again t
 .. arch:tag:: <segment id="int" name="unique_identifier">
 
     :req_param id:
-	The index of this segment.
+        The index of this segment.
 
     :req_param name:
-	The name of this segment.
+        The name of this segment.
 
 .. arch:tag:: <timing R_per_meter="float" C_per_meter="float">
 
-	This optional tag defines the timing information of this segment.
+        This optional tag defines the timing information of this segment.
 
     :opt_param R_per_meter, C_per_meter:
         The resistance and capacitance of a routing track, per unit logic block length.
@@ -678,7 +678,7 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
 
 .. arch:tag:: <block_type id="int" name="unique_identifier" width="int" height="int">
 
-	This describes generation information about the block using the following attributes:
+        This describes generation information about the block using the following attributes:
 
     :req_param id:
         The index of the type of the descriptor in the array. This is used for index referencing
@@ -691,7 +691,7 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
 
 .. arch:tag:: <pin_class type="unique_type">content</pin_class>
 
-	This optional subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
+        This optional subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
 
     :req_param type:
         This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``.
@@ -723,21 +723,21 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
 .. arch:tag:: <node id="int" type="unique_type" direction="unique_direction" capacity="int">
 
     :req_param id:
-    	The index of the particular routing resource node
+        The index of the particular routing resource node
 
     :req_param type:
-    	Indicates whether the node is a wire or a logic block.
+        Indicates whether the node is a wire or a logic block.
         Valid inputs for class types are { ``CHANX`` | ``CHANY`` | ``SOURCE`` | ``SINK`` | ``OPIN`` | ``IPIN`` }.
         Where ``CHANX`` and ``CHANY`` describe a horizontal and vertical channel.
         Sources and sinks describes where nets begin and end.
         ``OPIN`` represents an output pin and ``IPIN`` representd an input pin
 
     :opt_param direction:
-    	If the node represents a track (``CHANX`` or ``CHANY``), this field represents its direction as {``INC_DIR`` | ``DEC_DIR`` | ``BI_DIR``}.
+        If the node represents a track (``CHANX`` or ``CHANY``), this field represents its direction as {``INC_DIR`` | ``DEC_DIR`` | ``BI_DIR``}.
         In other cases this attribute should not be specified.
 
     :req_param capacity:
-    	The number of routes that can use this node.
+        The number of routes that can use this node.
 
 .. arch:tag:: <loc xlow="int" ylow="int" xhigh="int" yhigh="int" side="{LEFT|RIGHT|TOP|BOTTOM}" ptc="int">
 
@@ -796,51 +796,51 @@ An example of what a generated routing resource graph file would look like is sh
     :linenos:
 
     <rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Generated from arch file my_arch.xml">
-     	<channels>
-        	<channel chan_width_max="2" x_min="2" y_min="2" x_max="2" y_max="2"/>
-    	    	<x_list index="1" info="5"/>
-     	   	<x_list index="2" info="5"/>
-    	    	<y_list index="1" info="5"/>
-    	    	<y_list index="2" info="5"/>
-    	</channels>
-       	<switches>
-        	<switch id="0" name="my_switch" buffered="1"/>
-            	<timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
-            	<sizing mux_trans_size="2.32" buf_size="23.54"/>
-        	</switch>
-    	</switches>
-     	<segments>
-        	<segment id="0" name="L4"/>
-            	<timing R_per_meter="201.7" C_per_meter="18.110e-15"/>
-        	</segment>
-    	</segments>
-     	<block_types>
-        	<block_type id="0" name="io" width="1" height="1">
-            	<pin_class type="input">
-                	0 1 2 3
-            	</pin_class>
-            	<pin_class type="output">
-                	4 5 6 7
-            	</pin_class>
-        	</block_type>
-    	</block_types>
-     	<grid>
-        	<grid_loc x="0" y="0" block_type_id="0" width_offset="0" height_offset="0"/>
-    	</grid>
-     	<rr_nodes>
-        	<node id="0" type="SOURCE" direction="NONE" capacity="1">
-            	<loc xlow="0" ylow="0" xhigh="0" yhigh="0" ptc="0"/>
-            	<timing R="0" C="0"/>
-        	</node>
-        	<node id="1" type="CHANX" direction="INC" capacity="1">
-            	<loc xlow="0" ylow="0" xhigh="2" yhigh="0" ptc="0"/>
-            	<timing R="100" C="12e-12"/>
-            	<segment segment_id="0"/>
-        	</node>
-    	</rr_nodes>
-     	<rr_edges>
-        	<edge src_node="0" sink_node="1" switch_id="0"/>
-        	<edge src_node="1" sink_node="2" switch_id="0"/>
-    	</rr_edges>
+        <channels>
+                <channel chan_width_max="2" x_min="2" y_min="2" x_max="2" y_max="2"/>
+                <x_list index="1" info="5"/>
+                <x_list index="2" info="5"/>
+                <y_list index="1" info="5"/>
+                <y_list index="2" info="5"/>
+        </channels>
+        <switches>
+                <switch id="0" name="my_switch" buffered="1"/>
+                <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
+                <sizing mux_trans_size="2.32" buf_size="23.54"/>
+                </switch>
+        </switches>
+        <segments>
+                <segment id="0" name="L4"/>
+                <timing R_per_meter="201.7" C_per_meter="18.110e-15"/>
+                </segment>
+        </segments>
+        <block_types>
+                <block_type id="0" name="io" width="1" height="1">
+                <pin_class type="input">
+                        0 1 2 3
+                </pin_class>
+                <pin_class type="output">
+                        4 5 6 7
+                </pin_class>
+                </block_type>
+        </block_types>
+        <grid>
+                <grid_loc x="0" y="0" block_type_id="0" width_offset="0" height_offset="0"/>
+        </grid>
+        <rr_nodes>
+                <node id="0" type="SOURCE" direction="NONE" capacity="1">
+                <loc xlow="0" ylow="0" xhigh="0" yhigh="0" ptc="0"/>
+                <timing R="0" C="0"/>
+                </node>
+                <node id="1" type="CHANX" direction="INC" capacity="1">
+                <loc xlow="0" ylow="0" xhigh="2" yhigh="0" ptc="0"/>
+                <timing R="100" C="12e-12"/>
+                <segment segment_id="0"/>
+                </node>
+        </rr_nodes>
+        <rr_edges>
+                <edge src_node="0" sink_node="1" switch_id="0"/>
+                <edge src_node="1" sink_node="2" switch_id="0"/>
+        </rr_edges>
     </rr_graph>
 .. _end:
