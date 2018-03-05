@@ -1,0 +1,32 @@
+# Tools
+ABC:            ["abc_with_bb_support"]
+ACE2:           ["ace2"]
+blifexplorer:   ["blifexplorer"]
+Odin:           ["ODIN_II", "odin2_helper"]
+VPR:            ["vpr"]
+VTR Flow:       ["vtr_flow"]
+
+# Libraries
+libarchfpga:    ["libs/libarchfpga"]
+libeasygl:      ["libs/libeasygl"]
+liblog:         ["libs/liblog"]
+libpugiutil:    ["libs/libpugiutil"]
+libvtrutil:     ["libs/libvtrutil"]
+
+# General areas
+type-docs:      ["docs/", "README.md", "*.md", "tutorial", "README", "*.rst"]
+type-infra:     [".travis.yml", ".travis.yml", ".travis/", "scripts/", ".github/", "Dockerfile"]
+type-build:     ["Makefile", "*.make", "CMakeLists.txt", "cmake"]
+type-tests:     ["*_test.pl", "*test*", "*TESTS*"]
+type-external:  ["libs/EXTERNAL"]
+type-scripts:   ["scripts", "*.pl", "*.sh"]
+
+# Tag pull requests with the languages used to make it easy to see what is
+# being used.
+lang-hdl:       ["*.v", "*.sv"]
+lang-cpp:       ["*.c*", "*.h"]
+lang-perl:      ["*.pl", "*perl*"]
+lang-python:    ["*.py"]
+lang-shell:     ["*.sh"]
+lang-netlist:   ["*.blif", "*.eblif", "*.edif"]
+lang-make:      ["*.make", "Makefile", "CMakeLists.txt"]
