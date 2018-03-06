@@ -42,13 +42,13 @@ AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
 }
 
 const t_model* AtomNetlist::block_model(const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
+    VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_models_[id];
 }
 
 const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
+    VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_truth_tables_[id];
 }
@@ -59,7 +59,7 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
  *
  */
 const t_model_ports* AtomNetlist::port_model(const AtomPortId id) const {
-    VTR_ASSERT(valid_port_id(id));
+    VTR_ASSERT_SAFE(valid_port_id(id));
 
     return port_models_[id];
 }
@@ -70,8 +70,8 @@ const t_model_ports* AtomNetlist::port_model(const AtomPortId id) const {
 *
 */
 AtomPortId AtomNetlist::find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const {
-    VTR_ASSERT(valid_block_id(blk_id));
-    VTR_ASSERT(model_port);
+    VTR_ASSERT_SAFE(valid_block_id(blk_id));
+    VTR_ASSERT_SAFE(model_port);
 
     //We can tell from the model port the set of ports
     //the port can be found in
