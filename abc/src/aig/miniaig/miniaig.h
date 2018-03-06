@@ -92,11 +92,13 @@ static void Mini_AigPush( Mini_Aig_t * p, int Lit0, int Lit1 )
 static int Mini_AigNodeFanin0( Mini_Aig_t * p, int Id )
 {
     assert( Id >= 0 && 2*Id < p->nSize );
+    assert( p->pArray[2*Id] == 0x7FFFFFFF || p->pArray[2*Id] < 2*Id );
     return p->pArray[2*Id];
 }
 static int Mini_AigNodeFanin1( Mini_Aig_t * p, int Id )
 {
     assert( Id >= 0 && 2*Id < p->nSize );
+    assert( p->pArray[2*Id+1] == 0x7FFFFFFF || p->pArray[2*Id+1] < 2*Id );
     return p->pArray[2*Id+1];
 }
 
@@ -145,19 +147,30 @@ static void Mini_AigStop( Mini_Aig_t * p )
     MINI_AIG_FREE( p->pArray );
     MINI_AIG_FREE( p );
 }
-static void Mini_AigPrintStats( Mini_Aig_t * p )
+static int Mini_AigPiNum( Mini_Aig_t * p )
 {
-    int i, nPis, nPos, nNodes;
-    nPis = 0;
+    int i, nPis = 0;
     Mini_AigForEachPi( p, i )
         nPis++;
-    nPos = 0;
+    return nPis;
+}
+static int Mini_AigPoNum( Mini_Aig_t * p )
+{
+    int i, nPos = 0;
     Mini_AigForEachPo( p, i )
         nPos++;
-    nNodes = 0;
+    return nPos;
+}
+static int Mini_AigAndNum( Mini_Aig_t * p )
+{
+    int i, nNodes = 0;
     Mini_AigForEachAnd( p, i )
         nNodes++;
-    printf( "PI = %d. PO = %d. Node = %d.\n", nPis, nPos, nNodes );
+    return nNodes;
+}
+static void Mini_AigPrintStats( Mini_Aig_t * p )
+{
+    printf( "PI = %d. PO = %d. Node = %d.\n", Mini_AigPiNum(p), Mini_AigPoNum(p), Mini_AigAndNum(p) );
 }
 
 // serialization
@@ -265,7 +278,59 @@ static int Mini_AigCheck( Mini_Aig_t * p )
     return status;
 }
 
-
+// procedure to dump MiniAIG into a Verilog file
+static void Mini_AigDumpVerilog( char * pFileName, char * pModuleName, Mini_Aig_t * p )
+{
+    int i, k, iFaninLit0, iFaninLit1, Length = strlen(pModuleName), nPos = Mini_AigPoNum(p); 
+    Vec_Bit_t * vObjIsPi = Vec_BitStart( Mini_AigNodeNum(p) );
+    FILE * pFile = fopen( pFileName, "wb" );
+    if ( pFile == NULL ) { printf( "Cannot open output file %s\n", pFileName ); return; }
+    // write interface
+    fprintf( pFile, "// This MiniAIG dump was produced by ABC on %s\n\n", Extra_TimeStamp() );
+    fprintf( pFile, "module %s (\n", pModuleName );
+    if ( Mini_AigPiNum(p) > 0 )
+    {
+        fprintf( pFile, "%*sinput wire", Length+10, "" );
+        k = 0;
+        Mini_AigForEachPi( p, i )
+        {
+            if ( k++ % 12 == 0 ) fprintf( pFile, "\n%*s", Length+10, "" );
+            fprintf( pFile, "i%d, ", i );
+            Vec_BitWriteEntry( vObjIsPi, i, 1 );
+        }
+    }
+    fprintf( pFile, "\n%*soutput wire", Length+10, "" );
+    k = 0;
+    Mini_AigForEachPo( p, i )
+    {
+        if ( k++ % 12 == 0 ) fprintf( pFile, "\n%*s", Length+10, "" );
+        fprintf( pFile, "o%d%s", i, k==nPos ? "":", " );
+    }
+    fprintf( pFile, "\n%*s);\n\n", Length+8, "" );
+    // write LUTs
+    Mini_AigForEachAnd( p, i )
+    {
+        iFaninLit0 = Mini_AigNodeFanin0( p, i );
+        iFaninLit1 = Mini_AigNodeFanin1( p, i );
+        fprintf( pFile, "  assign n%d = ", i );
+        fprintf( pFile, "%s%c%d", (iFaninLit0 & 1) ? "~":"", Vec_BitEntry(vObjIsPi, iFaninLit0 >> 1) ? 'i':'n', iFaninLit0 >> 1 );
+        fprintf( pFile, " & " );
+        fprintf( pFile, "%s%c%d", (iFaninLit1 & 1) ? "~":"", Vec_BitEntry(vObjIsPi, iFaninLit1 >> 1) ? 'i':'n', iFaninLit1 >> 1  );
+        fprintf( pFile, ";\n" );
+    }
+    // write assigns
+    fprintf( pFile, "\n" );
+    Mini_AigForEachPo( p, i )
+    {
+        iFaninLit0 = Mini_AigNodeFanin0( p, i );
+        fprintf( pFile, "  assign o%d = ", i );
+        fprintf( pFile, "%s%c%d", (iFaninLit0 & 1) ? "~":"", Vec_BitEntry(vObjIsPi, iFaninLit0 >> 1) ? 'i':'n', iFaninLit0 >> 1 );
+        fprintf( pFile, ";\n" );
+    }
+    fprintf( pFile, "\nendmodule // %s \n\n\n", pModuleName );
+    Vec_BitFree( vObjIsPi );
+    fclose( pFile );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                    FUNCTION DECLARATIONS                         ///

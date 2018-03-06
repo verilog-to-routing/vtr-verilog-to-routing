@@ -25,6 +25,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <stdio.h>
 #include <stdlib.h>
 
+ABC_NAMESPACE_IMPL_START
+
 using namespace Gluco;
 
 // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
@@ -72,7 +74,11 @@ double Gluco::memUsedPeak() {
     double peak = memReadPeak() / 1024;
     return peak == 0 ? memUsed() : peak; }
 
+ABC_NAMESPACE_IMPL_END
+
 #elif defined(__FreeBSD__)
+
+ABC_NAMESPACE_IMPL_START
 
 double Gluco::memUsed(void) {
     struct rusage ru;
@@ -80,16 +86,29 @@ double Gluco::memUsed(void) {
     return (double)ru.ru_maxrss / 1024; }
 double MiniSat::memUsedPeak(void) { return memUsed(); }
 
+ABC_NAMESPACE_IMPL_END
 
 #elif defined(__APPLE__)
+
 #include <malloc/malloc.h>
+
+ABC_NAMESPACE_IMPL_START
 
 double Gluco::memUsed(void) {
     malloc_statistics_t t;
     malloc_zone_statistics(NULL, &t);
     return (double)t.max_size_in_use / (1024*1024); }
 
+ABC_NAMESPACE_IMPL_END
+
 #else
+
+ABC_NAMESPACE_IMPL_START
+
 double Gluco::memUsed() { 
     return 0; }
+
+ABC_NAMESPACE_IMPL_END
+
 #endif
+

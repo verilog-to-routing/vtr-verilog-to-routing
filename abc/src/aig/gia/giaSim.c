@@ -19,6 +19,7 @@
 ***********************************************************************/
 
 #include "gia.h"
+#include "misc/util/utilTruth.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -746,6 +747,370 @@ void Gia_ManSimSimulatePattern( Gia_Man_t * p, char * pFileIn, char * pFileOut )
         printf( "Output patterns are written into file \"%s\".\n", pFileOut );
     Vec_IntFree( vPat );
     Vec_IntFree( vPatOut );
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Bit-parallel simulation during AIG construction.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static inline word * Gia_ManBuiltInDataPi( Gia_Man_t * p, int iCiId )
+{
+    return Vec_WrdEntryP( p->vSimsPi, p->nSimWords * iCiId );
+}
+static inline word * Gia_ManBuiltInData( Gia_Man_t * p, int iObj )
+{
+    return Vec_WrdEntryP( p->vSims, p->nSimWords * iObj );
+}
+static inline void Gia_ManBuiltInDataPrint( Gia_Man_t * p, int iObj )
+{
+//    printf( "Obj %6d : ", iObj ); Extra_PrintBinary( stdout, Gia_ManBuiltInData(p, iObj), p->nSimWords * 64 ); printf( "\n" );
+}
+void Gia_ManBuiltInSimStart( Gia_Man_t * p, int nWords, int nObjs )
+{
+    int i, k;
+    assert( !p->fBuiltInSim );
+    assert( Gia_ManAndNum(p) == 0 );
+    p->fBuiltInSim = 1;
+    p->iPatsPi = 0;
+    p->iPastPiMax = 0;
+    p->nSimWords = nWords;
+    p->nSimWordsMax = 8;
+    Gia_ManRandomW( 1 );
+    // init PI care info
+    p->vSimsPi = Vec_WrdAlloc( p->nSimWords * Gia_ManCiNum(p) );
+    Vec_WrdFill( p->vSimsPi, p->nSimWords * Gia_ManCiNum(p), 0 );
+    // init object sim info
+    p->vSims = Vec_WrdAlloc( p->nSimWords * nObjs );
+    Vec_WrdFill( p->vSims, p->nSimWords, 0 );
+    for ( i = 0; i < Gia_ManCiNum(p); i++ )
+        for ( k = 0; k < p->nSimWords; k++ )
+            Vec_WrdPush( p->vSims, Gia_ManRandomW(0) );
+}
+void Gia_ManBuiltInSimPerformInt( Gia_Man_t * p, int iObj )
+{
+    Gia_Obj_t * pObj = Gia_ManObj( p, iObj ); int w;
+    word * pInfo  = Gia_ManBuiltInData( p, iObj ); 
+    word * pInfo0 = Gia_ManBuiltInData( p, Gia_ObjFaninId0(pObj, iObj) );
+    word * pInfo1 = Gia_ManBuiltInData( p, Gia_ObjFaninId1(pObj, iObj) ); 
+    assert( p->fBuiltInSim );
+    if ( Gia_ObjFaninC0(pObj) )
+    {
+        if (  Gia_ObjFaninC1(pObj) )
+            for ( w = 0; w < p->nSimWords; w++ )
+                pInfo[w] = ~(pInfo0[w] | pInfo1[w]);
+        else 
+            for ( w = 0; w < p->nSimWords; w++ )
+                pInfo[w] = ~pInfo0[w] & pInfo1[w];
+    }
+    else 
+    {
+        if (  Gia_ObjFaninC1(pObj) )
+            for ( w = 0; w < p->nSimWords; w++ )
+                pInfo[w] = pInfo0[w] & ~pInfo1[w];
+        else 
+            for ( w = 0; w < p->nSimWords; w++ )
+                pInfo[w] = pInfo0[w] & pInfo1[w];
+    }
+    assert( Vec_WrdSize(p->vSims) == Gia_ManObjNum(p) * p->nSimWords );
+}
+void Gia_ManBuiltInSimPerform( Gia_Man_t * p, int iObj )
+{
+    int w;
+    for ( w = 0; w < p->nSimWords; w++ )
+        Vec_WrdPush( p->vSims, 0 );
+    Gia_ManBuiltInSimPerformInt( p, iObj );
+}
+
+void Gia_ManBuiltInSimResimulateCone_rec( Gia_Man_t * p, int iObj )
+{
+    Gia_Obj_t * pObj;
+    if ( Gia_ObjIsTravIdCurrentId(p, iObj) )
+        return;
+    Gia_ObjSetTravIdCurrentId(p, iObj);
+    pObj = Gia_ManObj( p, iObj );
+    if ( Gia_ObjIsCi(pObj) )
+        return;
+    assert( Gia_ObjIsAnd(pObj) );
+    Gia_ManBuiltInSimResimulateCone_rec( p, Gia_ObjFaninId0(pObj, iObj) );
+    Gia_ManBuiltInSimResimulateCone_rec( p, Gia_ObjFaninId1(pObj, iObj) );
+    Gia_ManBuiltInSimPerformInt( p, iObj );
+}
+void Gia_ManBuiltInSimResimulateCone( Gia_Man_t * p, int iLit0, int iLit1 )
+{
+    Gia_ManIncrementTravId( p );
+    Gia_ManBuiltInSimResimulateCone_rec( p, Abc_Lit2Var(iLit0) );
+    Gia_ManBuiltInSimResimulateCone_rec( p, Abc_Lit2Var(iLit1) );
+}
+void Gia_ManBuiltInSimResimulate( Gia_Man_t * p )
+{
+    Gia_Obj_t * pObj;  int iObj;
+    Gia_ManForEachAnd( p, pObj, iObj )
+        Gia_ManBuiltInSimPerformInt( p, iObj );
+}
+
+int Gia_ManBuiltInSimCheckOver( Gia_Man_t * p, int iLit0, int iLit1 )
+{
+    word * pInfo0 = Gia_ManBuiltInData( p, Abc_Lit2Var(iLit0) );
+    word * pInfo1 = Gia_ManBuiltInData( p, Abc_Lit2Var(iLit1) ); int w;
+    assert( p->fBuiltInSim );
+
+//    printf( "%d %d\n", Abc_LitIsCompl(iLit0), Abc_LitIsCompl(iLit1) );
+//    Extra_PrintBinary( stdout, pInfo0, 64*p->nSimWords ); printf( "\n" );
+//    Extra_PrintBinary( stdout, pInfo1, 64*p->nSimWords ); printf( "\n" );
+//    printf( "\n" );
+
+    if ( Abc_LitIsCompl(iLit0) )
+    {
+        if (  Abc_LitIsCompl(iLit1) )
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( ~pInfo0[w] & ~pInfo1[w] )
+                    return 1;
+        }
+        else 
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( ~pInfo0[w] & pInfo1[w] )
+                    return 1;
+        }
+    }
+    else 
+    {
+        if (  Abc_LitIsCompl(iLit1) )
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( pInfo0[w] & ~pInfo1[w] )
+                    return 1;
+        }
+        else 
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( pInfo0[w] & pInfo1[w] )
+                    return 1;
+        }
+    }
+    return 0;
+}
+int Gia_ManBuiltInSimCheckEqual( Gia_Man_t * p, int iLit0, int iLit1 )
+{
+    word * pInfo0 = Gia_ManBuiltInData( p, Abc_Lit2Var(iLit0) );
+    word * pInfo1 = Gia_ManBuiltInData( p, Abc_Lit2Var(iLit1) ); int w;
+    assert( p->fBuiltInSim );
+
+//    printf( "%d %d\n", Abc_LitIsCompl(iLit0), Abc_LitIsCompl(iLit1) );
+//    Extra_PrintBinary( stdout, pInfo0, 64*p->nSimWords ); printf( "\n" );
+//    Extra_PrintBinary( stdout, pInfo1, 64*p->nSimWords ); printf( "\n" );
+//    printf( "\n" );
+
+    if ( Abc_LitIsCompl(iLit0) )
+    {
+        if (  Abc_LitIsCompl(iLit1) )
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( ~pInfo0[w] != ~pInfo1[w] )
+                    return 0;
+        }
+        else 
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( ~pInfo0[w] != pInfo1[w] )
+                    return 0;
+        }
+    }
+    else 
+    {
+        if (  Abc_LitIsCompl(iLit1) )
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( pInfo0[w] != ~pInfo1[w] )
+                    return 0;
+        }
+        else 
+        {
+            for ( w = 0; w < p->nSimWords; w++ )
+                if ( pInfo0[w] != pInfo1[w] )
+                    return 0;
+        }
+    }
+    return 1;
+}
+
+int Gia_ManBuiltInSimPack( Gia_Man_t * p, Vec_Int_t * vPat )
+{
+    int i, k, iLit;
+    assert( Vec_IntSize(vPat) > 0 );
+    //printf( "%d ", Vec_IntSize(vPat) );
+    for ( i = 0; i < p->iPatsPi; i++ )
+    {
+        Vec_IntForEachEntry( vPat, iLit, k )
+            if ( Abc_TtGetBit(Gia_ManBuiltInDataPi(p, Abc_Lit2Var(iLit)), i) && 
+                 Abc_TtGetBit(Gia_ManBuiltInData(p, 1+Abc_Lit2Var(iLit)), i) == Abc_LitIsCompl(iLit) )
+                break;
+        if ( k == Vec_IntSize(vPat) )
+            return i; // success
+    }
+    return -1; // failure
+}
+// adds PI pattern to storage; the pattern comes in terms of CiIds
+int Gia_ManBuiltInSimAddPat( Gia_Man_t * p, Vec_Int_t * vPat )
+{
+    int Period = 0xF;
+    int fOverflow = p->iPatsPi == 64 * p->nSimWords && p->nSimWords == p->nSimWordsMax;
+    int k, iLit, iPat = Gia_ManBuiltInSimPack( p, vPat );
+    if ( iPat == -1 )
+    {
+        if ( fOverflow )
+        {
+            if ( (p->iPastPiMax & Period) == 0 )
+                Gia_ManBuiltInSimResimulate( p );
+            iPat = p->iPastPiMax;
+            //if ( p->iPastPiMax == 64 * p->nSimWordsMax - 1 )
+            //    printf( "Completed the cycle.\n" );
+            p->iPastPiMax = p->iPastPiMax == 64 * p->nSimWordsMax - 1 ? 0 : p->iPastPiMax + 1;
+        }
+        else
+        {
+            if ( p->iPatsPi && (p->iPatsPi & Period) == 0 )
+                Gia_ManBuiltInSimResimulate( p );
+            if ( p->iPatsPi == 64 * p->nSimWords )
+            {
+                Vec_Wrd_t * vTemp = Vec_WrdAlloc( 2 * Vec_WrdSize(p->vSims) ); 
+                word Data; int w, Count = 0, iObj = 0;
+                Vec_WrdForEachEntry( p->vSims, Data, w )
+                {
+                    Vec_WrdPush( vTemp, Data );
+                    if ( ++Count == p->nSimWords )
+                    {
+                        Gia_Obj_t * pObj = Gia_ManObj(p, iObj++);
+                        if ( Gia_ObjIsCi(pObj) )
+                            Vec_WrdPush( vTemp, Gia_ManRandomW(0) ); // Vec_WrdPush( vTemp, 0 );
+                        else if ( Gia_ObjIsAnd(pObj) )
+                            Vec_WrdPush( vTemp, pObj->fPhase ? ~(word)0 : 0 );
+                        else
+                            Vec_WrdPush( vTemp, 0 );
+                        Count = 0;
+                    }
+                }
+                assert( iObj == Gia_ManObjNum(p) );
+                Vec_WrdFree( p->vSims );
+                p->vSims = vTemp;
+
+                vTemp = Vec_WrdAlloc( 2 * Vec_WrdSize(p->vSimsPi) ); 
+                Count = 0;
+                Vec_WrdForEachEntry( p->vSimsPi, Data, w )
+                {
+                    Vec_WrdPush( vTemp, Data );
+                    if ( ++Count == p->nSimWords )
+                    {
+                        Vec_WrdPush( vTemp, 0 );
+                        Count = 0;
+                    }
+                }
+                Vec_WrdFree( p->vSimsPi );
+                p->vSimsPi = vTemp;
+
+                // update the word count
+                p->nSimWords++;
+                assert( Vec_WrdSize(p->vSims)   == p->nSimWords * Gia_ManObjNum(p) );
+                assert( Vec_WrdSize(p->vSimsPi) == p->nSimWords * Gia_ManCiNum(p)  );
+                //printf( "Resizing to %d words.\n", p->nSimWords );
+            }
+            iPat = p->iPatsPi++;
+        }
+    }
+    assert( iPat >= 0 && iPat < p->iPatsPi );
+    // add literals 
+    if ( fOverflow )
+    {
+        int iVar;
+        Vec_IntForEachEntry( &p->vSuppVars, iVar, k )
+            if ( Abc_TtGetBit(Gia_ManBuiltInDataPi(p, iVar), iPat) )
+                 Abc_TtXorBit(Gia_ManBuiltInDataPi(p, iVar), iPat);
+        Vec_IntForEachEntry( vPat, iLit, k )
+        {
+            if ( Abc_TtGetBit(Gia_ManBuiltInData(p, 1+Abc_Lit2Var(iLit)), iPat) == Abc_LitIsCompl(iLit) )
+            Abc_TtXorBit(Gia_ManBuiltInData(p, 1+Abc_Lit2Var(iLit)), iPat);
+            Abc_TtXorBit(Gia_ManBuiltInDataPi(p, Abc_Lit2Var(iLit)), iPat);
+        }
+    }
+    else
+    {
+        Vec_IntForEachEntry( vPat, iLit, k )
+        {
+            if ( Abc_TtGetBit(Gia_ManBuiltInDataPi(p, Abc_Lit2Var(iLit)), iPat) )
+                assert( Abc_TtGetBit(Gia_ManBuiltInData(p, 1+Abc_Lit2Var(iLit)), iPat) != Abc_LitIsCompl(iLit) );
+            else 
+            {
+                if ( Abc_TtGetBit(Gia_ManBuiltInData(p, 1+Abc_Lit2Var(iLit)), iPat) == Abc_LitIsCompl(iLit) )
+                Abc_TtXorBit(Gia_ManBuiltInData(p, 1+Abc_Lit2Var(iLit)), iPat);
+                Abc_TtXorBit(Gia_ManBuiltInDataPi(p, Abc_Lit2Var(iLit)), iPat);
+            }
+        }
+    }
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Finds a satisfying assignment.]
+
+  Description [Returns 1 if a sat assignment is found; 0 otherwise.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Gia_ManObjCheckSat_rec( Gia_Man_t * p, int iLit, Vec_Int_t * vObjs )
+{
+    int iObj = Abc_Lit2Var(iLit);
+    Gia_Obj_t * pObj = Gia_ManObj( p, iObj );
+    if ( pObj->fMark0 )
+        return pObj->fMark1 == (unsigned)Abc_LitIsCompl(iLit);
+    pObj->fMark0 = 1;
+    pObj->fMark1 = Abc_LitIsCompl(iLit);
+    Vec_IntPush( vObjs, iObj );
+    if ( Gia_ObjIsAnd(pObj) )
+    {
+        if ( pObj->fMark1 == 0 ) // node value is 1
+        {
+            if ( !Gia_ManObjCheckSat_rec( p, Gia_ObjFaninLit0(pObj, iObj), vObjs ) )   return 0;
+            if ( !Gia_ManObjCheckSat_rec( p, Gia_ObjFaninLit1(pObj, iObj), vObjs ) )   return 0;
+        }
+        else
+        {
+            if ( !Gia_ManObjCheckSat_rec( p, Abc_LitNot(Gia_ObjFaninLit0(pObj, iObj)), vObjs ) )   return 0;
+        }
+    }
+    return 1;
+}
+int Gia_ManObjCheckOverlap1( Gia_Man_t * p, int iLit0, int iLit1, Vec_Int_t * vObjs )
+{
+    Gia_Obj_t * pObj;
+    int i, Res0, Res1 = 0;
+//    Gia_ManForEachObj( p, pObj, i )
+//        assert( pObj->fMark0 == 0 && pObj->fMark1 == 0 );
+    Vec_IntClear( vObjs );
+    Res0 = Gia_ManObjCheckSat_rec( p, iLit0, vObjs );
+    if ( Res0 )
+        Res1 = Gia_ManObjCheckSat_rec( p, iLit1, vObjs );
+    Gia_ManForEachObjVec( vObjs, p, pObj, i )
+        pObj->fMark0 = pObj->fMark1 = 0;
+    return Res0 && Res1;
+}
+int Gia_ManObjCheckOverlap( Gia_Man_t * p, int iLit0, int iLit1, Vec_Int_t * vObjs )
+{
+    if ( Gia_ManObjCheckOverlap1( p, iLit0, iLit1, vObjs ) )
+        return 1;
+    return Gia_ManObjCheckOverlap1( p, iLit1, iLit0, vObjs );
 }
 
 ////////////////////////////////////////////////////////////////////////

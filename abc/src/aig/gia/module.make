@@ -24,6 +24,7 @@ SRC +=	src/aig/gia/giaAig.c \
 	src/aig/gia/giaEra.c \
 	src/aig/gia/giaEra2.c \
 	src/aig/gia/giaEsop.c \
+	src/aig/gia/giaExist.c \
 	src/aig/gia/giaFalse.c \
 	src/aig/gia/giaFanout.c \
 	src/aig/gia/giaForce.c \

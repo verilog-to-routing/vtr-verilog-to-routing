@@ -914,6 +914,7 @@ void Io_WriteAigerCex( Abc_Cex_t * pCex, Abc_Ntk_t * pNtk, void * pG, char * pFi
         fprintf( pFile, "0" );
     fprintf( pFile, " " );
     Aig_ManCleanMarkA( pAig );
+    Aig_ManConst1(pAig)->fMarkA = 1;
     for ( f = 0; f <= pCex->iFrame; f++ )
     {
         for ( k = 0; k < pCex->nPis; k++ )

@@ -1716,12 +1716,11 @@ void sat_solver_rollback( sat_solver* s )
 
 int sat_solver_addclause(sat_solver* s, lit* begin, lit* end)
 {
-    int fVerbose = 0;
     lit *i,*j;
     int maxvar;
     lit last;
     assert( begin < end );
-    if ( fVerbose )
+    if ( s->fPrintClause )
     {
         for ( i = begin; i < end; i++ )
             printf( "%s%d ", (*i)&1 ? "!":"", (*i)>>1 );

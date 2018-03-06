@@ -1091,6 +1091,10 @@ SOURCE=.\src\base\acb\acbSets.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\base\acb\acbSets.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\base\acb\acbUtil.c
 # End Source File
 # End Group
@@ -2020,6 +2024,14 @@ SOURCE=.\src\sat\bmc\bmcLoad.c
 # Begin Source File
 
 SOURCE=.\src\sat\bmc\bmcMaj.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\sat\bmc\bmcMaj2.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\sat\bmc\bmcMaj3.c
 # End Source File
 # Begin Source File
 
@@ -4719,6 +4731,10 @@ SOURCE=.\src\aig\gia\giaEsop.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\aig\gia\giaExist.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\aig\gia\giaFalse.c
 # End Source File
 # Begin Source File
@@ -4764,6 +4780,10 @@ SOURCE=.\src\aig\gia\giaIff.c
 # Begin Source File
 
 SOURCE=.\src\aig\gia\giaIiff.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\aig\gia\giaIiff.h
 # End Source File
 # Begin Source File
 

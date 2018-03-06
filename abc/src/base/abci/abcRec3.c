@@ -585,7 +585,7 @@ void Abc_NtkRecLibMerge3( Gia_Man_t * pLib )
     assert( Gia_ManCiNum(pLib) == Gia_ManCiNum(pGia) );
 
     // create hash table if not available
-    if ( pGia->pHTable == NULL )
+    if ( Vec_IntSize(&pGia->vHTable) == 0 )
         Gia_ManHashStart( pGia );
 
     // add AIG subgraphs
@@ -841,7 +841,7 @@ void Abc_NtkRecAdd3( Abc_Ntk_t * pNtk, int fUseSOPB )
     // remember that the manager was used for library construction
     s_pMan3->fLibConstr = 1;
     // create hash table if not available
-    if ( s_pMan3->pGia && s_pMan3->pGia->pHTable == NULL )
+    if ( s_pMan3->pGia && Vec_IntSize(&s_pMan3->pGia->vHTable) == 0 )
         Gia_ManHashStart( s_pMan3->pGia );
 
     // set defaults

@@ -148,6 +148,7 @@ struct Abc_Frame_t_
     Gia_Man_t *     pGiaMiniLut; 
     Vec_Int_t *     vCopyMiniAig;
     Vec_Int_t *     vCopyMiniLut;
+    int *           pArray;
 
     Abc_Frame_Callback_BmcFrameDone_Func pFuncOnFrameDone;
 };

@@ -38,6 +38,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/Map.h"
 #include "sat/glucose/Alloc.h"
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 namespace Gluco {
 
 //=================================================================================================
@@ -430,5 +432,6 @@ inline void Clause::strengthen(Lit p)
 //=================================================================================================
 }
 
- 
+ABC_NAMESPACE_CXX_HEADER_END
+
 #endif

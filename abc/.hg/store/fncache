@@ -356,6 +356,7 @@ data/src/misc/espresso/cubehack.c.i
 data/src/base/abci/abcFx.c.i
 data/src/aig/fra/fraSec.c.i
 data/src/aig/tim/module.make.i
+data/src/sat/xsat/module.make.i
 data/src/map/mpm/mpmMig.h.i
 data/src/base/abci/abcCas.c.i
 data/src/sat/satoko/utils/sdbl.h.i
@@ -416,6 +417,7 @@ data/src/misc/bbl/bblif.c.i
 data/src/aig/saig/saigSimFast.c.i
 data/src/misc/zlib/module.make.i
 data/src/bool/kit/kitPerm.c.i
+data/src/aig/gia/giaExist.c.i
 data/src/aig/fsim/fsimTsim.c.i
 data/src/map/fpga/fpgaCreate.c.i
 data/src/aig/kit/kitCloud.c.i
@@ -588,7 +590,7 @@ data/src/base/exor/exorBits.c.i
 data/src/map/mapper/mapperTree.c.i
 data/src/aig/ivy/ivyObj.c.i
 data/src/aig/bbr/module.make.i
-data/src/base/pla/module.make.i
+data/src/misc/extra/extraBddImage.c.i
 data/src/proof/bbr/bbrImage.c.i
 data/src/base/abci/abcCollapse.c.i
 data/src/proof/fraig/fraigPrime.c.i
@@ -1305,6 +1307,7 @@ data/scripts/par.py.i
 data/src/opt/res/resSim_old.c.i
 data/src/proof/int2/int2Int.h.i
 data/src/sat/msat/msatSolverCore.c.i
+data/src/aig/gia/giaIiff.h.i
 data/src/aig/saig/saigBmc3.c.i
 data/src/sat/glucose/SimpSolver.cpp.i
 data/src/aig/saig/saigSynch.c.i
@@ -1412,7 +1415,7 @@ data/src/aig/llb/llb1Core.c.i
 data/src/proof/dch/dchSat.c.i
 data/src/python/reachx_cmd.py.i
 data/src/bdd/cudd/cuddEssent.c.i
-data/src/aig/hop/hop.h.i
+data/src/aig/aig/aigCheck.c.i
 data/src/aig/llb/llb1Pivot.c.i
 data/src/misc/zlib/gzread.c.i
 data/src/sat/bmc/bmcBmci.c.i
@@ -1577,7 +1580,7 @@ data/regtest_output.txt.i
 data/src/bdd/cudd/cuddAddInv.c.i
 data/src/sat/xsat/xsatSolverAPI.c.i
 data/src/base/abci/abcMfs.c.i
-data/src/sat/xsat/module.make.i
+data/src/sat/glucose/Heap.h.i
 data/src/aig/hop/hopDfs.c.i
 data/src/sat/glucose/Options.h.i
 data/src/aig/saig/saigAbsStart.c.i
@@ -1602,6 +1605,7 @@ data/src/opt/csw/cswTable.c.i
 data/src/misc/tim/timDump.c.i
 data/src/aig/gia/giaEnable.c.i
 data/src/aig/gia/giaSat3.c.i
+data/src/base/acb/acbSets.h.i
 data/src/aig/gia/giaMfs.c.i
 data/src/aig/dch/dchCore.c.i
 data/src/opt/dec/decPrint.c.i
@@ -1622,7 +1626,7 @@ data/src/misc/extra/extraUtilDsd.c.i
 data/src/base/pla/plaRead.c.i
 data/src/bdd/reo/reoTransfer.c.i
 data/src/proof/llb/llb3Image.c.i
-data/src/aig/aig/aigCheck.c.i
+data/src/aig/hop/hop.h.i
 data/src/aig/saig/saigAbs2.c.i
 data/src/bdd/llb/llb2Bad.c.i
 data/src/phys/place/place_legalize.c.i
@@ -1670,6 +1674,7 @@ data/src/opt/fxu/fxu.h.i
 data/src/sat/bmc/bmc.c.i
 data/src/opt/ret/retArea.c.i
 data/src/proof/abs/absRef2.h.i
+data/src/sat/bmc/bmcMaj3.c.i
 data/src/bdd/llb/llb1Matrix.c.i
 data/src/proof/llb/llb1Hint.c.i
 data/src/sat/bsat/satProof.c.i
@@ -1874,7 +1879,6 @@ data/src/sat/msat/msatSolverSearch.c.i
 data/src/proof/ssw/sswCore.c.i
 data/src/proof/fra/fraSat.c.i
 data/src/proof/int/intInt.h.i
-data/src/sat/glucose/Heap.h.i
 data/src/aig/gia/giaIff.c.i
 data/src/opt/sim/simSeq.c.i
 data/src/map/scl/sclBuff.c.i
@@ -1972,7 +1976,7 @@ data/src/map/cov/covMinUtil.c.i
 data/src/misc/vec/vecBit.h.i
 data/src/phys/place/Makefile.i
 data/src/aig/gia/giaChoice.c.i
-data/src/misc/extra/extraBddImage.c.i
+data/src/base/pla/module.make.i
 data/src/aig/nwk/nwkAig.c.i
 data/src/aig/nwk/nwkMan.c.i
 data/src/python/getch.py.i
@@ -1992,6 +1996,7 @@ data/src/opt/dec/decMan.c.i
 data/src/misc/espresso/solution.c.i
 data/src/aig/hop/cudd2.h.i
 data/src/opt/sbd/sbdSim.c.i
+data/src/sat/bmc/bmcMaj2.c.i
 data/src/sat/fraig/fraigApi.c.i
 data/src/bool/kit/kitIsop.c.i
 data/src/base/wlc/wlcPth.c.i

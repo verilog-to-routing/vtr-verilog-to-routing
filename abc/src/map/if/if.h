@@ -270,6 +270,8 @@ struct If_Man_t_
     int                pArrTimeProfile[IF_MAX_FUNC_LUTSIZE];
     Vec_Ptr_t *        vVisited;
     void *             pUserMan;
+    Vec_Int_t *        vDump;
+    int                pDumpIns[16];
 
     // timing manager
     Tim_Man_t *        pManTim;

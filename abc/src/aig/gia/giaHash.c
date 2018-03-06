@@ -53,15 +53,17 @@ static inline int Gia_ManHashOne( int iLit0, int iLit1, int iLitC, int TableSize
 }
 static inline int * Gia_ManHashFind( Gia_Man_t * p, int iLit0, int iLit1, int iLitC )
 {
-    Gia_Obj_t * pThis;
-    int * pPlace = p->pHTable + Gia_ManHashOne( iLit0, iLit1, iLitC, p->nHTable );
+    int iThis, * pPlace = Vec_IntEntryP( &p->vHTable, Gia_ManHashOne( iLit0, iLit1, iLitC, Vec_IntSize(&p->vHTable) ) );
+    assert( Vec_IntSize(&p->vHash) == Gia_ManObjNum(p) );
     assert( p->pMuxes || iLit0 < iLit1 );
     assert( iLit0 < iLit1 || (!Abc_LitIsCompl(iLit0) && !Abc_LitIsCompl(iLit1)) );
     assert( iLitC == -1 || !Abc_LitIsCompl(iLit1) );
-    for ( pThis = (*pPlace)? Gia_ManObj(p, Abc_Lit2Var(*pPlace)) : NULL; pThis; 
-          pPlace = (int *)&pThis->Value, pThis = (*pPlace)? Gia_ManObj(p, Abc_Lit2Var(*pPlace)) : NULL )
-              if ( Gia_ObjFaninLit0p(p, pThis) == iLit0 && Gia_ObjFaninLit1p(p, pThis) == iLit1 && (p->pMuxes == NULL || Gia_ObjFaninLit2p(p, pThis) == iLitC) )
-                  break;
+    for ( ; (iThis = *pPlace); pPlace = Vec_IntEntryP(&p->vHash, iThis) )
+    {
+        Gia_Obj_t * pThis = Gia_ManObj( p, iThis );
+        if ( Gia_ObjFaninLit0(pThis, iThis) == iLit0 && Gia_ObjFaninLit1(pThis, iThis) == iLit1 && (p->pMuxes == NULL || Gia_ObjFaninLit2p(p, pThis) == iLitC) )
+            break;
+    }
     return pPlace;
 }
 
@@ -80,7 +82,7 @@ int Gia_ManHashLookupInt( Gia_Man_t * p, int iLit0, int iLit1 )
 {
     if ( iLit0 > iLit1 )
         iLit0 ^= iLit1, iLit1 ^= iLit0, iLit0 ^= iLit1;
-    return *Gia_ManHashFind( p, iLit0, iLit1, -1 );
+    return Abc_Var2Lit( *Gia_ManHashFind( p, iLit0, iLit1, -1 ), 0 );
 }
 int Gia_ManHashLookup( Gia_Man_t * p, Gia_Obj_t * p0, Gia_Obj_t * p1 )
 {
@@ -102,9 +104,11 @@ int Gia_ManHashLookup( Gia_Man_t * p, Gia_Obj_t * p0, Gia_Obj_t * p1 )
 ***********************************************************************/
 void Gia_ManHashAlloc( Gia_Man_t * p )  
 {
-    assert( p->pHTable == NULL );
-    p->nHTable = Abc_PrimeCudd( Gia_ManAndNum(p) ? Gia_ManAndNum(p) + 1000 : p->nObjsAlloc );
-    p->pHTable = ABC_CALLOC( int, p->nHTable );
+    assert( Vec_IntSize(&p->vHTable) == 0 );
+    Vec_IntFill( &p->vHTable, Abc_PrimeCudd( Gia_ManAndNum(p) ? Gia_ManAndNum(p) + 1000 : p->nObjsAlloc ), 0 );
+    Vec_IntGrow( &p->vHash, Abc_MaxInt(Vec_IntSize(&p->vHTable), Gia_ManObjNum(p)) );
+    Vec_IntFill( &p->vHash, Gia_ManObjNum(p), 0 );
+//printf( "Alloced table with %d entries.\n", Vec_IntSize(&p->vHTable) );
 }
 
 /**Function*************************************************************
@@ -123,12 +127,11 @@ void Gia_ManHashStart( Gia_Man_t * p )
     Gia_Obj_t * pObj;
     int * pPlace, i;
     Gia_ManHashAlloc( p );
-    Gia_ManCleanValue( p );
     Gia_ManForEachAnd( p, pObj, i )
     {
         pPlace = Gia_ManHashFind( p, Gia_ObjFaninLit0(pObj, i), Gia_ObjFaninLit1(pObj, i), Gia_ObjFaninLit2(p, i) );
         assert( *pPlace == 0 );
-        *pPlace = Abc_Var2Lit( i, 0 );
+        *pPlace = i;
     }
 }
 
@@ -145,8 +148,8 @@ void Gia_ManHashStart( Gia_Man_t * p )
 ***********************************************************************/
 void Gia_ManHashStop( Gia_Man_t * p )  
 {
-    ABC_FREE( p->pHTable );
-    p->nHTable = 0;
+    Vec_IntErase( &p->vHTable );
+    Vec_IntErase( &p->vHash );
 }
 
 /**Function*************************************************************
@@ -162,35 +165,32 @@ void Gia_ManHashStop( Gia_Man_t * p )
 ***********************************************************************/
 void Gia_ManHashResize( Gia_Man_t * p )
 {
-    Gia_Obj_t * pThis;
-    int * pHTableOld, * pPlace;
-    int nHTableOld, iNext, Counter, Counter2, i;
-    assert( p->pHTable != NULL );
+    int i, iThis, iNext, Counter, Counter2, * pPlace;
+    Vec_Int_t vOld = p->vHTable;
+    assert( Vec_IntSize(&vOld) > 0 );
     // replace the table
-    pHTableOld = p->pHTable;
-    nHTableOld = p->nHTable;
-    p->nHTable = Abc_PrimeCudd( 2 * Gia_ManAndNum(p) ); 
-    p->pHTable = ABC_CALLOC( int, p->nHTable );
+    Vec_IntZero( &p->vHTable );
+    Vec_IntFill( &p->vHTable, Abc_PrimeCudd( 2 * Gia_ManAndNum(p) ), 0 ); 
     // rehash the entries from the old table
     Counter = 0;
-    for ( i = 0; i < nHTableOld; i++ )
-    for ( pThis = (pHTableOld[i]? Gia_ManObj(p, Abc_Lit2Var(pHTableOld[i])) : NULL),
-          iNext = (pThis? pThis->Value : 0);  
-          pThis;  pThis = (iNext? Gia_ManObj(p, Abc_Lit2Var(iNext)) : NULL),   
-          iNext = (pThis? pThis->Value : 0)  )
-    {
-        pThis->Value = 0;
-        pPlace = Gia_ManHashFind( p, Gia_ObjFaninLit0p(p, pThis), Gia_ObjFaninLit1p(p, pThis), Gia_ObjFaninLit2p(p, pThis) );
-        assert( *pPlace == 0 ); // should not be there
-        *pPlace = Abc_Var2Lit( Gia_ObjId(p, pThis), 0 );
-        assert( *pPlace != 0 );
-        Counter++;
-    }
+    Vec_IntForEachEntry( &vOld, iThis, i )
+        for ( iNext = Vec_IntEntry(&p->vHash, iThis);  
+              iThis;  iThis = iNext,   
+              iNext = Vec_IntEntry(&p->vHash, iThis)  )
+        {
+            Gia_Obj_t * pThis0 = Gia_ManObj( p, iThis );
+            Vec_IntWriteEntry( &p->vHash, iThis, 0 );
+            pPlace = Gia_ManHashFind( p, Gia_ObjFaninLit0(pThis0, iThis), Gia_ObjFaninLit1(pThis0, iThis), Gia_ObjFaninLit2p(p, pThis0) );
+            assert( *pPlace == 0 ); // should not be there
+            *pPlace = iThis;
+            assert( *pPlace != 0 );
+            Counter++;
+        }
     Counter2 = Gia_ManAndNum(p) - Gia_ManBufNum(p);
     assert( Counter == Counter2 );
-    ABC_FREE( pHTableOld );
 //    if ( p->fVerbose )
-//        printf( "Resizing GIA hash table: %d -> %d.\n", nHTableOld, p->nHTable );
+//        printf( "Resizing GIA hash table: %d -> %d.\n", Vec_IntSize(&vOld), Vec_IntSize(&p->vHTable) );
+    Vec_IntErase( &vOld );
 }
 
 /**Function********************************************************************
@@ -206,17 +206,17 @@ void Gia_ManHashResize( Gia_Man_t * p )
 ******************************************************************************/
 void Gia_ManHashProfile( Gia_Man_t * p )
 {
-    Gia_Obj_t * pEntry;
+    int iEntry;
     int i, Counter, Limit;
-    printf( "Table size = %d. Entries = %d. ", p->nHTable, Gia_ManAndNum(p) );
+    printf( "Table size = %d. Entries = %d. ", Vec_IntSize(&p->vHTable), Gia_ManAndNum(p) );
     printf( "Hits = %d. Misses = %d.\n", (int)p->nHashHit, (int)p->nHashMiss );
-    Limit = Abc_MinInt( 1000, p->nHTable );
+    Limit = Abc_MinInt( 1000, Vec_IntSize(&p->vHTable) );
     for ( i = 0; i < Limit; i++ )
     {
         Counter = 0;
-        for ( pEntry = (p->pHTable[i]? Gia_ManObj(p, Abc_Lit2Var(p->pHTable[i])) : NULL); 
-              pEntry; 
-              pEntry = (pEntry->Value? Gia_ManObj(p, Abc_Lit2Var(pEntry->Value)) : NULL) )
+        for ( iEntry = Vec_IntEntry(&p->vHTable, i); 
+              iEntry; 
+              iEntry = iEntry? Vec_IntEntry(&p->vHash, iEntry) : 0 )
             Counter++;
         if ( Counter ) 
             printf( "%d ", Counter );
@@ -478,7 +478,7 @@ int Gia_ManHashXorReal( Gia_Man_t * p, int iLit0, int iLit1 )
         return 0;
     if ( iLit0 == Abc_LitNot(iLit1) )
         return 1;
-    if ( (p->nObjs & 0xFF) == 0 && 2 * p->nHTable < Gia_ManAndNum(p) )
+    if ( (p->nObjs & 0xFF) == 0 && 2 * Vec_IntSize(&p->vHTable) < Gia_ManAndNum(p) )
         Gia_ManHashResize( p );
     if ( iLit0 < iLit1 )
         iLit0 ^= iLit1, iLit1 ^= iLit0, iLit0 ^= iLit1;
@@ -491,19 +491,19 @@ int Gia_ManHashXorReal( Gia_Man_t * p, int iLit0, int iLit1 )
         if ( *pPlace )
         {
             p->nHashHit++;
-            return Abc_LitNotCond( *pPlace, fCompl );
+            return Abc_Var2Lit( *pPlace, fCompl );
         }
         p->nHashMiss++;
-        if ( p->nObjs < p->nObjsAlloc )
-            *pPlace = Gia_ManAppendXorReal( p, iLit0, iLit1 );
+        if ( Vec_IntSize(&p->vHash) < Vec_IntCap(&p->vHash) )
+            *pPlace = Abc_Lit2Var( Gia_ManAppendXorReal( p, iLit0, iLit1 ) );
         else
         {
             int iNode = Gia_ManAppendXorReal( p, iLit0, iLit1 );
             pPlace = Gia_ManHashFind( p, iLit0, iLit1, -1 );
             assert( *pPlace == 0 );
-            *pPlace = iNode;
+            *pPlace = Abc_Lit2Var( iNode );
         }
-        return Abc_LitNotCond( *pPlace, fCompl );
+        return Abc_Var2Lit( *pPlace, fCompl );
     }
 }
 
@@ -546,19 +546,19 @@ int Gia_ManHashMuxReal( Gia_Man_t * p, int iLitC, int iLit1, int iLit0 )
         if ( *pPlace )
         {
             p->nHashHit++;
-            return Abc_LitNotCond( *pPlace, fCompl );
+            return Abc_Var2Lit( *pPlace, fCompl );
         }
         p->nHashMiss++;
-        if ( p->nObjs < p->nObjsAlloc )
-            *pPlace = Gia_ManAppendMuxReal( p, iLitC, iLit1, iLit0 );
+        if ( Vec_IntSize(&p->vHash) < Vec_IntCap(&p->vHash) )
+            *pPlace = Abc_Lit2Var( Gia_ManAppendMuxReal( p, iLitC, iLit1, iLit0 ) );
         else
         {
             int iNode = Gia_ManAppendMuxReal( p, iLitC, iLit1, iLit0 );
             pPlace = Gia_ManHashFind( p, iLit0, iLit1, iLitC );
             assert( *pPlace == 0 );
-            *pPlace = iNode;
+            *pPlace = Abc_Lit2Var( iNode );
         }
-        return Abc_LitNotCond( *pPlace, fCompl );
+        return Abc_Var2Lit( *pPlace, fCompl );
     }
 }
 
@@ -585,10 +585,10 @@ int Gia_ManHashAnd( Gia_Man_t * p, int iLit0, int iLit1 )
         return 0;
     if ( p->fGiaSimple )
     {
-        assert( p->nHTable == 0 );
+        assert( Vec_IntSize(&p->vHTable) == 0 );
         return Gia_ManAppendAnd( p, iLit0, iLit1 );
     }
-    if ( (p->nObjs & 0xFF) == 0 && 2 * p->nHTable < Gia_ManAndNum(p) )
+    if ( (p->nObjs & 0xFF) == 0 && 2 * Vec_IntSize(&p->vHTable) < Gia_ManAndNum(p) )
         Gia_ManHashResize( p );
     if ( p->fAddStrash )
     {
@@ -603,18 +603,19 @@ int Gia_ManHashAnd( Gia_Man_t * p, int iLit0, int iLit1 )
         if ( *pPlace )
         {
             p->nHashHit++;
-            return *pPlace;
+            return Abc_Var2Lit( *pPlace, 0 );
         }
         p->nHashMiss++;
-        if ( p->nObjs < p->nObjsAlloc )
-            return *pPlace = Gia_ManAppendAnd( p, iLit0, iLit1 );
+        if ( Vec_IntSize(&p->vHash) < Vec_IntCap(&p->vHash) )
+            *pPlace = Abc_Lit2Var( Gia_ManAppendAnd( p, iLit0, iLit1 ) );
         else
         {
             int iNode = Gia_ManAppendAnd( p, iLit0, iLit1 );
             pPlace = Gia_ManHashFind( p, iLit0, iLit1, -1 );
             assert( *pPlace == 0 );
-            return *pPlace = iNode;
+            *pPlace = Abc_Lit2Var( iNode );
         }
+        return Abc_Var2Lit( *pPlace, 0 );
     }
 }
 int Gia_ManHashOr( Gia_Man_t * p, int iLit0, int iLit1 )  
@@ -648,7 +649,7 @@ int Gia_ManHashAndTry( Gia_Man_t * p, int iLit0, int iLit1 )
     {
         int * pPlace = Gia_ManHashFind( p, iLit0, iLit1, -1 );
         if ( *pPlace ) 
-            return *pPlace;
+            return Abc_Var2Lit( *pPlace, 0 );
         return -1;
     }
 }
@@ -797,6 +798,13 @@ int Gia_ManHashAndMulti( Gia_Man_t * p, Vec_Int_t * vLits )
     }
     assert( Vec_IntSize(vLits) == 1 );
     return Vec_IntEntry(vLits, 0);
+}
+int Gia_ManHashAndMulti2( Gia_Man_t * p, Vec_Int_t * vLits )
+{
+    int i, iLit, iRes = 1;
+    Vec_IntForEachEntry( vLits, iLit, i )
+        iRes = Gia_ManHashAnd( p, iRes, iLit );
+    return iRes;
 }
 
 ////////////////////////////////////////////////////////////////////////

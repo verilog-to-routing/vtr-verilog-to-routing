@@ -2719,13 +2719,16 @@ usage:
 int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
 {
     char * pFileName;
-    int c;
+    int c, fOnlyAnds = 0;
 
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "h" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "ah" ) ) != EOF )
     {
         switch ( c )
         {
+            case 'a':
+                fOnlyAnds ^= 1;
+                break;
             case 'h':
                 goto usage;
             default:
@@ -2742,12 +2745,22 @@ int IoCommandWriteVerilog( Abc_Frame_t * pAbc, int argc, char **argv )
     // get the output file name
     pFileName = argv[globalUtilOptind];
     // call the corresponding file writer
+    if ( fOnlyAnds )
+    {
+        Abc_Ntk_t * pNtkTemp = Abc_NtkToNetlist( pAbc->pNtkCur );
+        if ( !Abc_NtkHasAig(pNtkTemp) && !Abc_NtkHasMapping(pNtkTemp) )
+            Abc_NtkToAig( pNtkTemp );
+        Io_WriteVerilog( pNtkTemp, pFileName, 1 );
+        Abc_NtkDelete( pNtkTemp );
+    }
+    else
     Io_Write( pAbc->pNtkCur, pFileName, IO_FILE_VERILOG );
     return 0;
 
 usage:
-    fprintf( pAbc->Err, "usage: write_verilog [-h] <file>\n" );
+    fprintf( pAbc->Err, "usage: write_verilog [-ah] <file>\n" );
     fprintf( pAbc->Err, "\t         writes the current network in Verilog format\n" );
+    fprintf( pAbc->Err, "\t-a     : toggle writing expressions with only ANDs (without XORs and MUXes) [default = %s]\n", fOnlyAnds? "yes":"no" );
     fprintf( pAbc->Err, "\t-h     : print the help massage\n" );
     fprintf( pAbc->Err, "\tfile   : the name of the file to write\n" );
     return 1;

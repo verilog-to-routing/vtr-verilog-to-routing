@@ -1063,7 +1063,7 @@ static inline int Abc_TtReadHex( word * pTruth, char * pString )
         }
     }
     // determine the number of variables
-    nVars = 2 + Abc_Base2Log( nDigits );
+    nVars = 2 + (nDigits == 1 ? 0 : Abc_Base2Log(nDigits));
     // clean storage
     for ( k = Abc_TtWordNum(nVars) - 1; k >= 0; k-- )
         pTruth[k] = 0;
@@ -2354,7 +2354,7 @@ static inline int Abc_Tt6EsopVerify( word t, int nVars )
   SeeAlso     []
 
 ***********************************************************************/
-static inline int Abc_TtCheckOutAnd( word t, int i, word * pOut )
+static inline int Abc_Tt6CheckOutDec( word t, int i, word * pOut )
 {
     word c0 = Abc_Tt6Cofactor0( t, i );
     word c1 = Abc_Tt6Cofactor1( t, i );
@@ -2386,142 +2386,81 @@ static inline int Abc_TtCheckOutAnd( word t, int i, word * pOut )
     }
     return -1;
 }
-static inline int Abc_TtCheckOutAnd7( word * t, int i, word * pOut )
+static inline int Abc_TtCheckOutDec( word * pTruth, int nVars, int v, word * pOut )
 {
-    assert( i < 7 );
-    if ( i == 6 )
+    word Cof0[4], Cof1[4];
+    int nWords = Abc_TtWordNum(nVars);
+    assert( nVars <= 8 );
+    Abc_TtCofactor0p( Cof0, pTruth, nWords, v );
+    Abc_TtCofactor1p( Cof1, pTruth, nWords, v );
+    assert( !Abc_TtEqual(Cof0, Cof1, nWords) );
+    if ( Abc_TtIsConst0(Cof0, nWords) ) //if ( c0 == 0 ) //  F = i * G
     {
-        word c0 = t[0];
-        word c1 = t[1];
-        assert( c0 != c1 );
-        if ( c0 == 0 ) //  F = i * G
-        {
-            if ( pOut ) pOut[0] = pOut[1] = c1;
-            return 0;
-        }
-        if ( c1 == 0 ) //  F = ~i * G
-        {
-            if ( pOut ) pOut[0] = pOut[1] = c0;
-            return 1;
-        }
-        if ( ~c0 == 0 ) //  F = ~i + G
-        {
-            if ( pOut ) pOut[0] = pOut[1] = c1;
-            return 2;
-        }
-        if ( ~c1 == 0 ) //  F = i + G
-        {
-            if ( pOut ) pOut[0] = pOut[1] = c0;
-            return 3;
-        }
-        if ( c0 == ~c1 ) //  F = i # G
-        {
-            if ( pOut ) pOut[0] = pOut[1] = c0;
-            return 4;
-        }
+        if ( pOut ) Abc_TtCopy( pOut, Cof1, nWords, 0 ); //*pOut = c1;
+        return 0;
     }
-    else
+    if ( Abc_TtIsConst0(Cof1, nWords) ) //if ( c1 == 0 ) //  F = ~i * G
     {
-        int k, Res[2];
-        for ( k = 0; k < 2; k++ )
-            if ( (Res[k] = Abc_TtCheckOutAnd(t[k], i, pOut+k)) == -1 || Res[0] != Res[k] )
-                return -1;
-        return Res[0];
+        if ( pOut ) Abc_TtCopy( pOut, Cof0, nWords, 0 ); //*pOut = c0;
+        return 1;
     }
-    return -1;
-}
-static inline int Abc_TtCheckOutAnd8( word * t, int i, word * pOut )
-{
-    assert( i < 8 );
-    if ( i == 7 )
+    if ( Abc_TtIsConst1(Cof0, nWords) ) //if ( ~c0 == 0 ) //  F = ~i + G
     {
-        word * c0 = t;
-        word * c1 = t + 2;
-        assert( c0[0] != c1[0] || c0[1] != c1[1] );
-        if ( c0[0] == 0 && c0[1] == 0 ) //  F = i * G
-        {
-            if ( pOut ) pOut[0] = pOut[2] = c1[0], pOut[1] = pOut[3] = c1[1];
-            return 0;
-        }
-        if ( c1[0] == 0 && c1[1] == 0 ) //  F = ~i * G
-        {
-            if ( pOut ) pOut[0] = pOut[2] = c0[0], pOut[1] = pOut[3] = c0[1];
-            return 1;
-        }
-        if ( ~c0[0] == 0 && ~c0[1] == 0 ) //  F = ~i + G
-        {
-            if ( pOut ) pOut[0] = pOut[2] = c1[0], pOut[1] = pOut[3] = c1[1];
-            return 2;
-        }
-        if ( ~c1[0] == 0 && ~c1[1] == 0 ) //  F = i + G
-        {
-            if ( pOut ) pOut[0] = pOut[2] = c0[0], pOut[1] = pOut[3] = c0[1];
-            return 3;
-        }
-        if ( c0[0] == ~c1[0] && c0[1] == ~c1[1] ) //  F = i # G
-        {
-            if ( pOut ) pOut[0] = pOut[2] = c0[0], pOut[1] = pOut[3] = c0[1];
-            return 4;
-        }
+        if ( pOut ) Abc_TtCopy( pOut, Cof1, nWords, 0 ); //*pOut = c1;
+        return 2;
     }
-    else if ( i == 6 )
+    if ( Abc_TtIsConst1(Cof1, nWords) ) //if ( ~c1 == 0 ) //  F = i + G
     {
-        int k, Res[2];
-        for ( k = 0; k < 2; k++ )
-            if ( (Res[k] = Abc_TtCheckOutAnd7(t+2*k, i, pOut+2*k)) == -1 || Res[0] != Res[k] )
-                return -1;
-        return Res[0];
+        if ( pOut ) Abc_TtCopy( pOut, Cof0, nWords, 0 ); //*pOut = c0;
+        return 3;
     }
-    else
+    if ( Abc_TtOpposite(Cof0, Cof1, nWords) ) //if ( c0 == ~c1 )  //  F = i # G
     {
-        int k, Res[4];
-        for ( k = 0; k < 4; k++ )
-            if ( (Res[k] = Abc_TtCheckOutAnd(t[k], i, pOut+k)) == -1 || Res[0] != Res[k] )
-                return -1;
-        return Res[0];
+        if ( pOut ) Abc_TtCopy( pOut, Cof0, nWords, 0 ); //*pOut = c0;
+        return 4;
     }
     return -1;
 }
 static inline word Abc_TtCheckDecOutOne7( word * t, int * piVar, int * pType )
 {
-    int v, Type, Type2; word Out;
+    int v, Type, Type2; word Out[2];
     for ( v = 6; v >= 0; v-- )
-        if ( (Type = Abc_TtCheckOutAnd7(t, v, NULL)) != -1 )
+        if ( (Type = Abc_TtCheckOutDec(t, 7, v, NULL)) != -1 )
         {
-            Abc_TtSwapVars( t, 7, v, 6 );
-            Type2 = Abc_TtCheckOutAnd7(t, 6, &Out);
+            Abc_TtSwapVars( t, 7, 6, v );
+            Type2 = Abc_TtCheckOutDec( t, 7, 6, Out );
             assert( Type == Type2 );
             *piVar = v;
             *pType = Type;
-            return Out;
+            return Out[0];
         }
     return 0;
 }
 static inline word Abc_TtCheckDecOutOne8( word * t, int * piVar1, int * piVar2, int * pType1, int * pType2 )
 {
-    int v, Type1, Type12, Type2, Type22; word Out[2], Out2;
+    int v, Type1, Type12, Type2, Type22; word Out[4], Out2[2];
     for ( v = 7; v >= 0; v-- )
-        if ( (Type1 = Abc_TtCheckOutAnd8(t, v, NULL)) != -1 )
+        if ( (Type1 = Abc_TtCheckOutDec(t, 8, v, NULL)) != -1 )
         {
-            Abc_TtSwapVars( t, 8, v, 7 );
-            Type12 = Abc_TtCheckOutAnd8(t, 7, Out);
+            Abc_TtSwapVars( t, 8, 7, v );
+            Type12 = Abc_TtCheckOutDec( t, 8, 7, Out );
             assert( Type1 == Type12 );
             *piVar1 = v;
-            *piVar2 = Type1;
+            *pType1 = Type1;
             break;
         }
     if ( v == -1 )
         return 0;
     for ( v = 6; v >= 0; v-- )
-        if ( (Type2 = Abc_TtCheckOutAnd7(Out, v, NULL)) != -1 && Abc_Lit2Var(Type2) == Abc_Lit2Var(Type1) )
+        if ( (Type2 = Abc_TtCheckOutDec(Out, 7, v, NULL)) != -1 && Abc_Lit2Var(Type2) == Abc_Lit2Var(Type1) )
         {
-            Abc_TtSwapVars( Out, 7, v, 6 );
-            Type22 = Abc_TtCheckOutAnd7(t, 6, &Out2);
+            Abc_TtSwapVars( Out, 7, 6, v );
+            Type22 = Abc_TtCheckOutDec(Out, 7, 6, Out2);
             assert( Type2 == Type22 );
             *piVar2 = v;
             *pType2 = Type2;
             assert( *piVar2 < *piVar1 );
-            return Out2;
+            return Out2[0];
         }
     return 0;
 }

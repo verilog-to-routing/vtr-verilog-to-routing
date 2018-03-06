@@ -26,7 +26,6 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include <limits.h>
 #include "base/abc/abc.h"
 #include "misc/extra/extra.h"
 #include "misc/util/utilNam.h"
@@ -72,7 +71,7 @@ typedef enum {
 ///                      MACRO DEFINITIONS                           ///
 ////////////////////////////////////////////////////////////////////////
 
-#define  IO_WRITE_LINE_LENGTH INT_MAX    // the output line length
+#define  IO_WRITE_LINE_LENGTH    78    // the output line length
 
 ////////////////////////////////////////////////////////////////////////
 ///                    FUNCTION DECLARATIONS                         ///
@@ -136,7 +135,7 @@ extern int                Io_WriteMoPla( Abc_Ntk_t * pNtk, char * FileName );
 /*=== abcWriteSmv.c ===========================================================*/
 extern int                Io_WriteSmv( Abc_Ntk_t * pNtk, char * FileName );
 /*=== abcWriteVerilog.c =======================================================*/
-extern void               Io_WriteVerilog( Abc_Ntk_t * pNtk, char * FileName );
+extern void               Io_WriteVerilog( Abc_Ntk_t * pNtk, char * FileName, int fOnlyAnds );
 /*=== abcUtil.c ===============================================================*/
 extern Io_FileType_t      Io_ReadFileType( char * pFileName );
 extern Io_FileType_t      Io_ReadLibType( char * pFileName );

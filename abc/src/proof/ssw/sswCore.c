@@ -247,7 +247,7 @@ Aig_Man_t * Ssw_SignalCorrespondenceRefine( Ssw_Man_t * p )
         Abc_Print( 1, "Before BMC: " );
         Ssw_ClassesPrint( p->ppClasses, 0 );
     }
-    if ( !p->pPars->fLatchCorr )
+    if ( !p->pPars->fLatchCorr || p->pPars->nFramesK > 1 )
     {
         p->pMSat = Ssw_SatStart( 0 );
         if ( p->pPars->fConstrs )

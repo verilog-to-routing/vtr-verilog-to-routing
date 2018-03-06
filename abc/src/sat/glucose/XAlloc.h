@@ -25,6 +25,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <misc/util/abc_namespaces.h>
+
+ABC_NAMESPACE_CXX_HEADER_START
+
 namespace Gluco {
 
 //=================================================================================================
@@ -43,5 +47,7 @@ static inline void* xrealloc(void *ptr, size_t size)
 
 //=================================================================================================
 }
+
+ABC_NAMESPACE_CXX_HEADER_END
 
 #endif

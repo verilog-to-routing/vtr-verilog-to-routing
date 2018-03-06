@@ -85,7 +85,7 @@ Ssc_Man_t * Ssc_ManStart( Gia_Man_t * pAig, Gia_Man_t * pCare, Ssc_Pars_t * pPar
     p->pAig   = pAig;
     p->pCare  = pCare;
     p->pFraig = Gia_ManDupDfs( p->pCare );
-    assert( p->pFraig->pHTable == NULL );
+    assert( Vec_IntSize(&p->pFraig->vHTable) == 0 );
     assert( !Gia_ManHasDangling(p->pFraig) );
     Gia_ManInvertPos( p->pFraig );
     Ssc_ManStartSolver( p );

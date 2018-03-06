@@ -266,7 +266,7 @@ void Abc_SclReadTimingConstr( Abc_Frame_t * pAbc, char * pFileName, int fVerbose
         {
             Abc_FrameSetMaxLoad( atof(strtok(NULL, " \t\r\n")) );
             if ( fVerbose ) 
-                printf( "Setting driving cell to be %f.\n", Abc_FrameReadMaxLoad() );
+                printf( "Setting output load to be %f.\n", Abc_FrameReadMaxLoad() );
         }
         else printf( "Unrecognized token \"%s\".\n", pToken );
     }

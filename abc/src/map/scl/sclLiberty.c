@@ -399,6 +399,18 @@ int Scl_LibertyBuildItem( Scl_Tree_t * p, char ** ppPos, char * pEnd )
         if ( Scl_LibertySkipSpaces( p, ppPos, pEnd, 1 ) )
             goto exit;
         pNext = *ppPos;
+        while ( *pNext == '+' || *pNext == '-' || *pNext == '*' || *pNext == '/' )
+        {
+	    (*ppPos) += 1;
+            if ( Scl_LibertySkipSpaces( p, ppPos, pEnd, 0 ) )
+                goto exit;
+            if ( Scl_LibertySkipEntry( ppPos, pEnd ) )
+                goto exit;
+            Head.End = *ppPos - p->pContents;
+            if ( Scl_LibertySkipSpaces( p, ppPos, pEnd, 1 ) )
+                goto exit;
+	    pNext = *ppPos;
+        }
         if ( *pNext != ';' && *pNext != '\n' )
             goto exit;
         *ppPos = pNext + 1;

@@ -48,7 +48,7 @@ int Gia_ManDeriveMatches( Vec_Ptr_t ** pvNames, Vec_Wrd_t ** pvTruths, Vec_Int_t
 {
     return 0;
 }
-Gia_Man_t * Gia_ManIiffTest( char * pFileName, Gia_Man_t * pGia, int nLutSize, int nNumCuts, int fUseGates, int fUseCells, int fVerbose )
+Gia_Man_t * Gia_ManIiffTest( char * pFileName, Gia_Man_t * pGia, int nLutSize, int nNumCuts, int fUseGates, int fUseCells, int fUseLuts, int fVerbose )
 {
     return NULL;
 }

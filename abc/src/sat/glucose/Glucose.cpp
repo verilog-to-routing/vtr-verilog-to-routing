@@ -34,6 +34,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/Constants.h"
 #include "sat/glucose/System.h"
 
+ABC_NAMESPACE_IMPL_START
+
 using namespace Gluco;
 
 //=================================================================================================
@@ -251,6 +253,12 @@ bool Solver::addClause_(vec<Lit>& ps)
       else if (value(ps[i]) != l_False && ps[i] != p)
         ps[j++] = p = ps[i];
     ps.shrink(i - j);
+
+    if ( 0 ) {
+        for ( int i = 0; i < ps.size(); i++ )
+            printf( "%s%d ", (toInt(ps[i]) & 1) ? "-":"", toInt(ps[i]) >> 1 );
+        printf( "\n" );
+    }
     
     if (flag && (certifiedUNSAT)) {
       for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
@@ -1491,3 +1499,5 @@ void Solver::reset()
     assumptionPositions.clear(false);
     initialPositions.clear(false);
 }
+
+ABC_NAMESPACE_IMPL_END

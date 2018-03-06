@@ -188,6 +188,7 @@ void Gia_ManWriteMiniAig( Gia_Man_t * pGia, char * pFileName )
 {
     Mini_Aig_t * p = Gia_ManToMiniAig( pGia );
     Mini_AigDump( p, pFileName );
+    //Mini_AigDumpVerilog( "test_miniaig.v", "top", p );
     Mini_AigStop( p );
 }
 

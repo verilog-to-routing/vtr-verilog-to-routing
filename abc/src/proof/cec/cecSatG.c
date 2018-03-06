@@ -73,9 +73,9 @@ struct Cec3_Man_t_
     abctime          timeStart;
 };
 
-static inline int    Cec3_ObjSatId( Gia_Man_t * p, Gia_Obj_t * pObj )             { return Gia_ObjCopyArray(p, Gia_ObjId(p, pObj));                                                     }
-static inline int    Cec3_ObjSetSatId( Gia_Man_t * p, Gia_Obj_t * pObj, int Num ) { assert(Cec3_ObjSatId(p, pObj) == -1); Gia_ObjSetCopyArray(p, Gia_ObjId(p, pObj), Num); return Num;  }
-static inline void   Cec3_ObjCleanSatId( Gia_Man_t * p, Gia_Obj_t * pObj )        { assert(Cec3_ObjSatId(p, pObj) != -1); Gia_ObjSetCopyArray(p, Gia_ObjId(p, pObj), -1);               }
+static inline int    Cec3_ObjSatId( Gia_Man_t * p, Gia_Obj_t * pObj )             { return Gia_ObjCopy2Array(p, Gia_ObjId(p, pObj));                                                     }
+static inline int    Cec3_ObjSetSatId( Gia_Man_t * p, Gia_Obj_t * pObj, int Num ) { assert(Cec3_ObjSatId(p, pObj) == -1); Gia_ObjSetCopy2Array(p, Gia_ObjId(p, pObj), Num); return Num;  }
+static inline void   Cec3_ObjCleanSatId( Gia_Man_t * p, Gia_Obj_t * pObj )        { assert(Cec3_ObjSatId(p, pObj) != -1); Gia_ObjSetCopy2Array(p, Gia_ObjId(p, pObj), -1);               }
 
 static inline void   satoko_mark_cone( bmcg_sat_solver * p, int * pVars, int nVars )   {}
 static inline void   satoko_unmark_cone( bmcg_sat_solver * p, int * pVars, int nVars ) {}
@@ -676,7 +676,7 @@ Cec3_Man_t * Cec3_ManCreate( Gia_Man_t * pAig, Cec3_Par_t * pPars )
     Gia_ManForEachCi( pAig, pObj, i )
         pObj->Value = Gia_ManAppendCi( p->pNew );
     Gia_ManHashAlloc( p->pNew );
-    Vec_IntFill( &p->pNew->vCopies, Gia_ManObjNum(p->pNew), -1 );
+    Vec_IntFill( &p->pNew->vCopies2, Gia_ManObjNum(p->pNew), -1 );
     // SAT solving
     //memset( &Pars, 0, sizeof(satoko_opts_t) );
     p->pSat         = bmcg_sat_solver_start();
@@ -965,14 +965,14 @@ int Cec3_ManPerformSweeping( Gia_Man_t * p, Cec3_Par_t * pPars, Gia_Man_t ** ppN
             assert( !Gia_ObjProved(p, i) && !Gia_ObjFailed(p, i) );
             // duplicate the node
             pObj->Value = Gia_ManHashAnd( pMan->pNew, Gia_ObjFanin0Copy(pObj), Gia_ObjFanin1Copy(pObj) );
-            if ( Vec_IntSize(&pMan->pNew->vCopies) == Abc_Lit2Var(pObj->Value) )
+            if ( Vec_IntSize(&pMan->pNew->vCopies2) == Abc_Lit2Var(pObj->Value) )
             {
                 pObjNew = Gia_ManObj( pMan->pNew, Abc_Lit2Var(pObj->Value) );
                 pObjNew->fMark0 = Gia_ObjIsMuxType( pObjNew );
                 Gia_ObjSetPhase( pMan->pNew, pObjNew );
-                Vec_IntPush( &pMan->pNew->vCopies, -1 );
+                Vec_IntPush( &pMan->pNew->vCopies2, -1 );
             }
-            assert( Vec_IntSize(&pMan->pNew->vCopies) == Gia_ManObjNum(pMan->pNew) );
+            assert( Vec_IntSize(&pMan->pNew->vCopies2) == Gia_ManObjNum(pMan->pNew) );
             pRepr = Gia_ObjReprObj( p, i );
             if ( pRepr == NULL || !~pRepr->Value )
                 continue;

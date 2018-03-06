@@ -26,6 +26,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/ParseUtils.h"
 #include "sat/glucose/SolverTypes.h"
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 namespace Gluco {
 
 //=================================================================================================
@@ -85,5 +87,7 @@ static void parse_DIMACS(gzFile input_stream, Solver& S) {
 
 //=================================================================================================
 }
+
+ABC_NAMESPACE_CXX_HEADER_END
 
 #endif

@@ -106,7 +106,10 @@ void        Abc_FrameSetBridgeMode()                         { if ( s_GlobalFram
 char *      Abc_FrameReadDrivingCell()                       { return s_GlobalFrame->pDrivingCell;    }              
 float       Abc_FrameReadMaxLoad()                           { return s_GlobalFrame->MaxLoad;         }      
 void        Abc_FrameSetDrivingCell( char * pName )          { ABC_FREE(s_GlobalFrame->pDrivingCell); s_GlobalFrame->pDrivingCell   = pName; }      
-void        Abc_FrameSetMaxLoad( float Load )                { s_GlobalFrame->MaxLoad        = Load;  }      
+void        Abc_FrameSetMaxLoad( float Load )                { s_GlobalFrame->MaxLoad = Load;         }      
+
+int *       Abc_FrameReadArrayMapping( Abc_Frame_t * pAbc )  { return pAbc->pArray;                                            }
+void        Abc_FrameSetArrayMapping( int * p )              { ABC_FREE( s_GlobalFrame->pArray ); s_GlobalFrame->pArray = p;   }      
 
 /**Function*************************************************************
 
@@ -232,6 +235,7 @@ void Abc_FrameDeallocate( Abc_Frame_t * p )
     Gia_ManStopP( &p->pGiaMiniLut );
     Vec_IntFreeP( &p->vCopyMiniAig );
     Vec_IntFreeP( &p->vCopyMiniLut );
+    ABC_FREE( p->pArray );
 
     ABC_FREE( p );
     s_GlobalFrame = NULL;

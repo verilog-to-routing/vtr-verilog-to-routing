@@ -2075,6 +2075,58 @@ void Gia_DumpLutSizeDistrib( Gia_Man_t * p, char * pFileName )
     fclose( pTable );
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Check if two logic cones have overlap.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Gia_ManCheckSuppMark_rec( Gia_Man_t * p, Gia_Obj_t * pObj )
+{
+    if ( pObj->fMark0 )
+        return;
+    pObj->fMark0 = 1;
+    if ( Gia_ObjIsCi(pObj) )
+        return;
+    Gia_ManCheckSuppMark_rec( p, Gia_ObjFanin0(pObj) );
+    Gia_ManCheckSuppMark_rec( p, Gia_ObjFanin1(pObj) );
+}
+void Gia_ManCheckSuppUnmark_rec( Gia_Man_t * p, Gia_Obj_t * pObj )
+{
+    if ( !pObj->fMark0 )
+        return;
+    pObj->fMark0 = 0;
+    if ( Gia_ObjIsCi(pObj) )
+        return;
+    Gia_ManCheckSuppUnmark_rec( p, Gia_ObjFanin0(pObj) );
+    Gia_ManCheckSuppUnmark_rec( p, Gia_ObjFanin1(pObj) );
+}
+int Gia_ManCheckSupp_rec( Gia_Man_t * p, Gia_Obj_t * pObj )
+{
+    if ( pObj->fMark0 )
+        return 1;
+    if ( Gia_ObjIsCi(pObj) )
+        return 0;
+    if ( Gia_ManCheckSupp_rec( p, Gia_ObjFanin0(pObj) ) )
+        return 1;
+    return Gia_ManCheckSupp_rec( p, Gia_ObjFanin1(pObj) );
+}
+int Gia_ManCheckSuppOverlap( Gia_Man_t * p, int iNode1, int iNode2 )
+{
+    int Result;
+    if ( iNode1 == 0 || iNode2 == 0 )
+        return 0;
+    Gia_ManCheckSuppMark_rec( p, Gia_ManObj(p, iNode1) );
+    Result = Gia_ManCheckSupp_rec( p, Gia_ManObj(p, iNode2) );
+    Gia_ManCheckSuppUnmark_rec( p, Gia_ManObj(p, iNode1) );
+    return Result;
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

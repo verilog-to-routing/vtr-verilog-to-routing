@@ -31,6 +31,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/Vec.h"
 #include "sat/glucose/ParseUtils.h"
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 namespace Gluco {
 
 //==================================================================================================
@@ -384,5 +386,7 @@ class BoolOption : public Option
 
 //=================================================================================================
 }
+
+ABC_NAMESPACE_CXX_HEADER_END
 
 #endif

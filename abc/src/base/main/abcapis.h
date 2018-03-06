@@ -90,6 +90,7 @@ extern ABC_DLL void   Abc_NtkSetAndGateDelay( Abc_Frame_t * pAbc, float Delay );
 // procedures to return the mapped network
 extern ABC_DLL int *  Abc_NtkOutputMiniMapping( Abc_Frame_t * pAbc );
 extern ABC_DLL void   Abc_NtkPrintMiniMapping( int * pArray );
+extern ABC_DLL int *  Abc_FrameReadArrayMapping( Abc_Frame_t * pAbc );              
 
 // procedures to access verifization status and a counter-example
 extern ABC_DLL int    Abc_FrameReadProbStatus( Abc_Frame_t * pAbc );   

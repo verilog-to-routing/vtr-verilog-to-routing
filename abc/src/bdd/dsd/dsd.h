@@ -78,7 +78,7 @@ typedef enum   Dsd_Type_t_      Dsd_Type_t;
 #define Dsd_NodeForEachChild( Node, Index, Child )        \
     for ( Index = 0;                                      \
           Index < Dsd_NodeReadDecsNum(Node) &&            \
-             ((Child = Dsd_NodeReadDec(Node,Index))>=0);  \
+             ((Child = Dsd_NodeReadDec(Node,Index))!=0);  \
           Index++ )
 
 ////////////////////////////////////////////////////////////////////////

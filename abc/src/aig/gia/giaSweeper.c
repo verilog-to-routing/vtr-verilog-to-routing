@@ -108,7 +108,7 @@ static inline Swp_Man_t * Swp_ManStart( Gia_Man_t * pGia )
 {
     Swp_Man_t * p;
     int Lit;
-    assert( pGia->pHTable != NULL );
+    assert( Vec_IntSize(&pGia->vHTable) );
     pGia->pData = p = ABC_CALLOC( Swp_Man_t, 1 );
     p->pGia         = pGia;
     p->nConfMax     = 1000;
@@ -146,7 +146,7 @@ Gia_Man_t * Gia_SweeperStart( Gia_Man_t * pGia )
 {
     if ( pGia == NULL )
         pGia = Gia_ManStart( 10000 );
-    if ( pGia->pHTable == NULL )
+    if ( Vec_IntSize(&pGia->vHTable) == 0 )
         Gia_ManHashStart( pGia );
     // recompute fPhase and fMark1 to mark multiple fanout nodes if AIG is already defined!!!
 

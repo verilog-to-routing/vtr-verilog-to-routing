@@ -158,6 +158,7 @@ struct sat_solver_t
     double      progress_estimate;
     int         verbosity;     // Verbosity level. 0=silent, 1=some progress report, 2=everything
     int         fVerbose;
+    int         fPrintClause;
 
     stats_t     stats;
     int         nLearntMax;    // max number of learned clauses
@@ -212,17 +213,21 @@ static inline clause * clause_read( sat_solver * s, cla h )
     return Sat_MemClauseHand( &s->Mem, h );      
 }
 
-static int sat_solver_var_value( sat_solver* s, int v )
+static inline int sat_solver_var_value( sat_solver* s, int v )
 {
     assert( v >= 0 && v < s->size );
     return (int)(s->model[v] == l_True);
 }
-static int sat_solver_var_literal( sat_solver* s, int v )
+static inline int sat_solver_var_literal( sat_solver* s, int v )
 {
     assert( v >= 0 && v < s->size );
     return toLitCond( v, s->model[v] != l_True );
 }
-static void sat_solver_act_var_clear(sat_solver* s) 
+static inline void sat_solver_flip_print_clause( sat_solver* s )
+{
+    s->fPrintClause ^= 1;
+}
+static inline void sat_solver_act_var_clear(sat_solver* s) 
 {
     int i;
     if ( s->VarActType == 0 )
@@ -245,7 +250,7 @@ static void sat_solver_act_var_clear(sat_solver* s)
     }
     else assert(0);
 }
-static void sat_solver_compress(sat_solver* s) 
+static inline void sat_solver_compress(sat_solver* s) 
 {
     if ( s->qtail != s->qhead )
     {
@@ -254,19 +259,19 @@ static void sat_solver_compress(sat_solver* s)
         (void) RetValue;
     }
 }
-static void sat_solver_delete_p( sat_solver ** ps )
+static inline void sat_solver_delete_p( sat_solver ** ps )
 {
     if ( *ps )
         sat_solver_delete( *ps );
     *ps = NULL;
 }
-static void sat_solver_clean_polarity(sat_solver* s, int * pVars, int nVars )
+static inline void sat_solver_clean_polarity(sat_solver* s, int * pVars, int nVars )
 {
     int i;
     for ( i = 0; i < nVars; i++ )
         s->polarity[pVars[i]] = 0;
 }
-static void sat_solver_set_polarity(sat_solver* s, int * pVars, int nVars )
+static inline void sat_solver_set_polarity(sat_solver* s, int * pVars, int nVars )
 {
     int i;
     for ( i = 0; i < s->size; i++ )
@@ -274,27 +279,27 @@ static void sat_solver_set_polarity(sat_solver* s, int * pVars, int nVars )
     for ( i = 0; i < nVars; i++ )
         s->polarity[pVars[i]] = 1;
 }
-static void sat_solver_set_literal_polarity(sat_solver* s, int * pLits, int nLits )
+static inline void sat_solver_set_literal_polarity(sat_solver* s, int * pLits, int nLits )
 {
     int i;
     for ( i = 0; i < nLits; i++ )
         s->polarity[Abc_Lit2Var(pLits[i])] = !Abc_LitIsCompl(pLits[i]);
 }
 
-static int sat_solver_final(sat_solver* s, int ** ppArray)
+static inline int sat_solver_final(sat_solver* s, int ** ppArray)
 {
     *ppArray = s->conf_final.ptr;
     return s->conf_final.size;
 }
 
-static abctime sat_solver_set_runtime_limit(sat_solver* s, abctime Limit)
+static inline abctime sat_solver_set_runtime_limit(sat_solver* s, abctime Limit)
 {
     abctime nRuntimeLimit = s->nRuntimeLimit;
     s->nRuntimeLimit = Limit;
     return nRuntimeLimit;
 }
 
-static int sat_solver_set_random(sat_solver* s, int fNotUseRandom)
+static inline int sat_solver_set_random(sat_solver* s, int fNotUseRandom)
 {
     int fNotUseRandomOld = s->fNotUseRandom;
     s->fNotUseRandom = fNotUseRandom;
@@ -330,11 +335,11 @@ static inline int sat_solver_count_usedvars(sat_solver* s)
         }
     return nVars;
 }
-static void sat_solver_set_runid( sat_solver *s, int id )               
+static inline void sat_solver_set_runid( sat_solver *s, int id )               
 { 
     s->RunId      = id;  
 }
-static void sat_solver_set_stop_func( sat_solver *s, int (*fnct)(int) ) 
+static inline void sat_solver_set_stop_func( sat_solver *s, int (*fnct)(int) ) 
 { 
     s->pFuncStop = fnct; 
 }

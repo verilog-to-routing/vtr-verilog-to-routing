@@ -24,6 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/Queue.h"
 #include "sat/glucose/Solver.h"
 
+ABC_NAMESPACE_CXX_HEADER_START
 
 namespace Gluco {
 
@@ -200,5 +201,7 @@ inline void SimpSolver::addVar(Var v) { while (v >= nVars()) newVar(); }
 
 //=================================================================================================
 }
+
+ABC_NAMESPACE_CXX_HEADER_END
 
 #endif

@@ -20,6 +20,10 @@
  
 #include "gia.h"
 
+#include "sat/bsat/satSolver.h"
+#include "sat/cnf/cnf.h"
+#include "sat/bmc/bmc.h"
+
 ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
@@ -382,6 +386,118 @@ Abc_Cex_t * Gia_ManCexExtendToIncludeAllObjects( Gia_Man_t * p, Abc_Cex_t * pCex
     return pNew;
 }
 
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Gia_Man_t * Gia_ManFramesForCexMin( Gia_Man_t * p, int nFrames )
+{
+    Gia_Man_t * pFrames, * pTemp;
+    Gia_Obj_t * pObj; int i, f;
+    assert( Gia_ManPoNum(p) == 1 );
+    pFrames = Gia_ManStart( Gia_ManObjNum(p) );
+    pFrames->pName = Abc_UtilStrsav( p->pName );
+    pFrames->pSpec = Abc_UtilStrsav( p->pSpec );
+    Gia_ManHashAlloc( pFrames );
+    Gia_ManConst0(p)->Value = 0;
+    for ( f = 0; f < nFrames; f++ )
+    {
+        Gia_ManForEachRo( p, pObj, i )
+            pObj->Value = f ? Gia_ObjRoToRi( p, pObj )->Value : 0;
+        Gia_ManForEachPi( p, pObj, i )
+            pObj->Value = Gia_ManAppendCi( pFrames );
+        Gia_ManForEachAnd( p, pObj, i )
+            pObj->Value = Gia_ManHashAnd( pFrames, Gia_ObjFanin0Copy(pObj), Gia_ObjFanin1Copy(pObj) );
+        Gia_ManForEachRi( p, pObj, i )
+            pObj->Value = Gia_ObjFanin0Copy(pObj);
+    }
+    Gia_ManForEachCo( p, pObj, i )
+        Gia_ManAppendCo( pFrames, Gia_ObjFanin0Copy(pObj) );
+    pFrames = Gia_ManCleanup( pTemp = pFrames );
+    printf( "Before cleanup = %d nodes. After cleanup = %d nodes.\n", 
+        Gia_ManAndNum(pTemp), Gia_ManAndNum(pFrames) );
+    Gia_ManStop( pTemp );
+    return pFrames;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Gia_ManMinCex( Gia_Man_t * p, Abc_Cex_t * pCex )
+{
+    abctime clk = Abc_Clock();
+    int n, i, iFirstVar, iLit, status, Counter = 0;//, Id;
+    Vec_Int_t * vLits;
+    sat_solver * pSat;
+    Cnf_Dat_t * pCnf;
+    int nFinal, * pFinal;
+    Abc_Cex_t * pCexCare;
+    Gia_Man_t * pFrames;
+
+    // CEX minimization
+    clk = Abc_Clock();
+    pCexCare = Bmc_CexCareMinimizeAig( p, Gia_ManPiNum(p), pCex, 1, 1, 1 );
+    for ( i = pCexCare->nRegs; i < pCexCare->nBits; i++ )
+        Counter += Abc_InfoHasBit(pCexCare->pData, i);
+    Abc_CexFree( pCexCare );
+    printf( "Care bits = %d. ", Counter );
+    Abc_PrintTime( 1, "CEX minimization", Abc_Clock() - clk );
+
+    // SAT instance
+    clk = Abc_Clock();
+    pFrames = Gia_ManFramesForCexMin( p, pCex->iFrame + 1 );
+    pCnf = (Cnf_Dat_t*)Mf_ManGenerateCnf( pFrames, 8, 0, 0, 0, 0 );
+    iFirstVar = pCnf->nVars - (pCex->iFrame+1) * pCex->nPis;
+    pSat = (sat_solver*)Cnf_DataWriteIntoSolver( pCnf, 1, 0 );
+    iLit = Abc_Var2Lit( 1, 1 );
+    status = sat_solver_addclause( pSat, &iLit, &iLit + 1 );
+    assert( status );
+    // create literals
+    vLits = Vec_IntAlloc( 100 );
+    for ( i = pCex->nRegs; i < pCex->nBits; i++ )
+        Vec_IntPush( vLits, Abc_Var2Lit(iFirstVar + i - pCex->nRegs, !Abc_InfoHasBit(pCex->pData, i)) );
+    Abc_PrintTime( 1, "SAT solver", Abc_Clock() - clk );
+
+    for ( n = 0; n < 2; n++ )
+    {
+        if ( n ) Vec_IntReverseOrder( vLits );
+
+        // SAT-based minimization
+        clk = Abc_Clock();
+        status = sat_solver_solve( pSat, Vec_IntArray(vLits), Vec_IntLimit(vLits), 0, 0, 0, 0 );
+        nFinal = sat_solver_final( pSat, &pFinal );
+        printf( "Status %d.  Selected %d assumptions out of %d.  ", status, nFinal, Vec_IntSize(vLits) );
+        Abc_PrintTime( 1, "Analyze_final", Abc_Clock() - clk );
+
+        // SAT-based minimization
+        clk = Abc_Clock();
+        nFinal = sat_solver_minimize_assumptions( pSat, Vec_IntArray(vLits), Vec_IntSize(vLits), 0 );
+        printf( "Status %d.  Selected %d assumptions out of %d.  ", status, nFinal, Vec_IntSize(vLits) );
+        Abc_PrintTime( 1, "LEXUNSAT", Abc_Clock() - clk );
+    }
+
+    // cleanup
+    Vec_IntFree( vLits );
+    sat_solver_delete( pSat );
+    Cnf_DataFree( pCnf );
+    Gia_ManStop( pFrames );
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

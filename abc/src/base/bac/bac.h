@@ -650,7 +650,7 @@ static inline void Bac_NtkPrintStats( Bac_Ntk_t * p )
     printf( "clp =%7d  ",  p->Count );
     printf( "obj =%7d  ",  Bac_NtkObjNum(p) );
     printf( "%s ",         Bac_NtkName(p) );
-    if ( Bac_NtkHostNtk(p) > 0 )
+    if ( Bac_NtkHostNtk(p) )
         printf( "-> %s",   Bac_NtkName(Bac_NtkHostNtk(p)) );
     printf( "\n" );
 }

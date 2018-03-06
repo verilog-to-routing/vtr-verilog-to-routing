@@ -22,6 +22,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/SimpSolver.h"
 #include "sat/glucose/System.h"
 
+ABC_NAMESPACE_IMPL_START
+
 using namespace Gluco;
 
 //=================================================================================================
@@ -771,4 +773,4 @@ void SimpSolver::reset()
     remove_satisfied      = false;
 }
 
-
+ABC_NAMESPACE_IMPL_END

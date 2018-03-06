@@ -21,6 +21,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/Options.h"
 #include "sat/glucose/ParseUtils.h"
 
+ABC_NAMESPACE_IMPL_START
+
 using namespace Gluco;
 
 void Gluco::parseOptions(int& argc, char** argv, bool strict)
@@ -90,3 +92,4 @@ void Gluco::printUsageAndExit (int argc, char** argv, bool verbose)
     exit(0);
 }
 
+ABC_NAMESPACE_IMPL_END

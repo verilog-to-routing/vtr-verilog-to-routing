@@ -150,6 +150,10 @@ static int Abc_CommandBmsStart               ( Abc_Frame_t * pAbc, int argc, cha
 static int Abc_CommandBmsStop                ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandBmsPs                  ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandMajExact               ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int Abc_CommandTwoExact               ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int Abc_CommandLutExact               ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int Abc_CommandAllExact               ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int Abc_CommandTestExact              ( Abc_Frame_t * pAbc, int argc, char ** argv );
 
 static int Abc_CommandLogic                  ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int Abc_CommandComb                   ( Abc_Frame_t * pAbc, int argc, char ** argv );
@@ -817,6 +821,10 @@ void Abc_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "Exact synthesis", "bms_stop",   Abc_CommandBmsStop,          0 );
     Cmd_CommandAdd( pAbc, "Exact synthesis", "bms_ps",     Abc_CommandBmsPs,            0 );
     Cmd_CommandAdd( pAbc, "Exact synthesis", "majexact",   Abc_CommandMajExact,         0 );
+    Cmd_CommandAdd( pAbc, "Exact synthesis", "twoexact",   Abc_CommandTwoExact,         0 );
+    Cmd_CommandAdd( pAbc, "Exact synthesis", "lutexact",   Abc_CommandLutExact,         0 );
+    Cmd_CommandAdd( pAbc, "Exact synthesis", "allexact",   Abc_CommandAllExact,         0 );
+    Cmd_CommandAdd( pAbc, "Exact synthesis", "testexact",  Abc_CommandTestExact,        0 );
 
     Cmd_CommandAdd( pAbc, "Various",      "logic",         Abc_CommandLogic,            1 );
     Cmd_CommandAdd( pAbc, "Various",      "comb",          Abc_CommandComb,             1 );
@@ -8072,10 +8080,11 @@ usage:
 ***********************************************************************/
 int Abc_CommandMajExact( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
-    extern void Maj_ManExactSynthesis( int nVars, int nNodes, int fUseConst, int fUseLine, int fVerbose );
-    int c, nVars = 3, nNodes = 1, fUseConst = 0, fUseLine = 0, fVerbose = 1;
+    extern int Maj_ManExactSynthesis( int nVars, int nNodes, int fUseConst, int fUseLine, int fVerbose );
+    extern int Maj_ManExactSynthesis2( int nVars, int nNodes, int fUseConst, int fUseLine, int fUseRand, int nRands, int fVerbose );
+    int c, nVars = 3, nNodes = 1, fUseConst = 0, fUseLine = 0, fGlucose = 0, fUseRand = 0, nRands = 0, fVerbose = 1;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "INfcvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "INRfcrgvh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -8101,11 +8110,28 @@ int Abc_CommandMajExact( Abc_Frame_t * pAbc, int argc, char ** argv )
             if ( nNodes < 0 )
                 goto usage;
             break;
+        case 'R':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-R\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            nRands = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( nRands < 0 )
+                goto usage;
+            break;
         case 'f':
             fUseConst ^= 1;
             break;
         case 'c':
             fUseLine ^= 1;
+            break;
+        case 'r':
+            fUseRand ^= 1;
+            break;
+        case 'g':
+            fGlucose ^= 1;
             break;
         case 'v':
             fVerbose ^= 1;
@@ -8121,18 +8147,474 @@ int Abc_CommandMajExact( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Cannot sythesize MAJ gate with an even number of inputs (%d).\n", nVars );
         return 1;
     }
-    Maj_ManExactSynthesis( nVars, nNodes, fUseConst, fUseLine, fVerbose );
+    if ( fGlucose )
+        Maj_ManExactSynthesis( nVars, nNodes, fUseConst, fUseLine, fVerbose );
+    else
+        Maj_ManExactSynthesis2( nVars, nNodes, fUseConst, fUseLine, fUseRand, nRands, fVerbose );
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: majexact [-IN <num>] [-fcvh]\n" );
+    Abc_Print( -2, "usage: majexact [-INR <num>] [-fcrgvh]\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input MAJ using MAJ3 gates\n" );
     Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", nVars );
     Abc_Print( -2, "\t-N <num> : the number of MAJ3 nodes [default = %d]\n", nNodes );
+    Abc_Print( -2, "\t-R <num> : the number of additional connections [default = %d]\n", nRands );
     Abc_Print( -2, "\t-f       : toggle using constant fanins [default = %s]\n", fUseConst ? "yes" : "no" );
     Abc_Print( -2, "\t-c       : toggle using cascade topology [default = %s]\n", fUseLine ? "yes" : "no" );
+    Abc_Print( -2, "\t-r       : toggle using random topology [default = %s]\n", fUseRand ? "yes" : "no" );
+    Abc_Print( -2, "\t-g       : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n", fGlucose ? "yes" : "no" );
     Abc_Print( -2, "\t-v       : toggle verbose printout [default = %s]\n", fVerbose ? "yes" : "no" );
     Abc_Print( -2, "\t-h       : print the command usage\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_CommandTwoExact( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Exa_ManExactSynthesis( Bmc_EsPar_t * pPars );
+    extern void Exa_ManExactSynthesis2( Bmc_EsPar_t * pPars );
+    int c;
+    Bmc_EsPar_t Pars, * pPars = &Pars;
+    Bmc_EsParSetDefault( pPars );
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "INaogvh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'I':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nVars = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nVars < 0 )
+                goto usage;
+            break;
+        case 'N':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-N\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nNodes = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nNodes < 0 )
+                goto usage;
+            break;
+        case 'a':
+            pPars->fOnlyAnd ^= 1;
+            break;
+        case 'o':
+            pPars->fFewerVars ^= 1;
+            break;
+        case 'g':
+            pPars->fGlucose ^= 1;
+            break;
+        case 'v':
+            pPars->fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( argc == globalUtilOptind + 1 )
+        pPars->pTtStr = argv[globalUtilOptind];
+    if ( pPars->pTtStr == NULL )
+    {
+        Abc_Print( -1, "Truth table should be given on the command line.\n" );
+        return 1;
+    }
+    if ( (1 << (pPars->nVars-2)) != (int)strlen(pPars->pTtStr) )
+    {
+        Abc_Print( -1, "Truth table is expected to have %d hex digits (instead of %d).\n", (1 << (pPars->nVars-2)), strlen(pPars->pTtStr) );
+        return 1;
+    }
+    if ( pPars->nVars > pPars->nNodes * (2 - 1) + 1 )
+    {
+        Abc_Print( -1, "Function with %d variales cannot be implemented with %d two-input gates.\n", pPars->nVars, pPars->nNodes );
+        return 1;
+    }
+    if ( pPars->nVars > 10 )
+    {
+        Abc_Print( -1, "Function should not have more than 10 inputs.\n" );
+        return 1;
+    }
+    if ( pPars->fGlucose )
+        Exa_ManExactSynthesis( pPars );
+    else
+        Exa_ManExactSynthesis2( pPars );
+    return 0;
+
+usage:
+    Abc_Print( -2, "usage: twoexact [-IN <num>] [-aogvh] <hex>\n" );
+    Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );
+    Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
+    Abc_Print( -2, "\t-N <num> : the number of MAJ3 nodes [default = %d]\n", pPars->nNodes );
+    Abc_Print( -2, "\t-a       : toggle using only AND-gates (without XOR-gates) [default = %s]\n", pPars->fOnlyAnd ? "yes" : "no" );
+    Abc_Print( -2, "\t-o       : toggle using additional optimizations [default = %s]\n", pPars->fFewerVars ? "yes" : "no" );
+    Abc_Print( -2, "\t-g       : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n", pPars->fGlucose ? "yes" : "no" );
+    Abc_Print( -2, "\t-v       : toggle verbose printout [default = %s]\n", pPars->fVerbose ? "yes" : "no" );
+    Abc_Print( -2, "\t-h       : print the command usage\n" );
+    Abc_Print( -2, "\t<hex>    : truth table in hex notation\n" );
+    Abc_Print( -2, "\t           \n" );
+    Abc_Print( -2, "\t           For example, command line \"twoexact -g -I 5 -N 12 169AE443\"\n" );
+    Abc_Print( -2, "\t           synthesizes the smallest circuit composed of two-input gates\n" );
+    Abc_Print( -2, "\t           for the only NPN class of 5-input functions that requires 12 gates;\n" );
+    Abc_Print( -2, "\t           all other functions can be realized with 11 two-input gates or less\n" );
+    Abc_Print( -2, "\t           (see Section 7.1.2 \"Boolean evaluation\" in the book by Donald Knuth\n" );
+    Abc_Print( -2, "\t           http://www.cs.utsa.edu/~wagner/knuth/fasc0c.pdf)\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_CommandLutExact( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Exa3_ManExactSynthesis( Bmc_EsPar_t * pPars );
+    extern void Exa3_ManExactSynthesis2( Bmc_EsPar_t * pPars );
+    int c;
+    Bmc_EsPar_t Pars, * pPars = &Pars;
+    Bmc_EsParSetDefault( pPars );
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "INKaogvh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'I':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nVars = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nVars < 0 )
+                goto usage;
+            break;
+        case 'N':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-N\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nNodes = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nNodes < 0 )
+                goto usage;
+            break;
+       case 'K':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-K\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nLutSize = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nLutSize < 0 )
+                goto usage;
+            break;
+        case 'a':
+            pPars->fOnlyAnd ^= 1;
+            break;
+        case 'o':
+            pPars->fFewerVars ^= 1;
+            break;
+        case 'g':
+            pPars->fGlucose ^= 1;
+            break;
+        case 'v':
+            pPars->fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( argc == globalUtilOptind + 1 )
+        pPars->pTtStr = argv[globalUtilOptind];
+    if ( pPars->pTtStr == NULL )
+    {
+        Abc_Print( -1, "Truth table should be given on the command line.\n" );
+        return 1;
+    }
+    if ( (1 << (pPars->nVars-2)) != (int)strlen(pPars->pTtStr) )
+    {
+        Abc_Print( -1, "Truth table is expected to have %d hex digits (instead of %d).\n", (1 << (pPars->nVars-2)), strlen(pPars->pTtStr) );
+        return 1;
+    }
+    if ( pPars->nVars > pPars->nNodes * (pPars->nLutSize - 1) + 1 )
+    {
+        Abc_Print( -1, "Function with %d variales cannot be implemented with %d %d-input LUTs.\n", pPars->nVars, pPars->nNodes, pPars->nLutSize );
+        return 1;
+    }
+    if ( pPars->nVars > 10 )
+    {
+        Abc_Print( -1, "Function should not have more than 10 inputs.\n" );
+        return 1;
+    }
+    if ( pPars->nLutSize > 6 )
+    {
+        Abc_Print( -1, "Node size should not be more than 6 inputs.\n" );
+        return 1;
+    }
+    if ( pPars->fGlucose )
+        Exa3_ManExactSynthesis( pPars );
+    else
+        Exa3_ManExactSynthesis2( pPars );
+    return 0;
+
+usage:
+    Abc_Print( -2, "usage: lutexact [-INK <num>] [-aogvh] <hex>\n" );
+    Abc_Print( -2, "\t           exact synthesis of I-input function using N K-input gates\n" );
+    Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
+    Abc_Print( -2, "\t-N <num> : the number of K-input nodes [default = %d]\n", pPars->nNodes );
+    Abc_Print( -2, "\t-K <num> : the number of node fanins [default = %d]\n", pPars->nLutSize );
+    Abc_Print( -2, "\t-a       : toggle using only AND-gates when K = 2 [default = %s]\n", pPars->fOnlyAnd ? "yes" : "no" );
+    Abc_Print( -2, "\t-o       : toggle using additional optimizations [default = %s]\n", pPars->fFewerVars ? "yes" : "no" );
+    Abc_Print( -2, "\t-g       : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n", pPars->fGlucose ? "yes" : "no" );
+    Abc_Print( -2, "\t-v       : toggle verbose printout [default = %s]\n", pPars->fVerbose ? "yes" : "no" );
+    Abc_Print( -2, "\t-h       : print the command usage\n" );
+    Abc_Print( -2, "\t<hex>    : truth table in hex notation\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_CommandAllExact( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Zyx_ManExactSynthesis( Bmc_EsPar_t * pPars );
+    int c;
+    Bmc_EsPar_t Pars, * pPars = &Pars;
+    Bmc_EsParSetDefault( pPars );
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "MINKaoegvh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'M':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-M\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nMajSupp = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nMajSupp < 0 )
+                goto usage;
+            break;
+        case 'I':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nVars = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nVars < 0 )
+                goto usage;
+            break;
+        case 'N':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-N\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nNodes = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nNodes < 0 )
+                goto usage;
+            break;
+       case 'K':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-K\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->nLutSize = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->nLutSize < 0 )
+                goto usage;
+            break;
+        case 'a':
+            pPars->fOnlyAnd ^= 1;
+            break;
+        case 'o':
+            pPars->fOrderNodes ^= 1;
+            break;
+        case 'e':
+            pPars->fEnumSols ^= 1;
+            break;
+        case 'g':
+            pPars->fGlucose ^= 1;
+            break;
+        case 'v':
+            pPars->fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( pPars->nMajSupp > 0 )
+    {
+        if ( pPars->nMajSupp != 5 && pPars->nMajSupp != 7 && pPars->nMajSupp != 9 )
+        {
+            Abc_Print( -1, "Currently only support majority with 5, 7 or 9 inputs.\n" );
+            return 1;
+        }
+        pPars->nVars = pPars->nMajSupp;
+        pPars->nLutSize = 3;
+        pPars->fMajority = 1;
+        if ( pPars->nNodes == 0 )
+        {
+            if ( pPars->nMajSupp == 5 )
+                pPars->nNodes = 4;
+            if ( pPars->nMajSupp == 7 )
+                pPars->nNodes = 7;
+            if ( pPars->nMajSupp == 9 )
+                pPars->nNodes = 10;
+        }
+    }
+    else
+    {
+        if ( pPars->nVars == 0 )
+        {
+            Abc_Print( -1, "The number of variables (-I num) needs to be specified on the command line.\n" );
+            return 1;
+        }
+        if ( pPars->nNodes == 0 )
+        {
+            Abc_Print( -1, "The number of nodes (-N num) needs to be specified on the command line.\n" );
+            return 1;
+        }
+        if ( argc == globalUtilOptind + 1 )
+            pPars->pTtStr = argv[globalUtilOptind];
+        if ( pPars->pTtStr == NULL )
+        {
+            Abc_Print( -1, "Truth table should be given on the command line.\n" );
+            return 1;
+        }
+        if ( (1 << (pPars->nVars-2)) != (int)strlen(pPars->pTtStr) )
+        {
+            Abc_Print( -1, "Truth table is expected to have %d hex digits (instead of %d).\n", (1 << (pPars->nVars-2)), strlen(pPars->pTtStr) );
+            return 1;
+        }
+    }
+    if ( pPars->nVars > pPars->nNodes * (pPars->nLutSize - 1) + 1 )
+    {
+        Abc_Print( -1, "Function with %d variales cannot be implemented with %d %d-input LUTs.\n", pPars->nVars, pPars->nNodes, pPars->nLutSize );
+        return 1;
+    }
+    if ( pPars->nVars > 10 )
+    {
+        Abc_Print( -1, "Function should not have more than 10 inputs.\n" );
+        return 1;
+    }
+    if ( pPars->nLutSize > 6 )
+    {
+        Abc_Print( -1, "Node size should not be more than 6 inputs.\n" );
+        return 1;
+    }
+    Zyx_ManExactSynthesis( pPars );
+    return 0;
+
+usage:
+    Abc_Print( -2, "usage: allexact [-MIKN <num>] [-aoevh] <hex>\n" );
+    Abc_Print( -2, "\t           exact synthesis of I-input function using N K-input gates\n" );
+    Abc_Print( -2, "\t-M <num> : the majority support size (overrides -I and -K) [default = %d]\n", pPars->nMajSupp );
+    Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
+    Abc_Print( -2, "\t-K <num> : the number of node fanins [default = %d]\n", pPars->nLutSize );
+    Abc_Print( -2, "\t-N <num> : the number of K-input nodes [default = %d]\n", pPars->nNodes );
+    Abc_Print( -2, "\t-a       : toggle using only AND-gates when K = 2 [default = %s]\n", pPars->fOnlyAnd ? "yes" : "no" );
+    Abc_Print( -2, "\t-o       : toggle using node ordering by fanins [default = %s]\n", pPars->fOrderNodes ? "yes" : "no" );
+    Abc_Print( -2, "\t-e       : toggle enumerating all solutions [default = %s]\n", pPars->fEnumSols ? "yes" : "no" );
+//    Abc_Print( -2, "\t-g       : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n", pPars->fGlucose ? "yes" : "no" );
+    Abc_Print( -2, "\t-v       : toggle verbose printout [default = %s]\n", pPars->fVerbose ? "yes" : "no" );
+    Abc_Print( -2, "\t-h       : print the command usage\n" );
+    Abc_Print( -2, "\t<hex>    : truth table in hex notation\n" );
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_CommandTestExact( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Zyx_TestExact( char * pFileName );
+    char * pFileName = NULL;
+    int c, fVerbose = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "vh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+       case 'v':
+            fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( argc == globalUtilOptind + 1 )
+        pFileName = argv[globalUtilOptind];
+    if ( pFileName == NULL )
+    {
+        Abc_Print( -1, "File name is not given on the command line.\n" );
+        return 1;
+    }
+    Zyx_TestExact( pFileName );
+    return 0;
+
+usage:
+    Abc_Print( -2, "usage: testexact <file>\n" );
+    Abc_Print( -2, "\t           tests solution of the exact synthesis problem\n" );
+    Abc_Print( -2, "\t-v       : toggle verbose printout [default = %s]\n", fVerbose ? "yes" : "no" );
+    Abc_Print( -2, "\t-h       : print the command usage\n" );
+    Abc_Print( -2, "\t<file>   : file name in the specified format\n" );
     return 1;
 }
 
@@ -12546,7 +13028,7 @@ int Abc_CommandTest( Abc_Frame_t * pAbc, int argc, char ** argv )
 //        Cba_PrsReadBlifTest();
     }
 //    Abc_NtkComputePaths( Abc_FrameReadNtk(pAbc) );
-//    Psl_FileTest();
+//    Maj_ManExactSynthesisTest();
     return 0;
 usage:
     Abc_Print( -2, "usage: test [-CKDNM] [-aovwh] <file_name>\n" );
@@ -24607,7 +25089,7 @@ usage:
     Abc_Print( -2, "\t-L file: the log file name [default = %s]\n", pLogFileName ? pLogFileName : "no logging" );
     Abc_Print( -2, "\t-r     : toggle the use of rewriting [default = %s]\n", fRewrite? "yes": "no" );
 //    Abc_Print( -2, "\t-a     : toggle SAT sweeping and SAT solving [default = %s]\n", fNewAlgo? "SAT solving": "SAT sweeping" );
-    Abc_Print( -2, "\t-s     : toggle using Satoko instead of build-in MiniSAT [default = %s]\n", fUseSatoko? "yes": "no" );
+    Abc_Print( -2, "\t-s     : toggle using Satoko by Bruno Schmitt [default = %s]\n", fUseSatoko? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle verbose output [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
@@ -24803,7 +25285,7 @@ usage:
     Abc_Print( -2, "\t-D num : the delta in the number of nodes [default = %d]\n", nNodeDelta );
     Abc_Print( -2, "\t-L file: the log file name [default = %s]\n", pLogFileName ? pLogFileName : "no logging" );
     Abc_Print( -2, "\t-u     : toggle performing structural OR-decomposition [default = %s]\n", fOrDecomp? "yes": "no" );
-    Abc_Print( -2, "\t-s     : toggle using Satoko instead of build-in MiniSAT [default = %s]\n", fUseSatoko? "yes": "no" );
+    Abc_Print( -2, "\t-s     : toggle using Satoko by Bruno Schmitt [default = %s]\n", fUseSatoko? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle verbose output [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
@@ -25094,8 +25576,8 @@ usage:
     Abc_Print( -2, "\t-d     : toggle dropping (replacing by 0) SAT outputs [default = %s]\n",    pPars->fDropSatOuts? "yes": "no" );
     Abc_Print( -2, "\t-u     : toggle performing structural OR-decomposition [default = %s]\n",   fOrDecomp? "yes": "not" );
     Abc_Print( -2, "\t-r     : toggle disabling periodic restarts [default = %s]\n",              pPars->fNoRestarts? "yes": "no" );
-    Abc_Print( -2, "\t-s     : toggle using Satoko instead of build-in MiniSAT [default = %s]\n", pPars->fUseSatoko? "yes": "no" );
-    Abc_Print( -2, "\t-g     : toggle using Glucose instead of build-in MiniSAT [default = %s]\n",pPars->fUseGlucose? "yes": "no" );
+    Abc_Print( -2, "\t-s     : toggle using Satoko by Bruno Schmitt [default = %s]\n", pPars->fUseSatoko? "yes": "no" );
+    Abc_Print( -2, "\t-g     : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n",pPars->fUseGlucose? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle verbose output [default = %s]\n",                           pPars->fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-z     : toggle suppressing report about solved outputs [default = %s]\n",  pPars->fNotVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
@@ -28964,7 +29446,7 @@ int Abc_CommandAbc9WriteVer( Abc_Frame_t * pAbc, int argc, char ** argv )
         return 1;
     }
     Abc_NtkInsertHierarchyGia( pNtkSpec, pAbc->pNtkCur, fVerbose );
-    Io_WriteVerilog( pNtkSpec, pFileName );
+    Io_WriteVerilog( pNtkSpec, pFileName, 0 );
     Abc_NtkDelete( pNtkSpec );
     return 0;
 
@@ -40324,7 +40806,7 @@ usage:
     Abc_Print( -2, "\t-F num : the maximum number of timeframes [default = %d]\n",            pPars->nFramesMax );
     Abc_Print( -2, "\t-A num : the number of additional frames to unroll [default = %d]\n",   pPars->nFramesAdd );
     Abc_Print( -2, "\t-T num : approximate timeout in seconds [default = %d]\n",              pPars->nTimeOut );
-    Abc_Print( -2, "\t-g     : toggle using Glucose 3.0 [default = %s]\n",                    pPars->fUseGlucose?  "Glucose" : "Satoko" );
+    Abc_Print( -2, "\t-g     : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n", pPars->fUseGlucose?  "Glucose" : "Satoko" );
     Abc_Print( -2, "\t-e     : toggle using variable eliminatation [default = %s]\n",         pPars->fUseEliminate?"yes": "no" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n",         pPars->fVerbose?     "yes": "no" );
     Abc_Print( -2, "\t-w     : toggle printing information about unfolding [default = %s]\n", pPars->fVeryVerbose? "yes": "no" );
@@ -40939,15 +41421,16 @@ usage:
 int Abc_CommandAbc9Qbf( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     extern void Gia_QbfDumpFile( Gia_Man_t * pGia, int nPars );
-    extern int Gia_QbfSolve( Gia_Man_t * pGia, int nPars, int nIterLimit, int nConfLimit, int nTimeOut, int fVerbose );
+    extern int Gia_QbfSolve( Gia_Man_t * pGia, int nPars, int nIterLimit, int nConfLimit, int nTimeOut, int fGlucose, int fVerbose );
     int c, nPars   = -1;
     int nIterLimit =  0;
     int nConfLimit =  0;
     int nTimeOut   =  0;
     int fDumpCnf   =  0;
+    int fGlucose   =  0;
     int fVerbose   =  0;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "PICTdvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "PICTdgvh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -40998,6 +41481,9 @@ int Abc_CommandAbc9Qbf( Abc_Frame_t * pAbc, int argc, char ** argv )
         case 'd':
             fDumpCnf ^= 1;
             break;
+        case 'g':
+            fGlucose ^= 1;
+            break;
         case 'v':
             fVerbose ^= 1;
             break;
@@ -41030,17 +41516,18 @@ int Abc_CommandAbc9Qbf( Abc_Frame_t * pAbc, int argc, char ** argv )
     if ( fDumpCnf )
         Gia_QbfDumpFile( pAbc->pGia, nPars );
     else
-        Gia_QbfSolve( pAbc->pGia, nPars, nIterLimit, nConfLimit, nTimeOut, fVerbose );
+        Gia_QbfSolve( pAbc->pGia, nPars, nIterLimit, nConfLimit, nTimeOut, fGlucose, fVerbose );
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: &qbf [-PICT num] [-dvh]\n" );
+    Abc_Print( -2, "usage: &qbf [-PICT num] [-dgvh]\n" );
     Abc_Print( -2, "\t         solves QBF problem EpVxM(p,x)\n" );
     Abc_Print( -2, "\t-P num : number of parameters p (should be the first PIs) [default = %d]\n", nPars );
     Abc_Print( -2, "\t-I num : quit after the given iteration even if unsolved [default = %d]\n", nIterLimit );
     Abc_Print( -2, "\t-C num : conflict limit per problem [default = %d]\n", nConfLimit );
     Abc_Print( -2, "\t-T num : global timeout [default = %d]\n", nTimeOut );
     Abc_Print( -2, "\t-d     : toggle dumping QDIMACS file instead of solving [default = %s]\n", fDumpCnf? "yes": "no" );
+    Abc_Print( -2, "\t-g     : toggle using Glucose 3.0 by Gilles Audemard and Laurent Simon [default = %s]\n", fGlucose? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle verbose output [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;

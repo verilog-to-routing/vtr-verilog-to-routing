@@ -59,7 +59,7 @@ struct Cbs_Que_t_
     Gia_Obj_t **  pData;        // nodes stored in the queue
 };
  
-typedef struct Cbs_Man_t_ Cbs_Man_t;
+//typedef struct Cbs_Man_t_ Cbs_Man_t;
 struct Cbs_Man_t_
 {
     Cbs_Par_t     Pars;         // parameters
@@ -134,6 +134,10 @@ void Cbs_SetDefaultParams( Cbs_Par_t * pPars )
     pPars->fUseMaxFF   =     0;   // use node with the largest fanin fanout
     pPars->fVerbose    =     1;   // print detailed statistics
 }
+void Cbs_ManSetConflictNum( Cbs_Man_t * p, int Num )
+{
+    p->Pars.nBTLimit = Num;
+}
 
 /**Function*************************************************************
 
@@ -146,7 +150,7 @@ void Cbs_SetDefaultParams( Cbs_Par_t * pPars )
   SeeAlso     []
 
 ***********************************************************************/
-Cbs_Man_t * Cbs_ManAlloc()
+Cbs_Man_t * Cbs_ManAlloc( Gia_Man_t * pGia )
 {
     Cbs_Man_t * p;
     p = ABC_CALLOC( Cbs_Man_t, 1 );
@@ -158,6 +162,7 @@ Cbs_Man_t * Cbs_ManAlloc()
     p->vModel   = Vec_IntAlloc( 1000 );
     p->vLevReas = Vec_IntAlloc( 1000 );
     p->vTemp    = Vec_PtrAlloc( 1000 );
+    p->pAig     = pGia;
     Cbs_SetDefaultParams( &p->Pars );
     return p;
 }
@@ -619,7 +624,7 @@ static inline void Cbs_ManDeriveReason( Cbs_Man_t * p, int Level )
         pReason = Cbs_VarReason0( p, pObj );
         if ( pReason == pObj ) // no reason
         {
-            assert( pQue->pData[pQue->iHead] == NULL );
+            //assert( pQue->pData[pQue->iHead] == NULL );
             pQue->pData[pQue->iHead] = pObj;
             continue;
         }
@@ -929,7 +934,7 @@ int Cbs_ManSolve_rec( Cbs_Man_t * p, int Level )
   SeeAlso     []
 
 ***********************************************************************/
-int Cbs_ManSolve( Cbs_Man_t * p, Gia_Obj_t * pObj )
+int Cbs_ManSolve( Cbs_Man_t * p, Gia_Obj_t * pObj, Gia_Obj_t * pObj2 )
 {
     int RetValue = 0;
     s_Counter = 0;
@@ -938,6 +943,8 @@ int Cbs_ManSolve( Cbs_Man_t * p, Gia_Obj_t * pObj )
     assert( p->pClauses.iHead == 1 && p->pClauses.iTail == 1 );
     p->Pars.nBTThis = p->Pars.nJustThis = p->Pars.nBTThisNc = 0;
     Cbs_ManAssign( p, pObj, 0, NULL, NULL );
+    if ( pObj2 ) 
+    Cbs_ManAssign( p, pObj2, 0, NULL, NULL );
     if ( !Cbs_ManSolve_rec(p, 0) && !Cbs_ManCheckLimits(p) )
         Cbs_ManSaveModel( p, p->vModel );
     else
@@ -1014,9 +1021,8 @@ Vec_Int_t * Cbs_ManSolveMiterNc( Gia_Man_t * pAig, int nConfs, Vec_Str_t ** pvSt
     Gia_ManFillValue( pAig ); // maps nodes into trail ids
     Gia_ManSetPhase( pAig ); // maps nodes into trail ids
     // create logic network
-    p = Cbs_ManAlloc();
+    p = Cbs_ManAlloc( pAig );
     p->Pars.nBTLimit = nConfs;
-    p->pAig   = pAig;
     // create resulting data-structures
     vStatus   = Vec_StrAlloc( Gia_ManPoNum(pAig) );
     vCexStore = Vec_IntAlloc( 10000 );
@@ -1046,14 +1052,14 @@ Vec_Int_t * Cbs_ManSolveMiterNc( Gia_Man_t * pAig, int nConfs, Vec_Str_t ** pvSt
         clk = Abc_Clock();
         p->Pars.fUseHighest = 1;
         p->Pars.fUseLowest  = 0;
-        status = Cbs_ManSolve( p, Gia_ObjChild0(pRoot) );
+        status = Cbs_ManSolve( p, Gia_ObjChild0(pRoot), NULL );
 //        printf( "\n" );
 /*
         if ( status == -1 )
         {
             p->Pars.fUseHighest = 0;
             p->Pars.fUseLowest  = 1;
-            status = Cbs_ManSolve( p, Gia_ObjChild0(pRoot) );
+            status = Cbs_ManSolve( p, Gia_ObjChild0(pRoot), NULL );
         }
 */
         Vec_StrPush( vStatus, (char)status );

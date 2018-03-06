@@ -29,13 +29,13 @@ ABC_NAMESPACE_IMPL_START
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-static void Io_WriteVerilogInt( FILE * pFile, Abc_Ntk_t * pNtk );
+static void Io_WriteVerilogInt( FILE * pFile, Abc_Ntk_t * pNtk, int fOnlyAnds );
 static void Io_WriteVerilogPis( FILE * pFile, Abc_Ntk_t * pNtk, int Start );
 static void Io_WriteVerilogPos( FILE * pFile, Abc_Ntk_t * pNtk, int Start );
 static void Io_WriteVerilogWires( FILE * pFile, Abc_Ntk_t * pNtk, int Start );
 static void Io_WriteVerilogRegs( FILE * pFile, Abc_Ntk_t * pNtk, int Start );
 static void Io_WriteVerilogLatches( FILE * pFile, Abc_Ntk_t * pNtk );
-static void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk );
+static void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk, int fOnlyAnds );
 static int  Io_WriteVerilogWiresCount( Abc_Ntk_t * pNtk );
 static char * Io_WriteVerilogGetName( char * pName );
 
@@ -54,7 +54,7 @@ static char * Io_WriteVerilogGetName( char * pName );
   SeeAlso     []
 
 ***********************************************************************/
-void Io_WriteVerilog( Abc_Ntk_t * pNtk, char * pFileName )
+void Io_WriteVerilog( Abc_Ntk_t * pNtk, char * pFileName, int fOnlyAnds )
 {
     Abc_Ntk_t * pNetlist;
     FILE * pFile;
@@ -81,7 +81,7 @@ void Io_WriteVerilog( Abc_Ntk_t * pNtk, char * pFileName )
     if ( pNtk->pDesign )
     {
         // write the network first
-        Io_WriteVerilogInt( pFile, pNtk );
+        Io_WriteVerilogInt( pFile, pNtk, fOnlyAnds );
         // write other things
         Vec_PtrForEachEntry( Abc_Ntk_t *, pNtk->pDesign->vModules, pNetlist, i )
         {
@@ -89,12 +89,12 @@ void Io_WriteVerilog( Abc_Ntk_t * pNtk, char * pFileName )
             if ( pNetlist == pNtk )
                 continue;
 	        fprintf( pFile, "\n" );
-            Io_WriteVerilogInt( pFile, pNetlist );
+            Io_WriteVerilogInt( pFile, pNetlist, fOnlyAnds );
         }
     }
     else
     {
-        Io_WriteVerilogInt( pFile, pNtk );
+        Io_WriteVerilogInt( pFile, pNtk, fOnlyAnds );
     }
 
 	fprintf( pFile, "\n" );
@@ -112,7 +112,7 @@ void Io_WriteVerilog( Abc_Ntk_t * pNtk, char * pFileName )
   SeeAlso     []
 
 ***********************************************************************/
-void Io_WriteVerilogInt( FILE * pFile, Abc_Ntk_t * pNtk )
+void Io_WriteVerilogInt( FILE * pFile, Abc_Ntk_t * pNtk, int fOnlyAnds )
 {
     // write inputs and outputs
 //    fprintf( pFile, "module %s ( gclk,\n   ", Abc_NtkName(pNtk) );
@@ -163,7 +163,7 @@ void Io_WriteVerilogInt( FILE * pFile, Abc_Ntk_t * pNtk )
             fprintf( pFile, ";\n" );
         }
         // write nodes
-        Io_WriteVerilogObjects( pFile, pNtk );        
+        Io_WriteVerilogObjects( pFile, pNtk, fOnlyAnds );        
         // write registers
         if ( Abc_NtkLatchNum(pNtk) > 0 )
             Io_WriteVerilogLatches( pFile, pNtk );
@@ -483,7 +483,7 @@ void Io_WriteVerilogLatches( FILE * pFile, Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk )
+void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk, int fOnlyAnds )
 {
     int fUseSimpleGateNames = 0;
     Vec_Vec_t * vLevels;
@@ -566,7 +566,7 @@ void Io_WriteVerilogObjects( FILE * pFile, Abc_Ntk_t * pNtk )
             Abc_ObjForEachFanin( pObj, pFanin, k )
                 Hop_IthVar((Hop_Man_t *)pNtk->pManFunc, k)->pData = Extra_UtilStrsav(Io_WriteVerilogGetName(Abc_ObjName(pFanin)));
             // write the formula
-            Hop_ObjPrintVerilog( pFile, pFunc, vLevels, 0 );
+            Hop_ObjPrintVerilog( pFile, pFunc, vLevels, 0, fOnlyAnds );
             fprintf( pFile, ";\n" );
             // clear the input names
             Abc_ObjForEachFanin( pObj, pFanin, k )

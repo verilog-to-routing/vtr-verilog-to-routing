@@ -32,11 +32,13 @@ ABC_NAMESPACE_IMPL_START
 #define PARSE_EQN_SYM_CONST1  '1'   // constant 1
 #define PARSE_EQN_SYM_NEG     '!'   // negation before the variable
 #define PARSE_EQN_SYM_AND     '*'   // logic AND
+#define PARSE_EQN_SYM_XOR     '^'   // logic XOR
 #define PARSE_EQN_SYM_OR      '+'   // logic OR
 
 // the list of opcodes (also specifying operation precedence)
 #define PARSE_EQN_OPER_NEG    10    // negation
 #define PARSE_EQN_OPER_AND     9    // logic AND
+#define PARSE_EQN_OPER_XOR     8    // logic XOR
 #define PARSE_EQN_OPER_OR      7    // logic OR
 #define PARSE_EQN_OPER_MARK    1    // OpStack token standing for an opening parenthesis
 
@@ -138,6 +140,7 @@ Hop_Obj_t * Parse_FormulaParserEqn( FILE * pOutput, char * pFormInit, Vec_Ptr_t 
     		Parse_StackOpPush( pStackOp, PARSE_EQN_OPER_NEG );
 			break;
         case PARSE_EQN_SYM_AND:
+        case PARSE_EQN_SYM_XOR:
         case PARSE_EQN_SYM_OR:
 			if ( Flag != PARSE_EQN_FLAG_VAR )
 			{
@@ -147,8 +150,10 @@ Hop_Obj_t * Parse_FormulaParserEqn( FILE * pOutput, char * pFormInit, Vec_Ptr_t 
 			}
 			if ( *pTemp == PARSE_EQN_SYM_AND )
 				Parse_StackOpPush( pStackOp, PARSE_EQN_OPER_AND );
-			else //if ( *pTemp == PARSE_EQN_SYM_OR )
+			else if ( *pTemp == PARSE_EQN_SYM_OR )
 				Parse_StackOpPush( pStackOp, PARSE_EQN_OPER_OR );
+			else //if ( *pTemp == PARSE_EQN_SYM_XOR )
+				Parse_StackOpPush( pStackOp, PARSE_EQN_OPER_XOR );
 			Flag = PARSE_EQN_FLAG_OPER; 
             break;
 		case PARSE_EQN_SYM_OPEN:
@@ -204,7 +209,7 @@ Hop_Obj_t * Parse_FormulaParserEqn( FILE * pOutput, char * pFormInit, Vec_Ptr_t 
             // scan the next name
             for ( i = 0; pTemp[i] && 
                          pTemp[i] != ' ' && pTemp[i] != '\t' && pTemp[i] != '\r' && pTemp[i] != '\n' &&
-                         pTemp[i] != PARSE_EQN_SYM_AND && pTemp[i] != PARSE_EQN_SYM_OR && pTemp[i] != PARSE_EQN_SYM_CLOSE; i++ )
+                         pTemp[i] != PARSE_EQN_SYM_AND && pTemp[i] != PARSE_EQN_SYM_OR && pTemp[i] != PARSE_EQN_SYM_XOR && pTemp[i] != PARSE_EQN_SYM_CLOSE; i++ )
               {
 				    if ( pTemp[i] == PARSE_EQN_SYM_NEG || pTemp[i] == PARSE_EQN_SYM_OPEN )
 				    {
@@ -338,6 +343,8 @@ Hop_Obj_t * Parse_ParserPerformTopOp( Hop_Man_t * pMan, Parse_StackFn_t * pStack
 		gFunc = Hop_And( pMan, gArg1, gArg2 );
 	else if ( Oper == PARSE_EQN_OPER_OR )
 		gFunc = Hop_Or( pMan, gArg1, gArg2 );
+	else if ( Oper == PARSE_EQN_OPER_XOR )
+		gFunc = Hop_Exor( pMan, gArg1, gArg2 );
 	else
 		return NULL;
 //    Cudd_Ref( gFunc );

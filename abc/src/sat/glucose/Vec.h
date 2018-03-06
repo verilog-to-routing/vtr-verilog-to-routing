@@ -27,6 +27,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "sat/glucose/IntTypes.h"
 #include "sat/glucose/XAlloc.h"
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 namespace Gluco {
 
 //=================================================================================================
@@ -126,5 +128,7 @@ void vec<T>::clear(bool dealloc) {
 
 //=================================================================================================
 }
+
+ABC_NAMESPACE_CXX_HEADER_END
 
 #endif

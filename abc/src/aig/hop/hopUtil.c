@@ -366,7 +366,7 @@ void Hop_ObjPrintEqn( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, int L
   SeeAlso     []
 
 ***********************************************************************/
-void Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, int Level )
+void Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, int Level, int fOnlyAnds )
 {
     Vec_Ptr_t * vSuper;
     Hop_Obj_t * pFanin, * pFanin0, * pFanin1, * pFaninC;
@@ -387,7 +387,7 @@ void Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, i
         return;
     }
     // EXOR case
-    if ( Hop_ObjIsExor(pObj) )
+    if ( !fOnlyAnds && Hop_ObjIsExor(pObj) )
     {
         Vec_VecExpand( vLevels, Level );
         vSuper = Vec_VecEntry( vLevels, Level );
@@ -395,7 +395,7 @@ void Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, i
         fprintf( pFile, "%s", (Level==0? "" : "(") );
         Vec_PtrForEachEntry( Hop_Obj_t *, vSuper, pFanin, i )
         {
-            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin, (fCompl && i==0)), vLevels, Level+1 );
+            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin, (fCompl && i==0)), vLevels, Level+1, fOnlyAnds );
             if ( i < Vec_PtrSize(vSuper) - 1 )
                 fprintf( pFile, " ^ " );
         }
@@ -403,25 +403,25 @@ void Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, i
         return;
     }
     // MUX case
-    if ( Hop_ObjIsMuxType(pObj) )
+    if ( !fOnlyAnds && Hop_ObjIsMuxType(pObj) )
     {
         if ( Hop_ObjRecognizeExor( pObj, &pFanin0, &pFanin1 ) )
         {
             fprintf( pFile, "%s", (Level==0? "" : "(") );
-            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin0, fCompl), vLevels, Level+1 );
+            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin0, fCompl), vLevels, Level+1, fOnlyAnds );
             fprintf( pFile, " ^ " );
-            Hop_ObjPrintVerilog( pFile, pFanin1, vLevels, Level+1 );
+            Hop_ObjPrintVerilog( pFile, pFanin1, vLevels, Level+1, fOnlyAnds );
             fprintf( pFile, "%s", (Level==0? "" : ")") );
         }
         else 
         {
             pFaninC = Hop_ObjRecognizeMux( pObj, &pFanin1, &pFanin0 );
             fprintf( pFile, "%s", (Level==0? "" : "(") );
-            Hop_ObjPrintVerilog( pFile, pFaninC, vLevels, Level+1 );
+            Hop_ObjPrintVerilog( pFile, pFaninC, vLevels, Level+1, fOnlyAnds );
             fprintf( pFile, " ? " );
-            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin1, fCompl), vLevels, Level+1 );
+            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin1, fCompl), vLevels, Level+1, fOnlyAnds );
             fprintf( pFile, " : " );
-            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin0, fCompl), vLevels, Level+1 );
+            Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin0, fCompl), vLevels, Level+1, fOnlyAnds );
             fprintf( pFile, "%s", (Level==0? "" : ")") );
         }
         return;
@@ -433,7 +433,7 @@ void Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, i
     fprintf( pFile, "%s", (Level==0? "" : "(") );
     Vec_PtrForEachEntry( Hop_Obj_t *, vSuper, pFanin, i )
     {
-        Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin, fCompl), vLevels, Level+1 );
+        Hop_ObjPrintVerilog( pFile, Hop_NotCond(pFanin, fCompl), vLevels, Level+1, fOnlyAnds );
         if ( i < Vec_PtrSize(vSuper) - 1 )
             fprintf( pFile, " %s ", fCompl? "|" : "&" );
     }

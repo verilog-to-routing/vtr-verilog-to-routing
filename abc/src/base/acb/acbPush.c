@@ -46,7 +46,7 @@ void Acb_ObjPushToFanout( Acb_Ntk_t * p, int iObj, int iFaninIndex, int iFanout 
 {
     word c0, uTruthObjNew = 0, uTruthObj = Acb_ObjTruth( p, iObj ), Gate;
     word c1, uTruthFanNew = 0, uTruthFan = Acb_ObjTruth( p, iFanout );
-    int DecType = Abc_TtCheckOutAnd( uTruthObj, iFaninIndex, &uTruthObjNew );
+    int DecType = Abc_Tt6CheckOutDec( uTruthObj, iFaninIndex, &uTruthObjNew );
     int iFanin = Acb_ObjFanin( p, iObj, iFaninIndex );
     int iFanoutObjIndex = Acb_ObjWhatFanin( p, iFanout, iObj );
     int iFanoutFaninIndex = Acb_ObjWhatFanin( p, iFanout, iFanin );
@@ -274,7 +274,7 @@ static inline int Acb_ObjFindFanoutPushableIndex( Acb_Ntk_t * p, int iObj )
 {
     int k, iFanin, * pFanins;
     Acb_ObjForEachFaninFast( p, iObj, pFanins, iFanin, k )
-        if ( Abc_TtCheckOutAnd(Acb_ObjTruth(p, iObj), k, NULL) >= 0 )
+        if ( Abc_Tt6CheckOutDec(Acb_ObjTruth(p, iObj), k, NULL) >= 0 )
             return k;
     return -1;
 }

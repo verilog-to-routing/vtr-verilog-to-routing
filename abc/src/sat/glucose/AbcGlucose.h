@@ -4,7 +4,7 @@
 
   SystemName  [ABC: Logic synthesis and verification system.]
 
-  PackageName [SAT solver Glucose 3.0.]
+  PackageName [SAT solver Glucose 3.0 by Gilles Audemard and Laurent Simon.]
 
   Synopsis    [Interface to Glucose.]
 
@@ -31,12 +31,12 @@
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
 
-ABC_NAMESPACE_HEADER_START
-
 #define GLUCOSE_UNSAT -1
 #define GLUCOSE_SAT    1
 #define GLUCOSE_UNDEC  0
 
+
+ABC_NAMESPACE_HEADER_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -93,8 +93,9 @@ extern int               bmcg_sat_solver_learntnum( bmcg_sat_solver* s );
 extern int               bmcg_sat_solver_conflictnum( bmcg_sat_solver* s );
 extern int               bmcg_sat_solver_minimize_assumptions( bmcg_sat_solver * s, int * plits, int nlits, int pivot );
 extern int               bmcg_sat_solver_add_and( bmcg_sat_solver * s, int iVar, int iVar0, int iVar1, int fCompl0, int fCompl1, int fCompl );
-extern int               bmcg_sat_solver_quantify( bmcg_sat_solver * s[2], Gia_Man_t * p, int iLit, int(*pFuncCiToKeep)(int), int fHash );
+extern int               bmcg_sat_solver_quantify( bmcg_sat_solver * s[], Gia_Man_t * p, int iLit, int fHash, int(*pFuncCiToKeep)(void *, int), void * pData, Vec_Int_t * vDLits );
 extern int               bmcg_sat_solver_equiv_overlap_check( bmcg_sat_solver * s, Gia_Man_t * p, int iLit0, int iLit1, int fEquiv );
+extern Vec_Str_t *       bmcg_sat_solver_sop( Gia_Man_t * p, int CubeLimit );
 
 extern void              Glucose_SolveCnf( char * pFilename, Glucose_Pars * pPars );
 extern int               Glucose_SolveAig( Gia_Man_t * p, Glucose_Pars * pPars );

@@ -117,6 +117,10 @@ void Gia_ManStop( Gia_Man_t * p )
     Vec_IntFreeP( &p->vLevels );
     Vec_IntFreeP( &p->vTruths );
     Vec_IntErase( &p->vCopies );
+    Vec_IntErase( &p->vCopies2 );
+    Vec_IntErase( &p->vCopiesTwo );
+    Vec_IntErase( &p->vSuppVars );
+    Vec_WrdFreeP( &p->vSuppWords );
     Vec_IntFreeP( &p->vTtNums );
     Vec_IntFreeP( &p->vTtNodes );
     Vec_WrdFreeP( &p->vTtMemory );
@@ -137,6 +141,9 @@ void Gia_ManStop( Gia_Man_t * p )
     Gia_ManStopP( &p->pAigExtra );
     Vec_IntFree( p->vCis );
     Vec_IntFree( p->vCos );
+    Vec_IntErase( &p->vHash );
+    Vec_IntErase( &p->vHTable );
+    Vec_IntErase( &p->vRefs );
     ABC_FREE( p->pData2 );
     ABC_FREE( p->pTravIds );
     ABC_FREE( p->pPlacement );
@@ -152,7 +159,6 @@ void Gia_ManStop( Gia_Man_t * p )
     ABC_FREE( p->pSibls );
     ABC_FREE( p->pRefs );
     ABC_FREE( p->pLutRefs );
-    ABC_FREE( p->pHTable );
     ABC_FREE( p->pMuxes );
     ABC_FREE( p->pObjs );
     ABC_FREE( p->pSpec );
@@ -177,7 +183,7 @@ double Gia_ManMemory( Gia_Man_t * p )
     Memory += sizeof(Gia_Obj_t) * Gia_ManObjNum(p);
     Memory += sizeof(int) * Gia_ManCiNum(p);
     Memory += sizeof(int) * Gia_ManCoNum(p);
-    Memory += sizeof(int) * p->nHTable * (p->pHTable != NULL);
+    Memory += sizeof(int) * Vec_IntSize(&p->vHTable);
     Memory += sizeof(int) * Gia_ManObjNum(p) * (p->pRefs != NULL);
     Memory += Vec_IntMemory( p->vLevels );
     Memory += Vec_IntMemory( p->vCellMapping );
@@ -557,7 +563,7 @@ void Gia_ManPrintStats( Gia_Man_t * p, Gps_Par_t * pPars )
 */
         Gia_ManPrintTents( p );
     }
-    if ( pPars->fSlacks )
+    if ( pPars && pPars->fSlacks )
         Gia_ManDfsSlacksPrint( p );
 }
 

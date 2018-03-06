@@ -27,6 +27,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "sat/glucose/IntTypes.h"
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 //-------------------------------------------------------------------------------------------------
 
 namespace Gluco {
@@ -37,23 +39,34 @@ extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for 
 
 }
 
+ABC_NAMESPACE_CXX_HEADER_END
+
 //-------------------------------------------------------------------------------------------------
 // Implementation of inline functions:
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <time.h>
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 static inline double Gluco::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+
+ABC_NAMESPACE_CXX_HEADER_END
+
 
 #else
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
 
+ABC_NAMESPACE_CXX_HEADER_START
+
 static inline double Gluco::cpuTime(void) {
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
+
+ABC_NAMESPACE_CXX_HEADER_END
 
 #endif
 

@@ -35,9 +35,48 @@
 
 ABC_NAMESPACE_HEADER_START
 
+//#define USE_NODE_ORDER 1
+
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
+
+
+// exact synthesis parameters
+
+typedef struct Bmc_EsPar_t_ Bmc_EsPar_t;
+struct Bmc_EsPar_t_
+{
+    int        nVars; 
+    int        nNodes;
+    int        nLutSize;
+    int        nMajSupp;
+    int        fMajority;
+    int        fOnlyAnd;
+    int        fGlucose;
+    int        fOrderNodes;
+    int        fEnumSols;
+    int        fFewerVars;
+    int        fVerbose; 
+    char *     pTtStr;
+};
+
+static inline void Bmc_EsParSetDefault( Bmc_EsPar_t * pPars )
+{
+    memset( pPars, 0, sizeof(Bmc_EsPar_t) );
+    pPars->nVars       = 0; 
+    pPars->nNodes      = 0; 
+    pPars->nLutSize    = 2; 
+    pPars->nMajSupp    = 0;
+    pPars->fMajority   = 0; 
+    pPars->fOnlyAnd    = 0; 
+    pPars->fGlucose    = 0; 
+    pPars->fOrderNodes = 0; 
+    pPars->fEnumSols   = 0; 
+    pPars->fFewerVars  = 0; 
+    pPars->fVerbose    = 1; 
+}
+
 
 // unrolling manager 
 typedef struct Unr_Man_t_ Unr_Man_t;

@@ -73,9 +73,9 @@ struct Cec2_Man_t_
     abctime          timeStart;
 };
 
-static inline int    Cec2_ObjSatId( Gia_Man_t * p, Gia_Obj_t * pObj )             { return Gia_ObjCopyArray(p, Gia_ObjId(p, pObj));                                                     }
-static inline int    Cec2_ObjSetSatId( Gia_Man_t * p, Gia_Obj_t * pObj, int Num ) { assert(Cec2_ObjSatId(p, pObj) == -1); Gia_ObjSetCopyArray(p, Gia_ObjId(p, pObj), Num); return Num;  }
-static inline void   Cec2_ObjCleanSatId( Gia_Man_t * p, Gia_Obj_t * pObj )        { assert(Cec2_ObjSatId(p, pObj) != -1); Gia_ObjSetCopyArray(p, Gia_ObjId(p, pObj), -1);               }
+static inline int    Cec2_ObjSatId( Gia_Man_t * p, Gia_Obj_t * pObj )             { return Gia_ObjCopy2Array(p, Gia_ObjId(p, pObj));                                                     }
+static inline int    Cec2_ObjSetSatId( Gia_Man_t * p, Gia_Obj_t * pObj, int Num ) { assert(Cec2_ObjSatId(p, pObj) == -1); Gia_ObjSetCopy2Array(p, Gia_ObjId(p, pObj), Num); return Num;  }
+static inline void   Cec2_ObjCleanSatId( Gia_Man_t * p, Gia_Obj_t * pObj )        { assert(Cec2_ObjSatId(p, pObj) != -1); Gia_ObjSetCopy2Array(p, Gia_ObjId(p, pObj), -1);               }
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -310,49 +310,54 @@ void Cec2_ObjAddToFrontier( Gia_Man_t * p, Gia_Obj_t * pObj, Vec_Ptr_t * vFronti
     if ( Gia_ObjIsAnd(pObj) )
         Vec_PtrPush( vFrontier, pObj );
 }
-int Cec2_ObjGetCnfVar( Cec2_Man_t * p, int iObj )
+int Gia_ObjGetCnfVar( Gia_Man_t * pGia, int iObj, Vec_Ptr_t * vFrontier, Vec_Ptr_t * vFanins, satoko_t * pSat )
 { 
     Gia_Obj_t * pNode, * pFanin;
-    Gia_Obj_t * pObj = Gia_ManObj(p->pNew, iObj);
+    Gia_Obj_t * pObj = Gia_ManObj(pGia, iObj);
     int i, k, fUseMuxes = 1;
+    if ( Vec_IntSize(&pGia->vCopies2) < Gia_ManObjNum(pGia) )
+        Vec_IntFillExtra( &pGia->vCopies2, Gia_ManObjNum(pGia), -1 );
     // quit if CNF is ready
-    if ( Cec2_ObjSatId(p->pNew,pObj) >= 0 )
-        return Cec2_ObjSatId(p->pNew,pObj);
+    if ( Cec2_ObjSatId(pGia,pObj) >= 0 )
+        return Cec2_ObjSatId(pGia,pObj);
     assert( iObj > 0 );
     if ( Gia_ObjIsCi(pObj) )
-        return Cec2_ObjSetSatId( p->pNew, pObj, satoko_add_variable(p->pSat, 0) );
+        return Cec2_ObjSetSatId( pGia, pObj, satoko_add_variable(pSat, 0) );
     assert( Gia_ObjIsAnd(pObj) );
     // start the frontier
-    Vec_PtrClear( p->vFrontier );
-    Cec2_ObjAddToFrontier( p->pNew, pObj, p->vFrontier, p->pSat );
+    Vec_PtrClear( vFrontier );
+    Cec2_ObjAddToFrontier( pGia, pObj, vFrontier, pSat );
     // explore nodes in the frontier
-    Vec_PtrForEachEntry( Gia_Obj_t *, p->vFrontier, pNode, i )
+    Vec_PtrForEachEntry( Gia_Obj_t *, vFrontier, pNode, i )
     {
         // create the supergate
-        assert( Cec2_ObjSatId(p->pNew,pNode) >= 0 );
+        assert( Cec2_ObjSatId(pGia,pNode) >= 0 );
         if ( fUseMuxes && pNode->fMark0 )
         {
-            Vec_PtrClear( p->vFanins );
-            Vec_PtrPushUnique( p->vFanins, Gia_ObjFanin0( Gia_ObjFanin0(pNode) ) );
-            Vec_PtrPushUnique( p->vFanins, Gia_ObjFanin0( Gia_ObjFanin1(pNode) ) );
-            Vec_PtrPushUnique( p->vFanins, Gia_ObjFanin1( Gia_ObjFanin0(pNode) ) );
-            Vec_PtrPushUnique( p->vFanins, Gia_ObjFanin1( Gia_ObjFanin1(pNode) ) );
-            Vec_PtrForEachEntry( Gia_Obj_t *, p->vFanins, pFanin, k )
-                Cec2_ObjAddToFrontier( p->pNew, Gia_Regular(pFanin), p->vFrontier, p->pSat );
-            Cec2_AddClausesMux( p->pNew, pNode, p->pSat );
+            Vec_PtrClear( vFanins );
+            Vec_PtrPushUnique( vFanins, Gia_ObjFanin0( Gia_ObjFanin0(pNode) ) );
+            Vec_PtrPushUnique( vFanins, Gia_ObjFanin0( Gia_ObjFanin1(pNode) ) );
+            Vec_PtrPushUnique( vFanins, Gia_ObjFanin1( Gia_ObjFanin0(pNode) ) );
+            Vec_PtrPushUnique( vFanins, Gia_ObjFanin1( Gia_ObjFanin1(pNode) ) );
+            Vec_PtrForEachEntry( Gia_Obj_t *, vFanins, pFanin, k )
+                Cec2_ObjAddToFrontier( pGia, Gia_Regular(pFanin), vFrontier, pSat );
+            Cec2_AddClausesMux( pGia, pNode, pSat );
         }
         else
         {
-            Cec2_CollectSuper( pNode, fUseMuxes, p->vFanins );
-            Vec_PtrForEachEntry( Gia_Obj_t *, p->vFanins, pFanin, k )
-                Cec2_ObjAddToFrontier( p->pNew, Gia_Regular(pFanin), p->vFrontier, p->pSat );
-            Cec2_AddClausesSuper( p->pNew, pNode, p->vFanins, p->pSat );
+            Cec2_CollectSuper( pNode, fUseMuxes, vFanins );
+            Vec_PtrForEachEntry( Gia_Obj_t *, vFanins, pFanin, k )
+                Cec2_ObjAddToFrontier( pGia, Gia_Regular(pFanin), vFrontier, pSat );
+            Cec2_AddClausesSuper( pGia, pNode, vFanins, pSat );
         }
-        assert( Vec_PtrSize(p->vFanins) > 1 );
+        assert( Vec_PtrSize(vFanins) > 1 );
     }
-    return Cec2_ObjSatId(p->pNew,pObj);
+    return Cec2_ObjSatId(pGia,pObj);
 }
-
+int Cec2_ObjGetCnfVar( Cec2_Man_t * p, int iObj )
+{ 
+    return Gia_ObjGetCnfVar( p->pNew, iObj, p->vFrontier, p->vFanins, p->pSat );
+}
 
 
 /**Function*************************************************************
@@ -673,7 +678,7 @@ Cec2_Man_t * Cec2_ManCreate( Gia_Man_t * pAig, Cec2_Par_t * pPars )
     Gia_ManForEachCi( pAig, pObj, i )
         pObj->Value = Gia_ManAppendCi( p->pNew );
     Gia_ManHashAlloc( p->pNew );
-    Vec_IntFill( &p->pNew->vCopies, Gia_ManObjNum(p->pNew), -1 );
+    Vec_IntFill( &p->pNew->vCopies2, Gia_ManObjNum(p->pNew), -1 );
     // SAT solving
     memset( &Pars, 0, sizeof(satoko_opts_t) );
     p->pSat         = satoko_create();
@@ -952,14 +957,14 @@ int Cec2_ManPerformSweeping( Gia_Man_t * p, Cec2_Par_t * pPars, Gia_Man_t ** ppN
             assert( !Gia_ObjProved(p, i) && !Gia_ObjFailed(p, i) );
             // duplicate the node
             pObj->Value = Gia_ManHashAnd( pMan->pNew, Gia_ObjFanin0Copy(pObj), Gia_ObjFanin1Copy(pObj) );
-            if ( Vec_IntSize(&pMan->pNew->vCopies) == Abc_Lit2Var(pObj->Value) )
+            if ( Vec_IntSize(&pMan->pNew->vCopies2) == Abc_Lit2Var(pObj->Value) )
             {
                 pObjNew = Gia_ManObj( pMan->pNew, Abc_Lit2Var(pObj->Value) );
                 pObjNew->fMark0 = Gia_ObjIsMuxType( pObjNew );
                 Gia_ObjSetPhase( pMan->pNew, pObjNew );
-                Vec_IntPush( &pMan->pNew->vCopies, -1 );
+                Vec_IntPush( &pMan->pNew->vCopies2, -1 );
             }
-            assert( Vec_IntSize(&pMan->pNew->vCopies) == Gia_ManObjNum(pMan->pNew) );
+            assert( Vec_IntSize(&pMan->pNew->vCopies2) == Gia_ManObjNum(pMan->pNew) );
             pRepr = Gia_ObjReprObj( p, i );
             if ( pRepr == NULL || !~pRepr->Value )
                 continue;

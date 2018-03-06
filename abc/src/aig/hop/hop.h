@@ -337,7 +337,7 @@ extern int             Hop_ObjIsMuxType( Hop_Obj_t * pObj );
 extern int             Hop_ObjRecognizeExor( Hop_Obj_t * pObj, Hop_Obj_t ** ppFan0, Hop_Obj_t ** ppFan1 );
 extern Hop_Obj_t *     Hop_ObjRecognizeMux( Hop_Obj_t * pObj, Hop_Obj_t ** ppObjT, Hop_Obj_t ** ppObjE );
 extern void            Hop_ObjPrintEqn( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, int Level );
-extern void            Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, int Level );
+extern void            Hop_ObjPrintVerilog( FILE * pFile, Hop_Obj_t * pObj, Vec_Vec_t * vLevels, int Level, int fOnlyAnds );
 extern void            Hop_ObjPrintVerbose( Hop_Obj_t * pObj, int fHaig );
 extern void            Hop_ManPrintVerbose( Hop_Man_t * p, int fHaig );
 extern void            Hop_ManDumpBlif( Hop_Man_t * p, char * pFileName );

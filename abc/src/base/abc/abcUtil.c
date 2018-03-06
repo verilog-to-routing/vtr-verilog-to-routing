@@ -3235,7 +3235,7 @@ Gia_Man_t * Abc_NtkStrashToGia( Abc_Ntk_t * pNtk )
     Gia_ManStop( pTemp );
     return pNew;
 }
-Gia_Man_t * Abc_SopSynthesizeOne( char * pSop )
+Gia_Man_t * Abc_SopSynthesizeOne( char * pSop, int fClp )
 {
     Abc_Ntk_t * pNtkNew, * pNtk;
     Vec_Ptr_t * vSops;
@@ -3253,6 +3253,8 @@ Gia_Man_t * Abc_SopSynthesizeOne( char * pSop )
     pNtk = Abc_NtkCreateFromSops( "top", vSops );
     Vec_PtrFree( vSops );
     Abc_FrameReplaceCurrentNetwork( Abc_FrameReadGlobalFrame(), pNtk );
+    if ( fClp ) 
+    Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "clp; sop" );
     Cmd_CommandExecute( Abc_FrameGetGlobalFrame(), "fx; strash; balance; dc2" );
     pNtkNew = Abc_FrameReadNtk( Abc_FrameReadGlobalFrame() );
     return Abc_NtkStrashToGia( pNtkNew );

@@ -250,7 +250,7 @@ void Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdat
     Abc_AigReplace( (Abc_Aig_t *)pNtk->pManFunc, pRoot, pRootNew, fUpdateLevel );
     // compare the gains
     nNodesNew = Abc_NtkNodeNum(pNtk);
-    assert( nGain <= nNodesOld - nNodesNew );
+    //assert( nGain <= nNodesOld - nNodesNew );
 }
 
 
