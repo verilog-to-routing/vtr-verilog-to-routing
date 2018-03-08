@@ -31,6 +31,11 @@ namespace vtr {
         return !(lhs == rhs);
     }
 
+    template<class T>
+    bool operator<(Point<T> lhs, Point<T> rhs) {
+        return std::make_tuple(lhs.x(), lhs.y()) < std::make_tuple(rhs.x(), rhs.y());
+    }
+
     /*
      * Rect
      */
