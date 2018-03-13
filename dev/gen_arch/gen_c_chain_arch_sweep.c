@@ -304,7 +304,7 @@ static void print_header(FILE *fpout) {
 	fprintf(fpout, "        </mode>\n");
 	fprintf(fpout, "\n");
 	fprintf(fpout, "        <!-- Every input pin is driven by 15%% of the tracks in a channel, every output pin is driven by 10%% of the tracks in a channel -->\n");
-	fprintf(fpout, "        <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n");
+	fprintf(fpout, "        <fc in_type=\"frac\" in_val=\"0.15\" out_type=\"frac\" out_val=\"0.10\"/>\n");
 	fprintf(fpout, "\n");
 	fprintf(fpout, "        <!-- IOs go on the periphery of the FPGA, for consistency, \n");
 	fprintf(fpout, "          make it physically equivalent on all sides so that only one definition of I/Os is needed.\n");
@@ -623,7 +623,7 @@ static void print_clb(FILE *fpout, int FI, int clbI) {
 	fprintf(fpout, "        </interconnect>\n");
 	fprintf(fpout, "\n");
 
-	fprintf(fpout, "        <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\">\n");
+	fprintf(fpout, "        <fc in_type=\"frac\" in_val=\"0.15\" out_type=\"frac\" out_val=\"0.10\">\n");
 	fprintf(fpout, "          <pin name=\"cin\" fc_type=\"frac\" fc_val=\"0\"/>\n");
 	fprintf(fpout, "          <pin name=\"cout\" fc_type=\"frac\" fc_val=\"0\"/>\n");
 	fprintf(fpout, "        </fc>\n");
@@ -806,7 +806,7 @@ static void print_footer(FILE *fpout) {
 	fprintf(fpout, "\n");
 	fprintf(fpout, "      </mode>\n");
 	fprintf(fpout, "\n");
-	fprintf(fpout, "      <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n");
+	fprintf(fpout, "      <fc in_type=\"frac\" in_val=\"0.15\" out_type=\"frac\" out_val=\"0.10\"/>\n");
 	fprintf(fpout, "      <pinlocations pattern=\"spread\"/>\n");
 	fprintf(fpout, "\n");
 	fprintf(fpout, "      <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->\n");
@@ -1396,7 +1396,7 @@ static void print_footer(FILE *fpout) {
 	fprintf(fpout, "      </mode>\n");
 	fprintf(fpout, "\n");
 	fprintf(fpout, "      <!-- Every input pin is driven by 15%% of the tracks in a channel, every output pin is driven by 10%% of the tracks in a channel -->\n");
-	fprintf(fpout, "      <fc default_in_type=\"frac\" default_in_val=\"0.15\" default_out_type=\"frac\" default_out_val=\"0.10\"/>\n");
+	fprintf(fpout, "      <fc in_type=\"frac\" in_val=\"0.15\" out_type=\"frac\" out_val=\"0.10\"/>\n");
 	fprintf(fpout, "      <pinlocations pattern=\"spread\"/>\n");
 	fprintf(fpout, "\n");
 	fprintf(fpout, "      <!-- Place this memory block every 8 columns from (and including) the second column -->\n");

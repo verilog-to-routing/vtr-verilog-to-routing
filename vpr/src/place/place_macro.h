@@ -100,12 +100,12 @@
 	  
 	  A <fc> tag may have 0 or more children called <pin>. For each <fc>, there are the 
 	  following fields:
-	    1) default_in_type: This specifies the default fc_type for input pins. They could
+	    1) in_type: This specifies the default fc_type for input pins. They could
 		                    be "frac", "abs" or "full".
-		2) default_in_val: This specifies the default fc_value for input pins.
-		3) default_out_type: This specifies the default fc_type for output pins. They could
+		2) in_val: This specifies the default fc_value for input pins.
+		3) out_type: This specifies the default fc_type for output pins. They could
 		                     be "frac", "abs" or "full".
-		4) default_out_val: This specifies the default fc_value for output pins.
+		4) out_val: This specifies the default fc_value for output pins.
 
 	  As for the <pin> children, there are the following fields:
 	    1) name: This specifies the name of the port/pin that the fc_type and fc_value 
@@ -120,8 +120,8 @@
 	  The example of a pin-based fc_value specification below shows that the fc_values for
 	  the cout and the cin ports are 0:
 	   _______________________________________________________________________________
-      | <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac"      |
-	  |     default_out_val="0.15">                                                   |
+      | <fc in_type="frac" in_val="0.15" out_type="frac"      |
+	  |     out_val="0.15">                                                   |
       |    <pin name="cin" fc_type="frac" fc_val="0"/>                                |
       |    <pin name="cout" fc_type="frac" fc_val="0"/>                               |
       | </fc>                                                                         |

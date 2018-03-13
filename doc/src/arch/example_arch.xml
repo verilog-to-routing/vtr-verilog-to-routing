@@ -140,7 +140,7 @@
           </direct>
         </interconnect>
       </mode>
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <!-- IOs go on the periphery of the FPGA, for consistency, 
            make it physically equivalent on all sides so that only one definition of I/Os is needed.
            If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
@@ -208,7 +208,7 @@
         <complete name="clks" input="clb.clk" output="ble[9:0].clk"/>
         <direct name="clbouts" input="ble[9:0].out" output="clb.O"/>
       </interconnect>
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
       </pb_type>
 
@@ -491,7 +491,7 @@
           <direct name="clk" input="memory.clk" output="mem_18194x9_sp.clk"/>
         </interconnect>
       </mode>
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
       </pb_type>
   </complexblocklist>

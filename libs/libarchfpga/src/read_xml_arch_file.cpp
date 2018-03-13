@@ -1595,18 +1595,18 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
     float default_fc_out_value = std::numeric_limits<float>::quiet_NaN();
 
 	/* Load the default fc_in */
-	auto default_fc_in_attrib = get_attribute(Node, "default_in_type", loc_data);
+	auto default_fc_in_attrib = get_attribute(Node, "in_type", loc_data);
     default_fc_in_value_type = string_to_fc_value_type(default_fc_in_attrib.value(), Node, loc_data);
 
-    auto default_in_val_attrib = get_attribute(Node, "default_in_val", loc_data);
-    default_fc_in_value = vtr::atof(default_in_val_attrib.value());
+    auto in_val_attrib = get_attribute(Node, "in_val", loc_data);
+    default_fc_in_value = vtr::atof(in_val_attrib.value());
 
 	/* Load the default fc_out */
-	auto default_fc_out_attrib = get_attribute(Node, "default_out_type", loc_data);
+	auto default_fc_out_attrib = get_attribute(Node, "out_type", loc_data);
     default_fc_out_value_type = string_to_fc_value_type(default_fc_out_attrib.value(), Node, loc_data);
 
-    auto default_out_val_attrib = get_attribute(Node, "default_out_val", loc_data);
-    default_fc_out_value = vtr::atof(default_out_val_attrib.value());
+    auto out_val_attrib = get_attribute(Node, "out_val", loc_data);
+    default_fc_out_value = vtr::atof(out_val_attrib.value());
 
     /* Load any <fc_override/> tags */
     std::vector<t_fc_override> fc_overrides;

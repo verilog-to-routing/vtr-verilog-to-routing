@@ -125,7 +125,7 @@
       </mode>
     
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
     
       <!-- IOs go on the periphery of the FPGA, for consistency, 
               make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -3016,7 +3016,7 @@
           <T_clock_to_Q max="1.24e-10" port="ff.Q" clock="clk"/>
         </pb_type>
       </pb_type>
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.1"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.1"/>
       <pinlocations pattern="spread"/>
       </pb_type>
     <pb_type name="mult_36" height="4" area="396000">
@@ -3175,7 +3175,7 @@
     
       </mode>
     
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
     
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
@@ -3754,7 +3754,7 @@
       </mode>
     
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
     
       <!-- Place this memory block every 8 columns from (and including) the second column -->
