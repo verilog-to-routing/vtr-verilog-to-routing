@@ -34,6 +34,7 @@ supported_upgrades = [
     "uniqify_interconnect_names",
     "upgrade_connection_block_input_switch",
     "upgrade_switch_types",
+    "rename_fc_attributes",
 ]
 
 def parse_args():
@@ -103,6 +104,11 @@ def main():
 
     if "upgrade_switch_types" in args.features:
         result = upgrade_switch_types(arch)
+        if result:
+            modified = True
+
+    if "rename_fc_attributes" in args.features:
+        result = rename_fc_attributes(arch)
         if result:
             modified = True
 
@@ -656,6 +662,25 @@ def upgrade_switch_types(arch):
             modified = True
 
     return modified
+
+def rename_fc_attributes(arch):
+    """
+    Converts <fc> attributes of the form default_% to %
+    """
+    fc_tags = arch.findall(".//fc")
+
+    changed = False
+    for fc_tag in fc_tags:
+        assert fc_tag.tag == "fc"
+        attr_to_replace = ["default_in_type", "default_in_val", "default_out_type", "default_out_val"]
+        attr_list = list(fc_tag.attrib.keys())
+        for attr in attr_list:
+            if attr in attr_to_replace:
+                val = fc_tag.attrib[attr]
+                del fc_tag.attrib[attr]
+                fc_tag.attrib[attr.replace("default_", "")] = val
+                changed = True
+    return changed
 
 def get_port_names(string):
     ports = []
