@@ -317,22 +317,26 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	pugi::xml_node Cur;
 
 	capacity = Type->capacity;
+    if(!Locations) {
+        Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
+    } else {
+        expect_only_attributes(Locations, {"pattern"}, loc_data);
 
-    expect_only_attributes(Locations, {"pattern"}, loc_data);
+        Prop = get_attribute(Locations, "pattern", loc_data).value();
+        if (strcmp(Prop, "spread") == 0) {
+            Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
+        } else if (strcmp(Prop, "perimeter") == 0) {
+            Type->pin_location_distribution = E_PERIMETER_PIN_DISTR;
+        } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
+            Type->pin_location_distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
+        } else if (strcmp(Prop, "custom") == 0) {
+            Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                    "%s is an invalid pin location pattern.\n", Prop);
+        }
+    }
 
-	Prop = get_attribute(Locations, "pattern", loc_data).value();
-	if (strcmp(Prop, "spread") == 0) {
-		Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
-    } else if (strcmp(Prop, "perimeter") == 0) {
-		Type->pin_location_distribution = E_PERIMETER_PIN_DISTR;
-    } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
-		Type->pin_location_distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
-	} else if (strcmp(Prop, "custom") == 0) {
-		Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
-	} else {
-		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-				"%s is an invalid pin location pattern.\n", Prop);
-	}
 
 	/* Alloc and clear pin locations */
 	Type->pinloc = (bool ****) vtr::malloc(Type->width * sizeof(int ***));
@@ -501,7 +505,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                 }
             }
         }
-	} else {
+	} else if (Locations) {
         //Non-custom pin locations. There should be no child tags
         expect_child_node_count(Locations, 0, loc_data);
     }
@@ -2555,7 +2559,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Type->num_drivers = Type->capacity * Type->pb_type->num_output_pins;
 
 		/* Load pin names and classes and locations */
-		Cur = get_single_child(CurType, "pinlocations", loc_data);
+		Cur = get_single_child(CurType, "pinlocations", loc_data, OPTIONAL);
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
         //Warn that gridlocations is no longer supported
