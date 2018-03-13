@@ -406,9 +406,14 @@ The io pad is set to inpad mode and is driven by the inpad:
 
                         <clocks>
                         </clocks>
-                        
-                        <attribute name="vccio">3.3</attribute>
-                        <parameter name="iostandard">LVCMOS33</parameter>
+
+                        <attributes>
+                                <attribute name="vccio">3.3</attribute>
+                        </attributes>
+
+                        <parameters>
+                                <parameter name="iostandard">LVCMOS33</parameter>
+                        </parameters>
                 </block>
         </block>
     ...

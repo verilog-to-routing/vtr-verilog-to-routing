@@ -359,14 +359,16 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 		AtomBlockId atom_blk = atom_ctx.nlist.find_block(pb->name);
 		VTR_ASSERT(atom_blk);
 
+		pugi::xml_node attrs_node = block_node.append_child("attributes");
 		for (const auto& attr : atom_ctx.nlist.block_attrs(atom_blk)) {
-			pugi::xml_node attr_node = parent_node.append_child("attribute");
+			pugi::xml_node attr_node = attrs_node.append_child("attribute");
 			attr_node.append_attribute("name") = attr.first.c_str();
 			attr_node.text().set(attr.second.c_str());
 		}
-		
+
+		pugi::xml_node params_node = block_node.append_child("parameters");
 		for (const auto& param : atom_ctx.nlist.block_params(atom_blk)) {
-			pugi::xml_node param_node = parent_node.append_child("parameter");
+			pugi::xml_node param_node = params_node.append_child("parameter");
 			param_node.append_attribute("name") = param.first.c_str();
 			param_node.text().set(param.second.c_str());
 		}
