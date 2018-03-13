@@ -455,7 +455,7 @@
 				</interconnect>
 			</mode>
 
-			<fc default_in_type="abs" default_in_val="1" default_out_type="abs" default_out_val="1"/>
+			<fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
 
 			<pinlocations pattern="spread"/>
 
@@ -737,7 +737,7 @@
 					<complete name="CLK" input="SLICEL.CLK" output="ble6[3:0].CLK"/>
 				</interconnect>
 			</mode>
-			<fc default_in_type="abs" default_in_val="1" default_out_type="abs" default_out_val="1">
+			<fc in_type="abs" in_val="1" out_type="abs" out_val="1">
 				<!-- Carry chain pins have no access to general routing -->
 				<fc_override port_name="CIN" fc_type="frac" fc_val="0"/><fc_override port_name="COUT" fc_type="frac" fc_val="0"/></fc>
 
@@ -1014,7 +1014,7 @@
 				</interconnect>
 			</mode>
 
-			<fc default_in_type="abs" default_in_val="1" default_out_type="abs" default_out_val="1"/>
+			<fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
 			<pinlocations pattern="spread"/>
 
 			</pb_type>
@@ -4364,7 +4364,7 @@
 				</interconnect>
 			</mode>
 
-			<fc default_in_type="abs" default_in_val="1" default_out_type="abs" default_out_val="1"/>
+			<fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
 			<pinlocations pattern="spread"/>
 			</pb_type>
 		<pb_type name="BUFG" height="2" capacity="16">
@@ -4394,7 +4394,7 @@
 				<direct name="ignore" input="BUFG.IGNORE" output="BUFGCTRL.ignore"/>
 				<direct name="o" input="BUFGCTRL.o" output="BUFG.O"/>
 			</interconnect>
-			<fc default_in_type="abs" default_in_val="1" default_out_type="abs" default_out_val="1"/>
+			<fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
 			<pinlocations pattern="spread"/>
 			</pb_type>
 	</complexblocklist>

@@ -521,10 +521,10 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
     xend()  # pb_type ble
     
     xbegin("fc")
-    xprop("default_in_type", "frac")
-    xprop("default_in_val", Fc_in)
-    xprop("default_out_type", "frac")
-    xprop("default_out_val", Fc_out)
+    xprop("in_type", "frac")
+    xprop("in_val", Fc_in)
+    xprop("out_type", "frac")
+    xprop("out_val", Fc_out)
     xcloseend()
     
     xbegin("pinlocations")

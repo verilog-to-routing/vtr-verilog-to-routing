@@ -963,26 +963,26 @@ The following tags are common to all <pb_type> tags:
 The following tags are unique to the top level <pb_type> of a complex logic block.
 They describe how a complex block interfaces with the inter-block world.
 
-.. arch:tag:: <fc default_in_type="{frac|abs}" default_in_val="{int|float}" default_out_type="{frac|abs}" default_out_val="{int|float}">
+.. arch:tag:: <fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}">
 
-    :req_param default_in_type:
+    :req_param in_type:
         Indicates how the default :math:`F_c` values for input pins should be interpreted.
 
         ``frac``: The fraction of tracks in the channel from which each input pin connects.
 
         ``abs``: Interpreted as the absolute number of tracks from which each input pin connects.
 
-    :req_param default_in_val:
+    :req_param in_val:
         Fraction or number of tracks in a channel from which each input pin connects.
 
-    :req_param default_out_type:
+    :req_param out_type:
         Indicates how the default :math:`F_c` values for output pins should be interpreted.
 
         ``frac``: The fraction of tracks in the channel to which each output pin connects.
 
         ``abs``: Interpreted as the absolute number of tracks to which each output pin connects.
 
-    :req_param default_out_val:
+    :req_param out_val:
         Fraction or number of tracks in a channel to which each output pin connects.
 
     Sets the number of tracks to which each logic block pin connects in each channel bordering the pin.

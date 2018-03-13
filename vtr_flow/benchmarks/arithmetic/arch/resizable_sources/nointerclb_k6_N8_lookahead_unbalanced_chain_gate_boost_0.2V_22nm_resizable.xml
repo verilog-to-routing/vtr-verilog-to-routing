@@ -139,7 +139,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           </interconnect>
         </mode>
 
-        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
+        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -523,7 +523,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
           </direct>
         </interconnect>
 
-        <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10">
+        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10">
         </fc>
 
         <!-- Two sided connectivity CLB architecture--> 
@@ -712,7 +712,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
 
       </mode>
 
-      <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
@@ -1312,7 +1312,7 @@ Note: For ease of modelling, I optimistically assume that the 6-LUT can be bypas
       </mode>
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.10"/>
+      <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->
