@@ -24,8 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <vector>
-#include <string>
 #include "types.h"
 #include "globals.h"
 
@@ -41,7 +39,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_memory.h"
-#include "vtr_util.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -61,7 +58,6 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 
 void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist);
-void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *netlist);
 
 
 /*-------------------------------------------------------------------------
@@ -549,12 +545,23 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
  *-------------------------------------------------------------------------------------------*/
 void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, netlist_t *netlist)
 {
-	int i, j;
-
+	int width;
+	int i, j, k;
+	int port_B_offset;
+        int lenght_is_larger_others;
+	int *port_width;
+	nnode_t **new_logic_cells;
 	operation_list cell_op;
 
 	oassert(node->num_input_pins > 0);
 	oassert(node->num_input_port_sizes >= 2);
+	port_width = (int *)vtr::calloc(node->num_input_port_sizes,sizeof(int));
+	/* setup the calculations for padding and indexing */
+	width = node->output_port_sizes[0];
+	for(i = 0; i < node->num_input_port_sizes; i++){   
+		port_width[i] = node->input_port_sizes[i];  
+	}
+	port_B_offset = port_width[0];
 
 	switch (op)
 	{
@@ -581,28 +588,41 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			oassert(FALSE);
 			break;
 	}
-	
-	/* connect inputs.  In the case that a signal is smaller than the other then zero pad */
-	for(i = 0; i < node->output_port_sizes[0]; i++)
+	new_logic_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+	for (i = 0; i < width; i++)
 	{
-		nnode_t *new_logic_cells = make_nport_gate(cell_op, node->num_input_port_sizes, 1, 1, node, mark);
-		int current_port_offset = 0;
+		/* instantiate the cells */
+		new_logic_cells[i] = make_nport_gate(cell_op, node->num_input_port_sizes, 1, 1, node, mark);
+	}
+
+	/* connect inputs.  In the case that a signal is smaller than the other then zero pad */
+	for(i = 0; i < width; i++)
+	{
 		/* Joining the inputs to the input 1 of that gate */
-		for(j = 0; j < node->num_input_port_sizes; j++)
-		{
-			/* IF - this current input will also have a corresponding other input ports then join it to the gate */
-			if(i < node->input_port_sizes[j])
-				remap_pin_to_new_node(node->input_pins[i+current_port_offset], new_logic_cells, j);   
-				
-			/* ELSE - the input does not exist, so this answer goes right through */
-			else
-				add_input_pin_to_node(new_logic_cells, get_zero_pin(netlist), j); 
-			
-			current_port_offset += node->input_port_sizes[j];
+		for(j = 0; j < node->num_input_port_sizes; j++){
+			if(i < port_width[j]){
+			lenght_is_larger_others = 0;
+			for(k = 0; k < node->num_input_port_sizes && lenght_is_larger_others == 0; k++){
+			if(k == j){
+				if(i >= port_width[k]) { 
+				lenght_is_larger_others = 1;
+				}
+	                   }
+		}
+		if(lenght_is_larger_others == 0){ 
+		/* IF - this current input will also have a corresponding other input ports then join it to the gate */
+			remap_pin_to_new_node(node->input_pins[i+port_B_offset*j], new_logic_cells[i], j);             }
+		else {
+		/* ELSE - the input does not exist, so this answer goes right through */
+			add_input_pin_to_node(new_logic_cells[i], get_zero_pin(netlist), j); 
+                }
+            }      
         }       
 
-		remap_pin_to_new_node(node->output_pins[i], new_logic_cells, 0);
+		remap_pin_to_new_node(node->output_pins[i], new_logic_cells[i], 0);
 	}
+
+	vtr::free(new_logic_cells);
 }
 
 /*--------------------------------------------------------------------------
@@ -611,31 +631,135 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
  *	multi-output logic functions (BLIF).  We use one function for the 
  *	add, and one for the carry.
  *------------------------------------------------------------------------*/
+ 
 void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 {
-		// define locations in array when fetching pins
-	const int out = 0, input_a = 1, input_b = 2, pinout_count = 3;
+	
+	//int skip_size = strtol(global_args.carry_skip_size,NULL,10);
+	int width;
+	int width_a;
+	int width_b;
+	int i;
+	nnode_t **new_add_cells;
+	nnode_t **new_carry_cells;
 
 	oassert(node->num_input_pins > 0);
-	
-	int start_pin =0;
-	int counter =0;
-	nnode_t *carry_node_in = netlist->gnd_node;
-	
-	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
-	
+	//oassert(node->num_input_port_sizes == 2);
 	if(node->num_input_port_sizes == 2)
-		width[out] = node->output_port_sizes[0];
+		width = node->output_port_sizes[0];
 	else
-		width[out] = node->num_output_pins;
-		
-	width[input_a] = node->input_port_sizes[0];
-	width[input_b] = node->input_port_sizes[1];
+		width = node->num_output_pins;
+	width_a = node->input_port_sizes[0];
+	width_b = node->input_port_sizes[1];
+	
+	/*
+	int nb_of_parralel_adders = (skip_size)? 2: 1;
+	// find out how many muxes we need for carry skip
+	// if none ripple carry adder is used, keep it at 0
+	int nb_of_carry_mux = (skip_size)? width - skip_size: 0;
+	//first bit block does not need a selector mux for individual pinout
+	int nb_of_selector_mux = (skip_size)? ceil((double)width / double(skip_size)) -1: 0;
+	*/
+	new_add_cells  = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
 
-	instantiate_add_w_carry_block(width, node, carry_node_in, start_pin, mark, netlist, counter, 0);
+	/* create the adder units and the zero unit */
+	for (i = 0; i < width; i++)
+	{
+		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
+		// The last carry cell will be connected to an output pin, if one is available
+		new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
 
-	vtr::free(width);
+	}
+
+    /* ground first carry in */
+	if(node->num_input_port_sizes == 2)
+	{
+		add_input_pin_to_node(new_add_cells[0], get_zero_pin(netlist), 0);
+		if (i > 1)
+		{
+			add_input_pin_to_node(new_carry_cells[0], get_zero_pin(netlist), 0);
+		}
+	}
+	else
+	{
+		remap_pin_to_new_node(node->input_pins[width_a + width_b], new_add_cells[0], 0);
+		if (i > 1)
+		{
+			add_input_pin_to_node(new_carry_cells[0], copy_input_npin(new_add_cells[0]->input_pins[0]), 0);
+			//remap_pin_to_new_node(node->input_pins[width_a + width_b], new_carry_cells[0], 0);
+		}
+	}
+
+	/* connect inputs */
+	for(i = 0; i < width; i++)
+	{
+		if (i < width_a)
+		{
+			/* join the A port up to adder */
+			remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
+			if (i < width - 1)
+				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+		}
+		else 
+		{
+			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
+			if (i < width - 1)
+				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
+		}
+
+		if (i < width_b)
+		{
+			/* join the B port up to adder */
+			remap_pin_to_new_node(node->input_pins[i+width_a], new_add_cells[i], 2);
+			if (i < width - 1)
+				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[2]), 2);
+		}
+		else
+		{
+			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
+			if (i < width - 1)
+				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
+		}
+
+		/* join that gate to the output */
+		if(node->num_input_port_sizes == 2)
+			remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+		else
+		{
+			if(i != width - 1)
+			{
+				if(node->output_pins[i + 1]->type != NO_ID)
+					remap_pin_to_new_node(node->output_pins[i + 1], new_add_cells[i], 0);
+				else
+				{
+					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+				}
+			}
+			else
+				if(node->output_pins[0]->type != NO_ID)
+					remap_pin_to_new_node(node->output_pins[0], new_add_cells[i], 0);
+				else
+				{
+					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
+				}
+		}
+	}
+	
+	/* connect carry outs with carry ins */
+	for(i = 1; i < width; i++)
+	{
+		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
+		if (i < width - 1)
+			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
+	}
+
+	vtr::free(new_add_cells);
+	vtr::free(new_carry_cells);
 }
+
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_sub_w_carry )
  * 	This subtraction is intended for sof subtraction with output formats that can't handle 
@@ -643,32 +767,129 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 {
-		// define locations in array when fetching pins
-	const int out = 0, input_a = 1, input_b = 2, pinout_count = 3;
+	int width;
+	int width_a;
+	int width_b;
+	int i;
+	nnode_t **new_add_cells;
+	nnode_t **new_carry_cells;
+	nnode_t **new_not_cells;
 
 	oassert(node->num_input_pins > 0);
-	
-	int start_pin =0;
-	int counter =0;
-	nnode_t *carry_node_in = netlist->vcc_node;
-	
-	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
-	width[out] = node->output_port_sizes[0];
-	
-	if(node->num_input_port_sizes == 1)
+	oassert(node->num_input_port_sizes == 2);
+	width = node->output_port_sizes[0];
+	width_a = node->input_port_sizes[0];
+	width_b = node->input_port_sizes[1];
+
+	new_add_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+	new_not_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+
+	/* create the adder units and the zero unit */
+	for (i = 0; i < width; i++)
 	{
-		width[input_a] = 0;
-		width[input_b] = node->input_port_sizes[0];
-	}
-	else if(node->num_input_port_sizes == 2)
-	{
-		width[input_a] = node->input_port_sizes[0];
-		width[input_b] = node->input_port_sizes[1];
+		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
+		new_not_cells[i] = make_not_gate(node, mark);
+		if (i < width - 1)
+		{
+			new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+		}
 	}
 
-	instantiate_add_w_carry_block(width, node, carry_node_in, start_pin, mark, netlist, counter, 1);
+    	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
+	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
+	if (i > 1)
+	{
+		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
+	}
 
-	vtr::free(width);
+	/* connect inputs */
+	for(i = 0; i < width; i++)
+	{
+		if (i < width_a)
+		{
+			/* join the A port up to adder */
+			remap_pin_to_new_node(node->input_pins[i], new_add_cells[i], 1);
+			if (i < width - 1)
+				add_input_pin_to_node(new_carry_cells[i], copy_input_npin(new_add_cells[i]->input_pins[1]), 1);
+		}
+		else
+		{
+			add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 1);
+			if (i < width - 1)
+				add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 1);
+		}
+
+		if (i < width_b)
+		{
+			/* join the B port up to adder */
+			remap_pin_to_new_node(node->input_pins[i+width_a], new_not_cells[i], 0);
+		}
+		else 
+		{
+			add_input_pin_to_node(new_not_cells[i], get_zero_pin(netlist), 0);
+		}
+
+		/* now hookup not to adder parts */
+		/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+		 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+		if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+		{
+			connect_nodes(netlist->vcc_node, 0, new_add_cells[i], 2);
+			if(i == width - 1)
+			{
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+
+		}
+		else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+		{
+			connect_nodes(netlist->gnd_node, 0, new_add_cells[i], 2);
+			if(i == width - 1)
+			{
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+		}
+		else
+			connect_nodes(new_not_cells[i], 0, new_add_cells[i], 2);
+
+		if (i < width - 1)
+		{
+			/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+			 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+			if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+			{
+				connect_nodes(netlist->vcc_node, 0, new_carry_cells[i], 2);
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+			else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+			{
+				connect_nodes(netlist->gnd_node, 0, new_carry_cells[i], 2);
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+			else
+				connect_nodes(new_not_cells[i], 0, new_carry_cells[i], 2);
+		}
+
+		/* join that gate to the output */
+		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+	}
+	
+	/* connect carry outs with carry ins */
+	for(i = 1; i < width; i++)
+	{
+		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
+		if (i < width - 1)
+			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
+	}
+
+	vtr::free(new_add_cells);
+	vtr::free(new_carry_cells);
+	vtr::free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -677,7 +898,107 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 {
-	instantiate_sub_w_carry(node, mark, netlist);	
+	int width;
+	int i;
+	nnode_t **new_add_cells;
+	nnode_t **new_carry_cells;
+	nnode_t **new_not_cells;
+
+	oassert(node->num_input_pins > 0);
+	oassert(node->num_input_port_sizes == 1);
+	width = node->output_port_sizes[0];
+
+	new_add_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+	new_carry_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+	new_not_cells = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*width);
+
+	/* create the adder units and the zero unit */
+	for (i = 0; i < width; i++)
+	{
+		new_add_cells[i] = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
+		new_not_cells[i] = make_not_gate(node, mark);
+		if (i < width - 1)
+		{
+			new_carry_cells[i] = make_3port_gate(CARRY_FUNC, 1, 1, 1, 1, node, mark);
+		}
+	}
+
+    	/* ground first carry in .  Note the one constant is inputted to start 2's complement */
+	add_input_pin_to_node(new_add_cells[0], get_one_pin(netlist), 0);
+	if (i > 1)
+	{
+		add_input_pin_to_node(new_carry_cells[0], get_one_pin(netlist), 0);
+	}
+
+	/* connect inputs */
+	for(i = 0; i < width; i++)
+	{
+		/* join the A port up to adder */
+		remap_pin_to_new_node(node->input_pins[i], new_not_cells[i], 0);
+		/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+		 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+		if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+		{
+			connect_nodes(netlist->vcc_node, 0, new_add_cells[i], 1);
+			if(i == width - 1)
+			{
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+
+		}
+		else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+		{
+			connect_nodes(netlist->gnd_node, 0, new_add_cells[i], 1);
+			if(i == width - 1)
+			{
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+		}
+		else
+			connect_nodes(new_not_cells[i], 0, new_add_cells[i], 1);
+
+
+		if (i < width - 1)
+		{
+			/* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
+			 * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+			if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == GND_NODE)
+			{
+				connect_nodes(netlist->vcc_node, 0, new_carry_cells[i], 1);
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+			else if(new_not_cells[i]->input_pins[0]->net->driver_pin->node->type == VCC_NODE)
+			{
+				connect_nodes(netlist->gnd_node, 0, new_carry_cells[i], 1);
+				remove_fanout_pins_from_net(new_not_cells[i]->input_pins[0]->net, new_not_cells[i]->input_pins[0], new_not_cells[i]->input_pins[0]->pin_net_idx);
+				free_nnode(new_not_cells[i]);
+			}
+			else
+				connect_nodes(new_not_cells[i], 0, new_carry_cells[i], 1);
+		}
+
+		add_input_pin_to_node(new_add_cells[i], get_zero_pin(netlist), 2);
+		if (i < width - 1)
+			add_input_pin_to_node(new_carry_cells[i], get_zero_pin(netlist), 2);
+
+		/* join that gate to the output */
+		remap_pin_to_new_node(node->output_pins[i], new_add_cells[i], 0);
+	}
+	
+	/* connect carry outs with carry ins */
+	for(i = 1; i < width; i++)
+	{
+		connect_nodes(new_carry_cells[i-1], 0, new_add_cells[i], 0);
+		if (i < width - 1)
+			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
+	}
+
+	vtr::free(new_add_cells);
+	vtr::free(new_carry_cells);
+	vtr::free(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1083,253 +1404,3 @@ void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netl
 	instantiate_buffer(buf_node, mark, netlist);
 }
  
-/*---------------------------------------------------------------------------
- * (function: instantiate_simple_soft_multiplier )
- * Sample 4x4 multiplier to help understand logic.
- *
- * 					a3 	a2	a1	a0 
- *					b3 	b2 	b1 	b0
- *					---------------------------
- *					c03	c02	c01	c00
- *			+	c13	c12	c11	c10
- *			-----------------------------------	
- *			r14	r13	r12	r11	r10
- *		+	c23	c22	c21	c20
- *		-----------------------------------
- *		r24	r23	r22	r21	r20
- *	+	c33	c32	c31	c30
- *	------------------------------------
- *	o7	o6	o5	o4	o3	o2	o1	o0
- *
- *	In the first case will be c01
- *-------------------------------------------------------------------------*/
-void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *netlist)
-{
-	int width_a;
-	int width_b;
-	int width;
-	int multiplier_width;
-	int multiplicand_width;
-	nnode_t **adders_for_partial_products;
-	nnode_t ***partial_products;
-	int multiplicand_offset_index;
-	int multiplier_offset_index;
-	int current_index;
-	int i, j;
-
-	/* need for an carry-ripple-adder for each of the bits of port B. */
-	/* good question of which is better to put on the bottom of multiplier.  Larger means more smaller adds, or small is 
-	 * less large adds */
-	oassert(node->num_output_pins > 0);
-	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 2);
-	oassert(node->num_output_port_sizes == 1);
-	width_a = node->input_port_sizes[0];
-	width_b = node->input_port_sizes[1];
-	width = node->output_port_sizes[0];
-	multiplicand_width = width_b;
-	multiplier_width = width_a;
-	/* offset is related to which multport is chosen as the multiplicand */
-	multiplicand_offset_index = width_a;
-	multiplier_offset_index = 0;
-
-	adders_for_partial_products = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*multiplicand_width-1);
-
-	/* need to generate partial products for each bit in width B. */
-	partial_products = (nnode_t***)vtr::malloc(sizeof(nnode_t**)*multiplicand_width);
-
-	/* generate the AND partial products */
-	for (i = 0; i < multiplicand_width; i++)
-	{
-		/* create the memory for each AND gate needed for the levels of partial products */
-		partial_products[i] = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*multiplier_width);
-		
-		if (i < multiplicand_width - 1)
-		{
-			adders_for_partial_products[i] = make_2port_gate(ADD, multiplier_width+1, multiplier_width+1, multiplier_width+1, node, mark);
-		}
-
-		for (j = 0; j < multiplier_width; j++)
-		{
-			/* create each one of the partial products */
-			partial_products[i][j] = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
-		}
-	}
-
-	/* generate the coneections to the AND gates */
-	for (i = 0; i < multiplicand_width; i++)
-	{
-		for (j = 0; j < multiplier_width; j++)
-		{
-			/* hookup the input of B to each AND gate */
-			if (j == 0)
-			{
-				/* IF - this is the first time we are mapping multiplicand port then can remap */ 
-				remap_pin_to_new_node(node->input_pins[i+multiplicand_offset_index], partial_products[i][j], 0);
-			}
-			else
-			{
-				/* ELSE - this needs to be a new ouput of the multiplicand port */
-				add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[i][0]->input_pins[0]), 0);
-			}
-
-			/* hookup the input of the multiplier to each AND gate */
-			if (i == 0)
-			{
-				/* IF - this is the first time we are mapping multiplier port then can remap */ 
-				remap_pin_to_new_node(node->input_pins[j+multiplier_offset_index], partial_products[i][j], 1);
-			}
-			else
-			{
-				/* ELSE - this needs to be a new ouput of the multiplier port */
-				add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]), 1);
-			}
-		}
-	}
-
-	/* hookup each of the adders */
-	for (i = 0; i < multiplicand_width-1; i++) // -1 since the first stage is a combo of partial products while all others are part of tree
-	{
-		for (j = 0; j < multiplier_width+1; j++) // +1 since adders are one greater than multwidth to pass carry
-		{
-			/* join to port 1 of the add one of the partial products.  */
-			if (i == 0)
-			{
-				/* IF - this is the first addition row, then adding two sets of partial products and first set is from the c0* */
-				if (j < multiplier_width-1)
-				{
-					/* IF - we just take an element of the first list c[0][j+1]. */
-					connect_nodes(partial_products[i][j+1], 0, adders_for_partial_products[i], j);
-				}
-				else
-				{
-					/* ELSE - this is the last input to the first adder, then we pass in 0 since no carry yet */
-					add_input_pin_to_node(adders_for_partial_products[i], get_zero_pin(netlist), j);
-				}
-			}
-			else if (j < multiplier_width)
-			{
-				/* ELSE - this is the standard situation when we need to hookup this adder with a previous adder, r[i-1][j+1] */
-				connect_nodes(adders_for_partial_products[i-1], j+1, adders_for_partial_products[i], j);
-			}
-			else
-			{
-				add_input_pin_to_node(adders_for_partial_products[i], get_zero_pin(netlist), j);
-			}
-			
-			if (j < multiplier_width)
-			{
-				/* IF - this is not most significant bit then just add current partial product */
-				connect_nodes(partial_products[i+1][j], 0, adders_for_partial_products[i], j+multiplier_width+1);
-			}
-			else
-			{
-				add_input_pin_to_node(adders_for_partial_products[i], get_zero_pin(netlist), j+multiplier_width+1);
-			}
-		}
-	}
-
-	current_index = 0;
-	/* hookup the outputs */
-	for (i = 0; i < width; i++)
-	{
-		if (multiplicand_width == 1)
-		{
-			// this is undealt with
-			error_message(1,-1,-1,"Cannot create soft multiplier with multiplicand width of 1.\n");
-		}
-		else if (i == 0)
-		{
-			/* IF - this is the LSbit, then we use a pass through from the partial product */
-			remap_pin_to_new_node(node->output_pins[i], partial_products[0][0], 0);
-		}
-		else if (i < multiplicand_width - 1)
-		{
-			/* ELSE IF - these are the middle values that come from the LSbit of partial adders */
-			remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[i-1], 0);
-		}
-		else 
-		{
-			/* ELSE - the final outputs are straight from the outputs of the last adder */
-			remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width-2], current_index);
-			current_index++;
-		}
-	}
-
-	/* soft map the adders if they need to be mapped */
-	for (i = 0; i < multiplicand_width - 1; i++)
-	{
-		instantiate_add_w_carry(adders_for_partial_products[i], mark, netlist);
-	}
-
-	/* Cleanup everything */
-	if (adders_for_partial_products != NULL)
-	{
-		vtr::free(adders_for_partial_products);
-	}
-	/* generate the AND partial products */
-	for (i = 0; i < multiplicand_width; i++)
-	{
-		/* create the memory for each AND gate needed for the levels of partial products */
-		if (partial_products[i] != NULL)
-		{
-			vtr::free(partial_products[i]);
-		}
-	}
-	if (partial_products != NULL)
-	{
-		vtr::free(partial_products);
-	}
-}
-
-/*
-
-the shifter works using a crossbar, 
-
-
-void instantiate_simple_shifter(nnode_t *node, short mark, netlist_t *netlist)
-{
-	npin _t *pad_pin = get_zero_pin(netlist);
-	short negative_check_mux //MSB == 1 && left or right shift
-	
-	//shift left and shift right
-	if()
-	{
-		
-			// assign initial = (shift_left) ? input_a: reverse_endian(input_a);
-			// assign shifted = shift_left(initial, pad_with_zero):
-			
-			// //make sure to trim all the MSB that don't fit
-			// assign output = (shift_left)? shifted: reverse_endian(shifted); 
-		
-	}
-	//else if(only if input A and input B are signed numbers )
-	{
-		arithmetic shift left and arithmetic shift right
-		
-			assign padding = (arithmetic shift left) ? input_b[MSB]: NOT(input_b[MSB]);
-			assign initial = (padding == 0)? input_a: reverse_endian(input_a);
-			assign shifted = shift_left(initial, padding):
-			
-			//make sure to trim all the MSB that don't fit
-			assign output = (padding == 0)? shifted: reverse_endian(shifted); 
-	}
-
-	else
-	{
-		//unsuported
-		return;
-	}
-
-	
-	if(flip_bits)
-		//flip endian
-	instantiate_crossbar(node, mark, netlist, 0, pad_with);
-	
-	if(flip_bits)
-		// trim left-most bits
-		// flip endian
-		
-	
-}
-*/
