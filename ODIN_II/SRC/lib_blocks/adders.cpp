@@ -1304,6 +1304,11 @@ int match_pins(nnode_t *node, nnode_t *next_node)
  * ###########################################################
  * These are function for the soft_logic adders only
  *-------------------------------------------------------------------------------------------*/
+int fetch_blk_size(int full_width, int start_pin, int current_counter);
+void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, nnode_t *node, nnode_t *current_adder, short subtraction);
+nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_t *node, short mark);
+nnode_t *make_adder(nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
+nnode_t *duplicate_adder_input(operation_list funct, nnode_t *previous_carry, nnode_t *current_adder, nnode_t *node, short mark);
 
 /*---------------------------------------------------------------------------------------------
  * gets the adder blk size at a certain point in the adder using a define file input

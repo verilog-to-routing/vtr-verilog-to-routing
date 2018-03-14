@@ -339,19 +339,6 @@ typedef enum
 	RAM
 } ids;
 
-
-typedef enum{
-	ripple,
-	carry_skip,
-	parralel_adder,
-}type_of_adder_e;
-
-typedef enum{
-	fixed_step,
-	log_step,
-	increasing_step
-}step_type_e;
-
 struct typ_t
 {
 	char *identifier;
@@ -438,6 +425,18 @@ struct chain_information_t_t
 	int count;//the number of hard blocks in this chain
 	int num_bits;
 };
+
+typedef enum{
+	ripple,
+	carry_skip,
+	parralel_adder,
+}type_of_adder_e;
+
+typedef enum{
+	fixed_step,
+	log_step,
+	increasing_step
+}step_type_e;
 
 // to define type of adder in cmd line
 struct adder_def_t_t
