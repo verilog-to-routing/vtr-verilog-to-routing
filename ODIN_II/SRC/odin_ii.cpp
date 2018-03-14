@@ -348,7 +348,6 @@ void parse_adder_def_file()
 	}
 }
 
-
 struct ParseInitRegState {
     int from_str(std::string str) {
         if      (str == "0") return 0;

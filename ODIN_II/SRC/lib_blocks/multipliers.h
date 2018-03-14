@@ -37,6 +37,7 @@ extern t_model *hard_multipliers;
 extern vtr::t_linked_vptr *mult_list;
 extern int min_mult;
 
+extern void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *netlist);
 extern void init_mult_distribution();
 extern void report_mult_distribution();
 extern void declare_hard_multiplier(nnode_t *node);
