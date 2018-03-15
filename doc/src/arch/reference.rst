@@ -595,6 +595,11 @@ The tags within the ``<device>`` tag are:
     Content inside this tag is only used when VPR is in global routing mode.
     The contents of this tag are described in :ref:`global_routing_info`.
 
+.. arch:tag:: <default_fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}"/>
+
+    This defines the default Fc specification, if it is not specified within a ``<fc>`` tag inside a top-level complex block.
+    The attributes have the same meaning as within a ``<fc>`` tag.
+
 .. _arch_switches:
 
 Switches
@@ -990,6 +995,7 @@ They describe how a complex block interfaces with the inter-block world.
 
     When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
 
+    If ``<fc>`` is not specified for a complex block, the values from the architecture's ``<default_fc>`` tag will be used if available.
 
     **Overriding Default Values:**
 
@@ -1091,6 +1097,8 @@ They describe how a complex block interfaces with the inter-block world.
 
     Physical equivalence for a pin is specified by listing a pin more than once for different locations.
     For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
+
+    If the ``<pinlocations>`` tag is missing, a ``spread`` pattern is assumed.
 
 .. arch:tag:: <switchblock_locations pattern="{external_full_internal_straight|all|external|internal|none|custom}" internal_switch="string">
 
@@ -1909,4 +1917,3 @@ The full format is documented below.
     This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
-
