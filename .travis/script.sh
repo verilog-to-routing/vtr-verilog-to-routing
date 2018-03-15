@@ -33,8 +33,8 @@ end_section "vtr.test.1"
 
 $SPACER
 
-#start_section "vtr.test.2" "${GREEN}Testing..${NC} ${CYAN}vtr_reg_strong${NC}"
-#./run_reg_test.pl vtr_reg_strong -j2
-#end_section "vtr.test.2"
-#
-#$SPACER
+start_section "vtr.test.2" "${GREEN}Testing..${NC} ${CYAN}vtr_reg_strong${NC}"
+./run_reg_test.pl vtr_reg_strong -j2
+end_section "vtr.test.2"
+
+$SPACER
