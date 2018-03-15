@@ -1132,6 +1132,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::clean_blocks(const vtr::vector_map<
     block_num_output_ports_ = clean_and_reorder_values(block_num_output_ports_, block_id_map);
     block_num_clock_ports_ = clean_and_reorder_values(block_num_clock_ports_, block_id_map);
 
+    block_attrs_ = clean_and_reorder_values(block_attrs_, block_id_map);
+    block_params_ = clean_and_reorder_values(block_params_, block_id_map);
+
     clean_blocks_impl(block_id_map);
 
     VTR_ASSERT(validate_block_sizes());
@@ -1466,6 +1469,8 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_sizes() const {
         || block_num_input_ports_.size() != num_blocks
         || block_num_output_ports_.size() != num_blocks
         || block_num_clock_ports_.size() != num_blocks
+        || block_attrs_.size() != num_blocks
+        || block_params_.size() != num_blocks
         || !validate_block_sizes_impl(num_blocks)) {
         VPR_THROW(VPR_ERROR_NETLIST, "Inconsistent block data sizes");
     }
