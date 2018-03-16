@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <map>
 using namespace std;
 
 #include "pugixml.hpp"
@@ -315,6 +316,47 @@ static void processComplexBlock(pugi::xml_node clb_block,
 }
 
 /**
+ * This processes a set of key-value pairs in the XML e.g. block attributes or parameters,
+ * which must be of the form <attributes><attribute name="attrName">attrValue</attribute> ... </attributes>
+ */
+template<typename T> void processAttrsParams(pugi::xml_node Parent, const char * child_name, T &atom_net_range,
+        const pugiutil::loc_data& loc_data) {
+    std::map<std::string, std::string> kvs;
+    if (Parent) {
+        for (auto Cur = pugiutil::get_first_child(Parent, child_name, loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling(child_name)) {
+            std::string cname = pugiutil::get_attribute(Cur, "name", loc_data).value();
+            std::string cval = Cur.text().get();
+            bool found = false;
+            // Look for corresponding key-value in range from AtomNetlist
+            for (auto bitem : atom_net_range) {
+                if (bitem.first == cname) {
+                    if (bitem.second != cval) {
+                        // Found in AtomNetlist range, but values don't match
+                        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
+                                ".net file and .blif file do not match, %s %s set to \"%s\" in .net file but \"%s\" in .blif file.\n",
+                                child_name, cname.c_str(), cval.c_str(), bitem.second.c_str());
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) // Not found in AtomNetlist range
+                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
+                        ".net file and .blif file do not match, %s %s missing in .blif file.\n",
+                        child_name, cname.c_str());
+            kvs[cname] = cval;
+        }
+    }
+    // Check for attrs/params in AtomNetlist but not in .net file
+    for (auto bitem : atom_net_range) {
+        if(kvs.find(bitem.first) == kvs.end())
+            vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Parent),
+                    ".net file and .blif file do not match, %s %s missing in .net file.\n",
+                    child_name, bitem.first.c_str());
+    }
+}
+
+/**
  * XML parser to populate pb info and to update internal nets of the parent CLB
  * Parent - XML tag for this pb_type
  * pb - physical block to use
@@ -341,6 +383,9 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 
     auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
 	int num_clock_ports = processPorts(clocks, pb, pb_route, loc_data);
+
+    auto attrs = pugiutil::get_single_child(Parent, "attributes", loc_data, pugiutil::OPTIONAL);
+    auto params = pugiutil::get_single_child(Parent, "parameters", loc_data, pugiutil::OPTIONAL);
 
 	pb_type = pb->pb_graph_node->pb_type;
 
@@ -374,6 +419,11 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
         VTR_ASSERT(blk_id);
         atom_ctx.lookup.set_atom_pb(blk_id, pb);
         atom_ctx.lookup.set_atom_clb(blk_id, index);
+
+        auto atom_attrs = atom_ctx.nlist.block_attrs(blk_id);
+        auto atom_params = atom_ctx.nlist.block_params(blk_id);
+        processAttrsParams(attrs, "attribute", atom_attrs, loc_data);
+        processAttrsParams(params, "parameter", atom_params, loc_data);
 
 		(*num_primitives)++;
 	} else {
@@ -1108,4 +1158,3 @@ static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBl
     //Save the mapping
     atom_ctx.lookup.set_atom_pin_pb_graph_pin(atom_pin, gpin);
 }
-
