@@ -432,12 +432,16 @@ class IdMap;
 template<typename BlockId, typename PortId, typename PinId, typename NetId> 
 class Netlist {
     public: //Public Types
-        typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator      block_iterator;
-        typedef typename vtr::vector_map<NetId, NetId>::const_iterator          net_iterator;
-        typedef typename vtr::vector_map<PinId, PinId>::const_iterator          pin_iterator;
-        typedef typename vtr::vector_map<PortId, PortId>::const_iterator        port_iterator;
+        typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator              block_iterator;
+        typedef typename std::unordered_map<std::string, std::string>::const_iterator   attr_iterator;
+        typedef typename std::unordered_map<std::string, std::string>::const_iterator   param_iterator;
+        typedef typename vtr::vector_map<NetId, NetId>::const_iterator                  net_iterator;
+        typedef typename vtr::vector_map<PinId, PinId>::const_iterator                  pin_iterator;
+        typedef typename vtr::vector_map<PortId, PortId>::const_iterator                port_iterator;
         
         typedef typename vtr::Range<block_iterator> block_range;
+        typedef typename vtr::Range<attr_iterator>  attr_range;
+        typedef typename vtr::Range<param_iterator> param_range;
         typedef typename vtr::Range<net_iterator>   net_range;
         typedef typename vtr::Range<pin_iterator>   pin_range;
         typedef typename vtr::Range<port_iterator>  port_range;
@@ -482,6 +486,12 @@ class Netlist {
         //Returns true if the block is purely combinational (i.e. no input clocks
         //and not a primary input
         bool                block_is_combinational(const BlockId blk_id) const;
+
+        // Returns a range of all attributes associated with the specified block
+        attr_range          block_attrs(const BlockId blk_id) const;
+
+        // Returns a range of all parameters associated with the specified block
+        param_range         block_params(const BlockId blk_id) const;
 
         //Returns a range of all pins associated with the specified block
         pin_range           block_pins(const BlockId blk_id) const;
@@ -681,6 +691,18 @@ class Netlist {
         //  blk_id   : The block to be renamed
         //  new_name : The new name for the specified block
         void set_block_name(const BlockId blk_id, const std::string new_name);
+
+        //Set a block attribute
+        //  blk_id   : The block to which the attribute is attached
+        //  name     : The name of the attribute to set
+        //  value    : The new value for the specified attribute on the specified block
+        void set_block_attr(const BlockId blk_id, const std::string &name, const std::string &value);
+
+        //Set a block parameter
+        //  blk_id   : The block to which the parameter is attached
+        //  name     : The name of the parameter to set
+        //  value    : The new value for the specified parameter on the specified block
+        void set_block_param(const BlockId blk_id, const std::string &name, const std::string &value);
 
         //Merges sink_net into driver_net
         //After merging driver_net will contain all the sinks of sink_net
@@ -907,6 +929,9 @@ class Netlist {
         vtr::vector_map<BlockId, unsigned>                  block_num_input_pins_;     //Number of input pins on each block
         vtr::vector_map<BlockId, unsigned>                  block_num_output_pins_;    //Number of output pins on each block
         vtr::vector_map<BlockId, unsigned>                  block_num_clock_pins_;     //Number of clock pins on each block
+
+        vtr::vector_map<BlockId, std::unordered_map<std::string,std::string>>       block_params_;        //Parameters of each block
+        vtr::vector_map<BlockId, std::unordered_map<std::string,std::string>>       block_attrs_;         //Attributes of each block
 
         //Port data
         vtr::vector_map<PortId, PortId>                 port_ids_;      //Valid port ids

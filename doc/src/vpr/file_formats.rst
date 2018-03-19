@@ -233,7 +233,7 @@ For example:
 
 Would set the parameter ``mode`` of the above ``dsp`` ``.subckt`` to ``adder``.
 
-.. warning:: VPR currently ignores ``.param`` statements
+``.param`` statements propagate to ``<parameter>`` elements in the packed netlist.
 
 .attr
 ~~~~~
@@ -250,7 +250,7 @@ For example:
 
 Would set the attribute ``src`` of the above ``.latch`` to ``my_design.v:42``.
 
-.. warning:: VPR currently ignores ``.attr`` statements
+``.attr`` statements propagate to ``<attribute>`` elements in the packed netlist.
 
 Extended BLIF File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,6 +406,14 @@ The io pad is set to inpad mode and is driven by the inpad:
 
                         <clocks>
                         </clocks>
+
+                        <attributes>
+                                <attribute name="vccio">3.3</attribute>
+                        </attributes>
+
+                        <parameters>
+                                <parameter name="iostandard">LVCMOS33</parameter>
+                        </parameters>
                 </block>
         </block>
     ...

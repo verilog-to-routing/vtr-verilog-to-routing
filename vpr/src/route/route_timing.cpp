@@ -1411,38 +1411,40 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
      * the target node from inode.  It doesn't include the cost of inode --       *
      * that's already in the "known" path_cost.                                   */
 
-    t_rr_type rr_type;
-    int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
-    float expected_cost, cong_cost, Tdel;
-
     auto& device_ctx = g_vpr_ctx.device();
 
-    rr_type = device_ctx.rr_nodes[inode].type();
+    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
 
     if (rr_type == CHANX || rr_type == CHANY) {
 
 #ifdef USE_MAP_LOOKAHEAD
         return get_lookahead_map_cost(inode, target_node, criticality_fac);
 #else
-        num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
-        cost_index = device_ctx.rr_nodes[inode].cost_index();
-        ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+        int num_segs_ortho_dir = 0;
+        int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
 
-        cong_cost = num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].base_cost
-                + num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].base_cost;
-        cong_cost += device_ctx.rr_indexed_data[IPIN_COST_INDEX].base_cost
-                + device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost;
+        int cost_index = device_ctx.rr_nodes[inode].cost_index();
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
-        Tdel = num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].T_linear
-                + num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].T_linear
-                + num_segs_same_dir * num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].T_quadratic
-                + num_segs_ortho_dir * num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic
-                + R_upstream * (num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].C_load + num_segs_ortho_dir *
-                device_ctx.rr_indexed_data[ortho_cost_index].C_load);
+        const auto& same_data = device_ctx.rr_indexed_data[cost_index];
+        const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
+        const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+        const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
 
-        Tdel += device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear;
+        float cong_cost =   num_segs_same_dir * same_data.base_cost
+                          + num_segs_ortho_dir * ortho_data.base_cost
+                          + ipin_data.base_cost
+                          + sink_data.base_cost;
 
-        expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
+        float Tdel =   num_segs_same_dir * same_data.T_linear
+                     + num_segs_ortho_dir * ortho_data.T_linear
+                     + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
+                     + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
+                     + R_upstream * (  num_segs_same_dir * same_data.C_load 
+                                     + num_segs_ortho_dir * ortho_data.C_load)
+                     + ipin_data.T_linear;
+
+        float expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
         return (expected_cost);
 #endif
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */

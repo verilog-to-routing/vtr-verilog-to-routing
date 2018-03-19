@@ -1,4 +1,7 @@
-# Introduction
+# Verilog to Routing (VTR)
+[![Build Status](https://travis-ci.org/verilog-to-routing/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.org/verilog-to-routing/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/?badge=latest)
+
+## Introduction
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
 It then perfoms:
@@ -9,19 +12,16 @@ It then perfoms:
 to generate FPGA speed and area results.
 VTR also includes a set of benchmark designs known to work with the design flow.
 
-# Documentation
+## Documentation
 VTR's [full documentation](https://docs.verilogtorouting.org) includes tutorials, descriptions of the VTR design flow, and tool options.
 
 Also check out our [additional support resources](SUPPORT.md).
 
-# License
+## License
 Generally most code is under MIT license, with the exception of ABC which is distributed under its own (permissive) terms.
 See the [full license](LICENSE.md) for details.
 
-# Download
-For most users of VTR (rather than active developers) you should download the [latest offical VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
-
-# How to Cite
+## How to Cite
 The following paper may be used as a general citation for VTR:
 
 J. Luu, J. Goeders, M. Wainberg, A. Somerville, T. Yu, K. Nasartschuk, M. Nasr, S. Wang, T. Liu, N. Ahmed, K. B. Kent, J. Anderson, J. Rose and V. Betz "VTR 7.0: Next Generation Architecture and CAD System for FPGAs," ACM TRETS, Vol. 7, No. 2, June 2014, pp. 6:1 - 6:30.
@@ -40,16 +40,19 @@ Bibtex:
 }
 ```
 
-# Building
+## Download
+For most users of VTR (rather than active developers) you should download the [latest offical VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
+
+## Building
 On unix-like systems run `make` from the root VTR directory.
 
 For more details see the [building instructions](BUILDING.md).
 
-### Docker
+#### Docker
 We provide a Dockerfile that sets up all the necessary packages for VTR to run.
 For more details see [here](dev/DOCKER_DEPLOY.md).
 
-# Mailing Lists
+## Mailing Lists
 If you have questions, or want to keep up-to-date with VTR, consider joining our mailing lists:
 
 [VTR-Announce](https://groups.google.com/forum/#!forum/vtr-announce): VTR release announcements (low traffic)
@@ -60,7 +63,7 @@ If you have questions, or want to keep up-to-date with VTR, consider joining our
 
 [VTR-Commits](https://groups.google.com/forum/#!forum/vtr-commits): VTR revision control commits
 
-# Development
+## Development
 This is the development trunk for the Verilog-to-Routing project.
 Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux.
 You should expect that the tools are not always stable and that more work is needed to get the flow to run.
@@ -82,10 +85,10 @@ We do automated testing of the trunk using BuildBot to verify functionality and 
 
 For additional information see the [developer README](README.developers.md).
 
-## Contributing to VTR
+### Contributing to VTR
 If you'd like to contribute to VTR see our [Contribution Guidelines](CONTRIBUTING.md).
 
-# Contributors
+## Contributors
 *Please keep this up-to-date*
 
 Professors: Kenneth Kent, Vaughn Betz, Jonathan Rose, Jason Anderson, Peter Jamieson
