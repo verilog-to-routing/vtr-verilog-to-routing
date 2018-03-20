@@ -38,3 +38,9 @@ start_section "vtr.test.2" "${GREEN}Testing..${NC} ${CYAN}vtr_reg_strong${NC}"
 end_section "vtr.test.2"
 
 $SPACER
+
+start_section "vtr.test.3" "${GREEN}Testing..${NC} ${CYAN}vtr_reg_valgrind_small${NC}"
+./run_reg_test.pl vtr_reg_valgrind_small
+end_section "vtr.test.3"
+
+$SPACER
