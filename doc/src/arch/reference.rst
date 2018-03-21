@@ -598,7 +598,7 @@ The tags within the ``<device>`` tag are:
 .. arch:tag:: <default_fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}"/>
 
     This defines the default Fc specification, if it is not specified within a ``<fc>`` tag inside a top-level complex block.
-    The attributes have the same meaning as within a ``<fc>`` tag.
+    The attributes have the same meaning as the :ref:`\<fc\> tag attributes <tag-fc>`.
 
 .. _arch_switches:
 
@@ -969,6 +969,7 @@ The following tags are unique to the top level <pb_type> of a complex logic bloc
 They describe how a complex block interfaces with the inter-block world.
 
 .. arch:tag:: <fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}">
+.. _tag-fc:
 
     :req_param in_type:
         Indicates how the default :math:`F_c` values for input pins should be interpreted.
@@ -995,7 +996,7 @@ They describe how a complex block interfaces with the inter-block world.
 
     When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
 
-    If ``<fc>`` is not specified for a complex block, the values from the architecture's ``<default_fc>`` tag will be used if available.
+    .. note:: If ``<fc>`` is not specified for a complex block, the values from the architecture's ``<default_fc>`` tag will be used if available.
 
     **Overriding Default Values:**
 
@@ -1098,7 +1099,7 @@ They describe how a complex block interfaces with the inter-block world.
     Physical equivalence for a pin is specified by listing a pin more than once for different locations.
     For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
-    If the ``<pinlocations>`` tag is missing, a ``spread`` pattern is assumed.
+    .. note:: If the ``<pinlocations>`` tag is missing, a ``spread`` pattern is assumed.
 
 .. arch:tag:: <switchblock_locations pattern="{external_full_internal_straight|all|external|internal|none|custom}" internal_switch="string">
 
