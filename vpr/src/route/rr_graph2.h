@@ -124,7 +124,6 @@ int get_bidir_opin_connections(
 		const int ipin,
 		t_linked_edge **edge_list,
 		const t_pin_to_track_lookup& opin_to_track_map,
-		const int Fc,
 		bool *L_rr_edge_done,
 		const t_rr_node_indices& L_rr_node_indices,
 		const t_seg_details *seg_details);
