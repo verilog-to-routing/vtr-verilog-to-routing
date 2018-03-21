@@ -1262,7 +1262,6 @@ struct t_arch {
 	t_model *model_library;
 	t_power_arch * power;
 	t_clock_arch * clocks;
-	t_default_fc_spec def_fc;
 	
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
