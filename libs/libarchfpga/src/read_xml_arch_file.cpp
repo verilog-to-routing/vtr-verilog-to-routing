@@ -95,7 +95,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
-static void Process_Default_Fc(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
+static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
@@ -108,10 +108,11 @@ static void ProcessModels(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
-static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
+static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const pugiutil::loc_data& loc_data);
+		t_arch& arch, const t_default_fc_spec &arch_def_fc,
+        const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		t_arch_switch_inf **Switches, int *NumSwitches,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -180,6 +181,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	/* Parse the file */
 	pugi::xml_document doc;
 	pugiutil::loc_data loc_data;
+    t_default_fc_spec arch_def_fc;
 	try {
 		loc_data = pugiutil::load_xml(doc, ArchFile);
 
@@ -211,7 +213,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
-        ProcessDevice(Next, arch, loc_data);
+        ProcessDevice(Next, arch, arch_def_fc, loc_data);
 
         /* Process switches */
         Next = get_single_child(architecture, "switchlist", loc_data);
@@ -236,7 +238,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, Types, NumTypes, *arch, loc_data);
+        ProcessComplexBlocks(Next, Types, NumTypes, *arch, arch_def_fc, loc_data);
 
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
@@ -1587,7 +1589,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 	ProcessInterconnect(Cur, mode, loc_data);
 }
 
-static void Process_Default_Fc(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
+static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
     spec.specified = true;
 
     /* Load the default fc_in */
@@ -1612,7 +1614,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
     t_default_fc_spec def_fc_spec;
     if (Node) {
         /* Load the default Fc values from the node */
-        Process_Default_Fc(Node, def_fc_spec, loc_data);
+        Process_Fc_Values(Node, def_fc_spec, loc_data);
         /* Load any <fc_override/> tags */
         for (auto child_node : Node.children()) {
             t_fc_override fc_override = Process_Fc_override(child_node, loc_data);
@@ -2398,7 +2400,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
-static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data) {
+static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
 	const char *Prop;
 	pugi::xml_node Cur;
 	bool custom_switch_block = false;
@@ -2465,11 +2467,11 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 
 	Cur = get_single_child(Node, "default_fc", loc_data, OPTIONAL);
 	if (Cur) {
-		arch->def_fc.specified = true;
+		arch_def_fc.specified = true;
 		expect_only_attributes(Cur, {"in_type", "in_val", "out_type", "out_val"}, loc_data);
-		Process_Default_Fc(Cur, arch->def_fc, loc_data);
+		Process_Fc_Values(Cur, arch_def_fc, loc_data);
 	} else {
-		arch->def_fc.specified = false;
+		arch_def_fc.specified = false;
 	}
 }
 
@@ -2525,7 +2527,8 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const pugiutil::loc_data& loc_data) {
+		t_arch& arch, const t_default_fc_spec &arch_def_fc, 
+        const pugiutil::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
@@ -2594,7 +2597,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
         /* Load Fc */
         Cur = get_single_child(CurType, "fc", loc_data, OPTIONAL);
-        Process_Fc(Cur, Type, arch.Segments, arch.num_segments, arch.def_fc, loc_data);
+        Process_Fc(Cur, Type, arch.Segments, arch.num_segments, arch_def_fc, loc_data);
 
         //Load switchblock type and location overrides
         Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);
