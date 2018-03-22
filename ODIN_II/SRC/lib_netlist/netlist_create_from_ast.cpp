@@ -2871,9 +2871,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	{
 		error_message(0,0,-1,"Invalid state or internal error");
 	}
-
-
-	for (i = 0; i < pin_lists->num_strings; i++)
+	
+	for (i = 0; pin_lists && i < pin_lists->num_strings; i++)
 	{
 		new_pin = allocate_npin();
 		new_pin->name = pin_lists->strings[i];

@@ -767,7 +767,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		width = 1;
 		return_string = (char**)vtr::malloc(sizeof(char*));
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
-		oassert(rnode[1]->type == NUMBERS);
+		oassert(rnode[1] && rnode[1]->type == NUMBERS);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.number.value);
 	}
@@ -1340,10 +1340,11 @@ ast_node_t *node_is_constant(ast_node_t *node){
 			case DEC: //fallthrough
             case HEX: //fallthrough
             case OCT: //fallthrough
-            case BIN:
+            case BIN: 
 				if (node->types.number.value == -1){
 					break;
 				}
+				//fallthrough
 			case(LONG_LONG):
 				return node;
 				break;

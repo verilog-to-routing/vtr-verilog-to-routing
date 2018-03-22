@@ -199,10 +199,10 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	len = len + 20; /* 20 chars should hold mul specs */
 	new_name = (char*)vtr::malloc(len);
 
-	/* wide input first :) */
-	if (node->input_port_sizes[0] > node->input_port_sizes[1])
-		sanity = sprintf(new_name, "%s", node->name);
-	else
+	/* wide input first :) identical branches! */
+	// if (node->input_port_sizes[0] > node->input_port_sizes[1])
+	// 	sanity = sprintf(new_name, "%s", node->name);
+	// else
 		sanity = sprintf(new_name, "%s", node->name);
 
 	if (len <= sanity) /* buffer not large enough */
@@ -262,10 +262,10 @@ void add_the_blackbox_for_adds(FILE *out)
 	/* simplified way of getting the multsize, but fine for quick example */
 	while (adds != NULL)
 	{
-		/* write out this adder model */
-		if (configuration.fixed_hard_adder != 0)
-			count = fprintf(out, ".model adder\n");
-		else
+		/* write out this adder model TODO identical branches ?*/
+		// if (configuration.fixed_hard_adder != 0)
+		// 	count = fprintf(out, ".model adder\n");
+		// else
 			count = fprintf(out, ".model adder\n");
 
 		/* add the inputs */

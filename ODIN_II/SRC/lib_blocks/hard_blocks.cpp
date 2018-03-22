@@ -32,11 +32,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hard_blocks.h"
 #include "memories.h"
 
-
-
 STRING_CACHE *hard_block_names = NULL;
 
 void cache_hard_block_names();
+void register_hb_port_size(t_model_ports *hb_ports, int size);
+
+
+void register_hb_port_size(t_model_ports *hb_ports, int size)
+{
+	if(hb_ports)
+		hb_ports->size = size;
+	/***
+	 * else
+	 *	TODO error
+	 */
+	
+}
 
 t_model_ports *get_model_port(t_model_ports *ports, const char *name)
 {
@@ -68,44 +79,49 @@ void register_hard_blocks()
 
 	if (single_port_rams)
 	{
-		t_model_ports *hb_ports;
-
 		if (configuration.split_memory_width)
 		{
-			hb_ports = get_model_port(single_port_rams->inputs, "data");
-			hb_ports->size = 1;
-
-			hb_ports = get_model_port(single_port_rams->outputs, "out");
-			hb_ports->size = 1;
+			register_hb_port_size(
+				get_model_port(single_port_rams->inputs, "data")
+				, 1);
+				
+			register_hb_port_size(
+				get_model_port(single_port_rams->outputs, "out")
+				, 1);
 		}
 
-		int split_depth = get_sp_ram_split_depth();
-		hb_ports = get_model_port(single_port_rams->inputs, "addr");
-		hb_ports->size = split_depth;
+		register_hb_port_size(
+			get_model_port(single_port_rams->inputs, "addr")
+			,get_sp_ram_split_depth());
 	}
 
 	if (dual_port_rams)
 	{
-		t_model_ports *hb_ports;
-
 		if (configuration.split_memory_width)
 		{
-			hb_ports = get_model_port(dual_port_rams->inputs, "data1");
-			hb_ports->size = 1;
-			hb_ports = get_model_port(dual_port_rams->inputs, "data2");
-			hb_ports->size = 1;
+			register_hb_port_size(
+				get_model_port(dual_port_rams->inputs, "data1")
+				, 1);
+			register_hb_port_size(
+				get_model_port(dual_port_rams->inputs, "data2")
+				, 1);
 
-			hb_ports = get_model_port(dual_port_rams->outputs, "out1");
-			hb_ports->size = 1;
-			hb_ports = get_model_port(dual_port_rams->outputs, "out2");
-			hb_ports->size = 1;
+			register_hb_port_size(
+				get_model_port(dual_port_rams->outputs, "out1")
+				, 1);
+			register_hb_port_size(
+				get_model_port(dual_port_rams->outputs, "out2")
+				, 1);
 		}
-
+		
 		int split_depth = get_dp_ram_split_depth();
-		hb_ports = get_model_port(dual_port_rams->inputs, "addr1");
-		hb_ports->size = split_depth;
-		hb_ports = get_model_port(dual_port_rams->inputs, "addr2");
-		hb_ports->size = split_depth;
+		
+		register_hb_port_size(
+			get_model_port(dual_port_rams->inputs, "addr1")
+			, split_depth);
+		register_hb_port_size(
+			get_model_port(dual_port_rams->inputs, "addr2")
+			, split_depth);
 	}
 }
 
