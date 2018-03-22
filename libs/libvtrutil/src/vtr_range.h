@@ -60,7 +60,13 @@ class Range {
  *  auto my_range = vtr::make_range(my_vec.begin(), my_vec.end());
  */
 template<typename T>
-Range<T> make_range(T b, T e) { return Range<T>(b, e); }
+auto make_range(T b, T e) { return Range<T>(b, e); }
+
+/*
+ * Creates a vtr::Range from a container
+ */
+template<typename Container>
+auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
 
 } //namespace
 

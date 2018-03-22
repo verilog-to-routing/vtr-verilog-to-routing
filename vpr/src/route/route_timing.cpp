@@ -785,7 +785,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         rt_root->re_expand = false;
     }
 
-    VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
     std::vector<int> modified_rr_node_inf;
 
@@ -814,11 +814,11 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     int inode = cheapest->index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
-    VTR_ASSERT_SAFE(validate_traceback(route_ctx.trace_head[net_id]));
+    VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
 
     rt_node_of_sink[target_pin] = update_route_tree(cheapest);
-    VTR_ASSERT_SAFE(verify_route_tree(rt_root));
-    VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
+    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
@@ -1014,7 +1014,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         rt_root = traceback_to_route_tree(net_id);
 
         //Santiy check that route tree and traceback are equivalent before pruning
-        VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+        VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
         // check for edge correctness
         VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
@@ -1037,10 +1037,10 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
 
             //Sanity check the traceback for self-consistency
-            VTR_ASSERT_SAFE(validate_traceback(route_ctx.trace_head[net_id]));
+            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
 
             //Santiy check that route tree and traceback are equivalent after pruning
-            VTR_ASSERT_SAFE(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
             // put the updated costs of the route tree nodes back into pathfinder
             pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);

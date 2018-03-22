@@ -38,8 +38,11 @@ class NdMatrixProxy {
             VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
             VTR_ASSERT_SAFE_MSG(index < dim_sizes_[idim_], "Index out of range (above dimension maximum)");
 
+            size_t next_dim_size = dim_sizes_[idim_ + 1];
+            VTR_ASSERT_SAFE_MSG(next_dim_size > 0, "Can not index into zero-sized dimension");
+
             //Determine the stride of the next dimension
-            size_t next_dim_stride = dim_stride_ / dim_sizes_[idim_ + 1];
+            size_t next_dim_stride = dim_stride_ / next_dim_size;
 
             //Strip off one dimension
             return NdMatrixProxy<T,N-1>(dim_sizes_,                           //Pass the dimension information

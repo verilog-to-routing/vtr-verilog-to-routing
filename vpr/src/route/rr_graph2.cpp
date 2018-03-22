@@ -724,11 +724,11 @@ int get_bidir_opin_connections(
         const int i, const int j, const int ipin,
         t_linked_edge **edge_list,
         const t_pin_to_track_lookup& opin_to_track_map,
-        const int Fc, bool * L_rr_edge_done,
+        bool * L_rr_edge_done,
         const t_rr_node_indices& L_rr_node_indices, const t_seg_details * seg_details) {
 
     int iside, num_conn, tr_i, tr_j, chan, seg;
-    int to_track, to_switch, to_node, iconn;
+    int to_switch, to_node;
     int is_connected_track;
     t_type_ptr type;
     t_rr_type to_type;
@@ -770,8 +770,7 @@ int get_bidir_opin_connections(
         is_connected_track = false;
 
         /* Itterate of the opin to track connections */
-        for (iconn = 0; iconn < Fc; ++iconn) {
-            to_track = opin_to_track_map[type->index][ipin][width_offset][height_offset][iside][iconn];
+        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][iside]) {
 
             /* Skip unconnected connections */
             if (OPEN == to_track || is_connected_track) {

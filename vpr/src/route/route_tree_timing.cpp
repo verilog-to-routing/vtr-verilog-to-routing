@@ -698,7 +698,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head) {
         return nullptr;
     }
 
-    VTR_ASSERT_SAFE(validate_traceback(head));
+    VTR_ASSERT_DEBUG(validate_traceback(head));
 
     std::map<int,t_rt_node*> rr_node_to_rt;
 
