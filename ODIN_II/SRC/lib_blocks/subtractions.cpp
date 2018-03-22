@@ -131,11 +131,11 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 	len = len + 20; /* 20 chars should hold mul specs */
 	new_name = (char*)vtr::malloc(len);
 
-	/* wide input first :) */
-	if (node->input_port_sizes[0] > node->input_port_sizes[1])
+	/* wide input first :) identical branching! ? */
+	//if (node->input_port_sizes[0] > node->input_port_sizes[1])
 		sanity = sprintf(new_name, "%s", node->name);
-	else
-		sanity = sprintf(new_name, "%s", node->name);
+	// else
+	// 	sanity = sprintf(new_name, "%s", node->name);
 
 	if (len <= sanity) /* buffer not large enough */
 		oassert(FALSE);

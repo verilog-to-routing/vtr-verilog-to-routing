@@ -210,7 +210,7 @@ void record_expression(ast_node_t *node, std::vector<std::string> expressions, b
 			record_expression(node->children[0], expressions, found_statement);
 			
 		
-		if(!(*found_statement) && (node->type == BLOCKING_STATEMENT || node->type == BLOCKING_STATEMENT)){
+		if(!(*found_statement) && (/*node->type == BLOCKING_STATEMENT || */node->type == BLOCKING_STATEMENT)){
 			*found_statement = TRUE;
 			
 		}else if(*found_statement){	
