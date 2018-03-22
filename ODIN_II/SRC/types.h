@@ -428,23 +428,14 @@ struct chain_information_t_t
 
 typedef enum{
 	ripple,
-	carry_skip,
-	parralel_adder,
+	fixed_step
 }type_of_adder_e;
-
-typedef enum{
-	fixed_step,
-	log_step,
-	increasing_step
-}step_type_e;
 
 // to define type of adder in cmd line
 struct adder_def_t_t
 {
 	type_of_adder_e type_of_adder; 
-	step_type_e step_type;
-	int inital_size;
-	int step_size;
+	int next_step_size;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version

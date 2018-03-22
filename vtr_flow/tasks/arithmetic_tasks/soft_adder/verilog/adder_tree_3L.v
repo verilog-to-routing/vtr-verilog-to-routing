@@ -1,4 +1,4 @@
-`define ADDER_WIDTH 3
+`define ADDER_WIDTH 51
 `define DUMMY_WIDTH 128
 
 `define 3_LEVEL_ADDER

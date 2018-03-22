@@ -124,7 +124,7 @@ my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $routing_budgets_algorithm = "disable";
-my $odin_adder_config_path = "ripple";
+my $odin_adder_config_path = "optimized";
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {

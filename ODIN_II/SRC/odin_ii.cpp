@@ -57,7 +57,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-std::vector<adder_def_t*> list_of_adder_def;
+
 size_t current_parse_file;
 t_arch Arch;
 global_args_t global_args;
@@ -110,9 +110,6 @@ int main(int argc, char **argv)
             return 1;
         }
 	}
-	
-	/* get odin soft_logic adder definition file */
-	parse_adder_def_file();
 
 	/* do High level Synthesis */
 	if (!global_args.blif_file)
@@ -127,6 +124,9 @@ int main(int argc, char **argv)
 		find_hard_adders();
 		//find_hard_adders_for_sub();
 		register_hard_blocks();
+		
+		/* get odin soft_logic adder definition file */
+		parse_adder_def_file();
 
 		global_param_table_sc = sc_new_string_cache();
 
@@ -287,65 +287,15 @@ void print_usage()
 // tab separated values for adder_def
 void parse_adder_def_file()
 {
-	const char* input_file_name = global_args.adder_def;
-	
-	if(strcmp(input_file_name,"ripple")!=0)
-	{
-		adder_def_t *out = (adder_def_t*)malloc(sizeof(adder_def_t));
-		out->inital_size =0;
-		out->step_size =0;
-		out->type_of_adder = ripple;
-	
-		FILE *input_file = fopen(input_file_name,"r");
+	if(hard_adders || strcmp(global_args.adder_def,"ripple")==0)
+		return;
 		
-		const size_t line_size = 128;
-		char line_buf[line_size];
-		char *line = line_buf;
+	else if(strcmp(global_args.adder_def,"optimized")==0)
+		populate_adder_def();
 
-		while (fgets(line, line_size, input_file) != NULL)
-		{
-			std::string type(strtok(line,","));
-			if(type == "skip")					
-			{
-			    out->type_of_adder = carry_skip;
-			}
-			else if(type == "parallel")			
-			{
-			    out->type_of_adder = parralel_adder;
-			}
-			else 								
-			{
-			    list_of_adder_def.push_back(out);	
-			    continue;
-			}
-			
-			std::string skip_type(strtok(NULL,","));
-			
-			if (skip_type == "fixed")		
-			{
-			    out->step_type = fixed_step;
-			}
-			else if (skip_type == "log")			
-			{
-			    out->step_type = log_step;
-			}
-			else if	(skip_type == "increasing")	
-			{
-			    out->step_type = increasing_step;
-			}
-			else	
-			{
-			    list_of_adder_def.push_back(out);	
-			    continue;
-			}
-			
-			out->inital_size = strtol(strtok(NULL,","),NULL,10);
-			out->step_size = strtol(strtok(NULL,","),NULL,10);
-			
-			list_of_adder_def.push_back(out);
-		}
-		fclose(input_file);
-	}
+	else	// we do have a define file! read it!
+		read_adder_def_file(global_args.adder_def);
+
 }
 
 struct ParseInitRegState {
@@ -431,8 +381,8 @@ void get_options(int argc, char** argv) {
             .action(argparse::Action::STORE_TRUE);
 
     other_grp.add_argument(global_args.adder_def, "--adder_type")
-            .help("input file defining adder_type")
-	        .default_value("ripple")
+            .help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
+	        .default_value("optimized")
 	        .metavar("INPUT_FILE")
 	        ;   
 

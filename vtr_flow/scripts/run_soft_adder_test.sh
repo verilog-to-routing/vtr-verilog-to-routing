@@ -21,126 +21,83 @@ function get_geomean() {
     echo $(echo "e( l( $OUT )/4 )" | bc -l)
 }
 
-#$ADDER_TYPE    $SKIP_TYPE $VTR_FLOW_DIR   $TASK   $BIT_WIDTH   $TASK_DIR
-#$1             $2         $3              $4      $5           $6
+#$ADDER_TYPE $VTR_FLOW_DIR   $TASK   $BIT_WIDTH   $TASK_DIR
+#$1          $2              $3      $4           $5
 function run_task() {
-    
-    MAX_INIT=$(echo "$5 - 1" | bc)
-    
-    for INITIAL_SIZE in $(eval echo {1..$MAX_INIT}); do
-        MAX_SKIP=$(echo "$5 - $INITIAL_SIZE" | bc)
+    MAX_SIZE=$(( $4-1 ))
+    for NEXT_SIZE in $(eval echo {0..$MAX_SIZE}); do
         
-        for SKIP_SIZE in $(eval echo {1..$MAX_SKIP}); do
-            rm -Rf $6/run*
-            
-            cat $6/track_completed/current_config.odin > $6/track_completed/odin.config
-            
-            for WIDTH in $(eval echo {$5..256}); do
-                echo -e $1,$2,$INITIAL_SIZE,$SKIP_SIZE >> $6/track_completed/odin.config
-            done
-            
-            $3/scripts/run_vtr_task.pl $4 -p $(nproc --all)
-            
-            $3/scripts/parse_vtr_task.pl $4
-            
-            VAR=$(get_geomean $6/run001/parse_results.txt)
-            
-            if (( $(echo "$(cat $6/track_completed/best_value ) > $VAR" | bc ) ));
-            then
-                echo $1,$2,$INITIAL_SIZE,$SKIP_SIZE > $6/track_completed/best_name
-                echo $VAR > $6/track_completed/best_value
-            fi
+        rm -Rf $5/run*
+        cat $5/track_completed/current_config.odin > $5/track_completed/odin.config
+        
+        for WIDTH in $(eval echo {$4..128}); do
+            echo "$1,$NEXT_SIZE" >> $5/track_completed/odin.config
         done
+        
+        $2/scripts/run_vtr_task.pl $3 -p $(nproc --all) > $5/track_completed/run_pass
+        if grep -q OK "$5/track_completed/run_pass";
+        then
+            $2/scripts/parse_vtr_task.pl $3 > /dev/null
+            VAR=$(get_geomean $5/run001/parse_results.txt)
+            
+            if (( $(echo "$(cat $5/track_completed/best_value ) >= $VAR" | bc ) ));
+            then
+                echo $1,$NEXT_SIZE > $5/track_completed/best_name
+                echo $VAR > $5/track_completed/best_value
+                echo "$1,$NEXT_SIZE ... PASS setting new best: $VAR"
+            else
+                echo "$1,$NEXT_SIZE ... PASS"
+            fi
+        else
+            echo "$1,$NEXT_SIZE ... FAILED"
+        fi
+
     done
 }
 
 ######### inital cleanup
-if [ ! -d $TASK_DIR/track_completed ]; then
-    mkdir $TASK_DIR/track_completed
-fi
+
 rm -Rf $TASK_DIR/run*
+rm -Rf $TASK_DIR/track_completed
+mkdir $TASK_DIR/track_completed
 
-#default config
-ADDER_TYPE="ripple"
-SKIP_TYPE="fixed"
-INITIAL_SIZE=0
-SKIP_SIZE=0
+INITIAL_BITSIZE=1
 
-INITIAL_BITSIZE=2
+touch $TASK_DIR/track_completed/current_config.odin
 
-#check if file is already populated and get the current bitwidth
-if [ ! -f $TASK_DIR/track_completed/current_config.odin ]; then
-    #bit width 0
-    echo -e $ADDER_TYPE,$SKIP_TYPE,$INITIAL_SIZE,$SKIP_SIZE > $TASK_DIR/track_completed/current_config.odin
-    #bit width 1
-    echo -e $ADDER_TYPE,$SKIP_TYPE,$INITIAL_SIZE,$SKIP_SIZE >> $TASK_DIR/track_completed/current_config.odin
-else
-    INITIAL_BITSIZE=$(wc -l < $TASK_DIR/track_completed/current_config.odin) 
-fi
-
-
-for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..256}); do
+for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..128}); do
     ######### run baseline
+    echo "TESTING $BITWIDTH ##########"
+    echo ""
     
-    ADDER_TYPE="ripple"
-    SKIP_TYPE="fixed"
-    INITIAL_SIZE=0
-    SKIP_SIZE=0
-
-    if [ ! -d $TASK_DIR/verilog ]; then
-        mkdir $TASK_DIR/verilog
-    else
-        if [ ! -f $TASK_DIR/verilog/adder_tree_2L.v ]; then
-            rm -f $TASK_DIR/verilog/adder_tree_2L.v
-        fi
-        
-        if [ ! -f $TASK_DIR/verilog/adder_tree_3L.v ]; then
-            rm -f $TASK_DIR/verilog/adder_tree_3L.v
-        fi
-    fi
-
+    rm -Rf $TASK_DIR/verilog && mkdir $TASK_DIR/verilog
     ## create test file
     sed -e "s/%%LEVELS_OF_ADDER%%/2/g" -e "s/%%ADDER_BITS%%/$BITWIDTH/g" "$VTR_FLOW_DIR/benchmarks/arithmetic/adder_trees/verilog/adder_tree.v" > $TASK_DIR/verilog/adder_tree_2L.v
     sed -e "s/%%LEVELS_OF_ADDER%%/3/g" -e "s/%%ADDER_BITS%%/$BITWIDTH/g" "$VTR_FLOW_DIR/benchmarks/arithmetic/adder_trees/verilog/adder_tree.v" > $TASK_DIR/verilog/adder_tree_3L.v
-
+    
+    rm -Rf $TASK_DIR/run*
     cat $TASK_DIR/track_completed/current_config.odin > $TASK_DIR/track_completed/odin.config
     
-    for i in $(eval echo {$BITWIDTH..256}); do
-        echo $ADDER_TYPE,$SKIP_TYPE,$INITIAL_SIZE,$SKIP_SIZE >> $TASK_DIR/track_completed/odin.config
+    for WIDTH in $(eval echo {$BITWIDTH..128}); do
+        echo "ripple,0" >> $TASK_DIR/track_completed/odin.config
     done
     
-    $VTR_FLOW_DIR/scripts/run_vtr_task.pl $TASK -p $(nproc --all)
-    $VTR_FLOW_DIR/scripts/parse_vtr_task.pl $TASK
+    $VTR_FLOW_DIR/scripts/run_vtr_task.pl $TASK -p $(nproc --all) > $TASK_DIR/track_completed/run_pass
+    $VTR_FLOW_DIR/scripts/parse_vtr_task.pl $TASK > /dev/null
+    BASELINE=$(get_geomean $TASK_DIR/run001/parse_results.txt)
+
+    echo "ripple,0" > $TASK_DIR/track_completed/best_name
+    echo $BASELINE > $TASK_DIR/track_completed/best_value
+    echo "ripple,0 ... PASS INITIAL: $BASELINE"
     
-    echo $ADDER_TYPE,$SKIP_TYPE,$INITIAL_SIZE,$SKIP_SIZE > $TASK_DIR/track_completed/best_name
-    echo $(get_geomean $TASK_DIR/run001/parse_results.txt) > $TASK_DIR/track_completed/best_value 
-     
-     
-     
-    #start the full sweep 
-    ADDER_TYPE="parallel"
+    cat $TASK_DIR/track_completed/best_value >> $TASK_DIR/track_completed/current_config_baseline.odin
     
-    SKIP_TYPE="fixed"
-    run_task  $ADDER_TYPE $SKIP_TYPE $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
-    
-    SKIP_TYPE="log"
-    run_task $ADDER_TYPE $SKIP_TYPE $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
-    
-    SKIP_TYPE="increasing"
-    run_task $ADDER_TYPE $SKIP_TYPE $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
-    
-    
-    ADDER_TYPE="skip"
-    
-    SKIP_TYPE="fixed"
-    run_task $ADDER_TYPE $SKIP_TYPE $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
-    
-    SKIP_TYPE="log"
-    run_task $ADDER_TYPE $SKIP_TYPE $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
-    
-    SKIP_TYPE="increasing"
-    run_task $ADDER_TYPE $SKIP_TYPE $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
-    
-    
+    run_task  "fixed" $VTR_FLOW_DIR $TASK $BITWIDTH $TASK_DIR
+
+    BEST_RESULT=$(cat $TASK_DIR/track_completed/best_value)
+    RATIO=$(echo "$BEST_RESULT / $BASELINE" | bc -l)
+    echo "$BEST_RESULT __ $RATIO" >> $TASK_DIR/track_completed/current_config_values.odin
     cat $TASK_DIR/track_completed/best_name >> $TASK_DIR/track_completed/current_config.odin
+    
+    
 done

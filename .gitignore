@@ -24,6 +24,7 @@ vtr_flow/tasks/**/run[0-9]*
 vtr_flow/tasks/**/qor_geomean.txt
 vtr_flow/tasks/**/task_summary/
 vtr_flow/tasks/**/track_completed/
+vtr_flow/tasks/arithmetic_tasks/soft_adder/verilog/*
 quick_test/*
 
 #
