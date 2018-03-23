@@ -324,7 +324,7 @@ int main(int argc, char * argv[]) {
 	Abc_Ntk_t * ntk;
 	Abc_Obj_t * obj;
 	int seed = 0;
-
+	char * clk_name = NULL;
 
 	p = ACE_PI_STATIC_PROB;
 	d = ACE_PI_SWITCH_PROB;
@@ -332,7 +332,7 @@ int main(int argc, char * argv[]) {
 	char blif_file_name[BLIF_FILE_NAME_LEN];
 	char new_blif_file_name[BLIF_FILE_NAME_LEN];
 	ace_io_parse_argv(argc, argv, &BLIF, &IN_ACT, &OUT_ACT, blif_file_name,
-			new_blif_file_name, &pi_format, &p, &d, &seed);
+			new_blif_file_name, &pi_format, &p, &d, &seed, &clk_name);
 
 	srand(seed);
 
@@ -361,10 +361,12 @@ int main(int argc, char * argv[]) {
 	// Full Allocation
 	Ace_Obj_Info_t * info = calloc(Abc_NtkObjNum(ntk), sizeof(Ace_Obj_Info_t));
 	ace_info_hash_table = st__init_table(st__ptrcmp, st__ptrhash);
+
+	int objNum = 0;
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
-		st__insert(ace_info_hash_table, (char *) obj, (char *) &info[i]);
-		//Ace_InfoPtrSet(obj, & info[i]);
+		st__insert(ace_info_hash_table, (char *) obj, (char *) &info[objNum]);
+		objNum++;
 	}
 
 	/* DFS Allocation
@@ -419,37 +421,42 @@ int main(int argc, char * argv[]) {
 	 */
 
 	// Get clock info
-	char * clk_name = NULL;
-	if (!error) {
-		Abc_NtkForEachLatch(ntk, obj, i)
-		{
-			Abc_LatchInfo_t * latch_info = obj->pData;
 
-			if (!clk_name) {
-				clk_name = latch_info->pClkName;
-			}
-			if (strcmp(clk_name, latch_info->pClkName) == 0) {
-				// Clock names match - do nothing
-			} else {
-				// Multiple clocks - error
-				printf(
-						"Multiple clocks detected in blif file.  This is not supported.\n");
-				error = ACE_ERROR;
-				break;
-			}
-		}
-	}
 
-	if (!error) {
-		if (clk_name == NULL) {
-			// No clocks
-			printf(
-					"No clocks detected in blif file.  This is not supported.\n");
-			error = ACE_ERROR;
-		} else {
-			printf("Clock detected: %s\n", clk_name);
-		}
-	}
+	// ABC no longer has clock information
+//	if (!error) {
+//		Abc_NtkForEachLatch(ntk, obj, i)
+//		{
+//			assert(obj);
+//			assert(obj->pData);
+//			Abc_LatchInfo_t * latch_info = obj->pData;
+//
+//			if (!clk_name) {
+//				clk_name = latch_info->pClkName;
+//			}
+//			if (strcmp(clk_name, latch_info->pClkName) == 0) {
+//				// Clock names match - do nothing
+//			} else {
+//				// Multiple clocks - error
+//				printf(
+//						"Multiple clocks detected in blif file.  This is not supported.\n");
+//				error = ACE_ERROR;
+//				break;
+//			}
+//		}
+//	}
+//
+//	if (!error) {
+//		if (clk_name == NULL) {
+//			// No clocks
+//			printf(
+//					"No clocks detected in blif file.  This is not supported.\n");
+//			error = ACE_ERROR;
+//		} else {
+//			printf("Clock detected: %s\n", clk_name);
+//		}
+//	}
+
 
 	// Read Activities
 	if (!error) {

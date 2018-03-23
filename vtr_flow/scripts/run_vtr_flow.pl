@@ -392,7 +392,12 @@ my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
 my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
 
+my $ace_clk_file_name = "ace_clk.txt";
+my $ace_clk_file_path = "$temp_dir$ace_clk_file_name";
+
 my $addMissingLatchInfoScript_path = "$vtr_flow_path/../ODIN_II/SRC/scripts/restore_multi_clock_latch_information.pl";
+
+my $ace_clk_extraction_path = "$vtr_flow_path/../ace2/scripts/extract_clk_from_blif.py";
 
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
@@ -497,7 +502,9 @@ if (    $starting_stage <= $stage_idx_abc
 		system("mv ${temp_dir}LatchInfo ${temp_dir}$abc_output_file_name");
 
 		if ( !$keep_intermediate_files ) {
-			system "rm -f $odin_output_file_path";
+			if (! $do_power) {
+				system "rm -f $odin_output_file_path";
+			}
 			system "rm -f ${temp_dir}*.rc";
 		}
 	}
@@ -515,22 +522,46 @@ if (    $starting_stage <= $stage_idx_ace
 	and $do_power
 	and !$error_code )
 {
+	my $abc_clk_name;
+
 	$q = &system_with_timeout(
-		$ace_path, "ace.out",             $timeout, $temp_dir,
-		"-b",      $abc_output_file_name, "-n",     $ace_output_blif_name,
-		"-o",      $ace_output_act_name,
-		"-s", $seed
-	);
-	
-	if ( -e $ace_output_blif_path and $q eq "success") {
-		if ( !$keep_intermediate_files ) {
-			system "rm -f $abc_output_file_path";
-			#system "rm -f ${temp_dir}*.rc";
-		}
-	}
-	else {
-		print "failed: ace";
+		"python", "ace_clk_extraction.out", $timeout, $temp_dir, $ace_clk_extraction_path, $ace_clk_file_name, $abc_output_file_name);
+
+	if ($q ne "success") {
+		print "failed: ace clock extraction";
 		$error_code = 1;
+	}
+
+	{
+	  local $/ = undef;
+	  open(FILE, $ace_clk_file_path) or die "Can't read file '$ace_clk_file_path' [$!]\n";  
+	  $abc_clk_name = <FILE>; 
+	  close (FILE);
+	}
+
+	if (!$error_code) {
+		$q = &system_with_timeout(
+			$ace_path, "ace.out",             $timeout, $temp_dir,
+			"-b",      $abc_output_file_name, "-n",     $ace_output_blif_name,
+			"-o",      $ace_output_act_name,
+			"-s", $seed,
+			"-c", $abc_clk_name
+		);
+		
+		if ( -e $ace_output_blif_path and $q eq "success") {
+
+			system("$addMissingLatchInfoScript_path ${temp_dir}$odin_output_file_name $ace_output_blif_path > ${temp_dir}LatchInfoAce");
+			system("mv ${temp_dir}LatchInfoAce $ace_output_blif_path");
+
+			if ( !$keep_intermediate_files ) {
+				system "rm -f $abc_output_file_path";
+				system "rm -f $odin_output_file_path";				
+			}
+		}
+		else {
+			print "failed: ace";
+			$error_code = 1;
+		}
 	}
 }
 
