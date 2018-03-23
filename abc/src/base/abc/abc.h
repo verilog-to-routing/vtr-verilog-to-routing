@@ -108,6 +108,30 @@ typedef enum {
 } Abc_InitType_t;
 
 ////////////////////////////////////////////////////////////////////////
+///                VTR: Additional Latch Information                 ///
+////////////////////////////////////////////////////////////////////////
+
+// Latch Type Enumeration
+typedef enum {
+  ABC_FALLING_EDGE = 0,
+  ABC_RISING_EDGE,
+  ABC_ACTIVE_HIGH,
+  ABC_ACTIVE_LOW,
+  ABC_ASYNC
+} Abc_LatchType_t;
+
+// Latch Information
+struct Abc_LatchInfo_t_
+{
+  Abc_InitType_t    InitValue;
+  Abc_LatchType_t   LatchType;
+  char              *pClkName;
+};
+
+// Latch Information Type
+typedef struct Abc_LatchInfo_t_ Abc_LatchInfo_t;
+
+////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
 
