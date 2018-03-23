@@ -1041,60 +1041,61 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		}
 	} else {
 		//Children pb_types
-		if (mode == nullptr ) {
+		if (mode) {
+            for (i = 0; i < mode->num_pb_type_children; i++) {
+                VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
+                if (0 == strcmp(mode->pb_type_children[i].name,	tokens[*token_index].data)) {
+                    pb_node_array = pb_graph_children_nodes[i];
+                    max_pb_node_array = mode->pb_type_children[i].num_pb;
+                    found = true;
+                    (*token_index)++;
+
+                    if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
+                        (*token_index)++;
+                        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                            return false;
+                        }
+                        pb_msb = vtr::atoi(tokens[*token_index].data);
+                        VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-siginificant-bit must be non-negative");
+                        (*token_index)++;
+                        if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
+                            if (!checkTokenType(tokens[*token_index],
+                                    TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                return false;
+                            }
+                            pb_lsb = pb_msb;
+                            (*token_index)++;
+                        } else {
+                            (*token_index)++;
+                            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                                return false;
+                            }
+                            pb_lsb = vtr::atoi(tokens[*token_index].data);
+                            VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-siginificant-bit must be non-negative");
+                            (*token_index)++;
+                            if (!checkTokenType(tokens[*token_index],
+                                    TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                return false;
+                            }
+                            (*token_index)++;
+                        }
+                        /* Check range of children pb */
+                        if (pb_lsb < 0 || pb_lsb >= max_pb_node_array ||
+                            pb_msb < 0 || pb_msb >= max_pb_node_array) {
+                            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+                                "Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
+                                mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
+                        }
+                    } else {
+                        pb_msb = pb_node_array[0].pb_type->num_pb - 1;
+                        pb_lsb = 0;
+                    }
+                    break; //found pb_type_children, no need to keep traversing
+                }
+            }
+        } else {
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 				"Parent pb node '%s' missing", pb_graph_parent_node->pb_type->name);
-		}
-		for (i = 0; i < mode->num_pb_type_children; i++) {
-			VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
-			if (0 == strcmp(mode->pb_type_children[i].name,	tokens[*token_index].data)) {
-				pb_node_array = pb_graph_children_nodes[i];
-				max_pb_node_array = mode->pb_type_children[i].num_pb;
-				found = true;
-				(*token_index)++;
-
-				if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
-					(*token_index)++;
-					if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-						return false;
-					}
-					pb_msb = vtr::atoi(tokens[*token_index].data);
-                    VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-siginificant-bit must be non-negative");
-					(*token_index)++;
-					if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
-						if (!checkTokenType(tokens[*token_index],
-								TOKEN_CLOSE_SQUARE_BRACKET)) {
-							return false;
-						}
-						pb_lsb = pb_msb;
-						(*token_index)++;
-					} else {
-						(*token_index)++;
-						if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-							return false;
-						}
-						pb_lsb = vtr::atoi(tokens[*token_index].data);
-                        VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-siginificant-bit must be non-negative");
-						(*token_index)++;
-						if (!checkTokenType(tokens[*token_index],
-								TOKEN_CLOSE_SQUARE_BRACKET)) {
-							return false;
-						}
-						(*token_index)++;
-					}
-					/* Check range of children pb */
-					if (pb_lsb < 0 || pb_lsb >= max_pb_node_array ||
-						pb_msb < 0 || pb_msb >= max_pb_node_array) {
-						vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-							"Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
-							mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
-					}
-				} else {
-					pb_msb = pb_node_array[0].pb_type->num_pb - 1;
-					pb_lsb = 0;
-				}
-				break; //found pb_type_children, no need to keep traversing
-			}
 		}
 	}
     

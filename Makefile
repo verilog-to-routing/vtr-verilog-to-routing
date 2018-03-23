@@ -21,7 +21,6 @@ BUILD_TYPE = release
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
 override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
 
-
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
@@ -47,7 +46,7 @@ all: $(GENERATED_MAKEFILE)
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: $(GENERATED_MAKEFILE)
 	@ echo "Cleaning build..."
-	@+$(MAKE) -C $(BUILD_DIR) clean 
+	@+$(MAKE) -C $(BUILD_DIR) clean
 	@ echo "Removing build system files.."
 	@ rm -rf $(BUILD_DIR)
 	@ rm -rf CMakeFiles CMakeCache.txt #In case 'cmake .' was run in the source directory
@@ -57,9 +56,18 @@ $(GENERATED_MAKEFILE):
 ifeq ($(CMAKE),)
 	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
 endif
+
 	@ mkdir -p $(BUILD_DIR)
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
+# Couldn't Find readline.h. Set READLINE_FOUND=FALSE
+ifeq (,$(wildcard /usr/include/readline/readline.h))
+	echo "Couldn't Find readline.h. Set READLINE_FOUND=FALSE"
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DREADLINE_FOUND=FALSE .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DREADLINE_FOUND=FALSE ..
+else# Found readline.h. Set READLINE_FOUND=TRUE and READLINE_LIBRARIES=-lreadline
+	echo "Found readline.h. Set READLINE_FOUND=TRUE and READLINE_LIBRARIES=-lreadline"
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DREADLINE_FOUND=TRUE -DREADLINE_LIBRARIES=-lreadline .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DREADLINE_FOUND=TRUE -DREADLINE_LIBRARIES=-lreadline ..
+endif
 
 #Forward any targets that are not named 'distclean' to the generated Makefile
 ifneq ($(MAKECMDGOALS),distclean)

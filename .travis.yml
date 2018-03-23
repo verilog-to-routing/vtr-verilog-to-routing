@@ -1,0 +1,56 @@
+language: cpp
+
+#dist: trusty
+sudo: false
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test # For newer GCC
+    - george-edison55-precise-backports # For cmake
+    packages:
+    - autoconf
+    - automake
+    - bash
+    - bison
+    - build-essential
+    - cmake
+    - ctags
+    - curl
+    - doxygen
+    - flex
+    - fontconfig
+    - gcc-6
+    - g++-6
+    - gcc-4.9
+    - gdb
+    - git
+    - gperf
+    - libcairo2-dev
+    - libevent-dev
+    - libfontconfig1-dev
+    - liblist-moreutils-perl
+    - libncurses5-dev
+    - libx11-dev
+    - libxft-dev
+    - libxml++2.6-dev
+    - perl
+    - python
+    - texinfo
+    - time
+    - valgrind
+    - zip
+
+before_install:
+ - source .travis/common.sh
+
+install:
+ - ./.travis/install.sh
+
+script:
+  - ./.travis/script.sh
+
+after_failure:
+  - ./.travis/after_failure.sh
+
+after_success:
+  - ./.travis/after_success.sh

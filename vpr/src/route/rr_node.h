@@ -148,33 +148,33 @@ class t_rr_node {
         };
 
     private: //Data
-        short xlow_ = -1;
-        short ylow_ = -1;
-        short xhigh_ = -1;
-        short yhigh_ = -1;
-
-        union {
-            short pin_num;
-            short track_num;
-            short class_num;
-        } ptc_;
-        short cost_index_ = -1;
-        short fan_in_ = 0;
-        short capacity_ = -1;
-
-        //Note: we use a plain array and a single size counter to save space vs std::vector
+        //Note: we use a plain array and a shorts for size to save space vs std::vector
         //      (using std::vector's nearly doubles the size of the class)
         std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
         short num_edges_ = 0;
         short num_configurable_edges_ = 0;
 
         short rc_index_ = -1;
+        short cost_index_ = -1;
 
+        short xlow_ = -1;
+        short ylow_ = -1;
+        short xhigh_ = -1;
+        short yhigh_ = -1;
+
+        t_rr_type type_ = NUM_RR_TYPES;
         union {
             e_direction direction; //Valid only for CHANX/CHANY
             e_side side; //Valid only for IPINs/OPINs
         } dir_side_;
-        t_rr_type type_ = NUM_RR_TYPES;
+
+        union {
+            short pin_num;
+            short track_num;
+            short class_num;
+        } ptc_;
+        short fan_in_ = 0;
+        short capacity_ = -1;
 };
 
 

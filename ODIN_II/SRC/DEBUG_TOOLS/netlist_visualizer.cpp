@@ -153,14 +153,18 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 				if (node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string);
+                    char* temp_string_old = temp_string;
+					temp_string = (char*)vtr::malloc(sizeof(char)*strlen(temp_string)+1+2);
+					sprintf(temp_string, "%s_O", temp_string_old);
+                    free(temp_string_old);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2);
+                    char* temp_string2_old = temp_string2;
+					temp_string2 = (char*)vtr::malloc(sizeof(char)*strlen(temp_string2)+1+2);
+					sprintf(temp_string2, "%s_O", temp_string2_old);
+                    free(temp_string2_old);
 				}
 
 				fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2); 

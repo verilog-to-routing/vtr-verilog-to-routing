@@ -135,12 +135,15 @@ private:
             size_t pointsize, int degrees,
             queue_type& orderqueue, map_type& descr2font_map, size_t max_size);
 
+    typedef std::unordered_map<font_descriptor, font_ptr, fontdesc_hasher> font_lookup;
+    typedef std::deque<font_descriptor> font_queue;
+
     // unrotated fonts (zero rotation)
-    std::deque<font_descriptor> order_zeros;
-    std::unordered_map<font_descriptor, font_ptr, fontdesc_hasher> descriptor2font_zeros;
+    font_queue order_zeros;
+    font_lookup descriptor2font_zeros;
     // rotated fonts
-    std::deque<font_descriptor> order_rotated;
-    std::unordered_map<font_descriptor, font_ptr, fontdesc_hasher> descriptor2font_rotated;
+    font_queue order_rotated;
+    font_lookup descriptor2font_rotated;
 };
 
 #endif // FONTCACHE_H

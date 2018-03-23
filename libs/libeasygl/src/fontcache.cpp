@@ -209,7 +209,9 @@ font_ptr FontCache::get_font_info(
             font_descriptor fontdesc_to_remove = orderqueue.back();
             auto font_to_remove = descr2font_map.find(fontdesc_to_remove);
 
-            close_font(font_to_remove->second);
+            if (font_to_remove != descr2font_map.end()) {
+                close_font(font_to_remove->second);
+            }
 
             descr2font_map.erase(font_to_remove);
             orderqueue.pop_back();

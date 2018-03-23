@@ -154,7 +154,11 @@ struct t_pb {
 	}
 
 	int get_num_children_of_type(int type_index) const {
-		return get_mode()->pb_type_children[type_index].num_pb;
+        t_mode* mode_ptr = get_mode();
+        if (mode_ptr) {
+            return mode_ptr->pb_type_children[type_index].num_pb;
+        }
+        return 0; //No mode
 	}
 
 	t_mode* get_mode() const {

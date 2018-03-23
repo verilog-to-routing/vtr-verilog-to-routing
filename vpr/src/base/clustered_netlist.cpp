@@ -19,13 +19,13 @@ ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
  *
  */
 t_pb* ClusteredNetlist::block_pb(const ClusterBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
+    VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_pbs_[id];
 }
 
 t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
+    VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_types_[id];
 }
@@ -51,8 +51,8 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
 }
 
 ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phys_pin_index) const {
-    VTR_ASSERT(valid_block_id(blk));
-    VTR_ASSERT_MSG(phys_pin_index >= 0 && phys_pin_index < block_type(blk)->num_pins, "Physical pin index must be in range");
+    VTR_ASSERT_SAFE(valid_block_id(blk));
+    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < block_type(blk)->num_pins, "Physical pin index must be in range");
 
     return block_logical_pins_[blk][phys_pin_index];
 }
@@ -76,7 +76,7 @@ bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) c
  *
  */
 int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
-    VTR_ASSERT(valid_pin_id(id));
+    VTR_ASSERT_SAFE(valid_pin_id(id));
 
     return pin_physical_index_[id];
 }
@@ -97,7 +97,7 @@ int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_
  *
  */
 bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
-    VTR_ASSERT(valid_net_id(id));
+    VTR_ASSERT_SAFE(valid_net_id(id));
 
     return net_is_global_[id];
 }
@@ -130,7 +130,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type
 }
 
 void ClusteredNetlist::set_pin_physical_index(const ClusterPinId pin, const int phys_pin_index) {
-    VTR_ASSERT(valid_pin_id(pin));
+    VTR_ASSERT_SAFE(valid_pin_id(pin));
     auto blk = pin_block(pin);
 
     int old_phys_pin_index = pin_physical_index(pin);
