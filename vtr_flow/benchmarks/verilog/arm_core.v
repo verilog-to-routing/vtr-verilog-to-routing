@@ -3137,27 +3137,27 @@ always @ ( posedge i_clk )
 assign dabt = dabt_reg || i_dabt;
  
  
-// ========================================================
-// Decompiler for debugging core - not synthesizable
-// ========================================================
-//synopsys translate_off
+// // ========================================================
+// // Decompiler for debugging core - not synthesizable
+// // ========================================================
+// //synopsys translate_off
  
-//`include "a25/debug_functions.v"
+// //`include "a25/debug_functions.v"
  
-/*a25_decompile  u_decompile (
-    .i_clk                      ( i_clk                            ),
-    .i_core_stall               ( i_core_stall                     ),
-    .i_instruction              ( instruction                      ),
-    .i_instruction_valid        ( instruction_valid &&!conflict    ),
-    .i_instruction_execute      ( instruction_execute              ),
-    .i_instruction_address      ( instruction_address              ),
-    .i_interrupt                ( {3{interrupt}} & next_interrupt  ),
-    .i_interrupt_state          ( control_state == INT_WAIT2       ),
-    .i_instruction_undefined    ( und_request                      ),
-    .i_pc_sel                   ( o_pc_sel                         ),
-    .i_pc_wen                   ( o_pc_wen                         )
-);
-*/ 
+// /*a25_decompile  u_decompile (
+    // .i_clk                      ( i_clk                            ),
+    // .i_core_stall               ( i_core_stall                     ),
+    // .i_instruction              ( instruction                      ),
+    // .i_instruction_valid        ( instruction_valid &&!conflict    ),
+    // .i_instruction_execute      ( instruction_execute              ),
+    // .i_instruction_address      ( instruction_address              ),
+    // .i_interrupt                ( {3{interrupt}} & next_interrupt  ),
+    // .i_interrupt_state          ( control_state == INT_WAIT2       ),
+    // .i_instruction_undefined    ( und_request                      ),
+    // .i_pc_sel                   ( o_pc_sel                         ),
+    // .i_pc_wen                   ( o_pc_wen                         )
+// );
+// */ 
  
 wire    [(15*8)-1:0]    xCONTROL_STATE;
 wire    [(15*8)-1:0]    xMODE;
@@ -3208,14 +3208,14 @@ assign xTYPE  =
 						  "SWI"      ;
   
  
-/*always @( posedge i_clk )
-    if (control_state == EXECUTE && ((instruction[0] === 1'bx) || (instruction[31] === 1'bx)))
-        begin
-        `TB_ERROR_MESSAGE
-        $display("Instruction with x's =%08h", instruction);
-        end
-*/
-//synopsys translate_on
+// /*always @( posedge i_clk )
+    // if (control_state == EXECUTE && ((instruction[0] === 1'bx) || (instruction[31] === 1'bx)))
+        // begin
+        // `TB_ERROR_MESSAGE
+        // $display("Instruction with x's =%08h", instruction);
+        // end
+// */
+// //synopsys translate_on
  
 endmodule
 
@@ -4146,24 +4146,24 @@ case(i_wb_read_data_rd)
 endcase
 
 
-/* i_wb_read_data_rd == 4'h0  ? 15'h0001  :
-		 i_wb_read_data_rd == 4'h1  ? 15'h0002  :
-		 i_wb_read_data_rd == 4'h2  ? 15'h0004  :
-		 i_wb_read_data_rd == 4'h3  ? 15'h0008  :
-		 i_wb_read_data_rd == 4'h4  ? 15'h0010  :
-		 i_wb_read_data_rd == 4'h5  ? 15'h0020  :
+// /* i_wb_read_data_rd == 4'h0  ? 15'h0001  :
+		 // i_wb_read_data_rd == 4'h1  ? 15'h0002  :
+		 // i_wb_read_data_rd == 4'h2  ? 15'h0004  :
+		 // i_wb_read_data_rd == 4'h3  ? 15'h0008  :
+		 // i_wb_read_data_rd == 4'h4  ? 15'h0010  :
+		 // i_wb_read_data_rd == 4'h5  ? 15'h0020  :
 
-		 i_wb_read_data_rd == 4'h6  ? 15'h0040  :
-		 i_wb_read_data_rd == 4'h7  ? 15'h0080  :
-		 i_wb_read_data_rd == 4'h8  ? 15'h0100  :
-		 i_wb_read_data_rd == 4'h9  ? 15'h0200  :
-		 i_wb_read_data_rd == 4'ha  ? 15'h0400  :
-		 i_wb_read_data_rd == 4'hb  ? 15'h0800  :
-		 i_wb_read_data_rd == 4'hc  ? 15'h1000  :
-		 i_wb_read_data_rd == 4'hd  ? 15'h2000  :
-		 i_wb_read_data_rd == 4'he  ? 15'h4000  :
-			         default:     15'h0000  ;
-*/
+		 // i_wb_read_data_rd == 4'h6  ? 15'h0040  :
+		 // i_wb_read_data_rd == 4'h7  ? 15'h0080  :
+		 // i_wb_read_data_rd == 4'h8  ? 15'h0100  :
+		 // i_wb_read_data_rd == 4'h9  ? 15'h0200  :
+		 // i_wb_read_data_rd == 4'ha  ? 15'h0400  :
+		 // i_wb_read_data_rd == 4'hb  ? 15'h0800  :
+		 // i_wb_read_data_rd == 4'hc  ? 15'h1000  :
+		 // i_wb_read_data_rd == 4'hd  ? 15'h2000  :
+		 // i_wb_read_data_rd == 4'he  ? 15'h4000  :
+			         // default:     15'h0000  ;
+// */
 //& decode (i_wb_read_data_rd); 
 assign read_data_wen = {15{i_wb_read_data_valid & ~i_mem_stall}} 
 			& decode;
@@ -6625,64 +6625,64 @@ assign next_way   = 	valid_bits_r[0] == 1'd0 ? 4'b0001:
 //                     c_state == CS_WRITE_HIT_WAIT_WB  ? "CS_WRITE_HIT_WAIT_WB"  :
 //							"CS_WRITE_MISS_WAIT_WB" ;
  
-/* 
-generate
-if ( WAYS == 2 ) begin : check_hit_2ways
+// /* 
+// generate
+// if ( WAYS == 2 ) begin : check_hit_2ways
  
-    always @( posedge i_clk )
-        if ( (data_hit_way[0] + data_hit_way[1] ) > 4'd1 )
-            begin
-            `TB_ERROR_MESSAGE
-            $display("Hit in more than one cache ways!");                                                  
-            end
+    // always @( posedge i_clk )
+        // if ( (data_hit_way[0] + data_hit_way[1] ) > 4'd1 )
+            // begin
+            // `TB_ERROR_MESSAGE
+            // $display("Hit in more than one cache ways!");                                                  
+            // end
  
-end
-else if ( WAYS == 3 ) begin : check_hit_3ways
+// end
+// else if ( WAYS == 3 ) begin : check_hit_3ways
  
-    always @( posedge i_clk )
-        if ( (data_hit_way[0] + data_hit_way[1] + data_hit_way[2] ) > 4'd1 )
-            begin
-            `TB_ERROR_MESSAGE
-            $display("Hit in more than one cache ways!");                                                  
-            end
+    // always @( posedge i_clk )
+        // if ( (data_hit_way[0] + data_hit_way[1] + data_hit_way[2] ) > 4'd1 )
+            // begin
+            // `TB_ERROR_MESSAGE
+            // $display("Hit in more than one cache ways!");                                                  
+            // end
  
-end
-else if ( WAYS == 4 ) begin : check_hit_4ways
+// end
+// else if ( WAYS == 4 ) begin : check_hit_4ways
  
-    always @( posedge i_clk )
-        if ( (data_hit_way[0] + data_hit_way[1] + 
-              data_hit_way[2] + data_hit_way[3] ) > 4'd1 )
-            begin
-            `TB_ERROR_MESSAGE
-            $display("Hit in more than one cache ways!");                                                  
-            end
+    // always @( posedge i_clk )
+        // if ( (data_hit_way[0] + data_hit_way[1] + 
+              // data_hit_way[2] + data_hit_way[3] ) > 4'd1 )
+            // begin
+            // `TB_ERROR_MESSAGE
+            // $display("Hit in more than one cache ways!");                                                  
+            // end
  
-end
-else if ( WAYS == 8 )  begin : check_hit_8ways
+// end
+// else if ( WAYS == 8 )  begin : check_hit_8ways
  
-    always @( posedge i_clk )
-        if ( (data_hit_way[0] + data_hit_way[1] + 
-              data_hit_way[2] + data_hit_way[3] +
-              data_hit_way[4] + data_hit_way[5] +
-              data_hit_way[6] + data_hit_way[7] ) > 4'd1 )
-            begin
-            `TB_ERROR_MESSAGE
-            $display("Hit in more than one cache ways!");                                                  
-            end
+    // always @( posedge i_clk )
+        // if ( (data_hit_way[0] + data_hit_way[1] + 
+              // data_hit_way[2] + data_hit_way[3] +
+              // data_hit_way[4] + data_hit_way[5] +
+              // data_hit_way[6] + data_hit_way[7] ) > 4'd1 )
+            // begin
+            // `TB_ERROR_MESSAGE
+            // $display("Hit in more than one cache ways!");                                                  
+            // end
  
-end
-else begin : check_hit_nways
+// end
+// else begin : check_hit_nways
  
-    initial
-        begin
-        ` 
-        $display("Unsupported number of ways %0d", WAYS);
-        $display("Set A25_DCACHE_WAYS in a25_config_defines.v to either 2,3,4 or 8");
-        end
+    // initial
+        // begin
+        // ` 
+        // $display("Unsupported number of ways %0d", WAYS);
+        // $display("Set A25_DCACHE_WAYS in a25_config_defines.v to either 2,3,4 or 8");
+        // end
  
-end
-endgenerate
-*/ 
+// end
+// endgenerate
+// */ 
  
 //synopsys translate_on
  

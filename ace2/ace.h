@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "abc.h"
+#include "base/abc/abc.h"
 
 #define bool	int
 #define TRUE 1
@@ -29,7 +29,7 @@
 #define ACE_PI_SWITCH_PROB		0.2	/* Assumed switching probability of the PIs */
 #define ACE_PI_SWITCH_ACT		0.2	/* Assumed tx activity of the primary inputs */
 
-#define ACE_CHAR_BUFFER_SIZE 	4096
+#define ACE_CHAR_BUFFER_SIZE 	4096000
 #define ACE_NUM_VECTORS			5000
 
 typedef enum {
@@ -60,7 +60,7 @@ typedef struct {
 	double prob1to0;
 } Ace_Obj_Info_t; /* Activity info for each node */
 
-extern st_table * ace_info_hash_table;
+extern st__table * ace_info_hash_table;
 
 Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj);
 //static inline void 				Ace_InfoPtrSet(Abc_Obj_t * obj_ptr, Ace_Obj_Info_t* info_ptr)	{obj_ptr->pTemp = info_ptr;					}

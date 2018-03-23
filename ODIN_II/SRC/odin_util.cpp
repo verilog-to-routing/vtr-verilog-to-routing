@@ -43,7 +43,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  * (function: make_signal_name)
 // return signal_name-bit
  *------------------------------------------------------------------------*/
-char *make_signal_name(char *signal_name, int bit)
+char *make_signal_name(const char *signal_name, int bit)
 {
 	oassert(signal_name);
 	std::stringstream return_string;

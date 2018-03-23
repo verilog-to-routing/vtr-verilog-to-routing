@@ -378,7 +378,7 @@ sub run_quick_test {
 	}
 
 	print "Testing ABC: ";
-	system("../abc_with_bb_support/abc -c \"read abc_test.blif;sweep;write_hie abc_test.blif abc_out.blif\" > abc_out.txt  2>&1" );
+	system("../abc/abc -c \"read abc_test.blif;sweep;write_hie abc_test.blif abc_out.blif\" > abc_out.txt  2>&1" );
 	if(-f "abc_out.blif") {
 		print " [PASSED]\n\n";
 	} else {

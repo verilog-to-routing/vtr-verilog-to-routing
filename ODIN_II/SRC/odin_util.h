@@ -4,7 +4,7 @@
 
 #define MAX_BUF 256
 
-char *make_signal_name(char *signal_name, int bit);
+char *make_signal_name(const char *signal_name, int bit);
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit);
 
 char *twos_complement(char *str);

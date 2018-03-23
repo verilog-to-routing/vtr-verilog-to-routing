@@ -205,7 +205,7 @@ enable_testing()
 #Add the various sub-projects
 add_subdirectory(libs)
 add_subdirectory(vpr)
-add_subdirectory(abc_with_bb_support)
+add_subdirectory(abc)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
@@ -214,8 +214,8 @@ add_subdirectory(ace2)
 # the specified target
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
-#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes). 
-#Since we don't want to change PugiXml (it is developed externally), we relax the warning 
+#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes).
+#Since we don't want to change PugiXml (it is developed externally), we relax the warning
 #level so no fallthrough warnings are generated
 CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
 if(CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
@@ -269,11 +269,11 @@ set_target_properties(libtatum
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum")
-set_target_properties(libabc abc 
+set_target_properties(libabc abc
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support")
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc")
 set_target_properties(libvpr vpr
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr"

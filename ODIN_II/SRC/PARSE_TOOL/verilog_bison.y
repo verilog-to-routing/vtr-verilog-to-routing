@@ -421,6 +421,7 @@ stmt_list:
 
 delay_control:
 	'@' '(' event_expression_list ')' 						{$$ = $3;}
+	|'@' '(' '*' ')' 										{$$ = NULL;}
 	| '@' '*'												{$$ = NULL;}
 	| '@' '(' '*' ')'										{$$ = NULL;}
 	;
