@@ -364,6 +364,7 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 	( -e $ace_path or -e "${ace_path}.exe" )
 	  or die "Cannot find ACE executable ($ace_path)";
 }
+my $ace_clk_extraction_path = "$vtr_flow_path/../ace2/scripts/extract_clk_from_blif.py";
 
 #Extract the circuit/architecture name and filename
 my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
@@ -408,9 +409,15 @@ my $abc_raw_output_file_path = "$temp_dir$abc_raw_output_file_name";
 my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc, $circuit_suffix);
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
-my $clock_list_file_name = "$benchmark_name.clock_info.txt";
-my $clock_list_file_path = "$temp_dir$clock_list_file_name";
+#Clock information for ACE
+my $ace_clk_file_name = "ace_clk.txt";
+my $ace_clk_file_path = "$temp_dir$ace_clk_file_name";
 
+#The raw unprocessed ACE output
+my $ace_raw_output_blif_name = "$benchmark_name" . ".raw" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
+my $ace_raw_output_blif_path = "$temp_dir$ace_raw_output_blif_name";
+
+#The processed ACE output useable by downstream tools
 my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
@@ -518,9 +525,9 @@ if (    $starting_stage <= $stage_idx_abc
 
 	if ( -e $abc_raw_output_file_path and $q eq "success") {
 
-		# Restore Multi-Clock Latch Information from ODIN II That was Striped out by ABC.
-        $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.out", $timeout, $temp_dir,
-                $odin_output_file_name, $abc_raw_output_file_name, $abc_output_file_name, $clock_list_file_name);
+		# Restore Multi-Clock Latch Information from ODIN II that was striped out by ABC
+        $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.abc.out", $timeout, $temp_dir,
+                $odin_output_file_name, $abc_raw_output_file_name, $abc_output_file_name);
 
         if ($q ne "success") {
             print "failed: to restore multi-clock latch info";
@@ -530,7 +537,9 @@ if (    $starting_stage <= $stage_idx_abc
 
 		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
-			system "rm -f $odin_output_file_path";
+			if (! $do_power) {
+				system "rm -f $odin_output_file_path";
+			}
 			system "rm -f ${temp_dir}*.rc";
 		}
 	}
@@ -548,33 +557,55 @@ if (    $starting_stage <= $stage_idx_ace
 	and $do_power
 	and !$error_code )
 {
-    my @clocks = get_clocks($clock_list_file_path);
+	my $abc_clk_name;
 
-    if (scalar @clocks != 1) {
-		print "failed: ace - multi-clock power analysis not supported";
-		$error_code = 1;
-    } else {
+	$q = &system_with_timeout($ace_clk_extraction_path, "ace_clk_extraction.out", $timeout, $temp_dir,
+            $ace_clk_file_name, $abc_output_file_name);
 
-        $q = &system_with_timeout(
-            $ace_path, "ace.out", $timeout, $temp_dir,
-            "-b", $abc_output_file_name,
-            "-c", @clocks[0],
-            "-n", $ace_output_blif_name,
-            "-o", $ace_output_act_name,
-            "-s", $seed
-        );
-        
-        if ( -e $ace_output_blif_path and $q eq "success") {
-            if ( !$keep_intermediate_files ) {
-                system "rm -f $abc_output_file_path";
-                #system "rm -f ${temp_dir}*.rc";
-            }
-        }
-        else {
-            print "failed: ace";
-            $error_code = 1;
-        }
+	if ($q ne "success") {
+		print "failed: ace clock extraction (only single clock activiy estimation is supported)";
+        $error_code = 1;
     }
+
+	{
+	  local $/ = undef;
+	  open(FILE, $ace_clk_file_path) or die "Can't read file '$ace_clk_file_path' ($!)\n";  
+	  $abc_clk_name = <FILE>; 
+	  close (FILE);
+	}
+
+	if (!$error_code) {
+		$q = &system_with_timeout(
+			$ace_path, "ace.out", $timeout, $temp_dir,
+			"-b", $abc_output_file_name,
+			"-c", $abc_clk_name,
+            "-n", $ace_raw_output_blif_name,
+			"-o", $ace_output_act_name,
+			"-s", $seed
+		);
+		
+		if ( -e $ace_raw_output_blif_path and $q eq "success") {
+
+            # Restore Multi-Clock Latch Information from ODIN II that was striped out by ACE
+            $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.ace.out", $timeout, $temp_dir,
+                    $odin_output_file_name, $ace_raw_output_blif_name, $ace_output_blif_name);
+
+            if ($q ne "success") {
+                print "failed: to restore multi-clock latch info";
+                $error_code = 1;
+
+            }
+
+			if ( !$keep_intermediate_files ) {
+				system "rm -f $abc_output_file_path";
+				system "rm -f $odin_output_file_path";				
+			}
+		}
+		else {
+			print "failed: ace";
+			$error_code = 1;
+		}
+	}
 }
 
 #################################################################################

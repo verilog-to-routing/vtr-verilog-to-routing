@@ -146,11 +146,7 @@ int ace_io_parse_argv(int argc, char ** argv, FILE ** BLIF, FILE ** IN_ACT,
 				*seed = atoi(argv[i]);
 				break;
 			case 'c':
-                if (*clk_name) {
-                    printf("Multiple clocks specified. This is not supported.\n");
-                    exit(1);
-                }
-				*clk_name = strdup(argv[i]);
+				*clk_name = argv[i];
 				break;
 			default:
 				ace_io_print_usage();

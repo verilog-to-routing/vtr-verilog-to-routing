@@ -50,7 +50,7 @@ void alloc_and_init_activity_info(Abc_Ntk_t * ntk) {
 	int i;
 
 	node_vec = Abc_NtkDfsSeq(ntk);
-	Vec_PtrForEachEntry(Vec_Ptr_t*, node_vec, obj_ptr, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, node_vec, obj_ptr, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj_ptr);
 		info->values = NULL;
@@ -121,7 +121,7 @@ void print_nodes(Vec_Ptr_t * nodes) {
 	int i;
 
 	printf("Printing Nodes\n");
-	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes, obj, i)
 	{
 		printf("\t%d. %d-%d-%s\n", i, Abc_ObjId(obj), Abc_ObjType(obj),
 				Abc_ObjName(obj));
@@ -147,7 +147,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 
 	//print_nodes(nodes_logic);
 
-	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes_all, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_all, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 		info->status = ACE_UNDEF;
@@ -225,8 +225,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	}
 	Abc_NtkForEachPi(ntk, obj, i)
 	{
-		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
-		assert(info->switch_act >= 0.0);
+		assert(Ace_ObjInfo(obj)->switch_act >= 0.0);
 	}
 
 	/*------------- Calculate switching activities. ---------------------*/
@@ -234,7 +233,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	fflush(0);
 
 	/* Do latches first, then logic after */
-	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes_all, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_all, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 
@@ -259,7 +258,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		}
 	}
 
-	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes_logic, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_logic, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 		//Ace_Obj_Info_t * fanin_info;
@@ -325,7 +324,6 @@ int main(int argc, char * argv[]) {
 	Abc_Obj_t * obj;
 	int seed = 0;
 
-
 	p = ACE_PI_STATIC_PROB;
 	d = ACE_PI_SWITCH_PROB;
 
@@ -334,8 +332,6 @@ int main(int argc, char * argv[]) {
     char* clk_name = NULL;
 	ace_io_parse_argv(argc, argv, &BLIF, &IN_ACT, &OUT_ACT, blif_file_name,
 			new_blif_file_name, &pi_format, &p, &d, &seed, &clk_name);
-
-    assert(clk_name);
 
 	srand(seed);
 
@@ -364,21 +360,13 @@ int main(int argc, char * argv[]) {
 	// Full Allocation
 	Ace_Obj_Info_t * info = calloc(Abc_NtkObjNum(ntk), sizeof(Ace_Obj_Info_t));
 	ace_info_hash_table = st__init_table(st__ptrcmp, st__ptrhash);
+
+	int objNum = 0;
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
-		st__insert(ace_info_hash_table, (char *) obj, (char *) &info[i]);
-		//Ace_InfoPtrSet(obj, & info[i]);
+		st__insert(ace_info_hash_table, (char *) obj, (char *) &info[objNum]);
+		objNum++;
 	}
-
-	/* DFS Allocation
-	 Vec_Ptr_t * node_vec = Abc_NtkDfsSeq(ntk);
-	 Ace_Obj_Info_t * info = malloc(node_vec->nSize * sizeof(Ace_Obj_Info_t));
-	 Vec_PtrForEachEntry(Abc_Obj_t *, node_vec, obj_ptr, i)
-	 {
-	 Ace_InfoPtrSet(obj_ptr, & info[i]);
-	 }
-	 Vec_PtrFree(node_vec);
-	 */
 
 	// Check Depth
 	depth = ace_calc_network_depth(ntk);
@@ -407,19 +395,6 @@ int main(int argc, char * argv[]) {
 		error = ACE_ERROR;
 		break;
 	}
-
-	/*
-	 Abc_NtkForEachPi(ntk, obj_ptr, i)
-	 {
-	 char * s;
-	 s = Nm_ManFindNameById(ntk->pManName, obj_ptr->Id);
-	 if (s != NULL)
-	 {
-	 //printf("%s\n",s);
-	 }
-
-	 }
-	 */
 
 	if (!error) {
 		if (clk_name == NULL) {

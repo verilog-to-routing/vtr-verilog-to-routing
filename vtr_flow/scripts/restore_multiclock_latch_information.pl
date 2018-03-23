@@ -9,7 +9,7 @@
 #  and drops all other clock information. This script restores the dropped
 #  multi-clock information (from the ODIN II BLIF to the ABC Optimized BLIF)
 #
-# Inputs: <ODIN_II_BLIF_IN_FILE> <ABC_BLIF_IN_FILE> <ABC_BLIF_OUT_FILE> <CLOCK_LIST_OUT_FILE>
+# Inputs: <ODIN_II_BLIF_IN_FILE> <ABC_BLIF_IN_FILE> <ABC_BLIF_OUT_FILE>
 #
 ################################################################################
 
@@ -21,11 +21,6 @@ open(my $abcInFile, "<".$ARGV[1]) || die "Error Opening ABC Input File $ARGV[1]:
 
 #Open the ABC Optimized (ODIN II) BLIF File
 open(my $abcOutFile, ">".$ARGV[2]) || die "Error Opening Output File $ARGV[2]: $!\n";
-
-#Open the ABC Optimized (ODIN II) BLIF File
-open(my $clockOutFile, ">".$ARGV[3]) || die "Error Opening Output Clock list File $ARGV[3]: $!\n";
-
-my %seen_clocks;
 
 #While there are lines in the ABC Optimized (ODIN II) BLIF File
 while(($line = <$abcInFile>))
@@ -43,9 +38,6 @@ while(($line = <$abcInFile>))
 		if ($size >= 5)
 		{
 			print $abcOutFile $line;
-
-            #Record any seen clocks
-            $seen_clocks{@tokens[4]} = 1;
 		}
 		#The Latch Is Missing the Clock Information
 		elsif ($size >= 3)
@@ -77,9 +69,6 @@ while(($line = <$abcInFile>))
 						#Print Out the Line with the Restored Latch Information Included
 					    print $abcOutFile join(" ", (@tokens[0], @tokens[1], @tokens[2], @tokensOdn[3], @tokensOdn[4], @tokens[3]) ), "\n";
 
-                        #Record any seen clocks
-                        $seen_clocks{@tokensOdn[4]} = 1;
-
 						#Say that we Found the Droids we're Looking For
 						$found = 1;
 					}
@@ -106,11 +95,6 @@ while(($line = <$abcInFile>))
 	}
 }
 
-#Record every clock seen in an output file
-foreach my $clock (keys %seen_clocks) {
-    print $clockOutFile "$clock\n";
-}
-
 #Close the ODIN II BLIF File
 close($odin2File);
 
@@ -119,6 +103,3 @@ close($abcInFile);
 
 #Close the processed BLIF file with restored clocks
 close($abcOutFile);
-
-#Close list of clocks
-close($clockListFile);
