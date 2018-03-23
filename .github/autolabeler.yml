@@ -4,7 +4,6 @@ ACE2:           ["ace2"]
 blifexplorer:   ["blifexplorer"]
 Odin:           ["ODIN_II", "odin2_helper"]
 VPR:            ["vpr"]
-VTR Flow:       ["vtr_flow"]
 
 # Libraries
 libarchfpga:    ["libs/libarchfpga"]
@@ -12,14 +11,15 @@ libeasygl:      ["libs/libeasygl"]
 liblog:         ["libs/liblog"]
 libpugiutil:    ["libs/libpugiutil"]
 libvtrutil:     ["libs/libvtrutil"]
+external_libs:  ["libs/EXTERNAL"]
 
 # General areas
-type-docs:      ["docs/", "README.md", "*.md", "tutorial", "README", "*.rst"]
-type-infra:     [".travis.yml", ".travis.yml", ".travis/", "scripts/", ".github/", "Dockerfile"]
-type-build:     ["Makefile", "*.make", "CMakeLists.txt", "cmake"]
-type-tests:     ["*_test.pl", "*test*", "*TESTS*"]
-type-external:  ["libs/EXTERNAL"]
-type-scripts:   ["scripts", "*.pl", "*.sh"]
+docs:      ["docs/", "README.md", "*.md", "tutorial", "README", "*.rst"]
+infra:     [".travis.yml", ".travis.yml", ".travis/", "scripts/", ".github/", "Dockerfile"]
+build:     ["Makefile", "*.make", "CMakeLists.txt", "cmake"]
+tests:     ["*_test.pl", "*test*", "*TESTS*"]
+scripts:   ["scripts", "*.pl", "*.sh"]
+VTR Flow:  ["vtr_flow"]
 
 # Tag pull requests with the languages used to make it easy to see what is
 # being used.
