@@ -1,0 +1,57 @@
+#! /usr/bin/perl
+
+$netsfile = shift;
+$plfile = shift;
+
+# ------------------------------ read placement
+
+open FILE, $plfile;
+while (<FILE>) {
+  chop;
+  if (/(\w+)\s+([\-\d\.]+)\s+([\-\d\.]+)\s+\:/) {
+    $loc{$1} = "$2 $3";
+  }
+}
+close FILE;
+
+open FILE, $netsfile;
+while (<FILE>) {
+  chop;
+  $net = $2 if /NetDegree\s+\:\s+(\d+)\s+(\w+)/;
+  if (/(\w+)\s+(\w+)\s+\:/) {
+    $netconn{$net} .= "$1 ";
+    $cellconn{$1} .= "$net ";
+  }
+}
+close FILE;
+
+# ----------------------------- compute HPWL
+
+$hpwl = 0;
+foreach $net (keys %netconn) {
+  @conns = split ' ',$netconn{$net};
+  $min_x = $min_y = 1e12;
+  $max_x = $max_y = -1e12;
+  foreach $cell (@conns) {
+    if (!exists $loc{$cell}) {
+      print "WARNING: Unknown cell location: $cell\n";
+    } else {
+      ($x, $y) = split ' ',$loc{$cell};
+      $min_x = $x if $x < $min_x;
+      $min_y = $y if $y < $min_y;
+      $max_x = $x if $x > $max_x;
+      $max_y = $y if $y > $max_y;
+    }
+  }
+  
+  if ($min_x eq 1e12 or $min_y eq 1e12 or
+      $max_x eq -1e12 or $max_y eq -1e12) {
+    print "WARNING: Unbounded box\n";
+  } else {
+    $hpwl = $hpwl + $max_x - $min_x + $max_y - $min_y;
+  }
+}
+
+print "HPWL = ";
+printf "%e",$hpwl;
+print "\n";

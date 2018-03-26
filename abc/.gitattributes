@@ -1,0 +1,32 @@
+* text=auto
+
+*.c text
+*.cpp text
+*.h text
+
+*.py text
+*.sh text
+
+*.make text
+Makefile text
+
+*.txt text
+*.md text
+*.html text
+
+readmeaig text
+LICENSE text
+license text
+CHANGES text
+README text
+
+.hgignore text
+.gitignore text
+.gitattributes text
+
+*.dsp text eol=crlf
+*.dsw text eol=crlf
+
+*.aig binary
+*.lib binary
+*.dll binary
