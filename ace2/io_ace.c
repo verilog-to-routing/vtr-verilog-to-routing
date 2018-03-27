@@ -5,7 +5,7 @@
 #include "ace.h"
 #include "io_ace.h"
 
-#include "abc.h"
+#include "base/abc/abc.h"
 
 char * hdl_name_ptr = NULL;
 
@@ -98,7 +98,7 @@ void ace_io_print_activity(Abc_Ntk_t * ntk, FILE * fp) {
 
 int ace_io_parse_argv(int argc, char ** argv, FILE ** BLIF, FILE ** IN_ACT,
 		FILE ** OUT_ACT, char * blif_file_name, char * new_blif_file_name,
-		ace_pi_format_t * pi_format, double *p, double * d, int * seed) {
+		ace_pi_format_t * pi_format, double *p, double * d, int * seed, char** clk_name) {
 	int i;
 	char option;
 
@@ -145,6 +145,13 @@ int ace_io_parse_argv(int argc, char ** argv, FILE ** BLIF, FILE ** IN_ACT,
 			case 's':
 				*seed = atoi(argv[i]);
 				break;
+			case 'c':
+                if (*clk_name) {
+                    printf("Multiple clocks specified. This is not supported.\n");
+                    exit(1);
+                }
+				*clk_name = strdup(argv[i]);
+				break;
 			default:
 				ace_io_print_usage();
 				exit(1);
@@ -154,6 +161,13 @@ int ace_io_parse_argv(int argc, char ** argv, FILE ** BLIF, FILE ** IN_ACT,
 	}
 
 	if (*BLIF == NULL) {
+        printf("No BLIF file specified\n");
+		ace_io_print_usage();
+		exit(1);
+	}
+
+	if (*clk_name == NULL) {
+        printf("No clock specified\n");
 		ace_io_print_usage();
 		exit(1);
 	}
@@ -165,6 +179,7 @@ void ace_io_print_usage() {
 
 	(void) fprintf(stderr, "                                --+\n");
 	(void) fprintf(stderr, "    -b [input circuitname.blif]   | required\n");
+	(void) fprintf(stderr, "    -c [clock name]               | required\n");
 	(void) fprintf(stderr, "    -n [new circuitname.blif]     |\n");
 	(void) fprintf(stderr, "                                --+\n");
 	(void) fprintf(stderr, "\n");
@@ -206,7 +221,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 	node_vec = Abc_NtkDfsSeq(ntk);
 
 	// Initialize node information structure
-	Vec_PtrForEachEntry(node_vec, obj_ptr, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, node_vec, obj_ptr, i)
 	{
 		info = Ace_ObjInfo(obj_ptr);
 		info->static_prob = ACE_OPEN;
