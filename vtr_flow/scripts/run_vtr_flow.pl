@@ -123,6 +123,7 @@ my $verify_rr_graph         = 0;
 my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
+my $use_old_abc             = 0;
 my $routing_budgets_algorithm = "disable";
 
 while ( $token = shift(@ARGV) ) {
@@ -233,6 +234,9 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-routing_budgets_algorithm"){
             $routing_budgets_algorithm = shift(@ARGV);
     }
+    elsif ( $token eq "-use_old_abc"){
+            $use_old_abc = 1;
+    }
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
@@ -335,11 +339,17 @@ if (    $stage_idx_odin >= $starting_stage
 my $abc_path;
 my $abc_rc_path;
 if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
-	$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
+    my $abc_dir_path = "$vtr_flow_path/../abc";
+
+    if ($use_old_abc) {
+        my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
+    }
+
+	$abc_path = "$abc_dir_path/abc";
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
 
-	$abc_rc_path = "$vtr_flow_path/../abc_with_bb_support/abc.rc";
+	$abc_rc_path = "$abc_dir_path/abc.rc";
 	( -e $abc_rc_path ) or die "Cannot find ABC RC file ($abc_rc_path)";
 
 	copy( $abc_rc_path, $temp_dir );
@@ -857,9 +867,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			
 	if ($q eq "success") {
 		if($check_equivalent eq "on") {
-			if($abc_path eq "") {
-				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
-			}
 			
 			find(\&find_postsynthesis_netlist, ".");
 
