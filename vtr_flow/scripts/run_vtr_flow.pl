@@ -502,7 +502,7 @@ if (    $starting_stage <= $stage_idx_abc
     #           In recent versions, ABC does not remember that LUT size you want to techmap to.
     #           As a result, specifying if -K # early in the script causes ABC techmap to 2-LUTs, 
     #           greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
-    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; time; strash; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; if -K $lut_size; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
+    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; time; strash; scleanup; time; if -K $lut_size; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
 
     if ($use_old_abc) {
         #Legacy ABC script
