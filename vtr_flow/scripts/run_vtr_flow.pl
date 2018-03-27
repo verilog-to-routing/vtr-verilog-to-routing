@@ -483,7 +483,23 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
-    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; strash; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
+	#For ABC’s documentation see: https://people.eecs.berkeley.edu/~alanmi/abc/abc.htm
+    #
+    #Some key points on the script used:
+    #
+	#  strash : The strash command (which build's ABC's internal AIG) is needed before scleanup, 
+    #           otherwise scleanup will fail with “Only works for structurally hashed networks”.
+    #  
+	#  if –K #: This should appear as the final step before writing the optimized netlist.
+    #           In recent versions, ABC does not remember that LUT size you want to techmap to.
+    #           As a result, specifying if -K # early in the script causes ABC techmap to 2-LUTs, 
+    #           greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
+    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; time; strash; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; if -K $lut_size; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
+
+    if ($use_old_abc) {
+        #Legacy ABC script
+        $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
+    }
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
     
