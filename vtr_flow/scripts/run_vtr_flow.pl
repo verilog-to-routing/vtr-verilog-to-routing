@@ -338,7 +338,8 @@ if (    $stage_idx_odin >= $starting_stage
 
 my $abc_path;
 my $abc_rc_path;
-if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
+if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
+    #Need ABC for either synthesis or post-VPR verification
     my $abc_dir_path = "$vtr_flow_path/../abc";
 
     if ($use_old_abc) {
