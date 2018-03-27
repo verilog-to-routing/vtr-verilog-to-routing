@@ -502,12 +502,55 @@ if (    $starting_stage <= $stage_idx_abc
     #           In recent versions, ABC does not remember that LUT size you want to techmap to.
     #           As a result, specifying if -K # early in the script causes ABC techmap to 2-LUTs, 
     #           greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
-    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; time; strash; scleanup; time; if -K $lut_size; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
+    my $abc_commands="
+echo '';
+echo 'Load Netlist';
+echo '============';
+read $odin_output_file_name;
+print_stats;
+time;
+
+echo '';
+echo 'Latch Info';
+echo '==========';
+print_latch;
+
+echo '';
+echo 'Logic Opt';
+echo '=========';
+resyn;
+resyn2;
+print_stats;
+time;
+
+echo '';
+echo 'Clean';
+echo '=====';
+strash;
+scleanup -v
+print_stats;
+time;
+
+echo '';
+echo 'Techmap';
+echo '=======';
+if -K $lut_size -v;
+print_stats;
+time;
+
+echo '';
+echo 'Output Netlist';
+echo '==============';
+write_hie $odin_output_file_name $abc_raw_output_file_name;
+time;
+";
 
     if ($use_old_abc) {
         #Legacy ABC script
         $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
     }
+
+    $abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
     
