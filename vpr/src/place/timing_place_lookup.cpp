@@ -265,12 +265,12 @@ static float route_connection_delay(int source_x, int source_y,
     //Get the rr nodes to route between
     int driver_ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
     int source_rr_node = -1;
-    if (driver_ptc > 0)
+    if (driver_ptc > -1)
         source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
 
     int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
     int sink_rr_node = -1;
-    if (sink_ptc > 0)
+    if (sink_ptc > -1)
         sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
 
     bool successfully_routed = false;
@@ -702,4 +702,3 @@ static bool calculate_delay(int source_node, int sink_node,
     free_route_tree(rt_root);
     return (true);
 }
-
