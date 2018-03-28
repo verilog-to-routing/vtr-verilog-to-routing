@@ -178,7 +178,7 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle) {
 	ace_status_t status;
 	DdNode * dd_node;
 
-	Vec_PtrForEachEntry(Vec_Ptr_t*, node_vec, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, node_vec, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 

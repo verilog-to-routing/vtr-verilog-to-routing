@@ -34,7 +34,7 @@ int ace_calc_network_depth(Abc_Ntk_t * ntk) {
 	nodes = Abc_NtkDfs(ntk, TRUE);
 
 	depth = 0;
-	Vec_PtrForEachEntry(Vec_Ptr_t*, nodes, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 

@@ -248,7 +248,7 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
 		ace_cube_t * cube, Vec_Ptr_t * inputs, double P1, int phase) {
 	short i;
 	Abc_Obj_t * pi;
-	double switch_prob, switch_prob_t, switch_prob_e;
+	double switch_prob_t, switch_prob_e;
 	double prob;
 	DdNode * bdd_if1, *bdd_if0;
 	ace_cube_t * cube0, *cube1;
@@ -337,7 +337,7 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 	n0 = n1 = 0;
 	ace_bdd_count_paths(mgr, bdd, &n1, &n0);
 
-	Vec_PtrForEachEntry(Vec_Ptr_t*, fanins, fanin, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, fanins, fanin, i)
 	//#define Vec_PtrForEachEntry( vVec, pEntry, i ) for ( i = 0; (i < Vec_PtrSize(vVec)) && (((pEntry) = Vec_PtrEntry(vVec, i)), 1); i++ )
 	//for ( i = 0; (i < Vec_PtrSize(fanins)) && (((fanin) = Vec_PtrEntry(fanins, i)), 1); i++ )
 	{
