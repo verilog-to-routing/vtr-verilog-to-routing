@@ -202,6 +202,16 @@ enable_testing()
 # Sub-projects
 #
 
+#Explicitly specify that libreadline has not been found
+# This must be explicitly set for ABC to not depend on
+# libreadline. Note that because the ABC CMakeLists uses MATCHES
+# in its check the value must be explicitly 'FALSE' (in upper case).
+#
+# TODO: Ideally ABC's CMakeLists.txt should handle this itself,
+#       or we should really search for readline correctly.
+#       For now just disable readline.
+set(READLINE_FOUND FALSE)
+
 #Add the various sub-projects
 add_subdirectory(libs)
 add_subdirectory(vpr)
