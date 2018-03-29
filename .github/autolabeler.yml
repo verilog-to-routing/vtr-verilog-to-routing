@@ -1,5 +1,5 @@
 # Tools
-ABC:            ["abc_with_bb_support"]
+ABC:            ["abc_with_bb_support", "abc"]
 ACE2:           ["ace2"]
 blifexplorer:   ["blifexplorer"]
 Odin:           ["ODIN_II", "odin2_helper"]

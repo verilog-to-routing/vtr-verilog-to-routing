@@ -728,46 +728,54 @@ sub check_two_files {
 
 
 			if ( $type{$value} eq "Range" or $type{$value} eq "RangeAbs" ) {
+                my $abs_diff = abs($first_file_value - $second_file_value);
+                my $ratio;
+                if ($second_file_value == 0) {
+                    $ratio = "inf";
+                } else {
+                    $ratio = $first_file_value / $second_file_value;
+                }
 
-				# Check because of division by 0
-				if ( $second_file_value == 0 ) {
-					if ( $first_file_value != 0 ) {
-						if ($is_golden){
-                            print "[Fail] \n $circuitarch $value: golden = $second_file_value result = $first_file_value\n";
-                        }else{
-                            print "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
-                        }
-						$failed += 1;
-					}
-				} else {
-					my $ratio = $first_file_value / $second_file_value;
-                    my $abs_diff = abs($first_file_value - $second_file_value);
-                    
-                    if($verbose) {
-                        print "\tParam: $value\n";
-                        print "\t\tTest: $first_file_value\n";
-                        print "\t\tGolden Value: $second_file_value\n";
-                        print "\t\tRatio: $ratio\n";
-                    }
+                if($verbose) {
+                    print "\tParam: $value\n";
+                    print "\t\tTest: $first_file_value\n";
+                    print "\t\tGolden Value: $second_file_value\n";
+                    print "\t\tRatio: $ratio\n";
+                    print "\t\tAbsDiff $abs_diff\n";
+                }
 
-					if (   $ratio < $min_threshold{$value}
-						or $ratio > $max_threshold{$value} ) {
-                        #Beyond relative threshold
+                if (    exists $abs_diff_threshold{$value}
+                    and $abs_diff <= $abs_diff_threshold{$value}) {
+                    #Within absolute threshold
+                    next;
+                }
 
-                        if (not exists $abs_diff_threshold{$value}
-                            or $abs_diff > $abs_diff_threshold{$value}) {
-                            #Either no absolute threshold specified, or beyond it
-                            if ($is_golden){
-                                print
-                                    "[Fail] \n $circuitarch $value: golden = $second_file_value result = $first_file_value\n";
-                            }else{
-                                print
-                                    "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
-                            }
-                            $failed += 1;
-                        }
-					}
-				}
+                if (    $ratio >= $min_threshold{$value}
+                    and $ratio <= $max_threshold{$value}) {
+                    #Within relative thershold  
+                    next;
+                }
+
+                if ($first_file_value == $second_file_value) {
+                    #Equal (e.g. both zero)
+                    next;
+                }
+
+                if (    $first_file_value eq 'nan'
+                    and $second_file_value eq 'nan') {
+                    #Both literal Not-a-Numbers
+                    next;
+                }
+
+                #Beyond absolute and relative thresholds
+                if ($is_golden){
+                    print
+                        "[Fail] \n $circuitarch $value: golden = $second_file_value result = $first_file_value\n";
+                }else{
+                    print
+                        "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
+                }
+                $failed += 1;
 			} elsif ($type{$value} eq "Equal") {
 				if ( $first_file_value ne $second_file_value ) {
                     if ($is_golden) {
