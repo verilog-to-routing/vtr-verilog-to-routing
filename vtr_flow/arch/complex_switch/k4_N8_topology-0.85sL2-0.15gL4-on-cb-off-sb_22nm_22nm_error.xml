@@ -188,7 +188,7 @@
           </interconnect>
         </mode>
 
-        <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+        <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
             <fc_override port_name="outpad" segment_name="l4g" fc_type="frac" fc_val="0"/>
             <fc_override port_name="inpad" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
             <fc_override port_name="clock" segment_name="l4g" fc_type="frac" fc_val="0"/>
@@ -280,7 +280,7 @@
         <direct name="directO" input="ble4[7:0].out" output="clb.O"/>
       </interconnect>
 
-      <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
           <fc_override port_name="I0" segment_name="l4g" fc_type="frac" fc_val="0"/>
           <fc_override port_name="I1" segment_name="l4g" fc_type="frac" fc_val="0"/>
           <fc_override port_name="I2" segment_name="l4g" fc_type="frac" fc_val="0"/>
@@ -479,7 +479,7 @@
 
       </mode>
 
-      <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
           <fc_override port_name="a" segment_name="l4g" fc_type="frac" fc_val="0"/>
           <fc_override port_name="b" segment_name="l4g" fc_type="frac" fc_val="0"/>
           <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
@@ -987,7 +987,7 @@
       </mode>
 
 
-      <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
           <fc_override port_name="addr1" segment_name="l4g" fc_type="frac" fc_val="0"/>
           <fc_override port_name="addr2" segment_name="l4g" fc_type="frac" fc_val="0"/>
           <fc_override port_name="data" segment_name="l4g" fc_type="frac" fc_val="0"/>

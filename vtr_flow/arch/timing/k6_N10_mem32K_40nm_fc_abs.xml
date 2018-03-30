@@ -181,7 +181,7 @@
         </interconnect>
       </mode>
 
-      <fc default_in_type="abs" default_in_val="20" default_out_type="abs" default_out_val="20"/>
+      <fc in_type="abs" in_val="20" out_type="abs" out_val="20"/>
 
       <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -309,7 +309,7 @@
         <direct name="clbouts1" input="fle[9:0].out" output="clb.O"/>
       </interconnect>
 
-      <fc default_in_type="abs" default_in_val="20" default_out_type="abs" default_out_val="20"/>
+      <fc in_type="abs" in_val="20" out_type="abs" out_val="20"/>
 
       <pinlocations pattern="spread"/>
 
@@ -496,7 +496,7 @@
 
       </mode>
 
-      <fc default_in_type="abs" default_in_val="20" default_out_type="abs" default_out_val="20"/>
+      <fc in_type="abs" in_val="20" out_type="abs" out_val="20"/>
 
       <pinlocations pattern="spread"/>
 
@@ -1096,7 +1096,7 @@
         </interconnect>
       </mode>
 
-      <fc default_in_type="abs" default_in_val="20" default_out_type="abs" default_out_val="20"/>
+      <fc in_type="abs" in_val="20" out_type="abs" out_val="20"/>
 
       <pinlocations pattern="spread"/>
 

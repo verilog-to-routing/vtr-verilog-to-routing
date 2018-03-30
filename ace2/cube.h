@@ -39,7 +39,7 @@ typedef unsigned int *pset;
 
 #define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (1 << WHICH_BIT(e)))
 #define set_insert(set, e)      (set[WHICH_WORD(e)] |= 1 << WHICH_BIT(e))
-#define set_new(size)			ALLOC(unsigned int, SET_SIZE(size)), size
+#define set_new(size)			ALLOC(unsigned int, SET_SIZE(size))
 
 /* # of ints needed to allocate a set with "size" elements */
 #define SET_SIZE(size)          ((size) <= BPI ? 2 : (WHICH_WORD((size)-1) + 1))

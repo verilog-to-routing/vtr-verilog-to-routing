@@ -10,12 +10,12 @@
 #include "cube.h"
 
 // ABC Headers
-#include "abc.h"
-#include "main.h"
-#include "io.h"
+#include "base/abc/abc.h"
+#include "base/main/main.h"
+#include "base/io/ioAbc.h"
 //#include "vecInt.h"
 
-st_table * ace_info_hash_table;
+st__table * ace_info_hash_table;
 
 void print_status(Abc_Ntk_t * ntk) {
 	int i;
@@ -50,7 +50,7 @@ void alloc_and_init_activity_info(Abc_Ntk_t * ntk) {
 	int i;
 
 	node_vec = Abc_NtkDfsSeq(ntk);
-	Vec_PtrForEachEntry(node_vec, obj_ptr, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, node_vec, obj_ptr, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj_ptr);
 		info->values = NULL;
@@ -121,7 +121,7 @@ void print_nodes(Vec_Ptr_t * nodes) {
 	int i;
 
 	printf("Printing Nodes\n");
-	Vec_PtrForEachEntry(nodes, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes, obj, i)
 	{
 		printf("\t%d. %d-%d-%s\n", i, Abc_ObjId(obj), Abc_ObjType(obj),
 				Abc_ObjName(obj));
@@ -147,7 +147,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 
 	//print_nodes(nodes_logic);
 
-	Vec_PtrForEachEntry(nodes_all, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_all, obj, i)
 	{
 		info = Ace_ObjInfo(obj);
 		info->status = ACE_UNDEF;
@@ -209,7 +209,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		ace_update_latch_static_probs(ntk);
 		ace_update_latch_switch_probs(ntk);
 	}
-	st_free_table(leaves);
+	st__free_table(leaves);
 	Vec_PtrFree(literals);
 #endif
 
@@ -225,8 +225,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	}
 	Abc_NtkForEachPi(ntk, obj, i)
 	{
-		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
-		assert(info->switch_act >= 0.0);
+		assert(Ace_ObjInfo(obj)->switch_act >= 0.0);
 	}
 
 	/*------------- Calculate switching activities. ---------------------*/
@@ -234,7 +233,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	fflush(0);
 
 	/* Do latches first, then logic after */
-	Vec_PtrForEachEntry(nodes_all, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_all, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 
@@ -259,7 +258,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		}
 	}
 
-	Vec_PtrForEachEntry(nodes_logic, obj, i)
+	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_logic, obj, i)
 	{
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
 		//Ace_Obj_Info_t * fanin_info;
@@ -294,7 +293,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj) {
 	Ace_Obj_Info_t * info;
 
-	if (st_lookup(ace_info_hash_table, (char *) obj, (char **) &info)) {
+	if (st__lookup(ace_info_hash_table, (char *) obj, (char **) &info)) {
 		return info;
 	}
 	assert(0);
@@ -325,20 +324,20 @@ int main(int argc, char * argv[]) {
 	Abc_Obj_t * obj;
 	int seed = 0;
 
-
 	p = ACE_PI_STATIC_PROB;
 	d = ACE_PI_SWITCH_PROB;
 
 	char blif_file_name[BLIF_FILE_NAME_LEN];
 	char new_blif_file_name[BLIF_FILE_NAME_LEN];
+    char* clk_name = NULL;
 	ace_io_parse_argv(argc, argv, &BLIF, &IN_ACT, &OUT_ACT, blif_file_name,
-			new_blif_file_name, &pi_format, &p, &d, &seed);
+			new_blif_file_name, &pi_format, &p, &d, &seed, &clk_name);
 
 	srand(seed);
 
 	pAbc = Abc_FrameGetGlobalFrame();
 
-	ntk = Io_Read(blif_file_name, IO_FILE_BLIF, 1);
+	ntk = Io_Read(blif_file_name, IO_FILE_BLIF, 1, 0);
 
     assert(ntk);
 
@@ -360,22 +359,14 @@ int main(int argc, char * argv[]) {
 
 	// Full Allocation
 	Ace_Obj_Info_t * info = calloc(Abc_NtkObjNum(ntk), sizeof(Ace_Obj_Info_t));
-	ace_info_hash_table = st_init_table(st_ptrcmp, st_ptrhash);
+	ace_info_hash_table = st__init_table(st__ptrcmp, st__ptrhash);
+
+	int objNum = 0;
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
-		st_insert(ace_info_hash_table, (char *) obj, (char *) &info[i]);
-		//Ace_InfoPtrSet(obj, & info[i]);
+		st__insert(ace_info_hash_table, (char *) obj, (char *) &info[objNum]);
+		objNum++;
 	}
-
-	/* DFS Allocation
-	 Vec_Ptr_t * node_vec = Abc_NtkDfsSeq(ntk);
-	 Ace_Obj_Info_t * info = malloc(node_vec->nSize * sizeof(Ace_Obj_Info_t));
-	 Vec_PtrForEachEntry(Abc_Obj_t *, node_vec, obj_ptr, i)
-	 {
-	 Ace_InfoPtrSet(obj_ptr, & info[i]);
-	 }
-	 Vec_PtrFree(node_vec);
-	 */
 
 	// Check Depth
 	depth = ace_calc_network_depth(ntk);
@@ -403,41 +394,6 @@ int main(int argc, char * argv[]) {
 		printf("Error reading activities.\n");
 		error = ACE_ERROR;
 		break;
-	}
-
-	/*
-	 Abc_NtkForEachPi(ntk, obj_ptr, i)
-	 {
-	 char * s;
-	 s = Nm_ManFindNameById(ntk->pManName, obj_ptr->Id);
-	 if (s != NULL)
-	 {
-	 //printf("%s\n",s);
-	 }
-
-	 }
-	 */
-
-	// Get clock info
-	char * clk_name = NULL;
-	if (!error) {
-		Abc_NtkForEachLatch(ntk, obj, i)
-		{
-			Abc_LatchInfo_t * latch_info = obj->pData;
-
-			if (!clk_name) {
-				clk_name = latch_info->pClkName;
-			}
-			if (strcmp(clk_name, latch_info->pClkName) == 0) {
-				// Clock names match - do nothing
-			} else {
-				// Multiple clocks - error
-				printf(
-						"Multiple clocks detected in blif file.  This is not supported.\n");
-				error = ACE_ERROR;
-				break;
-			}
-		}
 	}
 
 	if (!error) {

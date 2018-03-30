@@ -202,16 +202,37 @@ enable_testing()
 # Sub-projects
 #
 
+#Explicitly specify that libreadline has not been found
+# This must be explicitly set for ABC to not depend on
+# libreadline. Note that because the ABC CMakeLists uses MATCHES
+# in its check the value must be explicitly 'FALSE' (in upper case).
+#
+# TODO: Ideally ABC's CMakeLists.txt should handle this itself,
+#       or we should really search for readline correctly.
+#       For now just disable readline.
+set(READLINE_FOUND FALSE)
+
 #Add the various sub-projects
 add_subdirectory(libs)
 add_subdirectory(vpr)
-add_subdirectory(abc_with_bb_support)
+add_subdirectory(abc)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
-#Add extra compilation flags to suppress warnings from some libraries
+#Add extra compilation flags to suppress warnings from some libraries/tools
 # Note that target_compile_options() *appends* to the current compilation options of
 # the specified target
+
+#Since ABC is an externally developed tool, we suppress all compiler warnings
+CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
+if(CXX_COMPILER_SUPPORTS_-w)
+    target_compile_options(libabc PRIVATE "-w")
+    target_compile_options(abc PRIVATE "-w")
+endif()
+
+#Some ABC headers generate warnings, treat them as system headers to suppress warnings
+get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
+target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
 #are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes). 
@@ -271,9 +292,9 @@ set_target_properties(libtatum
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/EXTERNAL/libtatum")
 set_target_properties(libabc abc 
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support")
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc")
 set_target_properties(libvpr vpr
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr"

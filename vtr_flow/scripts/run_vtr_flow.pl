@@ -123,6 +123,7 @@ my $verify_rr_graph         = 0;
 my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
+my $use_old_abc             = 0;
 my $routing_budgets_algorithm = "disable";
 my $odin_adder_config_path = "optimized";
 
@@ -238,6 +239,9 @@ while ( $token = shift(@ARGV) ) {
             $odin_adder_config_path = $vtr_flow_path;
             $odin_adder_config_path .= shift(@ARGV);
     }
+    elsif ( $token eq "-use_old_abc"){
+            $use_old_abc = 1;
+    }
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
@@ -339,16 +343,25 @@ if (    $stage_idx_odin >= $starting_stage
 
 my $abc_path;
 my $abc_rc_path;
-if ( $stage_idx_abc >= $starting_stage and $stage_idx_abc <= $ending_stage ) {
-	$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
+if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
+    #Need ABC for either synthesis or post-VPR verification
+    my $abc_dir_path = "$vtr_flow_path/../abc";
+
+    if ($use_old_abc) {
+        my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
+    }
+
+	$abc_path = "$abc_dir_path/abc";
 	( -e $abc_path or -e "${abc_path}.exe" )
 	  or die "Cannot find ABC executable ($abc_path)";
 
-	$abc_rc_path = "$vtr_flow_path/../abc_with_bb_support/abc.rc";
+	$abc_rc_path = "$abc_dir_path/abc.rc";
 	( -e $abc_rc_path ) or die "Cannot find ABC RC file ($abc_rc_path)";
 
 	copy( $abc_rc_path, $temp_dir );
 }
+
+my $restore_multiclock_info_script = "$vtr_flow_path/scripts/restore_multiclock_latch_information.pl";
 
 my $ace_path;
 if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $do_power) {
@@ -356,6 +369,7 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 	( -e $ace_path or -e "${ace_path}.exe" )
 	  or die "Cannot find ACE executable ($ace_path)";
 }
+my $ace_clk_extraction_path = "$vtr_flow_path/../ace2/scripts/extract_clk_from_blif.py";
 
 #Extract the circuit/architecture name and filename
 my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
@@ -392,9 +406,23 @@ $mem_size = xml_find_mem_size($xml_tree);
 my $odin_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_odin, $circuit_suffix);
 my $odin_output_file_path = "$temp_dir$odin_output_file_name";
 
+#The raw unprocessed ABC output
+my $abc_raw_output_file_name = "$benchmark_name" . ".raw" . file_ext_for_stage($stage_idx_abc, $circuit_suffix);
+my $abc_raw_output_file_path = "$temp_dir$abc_raw_output_file_name";
+
+#The processed ABC output useable by downstream tools
 my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc, $circuit_suffix);
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
+#Clock information for ACE
+my $ace_clk_file_name = "ace_clk.txt";
+my $ace_clk_file_path = "$temp_dir$ace_clk_file_name";
+
+#The raw unprocessed ACE output
+my $ace_raw_output_blif_name = "$benchmark_name" . ".raw" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
+my $ace_raw_output_blif_path = "$temp_dir$ace_raw_output_blif_name";
+
+#The processed ACE output useable by downstream tools
 my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace, $circuit_suffix);
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
@@ -468,7 +496,66 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
-    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
+	#For ABC’s documentation see: https://people.eecs.berkeley.edu/~alanmi/abc/abc.htm
+    #
+    #Some key points on the script used:
+    #
+	#  strash : The strash command (which build's ABC's internal AIG) is needed before scleanup, 
+    #           otherwise scleanup will fail with “Only works for structurally hashed networks”.
+    #  
+	#  if –K #: This should appear as the final step before writing the optimized netlist.
+    #           In recent versions, ABC does not remember that LUT size you want to techmap to.
+    #           As a result, specifying if -K # early in the script causes ABC techmap to 2-LUTs, 
+    #           greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
+    my $abc_commands="
+echo '';
+echo 'Load Netlist';
+echo '============';
+read $odin_output_file_name;
+print_stats;
+time;
+
+echo '';
+echo 'Latch Info';
+echo '==========';
+print_latch;
+
+echo '';
+echo 'Logic Opt';
+echo '=========';
+resyn;
+resyn2;
+print_stats;
+time;
+
+echo '';
+echo 'Clean';
+echo '=====';
+strash;
+scleanup -v
+print_stats;
+time;
+
+echo '';
+echo 'Techmap';
+echo '=======';
+if -K $lut_size -v;
+print_stats;
+time;
+
+echo '';
+echo 'Output Netlist';
+echo '==============';
+write_hie $odin_output_file_name $abc_raw_output_file_name;
+time;
+";
+
+    if ($use_old_abc) {
+        #Legacy ABC script
+        $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
+    }
+
+    $abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
     
@@ -480,15 +567,27 @@ if (    $starting_stage <= $stage_idx_abc
             $valgrind = 1;
     }
     else {
-	$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-            $abc_commands);
+        $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+                $abc_commands);
     }
 
-	if ( -e $abc_output_file_path and $q eq "success") {
+	if ( -e $abc_raw_output_file_path and $q eq "success") {
+
+		# Restore Multi-Clock Latch Information from ODIN II that was striped out by ABC
+        $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.abc.out", $timeout, $temp_dir,
+                $odin_output_file_name, $abc_raw_output_file_name, $abc_output_file_name);
+
+        if ($q ne "success") {
+            print "failed: to restore multi-clock latch info";
+            $error_code = 1;
+
+        }
 
 		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
-			system "rm -f $odin_output_file_path";
+			if (! $do_power) {
+				system "rm -f $odin_output_file_path";
+			}
 			system "rm -f ${temp_dir}*.rc";
 		}
 	}
@@ -506,22 +605,54 @@ if (    $starting_stage <= $stage_idx_ace
 	and $do_power
 	and !$error_code )
 {
-	$q = &system_with_timeout(
-		$ace_path, "ace.out",             $timeout, $temp_dir,
-		"-b",      $abc_output_file_name, "-n",     $ace_output_blif_name,
-		"-o",      $ace_output_act_name,
-		"-s", $seed
-	);
-	
-	if ( -e $ace_output_blif_path and $q eq "success") {
-		if ( !$keep_intermediate_files ) {
-			system "rm -f $abc_output_file_path";
-			#system "rm -f ${temp_dir}*.rc";
-		}
+	my $abc_clk_name;
+
+	$q = &system_with_timeout($ace_clk_extraction_path, "ace_clk_extraction.out", $timeout, $temp_dir,
+            $ace_clk_file_name, $abc_output_file_name);
+
+	if ($q ne "success") {
+		print "failed: ace clock extraction (only single clock activiy estimation is supported)";
+        $error_code = 1;
+    }
+
+	{
+	  local $/ = undef;
+	  open(FILE, $ace_clk_file_path) or die "Can't read file '$ace_clk_file_path' ($!)\n";  
+	  $abc_clk_name = <FILE>; 
+	  close (FILE);
 	}
-	else {
-		print "failed: ace";
-		$error_code = 1;
+
+	if (!$error_code) {
+		$q = &system_with_timeout(
+			$ace_path, "ace.out", $timeout, $temp_dir,
+			"-b", $abc_output_file_name,
+			"-c", $abc_clk_name,
+            "-n", $ace_raw_output_blif_name,
+			"-o", $ace_output_act_name,
+			"-s", $seed
+		);
+		
+		if ( -e $ace_raw_output_blif_path and $q eq "success") {
+
+            # Restore Multi-Clock Latch Information from ODIN II that was striped out by ACE
+            $q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.ace.out", $timeout, $temp_dir,
+                    $odin_output_file_name, $ace_raw_output_blif_name, $ace_output_blif_name);
+
+            if ($q ne "success") {
+                print "failed: to restore multi-clock latch info";
+                $error_code = 1;
+
+            }
+
+			if ( !$keep_intermediate_files ) {
+				system "rm -f $abc_output_file_path";
+				system "rm -f $odin_output_file_path";				
+			}
+		}
+		else {
+			print "failed: ace";
+			$error_code = 1;
+		}
 	}
 }
 
@@ -832,9 +963,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			
 	if ($q eq "success") {
 		if($check_equivalent eq "on") {
-			if($abc_path eq "") {
-				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
-			}
 			
 			find(\&find_postsynthesis_netlist, ".");
 
@@ -852,13 +980,13 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }
 
 
-            #First try ABC's Sequential Equivalence Check (SEC)
+            #First try ABC's Unbounded Sequential Equivalence Check (DSEC)
 			$q = &system_with_timeout($abc_path, 
 							"abc.sec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"sec $reference_netlist $vpr_postsynthesis_netlist"
+							"dsec $reference_netlist $vpr_postsynthesis_netlist"
 			);
 
             # Parse ABC verification output
@@ -898,7 +1026,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                     $error_code = 1;
                 }
             } else {
-                print("failed: no SEC output");
+                print("failed: no DSEC output");
                 $error_code = 1;
             }
         }
@@ -1313,3 +1441,12 @@ sub exe_for_platform {
 	return $file_name;
 }
 
+sub get_clocks {
+    my $filename = shift();
+
+    open my $fh, $filename or die "Cannot open $filename: $!\n";
+
+    my @clocks = <$fh>;
+
+    return @clocks;
+}

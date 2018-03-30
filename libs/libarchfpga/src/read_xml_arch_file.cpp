@@ -95,7 +95,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data);
+static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -107,10 +108,11 @@ static void ProcessModels(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
-static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
+static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const pugiutil::loc_data& loc_data);
+		t_arch& arch, const t_default_fc_spec &arch_def_fc,
+        const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		t_arch_switch_inf **Switches, int *NumSwitches,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -179,6 +181,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	/* Parse the file */
 	pugi::xml_document doc;
 	pugiutil::loc_data loc_data;
+    t_default_fc_spec arch_def_fc;
 	try {
 		loc_data = pugiutil::load_xml(doc, ArchFile);
 
@@ -210,7 +213,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
-        ProcessDevice(Next, arch, loc_data);
+        ProcessDevice(Next, arch, arch_def_fc, loc_data);
 
         /* Process switches */
         Next = get_single_child(architecture, "switchlist", loc_data);
@@ -235,7 +238,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, Types, NumTypes, *arch, loc_data);
+        ProcessComplexBlocks(Next, Types, NumTypes, *arch, arch_def_fc, loc_data);
 
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
@@ -317,22 +320,26 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	pugi::xml_node Cur;
 
 	capacity = Type->capacity;
+    if(!Locations) {
+        Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
+    } else {
+        expect_only_attributes(Locations, {"pattern"}, loc_data);
 
-    expect_only_attributes(Locations, {"pattern"}, loc_data);
+        Prop = get_attribute(Locations, "pattern", loc_data).value();
+        if (strcmp(Prop, "spread") == 0) {
+            Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
+        } else if (strcmp(Prop, "perimeter") == 0) {
+            Type->pin_location_distribution = E_PERIMETER_PIN_DISTR;
+        } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
+            Type->pin_location_distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
+        } else if (strcmp(Prop, "custom") == 0) {
+            Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                    "%s is an invalid pin location pattern.\n", Prop);
+        }
+    }
 
-	Prop = get_attribute(Locations, "pattern", loc_data).value();
-	if (strcmp(Prop, "spread") == 0) {
-		Type->pin_location_distribution = E_SPREAD_PIN_DISTR;
-    } else if (strcmp(Prop, "perimeter") == 0) {
-		Type->pin_location_distribution = E_PERIMETER_PIN_DISTR;
-    } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
-		Type->pin_location_distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
-	} else if (strcmp(Prop, "custom") == 0) {
-		Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
-	} else {
-		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-				"%s is an invalid pin location pattern.\n", Prop);
-	}
 
 	/* Alloc and clear pin locations */
 	Type->pinloc = (bool ****) vtr::malloc(Type->width * sizeof(int ***));
@@ -501,7 +508,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                 }
             }
         }
-	} else {
+	} else if (Locations) {
         //Non-custom pin locations. There should be no child tags
         expect_child_node_count(Locations, 0, loc_data);
     }
@@ -1582,35 +1589,45 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 	ProcessInterconnect(Cur, mode, loc_data);
 }
 
+static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
+    spec.specified = true;
+
+    /* Load the default fc_in */
+    auto default_fc_in_attrib = get_attribute(Node, "in_type", loc_data);
+    spec.in_value_type = string_to_fc_value_type(default_fc_in_attrib.value(), Node, loc_data);
+
+    auto in_val_attrib = get_attribute(Node, "in_val", loc_data);
+    spec.in_value = vtr::atof(in_val_attrib.value());
+
+    /* Load the default fc_out */
+    auto default_fc_out_attrib = get_attribute(Node, "out_type", loc_data);
+    spec.out_value_type  = string_to_fc_value_type(default_fc_out_attrib.value(), Node, loc_data);
+
+    auto out_val_attrib = get_attribute(Node, "out_val", loc_data);
+    spec.out_value = vtr::atof(out_val_attrib.value());
+}
+
 /* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data) {
-    e_fc_value_type default_fc_in_value_type = e_fc_value_type::FRACTIONAL;
-    e_fc_value_type default_fc_out_value_type = e_fc_value_type::FRACTIONAL;
-    float default_fc_in_value = std::numeric_limits<float>::quiet_NaN();
-    float default_fc_out_value = std::numeric_limits<float>::quiet_NaN();
-
-	/* Load the default fc_in */
-	auto default_fc_in_attrib = get_attribute(Node, "default_in_type", loc_data);
-    default_fc_in_value_type = string_to_fc_value_type(default_fc_in_attrib.value(), Node, loc_data);
-
-    auto default_in_val_attrib = get_attribute(Node, "default_in_val", loc_data);
-    default_fc_in_value = vtr::atof(default_in_val_attrib.value());
-
-	/* Load the default fc_out */
-	auto default_fc_out_attrib = get_attribute(Node, "default_out_type", loc_data);
-    default_fc_out_value_type = string_to_fc_value_type(default_fc_out_attrib.value(), Node, loc_data);
-
-    auto default_out_val_attrib = get_attribute(Node, "default_out_val", loc_data);
-    default_fc_out_value = vtr::atof(default_out_val_attrib.value());
-
-    /* Load any <fc_override/> tags */
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
     std::vector<t_fc_override> fc_overrides;
-    for (auto child_node : Node.children()) {
-        t_fc_override fc_override = Process_Fc_override(child_node, loc_data);
-        fc_overrides.push_back(fc_override);
+    t_default_fc_spec def_fc_spec;
+    if (Node) {
+        /* Load the default Fc values from the node */
+        Process_Fc_Values(Node, def_fc_spec, loc_data);
+        /* Load any <fc_override/> tags */
+        for (auto child_node : Node.children()) {
+            t_fc_override fc_override = Process_Fc_override(child_node, loc_data);
+            fc_overrides.push_back(fc_override);
+        }
+    } else {
+        /* Use the default value, if available */
+        if (!arch_def_fc.specified) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                    "<pb_type> is missing child <fc>, and no <default_fc> specified in architecture\n");
+        }
+        def_fc_spec = arch_def_fc;
     }
-
 
     /* Go through all the port/segment combinations and create the (potentially 
      * overriden) pin/seg Fc specifications */
@@ -1634,13 +1651,13 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
                 //Apply type and defaults
                 if (port->type == IN_PORT) {
                     fc_spec.fc_type = e_fc_type::IN;
-                    fc_spec.fc_value_type = default_fc_in_value_type;
-                    fc_spec.fc_value = default_fc_in_value;
+                    fc_spec.fc_value_type = def_fc_spec.in_value_type;
+                    fc_spec.fc_value = def_fc_spec.in_value;
                 } else {
                     VTR_ASSERT(port->type == OUT_PORT);
                     fc_spec.fc_type = e_fc_type::OUT;
-                    fc_spec.fc_value_type = default_fc_out_value_type;
-                    fc_spec.fc_value = default_fc_out_value;
+                    fc_spec.fc_value_type = def_fc_spec.out_value_type;
+                    fc_spec.fc_value = def_fc_spec.out_value;
                 }
 
                 //Apply any matching overrides
@@ -2383,7 +2400,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
-static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data) {
+static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
 	const char *Prop;
 	pugi::xml_node Cur;
 	bool custom_switch_block = false;
@@ -2401,7 +2418,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 
     expect_only_children(Node, {"sizing", "area", 
                                 "chan_width_distr", "switch_block",
-                                "connection_block"}, loc_data);
+                                "connection_block", "default_fc"}, loc_data);
 
     //<sizing> tag
 	Cur = get_single_child(Node, "sizing", loc_data);
@@ -2448,6 +2465,14 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 	ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
 	arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
 
+	Cur = get_single_child(Node, "default_fc", loc_data, OPTIONAL);
+	if (Cur) {
+		arch_def_fc.specified = true;
+		expect_only_attributes(Cur, {"in_type", "in_val", "out_type", "out_val"}, loc_data);
+		Process_Fc_Values(Cur, arch_def_fc, loc_data);
+	} else {
+		arch_def_fc.specified = false;
+	}
 }
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
@@ -2502,7 +2527,8 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const pugiutil::loc_data& loc_data) {
+		t_arch& arch, const t_default_fc_spec &arch_def_fc, 
+        const pugiutil::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
@@ -2555,7 +2581,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Type->num_drivers = Type->capacity * Type->pb_type->num_output_pins;
 
 		/* Load pin names and classes and locations */
-		Cur = get_single_child(CurType, "pinlocations", loc_data);
+		Cur = get_single_child(CurType, "pinlocations", loc_data, OPTIONAL);
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
         //Warn that gridlocations is no longer supported
@@ -2569,9 +2595,9 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
             archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
         }
 
-		/* Load Fc */
-		Cur = get_single_child(CurType, "fc", loc_data);
-		Process_Fc(Cur, Type, arch.Segments, arch.num_segments, loc_data);
+        /* Load Fc */
+        Cur = get_single_child(CurType, "fc", loc_data, OPTIONAL);
+        Process_Fc(Cur, Type, arch.Segments, arch.num_segments, arch_def_fc, loc_data);
 
         //Load switchblock type and location overrides
         Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);

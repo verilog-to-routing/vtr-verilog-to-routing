@@ -1,0 +1,26 @@
+language: cpp
+
+matrix:
+  include:
+
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - libreadline-dev
+
+    - os: osx
+      osx_image: xcode8
+      before_install:
+        - brew update
+        - brew install readline
+
+script:
+  
+  - make -j2 abc
+  - ./abc -c "r i10.aig; b; ps; b; rw -l; rw -lz; b; rw -lz; b; ps; cec"
+
+  - make libabc.a
+  - gcc -Wall -c src/demo.c -o demo.o
+  - g++ -o demo demo.o libabc.a -lm -ldl -lreadline -lpthread
+  - ./demo i10.aig

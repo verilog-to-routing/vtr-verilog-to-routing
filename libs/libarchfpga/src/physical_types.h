@@ -384,6 +384,15 @@ struct t_fc_specification {
     std::vector<int> pins;          //The block pins collectively effected by this Fc
 };
 
+//Defines the default Fc specification for an architecture
+struct t_default_fc_spec {
+    bool specified = false; 		//Whether or not a default specification exists 
+    e_fc_value_type in_value_type;	//Type of the input value (frac or abs)
+    float in_value;					//Input Fc value
+    e_fc_value_type out_value_type; //Type of the output value (frac or abs)
+    float out_value;				//Output Fc value
+};
+
 enum class e_sb_type {
     NONE,          //No SB at this location
     HORIZONTAL,    //Horizontal straight-through connections
@@ -1263,4 +1272,3 @@ struct t_arch {
 };
 
 #endif
-

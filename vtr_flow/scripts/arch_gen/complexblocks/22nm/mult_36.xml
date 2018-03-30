@@ -154,7 +154,7 @@
 
   </mode>
 
-  <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
+  <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
   <pinlocations pattern="spread"/>
 
   <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->

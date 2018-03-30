@@ -354,6 +354,10 @@ class LutInst : public Instance {
             }
             if(minterms_set == 0 && maxterms_set == 0) {
                 //Handle the always true/false case
+                for (size_t i = 0; i < port_conns_["in"].size(); ++i) {
+                    os << "-"; //Don't care for all inputs
+                }
+
                 if (output_value == vtr::LogicValue::TRUE) {
                     //Always false
                     os << " 0\n";
