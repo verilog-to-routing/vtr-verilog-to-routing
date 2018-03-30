@@ -40,7 +40,7 @@ Next we'll copy over the ``stereovision3`` benchmark netlist in BLIF format and 
 Now we can run VPR to implement the circuit onto the ``k6_N10_40nm`` architecture.
 We also need to provide the :option:`vpr --gen_post_synthesis_netlist` option to generate the post-implementation netlist and dump the timing information in Standard Delay Format (SDF)::
 
-    $ vpr k6_N10_40nm.xml stereovision3.blif -gen_post_synthesis_netlist on
+    $ vpr k6_N10_40nm.xml stereovision3.blif --gen_post_synthesis_netlist on
 
 Once VPR has completed we should see the generated verilog netlist and SDF:
 
