@@ -88,14 +88,16 @@ function(abc_properties target visibility)
     target_link_libraries(${target} ${visibility} ${ABC_LIBS})
 endfunction()
 
-add_executable(abc ${ABC_SRC})
-abc_properties(abc PRIVATE)
-
-list(REMOVE_ITEM ABC_SRC src/base/main/main.c)
+set(ABC_MAIN_SRC src/base/main/main.c)
+list(REMOVE_ITEM ABC_SRC ${ABC_MAIN_SRC})
 
 add_library(libabc EXCLUDE_FROM_ALL ${ABC_SRC})
 abc_properties(libabc PUBLIC)
 set_property(TARGET libabc PROPERTY OUTPUT_NAME abc)
+
+add_executable(abc ${ABC_MAIN_SRC})
+target_link_libraries(abc PRIVATE libabc)
+abc_properties(abc PRIVATE)
 
 add_library(libabc-pic EXCLUDE_FROM_ALL ${ABC_SRC})
 abc_properties(libabc-pic PUBLIC)
