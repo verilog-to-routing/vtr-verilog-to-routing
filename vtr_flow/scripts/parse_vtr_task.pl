@@ -45,6 +45,8 @@ my $vtr_flow_path = $1;
 
 my $run_prefix = "run";
 
+my $FAILED_PARSE_EXIT_CODE = -1;
+
 # Parse Input Arguments
 my @tasks;
 my @task_files;
@@ -219,9 +221,14 @@ sub parse_single_task {
 	open( OUTPUT_FILE, ">$run_path/parse_results.txt" );
 	foreach my $arch (@archs) {
 		foreach my $circuit (@circuits) {
-			system(
-				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $parse_file > $run_path/$arch/$circuit/parse_results.txt"
-			);
+            my $cmd = "$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $parse_file > $run_path/$arch/$circuit/parse_results.txt";
+
+            my $ret = system($cmd);
+            if ($ret != 0) {
+                print "System command '$cmd' failed\n";
+                exit $FAILED_PARSE_EXIT_CODE;
+            }
+
 			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results.txt" );
             # first line is heading
 			my $output = <RESULTS_FILE>;
@@ -245,9 +252,14 @@ sub parse_single_task {
 	open( OUTPUT_FILE, ">$run_path/parse_results_2.txt" );
 	foreach my $arch (@archs) {
 		foreach my $circuit (@circuits) {
-			system(
-				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $second_parse_file > $run_path/$arch/$circuit/parse_results_2.txt"
-			);
+		    my $cmd = "$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $second_parse_file > $run_path/$arch/$circuit/parse_results_2.txt";
+
+            my $ret = system($cmd);
+            if ($ret != 0) {
+                print "System command '$cmd' failed\n";
+                exit $FAILED_PARSE_EXIT_CODE;
+            }
+
 			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results_2.txt" );
             # first line is heading
 			my $output = <RESULTS_FILE>;
@@ -276,9 +288,14 @@ sub parse_single_task {
 		open( OUTPUT_FILE, ">$run_path/qor_results.txt" );
 		foreach my $arch (@archs) {
 			foreach my $circuit (@circuits) {
-				system(
-					"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $qor_parse_file > $run_path/$arch/$circuit/qor_results.txt"
-				);
+				my $cmd = "$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $qor_parse_file > $run_path/$arch/$circuit/qor_results.txt";
+
+                my $ret = system($cmd);
+                if ($ret != 0) {
+                    print "System command '$cmd' failed\n";
+                    exit $FAILED_PARSE_EXIT_CODE;
+                }
+
 				open( RESULTS_FILE, "$run_path/$arch/$circuit/qor_results.txt" );
 				my $output = <RESULTS_FILE>;
 				if ($first) {
