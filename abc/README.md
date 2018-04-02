@@ -66,11 +66,11 @@ The current version of ABC can be compiled with C compiler or C++ compiler.
 ## Bug reporting:
 
 Please try to reproduce all the reported bugs and unexpected features using the latest 
-version of ABC available from https://bitbucket.org/alanmi/abc/
+version of ABC available from https://github.com/berkeley-abc/abc
 
 If the bug still persists, please provide the following information:    
 
- 1. ABC version (when it was downloaded from BitBucket)
+ 1. ABC version (when it was downloaded from GitHub)
  1. Linux distribution and version (32-bit or 64-bit)
  1. The exact command-line and error message when trying to run the tool
  1. The output of the `ldd` command run on the exeutable (e.g. `ldd abc`).
@@ -109,6 +109,4 @@ https://www.dropbox.com/s/qrl9svlf0ylxy8p/ABC_GettingStarted.pdf
 Unfortunately, there is no comprehensive regression test. Good luck!                                
 
 This system is maintained by Alan Mishchenko <alanmi@berkeley.edu>. Consider also 
-using ZZ framework developed by Niklas Een: https://bitbucket.org/niklaseen/abc-zz
-
-This file was last modified on June 18, 2014
+using ZZ framework developed by Niklas Een: https://bitbucket.org/niklaseen/abc-zz (or https://github.com/berkeley-abc/abc-zz)

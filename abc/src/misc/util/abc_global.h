@@ -96,6 +96,49 @@ ABC_NAMESPACE_HEADER_START
 ///                         BASIC TYPES                              ///
 ////////////////////////////////////////////////////////////////////////
 
+#ifdef ABC_USE_STDINT_H
+// If there is stdint.h, assume this is a reasonably-modern platform that
+// would also have stddef.h and limits.h
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFF
+#define SIZEOF_VOID_P 8
+#ifdef _WIN32
+#define NT64
+#else
+#define LIN64
+#endif
+#elif UINTPTR_MAX == 0xFFFFFFFF
+#define SIZEOF_VOID_P 4
+#ifdef _WIN32
+#define NT
+#else
+#define LIN
+#endif
+#else
+   #error unsupported platform
+#endif
+
+#if ULONG_MAX == 0xFFFFFFFFFFFFFFFF
+#define SIZEOF_LONG 8
+#elif ULONG_MAX == 0xFFFFFFFF
+#define SIZEOF_LONG 4
+#else
+   #error unsupported platform
+#endif
+
+#if UINT_MAX == 0xFFFFFFFFFFFFFFFF
+#define SIZEOF_INT 8
+#elif UINT_MAX == 0xFFFFFFFF
+#define SIZEOF_INT 4
+#else
+   #error unsupported platform
+#endif
+
+#endif
+
 /**
  * Pointer difference type; replacement for ptrdiff_t.
  * This is a signed integral type that is the same size as a pointer.
@@ -103,6 +146,8 @@ ABC_NAMESPACE_HEADER_START
  */
 #if       defined(__ccdoc__)
 typedef platform_dependent_type ABC_PTRDIFF_T;
+#elif     defined(ABC_USE_STDINT_H)
+typedef ptrdiff_t ABC_PTRDIFF_T;
 #elif     defined(LIN64)
 typedef long ABC_PTRDIFF_T;
 #elif     defined(NT64)
@@ -120,6 +165,8 @@ typedef int ABC_PTRDIFF_T;
  */
 #if       defined(__ccdoc__)
 typedef platform_dependent_type ABC_PTRUINT_T;
+#elif     defined(ABC_USE_STDINT_H)
+typedef uintptr_t ABC_PTRUINT_T;
 #elif     defined(LIN64)
 typedef unsigned long ABC_PTRUINT_T;
 #elif     defined(NT64)
@@ -137,6 +184,8 @@ typedef unsigned int ABC_PTRUINT_T;
  */
 #if       defined(__ccdoc__)
 typedef platform_dependent_type ABC_PTRINT_T;
+#elif     defined(ABC_USE_STDINT_H)
+typedef intptr_t ABC_PTRINT_T;
 #elif     defined(LIN64)
 typedef long ABC_PTRINT_T;
 #elif     defined(NT64)
@@ -152,6 +201,8 @@ typedef int ABC_PTRINT_T;
  */
 #if       defined(__ccdoc__)
 typedef platform_dependent_type ABC_INT64_T;
+#elif     defined(ABC_USE_STDINT_H)
+typedef int64_t ABC_INT64_T;
 #elif     defined(LIN64)
 typedef long ABC_INT64_T;
 #elif     defined(NT64) || defined(LIN)
@@ -167,6 +218,8 @@ typedef signed __int64 ABC_INT64_T;
  */
 #if       defined(__ccdoc__)
 typedef platform_dependent_type ABC_UINT64_T;
+#elif     defined(ABC_USE_STDINT_H)
+typedef uint64_t ABC_UINT64_T;
 #elif     defined(LIN64)
 typedef unsigned long ABC_UINT64_T;
 #elif     defined(NT64) || defined(LIN)

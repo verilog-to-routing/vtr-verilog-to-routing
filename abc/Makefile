@@ -43,7 +43,13 @@ $(ARCHFLAGS_EXE) : arch_flags.c
 
 INCLUDES += -I$(ABCSRC)/src
 
-ARCHFLAGS ?= $(shell $(CC) $(ABCSRC)/arch_flags.c -o $(ARCHFLAGS_EXE) && $(ARCHFLAGS_EXE))
+# Use C99 stdint.h header for platform-dependent types
+ifdef ABC_USE_STDINT_H
+    ARCHFLAGS ?= -DABC_USE_STDINT_H=1
+else
+    ARCHFLAGS ?= $(shell $(CC) $(ABCSRC)/arch_flags.c -o $(ARCHFLAGS_EXE) && $(ARCHFLAGS_EXE))
+endif
+
 ARCHFLAGS := $(ARCHFLAGS)
 
 OPTFLAGS  ?= -g -O
