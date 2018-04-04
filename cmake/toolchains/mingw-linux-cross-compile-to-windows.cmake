@@ -47,12 +47,13 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-#The current version of ABC does some unsafe casting 
-#(e.g. 64-bit pointer to 32-bit unsigned), since it assumes
-#an LP64 OS, but Windows is LLP64.
-#For now, just turn on permissive mode to let things compile
-#TODO: these issues are fixed in the latest ABC, so this option should be removed when ABC is upgraded
-add_compile_options(-fpermissive)
+#The mingw-w64 headers and ABC's pthread.h have conflicting definitions of struct timespec.
+#Adding this define suppresses the duplicate definition in ABC's pthread.h
+add_definitions(-DHAVE_STRUCT_TIMESPEC=1)
+
+#This forces ABC to use the stdint types (e.g. ptrdiff_t) instead of its platform
+#dependant type look-up. This avoids 'unkown platform' compilation errors.
+add_definitions(-DABC_USE_STDINT_H=1)
 
 if (STATIC_LIBGCC_LIBSTDCPP)
     #Statically link to libgcc and libstdc++ to avoid DLL dependencies

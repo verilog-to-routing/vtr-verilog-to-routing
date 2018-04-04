@@ -123,7 +123,14 @@ def main():
                     config["TATUM_EXECUTION_ENGINE"] = tatum_execution_engine_config
                     config["VTR_ASSERT_LEVEL"] = vtr_assert_level
 
-                    success = build_config(args, config, cc, cxx)
+                    targets = args.targets
+                    if 'CMAKE_TOOLCHAIN_FILE' in config and targets == DEFAULT_TARGETS_TO_BUILD:
+                        #Only build VPR with MINGW by default
+                        # The updated version of ABC (and ace/odin which depend on ABC)
+                        # fail to compile with MINGW
+                        targets = ['vpr']
+
+                    success = build_config(args, targets, config, cc, cxx)
 
                     if not success:
                         num_failed += 1
@@ -138,7 +145,7 @@ def main():
 
     sys.exit(num_failed)
 
-def build_config(args, config, cc=None, cxx=None):
+def build_config(args, targets, config, cc=None, cxx=None):
 
     if not compiler_is_found(cc):
         print "Failed to find C compiler {}, skipping".format(cc)
@@ -208,7 +215,7 @@ def build_config(args, config, cc=None, cxx=None):
         #Run Make
         build_cmd = ["make"]
         build_cmd += ["-j", "{}".format(args.j)]
-        build_cmd += args.targets
+        build_cmd += targets
 
         print "  " + ' '.join(build_cmd)
         print >>f, "  " + ' '.join(build_cmd)
