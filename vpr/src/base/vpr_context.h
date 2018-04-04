@@ -1,5 +1,7 @@
 #ifndef VPR_CONTEXT_H
 #define VPR_CONTEXT_H
+#include "vpr_context_fwd.h"
+
 #include <unordered_map>
 #include <memory>
 #include <vector>

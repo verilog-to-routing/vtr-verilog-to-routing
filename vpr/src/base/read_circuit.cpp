@@ -74,7 +74,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     return netlist;
 }
 
-static void process_circuit(AtomNetlist& netlist,
+void process_circuit(AtomNetlist& netlist,
                             const t_model *library_models,
                             bool should_absorb_buffers, 
                             bool should_sweep_dangling_primary_ios, 

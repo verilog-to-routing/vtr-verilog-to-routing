@@ -8,6 +8,7 @@ include(CheckCXXSymbolExists)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
+file(GLOB_RECURSE EXEC_PASSES_SOURCES src/main_passes.cpp)
 file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
@@ -33,6 +34,11 @@ target_link_libraries(libvpr
 #Create the executable
 add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr 
+                        libvpr)
+
+#Create the executable
+add_executable(vpr_passes ${EXEC_PASSES_SOURCES})
+target_link_libraries(vpr_passes 
                         libvpr)
 
 if (VPR_USE_SIGNAL_HANDLER)
