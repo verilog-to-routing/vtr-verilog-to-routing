@@ -698,7 +698,7 @@ bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk_id) {
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     AtomBlockType type = netlist.block_type(blk_id);
 
-    //Only return true if an INPAD
+    //Only return true if an OUTPAD
     if(type != AtomBlockType::OUTPAD) return false;
 
     //An output is only removable if it has no fan-in
