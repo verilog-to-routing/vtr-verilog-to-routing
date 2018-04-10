@@ -338,6 +338,13 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
     //Create edges from the driver to sink tnodes
 
     AtomPinId driver_pin = netlist_.net_driver(net);
+
+    if (!driver_pin) {
+        //Undriven nets have no timing dependencies, and hence no edges
+        vtr::printf_warning(__FILE__, __LINE__, "Net %s has no driver and will be ignored for timing purposes\n", netlist_.net_name(net).c_str());
+        return;
+    }
+
     NodeId driver_tnode = netlist_lookup_.atom_pin_tnode(driver_pin);
     VTR_ASSERT(driver_tnode);
     
