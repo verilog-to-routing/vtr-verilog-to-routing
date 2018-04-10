@@ -200,7 +200,7 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     for(auto kv : net_stats) {
         vtr::printf_info("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_clocks(netlist).size()); 
+    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size()); 
 
     if (netlist.blocks().empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");

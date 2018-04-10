@@ -50,6 +50,9 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist);
 /*
  * Truth-table operations
  */
+//Returns true if the specified block is a logical buffer
+bool is_buffer(const AtomNetlist& netlist, const AtomBlockId blk);
+
 //Deterimine whether a truth table encodes the logic functions 'On' set (returns true)
 //or 'Off' set (returns false)
 bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table);
@@ -84,5 +87,15 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist);
 /*
  * Identify all clock nets
  */
-std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist);
+
+//Returns the set of nets which drive clock pins in the netlist
+// Note the returned nets may be logically equivalent (e.g. driven by buffers
+// connected to a common net)
+std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist);
+
+//Returns the set of pins which logically drive unique clocks in the netlist
+// Note that VPR currently has limited understanding of logic operating on clocks,
+// so logically unique should be viewed as true only to the extent of VPR's 
+// understanding
+std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist);
 #endif

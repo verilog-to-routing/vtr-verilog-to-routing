@@ -26,12 +26,12 @@ void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
 
 void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                    const AtomLookup& lookup,
-                                                   const AtomNetId clock_net,
+                                                   const AtomPinId clock_driver,
                                                    tatum::TimingConstraints& timing_constraints);
 
 void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                   const AtomLookup& lookup,
-                                                  const std::set<AtomNetId>& clock_nets,
+                                                  const std::set<AtomPinId>& clock_drivers,
                                                   tatum::TimingConstraints& timing_constraints);
 
 void mark_constant_generators(const AtomNetlist& netlist, 
@@ -66,7 +66,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
     public: //sdcparse::Callback interface
         //Start of parsing
         void start_parse() override {
-            netlist_clock_nets_ = find_netlist_clocks(netlist_);        
+            netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_);        
             netlist_primary_ios_ = find_netlist_primary_ios(netlist_);
         }
 
@@ -108,7 +108,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     auto clock_name_regex = glob_pattern_to_regex(clock_name_glob_pattern);
 
                     //Look for matching netlist clocks
-                    for(AtomNetId clock_net : netlist_clock_nets_) {
+                    for(AtomPinId clock_pin : netlist_clock_drivers_) {
+                        AtomNetId clock_net = netlist_.pin_net(clock_pin);
                         const auto& clock_name = netlist_.net_name(clock_net);
 
                         if(std::regex_match(clock_name, clock_name_regex)) {
@@ -150,11 +151,12 @@ class SdcParseCallback2 : public sdcparse::Callback {
             tatum::DomainId domain;
             
             if (cmd.clock_name == "*") {
-                if(netlist_clock_nets_.size() == 1) {
+                if(netlist_clock_drivers_.size() == 1) {
                     //Support non-standard wildcard clock name for set_input_delay/set_output_delay
                     //commands, provided it is unambiguous (i.e. there is only one netlist clock)
 
-                    std::string clock_name = netlist_.net_name(*netlist_clock_nets_.begin());
+                    AtomNetId clock_net = netlist_.pin_net(*netlist_clock_drivers_.begin());
+                    std::string clock_name = netlist_.net_name(clock_net);
                     domain = tc_.find_clock_domain(clock_name); 
                 } else {
                     vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -914,7 +916,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
         float unit_scale_ = 1e-9;
 
         std::map<tatum::DomainId,sdcparse::CreateClock> sdc_clocks_;
-        std::set<AtomNetId> netlist_clock_nets_;
+        std::set<AtomPinId> netlist_clock_drivers_;
         std::map<std::string,AtomPinId> netlist_primary_ios_;
 
         std::set<std::pair<tatum::DomainId,tatum::DomainId>> disabled_domain_pairs_;
@@ -974,18 +976,18 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
 void apply_default_timing_constraints(const AtomNetlist& netlist, 
                                       const AtomLookup& lookup, 
                                       tatum::TimingConstraints& tc) {
-    std::set<AtomNetId> netlist_clocks = find_netlist_clocks(netlist); 
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist); 
 
-    if(netlist_clocks.size() == 0) {
+    if(netlist_clock_drivers.size() == 0) {
         apply_combinational_default_timing_constraints(netlist, lookup, tc);
 
-    } else if (netlist_clocks.size() == 1) {
-        apply_single_clock_default_timing_constraints(netlist, lookup, *netlist_clocks.begin(), tc);
+    } else if (netlist_clock_drivers.size() == 1) {
+        apply_single_clock_default_timing_constraints(netlist, lookup, *netlist_clock_drivers.begin(), tc);
 
     } else {
-        VTR_ASSERT(netlist_clocks.size() > 1);
+        VTR_ASSERT(netlist_clock_drivers.size() > 1);
 
-        apply_multi_clock_default_timing_constraints(netlist, lookup, netlist_clocks, tc);
+        apply_multi_clock_default_timing_constraints(netlist, lookup, netlist_clock_drivers, tc);
     }
 
 }
@@ -1016,8 +1018,9 @@ void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
 //Apply the default timing constraints for circuits with a single netlist clock
 void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                    const AtomLookup& lookup,
-                                                   const AtomNetId clock_net,
+                                                   const AtomPinId clock_driver,
                                                    tatum::TimingConstraints& tc) {
+    AtomNetId clock_net = netlist.pin_net(clock_driver);
     std::string clock_name = netlist.net_name(clock_net);
 
     vtr::printf("Setting default timing constraints:\n");
@@ -1045,7 +1048,7 @@ void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
 //Apply the default timing constraints for circuits with multiple netlist clocks
 void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                   const AtomLookup& lookup,
-                                                  const std::set<AtomNetId>& clock_nets,
+                                                  const std::set<AtomPinId>& clock_drivers,
                                                   tatum::TimingConstraints& tc) {
     std::string virtual_clock_name = "virtual_io_clock";
     vtr::printf("Setting default timing constraints:\n");
@@ -1062,15 +1065,15 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
     constrain_all_ios(netlist, lookup, tc, virtual_clock, virtual_clock, tatum::Time(0.), tatum::Time(0.));
 
     //Create each of the netlist clocks, and constrain it to period 0. Do not analyze cross-domain paths
-    for(AtomNetId clock_net : clock_nets) {
+    for(AtomPinId clock_driver : clock_drivers) {
+        AtomNetId clock_net = netlist.pin_net(clock_driver);
 
         //Create the clock
         std::string clock_name = netlist.net_name(clock_net);
         tatum::DomainId clock = tc.create_clock_domain(clock_name);
 
         //Mark the clock domain source
-        AtomPinId clock_driver_pin = netlist.net_driver(clock_net);
-        tatum::NodeId clock_source = lookup.atom_pin_tnode(clock_driver_pin);
+        tatum::NodeId clock_source = lookup.atom_pin_tnode(clock_driver);
         VTR_ASSERT(clock_source);
         tc.set_clock_domain_source(clock_source, clock);
 
@@ -1175,11 +1178,12 @@ std::string orig_blif_name(std::string name) {
 //Print informatino about clocks
 void print_netlist_clock_info(const AtomNetlist& netlist) {
 
-    std::set<AtomNetId> netlist_clocks = find_netlist_clocks(netlist); 
-    vtr::printf("Netlist contains %zu clocks\n", netlist_clocks.size());
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist); 
+    vtr::printf("Netlist contains %zu clocks\n", netlist_clock_drivers.size());
 
     //Print out pin/block fanout info for each block
-    for (auto net_id : netlist_clocks) {
+    for (auto clock_driver : netlist_clock_drivers) {
+        AtomNetId net_id = netlist.pin_net(clock_driver);
         auto sinks = netlist.net_sinks(net_id);
         size_t fanout = sinks.size();
         std::set<AtomBlockId> clk_blks;

@@ -36,7 +36,7 @@ TimingGraphBuilder::TimingGraphBuilder(const AtomNetlist& netlist,
                    AtomLookup& netlist_lookup)
     : netlist_(netlist) 
     , netlist_lookup_(netlist_lookup)
-    , netlist_clocks_(find_netlist_clocks(netlist_)) {
+    , netlist_clock_drivers_(find_netlist_logical_clock_drivers(netlist_)) {
     //pass
 }
 
@@ -415,11 +415,6 @@ void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
 }
 
 bool TimingGraphBuilder::is_netlist_clock_source(const AtomPinId pin) const {
-    AtomNetId net = netlist_.pin_net(pin);
-
-    bool is_clock_net = netlist_clocks_.count(net);
-    bool is_net_driver = (pin == netlist_.net_driver(net));
-
-    return is_clock_net && is_net_driver;
+    return netlist_clock_drivers_.count(pin);
 }
 

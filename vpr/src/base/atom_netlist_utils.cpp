@@ -620,9 +620,9 @@ void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_
 std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist) {
     std::map<AtomNetId,std::vector<AtomPinId>> clock_data_pins;
 
-    auto netlist_clocks = find_netlist_clocks(netlist);
+    auto netlist_clock_nets = find_netlist_physical_clock_nets(netlist);
 
-    for(AtomNetId clock_net : netlist_clocks) {
+    for(AtomNetId clock_net : netlist_clock_nets) {
         for(AtomPinId clock_sink : netlist.net_sinks(clock_net)) {
 
             auto port_type = netlist.pin_port_type(clock_sink);
@@ -1077,8 +1077,8 @@ void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size
     }
 }
 
-//Find all the clock nets in the specified netlist
-std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
+//Find all the nets connected to clock pins in the netlist
+std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist) {
 
     std::set<AtomNetId> clock_nets; //The clock nets
 
@@ -1097,8 +1097,7 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
         //Save any clock generating ports on this model type
         const t_model* model = netlist.block_model(blk_id);
         VTR_ASSERT(model);
-        auto iter = clock_gen_ports.find(model);
-        if(iter == clock_gen_ports.end()) { 
+        if(clock_gen_ports.find(model) == clock_gen_ports.end()) { 
             //First time we've seen this model, intialize it
             clock_gen_ports[model] = {};
 
@@ -1145,3 +1144,48 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
     return clock_nets;
 }
 
+//Finds all logical clock drivers in the netlist
+std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
+    auto clock_nets = find_netlist_physical_clock_nets(netlist);
+
+    //We now have a set of nets which drive clock pins
+    //
+    //However, some of them may be the same logical clock (e.g. if there are
+    //buffers between them). Here we trace-back through any clock buffers
+    //to find the true source
+    std::set<AtomNetId> prev_clock_nets;
+    while (prev_clock_nets != clock_nets) { //Still tracing back
+        prev_clock_nets = clock_nets;
+        clock_nets.clear();
+
+        for (auto clk_net : prev_clock_nets) {
+            auto driver_block = netlist.net_driver_block(clk_net);
+
+            if (is_buffer(netlist, driver_block)) {
+                //Driver is a buffer lut, use it's input net
+                auto input_pins = netlist.block_input_pins(driver_block);
+                VTR_ASSERT(input_pins.size() == 1);
+                auto input_pin = *input_pins.begin();
+
+                auto input_net = netlist.pin_net(input_pin);
+                clock_nets.insert(input_net);
+            } else {
+                clock_nets.insert(clk_net);
+            }
+        }
+    }
+
+    //Extract the net drivers
+    std::set<AtomPinId> clock_drivers;
+    for (auto net : clock_nets) {
+        clock_drivers.insert(netlist.net_driver(net));
+    }
+
+    return clock_drivers;
+}
+
+bool is_buffer(const AtomNetlist& netlist, const AtomBlockId blk) {
+    //For now only support LUT buffers
+    //TODO: In the future could add support for non-LUT buffers
+    return is_buffer_lut(netlist, blk);
+}
