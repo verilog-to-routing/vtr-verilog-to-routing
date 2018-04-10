@@ -1327,7 +1327,9 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vector_map<PinId, PinId>& pin_id_map) {
     //Update pin references held by nets
     for (auto& pin_collection : net_pins_) {
-        pin_collection = update_valid_refs(pin_collection, pin_id_map);
+        //We take special care to preserve the driver index, since an INVALID id is used
+        //to indicate an undriven net it should not be dropped during the update
+        pin_collection = update_valid_refs(pin_collection, pin_id_map, {NET_DRIVER_INDEX});
 
         VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
     }
