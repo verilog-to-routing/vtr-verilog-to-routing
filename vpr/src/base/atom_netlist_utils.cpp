@@ -213,10 +213,14 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
             //Collect Outputs
             auto out_pins = netlist.block_output_pins(blk_id);
-            VTR_ASSERT(out_pins.size() == 1);
 
-            auto out_net_id = netlist.pin_net(*out_pins.begin());
-            nets.push_back(out_net_id);
+            if (out_pins.size() == 1) {
+
+                auto out_net_id = netlist.pin_net(*out_pins.begin());
+                nets.push_back(out_net_id);
+            } else {
+                VTR_ASSERT(out_pins.size() == 0);
+            }
 
             fprintf(f, ".names ");
             for(size_t i = 0; i < nets.size(); ++i) {
