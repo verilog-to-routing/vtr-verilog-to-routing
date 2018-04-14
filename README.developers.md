@@ -16,14 +16,14 @@ We have some guidelines in place to help catch most of these problems:
     At a minimum you must run:
     ```shell
     #From the VTR root directory
-    $ ./run_reg_test vtr_reg_basic
+    $ ./run_reg_test.pl vtr_reg_basic
     ```
     You may push if all the tests return `All tests passed`.
 
     However you are strongly encouraged to run both the *basic* and *strong* regression tests:
     ```shell
     #From the VTR root directory
-    $ ./run_reg_test vtr_reg_basic vtr_reg_strong
+    $ ./run_reg_test.pl vtr_reg_basic vtr_reg_strong
     ```
     since it performs much more thorough testing.
 
