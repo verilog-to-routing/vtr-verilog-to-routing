@@ -1,7 +1,7 @@
 #!/bin/bash 
 #1
 #failed_benchmark
-FAILURE_LOG="REGRESSION_TESTS/RUN/failure.log"
+FAILURE_LOG="regression_test/runs/failure.log"
 
 function failed() {
 	echo " -X- FAILED == $1" 
@@ -19,13 +19,13 @@ exit_finish() {
 }
 
 function clean_up() {
-	rm -Rf REGRESSION_TESTS/RUN/REGRESSION_TESTS
+	rm -Rf regression_test/runs/regression_test
 }
 
-REGR_BENCH="FULL_REGRESSION_TESTS"
-ARCH_BENCH="REGRESSION_TESTS/BENCHMARKS/ARCH_BENCHMARKS"
-SYNT_BENCH="REGRESSION_TESTS/BENCHMARKS/SYNTAX_BENCHMARKS"
-MICR_BENCH="REGRESSION_TESTS/BENCHMARKS/MICROBENCHMARKS"
+REGR_BENCH="regression_test/benchmark/full"
+ARCH_BENCH="regression_test/benchmark/arch"
+SYNT_BENCH="regression_test/benchmark/syntax"
+MICR_BENCH="regression_test/benchmark/micro"
 
 ARCH="../libs/libarchfpga/arch/sample_arch.xml"
 
@@ -40,7 +40,7 @@ function extensive_vector() {
 			input_vectors="$basename"_input
 			output_vectors="$basename"_output	
 			
-			DIR="REGRESSION_TESTS/RUN/$basename"
+			DIR="regression_test/runs/$basename"
 			
 			############################
 			# Simulate using verilog. 
@@ -87,7 +87,7 @@ function basic_vector() {
 	do 
 		(
 			basename=${benchmark%.v}
-			DIR="REGRESSION_TESTS/RUN/$basename"
+			DIR="regression_test/runs/$basename"
 			mkdir -p $DIR
 			
 			input_vectors="$basename"_input
@@ -113,7 +113,7 @@ function simple_test() {
 	do 
 	    (
 	    	basename=${benchmark%.v}
-			DIR="REGRESSION_TESTS/RUN/$basename"
+			DIR="regression_test/runs/$basename"
 			mkdir -p $DIR
 			
 			./odin_II -E -W -a "$ARCH" -V "$benchmark" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
@@ -232,7 +232,7 @@ fi
 if [ $fail_count -gt "0" ]
 then
 	echo "Failed $fail_count"
-	echo "View Failure log in REGRESSION_TESTS/RUN/failure.log, "
+	echo "View Failure log in regression_test/runs/failure.log, "
 	echo "once the issue is fixed, you can retry only the failed test by calling \'./verify_odin rerun\' "
 else
 	echo "no run failure!"

@@ -60,7 +60,7 @@ vtr_flow/benchmarks/titan_other_blif/*.blif
 #Odin test outputs
 #
 ODIN_II/log
-ODIN_II/REGRESSION_TESTS/RUN
+ODIN_II/regression_test/runs
 ODIN_II/OUTPUT
 
 #
