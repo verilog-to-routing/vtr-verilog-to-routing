@@ -55,6 +55,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
+
+#define DEFAULT_RUN_DIRECTORY "REGRESSION_TESTS/SIM/"
+
 
 size_t current_parse_file;
 t_arch Arch;
@@ -65,10 +69,11 @@ int block_tag;
 void set_default_config();
 void get_options(int argc, char **argv);
 void print_usage();
+void parse_adder_def_file();
 
 int main(int argc, char **argv)
 {
-	int num_types;
+	int num_types=0;
 
 	/* Some initialization */
 	one_string = vtr::strdup("ONE_VCC_CNS");
@@ -121,6 +126,9 @@ int main(int argc, char **argv)
 		find_hard_adders();
 		//find_hard_adders_for_sub();
 		register_hard_blocks();
+		
+		/* get odin soft_logic adder definition file */
+		parse_adder_def_file();
 
 		global_param_table_sc = sc_new_string_cache();
 
@@ -278,6 +286,19 @@ void print_usage()
 	);
 	fflush(stdout);
 }
+// tab separated values for adder_def
+void parse_adder_def_file()
+{
+	if(hard_adders || strcmp(global_args.adder_def,"ripple")==0)
+		return;
+		
+	else if(strcmp(global_args.adder_def,"optimized")==0)
+		populate_adder_def();
+
+	else	// we do have a define file! read it!
+		read_adder_def_file(global_args.adder_def);
+
+}
 
 struct ParseInitRegState {
     int from_str(std::string str) {
@@ -328,7 +349,7 @@ void get_options(int argc, char** argv) {
 
     output_grp.add_argument(global_args.output_file, "-o")
             .help("Output file path")
-            .default_value("default_out.blif")
+            .default_value("OUTPUT/default_out.blif")
             .metavar("OUTPUT_FILE_PATH");
 
     auto& other_grp = parser.add_argument_group("other options");
@@ -361,11 +382,10 @@ void get_options(int argc, char** argv) {
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
 
-    other_grp.add_argument(global_args.carry_skip_size, "--carryskip")
-            .help("use carry skip adders with skip size of <input length>")
-	        .default_value("0")
-	        .metavar("SKIP_SIZE")
-	        //.choices({"0", "1", "2"})
+    other_grp.add_argument(global_args.adder_def, "--adder_type")
+            .help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
+	        .default_value("ripple")
+	        .metavar("INPUT_FILE")
 	        ;   
 
     auto& rand_sim_grp = parser.add_argument_group("random simulation options");
@@ -400,6 +420,11 @@ void get_options(int argc, char** argv) {
 
     auto& other_sim_grp = parser.add_argument_group("other simulation options");
 
+    other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
+            .help("Directory output for simulation")
+            .default_value("OUTPUT/")
+            .metavar("SIMULATION_DIRECTORY");
+            
     other_sim_grp.add_argument(global_args.sim_generate_three_valued_logic, "-3")
             .help("Generate three valued logic, instead of binary")
             .default_value("false")

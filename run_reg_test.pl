@@ -403,10 +403,10 @@ sub run_odin_test {
 
     my $return_status = 0;
 	if ( $token eq "odin_reg_micro" ) {
-		$return_status = system("./verify_microbenchmarks.sh");
+		$return_status = system("./verify_odin.sh micro $num_cpu");
 	}
 	elsif ( $token eq "odin_reg_full" ) {
-		$return_status = system("./verify_regression_tests.sh");
+		$return_status = system("./verify_odin.sh regression $num_cpu");
 	} else {
         die("Unrecognized odin test $token");
     }

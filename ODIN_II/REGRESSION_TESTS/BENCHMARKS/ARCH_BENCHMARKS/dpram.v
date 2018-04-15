@@ -5,7 +5,7 @@
 module  dpram(clock,
 		wren1,
 		wren2,
-                reset_n,
+                reset_n,  //TODO!!!!!!
                 value_out,
                 value_out2,
                 value_in,

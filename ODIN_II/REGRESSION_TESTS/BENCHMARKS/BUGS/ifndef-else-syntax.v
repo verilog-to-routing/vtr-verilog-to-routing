@@ -1,6 +1,11 @@
 // DEFINES
-`define BITS 8         // Bit width of the operands
+// Warning: Unable to find ifndef-else-syntax/module_a_or.v in the present working directory, 
+// opening REGRESSION_TESTS/BENCHMARKS/SYNTAX_BENCHMARKS/ifndef-else-syntax/module_a_or.v instead
+// free(): invalid next size (fast)
+
+`define BITS 8			// Bit width of the operands
 `define B2TS 16         // Bit width of the operands
+`define USEAND 0		// No available documentation provides for macros without values so we use 0
 
 module 	bm_base_multiply(clock, 
 		reset_n, 
@@ -59,5 +64,10 @@ assign out4 = f_in * e_in;
 
 endmodule
 
-`include "include-syntax/module_a.v"
-`include "include-syntax/module_b.v"
+`ifndef USEAND
+`include "ifndef-else-syntax/module_a_and.v"
+`else
+`include "ifndef-else-syntax/module_a_or.v"
+`endif
+
+`include "ifndef-else-syntax/module_b.v"

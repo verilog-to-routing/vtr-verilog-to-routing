@@ -1,6 +1,8 @@
 // DEFINES
-`define BITS 8         // Bit width of the operands
+`define BITS 8			// Bit width of the operands
 `define B2TS 16         // Bit width of the operands
+`define SWITCH 0		// No available documentation provides for macros without values so we use 0
+`define NEST 0
 
 module 	bm_base_multiply(clock, 
 		reset_n, 
@@ -59,5 +61,52 @@ assign out4 = f_in * e_in;
 
 endmodule
 
-`include "include-syntax/module_a.v"
-`include "include-syntax/module_b.v"
+`ifdef SWITCH
+
+`include "nested-ifdef-syntax/module_b.v"
+
+`ifndef NEST
+
+module a(clock,
+		a_in,
+		b_in,
+		out);
+
+input	clock;
+input [`BITS-1:0] a_in;
+input [`BITS-1:0] b_in;
+output [`BITS-1:0]    out;
+reg [`BITS-1:0]    out;
+
+always @(posedge clock)
+begin
+	out <= a_in & b_in;
+end
+
+endmodule
+
+`else
+
+module a(clock,
+		a_in,
+		b_in,
+		out);
+
+input	clock;
+input [`BITS-1:0] a_in;
+input [`BITS-1:0] b_in;
+output [`BITS-1:0]    out;
+reg [`BITS-1:0]    out;
+
+always @(posedge clock)
+begin
+	out <= a_in | b_in;
+end
+
+endmodule
+
+`endif
+
+`endif
+
+

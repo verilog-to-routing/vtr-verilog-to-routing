@@ -27,23 +27,23 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 #include <chrono>
-
-#ifndef _WIN32
 #include <dlfcn.h>
-#endif
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
 #define min(a,b) ((a) > (b)? (b) : (a))
 #endif
 
+char *sim_run_dir;
+
 /*
  * Performs simulation.
  */
 void simulate_netlist(netlist_t *netlist)
 {
-	printf("Beginning simulation.\n"); fflush(stdout);
-
+	sim_run_dir = global_args.sim_directory;
+	printf("Beginning simulation. Output_files located @: %s\n", sim_run_dir); fflush(stdout);
+	
 	// Create and verify the lines.
 	lines_t *input_lines = create_lines(netlist, INPUT);
 	if (!verify_lines(input_lines))
@@ -52,26 +52,34 @@ void simulate_netlist(netlist_t *netlist)
 	lines_t *output_lines = create_lines(netlist, OUTPUT);
 	if (!verify_lines(output_lines))
 		error_message(SIMULATION_ERROR, 0, -1, "Output lines could not be assigned.");
-
+	
 	// Open the output vector file.
-	FILE *out = fopen(OUTPUT_VECTOR_FILE_NAME, "w");
+	char out_vec_file[128] = { 0 };
+	sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
+	FILE *out = fopen(out_vec_file, "w");
 	if (!out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create output vector file.");
 
 	// Open the input vector file.
-	FILE *in_out  = fopen( INPUT_VECTOR_FILE_NAME, "w");
+	char in_vec_file[128] = { 0 };
+	sprintf(in_vec_file,"%s%s",sim_run_dir,INPUT_VECTOR_FILE_NAME);
+	FILE *in_out = fopen(in_vec_file, "w");
 	if (!in_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open input vector file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create input vector file.");
 
 	// Open the activity output file.
-	FILE *act_out  = fopen( OUTPUT_ACTIVITY_FILE_NAME, "w");
+	char act_file[128] = { 0 };
+	sprintf(act_file,"%s%s",sim_run_dir,OUTPUT_ACTIVITY_FILE_NAME);
+	FILE *act_out = fopen(act_file, "w");
 	if (!act_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open activity output file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create activity output file.");
 
 	// Open the modelsim vector file.
-	FILE *modelsim_out = fopen("test.do", "w");
+	char test_file[128] = { 0 };
+	sprintf(test_file,"%s%s",sim_run_dir,MODEL_SIM_FILE_NAME);
+	FILE *modelsim_out = fopen(test_file, "w");
 	if (!modelsim_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open modelsim output file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
 
 	FILE *in  = NULL;
 	int num_vectors;
@@ -2666,6 +2674,7 @@ void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
  */
 int compare_test_vectors(test_vector *v1, test_vector *v2)
 {
+	int equivalent = TRUE;
 	if (v1->count != v2->count)
 	{
 		warning_message(SIMULATION_ERROR, 0, -1, "Vector lengths differ.");
@@ -2677,8 +2686,15 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 	{	// Compare bit by bit.
 		int i;
 		for (i = 0; i < v1->counts[l] && i < v2->counts[l]; i++)
-			if (v1->values[l][i] != v2->values[l][i])
-				return FALSE;
+		{
+			if (v1->values[l][i] != v2->values[l][i])		
+			{
+				if (v1->values[l][i] == -1)	
+					equivalent = -1;	
+				else
+					return FALSE;
+			}
+		}		
 
 		/*
 		 *  If one value has more bits than the other, they are still
@@ -2690,11 +2706,11 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 			test_vector *v = v1->counts[l] < v2->counts[l] ? v2 : v1;
 			int j;
 			for (j = i; j < v->counts[l]; j++)
-				if (v->values[l][j] != 0)
+				if (v->values[l][j] != 0)	
 					return FALSE;
 		}
 	}
-	return TRUE;
+	return equivalent;
 }
 
 /*
@@ -3018,8 +3034,11 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 		if (!existing_out) error_message(SIMULATION_ERROR, 0, -1, "Could not open vector output file: %s", output_vector_file);
 
 		// Our current output vectors. (Just produced.)
-		FILE *current_out  = fopen(OUTPUT_VECTOR_FILE_NAME, "r");
-		if (!current_out) error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
+		char out_vec_file[128] = { 0 };
+		sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
+		FILE *current_out  = fopen(out_vec_file, "r");
+		if (!current_out) 
+			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
 
 		int cycle;
 		char buffer1[BUFFER_MAX_SIZE];
@@ -3057,9 +3076,11 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 				// Parse both vectors.
 				test_vector *v1 = parse_test_vector(buffer1);
 				test_vector *v2 = parse_test_vector(buffer2);
-
+				
+				int equivalent = compare_test_vectors(v1,v2);
 				// Compare them and print an appropriate message if they differ.
-				if (!compare_test_vectors(v1,v2))
+				
+				if (!equivalent)
 				{
 					trim_string(buffer1, "\n\t");
 					trim_string(buffer2, "\n\t");
@@ -3070,6 +3091,17 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
 					);
 				}
+				else if (equivalent == -1)
+				{
+					trim_string(buffer1, "\n\t");
+					trim_string(buffer2, "\n\t");
+					warning_message(SIMULATION_ERROR, 0, -1, "Vector %d equivalent but output vector has bits set when expecting don't care :\n"
+							"\t%s in %s\n"
+							"\t%s in %s\n",
+							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
+					);
+				}
+				
 				free_test_vector(v1);
 				free_test_vector(v2);
 			}

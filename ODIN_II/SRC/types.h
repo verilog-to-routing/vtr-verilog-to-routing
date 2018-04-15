@@ -58,6 +58,9 @@ typedef struct netlist_t_t netlist_t;
 typedef struct netlist_stats_t_t netlist_stats_t;
 typedef struct chain_information_t_t chain_information_t;
 
+// to define type of adder in cmd line
+typedef struct adder_def_t_t adder_def_t;
+
 /* for parsing and AST creation errors */
 #define PARSE_ERROR -3
 /* for netlist creation oerrors */
@@ -86,9 +89,9 @@ typedef struct chain_information_t_t chain_information_t;
 #define LEVELIZE 12
 #define ACTIVATION 13
 
-//#define oassert(x) {if(!(x)){exit(-1);}} // causes an interrupt in GDB
-//#define oassert(x) {if(!(x)){__asm("int3");}} // causes an interrupt in GDB
-#define oassert(x) {if(!(x)){std::abort();}} // causes an interrupt in GDB
+// causes an interrupt in GDB
+#define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " @ " << __FILE__ << " (" << __LINE__ << ")" << std::endl; 
+#define oassert(condition) { if(!(condition)){ verbose_assert(condition); std::abort();} }
 // bitvector library (PETER_LIB) defines it, so we don't
 
 /* This is the data structure that holds config file details */
@@ -156,7 +159,7 @@ struct global_args_t_t
     argparse::ArgValue<bool> show_help;
 
     argparse::ArgValue<bool> black_box_latches; //Weather or not to treat and output latches as black boxes
-	argparse::ArgValue<char*> carry_skip_size; //carry skip adder skip size
+	argparse::ArgValue<char*> adder_def; //carry skip adder skip size
 
 	/////////////////////
 	// For simulation.
@@ -167,6 +170,8 @@ struct global_args_t_t
 	argparse::ArgValue<char*> sim_vector_input_file;
 	// Existing output vectors to verify against.
 	argparse::ArgValue<char*> sim_vector_output_file;
+	// Simulation output Directory
+	argparse::ArgValue<char*> sim_directory;
 	// Tells the simulator whether or not to generate random vectors which include the unknown logic value.
 	argparse::ArgValue<bool> sim_generate_three_valued_logic;
 	// Output both falling and rising edges in the output_vectors file.
@@ -421,6 +426,18 @@ struct chain_information_t_t
 	char *name;//unique name of the chain
 	int count;//the number of hard blocks in this chain
 	int num_bits;
+};
+
+typedef enum{
+	ripple,
+	fixed_step
+}type_of_adder_e;
+
+// to define type of adder in cmd line
+struct adder_def_t_t
+{
+	type_of_adder_e type_of_adder; 
+	int next_step_size;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
