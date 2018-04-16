@@ -621,7 +621,7 @@ Switches
 
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each switch tag has a ``switch`` subtag.
 
-.. arch:tag:: <switch id="int" name="unique_identifier" buffered="int" configurable="int">
+.. arch:tag:: <switch id="int" name="unique_identifier" buffered="int" type="{mux|tristate|pass_gate|short|buffer}" configurable="int">
 
     :req_param id:
         A unique identifier for that type of switch.
@@ -631,6 +631,9 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
     :req_param buffered:
         An integer value that describes whether the switch includes a buffer. 1 means a buffer is included.
+
+    :req_param type:
+        See arch doc.
 
     :opt_param configurable:
         Indicates whether the switch is configurable (``1``) or non-configurable (``0``).
@@ -697,15 +700,25 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
     :req_param width, height:
         The width and height of a large block in grid tiles.
 
-.. arch:tag:: <pin_class type="unique_type">content</pin_class>
+.. arch:tag:: <pin_class type="pin_type">
 
-        This optional subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
+        This optional subtag of ``block_type`` describes groups of pins in configurable logic blocks that share common properties.
 
     :req_param type:
         This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``.
 
-    :req_param content:
-        A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
+.. arch:tag:: <pin index="class_pin_index" ptc="block_pin_index">name</pin>
+
+        This required subtag of ``pin_class`` describes its pins.
+
+    :req_param index:
+        The index of the pin within the ``pin_class``.
+
+    :req_param ptc:
+        The index of the pin within the ``block_type``.
+
+    :req_param name:
+        Human readable pin name.
 
 Grid
 ^^^^
@@ -803,52 +816,67 @@ An example of what a generated routing resource graph file would look like is sh
     :caption: Example of a routing resource graph in XML format
     :linenos:
 
-    <rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Generated from arch file my_arch.xml">
+    <rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Based on my_arch.xml">
         <channels>
-                <channel chan_width_max="2" x_min="2" y_min="2" x_max="2" y_max="2"/>
-                <x_list index="1" info="5"/>
-                <x_list index="2" info="5"/>
-                <y_list index="1" info="5"/>
-                <y_list index="2" info="5"/>
+            <channel chan_width_max="2" x_min="2" y_min="2" x_max="2" y_max="2"/>
+            <x_list index="1" info="5"/>
+            <x_list index="2" info="5"/>
+            <y_list index="1" info="5"/>
+            <y_list index="2" info="5"/>
         </channels>
         <switches>
-                <switch id="0" name="my_switch" buffered="1"/>
+            <switch id="0" name="my_switch" buffered="1"/>
                 <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
                 <sizing mux_trans_size="2.32" buf_size="23.54"/>
-                </switch>
+            </switch>
         </switches>
         <segments>
-                <segment id="0" name="L4"/>
+            <segment id="0" name="L4"/>
                 <timing R_per_meter="201.7" C_per_meter="18.110e-15"/>
-                </segment>
+            </segment>
         </segments>
         <block_types>
-                <block_type id="0" name="io" width="1" height="1">
+            <block_type id="0" name="io" width="1" height="1">
                 <pin_class type="input">
-                        0 1 2 3
+                    <pin index="0" ptc="0">DATIN[0]</pin>
+                    <pin index="1" ptc="1">DATIN[1]</pin>
+                    <pin index="2" ptc="2">DATIN[2]</pin>
+                    <pin index="3" ptc="3">DATIN[3]</pin>
                 </pin_class>
                 <pin_class type="output">
-                        4 5 6 7
+                    <pin index="0" ptc="4">DATOUT[0]</pin>
+                    <pin index="1" ptc="5">DATOUT[1]</pin>
+                    <pin index="2" ptc="6">DATOUT[2]</pin>
+                    <pin index="3" ptc="7">DATOUT[3]</pin>
                 </pin_class>
-                </block_type>
+            </block_type>
+            <block_type id="1" name="buf" width="1" height="1">
+                <pin_class type="input">
+                    <pin index="0" ptc="0">IN</pin>
+                </pin_class>
+                <pin_class type="output">
+                    <pin index="0" ptc="1">OUT</pin>
+                </pin_class>
+            </block_type>
         </block_types>
         <grid>
-                <grid_loc x="0" y="0" block_type_id="0" width_offset="0" height_offset="0"/>
+            <grid_loc x="0" y="0" block_type_id="0" width_offset="0" height_offset="0"/>
+            <grid_loc x="1" y="0" block_type_id="1" width_offset="0" height_offset="0"/>
         </grid>
         <rr_nodes>
-                <node id="0" type="SOURCE" direction="NONE" capacity="1">
+            <node id="0" type="SOURCE" direction="NONE" capacity="1">
                 <loc xlow="0" ylow="0" xhigh="0" yhigh="0" ptc="0"/>
                 <timing R="0" C="0"/>
-                </node>
-                <node id="1" type="CHANX" direction="INC" capacity="1">
+            </node>
+            <node id="1" type="CHANX" direction="INC" capacity="1">
                 <loc xlow="0" ylow="0" xhigh="2" yhigh="0" ptc="0"/>
                 <timing R="100" C="12e-12"/>
                 <segment segment_id="0"/>
-                </node>
+            </node>
         </rr_nodes>
         <rr_edges>
-                <edge src_node="0" sink_node="1" switch_id="0"/>
-                <edge src_node="1" sink_node="2" switch_id="0"/>
+            <edge src_node="0" sink_node="1" switch_id="0"/>
+            <edge src_node="1" sink_node="2" switch_id="0"/>
         </rr_edges>
     </rr_graph>
 .. _end:
