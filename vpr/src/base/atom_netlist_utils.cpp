@@ -13,7 +13,7 @@
 #include "vpr_utils.h"
 
 //If defined produces verbose output while sweeping the netlist
-//#define SWEEP_VERBOSE
+#define SWEEP_VERBOSE
 
 std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist);
 
@@ -138,7 +138,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             for(auto ports : {input_ports, output_ports, clock_ports}) {
                 for(AtomPortId port_id : ports) {
                     auto pins = netlist.port_pins(port_id);
-                    VTR_ASSERT(pins.size() == 1);
+                    VTR_ASSERT(pins.size() <= 1);
                     for(auto in_pin_id : pins) {
                         auto net_id = netlist.pin_net(in_pin_id);
                         if(netlist.port_name(port_id) == "D") {
@@ -158,14 +158,17 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             }
 
             if(d_net.empty()) {
+                vtr::printf_warning(__FILE__, __LINE__, "No net found for .latch '%s' data input (D pin)\n", netlist.block_name(blk_id).c_str());
                 d_net = make_unconn(unconn_count, PinType::SINK);
             }
 
             if(q_net.empty()) {
+                vtr::printf_warning(__FILE__, __LINE__, "No net found for .latch '%s' data output (Q pin)\n", netlist.block_name(blk_id).c_str());
                 q_net = make_unconn(unconn_count, PinType::DRIVER);
             }
 
             if(clk_net.empty()) {
+                vtr::printf_warning(__FILE__, __LINE__, "No net found for .latch '%s' clock (clk pin)\n", netlist.block_name(blk_id).c_str());
                 clk_net = make_unconn(unconn_count, PinType::SINK);
             }
 
