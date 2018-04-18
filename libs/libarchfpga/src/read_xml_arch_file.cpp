@@ -1949,6 +1949,8 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data) {
 	const char *Prop;
 
+    expect_only_attributes(Node, {"name", "capacity", "width", "height", "area"}, loc_data);
+
 	/* Load type name */
 	Prop = get_attribute(Node, "name", loc_data).value();
 	Type->name = vtr::strdup(Prop);
