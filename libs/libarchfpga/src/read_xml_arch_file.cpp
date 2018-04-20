@@ -2888,7 +2888,8 @@ static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 			case '1':
 				if (i >= len) {
 					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-							"CB or SB depopulation is too long. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
+							"CB or SB depopulation is too long (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
+							i, len-1, len);
 				}
 				list[i] = true;
 				++i;
@@ -2897,7 +2898,8 @@ static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 			case '0':
 				if (i >= len) {
 					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-							"CB or SB depopulation is too long. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
+							"CB or SB depopulation is too long (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
+							i, len-1, len);
 				}
 				list[i] = false;
 				++i;
@@ -2911,7 +2913,8 @@ static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 		}
 		if (i < len) {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"CB or SB depopulation is too short. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
+					"CB or SB depopulation is too short (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
+					i, len-1, len);
 		}
 	}
 
