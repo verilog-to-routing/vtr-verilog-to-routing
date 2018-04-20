@@ -1,25 +1,25 @@
-/* The XML parser processes an XML file into a tree data structure composed of  
- * pugi::xml_nodes.  Each node represents an XML element.  For example          
- * <a> <b/> </a> will generate two pugi::xml_nodes.  One called "a" and its      
- * child "b".  Each pugi::xml_node can contain various XML data such as attribute 
- * information and text content.  The XML parser provides several functions to  
+/* The XML parser processes an XML file into a tree data structure composed of
+ * pugi::xml_nodes.  Each node represents an XML element.  For example
+ * <a> <b/> </a> will generate two pugi::xml_nodes.  One called "a" and its
+ * child "b".  Each pugi::xml_node can contain various XML data such as attribute
+ * information and text content.  The XML parser provides several functions to
  * help the developer build, and traverse tree (this is also somtime referred to
- * as the Document Object Model or DOM).              
- *                                                                              
+ * as the Document Object Model or DOM).
+ *
  * For convenience it often makes sense to use some wraper functions (provided in
- * the pugiutil namespace of libvtrutil) which simplify loading an XML file and 
+ * the pugiutil namespace of libvtrutil) which simplify loading an XML file and
  * error handling.
  *
- * The function pugiutil::load_xml() reads in an xml file.                 
- *                                                                              
+ * The function pugiutil::load_xml() reads in an xml file.
+ *
  * The function pugiutil::get_single_child() returns a child xml_node for a given parent
- * xml_node if there is a child which matches the name provided by the developer.                          
- *                                                                              
- * The function pugiutil::get_attribute() is used to extract attributes from an 
+ * xml_node if there is a child which matches the name provided by the developer.
+ *
+ * The function pugiutil::get_attribute() is used to extract attributes from an
  * xml_node, returning a pugi::xml_attribute. xml_attribute objects support accessors
  * such as as_float(), as_int() to retrieve semantic values. See pugixml documentation
  * for more details.
- * 
+ *
  * Architecture file checks already implemented (Daniel Chen):
  *		- Duplicate pb_types, pb_type ports, models, model ports,
  *			interconnects, interconnect annotations.
@@ -27,9 +27,9 @@
  *			accessed within [0:3].
  *		- LUT delay matrix size matches # of LUT inputs
  *		- Ensures XML tags are ordered.
- *		- Clocked primitives that have timing annotations must have a clock 
+ *		- Clocked primitives that have timing annotations must have a clock
  *			name matching the primitive.
- *		- Enforced VPR definition of LUT and FF must have one input port (n pins) 
+ *		- Enforced VPR definition of LUT and FF must have one input port (n pins)
  *			and one output port(1 pin).
  *		- Checks file extension for blif and architecture xml file, avoid crashes if
  *			the two files are swapped on command line.
@@ -70,7 +70,7 @@ struct t_fc_override {
     float fc_value;
 };
 
-/* This gives access to the architecture file name to 
+/* This gives access to the architecture file name to
  all architecture-parser functions       */
 static const char* arch_file_name = nullptr;
 
@@ -229,7 +229,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         Next = get_single_child(architecture, "segmentlist", loc_data);
         ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
                 arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required, loc_data);
-        
+
 
         Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
         if (Next){
@@ -308,7 +308,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
  *
  */
 
-/* Sets up the pinloc map and pin classes for the type. 
+/* Sets up the pinloc map and pin classes for the type.
  * Pins and pin classes must already be setup by SetupPinClasses */
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data) {
@@ -399,7 +399,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 
 			if ((x_offset < 0) || (x_offset >= Type->width)) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"'%d' is an invalid horizontal offset for type '%s' (must be within [0, %d]).\n", 
+						"'%d' is an invalid horizontal offset for type '%s' (must be within [0, %d]).\n",
                         x_offset, Type->name, Type->width - 1);
 			}
 			if ((y_offset < 0) || (y_offset >= Type->height)) {
@@ -563,7 +563,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 					Type->class_inf[num_class].type = DRIVER;
 				}
 				Type->pin_class[pin_count] = num_class;
-				Type->is_global_pin[pin_count] = Type->pb_type->ports[j].is_clock || 
+				Type->is_global_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
                     Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 
@@ -765,7 +765,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 				"Unknown port type %s in %s in %s", Parent.name(),
 				Parent.parent().name(), Parent.parent().parent().name() );
-	} 
+	}
 	VTR_ASSERT(i == annotation->num_value_prop_pairs);
 }
 
@@ -1067,7 +1067,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 			/* get next iteration */
 			j++;
 			k++;
-			Cur = Cur.next_sibling(Cur.name()); 
+			Cur = Cur.next_sibling(Cur.name());
 		}
 	}
 
@@ -1629,7 +1629,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
         def_fc_spec = arch_def_fc;
     }
 
-    /* Go through all the port/segment combinations and create the (potentially 
+    /* Go through all the port/segment combinations and create the (potentially
      * overriden) pin/seg Fc specifications */
     const t_pb_type* pb_type = Type->pb_type;
     int pins_per_capacity_instance = Type->num_pins / Type->capacity;
@@ -1669,7 +1669,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
                         if (fc_override.port_name == port->name && fc_override.seg_name == segments[iseg].name) {
                             apply_override = true;
                         }
-                        
+
                     } else if (!fc_override.port_name.empty()) {
                         VTR_ASSERT(fc_override.seg_name.empty());
                         //Only the port name specified, require it to match
@@ -1704,7 +1704,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 
                 //Add all the pins from this port
                 for(int iport_pin = 0; iport_pin < port->num_pins; ++iport_pin) {
-                    //XXX: this assumes that iterating through the pb_type ports 
+                    //XXX: this assumes that iterating through the pb_type ports
                     //     in order yields the block pin order
                     fc_spec.pins.push_back(iblk_pin);
                     ++iblk_pin;
@@ -1835,7 +1835,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_
 
             //Determine the switch type
             int sb_switch_override = DEFAULT_SWITCH;
-                
+
             auto sb_switch_override_attr = get_attribute(sb_loc, "switch_override", loc_data, OPTIONAL);
             if (sb_switch_override_attr) {
                 std::string sb_switch_override_str = sb_switch_override_attr.as_string();
@@ -2106,7 +2106,7 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
         if(dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
                     "Model output ports can not have combinational sink ports");
-            
+
         }
 
         //Add the port
@@ -2341,8 +2341,8 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
             grid_def.loc_defs.push_back(row);
         } else if (loc_type == std::string("region")) {
-            expect_only_attributes(loc_spec_tag, 
-                                   {"type", "priority", 
+            expect_only_attributes(loc_spec_tag,
+                                   {"type", "priority",
                                     "startx", "endx", "repeatx", "incrx",
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
@@ -2418,7 +2418,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &
         archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
     }
 
-    expect_only_children(Node, {"sizing", "area", 
+    expect_only_children(Node, {"sizing", "area",
                                 "chan_width_distr", "switch_block",
                                 "connection_block", "default_fc"}, loc_data);
 
@@ -2529,7 +2529,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const t_default_fc_spec &arch_def_fc, 
+		t_arch& arch, const t_default_fc_spec &arch_def_fc,
         const pugiutil::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
@@ -2789,8 +2789,8 @@ static void ProcessSegments(pugi::xml_node Parent,
 	}
 }
 
-/* Processes the switchblocklist section from the xml architecture file. 
-   See vpr/SRC/route/build_switchblocks.c for a detailed description of this 
+/* Processes the switchblocklist section from the xml architecture file.
+   See vpr/SRC/route/build_switchblocks.c for a detailed description of this
    switch block format */
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data){
 
@@ -3020,7 +3020,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
                 arch_switch.buf_size_type = BufferSize::ABSOLUTE;
                 arch_switch.buf_size = buf_size_attrib.as_float();
             }
-                    
+
             auto power_buf_size = get_attribute(Node, "power_buf_size", loc_data, OPTIONAL).as_string(nullptr);
             if (power_buf_size == nullptr) {
                 arch_switch.power_buffer_type = POWER_BUFFER_TYPE_AUTO;
@@ -3041,9 +3041,9 @@ static void ProcessSwitches(pugi::xml_node Parent,
 	}
 }
 
-/* Processes the switch delay. Switch delay can be specified in two ways. 
-   First way: switch delay is specified as a constant via the property Tdel in the switch node. 
-   Second way: switch delay is specified as a function of the switch fan-in. In this 
+/* Processes the switch delay. Switch delay can be specified in two ways.
+   First way: switch delay is specified as a constant via the property Tdel in the switch node.
+   Second way: switch delay is specified as a function of the switch fan-in. In this
                case, multiple nodes in the form
 
                <Tdel num_inputs="1" delay="3e-11"/>
@@ -3081,7 +3081,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 		/* delay specified as a constant */
         Switches[switch_index].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel_prop_value);
 	} else if (has_Tdel_children) {
-		/* Delay specified as a function of switch fan-in. 
+		/* Delay specified as a function of switch fan-in.
 		   Go through each Tdel child, read-in num_inputs and the delay value.
 		   Insert this info into the switch delay map */
 		pugi::xml_node Tdel_child = get_first_child(Node, "Tdel", loc_data);
@@ -3186,7 +3186,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
             //TODO: find a better way of indicating this.  Ideally, we would
             //specify the delayless switch index here, but it does not appear
             //to be defined at this point.
-            (*Directs)[i].switch_type = -1; 
+            (*Directs)[i].switch_type = -1;
         }
 
 		/* Check that the direct chain connection is not zero in both direction */
@@ -3367,7 +3367,7 @@ void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_dat
 
         comb_connected_outputs.insert(port->combinational_sink_ports.begin(), port->combinational_sink_ports.end());
     }
-     
+
     for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
         if(port->clock.empty() //Not sequential
            && !comb_connected_outputs.count(port->name) //Not combinationally drivven
@@ -3399,7 +3399,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
     for(const t_model* models : {arch.models, arch.model_library}) {
         for(model = models; model != nullptr; model = model->next) {
             if(std::string(model->name) == blif_model) {
-                break;    
+                break;
             }
         }
         if(model != nullptr) {
@@ -3413,9 +3413,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
     }
 
     //Now that we have the model we can compare the timing annotations
-     
+
     //Check from the pb_type's delay annotations match the model
-    //  
+    //
     //  This ensures that the pb_types' delay annotations are consistent with the model
     for(int i = 0; i < pb_type->num_annotations; ++i) {
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[i];
@@ -3520,14 +3520,14 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
     //Check from the model to pb_type's delay annotations
     //
-    //  This ensures that the pb_type has annotations for all delays/values 
+    //  This ensures that the pb_type has annotations for all delays/values
     //  required by the model
     for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
         for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
 
             //If the model port has no timing specification don't check anything (e.g. architectures with no timing info)
-            if (   model_port->clock.empty() 
-                && model_port->combinational_sink_ports.empty() 
+            if (   model_port->clock.empty()
+                && model_port->combinational_sink_ports.empty()
                 && !comb_connected_outputs.count(model_port->name)) {
                 continue;
             }
@@ -3636,7 +3636,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
         }
     }
 
-    return true; 
+    return true;
 }
 
 const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
