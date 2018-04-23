@@ -1,0 +1,14 @@
+# Auto convert CRLF line-endings in Windows source files to LF
+*.c	                text=input
+*.cpp	                text=input
+*.h	                text=input
+*.make	                text=input
+*.pl	                text=input
+*.py	                text=input
+*.txt	                text=input
+*.v	                text=input
+*.xml	                text=input
+
+abc/**                  -text
+abc_with_bb_support/**  -text
+libs/EXTERNAL/**        -text
