@@ -15,7 +15,7 @@
  t_rr_node - The basic building block of the interconnect in the FPGA architecture
 
  Cluster-specific main data structure:
- t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA achitecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
+ t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  The t_pb hierarchy follows what is described by t_pb_graph_node
 
  */
