@@ -49,9 +49,10 @@ Task #3 - Setup VTR
 
   3.  Run "./run_quick_test.pl" to check that the build worked
 
-  4.  Read the README.release.txt file.  Follow the instructions in that file to 
-run a circuit through the entire flow and read the statistics gathered from that 
-run.
+  4.  Follow the Basic Design Flow Tutorial found in the Tutorials
+  section of the documentation (https://vtr.readthedocs.io/en/latest).
+  This tutorial will allow you to run a circuit through the entire flow
+  and read the statistics gathered from that run.
 
 Task #4 - Use VTR
 
@@ -88,13 +89,12 @@ Task #5 - Open the Black Box
   to a target architecture.  You may need to consult the VPR User Manual and skim
   You may need to skim vtr_flow/scripts/run_vtr_flow.pl.
 
-  4.  Read vpr/VPR_User_Manual.doc
-
+  4.  Read the VPR section of the online documentation.
 
 Task #6 - Submitting Changes and Regression Testing
 
-  1.  Read README.txt in the base directory of VTR.  Code changes rapidly so please help keep
-  this up to date if you see something that is out of date.
+  1.  Read README.developers.md in the base directory of VTR. Code changes rapidly
+  so please help keep this up to date if you see something that is out of date.
 
   2.  Make your first change to git by modifying README.txt and pushing it.  I recommend 
   adding your name to the list of contributors.  If you have
