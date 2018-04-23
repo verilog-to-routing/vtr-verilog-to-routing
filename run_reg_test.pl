@@ -404,9 +404,12 @@ sub run_odin_test {
     my $return_status = 0;
 	if ( $token eq "odin_reg_micro" ) {
 		$return_status = system("./verify_odin.sh micro $num_cpu");
-	}
-	elsif ( $token eq "odin_reg_full" ) {
+	} elsif ( $token eq "odin_reg_full" ) {
 		$return_status = system("./verify_odin.sh regression $num_cpu");
+	} elsif ( $token eq "odin_reg_arch" ) {
+		$return_status = system("./verify_odin.sh arch $num_cpu");
+	} elsif ( $token eq "odin_reg_syntax" ) {
+		$return_status = system("./verify_odin.sh syntax $num_cpu");
 	} else {
         die("Unrecognized odin test $token");
     }
@@ -415,6 +418,9 @@ sub run_odin_test {
 
     #Perl is obtuse, and requires you to manually shift the return value by 8 bits
     #to get the real exit code from a call to system(). There must be a better way to do this....
+    
+	# odin return the number of failure as its exit code
+	
     my $exit_code = $return_status >> 8;
     return $exit_code;
 }

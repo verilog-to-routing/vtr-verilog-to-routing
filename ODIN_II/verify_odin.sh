@@ -48,12 +48,12 @@ function extensive_vector() {
 			# With the arch file
 			V_ARCH=$DIR/verilog_arch && mkdir -p $V_ARCH
 			./odin_II -W -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" -o "$V_ARCH/temp.blif" -sim_dir "$V_ARCH/" &> "$V_ARCH/log" \
-			&& pass $benchmark || failed $benchmark
+			&& pass $V_ARCH || failed $V_ARCH
 			
 			# Without the arch file
 			V_NO_ARCH=$DIR/verilog_no_arch && mkdir -p $V_NO_ARCH
 			./odin_II -W -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors"  -o "$V_NO_ARCH/temp.blif" -sim_dir "$V_NO_ARCH/" &> "$V_NO_ARCH/log" \
-			&& pass $benchmark || failed $benchmark
+			&& pass $V_NO_ARCH || failed $V_NO_ARCH
 			
 			############################
 			# Simulate using the blif file. 
@@ -61,13 +61,13 @@ function extensive_vector() {
 			B_ARCH=$DIR/bliff_arch && mkdir -p $B_ARCH
 			./odin_II -E -W -a $ARCH -V "$benchmark" -o "$B_ARCH/temp.blif" -sim_dir "$B_ARCH/" &> "$B_ARCH/log" && \
 			./odin_II -E -W -a $ARCH -b "$B_ARCH/temp.blif" -t "$input_vectors" -T "$output_vectors" -sim_dir "$B_ARCH/" &>> "$B_ARCH/log" \
-			&& pass $benchmark || failed $benchmark
+			&& pass $B_ARCH || failed $B_ARCH
 			
 			# Without the arch file. 
 			B_NO_ARCH=$DIR/bliff_no_arch && mkdir -p $B_NO_ARCH
 			./odin_II -E -W -V "$benchmark" -o "$B_NO_ARCH/temp.blif" -sim_dir "$B_NO_ARCH/" &> "$B_NO_ARCH/log" && \
 			./odin_II -E -W -b "$B_NO_ARCH/temp.blif" -t "$input_vectors" -T "$output_vectors" -sim_dir "$B_NO_ARCH/" &>> "$B_NO_ARCH/log" \
-			&& pass $benchmark || failed $benchmark
+			&& pass $B_NO_ARCH || failed $B_NO_ARCH
 		) &
 	
 	    [[ $(jobs -r -p | wc -l) -le $2 ]] || wait -n
@@ -94,7 +94,7 @@ function basic_vector() {
 			output_vectors="$basename"_output	
 
 		    ./odin_II -E -W -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
-			&& pass $benchmark || failed $benchmark
+			&& pass $DIR || failed $DIR
 			
 	    ) &
 	
@@ -117,7 +117,7 @@ function simple_test() {
 			mkdir -p $DIR
 			
 			./odin_II -E -W -a "$ARCH" -V "$benchmark" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
-			&& pass $benchmark || failed $benchmark
+			&& pass $DIR || failed $DIR
 			
 		) &
 	
@@ -142,7 +142,7 @@ function simple_file() {
 		mkdir -p $DIR
 		
 		./odin_II -E -W -a "$ARCH" -V "$p" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
-		&& pass $p || failed $p
+		&& pass $DIR || failed $DIR
 			
 	done
 }
@@ -232,10 +232,12 @@ fi
 if [ $fail_count -gt "0" ]
 then
 	echo "Failed $fail_count"
+	exit $fail_count
 	echo "View Failure log in regression_test/runs/failure.log, "
 	echo "once the issue is fixed, you can retry only the failed test by calling \'./verify_odin rerun\' "
 else
 	echo "no run failure!"
+	exit 0
 fi
 
 ### end here
