@@ -151,7 +151,7 @@ struct t_pl_macro_member{
 };
 
 /* num_blocks: The number of blocks this macro contains.
- * members: An array of blocks in this macro [0¡­num_macro-1].
+ * members: An array of blocks in this macro [0:num_macro-1].
  * idirect: The direct index as specified in the arch file
  */
 struct t_pl_macro {
