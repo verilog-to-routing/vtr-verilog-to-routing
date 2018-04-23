@@ -78,10 +78,10 @@
 //==========
 //Verilog netlist generation assumes the existance of appropriate primitives for the various
 //atom types (i.e. a LUT_K module, a DFF module etc.).  These are currently defined the file
-//<vtr>/vtr_flow/primtives.v, where <vtr> is the root of the VTR source tree.
+//<vtr>/vtr_flow/primitives.v, where <vtr> is the root of the VTR source tree.
 //
 //You will typically need to link with this file when attempting to simulate a post-implementation netlist.
-//Also see the comments in primtives.v for important notes related to performing SDF back-annotated timing
+//Also see the comments in primitives.v for important notes related to performing SDF back-annotated timing
 //simulation.
 
 
@@ -194,7 +194,7 @@ class Arc {
         std::string condition_;
 };
 
-//Instance is an interface used to represent an element insantiated in a netlist
+//Instance is an interface used to represent an element instantiated in a netlist
 //
 //Instances know how to describe themselves in BLIF, Verilog and SDF
 //
