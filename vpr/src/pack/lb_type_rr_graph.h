@@ -62,7 +62,7 @@ struct t_lb_type_rr_graph {
 
     std::vector<int> external_sources; //External source nodes
     std::vector<int> external_sinks; //External sink nodes
-    std::vector<int> external_rr; //External routing nodes
+    std::vector<int> external_routing; //External routing nodes
 };
 
 

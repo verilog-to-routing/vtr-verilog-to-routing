@@ -169,6 +169,11 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 	VTR_ASSERT(	lb_type_rr_graph.nodes[ext_source_index].type == NUM_LB_RR_TYPES && 
 			lb_type_rr_graph.nodes[ext_sink_index].type == NUM_LB_RR_TYPES);
 
+    //Record the external nodes
+    lb_type_rr_graph.external_sources.push_back(ext_source_index);
+    lb_type_rr_graph.external_sinks.push_back(ext_sink_index);
+    lb_type_rr_graph.external_routing.push_back(ext_rr_index);
+
     //Build a pin-to-fc_spec look-up
     // Note that since we really only care about unconnected (fc_value == 0) cases,
     // we don't need to check whether the Fc value type, since both absolute and fractional
