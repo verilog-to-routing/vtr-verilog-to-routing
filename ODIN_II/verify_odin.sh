@@ -6,7 +6,7 @@ fail_count=0
 
 function ctrl_c() {
     echo "** EXISTED FORCEFULLY"
-    fail_count=12345
+    fail_count=9990000
 }
 
 function clean_up() {
@@ -205,7 +205,8 @@ esac
 END=$(date +%s%3N)
 echo "ran test in: $(( ((END-START)/1000)/60 )):$(( ((END-START)/1000)%60 )).$(( (END-START)%1000 )) [m:s.ms]"
 
-fail_count=$(( fail_count + $(wc -l < regression_test/runs/failure.log) ))
+line_count=$(wc -l < regression_test/runs/failure.log)
+fail_count=$[fail_count+line_count]
 
 if [ $fail_count -gt "0" ]
 then
