@@ -1,155 +1,147 @@
 #!/bin/bash 
 #1
-#failed_benchmark
-FAILURE_LOG="regression_test/runs/failure.log"
+trap ctrl_c INT
 
-function failed() {
-	echo " -X- FAILED == $1" 
-	echo $1 >> $FAILURE_LOG
-}
+fail_count=0
 
-function pass() {
-	echo " --- PASSED == $1"
-}
-
-exit_finish() {
-	
-	failed $1
-	exit 1
+function ctrl_c() {
+    echo "** EXISTED FORCEFULLY"
+    fail_count=12345
 }
 
 function clean_up() {
-	rm -Rf regression_test/runs/regression_test
+	rm -Rf regression_test/runs/*
+	touch regression_test/runs/failure.log
 }
 
-REGR_BENCH="regression_test/benchmark/full"
-ARCH_BENCH="regression_test/benchmark/arch"
-SYNT_BENCH="regression_test/benchmark/syntax"
-MICR_BENCH="regression_test/benchmark/micro"
+function micro_test() {
+	for benchmark in regression_test/benchmark/micro/*.v
+	do 
+		basename=${benchmark%.v}
+		test_name=${basename##*/}
+		input_vectors="$basename"_input
+		output_vectors="$basename"_output	
+		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR
+		
+		cp $benchmark $DIR/circuit.v
+		cp $input_vectors $DIR/circuit_input
+		cp $output_vectors $DIR/circuit_output
+		cp ../libs/libarchfpga/arch/sample_arch.xml $DIR/arch.xml
+	done
 
-ARCH="../libs/libarchfpga/arch/sample_arch.xml"
+	
+	#verilog
+	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
+	'./odin_II -E \
+		-V regression_test/runs/micro/test_dir/circuit.v \
+		-t regression_test/runs/micro/test_dir/circuit_input \
+		-T regression_test/runs/micro/test_dir/circuit_output \
+		-o regression_test/runs/micro/test_dir/tempa.blif \
+		-sim_dir regression_test/runs/micro/test_dir/ \
+		&> regression_test/runs/micro/test_dir/log \
+	&& ./odin_II -E \
+		-b regression_test/runs/micro/test_dir/tempa.blif \
+		-t regression_test/runs/micro/test_dir/circuit_input \
+		-T regression_test/runs/micro/test_dir/circuit_output \
+		-sim_dir regression_test/runs/micro/test_dir/ \
+		&> regression_test/runs/micro/test_dir/log \
+	&& ./odin_II -E \
+		-a regression_test/runs/micro/test_dir/arch.xml \
+		-V regression_test/runs/micro/test_dir/circuit.v \
+		-t regression_test/runs/micro/test_dir/circuit_input \
+		-T regression_test/runs/micro/test_dir/circuit_output \
+		-o regression_test/runs/micro/test_dir/tempb.blif \
+		-sim_dir regression_test/runs/micro/test_dir/ \
+		&> regression_test/runs/micro/test_dir/log \
+	&& ./odin_II -E \
+		-a regression_test/runs/micro/test_dir/arch.xml \
+		-b regression_test/runs/micro/test_dir/tempb.blif \
+		-t regression_test/runs/micro/test_dir/circuit_input \
+		-T regression_test/runs/micro/test_dir/circuit_output \
+		-sim_dir regression_test/runs/micro/test_dir/ \
+		&> regression_test/runs/micro/test_dir/log \
+	&& echo " --- PASSED == regression_test/runs/micro/test_dir" \
+	|| (echo " -X- FAILED == regression_test/runs/micro/test_dir" \
+		&& echo regression_test/runs/micro/test_dir >> regression_test/runs/failure.log )'
+
+}
 
 #1
 #bench
-function extensive_vector() {
-	
-	for benchmark in $1/*.v
+function regression_test() {
+	for benchmark in regression_test/benchmark/full/*.v
 	do 
-		(
-			basename=${benchmark%.v}
-			input_vectors="$basename"_input
-			output_vectors="$basename"_output	
-			
-			DIR="regression_test/runs/$basename"
-			
-			############################
-			# Simulate using verilog. 
-			############################
-			# With the arch file
-			V_ARCH=$DIR/verilog_arch && mkdir -p $V_ARCH
-			./odin_II -W -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" -o "$V_ARCH/temp.blif" -sim_dir "$V_ARCH/" &> "$V_ARCH/log" \
-			&& pass $V_ARCH || failed $V_ARCH
-			
-			# Without the arch file
-			V_NO_ARCH=$DIR/verilog_no_arch && mkdir -p $V_NO_ARCH
-			./odin_II -W -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors"  -o "$V_NO_ARCH/temp.blif" -sim_dir "$V_NO_ARCH/" &> "$V_NO_ARCH/log" \
-			&& pass $V_NO_ARCH || failed $V_NO_ARCH
-			
-			############################
-			# Simulate using the blif file. 
-			############################
-			B_ARCH=$DIR/bliff_arch && mkdir -p $B_ARCH
-			./odin_II -E -W -a $ARCH -V "$benchmark" -o "$B_ARCH/temp.blif" -sim_dir "$B_ARCH/" &> "$B_ARCH/log" && \
-			./odin_II -E -W -a $ARCH -b "$B_ARCH/temp.blif" -t "$input_vectors" -T "$output_vectors" -sim_dir "$B_ARCH/" &>> "$B_ARCH/log" \
-			&& pass $B_ARCH || failed $B_ARCH
-			
-			# Without the arch file. 
-			B_NO_ARCH=$DIR/bliff_no_arch && mkdir -p $B_NO_ARCH
-			./odin_II -E -W -V "$benchmark" -o "$B_NO_ARCH/temp.blif" -sim_dir "$B_NO_ARCH/" &> "$B_NO_ARCH/log" && \
-			./odin_II -E -W -b "$B_NO_ARCH/temp.blif" -t "$input_vectors" -T "$output_vectors" -sim_dir "$B_NO_ARCH/" &>> "$B_NO_ARCH/log" \
-			&& pass $B_NO_ARCH || failed $B_NO_ARCH
-		) &
-	
-	    [[ $(jobs -r -p | wc -l) -le $2 ]] || wait -n
-	
-	
+		basename=${benchmark%.v}
+		test_name=${basename##*/}
+		input_vectors="$basename"_input
+		output_vectors="$basename"_output	
+		DIR="regression_test/runs/full/$test_name" && mkdir -p $DIR
+		
+		cp $benchmark $DIR/circuit.v
+		cp $input_vectors $DIR/circuit_input
+		cp $output_vectors $DIR/circuit_output
 	done
-	wait
-}
 
-#1
-#bench
-function basic_vector() {
-	pass_count=$3 
-	fail_count=$4
 	
-	for benchmark in $1/*.v
-	do 
-		(
-			basename=${benchmark%.v}
-			DIR="regression_test/runs/$basename"
-			mkdir -p $DIR
-			
-			input_vectors="$basename"_input
-			output_vectors="$basename"_output	
+	ls regression_test/runs/full | xargs -P$1 -I test_dir /bin/bash -c \
+		' ./odin_II -E -V regression_test/runs/full/test_dir/circuit.v \
+			-t regression_test/runs/full/test_dir/circuit_input \
+			-T regression_test/runs/full/test_dir/circuit_output \
+			-o regression_test/runs/full/test_dir/temp.blif \
+			-sim_dir regression_test/runs/full/test_dir/ \
+				&> regression_test/runs/full/test_dir/log \
+    	&& echo " --- PASSED == regression_test/runs/full/test_dir" \
+    	|| (echo " -X- FAILED == regression_test/runs/full/test_dir" \
+    		&& echo regression_test/runs/full/test_dir >> regression_test/runs/failure.log)'
 
-		    ./odin_II -E -W -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
-			&& pass $DIR || failed $DIR
-			
-	    ) &
-	
-	    [[ $(jobs -r -p | wc -l) -le $2 ]] || wait -n
-	done
-	wait
 }
 
 #1				#2
 #benchmark dir	N_trhead
-function simple_test() {
-	pass_count=$3 
-	fail_count=$4
-	
-	for benchmark in $1/*.v
+function arch_test() {
+	for benchmark in regression_test/benchmark/arch/*.v
 	do 
-	    (
-	    	basename=${benchmark%.v}
-			DIR="regression_test/runs/$basename"
-			mkdir -p $DIR
-			
-			./odin_II -E -W -a "$ARCH" -V "$benchmark" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
-			&& pass $DIR || failed $DIR
-			
-		) &
-	
-	    [[ $(jobs -r -p | wc -l) -le $2 ]] || wait -n
-
-	done
-	wait
-}
-
-function simple_file() {
-	pass_count=$1 
-	fail_count=$2
-	
-	cat FAILURE_LOG | while read p;
-	do 
-		if [ -z $p ]
-		then
-			break
-		fi
-    	basename=${p%.v}
-		DIR=$basename
-		mkdir -p $DIR
+    	basename=${benchmark%.v}
+    	test_name=${basename##*/}
+		DIR="regression_test/runs/arch/$test_name" && mkdir -p $DIR
 		
-		./odin_II -E -W -a "$ARCH" -V "$p" -o "$DIR/temp.blif" -sim_dir "$DIR/" &> "$DIR/log" \
-		&& pass $DIR || failed $DIR
-			
+		cp $benchmark $DIR/circuit.v
 	done
+	
+	ls regression_test/runs/arch | xargs -P$1 -I test_dir /bin/bash -c \
+		' ./odin_II -E -V regression_test/runs/arch/test_dir/circuit.v \
+				-o regression_test/runs/arch/test_dir/temp.blif \
+				-sim_dir regression_test/runs/arch/test_dir/ \
+					&> regression_test/runs/arch/test_dir/log \
+    	&& echo " --- PASSED == regression_test/runs/arch/test_dir" \
+    	|| (echo " -X- FAILED == regression_test/runs/arch/test_dir" \
+    		&& echo regression_test/runs/arch/test_dir >> regression_test/runs/failure.log)'
 }
+
+#1				#2
+#benchmark dir	N_trhead
+function syntax_test() {
+	for benchmark in regression_test/benchmark/syntax/*.v
+	do 
+    	basename=${benchmark%.v}
+    	test_name=${basename##*/}
+		DIR="regression_test/runs/syntax/$test_name" && mkdir -p $DIR
+		
+		cp $benchmark $DIR/circuit.v
+	done
+
+	ls regression_test/runs/syntax | xargs -P$2 -I test_dir /bin/bash -c \
+		' ./odin_II -E -V regression_test/runs/syntax/test_dir/circuit.v \
+				-o regression_test/runs/syntax/test_dir/temp.blif \
+				-sim_dir regression_test/runs/syntax/test_dir/ \
+					&> regression_test/runs/syntax/test_dir/log \
+    	&& echo " --- PASSED == regression_test/runs/syntax/test_dir" \
+    	|| (echo " -X- FAILED == regression_test/runs/syntax/test_dir" \
+    		&& echo regression_test/runs/syntax/test_dir >> regression_test/runs/failure.log)'
+}
+
 
 ### starts here
-export pass_count=0
-export fail_count=0
 
 clean_up
 
@@ -159,36 +151,27 @@ if [[ "$2" -gt "0" ]]
 then
 	NB_OF_PROC=$2
 	echo "running benchmark on $NB_OF_PROC thread"
+	echo "running on too many thread can cause failures, so choose wisely!"
 fi
-
-case $1 in
-	"rerun")
-		simple_file 
-		exit 0
-		;;
-	*)
-		rm -f $FAILURE_LOG
-		;;
-esac
 
 START=$(date +%s%3N)
 
 case $1 in
 
 	"arch")
-		simple_test $ARCH_BENCH $NB_OF_PROC 
+		arch_test $NB_OF_PROC 
 		;;
 	
 	"syntax")
-		simple_test $SYNT_BENCH $NB_OF_PROC 
+		syntax_test $NB_OF_PROC 
 		;;
 		
 	"micro") 
-		extensive_vector $MICR_BENCH $NB_OF_PROC 
+		micro_test $NB_OF_PROC 
 		;;
 		
 	"regression") 
-		basic_vector $REGR_BENCH $NB_OF_PROC 
+		regression_test $NB_OF_PROC 
 		;;
 		
 	"vtr_basic") 
@@ -204,10 +187,10 @@ case $1 in
 		;;
 		
 	"pre_commit")  
-		simple_test $ARCH_BENCH $NB_OF_PROC 
-		simple_test $SYNT_BENCH $NB_OF_PROC 
-		extensive_vector $MICR_BENCH $NB_OF_PROC 
-		basic_vector $REGR_BENCH $NB_OF_PROC 
+		arch_test $NB_OF_PROC 
+		syntax_test $NB_OF_PROC 
+		micro_test $NB_OF_PROC 
+		regression_test $NB_OF_PROC 
 		cd ..
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic 
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_strong
@@ -218,28 +201,22 @@ case $1 in
 		echo 'nothing to run, ./verify_odin [ arch, syntax, micro, full, regression, vtr_basic, vtr_strong or pre_commit ] [ nb_of_process ]' 
 		;;
 esac
-wait
 
 END=$(date +%s%3N)
 echo "ran test in: $(( ((END-START)/1000)/60 )):$(( ((END-START)/1000)%60 )).$(( (END-START)%1000 )) [m:s.ms]"
 
-fail_count=0
-if [ -e $FAILURE_LOG ]
-then
-	fail_count=$(wc -l < $FAILURE_LOG)
-fi
+fail_count=$(( fail_count + $(wc -l < regression_test/runs/failure.log) ))
 
 if [ $fail_count -gt "0" ]
 then
 	echo "Failed $fail_count"
-	exit $fail_count
 	echo "View Failure log in regression_test/runs/failure.log, "
 	echo "once the issue is fixed, you can retry only the failed test by calling \'./verify_odin rerun\' "
 else
 	echo "no run failure!"
-	exit 0
 fi
 
+exit $fail_count
 ### end here
 
 
