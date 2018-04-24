@@ -37,7 +37,7 @@ using namespace std;
 
 #include "rr_types.h"
 
-#define VERBOSE
+//#define VERBOSE
 
 struct t_mux {
     int size;
