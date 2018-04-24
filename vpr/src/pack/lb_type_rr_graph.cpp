@@ -45,7 +45,8 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 													 std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
 														std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
-														const int ext_rr_index);
+														const int ext_rr_index,
+                                                        const std::map<int,float>& cluster_pin_to_max_Fc);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
 static void print_lb_type_rr_graph(FILE *fp, const std::vector<t_lb_type_rr_node> &lb_type_rr_graph);
 
@@ -156,7 +157,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_head;
 	int ext_source_index, ext_sink_index, ext_rr_index;
-	int ioutedges;
 	
 	VTR_ASSERT(lb_type_rr_node_graph.empty());
 
@@ -179,36 +179,62 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 	VTR_ASSERT(	lb_type_rr_node_graph[ext_source_index].type == NUM_LB_RR_TYPES && 
 			lb_type_rr_node_graph[ext_sink_index].type == NUM_LB_RR_TYPES);
 
+    //Build a pin-to-fc_spec look-up^M
+    // Note that since we really only care about unconnected (fc_value == 0) cases,^M
+    // we don't need to check whether the Fc value type, since both absolute and fractional^M
+    // are equivalent at zero^M
+    std::map<int,float> pin_to_max_fc;
+    for (auto& fc_spec : lb_type->fc_specs) {
+        for (auto pin : fc_spec.pins) {
+            if (pin_to_max_fc.count(pin)) {
+                pin_to_max_fc[pin] = fc_spec.fc_value;
+            } else {
+                pin_to_max_fc[pin] = std::max(pin_to_max_fc[pin], fc_spec.fc_value);
+            }
+        }
+    }
+
 	/*******************************************************************************
 	* Build logic block source node 
 	*******************************************************************************/
 
 	/* External source node drives all inputs going into logic block type */
-	lb_type_rr_node_graph[ext_source_index].capacity = pb_type->num_input_pins + pb_type->num_clock_pins;
     lb_type_rr_node_graph[ext_source_index].outedges.resize(1); //Default mode
 	lb_type_rr_node_graph[ext_source_index].type = LB_SOURCE;
 	
-	/* Connect external souce node to all input and clock pins of logic block type */
-	ioutedges = 0;
-	
+    //Connect external souce node to input and clock pins of logic block type
+    //
+    // Note that we *only* connect pins with non-zero maximum Fc to the generic soruce
+    // (i.e. skipping those which are not connected to the global routing network).
+    // 
+    // This ensures the packer does not try to use such pins to connect to signals on
+    // the global routing network.
+    // 
+    // Failure to do this causes global routing to fail, since the global routing network
+    // can not actually reach Fc = 0 pins.
 	for(int iport = 0; iport < pb_graph_head->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_head->num_input_pins[iport]; ipin++) {
             int cluster_pin = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
-			lb_type_rr_node_graph[ext_source_index].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
-			ioutedges++;
+            VTR_ASSERT_MSG(pin_to_max_fc.count(cluster_pin), "Fc must be specified for pin");
+            if (pin_to_max_fc[cluster_pin] != 0.) {
+                lb_type_rr_node_graph[ext_source_index].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
+            }
 		}
 	}
 
 	for(int iport = 0; iport < pb_graph_head->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_head->num_clock_pins[iport]; ipin++) {
             int cluster_pin = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
-			lb_type_rr_node_graph[ext_source_index].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
-			ioutedges++;
+            VTR_ASSERT_MSG(pin_to_max_fc.count(cluster_pin), "Fc must be specified for pin");
+            if (pin_to_max_fc[cluster_pin] != 0.) {
+                lb_type_rr_node_graph[ext_source_index].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
+            }
 		}
 	}
 	
-	/* Check that the fanout indices are correct */
-	VTR_ASSERT(ioutedges == pb_type->num_input_pins + pb_type->num_clock_pins);
+	lb_type_rr_node_graph[ext_source_index].capacity = lb_type_rr_node_graph[ext_source_index].outedges[0].size();
+
+	VTR_ASSERT(lb_type_rr_node_graph[ext_source_index].capacity <= pb_type->num_input_pins + pb_type->num_clock_pins);
 
 	/*******************************************************************************
 	* Build logic block sink node 
@@ -232,23 +258,26 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 	lb_type_rr_node_graph[ext_rr_index].outedges[0].emplace_back(ext_sink_index, INTERNAL_INTERCONNECT_COST);
 
 	/* Connect opin of logic block to all input and clock pins of logic block type */
-	ioutedges = 1;	
 	for(int iport = 0; iport < pb_graph_head->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_head->num_input_pins[iport]; ipin++) {
             int cluster_pin = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
-			lb_type_rr_node_graph[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
-            ioutedges++;
+            VTR_ASSERT_MSG(pin_to_max_fc.count(cluster_pin), "Fc must be specified for pin");
+            if (pin_to_max_fc[cluster_pin] != 0.) {
+                lb_type_rr_node_graph[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+            }
 		}
 	}
 	for(int iport = 0; iport < pb_graph_head->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_head->num_clock_pins[iport]; ipin++) {
             int cluster_pin = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
-			lb_type_rr_node_graph[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
-			ioutedges++;
+            VTR_ASSERT_MSG(pin_to_max_fc.count(cluster_pin), "Fc must be specified for pin");
+            if (pin_to_max_fc[cluster_pin] != 0.) {
+                lb_type_rr_node_graph[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+            }
 		}
 	}	
 
-	alloc_and_load_lb_type_rr_graph_for_pb_graph_node(pb_graph_head, lb_type_rr_node_graph, ext_rr_index);
+	alloc_and_load_lb_type_rr_graph_for_pb_graph_node(pb_graph_head, lb_type_rr_node_graph, ext_rr_index, pin_to_max_fc);
 }
 
 
@@ -259,7 +288,8 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 */
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
 													std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
-													const int ext_rr_index) {
+													const int ext_rr_index,
+                                                    const std::map<int,float>& cluster_pin_to_max_Fc) {
 	t_pb_type *pb_type;
 	int pin_index;
 	t_pb_graph_pin *pb_pin;
@@ -373,7 +403,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 			for(int ipb_type = 0; ipb_type < pb_type->modes[imode].num_pb_type_children; ipb_type++) {
 				for(int ipb = 0; ipb < pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
 					alloc_and_load_lb_type_rr_graph_for_pb_graph_node(
-						&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_node_graph, ext_rr_index);
+						&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_node_graph, ext_rr_index, cluster_pin_to_max_Fc);
 				}
 			}
 		}
@@ -423,7 +453,13 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 					lb_type_rr_node_graph[pin_index].outedges.resize(num_modes);
 
 					/* Load one edge to external opin */;
-					lb_type_rr_node_graph[pin_index].outedges[0].emplace_back(ext_rr_index, INTERNAL_INTERCONNECT_COST);
+                    int cluster_pin = pb_pin->pin_count_in_cluster;
+                    auto itr = cluster_pin_to_max_Fc.find(cluster_pin);
+                    VTR_ASSERT_MSG(itr != cluster_pin_to_max_Fc.end(), "Fc must be specified for pin");
+                    if (itr->second != 0.) {
+                        //This pin connects to global routing
+                        lb_type_rr_node_graph[pin_index].outedges[0].emplace_back(ext_rr_index, INTERNAL_INTERCONNECT_COST);
+                    }
 				}			
 			}
 		} else {
