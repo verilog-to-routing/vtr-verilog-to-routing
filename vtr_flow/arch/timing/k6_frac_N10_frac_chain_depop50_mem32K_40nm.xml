@@ -3,7 +3,7 @@
 
   - 40 nm technology
   - General purpose logic block: 
-    K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) 
+    K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with 8 total FLE inputs (2 inputs of which are shared by the 5-LUTs) 
     with optionally registered outputs
     Each 5-LUT has an arithemtic mode that converts it to a single-bit adder with both inputs driven by 4-LUTs (both 4-LUTs share all 4 inputs)
     Carry chain links to vertically adjacent logic blocks

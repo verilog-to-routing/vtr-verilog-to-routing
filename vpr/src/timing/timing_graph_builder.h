@@ -38,6 +38,6 @@ class TimingGraphBuilder {
         const AtomNetlist& netlist_;
         AtomLookup& netlist_lookup_;
 
-        std::set<AtomNetId> netlist_clocks_;
+        std::set<AtomPinId> netlist_clock_drivers_;
 };
 

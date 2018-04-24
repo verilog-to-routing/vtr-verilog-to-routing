@@ -2,6 +2,7 @@
 #define NETLIST_UTILS_H
 
 #include "vtr_vector_map.h"
+#include <set>
 
 /*
 *
@@ -129,11 +130,25 @@ Container update_all_refs(const Container& values, const vtr::vector_map<ValId, 
 }
 
 template<typename Container, typename ValId>
-Container update_valid_refs(const Container& values, const vtr::vector_map<ValId, ValId>& id_map) {
+Container update_valid_refs(const Container& values, 
+                            const vtr::vector_map<ValId, ValId>& id_map,
+                            const std::set<size_t>& preserved_indices={}) {
     Container updated;
 
+    size_t idx = 0;
     for (ValId orig_val : values) {
-        if (orig_val) {
+        if (preserved_indices.count(idx)) {
+            //Preserve the original value
+            if (!orig_val) {
+                updated.emplace_back(orig_val);
+            } else {
+                ValId new_val = id_map[orig_val];
+                if (new_val) {
+                    //The original item exists in the new mapping
+                    updated.emplace_back(new_val);
+                }
+            }
+        } else if (orig_val) {
             //Original item valid
 
             ValId new_val = id_map[orig_val];
@@ -142,6 +157,7 @@ Container update_valid_refs(const Container& values, const vtr::vector_map<ValId
                 updated.emplace_back(new_val);
             }
         }
+        ++idx;
     }
     return updated;
 }

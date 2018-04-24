@@ -17,5 +17,6 @@ AtomNetlist read_and_process_circuit(const e_circuit_format circuit_format,
                                      bool should_sweep_dangling_primary_ios, 
                                      bool should_sweep_dangling_nets,
                                      bool should_sweep_dangling_blocks,
-                                     bool should_sweep_constant_primary_outputs);
+                                     bool should_sweep_constant_primary_outputs,
+                                     bool verbose_sweep);
 #endif

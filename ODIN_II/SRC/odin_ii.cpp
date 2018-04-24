@@ -57,6 +57,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+<<<<<<< HEAD
+=======
+#define DEFAULT_RUN_DIRECTORY "REGRESSION_TESTS/SIM/"
+
+>>>>>>> origin/master
 
 size_t current_parse_file;
 t_arch Arch;
@@ -347,7 +352,7 @@ void get_options(int argc, char** argv) {
 
     output_grp.add_argument(global_args.output_file, "-o")
             .help("Output file path")
-            .default_value("default_out.blif")
+            .default_value("OUTPUT/default_out.blif")
             .metavar("OUTPUT_FILE_PATH");
 
     auto& other_grp = parser.add_argument_group("other options");
@@ -382,7 +387,7 @@ void get_options(int argc, char** argv) {
 
     other_grp.add_argument(global_args.adder_def, "--adder_type")
             .help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
-	        .default_value("optimized")
+	        .default_value("ripple")
 	        .metavar("INPUT_FILE")
 	        ;   
 
@@ -418,6 +423,11 @@ void get_options(int argc, char** argv) {
 
     auto& other_sim_grp = parser.add_argument_group("other simulation options");
 
+    other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
+            .help("Directory output for simulation")
+            .default_value("OUTPUT/")
+            .metavar("SIMULATION_DIRECTORY");
+            
     other_sim_grp.add_argument(global_args.sim_generate_three_valued_logic, "-3")
             .help("Generate three valued logic, instead of binary")
             .default_value("false")

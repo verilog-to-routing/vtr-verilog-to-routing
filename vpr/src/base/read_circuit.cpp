@@ -15,7 +15,8 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_primary_ios, 
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
-                            bool should_sweep_constant_primary_outputs);
+                            bool should_sweep_constant_primary_outputs,
+                            bool verbose);
 
 static void show_circuit_stats(const AtomNetlist& netlist);
 
@@ -27,7 +28,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                                      bool should_sweep_dangling_primary_ios, 
                                      bool should_sweep_dangling_nets,
                                      bool should_sweep_dangling_blocks,
-                                     bool should_sweep_constant_primary_outputs) {
+                                     bool should_sweep_constant_primary_outputs,
+                                     bool verbose_sweep) {
 
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
@@ -62,7 +64,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                     should_sweep_dangling_primary_ios, 
                     should_sweep_dangling_nets,
                     should_sweep_dangling_blocks,
-                    should_sweep_constant_primary_outputs);
+                    should_sweep_constant_primary_outputs,
+                    verbose_sweep);
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
@@ -80,7 +83,8 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_primary_ios, 
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
-                            bool should_sweep_constant_primary_outputs) {
+                            bool should_sweep_constant_primary_outputs,
+                            bool verbose_sweep) {
 
 
     {
@@ -88,18 +92,24 @@ static void process_circuit(AtomNetlist& netlist,
         
         //Clean-up lut buffers
         if(should_absorb_buffers) {
-            absorb_buffer_luts(netlist);
+            absorb_buffer_luts(netlist, verbose_sweep);
         }
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if(unconn_net_id) {
+            if (verbose_sweep) {
+                vtr::printf_warning(__FILE__, __LINE__, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
+            }
             netlist.remove_net(unconn_net_id);
         }
 
         //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if(unconn_blk_id) {
+            if (verbose_sweep) {
+                vtr::printf_warning(__FILE__, __LINE__, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
+            }
             netlist.remove_block(unconn_blk_id);
         }
 
@@ -108,7 +118,8 @@ static void process_circuit(AtomNetlist& netlist,
                         should_sweep_dangling_primary_ios, 
                         should_sweep_dangling_nets, 
                         should_sweep_dangling_blocks,
-                        should_sweep_constant_primary_outputs);
+                        should_sweep_constant_primary_outputs,
+                        verbose_sweep);
 
         //Fix-up cases where a clock is used as a data input
         // Currently such connections break the clusterer, so
@@ -200,7 +211,7 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     for(auto kv : net_stats) {
         vtr::printf_info("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_clocks(netlist).size()); 
+    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size()); 
 
     if (netlist.blocks().empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");

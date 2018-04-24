@@ -61,13 +61,9 @@ vtr_flow/benchmarks/titan_other_blif/*.blif
 #
 #Odin test outputs
 #
-ODIN_II/default_out.blif
-ODIN_II/input_vectors
-ODIN_II/output_vectors
 ODIN_II/log
-ODIN_II/output_activity
-ODIN_II/temp.blif
-ODIN_II/test.do
+ODIN_II/regression_test/runs
+ODIN_II/OUTPUT
 
 #
 #C/C++

@@ -36,7 +36,7 @@ TimingGraphBuilder::TimingGraphBuilder(const AtomNetlist& netlist,
                    AtomLookup& netlist_lookup)
     : netlist_(netlist) 
     , netlist_lookup_(netlist_lookup)
-    , netlist_clocks_(find_netlist_clocks(netlist_)) {
+    , netlist_clock_drivers_(find_netlist_logical_clock_drivers(netlist_)) {
     //pass
 }
 
@@ -338,6 +338,13 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
     //Create edges from the driver to sink tnodes
 
     AtomPinId driver_pin = netlist_.net_driver(net);
+
+    if (!driver_pin) {
+        //Undriven nets have no timing dependencies, and hence no edges
+        vtr::printf_warning(__FILE__, __LINE__, "Net %s has no driver and will be ignored for timing purposes\n", netlist_.net_name(net).c_str());
+        return;
+    }
+
     NodeId driver_tnode = netlist_lookup_.atom_pin_tnode(driver_pin);
     VTR_ASSERT(driver_tnode);
     
@@ -408,11 +415,6 @@ void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
 }
 
 bool TimingGraphBuilder::is_netlist_clock_source(const AtomPinId pin) const {
-    AtomNetId net = netlist_.pin_net(pin);
-
-    bool is_clock_net = netlist_clocks_.count(net);
-    bool is_net_driver = (pin == netlist_.net_driver(net));
-
-    return is_clock_net && is_net_driver;
+    return netlist_clock_drivers_.count(pin);
 }
 

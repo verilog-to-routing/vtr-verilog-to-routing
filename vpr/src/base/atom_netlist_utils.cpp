@@ -12,9 +12,6 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
-//If defined produces verbose output while sweeping the netlist
-//#define SWEEP_VERBOSE
-
 std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist);
 
 AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist, 
@@ -28,7 +25,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk);
-void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk);
+void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose);
 
 std::string make_unconn(size_t& unconn_count, PinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
@@ -138,7 +135,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             for(auto ports : {input_ports, output_ports, clock_ports}) {
                 for(AtomPortId port_id : ports) {
                     auto pins = netlist.port_pins(port_id);
-                    VTR_ASSERT(pins.size() == 1);
+                    VTR_ASSERT(pins.size() <= 1);
                     for(auto in_pin_id : pins) {
                         auto net_id = netlist.pin_net(in_pin_id);
                         if(netlist.port_name(port_id) == "D") {
@@ -158,14 +155,17 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             }
 
             if(d_net.empty()) {
+                vtr::printf_warning(__FILE__, __LINE__, "No net found for .latch '%s' data input (D pin)\n", netlist.block_name(blk_id).c_str());
                 d_net = make_unconn(unconn_count, PinType::SINK);
             }
 
             if(q_net.empty()) {
+                vtr::printf_warning(__FILE__, __LINE__, "No net found for .latch '%s' data output (Q pin)\n", netlist.block_name(blk_id).c_str());
                 q_net = make_unconn(unconn_count, PinType::DRIVER);
             }
 
             if(clk_net.empty()) {
+                vtr::printf_warning(__FILE__, __LINE__, "No net found for .latch '%s' clock (clk pin)\n", netlist.block_name(blk_id).c_str());
                 clk_net = make_unconn(unconn_count, PinType::SINK);
             }
 
@@ -213,10 +213,14 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
             //Collect Outputs
             auto out_pins = netlist.block_output_pins(blk_id);
-            VTR_ASSERT(out_pins.size() == 1);
 
-            auto out_net_id = netlist.pin_net(*out_pins.begin());
-            nets.push_back(out_net_id);
+            if (out_pins.size() == 1) {
+
+                auto out_net_id = netlist.pin_net(*out_pins.begin());
+                nets.push_back(out_net_id);
+            } else {
+                VTR_ASSERT(out_pins.size() == 0);
+            }
 
             fprintf(f, ".names ");
             for(size_t i = 0; i < nets.size(); ++i) {
@@ -361,7 +365,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     }
 }
 
-void absorb_buffer_luts(AtomNetlist& netlist) {
+void absorb_buffer_luts(AtomNetlist& netlist, bool verbose) {
     //First we look through the netlist to find LUTs with identity logic functions
     //we then remove those luts, replacing the net's they drove with the inputs to the
     //buffer lut
@@ -373,7 +377,7 @@ void absorb_buffer_luts(AtomNetlist& netlist) {
 
     //Remove the buffer luts
     for(auto blk : buffer_luts) {
-        remove_buffer_lut(netlist, blk);
+        remove_buffer_lut(netlist, blk, verbose);
     }
 
     //TODO: absorb inverter LUTs?
@@ -383,9 +387,6 @@ std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist) {
     std::vector<AtomBlockId> buffer_luts;
     for(auto blk : netlist.blocks()) {
         if(is_buffer_lut(netlist, blk)) {
-#ifdef SWEEP_VERBOSE
-            vtr::printf_warning(__FILE__, __LINE__, "%s is a lut buffer and will be absorbed\n", netlist.block_name(blk).c_str());
-#endif
             buffer_luts.push_back(blk);
         }
     }
@@ -455,7 +456,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     return false;
 }
 
-void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
+void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose) {
     //General net connectivity, numbers equal pin ids
     //
     // 1  in    2 ----- m+1  out
@@ -564,6 +565,10 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
 
+    if (verbose) {
+        vtr::printf_warning(__FILE__, __LINE__, "%s is a LUT buffer and will be absorbed\n", netlist.block_name(blk).c_str());
+    }
+
     //Remove the buffer
     //
     // Note that this removes pins 2 and m+1
@@ -620,9 +625,9 @@ void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_
 std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist) {
     std::map<AtomNetId,std::vector<AtomPinId>> clock_data_pins;
 
-    auto netlist_clocks = find_netlist_clocks(netlist);
+    auto netlist_clock_nets = find_netlist_physical_clock_nets(netlist);
 
-    for(AtomNetId clock_net : netlist_clocks) {
+    for(AtomNetId clock_net : netlist_clock_nets) {
         for(AtomPinId clock_sink : netlist.net_sinks(clock_net)) {
 
             auto port_type = netlist.pin_port_type(clock_sink);
@@ -698,7 +703,7 @@ bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk_id) {
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     AtomBlockType type = netlist.block_type(blk_id);
 
-    //Only return true if an INPAD
+    //Only return true if an OUTPAD
     if(type != AtomBlockType::OUTPAD) return false;
 
     //An output is only removable if it has no fan-in
@@ -714,7 +719,7 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     return true;
 }
 
-size_t sweep_constant_primary_outputs(AtomNetlist& netlist) {
+size_t sweep_constant_primary_outputs(AtomNetlist& netlist, bool verbose) {
     size_t removed_count = 0;
     for(AtomBlockId blk_id : netlist.blocks()) {
         if(!blk_id) continue;
@@ -736,6 +741,9 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist) {
 
             if(all_inputs_are_const) {
                 //All inputs are constant, so we should remove this output
+                if (verbose) {
+                    vtr::printf_warning(__FILE__, __LINE__, "Sweeping constant primary output '%s'\n", netlist.block_name(blk_id).c_str());
+                }
                 netlist.remove_block(blk_id);
                 removed_count++;
             }
@@ -748,7 +756,8 @@ size_t sweep_iterative(AtomNetlist& netlist,
                        bool should_sweep_ios, 
                        bool should_sweep_nets, 
                        bool should_sweep_blocks, 
-                       bool should_sweep_constant_primary_outputs) {
+                       bool should_sweep_constant_primary_outputs,
+                       bool verbose) {
     size_t dangling_nets_swept = 0;
     size_t dangling_blocks_swept = 0;
     size_t dangling_inputs_swept = 0;
@@ -772,25 +781,25 @@ size_t sweep_iterative(AtomNetlist& netlist,
         pass_constant_outputs_swept = 0;
 
         if(should_sweep_ios) {
-            pass_dangling_inputs_swept += sweep_inputs(netlist);
-            pass_dangling_outputs_swept += sweep_outputs(netlist);
+            pass_dangling_inputs_swept += sweep_inputs(netlist, verbose);
+            pass_dangling_outputs_swept += sweep_outputs(netlist, verbose);
         }
 
         if(should_sweep_blocks) {
-            pass_dangling_blocks_swept += sweep_blocks(netlist);
+            pass_dangling_blocks_swept += sweep_blocks(netlist, verbose);
         }
 
         if(should_sweep_nets) {
-            pass_dangling_nets_swept += sweep_nets(netlist);
+            pass_dangling_nets_swept += sweep_nets(netlist, verbose);
         }
 
         if(should_sweep_constant_primary_outputs) {
-            pass_constant_outputs_swept += sweep_constant_primary_outputs(netlist);
+            pass_constant_outputs_swept += sweep_constant_primary_outputs(netlist, verbose);
         }
 
         dangling_nets_swept += pass_dangling_nets_swept;
         dangling_blocks_swept += pass_dangling_blocks_swept;
-        dangling_inputs_swept += pass_dangling_outputs_swept;
+        dangling_inputs_swept += pass_dangling_inputs_swept;
         dangling_outputs_swept += pass_dangling_outputs_swept;
         constant_outputs_swept += pass_constant_outputs_swept;
     } while(pass_dangling_nets_swept != 0 
@@ -813,7 +822,7 @@ size_t sweep_iterative(AtomNetlist& netlist,
            + constant_outputs_swept;
 }
 
-size_t sweep_blocks(AtomNetlist& netlist) {
+size_t sweep_blocks(AtomNetlist& netlist, bool verbose) {
     //Identify any blocks (not inputs or outputs) for removal
     std::unordered_set<AtomBlockId> blocks_to_remove;
     for(auto blk_id : netlist.blocks()) {
@@ -832,16 +841,16 @@ size_t sweep_blocks(AtomNetlist& netlist) {
 
     //Remove them
     for(auto blk_id : blocks_to_remove) {
-#ifdef SWEEP_VERBOSE
-        vtr::printf_warning(__FILE__, __LINE__, "Sweeping block '%s'\n", netlist.block_name(blk_id).c_str());
-#endif
+        if (verbose) {
+            vtr::printf_warning(__FILE__, __LINE__, "Sweeping block '%s'\n", netlist.block_name(blk_id).c_str());
+        }
         netlist.remove_block(blk_id);
     }
 
     return blocks_to_remove.size();
 }
 
-size_t sweep_inputs(AtomNetlist& netlist) {
+size_t sweep_inputs(AtomNetlist& netlist, bool verbose) {
     //Identify any inputs for removal
     std::unordered_set<AtomBlockId> inputs_to_remove;
     for(auto blk_id : netlist.blocks()) {
@@ -854,25 +863,25 @@ size_t sweep_inputs(AtomNetlist& netlist) {
 
     //Remove them
     for(auto blk_id : inputs_to_remove) {
-#ifdef SWEEP_VERBOSE
-        vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary input '%s'\n", netlist.block_name(blk_id).c_str());
-#endif
+        if (verbose) {
+            vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary input '%s'\n", netlist.block_name(blk_id).c_str());
+        }
         netlist.remove_block(blk_id);
     }
 
     return inputs_to_remove.size();
 }
 
-size_t sweep_outputs(AtomNetlist& netlist) {
+size_t sweep_outputs(AtomNetlist& netlist, bool verbose) {
     //Identify any outputs for removal
     std::unordered_set<AtomBlockId> outputs_to_remove;
     for(auto blk_id : netlist.blocks()) {
         if(!blk_id) continue;
 
         if(is_removable_output(netlist, blk_id)) {
-#ifdef SWEEP_VERBOSE
-            vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary output '%s'\n", netlist.block_name(blk_id).c_str());
-#endif
+            if (verbose) {
+                vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary output '%s'\n", netlist.block_name(blk_id).c_str());
+            }
             outputs_to_remove.insert(blk_id);
         }
     }
@@ -885,7 +894,7 @@ size_t sweep_outputs(AtomNetlist& netlist) {
     return outputs_to_remove.size();
 }
 
-size_t sweep_nets(AtomNetlist& netlist) {
+size_t sweep_nets(AtomNetlist& netlist, bool verbose) {
     //Find any nets with no fanout or no driver, and remove them
 
     std::unordered_set<AtomNetId> nets_to_remove;
@@ -894,16 +903,16 @@ size_t sweep_nets(AtomNetlist& netlist) {
 
         if(!netlist.net_driver(net_id)) {
             //No driver
-#ifdef SWEEP_VERBOSE
-            vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no driver and will be removed\n", netlist.net_name(net_id).c_str());
-#endif
+            if (verbose) {
+                vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no driver and will be removed\n", netlist.net_name(net_id).c_str());
+            }
             nets_to_remove.insert(net_id);
         }
         if(netlist.net_sinks(net_id).size() == 0) {
             //No sinks
-#ifdef SWEEP_VERBOSE
-            vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no sinks and will be removed\n", netlist.net_name(net_id).c_str());
-#endif
+            if (verbose) {
+                vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no sinks and will be removed\n", netlist.net_name(net_id).c_str());
+            }
             nets_to_remove.insert(net_id);
         }
     }
@@ -1077,8 +1086,8 @@ void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size
     }
 }
 
-//Find all the clock nets in the specified netlist
-std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
+//Find all the nets connected to clock pins in the netlist
+std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist) {
 
     std::set<AtomNetId> clock_nets; //The clock nets
 
@@ -1097,8 +1106,7 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
         //Save any clock generating ports on this model type
         const t_model* model = netlist.block_model(blk_id);
         VTR_ASSERT(model);
-        auto iter = clock_gen_ports.find(model);
-        if(iter == clock_gen_ports.end()) { 
+        if(clock_gen_ports.find(model) == clock_gen_ports.end()) { 
             //First time we've seen this model, intialize it
             clock_gen_ports[model] = {};
 
@@ -1145,3 +1153,48 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
     return clock_nets;
 }
 
+//Finds all logical clock drivers in the netlist
+std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
+    auto clock_nets = find_netlist_physical_clock_nets(netlist);
+
+    //We now have a set of nets which drive clock pins
+    //
+    //However, some of them may be the same logical clock (e.g. if there are
+    //buffers between them). Here we trace-back through any clock buffers
+    //to find the true source
+    std::set<AtomNetId> prev_clock_nets;
+    while (prev_clock_nets != clock_nets) { //Still tracing back
+        prev_clock_nets = clock_nets;
+        clock_nets.clear();
+
+        for (auto clk_net : prev_clock_nets) {
+            auto driver_block = netlist.net_driver_block(clk_net);
+
+            if (is_buffer(netlist, driver_block)) {
+                //Driver is a buffer lut, use it's input net
+                auto input_pins = netlist.block_input_pins(driver_block);
+                VTR_ASSERT(input_pins.size() == 1);
+                auto input_pin = *input_pins.begin();
+
+                auto input_net = netlist.pin_net(input_pin);
+                clock_nets.insert(input_net);
+            } else {
+                clock_nets.insert(clk_net);
+            }
+        }
+    }
+
+    //Extract the net drivers
+    std::set<AtomPinId> clock_drivers;
+    for (auto net : clock_nets) {
+        clock_drivers.insert(netlist.net_driver(net));
+    }
+
+    return clock_drivers;
+}
+
+bool is_buffer(const AtomNetlist& netlist, const AtomBlockId blk) {
+    //For now only support LUT buffers
+    //TODO: In the future could add support for non-LUT buffers
+    return is_buffer_lut(netlist, blk);
+}

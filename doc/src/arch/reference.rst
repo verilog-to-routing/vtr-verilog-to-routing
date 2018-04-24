@@ -968,49 +968,73 @@ The following tags are common to all <pb_type> tags:
 The following tags are unique to the top level <pb_type> of a complex logic block.
 They describe how a complex block interfaces with the inter-block world.
 
+
 .. arch:tag:: <fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}">
-.. _tag-fc:
 
     :req_param in_type:
-        Indicates how the default :math:`F_c` values for input pins should be interpreted.
+        Indicates how the :math:`F_c` values for input pins should be interpreted.
 
-        ``frac``: The fraction of tracks in the channel from which each input pin connects.
+        ``frac``: The fraction of tracks of each wire/segment type.
 
-        ``abs``: Interpreted as the absolute number of tracks from which each input pin connects.
+        ``abs``: The absolute number of tracks of each wire/segment type.
 
     :req_param in_val:
-        Fraction or number of tracks in a channel from which each input pin connects.
+        Fraction or absolute number of tracks to which each input pin is connected.
 
     :req_param out_type:
-        Indicates how the default :math:`F_c` values for output pins should be interpreted.
+        Indicates how the :math:`F_c` values for output pins should be interpreted.
 
-        ``frac``: The fraction of tracks in the channel to which each output pin connects.
+        ``frac``: The fraction of tracks of each wire/segment type.
 
-        ``abs``: Interpreted as the absolute number of tracks to which each output pin connects.
+        ``abs``: The absolute number of tracks of each wire/segment type.
 
     :req_param out_val:
-        Fraction or number of tracks in a channel to which each output pin connects.
+        Fraction or absolute number of wires/segments to which each output pin connects.
 
-    Sets the number of tracks to which each logic block pin connects in each channel bordering the pin.
-    The :math:`F_c` value :cite:`brown_fpgas` used is always the minimum of the specified :math:`F_c` and the channel width, :math:`W`.
+
+    Sets the number of tracks/wires to which each logic block pin connects in each channel bordering the pin.
+
+    The :math:`F_c` value :cite:`brown_fpgas` is interpreted as applying to each wire/segment type *individually* (see example).
 
     When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
 
-    .. note:: If ``<fc>`` is not specified for a complex block, the values from the architecture's ``<default_fc>`` tag will be used if available.
 
-    **Overriding Default Values:**
+    .. note:: If ``<fc>`` is not specified for a complex block, the architecture's ``<default_fc>`` is used.
+
+    .. note:: For unidirection routing architectures absolute :math:`F_c` values must be a multiple of 2.
+
+
+    **Example:**
+
+    Consider a routing architecture with 200 length 4 (L4) wires and 50 length 16 (L16) wires per channel, and the following Fc specification:
+
+    .. code-block:: xml
+
+        <fc in_type="frac" in_val="0.1" out_type="abs" out_val="25">
+
+    The above specifies that each:
+    
+    * input pin connects to 20 L4 tracks (10% of the 200 L4s) and 5 L16 tracks (10% of the 50 L16s), and
+
+    * output pin connects to 25 L4 tracks and 25 L16 tracks.
+
+
+
+    **Overriding Values:**
 
     .. arch:tag:: <fc_override fc_type="{frac|abs}" fc_val="{int|float}", port_name="{string}" segment_name="{string}">
+
+        Allows :math:`F_c` values to be overriden on a port or wire/segment type basis.
 
         :req_param fc_type:
             Indicates how the override :math:`F_c` value should be interpreted.
 
-            ``frac``: The fraction of tracks in the channel from which each pin connects.
+            ``frac``: The fraction of tracks of each wire/segment type.
 
-            ``abs``: Interpreted as the absolute number of tracks from which each connects.
+            ``abs``: The absolute number of tracks of each wire/segment type.
 
         :req_param fc_val:
-            Fraction or number of tracks in a channel.
+            Fraction or absolute number of tracks in a channel.
 
         :opt_param port_name:
             The name of the port to which this override applies.
@@ -1020,9 +1044,7 @@ They describe how a complex block interfaces with the inter-block world.
             The name of the segment (defined under ``<segmentlist>``) to which this override applies.
             If left unspecified this override applies to all segments.
 
-
         .. note:: At least one of ``port_name`` or ``segment_name`` must be specified.
-
 
 
         **Port Override Example: Carry Chains**
@@ -1035,6 +1057,7 @@ They describe how a complex block interfaces with the inter-block world.
             <fc_override fc_type="frac" fc_val="0" port_name="cout"/>
 
         Where the attribute ``port_name`` is the name of the pin (``cin`` and ``cout`` in this example).
+
 
         **Segment Override Example:**
 

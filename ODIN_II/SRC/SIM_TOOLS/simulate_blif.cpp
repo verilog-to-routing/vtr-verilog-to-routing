@@ -27,23 +27,23 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 #include <chrono>
-
-#ifndef _WIN32
 #include <dlfcn.h>
-#endif
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
 #define min(a,b) ((a) > (b)? (b) : (a))
 #endif
 
+char *sim_run_dir;
+
 /*
  * Performs simulation.
  */
 void simulate_netlist(netlist_t *netlist)
 {
-	printf("Beginning simulation.\n"); fflush(stdout);
-
+	sim_run_dir = global_args.sim_directory;
+	printf("Beginning simulation. Output_files located @: %s\n", sim_run_dir); fflush(stdout);
+	
 	// Create and verify the lines.
 	lines_t *input_lines = create_lines(netlist, INPUT);
 	if (!verify_lines(input_lines))
@@ -52,26 +52,34 @@ void simulate_netlist(netlist_t *netlist)
 	lines_t *output_lines = create_lines(netlist, OUTPUT);
 	if (!verify_lines(output_lines))
 		error_message(SIMULATION_ERROR, 0, -1, "Output lines could not be assigned.");
-
+	
 	// Open the output vector file.
-	FILE *out = fopen(OUTPUT_VECTOR_FILE_NAME, "w");
+	char out_vec_file[128] = { 0 };
+	sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
+	FILE *out = fopen(out_vec_file, "w");
 	if (!out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create output vector file.");
 
 	// Open the input vector file.
-	FILE *in_out  = fopen( INPUT_VECTOR_FILE_NAME, "w");
+	char in_vec_file[128] = { 0 };
+	sprintf(in_vec_file,"%s%s",sim_run_dir,INPUT_VECTOR_FILE_NAME);
+	FILE *in_out = fopen(in_vec_file, "w");
 	if (!in_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open input vector file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create input vector file.");
 
 	// Open the activity output file.
-	FILE *act_out  = fopen( OUTPUT_ACTIVITY_FILE_NAME, "w");
+	char act_file[128] = { 0 };
+	sprintf(act_file,"%s%s",sim_run_dir,OUTPUT_ACTIVITY_FILE_NAME);
+	FILE *act_out = fopen(act_file, "w");
 	if (!act_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open activity output file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create activity output file.");
 
 	// Open the modelsim vector file.
-	FILE *modelsim_out = fopen("test.do", "w");
+	char test_file[128] = { 0 };
+	sprintf(test_file,"%s%s",sim_run_dir,MODEL_SIM_FILE_NAME);
+	FILE *modelsim_out = fopen(test_file, "w");
 	if (!modelsim_out)
-		error_message(SIMULATION_ERROR, 0, -1, "Could not open modelsim output file.");
+		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
 
 	FILE *in  = NULL;
 	int num_vectors;
@@ -3026,8 +3034,11 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 		if (!existing_out) error_message(SIMULATION_ERROR, 0, -1, "Could not open vector output file: %s", output_vector_file);
 
 		// Our current output vectors. (Just produced.)
-		FILE *current_out  = fopen(OUTPUT_VECTOR_FILE_NAME, "r");
-		if (!current_out) error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
+		char out_vec_file[128] = { 0 };
+		sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
+		FILE *current_out  = fopen(out_vec_file, "r");
+		if (!current_out) 
+			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
 
 		int cycle;
 		char buffer1[BUFFER_MAX_SIZE];

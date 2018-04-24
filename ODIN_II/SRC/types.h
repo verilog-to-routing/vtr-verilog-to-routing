@@ -89,9 +89,9 @@ typedef struct adder_def_t_t adder_def_t;
 #define LEVELIZE 12
 #define ACTIVATION 13
 
-//#define oassert(x) {if(!(x)){exit(-1);}} // causes an interrupt in GDB
-//#define oassert(x) {if(!(x)){__asm("int3");}} // causes an interrupt in GDB
-#define oassert(x) {if(!(x)){std::abort();}} // causes an interrupt in GDB
+// causes an interrupt in GDB
+#define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " @ " << __FILE__ << " (" << __LINE__ << ")" << std::endl; 
+#define oassert(condition) { if(!(condition)){ verbose_assert(condition); std::abort();} }
 // bitvector library (PETER_LIB) defines it, so we don't
 
 /* This is the data structure that holds config file details */
@@ -170,6 +170,8 @@ struct global_args_t_t
 	argparse::ArgValue<char*> sim_vector_input_file;
 	// Existing output vectors to verify against.
 	argparse::ArgValue<char*> sim_vector_output_file;
+	// Simulation output Directory
+	argparse::ArgValue<char*> sim_directory;
 	// Tells the simulator whether or not to generate random vectors which include the unknown logic value.
 	argparse::ArgValue<bool> sim_generate_three_valued_logic;
 	// Output both falling and rising edges in the output_vectors file.

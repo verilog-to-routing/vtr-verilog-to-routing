@@ -22,6 +22,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#include <misc/util/abc_global.h>
+
 #if defined(LIN) || defined(LIN64)
 #include <unistd.h>
 #endif

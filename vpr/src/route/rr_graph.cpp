@@ -37,6 +37,8 @@ using namespace std;
 
 #include "rr_types.h"
 
+#define VERBOSE
+
 struct t_mux {
     int size;
     t_mux *next;
@@ -216,7 +218,9 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
         int * num_seg_details = nullptr);
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
-        const int num_seg_types, const int *sets_per_seg_type,
+        const int num_seg_types, 
+        const t_segment_inf * segment_inf,
+        const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
         bool *Fc_clipped);
@@ -428,13 +432,13 @@ static void build_rr_graph(
         Fc_out = std::vector<vtr::Matrix<int>>(L_num_types, ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
+        Fc_in = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, segment_inf, sets_per_seg_type, max_chan_width,
                 e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
+        Fc_out = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, segment_inf, sets_per_seg_type, max_chan_width,
                 e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -922,7 +926,9 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 /* Calculates the number of track connections from each block pin to each segment type */
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
-        const int num_seg_types, const int *sets_per_seg_type,
+        const int num_seg_types, 
+        const t_segment_inf * segment_inf,
+        const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
         bool *Fc_clipped) {
@@ -946,6 +952,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
             if (fc_type != fc_spec.fc_type) continue;
 
+            VTR_ASSERT(fc_spec.pins.size() > 0);
+
             int iseg = fc_spec.seg_index;
 
             if (fc_spec.fc_value == 0) {
@@ -956,18 +964,32 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
             } else {
                 /* General case indicating that this pin connects to general-purpose routing */
 
+
                 //Calculate how many connections there should be accross all the pins in this fc_spec
-                float flt_total_connections;
+                int total_connections = 0;
                 if (fc_spec.fc_value_type == e_fc_value_type::FRACTIONAL) {
                     float conns_per_pin = fac * sets_per_seg_type[iseg] * fc_spec.fc_value;
-                    flt_total_connections = conns_per_pin * fc_spec.pins.size();
+                    float flt_total_connections = conns_per_pin * fc_spec.pins.size();
+                    total_connections = vtr::nint(flt_total_connections); //Round to integer
                 } else {
                     VTR_ASSERT(fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE);
-                    flt_total_connections = fc_spec.fc_value * fc_spec.pins.size();
-                }
 
-                //Round to integer
-                int total_connections = vtr::nint(flt_total_connections);
+                    if (std::fmod(fc_spec.fc_value, fac) != 0.) {
+                        VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
+                                                    fac, fc_spec.fc_value, 
+                                                    block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
+                                                    segment_inf[iseg].name);
+                    }
+
+                    if (fc_spec.fc_value < fac) {
+                        VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
+                                                    fac, fc_spec.fc_value, 
+                                                    block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
+                                                    segment_inf[iseg].name);
+                    }
+
+                    total_connections = vtr::nint(fc_spec.fc_value) * fc_spec.pins.size();
+                }
 
                 //Ensure that there are at least fac connections, this ensures that low Fc ports
                 //targeting small sets of segs get connection(s), even if flt_total_connections < fac.
@@ -1007,7 +1029,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
                     }
 
                     VTR_ASSERT_MSG(Fc[itype][ipin][iseg] >= 0, "Calculated absolute Fc must be positive");
-                    VTR_ASSERT_MSG(Fc[itype][ipin][iseg] % fac == 0, "Calculated absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)");
+                    VTR_ASSERT_MSG(Fc[itype][ipin][iseg] % fac == 0, "Calculated absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)"); //Required by connection block construction code
                 }
             }
         }

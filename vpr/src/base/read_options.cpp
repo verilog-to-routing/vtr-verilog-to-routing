@@ -468,6 +468,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    netlist_grp.add_argument<bool,ParseOnOff>(args.verbose_sweep, "--verbose_sweep")
+            .help("Controls whether sweeping describes the netlist modifications performed")
+            .default_value("off")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& pack_grp = parser.add_argument_group("packing options");
 
