@@ -593,7 +593,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
         //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
 		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
-		VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
+		VTR_ASSERT(lb_type_graph[pin_index].num_fanout(0) == 1);
 		
 		/* We actually route to the sink (to handle logically equivalent pins).
          * The sink is one past the primitive input pin */
@@ -715,7 +715,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 
 
 		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
-		VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
+		VTR_ASSERT(lb_type_graph[pin_index].num_fanout(0) == 1);
 		int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
 		VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
 			
@@ -833,7 +833,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                             kv.first, pin_index);
 
                 VTR_ASSERT(lb_type_graph[pin_index].type == LB_INTERMEDIATE);
-                VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
+                VTR_ASSERT(lb_type_graph[pin_index].num_fanout(0) == 1);
                 int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
                 VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
                 VTR_ASSERT_MSG(sink_index == lb_nets[ilb_net].terminals[iterm], "Remapped pin must be connected to original sink");
@@ -975,7 +975,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 	t_lb_router_params params = router_data->params;
 
 
-	for(int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+	for(int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout(mode); iedge++) {
 		int next_mode;
 
 		/* Init new expansion node */
@@ -996,7 +996,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		float fanout_factor = 1.0;
 		next_mode = lb_rr_node_stats[enode.node_index].mode;
         VTR_ASSERT(next_mode >= 0);
-		if (lb_type_graph[enode.node_index].num_fanout[next_mode] > 1) {
+		if (lb_type_graph[enode.node_index].num_fanout(next_mode) > 1) {
 			fanout_factor = 0.85 + (0.25 / net_fanout);
 		}
 		else {
@@ -1229,7 +1229,7 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_d
         const t_lb_type_rr_node& rr_node = lb_rr_graph[inode];
         int mode = lb_rr_node_stats[inode].mode;
 
-        for (int iedge = 0; iedge < rr_node.num_fanout[mode]; ++iedge) {
+        for (int iedge = 0; iedge < rr_node.num_fanout(mode); ++iedge) {
             const t_lb_type_rr_node_edge& rr_edge = rr_node.outedges[mode][iedge];
 
             if (rr_edge.node_index == dst_node) {

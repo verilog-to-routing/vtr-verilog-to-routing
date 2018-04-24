@@ -98,7 +98,7 @@ struct t_lb_type_rr_node_edge {
 /* Describes a routing resource node within a logic cluster_ctx.blocks type */
 struct t_lb_type_rr_node {
 	short capacity;			/* Number of nets that can simultaneously use this node */
-	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
+	short *num_fanout_;		/* [0..num_modes - 1] Mode dependant fanout */
 	enum e_lb_rr_type type;	/* Type of logic cluster_ctx.blocks resource node */	
 
 	t_lb_type_rr_node_edge **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
@@ -108,12 +108,16 @@ struct t_lb_type_rr_node {
 	
 	t_lb_type_rr_node() {
 		capacity = 0;
-		num_fanout = nullptr;
+		num_fanout_ = nullptr;
 		type = NUM_LB_RR_TYPES;
 		outedges = nullptr;
 		pb_graph_pin = nullptr;
 		intrinsic_cost = 0;
 	}
+
+    short num_fanout(int mode) const { 
+        return num_fanout_[mode];
+    }
 };
 
 
