@@ -4,14 +4,31 @@ trap ctrl_c INT
 
 fail_count=0
 
-function ctrl_c() {
-    echo "** EXISTED FORCEFULLY"
-    fail_count=9990000
+function exit_program() {
+
+    if [ -e regression_test/runs/failure.log ]
+    then
+	    line_count=$(wc -l < regression_test/runs/failure.log)
+		fail_count=$[ fail_count+line_count ]
+	fi
+	
+	if [ $fail_count -gt "0" ]
+	then
+		echo "Failed $fail_count"
+		echo "View Failure log in ODIN_II/regression_test/runs/failure.log, "
+	else
+		echo "no run failure!"
+	fi
+	
+	exit $fail_count
 }
 
-function clean_up() {
-	rm -Rf regression_test/runs/*
-	touch regression_test/runs/failure.log
+function ctrl_c() {
+
+	echo ""
+	echo "** EXITED FORCEFULLY **"
+    fail_count=123456789
+	exit_program 
 }
 
 function micro_test() {
@@ -130,7 +147,7 @@ function syntax_test() {
 		cp $benchmark $DIR/circuit.v
 	done
 
-	ls regression_test/runs/syntax | xargs -P$2 -I test_dir /bin/bash -c \
+	ls regression_test/runs/syntax | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/runs/syntax/test_dir/circuit.v \
 				-o regression_test/runs/syntax/test_dir/temp.blif \
 				-sim_dir regression_test/runs/syntax/test_dir/ \
@@ -143,16 +160,31 @@ function syntax_test() {
 
 ### starts here
 
-clean_up
-
+#in MB
+MIN_MEMORY_PER_PROC=4096
 NB_OF_PROC=1
+
+freeMEM=`free -mt | grep Total | awk '{print $4}'`
+MAX_PROC=$[freeMEM/MIN_MEMORY_PER_PROC]
 
 if [[ "$2" -gt "0" ]]
 then
 	NB_OF_PROC=$2
-	echo "running benchmark on $NB_OF_PROC thread"
-	echo "running on too many thread can cause failures, so choose wisely!"
+	MEM_PER_PROC=$[freeMEM/NB_OF_PROC]
+	echo "Trying to run benchmark on $NB_OF_PROC processes with ~$MEM_PER_PROC MB per/proc (incl. swap)"
+	
+	if [[ "$NB_OF_PROC" -gt "$MAX_PROC" ]]
+	then
+		echo " $NB_OF_PROC would crash the system, we need a hard minimum of $MIN_MEMORY_PER_PROC MB per process"
+		echo " Setting the number of process to $MAX_PROC"
+		
+		NB_OF_PROC=$MAX_PROC
+	fi
 fi
+
+
+rm -Rf regression_test/runs/*
+touch regression_test/runs/failure.log
 
 START=$(date +%s%3N)
 
@@ -204,20 +236,7 @@ esac
 
 END=$(date +%s%3N)
 echo "ran test in: $(( ((END-START)/1000)/60 )):$(( ((END-START)/1000)%60 )).$(( (END-START)%1000 )) [m:s.ms]"
-
-line_count=$(wc -l < regression_test/runs/failure.log)
-fail_count=$[fail_count+line_count]
-
-if [ $fail_count -gt "0" ]
-then
-	echo "Failed $fail_count"
-	echo "View Failure log in regression_test/runs/failure.log, "
-	echo "once the issue is fixed, you can retry only the failed test by calling \'./verify_odin rerun\' "
-else
-	echo "no run failure!"
-fi
-
-exit $fail_count
+exit_program
 ### end here
 
 
