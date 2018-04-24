@@ -63,8 +63,7 @@ std::vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 			 alloc_and_load_lb_type_rr_graph_for_type(&device_ctx.block_types[i], lb_type_rr_graphs[i]);
 
 			 /* Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
-			 /* I should be using shrinktofit() but as of 2013, C++ 11 is yet not well supported so I can't call this function in gcc */
-			 std::vector<t_lb_type_rr_node>(lb_type_rr_graphs[i]).swap(lb_type_rr_graphs[i]);
+             lb_type_rr_graphs[i].shrink_to_fit();
 		}
 	}
 	return lb_type_rr_graphs;
