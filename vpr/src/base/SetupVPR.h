@@ -4,6 +4,7 @@
 #include "logic_types.h"
 #include "read_options.h"
 #include "physical_types.h"
+#include "pack_types.h"
 #include "vpr_types.h"
 
 
@@ -21,7 +22,7 @@ void SetupVPR(t_options *Options,
 		t_router_opts *RouterOpts,
 		t_analysis_opts* AnalysisOpts,
 		t_det_routing_arch *RoutingArch,
-		std::vector<t_lb_type_rr_node> **PackerRRGraphs,
+		std::vector<t_lb_type_rr_graph>* PackerRRGraphs,
 		t_segment_inf ** Segments, t_timing_inf * Timing,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts);

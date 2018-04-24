@@ -29,6 +29,7 @@
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
+#include "pack_types.h"
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -1115,7 +1116,7 @@ struct t_vpr_setup {
 	t_router_opts RouterOpts; /* router options */
     t_analysis_opts AnalysisOpts; /* Analysis options */
 	t_det_routing_arch RoutingArch; /* routing architecture */
-	std::vector <t_lb_type_rr_node> *PackerRRGraph;
+	std::vector <t_lb_type_rr_graph> PackerRRGraph;
 	t_segment_inf * Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */

@@ -11,19 +11,10 @@
 
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+#include "lb_type_rr_graph.h"
 
-/**************************************************************************
-* Packing Algorithm Enumerations
-***************************************************************************/
-
-/* Describes different types of intra-logic cluster_ctx.blocks routing resource nodes */
-enum e_lb_rr_type {
-	LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES
-};
-const std::vector<const char*> lb_rr_type_str {
-    "LB_SOURCE", "LB_SINK", "LB_INTERMEDIATE", "INVALID"
-};
-
+//Forward declaration
+struct t_pack_molecule;
 
 /**************************************************************************
 * Packing Algorithm Data Structures
@@ -82,46 +73,6 @@ struct t_pb_stats {
 	t_pack_molecule **feasible_blocks;
 	int num_feasible_blocks; /* [0..num_marked_models-1] */
 };
-
-
-
-/**************************************************************************
-* Intra-Logic Block Routing Data Structures (by type)
-***************************************************************************/
-
-/* Output edges of a t_lb_type_rr_node */
-struct t_lb_type_rr_node_edge {
-    t_lb_type_rr_node_edge (int node, float cost)
-        : node_index(node), intrinsic_cost(cost) {}
-
-	int node_index;
-	float intrinsic_cost;
-};
-
-/* Describes a routing resource node within a logic cluster_ctx.blocks type */
-struct t_lb_type_rr_node {
-	short capacity;			/* Number of nets that can simultaneously use this node */
-	enum e_lb_rr_type type;	/* Type of logic cluster_ctx.blocks resource node */	
-
-    std::vector<std::vector<t_lb_type_rr_node_edge>> outedges; /* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
-
-	t_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
-	float intrinsic_cost;					/* cost of this node */
-	
-	t_lb_type_rr_node() {
-		capacity = 0;
-		type = NUM_LB_RR_TYPES;
-		pb_graph_pin = nullptr;
-		intrinsic_cost = 0;
-	}
-
-    short num_fanout(int mode) const { 
-        VTR_ASSERT(mode < (int)outedges.size());
-        return outedges[mode].size();
-    }
-};
-
-
 
 /**************************************************************************
 * Intra-Logic Block Routing Data Structures (by instance)
@@ -231,7 +182,7 @@ struct t_explored_node_tb {
 /* Stores all data needed by intra-logic cluster_ctx.blocks router */
 struct t_lb_router_data {
 	/* Physical Architecture Info */
-    std::vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
+    const t_lb_type_rr_graph* lb_type_graph;	/* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
 	
 	/* Logical Netlist Info */
     std::vector<t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */

@@ -89,7 +89,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
         t_router_opts *RouterOpts,
         t_analysis_opts* AnalysisOpts,
         t_det_routing_arch *RoutingArch,
-        vector <t_lb_type_rr_node> **PackerRRGraph,
+        vector <t_lb_type_rr_graph> *PackerRRGraph,
         t_segment_inf ** Segments, t_timing_inf * Timing,
         bool * ShowGraphics, int *GraphPause,
         t_power_opts * PowerOpts);

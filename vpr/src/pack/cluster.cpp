@@ -247,7 +247,7 @@ static void start_new_cluster(
 	const int num_models, const int max_cluster_size,
 	const t_arch* arch,
 	std::string device_layout_name,
-	vector<t_lb_type_rr_node> *lb_type_rr_graphs,
+	const vector<t_lb_type_rr_graph>& lb_type_rr_graphs,
 	t_lb_router_data **router_data,
 	const int detailed_routing_stage,
 	ClusteredNetlist *clb_nlist,
@@ -303,7 +303,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         const float target_device_utilization,
 		bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
+		enum e_packer_algorithm packer_algorithm,
+        const vector<t_lb_type_rr_graph>& lb_type_rr_graphs,
         std::string device_layout_name,
         bool debug_clustering,
         bool enable_pin_feasibility_filter
@@ -1916,7 +1917,7 @@ static void start_new_cluster(
 		const int num_models, const int max_cluster_size,
 		const t_arch* arch,
 		std::string device_layout_name,
-		vector<t_lb_type_rr_node> *lb_type_rr_graphs, 
+		const vector<t_lb_type_rr_graph>& lb_type_rr_graphs, 
 		t_lb_router_data **router_data, 
 		const int detailed_routing_stage,
 		ClusteredNetlist *clb_nlist,
@@ -1963,7 +1964,7 @@ static void start_new_cluster(
         alloc_and_load_pb_stats(pb);
         pb->parent_pb = nullptr;
 
-        *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
+        *router_data = alloc_and_load_router_data(lb_type_rr_graphs[type->index], type);
 
         //Try packing into each mode
         for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {

@@ -59,7 +59,7 @@ void SetupVPR(t_options *Options,
               t_router_opts *RouterOpts,
               t_analysis_opts* AnalysisOpts,
               t_det_routing_arch *RoutingArch,
-              vector <t_lb_type_rr_node> **PackerRRGraphs,
+              vector<t_lb_type_rr_graph>* PackerRRGraphs,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
@@ -197,7 +197,7 @@ void SetupVPR(t_options *Options,
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH),*PackerRRGraphs);
+		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *PackerRRGraphs);
 	}
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
