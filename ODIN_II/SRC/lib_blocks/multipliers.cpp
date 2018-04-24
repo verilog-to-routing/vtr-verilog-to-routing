@@ -252,7 +252,6 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	}
 }
 
-
 /*---------------------------------------------------------------------------
  * (function: init_mult_distribution)
  *-------------------------------------------------------------------------*/

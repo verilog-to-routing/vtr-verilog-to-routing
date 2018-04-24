@@ -4,6 +4,7 @@
 #include "types.h"
 #include "string_cache.h"
 #include "read_xml_arch_file.h"
+#include <vector>
 
 extern t_type_descriptor* type_descriptors;
 

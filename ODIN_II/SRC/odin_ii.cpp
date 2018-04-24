@@ -57,8 +57,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+<<<<<<< HEAD
+=======
 #define DEFAULT_RUN_DIRECTORY "REGRESSION_TESTS/SIM/"
 
+>>>>>>> origin/master
 
 size_t current_parse_file;
 t_arch Arch;

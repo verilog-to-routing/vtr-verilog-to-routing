@@ -1,5 +1,7 @@
 # The root of your vtr repository
+
 VTR_SVN_DIR="root of your vtr repository"
+VTR_SVN_DIR=$1
 if [[ $VTR_SVN_DIR == /* ]]; then
 	printf ""
 else

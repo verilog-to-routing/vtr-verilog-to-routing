@@ -468,17 +468,25 @@ void remap_pin_to_new_net(npin_t *pin, nnet_t *new_net)
  *-----------------------------------------------------------------------*/
 void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx)
 {
-	if (pin->type == INPUT) {
-		/* clean out the entry in the old net */
-		pin->node->input_pins[pin->pin_node_idx] = NULL;
-		/* do the new addition */
-		add_input_pin_to_node(new_node, pin, pin_idx);
-	}
-	else if (pin->type == OUTPUT) {
-		/* clean out the entry in the old net */
-		pin->node->output_pins[pin->pin_node_idx] = NULL;
-		/* do the new addition */
-		add_output_pin_to_node(new_node, pin, pin_idx);
+	switch(pin->type)
+	{
+		case INPUT:
+			/* clean out the entry in the old net */
+			pin->node->input_pins[pin->pin_node_idx] = NULL;
+			/* do the new addition */
+			add_input_pin_to_node(new_node, pin, pin_idx);
+			break;
+			
+		case OUTPUT:
+			/* clean out the entry in the old net */
+			pin->node->output_pins[pin->pin_node_idx] = NULL;
+			/* do the new addition */
+			add_output_pin_to_node(new_node, pin, pin_idx);
+			break;
+			
+		default:
+			//TODO print relevant warnings
+			break;
 	}
 }
 
