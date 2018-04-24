@@ -91,6 +91,9 @@ struct t_pb_stats {
 
 /* Output edges of a t_lb_type_rr_node */
 struct t_lb_type_rr_node_edge {
+    t_lb_type_rr_node_edge (int node, float cost)
+        : node_index(node), intrinsic_cost(cost) {}
+
 	int node_index;
 	float intrinsic_cost;
 };
@@ -98,25 +101,23 @@ struct t_lb_type_rr_node_edge {
 /* Describes a routing resource node within a logic cluster_ctx.blocks type */
 struct t_lb_type_rr_node {
 	short capacity;			/* Number of nets that can simultaneously use this node */
-	short *num_fanout_;		/* [0..num_modes - 1] Mode dependant fanout */
 	enum e_lb_rr_type type;	/* Type of logic cluster_ctx.blocks resource node */	
 
-	t_lb_type_rr_node_edge **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
+    std::vector<std::vector<t_lb_type_rr_node_edge>> outedges; /* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
 
 	t_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
 	float intrinsic_cost;					/* cost of this node */
 	
 	t_lb_type_rr_node() {
 		capacity = 0;
-		num_fanout_ = nullptr;
 		type = NUM_LB_RR_TYPES;
-		outedges = nullptr;
 		pb_graph_pin = nullptr;
 		intrinsic_cost = 0;
 	}
 
     short num_fanout(int mode) const { 
-        return num_fanout_[mode];
+        VTR_ASSERT(mode < (int)outedges.size());
+        return outedges[mode].size();
     }
 };
 
