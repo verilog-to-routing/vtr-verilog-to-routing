@@ -5,7 +5,7 @@
 * ===========================
 * Hypergraph H = (V, Eh) with V vertices and Eh hyperedges stored in plain text file.
 * Contains |Eh|+1 lines if vertices weightless, and |Eh|+|V|+1 lines if weighted.
-* Lines starting with ‘%’ are comments.
+* Lines starting with '%' are comments.
 *
 * First line contains 2 or 3 integers:
 *	(1) |Eh| = # of hyperedges
