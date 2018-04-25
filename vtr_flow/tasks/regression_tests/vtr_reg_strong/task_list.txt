@@ -31,3 +31,4 @@ regression_tests/vtr_reg_strong/strong_analysis_only
 regression_tests/vtr_reg_strong/strong_route_only
 regression_tests/vtr_reg_strong/strong_eblif_vpr
 regression_tests/vtr_reg_strong/strong_default_fc_pinlocs
+regression_tests/vtr_reg_strong/strong_longline
