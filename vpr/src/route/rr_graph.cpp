@@ -698,8 +698,14 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
         vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
                 "Not currently allowing an ipin cblock switch to have multiple fan-ins");
     } else {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-                "No switch is specified for the ipin cblock, check if there is an error in arch file");
+        //This likely indicates that no connection block has been constructed, indicating significant issues with
+        //the generated RR graph.
+        //
+        //Instead of throwing an error we issue a warning. This means that check_rr_graph() etc. will run to give more information
+        //and allow graphics to be brought up for users to debug their architectures.
+        (*wire_to_rr_ipin_switch) = OPEN;
+        vtr::printf_warning(__FILE__, __LINE__,
+                "No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
     }
 
     delete[] switch_fanin;
