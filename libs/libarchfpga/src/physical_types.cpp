@@ -30,7 +30,7 @@ float t_arch_switch_inf::Tdel(int fanin) const {
         return itr->second;
     } else {
         VTR_ASSERT(fanin >= 0);
-        return vtr::linear_interpolate_or_extrapolate(&Tdel_map_, fanin); 
+        return vtr::linear_interpolate_or_extrapolate(&Tdel_map_, fanin);
     }
 }
 
@@ -61,7 +61,7 @@ void t_rr_switch_inf::set_type(SwitchType type_val) {
 static bool switch_type_is_buffered(SwitchType type) {
     //Muxes and Tristates isolate thier input and output into
     //seperate DC connected sub-circuits
-    return type == SwitchType::MUX 
+    return type == SwitchType::MUX
         || type == SwitchType::TRISTATE
         || type == SwitchType::BUFFER;
 }
@@ -69,6 +69,6 @@ static bool switch_type_is_buffered(SwitchType type) {
 static bool switch_type_is_configurable(SwitchType type) {
     //Muxes and Tristates isolate thier input and output into
     //seperate DC connected sub-circuits
-    return !(   type == SwitchType::SHORT 
+    return !(   type == SwitchType::SHORT
              || type == SwitchType::BUFFER);
 }

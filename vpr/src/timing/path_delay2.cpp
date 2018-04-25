@@ -29,7 +29,7 @@ std::vector<std::vector<int> > detect_timing_graph_combinational_loops();
 
 std::vector<std::vector<int> > identify_strongly_connected_components(size_t min_size);
 
-void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tnode_instack, 
+void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tnode_instack,
                    std::stack<int>& tnode_stack, std::vector<std::vector<int> >& tnode_sccs,
                    size_t min_size, int inode);
 
@@ -63,9 +63,9 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
 				if (to_node < 0 || to_node >= timing_ctx.num_tnodes) {
-					vtr::printf_error(__FILE__, __LINE__, 
+					vtr::printf_error(__FILE__, __LINE__,
 							"in alloc_and_load_tnode_fanin_and_check_edges:\n");
-					vtr::printf_error(__FILE__, __LINE__, 
+					vtr::printf_error(__FILE__, __LINE__,
 							"\ttnode #%d edge #%d goes to illegal node #%d.\n",
 							inode, iedge, to_node);
 					error++;
@@ -80,10 +80,10 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 		}
 
 		else {
-			vtr::printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__,
 					"in alloc_and_load_tnode_fanin_and_check_edges:\n");
-			vtr::printf_error(__FILE__, __LINE__, 
-					"\ttnode #%d has %d edges.\n", 
+			vtr::printf_error(__FILE__, __LINE__,
+					"\ttnode #%d has %d edges.\n",
 					inode, num_edges);
 			error++;
 		}
@@ -91,7 +91,7 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 	}
 
 	if (error != 0) {
-		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__,
 				"Found %d Errors in the timing graph. Aborting.\n", error);
 	}
 
@@ -203,8 +203,8 @@ void check_timing_graph() {
 		num_tnodes_check += timing_ctx.tnodes_at_level[ilevel].size();
 
 	if (num_tnodes_check != timing_ctx.num_tnodes) {
-		vtr::printf_error(__FILE__, __LINE__, 
-				"Error in check_timing_graph: %d tnodes appear in the tnode level structure. Expected %d.\n", 
+		vtr::printf_error(__FILE__, __LINE__,
+				"Error in check_timing_graph: %d tnodes appear in the tnode level structure. Expected %d.\n",
 				num_tnodes_check, timing_ctx.num_tnodes);
 		vtr::printf_info("Checking the netlist for combinational cycles:\n");
 		if (timing_ctx.num_tnodes > num_tnodes_check) {
@@ -226,7 +226,7 @@ void check_timing_graph() {
 	 black boxes match # of sinks/sources*/
 
 	if (error != 0) {
-		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__,
 				"Found %d Errors in the timing graph. Aborting.\n", error);
 	}
 }
@@ -243,7 +243,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	static const char *tnode_type_names[] = { "TN_INPAD_SOURCE", "TN_INPAD_OPIN",
 			"TN_OUTPAD_IPIN", "TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN",
 			"TN_INTERMEDIATE_NODE", "TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN",
-			"TN_FF_OPIN", "TN_FF_SINK", "TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CLOCK_SOURCE", "TN_CLOCK_OPIN", 
+			"TN_FF_OPIN", "TN_FF_SINK", "TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CLOCK_SOURCE", "TN_CLOCK_OPIN",
             "TN_CONSTANT_GEN_SOURCE" };
 
 	vtr::t_linked_int *next_crit_node;
@@ -308,9 +308,9 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 // The idea behind the implementation of is to identify Strongly
 // Connected Components (SCCs) in the timing graph which, by definition,
 // must contain cycles if they include more than one element. This is done using
-// Tarjan's algorithm in O(V + E) time.  
+// Tarjan's algorithm in O(V + E) time.
 //
-// Once the SCCs are identified, an arbitrary edge in the timing graph is 
+// Once the SCCs are identified, an arbitrary edge in the timing graph is
 // disconnected to break the cycle. Since it may be possible for smaller sub-SCCs
 // to result, this is done iteratively until no SCCs with more than one element
 // are found.
@@ -325,9 +325,9 @@ void detect_and_fix_timing_graph_combinational_loops() {
     //Repeat until all loops broken
     while(tnode_comb_loops.size() > 0) {
         comb_cycle_iter_count++;
-        vtr::printf_info("Found %d Combinational Loops in the timing graph on iteration %d.\n", 
+        vtr::printf_info("Found %d Combinational Loops in the timing graph on iteration %d.\n",
                         tnode_comb_loops.size(), comb_cycle_iter_count);
-        vtr::printf_warning(__FILE__, __LINE__, 
+        vtr::printf_warning(__FILE__, __LINE__,
                             "Combinational Loops can not be analyzed properly and will be "
                             "arbitrarily disconnected.\n");
 
@@ -337,7 +337,7 @@ void detect_and_fix_timing_graph_combinational_loops() {
 
         tnode_comb_loops = detect_timing_graph_combinational_loops();
     }
-    vtr::printf_info("Removed %d combinational cycles from timing graph after %d iteration(s)\n", 
+    vtr::printf_info("Removed %d combinational cycles from timing graph after %d iteration(s)\n",
                     comb_cycle_count, comb_cycle_iter_count);
 }
 
@@ -373,7 +373,7 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
 
     VTR_ASSERT(loop_tnodes.size() >= 2); //Must have atleast 2 nodes for a valid cycle
 
-    //Find an edge between two tnodes in the loop set 
+    //Find an edge between two tnodes in the loop set
     // arbitrarily decide that it will be the first edge
     // from the first tnode which fans out to another tnode
     // in the loop set that will be cut
@@ -388,7 +388,7 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
             vtr::printf_warning(__FILE__, __LINE__, "Disconnecting timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
 
             //Mark the original target node as a combinational loop breakpoint
-            timing_ctx.tnodes[i_to_tnode].is_comb_loop_breakpoint = true; 
+            timing_ctx.tnodes[i_to_tnode].is_comb_loop_breakpoint = true;
 
             //Mark the edge as invalid
             timing_ctx.tnodes[i_first_tnode].out_edges[i_edge].to_node = DO_NOT_ANALYSE;
@@ -396,23 +396,23 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
             return;
         }
     }
-    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
+    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__,
             "Could not find edge to break combinational loop in timing graph.\n");
 }
 
 /*
  * Tarjan's algorithm for finding Strongly Connected Components (SCCs) in
  *  a direct graph. Only SCCs with min_size or greater members are returned.
- * 
+ *
  *  We keep track of the following information:
- *    - The current 'index' of the node (stored in tnode_indexes), this 
+ *    - The current 'index' of the node (stored in tnode_indexes), this
  *      corresponds to the order the node was traversed in the DFS
  *    - The current 'lowlink' of the node (stored in tnode_lowlinks), this
  *      corresponds to the lowest node index which connects to the current
  *      node
  *    - Whether the node is currently in the stack (stored in tnode_instack)
  *    - A stack (tnode_stack) of elements in the current SCC
- * 
+ *
  *  The key idea behind the algorithm is that a node stays on the stack if it
  *  connects to a node earlier in the traversal.
  */
@@ -453,7 +453,7 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
     return tnode_sccs;
 }
 
-void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tnode_instack, 
+void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tnode_instack,
                    std::stack<int>& tnode_stack, std::vector<std::vector<int> >& tnode_sccs,
                    size_t min_size, int inode) {
     int iedge; //Index for out-going edges of the current node (inode)
@@ -486,7 +486,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
             //to_node's lowest link
             tnode_lowlinks[inode] = std::min(tnode_lowlinks[inode], tnode_lowlinks[to_node_index]);
         } else if (tnode_instack[to_node_index]) {
-            //to_node was in the stack, and so is part of the current SCC 
+            //to_node was in the stack, and so is part of the current SCC
             VTR_ASSERT(tnode_lowlinks[inode] >= 0);
             VTR_ASSERT(tnode_indexes[to_node_index] >= 0);
 
@@ -527,8 +527,8 @@ void print_comb_loop(std::vector<int>& loop_tnodes) {
         int i_tnode = *it;
         if(timing_ctx.tnodes[i_tnode].pb_graph_pin != nullptr) {
             vtr::printf_info("\ttnode: %d %s.%s[%d]\n", i_tnode,
-                            timing_ctx.tnodes[i_tnode].pb_graph_pin->parent_node->pb_type->name, 
-                            timing_ctx.tnodes[i_tnode].pb_graph_pin->port->name, 
+                            timing_ctx.tnodes[i_tnode].pb_graph_pin->parent_node->pb_type->name,
+                            timing_ctx.tnodes[i_tnode].pb_graph_pin->port->name,
                             timing_ctx.tnodes[i_tnode].pb_graph_pin->pin_number);
         } else {
             vtr::printf_info("\ttnode: %d\n", i_tnode);

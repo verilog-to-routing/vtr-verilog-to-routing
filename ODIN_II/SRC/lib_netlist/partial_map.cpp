@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,7 +71,7 @@ void partial_map_top(netlist_t *netlist)
 	if (strcmp(configuration.output_type.c_str(), "blif") == 0)
 	{
 		/* do the partial map without any larger structures identified */
-		depth_first_traversal_to_partial_map(PARTIAL_MAP_TRAVERSE_VALUE, netlist);	
+		depth_first_traversal_to_partial_map(PARTIAL_MAP_TRAVERSE_VALUE, netlist);
 	}
 }
 
@@ -142,7 +142,7 @@ void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, n
  *--------------------------------------------------------------------*/
 void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 {
-	switch (node->type) 
+	switch (node->type)
 	{
 		case BITWISE_NOT:
 			instantiate_not_logic(node, traverse_number, netlist);
@@ -255,7 +255,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 				instantiate_simple_soft_multiplier(node, traverse_number, netlist);
 			}
 			break;
-		
+
 		case MEMORY:
 		{
 			ast_node_t *ast_node = node->related_ast_node;
@@ -321,7 +321,7 @@ void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist)
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_multi_port_mux )
- * 	Makes the multiport into a series of 2-Mux-decoded 
+ * 	Makes the multiport into a series of 2-Mux-decoded
  *-------------------------------------------------------------------------------------------*/
 void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
@@ -330,7 +330,7 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 	int num_ports;
 	int port_offset;
 	nnode_t **muxes;
-	
+
 	/* setup the calculations for padding and indexing */
 	width_of_one_hot_logic = node->input_port_sizes[0];
 	num_ports = node->num_input_port_sizes;
@@ -348,7 +348,7 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 		{
 			/* map the inputs to the muxt */
 			remap_pin_to_new_node(node->input_pins[i+(j+1)*port_offset], muxes[j], width_of_one_hot_logic+i);
-			
+
 			/* map the one hot logic control */
 			if (j == 0)
 				remap_pin_to_new_node(node->input_pins[i], muxes[j], i);
@@ -579,7 +579,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			oassert(FALSE);
 			break;
 	}
-	
+
 	/* connect inputs.  In the case that a signal is smaller than the other then zero pad */
 	for(i = 0; i < node->output_port_sizes[0]; i++)
 	{
@@ -590,14 +590,14 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 		{
 			/* IF - this current input will also have a corresponding other input ports then join it to the gate */
 			if(i < node->input_port_sizes[j])
-				remap_pin_to_new_node(node->input_pins[i+current_port_offset], new_logic_cells, j);   
-				
+				remap_pin_to_new_node(node->input_pins[i+current_port_offset], new_logic_cells, j);
+
 			/* ELSE - the input does not exist, so this answer goes right through */
 			else
-				add_input_pin_to_node(new_logic_cells, get_zero_pin(netlist), j); 
-			
+				add_input_pin_to_node(new_logic_cells, get_zero_pin(netlist), j);
+
 			current_port_offset += node->input_port_sizes[j];
-        }       
+        }
 
 		remap_pin_to_new_node(node->output_pins[i], new_logic_cells, 0);
 	}
@@ -605,8 +605,8 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 
 /*--------------------------------------------------------------------------
  * (function: instantiate_add_w_carry )
- * 	This is for soft addition in output formats that don't handle 
- *	multi-output logic functions (BLIF).  We use one function for the 
+ * 	This is for soft addition in output formats that don't handle
+ *	multi-output logic functions (BLIF).  We use one function for the
  *	add, and one for the carry.
  *------------------------------------------------------------------------*/
 void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
@@ -617,14 +617,14 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	oassert(node->num_input_pins > 0);
 
 	nnode_t *carry_node_in = netlist->gnd_node;
-	
+
 	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
-	
+
 	if(node->num_input_port_sizes == 2)
 		width[out] = node->output_port_sizes[0];
 	else
 		width[out] = node->num_output_pins;
-		
+
 	width[input_a] = node->input_port_sizes[0];
 	width[input_b] = node->input_port_sizes[1];
 
@@ -635,7 +635,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_sub_w_carry )
- * 	This subtraction is intended for sof subtraction with output formats that can't handle 
+ * 	This subtraction is intended for sof subtraction with output formats that can't handle
  * 	multi output logic functions.  We split the add and the carry over two logic functions.
  *-------------------------------------------------------------------------------------------*/
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
@@ -646,10 +646,10 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	oassert(node->num_input_pins > 0);
 
 	nnode_t *carry_node_in = netlist->vcc_node;
-	
+
 	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
 	width[out] = node->output_port_sizes[0];
-	
+
 	if(node->num_input_port_sizes == 1)
 	{
 		width[input_a] = 0;
@@ -660,7 +660,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		width[input_a] = node->input_port_sizes[0];
 		width[input_b] = node->input_port_sizes[1];
 	}
-	
+
 	instantiate_add_w_carry_block(width, node, carry_node_in, 0, mark, netlist, 1, 1);
 
 	vtr::free(width);
@@ -668,11 +668,11 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 /*---------------------------------------------------------------------------------------------
  * (function:  instantiate_unary_sub )
- *	Does 2's complement which is the equivalent of a unary subtraction as a HW implementation.	
+ *	Does 2's complement which is the equivalent of a unary subtraction as a HW implementation.
  *-------------------------------------------------------------------------------------------*/
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 {
-	instantiate_sub_w_carry(node, mark, netlist);	
+	instantiate_sub_w_carry(node, mark, netlist);
 }
 
 
@@ -885,7 +885,7 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 			/* get all the equals with the or gates */
 			connect_nodes(xor_gate, i, or_cells[i], 0);
 			connect_nodes(or_cells[i], 0, gt_cells[i], 2);
-			
+
 		}
 		else
 		{
@@ -1017,11 +1017,11 @@ void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netl
 	{
 		shift_size = 0;
 		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Odin only supports constant shifts at present\n");
-	}	
+	}
 
 	buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
 
-	if (type == SL) 
+	if (type == SL)
 	{
 		/* IF shift left */
 
@@ -1031,14 +1031,14 @@ void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netl
 			// connect higher output pin to lower input pin
 			remap_pin_to_new_node(node->input_pins[i], buf_node, i+shift_size);
 		}
-	
+
 		/* connect ZERO to outputs that don't have inputs connected */
 	 	for(i = 0; i < shift_size; i++)
 		{
 			// connect 0 to lower outputs
 			add_input_pin_to_node(buf_node, get_zero_pin(netlist), i);
 		}
-	
+
 	 	for(i = width-1; i >= width-shift_size; i--)
 		{
 			/* demap the node from the net */
@@ -1056,7 +1056,7 @@ void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netl
 			// connect higher input pin to lower output pin
 			remap_pin_to_new_node(node->input_pins[i], buf_node, i-shift_size);
 		}
-	
+
 		/* connect ZERO to outputs that don't have inputs connected */
 	 	for(i = width - 1; i >= width - shift_size; i--)
 		{

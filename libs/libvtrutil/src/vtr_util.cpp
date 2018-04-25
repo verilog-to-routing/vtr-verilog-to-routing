@@ -52,12 +52,12 @@ std::vector<std::string> split(const std::string& text, const std::string delims
             curr_tok += c;
         }
     }
-    
+
     //Add last token
     if(!curr_tok.empty()) {
         //Save it
         tokens.push_back(curr_tok);
-    } 
+    }
     return tokens;
 }
 
@@ -126,13 +126,13 @@ std::string string_fmt(const char* fmt, ...) {
 //Returns a std::string formatted using a printf-style format string taking
 //an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
-    
+
     // We need to copy the args so we don't change them before the true formating
     va_list va_args_copy;
     va_copy(va_args_copy, args);
 
     //Determine the formatted length using a copy of the args
-    int len = std::vsnprintf(nullptr, 0, fmt, va_args_copy); 
+    int len = std::vsnprintf(nullptr, 0, fmt, va_args_copy);
 
     va_end(va_args_copy); //Clean-up
 
@@ -176,7 +176,7 @@ std::string dirname(const std::string& path) {
         if(path[0] == '/') {
             str += "/";
         }
-            
+
         //Join all except the last path element
         str += join(elements.begin(), elements.end() - 1, "/");
 
@@ -208,7 +208,7 @@ char* strncpy(char *dest, const char *src, size_t size) {
 }
 
 char* strdup(const char *str) {
-    
+
     if (str == nullptr ) {
         return nullptr ;
     }
@@ -300,7 +300,7 @@ FILE* fopen(const char *fname, const char *flag) {
     }
 
     if (nullptr == (fp = std::fopen(fname, flag))) {
-        throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__, __LINE__);        
+        throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__, __LINE__);
     }
 
     if (new_fname)
@@ -316,7 +316,7 @@ int fclose(FILE* f) {
 char* fgets(char *buf, int max_size, FILE * fp) {
     /* Get an input line, update the line number and cut off *
      * any comment part.  A \ at the end of a line with no   *
-     * comment part (#) means continue. vtr::fgets should give * 
+     * comment part (#) means continue. vtr::fgets should give *
      * identical results for Windows (\r\n) and Linux (\n)   *
      * newlines, since it replaces each carriage return \r   *
      * by a newline character \n.  Returns NULL after EOF.     */
@@ -393,18 +393,18 @@ bool file_exists(const char* filename) {
     return false;
 }
 
-/* Date:July 17th, 2013                                
- * Author: Daniel Chen                                
- * Purpose: Checks the file extension of an file to ensure 
- *            correct file format. Returns true if format is 
+/* Date:July 17th, 2013
+ * Author: Daniel Chen
+ * Purpose: Checks the file extension of an file to ensure
+ *            correct file format. Returns true if format is
  *            correct, and false otherwise.
- * Note:    This is probably a fragile check, but at least 
+ * Note:    This is probably a fragile check, but at least
  *            should prevent common problems such as swapping
- *            architecture file and blif file on the VPR 
- *            command line. 
+ *            architecture file and blif file on the VPR
+ *            command line.
  */
 
-bool check_file_name_extension(const char* file_name, 
+bool check_file_name_extension(const char* file_name,
                                const char* file_extension){
     const char* str;
     int len_extension;

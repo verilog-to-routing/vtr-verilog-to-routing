@@ -43,7 +43,7 @@ void simulate_netlist(netlist_t *netlist)
 {
 	sim_run_dir = global_args.sim_directory;
 	printf("Beginning simulation. Output_files located @: %s\n", sim_run_dir); fflush(stdout);
-	
+
 	// Create and verify the lines.
 	lines_t *input_lines = create_lines(netlist, INPUT);
 	if (!verify_lines(input_lines))
@@ -52,7 +52,7 @@ void simulate_netlist(netlist_t *netlist)
 	lines_t *output_lines = create_lines(netlist, OUTPUT);
 	if (!verify_lines(output_lines))
 		error_message(SIMULATION_ERROR, 0, -1, "Output lines could not be assigned.");
-	
+
 	// Open the output vector file.
 	char out_vec_file[128] = { 0 };
 	sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
@@ -106,7 +106,7 @@ void simulate_netlist(netlist_t *netlist)
 		// Passed via the -g option.
 		num_vectors = global_args.sim_num_test_vectors;
 		printf("Simulating %d new vectors.\n", num_vectors); fflush(stdout);
-		
+
 		srand(global_args.sim_random_seed);
 	}
 
@@ -2687,14 +2687,14 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 		int i;
 		for (i = 0; i < v1->counts[l] && i < v2->counts[l]; i++)
 		{
-			if (v1->values[l][i] != v2->values[l][i])		
+			if (v1->values[l][i] != v2->values[l][i])
 			{
-				if (v1->values[l][i] == -1)	
-					equivalent = -1;	
+				if (v1->values[l][i] == -1)
+					equivalent = -1;
 				else
 					return FALSE;
 			}
-		}		
+		}
 
 		/*
 		 *  If one value has more bits than the other, they are still
@@ -2706,7 +2706,7 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 			test_vector *v = v1->counts[l] < v2->counts[l] ? v2 : v1;
 			int j;
 			for (j = i; j < v->counts[l]; j++)
-				if (v->values[l][j] != 0)	
+				if (v->values[l][j] != 0)
 					return FALSE;
 		}
 	}
@@ -2876,12 +2876,12 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			for (j = num_pins - 1; j >= 0 ; j--)
 			{
 				signed char value = get_line_pin_value(line, j, cycle);
-		
+
 				if (value > 1){
 					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
 				}else if(value < 0){
 					buffer << "x";
-				}else{	
+				}else{
 					buffer << std::dec <<(int)value;
 				}
 			}
@@ -2919,7 +2919,7 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 		// Expand the value to fill to space under the header. (Gets ugly sometimes.)
 		//while (strlen(buffer) < strlen(l->lines[i]->name))
 		//	strcat(buffer," ");
-		
+
 		fprintf(file,"%s",buffer.str().c_str());
 	}
 	fprintf(file, "\n");
@@ -3037,7 +3037,7 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 		char out_vec_file[128] = { 0 };
 		sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
 		FILE *current_out  = fopen(out_vec_file, "r");
-		if (!current_out) 
+		if (!current_out)
 			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
 
 		int cycle;
@@ -3076,10 +3076,10 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 				// Parse both vectors.
 				test_vector *v1 = parse_test_vector(buffer1);
 				test_vector *v2 = parse_test_vector(buffer2);
-				
+
 				int equivalent = compare_test_vectors(v1,v2);
 				// Compare them and print an appropriate message if they differ.
-				
+
 				if (!equivalent)
 				{
 					trim_string(buffer1, "\n\t");
@@ -3101,7 +3101,7 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 							cycle, buffer2, OUTPUT_VECTOR_FILE_NAME, buffer1, output_vector_file
 					);
 				}
-				
+
 				free_test_vector(v1);
 				free_test_vector(v2);
 			}
@@ -3737,7 +3737,7 @@ double wall_time()
 	typedef std::chrono::duration<double> dsec;
 	auto time_point = Time::now();
 	dsec time_since_epoch = time_point.time_since_epoch();
-	
+
 	return time_since_epoch.count();
 }
 

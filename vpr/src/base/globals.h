@@ -1,6 +1,6 @@
-/* 
- Global variables 
- Key global variables that are used everywhere in VPR: 
+/*
+ Global variables
+ Key global variables that are used everywhere in VPR:
  */
 
 #ifndef GLOBALS_H

@@ -16,8 +16,8 @@
 #include "atom_netlist_utils.h"
 #include "atom_lookup.h"
 
-void apply_default_timing_constraints(const AtomNetlist& netlist, 
-                                      const AtomLookup& lookup, 
+void apply_default_timing_constraints(const AtomNetlist& netlist,
+                                      const AtomLookup& lookup,
                                       tatum::TimingConstraints& timing_constraints);
 
 void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
@@ -34,16 +34,16 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                   const std::set<AtomPinId>& clock_drivers,
                                                   tatum::TimingConstraints& timing_constraints);
 
-void mark_constant_generators(const AtomNetlist& netlist, 
-                              const AtomLookup& lookup, 
+void mark_constant_generators(const AtomNetlist& netlist,
+                              const AtomLookup& lookup,
                               tatum::TimingConstraints& tc);
 
-void constrain_all_ios(const AtomNetlist& netlist, 
-                       const AtomLookup& lookup, 
+void constrain_all_ios(const AtomNetlist& netlist,
+                       const AtomLookup& lookup,
                        tatum::TimingConstraints& tc,
                        tatum::DomainId input_domain,
                        tatum::DomainId output_domain,
-                       tatum::Time input_delay, 
+                       tatum::Time input_delay,
                        tatum::Time output_delay);
 
 std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist);
@@ -66,7 +66,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
     public: //sdcparse::Callback interface
         //Start of parsing
         void start_parse() override {
-            netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_);        
+            netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_);
             netlist_primary_ios_ = find_netlist_primary_ios(netlist_);
         }
 
@@ -77,7 +77,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
         void lineno(int line_num) override { lineno_ = line_num; }
 
         //Individual commands
-        void create_clock(const sdcparse::CreateClock& cmd) override { 
+        void create_clock(const sdcparse::CreateClock& cmd) override {
             ++num_commands_;
 
             if(cmd.is_virtual) {
@@ -145,11 +145,11 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_io_delay(const sdcparse::SetIoDelay& cmd) override { 
+        void set_io_delay(const sdcparse::SetIoDelay& cmd) override {
             ++num_commands_;
 
             tatum::DomainId domain;
-            
+
             if (cmd.clock_name == "*") {
                 if(netlist_clock_drivers_.size() == 1) {
                     //Support non-standard wildcard clock name for set_input_delay/set_output_delay
@@ -157,7 +157,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                     AtomNetId clock_net = netlist_.pin_net(*netlist_clock_drivers_.begin());
                     std::string clock_name = netlist_.net_name(clock_net);
-                    domain = tc_.find_clock_domain(clock_name); 
+                    domain = tc_.find_clock_domain(clock_name);
                 } else {
                     vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                               "Wildcard clock domain '%s' is ambiguous in multi-clock circuits, explicitly specify the target clock",
@@ -216,7 +216,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
-                        vtr::printf_warning(fname_.c_str(), lineno_, 
+                        vtr::printf_warning(fname_.c_str(), lineno_,
                                             "set_input_delay command matched but was not applied to primary output '%s'\n",
                                             io_name.c_str());
                     }
@@ -236,7 +236,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
-                        vtr::printf_warning(fname_.c_str(), lineno_, 
+                        vtr::printf_warning(fname_.c_str(), lineno_,
                                             "set_output_delay command matched but was not applied to primary input '%s'\n",
                                             io_name.c_str());
                     }
@@ -244,12 +244,12 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_clock_groups(const sdcparse::SetClockGroups& cmd) override { 
+        void set_clock_groups(const sdcparse::SetClockGroups& cmd) override {
             ++num_commands_;
 
             if (cmd.type != sdcparse::ClockGroupsType::EXCLUSIVE) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                        "set_clock_groups only supports -exclusive groups"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_clock_groups only supports -exclusive groups");
             }
 
             //FIXME: more efficient to collect per-group clocks once instead of at each iteration
@@ -273,15 +273,15 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_false_path(const sdcparse::SetFalsePath& cmd) override { 
+        void set_false_path(const sdcparse::SetFalsePath& cmd) override {
             ++num_commands_;
 
             auto from_clocks = get_clocks(cmd.from);
             auto to_clocks = get_clocks(cmd.to);
 
             if (from_clocks.empty() && to_clocks.empty()) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                        "set_false_path must specify at least one -from or -to clock"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_false_path must specify at least one -from or -to clock");
             }
 
             if (from_clocks.empty()) {
@@ -300,15 +300,15 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override { 
+        void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override {
             ++num_commands_;
 
             auto from_clocks = get_clocks(cmd.from);
             auto to_clocks = get_clocks(cmd.to);
 
             if(from_clocks.empty() && to_clocks.empty()) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                        "set_max_path must specify at least one -from or -to clock"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_max_path must specify at least one -from or -to clock");
             }
 
             if (from_clocks.empty()) {
@@ -343,8 +343,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
             auto to_clocks = get_clocks(cmd.to);
 
             if(from_clocks.empty() && to_clocks.empty()) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                        "set_multicycle_path must specify at least one -from or -to clock"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_multicycle_path must specify at least one -from or -to clock");
             }
 
             if (from_clocks.empty()) {
@@ -386,7 +386,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
         }
 
-        void set_clock_uncertainty(const sdcparse::SetClockUncertainty& cmd) override { 
+        void set_clock_uncertainty(const sdcparse::SetClockUncertainty& cmd) override {
             ++num_commands_;
 
             auto from_clocks = get_clocks(cmd.from);
@@ -416,7 +416,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     if (is_setup) {
                         tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
                     }
-                    
+
                     if (is_hold) {
                         tc_.set_hold_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
                     }
@@ -424,11 +424,11 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_clock_latency(const sdcparse::SetClockLatency& cmd) override { 
+        void set_clock_latency(const sdcparse::SetClockLatency& cmd) override {
             ++num_commands_;
 
             if (cmd.type != sdcparse::ClockLatencyType::SOURCE) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency");
             }
 
             auto clocks = get_clocks(cmd.target_clocks);
@@ -448,20 +448,20 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
             for (auto clock : clocks) {
                 if (is_early) {
-                    tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency)); 
+                    tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency));
                 }
                 if (is_late) {
-                    tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency)); 
+                    tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency));
                 }
             }
         }
 
-        void set_disable_timing(const sdcparse::SetDisableTiming& cmd) override { 
+        void set_disable_timing(const sdcparse::SetDisableTiming& cmd) override {
             ++num_commands_;
 
             //Collect the specified pins
-            auto from_pins = get_pins(cmd.from); 
-            auto to_pins = get_pins(cmd.to); 
+            auto from_pins = get_pins(cmd.from);
+            auto to_pins = get_pins(cmd.to);
 
             if (from_pins.empty()) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -489,7 +489,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         const auto& from_pin_name = netlist_.pin_name(from_pin);
                         const auto& to_pin_name = netlist_.pin_name(to_pin);
 
-                        vtr::printf_warning(fname_.c_str(), lineno_, 
+                        vtr::printf_warning(fname_.c_str(), lineno_,
                                             "set_disable_timing no timing edge found from pin '%s' to pin '%s'\n",
                                             from_pin_name.c_str(), to_pin_name.c_str());
                     }
@@ -500,9 +500,9 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_timing_derate(const sdcparse::SetTimingDerate& /*cmd*/) override { 
+        void set_timing_derate(const sdcparse::SetTimingDerate& /*cmd*/) override {
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_timing_derate currently unsupported"); 
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_timing_derate currently unsupported");
         }
 
         //End of parsing
@@ -561,7 +561,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             //The period based constraint is the minimum launch to capture edge time + the capture period * (extra_cycles)
             //
             // Since min_launch_to_capture_time is the minimum time to the first capture edge after a launch edge, it already
-            // implicitly includes one capture cycle. As a result we subtract 1 from the setup capture cycle value to determine 
+            // implicitly includes one capture cycle. As a result we subtract 1 from the setup capture cycle value to determine
             // how many extra capture cycles need to be added to the constraint.
             //
             // By default the setup capture cycle 1, specifying a capture 1 cycle after launch
@@ -622,11 +622,11 @@ class SdcParseCallback2 : public sdcparse::Callback {
             //The period based constraint is the minimum launch to capture edge time + the capture period * extra_cycles
             //
             // Since min_launch_to_capture_time is the minimum time to the first capture edge *after* a launch edge, it already
-            // implicitly includes one capture cycle. As a result we subtract 1 from the hold capture cycle value to determine 
+            // implicitly includes one capture cycle. As a result we subtract 1 from the hold capture cycle value to determine
             // how many extra capture cycles need to be added to the constraint.
             //
             // For the default hold check is one cycle before the setup check
-            // For the default setup check (1) this means extra_cycles is -1 (i.e. the hold capture check occurs against 
+            // For the default setup check (1) this means extra_cycles is -1 (i.e. the hold capture check occurs against
             // the capture edge *before* the launch edge)
             int extra_cycles = hold_capture_cycle(launch_domain, capture_domain) - 1;
             float period_based_hold_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
@@ -675,10 +675,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
             float constraint = std::numeric_limits<float>::quiet_NaN();
 
-            if (std::fabs(launch_clock.period - capture_clock.period) < EPSILON && 
+            if (std::fabs(launch_clock.period - capture_clock.period) < EPSILON &&
                 std::fabs(launch_clock.rise_edge - capture_clock.rise_edge) < EPSILON &&
                 std::fabs(launch_clock.fall_edge - capture_clock.fall_edge) < EPSILON) {
-                //The source and sink domains have the same period and edges, the constraint is the common clock period. 
+                //The source and sink domains have the same period and edges, the constraint is the common clock period.
 
                 constraint = launch_clock.period;
 
@@ -691,14 +691,14 @@ class SdcParseCallback2 : public sdcparse::Callback {
                  * Use edge counting to find the minimum launch to capture edge time
                  */
 
-                //Multiply periods and edges by CLOCK_SCALE and round down to the nearest 
+                //Multiply periods and edges by CLOCK_SCALE and round down to the nearest
                 //integer, to avoid messy decimals.
                 int launch_period = static_cast<int>(launch_clock.period * CLOCK_SCALE);
                 int capture_period = static_cast<int>(capture_clock.period * CLOCK_SCALE);
                 int launch_rise_edge = static_cast<int>(launch_clock.rise_edge * CLOCK_SCALE);
-                int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);	
+                int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);
 
-                //Find the LCM of the two periods. This determines how long it takes before 
+                //Find the LCM of the two periods. This determines how long it takes before
                 //the pattern of the two clock's edges starts repeating.
                 int lcm_period = vtr::lcm(launch_period, capture_period);
 
@@ -707,7 +707,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 //Launch edges
                 int launch_rise_time = launch_rise_edge;
                 std::vector<int> launch_edges;
-                int num_launch_edges = lcm_period/launch_period + 1; 
+                int num_launch_edges = lcm_period/launch_period + 1;
                 for(int i = 0; i < num_launch_edges; ++i) {
                     launch_edges.push_back(launch_rise_time);
                     launch_rise_time += launch_period;
@@ -722,8 +722,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     capture_rise_time += capture_period;
                 }
 
-                //Compare every edge in source_edges with every edge in sink_edges. 
-                //The lowest STRICTLY POSITIVE difference between a sink edge and a 
+                //Compare every edge in source_edges with every edge in sink_edges.
+                //The lowest STRICTLY POSITIVE difference between a sink edge and a
                 //source edge yeilds the setup time constraint.
                 int scaled_constraint = std::numeric_limits<int>::max(); //Initialize to +inf, so any constraint will be less
 
@@ -776,7 +776,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 //the standard SDC behaviour (e.g. N - 1) of hold multicycles.
                 //
                 //For details see section 8.3 'Multicycle paths' in:
-                //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer 
+                //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer
                 //      Designs A Practical Approach", Springer, 2009
                 hold_offset += iter->second;
             }
@@ -787,8 +787,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
         std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
             if(port_group.type != sdcparse::StringGroupType::PORT) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                         "Expected port collection via get_ports"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                         "Expected port collection via get_ports");
             }
 
             std::set<AtomPinId> pins;
@@ -797,19 +797,19 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                 bool found = false;
                 for(const auto& kv : netlist_primary_ios_) {
-                    
+
                     const std::string& io_name = kv.first;
                     if(std::regex_match(io_name, port_regex)) {
                         found = true;
 
                         AtomPinId pin = kv.second;
-                        
+
                         pins.insert(pin);
                     }
                 }
 
                 if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                    vtr::printf_warning(fname_.c_str(), lineno_,
                                         "get_ports target name or pattern '%s' matched no ports\n",
                                         port_pattern.c_str());
                 }
@@ -825,8 +825,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
 
             if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                         "Expected clock collection via get_clocks"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                         "Expected clock collection via get_clocks");
             }
 
             for (const auto& clock_glob_pattern : clock_group.strings) {
@@ -834,22 +834,22 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                 bool found = false;
                 for(tatum::DomainId domain : tc_.clock_domains()) {
-                    
+
                     const std::string& clock_name = tc_.clock_domain_name(domain);
                     if(std::regex_match(clock_name, clock_regex)) {
                         found = true;
-                        
+
                         domains.insert(domain);
                     }
                 }
 
                 if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                    vtr::printf_warning(fname_.c_str(), lineno_,
                                         "get_clocks target name or pattern '%s' matched no clocks\n",
                                         clock_glob_pattern.c_str());
                 }
             }
-            
+
             return domains;
         }
 
@@ -861,8 +861,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
 
             if(pin_group.type != sdcparse::StringGroupType::PIN) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                         "Expected pin collection via get_pins"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                         "Expected pin collection via get_pins");
             }
 
             for (const auto& pin_pattern : pin_group.strings) {
@@ -875,18 +875,18 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                     if(std::regex_match(pin_name, pin_regex)) {
                         found = true;
-                        
+
                         pins.insert(pin);
                     }
                 }
 
                 if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                    vtr::printf_warning(fname_.c_str(), lineno_,
                                         "get_pins target name or pattern '%s' matched no pins\n",
                                         pin_pattern.c_str());
                 }
             }
-            
+
             return pins;
         }
 
@@ -927,9 +927,9 @@ class SdcParseCallback2 : public sdcparse::Callback {
         std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> hold_mcp_overrides_;
 };
 
-std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf, 
-                                                   const AtomNetlist& netlist, 
-                                                   const AtomLookup& lookup, 
+std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf,
+                                                   const AtomNetlist& netlist,
+                                                   const AtomLookup& lookup,
                                                    tatum::TimingGraph& timing_graph) {
     auto timing_constraints = std::make_unique<tatum::TimingConstraints>();
 
@@ -973,10 +973,10 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
 
 //Apply the default timing constraints (i.e. if there are no user specified constraints)
 //appropriate to the type of circuit.
-void apply_default_timing_constraints(const AtomNetlist& netlist, 
-                                      const AtomLookup& lookup, 
+void apply_default_timing_constraints(const AtomNetlist& netlist,
+                                      const AtomLookup& lookup,
                                       tatum::TimingConstraints& tc) {
-    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist); 
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
 
     if(netlist_clock_drivers.size() == 0) {
         apply_combinational_default_timing_constraints(netlist, lookup, tc);
@@ -1093,8 +1093,8 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
 
 //Look through the netlist to find any constant generators, and mark them as
 //constant generators in the timing constraints
-void mark_constant_generators(const AtomNetlist& netlist, 
-                              const AtomLookup& lookup, 
+void mark_constant_generators(const AtomNetlist& netlist,
+                              const AtomLookup& lookup,
                               tatum::TimingConstraints& tc) {
 
     for(AtomPinId pin : netlist.pins()) {
@@ -1109,12 +1109,12 @@ void mark_constant_generators(const AtomNetlist& netlist,
 
 
 //Constrain all primary inputs and primary outputs to the specifed clock domains and delays
-void constrain_all_ios(const AtomNetlist& netlist, 
-                       const AtomLookup& lookup, 
+void constrain_all_ios(const AtomNetlist& netlist,
+                       const AtomLookup& lookup,
                        tatum::TimingConstraints& tc,
                        tatum::DomainId input_domain,
                        tatum::DomainId output_domain,
-                       tatum::Time input_delay, 
+                       tatum::Time input_delay,
                        tatum::Time output_delay) {
 
     for (AtomBlockId blk : netlist.blocks()) {
@@ -1178,7 +1178,7 @@ std::string orig_blif_name(std::string name) {
 //Print informatino about clocks
 void print_netlist_clock_info(const AtomNetlist& netlist) {
 
-    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist); 
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
     vtr::printf("Netlist contains %zu clocks\n", netlist_clock_drivers.size());
 
     //Print out pin/block fanout info for each block

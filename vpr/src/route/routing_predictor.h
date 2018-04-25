@@ -4,7 +4,7 @@
 #include <cstddef>
 
 //When the estimated number of routing iterations exceeds these factors
-//(for SAFE or AGGRESSIVE mode respectively) times the max router iterations 
+//(for SAFE or AGGRESSIVE mode respectively) times the max router iterations
 //specified by the router aborts early
 constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE = 3;
 constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;

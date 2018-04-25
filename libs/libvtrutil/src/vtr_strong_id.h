@@ -66,7 +66,7 @@
  * =====
  *
  * The StrongId template class takes one required and three optional template parameters:
- *    
+ *
  *    1) Tag        - the unique type used to identify this type of Ids [Required]
  *    2) T          - the underlying integral id type (default: int) [Optional]
  *    3) T sentinel - a value representing an invalid Id (default: -1) [Optional]
@@ -74,17 +74,17 @@
  * If no value is supllied during construction the StrongId is initialized to the invalid/sentinel value.
  *
  * Example 1: default definition
- *      
+ *
  *      struct net_id_tag;
  *      typedef StrongId<net_id_tag> NetId; //Internally stores an integer Id, -1 represents invalid
  *
  * Example 2: definition with custom underlying type
- *      
+ *
  *      struct blk_id_tag;
  *      typedef StrongId<net_id_tag,size_t> BlkId; //Internally stores a size_t Id, -1 represents invalid
  *
  * Example 3: definition with custom underlying type and custom sentinel value
- *      
+ *
  *      struct pin_id_tag;
  *      typedef StrongId<net_id_tag,size_t,0> PinId; //Internally stores a size_t Id, 0 represents invalid
  *
@@ -131,7 +131,7 @@
  *      if(my_id_one) //True my_id_one is valid
  *
  * Example 6: Indexing data structures
- *      
+ *
  *      struct my_id_tag;
  *      typedef StrongId<net_id_tag> MyId; //Internally stores an integer Id, -1 represents invalid
  *

@@ -20,7 +20,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		int remaining_connections_to_sink,
         std::vector<int>& modified_rr_node_inf);
 
-static void breadth_first_expand_neighbours(int inode, float pcost, 
+static void breadth_first_expand_neighbours(int inode, float pcost,
 	ClusterNetId net_id, float bend_cost);
 
 static void breadth_first_add_to_heap_expand_non_configurable(const float path_cost, const float bend_cost,
@@ -107,7 +107,7 @@ bool try_breadth_first_route(t_router_opts router_opts) {
 	return (false);
 }
 
-bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, 
+bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 		t_router_opts router_opts) {
 
 	bool is_routed = false;
@@ -227,7 +227,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 
 			if (current == nullptr) { /* Impossible routing. No path for net. */
                 vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
-                        size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), 
+                        size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                         cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 				reset_path_costs(modified_rr_node_inf);
 				return (false);
@@ -355,7 +355,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 	}
 }
 
-static void breadth_first_expand_neighbours(int inode, float pcost, 
+static void breadth_first_expand_neighbours(int inode, float pcost,
 	ClusterNetId net_id, float bend_cost) {
 
 	/* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *

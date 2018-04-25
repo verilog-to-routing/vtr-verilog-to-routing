@@ -98,11 +98,11 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
     //  v |   *
     //  e |
     //  r |    *
-    //  u |      
-    //  s |      
-    //  e |      *    
-    //    |           * 
-    //    |                     * 
+    //  u |
+    //  s |
+    //  e |      *
+    //    |           *
+    //    |                     *
     //    |                                       *
     //    ------------------------------------------------>
     //                  iterations
@@ -122,7 +122,7 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
     //    |         *
     //  o |
     //  v |                 *
-    //  e |      
+    //  e |
     //  r |                         *
     //  u |                              *
     //  s |                                   *

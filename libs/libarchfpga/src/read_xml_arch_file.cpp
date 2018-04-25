@@ -33,7 +33,7 @@
  *			and one output port(1 pin).
  *		- Checks file extension for blif and architecture xml file, avoid crashes if
  *			the two files are swapped on command line.
- *			
+ *
  */
 
 #include <string.h>
@@ -222,7 +222,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process switchblocks. This depends on switches */
         bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
-        SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);	
+        SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);
 
 
         /* Process segments. This depends on switches */
@@ -584,7 +584,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data) {
 	int i = 0;
 	const char *Prop;
-	
+
 	if ( get_attribute(Parent, "max", loc_data, OPTIONAL).as_string(nullptr) ){
 		i++;
 	}
@@ -1527,7 +1527,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 					false;
 
 			/* get next iteration */
-			Cur = Cur.next_sibling(Cur.name());			
+			Cur = Cur.next_sibling(Cur.name());
 			i++;
 		}
 	}
@@ -2463,7 +2463,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &
 		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 				"Unknown property %s for switch block type x\n", Prop);
 	}
-	
+
 	ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
 	arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
 
@@ -2643,7 +2643,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 	/* Load the segments. */
 	Node = get_first_child(Parent, "segment", loc_data);
 	for (i = 0; i < *NumSegs; ++i) {
-		
+
 		/* Get segment name */
 		tmp = get_attribute(Node, "name", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
@@ -2783,7 +2783,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		if (SubElem) {
 			ProcessCB_SB(SubElem, (*Segs)[i].sb, (length + 1), loc_data);
 		}
-		
+
 		/* Get next Node */
 		Node = Node.next_sibling(Node.name());
 	}
@@ -2802,7 +2802,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 	int num_switchblocks = count_children(Parent, "switchblock", loc_data);
 	arch->switchblocks.reserve(num_switchblocks);
 
-	
+
 	/* read-in all switchblock data */
 	Node = get_first_child(Parent, "switchblock", loc_data);
 	for (int i_sb = 0; i_sb < num_switchblocks; i_sb++){
@@ -2849,13 +2849,13 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 		/* get switchblock permutation functions */
 		SubElem = get_first_child(Node, "switchfuncs", loc_data);
 		read_sb_switchfuncs(SubElem, &sb, loc_data);
-		
+
 		read_sb_wireconns(arch->Switches, arch->num_switches, Node, &sb, loc_data);
 
 		/* run error checks on switch blocks */
 		check_switchblock(&sb, arch);
 
-		/* assign the sb to the switchblocks vector */		
+		/* assign the sb to the switchblocks vector */
 		arch->switchblocks.push_back(sb);
 
 		Node = Node.next_sibling(Node.name());
@@ -2987,7 +2987,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		}
         arch_switch.set_type(type);
 
-		
+
 		arch_switch.R = get_attribute(Node, "R", loc_data,TIMING_ENABLE_REQD).as_float(0);
 		arch_switch.Cin = get_attribute(Node, "Cin", loc_data, TIMING_ENABLE_REQD).as_float(0);
 
@@ -3037,7 +3037,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
 		/* Get next switch element */
 		Node = Node.next_sibling(Node.name());
-		
+
 	}
 }
 
@@ -3137,7 +3137,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 	/* Load the directs. */
 	Node = get_first_child(Parent, "direct", loc_data);
 	for (i = 0; i < *NumDirects; ++i) {
-		
+
 		direct_name = get_attribute(Node, "name", loc_data).value();
 		/* Check for direct name collisions */
 		for (j = 0; j < i; ++j) {

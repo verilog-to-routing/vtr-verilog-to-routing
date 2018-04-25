@@ -95,7 +95,7 @@ AtomPortId AtomNetlist::find_atom_port(const AtomBlockId blk_id, const t_model_p
  */
 AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* model, const TruthTable truth_table) {
     AtomBlockId blk_id = Netlist::create_block(name);
-    
+
     //Initialize the data
     block_models_.push_back(model);
     block_truth_tables_.push_back(truth_table);
@@ -150,7 +150,7 @@ AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_port
 
 AtomPinId AtomNetlist::create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type_, bool is_const) {
     AtomPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
-    
+
     //Check post-conditions: size
     VTR_ASSERT(validate_pin_sizes());
 
@@ -190,17 +190,17 @@ void AtomNetlist::remove_net_impl(const AtomNetId /*net_id*/) {
     //Unused
 }
 
-void AtomNetlist::rebuild_block_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/, 
+void AtomNetlist::rebuild_block_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/,
                                           const vtr::vector_map<AtomPortId, AtomPortId>& /*port_id_map*/) {
     //Unused
 }
 
-void AtomNetlist::rebuild_port_refs_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& /*block_id_map*/, 
+void AtomNetlist::rebuild_port_refs_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& /*block_id_map*/,
                                          const vtr::vector_map<AtomPinId, AtomPinId>& /*pin_id_map*/) {
     //Unused
 }
 
-void AtomNetlist::rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& /*port_id_map*/, 
+void AtomNetlist::rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& /*port_id_map*/,
                                         const vtr::vector_map<AtomNetId, AtomNetId>& /*net_id_map*/) {
     //Unused
 }

@@ -90,7 +90,7 @@ typedef struct adder_def_t_t adder_def_t;
 #define ACTIVATION 13
 
 // causes an interrupt in GDB
-#define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " @ " << __FILE__ << " (" << __LINE__ << ")" << std::endl; 
+#define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " @ " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
 #define oassert(condition) { if(!(condition)){ verbose_assert(condition); std::abort();} }
 // bitvector library (PETER_LIB) defines it, so we don't
 
@@ -189,7 +189,7 @@ struct global_args_t_t
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
-    
+
 };
 
 #endif // TYPES_H
@@ -436,7 +436,7 @@ typedef enum{
 // to define type of adder in cmd line
 struct adder_def_t_t
 {
-	type_of_adder_e type_of_adder; 
+	type_of_adder_e type_of_adder;
 	int next_step_size;
 };
 

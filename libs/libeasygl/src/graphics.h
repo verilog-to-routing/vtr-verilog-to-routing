@@ -24,8 +24,8 @@
 
 /* This is the main routine for the graphics.  When event_loop is
  * called, it will continue executing until the Proceed button is
- * pressed. It will handle many "events" (mouse clicks, button presses, mouse 
- * zooms and pans, etc.) for you, and will pass on other events to callback 
+ * pressed. It will handle many "events" (mouse clicks, button presses, mouse
+ * zooms and pans, etc.) for you, and will pass on other events to callback
  * functions you have passed in for your program to handle.
  * Whenever the graphics need to be redrawn, drawscreen will be called;
  * you must pass in a function pointer to a routine you write that can
@@ -33,8 +33,8 @@
  * You can also pass in event handlers for user input if you wish.
  * act_on_mouse_button() will be called whenever the user clicks
  * in the graphics area.
- * act_on_keypress() and act_on_mousemove() will be called whenever a 
- * keyboard key is pressed or the mouse is moved, respectively, in the 
+ * act_on_keypress() and act_on_mousemove() will be called whenever a
+ * keyboard key is pressed or the mouse is moved, respectively, in the
  * graphics area. You can turn keypress input and mouse_move input
  * on or off using the set_mouse_move_input () and set_keypress_input ()
  * functions (default for both: off).
@@ -42,7 +42,7 @@
  * and an integer "keysym" which is a longer code defined in X11/keysymdef.h
  * that has codes for keys like arrow keys that have no ASCII equivalent.
  * act_on_mousebutton() is passed the coordinates (in user coordinates) of
- * the mouse when the button was pressed, along with a t_event_buttonPressed 
+ * the mouse when the button was pressed, along with a t_event_buttonPressed
  * structure that stores which buttons was pressed and if Shift or Ctrl was
  * held down, etc.
  */
@@ -58,14 +58,14 @@ void init_graphics(const std::string& window_name, int cindex_background);
 void init_graphics(const std::string& window_name, const t_color& background);
 void change_graphics_background(const t_color& background);	// <Addition/Mod: Charles>
 
-/* Sets world coordinates of the graphics window so that the 
+/* Sets world coordinates of the graphics window so that the
  * lower-left corner of the screen has world coordinate (xl, yb) and the
  * top-right corner has world coordinate (xr, yt), or if you prefer you
- * can call the other version with a bounding_box giving the coordinates. 
- * Call this function before you call event_loop. Do not call it 
+ * can call the other version with a bounding_box giving the coordinates.
+ * Call this function before you call event_loop. Do not call it
  * in your drawscreen () callback function, since it will undo any
  * panning or zooming the user has done. If the aspect ratio (height/width) of
- * the coordinates you specify does not match the screen window aspect ratio, 
+ * the coordinates you specify does not match the screen window aspect ratio,
  * either the visible height or visible width of your world will be increased
  * so that 1-world-unit vertically is the same distance as 1-world-unit
  * horizontally when rendered on the screen.
@@ -75,7 +75,7 @@ void set_visible_world(const t_bound_box& bounds);
 
 
 /**
- * Returns a rectangle with the bounds of the drawn world -- i.e. what are 
+ * Returns a rectangle with the bounds of the drawn world -- i.e. what are
  * the edges in your chosen (world) coordinate system that match the edges of
  * the window? Useful for figuring out how zoomed in or out you are.
  * Also useful for getting the currently visible rectangle,
@@ -97,8 +97,8 @@ void close_graphics();
 
 /************************* USER INTERACTION FUNCTIONS ******************/
 
-/* Changes the status bar message (at the bottom of the main window) to the 
- * UTF-8 string msg. 
+/* Changes the status bar message (at the bottom of the main window) to the
+ * UTF-8 string msg.
  */
 void update_message(const std::string& msg);
 
@@ -129,17 +129,17 @@ void enable_or_disable_button(int ibutton, bool enabled);
 /***************************** DRAWING ROUTINES *********************/
 
 /****
- * The following routines draw anything you want to the biggest part of the 
+ * The following routines draw anything you want to the biggest part of the
  * screen (the graphics sub-window), or if you have set the mode to PostScript
  * they write to a file to generate the printable file.
- * 
+ *
  * The calls below split into ones that set "graphics attributes" like colour
  * and line widths, and rendering functions that actually draw text, lines, etc.
  * All the graphics attribute calls are "sticky" -- they affect all subsequent
  * drawing until you change the attribute again.
  ****/
 
-/* Clears the screen. Should normally be the first call in your 
+/* Clears the screen. Should normally be the first call in your
  * screen redrawing function.
  */
 void clearscreen();
@@ -148,7 +148,7 @@ void clearscreen();
  * Set the current draw colour to the supplied index colour from color_types,
  * the specified (rgba) t_colour, or rgba value. alpha (a) = 0 means transparent,
  * while a = 255 means opaque (the default). Affects all drawing functions,
- * including text. Note: postscript does not support transparency, so 
+ * including text. Note: postscript does not support transparency, so
  * the alpha value is ignored in postscript output.
  */
 void setcolor(int cindex);
@@ -216,7 +216,7 @@ void drawline(float x1, float y1, float x2, float y2);
 void drawline(const t_point& p1, const t_point& p2);
 
 
-/* Draws the rectangle with diagonally-opposite corners 
+/* Draws the rectangle with diagonally-opposite corners
  * at (x1, y1) and (x2, y2) or bottomleft and upperright points, or
  * the bound_box rect. All 3 functions are equivalent (use whichever is most
  * convenient), and draw with the current line style, colour and width.
@@ -234,14 +234,14 @@ void fillrect(const t_bound_box& rect);
 
 
 
-/* Draws a filled polygon with the specified points as its boundary. 
- * The first and last points passed in are connected to close the polygon. 
+/* Draws a filled polygon with the specified points as its boundary.
+ * The first and last points passed in are connected to close the polygon.
  */
 void fillpoly(t_point *points, int npoints);
 
-/* Draw or fill a circular arc or elliptical arc.  Angles in degrees.  
- * startang is measured from positive x-axis of Window.  
- * A positive angextent means a counterclockwise arc; a negative 
+/* Draw or fill a circular arc or elliptical arc.  Angles in degrees.
+ * startang is measured from positive x-axis of Window.
+ * A positive angextent means a counterclockwise arc; a negative
  * angextent means clockwise.
  */
 void drawarc(float xcen, float ycen, float rad, float startang,
@@ -259,19 +259,19 @@ void fillellipticarc(float xc, float yc, float radx, float rady, float startang,
 void fillellipticarc(const t_point& center, float radx, float rady, float startang, float angextent);
 
 
-/* 
- * These functions all draw UTF-8 text within some sort of bounding box; 
- * they are all very closely related and just give slightly different 
+/*
+ * These functions all draw UTF-8 text within some sort of bounding box;
+ * they are all very closely related and just give slightly different
  * interfaces so you can choose whichever one is most convenient.
- * 
+ *
  * The text is drawn centered around the point (xc,yc), text_center, or
  * in the case of drawtext_in, the centre of the bbox parameter.
  *
  * - SPECIFIC PAREMETER SPECIFICATION:
- * 
+ *
  * If text won't fit in bounds specified, the text isn't drawn.
  * This is useful for avoiding text going everywhere at high zoom levels.
- * 
+ *
  * boundx and boundy specify a width and height bound, respectively, whereas
  * bounds and bbox specify a box in which the text completely fit, or it won't
  * be drawn. boundx and boundy default to FLT_MAX, meaning always draw the
@@ -283,9 +283,9 @@ void fillellipticarc(const t_point& center, float radx, float rady, float starta
  *
  * tolerance, effectively, makes the given bounding box bigger, on
  * all sides by that amount.
- * 
+ *
  * For debugging purposes, if you would like to see exactly where the
- * bounds of the text are and the center of the text define SHOW_TEXT_BBOX 
+ * bounds of the text are and the center of the text define SHOW_TEXT_BBOX
  * in your build, or uncomment it in drawtext(..) in graphics.c .
  *
  * - NOTES:
@@ -337,20 +337,20 @@ void set_draw_mode(enum e_draw_mode draw_mode);
  */
 void change_button_text(const char *button_text, const char *new_button_text);
 
-/* Normal users shouldn't have to use draw_message.  Should only be 
- * useful if using non-interactive graphics and you want to redraw  
+/* Normal users shouldn't have to use draw_message.  Should only be
+ * useful if using non-interactive graphics and you want to redraw
  * yourself because of an expose.
  */
 void draw_message();
 
 /**
  * @brief Changes what all the drawX functions draws to.
- * 
+ *
  * By default, drawX will draw straight to the screen. By setting this to
  * draw off screen, all drawX commands will draw to an offscreen pixmap.
  * When you've finished drawing everything to this pixmap, copy it to the
  * screen using copy_off_screen_buffer_to_screen(). Drawing to an offscreen
- * buffer like this (double-buffering) can reduce screen flashing when you 
+ * buffer like this (double-buffering) can reduce screen flashing when you
  * pan the graphics, making the drawing seem smoother.
  *
  * @param[in] draw_mode ON_SCREEN || OFF_SCREEN
@@ -375,7 +375,7 @@ Surface load_png_from_file(const char* file_path);
 /**
  * @brief Draws a Surface.
  *
- * @param[in] x x coordinate (world or screen) of upper-left corner 
+ * @param[in] x x coordinate (world or screen) of upper-left corner
  * @param[in] y y coordinate (world or screen) of upper-left corner
  * @param[in] surface Surface loaded from load_png_from_file(const char*)
  */
@@ -407,7 +407,7 @@ bool LOD_min_dim_test(float dim_threshold);
  *
  * Iff the _screen_ area of the rectangle (passed in as world coordinates)
  * is less than screen_area_threshold then this function returns false. When
- * this function returns false it means that bounding box passed in will 
+ * this function returns false it means that bounding box passed in will
  * occupy less than (screen_area_threshold pixels)^2 on the screen.
  */
 bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold);
@@ -437,17 +437,17 @@ t_bound_box scrn_to_world(const t_bound_box& box);
 
 /***************** POSTSCRIPT PRINTING ROUTINES ******************************/
 
-/* Opens file for postscript commands and initializes it.  All subsequent  
- * drawing commands go to this file until close_postscript is called. 
+/* Opens file for postscript commands and initializes it.  All subsequent
+ * drawing commands go to this file until close_postscript is called.
  * You can generate postscript output by explicitly calling
- * this routine, and then calling drawscreen. More commonly you'll 
- * just click on the "PostScript" button though, and that button 
+ * this routine, and then calling drawscreen. More commonly you'll
+ * just click on the "PostScript" button though, and that button
  * calls this routine and drawscreen to generate a postscript file
  * that exactly matches the graphics area display on the screen.
  *
  * Limitation: Postscript output does not support transparency (object will
  * be opaque) or draw_surface of pngs/bitmaps (will not be drawn).
- * 
+ *
  * Warning: not all UTF-8 filenames will work on Windows (this uses fopen)
  */
 int init_postscript(const char *fname); /* Returns 1 if successful */
@@ -458,7 +458,7 @@ void close_postscript();
 /******************** DEBUGGING FUNCTIONS **********************************/
 
 /* Data structure below is for debugging the easygl API itself; you normally
- * will never use it or the functions below.  
+ * will never use it or the functions below.
  */
 /* t_report lets you get a bunch of info about the low-level graphics state.
  * xmult, ymult: world to pixel coordinate multiplier for screen
@@ -485,7 +485,7 @@ void get_report_structure(t_report*);
  */
 
 /* Draw beizer curve. Currently not used, but saving for possible use
- * in the future.                            
+ * in the future.
  */
 void win32_drawcurve(t_point *points, int npoints);
 void win32_fillcurve(t_point *points, int npoints);

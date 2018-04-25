@@ -1,5 +1,5 @@
-/* 
-The router lookahead provides an estimate of the cost from an intermediate node to the target node 
+/*
+The router lookahead provides an estimate of the cost from an intermediate node to the target node
 during directed (A*-like) routing.
 
 The VPR 7.0 lookahead (route/route_timing.c ==> get_timing_driven_expected_cost) lower-bounds the remaining delay and
@@ -46,7 +46,7 @@ using namespace std;
 
 
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
-   representative entry, this enum is passed-in to specify how that representative entry should be 
+   representative entry, this enum is passed-in to specify how that representative entry should be
    calculated */
 enum e_representative_entry_method{
 	FIRST = 0,	//the first cost that was recorded
@@ -62,7 +62,7 @@ enum e_representative_entry_method{
 class Cost_Entry{
 public:
 	float delay;
-	float congestion;	
+	float congestion;
 
 	Cost_Entry(){
 		delay = -1.0;
@@ -76,8 +76,8 @@ public:
 
 
 
-/* a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion. 
-   since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored 
+/* a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion.
+   since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored
    in the final lookahead cost map */
 class Expansion_Cost_Entry{
 private:
@@ -158,7 +158,7 @@ public:
 		this->R_upstream = parent_R_upstream;
 		if (!starting_node){
 			int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
-			//this->delay += g_rr_nodes[set_rr_node_ind].C() * (g_rr_switch_inf[switch_ind].R + 0.5*g_rr_nodes[set_rr_node_ind].R()) + 
+			//this->delay += g_rr_nodes[set_rr_node_ind].C() * (g_rr_switch_inf[switch_ind].R + 0.5*g_rr_nodes[set_rr_node_ind].R()) +
 			//              g_rr_switch_inf[switch_ind].Tdel;
 
 			//FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
@@ -185,11 +185,11 @@ public:
 };
 
 
-/* provides delay/congestion estimates to travel specified distances 
+/* provides delay/congestion estimates to travel specified distances
    in the x/y direction */
-typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]	-- [0..1] entry is to 
+typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]	-- [0..1] entry is to
                                                                             //distinguish between CHANX/CHANY start nodes respectively
-/* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type. 
+/* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
    the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
@@ -251,7 +251,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 }
 
 
-/* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again. 
+/* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
    The rr graph must have been built before calling this function. */
 void compute_router_lookahead(int num_segments){
 	if (f_cost_map.size()){
@@ -278,19 +278,19 @@ void compute_router_lookahead(int num_segments){
 			for (int ref_inc=0; ref_inc<3; ref_inc++){
 				for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
 					/* get the rr node index from which to start routing */
-					int start_node_ind = get_start_node_ind(REF_X+ref_inc, REF_Y+ref_inc, 
+					int start_node_ind = get_start_node_ind(REF_X+ref_inc, REF_Y+ref_inc,
                                                             device_ctx.grid.width()-2, device_ctx.grid.height()-2,  //non-corner upper right
 					                                        chan_type, iseg, track_offset);
 
 					if (start_node_ind == UNDEFINED){
 						continue;
 					}
-					
+
 					/* run Dijkstra's algorithm */
 					run_dijkstra(start_node_ind, REF_X+ref_inc, REF_Y+ref_inc, routing_cost_map);
 				}
 			}
-			
+
 			/* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
 			   cost map */
 			set_lookahead_map_costs(iseg, chan_type, routing_cost_map);
@@ -315,7 +315,7 @@ void compute_router_lookahead(int num_segments){
 	//}
 
 	clock_t end_time = clock();
-	
+
 	vtr::printf_info("Computing router lookahead map took %f seconds.\n", ((float)end_time - start_time)/CLOCKS_PER_SEC);
 }
 
@@ -326,7 +326,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 	int result = UNDEFINED;
 
 	if (rr_type != CHANX && rr_type != CHANY){
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead routing from CHANX or CHANY node\n");	
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead routing from CHANX or CHANY node\n");
 	}
 
 	int chan_coord = start_x;
@@ -479,7 +479,7 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_ro
 	/* set the lookahead cost map entries with a representative cost entry from routing_cost_map */
 	for (unsigned ix = 0; ix < routing_cost_map.size(); ix++){
 		for (unsigned iy = 0; iy < routing_cost_map[ix].size(); iy++){
-			
+
 			Expansion_Cost_Entry &expansion_cost_entry = routing_cost_map[ix][iy];
 
 			f_cost_map[chan_index][segment_index][ix][iy] = expansion_cost_entry.get_representative_cost_entry( REPRESENTATIVE_ENTRY_METHOD );
@@ -520,7 +520,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 	if (x == 0){
 		slope = 1e12;	//just a really large number
 	} else if (y == 0){
-		slope = 1e-12;	//just a really small number		
+		slope = 1e-12;	//just a really small number
 	} else {
 		slope = (float)y/(float)x;
 	}
@@ -579,7 +579,7 @@ Cost_Entry Expansion_Cost_Entry::get_average_entry(){
 
 /* returns a cost entry that represents the geomean of all the recorded entries */
 Cost_Entry Expansion_Cost_Entry::get_geomean_entry(){
-	
+
 
 	float geomean_delay = 0;
 	float geomean_cong = 0;
@@ -596,11 +596,11 @@ Cost_Entry Expansion_Cost_Entry::get_geomean_entry(){
 
 /* returns a cost entry that represents the medial of all recorded entries */
 Cost_Entry Expansion_Cost_Entry::get_median_entry(){
-	/* find median by binning the delays of all entries and then chosing the bin 
+	/* find median by binning the delays of all entries and then chosing the bin
 	   with the largest number of entries */
 
 	int num_bins = 10;
-	
+
 	/* find entries with smallest and largest delays */
 	Cost_Entry min_del_entry;
 	Cost_Entry max_del_entry;
@@ -616,7 +616,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 	/* get the bin size */
 	float delay_diff = max_del_entry.delay - min_del_entry.delay;
 	float bin_size = delay_diff / (float)num_bins;
-	
+
 	/* sort the cost entries into bins */
 	vector< vector<Cost_Entry> > entry_bins( num_bins, vector<Cost_Entry>() );
 	for (auto entry : this->cost_vector){
@@ -642,7 +642,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 
 	/* get the representative delay of the largest bin */
 	Cost_Entry representative_entry = entry_bins[largest_bin][0];
-	
+
 	return representative_entry;
 }
 
@@ -670,7 +670,7 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int 
 
 	/* now we want to count the minimum number of *channel segments* between the from and to nodes */
 	int delta_seg, delta_chan;
-	
+
 	/* orthogonal to wire */
 	int no_need_to_pass_by_clb = 0;	//if we need orthogonal wires then we don't need to pass by the target CLB along the current wire direction
 	if (to_chan > from_chan + 1){

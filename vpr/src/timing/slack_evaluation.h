@@ -16,7 +16,7 @@ class SetupSlackCrit {
         float setup_pin_slack(AtomPinId pin) const;
 
         //Returns the worst (maximum) criticality of connections through the specified pin.
-        //  Criticality (in [0., 1.]) represents how timing-critical something is, 
+        //  Criticality (in [0., 1.]) represents how timing-critical something is,
         //  0. is non-critical and 1. is most-critical.
         float setup_pin_criticality(AtomPinId pin) const;
 
@@ -31,15 +31,15 @@ class SetupSlackCrit {
 
         void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
-        float calc_pin_criticality(AtomPinId pin, 
-                                    const tatum::SetupTimingAnalyzer& analyzer, 
-                                    const std::map<DomainPair,float>& max_req, 
+        float calc_pin_criticality(AtomPinId pin,
+                                    const tatum::SetupTimingAnalyzer& analyzer,
+                                    const std::map<DomainPair,float>& max_req,
                                     const std::map<DomainPair,float>& worst_slack);
 
     private: //Data
         const AtomNetlist& netlist_;
         const AtomLookup& netlist_lookup_;
-        
+
         vtr::vector_map<AtomPinId, float> pin_slacks_;
         vtr::vector_map<AtomPinId, float> pin_criticalities_;
 };
@@ -56,7 +56,7 @@ class HoldSlackCrit {
         float hold_pin_slack(AtomPinId pin) const;
 
         //Returns the worst (maximum) criticality of connections through the specified pin.
-        //  Criticality (in [0., 1.]) represents how timing-critical something is, 
+        //  Criticality (in [0., 1.]) represents how timing-critical something is,
         //  0. is non-critical and 1. is most-critical.
         float hold_pin_criticality(AtomPinId pin) const;
 
@@ -71,15 +71,15 @@ class HoldSlackCrit {
 
         void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer);
 
-        float calc_pin_criticality(AtomPinId pin, 
-                                    const tatum::HoldTimingAnalyzer& analyzer, 
+        float calc_pin_criticality(AtomPinId pin,
+                                    const tatum::HoldTimingAnalyzer& analyzer,
                                     const float scale,
                                     const float shift);
 
     private: //Data
         const AtomNetlist& netlist_;
         const AtomLookup& netlist_lookup_;
-        
+
         vtr::vector_map<AtomPinId, float> pin_slacks_;
         vtr::vector_map<AtomPinId, float> pin_criticalities_;
 };

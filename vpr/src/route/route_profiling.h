@@ -2,7 +2,7 @@
 /* optional profiling for developers on the breakdown of time spent and other quantities
    profiling mostly focuses on per-fanout, but also has per-type (SINK, IPIN, ...) and
    per-criticality */
-   
+
 namespace profiling {
 
 // action counters for what actions setting up routing resources took to build targets list

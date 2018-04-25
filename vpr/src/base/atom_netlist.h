@@ -11,7 +11,7 @@
 * The AtomNetlist is derived from the Netlist class, and contains information on the primitives.
 * This includes basic components (Blocks, Ports, Pins, & Nets), and physical descriptions (t_model)
 * of the primitives.
-* 
+*
 * Most of the functionality relevant to components and their accessors/cross-accessors
 * is implemented in the Netlist class. Refer to netlist.(h|tpp) for more information.
 *
@@ -32,13 +32,13 @@
 * -----
 * Ports are composed of a set of pins that have specific directionality (INPUT, OUTPUT, or CLOCK).
 * The ports in the AtomNetlist are respective to the atoms. (i.e. the AtomNetlist does not contain
-* ports of a Clustered Logic Block). Each port has an associated t_model_port, describing the 
+* ports of a Clustered Logic Block). Each port has an associated t_model_port, describing the
 * physical properties.
 *
 * Pins
 * ----
 * Pins are single-wire input/outputs. They are part of a port, and are connected to a single net.
-* 
+*
 * Nets
 * ----
 * Nets in the AtomNetlist track the wiring connections between the atoms.
@@ -55,11 +55,11 @@
 *
 * Implementation
 * ==============
-* For all create_* functions, the AtomNetlist will wrap and call the Netlist's version as it contains 
+* For all create_* functions, the AtomNetlist will wrap and call the Netlist's version as it contains
 * additional information that the base Netlist does not know about.
-* 
+*
 * All functions with suffix *_impl() follow the Non-Virtual Interface (NVI) idiom.
-* They are called from the base Netlist class to simplify pre/post condition checks and 
+* They are called from the base Netlist class to simplify pre/post condition checks and
 * prevent Fragile Base Class (FBC) problems.
 *
 * Refer to netlist.h for more information.
@@ -105,7 +105,7 @@ class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
         // logic function.
         //
         // For FF/Latches there is only a single entry representing the initial state
-        const TruthTable& block_truth_table(const AtomBlockId id) const; 
+        const TruthTable& block_truth_table(const AtomBlockId id) const;
 
         /*
          * Ports

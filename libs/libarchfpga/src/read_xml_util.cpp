@@ -6,10 +6,10 @@
 
 using namespace pugiutil;
 
-/* Convert bool to ReqOpt enum */ 
+/* Convert bool to ReqOpt enum */
 extern ReqOpt BoolToReqOpt(bool b) {
 	if (b) {
-		return REQUIRED;	
+		return REQUIRED;
 	}
 	return OPTIONAL;
 }
@@ -54,9 +54,9 @@ InstPort::InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil
 }
 
 InstPort::name_index InstPort::parse_name_index(std::string str) {
-    auto open_bracket_pos = str.find("["); 
-    auto close_bracket_pos = str.find("]"); 
-    auto colon_pos = str.find(":"); 
+    auto open_bracket_pos = str.find("[");
+    auto close_bracket_pos = str.find("]");
+    auto colon_pos = str.find(":");
 
     //Parse checks
     if(open_bracket_pos == std::string::npos && close_bracket_pos != std::string::npos) {
@@ -154,7 +154,7 @@ void bad_tag(const pugi::xml_node node,
         for(auto iter = expected_tags.begin(); iter != expected_tags.end(); ++iter) {
             msg += "<";
             msg += *iter;
-            msg += ">"; 
+            msg += ">";
 
             if(iter < expected_tags.end() - 2) {
                 msg += ", ";
@@ -188,7 +188,7 @@ void bad_attribute(const pugi::xml_attribute attr,
         for(auto iter = expected_attributes.begin(); iter != expected_attributes.end(); ++iter) {
             msg += "'";
             msg += *iter;
-            msg += "'"; 
+            msg += "'";
 
             if(iter < expected_attributes.end() - 2) {
                 msg += ", ";
@@ -224,7 +224,7 @@ void bad_attribute_value(const pugi::xml_attribute attr,
         for(auto iter = expected_values.begin(); iter != expected_values.end(); ++iter) {
             msg += "'";
             msg += *iter;
-            msg += "'"; 
+            msg += "'";
 
             if(iter < expected_values.end() - 2) {
                 msg += ", ";

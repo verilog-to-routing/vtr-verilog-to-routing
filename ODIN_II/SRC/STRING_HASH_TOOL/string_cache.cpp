@@ -25,7 +25,7 @@ string_hash(STRING_CACHE * sc,
 	a = (a * mul + (unsigned char)string[i]) % mod;
     return a;
 }
-	
+
 void
 generate_sc_hash(STRING_CACHE * sc)
 {

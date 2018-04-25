@@ -25,7 +25,7 @@ typedef enum e_formula_obj{
 } t_formula_obj;
 
 
-/* Used to identify an operator in a formula */ 
+/* Used to identify an operator in a formula */
 typedef enum e_operator{
 	E_OP_UNDEFINED = 0,
 	E_OP_ADD,
@@ -41,7 +41,7 @@ typedef enum e_operator{
 
 
 /**** Class Definitions ****/
-/* This class is used to represent an object in a formula, such as 
+/* This class is used to represent an object in a formula, such as
    a number, a bracket, an operator, or a variable */
 class Formula_Object{
 public:
@@ -60,19 +60,19 @@ public:
 	Formula_Object(){
 		this->type = E_FML_UNDEFINED;
 	}
-	
+
 };
 
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
 /* converts specified formula to a vector in reverse-polish notation */
-static void formula_to_rpn( const char* formula, const t_formula_data &mydata, 
+static void formula_to_rpn( const char* formula, const t_formula_data &mydata,
 				vector<Formula_Object> &rpn_output );
 
 static void get_formula_object( const char *ch, int &ichar, const t_formula_data &mydata,
 				 Formula_Object *fobj );
 
-/* returns integer specifying precedence of passed-in operator. higher integer 
+/* returns integer specifying precedence of passed-in operator. higher integer
    means higher precedence */
 static int get_fobj_precedence( const Formula_Object &fobj );
 
@@ -95,7 +95,7 @@ static void handle_comma( const Formula_Object &fobj, vector<Formula_Object> &rp
 static int parse_rpn_vector( vector<Formula_Object> &rpn_vec );
 
 /* applies operation specified by 'op' to the given arguments. arg1 comes before arg2 */
-static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2, 
+static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 					const Formula_Object &op );
 
 /* checks if specified character represents an ASCII number */
@@ -120,31 +120,31 @@ int parse_formula(std::string formula, const t_formula_data& mydata ){
 	int result = -1;
 
 	/* output in reverse-polish notation */
-	vector<Formula_Object> rpn_output;	
+	vector<Formula_Object> rpn_output;
 
 	/* now we have to run the shunting-yard algorithm to convert formula to reverse polish notation */
 	formula_to_rpn( formula.c_str(), mydata, rpn_output );
-	
+
 	/* then we run an RPN parser to get the final result */
 	result = parse_rpn_vector(rpn_output);
-	
+
 	return result;
 }
 
 
 /* EXPERIMENTAL:
-   
-   returns integer result according to specified piece-wise formula and data. the piecewise 
-   notation specifies different formulas that should be evaluated based on the index of 
-   the incoming wire in 'mydata'. for example the formula 
+
+   returns integer result according to specified piece-wise formula and data. the piecewise
+   notation specifies different formulas that should be evaluated based on the index of
+   the incoming wire in 'mydata'. for example the formula
 
        {0:(W/2)} t-1; {(W/2):W} t+1;
 
-   indicates that the function "t-1" should be evaluated if the incoming wire index falls 
-   within the range [0,W/2) and that "t+1" should be evaluated if it falls within the 
+   indicates that the function "t-1" should be evaluated if the incoming wire index falls
+   within the range [0,W/2) and that "t+1" should be evaluated if it falls within the
    [W/2,W) range. The piece-wise format is:
-   
-       {start_0:end_0} formula_0; ... {start_i;end_i} formula_i; ... 
+
+       {start_0:end_0} formula_0; ... {start_i;end_i} formula_i; ...
 */
 int parse_piecewise_formula( const char *formula, const t_formula_data &mydata ){
 	int result = -1;
@@ -155,7 +155,7 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 	int tmp_ind_start = -1;
 	int tmp_ind_count = -1;
 	string substr;
-	
+
 	/* convert formula to string format */
 	string pw_formula(formula);
 	str_size = pw_formula.size();
@@ -163,7 +163,7 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 	if (pw_formula[str_ind] != '{'){
 		archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n");
 	}
-	
+
 	/* find the range to which t corresponds */
 	/* the first character must be '{' as verified above */
 	while (str_ind != str_size - 1){
@@ -184,7 +184,7 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 		tmp_ind_count = str_ind - tmp_ind_start;			/* range start is between { and : */
 		substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
 		range_start = parse_formula(substr.c_str(), mydata);
-	
+
 		/* get the end of the range */
 		tmp_ind_start = str_ind + 1;
 		char_found = goto_next_char(&str_ind, pw_formula, '}');
@@ -205,7 +205,7 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 		} else {
 			found_range = false;
 		}
-			
+
 		/* we're done if found correct range */
 		if (found_range){
 			break;
@@ -215,7 +215,7 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 			archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '{');
 		}
 	}
-	/* the string index should never actually get to the end of the string because we should have found the range to which the 
+	/* the string index should never actually get to the end of the string because we should have found the range to which the
 	   current wire number corresponds */
 	if (str_ind == str_size-1){
 		archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: could not find a closing '}'?\n");
@@ -238,7 +238,7 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 /* increments str_ind until it reaches specified char in formula. returns true if character was found, false otherwise */
 static bool goto_next_char( int *str_ind, const string &pw_formula, char ch){
 	bool result = true;
-	int str_size = pw_formula.size();	
+	int str_size = pw_formula.size();
 	if ((*str_ind) == str_size-1){
 		archfpga_throw( __FILE__, __LINE__, "goto_next_char: passed-in str_ind is already at the end of string\n");
 	}
@@ -258,9 +258,9 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch){
 }
 
 
-/* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result 
+/* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result
    is stored in the rpn_output vector in reverse-polish notation */
-static void formula_to_rpn( const char* formula, const t_formula_data &mydata, 
+static void formula_to_rpn( const char* formula, const t_formula_data &mydata,
 				vector<Formula_Object> &rpn_output ){
 
 	stack<Formula_Object> op_stack;		/* stack for handling operators and brackets in formula */
@@ -311,7 +311,7 @@ static void formula_to_rpn( const char* formula, const t_formula_data &mydata,
 
 		if (E_FML_BRACKET == fobj_dummy.type){
 			archfpga_throw( __FILE__, __LINE__, "in formula_to_rpn: Mismatched brackets in user-provided formula\n");
-		}		
+		}
 
 		rpn_output.push_back( fobj_dummy );
 		op_stack.pop();
@@ -321,9 +321,9 @@ static void formula_to_rpn( const char* formula, const t_formula_data &mydata,
 }
 
 
-/* Fills the formula object fobj according to specified character and mydata, 
+/* Fills the formula object fobj according to specified character and mydata,
    which help determine which numeric value, if any, gets assigned to fobj
-   ichar is incremented by the corresponding count if the need to step through the 
+   ichar is incremented by the corresponding count if the need to step through the
    character array arises */
 static void get_formula_object( const char *ch, int &ichar, const t_formula_data &mydata,
 				 Formula_Object *fobj ){
@@ -361,7 +361,7 @@ static void get_formula_object( const char *ch, int &ichar, const t_formula_data
 		while ( is_char_number(*ch) ){
 			ss << (*ch);
 			ichar++;
-			ch++;	
+			ch++;
 		}
 		ichar --;
 		fobj->type = E_FML_NUMBER;
@@ -397,15 +397,15 @@ static void get_formula_object( const char *ch, int &ichar, const t_formula_data
                 break;
 			default:
 				archfpga_throw( __FILE__, __LINE__, "in get_formula_object: unsupported character: %c\n", *ch);
-				break; 
-		}	
+				break;
+		}
 	}
-	
+
 	return;
 }
 
 
-/* returns integer specifying precedence of passed-in operator. higher integer 
+/* returns integer specifying precedence of passed-in operator. higher integer
    means higher precedence */
 static int get_fobj_precedence( const Formula_Object &fobj ){
 	int precedence = 0;
@@ -416,11 +416,11 @@ static int get_fobj_precedence( const Formula_Object &fobj ){
 		t_operator op = fobj.data.op;
 		switch (op){
 			case E_OP_ADD: //fallthrough
-			case E_OP_SUB: 
+			case E_OP_SUB:
 				precedence = 2;
 				break;
 			case E_OP_MULT: //fallthrough
-			case E_OP_DIV: 
+			case E_OP_DIV:
 				precedence = 3;
 				break;
             case E_OP_MIN: //fallthrough
@@ -431,12 +431,12 @@ static int get_fobj_precedence( const Formula_Object &fobj ){
                 break;
 			default:
 				archfpga_throw( __FILE__, __LINE__, "in get_fobj_precedence: unrecognized operator: %d\n", op);
-				break; 
+				break;
 		}
 	} else {
 		archfpga_throw( __FILE__, __LINE__, "in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type);
 	}
-	
+
 	return precedence;
 }
 
@@ -444,7 +444,7 @@ static int get_fobj_precedence( const Formula_Object &fobj ){
 /* Returns associativity of the specified operator */
 static bool op_associativity_is_left( const t_operator &/*op*/ ){
 	bool is_left = true;
-	
+
 	/* associativity is 'left' for all but the power operator, which is not yet implemented */
 	//TODO:
 	//if op is 'power' set associativity is_left=false and return
@@ -479,7 +479,7 @@ static void handle_operator( const Formula_Object &fobj, vector<Formula_Object> 
 
 			keep_going = ( (op_assoc_is_left && op_pr==top_pr)
 					|| op_pr<top_pr );
-			
+
 			if (keep_going){
 				/* pop top operator off stack onto the back of rpn_output */
 				fobj_dummy = op_stack.top();
@@ -492,7 +492,7 @@ static void handle_operator( const Formula_Object &fobj, vector<Formula_Object> 
 
 	/* place new operator object on top of stack */
 	op_stack.push(fobj);
-	
+
 	return;
 }
 
@@ -511,7 +511,7 @@ static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &
 	} else {
 		bool keep_going = false;
 		do{
-			/* here we keep popping operators off op_stack onto back of rpn_output until a 
+			/* here we keep popping operators off op_stack onto back of rpn_output until a
 			   left bracket is encountered */
 
 			if ( op_stack.empty() ){
@@ -519,7 +519,7 @@ static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &
 				archfpga_throw( __FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
 				keep_going = false;
 			}
-	
+
 			Formula_Object next_fobj = op_stack.top();
 			if (E_FML_BRACKET == next_fobj.type){
 				if (next_fobj.data.left_bracket){
@@ -559,7 +559,7 @@ static void handle_comma( const Formula_Object &fobj, vector<Formula_Object> &rp
 
     bool keep_going = true;
     do {
-        /* here we keep popping operators off op_stack onto back of rpn_output until a 
+        /* here we keep popping operators off op_stack onto back of rpn_output until a
            left bracket is encountered */
 
         if ( op_stack.empty() ){
@@ -588,7 +588,7 @@ static void handle_comma( const Formula_Object &fobj, vector<Formula_Object> &rp
             archfpga_throw( __FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
             keep_going = false;
         }
-        
+
     } while (keep_going);
 
 }
@@ -612,7 +612,7 @@ static int parse_rpn_vector( vector<Formula_Object> &rpn_vec ){
 		int ivec = 0;
 		/* keep going until we have gone through the whole vector */
 		while ( !rpn_vec.empty() ){
-			
+
 			/* keep going until we have hit an operator */
 			do{
 				ivec++;		/* first item should never be operator anyway */
@@ -643,12 +643,12 @@ static int parse_rpn_vector( vector<Formula_Object> &rpn_vec ){
 
 
 /* applies operation specified by 'op' to the given arguments. arg1 comes before arg2 */
-static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2, 
+static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 					const Formula_Object &op ){
 	int result = -1;
-	
+
 	/* arguments must be numbers */
-	if ( E_FML_NUMBER != arg1.type || 
+	if ( E_FML_NUMBER != arg1.type ||
 	     E_FML_NUMBER != arg2.type){
 		archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number\n");
 	}
@@ -688,15 +688,15 @@ static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 			archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: invalid operation: %d\n", op.data.op);
 			break;
 	}
-	
+
 	return result;
-} 
+}
 
 
 /* checks if specified character represents an ASCII number */
 static bool is_char_number ( const char ch ){
 	bool result = false;
-	
+
 	if ( ch >= '0' && ch <= '9' ){
 		result = true;
 	} else {
@@ -741,11 +741,11 @@ static int identifier_length (const char* str) {
     while(str[ichar] != '\0') {
 
         //No whitespace
-        if (str[ichar] == ' ') break; 
+        if (str[ichar] == ' ') break;
 
         //Not an operator
         if (is_operator(str[ichar])) break;
-        
+
         //First char must not be a number
         if (ichar == 0 && is_char_number(str[ichar])) break;
 

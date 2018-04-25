@@ -68,7 +68,7 @@ void sink_criticality_end(float target_criticality) {
 	if (!time_on_criticality.empty()) {
 		time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_clock) / CLOCKS_PER_SEC;
 		++itry_on_criticality[target_criticality / criticality_per_bin];
-	}	
+	}
 }
 
 static clock_t net_rebuild_clock;
@@ -96,7 +96,7 @@ void net_fanout_end(unsigned net_fanout) {
 }
 
 void time_on_fanout_analysis() {
-	vtr::printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n", 
+	vtr::printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n",
 		entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
 	vtr::printf_info("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
 	// using the global time_on_fanout and itry_on_fanout
@@ -104,9 +104,9 @@ void time_on_fanout_analysis() {
 	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
 		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
 			vtr::printf_info("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n",
-				bin*fanout_per_bin, 
-				time_on_fanout[bin], 
-				itry_on_fanout[bin], 
+				bin*fanout_per_bin,
+				time_on_fanout[bin],
+				itry_on_fanout[bin],
 				time_on_fanout_rebuild[bin],
 				finished_sinks[bin],
 				rerouted_sinks[bin]);
@@ -126,7 +126,7 @@ void time_on_criticality_analysis() {
 		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
 			vtr::printf_info("%4f           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
 		}
-	}	
+	}
 	return;
 }
 
@@ -161,7 +161,7 @@ void congestion_analysis() {
 	Congested_node_types congested;
 	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
 		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
-		vtr::printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
+		vtr::printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage);
 		// nodes of that type need specific printing
 		if (congestion_per_type[type] > 0 &&
 			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);

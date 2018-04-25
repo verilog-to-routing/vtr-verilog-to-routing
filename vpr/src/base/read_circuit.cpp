@@ -11,8 +11,8 @@
 
 static void process_circuit(AtomNetlist& netlist,
                             const t_model* library_models,
-                            bool should_absorb_buffers, 
-                            bool should_sweep_dangling_primary_ios, 
+                            bool should_absorb_buffers,
+                            bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
@@ -21,11 +21,11 @@ static void process_circuit(AtomNetlist& netlist,
 static void show_circuit_stats(const AtomNetlist& netlist);
 
 AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
-                                     const char* circuit_file, 
-                                     const t_model* user_models, 
+                                     const char* circuit_file,
+                                     const t_model* user_models,
                                      const t_model* library_models,
-                                     bool should_absorb_buffers, 
-                                     bool should_sweep_dangling_primary_ios, 
+                                     bool should_absorb_buffers,
+                                     bool should_sweep_dangling_primary_ios,
                                      bool should_sweep_dangling_nets,
                                      bool should_sweep_dangling_blocks,
                                      bool should_sweep_constant_primary_outputs,
@@ -49,8 +49,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
         vtr::ScopedPrintTimer t("Load circuit");
 
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
-                   || circuit_format == e_circuit_format::EBLIF); 
-        
+                   || circuit_format == e_circuit_format::EBLIF);
+
         netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
     }
 
@@ -60,8 +60,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 
     process_circuit(netlist,
                     library_models,
-                    should_absorb_buffers, 
-                    should_sweep_dangling_primary_ios, 
+                    should_absorb_buffers,
+                    should_sweep_dangling_primary_ios,
                     should_sweep_dangling_nets,
                     should_sweep_dangling_blocks,
                     should_sweep_constant_primary_outputs,
@@ -79,8 +79,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 
 static void process_circuit(AtomNetlist& netlist,
                             const t_model *library_models,
-                            bool should_absorb_buffers, 
-                            bool should_sweep_dangling_primary_ios, 
+                            bool should_absorb_buffers,
+                            bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
@@ -89,7 +89,7 @@ static void process_circuit(AtomNetlist& netlist,
 
     {
         vtr::ScopedPrintTimer t("Clean circuit");
-        
+
         //Clean-up lut buffers
         if(should_absorb_buffers) {
             absorb_buffer_luts(netlist, verbose_sweep);
@@ -114,9 +114,9 @@ static void process_circuit(AtomNetlist& netlist,
         }
 
         //Sweep unused logic/nets/inputs/outputs
-        sweep_iterative(netlist, 
-                        should_sweep_dangling_primary_ios, 
-                        should_sweep_dangling_nets, 
+        sweep_iterative(netlist,
+                        should_sweep_dangling_primary_ios,
+                        should_sweep_dangling_nets,
                         should_sweep_dangling_blocks,
                         should_sweep_constant_primary_outputs,
                         verbose_sweep);
@@ -202,16 +202,16 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     }
 
     //Print the statistics
-    vtr::printf_info("Circuit Statistics:\n"); 
-    vtr::printf_info("  Blocks: %zu\n", netlist.blocks().size()); 
+    vtr::printf_info("Circuit Statistics:\n");
+    vtr::printf_info("  Blocks: %zu\n", netlist.blocks().size());
     for(auto kv : block_type_counts) {
         vtr::printf_info("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Nets  : %zu\n", netlist.nets().size()); 
+    vtr::printf_info("  Nets  : %zu\n", netlist.nets().size());
     for(auto kv : net_stats) {
         vtr::printf_info("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size()); 
+    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
 
     if (netlist.blocks().empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");

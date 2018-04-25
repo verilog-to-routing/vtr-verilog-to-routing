@@ -252,7 +252,7 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 		vtr::free(pb_graph_node->interconnect_pins[i]);
 	}
 	vtr::free(pb_graph_node->interconnect_pins);
-	
+
 	vtr::free(pb_graph_node->input_pins);
 	vtr::free(pb_graph_node->output_pins);
 	vtr::free(pb_graph_node->clock_pins);
@@ -1196,9 +1196,9 @@ void UpdateAndCheckModels(t_arch *arch) {
 	}
 }
 
-/* Date:July 10th, 2013								
- * Author: Daniel Chen								
- * Purpose: Attempts to match a clock_name specified in an 
+/* Date:July 10th, 2013
+ * Author: Daniel Chen
+ * Purpose: Attempts to match a clock_name specified in an
  *			timing annotation (Tsetup, Thold, Tc_to_q) with the
  *			clock_name specified in the primitive. Applies
  *			to flipflop/memory right now.

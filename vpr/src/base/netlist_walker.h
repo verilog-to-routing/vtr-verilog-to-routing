@@ -9,7 +9,7 @@ class NetlistWalker {
     public:
         NetlistWalker(NetlistVisitor& netlist_visitor)
             : visitor_(netlist_visitor) {}
-        
+
         void walk();
 
     private:

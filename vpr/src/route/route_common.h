@@ -13,13 +13,13 @@ struct t_heap_prev {
 };
 
 
-/* Used by the heap as its fundamental data structure.                      * 
- * index:   Index (ID) of this routing resource node.                       * 
- * cost:    Cost up to and including this node.                             * 
- * u.prev_node:  Index (ID) of the predecessor to this node for             * 
- *          use in traceback.  NO_PREVIOUS if none.                         * 
- * u.next:  pointer to the next s_heap structure in the free                * 
- *          linked list.  Not used when on the heap.                        * 
+/* Used by the heap as its fundamental data structure.                      *
+ * index:   Index (ID) of this routing resource node.                       *
+ * cost:    Cost up to and including this node.                             *
+ * u.prev_node:  Index (ID) of the predecessor to this node for             *
+ *          use in traceback.  NO_PREVIOUS if none.                         *
+ * u.next:  pointer to the next s_heap structure in the free                *
+ *          linked list.  Not used when on the heap.                        *
  * prev_edge:  Index of the edge (between 0 and num_edges-1) used to        *
  *             connect the previous node to this one.  NO_PREVIOUS if       *
  *             there is no previous node.                                   *

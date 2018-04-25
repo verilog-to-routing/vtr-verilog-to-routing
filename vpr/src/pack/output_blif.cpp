@@ -3,7 +3,7 @@
  Date: February 11, 2013
 
  Print blif representation of circuit
- 
+
  Limitations: [jluu] Due to ABC requiring that all blackbox inputs be named exactly the same in the netlist to be checked as in the input netlist,
  I am forced to skip all internal connectivity checking for inputs going into subckts.  If in the future, ABC no longer treats
  blackboxes as primariy I/Os, then we should revisit this and make it so that we can do formal equivalence on a more representative netlist.
@@ -143,7 +143,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
                             VTR_ASSERT(net_id);
 
                             int k;
-                            for (k = 0; k < pb_type->ports[i].num_pins; k++) {								
+                            for (k = 0; k < pb_type->ports[i].num_pins; k++) {
                                 int node_index = pb_graph_node->input_pins[0][k].pin_count_in_cluster;
                                 AtomNetId a_net_id = pb_route[node_index].atom_net_id;
                                 if(a_net_id) {
@@ -164,7 +164,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
                 }
 			}
 		}
-        
+
         //Print the output port
 		for (int i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == OUT_PORT) {
@@ -273,7 +273,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 
 		/* Print input ports */
 		t_model_ports *port = cur->inputs;
-		
+
 		while (port != nullptr) {
             AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
@@ -318,7 +318,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
                 } else {
                     fprintf(fpout, "%s[%d]=unconn ", port->name, i);
                 }
-				
+
 				if (i % 4 == 3) {
 					if (i + 1 < port->size) {
 						fprintf(fpout, "\\\n");
@@ -330,7 +330,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 				fprintf(fpout, "\\\n");
 			}
 		}
-		fprintf(fpout, "\n");	
+		fprintf(fpout, "\n");
 		fprintf(fpout, "\n");
 
 
@@ -356,8 +356,8 @@ void print_routing_in_clusters(FILE *fpout, ClusterBlockId clb_index) {
 	t_pb_graph_node *pb_graph_node;
 	t_pb_graph_node *pb_graph_node_of_pin;
 	int max_pb_graph_pin;
-	t_pb_graph_pin** pb_graph_pin_lookup;		
-	
+	t_pb_graph_pin** pb_graph_pin_lookup;
+
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* print routing of clusters */
@@ -371,7 +371,7 @@ void print_routing_in_clusters(FILE *fpout, ClusterBlockId clb_index) {
 			int column = 0;
 			pb_graph_node_of_pin = pb_graph_pin_lookup[i]->parent_node;
 
-			/* Print interconnect */	
+			/* Print interconnect */
 			if(pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_route[i].driver_pb_pin_id == OPEN) {
 				/* Logic block input pin */
 				VTR_ASSERT(pb_graph_node_of_pin->parent_pb_graph_node == nullptr);
@@ -395,7 +395,7 @@ void print_routing_in_clusters(FILE *fpout, ClusterBlockId clb_index) {
 
 	free_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup);
 }
-	
+
 /* Print list of models to file */
 void print_models(FILE *fpout, t_model *user_models) {
 
@@ -405,7 +405,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 	while (cur != nullptr) {
 		fprintf(fpout, "\n");
 		fprintf(fpout, ".model %s\n", cur->name);
-		
+
 		/* Print input ports */
 		t_model_ports *port = cur->inputs;
 		if (port == nullptr) {
@@ -468,7 +468,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 void output_blif(const t_arch *arch, const char *out_fname) {
 	FILE *fpout;
 	int column;
-	
+
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	// Check that there's at least one block that exists
@@ -514,7 +514,7 @@ void output_blif(const t_arch *arch, const char *out_fname) {
 	for(auto clb_index : cluster_ctx.clb_nlist.blocks()) {
 		print_routing_in_clusters(fpout, clb_index);
 	}
-	
+
 	fprintf(fpout, "\n.end\n");
 
 	print_models(fpout, arch->models);

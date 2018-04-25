@@ -9,7 +9,7 @@ void insert(coeff_t c, cost_t cost, cfset_t &where) {
     /* was this coefficient previously generated with lesser cost? */
     /*if(GEN[c] >= 0 && GEN[c] < cost)
 	return;
-	else*/ 
+	else*/
     {
 	GEN[c] = cost;
 	where.insert(c);
@@ -39,7 +39,7 @@ void compute_all_sumdiffs(cfset_t &result, cost_t cost, coeff_t num1, coeff_t nu
 void compute_gen_set(const adj_t *adj) {
     outset_t &predset = GENSETS[adj->pred];
     outset_t out;
-    
+
     for(outiter_t pred = predset.begin(); pred != predset.end(); ++pred) {
 	coeff_t c1 = (*pred)[adj->in1];
 	coeff_t c2 = (*pred)[adj->in2];
@@ -50,7 +50,7 @@ void compute_gen_set(const adj_t *adj) {
 	    curout.push_back(*r);
 	    out.insert(curout);
 	}
-    }    
+    }
     GENSETS[adj] = out;
 }
 

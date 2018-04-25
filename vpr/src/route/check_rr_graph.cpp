@@ -143,8 +143,8 @@ void check_rr_graph(const t_graph_type graph_type,
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(inode)) {
 
                 /* A global CLB input pin will not have any edges, and neither will  *
-                 * a SOURCE or the start of a carry-chain.  Anything else is an error.                             
-                 * For simplicity, carry-chain input pin are entirely ignored in this test				 
+                 * a SOURCE or the start of a carry-chain.  Anything else is an error.
+                 * For simplicity, carry-chain input pin are entirely ignored in this test
                  */
                 bool is_chain = false;
                 if (rr_type == IPIN) {
@@ -172,11 +172,11 @@ void check_rr_graph(const t_graph_type graph_type,
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[node.xlow()][node.ylow()].type;
                             vtr::printf_error(__FILE__, __LINE__,
-                                    "in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s has no fanin.\n", 
+                                    "in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s has no fanin.\n",
                                     inode, node.type_string(), node.xlow(), node.ylow(), block_type->name, node.side_string());
                         }
                     } else {
-                        vtr::printf_error(__FILE__, __LINE__, "in check_rr_graph: node %d (%s) has no fanin.\n", 
+                        vtr::printf_error(__FILE__, __LINE__, "in check_rr_graph: node %d (%s) has no fanin.\n",
                                 inode, device_ctx.rr_nodes[inode].type_string());
                     }
                 } else if (!is_chain && !is_fringe_warning_sent) {
@@ -222,8 +222,8 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 
 void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext& device_ctx) {
 
-    /* This routine checks that the rr_node is inside the grid and has a valid  
-     * pin number, etc.  
+    /* This routine checks that the rr_node is inside the grid and has a valid
+     * pin number, etc.
      */
 
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
@@ -561,7 +561,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
         case SwitchType::MUX:       //Fallthrough
         case SwitchType::PASS_GATE: //Fallthrough
         case SwitchType::SHORT:     //Fallthrough
-            break; //pass 
+            break; //pass
         default:
             VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
     }

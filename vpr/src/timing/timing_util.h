@@ -12,7 +12,7 @@
 #include "vpr_utils.h"
 #include "clustered_netlist_utils.h"
 
-double sec_to_nanosec(double seconds); 
+double sec_to_nanosec(double seconds);
 
 double sec_to_mhz(double seconds);
 
@@ -81,12 +81,12 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags
 //
-// Criticality (in [0., 1.]) represents how timing-critical something is, 
+// Criticality (in [0., 1.]) represents how timing-critical something is,
 // 0. is non-critical and 1. is most-critical.
 //
 // This returns 'relaxed per constraint' criticaly as defined in:
 //
-//     M. Wainberg and V. Betz, "Robust Optimization of Multiple Timing Constraints," 
+//     M. Wainberg and V. Betz, "Robust Optimization of Multiple Timing Constraints,"
 //         IEEE CAD, vol. 34, no. 12, pp. 1942-1953, Dec. 2015. doi: 10.1109/TCAD.2015.2440316
 //
 // which handles the trade-off between different timing constraints in multi-clock circuits.

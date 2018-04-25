@@ -15,8 +15,8 @@
 
 
 namespace vtr {
-	
-	
+
+
 #ifndef __GLIBC__
 int malloc_trim(size_t /*pad*/) {
     return 0;

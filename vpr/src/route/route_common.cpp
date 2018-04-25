@@ -39,7 +39,7 @@ using namespace std;
 
 
 #include "path_delay.h"
- 
+
 
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
@@ -87,7 +87,7 @@ static vtr::t_chunk linked_f_pointer_ch;
  *  |           |         |           |         |           |               *
  *  +-----------+         +-----------+         +-----------+               *
  *                                                            } capacity in *
- *                        chan_x[1][0]          chan_x[2][0]  } chan_width  * 
+ *                        chan_x[1][0]          chan_x[2][0]  } chan_width  *
  *                                                            } _x[0]       *
  *                        +-----------+         +-----------+               *
  *                 No     |           |	   No   |           |               *
@@ -171,7 +171,7 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used&  clb_opins_used_locally,
 		const t_clb_opins_used&  saved_clb_opins_used_locally) {
-	
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -251,10 +251,10 @@ void try_graph(int width_fac, t_router_opts router_opts,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
 			&device_ctx.chan_width,
-			device_ctx.num_arch_switches, 
+			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
-			router_opts.base_cost_type, 
+			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs,
@@ -306,15 +306,15 @@ bool try_route(int width_fac, t_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-        
+
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
 			&device_ctx.chan_width,
-			device_ctx.num_arch_switches, 
+			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
-			router_opts.base_cost_type, 
+			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs,
@@ -349,7 +349,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
 
-		success = try_timing_driven_route(router_opts, net_delay, 
+		success = try_timing_driven_route(router_opts, net_delay,
             netlist_pin_lookup,
             timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -417,14 +417,14 @@ void pathfinder_update_path_cost(t_trace *route_segment_start,
 
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
 
-	/* Updates pathfinder's congestion cost by either adding or removing the 
+	/* Updates pathfinder's congestion cost by either adding or removing the
 	 * usage of a resource node. pres_cost is Pn in the Pathfinder paper.
 	 * pres_cost is set according to the overuse that would result from having
 	 * ONE MORE net use this routing node.     */
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
-    
+
 	int occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
 	route_ctx.rr_node_route_inf[inode].set_occ(occ);
 	// can't have negative occupancy
@@ -510,12 +510,12 @@ void init_route_structs(int bb_factor) {
 	 * really were.                                                           */
 
 	if (rr_modified_head != nullptr) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in init_route_structs. List of modified rr nodes is not empty.\n");
 	}
 
 	if (heap_tail != 1) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in init_route_structs. Heap is not empty.\n");
 	}
 }
@@ -566,7 +566,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 
 	auto rr_type = device_ctx.rr_nodes[node].type();
 	if (rr_type != SINK) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in traceback_branch: Expected type = SINK (%d).\n");
 	}
 
@@ -616,7 +616,7 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
         std::tie(branch_head, branch_tail) = add_trace_non_configurable(branch_head, branch_tail, new_node, trace_nodes);
     }
 
-    return {branch_head, branch_tail}; 
+    return {branch_head, branch_tail};
 }
 
 //Traces any non-configurable subtrees from branch_head, returning the new branch_head and updating trace_nodes
@@ -893,13 +893,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 			// another hack to avoid I/Os, whole function needs a rethink
 			if(is_io_type(type))
 				continue;
-			
+
 			if ((cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) != ClusterNetId::INVALID()
 					&& cluster_ctx.clb_nlist.net_sinks(cluster_ctx.clb_nlist.block_net(blk_id, clb_pin)).size() == 0)
 					|| cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) == ClusterNetId::INVALID()) {
-                
+
 				iclass = type->pin_class[clb_pin];
-				
+
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
 					VTR_ASSERT(iclass >= class_low && iclass <= class_high);
@@ -1021,7 +1021,7 @@ void reset_rr_node_route_structs() {
 
 
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
-* index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    * 
+* index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
 * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
     vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals;
@@ -1117,7 +1117,7 @@ static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
 	 * If bb_factor = max(device_ctx.grid.width()-1, device_cts.grid.height() - 1),
      * the maze router will search every channel in     *
 	 * the FPGA if necessary.  The bounding boxes returned by this routine *
-	 * are different from the ones used by the placer in that they are     * 
+	 * are different from the ones used by the placer in that they are     *
 	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1) rather than (1,1) and   *
 	 * (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            */
     vtr::vector_map<ClusterNetId, t_bb> route_bb;
@@ -1252,7 +1252,7 @@ namespace heap_ {
 			heap = (t_heap **) vtr::realloc((void *) (heap + 1),
 					heap_size * sizeof(t_heap *));
 			heap--; /* heap goes from [1..heap_size] */
-		}		
+		}
 	}
 
 	// adds an element to the back of heap and expand if necessary, but does not maintain heap property
@@ -1269,7 +1269,7 @@ namespace heap_ {
 		/* Puts an rr_node on the heap with the same condition as node_to_heap,
 		   but do not fix heap property yet as that is more efficiently done from
 		   bottom up with build_heap    */
-	
+
         auto& route_ctx = g_vpr_ctx.routing();
 		if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
 			return;
@@ -1307,7 +1307,7 @@ namespace heap_ {
 		std::vector<t_heap*> heap_copy {heap + 1, heap + heap_tail};
 		// sort based on cost with cheapest first
 		VTR_ASSERT(heap_copy.size() == size());
-		std::sort(begin(heap_copy), end(heap_copy), 
+		std::sort(begin(heap_copy), end(heap_copy),
 			[](const t_heap* a, const t_heap* b){
 			return a->cost < b->cost;
 		});
@@ -1316,7 +1316,7 @@ namespace heap_ {
 		while (!is_empty_heap()) {
 			while (heap_copy[i]->index == OPEN) ++i;	// skip the ones that won't be extracted
 			auto top = get_heap_head();
-			if (abs(top->cost - heap_copy[i]->cost) > float_epsilon)	
+			if (abs(top->cost - heap_copy[i]->cost) > float_epsilon)
 				std::cout << "mismatch with sorted " << top << '(' << top->cost << ") " << heap_copy[i] << '(' << heap_copy[i]->cost << ")\n";
 			++i;
 		}
@@ -1328,7 +1328,7 @@ namespace heap_ {
 void add_to_heap(t_heap *hptr) {
 	heap_::expand_heap_if_full();
 	// start with undefined hole
-	++heap_tail;	
+	++heap_tail;
 	heap_::sift_up(heap_tail - 1, hptr);
 }
 
@@ -1354,7 +1354,7 @@ get_heap_head() {
 			return (nullptr);
 		}
 
-		cheapest = heap[1]; 
+		cheapest = heap[1];
 
 		hole = 1;
 		child = 2;
@@ -1462,7 +1462,7 @@ alloc_linked_f_pointer() {
 	t_linked_f_pointer *temp_ptr;
 
 	if (linked_f_pointer_free_head == nullptr) {
-		/* No elements on the free list */	
+		/* No elements on the free list */
 	linked_f_pointer_free_head = (t_linked_f_pointer *) vtr::chunk_malloc(sizeof(t_linked_f_pointer),&linked_f_pointer_ch);
 	linked_f_pointer_free_head->next = nullptr;
 	}
@@ -1507,7 +1507,7 @@ void print_route(const char* placement_file, const char* route_file) {
 					ilow = device_ctx.rr_nodes[inode].xlow();
 					jlow = device_ctx.rr_nodes[inode].ylow();
 
-					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, 
+					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
 							device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
 
 					if ((ilow != device_ctx.rr_nodes[inode].xhigh())
@@ -1541,8 +1541,8 @@ void print_route(const char* placement_file, const char* route_file) {
 						break;
 
 					default:
-						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-								  "in print_route: Unexpected traceback element type: %d (%s).\n", 
+						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+								  "in print_route: Unexpected traceback element type: %d (%s).\n",
 								  rr_type, device_ctx.rr_nodes[inode].type_string());
 						break;
 					}
@@ -1562,7 +1562,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					/* Uncomment line below if you're debugging and want to see the switch types *
 					 * used in the routing.                                                      */
-					fprintf (fp, "Switch: %d", tptr->iswitch);    
+					fprintf (fp, "Switch: %d", tptr->iswitch);
 
 					fprintf(fp, "\n");
 
@@ -1582,7 +1582,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 				fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
 					cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
-					place_ctx.block_locs[block_id].x, 
+					place_ctx.block_locs[block_id].x,
 					place_ctx.block_locs[block_id].y,
 					iclass);
 			}
@@ -1607,7 +1607,7 @@ void print_route(const char* placement_file, const char* route_file) {
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins) {
 
-	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
+	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs.
 	 This was especially important for logical equivalence; however, now that we have a very general logic cluster,
 	 it does not make sense to allow LUT duplication implicitly. We'll need to look into how we want to handle this case
 	 */
@@ -1708,9 +1708,9 @@ void print_traceback(ClusterNetId net_id) {
 	t_trace* head = route_ctx.trace_head[net_id];
 	while (head) {
 		int inode {head->index};
-		if (device_ctx.rr_nodes[inode].type() == SINK) 
+		if (device_ctx.rr_nodes[inode].type() == SINK)
 			vtr::printf_info("%d(sink)(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
-		else 
+		else
 			vtr::printf_info("%d(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
 		head = head->next;
 	}
@@ -1761,7 +1761,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
 
     if (next) {
         if (trace->iswitch == OPEN) { //End of a branch
-            
+
             //Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
                 VPR_THROW(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
@@ -1820,7 +1820,7 @@ void print_invalid_routing_info() {
         t_trace* tptr = route_ctx.trace_head[net_id];
 
         while (tptr != nullptr) {
-            rr_node_nets.emplace(tptr->index, net_id); 
+            rr_node_nets.emplace(tptr->index, net_id);
             tptr = tptr->next;
         }
     }
@@ -1835,7 +1835,7 @@ void print_invalid_routing_info() {
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
                 auto net_id = itr->second;
-                vtr::printf("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id)); 
+                vtr::printf("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
             }
 
 		}
@@ -1856,7 +1856,7 @@ void print_rr_node_route_inf() {
             if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
                 vtr::printf("*");
             }
-                    
+
             vtr::printf(" pcost: %g back_pcost: %g\n",
                     route_ctx.rr_node_route_inf[inode].path_cost, route_ctx.rr_node_route_inf[inode].backward_path_cost);
         }

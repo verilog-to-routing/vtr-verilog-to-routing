@@ -30,7 +30,7 @@ template<typename X, typename Y> Y linear_interpolate_or_extrapolate(const std::
 
 	/* the intention of this function is to interpolate/extrapolate. we can't do so with less than 2 values in the xy_map */
 	if (xy_map->size() < 2){
-        throw VtrError("linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs", __FILE__, __LINE__); 
+        throw VtrError("linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs", __FILE__, __LINE__);
 	}
 
     auto itr = xy_map->find(requested_x);

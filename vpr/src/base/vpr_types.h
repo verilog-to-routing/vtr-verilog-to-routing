@@ -51,12 +51,12 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
-/* For update_screen.  Denotes importance of update. 
+/* For update_screen.  Denotes importance of update.
  * By default MINOR only updates the screen, while MAJOR
  * pauses graphics for the user to interact */
 enum class ScreenUpdatePriority {
     MINOR = 0,
-    MAJOR = 1 
+    MAJOR = 1
 };
 
 #define MAX_SHORT 32767
@@ -93,8 +93,8 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define NEVER_CLUSTER -2
 #define NOT_VALID -10000  /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
-#ifndef UNDEFINED						 
-#define UNDEFINED -1    
+#ifndef UNDEFINED
+#define UNDEFINED -1
 #endif
 
 /* Selection algorithm for selecting next seed  */
@@ -116,9 +116,9 @@ struct t_pb_stats;
 struct t_pb_route;
 
 /* A t_pb represents an instance of a clustered block, which may be:
- *    1) A top level clustered block which is placeable at a location in FPGA device 
+ *    1) A top level clustered block which is placeable at a location in FPGA device
  *       grid location (e.g. a Logic block, RAM block, DSP block), or
- *    2) An internal 'block' representing an intermediate level of hierarchy inside a top level 
+ *    2) An internal 'block' representing an intermediate level of hierarchy inside a top level
  *       block (e.g. a BLE), or
  *    3) A leaf (i.e. atom or primitive) block representing an element of netlist (e.g. LUT,
  *       flip-lop, memory slice etc.)
@@ -140,7 +140,7 @@ struct t_pb {
 	/* Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
 	*  t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
 	*  Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
-	t_pb_route *pb_route = nullptr; 
+	t_pb_route *pb_route = nullptr;
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
@@ -227,7 +227,7 @@ struct t_pb {
 
     //Returns the root pb containing this pb
     const t_pb* root_pb() const {
-        
+
         const t_pb* curr_pb = this;
         while(curr_pb->parent_pb != nullptr) {
             curr_pb = curr_pb->parent_pb;
@@ -267,7 +267,7 @@ struct t_pb {
     }
 
 private:
-    std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated 
+    std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated
                                                        //with any primitive pins which have been rotated during clustering
 
 };
@@ -289,10 +289,10 @@ enum e_pack_pattern_molecule_type {
 	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
 };
 
-/* Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
+/* Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing
  * Store in linked list
- * 
- * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  
+ *
+ * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.
  * Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
  */
@@ -300,7 +300,7 @@ struct t_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
 	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
-    std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule, 
+    std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule,
                                                 index on pack_pattern_block->index of pack pattern */
 	bool valid; /* Whether or not this molecule is still valid */
 
@@ -357,7 +357,7 @@ enum e_tnode_type {
 	TN_OUTPAD_SINK, /* output from an output I/O pad */
 	TN_CB_IPIN, /* input pin to complex block */
 	TN_CB_OPIN, /* output pin from complex block */
-	TN_INTERMEDIATE_NODE, /* Used in post-packed timing graph only: 
+	TN_INTERMEDIATE_NODE, /* Used in post-packed timing graph only:
 	 connection between intra-cluster pins. */
 	TN_PRIMITIVE_IPIN, /* input pin to a primitive (e.g. a LUT) */
 	TN_PRIMITIVE_OPIN, /* output pin from a primitive (e.g. a LUT) */
@@ -395,12 +395,12 @@ struct t_tnode {
 	 not bother to refer to itself. */
 	int num_edges;
 	float T_arr; /* Arrival time of the last input signal to this node. */
-	float T_req; /* Required arrival time of the last input signal to this node 
+	float T_req; /* Required arrival time of the last input signal to this node
 	 if the critical path is not to be lengthened. */
 	ClusterBlockId block; /* atom block primitive which this tnode is part of */
 
 #ifdef PATH_COUNTING
-	float forward_weight, backward_weight; /* Weightings of the importance of paths 
+	float forward_weight, backward_weight; /* Weightings of the importance of paths
 	 fanning into and out of this node, respectively. */
 #endif
 
@@ -476,7 +476,7 @@ struct t_override_constraint {
 	int file_line_number; /* line in the SDC file clock was constrained on - used for error reporting */
 };
 
-struct t_timing_constraints { /* Container structure for all SDC timing constraints. 
+struct t_timing_constraints { /* Container structure for all SDC timing constraints.
  See top-level comment to read_sdc.c for details on members. */
 	int num_constrained_clocks; /* number of clocks with timing constraints */
 	t_clock * constrained_clocks; /* [0..timing_ctx.sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
@@ -511,7 +511,7 @@ struct t_timing_inf {
 	bool timing_analysis_enabled;
 	float C_ipin_cblock;
 	float T_ipin_cblock;
-    std::string SDCFile; 
+    std::string SDCFile;
     std::string slack_definition;
 };
 
@@ -534,7 +534,7 @@ enum pfreq {
 	PLACE_NEVER, PLACE_ONCE, PLACE_ALWAYS
 };
 
-/* Are the pads free to be moved, locked in a random configuration, or 
+/* Are the pads free to be moved, locked in a random configuration, or
  * locked in user-specified positions?                                 */
 enum e_pad_loc_type {
 	FREE, RANDOM, USER
@@ -551,7 +551,7 @@ struct t_net_power {
 	float density;
 };
 
-/* s_grid_tile is the minimum tile of the fpga                         
+/* s_grid_tile is the minimum tile of the fpga
  * type:  Pointer to type descriptor, NULL for illegal
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block */
@@ -641,7 +641,7 @@ struct t_grid_blocks {
     int usage;
 
     //The clustered blocks associated with this grid location
-    std::vector<ClusterBlockId> blocks; 
+    std::vector<ClusterBlockId> blocks;
 };
 
 /* Names of various files */

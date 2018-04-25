@@ -28,7 +28,7 @@ class Connection_based_routing_resources {
 	// contains rt_nodes representing sinks reached legally while pruning the route tree
 	// used to populate rt_node_of_sink after building route tree from traceback
 	// order does not matter
-	std::vector<t_rt_node*> reached_rt_sinks;	
+	std::vector<t_rt_node*> reached_rt_sinks;
 public:
 	Connection_based_routing_resources();
 	// adding to the resources when they are reached during pruning
@@ -67,7 +67,7 @@ private:
 	// the current net that's being routed
 	ClusterNetId current_inet;
 
-	// the most recent stable critical path delay 
+	// the most recent stable critical path delay
 	// compared against the current iteration's critical path delay
 	// if the growth is too high, some connections will be forcibly ripped up
 	// those ones will be highly critical ones that are suboptimal (compared to 1st iteration minimum delay)
@@ -113,12 +113,12 @@ public:
         }
 		return itr->second;
 	}
-	void clear_force_reroute_for_connection(int rr_sink_node); 
+	void clear_force_reroute_for_connection(int rr_sink_node);
 	void clear_force_reroute_for_net();
 
 	// check each connection of each net to see if any satisfy the criteria described above (for the forcible_reroute_connection_flag data structure)
 	// and if so, mark them to be rerouted
-	bool forcibly_reroute_connections(float max_criticality, 
+	bool forcibly_reroute_connections(float max_criticality,
             std::shared_ptr<const SetupTimingInfo> timing_info,
             const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
             vtr::vector_map<ClusterNetId, float *> &net_delay);

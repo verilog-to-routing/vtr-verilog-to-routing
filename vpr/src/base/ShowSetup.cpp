@@ -82,7 +82,7 @@ void printClusteredNetlistStats() {
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-        auto type = cluster_ctx.clb_nlist.block_type(blk_id); 
+        auto type = cluster_ctx.clb_nlist.block_type(blk_id);
 		if (is_io_type(type)) {
 			for (j = 0; j < type->num_pins; j++) {
 				if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
@@ -243,7 +243,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 			vtr::printf_info("RouterOpts.routing_failure_predictor = AGGRESSIVE\n");
 		else if (RouterOpts.routing_failure_predictor == OFF)
 			vtr::printf_info("RouterOpts.routing_failure_predictor = OFF\n");
-                
+
                 if(RouterOpts.routing_budgets_algorithm == DISABLE){
 			vtr::printf_info("RouterOpts.routing_budgets_algorithm = DISABLE\n");
                 }else if(RouterOpts.routing_budgets_algorithm == MINIMAX){
@@ -251,8 +251,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 }else if(RouterOpts.routing_budgets_algorithm == SCALE_DELAY){
 			vtr::printf_info("RouterOpts.routing_budgets_algorithm = SCALE_DELAY\n");
                 }
-                
-                
+
+
 	} else {
 		VTR_ASSERT(GLOBAL == RouterOpts.route_type);
 

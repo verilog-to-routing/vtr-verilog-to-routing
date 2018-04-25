@@ -45,7 +45,7 @@ struct t_selected_sub_block_info {
 		inline std::size_t operator()(const clb_pin_tuple& v) const {
 			std::hash<int> int_hasher;
 			std::hash<const void*> ptr_hasher;
-			return int_hasher(size_t(v.clb_index)) 
+			return int_hasher(size_t(v.clb_index))
 				^ ptr_hasher((const void*)v.pb_gnode);
 		}
 	};
@@ -67,8 +67,8 @@ public:
 
 	/*
 	 * gets the t_pb that is currently selected. Please don't use this if
-	 * you think you can get away with using is_selected(...) or get_selected_pb_gnode() and 
-	 * get_containing_block(). May disappear in future. 
+	 * you think you can get away with using is_selected(...) or get_selected_pb_gnode() and
+	 * get_containing_block(). May disappear in future.
 	 */
 	t_pb* get_selected_pb() const;
 
@@ -82,24 +82,24 @@ public:
 };
 
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the
- * "Blk Internal" button. With each consecutive click of the button, a lower level in the 
- * pb_graph will be shown for every clb. When the number of clicks on the button exceeds 
+ * "Blk Internal" button. With each consecutive click of the button, a lower level in the
+ * pb_graph will be shown for every clb. When the number of clicks on the button exceeds
  * the maximum level of sub-blocks that exists in the pb_graph, internals drawing
  * will be disabled.
  */
 void toggle_blk_internal(void (*drawscreen_ptr)());
 
-/* This function pre-allocates space to store bounding boxes for all sub-blocks. Each 
+/* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
  * sub-block is identified by its descriptor_type and a unique pin ID in the type.
  */
 void draw_internal_alloc_blk();
 
-/* This function initializes bounding box values for all sub-blocks. It calls helper functions 
+/* This function initializes bounding box values for all sub-blocks. It calls helper functions
  * to traverse through the pb_graph for each descriptor_type and compute bounding box values.
  */
 void draw_internal_init_blk();
 
-/* Top-level drawing routine for internal sub-blocks. The function traverses through all 
+/* Top-level drawing routine for internal sub-blocks. The function traverses through all
  * grid tiles and calls helper function to draw inside each block.
  */
 void draw_internal_draw_subblk();
@@ -123,7 +123,7 @@ t_selected_sub_block_info& get_selected_sub_block_info();
 void draw_logical_connections();
 
 
-void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, 
+void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk,
                                    int* pin_index, int* total_pins);
 
 #endif /* INTRA_LOGIC_BLOCK_H */

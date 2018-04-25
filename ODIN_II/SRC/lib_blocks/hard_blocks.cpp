@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 
 
@@ -46,7 +46,7 @@ void register_hb_port_size(t_model_ports *hb_ports, int size)
 	 * else
 	 *	TODO error
 	 */
-	
+
 }
 
 t_model_ports *get_model_port(t_model_ports *ports, const char *name)
@@ -84,7 +84,7 @@ void register_hard_blocks()
 			register_hb_port_size(
 				get_model_port(single_port_rams->inputs, "data")
 				, 1);
-				
+
 			register_hb_port_size(
 				get_model_port(single_port_rams->outputs, "out")
 				, 1);
@@ -113,9 +113,9 @@ void register_hard_blocks()
 				get_model_port(dual_port_rams->outputs, "out2")
 				, 1);
 		}
-		
+
 		int split_depth = get_dp_ram_split_depth();
-		
+
 		register_hb_port_size(
 			get_model_port(dual_port_rams->inputs, "addr1")
 			, split_depth);

@@ -13,7 +13,7 @@ namespace vtr {
 //Each instance of this class peels off one-dimension and returns a NdMatrixProxy representing
 //the resulting sub-matrix. This is repeated recursively until we hit the 1-dimensional base-case.
 //
-//Since this expansion happens at compiler time all the proxy classes get optimized away, 
+//Since this expansion happens at compiler time all the proxy classes get optimized away,
 //yielding both high performance and generality.
 //
 //Recursive case: N-dimensional array
@@ -96,16 +96,16 @@ class NdMatrixProxy<T,1> {
 };
 
 //Base class for an N-dimensional matrix supporting arbitrary index ranges per dimension.
-//This class implements all of the matrix handling (lifetime etc.) except for indexing 
-//(which is implemented in the NdMatrix class). Indexing is split out to allows specialization 
+//This class implements all of the matrix handling (lifetime etc.) except for indexing
+//(which is implemented in the NdMatrix class). Indexing is split out to allows specialization
 //of indexing for N = 1.
 //
 //Implementation:
 //
-//This class uses a single linear array to store the matrix in c-style (row major) 
+//This class uses a single linear array to store the matrix in c-style (row major)
 //order. That is, the right-most index is laid out contiguous memory.
 //
-//This should improve memory usage (no extra pointers to store for each dimension), 
+//This should improve memory usage (no extra pointers to store for each dimension),
 //and cache locality (less indirection via pointers, predictable strides).
 //
 //The indicies are calculated based on the dimensions to access the appropriate elements.
@@ -131,7 +131,7 @@ class NdMatrixBase {
         }
 
     public: //Accessors
-        //Returns the size of the matrix (number of elements) 
+        //Returns the size of the matrix (number of elements)
         size_t size() const {
             VTR_ASSERT_DEBUG_MSG(calc_size() == size_, "Calculated and current matrix size must be consistent");
             return size_;
@@ -243,8 +243,8 @@ class NdMatrixBase {
         std::unique_ptr<T[]> data_ = nullptr;
 };
 
-//An N-dimensional matrix supporting arbitrary (continuous) index ranges 
-//per dimension. 
+//An N-dimensional matrix supporting arbitrary (continuous) index ranges
+//per dimension.
 //
 //Examples:
 //
@@ -305,7 +305,7 @@ class NdMatrix : public NdMatrixBase<T,N> {
 
         //Access an element
         //
-        //Returns a proxy-object to allow chained array-style indexing 
+        //Returns a proxy-object to allow chained array-style indexing
         NdMatrixProxy<T,N-1> operator[](size_t index) {
             //Call the const version, since returned by value don't need to worry about const
             return const_cast<const NdMatrix<T,N>*>(this)->operator[](index);

@@ -6,12 +6,12 @@
 #include "vpr_error.h"
 #include "slack_evaluation.h"
 #include "globals.h"
- 
+
 #include "tatum/report/graphviz_dot_writer.hpp"
 
 void warn_unconstrained(std::shared_ptr<const tatum::TimingAnalyzer> analyzer);
 
-//NOTE: These classes should not be used directly but created with the 
+//NOTE: These classes should not be used directly but created with the
 //      make_*_timing_info() functions in timing_info.h, and used through
 //      their abstract interfaces (SetupTimingInfo, HoldTimingInfo etc.)
 
@@ -19,7 +19,7 @@ template<class DelayCalc>
 class ConcreteSetupTimingInfo : public SetupTimingInfo {
     public:
         //Constructors
-        ConcreteSetupTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v, 
+        ConcreteSetupTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v,
                                 std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                 std::shared_ptr<DelayCalc> delay_calc,
                                 std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer_v)
@@ -94,7 +94,7 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             {
                 auto start_time = Clock::now();
 
-                setup_analyzer_->update_setup_timing(); 
+                setup_analyzer_->update_setup_timing();
 
                 sta_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
             }
@@ -103,7 +103,7 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             {
                 auto start_time = Clock::now();
 
-                update_setup_slacks(); 
+                update_setup_slacks();
 
                 slack_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
             }
@@ -142,7 +142,7 @@ template<class DelayCalc>
 class ConcreteHoldTimingInfo : public HoldTimingInfo {
     public:
         //Constructors
-        ConcreteHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v, 
+        ConcreteHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v,
                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                std::shared_ptr<DelayCalc> delay_calc,
                                std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer_v)
@@ -156,11 +156,11 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
     public:
         //Accessors
-        float hold_total_negative_slack() const override { 
+        float hold_total_negative_slack() const override {
             return find_hold_total_negative_slack(*hold_analyzer_);
         }
 
-        float hold_worst_negative_slack() const override { 
+        float hold_worst_negative_slack() const override {
             return find_hold_worst_negative_slack(*hold_analyzer_);
         }
 
@@ -187,9 +187,9 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
             }
         }
 
-        void update_hold() override { 
+        void update_hold() override {
             hold_analyzer_->update_hold_timing();
-            update_hold_slacks(); 
+            update_hold_slacks();
         }
 
         void update_hold_slacks() {
@@ -214,7 +214,7 @@ template<class DelayCalc>
 class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     public:
         //Constructors
-        ConcreteSetupHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v, 
+        ConcreteSetupHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v,
                                     std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                     std::shared_ptr<DelayCalc> delay_calc,
                                     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer_v)
@@ -260,12 +260,12 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         //Mutators
 
         //Update both setup and hold simultaneously
-        //  This is more efficient than calling update_hold() and update_setup() separately, since 
+        //  This is more efficient than calling update_hold() and update_setup() separately, since
         //  it performs a single combined STA to update both setup and hold (instead of calling it
         //  twice).
         void update() override {
-            setup_hold_analyzer_->update_timing(); 
-            setup_timing_.update_setup_slacks(); 
+            setup_hold_analyzer_->update_timing();
+            setup_timing_.update_setup_slacks();
             hold_timing_.update_hold_slacks();
 
             if(warn_unconstrained_) {
@@ -305,14 +305,14 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
 
         float setup_pin_slack(AtomPinId /*pin*/) const override { return 0.; }
 
-        float setup_pin_criticality(AtomPinId /*pin*/) const override { 
+        float setup_pin_criticality(AtomPinId /*pin*/) const override {
             /*
              * Note: There is a big difference between setting pin criticality to 0 compared to 1.
-             * If pin criticality is set to 0, then the current path delay is completely ignored 
-             * during optimization. By setting pin criticality to 1, the current path delay will 
+             * If pin criticality is set to 0, then the current path delay is completely ignored
+             * during optimization. By setting pin criticality to 1, the current path delay will
              * always be considered and optimized for.
              */
-            return criticality_; 
+            return criticality_;
         }
 
         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return nullptr; }

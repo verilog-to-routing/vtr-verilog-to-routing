@@ -216,7 +216,7 @@ bool check_my_atof_2D(const int max_i, const int max_j,
 		cur++;
 	}
 	*num_entries = entry_count;
-	
+
 	if(max_i * max_j != entry_count) return false;
 	return true;
 }

@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     vector<coeff_t> targets;
     vector<reg_t> dests;
 
-    targets.resize(2); dests.resize(2);  
+    targets.resize(2); dests.resize(2);
     targets[0] = 4;  dests[0] = 0;
     targets[1] = 5;  dests[1] = 2;
 

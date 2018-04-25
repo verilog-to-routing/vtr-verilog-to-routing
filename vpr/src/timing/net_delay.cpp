@@ -188,7 +188,7 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 	tptr = route_ctx.trace_head[net_id];
 
 	if (tptr == nullptr) {
-		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__,
 				"in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", size_t(net_id));
 	}
 

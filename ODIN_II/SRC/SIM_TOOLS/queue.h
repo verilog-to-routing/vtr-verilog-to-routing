@@ -25,7 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define queue_t       struct queue_t_t
 #define queue_node_t  struct queue_node_t_t
 
-// Constructor 
+// Constructor
 queue_t* create_queue();
 
 struct queue_t_t

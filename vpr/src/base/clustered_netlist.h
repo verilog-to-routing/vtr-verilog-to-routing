@@ -3,12 +3,12 @@
 /*
 * Summary
 * ========
-* This file defines the ClusteredNetlist class in the ClusteredContext created during 
+* This file defines the ClusteredNetlist class in the ClusteredContext created during
 * pre-placement stages of the VTR flow (packing & clustering), and used downstream.
 *
 * Overview
 * ========
-* The ClusteredNetlist is derived from the Netlist class, and contains some 
+* The ClusteredNetlist is derived from the Netlist class, and contains some
 * separate information on Blocks, Pins, and Nets. It does not make use of Ports.
 *
 * Blocks
@@ -23,7 +23,7 @@
 *       block_pin_nets_:    Returns the index of a pin relative to the net, when given a block and a pin's
 *                           index on that block (from the type descriptor).
 *                           Differs from block_nets_.
-*   
+*
 * Differences between block_nets_ & block_pin_nets_
 * --------------------------------------------------
 *           +-----------+
@@ -74,15 +74,15 @@
 * ---------------------
 * Given a ClusterPinId, physical_pin_index_ will return the index of the pin within its block
 * relative to the t_type_descriptor (physical description of the block).
-* 
+*
 *           +-----------+
 *       0-->|X         X|-->3
 *       1-->|O  Block  O|-->4
 *       2-->|O         O|-->5 (e.g. ClusterPinId = 92)
 *           +-----------+
-* 
+*
 * The index skips over unused pins, e.g. CLB has 6 pins (3 in, 3 out, numbered [0...5]), where
-* the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5] 
+* the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5]
 * represent the outs. Indices [2,3] are unused. Therefore, physical_pin_index_[92] = 5.
 *
 * Nets
@@ -188,7 +188,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
         ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, int pin_index, bool is_const=false);
 
-        //Sets the mapping of a ClusterPinId to the block's type descriptor's pin index 
+        //Sets the mapping of a ClusterPinId to the block's type descriptor's pin index
         //  pin_id   : The pin to be set
         //  index    : The new index to set the pin to
         void    set_pin_physical_index(const ClusterPinId pin_id, const int index);
@@ -196,7 +196,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         //Create an empty, or return an existing net in the netlist
         //  name     : The unique name of the net
         ClusterNetId    create_net(const std::string name);
-        
+
         //Sets the flag in net_global_ = state
         void set_net_is_global(ClusterNetId net_id, bool state);
 
@@ -239,17 +239,17 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         bool validate_net_sizes_impl(size_t num_nets) const override;
 
     private: //Private Data
-        
+
         //Blocks
         vtr::vector_map<ClusterBlockId, t_pb*>                     block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
         vtr::vector_map<ClusterBlockId, t_type_ptr>                block_types_;       //The type of physical block this user circuit block is mapped to
         vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical block pin
 
         //Pins
-        vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index 
+        vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index
                                                                 //in t_type_descriptor) of logical pins
-            
-        //Nets  
+
+        //Nets
         vtr::vector_map<ClusterNetId, bool> net_is_global_;     //Boolean mapping indicating if the net is global
 };
 

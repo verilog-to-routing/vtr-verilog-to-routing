@@ -22,7 +22,7 @@ extern STRING_CACHE *module_names_to_idx;
 extern STRING_CACHE *output_nets_sc;
 extern STRING_CACHE *input_nets_sc;
 extern STRING_CACHE *local_symbol_table_sc;
-extern STRING_CACHE *global_param_table_sc; 
+extern STRING_CACHE *global_param_table_sc;
 
 extern STRING_CACHE *function_local_symbol_table_sc;
 extern netlist_t *verilog_netlist;
@@ -47,7 +47,7 @@ extern t_arch Arch;
 /* ACTIVATION ESTIMATION GLOBALS */
 extern netlist_t *blif_netlist;
 
-/* Global variable for read_blif function call */ 
+/* Global variable for read_blif function call */
 extern netlist_t *read_blif_netlist;
 extern global_args_read_blif_t global_args_read_blif;
 

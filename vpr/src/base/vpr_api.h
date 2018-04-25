@@ -39,7 +39,7 @@
 #include "vpr_error.h"
 
 /* Main VPR Operations */
-void vpr_init(const int argc, const char **argv, 
+void vpr_init(const int argc, const char **argv,
               t_options *options,
               t_vpr_setup *vpr_setup,
               t_arch *arch);

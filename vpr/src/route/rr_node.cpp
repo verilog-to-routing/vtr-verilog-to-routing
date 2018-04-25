@@ -122,8 +122,8 @@ float t_rr_node::C() const {
     return device_ctx.rr_rc_data[rc_index()].C;
 }
 
-void t_rr_node::set_type(t_rr_type new_type) { 
-    type_ = new_type; 
+void t_rr_node::set_type(t_rr_type new_type) {
+    type_ = new_type;
 }
 
 /*
@@ -237,16 +237,16 @@ void t_rr_node::set_side(e_side new_side) {
 	dir_side_.side = new_side;
 }
 
-void t_rr_node::set_edge_sink_node(short iedge, int sink_node) { 
+void t_rr_node::set_edge_sink_node(short iedge, int sink_node) {
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(sink_node >= 0);
-    edges_[iedge].sink_node = sink_node; 
+    edges_[iedge].sink_node = sink_node;
 }
 
-void t_rr_node::set_edge_switch(short iedge, short switch_index) { 
+void t_rr_node::set_edge_switch(short iedge, short switch_index) {
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(switch_index >= 0);
-    edges_[iedge].switch_id = switch_index; 
+    edges_[iedge].switch_id = switch_index;
 }
 
 t_rr_rc_data::t_rr_rc_data(float Rval, float Cval)
@@ -264,13 +264,13 @@ short find_create_rr_rc_data(const float R, const float C) {
     };
 
     //Just a linear search for now
-    auto itr = std::find_if(device_ctx.rr_rc_data.begin(), 
+    auto itr = std::find_if(device_ctx.rr_rc_data.begin(),
                             device_ctx.rr_rc_data.end(),
                             match);
 
     if (itr == device_ctx.rr_rc_data.end()) {
         //Note found -> create it
-        device_ctx.rr_rc_data.emplace_back(R, C); 
+        device_ctx.rr_rc_data.emplace_back(R, C);
 
         itr = --device_ctx.rr_rc_data.end(); //Iterator to inserted value
     }

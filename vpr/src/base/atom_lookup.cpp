@@ -33,7 +33,7 @@ const t_pb_graph_node* AtomLookup::atom_pb_graph_node(const AtomBlockId blk_id) 
 }
 
 void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
-    //If either of blk_id or pb are not valid, 
+    //If either of blk_id or pb are not valid,
     //remove any mapping
 
     if(!blk_id && pb) {

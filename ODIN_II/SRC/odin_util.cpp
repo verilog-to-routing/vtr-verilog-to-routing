@@ -21,7 +21,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string>
 #include <sstream>
 #include <string.h>
@@ -49,7 +49,7 @@ char *make_signal_name(char *signal_name, int bit)
 	std::stringstream return_string;
 	return_string << signal_name;
 	if (bit != -1) return_string << "-" << std::dec << bit;
-	return vtr::strdup(return_string.str().c_str());		
+	return vtr::strdup(return_string.str().c_str());
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ char *make_signal_name(char *signal_name, int bit)
  *-------------------------------------------------------------------------------------------*/
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
 {
-	
+
 	std::stringstream return_string;
 	if(previous)								 return_string << previous;
 	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
@@ -69,8 +69,8 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 	if(bit != -1){
 		oassert(signal_name);
 		return_string	<< "~" << std::dec << bit ;
-	}								 
-	return vtr::strdup(return_string.str().c_str());	
+	}
+	return vtr::strdup(return_string.str().c_str());
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 		mask = mask << 1;
 	}
 	return_val[num_bits] = '\0';
-	
+
 	return return_val;
 }
 
@@ -252,11 +252,11 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	// Copy out only the bits before the truncation.
 	return_string = vtr::strdup(bit_string);
 	vtr::free(bit_string);
-	
+
     }
     else if(is_dont_care_number == 1){
-       char *string = vtr::strdup(orig_string); 
-       int   size       = strlen(string); 
+       char *string = vtr::strdup(orig_string);
+       int   size       = strlen(string);
        char *bit_string = (char *)vtr::calloc(1,sizeof(char));
        int count = 0;
        int i;
@@ -292,7 +292,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
         return_string = vtr::strdup(bit_string);
 	    vtr::free(bit_string);
 
-        
+
 
        // printf("bit_string %s",bit_string);
        // getchar();
@@ -300,9 +300,9 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
         //printf("return_string %s", return_string);
         //getchar();
         //return return_string;
-	    
+
     }
-    
+
     return return_string;
 }
 
@@ -534,7 +534,7 @@ char *make_string_based_on_id(nnode_t *node)
 {
 	// any unique id greater than 20 characters means trouble
 	std::string return_string = std::string ("n") + std::to_string(node->unique_id);
- 
+
 	return vtr::strdup(return_string.c_str());
  }
 
@@ -551,7 +551,7 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 	return_string = (char*)malloc(sizeof(char)*(strlen(input)+1));
 
 	for (i = 0; i < strlen(input); i++)
-	{ 
+	{
 		return_string[i] = input[i];
 		for (j = 0; j < strlen(flatten_string); j++)
 		{
@@ -563,7 +563,7 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 		}
 	}
 
-	return_string[strlen(input)] = '\0';	
+	return_string[strlen(input)] = '\0';
 
 	return return_string;
 }
@@ -676,7 +676,7 @@ void reverse_string(char *string, int length)
 
 /*---------------------------------------------------------------------------------------------
  * (function: to_bit)
- *-------------------------------------------------------------------------------------------*/ 
+ *-------------------------------------------------------------------------------------------*/
 short get_bit(char in){
 	if(in == 48 || in == 49)
 		return (short)in-48;
@@ -703,8 +703,8 @@ void error_message(short error_type, int line_number, int file, const char *mess
 	{
 		fprintf(stderr," ");
 		va_start(ap, message);
-		vfprintf(stderr,message, ap);	
-		va_end(ap); 
+		vfprintf(stderr,message, ap);
+		va_end(ap);
 	}
 
 	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
@@ -736,8 +736,8 @@ void warning_message(short /*error_type*/, int line_number, int file, const char
 		fprintf(stderr," ");
 
 		va_start(ap, message);
-		vfprintf(stderr,message, ap);	
-		va_end(ap); 
+		vfprintf(stderr,message, ap);
+		va_end(ap);
 	}
 
 	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
@@ -769,7 +769,7 @@ char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
 char *find_substring(char *src,const char *sKey,int flag)
 {
 	// flag == 1 first half, flag == 2 second half
-	
+
 	std::string tmp;
 	std::string key;
 	char *line;

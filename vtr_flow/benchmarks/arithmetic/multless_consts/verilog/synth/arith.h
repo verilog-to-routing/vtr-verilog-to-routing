@@ -2,13 +2,13 @@
 
 inline coeff_t fundamental(coeff_t z) {
     ASSERT(z > (coeff_t)0);
-    while((z & (coeff_t)1) == 0) 
+    while((z & (coeff_t)1) == 0)
       z = (z >> ((coeff_t)1));
     return z;
 }
 
-inline coeff_t cfabs(coeff_t x) { 
-    return x>=0 ? x : -x; 
+inline coeff_t cfabs(coeff_t x) {
+    return x>=0 ? x : -x;
 }
 inline int min(int i1, int i2) { return (i1>i2) ? i2 : i1; }
 inline int max(int i1, int i2) { return (i1>i2) ? i1 : i2; }

@@ -395,7 +395,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 				transistors sizes larger than what is defined in the <nmos_leakages> \
 				section of the technology file.");
 	}
-	
+
 	VTR_ASSERT(nmos_low != nullptr);
 	power_find_nmos_leakage(nmos_low, &lower, &upper, v_ds);
 	if (lower->v_ds == v_ds || !upper) {

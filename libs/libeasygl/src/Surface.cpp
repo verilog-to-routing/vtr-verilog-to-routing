@@ -8,12 +8,12 @@ Surface::Surface(const char* filePath)
 
 Surface::Surface()
     : impl_(nullptr) {
-    //Empty but explicitly provided to ensure unique_ptr 
+    //Empty but explicitly provided to ensure unique_ptr
     //works correctly with an incomplete type in the header
 }
 
 Surface::~Surface() {
-    //Empty but explicitly provided to ensure unique_ptr 
+    //Empty but explicitly provided to ensure unique_ptr
     //works correctly with an incomplete type in the header
 }
 

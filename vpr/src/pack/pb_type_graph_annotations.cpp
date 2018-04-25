@@ -26,7 +26,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 		const int mode, const char *annot_in_pins, const char *annot_out_pins,
 		const char *value);
 
-static void load_delay_annotations(const int line_num, 
+static void load_delay_annotations(const int line_num,
 		t_pb_graph_node *pb_graph_node, const int mode,
 		const enum e_pin_to_pin_annotation_format input_format,
 		const enum e_pin_to_pin_delay_annotations delay_type,
@@ -185,7 +185,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 	}
 }
 
-static void load_delay_annotations(const int line_num, 
+static void load_delay_annotations(const int line_num,
 		t_pb_graph_node *pb_graph_node, const int mode,
 		const enum e_pin_to_pin_annotation_format input_format,
 		const enum e_pin_to_pin_delay_annotations delay_type,
@@ -319,7 +319,7 @@ static void load_delay_annotations(const int line_num,
                     out_pins.insert(out_port[m][n]);
                 }
             }
-            
+
             //Mark the edge delays
             //
             //We walk all the out-going edges from the input pins, if the target
@@ -479,10 +479,10 @@ static void load_delay_annotations(const int line_num,
 }
 
 static void inferr_unspecified_pb_graph_node_delays(t_pb_graph_node* pb_graph_node) {
-    //Walk through all the pin timing, and sequential values and edges to inferr 
+    //Walk through all the pin timing, and sequential values and edges to inferr
     //any missing min/max setup/hold values if one of the pair is unspecified.
     //
-    //For example if only max and setup delays were specified, then the min and 
+    //For example if only max and setup delays were specified, then the min and
     //hold delays would be set to the same values.
 
     for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {

@@ -3,8 +3,8 @@
 #include "vtr_util.h"
 #include "vpr_error.h"
 
-/* Date:June 15th, 2013								
- * Author: Daniel Chen								
+/* Date:June 15th, 2013
+ * Author: Daniel Chen
  * Purpose: Used to throw any internal VPR error or architecture
  *			file error and output the appropriate file name,
  *			line number, and the error message. Does not return

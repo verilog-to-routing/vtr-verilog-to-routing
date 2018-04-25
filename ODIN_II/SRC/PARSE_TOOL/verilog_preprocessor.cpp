@@ -24,16 +24,16 @@ FILE *format_verilog_variable(FILE * src, FILE *dest);
 int init_veri_preproc()
 {
 	veri_includes.included_files = (veri_include **) vtr::calloc(DefaultSize, sizeof(veri_include *));
-	if (veri_includes.included_files == NULL) 
+	if (veri_includes.included_files == NULL)
 	{
 		perror("veri_includes.included_files : vtr::calloc ");
 		return -1;
 	}
 	veri_includes.current_size = DefaultSize;
 	veri_includes.current_index = 0;
-	
+
 	veri_defines.defined_constants = (veri_define **) vtr::calloc(DefaultSize, sizeof(veri_define *));
-	if (veri_defines.defined_constants == NULL) 
+	if (veri_defines.defined_constants == NULL)
 	{
 		perror("veri_defines.defined_constants : vtr::calloc ");
 		return -1;
@@ -46,15 +46,15 @@ int init_veri_preproc()
 /*
  * Cleanup allocated memory
  */
-int cleanup_veri_preproc() 
+int cleanup_veri_preproc()
 {
 	//fprintf(stderr, "Cleaning up the verilog preprocessor\n");
-	
+
 	veri_define *def_iterator = veri_defines.defined_constants[0];
 	veri_include *inc_iterator = veri_includes.included_files[0];
 	int i;
-	
-	for (i = 0; i < veri_defines.current_index && i < veri_defines.current_size; def_iterator = veri_defines.defined_constants[++i]) 
+
+	for (i = 0; i < veri_defines.current_index && i < veri_defines.current_size; def_iterator = veri_defines.defined_constants[++i])
 	{
 		clean_veri_define(def_iterator);
 	}
@@ -63,7 +63,7 @@ int cleanup_veri_preproc()
 	veri_defines.current_size = 0;
 	vtr::free(veri_defines.defined_constants);
 
-	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size; inc_iterator = veri_includes.included_files[++i]) 
+	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size; inc_iterator = veri_includes.included_files[++i])
 	{
 		clean_veri_include(inc_iterator);
 	}
@@ -71,7 +71,7 @@ int cleanup_veri_preproc()
 	veri_includes.current_index = 0;
 	veri_includes.current_size = 0;
 	vtr::free(veri_includes.included_files);
-	
+
 	//fprintf(stderr, " --- Finished\n");
 
 	return 0;
@@ -80,17 +80,17 @@ int cleanup_veri_preproc()
 /*
  * Free memory for a symbol in the define table
  */
-void clean_veri_define(veri_define *current) 
+void clean_veri_define(veri_define *current)
 {
-	if (current != NULL) 
+	if (current != NULL)
 	{
 		//fprintf(stderr, "\tCleaning Symbol: %s, ", current->symbol);
 		vtr::free(current->symbol);
 		//fprintf(stderr, "Value: %s ", current->value);
 		vtr::free(current->value);
-		
+
 		current->defined_in = NULL;
-		
+
 		vtr::free(current);
 		current=NULL;
 		//fprintf(stderr, "...done\n");
@@ -98,62 +98,62 @@ void clean_veri_define(veri_define *current)
 }
 
 /*
- * Free memory for a symbol in the include table 
+ * Free memory for a symbol in the include table
  */
-void clean_veri_include(veri_include *current) 
+void clean_veri_include(veri_include *current)
 {
 	if (current != NULL)
 	{
 		//fprintf(stderr, "\tCleaning Include: %s ", current->path);
 		vtr::free(current->path);
-		
+
 		vtr::free(current);
 		current = NULL;
 		//fprintf(stderr, "...done\n");
 	}
 }
 
-/* 
- * add_veri_define returns a non negative value on success, a -1 if creation of the define failed 
+/*
+ * add_veri_define returns a non negative value on success, a -1 if creation of the define failed
  * due to a lack of memory and -2 if the symbol was previously defined and the values conflict
  */
-int add_veri_define(char *symbol, char *value, int line, veri_include *defined_in) 
+int add_veri_define(char *symbol, char *value, int line, veri_include *defined_in)
 {
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
 	veri_define *new_def = (veri_define *)vtr::malloc(sizeof(veri_define));
-	if (new_def == NULL) 
+	if (new_def == NULL)
 	{
 		perror("new_def : vtr::malloc ");
 		return -1;
 	}
-	
+
 	/* Check to see if there's enough space in our lookup table and reallocate if not. */
-	if (veri_defines.current_index == veri_defines.current_size) 
+	if (veri_defines.current_index == veri_defines.current_size)
 	{
 		veri_defines.defined_constants = (veri_define **)vtr::realloc(veri_defines.defined_constants, (size_t)(veri_defines.current_size * 2) * sizeof(veri_define *));
 		//In a perfect world there is a check here to make sure realloc succeded
-		veri_defines.current_size *= 2; 
+		veri_defines.current_size *= 2;
 	}
-	
+
 	/* Check previously defined values for collisions. */
-	for (i = 0; i < veri_defines.current_index && i < veri_defines.current_size; def_iterator = veri_defines.defined_constants[++i]) 
+	for (i = 0; i < veri_defines.current_index && i < veri_defines.current_size; def_iterator = veri_defines.defined_constants[++i])
 	{
-		if (0 == strcmp(def_iterator->symbol, symbol)) 
+		if (0 == strcmp(def_iterator->symbol, symbol))
 		{
 			fprintf(stderr, "Warning: The constant %s defined on line %d in %s was previously defined on line %d in %s\n",
 				symbol, line, defined_in->path, def_iterator->line, def_iterator->defined_in->path);
-			
+
 			if (value == NULL || (value[0] == '/' && value[1] == '/'))
 #ifndef BLOCK_EMPTY_DEFINES
 			{
-				fprintf(stderr, "\tWarning: The new value of %s is empty\n\n", symbol);	
+				fprintf(stderr, "\tWarning: The new value of %s is empty\n\n", symbol);
 				vtr::free(def_iterator->value);
 				def_iterator->value =NULL;
 			}
-#else		
+#else
 			{
-				fprintf(stderr, "\tWarning: The new value of %s is empty, doing nothing\n\n", symbol);	
+				fprintf(stderr, "\tWarning: The new value of %s is empty, doing nothing\n\n", symbol);
 				return 0;
 			}
 #endif
@@ -169,42 +169,42 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 			return -2;
 		}
 	}
-	
+
 	/* Create the new define and initalize it. */
 	new_def->symbol = (char *)vtr::strdup(symbol);
 	new_def->value = (value == NULL)? NULL : (char *)vtr::strdup(value);
 	new_def->line = line;
 	new_def->defined_in = defined_in;
-	
+
 	veri_defines.defined_constants[veri_defines.current_index] = new_def;
 	veri_defines.current_index++;
-	
+
 	return 0;
 }
 
-/* add_veri_include shall return NULL if it is unable to create a new 
+/* add_veri_include shall return NULL if it is unable to create a new
  * veri_include in the lookup table or an entry for that file already exists.
  * Otherwise it wil return a pointer to the new veri_include entry.
  */
-veri_include* add_veri_include(char *path, int line, veri_include *included_from) 
+veri_include* add_veri_include(char *path, int line, veri_include *included_from)
 {
 	int i;
 	veri_include *inc_iterator = veri_includes.included_files[0];
 	veri_include *new_inc = (veri_include *)vtr::malloc(sizeof(veri_include));
-	if (new_inc == NULL) 
+	if (new_inc == NULL)
 	{
 		perror("new_inc : vtr::malloc ");
 		return NULL;
 	}
 
 	/* Check to see if there's enough space in our lookup table and reallocate if not. */
-	if (veri_includes.current_index == veri_includes.current_size) 
+	if (veri_includes.current_index == veri_includes.current_size)
 	{
 		veri_includes.included_files = (veri_include **)vtr::realloc(veri_includes.included_files, (size_t)(veri_includes.current_size * 2) * sizeof(veri_include *));
 		//In a perfect world there is a check here to make sure realloc succeded
-		veri_includes.current_size *= 2; 
+		veri_includes.current_size *= 2;
 	}
-	
+
 	/* Scan previous includes to make sure the file wasn't included previously. */
 	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i])
 	{
@@ -215,14 +215,14 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 //			return NULL;
 		}
 	}
-	
+
 	new_inc->path = (char *)vtr::strdup(path);
 	new_inc->included_from = included_from;
 	new_inc->line = line;
-	
+
 	veri_includes.included_files[veri_includes.current_index] = new_inc;
 	veri_includes.current_index++;
-	
+
 	return new_inc;
 }
 
@@ -238,7 +238,7 @@ char* ret_veri_definedval(char *symbol)
 		return veri_defines.defined_constants[is_defined]->value;
 	}
 	return NULL;
-	
+
 }
 
 /*
@@ -248,7 +248,7 @@ int veri_is_defined(char * symbol)
 {
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
-	
+
 	for (i = 0; (i < veri_defines.current_index) && (i < veri_defines.current_size) && (def_iterator != NULL); i++)
 	{
 		def_iterator = veri_defines.defined_constants[i];
@@ -271,13 +271,13 @@ FILE* open_source_file(char* filename)
 	extern global_args_t global_args;
 	extern config_t configuration;
 	extern size_t current_parse_file;
-	
+
 	FILE* src_file = fopen(filename, "r"); //Look for the file in the PWD
 	if (src_file != NULL)
 	{
 		return src_file;
 	}
-	
+
 	char* path;
 	if (global_args.verilog_file != NULL) //ODIN_II was called with the -V option.
 	{
@@ -292,7 +292,7 @@ FILE* open_source_file(char* filename)
 		path = NULL;
 		fprintf(stderr, "Invalid state in open_source_file.");
 	}
-	
+
 	char* last_slash = strrchr(path, '/');
 	if (last_slash == NULL) /* No other path to try to find the file */
 	{
@@ -301,16 +301,16 @@ FILE* open_source_file(char* filename)
 	}
 	*(last_slash + 1) = '\0';
 	strcat(path, filename);
-	
+
 	src_file = fopen(path, "r");
 	if (src_file != NULL)
 	{
-		fprintf(stderr, "Warning: Unable to find %s in the present working directory, opening %s instead\n", 
+		fprintf(stderr, "Warning: Unable to find %s in the present working directory, opening %s instead\n",
 				filename, path);
 		vtr::free(path);
 		return src_file;
 	}
-	
+
 	return NULL;
 }
 
@@ -323,7 +323,7 @@ FILE* veri_preproc(FILE *source)
 	extern config_t configuration;
 	extern size_t current_parse_file;
 	FILE *preproc_producer = NULL;
-	
+
 	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */
 	char* current_file = (global_args.verilog_file != NULL) ? global_args.verilog_file : configuration.list_of_file_names[current_parse_file];
 	veri_include *veri_initial = add_veri_include(current_file, 0, NULL);
@@ -336,18 +336,18 @@ FILE* veri_preproc(FILE *source)
 	preproc_producer = tmpfile();
 	preproc_producer = freopen(NULL, "r+", preproc_producer);
 
-	if (preproc_producer == NULL) 
+	if (preproc_producer == NULL)
 	{
 		perror("preproc_producer : fdopen - returning original FILE pointer");
 		exit(-1);
 		return source;
 	}
-	
+
 	/* to thread or not to thread, that is the question. Wether yac will block when waitin */
 	fprintf(stderr, "Preprocessing verilog.\n");
 
 	veri_preproc_bootstraped(source, preproc_producer, veri_initial);
-	rewind(preproc_producer);	
+	rewind(preproc_producer);
 	return preproc_producer;
 }
 
@@ -407,9 +407,9 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 {
 	// Strip the comments from the source file producing a temporary source file.
 	FILE *source = remove_comments(original_source);
-	
+
 	source = format_verilog_file(source);
-	
+
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
@@ -436,7 +436,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			pch_end = pch+1 ;
 			while ( ( *pch_end >= '0' && *pch_end <= '9' ) ||
 				( *pch_end >= 'A' && *pch_end <= 'Z' ) ||
-				( *pch_end >= 'a' && *pch_end <= 'z' ) || 
+				( *pch_end >= 'a' && *pch_end <= 'z' ) ||
 				*pch_end == '_' )
 				pch_end++ ;
 			// copy symbol into array
@@ -462,15 +462,15 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		*p_proc_line = '\0' ;
 
 		strcpy( line, proc_line ) ;
-		
+
 		//fprintf(stderr, "%s:%d\t%s\n", current_include->path,line_number, line);
 
 		/* Preprocessor directives have a backtick on the first column. */
-		if (line[0] == '`') 
+		if (line[0] == '`')
 		{
 			token = trim((char *)strtok(line, " \t"));
 			//printf("preproc first token: %s\n", token);
-			/* If we encounter an `included directive we want to recurse using included_file and 
+			/* If we encounter an `included directive we want to recurse using included_file and
 			 * new_include in place of source and current_include
 			 */
 			if (top(skip) < 1 && strcmp(token, "`include") == 0)
@@ -478,19 +478,19 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				printf("%s\n", token);
 
 				token = trim((char *)strtok(NULL, "\""));
-				
+
 				printf("%s\n", token);
 
 				FILE *included_file = open_source_file(token);
 
 				/* If we failed to open the included file handle the error */
 				if (!included_file)
-				{			
-					fprintf(stderr, "Warning: Unable to open file %s included on line %d of %s\n", 
+				{
+					fprintf(stderr, "Warning: Unable to open file %s included on line %d of %s\n",
 						token, line_number, current_include->path);
 					perror("included_file : fopen");
 					/*return erro or exit ? */
-				} 
+				}
 				else if (NULL != (new_include = add_veri_include(token, line_number, current_include)))
 				{
 					veri_preproc_bootstraped(included_file, preproc_producer, new_include);
@@ -498,18 +498,18 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				fclose(included_file);
 				/* If last included file has no newline an error could result so we add one. */
 				fputc('\n', preproc_producer);
-			} 
+			}
 			/* If we encounter a `define directive we want to add it and its value if any to our
 			 * symbol table.
 			 */
 			else if (top(skip) < 1 && strcmp(token, "`define") == 0)
 			{
 				char *value = NULL;
-				
+
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
 				fprintf(preproc_producer, "`define %s\n", line + 1 + strlen(line));
 				//printf("\tIn define: %s", token + 1 + strlen(token));
-				
+
 				token = trim(strtok(NULL, " \t"));
 				//printf("token is: %s\n", token);
 
@@ -531,11 +531,11 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				int is_defined = 0;
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
 				fprintf(preproc_producer, "`undef %s", line + 1 + strlen(line));
-				
+
 				token = trim(strtok(NULL, " \t"));
-				
+
 				is_defined = veri_is_defined(token);
-			
+
 				if(is_defined >= 0)
 				{
 					clean_veri_define(veri_defines.defined_constants[is_defined]);
@@ -548,7 +548,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				// if parent is not skipped
 				if ( top(skip) < 1 ) {
 					int is_defined = 0;
-					
+
 					token = trim(strtok(NULL, " \t"));
 					is_defined = veri_is_defined(token);
 					if(is_defined < 0) //If we are unable to locate the symbol in the table
@@ -559,7 +559,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 					{
 						push(skip, 0);
 					}
-				} 
+				}
 				// otherwise inherit skip from parent (use 2)
 				else {
 					push( skip, 2 ) ;
@@ -570,7 +570,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				// if parent is not skipped
 				if ( top(skip) < 1 ) {
 					int is_defined = 0;
-					
+
 					token = trim(strtok(NULL, " \t"));
 					is_defined = veri_is_defined(token);
 					if(is_defined >= 0) //If we are able to locate the symbol in the table
@@ -589,13 +589,13 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			}
 			else if (strcmp(token, "`else") == 0)
 			{
-				// if skip was 0 (prev. ifdef was 1) 
+				// if skip was 0 (prev. ifdef was 1)
 				if(top(skip) < 1)
 				{
 					// then set to 0
 					pop(skip) ;
 					push(skip, 1);
-				} 
+				}
 				// only when prev skip was 1 do we set to 0 now
 				else if (top(skip) == 1)
 				{
@@ -604,7 +604,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				}
 				// but if it's 2 (parent ifdef is 1)
 				else {
-					// then do nothing 
+					// then do nothing
 				}
 			}
 			else if (strcmp(token, "`endif") == 0)
@@ -676,10 +676,10 @@ int pop(veri_flag_stack *stack)
 	{
 		veri_flag_node *top = stack->top;
 		int flag = top->flag;
-		
+
 		stack->top = top->next;
 		vtr::free(top);
-	
+
 		return flag;
 	}
 	return 0;
@@ -691,7 +691,7 @@ void push(veri_flag_stack *stack, int flag)
 		veri_flag_node *new_node = (veri_flag_node *)vtr::malloc(sizeof(veri_flag_node));
 		new_node->next = stack->top;
 		new_node->flag = flag;
-		
+
 		stack->top = new_node;
 	}
 }
@@ -722,7 +722,7 @@ FILE *format_verilog_file(FILE *source)
 			fputs(line,destination);
 			i = 0;
 		}
-		
+
 	}
 	line[i++] = ch;
 	line[i] = '\0';

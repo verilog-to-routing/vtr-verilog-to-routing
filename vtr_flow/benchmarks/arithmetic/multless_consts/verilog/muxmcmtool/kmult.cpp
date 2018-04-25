@@ -57,7 +57,7 @@ static int USE_TABLE = False;
 static int USE_RANDOM_DAGORDER = False;
 static int VERBOSE = False;
 static int OPTIMIZATION = 0;
-static int RANDOM_SEARCH_SIZE = 10000;  // maximum number of rand. combinations 
+static int RANDOM_SEARCH_SIZE = 10000;  // maximum number of rand. combinations
                                         // being searched in function reorderdags
 
 
@@ -191,7 +191,7 @@ static dagnode *ttR1(int x, int index, reg_t dest, reg_t src) {
     } else {
         c = get_chain(x,index);
         assert(c!=NULL && "returned chain is NULL!");
-        if(VERBOSE) c->output(cout);            
+        if(VERBOSE) c->output(cout);
     }
     c->get_ops(oplist, dest, src, tmpreg_k);
     dagnode *ddest = NULL;
@@ -276,9 +276,9 @@ void setindices(dagnode *mydag) {
 		        for(i=0;i<MAX_DAGs;i++)
 		            if(mydag->mux[i] != NULL)
 		            	setindices(mydag->mux[i]);
-		    
+
 		}
-		          
+
 }
 
 
@@ -311,7 +311,7 @@ dagnode *copydag(dagnode *mydag) {
             leftdag =  copydag(mydag->leftnode);
         if (mydag->rightnode != NULL)
             rightdag =  copydag(mydag->rightnode);
-    
+
         returndag  = (struct _dagnode *) malloc(sizeof(struct _dagnode));
         returndag->type = mydag->type;
         returndag->dagindex = mydag->dagindex;
@@ -362,7 +362,7 @@ int i;
             result += countmuxes(mydag->leftnode);
         if (mydag->rightnode != NULL)
             result += countmuxes(mydag->rightnode);
-        if (mydag->type == RM) 
+        if (mydag->type == RM)
             result--;
             for(i=0;i<MAX_DAGs;i++)
                 if(mydag->mux[i] != NULL) {
@@ -420,10 +420,10 @@ dagnode *removeuselessmuxes(dagnode *mydag) {
                    	}
 
             if(muxmakessense == 0) {
-                tempdag = mydag;                
+                tempdag = mydag;
             		for(i=0;i<MAX_DAGs;i++)
                 	if(mydag->mux[i] != NULL)
-                		mydag = mydag->mux[i];                
+                		mydag = mydag->mux[i];
                 free(tempdag);
                 removeuselessmuxes(mydag);
             } else
@@ -473,7 +473,7 @@ void rdd(dagnode *mydag,FILE * out) {
                 		if(useful)
                     	fprintf(out,"  node%d -> node%d;\n",mydag->mux[i]->dagindex, mydag->dagindex);
                     rdd(mydag->mux[i],out);
-                }         
+                }
     }
     if(mydag->type == RT && mydag->shift == MAX_CONSTBITWIDTH+5) {//0 was the only constant specified
     		fprintf(out,"  node%d [shape=plaintext,label=\"0\"];\n",mydag->dagindex);
@@ -487,7 +487,7 @@ void rdd(dagnode *mydag,FILE * out) {
         } else {
             fprintf(out,"  node%d -> node%d;\n",mydag->leftnode->dagindex, mydag->dagindex);
             rdd(mydag->leftnode,out);
-        }      
+        }
     }
     if (mydag->rightnode != NULL) {
         if(mydag->rightnode->type == RT) {
@@ -500,7 +500,7 @@ void rdd(dagnode *mydag,FILE * out) {
         }
     }
     if(mydag->type == RT){
-        fprintf(out,"  node%d [label=\"%s %d\"];\n",mydag->dagindex,RString[mydag->type],mydag->shift);        
+        fprintf(out,"  node%d [label=\"%s %d\"];\n",mydag->dagindex,RString[mydag->type],mydag->shift);
     } else {
         if(mydag->type == RA || mydag->type == RS || mydag->type == RAS) {
             fprintf(out,"  node%d [label=\"%s",mydag->dagindex,RString[mydag->type]);
@@ -635,7 +635,7 @@ int indexof(dagnode *mydag, dagnode **op) {
 }
 
 /*
-// recusrively calculates the coarse cost for 
+// recusrively calculates the coarse cost for
 // fusing two specific nodes
 double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
     int i;
@@ -662,7 +662,7 @@ double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
     }
     return mincost;
     }
-    
+
     if (mydag0->type == RT && mydag1->type == RT &&
     mydag0->shift == mydag1->shift)
         return rcc(mydag0->leftnode, mydag1->leftnode, op0, op_perm);
@@ -677,7 +677,7 @@ double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
 }
 
 
-// calculates the coarse cost for 
+// calculates the coarse cost for
 // fusing two nodes
 
 double calccost(int *perm,int n, dagnode **op0, dagnode **op1,dagnode *mydag0, dagnode *mydag1,int currdagindex) {
@@ -716,13 +716,13 @@ double calccost(int *perm,int n, dagnode **op0, dagnode **op1,dagnode *mydag0, d
             rcc(op0[i]->rightnode, op_perm[i]->rightnode,op0,op_perm)),
                (rcc(op0[i]->leftnode, op_perm[i]->rightnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->leftnode,op0,op_perm)));
-            
+
       if (RType(op0[i]->type) == RAS && RType(op_perm[i]->type) == RA)
         cost+= min((rcc(op0[i]->leftnode, op_perm[i]->leftnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->rightnode,op0,op_perm)),
                (rcc(op0[i]->leftnode, op_perm[i]->rightnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->leftnode,op0,op_perm)));
-            
+
       if (RType(op0[i]->type) == RAS && RType(op_perm[i]->type) == RS)
         cost+= (rcc(op0[i]->leftnode, op_perm[i]->leftnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->rightnode,op0,op_perm));
@@ -742,16 +742,16 @@ double calccost(int *perm,int n, dagnode **op0, dagnode **op1,dagnode *mydag0, d
 
 
 
-// recusrively calculates the cost for 
+// recusrively calculates the cost for
 // fusing two specific nodes
 double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {//, costobject *returncost) {
 	  int maxfundamental = 0;
-	  int minshift = 99999;	  
+	  int minshift = 99999;
 	  int muxcount = 0;
 	  int permshift,permfundamental;
 	  bool foundperm = false;
 	  double origmuxsize = 0.0;
-	  
+
 	  if(mydag1->type == RM) {
 	  	dagnode *tempdag = mydag1;
 	  	mydag1 = mydag0;
@@ -767,7 +767,7 @@ double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
 	  	permshift = 0;
 	  	permfundamental = mydag1->fundamental;
 	  }
-	  
+
 		if(mydag0->type == RM) {
       for(int i=0;i<MAX_DAGs;i++) {
         if(mydag0->mux[i] != NULL) {
@@ -780,20 +780,20 @@ double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
         	} else {
         		minshift = 0;
         		if(mydag0->mux[i]->fundamentals[i] > maxfundamental) {maxfundamental = mydag0->mux[i]->fundamentals[i];}
-        		if(mydag1->type != RT  && indexof(mydag1,op_perm) == indexof(mydag0->mux[i],op0)) {foundperm = true;}        		
-        	}        	        	
+        		if(mydag1->type != RT  && indexof(mydag1,op_perm) == indexof(mydag0->mux[i],op0)) {foundperm = true;}
+        	}
         }
-      }			
+      }
       assert(muxcount > 1);
     	origmuxsize = (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * MUXSIZE +
        			        (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * (muxcount - 2) * MUXPLUS;
-			
+
 			maxfundamental = max(maxfundamental,permfundamental);
 			minshift = min(minshift,permshift);
 			if(!foundperm){muxcount++;}
 //			returncost->fundamental = maxfundamental;
 //			returncost->shift = minshift;
-			
+
 			return (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * MUXSIZE +
        			 (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * (muxcount - 2) * MUXPLUS - origmuxsize;
 		} else {
@@ -805,7 +805,7 @@ double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
 		  } else {
 		  	minshift = 0;
 		  	maxfundamental = mydag0->fundamental;
-		  	if(mydag1->type != RT  && indexof(mydag1,op_perm) == indexof(mydag0,op0)) {foundperm = true;}  
+		  	if(mydag1->type != RT  && indexof(mydag1,op_perm) == indexof(mydag0,op0)) {foundperm = true;}
 	  	}
 			maxfundamental = max(maxfundamental,permfundamental);
 			minshift = min(minshift,permshift);
@@ -815,14 +815,14 @@ double rcc(dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnode **op_perm) {
 			else {
 				return (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * MUXSIZE;
 			}
-			
+
 		}
-				
-	
+
+
 }
 
 
-// calculates the coarse cost for 
+// calculates the coarse cost for
 // fusing two nodes
 double calccost(int *perm,int n, dagnode **op0, dagnode **op1,dagnode *mydag0, dagnode *mydag1,int currdagindex) {
     int i;
@@ -860,13 +860,13 @@ double calccost(int *perm,int n, dagnode **op0, dagnode **op1,dagnode *mydag0, d
             rcc(op0[i]->rightnode, op_perm[i]->rightnode,op0,op_perm)),
                (rcc(op0[i]->leftnode, op_perm[i]->rightnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->leftnode,op0,op_perm)));
-            
+
       if (RType(op0[i]->type) == RAS && RType(op_perm[i]->type) == RA)
         cost+= min((rcc(op0[i]->leftnode, op_perm[i]->leftnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->rightnode,op0,op_perm)),
                (rcc(op0[i]->leftnode, op_perm[i]->rightnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->leftnode,op0,op_perm)));
-            
+
       if (RType(op0[i]->type) == RAS && RType(op_perm[i]->type) == RS)
         cost+= (rcc(op0[i]->leftnode, op_perm[i]->leftnode,op0,op_perm) +
             rcc(op0[i]->rightnode, op_perm[i]->rightnode,op0,op_perm));
@@ -884,7 +884,7 @@ double calccost(int *perm,int n, dagnode **op0, dagnode **op1,dagnode *mydag0, d
 }
 
 /*
- * recursively calculates the cost for 
+ * recursively calculates the cost for
  * merging two DAGs
  */
 void rmt(int *so_far, int curr_index, int n, int k, int empties,dagnode **op0, dagnode **op1,
@@ -951,7 +951,7 @@ dagnode *insertmux(int n,dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnod
             myshift->connections = 1;
             myshift->visited = False;
             myshift->rightnode = NULL;
-        
+
             if(mydag1->leftnode->type == RI)
                 myshift->leftnode = getRI(mydag0);
             else
@@ -998,7 +998,7 @@ dagnode *insertmux(int n,dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnod
             myshift->connections = 1;
             myshift->visited = False;
             myshift->rightnode = NULL;
-        
+
             if(mydag1->mux[i]->leftnode->type == RI)
                 myshift->leftnode = getRI(mydag0);
             else
@@ -1018,7 +1018,7 @@ dagnode *insertmux(int n,dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnod
     } // if(mydag1
     } // for(i=0
     } // if(mydag1
-    
+
     if(mydag1->type == RT) {
         myshift  = (struct _dagnode *) malloc(sizeof(struct _dagnode));
         myshift->type = RT;
@@ -1028,7 +1028,7 @@ dagnode *insertmux(int n,dagnode *mydag0, dagnode *mydag1, dagnode **op0, dagnod
         myshift->connections = 1;
         myshift->visited = False;
         myshift->rightnode = NULL;
-    
+
         if(mydag1->leftnode->type == RI)
         myshift->leftnode = getRI(mydag0);
         else
@@ -1088,7 +1088,7 @@ double mergedags(dagnode **mydaglist, int daglistsize) {
     double best = 99999.0;
     double cost = 0.0;
     double muxcount_a,muxcount_b;
-    
+
     getoperators(mydaglist[0],op0,&opcount0);
     resetvisitedstate(mydaglist[0]);
 
@@ -1097,12 +1097,12 @@ double mergedags(dagnode **mydaglist, int daglistsize) {
       getoperators(mydaglist[j],op1,&opcount1);
       resetvisitedstate(mydaglist[j]);
       storeswapdag = NULL;
-      
+
       //larger DAG has to be at mydaglist[0]
-      if(opcount1 > opcount0) {//swap DAGs        
+      if(opcount1 > opcount0) {//swap DAGs
         storeswapdag = copydag(mydaglist[j]);
         resetvisitedstate(mydaglist[j]);
-        
+
         tempdag = mydaglist[j];
         mydaglist[j] = mydaglist[0];
         mydaglist[0] = tempdag;
@@ -1121,7 +1121,7 @@ double mergedags(dagnode **mydaglist, int daglistsize) {
       }
 
       getrelativeorder(mydaglist[j],op1,relativeorderdag1);
-      
+
 
       rmt(so_far,0,opcount0,opcount1,opcount0 - opcount1,op0,op1,mydaglist[0],mydaglist[j],&best,best_so_far,j,relativeorderdag1);
       cost += best;
@@ -1333,7 +1333,7 @@ costobject *getfinalcost(dagnode *mydag,int control,double *overallcost) {
     costobject *cost_mux[MAX_DAGs];
     dagnode *muxstore[MAX_DAGs];
 
-   
+
     if(mydag->visited == False) {
         mydag->visited = True;
         if (mydag->leftnode != NULL)
@@ -1346,9 +1346,9 @@ costobject *getfinalcost(dagnode *mydag,int control,double *overallcost) {
                     cost_mux[i] = getfinalcost(mydag->mux[i],i,overallcost);
                 else
                     cost_mux[i] = NULL;
-    
+
         mydag->nodecost  = (struct _costobject *) malloc(sizeof(struct _costobject));
-    
+
         if (mydag->type == RI) {
             mydag->nodecost->fundamental = 1;
             mydag->nodecost->shift = 0;
@@ -1375,7 +1375,7 @@ costobject *getfinalcost(dagnode *mydag,int control,double *overallcost) {
             *overallcost += (max((logd(cost_left->fundamental) + cost_left->shift + VL_INPUTBITWIDTH),
                     (logd(cost_right->fundamental) + cost_right->shift + VL_INPUTBITWIDTH)) - 2) * ADDSUBSIZE;
 /*            cerr << "ADDSUB: " << (max((logd(cost_left->fundamental) + cost_left->shift + VL_INPUTBITWIDTH),
-                    (logd(cost_right->fundamental) + cost_right->shift + VL_INPUTBITWIDTH)) - 2) * ADDSUBSIZE << ", " << 
+                    (logd(cost_right->fundamental) + cost_right->shift + VL_INPUTBITWIDTH)) - 2) * ADDSUBSIZE << ", " <<
                     cost_left->fundamental << " " << cost_left->shift << ", " << cost_right->fundamental << " " << cost_right->shift << endl;
 */        }
         if (mydag->type == RM) {
@@ -1399,9 +1399,9 @@ costobject *getfinalcost(dagnode *mydag,int control,double *overallcost) {
                 *overallcost += (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * MUXSIZE +
                                 (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * (muxcount - 2) * MUXPLUS;
 /*                cerr << "MUX: " << (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * MUXSIZE +
-                                (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * (muxcount - 2) * MUXPLUS << " " << 
+                                (logd(maxfundamental) + VL_INPUTBITWIDTH - minshift) * (muxcount - 2) * MUXPLUS << " " <<
                                 maxfundamental << " " << minshift << endl;
-*/    
+*/
             mydag->nodecost->fundamental = maxfundamental;
             mydag->nodecost->shift = minshift;
         }
@@ -1429,12 +1429,12 @@ dagnode *rrd(dagnode **mydaglist, dagnode **insofar,dagnode *bestsofar,int index
     double cost;
 
     if(indexsofar == daglistsize) {
-        
+
         tempdag = insofar[0];
         insofar[0] = copydag(insofar[0]);
-    
-        resetvisitedstate(tempdag);      
-        
+
+        resetvisitedstate(tempdag);
+
         mergedags(insofar,daglistsize);
         cost = 0.0;
         getfinalcost(insofar[0],-1,&cost);
@@ -1446,10 +1446,10 @@ dagnode *rrd(dagnode **mydaglist, dagnode **insofar,dagnode *bestsofar,int index
                 killdag(bestsofar);
             bestsofar = insofar[0];
         } else
-            killdag(insofar[0]);    
+            killdag(insofar[0]);
 
-        insofar[0] = tempdag;        
-        
+        insofar[0] = tempdag;
+
     } else {
         for(i=0;i<daglistsize;i++) {
             if(mydaglist[i] != NULL) {
@@ -1479,7 +1479,7 @@ dagnode *reorderdags(dagnode **mydaglist, int daglistsize,int *x) {
     dagnode *tempdag;
     dagnode *insofar[MAX_DAGs+1];
     dagnode *bestsofar = NULL;
- 
+
     for(i=0;i<daglistsize;i++) {
         insofar[i] = NULL;
     }
@@ -1500,12 +1500,12 @@ dagnode *reorderdags(dagnode **mydaglist, int daglistsize,int *x) {
                 insofar[randnumber[i]] = mydaglist[i];
             }
             bestsofar = rrd(mydaglist, insofar,bestsofar, daglistsize, daglistsize,&bestcost);
-            for(i=0;i<daglistsize;i++) 
+            for(i=0;i<daglistsize;i++)
                 mydaglist[i] = insofar[randnumber[i]];
-               
+
         }
-    }else 
-        bestsofar = rrd(mydaglist, insofar, bestsofar, 0, daglistsize,&bestcost);    
+    }else
+        bestsofar = rrd(mydaglist, insofar, bestsofar, 0, daglistsize,&bestcost);
 
     return bestsofar;
 
@@ -1721,7 +1721,7 @@ void printdagtoverilog(dagnode *mydag, char *filename,int daglistsize,int* x) {
     for(i=0;i<daglistsize;i++){
         fprintf(out," * for control = %d: %d",i,x[i]==powertwo(MAX_CONSTBITWIDTH+5) ? 0 : x[i]);
         if(VL_FRACTIONBITWIDTH > 0)
-        		fprintf(out," * 2^(-%d)",VL_FRACTIONBITWIDTH);        	
+        		fprintf(out," * 2^(-%d)",VL_FRACTIONBITWIDTH);
         fprintf(out,"\n");
     }
     fprintf(out," */\n\n\n");
@@ -1767,7 +1767,7 @@ int getNumberofAdders(dagnode *mydag){
             if(mydag->mux[i] != NULL)
             	adders += getNumberofAdders(mydag->mux[i]);
     }
-    if(mydag->type == RA ||mydag->type == RS ||mydag->type == RAS) {adders++;}	    
+    if(mydag->type == RA ||mydag->type == RS ||mydag->type == RAS) {adders++;}
   }
   return adders;
 }
@@ -1879,14 +1879,14 @@ int main(int argc, char *argv[], char *envp[]) {
         exit(2);
     }
     if(USE_TABLE) {init_table(tablepath); }
-   
+
 		srand(0);
     for(j=0;j<number_iterations;j++) {
         if(USE_RANDOM_DAGs == True) {
 	          //fprintf(stderr,"Iteration = %d\n",j+1);
             constnumber = number_randomDAGs;
             for(i=0;i<constnumber;i++) {
-            /*	
+            /*
                 do {
                 		constants[i] = 0;
 										for(int bytes=0; bytes < sizeof(int); ++bytes) {
@@ -1894,7 +1894,7 @@ int main(int argc, char *argv[], char *envp[]) {
 											constants[i] = (constants[i]<<8) + rand() % (1<<8);
 										}
                     constants[i] = abs(constants[i]  % mypowertwo(VL_CONSTBITWIDTH));
-                } while (constants[i] == 0);        
+                } while (constants[i] == 0);
                 while(constants[i] % 2 == 0){constants[i] = constants[i] / 2;}
 //                if(constants[i] == 1) {
 //                	i--;
@@ -1902,13 +1902,13 @@ int main(int argc, char *argv[], char *envp[]) {
 //                }
             }
             if(constnumber == 0) {constants[0]++;constnumber++;}
-            */            	
+            */
             	constants[i] = fundamental(rand_coeff(mypowertwo(VL_CONSTBITWIDTH)));
             	while(constants[i] % 2 == 0){constants[i] = constants[i] / 2;}
           	}
         } else {
             i = optind;
-            for ( ; optind < argc; optind++) 
+            for ( ; optind < argc; optind++)
                 sscanf(argv[optind], "%d", &constants[optind-i]);
         }
 
@@ -1921,17 +1921,17 @@ int main(int argc, char *argv[], char *envp[]) {
             }
         }
 
-        
+
         if(!USE_TABLE) {set_chains(constants,constnumber,OPTIMIZATION);}
-        
+
         for(i=0;i<constnumber;i++) {
 	          fprintf(stderr,"Building DAG: %d\n",constants[i]);
             if (logd(constants[i]+1) > VL_CONSTBITWIDTH)
                 fprintf(stderr,"WARNING: constant %d is too large for constant bitwidth of %d!\n",constants[i],VL_CONSTBITWIDTH);
-            mydaglist[i] = builddag(constants[i],i);        
+            mydaglist[i] = builddag(constants[i],i);
         }
         if(!USE_TABLE) {delete_chain();}
-            
+
         fprintf(stderr,"Merging DAGs... ");
         fflush(stderr);
         resultdag = reorderdags(mydaglist,constnumber,constants);
@@ -1939,11 +1939,11 @@ int main(int argc, char *argv[], char *envp[]) {
 //        resultdag = mydaglist[0];
         fprintf(stderr,"Done!\n");
         fflush(stderr);
-    
+
         resultdag = removeuselessmuxes(resultdag);
         resetvisitedstate(resultdag);
 
-        // checking results 
+        // checking results
         for(i=0;i<constnumber;i++) {
             temp = testdag(resultdag,i);
             if(constants[i] != temp) {
@@ -1953,8 +1953,8 @@ int main(int argc, char *argv[], char *envp[]) {
             }
             resetvisitedstate(resultdag);
         }
-    
-    
+
+
         if(USE_RANDOM_DAGs == False) {
         		setindices(resultdag);
         		resetvisitedstate(resultdag);
@@ -1977,15 +1977,15 @@ int main(int argc, char *argv[], char *envp[]) {
         //printf("Number of muxes: %d\n",no_muxes);
         //printf("%d, %f\n",no_muxes,finalcost);
         resetvisitedstate(resultdag);
-        
-        
+
+
         for(i=0;i<constnumber;i++) {
             killdag(mydaglist[i]);
             mydaglist[i] = NULL;
         }
         if(resultdag != NULL)
             killdag(resultdag);
-        
+
     } //for(j=0
     if(USE_RANDOM_DAGs) fprintf(stderr,"%f\n",avg_cost1/number_iterations);//printf("\n\nOverall average area cost in microns: %f\n",avg_cost1/number_iterations);
     if(USE_RANDOM_DAGs) fprintf(stderr,"%f\n",avg_muxes/number_iterations);//printf("\n\nOverall average number of muxes: %f\n\n",avg_muxes/number_iterations);

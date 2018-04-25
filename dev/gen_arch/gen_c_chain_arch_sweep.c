@@ -1,12 +1,12 @@
 /* Jason Luu
    June 26, 2013
-   
+
    Carry chain arch generator.  Creates arch files of fracturable 6-LUTs with varying parameters.  Each fracturable 6-LUT can operate as one 6-LUT or two 5 LUTs with shared inputs.
    The number of pins in dual 5-LUT mode is labelled FI where an FI = 5 means all 5 pins of the dual 5-LUTs are shared and an FI = 10 means no pins are shared.
    Each 5-LUT can operate in arithmetic mode which consists of a one-bit full adder that is fed by two 4-lUTs with all 4 inputs shared.  The adder cout pin drives the cin pin of the adjacent adder directly below.
 
    FI varies from 5 to 10 and inputs to CLB (I) varies from 50 to 100
-      
+
    To run, enter: ./gen_c_chain_arch_sweep
 
 */
@@ -29,7 +29,7 @@ int main(void) {
 			/* Open arch file for writing */
 			sprintf(fname, "chain_FI%d_I%d.xml", i_FI, i_clbI);
 			fpout = fopen(fname, "w");
-			
+
 			/* Populate arch file */
 			print_header(fpout);
 			print_clb(fpout, i_FI, i_clbI);

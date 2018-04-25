@@ -244,7 +244,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                               ;
     auto parser = argparse::ArgumentParser(prog_name, description);
 
-    std::string epilog = vtr::replace_all( 
+    std::string epilog = vtr::replace_all(
         "Usage Examples\n"
         "--------------\n"
         "   #Find the minimum routable channel width of my_circuit on my_arch\n"
@@ -728,7 +728,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("safe")
             .choices({"safe", "aggressive", "off"})
             .show_in(argparse::ShowIn::HELP_ONLY);
-            
+
     route_timing_grp.add_argument<e_routing_budgets_algorithm,RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
             .help("Controls how the routing budgets are created.\n"
                   " * slack: Sets the budgets depending on the amount slack between connections and the current delay values.\n"
@@ -842,7 +842,7 @@ static void set_conditional_defaults(t_options& args) {
     if (args.timing_driven_clustering && !args.timing_analysis) {
         if (args.timing_driven_clustering.provenance() == Provenance::SPECIFIED) {
             vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '%s' has no effect since timing analysis is disabled\n",
-                                args.timing_driven_clustering.argument_name().c_str()); 
+                                args.timing_driven_clustering.argument_name().c_str());
         }
         args.timing_driven_clustering.set(args.timing_analysis, Provenance::INFERRED);
     }

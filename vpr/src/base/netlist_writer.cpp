@@ -42,22 +42,22 @@
 //==============
 //
 //The netlist writer is primarily driven by the NetlistWriterVisitor class, which walks the netlist using the
-//NetlistWalker (see netlist_walker.h).  The netlist walker calls NetlistWriterVisitor's  visit_atom_impl() 
+//NetlistWalker (see netlist_walker.h).  The netlist walker calls NetlistWriterVisitor's  visit_atom_impl()
 //method for every atom (i.e. primitive circuit element) in VPR's internal data structures.
 //
-//visit_atom_impl() then dispatches the atom to the appropriate NetlistWriterVisitor member function 
+//visit_atom_impl() then dispatches the atom to the appropriate NetlistWriterVisitor member function
 //(e.g. LUTs to make_lut_instance(), Latches to make_latch_instance(), etc.).  Each of the make_*_instance()
 //functions records the external nets the atom connects to (see make_inst_wire()) and constructs a concrete
 //'Instance' object to represent the primitive. NetlistWriterVisitor saves these representations for later
 //output.
 //
 //'Instance' is an abstract class representing objects which know how to create thier own representation in
-//BLIF, Verilog and SDF formats.  Most primitives can be represented by the BlackBoxInst class, but special 
+//BLIF, Verilog and SDF formats.  Most primitives can be represented by the BlackBoxInst class, but special
 //primitives like LUTs and Latchs have thier own implementations (LutInst, LatchInst) to handle some of their
 //unique requirements.
 //
 //Once the entire netlist has been traversed the netlist walker will call NetlistWriterVisitor's finish_impl()
-//method which kicks off the generation of the actual netlists and SDF files.  NetlistWriterVisitor's print_*() 
+//method which kicks off the generation of the actual netlists and SDF files.  NetlistWriterVisitor's print_*()
 //methods setting up file-level global information (I/Os, net declarations etc.) and then ask each Instance to
 //print itself in the appropriate format to the appropriate file.
 //
@@ -77,7 +77,7 @@
 //Primitives
 //==========
 //Verilog netlist generation assumes the existance of appropriate primitives for the various
-//atom types (i.e. a LUT_K module, a DFF module etc.).  These are currently defined the file 
+//atom types (i.e. a LUT_K module, a DFF module etc.).  These are currently defined the file
 //<vtr>/vtr_flow/primtives.v, where <vtr> is the root of the VTR source tree.
 //
 //You will typically need to link with this file when attempting to simulate a post-implementation netlist.
@@ -163,7 +163,7 @@ class LogicVec {
 //A combinational timing arc
 class Arc {
     public:
-        Arc(std::string src_port, //Source of the arc 
+        Arc(std::string src_port, //Source of the arc
             int src_ipin, //Source pin index
             std::string snk_port, //Sink of the arc
             int snk_ipin, //Sink pin index
@@ -231,7 +231,7 @@ class LutInst : public Instance {
         LutInst(size_t lut_size, //The LUT size
                 LogicVec lut_mask, //The LUT mask representing the logic function
                 std::string inst_name, //The name of this instance
-                std::map<std::string,std::vector<std::string>> port_conns, //The port connections of this instance. Key: port name, Value: connected nets 
+                std::map<std::string,std::vector<std::string>> port_conns, //The port connections of this instance. Key: port name, Value: connected nets
                 std::vector<Arc> timing_arc_values) //The timing arcs of this instance
             : type_("LUT_K")
             , lut_size_(lut_size)
@@ -340,7 +340,7 @@ class LutInst : public Instance {
 
                     //Add the row as true
                     os << indent(depth) << input_values;
-                    
+
                     //Specify whether this is a minterm (on-set) or max-term (off-set)
                     if (output_value == vtr::LogicValue::TRUE) {
                         os << " 1\n";
@@ -377,7 +377,7 @@ class LutInst : public Instance {
             if(!timing_arcs().empty()) {
                 os << indent(depth+1) << "(DELAY\n";
                 os << indent(depth+2) << "(ABSOLUTE\n";
-                
+
                 for(auto& arc : timing_arcs()) {
                     double delay_ps = arc.delay();
 
@@ -672,12 +672,12 @@ class BlackBoxInst : public Instance {
                     //We also only put the last index in if the port has multiple bits
                     os << indent(depth+3) << "(IOPATH ";
                     os << escape_sdf_identifier(arc.source_name());
-                    if(find_port_size(arc.source_name()) > 1) { 
+                    if(find_port_size(arc.source_name()) > 1) {
                         os << "[" << arc.source_ipin() << "]";
                     }
                     os << " ";
                     os << escape_sdf_identifier(arc.sink_name());
-                    if(find_port_size(arc.sink_name()) > 1) { 
+                    if(find_port_size(arc.sink_name()) > 1) {
                         os << "[" << arc.sink_ipin() << "]";
                     }
                     os << " ";
@@ -818,11 +818,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     private: //Internal types
     private: //NetlistVisitor interface functions
 
-        void visit_top_impl(const char* top_level_name) override { 
+        void visit_top_impl(const char* top_level_name) override {
             top_module_name_ = top_level_name;
         }
 
-        void visit_atom_impl(const t_pb* atom) override { 
+        void visit_atom_impl(const t_pb* atom) override {
             auto& atom_ctx = g_vpr_ctx.atom();
 
             const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
@@ -1033,7 +1033,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             sdf_os_ << indent(depth) << ")\n";
         }
 
-        //Returns the name of a wire connecting a primitive and global net.  
+        //Returns the name of a wire connecting a primitive and global net.
         //The wire is recorded and instantiated by the top level output routines.
         std::string make_inst_wire(AtomNetId atom_net_id, //The id of the net in the atom netlist
                                    tatum::NodeId tnode_id,  //The tnode associated with the primitive pin
@@ -1075,7 +1075,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //The I/O is recorded and instantiated by the top level output routines
         std::string make_io(const t_pb* atom, //The implementation primitive representing the I/O
                             PortType dir) { //The IO direction
-            
+
 
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
@@ -1085,8 +1085,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 VTR_ASSERT(pb_graph_node->num_output_ports == 1); //One output port
                 VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //One output pin
                 cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-                
-                io_name = atom->name;  
+
+                io_name = atom->name;
 
             } else {
                 VTR_ASSERT(pb_graph_node->num_input_ports == 1); //One input port
@@ -1095,7 +1095,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 //Strip off the starting 'out:' that vpr adds to uniqify outputs
                 //this makes the port names match the input blif file
-                io_name = atom->name + 4;  
+                io_name = atom->name + 4;
             }
 
 			const t_pb_route* top_pb_route = find_top_pb_route(atom);
@@ -1119,7 +1119,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     assignments_.emplace_back(wire_name, io_name);
                 }
             }
-            
+
             return io_name;
         }
 
@@ -1158,7 +1158,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     net = "";
                 } else {
                     //Connected to a net
-                    
+
                     //Look up the tnode associated with this pin (used for delay calculation)
                     tatum::NodeId src_tnode_id = find_tnode(atom, cluster_pin_idx);
                     tatum::NodeId sink_tnode_id = find_tnode(atom, sink_cluster_pin_idx);
@@ -1205,7 +1205,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
 			const t_pb_route* top_pb_route = find_top_pb_route(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
-             
+
             //We expect a single input, output and clock ports
             VTR_ASSERT(pb_graph_node->num_input_ports == 1);
             VTR_ASSERT(pb_graph_node->num_output_ports == 1);
@@ -1274,7 +1274,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -1331,7 +1331,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -1367,7 +1367,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -1416,7 +1416,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
                 for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
                     params["WIDTH"] = std::to_string(port->num_pins); //Assume same width on all ports
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
@@ -1452,7 +1452,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
@@ -1512,7 +1512,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
                 for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
 
                     if(port->name == std::string("a") || port->name == std::string("b")) {
                         params["WIDTH"] = std::to_string(port->num_pins); //Assume same width on all ports
@@ -1567,7 +1567,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
-                    const t_port* port = pin->port; 
+                    const t_port* port = pin->port;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
@@ -1601,7 +1601,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_route* find_top_pb_route(const t_pb* curr) {
             auto& cluster_ctx = g_vpr_ctx.clustering();
 
-            const t_pb* top_pb = find_top_cb(curr); 
+            const t_pb* top_pb = find_top_cb(curr);
 
             const t_pb_route* top_pb_route = nullptr;
             for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -1681,7 +1681,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //
         //  Since the LUT inputs may have been rotated from the input blif specification we need to
         //  figure out this permutation to reflect the physical implementation connectivity.
-        //  
+        //
         //  We return a permutation map (which is a list of swaps from index to index)
         //  which is then applied to do the rotation of the lutmask.
         //
@@ -1787,16 +1787,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 //Determine whether the truth table stores the ON or OFF set
                 //
                 //  In blif, the 'output values' of a .names must be either '1' or '0', and must be consistent
-                //  within a single .names -- that is a single .names can encode either the ON or OFF set 
+                //  within a single .names -- that is a single .names can encode either the ON or OFF set
                 //  (of which only one will be encoded in a single .names)
                 //
                 const std::string names_first_row = (const char*) names_row_ptr->data_vptr;
                 auto names_first_row_output_iter = names_first_row.end() - 1;
 
                 if(*names_first_row_output_iter == '1') {
-                    encoding_on_set = true; 
+                    encoding_on_set = true;
                 } else if (*names_first_row_output_iter == '0') {
-                    encoding_on_set = false; 
+                    encoding_on_set = false;
                 } else {
                     vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                 "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", *names_first_row_output_iter);
@@ -1816,7 +1816,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Sanity-check, the 2nd last character should be a space
             auto space_iter = names_row.end() - 2;
             VTR_ASSERT(*space_iter == ' ');
-            
+
             //Extract the truth (output value) for this row
             if(*output_val_iter == '1') {
                 VTR_ASSERT(encoding_on_set);
@@ -1834,11 +1834,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
             while(names_row[i] != ' ') {
                 vtr::LogicValue input_val = vtr::LogicValue::UNKOWN;
                 if(names_row[i] == '1') {
-                    input_val = vtr::LogicValue::TRUE; 
+                    input_val = vtr::LogicValue::TRUE;
                 } else if (names_row[i] == '0') {
-                    input_val = vtr::LogicValue::FALSE; 
+                    input_val = vtr::LogicValue::FALSE;
                 } else if (names_row[i] == '-') {
-                    input_val = vtr::LogicValue::DONT_CARE; 
+                    input_val = vtr::LogicValue::DONT_CARE;
                 } else {
                     vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                 "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", names_row[i]);
@@ -1860,7 +1860,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             return count;
         }
 
-        //Returns the logical net ID 
+        //Returns the logical net ID
         AtomNetId find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
             const t_pb_graph_node* pb_node = atom->pb_graph_node;
 
@@ -1900,13 +1900,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::vector<Assignment> assignments_; //Set of assignments (i.e. net-to-net connections)
         std::vector<std::shared_ptr<Instance>> cell_instances_; //Set of cell instances
 
-        //Drivers of logical nets. 
+        //Drivers of logical nets.
         // Key: logic net id, Value: pair of wire_name and tnode_id
-        std::map<AtomNetId, std::pair<std::string,tatum::NodeId>> logical_net_drivers_; 
+        std::map<AtomNetId, std::pair<std::string,tatum::NodeId>> logical_net_drivers_;
 
-        //Sinks of logical nets. 
+        //Sinks of logical nets.
         // Key: logical net id, Value: vector wire_name tnode_id pairs
-        std::map<AtomNetId, std::vector<std::pair<std::string,tatum::NodeId>>> logical_net_sinks_; 
+        std::map<AtomNetId, std::vector<std::pair<std::string,tatum::NodeId>>> logical_net_sinks_;
         std::map<std::string, float> logical_net_sink_delays_;
 
         //Output streams
@@ -2089,16 +2089,16 @@ bool is_special_sdf_char(char c) {
     //    ` to ` (ASCII decimal 96)
     //    { to ~ (ASCII decimal 123-126)
     //
-    //Note that the spec defines _ (decimal code 95) and $ (decimal code 36) 
-    //as non-special alphanumeric characters. 
+    //Note that the spec defines _ (decimal code 95) and $ (decimal code 36)
+    //as non-special alphanumeric characters.
     //
     //However it inconsistently also lists $ in the list of special characters.
     //Since the spec allows for non-special characters to be escaped (they are treated
     //normally), we treat $ as a special character to be safe.
     //
     //Note that the spec appears to have rendering errors in the PDF availble
-    //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK' 
-    //character (decimal code 171) in place of the APOSTROPHE character ' 
+    //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK'
+    //character (decimal code 171) in place of the APOSTROPHE character '
     //with decimal code 39 in the special character list. We assume code 39.
     if((c >= 33 && c <= 35) ||
        (c == 36) || // $

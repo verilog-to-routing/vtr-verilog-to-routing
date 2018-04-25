@@ -46,7 +46,7 @@ typedef struct exp_node
 		int data;
 		std::string variable;
 	}type;
-	
+
 	int id;
 	int flag;
 	int priority;

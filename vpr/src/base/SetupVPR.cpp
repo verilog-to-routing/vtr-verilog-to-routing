@@ -45,12 +45,12 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(t_options *Options, 
+void SetupVPR(t_options *Options,
               const bool TimingEnabled,
-              const bool readArchFile, 
+              const bool readArchFile,
               t_file_name_opts *FileNameOpts,
               t_arch * Arch,
-              t_model ** user_models, 
+              t_model ** user_models,
               t_model ** library_models,
               t_netlist_opts* NetlistOpts,
               t_packer_opts *PackerOpts,
@@ -69,7 +69,7 @@ void SetupVPR(t_options *Options,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (Options->CircuitName.value() == "") {
-        vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, 
+        vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__,
                   "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
@@ -125,12 +125,12 @@ void SetupVPR(t_options *Options,
 	VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
 
     if (device_ctx.input_types.empty()) {
-        VPR_THROW(VPR_ERROR_ARCH, 
+        VPR_THROW(VPR_ERROR_ARCH,
                 "Architecture contains no top-level block type containing '.input' models");
     }
 
     if (device_ctx.output_types.empty()) {
-        VPR_THROW(VPR_ERROR_ARCH, 
+        VPR_THROW(VPR_ERROR_ARCH,
                 "Architecture contains no top-level block type containing '.output' models");
     }
 
@@ -240,7 +240,7 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 #endif
 }
 
-/* This loads up VPR's arch_switch_inf data by combining the switches from 
+/* This loads up VPR's arch_switch_inf data by combining the switches from
  * the arch file with the special switches that VPR needs. */
 static void SetupSwitches(const t_arch& Arch,
 		t_det_routing_arch *RoutingArch,
@@ -279,7 +279,7 @@ static void SetupSwitches(const t_arch& Arch,
 	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
 
     //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
-    //VPR do not model the R/C's of block internal routing connectsion. 
+    //VPR do not model the R/C's of block internal routing connectsion.
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
@@ -374,8 +374,8 @@ static void SetupAnnealSched(const t_options& Options,
 	AnnealSched->type = Options.anneal_sched_type;
 }
 
-/* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.  
- * Error checking, such as checking for conflicting params is assumed to be done beforehand 
+/* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.
+ * Error checking, such as checking for conflicting params is assumed to be done beforehand
  */
 void SetupPackerOpts(const t_options& Options,
 		t_packer_opts *PackerOpts) {
@@ -413,7 +413,7 @@ void SetupPackerOpts(const t_options& Options,
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
-    
+
     NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
     NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;

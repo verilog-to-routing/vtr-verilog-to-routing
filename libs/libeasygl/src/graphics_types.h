@@ -10,7 +10,7 @@
 /**************** USEFUL TYPES YOU CAN PASS TO GRAPHICS FUNCTIONS **********/
 
 /**
- * An (x,y) point data type. 
+ * An (x,y) point data type.
  */
 class t_point {
 public:
@@ -23,7 +23,7 @@ public:
     void offset(float x, float y);
 
     /**
-     * These add the given point to this point in a 
+     * These add the given point to this point in a
      * component-wise fashion, ie x = x + rhs.x
      *
      * Naturally, {+,-} don't modify the left-hand side and {+,-}= do.
@@ -154,7 +154,7 @@ public:
 
     /*
      * Some useful functions for working with indexed colour,
-     * t_color is a colour index (id); you can 
+     * t_color is a colour index (id); you can
      * use the enumerated constants in easygl_constants.h to use named
      * colours (color_types) if you don't want to make your own rgb colours.
      */
@@ -162,7 +162,7 @@ public:
     color_types operator=(color_types color_enum);
     bool operator==(color_types rhs) const;
     bool operator!=(color_types rhs) const;
-    
+
     static const std::array<t_color,NUM_COLOR> predef_colors;
 };
 

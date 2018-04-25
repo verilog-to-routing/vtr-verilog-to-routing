@@ -86,7 +86,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         if (exists_ok) {
             return false;
         } else {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "in alloc_route_tree_timing_structs: old structures already exist.\n");
         }
 	}
@@ -100,7 +100,7 @@ void free_route_tree_timing_structs() {
 
 	/* Frees the structures needed to build routing trees, and really frees
 	 * (i.e. calls free) all the data on the free lists.                         */
-    
+
 	t_rt_node *rt_node, *next_node;
 	t_linked_rt_edge *rt_edge, *next_edge;
 
@@ -278,7 +278,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	inode = hptr->index;
 
 	if (device_ctx.rr_nodes[inode].type() != SINK) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
 			"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
 	}
@@ -338,7 +338,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
         }
     }
 
-	//Inode is now the branch point to the old routing; do not need 
+	//Inode is now the branch point to the old routing; do not need
     //to alloc another node since the old routing has done so already
 	rt_node = rr_node_to_rt_node[inode];
     VTR_ASSERT_MSG(rt_node, "Previous routing branch should exist");
@@ -352,7 +352,7 @@ add_subtree_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	downstream_rt_node->parent_node = rt_node;
 	downstream_rt_node->parent_switch = iswitch;
 
-    //Expand (recursively) each of the main-branch nodes adding any 
+    //Expand (recursively) each of the main-branch nodes adding any
     //non-configurably connected nodes
     std::unordered_set<int> all_visited = main_branch_visited;
     for (int rr_node : main_branch_visited) {
@@ -395,7 +395,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
 
         for (int iedge : device_ctx.rr_nodes[rr_node].non_configurable_edges()) {
             //Recursive case: expand children
-            VTR_ASSERT (!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge)); 
+            VTR_ASSERT (!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge));
 
             int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
 
@@ -563,7 +563,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	t_linked_rt_edge* edge {root->u.child_list};
-	
+
 	for (;;) {
 		int inode = root->inode;
 		route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
@@ -586,7 +586,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
 
 		root = edge->child;
 		edge = root->u.child_list;
-	}	
+	}
 }
 
 bool verify_route_tree(t_rt_node* root) {
@@ -670,7 +670,7 @@ void update_net_delays_from_route_tree(float *net_delay,
 	}
 }
 
-void update_remaining_net_delays_from_route_tree(float* net_delay, 
+void update_remaining_net_delays_from_route_tree(float* net_delay,
 		const t_rt_node* const * rt_node_of_sink, const vector<int>& remaining_sinks) {
 
 	/* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
@@ -853,7 +853,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 
     int num_trace_sinks = 0;
     for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
-        nodes.insert(trace->index); 
+        nodes.insert(trace->index);
 
         //Sanity check that number of sinks match expected
         if (device_ctx.rr_nodes[trace->index].type() == SINK) {
@@ -902,7 +902,7 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
     t_linked_rt_edge* prev_edge = nullptr;
     t_linked_rt_edge* edge = node->u.child_list;
     while (edge) {
-        t_rt_node* child = prune_route_tree_recurr(edge->child, connections_inf, force_prune); 
+        t_rt_node* child = prune_route_tree_recurr(edge->child, connections_inf, force_prune);
 
         if (!child) { //Child was pruned
 
@@ -931,9 +931,9 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
     }
 
     if (device_ctx.rr_nodes[node->inode].type() == SINK) {
-        
+
         if (!force_prune) {
-            //Valid path to sink 
+            //Valid path to sink
 
             //Record sink as reachable
             connections_inf.reached_rt_sink(node);
@@ -952,7 +952,7 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
         //This node has no children
         //
         // This can happen in three scenarios:
-        //   1) This node is being pruned. As a result any child nodes 
+        //   1) This node is being pruned. As a result any child nodes
         //      (subtrees) will have been pruned.
         //
         //   2) This node was reached by a non-configurable edge but
@@ -980,7 +980,7 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
         //
         //   3) Prune the node.
         //
-        //      This avoid the creation of unused 'stubs'. (For example if 
+        //      This avoid the creation of unused 'stubs'. (For example if
         //      we left the stubs in and they were subsequently not used
         //      they would uselessly consume routing resources).
         VTR_ASSERT(node->u.child_list == nullptr);
@@ -1035,7 +1035,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 	VTR_ASSERT(rt_root != nullptr);
 
 	t_linked_rt_edge* edge {rt_root->u.child_list};
-	
+
 	// update every node once, so even do it for sinks and branch points once
 	for (;;) {
 		pathfinder_update_single_node_cost(rt_root->inode, add_or_sub, pres_fac);
@@ -1110,7 +1110,7 @@ static void print_node(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	t_rr_type node_type = device_ctx.rr_nodes[inode].type();
 	vtr::printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
-		rt_node->re_expand, rr_node_typename[node_type], inode);	
+		rt_node->re_expand, rr_node_typename[node_type], inode);
 }
 
 
@@ -1120,7 +1120,7 @@ static void print_node_inf(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	const auto& node_inf = route_ctx.rr_node_route_inf[inode];
 	vtr::printf_info("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
-		node_inf.prev_node, node_inf.prev_edge, inode);	
+		node_inf.prev_node, node_inf.prev_edge, inode);
 }
 
 
@@ -1133,7 +1133,7 @@ static void print_node_congestion(const t_rt_node* rt_node) {
 	const auto& node = device_ctx.rr_nodes[inode];
 	const auto& node_state = route_ctx.rr_node_route_inf[inode];
 	vtr::printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
-		node_state.occ(), node.capacity(), inode);		
+		node_state.occ(), node.capacity(), inode);
 }
 
 
@@ -1152,7 +1152,7 @@ void print_route_tree_congestion(const t_rt_node* rt_root) {
 	vtr::printf_info("\n");
 }
 
-/* the following is_* functions are for debugging correctness of pruned route tree 
+/* the following is_* functions are for debugging correctness of pruned route tree
    these should only be called when the debug switch DEBUG_INCREMENTAL_REROUTING is on */
 bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone) {
 	if (!root && !root_clone) return true;
@@ -1161,9 +1161,9 @@ bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone
 		(!equal_approx(root->R_upstream, root_clone->R_upstream)) ||
 		(!equal_approx(root->C_downstream, root_clone->C_downstream)) ||
 		(!equal_approx(root->Tdel, root_clone->Tdel))) {
-		vtr::printf_info("mismatch i %d|%d R %e|%e C %e|%e T %e %e\n", 
+		vtr::printf_info("mismatch i %d|%d R %e|%e C %e|%e T %e %e\n",
 			root->inode, root_clone->inode,
-			root->R_upstream, root_clone->R_upstream, 
+			root->R_upstream, root_clone->R_upstream,
 			root->C_downstream, root_clone->C_downstream,
 			root->Tdel, root_clone->Tdel);
 		return false;
@@ -1172,7 +1172,7 @@ bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone
 	t_linked_rt_edge* clone_edge {root_clone->u.child_list};
 	while (orig_edge && clone_edge) {
 		if (orig_edge->iswitch != clone_edge->iswitch)
-			vtr::printf_info("mismatch i %d|%d edge switch %d|%d\n", 
+			vtr::printf_info("mismatch i %d|%d edge switch %d|%d\n",
 				root->inode, root_clone->inode,
 				orig_edge->iswitch, clone_edge->iswitch);
 		if (!is_equivalent_route_tree(orig_edge->child, clone_edge->child)) return false;	// child trees not equivalent
@@ -1192,13 +1192,13 @@ bool is_valid_skeleton_tree(const t_rt_node* root) {
 	t_linked_rt_edge* edge = root->u.child_list;
 	while (edge) {
 		if (edge->child->parent_node != root) {
-			vtr::printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n", 
+			vtr::printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
 				inode, edge->child->inode,
 				edge->child->inode, edge->child->parent_node->inode);
 			return false;
 		}
 		if (edge->iswitch != edge->child->parent_switch) {
-			vtr::printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n", 
+			vtr::printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n",
 				inode, edge->child->inode, edge->iswitch, edge->child->parent_switch);
 			return false;
 		}
@@ -1209,7 +1209,7 @@ bool is_valid_skeleton_tree(const t_rt_node* root) {
 		}
 		edge = edge->next;
 	}
-	return true;	
+	return true;
 }
 
 bool is_valid_route_tree(const t_rt_node* root) {
@@ -1222,13 +1222,13 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	if (root->parent_node) {
 		if (device_ctx.rr_switch_inf[iswitch].buffered) {
 			if (root->R_upstream != device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R) {
-				vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
+				vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
 					device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R);
 				return false;
 			}
 		}
 		else if (root->R_upstream != device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R) {
-			vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
+			vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
 				device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R);
 			return false;
 		}
@@ -1252,13 +1252,13 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	}
 	while (edge) {
 		if (edge->child->parent_node != root) {
-			vtr::printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n", 
+			vtr::printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n",
 				inode, edge->child->inode,
 				edge->child->inode, edge->child->parent_node->inode);
 			return false;
 		}
 		if (edge->iswitch != edge->child->parent_switch) {
-			vtr::printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n", 
+			vtr::printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n",
 				inode, edge->child->inode, edge->iswitch, edge->child->parent_switch);
 			return false;
 		}
@@ -1333,7 +1333,7 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
 
     //Walk the route tree saving all the used connections
     std::set<std::tuple<int,int,int>> route_tree_connections;
-    collect_route_tree_connections(rt_root, route_tree_connections); 
+    collect_route_tree_connections(rt_root, route_tree_connections);
 
     //Remove the extra parent connection to root (not included in traceback)
     route_tree_connections.erase(std::make_tuple(OPEN, OPEN, rt_root->inode));

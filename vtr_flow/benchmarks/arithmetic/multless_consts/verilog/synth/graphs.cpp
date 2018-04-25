@@ -9,14 +9,14 @@ struct graph_t : public vector<edge_t> {
     graph_t() { length=0; }
     void add_edge(const edge_t &e) {
 	assert(e.first < e.second);
-	push_back(e); 
+	push_back(e);
 	if(e.second > length) length = e.second;
     }
     void move_edges_by_1(int pos) {
-	if(pos >= length) 
+	if(pos >= length)
 	    return;
 	for(iterator i=begin(); i!=end(); ++i) {
-	    if((*i).first >=pos) 
+	    if((*i).first >=pos)
 		++((*i).first);
 	    else if((*i).second > pos)
 		++((*i).second);
@@ -26,9 +26,9 @@ struct graph_t : public vector<edge_t> {
     bool is_valid() {
 	vector<bool> has_in(length+1);
 	has_in.resize(length+1);
-	for(int i=0; i<=length; i++) 
+	for(int i=0; i<=length; i++)
 	    has_in[i]=false;
-	for(iterator i=begin(); i!=end(); ++i) 
+	for(iterator i=begin(); i!=end(); ++i)
 	    has_in[(*i).second] = true;
 	for(int i=1; i<=length; i++)
 	    if(!has_in[i]) return false;
@@ -43,9 +43,9 @@ struct graph_t : public vector<edge_t> {
     graph_t &reduce() {
 	vector<bool> has_out(length+1);
 	has_out.resize(length+1); /* has_out[length] will always be false */
-	for(int i=0; i <= length; i++) 
+	for(int i=0; i <= length; i++)
 	    has_out[i]=false;
-	for(iterator i=begin(); i!=end(); ++i) 
+	for(iterator i=begin(); i!=end(); ++i)
 	    has_out[(*i).first] = true;
 
 	map<int,int> shifts;
@@ -96,7 +96,7 @@ void generate_graphs(int cost) {
 	    sort(gnew.begin(), gnew.end());
 	    dest.insert(gnew);
 	}
-	
+
     }
 }
 
@@ -116,7 +116,7 @@ void output_reduced_graphs(int cost) {
 	sort(gnew.begin(), gnew.end());
 	greduc.insert(gnew);
     }
-    for(gsiter_t i=greduc.begin(); i!=greduc.end(); ++i) 
+    for(gsiter_t i=greduc.begin(); i!=greduc.end(); ++i)
 	(*i).output();
     printf("==> nreduced=%d\n", greduc.size());
 }
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     printf("cost=%d\n", maxcost);
     int narcs = (maxcost*(maxcost+1)) / 2;
     printf("arcs=%d\n", narcs);
-    
+
     GRAPHS = vector<graphset_t>(maxcost);
     GRAPHS.push_back(graphset_t());
     GRAPHS[0].insert(graph_t());

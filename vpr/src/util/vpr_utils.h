@@ -27,7 +27,7 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 void get_class_range_for_block(const ClusterBlockId blk_id, int *class_low,
 		int *class_high);
 
-void get_pin_range_for_block(const ClusterBlockId blk_id, 
+void get_pin_range_for_block(const ClusterBlockId blk_id,
 		int *pin_low,
 		int *pin_high);
 
@@ -57,7 +57,7 @@ class IntraLbPbPinLookup {
         t_type_descriptor* block_types_;
         int num_types_;
 
-        t_pb_graph_pin*** intra_lb_pb_pin_lookup_; 
+        t_pb_graph_pin*** intra_lb_pb_pin_lookup_;
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
@@ -76,10 +76,10 @@ std::tuple<ClusterNetId,int,int> find_pb_route_clb_input_net_pin(ClusterBlockId 
 //
 //  Note that a CLB pin index does not (neccessarily) map directly to the pb_route index representing the first stage
 //  of internal routing in the block, since a block may have capacity > 1 (e.g. IOs)
-//  
+//
 //  In the clustered netlist blocks with capacity > 1 may have their 'z' position > 0, and their clb pin indicies offset
 //  by the number of pins on the type (c.f. post_place_sync()).
-//  
+//
 //  This offset is not mirrored in the t_pb or pb graph, so we need to recover the basic pin index before processing
 //  further -- which is what this function does.
 int find_clb_pb_pin(ClusterBlockId clb, int clb_pin);
@@ -126,14 +126,14 @@ void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
 		int * port_pin);
 void free_port_pin_from_blk_pin();
 
-void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin, 
+void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin,
 		int * blk_pin);
 void free_blk_pin_from_port_pin();
 
 void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 		int *** idirect_from_blk_pin, int *** direct_type_from_blk_pin);
 
-void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, 
+void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 		int * end_pin_index, char * pb_type_name, char * port_name);
 
 

@@ -8,7 +8,7 @@
 #define BLIF_FILE_NAME_LEN 512
 
 /*
- int          ace_io_read_activity (network_t *, FILE *, 
+ int          ace_io_read_activity (network_t *, FILE *,
  ace_pi_format_t, double, double);
  void         ace_io_print_activity (network_t *, FILE *);
  */

@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -56,7 +56,7 @@ void read_config_file(char *file_name)
 
 	/* Parse the xml file */
 	oassert(file_name != NULL);
-	
+
 	pugi::xml_document doc;
 	pugiutil::loc_data loc_data;
 	try {
@@ -142,7 +142,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 		if (child != NULL)
 		{
 			/* Two arch files specified? */
-			if (global_args.arch_file != NULL) 
+			if (global_args.arch_file != NULL)
 			{
 				printf("Error: Arch file specified in config file AND command line\n");
 				exit(-1);
@@ -229,7 +229,7 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiutil:
 		}
 		else /* Default: No minimum hard multiply size */
 			config->min_hard_multiplier = 0;
-		
+
 		prop = get_attribute(child, "padding", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
@@ -265,7 +265,7 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiutil:
 		}
 		else /* Default: Do not split memory width! */
 			config->split_memory_width = 0;
-		
+
 		prop = get_attribute(child, "split_memory_depth", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
@@ -278,7 +278,7 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiutil:
 		}
 		else /* Default: Do not split memory depth! */
 			config->split_memory_depth = 0;
-		
+
 	}
 
 	child = get_single_child(a_node, "adder", loc_data, OPTIONAL);

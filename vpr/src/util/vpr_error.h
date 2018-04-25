@@ -5,7 +5,7 @@
 #include <cstdarg>
 
 enum e_vpr_error {
-	VPR_ERROR_UNKNOWN = 0, 
+	VPR_ERROR_UNKNOWN = 0,
 	VPR_ERROR_ARCH,
 	VPR_ERROR_PACK,
 	VPR_ERROR_PLACE,
@@ -48,7 +48,7 @@ void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int li
 void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
 
 /*
- * Macro wrapper around vpr_throw() which automatically 
+ * Macro wrapper around vpr_throw() which automatically
  * specifies file and line number of call site.
  */
 #define VPR_THROW(type, ...) do { \

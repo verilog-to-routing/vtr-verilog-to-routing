@@ -241,7 +241,7 @@ void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, Clust
     net_is_global_ = clean_and_reorder_values(net_is_global_, net_id_map);
 }
 
-void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/, 
+void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/,
                                                const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
     for (auto blk : blocks()) {
         block_logical_pins_[blk] = std::vector<ClusterPinId>(block_type(blk)->num_pins, ClusterPinId::INVALID()); //Reset
@@ -252,12 +252,12 @@ void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinI
     }
 }
 
-void ClusteredNetlist::rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& /*block_id_map*/, 
+void ClusteredNetlist::rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& /*block_id_map*/,
                                               const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/) {
     //Unused
 }
 
-void ClusteredNetlist::rebuild_pin_refs_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/, 
+void ClusteredNetlist::rebuild_pin_refs_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/,
                                              const vtr::vector_map<ClusterNetId, ClusterNetId>& /*net_id_map*/) {
     //Unused
 }

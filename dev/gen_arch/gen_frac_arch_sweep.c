@@ -1,11 +1,11 @@
 /* Jason Luu
    June 26, 2013
-   
+
    Fracturable LUT arch generator.  Creates arch files of fracturable 6-LUTs with varying parameters.  Each fracturable 6-LUT can operate as one 6-LUT or two 5 LUTs with shared inputs.
    The number of pins in dual 5-LUT mode is labelled FI where an FI = 5 means all 5 pins of the dual 5-LUTs are shared and an FI = 10 means no pins are shared.
 
    FI varies from 5 to 10 and inputs to CLB (I) varies from 50 to 100
-      
+
    To run, enter: ./gen_frac_arch_sweep
 
 */
@@ -28,7 +28,7 @@ int main(void) {
 			/* Open arch file for writing */
 			sprintf(fname, "frac_FI%d_I%d.xml", i_FI, i_clbI);
 			fpout = fopen(fname, "w");
-			
+
 			/* Populate arch file */
 			print_header(fpout);
 			print_clb(fpout, i_FI, i_clbI);

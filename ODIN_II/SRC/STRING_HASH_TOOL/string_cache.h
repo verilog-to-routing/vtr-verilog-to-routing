@@ -3,7 +3,7 @@
 
 /*
  * Copyright (c) 2001 Vladimir Dergachev (volodya@users.sourceforge.net)
- *    
+ *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
  *    General Public License as published by the Free Software
@@ -32,7 +32,7 @@ typedef struct {
 	long *string_hash;
 	long *next_string;
 } STRING_CACHE;
-	
+
 /* creates the hash where it is indexed by a string and the void ** holds the data */
 STRING_CACHE *sc_new_string_cache(void);
 /* returns an index of the spot where string is */

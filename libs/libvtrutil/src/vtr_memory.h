@@ -9,8 +9,8 @@ namespace vtr {
      * allocated to save overhead when allocating very small memory pieces. *
      * For a complete description, please see the comment in chunk_malloc*/
     struct t_chunk {
-        t_linked_vptr *chunk_ptr_head = nullptr; 
-        /* chunk_ptr_head->data_vptr: head of the entire linked 
+        t_linked_vptr *chunk_ptr_head = nullptr;
+        /* chunk_ptr_head->data_vptr: head of the entire linked
          * list of allocated "chunk" memory;
          * chunk_ptr_head->next: pointer to the next chunk on the linked list*/
         int mem_avail = 0; /* number of bytes left in the current chunk */

@@ -14,7 +14,7 @@ typedef struct cmdline {
 
 typedef struct cmditer {
     cmdline_t * cmd;
-    int own_cmd; 
+    int own_cmd;
     int pos;
     int last_pop;
 } cmditer_t;

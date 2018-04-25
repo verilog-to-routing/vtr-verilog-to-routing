@@ -119,32 +119,32 @@ void alloc_and_init_ace_structs(netlist_t *net) {
     */
 
     // GND Node
-    net->gnd_node->output_pins[0]->ace_info = alloc_and_init_ace_info_object(); 
+    net->gnd_node->output_pins[0]->ace_info = alloc_and_init_ace_info_object();
 
     // VCC Node
-    net->vcc_node->output_pins[0]->ace_info = alloc_and_init_ace_info_object(); 
+    net->vcc_node->output_pins[0]->ace_info = alloc_and_init_ace_info_object();
 
     // unconn Node
-    net->pad_node->output_pins[0]->ace_info = alloc_and_init_ace_info_object(); 
+    net->pad_node->output_pins[0]->ace_info = alloc_and_init_ace_info_object();
 
     // Input Nodes
     for ( x = 0; x < net->num_top_input_nodes; x++ ) {
         for ( y = 0; y < net->top_input_nodes[x]->num_output_pins; y++ ) {
-            net->top_input_nodes[x]->output_pins[y]->ace_info = alloc_and_init_ace_info_object(); 
+            net->top_input_nodes[x]->output_pins[y]->ace_info = alloc_and_init_ace_info_object();
         }
     }
 
     // FF Nodes
     for ( x = 0; x < net->num_ff_nodes; x++ ) {
         for ( y = 0; y < net->ff_nodes[x]->num_output_pins; y++ ) {
-            net->ff_nodes[x]->output_pins[y]->ace_info = alloc_and_init_ace_info_object(); 
+            net->ff_nodes[x]->output_pins[y]->ace_info = alloc_and_init_ace_info_object();
         }
     }
 
     // Internal Nodes
     for ( x = 0; x < net->num_internal_nodes; x++ ) {
         for ( y = 0; y < net->internal_nodes[x]->num_output_pins; y++ ) {
-            net->internal_nodes[x]->output_pins[y]->ace_info = alloc_and_init_ace_info_object(); 
+            net->internal_nodes[x]->output_pins[y]->ace_info = alloc_and_init_ace_info_object();
         }
     }
 
@@ -168,7 +168,7 @@ ace_obj_info_t* alloc_and_init_ace_info_object() {
 
     ace_obj_info_t *new_node;
 
-    new_node = (ace_obj_info_t *)my_malloc_struct(sizeof(ace_obj_info_t)); 
+    new_node = (ace_obj_info_t *)my_malloc_struct(sizeof(ace_obj_info_t));
 
     new_node->value = -1;
     new_node->num_toggles = 0;
@@ -254,11 +254,11 @@ void calculate_activity ( netlist_t *net, int max_cycles, FILE *act_out ) {
     }
 
     // Process Internal Nodes
-    for ( x = 0; x < net->num_internal_nodes; x++ ) { 
+    for ( x = 0; x < net->num_internal_nodes; x++ ) {
         for ( y = 0; y < net->internal_nodes[x]->num_output_pins; y++ ) {
             info = net->internal_nodes[x]->output_pins[y]->ace_info;
 
-            // Odin process each vector 2 times, need to adjust count. 
+            // Odin process each vector 2 times, need to adjust count.
             info->num_ones = info->num_ones / 2;
 
             // Static Probability = NUMBER of ONES / Cycles
@@ -272,7 +272,7 @@ void calculate_activity ( netlist_t *net, int max_cycles, FILE *act_out ) {
     //Compute Switching Activities for Internal Nodes
     compute_switching_activities ( net );
 
-    // Output ACE Info 
+    // Output ACE Info
     output_ace_info (net, act_out );
 }
 
@@ -293,11 +293,11 @@ void compute_switching_activities ( netlist_t *net ) {
     DdNode * bdd;
     ace_cube_t * cube;
 
-    // Initialize Cudd 
+    // Initialize Cudd
     dd = Cudd_Init( 0, 0, CUDD_UNIQUE_SLOTS, CUDD_CACHE_SLOTS, 0 );
 
     // Process each internal node
-    for ( x = 0; x < net->num_internal_nodes; x++ ) { 
+    for ( x = 0; x < net->num_internal_nodes; x++ ) {
         // Process each output pin of node
         for ( y = 0; y < net->internal_nodes[x]->num_output_pins; y++ ) {
             info = net->internal_nodes[x]->output_pins[y]->ace_info;
@@ -310,7 +310,7 @@ void compute_switching_activities ( netlist_t *net ) {
 
             // If nodes has a bitmap/truthtable use LAG 1 BDD model to determine switching activity
             if ( net->internal_nodes[x]->bit_map_line_count > 0 ) {
-                bdd = build_bdd_for_node (dd, net->internal_nodes[x] ); 
+                bdd = build_bdd_for_node (dd, net->internal_nodes[x] );
                 Cudd_Ref ( bdd );
                 n0 = n1 = 0;
                 ace_bdd_count_paths(dd, bdd, &n1, &n0);
@@ -366,8 +366,8 @@ void output_ace_info (netlist_t *net, FILE *act_out ) {
 
     // Process Top Input Nodes
     for ( x = 0; x < net->num_top_input_nodes; x++ ) {
-        output_ace_info_node (net->top_input_nodes[x]->name, 
-                              net->top_input_nodes[x]->output_pins[0]->ace_info, 
+        output_ace_info_node (net->top_input_nodes[x]->name,
+                              net->top_input_nodes[x]->output_pins[0]->ace_info,
                               act_out );
     }
 
@@ -379,7 +379,7 @@ void output_ace_info (netlist_t *net, FILE *act_out ) {
     }
 
     // Process Internal Nodes
-    for ( x = 0; x < net->num_internal_nodes; x++ ) { 
+    for ( x = 0; x < net->num_internal_nodes; x++ ) {
         for ( y = 0; y < net->internal_nodes[x]->num_output_pins; y++ ) {
             output_ace_info_node ( net->internal_nodes[x]->output_pins[y]->name,
                                    net->internal_nodes[x]->output_pins[y]->ace_info,
@@ -398,7 +398,7 @@ void output_ace_info (netlist_t *net, FILE *act_out ) {
 void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out ) {
 
     /*
-    printf ( "%s %f %f %f DEBUG: ONES: %3d TOGGLES: %d\n",  
+    printf ( "%s %f %f %f DEBUG: ONES: %3d TOGGLES: %d\n",
              name,
              info->static_prob,
              info->switch_prob ,
@@ -423,7 +423,7 @@ void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out ) {
  * make "r" the empty set of "size" elements
  *
  * This function is from Espresso-mv
- * 
+ *
  *---------------------------------------------------------------------------*/
 pset set_clear(pset r, int size)
 {
@@ -546,8 +546,8 @@ DdNode * build_bdd_for_node ( DdManager * dd, nnode_t *node ) {
                 continue;
             bCube  = Cudd_bddAnd( dd, bTemp = bCube, bVar );   Cudd_Ref( bCube );
             Cudd_RecursiveDeref( dd, bTemp );
-        } 
-        bSum = Cudd_bddOr( dd, bTemp = bSum, bCube );   
+        }
+        bSum = Cudd_bddOr( dd, bTemp = bSum, bCube );
         Cudd_Ref( bSum );
         Cudd_RecursiveDeref( dd, bTemp );
         Cudd_RecursiveDeref( dd, bCube );

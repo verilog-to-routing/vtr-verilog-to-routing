@@ -1,5 +1,5 @@
-/* 
- * Prepacking: Group together technology-mapped netlist blocks before packing.  
+/*
+ * Prepacking: Group together technology-mapped netlist blocks before packing.
  * This gives hints to the packer on what groups of blocks to keep together during packing.
  * Primary purpose:
  *    1) "Forced" packs (eg LUT+FF pair)
@@ -56,7 +56,7 @@ static void backward_expand_pack_pattern_from_edge(
 static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_patterns *pattern_b);
 static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_pattern_block **pattern_block_list);
 static t_pack_molecule *try_create_molecule(
-		t_pack_patterns *list_of_pack_patterns, 
+		t_pack_patterns *list_of_pack_patterns,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
 		AtomBlockId blk_id);
@@ -69,7 +69,7 @@ static void print_pack_molecules(const char *fname,
 		const t_pack_molecule *list_of_molecules);
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id);
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node *curr_pb_graph_node, float *cost);
-static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
+static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 /*****************************************/
@@ -77,12 +77,12 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 /*****************************************/
 
 /**
- * Find all packing patterns in architecture 
+ * Find all packing patterns in architecture
  * [0..num_packing_patterns-1]
  *
  * Limitations: Currently assumes that forced pack nets must be single-fanout
  * as this covers all the reasonable architectures we wanted.
- * More complicated structures should probably be handled either downstream 
+ * More complicated structures should probably be handled either downstream
  * (general packing) or upstream (in tech mapping).
  * If this limitation is too constraining, code is designed so that this limitation can be removed.
  */
@@ -117,10 +117,10 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 					list_of_packing_patterns, i, nullptr, nullptr, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
-			/* Default settings: A section of a netlist must match all blocks in a pack 
-             * pattern before it can be made a molecule except for carry-chains.  
-             * For carry-chains, since carry-chains are typically quite flexible in terms 
-             * of size, it is optional whether or not an atom in a netlist matches any 
+			/* Default settings: A section of a netlist must match all blocks in a pack
+             * pattern before it can be made a molecule except for carry-chains.
+             * For carry-chains, since carry-chains are typically quite flexible in terms
+             * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
 			list_of_packing_patterns[i].is_block_optional = (bool*) vtr::malloc(L_num_blocks * sizeof(bool));
 			for(k = 0; k < L_num_blocks; k++) {
@@ -164,7 +164,7 @@ static int add_pattern_name_to_hash(t_hash **nhash,
 }
 
 /**
- * Locate all pattern names 
+ * Locate all pattern names
  * Side-effect: set all pb_graph_node temp_scratch_pad field to NULL
  *				For cases where a pattern inference is "obvious", mark it as obvious.
  */
@@ -174,7 +174,7 @@ static void discover_pattern_names_in_pb_graph_node(
 	int i, j, k, m;
 	int index;
 	bool hasPattern;
-	/* Iterate over all edges to discover if an edge in current physical block belongs to a pattern 
+	/* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
 	 If edge does, then record the name of the pattern in a hash table
 	 */
 
@@ -207,7 +207,7 @@ static void discover_pattern_names_in_pb_graph_node(
 					}
 					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
 							index;
-				}								
+				}
 			}
 			if (hasPattern == true) {
 				forward_infer_pattern(&pb_graph_node->input_pins[i][j]);
@@ -296,7 +296,7 @@ static void discover_pattern_names_in_pb_graph_node(
 }
 
 /**
- * In obvious cases where a pattern edge has only one path to go, set that path to be inferred 
+ * In obvious cases where a pattern edge has only one path to go, set that path to be inferred
  */
 static void forward_infer_pattern(t_pb_graph_pin *pb_graph_pin) {
 	if (pb_graph_pin->num_output_edges == 1 && pb_graph_pin->output_edges[0]->num_pack_patterns == 0 && pb_graph_pin->output_edges[0]->infer_pattern == false) {
@@ -316,7 +316,7 @@ static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin) {
 }
 
 /**
- * Allocates memory for models and loads the name of the packing pattern 
+ * Allocates memory for models and loads the name of the packing pattern
  * so that it can be identified and loaded with more complete information later
  */
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
@@ -360,13 +360,13 @@ void free_list_of_pack_patterns(t_pack_patterns *list_of_pack_patterns, const in
 }
 
 /**
- * Locate first edge that belongs to pattern index 
+ * Locate first edge that belongs to pattern index
  */
 static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		const t_pb_graph_node *pb_graph_node) {
 	int i, j, k, m;
 	t_pb_graph_edge * edge;
-	/* Iterate over all edges to discover if an edge in current physical block belongs to a pattern 
+	/* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
 	 If edge does, then return that edge
 	 */
 
@@ -427,9 +427,9 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 	return nullptr;
 }
 
-/** 
+/**
  * Find if receiver of edge is in the same pattern, if yes, add to pattern
- *  Convention: Connections are made on backward expansion only (to make future 
+ *  Convention: Connections are made on backward expansion only (to make future
  *              multi-fanout support easier) so this function will not update connections
  */
 static void forward_expand_pack_pattern_from_edge(
@@ -507,7 +507,7 @@ static void forward_expand_pack_pattern_from_edge(
 						}
 					}
 				}
-			} 
+			}
 			if (((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index
 							== curr_pattern_index) {
 				if(make_root_of_chain == true) {
@@ -527,7 +527,7 @@ static void forward_expand_pack_pattern_from_edge(
 						if (expansion_edge->output_pins[i]->output_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
 							if (found == true) {
 								/* Check assumption that each forced net has only one fan-out */
-								vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
+								vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 										"Invalid packing pattern defined.  Multi-fanout nets not supported when specifying pack patterns.\n"
 										"Problem on %s[%d].%s[%d] for pattern %s\n",
 										expansion_edge->output_pins[i]->parent_node->pb_type->name,
@@ -550,10 +550,10 @@ static void forward_expand_pack_pattern_from_edge(
 
 }
 
-/** 
+/**
  * Find if driver of edge is in the same pattern, if yes, add to pattern
  *  Convention: Connections are made on backward expansion only (to make future multi-
- *               fanout support easier) so this function must update both source and 
+ *               fanout support easier) so this function must update both source and
  *               destination blocks
  */
 static void backward_expand_pack_pattern_from_edge(
@@ -686,7 +686,7 @@ static void backward_expand_pack_pattern_from_edge(
 				destination_block->connections = pack_pattern_connection;
 
 				if (source_block == destination_block) {
-					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
+					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 							"Invalid packing pattern defined. Source and destination block are the same (%s).\n",
 							source_block->pb_type->name);
 				}
@@ -753,9 +753,9 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	cur_molecule = list_of_molecules_head = nullptr;
 
 	/* Find forced pack patterns
-	 * Simplifying assumptions: Each atom can map to at most one molecule, 
+	 * Simplifying assumptions: Each atom can map to at most one molecule,
      *                          use first-fit mapping based on priority of pattern
-	 * TODO: Need to investigate better mapping strategies than first-fit 
+	 * TODO: Need to investigate better mapping strategies than first-fit
      */
 	for (i = 0; i < num_packing_patterns; i++) {
 		best_pattern = 0;
@@ -776,14 +776,14 @@ t_pack_molecule *alloc_and_load_pack_molecules(
             cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id);
             if (cur_molecule != nullptr) {
                 cur_molecule->next = list_of_molecules_head;
-                /* In the event of multiple molecules with the same atom block pattern, 
+                /* In the event of multiple molecules with the same atom block pattern,
                  * bias to use the molecule with less costly physical resources first */
                 /* TODO: Need to normalize magical number 100 */
                 cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
                 list_of_molecules_head = cur_molecule;
 
-                //Note: atom_molecules is an (ordered) multimap so the last molecule 
-                //      inserted for a given blk_id will be the last valid element 
+                //Note: atom_molecules is an (ordered) multimap so the last molecule
+                //      inserted for a given blk_id will be the last valid element
                 //      in the equal_range
                 auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
                 bool range_empty = (rng.first == rng.second);
@@ -848,7 +848,7 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
 	t_pack_pattern_connections *connection, *next;
 	if (pattern_block == nullptr || pattern_block->block_id == OPEN) {
 		/* already traversed, return */
-		return; 
+		return;
 	}
 	pattern_block_list[pattern_block->block_id] = pattern_block;
 	pattern_block->block_id = OPEN;
@@ -863,20 +863,20 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
 }
 
 /**
- * Given a pattern and an atom block to serve as the root block, determine if 
+ * Given a pattern and an atom block to serve as the root block, determine if
  * the candidate atom block serving as the root node matches the pattern.
  * If yes, return the molecule with this atom block as the root, if not, return NULL
  *
- * Limitations: Currently assumes that forced pack nets must be single-fanout as 
- *              this covers all the reasonable architectures we wanted. More complicated 
- *              structures should probably be handled either downstream (general packing) 
+ * Limitations: Currently assumes that forced pack nets must be single-fanout as
+ *              this covers all the reasonable architectures we wanted. More complicated
+ *              structures should probably be handled either downstream (general packing)
  *              or upstream (in tech mapping).
  *              If this limitation is too constraining, code is designed so that this limitation can be removed
  *
  * Side Effect: If successful, link atom to molecule
  */
 static t_pack_molecule *try_create_molecule(
-		t_pack_patterns *list_of_pack_patterns, 
+		t_pack_patterns *list_of_pack_patterns,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
 		AtomBlockId blk_id) {
@@ -902,7 +902,7 @@ static t_pack_molecule *try_create_molecule(
 		molecule->num_ext_inputs = 0;
 
 		if(list_of_pack_patterns[pack_pattern_index].is_chain == true) {
-			/* A chain pattern extends beyond a single logic block so we must find 
+			/* A chain pattern extends beyond a single logic block so we must find
              * the blk_id that matches with the portion of a chain for this particular logic block */
 			blk_id = find_new_root_atom_for_chain(blk_id, &list_of_pack_patterns[pack_pattern_index], atom_molecules);
 		}
@@ -918,7 +918,7 @@ static t_pack_molecule *try_create_molecule(
 			if(!blk_id2) {
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
-			}			
+			}
 
             atom_molecules.insert({blk_id2, molecule});
 		}
@@ -956,8 +956,8 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
     /* If the block in the pattern has already been visited, then there is no need to revisit it */
 	if (molecule->atom_block_ids[current_pattern_block->block_id]) {
 		if (molecule->atom_block_ids[current_pattern_block->block_id] != blk_id) {
-			/* Mismatch between the visited block and the current block implies 
-             * that the current netlist structure does not match the expected pattern, 
+			/* Mismatch between the visited block and the current block implies
+             * that the current netlist structure does not match the expected pattern,
              * return whether or not this matters */
 			return is_optional;
 		} else {
@@ -985,7 +985,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
 
 		molecule->num_ext_inputs += atom_ctx.nlist.block_input_pins(blk_id).size();
-		
+
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != nullptr && success == true) {
 			if (cur_pack_pattern_connection->from_block == current_pattern_block) {
@@ -1055,7 +1055,7 @@ static void print_pack_molecules(const char *fname,
 
 	fp = std::fopen(fname, "w");
 	fprintf(fp, "# of pack patterns %d\n", num_pack_patterns);
-		
+
 	for (i = 0; i < num_pack_patterns; i++) {
         VTR_ASSERT(list_of_pack_patterns[i].root_block);
 		fprintf(fp, "pack pattern index %d block count %d name %s root %s\n",
@@ -1192,7 +1192,7 @@ static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_p
 	return 0;
 }
 
-/* A chain can extend across multiple atom blocks.  Must segment the chain to fit in an atom 
+/* A chain can extend across multiple atom blocks.  Must segment the chain to fit in an atom
  * block by identifying the actual atom that forms the root of the new chain.
  * Returns AtomBlockId::INVALID() if this block_index doesn't match up with any chain
  *
@@ -1206,7 +1206,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	t_pb_graph_pin *root_ipin;
 	t_pb_graph_node *root_pb_graph_node;
 	t_model_ports *model_port;
-	
+
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	VTR_ASSERT(list_of_pack_pattern->is_chain == true);

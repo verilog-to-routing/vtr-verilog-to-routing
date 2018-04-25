@@ -1,8 +1,8 @@
-/* 
+/*
  * This file defines the writing rr graph function in XML format.
  * The rr graph is separated into channels, nodes, switches,
  * grids, edges, block types, and segments. Each tag has several
- * children tags such as timing, location, or some general 
+ * children tags such as timing, location, or some general
  * details. Each tag has attributes to describe them */
 
 #include <fstream>
@@ -20,7 +20,7 @@ using namespace std;
 
 /* All values are printed with this precision value. The higher the
  * value, the more accurate the read in rr graph is. Using numeric_limits
- * max_digits10 guarentees that no values change during a sequence of 
+ * max_digits10 guarentees that no values change during a sequence of
  * float -> string -> float conversions */
 constexpr int FLOAT_PRECISION = std::numeric_limits<float>::max_digits10;
 /*********************** Subroutines local to this module *******************/
@@ -64,7 +64,7 @@ void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, con
     cout << "Finished generating RR graph file named " << file_name << endl << endl;
 }
 
-/* Channel info in device_ctx.chan_width is written in xml format. 
+/* Channel info in device_ctx.chan_width is written in xml format.
  * A general summary of the min and max values of the channels are first printed. Every
  * x and y channel list is printed out in its own attribute*/
 void write_rr_channel(fstream &fp) {
@@ -88,7 +88,7 @@ void write_rr_channel(fstream &fp) {
     fp << "\t</channels>" << endl;
 }
 
-/* All relevant rr node info is written out to the graph. 
+/* All relevant rr node info is written out to the graph.
  * This includes location, timing, and segment info*/
 void write_rr_node(fstream &fp) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -115,7 +115,7 @@ void write_rr_node(fstream &fp) {
         }
         fp << "\" ptc=\"" << node.ptc_num() ;
         fp << "\"/>" << endl;
-        fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION)<< node.R() 
+        fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION)<< node.R()
                 << "\" C=\"" << setprecision(FLOAT_PRECISION)<<node.C() << "\"/>" << endl;
 
         if (device_ctx.rr_indexed_data[node.cost_index()].seg_index != -1) {
@@ -173,7 +173,7 @@ void write_rr_switches(fstream &fp) {
         }
         fp << "\" buffered=\"" << (int) rr_switch.buffered;
         fp << "\" configurable=\"" << (int) rr_switch.configurable << "\">" << endl;
-        fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.R << 
+        fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.R <<
                 "\" Cin=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cin <<
                 "\" Cout=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cout <<
                 "\" Tdel=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Tdel << "\"/>" << endl;

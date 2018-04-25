@@ -1,4 +1,4 @@
-/* 
+/*
  Given a group of atom blocks and a partially-packed complex block, find placement for group of atom blocks in complex block
  To use, keep "cluster_placement_stats" data structure throughout packing
  cluster_placement_stats undergoes these major states:
@@ -54,7 +54,7 @@ static void flush_intermediate_queues(
 /****************************************/
 
 /**
- * [0..num_pb_types-1] array of cluster placement stats, one for each device_ctx.block_types 
+ * [0..num_pb_types-1] array of cluster placement stats, one for each device_ctx.block_types
  */
 t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
 	t_cluster_placement_stats *cluster_placement_stats_list;
@@ -86,11 +86,11 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats() {
  *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
  *
  * return true if can find next primitive, false otherwise
- * 
+ *
  * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
  * molecule - molecule to pack into open complex block
  * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
- *                   Expects an allocated array of primitives ptrs as inputs.  
+ *                   Expects an allocated array of primitives ptrs as inputs.
  *                   This function loads the array with the lowest cost primitives that implement molecule
  */
 bool get_next_primitive_list(
@@ -108,9 +108,9 @@ bool get_next_primitive_list(
 
 		cluster_placement_stats->curr_molecule = molecule;
 	} else {
-		/* Hack! Same failed molecule may re-enter if upper stream functions suck, 
+		/* Hack! Same failed molecule may re-enter if upper stream functions suck,
          * I'm going to make the molecule selector more intelligent.
-         * TODO: Remove later 
+         * TODO: Remove later
          */
 		if (cluster_placement_stats->in_flight != nullptr) {
 			/* Hack end */
@@ -126,7 +126,7 @@ bool get_next_primitive_list(
 		}
 	}
 
-	/* find next set of blocks 
+	/* find next set of blocks
 	 1. Remove invalid blocks to invalid queue
 	 2. Find lowest cost array of primitives that implements blocks
 	 3. When found, move current blocks to in-flight, return lowest cost array of primitives
@@ -219,8 +219,8 @@ void reset_cluster_placement_stats(
 	cluster_placement_stats->curr_molecule = nullptr;
 }
 
-/** 
- * Free linked lists found in cluster_placement_stats_list 
+/**
+ * Free linked lists found in cluster_placement_stats_list
  */
 void free_cluster_placement_stats(
 		t_cluster_placement_stats *cluster_placement_stats_list) {
@@ -298,7 +298,7 @@ static void requeue_primitive(
 	}
 }
 
-/** 
+/**
  * Add any primitives found in pb_graph_nodes to cluster_placement_stats
  * Adds backward link from pb_graph_node to cluster_placement_primitive
  */
@@ -530,7 +530,7 @@ static bool expand_forced_pack_molecule_placement(
 				int to_pin, to_port;
 				to_pin = cur->to_pin->pin_number;
 				to_port = cur->to_pin->port->port_index_by_type;
-				
+
 				if (cur->from_pin->port->is_clock) {
 					cur_pin = &pb_graph_node->clock_pins[to_port][to_pin];
 				} else {

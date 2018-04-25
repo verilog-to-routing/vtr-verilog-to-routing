@@ -7,7 +7,7 @@
 # define USE_CAIRO_SURFACE
 #endif
 
-#ifdef USE_CAIRO_SURFACE 
+#ifdef USE_CAIRO_SURFACE
 # include <cairo.h>
 # include <cairo-xlib.h>
 #else

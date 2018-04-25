@@ -7,12 +7,12 @@
 #include "vpr_types.h"
 
 
-void SetupVPR(t_options *Options, 
+void SetupVPR(t_options *Options,
         const bool TimingEnabled,
-		const bool readArchFile, 
+		const bool readArchFile,
         t_file_name_opts *FileNameOpts,
 		t_arch * Arch,
-		t_model ** user_models, 
+		t_model ** user_models,
         t_model ** library_models,
 		t_netlist_opts* NetlistOpts,
 		t_packer_opts *PackerOpts,

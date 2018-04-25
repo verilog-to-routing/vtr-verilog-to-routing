@@ -386,7 +386,7 @@ int Container::createNodesFromOdin(){
          case CLOCK_NODE:
              type = LogicUnit::Clock;
              break;
-         case INPUT_NODE:         
+         case INPUT_NODE:
              type = LogicUnit::Input;
             break;
          case FF_NODE:

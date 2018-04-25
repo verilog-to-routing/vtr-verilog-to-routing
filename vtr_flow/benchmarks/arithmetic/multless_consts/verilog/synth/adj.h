@@ -20,14 +20,14 @@ public:
     const adj_t *in_pred2() const { return in_pred(in2); }
     /* find predecessor responsible for second input */
     const adj_t *in_pred(int n) const;
-    
+
     int cost, in1, in2;
     const adj_t *pred;
 
 protected:
     void output_in(int c) const;
 };
-    
+
 template<class X, class Y, class Z>
 struct triple {
     triple(const Z &x, const Y &y, const Z &z) : fst(x), snd(y), trd(z) {}

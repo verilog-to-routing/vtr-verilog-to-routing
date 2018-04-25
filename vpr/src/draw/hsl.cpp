@@ -10,7 +10,7 @@ hsl color2hsl(t_color color) {
 
     float xmin = std::min(std::min(r, g), b);    //Min. value of RGB
     float xmax = std::max(std::max(r, g), b);    //Max. value of RGB
-    float range = xmax - xmin;             
+    float range = xmax - xmin;
 
     float H = 0.;
     float S = 0.;
@@ -25,9 +25,9 @@ hsl color2hsl(t_color color) {
        if (L < 0.5) S = range / (xmax + xmin);
        else         S = range / (2 - xmax - xmin);
 
-       float delta_r = (((xmax - r) / 6) + (range / 2)) / range; 
-       float delta_g = (((xmax - g) / 6) + (range / 2)) / range; 
-       float delta_b = (((xmax - b) / 6) + (range / 2)) / range; 
+       float delta_r = (((xmax - r) / 6) + (range / 2)) / range;
+       float delta_g = (((xmax - g) / 6) + (range / 2)) / range;
+       float delta_b = (((xmax - b) / 6) + (range / 2)) / range;
 
        if      (r == xmax ) H = delta_b - delta_g;
        else if (g == xmax ) H = (1. / 3.) + delta_r - delta_b;

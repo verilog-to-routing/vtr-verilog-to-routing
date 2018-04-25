@@ -20,7 +20,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "string_cache.h"
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
-#include "hard_blocks.h" 
+#include "hard_blocks.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
@@ -95,7 +95,7 @@ void graphVizOutputPreproc(FILE *yyin, std::string path, char *file)
 	oassert(tmp);
 	oassert(*(tmp+1) == 'v');
 	*tmp = '\0';
-	
+
 	// strip the path from file
 	tmp = strrchr(file, '/');
 	if (tmp) file = tmp;
@@ -118,7 +118,7 @@ void parse_to_ast()
 	int i;
 	extern FILE *yyin;
 	extern int yylineno;
-	
+
 	/* hooks into macro at the top of verilog_flex.l that shows the tokens as they're parsed.  Set to true if you want to see it go...*/
 	to_view_parse = configuration.print_parse_tokens;
 
@@ -138,7 +138,7 @@ void parse_to_ast()
 		{
 			error_message(-1, -1, -1, "cannot open file: %s", global_args.verilog_file.value());
 		}
-	
+
 		/*Testing preprocessor - Paddy O'Brien*/
 		init_veri_preproc();
 		yyin = veri_preproc(yyin);
@@ -147,8 +147,8 @@ void parse_to_ast()
 		/* write out the pre-processed file */
 		if (configuration.output_preproc_source)
 			graphVizOutputPreproc(yyin, configuration.debug_output_path.c_str(), configuration.list_of_file_names[0]) ;
-			
-		/* set the file name */	
+
+		/* set the file name */
 		current_parse_file = 0;
 
 		/* setup the local parser structures for a file */
@@ -170,17 +170,17 @@ void parse_to_ast()
 			{
 				error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[i]);
 			}
-		
+
 			/*Testing preprocessor - Paddy O'Brien*/
 			init_veri_preproc();
 			yyin = veri_preproc(yyin);
 			cleanup_veri_preproc();
-			
+
 			/* write out the pre-processed file */
 			if (configuration.output_preproc_source)
 				graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[i]) ;
- 			
-			/* set the file name */	
+
+			/* set the file name */
 			current_parse_file = i;
 
 			/* reset the line count */
@@ -279,7 +279,7 @@ void init_parser()
 void cleanup_parser()
 {
 	size_t i;
-	
+
 	/* frees all the defines for module string caches (used for parameters) */
 	if (num_modules > 0)
 	{
@@ -287,7 +287,7 @@ void cleanup_parser()
 		{
 			sc_free_string_cache(defines_for_module_sc[i]);
 		}
-		
+
 		vtr::free(defines_for_module_sc);
 	}
 }
@@ -353,7 +353,7 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 	if(id != NULL) {
 		if (id[0] == '`')
 		{
-			/* IF - this is a define replace with number constant */ 
+			/* IF - this is a define replace with number constant */
 			/* def_reduct */
 
 			/* get the define symbol from the string cache */
@@ -404,12 +404,12 @@ ast_node_t *newList(ids node_type, ast_node_t *child)
 ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
 {
     /* create a output node for this array reference that is going to be the first child */
-   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, yylineno, current_parse_file);    
+   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, yylineno, current_parse_file);
     /* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, output_node, child);
-    
+
     return new_node;
 }
 /*---------------------------------------------------------------------------------------------
@@ -433,14 +433,14 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 {
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(CONCATENATE, yylineno, current_parse_file);
-	
+
 	new_node->types.concat.num_bit_strings = -1;
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 1, child);
-	
+
 	int i;
-	for (i = 1; i < exp->types.number.value; i++) 
+	for (i = 1; i < exp->types.number.value; i++)
 	{
 		add_child_to_node(new_node, child);
 	}
@@ -461,10 +461,10 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
     for (i = 0; i < symbol_list->num_children; i++)
 	{
 		/* checks range is legal.  */
-		
+
         get_range(symbol_list->children[i]);
 
-        if(top_type == MODULE) {  
+        if(top_type == MODULE) {
 
 		    if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
 						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
@@ -545,7 +545,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 		        {
 			        symbol_list->children[i]->children[1] = range_max;
 			        symbol_list->children[i]->children[2] = range_min;
-		        } 
+		        }
 
                 switch(id)
 	            {
@@ -582,28 +582,28 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            {
 				            binary_range = get_range(symbol_list->children[i]);
 			            }
-			
+
 			            /* fifth spot in the children list holds a parameter value */
 			            if (binary_range != -1)
 			            {
 				            /* check that the parameter size matches the number included */
-				             if((symbol_list->children[i]->children[5]->types.number.size != 0) 
-					            && (symbol_list->children[i]->children[5]->types.number.base == BIN) 
-					            && (symbol_list->children[i]->children[5]->types.number.size != binary_range)) 
+				             if((symbol_list->children[i]->children[5]->types.number.size != 0)
+					            && (symbol_list->children[i]->children[5]->types.number.base == BIN)
+					            && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
 				            {
 					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
 				            }
 				            else
 				            {
-					            symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range 
+					            symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range
 				            }
 			            }
 
 			            /* create an entry in the symbol table for this parameter */
 			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules], symbol_list->children[i]->children[0]->types.identifier)) == -1)
 			            {
-				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n", 
-					            symbol_list->children[i]->children[0]->types.identifier, 
+				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
+					            symbol_list->children[i]->children[0]->types.identifier,
 					            ((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
 			            }
 			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
@@ -657,7 +657,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
 						    && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
 		    {
-				
+
                 	if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
 			        {
 				        if ((sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_list->children[0]->children[1]->types.identifier)) != -1)
@@ -722,8 +722,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			        if(range_temp_min < 0 || range_temp_max < 0)
 				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
                 }
-                
-                
+
+
 
 		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 		        {
@@ -767,28 +767,28 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				        {
 					        binary_range = get_range(symbol_list->children[i]);
 				        }
-				
+
 				        /* fifth spot in the children list holds a parameter value */
 				        if (binary_range != -1)
 				        {
 					        /* check that the parameter size matches the number included */
-					         if((symbol_list->children[i]->children[5]->types.number.size != 0) 
-						        && (symbol_list->children[i]->children[5]->types.number.base == BIN) 
-						        && (symbol_list->children[i]->children[5]->types.number.size != binary_range)) 
+					         if((symbol_list->children[i]->children[5]->types.number.size != 0)
+						        && (symbol_list->children[i]->children[5]->types.number.base == BIN)
+						        && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
 					        {
 						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
 					        }
 					        else
 					        {
-						        symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range 
+						        symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range
 					        }
 				        }
 
 				        /* create an entry in the symbol table for this parameter */
 				        if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
 				        {
-					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n", 
-						        symbol_list->children[i]->children[0]->types.identifier, 
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
+						        symbol_list->children[i]->children[0]->types.identifier,
 						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
 				        }
 				        symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
@@ -900,7 +900,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 
     /* avoid uninitialized warning */
     new_node = NULL;
-	
+
 	/* allocate child nodes to this node */
 	if( expression2->type == NUMBERS ){
 		int len = expression2->types.number.value;
@@ -912,9 +912,9 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 		} else {
 			if (len == 0){
 				new_node = newNumberNode(vtr::strdup("1"), line_number);
-			} else {	
+			} else {
 				new_node = expression1;
-				for(int i=1; i < len; ++i){ 	
+				for(int i=1; i < len; ++i){
 					node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
 					node->types.operation.op = op_id;
 
@@ -1065,9 +1065,9 @@ ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression
 {
 	char *label;
 	ast_node_t *node;
-     
+
     label = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
-    
+
 	strcpy(label,expression1->types.identifier);
 
 	node = newSymbolNode(label,line_number);
@@ -1076,7 +1076,7 @@ ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(BLOCKING_STATEMENT, line_number, current_parse_file);
-    
+
     /* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
@@ -1203,14 +1203,14 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	{
 		symbol_node = NULL;
 	}
-	
+
 	if (expression->type != NUMBERS)
 	{
 		error_message(PARSE_ERROR, line_number, current_parse_file, "Parameter value must be of type NUMBERS!\n");
 	}
 
 	/* allocate child nodes to this node */
-	// leave 4 blank nodes so that expression is the 6th node to behave just like  
+	// leave 4 blank nodes so that expression is the 6th node to behave just like
 	// a default var_declare parameter (see create_symbol_table_for_module)
 	allocate_children_to_node(new_node, 6, symbol_node, NULL, NULL, NULL, NULL, expression);
 
@@ -1242,7 +1242,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
 {
     char *unique_name, *aux_name;
     int char_qntd = 100;
-    
+
     aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     strcpy(unique_name,"function_instance_");
@@ -1250,7 +1250,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     strcat(unique_name,aux_name);
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
-    
+
     /* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(FUNCTION_NAMED_INSTANCE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
@@ -1298,7 +1298,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	}
 
 	// make a unique module name based on its parameter list
-    ast_node_t *module_param_list = module_named_instance->children[i]->children[2];        
+    ast_node_t *module_param_list = module_named_instance->children[i]->children[2];
 	char *module_param_name = make_module_param_name(module_param_list, module_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
 
@@ -1309,7 +1309,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 		long sc_spot;
 		if ((sc_spot = sc_lookup_string(module_names_to_idx, module_param_name)) == -1)
 		{
-			// then add it, but set it to the symbol_node, because the 
+			// then add it, but set it to the symbol_node, because the
 			// module in question may not have been parsed yet
 			// later, we convert this symbol node back into a module node
 			ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
@@ -1327,7 +1327,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	/* allocate child nodes to this node */
 	    allocate_children_to_node(new_node, 2, symbol_node, module_named_instance->children[i]);
         if(i == 0) allocate_children_to_node(new_master_node, 1, new_node);
-        else add_child_to_node(new_master_node,new_node);        
+        else add_child_to_node(new_master_node,new_node);
 
 	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
 	module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
@@ -1355,7 +1355,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 
 	// make a unique module name based on its parameter list
 	ast_node_t *function_param_list = function_named_instance->children[2];
-    
+
 	char *function_param_name = make_module_param_name(function_param_list, function_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(function_param_name, line_number);
 
@@ -1445,7 +1445,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
     allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
 
     /* allocate n children nodes to this node */
-    for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);    
+    for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);
 
     return new_node;
 }
@@ -1493,7 +1493,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
     strcpy(number_0,"0");
 
     char *number_31 = (char*)vtr::calloc(5,sizeof(char));
-    strcpy(number_31,"31");    
+    strcpy(number_31,"31");
 
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
@@ -1602,7 +1602,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
 
 	list_of_ports->children[0] = var_node;
-    
+
 
 	for(i = 0; i < list_of_module_items->num_children; i++) {
 		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST){
@@ -1615,16 +1615,16 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 				}
 			}
 		}
-	}		
+	}
 
 	symbol_node = newSymbolNode(function_name, line_number);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(FUNCTION, line_number, current_parse_file);
 	/* mark all the ports symbols as ports */
-	
+
 	markAndProcessSymbolListWith(FUNCTION, PORT, list_of_ports);
-	
+
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
 
@@ -1632,7 +1632,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
 	new_node->types.function.size_function_instantiations = size_function_instantiations;
 	new_node->types.function.is_instantiated = FALSE;
-	
+
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
@@ -1645,7 +1645,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	module_names_to_idx->data[sc_spot] = (void*)new_node;
 
 	/* now that we've bottom up built the parse tree for this module, go to the next module */
-	next_function();    
+	next_function();
 
 	return new_node;
 }
@@ -1816,7 +1816,7 @@ void graphVizOutputAst(std::string path, ast_node_t *top)
         /* open graph */
         fprintf(fp, "digraph G {\t\nranksep=.25;\n");
 	unique_label_count = 0;
-	
+
 	graphVizOutputAst_traverse_node(fp, top, NULL, -1);
 
         /* close graph */
@@ -1846,7 +1846,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			case FILE_ITEMS:
 				fprintf(fp, "\t%d [label=\"FILE_ITEMS\"];\n", my_label);
 				break;
-			case MODULE: 
+			case MODULE:
 				fprintf(fp, "\t%d [label=\"MODULE\"];\n", my_label);
 				break;
 			case MODULE_ITEMS:
@@ -2132,7 +2132,7 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 				break;
 			default:
 				oassert(FALSE);
-		}	
+		}
 	}
 
 	if (node != NULL)

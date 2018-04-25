@@ -1,14 +1,14 @@
-/* This file contains declarations of structures and types shared by all drawing 
+/* This file contains declarations of structures and types shared by all drawing
  * routines.
  *
- * Key structures: 
- *  t_draw_coords - holds coordinates and dimensions for each grid tile and each 
+ * Key structures:
+ *  t_draw_coords - holds coordinates and dimensions for each grid tile and each
  *					logic block
  *  t_draw_state - holds variables that control drawing modes based on user input
  *				   (eg. clicking on the menu buttons)
  *               - holds state variables that control drawing and highlighting of
  *				   architectural elements on the FPGA chip
- *                 
+ *
  * Author: Long Yu (Mike) Wang
  * Date: August 20, 2013
  */
@@ -84,7 +84,7 @@ enum e_edge_dir {
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
  * color: Color of the rr_node
- * node_highlighted: Whether the node is highlighted. Useful for 
+ * node_highlighted: Whether the node is highlighted. Useful for
  *					 highlighting routing resources on rr_graph
  */
 typedef struct {
@@ -92,9 +92,9 @@ typedef struct {
 	bool node_highlighted;
 } t_draw_rr_node;
 
-/* Structure used to store state variables that control drawing and 
+/* Structure used to store state variables that control drawing and
  * highlighting.
- * pic_on_screen: What to draw on the screen (PLACEMENT, ROUTING, or 
+ * pic_on_screen: What to draw on the screen (PLACEMENT, ROUTING, or
  *				  NO_PICTURE).
  * show_nets: Whether to show nets at placement and routing.
  * show_congestion: Controls if congestion is shown, when ROUTING is
@@ -105,19 +105,19 @@ typedef struct {
  *				   if pic_on_screen is ROUTING.
  * show_blk_internal: If 0, no internal drawing is shown. Otherwise,
  *					  indicates how many levels of sub-pbs to be drawn
- * max_sub_blk_lvl: The maximum number of sub-block levels among all 
+ * max_sub_blk_lvl: The maximum number of sub-block levels among all
  *                  physical block types in the FPGA.
  * show_graphics: Whether graphics is enabled.
- * gr_automode: How often is user input required. (0: each t, 
+ * gr_automode: How often is user input required. (0: each t,
  *				1: each place, 2: never)
  * draw_route_type: GLOBAL or DETAILED
  * default_message: default screen message on screen
- * net_color: color in which each net should be drawn. 
+ * net_color: color in which each net should be drawn.
  *			  [0..cluster_ctx.clb_nlist.nets().size()-1]
  * block_color: color in which each blocks should be drawn.
  *			    [0..cluster_ctx.clb_nlist.blocks().size()-1]
- * draw_rr_node: stores the state information of each routing resource.  
- *				 Used to control drawing each routing resource when 
+ * draw_rr_node: stores the state information of each routing resource.
+ *				 Used to control drawing each routing resource when
  *				 ROUTING is on screen.
  *				 [0..device_ctx.num_rr_nodes-1]
  */
@@ -147,7 +147,7 @@ struct t_draw_state {
 	bool showing_sub_blocks();
 };
 
-/* For each cluster type, this structure stores drawing 
+/* For each cluster type, this structure stores drawing
  * information for all sub-blocks inside. This includes
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
@@ -157,13 +157,13 @@ struct t_draw_pb_type_info {
 	t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
 };
 
-/* Structure used to store coordinates and dimensions for 
- * grid tiles and logic blocks in the FPGA. 
+/* Structure used to store coordinates and dimensions for
+ * grid tiles and logic blocks in the FPGA.
  * tile_x and tile_y: together form two axes that make a
- * COORDINATE SYSTEM for grid_tiles, which goes from 
- * (tile_x[0],tile_y[0]) at the lower left corner of the FPGA 
- * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in 
- * the upper right corner.       
+ * COORDINATE SYSTEM for grid_tiles, which goes from
+ * (tile_x[0],tile_y[0]) at the lower left corner of the FPGA
+ * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in
+ * the upper right corner.
  * tile_width: Width (and height) of a grid_tile.
  *			 Set when init_draw_coords is called.
  * gap_size: distance of the gap between two adjacent
@@ -179,9 +179,9 @@ struct t_draw_coords {
 	float pin_size;
 
 	vector<t_draw_pb_type_info> blk_info;
-	
+
 	t_draw_coords();
-	
+
 	float get_tile_width();
 	float get_tile_height();
 

@@ -4,7 +4,7 @@
 enum class DelayType {
     MAX = 0,
     MIN,
-    NUM_DELAY_TYPES 
+    NUM_DELAY_TYPES
 };
 
 #endif

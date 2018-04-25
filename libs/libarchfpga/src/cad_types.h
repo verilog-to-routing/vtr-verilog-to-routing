@@ -1,5 +1,5 @@
-/* 
- Data types used to give architectural hints for the CAD algorithm 
+/*
+ Data types used to give architectural hints for the CAD algorithm
  */
 #ifndef CAD_TYPES_H
 #define CAD_TYPES_H
@@ -35,7 +35,7 @@ struct t_pack_patterns {
 	bool *is_block_optional; /* [0..num_blocks-1] is the block_id in this pattern mandatory or optional to form a molecule */
 
 	bool is_chain; /* Does this pattern chain across logic blocks */
-	t_pb_graph_pin *chain_root_pin; /* pointer to logic block input pin that drives this chain from the preceding logic block */	
+	t_pb_graph_pin *chain_root_pin; /* pointer to logic block input pin that drives this chain from the preceding logic block */
 };
 
 struct t_model_chain_pattern {

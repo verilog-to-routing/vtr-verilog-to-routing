@@ -5,19 +5,19 @@
  we allow arbitrary hierarchy, modes, primitives, and interconnect within each complex logic block.  The data structures here describe the properties of the island-style FPGA as well as the details on
  hierarchy, modes, primitives, and interconnects within each logic block.
 
- Data structures that flesh out 
+ Data structures that flesh out
 
- The data structures that store the 
+ The data structures that store the
 
  Key data types:
- t_type_descriptor: describes a placeable complex logic block, 
+ t_type_descriptor: describes a placeable complex logic block,
  pb_type: describes the types of physical blocks within the t_type_descriptor in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
  pb_graph_node: is a flattened version of pb_type so a pb_type with 10 instances will have 10 pb_graph_nodes representing each instance
- 
+
  Additional notes:
 
- The interconnect specified in the architecture file gets flattened out in the pb_graph_node netlist.  Each pb_graph_node contains pb_graph_pins which allow it to connect to other pb_graph_nodes.  
- These pins are in connected to other pins through pb_graph_edges. The pin connections are based on what is specified in the <interconnect> tags of the architecture file.  
+ The interconnect specified in the architecture file gets flattened out in the pb_graph_node netlist.  Each pb_graph_node contains pb_graph_pins which allow it to connect to other pb_graph_nodes.
+ These pins are in connected to other pins through pb_graph_edges. The pin connections are based on what is specified in the <interconnect> tags of the architecture file.
 
  Date: February 19, 2009
  Authors: Jason Luu and Kenneth Kent
@@ -64,7 +64,7 @@ enum class e_sb_type;
 /* FPGA basic definitions                                                                        */
 /*************************************************************************************************/
 
-/* Pins describe I/O into clustered logic block.  
+/* Pins describe I/O into clustered logic block.
  A pin may be unconnected, driving a net or in the fanout, respectively. */
 enum e_pin_type {
 	OPEN = -1, DRIVER = 0, RECEIVER = 1
@@ -77,10 +77,10 @@ enum e_interconnect {
 
 /* Orientations. */
 enum e_side : unsigned char {
-	TOP = 0, 
-    RIGHT = 1, 
-    BOTTOM = 2, 
-    LEFT = 3, 
+	TOP = 0,
+    RIGHT = 1,
+    BOTTOM = 2,
+    LEFT = 3,
     NUM_SIDES
 };
 constexpr std::array<e_side, NUM_SIDES> SIDES = { {TOP, RIGHT, BOTTOM, LEFT} }; //Set of all side orientations
@@ -150,7 +150,7 @@ enum e_sb_location{
 /*************************************************************************************************/
 /* Grid location specification
  *  Each member is a formula evaluated in terms of 'W' (device width),
- *  and 'H' (device height). Formulas can be evaluated using parse_formula() 
+ *  and 'H' (device height). Formulas can be evaluated using parse_formula()
  *  from expr_eval.h.
  */
 struct t_grid_loc_spec {
@@ -164,7 +164,7 @@ struct t_grid_loc_spec {
     std::string repeat_expr; //Distance between repeated
                              // region instances
 
-    std::string incr_expr;   //Distance between block instantiations 
+    std::string incr_expr;   //Distance between block instantiations
                              // with the region
 };
 
@@ -179,19 +179,19 @@ struct t_grid_loc_spec {
  *                      |    |                |    |    ...    |    |
  *                      |    |                |    |           |    |
  *                      +----+                +----+           +----+
- *                      
+ *
  *                        .                     .                 .
  *                        .                     .                 .
  *                        .                     .                 .
- *                                       
+ *
  *                      +----+                +----+           +----+
  *                      |    |                |    |           |    |
  *                      |    |                |    |    ...    |    |
  *                      |    |                |    |           |    |
  *                      +----+                +----+           +----+
- *                   ^  
+ *                   ^
  *                   |
- *           repeaty |  
+ *           repeaty |
  *                   |
  *                   v        (endx,endy)
  *                      +----+                +----+           +----+
@@ -200,7 +200,7 @@ struct t_grid_loc_spec {
  *                      |    |                |    |           |    |
  *                      +----+                +----+           +----+
  *       (startx,starty)
- *                            <--------------> 
+ *                            <-------------->
  *                                 repeatx
  *
  *  startx/endx and endx/endy define a rectangular region instancess dimensions.
@@ -244,7 +244,7 @@ struct t_grid_loc_def {
     std::string block_type; //The block type name
 
 	int priority = 0;       //Priority of the specification.
-                            // In case of conflicting specifications 
+                            // In case of conflicting specifications
                             // the largest priority wins.
 
     t_grid_loc_spec x;      //Horizontal location specification
@@ -264,7 +264,7 @@ struct t_grid_def {
     int width = -1;                             //Fixed device width (only valid for grid_type == FIXED)
     int height = -1;                            //Fixed device height (only valid for grid_type == FIXED)
 
-    float aspect_ratio = 1.;                    //Aspect ratio for auto-sized devices (only valid for 
+    float aspect_ratio = 1.;                    //Aspect ratio for auto-sized devices (only valid for
                                                 //grid_type == AUTO)
 
     std::vector<t_grid_loc_def> loc_defs;       //The list of grid location definitions for this grid specification
@@ -386,7 +386,7 @@ struct t_fc_specification {
 
 //Defines the default Fc specification for an architecture
 struct t_default_fc_spec {
-    bool specified = false; 		//Whether or not a default specification exists 
+    bool specified = false; 		//Whether or not a default specification exists
     e_fc_value_type in_value_type;	//Type of the input value (frac or abs)
     float in_value;					//Input Fc value
     e_fc_value_type out_value_type; //Type of the output value (frac or abs)
@@ -407,7 +407,7 @@ constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
 /* Describes the type for a physical logic block
- * name: unique identifier for type  
+ * name: unique identifier for type
  * num_pins: Number of pins for the block
  * capacity: Number of blocks of this type that can occupy one grid tile (typically used by IOs).
  * width: Width of large block in grid tiles
@@ -434,7 +434,7 @@ constexpr int DEFAULT_SWITCH = -2;
  * switchblock_locations: Switch block configuration for this block.
  *                        Each element describes the type of SB which should be
  *                        constructed at the specified location.
- *                        Note that the SB is located to the top-right of the 
+ *                        Note that the SB is located to the top-right of the
  *                        grid tile location. [0..width-1][0..height-1]
  *
  *
@@ -496,9 +496,9 @@ typedef const t_type_descriptor* t_type_ptr;
  * VPR represents the 'type' of block types corresponding to FPGA grid locations using a hierarchy
  * of t_pb_type objects.
  *
- * The root t_pb_type corresponds to a single top level block type and maps to a particular type 
+ * The root t_pb_type corresponds to a single top level block type and maps to a particular type
  * of location in the FPGA device grid (e.g. Logic, DSP, RAM etc.).
- * 
+ *
  * A non-root t_pb_type represents an intermediate level of hierarchy within the root block type.
  *
  * The PB Type hierarchy corresponds to the tags specified in the FPGA architecture description:
@@ -516,14 +516,14 @@ typedef const t_type_descriptor* t_type_ptr;
 /** Describes the type of clustered block if a root (parent_mode == nullptr), an
  *  intermediate level of hierarchy (parent_mode != nullptr), or a leaf/primitive
  *  (num_modes == 0, model != nullptr).
- *  
- *  This (along with t_mode) corresponds to the hierarchical specification of 
+ *
+ *  This (along with t_mode) corresponds to the hierarchical specification of
  *  block modes that users provide in the architecture (i.e. <pb_type/> tags).
  *
  *  It is also useful to note that a single t_pb_type may represent multiple instances of that
  *  type in the architecture (see the num_pb field).
  *
- *  In VPR there is a single instance of a t_pb_type for each type, which is referenced as a 
+ *  In VPR there is a single instance of a t_pb_type for each type, which is referenced as a
  *  flyweight by other objects (e.g. t_pb_graph_node).
  *
  *  Data members:
@@ -570,7 +570,7 @@ struct t_pb_type {
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
  *  It corresponds to <mode/> tags in the FPGA architecture description
- * 
+ *
  *  Data members:
  *      name: name of the mode
  *      pb_type_children: pb_types it contains
@@ -596,7 +596,7 @@ struct t_mode {
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
  *  It corresponds to <interconnect/> tags in the FPGA architecture description
- *  
+ *
  *  Data members:
  *      type: type of the interconnect
  *      name: identifier for interconnect
@@ -604,7 +604,7 @@ struct t_mode {
  *      output_string: input string output to parse later
  *      annotations: Annotations for delay, power, etc
  *      num_annotations: Total number of annotations
- *      infer_annotations: This interconnect is autogenerated, if true, infer pack_patterns 
+ *      infer_annotations: This interconnect is autogenerated, if true, infer pack_patterns
  *                         such as carry-chains and forced packs based on interconnect linked to it
  *      parent_mode_index: Mode of parent as int
  */
@@ -638,7 +638,7 @@ struct t_interconnect {
  *      name: name of the port
  *      model_port: associated model port
  *      is_clock: whether or not this port is a clock
- *      is_non_clock_global: Applies to top level pb_type, this pin is not a clock but 
+ *      is_non_clock_global: Applies to top level pb_type, this pin is not a clock but
  *                           is a global signal (useful for stuff like global reset signals,
  *                           perhaps useful for VCC and GND)
  *      num_pins: the number of pins this port has
@@ -705,7 +705,7 @@ struct t_mode_power {
 };
 
 /** Info placed between pins in the architecture file (e.g. delay annotations),
- * 
+ *
  * This is later for additional information.
  *
  * Data Members:
@@ -736,7 +736,7 @@ struct t_pin_to_pin_annotation {
  * PB Graph                                                                                      *
  *************************************************************************************************
  *
- * The PB graph represents the flattened and elaborated connectivity within a t_pb_type (i.e. 
+ * The PB graph represents the flattened and elaborated connectivity within a t_pb_type (i.e.
  * the routing resource graph), derived from the t_pb_type hierarchy.
  *
  * The PB graph is built of t_pb_graph_node and t_pb_graph_pin objects.
@@ -748,14 +748,14 @@ struct t_pin_to_pin_annotation {
 
 /** Describes the internal connectivity corresponding to a t_pb_type and t_mode of a cluster.
  *
- *  There is a t_pb_graph_node for each instance of the pb_type (i.e. t_pb_type may describe 
- *  num_pb instances of the type, with each instance represented as a t_pb_graph_node). 
+ *  There is a t_pb_graph_node for each instance of the pb_type (i.e. t_pb_type may describe
+ *  num_pb instances of the type, with each instance represented as a t_pb_graph_node).
  *  The distinction between the pb_type and the pb_graph_node is neccessary since the 'position'
  *  of a particular instance in the cluster is important when routing the cluster (since the routing
  *  accessible from each position may be different).
  *
  *  Data members:
- *      pb_type: Pointer to the type of pb graph node this belongs to 
+ *      pb_type: Pointer to the type of pb graph node this belongs to
  *      mode: parent mode of operation
  *      placement_index: there are a certain number of pbs available, this gives the index of the node
  *      child_pb_graph_nodes: array of children pb graph nodes organized into modes
@@ -832,7 +832,7 @@ enum e_pb_graph_pin_type {
 /** Describes a pb graph pin
  *
  *  Data Members:
- *      port: pointer to the port that this pin is associated with 
+ *      port: pointer to the port that this pin is associated with
  *      pin_number: pin number of the port that this pin is associated with
  *      input edges: [0..num_input_edges - 1]edges incoming
  *      num_input_edges: number edges incoming
@@ -1086,7 +1086,7 @@ struct t_arch_switch_inf {
 /* Lists all the important information about an rr switch type.              *
  * The s_rr_switch_inf describes a switch derived from a switch described    *
  * by s_arch_switch_inf. This indirection allows us to vary properties of a  *
- * given switch, such as varying delay with switch fan-in.                   * 
+ * given switch, such as varying delay with switch fan-in.                   *
  * buffered:  Does this switch isolate it's input/output into separate       *
  *            DC-connected sub-circuits?
  * configurable: Is this switch is configurable (i.e. can the switch can be  *
@@ -1167,18 +1167,18 @@ struct t_wire_switchpoints {
 struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> from_switchpoint_set; //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
     std::vector<t_wire_switchpoints> to_switchpoint_set;   //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    WireConnType num_conns_type;              /* The type specifies how many connections should be made for this wireconn. 
+    WireConnType num_conns_type;              /* The type specifies how many connections should be made for this wireconn.
                                                *
-                                               * FROM: The number of generated connections between the 'from' and 'to' sets equals the 
-                                               *       size of the 'from' set. This ensures every element in the from set is connected 
-                                               *       to an element of the 'to' set. 
-                                               *       Note: this it may result in 'to' elements being driven by multiple 'from' 
-                                               *       elements (if 'from' is larger than 'to'), or in some elements of 'to' having 
+                                               * FROM: The number of generated connections between the 'from' and 'to' sets equals the
+                                               *       size of the 'from' set. This ensures every element in the from set is connected
+                                               *       to an element of the 'to' set.
+                                               *       Note: this it may result in 'to' elements being driven by multiple 'from'
+                                               *       elements (if 'from' is larger than 'to'), or in some elements of 'to' having
                                                *       no driving connections (if 'to' is larger than 'from').
                                                * TO:   The number of generated connections is set equal to the size of the 'to' set.
                                                *       This ensures that each element of the 'to' set has precisely one incomming connection.
                                                *       Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
-                                               *       larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is 
+                                               *       larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
                                                *       larger than 'to')
                                                * MIN:  The number of generated connections is equal to the minimum size of the 'from' or 'to' sets.
                                                *       This ensures that no wire in the 'from' or 'to' set is connected more than once.
@@ -1208,7 +1208,7 @@ public:
         , to_side(to) {
 	}
 
-	/* overload < operator which will be used by std::map */	
+	/* overload < operator which will be used by std::map */
 	bool operator < (const SB_Side_Connection &obj) const{
 		bool result;
 
@@ -1262,7 +1262,7 @@ struct t_arch {
 	t_model *model_library;
 	t_power_arch * power;
 	t_clock_arch * clocks;
-	
+
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
     //This should correspond to a switch in Switches

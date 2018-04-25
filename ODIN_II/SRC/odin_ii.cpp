@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 		find_hard_adders();
 		//find_hard_adders_for_sub();
 		register_hard_blocks();
-		
+
 		/* get odin soft_logic adder definition file */
 		parse_adder_def_file();
 
@@ -291,7 +291,7 @@ void parse_adder_def_file()
 {
 	if(hard_adders || strcmp(global_args.adder_def,"ripple")==0)
 		return;
-		
+
 	else if(strcmp(global_args.adder_def,"optimized")==0)
 		populate_adder_def();
 
@@ -386,7 +386,7 @@ void get_options(int argc, char** argv) {
             .help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
 	        .default_value("ripple")
 	        .metavar("INPUT_FILE")
-	        ;   
+	        ;
 
     auto& rand_sim_grp = parser.add_argument_group("random simulation options");
 
@@ -424,7 +424,7 @@ void get_options(int argc, char** argv) {
             .help("Directory output for simulation")
             .default_value("OUTPUT/")
             .metavar("SIMULATION_DIRECTORY");
-            
+
     other_sim_grp.add_argument(global_args.sim_generate_three_valued_logic, "-3")
             .help("Generate three valued logic, instead of binary")
             .default_value("false")

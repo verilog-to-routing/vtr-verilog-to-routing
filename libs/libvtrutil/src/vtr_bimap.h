@@ -40,7 +40,7 @@ class bimap {
 
         //Return an immutable reference to the value matching key
         //Will throw an exception if key is not found
-        const V& operator[] (const K key) const { 
+        const V& operator[] (const K key) const {
             auto iter = find(key);
             if(iter == end()) {
                 throw VtrError("Invalid bimap key during look-up", __FILE__, __LINE__);
@@ -71,7 +71,7 @@ class bimap {
         bool contains(const V value) const { return find(value) != inverse_end(); }
 
     public: //Mutators
-        
+
         //Drop all stored key-values
         void clear() { map_.clear(); inverse_map_.clear(); }
 

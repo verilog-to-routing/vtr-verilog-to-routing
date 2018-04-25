@@ -27,14 +27,14 @@ using namespace std;
 #include "rr_graph2.h"
 #include "place_util.h"
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
-#include "route_profiling.h" 
+#include "route_profiling.h"
 
 constexpr float UNINITIALIZED_DELTA = -1; //Indicates the delta delay value has not been calculated
 constexpr float EMPTY_DELTA = -2; //Indicates delta delay from/to an EMPTY block
 constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Indicates there is no valid delta delay
 
 /*To compute delay between blocks we calculate the delay between */
-/*different nodes in the FPGA.  From this procedure we generate 
+/*different nodes in the FPGA.  From this procedure we generate
  * a lookup table which tells us the delay between different locations in*/
 /*the FPGA */
 
@@ -62,9 +62,9 @@ static void alloc_delta_arrays();
 
 static void free_delta_arrays();
 
-static void generic_compute_matrix(vtr::Matrix<float>& matrix, 
-        int source_x, int source_y, 
-        int start_x, int start_y, 
+static void generic_compute_matrix(vtr::Matrix<float>& matrix,
+        int source_x, int source_y,
+        int start_x, int start_y,
         int end_x, int end_y, t_router_opts router_opts);
 
 static void compute_delta_delays(t_router_opts router_opts, size_t longest_length);
@@ -143,10 +143,10 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
     /*This function tries to identify the best pin class to hook up
      * for delay calculation.  The assumption is that we should pick
      * the pin class with the largest number of pins. This makes
-     * sense, since it ensures we pick commonly used pins, and 
-     * removes order dependence on how the pins are specified 
+     * sense, since it ensures we pick commonly used pins, and
+     * removes order dependence on how the pins are specified
      * in the architecture (except in the case were the two largest pin classes
-     * of a particular pintype have the same number of pins, in which case the 
+     * of a particular pintype have the same number of pins, in which case the
      * first pin class is used). */
 
     int i, currpin, best_class_num_pins, best_class;
@@ -297,9 +297,9 @@ static void free_delta_arrays() {
 }
 
 static void generic_compute_matrix(vtr::Matrix<float>& matrix,
-        int source_x, int source_y, 
-        int start_x, int start_y, 
-        int end_x, int end_y, 
+        int source_x, int source_y,
+        int start_x, int start_y,
+        int end_x, int end_y,
         t_router_opts router_opts) {
 
     int delta_x, delta_y;
@@ -319,7 +319,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                                         || sink_type == device_ctx.EMPTY_TYPE);
 
             if (src_or_target_empty) {
-                
+
                 if (matrix[delta_x][delta_y] == UNINITIALIZED_DELTA) {
                     //Only set empty target if we don't already have a valid delta delay
                     matrix[delta_x][delta_y] = EMPTY_DELTA;
@@ -330,14 +330,14 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                                     source_x, source_y,
                                     sink_x, sink_y);
 #endif
-                } 
+                }
             } else {
                 //Valid start/end
 
                 float delay = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
 #ifdef VERBOSE
-                vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n", 
+                vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                         delay,
                         delta_x, delta_y,
                         source_x, source_y,
@@ -358,7 +358,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
 static void compute_delta_delays(t_router_opts router_opts, size_t longest_length) {
 
     //To avoid edge effects we place the source at least 'longest_length' away
-    //from the device edge 
+    //from the device edge
     //and route from there for all possible delta values < dimension
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -399,7 +399,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     t_type_ptr src_type = nullptr;
     for (x = 0; x < grid.width(); ++x) {
         for (y = 0; y < grid.height(); ++y) {
-            auto type = grid[x][y].type; 
+            auto type = grid[x][y].type;
 
             if (type != device_ctx.EMPTY_TYPE) {
                 src_type = type;
@@ -425,7 +425,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     src_type = nullptr;
     for (y = 0; y < grid.height(); ++y) {
         for (x = 0; x < grid.width(); ++x) {
-            auto type = grid[x][y].type; 
+            auto type = grid[x][y].type;
 
             if (type != device_ctx.EMPTY_TYPE) {
                 src_type = type;
@@ -447,7 +447,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
             router_opts);
 
 
-    //Since the other delta delay values may have suffered from edge effects, 
+    //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within region B
 #ifdef VERBOSE
     vtr::printf("Computing from mid:\n");
@@ -584,11 +584,11 @@ static bool verify_delta_delays() {
 
     for(size_t x = 0; x < grid.width(); ++x) {
         for(size_t y = 0; y < grid.height(); ++y) {
-                
+
             float delta_delay = get_delta_delay(x, y);
 
             if (delta_delay < 0.) {
-                VPR_THROW(VPR_ERROR_PLACE, 
+                VPR_THROW(VPR_ERROR_PLACE,
                         "Found invaild negative delay %g for delta (%d,%d)",
                         delta_delay, x, y);
             }

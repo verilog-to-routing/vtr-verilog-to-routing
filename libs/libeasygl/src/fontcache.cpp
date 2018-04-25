@@ -48,7 +48,7 @@ void FontCache::close_font(font_ptr /*font*/) {
  * Loads the font with given attributes, and puts the pointer to in in put_font_ptr_here
  */
 font_ptr FontCache::do_font_loading(
-        
+
 #if defined X11 || defined WIN32
         int pointsize, int degrees
 #else
@@ -125,7 +125,7 @@ font_ptr FontCache::do_font_loading(
     HFONT testfont;
 
 	// Convert lf->lfFaceName from a char_t* to a wc_chart*
-	// "The length of this string must not exceed 32 TCHAR values" 
+	// "The length of this string must not exceed 32 TCHAR values"
 	// Source: https://msdn.microsoft.com/en-us/library/windows/desktop/dd145037(v=vs.85).aspx
 	wchar_t wcFaceName[32];
 	std::mbstowcs(wcFaceName, lf->lfFaceName, 32);

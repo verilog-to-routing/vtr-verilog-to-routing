@@ -10,7 +10,7 @@
 
 /************ Classes, structs, typedefs ************/
 
-/* Holds the coordinates of a switch block source connection. Used to index into a 
+/* Holds the coordinates of a switch block source connection. Used to index into a
    map which specifies which destination wire segments this source wire should		//TODO: what data structure does this index to?
    connect to */
 class Switchblock_Lookup{
@@ -55,7 +55,7 @@ struct t_hash_Switchblock_Lookup{
 	size_t operator()(const Switchblock_Lookup &obj) const{
         //TODO: use vtr::hash_combine
 		size_t result;
-		result = ((((  std::hash<int>()(obj.x_coord) 
+		result = ((((  std::hash<int>()(obj.x_coord)
                      ^ std::hash<int>()(obj.y_coord) << 10)
                      ^ std::hash<int>()((int)obj.from_side) << 20)
                      ^ std::hash<int>()((int)obj.to_side) << 30));
@@ -68,7 +68,7 @@ struct t_hash_Switchblock_Lookup{
 struct t_switchblock_edge {
 	short from_wire;
 	short to_wire;
-	short switch_ind;	
+	short switch_ind;
 };
 
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].
@@ -84,9 +84,9 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
 /************ Functions ************/
 
 /* allocate and build switch block permutation map */
-t_sb_connection_map * alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
+t_sb_connection_map * alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
                 const DeviceGrid& grid,
-				std::vector<t_switchblock_inf> switchblocks, 
+				std::vector<t_switchblock_inf> switchblocks,
 				t_chan_width *nodes_per_chan, enum e_directionality directionality);
 
 /* deallocates switch block connections sparse array */

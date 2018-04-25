@@ -104,7 +104,7 @@ void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
     auto p_to_n = get_single_child(technology, "p_to_n", loc_data);
     power_ctx.tech->PN_ratio = get_attribute(p_to_n, "ratio", loc_data).as_float();
 
-	/* Transistor Information 
+	/* Transistor Information
      *  We expect two <transistor> sections for P and N types
      */
     auto child = get_first_child(technology, "transistor", loc_data);

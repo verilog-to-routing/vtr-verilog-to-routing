@@ -432,7 +432,7 @@ ast_node_t *find_top_module()
 		{
 			/* Check to see if the module is a hard block - a hard block is
 				never the top level! */
-			
+
 			if ((sc_spot = sc_lookup_string(hard_block_names, ast_modules[i]->types.module.module_instantiations_instance[j]->children[0]->types.identifier)) == -1)
 			{
 				// get the module index from the string cache
@@ -1439,11 +1439,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
 
 		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
-		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);		
+		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
 
 		oassert((node_max1->type == NUMBERS) && (node_min1->type == NUMBERS));
 		oassert((node_max2->type == NUMBERS) && (node_min2->type == NUMBERS));
-		oassert((node_max3->type == NUMBERS) && (node_min3->type == NUMBERS));		
+		oassert((node_max3->type == NUMBERS) && (node_min3->type == NUMBERS));
 
 		char *name = var_declare->children[0]->types.identifier;
 
@@ -2871,7 +2871,7 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	{
 		error_message(0,0,-1,"Invalid state or internal error");
 	}
-	
+
 	for (i = 0; pin_lists && i < pin_lists->num_strings; i++)
 	{
 		new_pin = allocate_npin();
@@ -3002,7 +3002,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		{
 			convert_multi_to_single_dimentional_array(right);
 		}
-		
+
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
 		// Pad/shrink the address to the depth of the memory.
 		{
@@ -3086,7 +3086,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			{
 				convert_multi_to_single_dimentional_array(left);
 			}
-			
+
 			// Make sure the memory is addressed.
 			signal_list_t* address = netlist_expand_ast_of_module(left->children[1], instance_name_prefix);
 
@@ -3587,16 +3587,16 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 				if (global_args.all_warnings)
 					warning_message(NETLIST_ERROR, node->line_number, node->file_number,
 							"More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
-	
+
 				add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
 			}
-			
+
 			input_list->pins[i]->name = output_list->strings[i];
 			free_nnode(input_list->pins[i]->node);
 			input_list->pins[i]->node = allocate_nnode();
 			input_list->pins[i]->node->related_ast_node = node;
 		}
-		
+
 		if (global_args.all_warnings && output_list->num_strings < input_list->count)
 			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
 					"Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
@@ -5625,16 +5625,16 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 
 	if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == NUMBERS))
 	{
-		array_row = node->children[1]->types.number.value;	
+		array_row = node->children[1]->types.number.value;
 		array_column = node->children[2]->types.number.value;
 		array_index = array_row * array_size + array_column;
 		sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
-		
+
 	}
 	else if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == IDENTIFIERS))
 	{
-		array_row = node->children[1]->types.number.value;	
+		array_row = node->children[1]->types.number.value;
 		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
@@ -5645,7 +5645,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 	}
 	else if ((node->children[1]->type == IDENTIFIERS) && (node->children[2]->type == NUMBERS))
 	{
-		array_column = node->children[2]->types.number.value;	
+		array_column = node->children[2]->types.number.value;
 		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
@@ -5653,17 +5653,17 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
 	}
-	else	
+	else
 	{
 		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
-		
+
 		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
-		
+
 		sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
 	}

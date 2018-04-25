@@ -16,7 +16,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
 public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
-                              float intercluster_net_delay, 
+                              float intercluster_net_delay,
                               std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode)
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
@@ -25,7 +25,7 @@ public:
         //nop
     }
 
-    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
+    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
@@ -43,7 +43,7 @@ public:
         }
     }
 
-    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
+    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
         auto edge_type = tg.edge_type(edge_id);
@@ -51,7 +51,7 @@ public:
         VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN, "Edge setup time only valid if source node is a CPIN");
         VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SINK, "Edge setup time only valid if sink node is a SINK");
         VTR_ASSERT(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE);
-        
+
         AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
         VTR_ASSERT(sink_pin);
 
@@ -61,7 +61,7 @@ public:
         return tatum::Time(gpin->tsu);
     }
 
-    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
+    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
         //Currently return the same delay
         //TODO: use true min delay
         return max_edge_delay(tg, edge_id);
@@ -150,7 +150,7 @@ private:
     const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId io_pin) const {
         const t_pb_graph_pin* io_gpin = find_pb_graph_pin(io_pin);
 
-        const t_pb_graph_pin* clock_gpin = io_gpin->associated_clock_pin; 
+        const t_pb_graph_pin* clock_gpin = io_gpin->associated_clock_pin;
 
         if(!clock_gpin) {
             AtomBlockId blk = netlist_.pin_block(io_pin);

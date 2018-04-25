@@ -14,7 +14,7 @@
 #include <vector>
 #include <string>
 
-/* 
+/*
  Logic model data types
  A logic model is described by its I/O ports and function name
  */

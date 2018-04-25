@@ -3,7 +3,7 @@
 #include "atom_netlist.h"
 
 void NetlistWalker::walk() {
-    
+
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -42,7 +42,7 @@ void NetlistWalker::walk_atoms(const t_pb* pb) {
             for(int j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
                 walk_atoms(&pb->child_pbs[i][j]);
             }
-        }  
+        }
     }
 }
 

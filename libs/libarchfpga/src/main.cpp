@@ -1,4 +1,4 @@
-/* 
+/*
  Test libarchfpga, try reading an architecture and print the results to a file
 
  Date: February 19, 2009
