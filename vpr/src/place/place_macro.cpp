@@ -127,6 +127,13 @@ static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> 
 							// Assume that carry chains only has 1 sink - direct connection
 							VTR_ASSERT(cluster_ctx.clb_nlist.net_sinks(curr_net_id).size() == 1);
 							next_blk_id = cluster_ctx.clb_nlist.net_pin_block(curr_net_id, 1);			
+
+                            if (cluster_ctx.clb_nlist.block_type(next_blk_id) != cluster_ctx.clb_nlist.block_type(blk_id)) {
+                                //Different block types, end of chain
+                                //
+                                //Currently we detect only macros connected to the same block type
+                                break;
+                            }
 							
 							// Assume that the from_iblk_pin index is the same for the next block
 							VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(next_blk_id)->index][from_iblk_pin] == from_idirect
