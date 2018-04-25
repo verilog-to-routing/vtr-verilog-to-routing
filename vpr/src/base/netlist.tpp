@@ -1311,8 +1311,15 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_
     //
     //Note that for this to work correctly, the net references must have already been re-built!
     for (auto net : nets()) {
-        int i = 0;
-        for (auto pin : net_pins(net)) {
+
+        auto driver_pin = net_driver(net);
+        if (driver_pin) {
+            //Only driver index if net has a driver
+            pin_net_indices_[driver_pin] = NET_DRIVER_INDEX;
+        }
+
+        int i = NET_DRIVER_INDEX + 1;
+        for (auto pin : net_sinks(net)) {
             pin_net_indices_[pin] = i;
             ++i;
         }
