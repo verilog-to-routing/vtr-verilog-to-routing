@@ -906,6 +906,10 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
     auto& atom_ctx = g_vpr_ctx.atom();
     for(AtomNetId net : atom_ctx.nlist.nets()) {
         AtomPinId driver_pin = atom_ctx.nlist.net_driver(net);
+        if (!driver_pin) {
+            vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no driver\n", atom_ctx.nlist.net_name(net).c_str());
+            continue;
+        }
         AtomBlockId driver_block = atom_ctx.nlist.pin_block(driver_pin);
 
         for(AtomPinId sink_pin : atom_ctx.nlist.net_sinks(net)) {
