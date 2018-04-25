@@ -37,7 +37,7 @@ typedef addmap_t::const_iterator      amiter_t;
 typedef map<coeff_t, adder>           full_addmap_t;
 typedef full_addmap_t::const_iterator full_amiter_t;
 
-struct dist_t { 
+struct dist_t {
   dist_t(int dist, coeff_t aux, int max_depth) : dist(dist), aux(aux), max_depth(max_depth) {}
   dist_t() : dist(-1), aux(-1), max_depth(-1) {}
   int dist;
@@ -50,10 +50,10 @@ typedef map<cfpair_t, dist_t>            distmap_t;
 #include "arith.h"
 #include "codegen.h"
 
-#define FORALL(set, it) for(cfsiter_t it = (set).begin(); it != (set).end(); ++it) 
-#define FORALL_V(vec, it) for(cfviter_t it = (vec).begin(); it != (vec).end(); ++it) 
-#define FORALL_AM(set, it) for(amiter_t it = (set).begin(); it != (set).end(); ++it) 
-#define FORALL_FAM(set, it) for(full_amiter_t it = set.begin(); it != set.end(); ++it) 
+#define FORALL(set, it) for(cfsiter_t it = (set).begin(); it != (set).end(); ++it)
+#define FORALL_V(vec, it) for(cfviter_t it = (vec).begin(); it != (vec).end(); ++it)
+#define FORALL_AM(set, it) for(amiter_t it = (set).begin(); it != (set).end(); ++it)
+#define FORALL_FAM(set, it) for(full_amiter_t it = set.begin(); it != set.end(); ++it)
 
 #define ADD(set,el) ((set).insert(el))
 #define CONTAINS(set,el) ((set).find(el) != (set).end())
@@ -72,7 +72,7 @@ struct chain {
     virtual void output(ostream &) const = 0;
     virtual void output_c(ostream &os) const = 0;
     virtual void get_ops(oplist_t &l, reg_t dest, reg_t src, reg_t (tmpreg)()) = 0;
-    virtual ~chain() {} 
+    virtual ~chain() {}
     virtual coeff_t get_intermediates_sum(chain *(get_ch)(coeff_t));
     virtual void get_intermediates(cfset_t &dest, chain *(get_ch)(coeff_t)) = 0;
     virtual void compute_depth(chain *(get_ch)(coeff_t)) = 0;
@@ -90,11 +90,11 @@ void gen_add_coeffs(cfset_t &src1, cfset_t &src2, cfset_t &dest);
 void gen_mul_coeffs(cfset_t &src1, cfset_t &src2, cfset_t &dest);
 void compute_all_sumdiffs(addmap_t &result, coeff_t num1, coeff_t num2);
 void compute_fast_sumdiffs(cfset_t &result, coeff_t num1, coeff_t num2);
-void sumdiff_ops(oplist_t &l, 
+void sumdiff_ops(oplist_t &l,
 		 reg_t dest, reg_t src1, reg_t src2, reg_t (tmpreg)(),
 		 coeff_t c1, coeff_t c2, spref_t sp);
 
-/* result of set_product is all possible outputs of an adder with 
+/* result of set_product is all possible outputs of an adder with
    inputs from 2 different sets */
 void set_product(cfset_t &dest, cfset_t &src1, cfset_t &src2);
 void set_product(cfset_t &dest, coeff_t c, cfset_t &src);
@@ -156,7 +156,7 @@ struct leapfrog2_chain : public chain {
 };
 
 struct leapfrog3_chain : public chain {
-    leapfrog3_chain(cost_t cost, coeff_t c1, coeff_t c2, 
+    leapfrog3_chain(cost_t cost, coeff_t c1, coeff_t c2,
 		    spref_t sp1, spref_t sp2, spref_t sp3);
     void get_ops(oplist_t &l, reg_t dest, reg_t src, reg_t (tmpreg)());
     void output(ostream &os) const;

@@ -52,7 +52,7 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width,
         const DeviceGrid& grid, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern, 
+        short ******sblock_pattern,
         const int switch_override,
         const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
@@ -274,7 +274,7 @@ t_seg_details *alloc_and_load_seg_details(
             seg_details[cur_track].length = length;
             seg_details[cur_track].longline = longline;
 
-            /* Stagger the start points in for each track set. The 
+            /* Stagger the start points in for each track set. The
              * pin mappings should be aware of this when chosing an
              * intelligent way of connecting pins and tracks.
              * cur_track is used as an offset so that extra tracks
@@ -671,7 +671,7 @@ int get_seg_start(
 
             /* NOTE: Start points are staggered between different channels.
              * The start point must stagger backwards as chan_num increases.
-             * Unidirectional routing expects this to allow the N-to-N 
+             * Unidirectional routing expects this to allow the N-to-N
              * assumption to be made with respect to ending wires in the core. */
             seg_start = seg_num - (seg_num + length + chan_num - start) % length;
             if (seg_start < 1) {
@@ -803,7 +803,7 @@ int get_unidir_opin_connections(
         const int max_chan_width, const t_rr_node_indices& L_rr_node_indices,
         bool * Fc_clipped) {
 
-    /* Gets a linked list of Fc nodes of specified seg_type_index to connect 
+    /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
     int *inc_muxes = nullptr;
@@ -1128,7 +1128,7 @@ static void load_chan_rr_indices(
 
                 int start = get_seg_start(seg_details, track, chan, seg);
 
-                /* If the start of the wire doesn't have a inode, 
+                /* If the start of the wire doesn't have a inode,
                  * assign one to it. */
                 int inode = indices[type][chan][start][0][track];
                 if (OPEN == inode) {
@@ -1311,9 +1311,9 @@ std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
 
 int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
         int x, int y, t_rr_type rr_type, int ptc, e_side side) {
-    /* 
-     * Returns the index of the specified routing resource node.  (x,y) are 
-     * the location within the FPGA, rr_type specifies the type of resource, 
+    /*
+     * Returns the index of the specified routing resource node.  (x,y) are
+     * the location within the FPGA, rr_type specifies the type of resource,
      * and ptc gives the number of this resource.  ptc is the class number,
      * pin number or track number, depending on what type of resource this
      * is.  All ptcs start at 0 and go up to pins_per_clb-1 or the equivalent.
@@ -1448,7 +1448,7 @@ int get_track_to_pins(
         enum e_directionality directionality) {
 
     /*
-     * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent 
+     * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent
      * blocks along the wire's length
      */
 
@@ -1483,7 +1483,7 @@ int get_track_to_pins(
                 if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
                     continue;
 
-                /* Move from logical (straight) to physical (twisted) track index 
+                /* Move from logical (straight) to physical (twisted) track index
                  * - algorithm assigns ipin connections to same physical track index
                  * so that the logical track gets distributed uniformly */
 
@@ -1503,7 +1503,7 @@ int get_track_to_pins(
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                     int to_node = get_rr_node_index(L_rr_node_indices, x, y, IPIN, ipin, side);
                     if (to_node >= 0) {
-                        edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch, 
+                        edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch,
                                             t_rr_edge_dir::FORWARD);
                         ++num_conn;
                     }
@@ -1516,19 +1516,19 @@ int get_track_to_pins(
     return (num_conn);
 }
 
-/* 
+/*
  * Collects the edges fanning-out of the 'from' track which connect to the 'to'
  * tracks, according to the switch block pattern.
  *
  * It returns the number of connections added, and updates edge_list_ptr to
  * point at the head of the (extended) linked list giving the nodes to which
  * this segment connects and the switch type used to connect to each.
- *                                                                          
+ *
  * An edge is added from this segment to a y-segment if:
  * (1) this segment should have a switch box at that location, or
  * (2) the y-segment to which it would connect has a switch box, and the switch
  *     type of that y-segment is unbuffered (bidirectional pass transistor).
- * 
+ *
  * For bidirectional:
  * If the switch in each direction is a pass transistor (unbuffered), both
  * switches are marked as being of the types of the larger (lower R) pass
@@ -1587,7 +1587,7 @@ int get_track_to_tracks(
     int start = start_sb_seg;
     int end = end_sb_seg;
 
-    //If source and destination segments both lie along the same channel 
+    //If source and destination segments both lie along the same channel
     //we clip the loop bounds to the switch blocks of interest and proceed
     //normally
     if (to_type == from_type) {
@@ -1631,7 +1631,7 @@ int get_track_to_tracks(
             to_sb = from_chan;
         }
 
-        /* to_chan_details may correspond to an x-directed or y-directed channel, depending for which 
+        /* to_chan_details may correspond to an x-directed or y-directed channel, depending for which
            channel type this function is used; so coordinates are reversed as necessary */
         if (to_type == CHANX) {
             to_seg_details = to_chan_details[to_seg][to_chan];
@@ -1671,7 +1671,7 @@ int get_track_to_tracks(
            one of two directions. If we're in CHANX, we can connect to it from the left or
            right, provided we're not at a track endpoint. And similarly for a source track
            in CHANY. */
-        /* Do edges going from the right SB side (if we're in CHANX) or top (if we're in CHANY). 
+        /* Do edges going from the right SB side (if we're in CHANX) or top (if we're in CHANY).
            However, can't connect to right (top) if already at rightmost (topmost) track end */
         if (sb_seg < end_sb_seg) {
             if (custom_switch_block) {
@@ -1705,7 +1705,7 @@ int get_track_to_tracks(
                                 from_track, to_chan,
                                 to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_a, to_side, Fs_per_side,
-                                sblock_pattern, 
+                                sblock_pattern,
                                 switch_override,
                                 L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1721,7 +1721,7 @@ int get_track_to_tracks(
                 if (INC_DIRECTION == from_seg_details[from_track].direction ||
                         BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
-                            to_type, from_side_b, to_side, 
+                            to_type, from_side_b, to_side,
                             switch_override,
                             L_rr_node_indices,
                             sb_conn_map, L_rr_edge_done, edge_list);
@@ -1832,7 +1832,7 @@ static int get_bidir_track_to_chan_seg(
 }
 
 /* Figures out the edges that should connect the given wire segment to the given
-   channel segment, adds these edges to 'edge_list' and returns the number of 
+   channel segment, adds these edges to 'edge_list' and returns the number of
    edges added .
    See route/build_switchblocks.c for a detailed description of how the switch block
    connection map sb_conn_map is generated. */
@@ -2042,7 +2042,7 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track,
 
 static void get_switch_type(
         bool is_from_sblock, bool is_to_sblock,
-        short from_node_switch, short to_node_switch, 
+        short from_node_switch, short to_node_switch,
         const int switch_override,
         short switch_types[2]) {
     /* This routine looks at whether the from_node and to_node want a switch,  *
@@ -2094,11 +2094,11 @@ static void get_switch_type(
             min_switch = min(to_node_switch, from_node_switch);
             max_switch = max(to_node_switch, from_node_switch);
 
-            /* Take the smaller index unless the other 
+            /* Take the smaller index unless the other
              * pass_trans is bigger (smaller R). */
 
             if (used < 2) {
-                VPR_THROW(VPR_ERROR_ROUTE, 
+                VPR_THROW(VPR_ERROR_ROUTE,
                         "Expected 2 switches (forward and back) between RR nodes (found %d switches, min switch index: %d max switch index: %d)",
                         used, min_switch, max_switch);
             }
@@ -2220,7 +2220,7 @@ short ******alloc_sblock_pattern_lookup(
 void free_sblock_pattern_lookup(
         short ******sblock_pattern) {
 
-    /* This free function corresponds to the chunked matrix 
+    /* This free function corresponds to the chunked matrix
      * allocation above and there should only be one free
      * call for each dimension. */
 
@@ -2260,27 +2260,27 @@ void load_sblock_pattern_lookup(
      * property is that the number of muxes (and ending wires) on each side is the same (very useful
      * property, since it leads to a N-to-N assignment problem with ending wires). 2) The corner sblock
      * which is same as a L=1 core sblock with 2 sides only (again N-to-N assignment problem). 3) The
-     * fringe / chip edge sblock which is most troublesome, as balance in each side of muxes is 
+     * fringe / chip edge sblock which is most troublesome, as balance in each side of muxes is
      * attainable but balance in the entire sblock is not. The following code first identifies the
      * incoming wires, which can be classified into incoming passing wires with sblock and incoming
-     * ending wires (the word "incoming" is sometimes dropped for ease of discussion). It appropriately 
-     * labels all the wires on each side by the following order: By the call to label_incoming_wires, 
-     * which labels for one side, the order is such that the incoming ending wires (always with sblock) 
-     * are labelled first 0,1,2,... p-1, then the incoming passing wires with sblock are labelled 
+     * ending wires (the word "incoming" is sometimes dropped for ease of discussion). It appropriately
+     * labels all the wires on each side by the following order: By the call to label_incoming_wires,
+     * which labels for one side, the order is such that the incoming ending wires (always with sblock)
+     * are labelled first 0,1,2,... p-1, then the incoming passing wires with sblock are labelled
      * p,p+1,p+2,... k-1 (for total of k). By this convention, one can easily distinguish the ending
-     * wires from the passing wires by checking a label against num_ending_wires variable. 
+     * wires from the passing wires by checking a label against num_ending_wires variable.
      *
      * After labelling all the incoming wires, this routine labels the muxes on the side we're currently
      * connecting to (iterated for four sides of the sblock), called the to_side. The label scheme is
      * the natural order of the muxes by their track #. Also we find the number of muxes.
      *
-     * For each to_side, the total incoming wires that connect to the muxes on to_side 
+     * For each to_side, the total incoming wires that connect to the muxes on to_side
      * come from three sides: side_1 (to_side's right), side_2 (to_side's left) and opp_side.
      * The problem of balancing mux size is then: considering all incoming passing wires
      * with sblock on side_1, side_2 and opp_side, how to assign them to the muxes on to_side
      * (with specified Fs) in a way that mux size is imbalanced by at most 1. I solve this
-     * problem by this approach: the first incoming passing wire will connect to 0, 1, 2, 
-     * ..., Fs_per_side - 1, then the next incoming passing wire will connect to 
+     * problem by this approach: the first incoming passing wire will connect to 0, 1, 2,
+     * ..., Fs_per_side - 1, then the next incoming passing wire will connect to
      * Fs_per_side, Fs_per_side+1, ..., Fs_per_side*2-1, and so on. This consistent STAGGERING
      * ensures N-to-N assignment is perfectly balanced and M-to-N assignment is imbalanced by no
      * more than 1.
@@ -2375,7 +2375,7 @@ void load_sblock_pattern_lookup(
 
         /* For the core sblock:
          * The new order for passing wires should appear as
-         * 0,1,2..,scw-1, for passing wires with sblock on side_cw 
+         * 0,1,2..,scw-1, for passing wires with sblock on side_cw
          * scw,scw+1,...,sccw-1, for passing wires with sblock on side_ccw
          * sccw,sccw+1,... for passing wires with sblock on side_opp.
          * This way, I can keep the imbalance to at most 1.
@@ -2457,9 +2457,9 @@ void load_sblock_pattern_lookup(
                         /* These are wire segments that pass through the switch block.
 
                            There is no connection from wire segment midpoints to the opposite switch block
-                           side, so there's nothing to be done here (at Fs=3, this connection is implicit for passing 
-                           wires and at Fs>3 the code in this function seems to create heavily unbalanced 
-                           switch patterns). Additionally, the code in build_rr_chan() explicitly skips 
+                           side, so there's nothing to be done here (at Fs=3, this connection is implicit for passing
+                           wires and at Fs>3 the code in this function seems to create heavily unbalanced
+                           switch patterns). Additionally, the code in build_rr_chan() explicitly skips
                            connections from wire segment midpoints to the opposide sb side (for switch block patterns
                            generated with this function) so any such assignment to sblock_pattern will be ignored anyway. */
                     }
@@ -2485,7 +2485,7 @@ static int *label_wire_muxes(
         const bool check_cb, int *num_wire_muxes, int *num_wire_muxes_cb_restricted) {
 
     /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
-     * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux> 
+     * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux>
      * This routine orders wire muxes by their natural order, i.e. track #
      * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
      * only looks at segments that belong to the specified segment type. */
@@ -2565,7 +2565,7 @@ static int *label_incoming_wires(
         const enum e_direction dir, const int max_chan_width,
         int *num_incoming_wires, int *num_ending_wires) {
 
-    /* Labels the incoming wires on that side (seg_num, chan_num, direction). 
+    /* Labels the incoming wires on that side (seg_num, chan_num, direction).
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
 
@@ -2663,12 +2663,12 @@ static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord
     int y_coord;
     int x_coord;
     if (from_chan_type == CHANX) {
-        y_coord = from_chan_coord; 
-        x_coord = from_seg_coord; 
+        y_coord = from_chan_coord;
+        x_coord = from_seg_coord;
     } else {
         VTR_ASSERT(from_chan_type == CHANY);
-        y_coord = from_seg_coord; 
-        x_coord = from_chan_coord; 
+        y_coord = from_seg_coord;
+        x_coord = from_chan_coord;
     }
 
     t_type_ptr blk_type = grid[x_coord][y_coord].type;

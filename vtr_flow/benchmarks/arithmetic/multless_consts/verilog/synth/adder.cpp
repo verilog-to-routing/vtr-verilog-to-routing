@@ -12,13 +12,13 @@ void adag_node::unlink_children() {
     for(list<adag_node*>::iterator p = parents.begin(); p != parents.end(); ++p)
 	(*p)->remove_parent(this);
 }
-  
+
 void adag_node::update_parent_child_links(adag_node *oldchild) {
     for(list<adag_node*>::iterator p = parents.begin(); p != parents.end(); ++p)
 	(*p)->update_child(oldchild, this);
 }
 void adag_node::update_child(adag_node *oldchild, adag_node *newchild) {
-    for(size_t i=0; i<src.size(); ++i) 
+    for(size_t i=0; i<src.size(); ++i)
 	if(src[i]==oldchild) src[i] = newchild;
 }
 void adag_node::remove_parent(adag_node *par) {
@@ -33,13 +33,13 @@ void adag_node::update_parent(adag_node *oldpar, adag_node *newpar) {
     }
 }
 void adag_node::set_rsh(int amt) {
-    for(size_t i=0; i < scales.size(); ++i) 
+    for(size_t i=0; i < scales.size(); ++i)
 	scales[i] = compose_scales(scales[i], amt+1);
     rsh = amt;
 }
 void adag_node::update_depth() {
     depth = 0;
-    for(size_t i=0; i < src.size(); ++i) 
+    for(size_t i=0; i < src.size(); ++i)
 	depth = max(depth, src[i]->depth);
     depth = 1+depth;
 }
@@ -48,7 +48,7 @@ bool adag_node::single_parent() {
     if(parents.size()==1) return true;
     adag_node *p = parents.front();
     list<adag_node*>::iterator i = parents.begin();
-    for(++i; i != parents.end(); ++i) 
+    for(++i; i != parents.end(); ++i)
 	if(*i!=p) return false;
     return true;
 }
@@ -56,9 +56,9 @@ bool adag_node::single_parent() {
 void adag_node::output_dot(ostream &os) {
     if(is_input()) os << c << " [peripheries=2]\n";
     else {
-	os << c << "[style=filled fillcolor=\"#" 
-	   << (char)('a'+rand()%6) << (char)('a'+rand()%6) << (char)('a'+rand()%6) 
-	   << (char)('a'+rand()%6) << (char)('a'+rand()%6) << (char)('a'+rand()%6) 
+	os << c << "[style=filled fillcolor=\"#"
+	   << (char)('a'+rand()%6) << (char)('a'+rand()%6) << (char)('a'+rand()%6)
+	   << (char)('a'+rand()%6) << (char)('a'+rand()%6) << (char)('a'+rand()%6)
 	   << "\"" << (is_target ? " peripheries=2]" : " peripheries=1]") << endl;
 	for(size_t i=0; i<src.size(); ++i) {
           os << src[i]->c << "->" << c << " [weight=1 label=\"";
@@ -78,7 +78,7 @@ multi_adag_node::multi_adag_node(reg_t reg) : adag_node(1, false, reg) { /* inpu
 multi_adag_node::multi_adag_node(coeff_t c, bool is_targ, reg_t reg) : adag_node(c, is_targ, reg) {
 }
 
-multi_adag_node::multi_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp, 
+multi_adag_node::multi_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
 				 adag_node *src1, adag_node *src2)
     : adag_node(c, is_targ, reg) {
     src.resize(2); scales.resize(2);
@@ -95,7 +95,7 @@ void multi_adag_node::add_summand(adag_node *s, int scale) {
     s->add_parent(this);
     depth = max(depth, 1 + s->depth);
 }
-	
+
 void multi_adag_node::output(ostream &os) {
     if(is_input()) os << "t" << reg << " = " << c << "\n";
     else {
@@ -128,8 +128,8 @@ binary_adag_node::binary_adag_node(reg_t reg): adag_node(1, false, reg) { /* inp
     output(cout);
 }
 
-binary_adag_node::binary_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp, 
-				   adag_node *src1, adag_node *src2) 
+binary_adag_node::binary_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
+				   adag_node *src1, adag_node *src2)
     : adag_node(c, is_targ, reg) {
     src.resize(2); scales.resize(2);
     src[0] = src1; scales[0] = sp.first;
@@ -137,7 +137,7 @@ binary_adag_node::binary_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
     depth = 1 + max(src1->depth, src2->depth);
     src[0]->add_parent(this); src[1]->add_parent(this);
     rsh = compute_shr(compute_sp(src1->c, src2->c, sp));
-    verify(); set_op(); 
+    verify(); set_op();
     output(cout);
 }
 void binary_adag_node::output(ostream &os) {
@@ -146,9 +146,9 @@ void binary_adag_node::output(ostream &os) {
     else  { if(is_target) os <<"T <<"<<rsh; o->output(os); }
 }
 
-coeff_t binary_adag_node::compute_coeff() { 
+coeff_t binary_adag_node::compute_coeff() {
     if(is_input()) return c;
-    else return 
+    else return
      (compute_scale(src[0]->c, scales[0]) + compute_scale(src[1]->c, scales[1]))
 	 >> rsh;
 }
@@ -174,8 +174,8 @@ void binary_adag_node::set_op() {
  * adag
  *******************************************************************************/
 
-adag::adag(reg_t input_reg) { 
-    set_input_node(input_reg); 
+adag::adag(reg_t input_reg) {
+    set_input_node(input_reg);
     max_depth = 0;
     nregs = -1;
     verbose = false;
@@ -187,20 +187,20 @@ adag_node *adag::lookup_coeff(coeff_t c) {
     else return it->second;
 }
 
-adag_node *adag::lookup_input() { 
-    adag_node * inp = lookup_coeff(1); 
+adag_node *adag::lookup_input() {
+    adag_node * inp = lookup_coeff(1);
     ASSERT(inp!=NULL);
     return inp;
 }
-	
-adag_node *adag::set_input_node(reg_t reg) { 
+
+adag_node *adag::set_input_node(reg_t reg) {
     return (nodes[1] = new multi_adag_node(reg));
 }
 
-adag_node *adag::add_binary_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp, 
+adag_node *adag::add_binary_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
 				 adag_node *src1, adag_node *src2) {
     if(is_targ)	outputs.insert(c);
-    return (nodes[c] = new multi_adag_node(c, is_targ, reg, sp, src1, src2)); 
+    return (nodes[c] = new multi_adag_node(c, is_targ, reg, sp, src1, src2));
 }
 
 adag_node *adag::add_node(adag_node *n) {
@@ -210,13 +210,13 @@ adag_node *adag::add_node(adag_node *n) {
 adag_node *adag::to_multi(adag_node *nn) {
     multi_adag_node *n = dynamic_cast<multi_adag_node*>(nn);
 
-    if(n->is_input()) 
+    if(n->is_input())
 	return n;
 
     for(size_t i = 0; i < n->src.size(); ++i) {
 	adag_node *ch = n->src[i];
 	int scale     = n->scales[i];
-	int numparents = ch->parents.size();	    
+	int numparents = ch->parents.size();
 	ASSERT(numparents >= 1);
 
 	/* outdegree == 1 and not input or output */
@@ -226,10 +226,10 @@ adag_node *adag::to_multi(adag_node *nn) {
 	    n->scales.erase(n->scales.begin()+i);
 	    --i; /* take into account deletion */
 
-	    if(ch->rsh > 0) 
+	    if(ch->rsh > 0)
 		n->set_rsh(ch->rsh);
 	    for(size_t j = 0; j < ch->src.size(); ++j) {
-		n->add_summand(ch->src[j], 
+		n->add_summand(ch->src[j],
 			       compose_scales(scale, ch->scales[j]));
 		ch->src[j]->update_parent(ch, n);
 	    }
@@ -239,10 +239,10 @@ adag_node *adag::to_multi(adag_node *nn) {
     n->update_depth();
     return n;
 }
-    
+
 void adag::remove_child(adag_node *parent, adag_node *n) {
     if(n->parents.size() <= 1) {
-	for(size_t i=0; i < n->src.size(); ++i) 
+	for(size_t i=0; i < n->src.size(); ++i)
 	    remove_child(n, n->src[i]);
 	nodes.erase(n->c);
 	delete n;
@@ -298,17 +298,17 @@ void adag::to_multi() {
     remove_dead_code();
     for(nodeiter_t ni = nodes.begin(); ni!=nodes.end(); ++ni) {
 	adag_node *n = (*ni).second;
-	to_multi(n)->verify(); 
+	to_multi(n)->verify();
     }
 }
 
-adag_node *adag::add_adder(adder *ad, reg_t dest, reg_t (tmpreg)(), 
+adag_node *adag::add_adder(adder *ad, reg_t dest, reg_t (tmpreg)(),
 			   adder *(get_adder)(coeff_t)) {
     adag_node *n = lookup_coeff(ad->res);
     if(n!=NULL) 	 return n;
     else if(ad->res==1)  return lookup_input();
     else {
-	return add_binary_node(ad->res, ad->is_target, dest, ad->sp, 
+	return add_binary_node(ad->res, ad->is_target, dest, ad->sp,
 			    add_adder(get_adder(ad->c1), tmpreg(), tmpreg, get_adder),
 			    add_adder(get_adder(ad->c2), tmpreg(), tmpreg, get_adder));
     }
@@ -324,7 +324,7 @@ void adag::compute_max_depth() {
 
 int adag::min_regs() {
     int numregs = 0;
-    for(int i=0; i <= max_depth; ++i) 
+    for(int i=0; i <= max_depth; ++i)
 	numregs = max(numregs, liveness[i].size());
     return numregs;
 }
@@ -370,23 +370,23 @@ int adag::allocate_regs() {
 			assigned[gen_node->reg] = assigned_reg;
 			--to_assign;
 			if(verbose) cerr << "assigned " << assigned_reg << " -> " << gen_node->reg << endl;
-			
+
 			for(size_t i=0; i < gen_node->src.size(); ++i)
 			    refs[gen_node->src[i]->reg].erase(gen_node);
 			++changed;
-		    } 
+		    }
 		}
 	    } while(changed > 0 && to_assign > 0);
-	    
+
 	    /* check if we are done */
-	    if(to_assign==0) break; 
+	    if(to_assign==0) break;
 
 	    for(regiter_t r = gens_here.begin(); r != gens_here.end(); ++r) {
 		/* find first unassigned gen */
 		if(assigned.find(*r) == assigned.end()) {
 		    assigned[*r] = *r;
 		    if(verbose) cerr << "assigned " << *r << " -> " << *r << endl;
-		    
+
 		    adag_node *gen_node = regnodes[*r];
 		    for(size_t i=0; i < gen_node->src.size(); ++i)
 			refs[gen_node->src[i]->reg].erase(gen_node);
@@ -394,7 +394,7 @@ int adag::allocate_regs() {
 		    ++nregs;
 		    break;
 		}
-	    }	
+	    }
 	}
     }
     if(verbose) cerr << "--- adjusted ---" << endl;
@@ -421,7 +421,7 @@ int adag::allocate_regs() {
 void adag::output_liveness(ostream &os) {
     for(int i=0; i <= max_depth; ++i) {
 	os << "// " << i << " : ";
-	for(regiter_t r = liveness[i].begin(); r != liveness[i].end(); ++r) 
+	for(regiter_t r = liveness[i].begin(); r != liveness[i].end(); ++r)
 	    os << *r << " ";
 	os << endl;
     }
@@ -450,7 +450,7 @@ void adag::compute_liveness(bool keep_input) {
 	}
 	else gen[n->reg] = n->depth;
 
-	if(n->is_target) 
+	if(n->is_target)
 	    kill[n->reg] = max_depth+1;
 
 	for(size_t i=0; i<n->src.size(); ++i) {
@@ -479,8 +479,8 @@ void adag::compute_liveness(bool keep_input) {
  * adder
  *******************************************************************************/
 
-adder::adder(coeff_t x) { 
-    res = x; c1 = c2 = 0; depth = 0; is_target = false; 
+adder::adder(coeff_t x) {
+    res = x; c1 = c2 = 0; depth = 0; is_target = false;
 }
 
 adder::adder(bool is_targ, coeff_t cc1, coeff_t cc2, spref_t ssp, int dep)
@@ -491,8 +491,8 @@ adder::adder(bool is_targ, coeff_t cc1, coeff_t cc2, spref_t ssp, int dep)
 }
 
 void adder::output(ostream &os) const {
-    os << res << " = adder(" << c1 << ", " << c2 << ", " 
-       << sp.first << "/" << sp.second << ", " 
+    os << res << " = adder(" << c1 << ", " << c2 << ", "
+       << sp.first << "/" << sp.second << ", "
        << depth << ") ";
 }
 

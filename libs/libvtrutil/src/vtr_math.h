@@ -10,7 +10,7 @@ namespace vtr {
     /*********************** Math operations *************************************/
     int ipow(int base, int exp);
 
-    template<typename X, typename Y> 
+    template<typename X, typename Y>
     Y linear_interpolate_or_extrapolate(const std::map<X,Y> *xy_map, X requested_x);
 
     constexpr int nint(float val) { return static_cast<int>(val + 0.5); }

@@ -9,9 +9,9 @@
 #include "atom_lookup_fwd.h"
 #include "vpr_types.h"
 
-std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf, 
-                                                   const AtomNetlist& netlist, 
-                                                   const AtomLookup& lookup, 
+std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf,
+                                                   const AtomNetlist& netlist,
+                                                   const AtomLookup& lookup,
                                                    tatum::TimingGraph& timing_graph);
 
 #endif

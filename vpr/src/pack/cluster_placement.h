@@ -1,4 +1,4 @@
-/* 
+/*
  Find placement for group of atom blocks in complex block
  Author: Jason Luu
  */

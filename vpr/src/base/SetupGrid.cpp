@@ -87,7 +87,7 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
 
             if (iter == grid_layouts.end()) {
                 //No device larger than specified width/height, so choose largest possible
-                vtr::printf_warning(__FILE__, __LINE__, 
+                vtr::printf_warning(__FILE__, __LINE__,
                         "Specified device dimensions (%zux%zu) exceed those of the largest fixed-size device."
                         " Using the largest fixed-size device\n",
                         width, height);
@@ -133,8 +133,8 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         const auto& grid_def = grid_layouts[0];
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
 
-        //Initial size is 3x3, the smallest possible while avoiding 
-        //start before end location issues with <perimeter> location 
+        //Initial size is 3x3, the smallest possible while avoiding
+        //start before end location issues with <perimeter> location
         //specifications
         size_t width = 3;
         size_t height = 3;
@@ -185,7 +185,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         for (const auto& grid_def : grid_layouts) {
 
             //Build the grid
-            grid = build_device_grid(grid_def, grid_def.width, grid_def.height);        
+            grid = build_device_grid(grid_def, grid_def.width, grid_def.height);
 
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
                 return grid;
@@ -234,12 +234,12 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_ty
     return true; //OK
 }
 
-//Build the specified device grid 
+//Build the specified device grid
 static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range) {
     if (grid_def.grid_type == GridDefType::FIXED) {
 
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
-            VPR_THROW(VPR_ERROR_OTHER, 
+            VPR_THROW(VPR_ERROR_OTHER,
                     "Requested grid size (%zu%zu) does not match fixed device size (%dx%d)",
                     grid_width, grid_height, grid_def.width, grid_def.height);
         }
@@ -273,7 +273,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         t_type_descriptor* type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
 
         if (!type) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Failed to find block type '%s' for grid location specification",
                     grid_loc_def.block_type.c_str());
         }
@@ -351,13 +351,13 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
         //The end must fall after (or equal) to the start
         if (endx < startx) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Grid location specification endx (%s = %d) can not come before startx (%s = %d) for block type '%s'",
                     xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->name);
         }
 
         if (endy < starty) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Grid location specification endy (%s = %d) can not come before starty (%s = %d) for block type '%s'",
                     yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->name);
         }
@@ -365,7 +365,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         //The minimum increment is the block dimension
         VTR_ASSERT(type->width > 0);
         if (incrx < size_t(type->width)) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Grid location specification incrx for block type '%s' must be at least"
                     " block width (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, type->width, xspec.incr_expr.c_str(), incrx);
@@ -373,7 +373,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
         VTR_ASSERT(type->height > 0);
         if (incry < size_t(type->height)) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Grid location specification incry for block type '%s' must be at least"
                     " block height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, type->height, yspec.incr_expr.c_str(), incry);
@@ -382,7 +382,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         //The minimum repeat is the region dimension
         size_t region_width = endx - startx + 1; //+1 since start/end are both inclusive
         if (repeatx < region_width) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Grid location specification repeatx for block type '%s' must be at least"
                     " the region width (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_width, xspec.repeat_expr.c_str(), repeatx);
@@ -390,13 +390,13 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
         size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
         if (repeaty < region_height) {
-            VPR_THROW(VPR_ERROR_ARCH, 
+            VPR_THROW(VPR_ERROR_ARCH,
                     "Grid location specification repeaty for block type '%s' must be at least"
                     " the region height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
         }
 
-        //vtr::printf("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n", 
+        //vtr::printf("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
         //            type->name, grid_loc_def.priority,
         //            xspec.start_expr.c_str(), startx, xspec.end_expr.c_str(), endx,
         //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
@@ -490,13 +490,13 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
     if (priority == max_priority_type_loc.priority) {
         //Ambiguous case where current grid block and new specification have equal priority
         //
-        //We arbitrarily decide to take the 'last applied' wins approach, and warn the user 
+        //We arbitrarily decide to take the 'last applied' wins approach, and warn the user
         //about the potential ambiguity
         vtr::printf_warning(__FILE__, __LINE__,
                 "Ambiguous block type specification at grid location (%zu,%zu)."
                 " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
                 " The last specification will apply.\n",
-                x_root, y_root, 
+                x_root, y_root,
                 max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
                 priority, type->name);
     }
@@ -520,10 +520,10 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
             VTR_ASSERT(grid_priorities[x][y] <= priority);
 
 
-            if (   grid_tile.type != nullptr 
+            if (   grid_tile.type != nullptr
                 && grid_tile.type != device_ctx.EMPTY_TYPE) {
                 //We are overriding a non-empty block, we need to be careful
-                //to ensure we remove any blocks which will be invalidated when we 
+                //to ensure we remove any blocks which will be invalidated when we
                 //overwrite part of their locations
 
                 size_t orig_root_x = x - grid[x][y].width_offset;
@@ -549,7 +549,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
             for (size_t y = invalidated_root.y; y < invalidated_root.y + invalidated_root.type->height; ++y) {
                 int y_offset = y - invalidated_root.y;
 
-                if (   grid[x][y].type == invalidated_root.type 
+                if (   grid[x][y].type == invalidated_root.type
                     && grid[x][y].width_offset == x_offset
                     && grid[x][y].height_offset == y_offset) {
                     //This is a left-over invalidated block, mark as empty
@@ -560,7 +560,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
 
 #ifdef VERBOSE
-                    vtr::printf("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n", 
+                    vtr::printf("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n",
                             invalidated_root.type->name, invalidated_root.x, invalidated_root.y,
                             x_offset, y_offset,
                             type->name, x_root, y_root);
@@ -606,20 +606,20 @@ static void CheckGrid(const DeviceGrid& grid) {
 
                         auto& tile = grid[x][y];
                         if (tile.type != type) {
-                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                    "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n", 
+                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                                    "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
                                     i, j, type->name, tile.type->name);
                         }
 
                         if (tile.width_offset != x_offset) {
-                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                    "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n", 
+                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                                    "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
                                     i, j, type->name, x_offset, tile.width_offset);
                         }
 
                         if (tile.height_offset != y_offset) {
-                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                    "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n", 
+                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                                    "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
                                     i, j, type->name, y_offset, tile.height_offset);
                         }
                     }

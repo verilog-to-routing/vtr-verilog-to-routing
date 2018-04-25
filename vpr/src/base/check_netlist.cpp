@@ -45,13 +45,13 @@ void check_netlist() {
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(),size_t(net_id));
 		if (h_net_ptr->count != 1) {
-			vtr::printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__,
 					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			error++;
 		}
 		check_connections_to_global_clb_pins(net_id);
 		if (error >= ERROR_THRESHOLD) {
-			vtr::printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__,
 					"Too many errors in netlist, exiting.\n");
 		}
 	}
@@ -63,7 +63,7 @@ void check_netlist() {
 		error += check_clb_conn(blk_id, num_conn);
 		error += check_clb_internal_nets(blk_id);
 		if (error >= ERROR_THRESHOLD) {
-			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 					"Too many errors in netlist, exiting.\n");
 		}
 	}
@@ -71,7 +71,7 @@ void check_netlist() {
 	error += check_for_duplicated_names();
 
 	if (error != 0) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"Found %d fatal Errors in the input netlist.\n", error);
 	}
 }
@@ -81,7 +81,7 @@ void check_netlist() {
 * global or non-global nets are allowed to connect to pads.                  */
 static void check_connections_to_global_clb_pins(ClusterNetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	
+
 	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
@@ -141,7 +141,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 	 * just a redundant double check.                                    */
 
 	if (num_conn > type->num_pins) {
-		vtr::printf_error(__FILE__, __LINE__, 
+		vtr::printf_error(__FILE__, __LINE__,
 				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
 		error++;
 	}
@@ -153,7 +153,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 /* Check that internal-to-logic-block connectivity is continuous and logically consistent */
 static int check_clb_internal_nets(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	
+
 	int error = 0;
 	t_pb_route * pb_route = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route;
 	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb(iblk)->pb_graph_node->total_pb_pins;
@@ -194,17 +194,17 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
 static int check_for_duplicated_names() {
 	int error, clb_count;
 	t_hash **clb_hash_table, *clb_h_ptr;
-	
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	clb_hash_table = alloc_hash_table();
-	
+
 	error = clb_count = 0;
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), clb_count);
 		if (clb_h_ptr->count > 1) {
-			vtr::printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__,
 					"Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 			error++;
 		} else {

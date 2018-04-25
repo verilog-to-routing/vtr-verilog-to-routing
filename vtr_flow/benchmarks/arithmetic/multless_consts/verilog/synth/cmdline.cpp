@@ -14,9 +14,9 @@
 char * flatten_string_array(char** strings, int count, const char* delimitor) {
 	int len = 0, i, ofs;
 	char * result;
-	for(i = 0; i < count; i++) 
+	for(i = 0; i < count; i++)
 	    len += strlen(strings[i])+1;
-	
+
 	result = (char*) xmalloc( sizeof(char) * len + 1 );
     result[0] = '\0';
 	ofs = 0;
@@ -88,7 +88,7 @@ char * cmdline_get(cmdline_t *c, int pos) {
 
 char * cmdline_string_marked(cmdline_t *c) {
     int first = cmdline_next_marked(c,-1);
-    if(first == c->argc) 
+    if(first == c->argc)
 	return xstrdup("");
     else {
 	int j = first, count = 1, i=0;
@@ -99,11 +99,11 @@ char * cmdline_string_marked(cmdline_t *c) {
 
 	j = first; i = 0;
 	while( j != c->argc) {
-	    result[i] = c->argv[j]; 
+	    result[i] = c->argv[j];
 	    j = cmdline_next_marked(c,j);
 	    ++i;
 	}
-	
+
 	str_result = flatten_string_array(result, count, " ");
 	xfree(result);
 	return str_result;
@@ -131,7 +131,7 @@ cmditer_t * cmditer_new(int argc, char ** argv) {
 }
 
 void cmditer_free(cmditer_t *iter) {
-    if(iter->own_cmd) 
+    if(iter->own_cmd)
 	xfree(iter->cmd);
     xfree(iter);
 }
@@ -170,17 +170,17 @@ void cmditer_skip(cmditer_t *iter) {
 
 char * cmditer_pop_string(cmditer_t *iter, const char *option) {
     char * str = cmditer_pop(iter);
-    if(!str) 
+    if(!str)
 	CMDLINE_ERROR("Option '%s' requires a string argument", option)
-    else 
+    else
 	return str;
 }
 
 int cmditer_pop_int(cmditer_t *iter, const char *option) {
     char * str = cmditer_pop(iter);
-    if(!str) 
+    if(!str)
 	CMDLINE_ERROR("Option '%s' requires an integer argument", option)
-    else { 
+    else {
 	int result;
 	if( sscanf(str, "%d", &result) == 0)
 	    CMDLINE_ERROR("Option '%s' requires an integer argument", option)
@@ -194,7 +194,7 @@ int cmditer_maybe_pop_posint(cmditer_t *iter) {
 	cmditer_unpop(iter);
 	return 0;
     }
-    else { 
+    else {
 	int result;
 	if( sscanf(str, "%d", &result) == 0 || result <= 0) {
 	    cmditer_unpop(iter);

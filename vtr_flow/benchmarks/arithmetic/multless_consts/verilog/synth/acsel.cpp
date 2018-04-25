@@ -44,7 +44,7 @@ void   acsel_init(const char *fname) {
     while(fin && ch!=NULL) {
 	if((++n) % 100000 == 0) cerr << n << " ";
 	chain *old = acsel_get_chain(ch->c);
-	if(old==NULL || COST(old) < COST(ch))	    
+	if(old==NULL || COST(old) < COST(ch))
 	    (*CHAINS)[ch->c] = ch;
 
 	ch = read_chain(fin);
@@ -67,12 +67,12 @@ int main(int argc, char **argv) {
     acsel_init(argv[1]);
 
     coeff_t num=-1;
-    if(argc==3) 
+    if(argc==3)
         num = atoi(argv[2]);
-    
+
     /* output all chains (internal format) */
     if(argc == 2) {
-	int n = 0; 
+	int n = 0;
 	double total_cost = 0;
 
 	cerr << "output ";
@@ -97,6 +97,6 @@ int main(int argc, char **argv) {
 	    (*i)->output(cout);
 	cout << "cost = " << COST(c) << endl;
     }
-    
+
     acsel_finish();
 }

@@ -168,7 +168,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
          (1. + 1. / device_ctx.rr_indexed_data[index].inv_length);  */
     }
 
-    /* Save a copy of the base costs -- if dynamic costing is used by the     * 
+    /* Save a copy of the base costs -- if dynamic costing is used by the     *
      * router, the base_cost values will get changed all the time and being   *
      * able to restore them from a saved version is useful.                   */
 
@@ -244,9 +244,9 @@ static void load_rr_indexed_data_T_values(int index_start,
     C_total = (float *) vtr::calloc(device_ctx.num_rr_indexed_data, sizeof (float));
     R_total = (float *) vtr::calloc(device_ctx.num_rr_indexed_data, sizeof (float));
 
-    /* August 2014: Not all wire-to-wire switches connecting from some wire segment will 
-       necessarily have the same delay. i.e. a mux with less inputs will have smaller delay 
-       than a mux with a greater number of inputs. So to account for these differences we will 
+    /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
+       necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
+       than a mux with a greater number of inputs. So to account for these differences we will
        get the average R/Tdel values by first averaging them for a single wire segment (first
        for loop below), and then by averaging this value over all wire segments in the channel
        (second for loop below) */

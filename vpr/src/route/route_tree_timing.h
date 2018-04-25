@@ -20,11 +20,11 @@ t_rt_node *update_route_tree(t_heap *hptr);
 
 void update_net_delays_from_route_tree(float *net_delay,
 		const t_rt_node* const * rt_node_of_sink, ClusterNetId inet);
-void update_remaining_net_delays_from_route_tree(float* net_delay, 
+void update_remaining_net_delays_from_route_tree(float* net_delay,
 		const t_rt_node* const * rt_node_of_sink, const std::vector<int>& remaining_sinks);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
-void load_route_tree_rr_route_inf(t_rt_node* root);	
+void load_route_tree_rr_route_inf(t_rt_node* root);
 
 t_rt_node* init_route_tree_to_source_no_net(int inode);
 

@@ -13,7 +13,7 @@ class t_formula_data {
         int get_var_value(std::string var) const {
             auto iter = vars_.find(var);
             if (iter == vars_.end()) {
-                archfpga_throw(__FILE__, __LINE__, 
+                archfpga_throw(__FILE__, __LINE__,
                     "No value found for variable '%s' from expression\n", var.c_str());
             }
 

@@ -50,8 +50,8 @@ static void free_crit(vtr::t_chunk *chunk_list_ptr){
 
 /**************************************/
 void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup) {
-	/* Performs a 1-to-1 mapping from criticality to f_timing_place_crit.  
-	  For every pin on every net (or, equivalently, for every tedge ending 
+	/* Performs a 1-to-1 mapping from criticality to f_timing_place_crit.
+	  For every pin on every net (or, equivalently, for every tedge ending
 	  in that pin), f_timing_place_crit = criticality^(criticality exponent) */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -64,8 +64,8 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
             float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pin_lookup, clb_pin);
 
-            /* The placer likes a great deal of contrast between criticalities. 
-            Since path criticality varies much more than timing, we "sharpen" timing 
+            /* The placer likes a great deal of contrast between criticalities.
+            Since path criticality varies much more than timing, we "sharpen" timing
             criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
             f_timing_place_crit[net_id][ipin] = pow(clb_pin_crit, crit_exponent);
         }
@@ -85,12 +85,12 @@ void set_timing_place_crit(ClusterNetId net_id, int ipin, float val) {
 void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		const t_direct_inf *directs, 
+		const t_direct_inf *directs,
 		const int num_directs) {
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			chan_width_dist, directs, num_directs);
-	
+
 	alloc_crit(&f_timing_place_crit_ch);
 }
 

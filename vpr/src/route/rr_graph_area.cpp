@@ -18,7 +18,7 @@ using namespace std;
    (Should FPGAs Abandon the Pass Gate?), the traditional transistor area model
    significantly overpredicts area at smaller process nodes. Their improved area models
    were obtained based on TSMC's 65nm layout rules, and scaled down to 22nm */
-enum e_trans_area_eq {	AREA_ORIGINAL, 
+enum e_trans_area_eq {	AREA_ORIGINAL,
 			AREA_IMPROVED_NMOS_ONLY,	/* only NMOS transistors taken into account */
 			AREA_IMPROVED_MIXED		/* both NMOS and PMOS. extra spacing required for N-wells */
 			};
@@ -26,11 +26,11 @@ static const e_trans_area_eq trans_area_eq = AREA_IMPROVED_NMOS_ONLY;
 
 /************************ Subroutines local to this module *******************/
 
-static void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, 
+static void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
 
 static void count_unidir_routing_transistors(t_segment_inf * segment_inf,
-		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
+		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos,
 		const float trans_sram_bit);
 
 static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,
@@ -50,7 +50,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans);
 /*************************** Subroutine definitions **************************/
 
 void count_routing_transistors(enum e_directionality directionality,
-		int num_switch, int wire_to_ipin_switch, t_segment_inf * segment_inf, 
+		int num_switch, int wire_to_ipin_switch, t_segment_inf * segment_inf,
 		float R_minW_nmos, float R_minW_pmos) {
 
 	/* Counts how many transistors are needed to implement the FPGA routing      *
@@ -64,10 +64,10 @@ void count_routing_transistors(enum e_directionality directionality,
 	 * I assume a minimum width transistor takes 1 unit of area.  A double-width *
 	 * transistor takes the twice the diffusion width, but the same spacing, so  *
 	 * I assume it takes 1.5x the area of a minimum-width transitor.             */
-	
+
 	/* Area per SRAM cell (in minimum-width transistor areas) */
-	const float trans_sram_bit = 4.; 
-	 
+	const float trans_sram_bit = 4.;
+
 	if (directionality == BI_DIRECTIONAL) {
 		count_bidir_routing_transistors(num_switch, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	} else {
@@ -76,7 +76,7 @@ void count_routing_transistors(enum e_directionality directionality,
 	}
 }
 
-void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, 
+void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
 
 	/* Tri-state buffers are designed as a buffer followed by a pass transistor. *
@@ -134,7 +134,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	max_inputs_to_cblock = 0;
 
 	/* Assume the buffer below is 4x minimum drive strength (enough to        *
-	 * drive a fanout of up to 16 pretty nicely) -- should cover a reasonable * 
+	 * drive a fanout of up to 16 pretty nicely) -- should cover a reasonable *
 	 * wiring C plus the fanout.                                              */
 
 	if (INCLUDE_TRACK_BUFFERS) {
@@ -172,7 +172,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 				to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
-				if ((device_ctx.rr_nodes[to_node].type() == SOURCE) 
+				if ((device_ctx.rr_nodes[to_node].type() == SOURCE)
 						&& (device_ctx.rr_nodes[to_node].xlow() == 0) && (device_ctx.rr_nodes[to_node].ylow() == 0)
 						&& (device_ctx.rr_nodes[to_node].xhigh() == 0) && (device_ctx.rr_nodes[to_node].yhigh() == 0)) {
 					continue;
@@ -204,7 +204,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 				case IPIN:
 					num_inputs_to_cblock[to_node]++;
-					max_inputs_to_cblock = max(max_inputs_to_cblock, 
+					max_inputs_to_cblock = max(max_inputs_to_cblock,
 							num_inputs_to_cblock[to_node]);
 
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
@@ -217,7 +217,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 					break;
 
 				default:
-					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 						"in count_routing_transistors:\n"
 						 "\tUnexpected connection from node %d (type %d) to node %d (type %d).\n",
 						from_node, from_rr_type, to_node, to_rr_type);
@@ -294,15 +294,15 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
-	vtr::printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n", 
+	vtr::printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n",
 			ntrans_no_sharing, ntrans_no_sharing / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
-	vtr::printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n", 
+	vtr::printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n",
 			ntrans_sharing, ntrans_sharing / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
 	vtr::printf_info("\n");
 }
 
-void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/, 
-		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
+void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
+		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos,
 		const float trans_sram_bit) {
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -344,7 +344,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	max_inputs_to_cblock = 0;
 
 	/* Assume the buffer below is 4x minimum drive strength (enough to        *
-	 * drive a fanout of up to 16 pretty nicely) -- should cover a reasonable * 
+	 * drive a fanout of up to 16 pretty nicely) -- should cover a reasonable *
 	 * wiring C plus the fanout.                                              */
 
 	if (INCLUDE_TRACK_BUFFERS) {
@@ -376,7 +376,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 				to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
-				if ((device_ctx.rr_nodes[to_node].type() == SOURCE) 
+				if ((device_ctx.rr_nodes[to_node].type() == SOURCE)
 						&& (device_ctx.rr_nodes[to_node].xlow() == 0) && (device_ctx.rr_nodes[to_node].ylow() == 0)
 						&& (device_ctx.rr_nodes[to_node].xhigh() == 0) && (device_ctx.rr_nodes[to_node].yhigh() == 0)) {
 					continue;
@@ -397,10 +397,10 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
                             /* Each multiplexer contains all the fan-in to that routing node */
                             /* Add up area of multiplexer */
                             ntrans += trans_per_mux(fan_in, trans_sram_bit,
-                                    device_ctx.rr_switch_inf[switch_index].mux_trans_size);			
+                                    device_ctx.rr_switch_inf[switch_index].mux_trans_size);
 
                             /* Add up area of buffer */
-                            /* The buffer size should already have been auto-sized (if required) when 
+                            /* The buffer size should already have been auto-sized (if required) when
                              * the rr switches were created from the arch switches */
                             ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
                         } else if (switch_type == SwitchType::SHORT) {
@@ -408,7 +408,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
                         } else if (switch_type == SwitchType::BUFFER) {
                             if (fan_in != 1) {
                                 std::string msg = vtr::string_fmt("Uni-directional RR node driven by non-configurable "
-                                                                  "BUFFER has fan in %d (expected 1)\n", 
+                                                                  "BUFFER has fan in %d (expected 1)\n",
                                                                   fan_in);
                                 msg += "  " + describe_rr_node(to_node);
                                 VPR_THROW(VPR_ERROR_OTHER, msg.c_str());
@@ -422,7 +422,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
                         }
 						chan_node_switch_done[to_node] = true;
 					}
-					
+
 					break;
 
 				case IPIN:
@@ -440,7 +440,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 				default:
 					vpr_throw(VPR_ERROR_ROUTE,  __FILE__, __LINE__,
 						"in count_routing_transistors:\n"
-						"\tUnexpected connection from node %d (type %d) to node %d (type %d).\n", 
+						"\tUnexpected connection from node %d (type %d) to node %d (type %d).\n",
 						from_node, from_rr_type, to_node, to_rr_type);
 					break;
 
@@ -509,18 +509,18 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 	 * I need the drivability just for metal capacitance.                        */
 
 	for (i = 1; i <= max_inputs_to_cblock; i++){
-		trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit, 
+		trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit,
 					device_ctx.rr_switch_inf[wire_to_ipin_switch].mux_trans_size);
 		trans_per_cblock[i] += device_ctx.rr_switch_inf[wire_to_ipin_switch].buf_size;
 	}
 
 	trans_count = 0.;
-	
+
 	for (i = 0; i < device_ctx.num_rr_nodes; i++) {
 		num_inputs = num_inputs_to_cblock[i];
 		trans_count += trans_per_cblock[num_inputs];
 	}
-	
+
 	free(trans_per_cblock);
 	return (trans_count);
 }
@@ -641,7 +641,7 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit,
 	 * levels.                                                                  */
 	float ntrans, sram_trans, pass_trans;
 	int num_second_stage_trans;
-	
+
 	if (num_inputs <= 1) {
 		return (0);
 	} else if (num_inputs == 2) {
@@ -710,7 +710,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
 		   are taken into account */
 		trans_area = 0.447 + 0.128*drive_strength + 0.391*sqrt(drive_strength);
 	} else if (trans_area_eq == AREA_IMPROVED_MIXED) {
-		/* New transistor area estimation equation. Here both NMOS and PMOS 
+		/* New transistor area estimation equation. Here both NMOS and PMOS
 		   transistors are taken into account (extra spacing needed for N-wells) */
 		trans_area = 0.518 + 0.127*drive_strength + 0.428*sqrt(drive_strength);
 	} else {

@@ -1,7 +1,7 @@
-/* This file contains declaration of accessor functions that can be used to 
+/* This file contains declaration of accessor functions that can be used to
  * retrieve global variables declared at filed scope inside draw_global.c.
  * Doing so could reduce the number of global variables in VPR and thus
- * reduced the likelihood of compiler error for declaration of multiple 
+ * reduced the likelihood of compiler error for declaration of multiple
  * variables with the same name.
  *
  * Author: Long Yu (Mike) Wang
@@ -24,4 +24,4 @@ constexpr float DEFAULT_ARROW_SIZE = 0.3;
 t_draw_coords *get_draw_coords_vars();
 t_draw_state *get_draw_state_vars();
 
-#endif 
+#endif

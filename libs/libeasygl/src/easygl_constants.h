@@ -202,8 +202,8 @@ enum e_draw_mode {
 };
 
 
-/* 
- * Used to pass information from event_loop when a mouse button is pressed 
+/*
+ * Used to pass information from event_loop when a mouse button is pressed
  * -- which button was pressed, and was shift and/or control being held
  * down when the button was pressed.
  */
@@ -213,7 +213,7 @@ typedef struct {
     unsigned int button; /* indicates what button is pressed: left click is 1; right click is 3; */
     /* scroll wheel click is 2; scroll wheel forward rotate is 4; */
     /* scroll wheel backward is 5. */
-} t_event_buttonPressed; 
+} t_event_buttonPressed;
 
 
 #endif // EASYGL_CONSTANTS_H

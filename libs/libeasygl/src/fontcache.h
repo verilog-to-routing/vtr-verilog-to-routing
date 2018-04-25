@@ -84,7 +84,7 @@ typedef void* font_ptr;
  * Also note that no references retrieved from this cache should be retained, as
  * another part of the program may cause the creation of another font(s) that will
  * push yours out. Instead a font should be retrieved every time it is needed.
- * 
+ *
  * We're currently using only integer font rotations (in degrees), to avoid having
  * a tremendous number of possible font rotations.
  */

@@ -130,7 +130,7 @@ Container update_all_refs(const Container& values, const vtr::vector_map<ValId, 
 }
 
 template<typename Container, typename ValId>
-Container update_valid_refs(const Container& values, 
+Container update_valid_refs(const Container& values,
                             const vtr::vector_map<ValId, ValId>& id_map,
                             const std::set<size_t>& preserved_indices={}) {
     Container updated;

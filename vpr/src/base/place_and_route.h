@@ -21,8 +21,8 @@ struct t_fmap_cell {
 };
 
 bool place_and_route(
-		t_placer_opts placer_opts, 
-		t_file_name_opts  filename_opts, 
+		t_placer_opts placer_opts,
+		t_file_name_opts  filename_opts,
         const t_arch* arch,
 		t_annealing_sched annealing_sched,
 		t_router_opts router_opts,

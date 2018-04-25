@@ -132,7 +132,7 @@ static void alloc_and_load_rr_graph(
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
-        const int wire_to_ipin_switch, 
+        const int wire_to_ipin_switch,
         const int delayless_switch,
         const enum e_directionality directionality,
         bool * Fc_clipped,
@@ -178,7 +178,7 @@ static void build_rr_chan(
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_sb_connection_map *sb_conn_map,
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn, const int cost_index_offset,
-        const int max_chan_width, 
+        const int max_chan_width,
         const DeviceGrid& grid,
         const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
@@ -218,7 +218,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
         int * num_seg_details = nullptr);
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
-        const int num_seg_types, 
+        const int num_seg_types,
         const t_segment_inf * segment_inf,
         const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
@@ -272,24 +272,24 @@ void create_rr_graph(
                 det_routing_arch->num_segment,
                 segment_inf,
                 base_cost_type,
-                &det_routing_arch->wire_to_rr_ipin_switch, 
+                &det_routing_arch->wire_to_rr_ipin_switch,
                 num_rr_switches,
                 det_routing_arch->read_rr_graph_filename.c_str());
     } else {
         build_rr_graph(
-                graph_type, 
-                num_block_types, block_types, 
-                grid, 
-                nodes_per_chan, 
-                det_routing_arch->switch_block_type, 
-                det_routing_arch->Fs, 
+                graph_type,
+                num_block_types, block_types,
+                grid,
+                nodes_per_chan,
+                det_routing_arch->switch_block_type,
+                det_routing_arch->Fs,
                 det_routing_arch->switchblocks,
-                det_routing_arch->num_segment, 
-                num_arch_switches, 
-                segment_inf, 
-                det_routing_arch->global_route_switch, 
+                det_routing_arch->num_segment,
+                num_arch_switches,
+                segment_inf,
+                det_routing_arch->global_route_switch,
                 det_routing_arch->wire_to_arch_ipin_switch,
-                det_routing_arch->delayless_switch, 
+                det_routing_arch->delayless_switch,
                 det_routing_arch->R_minW_nmos,
                 det_routing_arch->R_minW_pmos,
                 base_cost_type,
@@ -309,15 +309,15 @@ void create_rr_graph(
 }
 
 static void build_rr_graph(
-        const t_graph_type graph_type, 
+        const t_graph_type graph_type,
         const int L_num_types,
-        const t_type_ptr types, 
+        const t_type_ptr types,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
-        const enum e_switch_block_type sb_type, 
+        const enum e_switch_block_type sb_type,
         const int Fs,
         const vector<t_switchblock_inf> switchblocks,
-        const int num_seg_types, 
+        const int num_seg_types,
         const int num_arch_switches,
         const t_segment_inf * segment_inf,
         const int global_route_switch,
@@ -328,7 +328,7 @@ static void build_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
-        const t_direct_inf *directs, 
+        const t_direct_inf *directs,
         const int num_directs,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
@@ -369,7 +369,7 @@ static void build_rr_graph(
                 global_route_switch, &num_seg_details);
     } else {
         /* Setup segments including distrubuting tracks and staggering.
-         * If use_full_seg_groups is specified, max_chan_width may be 
+         * If use_full_seg_groups is specified, max_chan_width may be
          * changed. Warning should be singled to caller if this happens. */
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
@@ -471,14 +471,14 @@ static void build_rr_graph(
     bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof (bool) * device_ctx.num_rr_nodes);
     memset(L_rr_edge_done, 0, sizeof (bool) * device_ctx.num_rr_nodes);
 
-    /* These are data structures used by the the unidir opin mapping. They are used 
+    /* These are data structures used by the the unidir opin mapping. They are used
        to spread connections evenly for each segment type among the available
        wire start points */
     vtr::NdMatrix<int, 3> Fc_xofs({
-                                    grid.height() - 1, 
-                                    grid.width() - 1, 
+                                    grid.height() - 1,
+                                    grid.width() - 1,
                                     size_t(num_seg_types)
-                                  }, 
+                                  },
                                   0); //[0..grid.height()-2][0..grid.width()-2][0..num_seg_types-1]
     vtr::NdMatrix<int, 3> Fc_yofs({
                                     grid.width() - 1,
@@ -650,8 +650,8 @@ static void build_rr_graph(
 }
 
 /* Allocates and loads the global rr_switch_inf array based on the global
-   arch_switch_inf array and the fan-ins used by the rr nodes. 
-   Also changes switch indices of rr_nodes to index into rr_switch_inf 
+   arch_switch_inf array and the fan-ins used by the rr nodes.
+   Also changes switch indices of rr_nodes to index into rr_switch_inf
    instead of arch_switch_inf.
 
    Returns the number of rr switches created.
@@ -660,8 +660,8 @@ static void build_rr_graph(
           multiple fan-ins, so there's just one of these switches in the device_ctx.rr_switch_inf array.
           But in the future if we allow this, we can return an index to a representative switch
 
-   The rr_switch_inf switches are derived from the arch_switch_inf switches 
-   (which were read-in from the architecture file) based on fan-in. The delays of 
+   The rr_switch_inf switches are derived from the arch_switch_inf switches
+   (which were read-in from the architecture file) based on fan-in. The delays of
    the rr switches depend on their fan-in, so we first go through the rr_nodes
    and count how many different fan-ins exist for each arch switch.
    Then we create these rr switches and update the switch indices
@@ -670,7 +670,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
                                         const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
        each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
-       with this expanded list of switches. 
+       with this expanded list of switches.
        To do this we will use an array of maps where each map corresponds to a different arch switch.
        So for each arch switch we will use this map to keep track of the different fan-ins that it uses (map key)
        and which index in the device_ctx.rr_switch_inf array this arch switch / fanin combination will be placed in */
@@ -680,7 +680,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
        how many entries the rr_switch_inf array should have */
     int num_rr_switches = alloc_rr_switch_inf(switch_fanin);
 
-    /* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf 
+    /* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf
        array each version of its fanin has been mapped to */
     load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, switch_fanin);
 
@@ -689,7 +689,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
 
     /* now we need to set the wire_to_rr_ipin_switch variable which points the detailed routing architecture
        to the representative ipin cblock switch. currently we're not allowing the specification of an ipin cblock switch
-       with multiple fan-ins, so right now there's just one. May change in the future, in which case we'd need to 
+       with multiple fan-ins, so right now there's just one. May change in the future, in which case we'd need to
        return a representative switch */
     if (switch_fanin[wire_to_arch_ipin_switch].count(UNDEFINED)) {
         /* only have one ipin cblock switch. OK. */
@@ -713,7 +713,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
     return num_rr_switches;
 }
 
-/* Allocates space for the global device_ctx.rr_switch_inf variable and returns the 
+/* Allocates space for the global device_ctx.rr_switch_inf variable and returns the
    number of rr switches that were allocated */
 static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -756,7 +756,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     return num_rr_switches;
 }
 
-/* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what 
+/* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, map<int, int> *switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -810,7 +810,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.
-   now we want to remap these indices to point into the global device_ctx.rr_switch_inf array 
+   now we want to remap these indices to point into the global device_ctx.rr_switch_inf array
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -887,7 +887,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
             }
         }
     } else {
-        /* Unidirectional routing uses mux balancing patterns and 
+        /* Unidirectional routing uses mux balancing patterns and
          * thus shouldn't need perturbation. */
         VTR_ASSERT(UNI_DIRECTIONAL == directionality);
         for (int itype = 0; itype < L_num_types; ++itype) {
@@ -932,7 +932,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 /* Calculates the number of track connections from each block pin to each segment type */
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
-        const int num_seg_types, 
+        const int num_seg_types,
         const t_segment_inf * segment_inf,
         const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
@@ -982,14 +982,14 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
                     if (std::fmod(fc_spec.fc_value, fac) != 0.) {
                         VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
-                                                    fac, fc_spec.fc_value, 
+                                                    fac, fc_spec.fc_value,
                                                     block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
                                                     segment_inf[iseg].name);
                     }
 
                     if (fc_spec.fc_value < fac) {
                         VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
-                                                    fac, fc_spec.fc_value, 
+                                                    fac, fc_spec.fc_value,
                                                     block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
                                                     segment_inf[iseg].name);
                     }
@@ -1008,8 +1008,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
                 VTR_ASSERT(total_connections % fac == 0);
 
                 //We walk through all the pins this fc_spec applies to, adding fac connections
-                //to each pin, until we run out of connections. This should distribute the connections 
-                //as evenly as possible (if total_connections % pins.size() != 0, there will be 
+                //to each pin, until we run out of connections. This should distribute the connections
+                //as evenly as possible (if total_connections % pins.size() != 0, there will be
                 //some inevitable imbalance).
                 int connections_remaining = total_connections;
                 while (connections_remaining != 0) {
@@ -1123,7 +1123,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    /* We make a copy of the current fanin values for the nodes to 
+    /* We make a copy of the current fanin values for the nodes to
      * know the number of OPINs driving each mux presently */
     int *opin_mux_size = (int *) vtr::malloc(sizeof (int) * num_nodes);
     for (int i = 0; i < num_nodes; ++i) {
@@ -1258,10 +1258,10 @@ static void build_rr_sinks_sources(const int i, const int j,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const int delayless_switch, const DeviceGrid& grid) {
 
-    /* Loads IPIN, SINK, SOURCE, and OPIN. 
+    /* Loads IPIN, SINK, SOURCE, and OPIN.
      * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
 
-    /* Since we share nodes within a large block, only 
+    /* Since we share nodes within a large block, only
      * start tile can initialize sinks, sources, and pins */
     if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
         return;
@@ -1406,7 +1406,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_sb_connection_map *sb_conn_map,
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn, const int cost_index_offset,
-        const int max_chan_width, 
+        const int max_chan_width,
         const DeviceGrid& grid,
         const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
@@ -1416,7 +1416,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const int wire_to_ipin_switch,
         const enum e_directionality directionality) {
 
-    /* this function builds both x and y-directed channel segments, so set up our 
+    /* this function builds both x and y-directed channel segments, so set up our
        coordinates based on channel type */
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1509,14 +1509,14 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                         opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
-                        directionality, 
+                        directionality,
                         L_rr_node_indices, L_rr_edge_done,
                         switch_block_conn, sb_conn_map);
             }
         }
 
 
-        /* walk over the switch blocks along the source track and implement edges from this track to other tracks 
+        /* walk over the switch blocks along the source track and implement edges from this track to other tracks
            in the same channel (i.e. straight-through connections) */
         for (int target_seg = start - 1; target_seg <= end + 1; target_seg++) {
             if (target_seg != start - 1 && target_seg != end + 1) {
@@ -1585,7 +1585,7 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
         const int num_edges, bool * L_rr_edge_done,
         t_linked_edge * edge_list_head) {
 
-    /* Sets up all the edge related information for rr_node inode (num_edges,  * 
+    /* Sets up all the edge related information for rr_node inode (num_edges,  *
      * the edges array and the switches array).  The edge_list_head points to  *
      * a list of the num_edges edges and switches to put in the arrays.  This  *
      * linked list is freed by this routine. This routine also resets the      *
@@ -1601,11 +1601,11 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
         int from_node = OPEN;
         int to_node = OPEN;
         if (list_ptr->edge_dir == t_rr_edge_dir::FORWARD) {
-            from_node = inode; 
+            from_node = inode;
             to_node = list_ptr->edge;
         } else {
             VTR_ASSERT(list_ptr->edge_dir == t_rr_edge_dir::BACKWARD);
-            from_node = list_ptr->edge; 
+            from_node = list_ptr->edge;
             to_node = inode;
         }
 
@@ -1716,10 +1716,10 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
        Fc values */
 
 
-    /* NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = 
-     * NULL if there is no pin on that side, or that pin is of the wrong type. 
-     * Probably not enough memory to worry about, esp. as it's temporary.      
-     * If pin ipin on side iside does not exist or is of the wrong type,       
+    /* NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] =
+     * NULL if there is no pin on that side, or that pin is of the wrong type.
+     * Probably not enough memory to worry about, esp. as it's temporary.
+     * If pin ipin on side iside does not exist or is of the wrong type,
      * tracks_connected_to_pin[ipin][iside][0] = OPEN.                               */
 
     if (Type->num_pins < 1) {
@@ -1733,7 +1733,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         size_t(Type->height), //[0..height-1]
         NUM_SIDES, //[0..NUM_SIDES-1]
         size_t(Fc) //[0..Fc-1]
-    }, 
+    },
     OPEN); //Unconnected
 
     //Number of *physical* pins on each side.
@@ -1906,7 +1906,7 @@ static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& 
     // Note that for blocks of width == 1 and height == 1 this iterates through the sides
     // in clock-wise order:
     //
-    //      ***********   
+    //      ***********
     //      *    2    *
     //      * 1     3 *
     //      *    4    *
@@ -1992,7 +1992,7 @@ static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& 
 }
 
 static void load_uniform_connection_block_pattern(
-        vtr::NdMatrix<int, 5>& tracks_connected_to_pin, 
+        vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
         const std::vector<t_pin_loc>& pin_locations,
         const int x_chan_width, const int y_chan_width, const int Fc,
         enum e_directionality directionality) {
@@ -2002,14 +2002,14 @@ static void load_uniform_connection_block_pattern(
      * to every 4.3rd track in a channel, with exactly which tracks a pin       *
      * connects to staggered from pin to pin.                                   */
 
-    /* Uni-directional drive is implemented to ensure no directional bias and this means 
+    /* Uni-directional drive is implemented to ensure no directional bias and this means
      * two important comments noted below                                                */
     /* 1. Spacing should be (W/2)/(Fc/2), and step_size should be spacing/(num_phys_pins),
      *    and lay down 2 switches on an adjacent pair of tracks at a time to ensure
      *    no directional bias. Basically, treat W (even) as W/2 pairs of tracks, and
-     *    assign switches to a pair at a time. Can do this because W is guaranteed to 
+     *    assign switches to a pair at a time. Can do this because W is guaranteed to
      *    be even-numbered; however same approach cannot be applied to Fc_out pattern
-     *    when L > 1 and W <> 2L multiple. 
+     *    when L > 1 and W <> 2L multiple.
      *
      * 2. This generic pattern should be considered the tileable physical layout,
      *    meaning all track # here are physical #'s,
@@ -2070,7 +2070,7 @@ static void load_perturbed_connection_block_pattern(
      * Fc_input = Fc_output to avoid creating "pin domains" -- certain output   *
      * pins being able to talk only to certain input pins because their switch  *
      * patterns exactly line up.  Distribute Fc/2 + 1 switches over half the    *
-     * channel and Fc/2 - 1 switches over the other half to make the switch     * 
+     * channel and Fc/2 - 1 switches over the other half to make the switch     *
      * pattern different from the uniform one of the outputs.  Also, have half  *
      * the pins put the "dense" part of their connections in the first half of  *
      * the channel and the other half put the "dense" part in the second half,  *
@@ -2110,7 +2110,7 @@ static void load_perturbed_connection_block_pattern(
         for (int ihalf = 0; ihalf < 2; ihalf++) { /* For both dense and sparse halves. */
             for (int j = 0; j < Fc_half[ihalf]; ++j) {
 
-                /* Can occasionally get wraparound due to floating point rounding. 
+                /* Can occasionally get wraparound due to floating point rounding.
                  This is okay because the starting position > 0 when this occurs
                  so connection is valid and fine */
                 int itrack = (int) ftrack;
@@ -2171,12 +2171,12 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
         const int num_pins, const int max_chan_width,
         const int num_seg_types) {
 
-    /* [0..max_chan_width-1][0..width][0..height][0..3].  For each track number 
-     * it stores a vector for each of the four sides.  x-directed channels will 
-     * use the TOP and   BOTTOM vectors to figure out what clb input pins they 
+    /* [0..max_chan_width-1][0..width][0..height][0..3].  For each track number
+     * it stores a vector for each of the four sides.  x-directed channels will
+     * use the TOP and   BOTTOM vectors to figure out what clb input pins they
      * connect to above  and below them, respectively, while y-directed channels
-     * use the LEFT and RIGHT vectors.  Each vector contains an nelem field 
-     * saying how many ipins it connects to.  The list[0..nelem-1] array then 
+     * use the LEFT and RIGHT vectors.  Each vector contains an nelem field
+     * saying how many ipins it connects to.  The list[0..nelem-1] array then
      * gives the pin numbers.                                                  */
 
     /* Note that a clb pin that connects to a channel on its RIGHT means that  *
@@ -2293,8 +2293,8 @@ std::string describe_rr_node(int inode) {
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        msg += vtr::string_fmt(" track: %d len: %d seg_type: %s dir: %s", 
-                    rr_node.track_num(), 
+        msg += vtr::string_fmt(" track: %d len: %d seg_type: %s dir: %s",
+                    rr_node.track_num(),
                     rr_node.length(),
                     device_ctx.arch.Segments[seg_index].name,
                     rr_node.direction_string());
@@ -2324,7 +2324,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         const int num_seg_types) {
 
     /*
-     * This routine adds the edges from opins to channels at the specified 
+     * This routine adds the edges from opins to channels at the specified
      * grid location (i,j) and grid tile side
      */
     auto& device_ctx = g_vpr_ctx.device();
@@ -2364,7 +2364,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
                 continue;
             }
 
-            /* Figure out the chan seg at that side. 
+            /* Figure out the chan seg at that side.
              * side is the side of the logic or io block. */
             bool vert = ((side == TOP) || (side == BOTTOM));
             bool pos_dir = ((side == TOP) || (side == RIGHT));
@@ -2537,8 +2537,8 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 
         //We must be careful to clean-up anything that we may have incidentally allocated.
         //Specifically, we can be called while generating the dummy architecture
-        //for placer delay estimation.  Since the delay estimation occurs on a 
-        //'different' architecture it is almost certain that the f_blk_pin_from_port_pin allocated 
+        //for placer delay estimation.  Since the delay estimation occurs on a
+        //'different' architecture it is almost certain that the f_blk_pin_from_port_pin allocated
         //by calling get_blk_pin_from_port_pin() will later be invalid.
         //We therefore must free it now.
         free_blk_pin_from_port_pin();
@@ -2548,7 +2548,7 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 }
 
 /* Add all direct clb-pin-to-clb-pin edges to given opin
- * 
+ *
  * The current opin is located at (x,y) along the specified side
  */
 static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
@@ -2624,7 +2624,7 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         auto inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset - target_width_offset, y + directs[i].y_offset - target_height_offset,
                                 IPIN, ipin);
 
-                        //There may be multiple physical pins corresponding to the logical 
+                        //There may be multiple physical pins corresponding to the logical
                         //target ipin. We only need to connect to one of them (since the physical pins
                         //are logically equivalent).
                         VTR_ASSERT(inodes.size() > 0);

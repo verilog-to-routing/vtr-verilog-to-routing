@@ -96,7 +96,7 @@ void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const 
 }
 
 /**
- * Check if output log file setup, if not, then this function also sets it up 
+ * Check if output log file setup, if not, then this function also sets it up
  */
 static void check_init() {
 	if(log_stream == nullptr) {

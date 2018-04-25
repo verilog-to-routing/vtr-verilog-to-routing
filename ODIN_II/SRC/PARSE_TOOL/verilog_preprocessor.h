@@ -6,7 +6,7 @@
 
 //#define BLOCK_EMPTY_DEFINES
 
-/* Structs */ 
+/* Structs */
 typedef struct veri_include
 {
 	char *path;
@@ -22,14 +22,14 @@ typedef struct veri_define
 	veri_include *defined_in;
 } veri_define;
 
-struct veri_Includes 
+struct veri_Includes
 {
 	veri_include **included_files;
 	int current_size;
 	int current_index;
 } ;
 
-struct veri_Defines 
+struct veri_Defines
 {
 	veri_define **defined_constants;
 	int current_size;

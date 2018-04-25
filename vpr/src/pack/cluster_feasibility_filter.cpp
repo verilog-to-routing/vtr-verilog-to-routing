@@ -1,4 +1,4 @@
-/* 
+/*
  Feasibility filter used during packing that determines if various necessary conditions for legality are met
 
  Important for 2 reasons:
@@ -12,7 +12,7 @@
 
  Implementation details:
  a) Definition of a pin class - If there exists a path (ignoring directionality of connections) from pin A to pin B and pin A and pin B are of the same type (input, output, or clock), then pin A and pin B are in the same pin class.  Otherwise, pin A and pin B are in different pin classes.
- b) Code Identifies pin classes.  Given a candidate solution  
+ b) Code Identifies pin classes.  Given a candidate solution
 
  TODO: May 30, 2012 Jason Luu - Must take into consideration modes when doing pin counting.  For fracturable LUTs FI = 5, the soft logic block sees 6 pins instead of 5 pins for the dual LUT mode messing up the pin counter.  The packer still produces correct results but runs slower than its best (experiment on a modified architecture file that forces correct pin counting shows 40x speedup vs VPR 6.0 as opposed to 3x speedup at the time)
 
@@ -306,7 +306,7 @@ static void load_pin_class_by_depth(t_pb_graph_node *pb_graph_node,
 }
 
 /**
- * Load internal output-to-input connections within each cluster 
+ * Load internal output-to-input connections within each cluster
  */
 static void load_list_of_connectable_input_pin_ptrs(
 		t_pb_graph_node *pb_graph_node) {
@@ -339,7 +339,7 @@ static void load_list_of_connectable_input_pin_ptrs(
 	}
 }
 
-/*	Traverse outputs of output pin or primitive to see what input pins it reaches 
+/*	Traverse outputs of output pin or primitive to see what input pins it reaches
  Record list of input pins based on depth
  */
 static void expand_pb_graph_node_and_load_output_to_input_connections(
@@ -498,7 +498,7 @@ static void sum_pin_class(t_pb_graph_node *pb_graph_node) {
 			VTR_ASSERT(
 					pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
 			if (pb_graph_node->input_pins[i][j].pin_class == OPEN) {
-				vtr::printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__,
 						"%s[%d].%s[%d] unconnected pin in architecture.\n",
 						pb_graph_node->pb_type->name,
 						pb_graph_node->placement_index,
@@ -514,7 +514,7 @@ static void sum_pin_class(t_pb_graph_node *pb_graph_node) {
 			VTR_ASSERT(
 					pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
 			if (pb_graph_node->output_pins[i][j].pin_class == OPEN) {
-				vtr::printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__,
 						"%s[%d].%s[%d] unconnected pin in architecture.\n",
 						pb_graph_node->pb_type->name,
 						pb_graph_node->placement_index,
@@ -530,7 +530,7 @@ static void sum_pin_class(t_pb_graph_node *pb_graph_node) {
 			VTR_ASSERT(
 					pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
 			if (pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
-				vtr::printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__,
 						"%s[%d].%s[%d] unconnected pin in architecture.\n",
 						pb_graph_node->pb_type->name,
 						pb_graph_node->placement_index,
@@ -570,7 +570,7 @@ static void discover_all_forced_connections(t_pb_graph_node *pb_graph_node) {
 }
 
 /**
- * Given an output pin, determine if it connects to only one input pin and nothing else. 
+ * Given an output pin, determine if it connects to only one input pin and nothing else.
  */
 static bool is_forced_connection(const t_pb_graph_pin *pb_graph_pin) {
 	if(pb_graph_pin->num_output_edges > 1) {

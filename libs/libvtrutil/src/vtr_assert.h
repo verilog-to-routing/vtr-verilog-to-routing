@@ -10,7 +10,7 @@
  *      VTR_ASSERT       - medium overhead assertions that are usually be enabled
  *      VTR_ASSERT_SAFE  - high overhead assertions typically enabled only for debugging
  *      VTR_ASSERT_DEBUG - very high overhead assertions typically enabled only for extreme debugging
- * Each of the above assertions also have a *_MSG variants (e.g. VTR_ASSERT_MSG(expr, msg) 
+ * Each of the above assertions also have a *_MSG variants (e.g. VTR_ASSERT_MSG(expr, msg)
  * which takes an additional argument specifying additional message text to be shown.
  * By convention the message should state the condition *being checked* (and not the failure condition),
  * since that the condition failed is obvious from the assertion failure itself.
@@ -22,7 +22,7 @@
  *      VTR_ASSERT_LEVEL == 2: VTR_ASSERT_OPT, VTR_ASSERT enabled
  *      VTR_ASSERT_LEVEL == 1: VTR_ASSERT_OPT enabled
  *      VTR_ASSERT_LEVEL == 0: No assertion checking enabled
- * Note that an assertion levels beyond 3 are currently treated the same as level 3 
+ * Note that an assertion levels beyond 3 are currently treated the same as level 3
  */
 
 //Set a default assertion level if none is specified
@@ -97,7 +97,7 @@
 // Note that to avoid 'unused' variable warnings when assertions are
 // disabled, we pass the expr and msg to sizeof(). We use sizeof specifically
 // since it accepts expressions, and the C++ standard gaurentees sizeof's arguments
-// are never evaluated (ensuring any expensive expressions are not evaluated when 
+// are never evaluated (ensuring any expensive expressions are not evaluated when
 // assertions are disabled). To avoid warnings about the unused result of sizeof()
 // we cast it to void.
 #define VTR_ASSERT_IMPL_NOP(expr, msg) do { \
@@ -122,7 +122,7 @@
 
 namespace vtr {
     class Assert {
-        
+
         public:
             static void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg) {
                 fprintf(stderr, "%s:%d", file, line);

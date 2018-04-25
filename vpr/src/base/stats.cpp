@@ -47,7 +47,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		bool timing_analysis_enabled,
-		vtr::vector_map<ClusterNetId, float *> &net_delay 
+		vtr::vector_map<ClusterNetId, float *> &net_delay
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_slack * slacks, const t_timing_inf &timing_inf
 #endif
@@ -71,7 +71,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             auto type = device_ctx.grid[i][j].type;
-			if (   device_ctx.grid[i][j].width_offset == 0 
+			if (   device_ctx.grid[i][j].width_offset == 0
                 && device_ctx.grid[i][j].height_offset == 0
                 && !is_io_type(type)
                 && type != device_ctx.EMPTY_TYPE) {
@@ -99,7 +99,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("\tTotal used logic block area: %g\n", used_area);
 
 	if (route_type == DETAILED) {
-		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch, 
+		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
 				segment_inf, R_minW_nmos, R_minW_pmos);
 		get_segment_usage_stats(num_segment, segment_inf);
 
@@ -120,7 +120,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 
         if (getEchoEnabled()) {
             print_timing_graph("routing_stats.timing_graph.classic.echo");
-            if (isEchoFileEnabled(E_ECHO_NET_DELAY)) 
+            if (isEchoFileEnabled(E_ECHO_NET_DELAY))
                 print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
         }
 
@@ -208,7 +208,7 @@ static void get_channel_occupancy_stats() {
 	auto chanx_occ = vtr::Matrix<int>({{
                                         device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
                                         device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
-                                      }}, 
+                                      }},
                                       0);
 
 	auto chany_occ = vtr::Matrix<int>({{

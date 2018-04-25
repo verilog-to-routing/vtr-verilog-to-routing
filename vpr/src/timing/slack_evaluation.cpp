@@ -23,7 +23,7 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
 float SetupSlackCrit::setup_pin_slack(AtomPinId pin) const { return pin_slacks_[pin]; }
 
 //Returns the worst (maximum) criticality of connections through the specified pin.
-//  Criticality (in [0., 1.]) represents how timing-critical something is, 
+//  Criticality (in [0., 1.]) represents how timing-critical something is,
 //  0. is non-critical and 1. is most-critical.
 float SetupSlackCrit::setup_pin_criticality(AtomPinId pin) const { return pin_criticalities_[pin]; }
 
@@ -87,9 +87,9 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     }
 }
 
-float SetupSlackCrit::calc_pin_criticality(AtomPinId pin, 
-                                            const tatum::SetupTimingAnalyzer& analyzer, 
-                                            const std::map<DomainPair,float>& max_req, 
+float SetupSlackCrit::calc_pin_criticality(AtomPinId pin,
+                                            const tatum::SetupTimingAnalyzer& analyzer,
+                                            const std::map<DomainPair,float>& max_req,
                                             const std::map<DomainPair,float>& worst_slack) {
     tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
     VTR_ASSERT(node);
@@ -114,7 +114,7 @@ HoldSlackCrit::HoldSlackCrit(const AtomNetlist& netlist, const AtomLookup& netli
 float HoldSlackCrit::hold_pin_slack(AtomPinId pin) const { return pin_slacks_[pin]; }
 
 //Returns the worst (maximum) criticality of connections through the specified pin.
-//  Criticality (in [0., 1.]) represents how timing-critical something is, 
+//  Criticality (in [0., 1.]) represents how timing-critical something is,
 //  0. is non-critical and 1. is most-critical.
 float HoldSlackCrit::hold_pin_criticality(AtomPinId pin) const { return pin_criticalities_[pin]; }
 
@@ -146,7 +146,7 @@ void HoldSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::HoldTimin
 }
 
 void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer) {
-    //TODO: this calculates a simple shifted and scaled criticality, not clear if this is the 
+    //TODO: this calculates a simple shifted and scaled criticality, not clear if this is the
     //right approach (e.g. should we use a more intellegent method like the one used by setup slack?)
     float worst_slack = std::numeric_limits<float>::infinity();
     float best_slack = -std::numeric_limits<float>::infinity();
@@ -171,8 +171,8 @@ void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
     }
 }
 
-float HoldSlackCrit::calc_pin_criticality(AtomPinId pin, 
-                                            const tatum::HoldTimingAnalyzer& analyzer, 
+float HoldSlackCrit::calc_pin_criticality(AtomPinId pin,
+                                            const tatum::HoldTimingAnalyzer& analyzer,
                                             const float scale,
                                             const float shift) {
     tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);

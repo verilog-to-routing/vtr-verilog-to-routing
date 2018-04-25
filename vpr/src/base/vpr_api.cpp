@@ -196,7 +196,7 @@ void vpr_init(const int argc, const char **argv,
 #else
     //No parallel execution support
     if (num_workers != 1) {
-        vtr::printf_warning(__FILE__, __LINE__, 
+        vtr::printf_warning(__FILE__, __LINE__,
             "VPR was compiled without parallel execution support, ignoring the specified number of workers (%zu)",
             options->num_workers.value());
     }
@@ -504,7 +504,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), 
+    cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(),
                                          &arch,
                                          vpr_setup.FileNameOpts.verify_file_digests);
 
@@ -546,14 +546,14 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
 #ifdef ENABLE_CLASSIC_VPR_STA
               vpr_setup.Timing,
 #endif
-              arch.Directs, 
+              arch.Directs,
               arch.num_directs);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    print_place(filename_opts.NetFile.c_str(), 
-                cluster_ctx.clb_nlist.netlist_id().c_str(), 
+    print_place(filename_opts.NetFile.c_str(),
+                cluster_ctx.clb_nlist.netlist_id().c_str(),
                 filename_opts.PlaceFile.c_str());
 }
 
@@ -569,7 +569,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     RouteStatus route_status;
-    
+
     const auto& router_opts = vpr_setup.RouterOpts;
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
@@ -667,10 +667,10 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
     t_slack *slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
 #endif
 
-    bool status = try_route(fixed_channel_width, 
+    bool status = try_route(fixed_channel_width,
                             vpr_setup.RouterOpts,
                             &vpr_setup.RoutingArch,
-                            vpr_setup.Segments, 
+                            vpr_setup.Segments,
                             net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                             slacks,
@@ -750,10 +750,10 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
 			&device_ctx.chan_width,
-			device_ctx.num_arch_switches, 
+			device_ctx.num_arch_switches,
             det_routing_arch,
             vpr_setup.Segments,
-			router_opts.base_cost_type, 
+			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			arch.Directs, arch.num_directs,

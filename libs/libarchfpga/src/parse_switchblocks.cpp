@@ -2,11 +2,11 @@
 See vpr/SRC/route/build_switchblocks.c for a detailed description of how the new
 switch block format works and what files are involved.
 
- 
+
 A large chunk of this file is dedicated to helping parse the initial switchblock
 specificaiton in the XML arch file, providing error checking, etc.
 
-Another large chunk of this file is dedicated to parsing the actual formulas 
+Another large chunk of this file is dedicated to parsing the actual formulas
 specified by the switch block permutation functions into their numeric counterparts.
 */
 
@@ -41,7 +41,7 @@ using namespace pugiutil;
 /**** Function Declarations ****/
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
-//Load an XML wireconn specification into a t_wireconn_inf 
+//Load an XML wireconn specification into a t_wireconn_inf
 t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
 //Process a wireconn defined in the inline style (using attributes)
@@ -53,7 +53,7 @@ void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc
 //Process a <from> or <to> sub-node of a multinode wireconn
 t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
-/* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
+/* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec.
    Spaces are trimmed off */
 static void parse_comma_separated_wire_types(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints);
 
@@ -80,10 +80,10 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn);
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
 void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switches*/, pugi::xml_node Node, t_switchblock_inf *sb, const pugiutil::loc_data& loc_data ){
-	
+
 	/* Make sure that Node is a switchblock */
 	check_node(Node, "switchblock", loc_data);
-	
+
 	int num_wireconns;
 	pugi::xml_node SubElem;
 
@@ -92,7 +92,7 @@ void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switche
 	sb->wireconns.reserve(num_wireconns);
 
 	if (num_wireconns > 0) {
-		SubElem = get_first_child(Node, "wireconn", loc_data);	
+		SubElem = get_first_child(Node, "wireconn", loc_data);
 	}
 	for (int i = 0; i < num_wireconns; i++){
         t_wireconn_inf wc = parse_wireconn(SubElem, loc_data);
@@ -193,7 +193,7 @@ t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiu
     return wire_switchpoints;
 }
 
-/* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
+/* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec.
    Spaces are trimmed off */
 static void parse_comma_separated_wire_types(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints) {
     auto types = vtr::split(ch, ",");
@@ -242,13 +242,13 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
     }
 }
 
-/* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
+/* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be
    <switchfuncs> */
 void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiutil::loc_data& loc_data ){
-	
+
 	/* Make sure the passed-in is correct */
 	check_node(Node, "switchfuncs", loc_data);
-	
+
 	pugi::xml_node SubElem;
 
 	/* get the number of specified permutation functions */
@@ -261,10 +261,10 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 	/* used to index into permutation map of switchblock */
 	SB_Side_Connection conn;
 
-	/* now we iterate through all the specified permutation functions, and 
+	/* now we iterate through all the specified permutation functions, and
 	   load them into the switchblock structure as appropriate */
 	if (num_funcs > 0) {
-		SubElem = get_first_child(Node, "func", loc_data);	
+		SubElem = get_first_child(Node, "func", loc_data);
 	}
 	for (int ifunc = 0; ifunc < num_funcs; ifunc++){
 
@@ -307,7 +307,7 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 
 		/* Here we load the specified switch function(s) */
 		func_ptr->push_back( string(func_formula) );
- 
+
 		func_ptr = nullptr;
 		/* get the next switchblock function */
 		SubElem = SubElem.next_sibling(SubElem.name());
@@ -375,7 +375,7 @@ static void check_bidir_switchblock(const t_permutation_map *permutation_map ){
 				continue;
 			}
 
-			/* index into permutation map with this variable */			
+			/* index into permutation map with this variable */
 			conn.set_sides(from_side, to_side);
 
 			/* check if a connection between these sides exists */
@@ -461,7 +461,7 @@ int get_sb_formula_raw_result( const char* formula, const t_formula_data &mydata
 	} else {
 		result = parse_formula( formula, mydata );
 	}
-	
+
 	return result;
 }
 

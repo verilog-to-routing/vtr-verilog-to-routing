@@ -77,8 +77,8 @@ public:
     int screen_num;
     Window toplevel, menu, textarea;
     GC gc_normal, gc_xor, gc_menus, current_gc;
-    XftDraw *toplevel_draw = nullptr, 
-            *menu_draw = nullptr, 
+    XftDraw *toplevel_draw = nullptr,
+            *menu_draw = nullptr,
             *textarea_draw = nullptr;
     XftColor xft_menutextcolor;
     XftColor xft_currentcolor;
@@ -88,7 +88,7 @@ public:
     // single multi-buffering variables
     Drawable* draw_area = nullptr;
     Pixmap draw_buffer;
-    XftDraw *draw_buffer_draw = nullptr, 
+    XftDraw *draw_buffer_draw = nullptr,
             *draw_area_draw = nullptr;
 
     // window attributes here so I only have to call XGetWindowAttributes on resize
@@ -204,9 +204,9 @@ typedef enum {
  * get_mouse_move_input: whether mouse movements are sent back to callback functions
  * redraw_needed: true if there has been an expose or other event that requires a
  * redraw, but we haven't done one yet.
- * disable_event_loop: set for automarking of student assignments where 
+ * disable_event_loop: set for automarking of student assignments where
  *                     you don't want to hang in the event_loop
- * redirect_to_postscript: when set, a call to event_loop will instead draw to 
+ * redirect_to_postscript: when set, a call to event_loop will instead draw to
  *                         postscript. Useful for automarking.
  *
  * Need to initialize graphics_loaded to false, since checking it is

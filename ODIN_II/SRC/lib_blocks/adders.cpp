@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 #include <stdlib.h>
 #include <assert.h>
@@ -408,7 +408,7 @@ void define_add_function(nnode_t *node, short /*type*/, FILE *out)
 /*-----------------------------------------------------------------------
  * (function: init_split_adder)
  * ##################################
- * TODO the soft logic adders can now be splitted at the source, we could tap onto that and merge these function for 
+ * TODO the soft logic adders can now be splitted at the source, we could tap onto that and merge these function for
  * simplicicity and would also make sure to keep the allocation at one place
  *###################################
  *	Create a carry chain adder when spliting. Inputs are connected
@@ -760,7 +760,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		}
 		else
 			init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag, netlist);
-			
+
 		//store the processed hard adder node for optimization
 		processed_adder_list = insert_in_vptr_list(processed_adder_list, node[i]);
 	}
@@ -1316,7 +1316,7 @@ nnode_t *duplicate_adder_input(operation_list funct, nnode_t *previous_carry, nn
 void fetch_blk_size(int full_width, int *blk_size, type_of_adder_e *my_type)
 {
 	//if we have a define file for the specific adder we are looking for
-	if((int)list_of_adder_def.size() < full_width) 
+	if((int)list_of_adder_def.size() < full_width)
 	{
 		*blk_size = full_width;
 		*my_type = ripple;
@@ -1341,7 +1341,7 @@ void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, 
 		remap_pin_to_new_node(node->output_pins[current_pin], current_adder, output_pin_id);
 	}
 	else
-	{	
+	{
 		npin_t *node_pin_select = node->output_pins[(node->num_input_port_sizes == 2)? current_pin : (current_pin < width[output_pin_id]-1)? current_pin+1 : 0];
 		if(node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2))
 		{
@@ -1361,15 +1361,15 @@ void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, 
 nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_t *node, short mark)
 {
 	nnode_t *mux_2 = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
-	
+
 	//driver
 	nnode_t *notted_gate = make_not_gate(node,mark);
 	connect_nodes(select,0,notted_gate,0);
-	
-	
+
+
 	connect_nodes(select,0,mux_2,0);
 	connect_nodes(notted_gate,0,mux_2,1);
-	
+
 	//connect carry skip to mux
 	connect_nodes(port_a,0,mux_2,2);
 	connect_nodes(port_b,0,mux_2,3);
@@ -1383,15 +1383,15 @@ nnode_t *make_adder(nnode_t *previous_carry, int *width, int current_pin, netlis
 {
 	nnode_t *current_adder = make_3port_gate(ADDER_FUNC, 1, 1, 1, 1, node, mark);
 	connect_nodes(previous_carry, 0, current_adder, 0);
-	
+
 	//connect input a
 	if (current_pin < width[1])
 		remap_pin_to_new_node(node->input_pins[current_pin], current_adder, 1);
-	
-	else 
+
+	else
 		add_input_pin_to_node(current_adder, get_zero_pin(netlist), 1);
-		
-	//connect input b	
+
+	//connect input b
 	if(current_pin < width[2])
 	{
 		//pin a is neighbor to pin b
@@ -1420,15 +1420,15 @@ nnode_t *make_adder(nnode_t *previous_carry, int *width, int current_pin, netlis
 			remap_pin_to_new_node(pin_b, current_adder, 2);
 		}
 	}
-	else 
+	else
 	{
 		if(subtraction)
 			add_input_pin_to_node(current_adder, get_one_pin(netlist), 2);
-		
+
 		else
 			add_input_pin_to_node(current_adder, get_zero_pin(netlist), 2);
 	}
-	
+
 	return current_adder;
 }
 
@@ -1445,11 +1445,11 @@ nnode_t *duplicate_adder_input(operation_list funct, nnode_t *previous_carry, nn
 }
 
 /***---------------------------------------------------------------------------------------------
- * 
+ *
  * bit # :  	| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
  * blk_type:	  R->[heterogenous         ]->R
  *                   [blk size and blk type]
- * 
+ *
  * the first and last bit are ripple carry adders, everything between could be anything
  * create a single adder block using adder_type_definition file input to select blk size and type
  *-------------------------------------------------------------------------------------------*/
@@ -1458,13 +1458,13 @@ nnode_t *instantiate_add_w_carry_block(int *width, nnode_t *node, nnode_t *initi
 	//last node
 	if(start_pin >= width[0])
 		return initial_carry;
-	
+
 	type_of_adder_e my_type;
 	int blk_size;
 	fetch_blk_size(width[0]-start_pin,&blk_size, &my_type);
-	
+
 	nnode_t *previous_carry = initial_carry;
-		
+
 	switch(my_type)
 	{
 		case ripple:
@@ -1480,12 +1480,12 @@ nnode_t *instantiate_add_w_carry_block(int *width, nnode_t *node, nnode_t *initi
 			}
 			break;
 		}
-		
+
 		case fixed_step:
 		{
 			nnode_t *previous_gnd = netlist->gnd_node;
 			nnode_t *previous_vcc = netlist->vcc_node;
-					
+
 			/* connect the ios */
 			for(int i = start_pin; i < start_pin+blk_size; i++)
 			{
@@ -1505,19 +1505,19 @@ nnode_t *instantiate_add_w_carry_block(int *width, nnode_t *node, nnode_t *initi
 					nnode_t *current_adder_vcc = duplicate_adder_input(ADDER_FUNC, previous_vcc, current_adder_gnd, node, mark);
 					nnode_t *adder_out = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
 					connect_output_pin_to_node(width, i, 0, node, adder_out, subtraction);
-					
+
 					//build carry bound to gnd and vcc with output muxes
 					previous_gnd = duplicate_adder_input(CARRY_FUNC, previous_gnd, current_adder_gnd, node, mark);
 					previous_vcc = duplicate_adder_input(CARRY_FUNC, previous_vcc, current_adder_gnd, node, mark);
 					// build carry output MUX for last carry node of block
-					if(	i+1 == start_pin+blk_size || i+1 == width[0]-1)	
+					if(	i+1 == start_pin+blk_size || i+1 == width[0]-1)
 						previous_carry = make_mux_2to1(previous_carry, previous_vcc, previous_gnd, node, mark);
 				}
 			}
 
 			break;
 		}
-		
+
 		default: //we cover every case so it should not be here
 			break;
 	}

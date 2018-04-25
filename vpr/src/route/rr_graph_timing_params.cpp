@@ -174,7 +174,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 	/* Now we need to add any Cout loads for nets that we previously didn't process
 	 * Current structures only keep switch information from a node to the next node and
-	 * not the reverse.  Therefore I need to go through all the possible edges to figure 
+	 * not the reverse.  Therefore I need to go through all the possible edges to figure
 	 * out what the Cout's should be */
 	Couts_to_add = (float *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(float));
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {

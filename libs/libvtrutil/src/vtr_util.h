@@ -68,7 +68,7 @@ namespace vtr {
      */
     int get_file_line_number_of_last_opened_file();
     bool file_exists(const char * filename);
-    bool check_file_name_extension(const char* file_name, 
+    bool check_file_name_extension(const char* file_name,
                                    const char* file_extension);
 
 

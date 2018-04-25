@@ -43,7 +43,7 @@ int irand(int imax) {
 			/* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
 			ival = imax;
 		} else {
-            throw VtrError(string_fmt("Bad value in my_irand, imax = %d  ival = %d", imax, ival), __FILE__, __LINE__); 
+            throw VtrError(string_fmt("Bad value in my_irand, imax = %d  ival = %d", imax, ival), __FILE__, __LINE__);
 		}
 	}
 #endif

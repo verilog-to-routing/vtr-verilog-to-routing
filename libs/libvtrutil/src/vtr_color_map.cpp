@@ -781,7 +781,7 @@ static std::vector<Color<float>> viridis_data = {
        {0.98386829f, 0.90486726f, 0.13689671f},
        {0.99324789f, 0.90615657f, 0.1439362f }};
 
-ColorMap::ColorMap(float min_val, float max_val, const std::vector<Color<float>>& color_data) 
+ColorMap::ColorMap(float min_val, float max_val, const std::vector<Color<float>>& color_data)
     : min_(min_val)
     , max_(max_val)
     , color_data_(color_data) {
@@ -794,7 +794,7 @@ Color<float> ColorMap::color(float value) const {
 
     float norm_value;
     if (range() == 0) {
-        norm_value = 0;    
+        norm_value = 0;
     } else {
         norm_value = (value - min_) / range();
     }

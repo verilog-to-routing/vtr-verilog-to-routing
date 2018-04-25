@@ -54,13 +54,13 @@ inline void insert(cost_t dest_cost, coeff_t coeff) {
     chain *tempchain;
 
     if(coeff != 1 && coeff <= MAX_NUM){
-        for(int i=0;i<COEFFNUMBER;i++) 
+        for(int i=0;i<COEFFNUMBER;i++)
             for(cfviter_t coeffiter = SEARCH_COUNT[i].begin(); coeffiter != SEARCH_COUNT[i].end(); coeffiter++)
                 if(CUR_CHAIN->c == (*coeffiter))
-                    if(GEN[coeff] == -1 || GEN[coeff] == dest_cost) { 
+                    if(GEN[coeff] == -1 || GEN[coeff] == dest_cost) {
                         found_duplicate = false;
                         for(chainviter_t j = FOUND_CHAINS[i][dest_cost].begin(); j != FOUND_CHAINS[i][dest_cost].end(); j++)
-                            if((*j)->compare(CUR_CHAIN)) 
+                            if((*j)->compare(CUR_CHAIN))
                                 found_duplicate = true;
                         if(GEN[coeff] == -1) {GEN_COUNT++;}
 			//                        CUR_CHAIN->output(cout);
@@ -69,12 +69,12 @@ inline void insert(cost_t dest_cost, coeff_t coeff) {
                                 case MC:  tempchain = new mult_chain(CUR_CHAIN); break;
                                 case AC:  tempchain = new add_chain(CUR_CHAIN); break;
                                 case L2C: tempchain = new leapfrog2_chain(CUR_CHAIN); break;
-                                case L3C: tempchain = new leapfrog3_chain(CUR_CHAIN); break;                                
+                                case L3C: tempchain = new leapfrog3_chain(CUR_CHAIN); break;
                             }
                             FOUND_CHAINS[i][dest_cost].push_back(tempchain);
                         }
                     }
-        
+
         if(GEN[coeff] == -1) {
             GEN[coeff] = dest_cost;
             COSTVECS[dest_cost].push_back(coeff);
@@ -96,7 +96,7 @@ void _compute_all_sumdiffs(bool is_left, addmap_t &result, coeff_t num1, coeff_t
     diff = num1 - (num2<<shift);
     if(diff != 0) {
         sum = num1 + (num2<<shift);
-        if(sum < MAX_NUM && is_fundamental(sum)) 
+        if(sum < MAX_NUM && is_fundamental(sum))
             result[sum]   = SUM(shift);
         if(diff > 0 && diff < MAX_NUM && is_fundamental(diff))
             result[diff] = DIFF(shift);
@@ -235,16 +235,16 @@ void set_chains(int *c, int coeffnumber, int optimization) {
         if(fundamental(c[i]) > MAX_SEARCH_COUNT)
             MAX_SEARCH_COUNT = fundamental(c[i]);
     }
-    
+
     MAX_SHIFT = logd(MAX_SEARCH_COUNT)+1;
     MAX_NUM = powertwo(MAX_SHIFT);
 
     GEN = new cost_t[MAX_NUM+1];
     COSTVECS = new cfvec_t[MAX_COST+1];
     FOUND_CHAINS = new chainvec_t*[COEFFNUMBER+1];
-    for(int i=0;i<COEFFNUMBER;i++) 
+    for(int i=0;i<COEFFNUMBER;i++)
         FOUND_CHAINS[i] = new chainvec_t[MAX_COST+1];
-    
+
     for(curr_costlevel = 6; curr_costlevel > 0; curr_costlevel--) {
         GEN[1] = GEN[0] = 0;
         GEN_COUNT = 0;
@@ -254,20 +254,20 @@ void set_chains(int *c, int coeffnumber, int optimization) {
 
        CK generate_add_coeffs(0, 0, 1);
 	//CK generate_mul_coeffs(0, 1, 1); bogus - causes infinite recursive calls
-    
+
         CK generate_add_coeffs(0, 1, 2);
         CK generate_mul_coeffs(1, 1, 2);
-    
+
         CK generate_add_coeffs(0, 2, 3);
         CK generate_add_coeffs(1, 1, 3);
         CK generate_mul_coeffs(1, 2, 3);
-    
+
         CK generate_add_coeffs(0, 3, 4);
         CK generate_add_coeffs(1, 2, 4);
         CK generate_mul_coeffs(1, 3, 4);
         CK generate_mul_coeffs(2, 2, 4);
         CK generate_leapfrog2(1, 1, 4);
-    
+
         CK generate_add_coeffs(0, 4, 5);
         CK generate_add_coeffs(1, 3, 5);
         CK generate_add_coeffs(2, 2, 5);
@@ -275,7 +275,7 @@ void set_chains(int *c, int coeffnumber, int optimization) {
         CK generate_mul_coeffs(2, 3, 5);
         CK generate_leapfrog2(1, 2, 5);
         CK generate_leapfrog3(1, 1, 5);
-    
+
         CK generate_add_coeffs(0, 5, 6);
         CK generate_add_coeffs(1, 4, 6);
         CK generate_add_coeffs(2, 3, 6);
@@ -285,7 +285,7 @@ void set_chains(int *c, int coeffnumber, int optimization) {
         CK generate_leapfrog2(1, 3, 6);
         CK generate_leapfrog2(2, 2, 6);
         CK generate_leapfrog3(1, 2, 6);
-    
+
         for(int i=0;i<COEFFNUMBER;i++)
             SEARCH_COUNT[i].clear();
         CONSTNUMBER = 0;
@@ -294,8 +294,8 @@ void set_chains(int *c, int coeffnumber, int optimization) {
         for(int i=0;i<MAX_NUM;i++)
             GEN[i] = -1;
 
-        
-        for(int i=0;i<COEFFNUMBER;i++) 
+
+        for(int i=0;i<COEFFNUMBER;i++)
             for(chainviter_t chi = FOUND_CHAINS[i][curr_costlevel].begin(); chi != FOUND_CHAINS[i][curr_costlevel].end(); chi++) {
                 found_duplicate = false;
 		//cout << "Costlevel: " << curr_costlevel << ", Chain: " << i <<", Coeff: " << (*chi)->c << endl;
@@ -316,9 +316,9 @@ void set_chains(int *c, int coeffnumber, int optimization) {
                     SEARCH_COUNT[i].push_back((*chi)->c2);
                     CONSTNUMBER++;
 		    //cout << (*chi)->c2 << ", ";
-                }                
+                }
 		//cout << endl;
-            }	
+            }
     }
 
     delete[] GEN; delete[] COSTVECS; delete[] SEARCH_COUNT;
@@ -333,7 +333,7 @@ void set_chains(int *c, int coeffnumber, int optimization) {
                 c_value = 0;
                 //get savings from previous cost level
                 if(j>1)
-                    for(chainviter_t chi1 = FOUND_CHAINS[i][j-1].begin(); chi1 != FOUND_CHAINS[i][j-1].end(); chi1++) 
+                    for(chainviter_t chi1 = FOUND_CHAINS[i][j-1].begin(); chi1 != FOUND_CHAINS[i][j-1].end(); chi1++)
                         if(((*chi1)->c == (*chi0)->c1 || (*chi1)->c == (*chi0)->c2) && (*chi1)->value > (*chi0)->value)
                             (*chi0)->value = (*chi1)->value;
                 //calculate current cost level's savings
@@ -343,16 +343,16 @@ void set_chains(int *c, int coeffnumber, int optimization) {
                             c_value += (*chi1)->cost;
                             break;
                         }
-		
+
                 //savings bigger than from previous cost level
-		if (optimization == 1)                    
+		if (optimization == 1)
 		    if(c_value > (*chi0)->value)
 		        (*chi0)->value = c_value;
 		//for optimization == 2 the overlapping has to include ALL constants
 		if (optimization == 2)
 		    if (c_value == j*(COEFFNUMBER-1))
-		        (*chi0)->value = c_value;		    		    
-            }    
+		        (*chi0)->value = c_value;
+            }
 }
 
 
@@ -363,7 +363,7 @@ cost_t c_value = -1;
     for(chainviter_t ci = FOUND_CHAINS[index][i].begin(); ci != FOUND_CHAINS[index][i].end(); ci++){
 	  //cout << "search: " << c << ", value: " << (*ci)->value << ", int: ";
 	  //  (*ci)->output(cout);
-	    
+
       if((*ci)->c == c) {
     		if((*ci)->value > c_value){
     		    c_value = (*ci)->value;
@@ -378,7 +378,7 @@ cost_t c_value = -1;
 
 void delete_chain() {
     for(int i=0;i<COEFFNUMBER;i++) {
-        for(int j=0;j<MAX_COST;j++) 
+        for(int j=0;j<MAX_COST;j++)
             FOUND_CHAINS[i][j].clear();
         delete[] FOUND_CHAINS[i];
     }

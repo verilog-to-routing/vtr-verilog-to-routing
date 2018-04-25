@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -57,12 +57,12 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist);
  * (function: instantiate_simple_soft_multiplier )
  * Sample 4x4 multiplier to help understand logic.
  *
- * 					a3 	a2	a1	a0 
+ * 					a3 	a2	a1	a0
  *					b3 	b2 	b1 	b0
  *					---------------------------
  *					c03	c02	c01	c00
  *			+	c13	c12	c11	c10
- *			-----------------------------------	
+ *			-----------------------------------
  *			r14	r13	r12	r11	r10
  *		+	c23	c22	c21	c20
  *		-----------------------------------
@@ -88,7 +88,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	int i, j;
 
 	/* need for an carry-ripple-adder for each of the bits of port B. */
-	/* good question of which is better to put on the bottom of multiplier.  Larger means more smaller adds, or small is 
+	/* good question of which is better to put on the bottom of multiplier.  Larger means more smaller adds, or small is
 	 * less large adds */
 	oassert(node->num_output_pins > 0);
 	oassert(node->num_input_pins > 0);
@@ -113,7 +113,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	{
 		/* create the memory for each AND gate needed for the levels of partial products */
 		partial_products[i] = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*multiplier_width);
-		
+
 		if (i < multiplicand_width - 1)
 		{
 			adders_for_partial_products[i] = make_2port_gate(ADD, multiplier_width+1, multiplier_width+1, multiplier_width+1, node, mark);
@@ -134,7 +134,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 			/* hookup the input of B to each AND gate */
 			if (j == 0)
 			{
-				/* IF - this is the first time we are mapping multiplicand port then can remap */ 
+				/* IF - this is the first time we are mapping multiplicand port then can remap */
 				remap_pin_to_new_node(node->input_pins[i+multiplicand_offset_index], partial_products[i][j], 0);
 			}
 			else
@@ -146,7 +146,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 			/* hookup the input of the multiplier to each AND gate */
 			if (i == 0)
 			{
-				/* IF - this is the first time we are mapping multiplier port then can remap */ 
+				/* IF - this is the first time we are mapping multiplier port then can remap */
 				remap_pin_to_new_node(node->input_pins[j+multiplier_offset_index], partial_products[i][j], 1);
 			}
 			else
@@ -186,7 +186,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 			{
 				add_input_pin_to_node(adders_for_partial_products[i], get_zero_pin(netlist), j);
 			}
-			
+
 			if (j < multiplier_width)
 			{
 				/* IF - this is not most significant bit then just add current partial product */
@@ -218,7 +218,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 			/* ELSE IF - these are the middle values that come from the LSbit of partial adders */
 			remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[i-1], 0);
 		}
-		else 
+		else
 		{
 			/* ELSE - the final outputs are straight from the outputs of the last adder */
 			remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width-2], current_index);
@@ -672,7 +672,7 @@ void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
 
 	/* Set the number of input pins and clear pin entries */
 	node->num_input_pins = a->output_port_sizes[0] + b;
-	node->input_pins = (npin_t**)vtr::malloc(sizeof(void *) * 
+	node->input_pins = (npin_t**)vtr::malloc(sizeof(void *) *
 		(a->output_port_sizes[0] + b));
 	for (i = 0; i < a->output_port_sizes[0] + b; i++)
 		node->input_pins[i] = NULL;
@@ -698,7 +698,7 @@ void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
  *  a multiplier and is told how to split it. The end result is:
  *
  *  a1a0 * b1b0 => a0 * b0 + a0 * b1 + a1 * b0 + a1 * b1 => c1c0 => c
- *  
+ *
  * If we "balance" the additions, we can actually remove one of the
  * addition operations since we know that a0 * b0 and a1 * b1 will
  * not overlap in bits. This allows us to skip the addition between
@@ -720,7 +720,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	/* Check for a legitimate split */
 	oassert(node->input_port_sizes[0] == (a0 + a1));
 	oassert(node->input_port_sizes[1] == (b0 + b1));
-	
+
 	/* New node for small multiply */
 	a0b0 = allocate_nnode();
 	a0b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
@@ -759,7 +759,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, a1b0, a0b1->output_port_sizes[0]);
-	
+
 	/* New node for the BIG add */
 	addbig = allocate_nnode();
 	addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
@@ -767,7 +767,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	strcat(addbig->name, "-add1");
 	init_cascade_adder(addbig, addsmall,
 		a0b0->output_port_sizes[0] + a1b1->output_port_sizes[0]);
-	
+
 	/* Insert temporary pins for addsmall */
 	for (i = 0; i < a0b1->output_port_sizes[0]; i++)
 		connect_nodes(a0b1, i, addsmall, i);
@@ -794,8 +794,8 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	vtr::free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	vtr::free(node->input_pins); 
-	vtr::free(node->output_pins); 
+	vtr::free(node->input_pins);
+	vtr::free(node->output_pins);
 	vtr::free(node);
 
 	return;
@@ -804,15 +804,15 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 /*-------------------------------------------------------------------------
  * (function: split_multiplier_a)
  *
- * This function works to split the "a" input of a multiplier into 
- *  several smaller multipliers to better "fit" with the available 
+ * This function works to split the "a" input of a multiplier into
+ *  several smaller multipliers to better "fit" with the available
  *  resources in a targeted FPGA architecture.
  *
  * This function is at the lowest level since it simply receives
  *  a multiplier and is told how to split it. The end result is:
  *
  *  a1a0 * b => a0 * b + a1 * b => c
- *  
+ *
  * Note that for the addition we need to perform sign extension,
  * but this should not be a problem since the sign extension is always
  * extending NOT contracting.
@@ -826,7 +826,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	/* Check for a legitimate split */
 	oassert(node->input_port_sizes[0] == (a0 + a1));
 	oassert(node->input_port_sizes[1] == b);
-	
+
 	/* New node for a0b multiply */
 	a0b = allocate_nnode();
 	a0b->name = (char *)vtr::malloc(strlen(node->name) + 3);
@@ -849,7 +849,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, a1b, a1 + b);
-	
+
 	/* Connect pins for addsmall */
 	for (i = a0; i < a0b->output_port_sizes[0]; i++)
 		connect_nodes(a0b, i, addsmall, i-a0);
@@ -871,8 +871,8 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	vtr::free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	vtr::free(node->input_pins); 
-	vtr::free(node->output_pins); 
+	vtr::free(node->input_pins);
+	vtr::free(node->output_pins);
 	vtr::free(node);
 	return;
 }
@@ -880,15 +880,15 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 /*-------------------------------------------------------------------------
  * (function: split_multiplier_b)
  *
- * This function works to split the "b" input of a multiplier into 
- *  several smaller multipliers to better "fit" with the available 
+ * This function works to split the "b" input of a multiplier into
+ *  several smaller multipliers to better "fit" with the available
  *  resources in a targeted FPGA architecture.
  *
  * This function is at the lowest level since it simply receives
  *  a multiplier and is told how to split it. The end result is:
  *
  *  a * b1b0 => a * b1 + a * b0 => c
- *  
+ *
  * Note that for the addition we need to perform sign extension,
  * but this should not be a problem since the sign extension is always
  * extending NOT contracting.
@@ -902,7 +902,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	/* Check for a legitimate split */
 	oassert(node->input_port_sizes[0] == a);
 	oassert(node->input_port_sizes[1] == (b0 + b1));
-	
+
 	/* New node for ab0 multiply */
 	ab0 = allocate_nnode();
 	ab0->name = (char *)vtr::malloc(strlen(node->name) + 3);
@@ -925,7 +925,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, ab1, a + b1);
-	
+
 	/* Connect pins for addsmall */
 	for (i = b0; i < ab0->output_port_sizes[0]; i++)
 		connect_nodes(ab0, i, addsmall, i-b0);
@@ -947,8 +947,8 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	vtr::free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	vtr::free(node->input_pins); 
-	vtr::free(node->output_pins); 
+	vtr::free(node->input_pins);
+	vtr::free(node->output_pins);
 	vtr::free(node);
 	return;
 }
@@ -1143,8 +1143,8 @@ void iterate_multipliers(netlist_t *netlist)
 		{
 			/* Check to ensure IF mult needs to be exact size */
 			if(configuration.fixed_hard_multiplier != 0)
-				pad_multiplier(node, netlist); 
-				
+				pad_multiplier(node, netlist);
+
 			/* Otherwise, we still want to record the multiplier node for
 			reporting later on (the pad_multiplier function does this for the
 			other case */

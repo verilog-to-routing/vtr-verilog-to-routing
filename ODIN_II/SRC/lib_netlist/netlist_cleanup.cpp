@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -83,7 +83,7 @@ void traverse_backward(nnode_t *node){
 }
 
 /* Traverse the netlist forward, moving from inputs to outputs.
- * Adds nodes that do not affect any outputs to the useless_nodes list 
+ * Adds nodes that do not affect any outputs to the useless_nodes list
  * Arguments:
  * 	node: the current node in the netlist
  * 	toplevel: are we at one of the top-level nodes? (GND, VCC, PAD or INPUT)
@@ -92,26 +92,26 @@ void traverse_backward(nnode_t *node){
 void traverse_forward(nnode_t *node, int toplevel, int remove_me){
 	if(node == NULL) return; // Shouldn't happen, but check just in case
 	if(node->node_data == VISITED_FORWARD) return; // Already visited, shouldn't happen anyway
-	
-	/* We want to remove this node if either its parent was removed, 
+
+	/* We want to remove this node if either its parent was removed,
 	 * or if it was not visited on the backwards sweep */
 	remove_me = remove_me || ((node->node_data != VISITED_BACKWARD) && (toplevel == FALSE));
-	
+
 	/* Mark this node as visited */
 	node->node_data = VISITED_FORWARD;
-	
+
 	if(remove_me) {
 		/* Add this node to the list of nodes to remove */
 		removal_list_next = insert_node_list(removal_list_next, node);
 	}
-	
+
 	if(node->type == ADD || node->type == MINUS){
 		/* Check if we've found the head of an adder or subtractor chain */
 		if(node->input_pins[node->num_input_pins-1]->net->driver_pin->node->type == PAD_NODE){
 			addsub_list_next = insert_node_list(addsub_list_next, node);
 		}
 	}
-	
+
 	/* Iterate through every fanout node */
 	int i, j;
 	for(i = 0; i < node->num_output_pins; i++){
@@ -141,16 +141,16 @@ void mark_output_dependencies(netlist_t *netlist){
 	}
 }
 
-/* Traversed the netlist forward from the top level inputs and special nodes 
+/* Traversed the netlist forward from the top level inputs and special nodes
 (VCC, GND, PAD) */
 void identify_unused_nodes(netlist_t *netlist){
 
 	useless_nodes.node = NULL;
 	useless_nodes.next = NULL;
-	
+
 	addsub_nodes.node = NULL;
 	addsub_nodes.next = NULL;
-		
+
 	traverse_forward(netlist->gnd_node, TRUE, FALSE);
 	traverse_forward(netlist->vcc_node, TRUE, FALSE);
 	traverse_forward(netlist->pad_node, TRUE, FALSE);
@@ -164,7 +164,7 @@ void identify_unused_nodes(netlist_t *netlist){
 it from the rest of the circuit */
 void remove_unused_nodes(node_list_t *remove){
 	while(remove != NULL && remove->node != NULL){
-		int i;		
+		int i;
 		for(i = 0; i < remove->node->num_input_pins; i++){
 			npin_t *input_pin = remove->node->input_pins[i];
 			input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL; // Remove the fanout pin from the net
@@ -200,7 +200,7 @@ void calculate_addsub_statistics(node_list_t *addsub){
 				break;
 			}
 			chain_depth += 1;
-			
+
 			/* Carry out is always output pin 0 */
 			nnet_t *carry_out_net = node->output_pins[0]->net;
 			if(carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL) found_tail = TRUE;
@@ -217,11 +217,11 @@ void calculate_addsub_statistics(node_list_t *addsub){
 				total_subtractors += chain_depth;
 				if(chain_depth > longest_subtractor_chain) longest_subtractor_chain = chain_depth;
 			}
-			
+
 			sum_of_addsub_logs += log(chain_depth);
 			total_addsub_chain_count++;
 		}
-		
+
 		addsub = addsub->next;
 	}
 	/* Calculate the geometric mean carry chain length */

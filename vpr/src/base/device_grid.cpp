@@ -3,7 +3,7 @@
 DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid)
     : name_(grid_name)
     , grid_(grid) {
-    
+
     count_instances();
 }
 
@@ -16,9 +16,9 @@ size_t DeviceGrid::num_instances(t_type_ptr type) const {
     return 0; //None found
 }
 
-void DeviceGrid::clear() { 
-    grid_.clear(); 
-    instance_counts_.clear(); 
+void DeviceGrid::clear() {
+    grid_.clear();
+    instance_counts_.clear();
 }
 
 void DeviceGrid::count_instances() {

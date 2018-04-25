@@ -14,9 +14,9 @@
 
 std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist);
 
-AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist, 
+AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
                                    const AtomNetId clock_net, const std::vector<AtomPinId>& data_pins,
-                                   const t_model* blk_model, 
+                                   const t_model* blk_model,
                                    const t_model_ports* model_clock_port, const BitIndex clock_port_bit,
                                    const t_model_ports* model_data_port, const BitIndex data_port_bit);
 
@@ -113,7 +113,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             fprintf(f, "1 1\n");
             fprintf(f, "\n");
         }
-    
+
     }
 
     //Latch
@@ -170,7 +170,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             }
 
             //Latch type: VPR always assumes rising edge
-            auto type = "re"; 
+            auto type = "re";
 
             //Latch initial value
             int init_val = 3; //Unkown or unspecified
@@ -272,7 +272,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
         //Must be a subckt
         subckt_models.insert(blk_model);
-        
+
         std::vector<AtomPortId> ports;
         for(auto port_id : netlist.block_ports(blk_id)) {
             VTR_ASSERT(netlist.port_width(port_id) > 0);
@@ -289,7 +289,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                     fprintf(f, "[%zu]", j);
                 }
                 fprintf(f, "=");
-                
+
                 auto net_id = netlist.port_net(ports[i], j);
                 if(net_id) {
                     fprintf(f, "%s", netlist.net_name(net_id).c_str());
@@ -398,7 +398,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
         const t_model* blk_model = netlist.block_model(blk);
 
         if(blk_model->name != std::string(MODEL_NAMES)) return false;
-            
+
         auto input_ports = netlist.block_input_ports(blk);
         auto output_ports = netlist.block_output_ports(blk);
 
@@ -422,7 +422,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
 
             //Both ports must be single bit
             if(connected_input_pins == 1 && connected_output_pins == 1) {
-                //It is a single-input single-output LUT, we now 
+                //It is a single-input single-output LUT, we now
                 //inspect it's truth table
                 //
                 const auto& truth_table = netlist.block_truth_table(blk);
@@ -433,15 +433,15 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
                 //Check for valid buffer logic functions
                 // A LUT is a buffer provided it has the identity logic
                 // function and a single input. For example:
-                // 
+                //
                 // .names in_buf out_buf
                 // 1 1
-                // 
+                //
                 // and
-                // 
+                //
                 // .names int_buf out_buf
                 // 0 0
-                // 
+                //
                 // both implement logical identity.
                 if((truth_table[0][0] == vtr::LogicValue::TRUE && truth_table[0][1] == vtr::LogicValue::TRUE)
                     || (truth_table[0][0] == vtr::LogicValue::FALSE && truth_table[0][1] == vtr::LogicValue::FALSE)) {
@@ -483,7 +483,7 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose) {
     //      | ...           |   ...
     //      |               |
     //      |--> m          |----> m+k+1
-    // 
+    //
     //
     //We remove the buffer and fix-up the connectivity using the following steps
     //  - Remove the buffer (this also removes pins 2 and m+1 from the 'in' and 'out' nets)
@@ -510,11 +510,11 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose) {
     VTR_ASSERT(netlist.pin_type(new_driver) == PinType::DRIVER);
 
     std::vector<AtomPinId> new_sinks;
-    auto input_sinks = netlist.net_sinks(input_net); 
-    auto output_sinks = netlist.net_sinks(output_net); 
+    auto input_sinks = netlist.net_sinks(input_net);
+    auto output_sinks = netlist.net_sinks(output_net);
 
     //We don't copy the input pin (i.e. pin 2)
-    std::copy_if(input_sinks.begin(), input_sinks.end(), std::back_inserter(new_sinks), 
+    std::copy_if(input_sinks.begin(), input_sinks.end(), std::back_inserter(new_sinks),
         [input_pin](AtomPinId id) {
             return id != input_pin;
         }
@@ -533,7 +533,7 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose) {
     // Note that the driver can only (potentially) be an INPAD, and the sinks only (potentially) OUTPADs
     AtomBlockType driver_block_type = netlist.block_type(netlist.pin_block(new_driver));
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
-    bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(), 
+    bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(),
         [&](AtomPinId pin_id) {
             VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
             AtomBlockId blk_id = netlist.pin_block(pin_id);
@@ -614,7 +614,7 @@ void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_
 
         fix_clock_to_data_pins(netlist,
                                clock_net, data_pins,
-                               model, 
+                               model,
                                clock_port, clock_port_bit,
                                data_port, data_port_bit);
     }
@@ -632,17 +632,17 @@ std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const At
 
             auto port_type = netlist.pin_port_type(clock_sink);
             if(port_type != PortType::CLOCK) {
-                clock_data_pins[clock_net].push_back(clock_sink); 
+                clock_data_pins[clock_net].push_back(clock_sink);
             }
         }
     }
 
-    return clock_data_pins; 
+    return clock_data_pins;
 }
 
-AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist, 
+AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
                                    const AtomNetId clock_net, const std::vector<AtomPinId>& data_pins,
-                                   const t_model* blk_model, 
+                                   const t_model* blk_model,
                                    const t_model_ports* model_clock_port, const BitIndex clock_port_bit,
                                    const t_model_ports* model_data_port, const BitIndex data_port_bit) {
     //Create a new block clocked by clock_net which will drive the 'data' version of the clock
@@ -685,7 +685,7 @@ bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id) {
         AtomNetId net_id = netlist.pin_net(pin_id);
         if(net_id) {
             //There is a valid output net
-            return false; 
+            return false;
         }
     }
     return true;
@@ -712,7 +712,7 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
         AtomNetId net_id = netlist.pin_net(pin_id);
         if(net_id) {
             //There is a valid output net
-            return false; 
+            return false;
         }
     }
 
@@ -752,10 +752,10 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist, bool verbose) {
     return removed_count;
 }
 
-size_t sweep_iterative(AtomNetlist& netlist, 
-                       bool should_sweep_ios, 
-                       bool should_sweep_nets, 
-                       bool should_sweep_blocks, 
+size_t sweep_iterative(AtomNetlist& netlist,
+                       bool should_sweep_ios,
+                       bool should_sweep_nets,
+                       bool should_sweep_blocks,
                        bool should_sweep_constant_primary_outputs,
                        bool verbose) {
     size_t dangling_nets_swept = 0;
@@ -802,23 +802,23 @@ size_t sweep_iterative(AtomNetlist& netlist,
         dangling_inputs_swept += pass_dangling_inputs_swept;
         dangling_outputs_swept += pass_dangling_outputs_swept;
         constant_outputs_swept += pass_constant_outputs_swept;
-    } while(pass_dangling_nets_swept != 0 
-            || pass_dangling_blocks_swept != 0 
-            || pass_dangling_inputs_swept != 0 
+    } while(pass_dangling_nets_swept != 0
+            || pass_dangling_blocks_swept != 0
+            || pass_dangling_inputs_swept != 0
             || pass_dangling_outputs_swept != 0
             || pass_constant_outputs_swept != 0);
 
     vtr::printf_info("Swept input(s) : %zu\n", dangling_inputs_swept);
-    vtr::printf_info("Swept output(s): %zu (%zu dangling, %zu constant)\n", dangling_outputs_swept + constant_outputs_swept, 
-                                                                            dangling_outputs_swept, 
+    vtr::printf_info("Swept output(s): %zu (%zu dangling, %zu constant)\n", dangling_outputs_swept + constant_outputs_swept,
+                                                                            dangling_outputs_swept,
                                                                             constant_outputs_swept);
     vtr::printf_info("Swept net(s)   : %zu\n", dangling_nets_swept);
     vtr::printf_info("Swept block(s) : %zu\n", dangling_blocks_swept);
 
-    return dangling_nets_swept 
-           + dangling_blocks_swept 
-           + dangling_inputs_swept 
-           + dangling_outputs_swept 
+    return dangling_nets_swept
+           + dangling_blocks_swept
+           + dangling_inputs_swept
+           + dangling_outputs_swept
            + constant_outputs_swept;
 }
 
@@ -833,7 +833,7 @@ size_t sweep_blocks(AtomNetlist& netlist, bool verbose) {
         //Don't remove inpads/outpads here, we have seperate sweep functions for these
         if(type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) continue;
 
-        //We remove any blocks with no fanout 
+        //We remove any blocks with no fanout
         if(is_removable_block(netlist, blk_id)) {
             blocks_to_remove.insert(blk_id);
         }
@@ -952,7 +952,7 @@ bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table) {
         switch(out_val) {
             case vtr::LogicValue::TRUE: encodes_on_set = true; break;
             case vtr::LogicValue::FALSE: encodes_on_set = false; break;
-            default: 
+            default:
                   VPR_THROW(VPR_ERROR_OTHER, "Unrecognized truth-table output value");
         }
     }
@@ -969,7 +969,7 @@ AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth
         //Permute the inputs in the row
         for(size_t i = 0; i < row.size() - 1; i++) {
             int permuted_idx = permutation[i];
-            permuted_row[permuted_idx] = row[i]; 
+            permuted_row[permuted_idx] = row[i];
         }
         //Assign the output value
         permuted_row[permuted_row.size() - 1] = row[row.size() - 1];
@@ -985,8 +985,8 @@ AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_
 
     for(const auto& row : truth_table) {
         //Initialize an empty row
-        std::vector<vtr::LogicValue> expanded_row(num_inputs+1,  vtr::LogicValue::FALSE);     
-        
+        std::vector<vtr::LogicValue> expanded_row(num_inputs+1,  vtr::LogicValue::FALSE);
+
         //Copy the existing input values
         for(size_t i = 0; i < row.size() - 1; ++i) {
             expanded_row[i] = row[i];
@@ -1001,7 +1001,7 @@ AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_
 }
 
 std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs) {
-    bool on_set = truth_table_encodes_on_set(truth_table); 
+    bool on_set = truth_table_encodes_on_set(truth_table);
 
     //Initialize the lut mask
     size_t mask_bits = std::pow(2, num_inputs);
@@ -1015,7 +1015,7 @@ std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTab
     }
 
     for(const auto& row : truth_table) {
-        //Each row in the truth table (excluding the output) is a cube, 
+        //Each row in the truth table (excluding the output) is a cube,
         //and may need to be expanded to account for don't cares
 
         std::vector<vtr::LogicValue> cube(row.begin(), --row.end());
@@ -1106,7 +1106,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
         //Save any clock generating ports on this model type
         const t_model* model = netlist.block_model(blk_id);
         VTR_ASSERT(model);
-        if(clock_gen_ports.find(model) == clock_gen_ports.end()) { 
+        if(clock_gen_ports.find(model) == clock_gen_ports.end()) {
             //First time we've seen this model, intialize it
             clock_gen_ports[model] = {};
 

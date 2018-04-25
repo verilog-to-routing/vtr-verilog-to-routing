@@ -1,7 +1,7 @@
 /**
  * Author: Jason Luu
  * Date: May 2009
- * 
+ *
  * Read a circuit netlist in XML format and populate the netlist data structures for VPR
  */
 
@@ -35,7 +35,7 @@ using namespace std;
 
 static const char* netlist_file_name = nullptr;
 
-static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
+static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
         const pugiutil::loc_data& loc_data);
 
 static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
@@ -58,7 +58,7 @@ static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *p
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist);
-	
+
 static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
@@ -67,7 +67,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist);
 static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 
 /**
- * Initializes the clb_nlist with info from a netlist 
+ * Initializes the clb_nlist with info from a netlist
  * net_file - Name of the netlist file to read
  */
 ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests) {
@@ -126,10 +126,10 @@ ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool ver
 
         auto architecture_id = top.attribute("architecture_id");
         if (architecture_id) {
-            //Netlist file has an architecture id, make sure it is 
+            //Netlist file has an architecture id, make sure it is
             //consistent with the loaded architecture file.
             //
-            //Note that we currently don't require that the architecture_id exists, 
+            //Note that we currently don't require that the architecture_id exists,
             //to remain compatible with old .net files
             std::string arch_id = architecture_id.value();
             if (arch_id != arch->architecture_id) {
@@ -146,10 +146,10 @@ ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool ver
 
         auto atom_netlist_id = top.attribute("atom_netlist_id");
         if (atom_netlist_id) {
-            //Netlist file has an_atom netlist_id, make sure it is 
+            //Netlist file has an_atom netlist_id, make sure it is
             //consistent with the loaded atom netlist.
             //
-            //Note that we currently don't require that the atom_netlist_id exists, 
+            //Note that we currently don't require that the atom_netlist_id exists,
             //to remain compatible with old .net files
             std::string atom_nl_id = atom_netlist_id.value();
             if (atom_nl_id != atom_ctx.nlist.netlist_id()) {
@@ -239,7 +239,7 @@ ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool ver
 }
 
 /**
- * XML parser to populate CLB info and to update nets with the nets of this CLB 
+ * XML parser to populate CLB info and to update nets with the nets of this CLB
  * Parent - XML tag for this CLB
  * clb - Array of CLBs in the netlist
  * index - index of the CLB to allocate and load information into
@@ -365,11 +365,11 @@ template<typename T> void processAttrsParams(pugi::xml_node Parent, const char *
 static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
     const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist) {
-	
+
 	int i, j, pb_index;
 	bool found;
 	const t_pb_type *pb_type;
-	
+
 	t_token *tokens;
 	int num_tokens;
 
@@ -377,7 +377,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 
     auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
 	int num_in_ports = processPorts(inputs, pb, pb_route, loc_data);
-	
+
     auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
 	int num_out_ports = processPorts(outputs, pb, pb_route, loc_data);
 
@@ -532,8 +532,8 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
 }
 
 /**
- * Adds net to hashtable of nets.  If the net is "open", then this is a keyword so do not add it.  
- * If the net already exists, increase the count on that net 
+ * Adds net to hashtable of nets.  If the net is "open", then this is a keyword so do not add it.
+ * If the net already exists, increase the count on that net
  */
 static int add_net_to_hash(t_hash **nhash, const char *net_name, int *ncount) {
 	t_hash *hash_value;
@@ -552,7 +552,7 @@ static int add_net_to_hash(t_hash **nhash, const char *net_name, int *ncount) {
 
 static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
         const pugiutil::loc_data& loc_data) {
-	
+
 	int i, j, num_tokens;
 	int in_port = 0, out_port = 0, clock_port = 0;
     std::vector<std::string> pins;
@@ -757,7 +757,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 
                     //Why does this not use the output pin used to deterimine the rr node index?
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
-                    pb_route[rr_node_index].pb_graph_pin = pin_node[0][0]; 
+                    pb_route[rr_node_index].pb_graph_pin = pin_node[0][0];
 
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
@@ -782,8 +782,8 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 	}
 
     //Record any port rotation mappings
-    for(auto pin_rot_map = pugiutil::get_first_child(Parent, "port_rotation_map", loc_data, pugiutil::OPTIONAL); 
-            pin_rot_map; 
+    for(auto pin_rot_map = pugiutil::get_first_child(Parent, "port_rotation_map", loc_data, pugiutil::OPTIONAL);
+            pin_rot_map;
             pin_rot_map = pin_rot_map.next_sibling("port_rotation_map")) {
 
         auto port_name = pugiutil::get_attribute(pin_rot_map, "name", loc_data).value();
@@ -831,7 +831,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 	return in_port + out_port + clock_port + 1;
 }
 
-/**  
+/**
  * This function updates the nets list and the connections between that list and the complex block
  */
 static void load_external_nets_and_cb(const std::vector<std::string>& circuit_clocks, ClusteredNetlist& clb_nlist) {
@@ -1061,14 +1061,14 @@ static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *p
 
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 	int driver = pb_route[ipin].driver_pb_pin_id;
-	
+
 	VTR_ASSERT(driver != OPEN);
 	VTR_ASSERT(!pb_route[ipin].atom_net_id);
 
 	if (!pb_route[driver].atom_net_id) {
 		load_atom_index_for_pb_pin(pb_route, driver);
-	}	
-		
+	}
+
     //Store the net coming from the driver
 	pb_route[ipin].atom_net_id = pb_route[driver].atom_net_id;
 

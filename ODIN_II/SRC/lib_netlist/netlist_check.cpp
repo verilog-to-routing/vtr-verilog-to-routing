@@ -20,7 +20,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,7 +100,7 @@ void sequential_levelized_dfs(short marker_value, netlist_t *netlist)
 
 	/* allocate the first list.  Includes vcc and gnd */
 	netlist->sequential_level_nodes[sequential_level] = (nnode_t**)vtr::realloc(netlist->sequential_level_nodes[sequential_level], sizeof(nnode_t*)*(netlist->num_top_input_nodes+2));
-	
+
 	/* add all the primary nodes to the first level */
 	for (i = 0; i < netlist->num_top_input_nodes; i++)
 	{
@@ -134,7 +134,7 @@ void sequential_levelized_dfs(short marker_value, netlist_t *netlist)
 		/* WHILE there are PIs at this level */
 
 		/* Allocate the next level of storage since this part is a forward thing of the next flip-flops at the level */
-		/* add anothersequential level.  Note, needs to be done before we depth first the current combinational level. */		
+		/* add anothersequential level.  Note, needs to be done before we depth first the current combinational level. */
 		netlist->num_sequential_levels ++;
 		netlist->sequential_level_nodes = (nnode_t***)vtr::realloc(netlist->sequential_level_nodes, sizeof(nnode_t**)*(netlist->num_sequential_levels));
 		netlist->num_at_sequential_level = (int*)vtr::realloc(netlist->num_at_sequential_level, sizeof(int)*netlist->num_sequential_levels);
@@ -215,7 +215,7 @@ void depth_first_traverse_until_next_ff_or_output(nnode_t *node, nnode_t *callin
 		/* mark that we have visitied this node now */
 		node->traverse_visited = traverse_mark_number;
 		node->sequential_level = seq_level;
-		
+
 		for (i = 0; i < node->num_output_pins; i++)
 		{
 			if (node->output_pins[i]->net == NULL)
@@ -279,7 +279,7 @@ void depth_first_traverse_check_if_forward_leveled(nnode_t *node, int traverse_m
 
 		/* mark that we have visitied this node now */
 		node->traverse_visited = traverse_mark_number;
-		
+
 		for (i = 0; i < node->num_output_pins; i++)
 		{
 			if (node->output_pins[i]->net == NULL)
@@ -396,7 +396,7 @@ void levelize_forwards(netlist_t *netlist)
 			{
 				int *fanouts_visited;
 				if (current_node->output_pins[j] == NULL)
-					continue; 
+					continue;
 
 				for (k = 0; k < current_node->output_pins[j]->net->num_fanout_pins; k++)
 				{
@@ -409,48 +409,48 @@ void levelize_forwards(netlist_t *netlist)
 
 					if (output_node == NULL)
 						continue;
-	
+
 					if (output_node->node_data == NULL)
 					{
 						/* if this fanout hasn't been visited yet this will be null */
 						fanouts_visited = (int*)vtr::malloc(sizeof(int)*(output_node->num_input_pins));
-						
+
 						for (idx = 0; idx < output_node->num_input_pins; idx++)
 						{
 							fanouts_visited[idx] = -1;
 						}
-						
+
 						output_node->node_data = (void*)fanouts_visited;
 						output_node->unique_node_data_id = LEVELIZE;
 					}
-					else 
+					else
 					{
 						/* ELSE - get the list */
 						oassert(output_node->unique_node_data_id == LEVELIZE);
 						fanouts_visited = (int*)output_node->node_data;
 					}
-	
+
 					/* mark this entry as visited */
 					fanouts_visited[current_node->output_pins[j]->net->fanout_pins[k]->pin_node_idx] = cur_for_level;
-	
+
 					/* check if they've all been marked */
 					all_visited = TRUE;
 					for (idx = 0; idx < output_node->num_input_pins; idx++)
 					{
 						if (fanouts_visited[idx] == -1)
-						{	
+						{
 							all_visited = FALSE;
 							break;
 						}
 					}
-	
+
 					if ((all_visited == TRUE) && (output_node->type != FF_NODE))
 					{
 						/* This one has been visited by everyone */
 						netlist->forward_levels[cur_for_level+1] = (nnode_t**)vtr::realloc(netlist->forward_levels[cur_for_level+1], sizeof(nnode_t*)*(netlist->num_at_forward_level[cur_for_level+1]+1));
 						netlist->forward_levels[cur_for_level+1][netlist->num_at_forward_level[cur_for_level+1]] = output_node;
 						netlist->num_at_forward_level[cur_for_level+1]++;
-	
+
 						output_node->forward_level = cur_for_level+1;
 					}
 				}
@@ -496,7 +496,7 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 			{
 				int *fanouts_visited;
 				if (current_node->output_pins[j] == NULL)
-					continue; 
+					continue;
 
 				for (k = 0; k < current_node->output_pins[j]->net->num_fanout_pins; k++)
 				{
@@ -508,12 +508,12 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 
 					if (output_node == NULL)
 						continue;
-	
+
 					if (output_node->node_data == NULL)
 					{
 						oassert(output_node->unique_node_data_id == RESET);
 					}
-					else 
+					else
 					{
 						int idx;
 						/* ELSE - get the list */
@@ -526,12 +526,12 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 						for (idx = 0; idx < output_node->num_input_pins; idx++)
 						{
 							if (fanouts_visited[idx] == -1)
-							{	
+							{
 								all_visited = FALSE;
 								break;
 							}
 						}
-	
+
 						if (all_visited == FALSE)
 						{
 							/* Combo node since one of the outputs hasn'y been visisted. */
@@ -630,7 +630,7 @@ void levelize_backwards(netlist_t *netlist)
 			{
 				int *fanouts_visited;
 				if (current_node->input_pins[j] == NULL)
-					continue; 
+					continue;
 
 				/* visit the fanout point */
 				nnet_t *fanout_net = current_node->input_pins[j]->net;
@@ -640,16 +640,16 @@ void levelize_backwards(netlist_t *netlist)
 					int idx;
 					/* if this fanout hasn't been visited yet this will be null */
 					fanouts_visited = (int*)vtr::malloc(sizeof(int)*(fanout_net->num_fanout_pins));
-					
+
 					for (idx = 0; idx < fanout_net->num_fanout_pins; idx++)
 					{
 						fanouts_visited[idx] = -1;
 					}
-					
+
 					fanout_net->net_data = (void*)fanouts_visited;
 					fanout_net->unique_net_data_id = LEVELIZE;
 				}
-				else 
+				else
 				{
 					/* ELSE - get the list */
 					fanouts_visited = (int*)fanout_net->net_data;
@@ -667,7 +667,7 @@ void levelize_backwards(netlist_t *netlist)
 				for (k = 0; k < fanout_net->num_fanout_pins; k++)
 				{
 					if ((fanout_net->fanout_pins[k] != NULL) && (fanout_net->fanout_pins[k]->node != NULL) && (fanouts_visited[k] == -1))
-					{	
+					{
 						all_visited = FALSE;
 						break;
 					}
@@ -729,7 +729,7 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 			{
 				int *fanouts_visited;
 				if (current_node->input_pins[j] == NULL)
-					continue; 
+					continue;
 
 				/* visit the fanout point */
 				nnet_t *fanout_net = current_node->input_pins[j]->net;
@@ -739,7 +739,7 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					/* IF - already cleaned */
 					oassert(fanout_net->unique_net_data_id == -1);
 				}
-				else 
+				else
 				{
 					/* ELSE - get the list */
 					oassert(fanout_net->unique_net_data_id == LEVELIZE);
@@ -751,7 +751,7 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					for (k = 0; k < fanout_net->num_fanout_pins; k++)
 					{
 						if ((fanout_net->fanout_pins[k] != NULL) && (fanout_net->fanout_pins[k]->node != NULL) && (fanouts_visited[k] == -1))
-						{	
+						{
 							all_visited = FALSE;
 							break;
 						}
@@ -803,23 +803,23 @@ nnode_t *find_node_at_top_of_combo_loop(nnode_t *start_node)
 		oassert(next_node->unique_node_data_id == LEVELIZE);
 		fanouts_visited = (int*)next_node->node_data;
 		next_node->node_data = NULL;
-	
+
 		/* check if they've all been marked */
 		all_visited = TRUE;
 		for (i = 0; i < next_node->num_input_pins; i++)
 		{
 			if (fanouts_visited[i] == -1)
-			{	
+			{
 				all_visited = FALSE;
 				idx_missed = i;
 				break;
 			}
 		}
-	
+
 		if (all_visited == FALSE)
 		{
 			if (next_node->input_pins[idx_missed]->net->driver_pin->node->backward_level < next_node->backward_level)
-				/* IF - the next node has a lower backward level than this node suggests that it is 
+				/* IF - the next node has a lower backward level than this node suggests that it is
 				   closer to primary outputs and not in the combo loop */
 				return next_node;
 

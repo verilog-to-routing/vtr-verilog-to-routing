@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 #include <string.h>
 #include <math.h>
@@ -270,12 +270,12 @@ void check_memories_and_report_distribution()
 	printf("\nHard Logical Memory Distribution\n");
 	printf("============================\n");
 
-	
+
 	long total_memory_bits = 0;
 	int total_memory_block_counter = 0;
 	int memory_max_width = 0;
 	int memory_max_depth = 0;
-	
+
 	t_linked_vptr *temp = sp_memory_list;
 	while (temp != NULL)
 	{
@@ -290,7 +290,7 @@ void check_memories_and_report_distribution()
 		printf("SPRAM: %d width %d depth\n", width, depth);
 
 		total_memory_bits += (long)width * ((long)1 << (long)depth);
-		
+
 		total_memory_block_counter++;
 
 		if (width > memory_max_width) {
@@ -299,7 +299,7 @@ void check_memories_and_report_distribution()
 		if (depth > memory_max_depth) {
 			memory_max_depth = depth;
 		}
-		
+
 		temp = temp->next;
 	}
 
@@ -316,7 +316,7 @@ void check_memories_and_report_distribution()
 
 		printf("DPRAM: %d width %d depth\n", width, depth);
 		total_memory_bits += (long)width * ((long)1 << (long)depth);
-		
+
 		total_memory_block_counter++;
 		if (width > memory_max_width) {
 			memory_max_width = width;
@@ -324,23 +324,23 @@ void check_memories_and_report_distribution()
 		if (depth > memory_max_depth) {
 			memory_max_depth = depth;
 		}
-		
+
 		temp = temp->next;
 	}
-	
+
 	printf("\nTotal Logical Memory Blocks = %d \n", total_memory_block_counter);
 	printf("Total Logical Memory bits = %ld \n", total_memory_bits);
 	printf("Max Memory Width = %d \n", memory_max_width);
 	printf("Max Memory Depth = %d \n", memory_max_depth);
 	printf("\n");
-	
+
 	return;
 }
 
 /*-------------------------------------------------------------------------
  * (function: split_sp_memory_depth)
  *
- * This function works to split the depth of a single port memory into 
+ * This function works to split the depth of a single port memory into
  *   several smaller memories.
  *
  *   split_size: the number of address bits in the resulting memory.
@@ -351,7 +351,7 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 	sp_ram_signals *signals = get_sp_ram_signals(node);
 
 	int logical_size =  signals->addr->count;
-	
+
 	/* Check that the memory needs to be split */
 	if (logical_size <= split_size)
 	{
@@ -459,7 +459,7 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 /*-------------------------------------------------------------------------
  * (function: split_dp_memory_depth)
  *
- * This function works to split the depth of a dual port memory into 
+ * This function works to split the depth of a dual port memory into
  *   several smaller memories.
  *------------------------------------------------------------------------
  */
@@ -468,14 +468,14 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 
 	int logical_size =  signals->addr1->count;
- 	
+
 	/* Check that the memory needs to be split */
 	if (logical_size <= split_size)
 	{
 		free_dp_ram_signals(signals);
 		dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
 		return;
-	} 
+	}
 
 	signal_list_t *new_addr1 = init_signal_list();
 
@@ -1193,7 +1193,7 @@ void pad_sp_memory_width(nnode_t *node, netlist_t *netlist)
  */
 void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *model, const char *port_name)
 {
-	static int pad_pin_number = 0; 
+	static int pad_pin_number = 0;
 
 	int port_number = get_output_port_index_from_mapping(node, port_name);
 	int port_index  = get_output_pin_index_from_mapping (node, port_name);

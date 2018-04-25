@@ -46,9 +46,9 @@ hashtable_t* create_hashtable(int store_size)
 	}
 
 	hashtable_t *h = (hashtable_t *)malloc(sizeof(hashtable_t));
-	
-	h->store_size = store_size; 
-	h->store = (hashtable_node_t **)vtr::calloc(store_size, sizeof(hashtable_node_t*)); 
+
+	h->store_size = store_size;
+	h->store = (hashtable_node_t **)vtr::calloc(store_size, sizeof(hashtable_node_t*));
 	h->count = 0;
 
 	h->add                = ___hashtable_add;
@@ -58,24 +58,24 @@ hashtable_t* create_hashtable(int store_size)
 	h->is_empty           = ___hashtable_is_empty;
 	h->destroy            = ___hashtable_destroy;
 	h->destroy_free_items = ___hashtable_destroy_free_items;
-	
+
 	return h;
 }
 
 void ___hashtable_destroy(hashtable_t *h)
 {
-	int i; 
+	int i;
 	for (i = 0; i < h->store_size; i++)
 	{
-		hashtable_node_t* node; 
+		hashtable_node_t* node;
 		while((node = h->store[i]))
 		{
-			h->store[i] = node->next; 
+			h->store[i] = node->next;
 			vtr::free(node->key);
-			vtr::free(node); 
-			h->count--; 
+			vtr::free(node);
+			h->count--;
 		}
-	} 
+	}
 	vtr::free(h->store);
 	vtr::free(h);
 }
@@ -103,79 +103,79 @@ void  ___hashtable_add(hashtable_t *h, const void *key, size_t key_length, void 
 {
 	hashtable_node_t *node = (hashtable_node_t *)malloc(sizeof(hashtable_node_t));
 
-	node->key_length = key_length; 
+	node->key_length = key_length;
 	node->key        = malloc(key_length);
 	node->item       = item;
-	node->next       = NULL;	
+	node->next       = NULL;
 
 	memcpy(node->key, key, key_length);
-	
+
 	unsigned int i = ___hashtable_hash(key, key_length, h->store_size);
-	hashtable_node_t **location = h->store + i; 
+	hashtable_node_t **location = h->store + i;
 
 	while(*location)
-		location = &((*location)->next);		
-	
-	*location = node; 	
+		location = &((*location)->next);
+
+	*location = node;
 
 	h->count++;
 }
 
 void* ___hashtable_remove(hashtable_t *h, const void *key, size_t key_length)
 {
-	unsigned int i = ___hashtable_hash(key, key_length, h->store_size); 
+	unsigned int i = ___hashtable_hash(key, key_length, h->store_size);
 
-	hashtable_node_t **node_location = h->store + i; 
-	hashtable_node_t  *node          = *node_location; 
+	hashtable_node_t **node_location = h->store + i;
+	hashtable_node_t  *node          = *node_location;
 	while(node && !___hashtable_compare_keys(key, key_length, node->key, node->key_length))
 	{
-		node_location = &(node->next); 
-		node          = *node_location; 
+		node_location = &(node->next);
+		node          = *node_location;
 	}
-	
-	void *item = NULL; 
+
+	void *item = NULL;
 	if (node)
 	{
-		item = node->item; 
+		item = node->item;
 		*node_location = node->next;
 		vtr::free(node->key);
-		vtr::free(node); 		 
-		h->count--; 
+		vtr::free(node);
+		h->count--;
 	}
-	
+
 	return item;
 }
 
 void* ___hashtable_get(hashtable_t *h, const void *key, size_t key_length)
 {
-	unsigned int i = ___hashtable_hash(key, key_length, h->store_size); 
+	unsigned int i = ___hashtable_hash(key, key_length, h->store_size);
 
-	hashtable_node_t *node = h->store[i]; 
+	hashtable_node_t *node = h->store[i];
 	while(node && !___hashtable_compare_keys(key, key_length, node->key, node->key_length))
-		node = node->next; 
+		node = node->next;
 
-	void *item = NULL; 
+	void *item = NULL;
 	if (node)
-		item = node->item; 
+		item = node->item;
 
-	return item; 
-}	
+	return item;
+}
 
-void** ___hashtable_get_all(hashtable_t *h) {		
+void** ___hashtable_get_all(hashtable_t *h) {
 	int count = 0;
-	void **items = (void **)malloc(h->count * sizeof(void*));  
+	void **items = (void **)malloc(h->count * sizeof(void*));
 
 	int i;
 	for (i = 0; i < h->store_size; i++)
 	{
-		hashtable_node_t *node = h->store[i]; 
+		hashtable_node_t *node = h->store[i];
 		while(node)
 		{
 			items[count++] = node->item;
-			node = node->next; 
+			node = node->next;
 		}
-	} 
-	return items; 
+	}
+	return items;
 }
 
 int ___hashtable_is_empty (hashtable_t *h)
@@ -185,8 +185,8 @@ int ___hashtable_is_empty (hashtable_t *h)
 
 int ___hashtable_compare_keys(const void *key, size_t key_len, const void* key1, size_t key_len1)
 {
-	if (key_len != key_len1) return FALSE; 
-	return memcmp(key, key1, key_len) == 0; 
+	if (key_len != key_len1) return FALSE;
+	return memcmp(key, key1, key_len) == 0;
 }
 
 unsigned int ___hashtable_hash(const void *key, size_t key_len, int max_key)

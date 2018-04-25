@@ -47,11 +47,11 @@ int main(int argc, char **argv) {
     ac1_init(argv[1]);
 
     coeff_t num=-1;
-    if(argc==3) 
+    if(argc==3)
         num = atoi(argv[2]);
-    
+
     /* output all chains (internal format) */
-    if(argc == 2) 
+    if(argc == 2)
 	for(chainiter_t i = CHAINS->begin(); i != CHAINS->end(); ++i)
 	    (*i).second->output(cout);
     /* output *code* for one chain */
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	FORALL(inter, i) cout << (*i) << " ";
 	cout << endl;
     }
-    
+
     ac1_finish();
 }
 #endif

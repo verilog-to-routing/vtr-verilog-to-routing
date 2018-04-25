@@ -17,7 +17,7 @@ void print_endpoint_timing(char* filename) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
 	vtr::vector_map<ClusterBlockId, std::vector<int>> tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
-    
+
     fprintf(fp, "{\n");
     fprintf(fp, "  \"endpoint_timing\": [\n");
 
@@ -76,6 +76,6 @@ void print_tnode_info(FILE* fp, int inode, const char* identifier) {
 
     fprintf(fp, "      \"T_arr\": \"%g\",\n", T_arr);
     fprintf(fp, "      \"T_req\": \"%g\"\n", T_req);
-     
+
     fprintf(fp, "    }");
 }

@@ -11,7 +11,7 @@ namespace vtr {
 void free_ivec_vector(std::vector<std::vector<int>> ivec_vector, int nrmin, int nrmax) {
 
 	/* Frees a 1D array of integer vectors.                              */
-    
+
 	int i;
 
 	for (i = nrmin; i <= nrmax; i++)
@@ -39,7 +39,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 
 		if (list_head != nullptr ) {
             throw VtrError(vtr::string_fmt("alloc_ivector_and_copy_int_list: Copied %d elements, "
-                                           "but list at %p contains more.", num_items, (void *) list_head), 
+                                           "but list at %p contains more.", num_items, (void *) list_head),
                             __FILE__, __LINE__);
 		}
 		return;
@@ -57,7 +57,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 
 	if (linked_int->next != nullptr ) {
         throw VtrError(vtr::string_fmt("alloc_ivector_and_copy_int_list: Copied %d elements, "
-                                       "but list at %p contains more.", num_items, (void *) list_head), 
+                                       "but list at %p contains more.", num_items, (void *) list_head),
                         __FILE__, __LINE__);
 	}
 

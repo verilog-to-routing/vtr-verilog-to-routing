@@ -467,7 +467,7 @@ void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data
 
 }
 
-/* Grid was initialized from the architecture file. This function checks 
+/* Grid was initialized from the architecture file. This function checks
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const DeviceGrid& grid) {
     pugi::xml_node grid_node;
@@ -498,7 +498,7 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, con
     }
 }
 
-/* Blocks were initialized from the architecture file. This function checks 
+/* Blocks were initialized from the architecture file. This function checks
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
@@ -572,7 +572,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     }
 }
 
-/* Segments was initialized already. This function checks 
+/* Segments was initialized already. This function checks
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf * segment_inf) {
     pugi::xml_node Segment, subnode;
@@ -723,7 +723,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
 }
 
 /* This function sets the Source pins, sink pins, ipin, and opin
- * to their unique cost index identifier. CHANX and CHANY cost indicies are set after the 
+ * to their unique cost index identifier. CHANX and CHANY cost indicies are set after the
  * seg_id is read in from the rr graph*/
 void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
         const bool is_global_graph, const int num_seg_types) {

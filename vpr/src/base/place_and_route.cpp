@@ -215,14 +215,14 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
             save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
             //If the user gave us a minW hint (and we routed successfully at that width)
-            //make the initial guess closer to the current value instead of the standard guess. 
+            //make the initial guess closer to the current value instead of the standard guess.
             //
             //To avoid wasting time at unroutable channel widths we want to determine an un-routable (but close
             //to the hint channel width). Picking a value too far below the hint may cause us to waste time
             //at an un-routable channel width.  Picking a value too close to the hint may cause a spurious
             //failure (c.f. verify_binary_search). The scale_factor below seems a reasonable compromise.
             //
-            //Note this is only active for only the first re-routing after the initial guess, 
+            //Note this is only active for only the first re-routing after the initial guess,
             //and we use the default scale_factor otherwise
             if (using_minw_hint && attempt_count == 1) {
                 scale_factor = 1.1;
@@ -266,9 +266,9 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
     /* The binary search above occassionally does not find the minimum    *
      * routeable channel width.  Sometimes a circuit that will not route  *
-     * in 19 channels will route in 18, due to router flukiness.  If      *  
+     * in 19 channels will route in 18, due to router flukiness.  If      *
      * verify_binary_search is set, the code below will ensure that FPGAs *
-     * with channel widths of final-2 and final-3 wil not route           *  
+     * with channel widths of final-2 and final-3 wil not route           *
      * successfully.  If one does route successfully, the router keeps    *
      * trying smaller channel widths until two in a row (e.g. 8 and 9)    *
      * fail.                                                              */
@@ -343,10 +343,10 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
 			&device_ctx.chan_width,
-			device_ctx.num_arch_switches, 
+			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
-			router_opts.base_cost_type, 
+			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			arch->Directs, arch->num_directs,
@@ -378,7 +378,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
 void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
-    /* Assigns widths to channels (in tracks).  Minimum one track          * 
+    /* Assigns widths to channels (in tracks).  Minimum one track          *
      * per channel. The channel distributions read from the architecture  *
      * file are scaled by cfactor.                                         */
 
@@ -446,8 +446,8 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 static float comp_width(t_chan * chan, float x, float separation) {
 
     /* Return the relative channel density.  *chan points to a channel   *
-     * functional description data structure, and x is the distance      *   
-     * (between 0 and 1) we are across the chip.  separation is the      *   
+     * functional description data structure, and x is the distance      *
+     * (between 0 and 1) we are across the chip.  separation is the      *
      * distance between two channels, in the 0 to 1 coordinate system.   */
 
     float val;
@@ -503,7 +503,7 @@ static float comp_width(t_chan * chan, float x, float separation) {
  * This updates both the external inter-block net connecitivity (i.e. the clustered netlist), and the intra-block
  * connectivity (since the internal pins used also change).
  *
- * This function should only be called once 
+ * This function should only be called once
  */
 void post_place_sync() {
     /* Go through each block */

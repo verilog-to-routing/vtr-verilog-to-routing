@@ -21,7 +21,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,7 +54,7 @@ void graphVizOutputNetlist(char* path, const char* name, short marker_value, net
 
         /* open graph */
         fprintf(fp, "digraph G {\n\tranksep=.25;\n");
-	
+
 	depth_first_traversal_graph_display(fp, marker_value, netlist);
 
         /* close graph */
@@ -105,7 +105,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 
 		/* mark that we have visitied this node now */
 		node->traverse_visited = traverse_mark_number;
-		
+
 		temp_string = make_simple_name(node->name, "^-+.", '_');
 		if ((node->type == FF_NODE) || (node->type == BUF_NODE))
 		{
@@ -163,7 +163,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 					sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
-				fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2); 
+				fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2);
 				if (next_net->fanout_pins[j]->name)
 					fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
 				fprintf(fp, ";\n");
@@ -192,7 +192,7 @@ void graphVizOutputCombinationalNet(char* path, const char* name, short marker_v
 
         /* open graph */
         fprintf(fp, "digraph G {\n\tranksep=.25;\n");
-	
+
 	forward_traversal_net_graph_display(fp, marker_value, current_node);
 	backward_traversal_net_graph_display(fp, marker_value, current_node);
 
@@ -223,7 +223,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 
 		/* mark it */
 		current_node->traverse_visited = marker_value;
-		
+
 		/* printout the details of it */
 		temp_string = make_simple_name(current_node->name, "^-+.", '_');
 		if (index_in_stack == 0)
@@ -256,7 +256,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 		for (j = 0; j < current_node->num_output_pins; j++)
 		{
 			if (current_node->output_pins[j] == NULL)
-				continue; 
+				continue;
 
 			for (k = 0; k < current_node->output_pins[j]->net->num_fanout_pins; k++)
 			{
@@ -326,7 +326,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 
 		/* mark it */
 		current_node->traverse_visited = marker_value;
-		
+
 		/* printout the details of it */
 		temp_string = make_simple_name(current_node->name, "^-+.", '_');
 		if (index_in_stack != 0)
@@ -358,7 +358,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 		for (j = 0; j < current_node->num_input_pins; j++)
 		{
 			if (current_node->input_pins[j] == NULL)
-				continue; 
+				continue;
 
 			if ((current_node->input_pins[j] == NULL) || (current_node->input_pins[j]->net == NULL) || (current_node->input_pins[j]->net->driver_pin == NULL))
 				continue;

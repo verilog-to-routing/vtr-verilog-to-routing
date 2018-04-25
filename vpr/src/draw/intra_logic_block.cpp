@@ -1,16 +1,16 @@
 /* This file holds subroutines responsible for drawing inside clustered logic blocks.
- * The four main subroutines defined here are draw_internal_alloc_blk(), 
+ * The four main subroutines defined here are draw_internal_alloc_blk(),
  * draw_internal_init_blk(), draw_internal_draw_subblk(), and toggle_blk_internal().
- * When VPR graphics initially sets up, draw_internal_alloc_blk() will be called from 
+ * When VPR graphics initially sets up, draw_internal_alloc_blk() will be called from
  * draw.c to allocate space for the structures needed for internal blks drawing.
  * Before any drawing, draw_internal_init_blk() will pre-compute a bounding box
- * for each sub-block in the pb_graph of every physical block type. When the menu button 
+ * for each sub-block in the pb_graph of every physical block type. When the menu button
  * "Blk Internal" is pressed, toggle_blk_internal() will enable internal blocks drawing.
- * Then, with each subsequent click on the button, toggle_blk_internal() will propel one 
- * more level of pbs to be drawn. Draw_internal_draw_subblk() will be called whenever 
- * new blocks need to be drawn, and this function is responsible for drawing sub-blocks 
+ * Then, with each subsequent click on the button, toggle_blk_internal() will propel one
+ * more level of pbs to be drawn. Draw_internal_draw_subblk() will be called whenever
+ * new blocks need to be drawn, and this function is responsible for drawing sub-blocks
  * from the pre-computed bounding box values.
- * 
+ *
  * Author: Long Yu (Mike) Wang
  * Date: August 2013, May 2014
  *
@@ -37,11 +37,11 @@ using namespace std;
 
 /************************* Subroutines local to this file. *******************************/
 
-static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
+static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node,
 									  float parent_width, float parent_height);
-static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
-									  int num_pb_types, int type_index, int num_pb, int pb_index, 
-									  float parent_width, float parent_height, 
+static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node,
+									  int num_pb_types, int type_index, int num_pb, int pb_index,
+									  float parent_width, float parent_height,
 									  float *blk_width, float *blk_height);
 static int draw_internal_find_max_lvl(t_pb_type pb_type);
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
@@ -56,10 +56,10 @@ void draw_internal_alloc_blk() {
 	t_draw_coords *draw_coords;
 	int i;
 	t_pb_graph_node *pb_graph_head;
-	
+
 	/* Call accessor function to retrieve global variables. */
 	draw_coords = get_draw_coords_vars();
-	
+
 	/* Create a vector holding coordinate information for each type of physical logic
 	 * block.
 	 */
@@ -70,11 +70,11 @@ void draw_internal_alloc_blk() {
 		/* Empty block has no sub_blocks */
 		if (&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE)
 			continue;
-		
+
 		pb_graph_head = device_ctx.block_types[i].pb_graph_head;
-		
-		/* Create an vector with size equal to the total number of pins for each type 
-		 * of physical logic block, in order to uniquely identify each sub-block in 
+
+		/* Create an vector with size equal to the total number of pins for each type
+		 * of physical logic block, in order to uniquely identify each sub-block in
 		 * the pb_graph of that type.
 		 */
 		draw_coords->blk_info.at(i).subblk_array.resize(pb_graph_head->total_pb_pins);
@@ -127,7 +127,7 @@ void draw_internal_init_blk() {
 			draw_coords->get_tile_width()
 		);
 
-		draw_internal_load_coords(type_descriptor_index, pb_graph_head_node, 
+		draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
 								  clb_bbox.get_width(), clb_bbox.get_height());
 
 		/* Determine the max number of sub_block levels in the FPGA */
@@ -146,7 +146,7 @@ void draw_internal_draw_subblk() {
 	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			/* Only the first block of a group should control drawing */
-			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) 
+			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0)
 				continue;
 
 			/* Don't draw if tile is empty. This includes corners. */
@@ -172,7 +172,7 @@ void draw_internal_draw_subblk() {
 }
 
 
-/* This function traverses through the pb_graph of a certain physical block type and 
+/* This function traverses through the pb_graph of a certain physical block type and
  * finds the maximum sub-block levels for that type.
  */
 static int draw_internal_find_max_lvl(t_pb_type pb_type) {
@@ -200,7 +200,7 @@ static int draw_internal_find_max_lvl(t_pb_type pb_type) {
  * traverses through the pb_graph for a descriptor_type (given by type_descrip_index), and
  * calls helper function to compute bounding box values.
  */
-static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
+static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node,
 									  float parent_width, float parent_height) {
 	int i, j, k;
 	t_pb_type *pb_type;
@@ -225,17 +225,17 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *p
 			/* Find the number of instances for each child pb_type. */
 			num_pb = mode.pb_type_children[j].num_pb;
 
-			for (k = 0; k < num_pb; ++k) { 
+			for (k = 0; k < num_pb; ++k) {
 				/* Compute bound box for block. Don't call if pb_type is root-level pb. */
-				draw_internal_calc_coords(type_descrip_index, 
-										  &pb_graph_node->child_pb_graph_nodes[i][j][k], 
+				draw_internal_calc_coords(type_descrip_index,
+										  &pb_graph_node->child_pb_graph_nodes[i][j][k],
 										  num_children, j, num_pb, k,
-										  parent_width, parent_height, 
-										  &blk_width, &blk_height);		
+										  parent_width, parent_height,
+										  &blk_width, &blk_height);
 
 				/* Traverse to next level in the pb_graph */
-				draw_internal_load_coords(type_descrip_index, 
-										  &pb_graph_node->child_pb_graph_nodes[i][j][k], 
+				draw_internal_load_coords(type_descrip_index,
+										  &pb_graph_node->child_pb_graph_nodes[i][j][k],
 										  blk_width, blk_height);
 			}
 		}
@@ -244,14 +244,14 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *p
 }
 
 
-/* Helper function which computes bounding box values for a sub-block. The coordinates 
+/* Helper function which computes bounding box values for a sub-block. The coordinates
  * are relative to the left and bottom corner of the parent block.
  */
-static void 
-draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
-						  int num_pb_types, int type_index, int num_pb, int pb_index, 
-						  float parent_width, float parent_height, 
-						  float *blk_width, float *blk_height) 
+static void
+draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node,
+						  int num_pb_types, int type_index, int num_pb, int pb_index,
+						  float parent_width, float parent_height,
+						  float *blk_width, float *blk_height)
 {
 	float parent_drawing_width, parent_drawing_height;
 	float sub_tile_x, sub_tile_y;
@@ -285,8 +285,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	parent_drawing_height = parent_height * (NORMAL_FRACTION_PARENT_HEIGHT / capacity_divisor);
 
 
-	/* The left and bottom corner (inside the parent block) of the space to draw 
-	 * child blocks. 
+	/* The left and bottom corner (inside the parent block) of the space to draw
+	 * child blocks.
 	 */
 	sub_tile_x = parent_width * FRACTION_PARENT_PADDING_X;
 	sub_tile_y = parent_height * FRACTION_PARENT_PADDING_BOTTOM;
@@ -315,9 +315,9 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	return;
 }
 
-/* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph 
+/* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
- * each click on the "Blk Internal" button, a new level is shown. 
+ * each click on the "Blk Internal" button, a new level is shown.
  */
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type) {
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -339,7 +339,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 			// if this is a top level pb, and only if it isn't selected (ie. a funny colour),
 			// overwrite it. (but stil draw the text)
 			setcolor(WHITE);
-			fillrect(abs_bbox); 
+			fillrect(abs_bbox);
 			setcolor(BLACK);
 			setlinestyle(SOLID);
 			drawrect(abs_bbox);
@@ -498,13 +498,13 @@ void draw_logical_connections() {
 				continue; // not showing all, and not the sperified block, so skip
 			}
 
-			draw_one_logical_connection(driver_pin_id, sink_pin_id);		
+			draw_one_logical_connection(driver_pin_id, sink_pin_id);
 		}
 	}
 }
 
 /**
- * Helper function for draw_one_logical_connection(...). 
+ * Helper function for draw_one_logical_connection(...).
  * We return the index of the pin in the context of the *model*
  * This is used to determine where to draw connection start/end points
  *
@@ -538,7 +538,7 @@ void find_pin_index_at_model_scope(
                 //Get the pin index in the port
                 int atom_port_index = atom_ctx.nlist.pin_port_bit(pin_id);
 
-                //The index of this pin in the model is the pins counted so-far 
+                //The index of this pin in the model is the pins counted so-far
                 //(i.e. accross previous ports) plus the index in the port
                 *pin_index = pin_cnt + atom_port_index;
             }
@@ -588,7 +588,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 
 }
 
-/* This function checks whether a top-level clb has been highlighted. It does 
+/* This function checks whether a top-level clb has been highlighted. It does
  * so by checking whether the color in this block is default color.
  */
 static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_type_ptr type) {
@@ -617,7 +617,7 @@ int highlight_sub_block(const t_point& point_in_clb, ClusterBlockId clb_index, t
 
 	int max_depth = draw_state->show_blk_internal;
 
-	t_pb* new_selected_sub_block = 
+	t_pb* new_selected_sub_block =
 		highlight_sub_block_helper(clb_index, pb, point_in_clb, max_depth);
 	if (new_selected_sub_block == nullptr) {
 		get_selected_sub_block_info().clear();
@@ -635,7 +635,7 @@ int highlight_sub_block(const t_point& point_in_clb, ClusterBlockId clb_index, t
  */
 t_pb* highlight_sub_block_helper(
 	const ClusterBlockId clb_index, t_pb* pb, const t_point& local_pt, int max_depth) {
-	
+
 	t_draw_coords *draw_coords = get_draw_coords_vars();
 	t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 

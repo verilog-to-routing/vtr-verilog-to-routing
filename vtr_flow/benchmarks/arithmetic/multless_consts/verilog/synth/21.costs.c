@@ -2,7 +2,7 @@
    up to 20 bits. For all constants, except 699829, 5 additions suffice.
    699829 requires 6 additions. */
 
- int CBITS = 20; 
+ int CBITS = 20;
  int COSTS[] = { 0, 0, 0, 1, 0, 1, 1, 1,
 0, 1, 1, 2, 1, 2, 1, 1, 0, 1, 1, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 1,
 1, 0, 1, 1, 2, 1, 2, 2, 2, 1, 2, 2, 3, 2, 2, 2, 2, 1, 2, 2, 2, 2, 3,

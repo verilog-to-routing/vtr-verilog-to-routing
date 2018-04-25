@@ -126,15 +126,15 @@ static void print_stats() {
 }
 
 static const char * clustering_xml_net_text(AtomNetId net_id) {
-	/* This routine prints out the atom_ctx.nlist net name (or open).  
+	/* This routine prints out the atom_ctx.nlist net name (or open).
      * net_num is the index of the atom_ctx.nlist net to be printed
 	 */
-	
+
 	if (!net_id) {
 		return "open";
 	} else {
         auto& atom_ctx = g_vpr_ctx.atom();
-		return atom_ctx.nlist.net_name(net_id).c_str();		
+		return atom_ctx.nlist.net_name(net_id).c_str();
 	}
 }
 
@@ -148,14 +148,14 @@ static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, 
 	if (prev_node == OPEN) {
 		/* No previous driver implies that this is either a top-level input pin or a primitive output pin */
 		t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
-		VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == nullptr || 
+		VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == nullptr ||
 				(cur_pin->parent_node->pb_type->num_modes == 0 && cur_pin->port->type == OUT_PORT)
 				);
 		return clustering_xml_net_text(pb_route[inode].atom_net_id);
 	} else {
 		t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
 		t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
-		
+
 		for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
 			VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
 			if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) {
@@ -292,7 +292,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 				pugi::xml_node port_node = clock_node.append_child("port");
 				port_node.append_attribute("name") = pb_graph_node->pb_type->ports[i].name;
 
-				std::vector<std::string> pins;			
+				std::vector<std::string> pins;
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index = pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 					if (pb_type->parent_mode == nullptr) {
@@ -326,7 +326,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 							port_index++;
 						}
 					}
-					clustering_xml_open_block(block_node, type, 
+					clustering_xml_open_block(block_node, type,
 							&pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j],
 							j, is_used, pb_route);
 				}
@@ -343,7 +343,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 	t_mode *mode;
 	int port_index, node_index;
 	bool is_used;
-	
+
 	pb_type = pb->pb_graph_node->pb_type;
 	pb_graph_node = pb->pb_graph_node;
 	mode = &pb_type->modes[pb->mode];
@@ -394,8 +394,8 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 			}
 			port_node.text().set(vtr::join(pins.begin(), pins.end(), " ").c_str());
 
-            //The cluster router may have rotated equivalent pins (e.g. LUT inputs), 
-            //record the resulting rotation here so it can be unambigously mapped 
+            //The cluster router may have rotated equivalent pins (e.g. LUT inputs),
+            //record the resulting rotation here so it can be unambigously mapped
             //back to the atom netlist
             if(pb_type->ports[i].equivalent && pb_type->parent_mode != nullptr && pb_type->num_modes == 0) {
                 //This is a primitive with equivalent inputs
@@ -469,7 +469,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 			port_index++;
 		}
 	}
-	
+
 
 	pugi::xml_node clock_node = block_node.append_child("clocks");
 
@@ -479,7 +479,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 			pugi::xml_node port_node = clock_node.append_child("port");
 			port_node.append_attribute("name") = pb_graph_node->pb_type->ports[i].name;
 
-			std::vector<std::string> pins;			
+			std::vector<std::string> pins;
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 				node_index = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == nullptr) {
@@ -516,7 +516,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 							port_index++;
 						}
 					}
-					clustering_xml_open_block(block_node, type, 
+					clustering_xml_open_block(block_node, type,
 							&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j],
 							j, is_used, pb_route);
 				}
@@ -566,7 +566,7 @@ void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra
 			}
 			inputs.push_back(atom_ctx.nlist.block_name(blk_id));
 			break;
-			
+
         case AtomBlockType::OUTPAD:
 			if (skip_clustering) {
 				VTR_ASSERT(0);
@@ -581,8 +581,8 @@ void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra
 			break;
 
 		default:
-			vtr::printf_error(__FILE__, __LINE__, 
-					"in output_netlist: Unexpected type %d for atom block %s.\n", 
+			vtr::printf_error(__FILE__, __LINE__,
+					"in output_netlist: Unexpected type %d for atom block %s.\n",
 					type, atom_ctx.nlist.block_name(blk_id).c_str());
 		}
 	}

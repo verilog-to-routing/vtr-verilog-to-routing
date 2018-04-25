@@ -18,12 +18,12 @@ enum e_seg_details_type {
 t_rr_node_indices alloc_and_load_rr_node_indices(
 		const int max_chan_width,
         const DeviceGrid& grid,
-		int *index, 
+		int *index,
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y);
 
 int get_rr_node_index(
-		int x, int y, 
+		int x, int y,
 		t_rr_type rr_type, int ptc,
 		const t_rr_node_indices& L_rr_node_indices);
 
@@ -51,7 +51,7 @@ t_seg_details *alloc_and_load_seg_details(
 		const enum e_directionality directionality,
 		int *num_seg_details = nullptr);
 
-void alloc_and_load_chan_details( 
+void alloc_and_load_chan_details(
         const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
@@ -60,13 +60,13 @@ void alloc_and_load_chan_details(
 		const t_seg_details *seg_details,
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
-t_chan_details init_chan_details( 
+t_chan_details init_chan_details(
         const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const int num_seg_details,
 		const t_seg_details *seg_details,
 		const enum e_seg_details_type seg_details_type);
-void obstruct_chan_details( 
+void obstruct_chan_details(
         const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
@@ -87,7 +87,7 @@ void adjust_seg_details(
 
 void free_seg_details(
 		t_seg_details *seg_details,
-		const int max_chan_width); 
+		const int max_chan_width);
 void free_chan_details(
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y,

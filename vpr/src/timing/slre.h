@@ -62,7 +62,7 @@
                      SLRE_STRING, sizeof(uri), uri,
                      SLRE_INT,sizeof(http_version_major),&http_version_major,
                      SLRE_INT,sizeof(http_version_minor),&http_version_minor);
- 
+
   if (error != NULL) {
     printf("Error parsing HTTP request: %s\n", error);
   } else {

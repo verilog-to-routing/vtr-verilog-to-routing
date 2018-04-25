@@ -28,7 +28,7 @@ class DeviceGrid {
 
         std::string name_;
 
-        //Note that vtr::Matrix operator[] returns and intermediate type 
+        //Note that vtr::Matrix operator[] returns and intermediate type
         //which can be used or indexing in the second dimension, allowing
         //traditional 2-d indexing to be used
         vtr::Matrix<t_grid_tile> grid_;

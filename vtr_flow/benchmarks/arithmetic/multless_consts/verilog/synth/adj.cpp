@@ -42,10 +42,10 @@ void cfinsert(coeff_t c, cost_t cost, genset_t &where) {
     }
 }
 
-struct adder_t { 
+struct adder_t {
     adder_t() { c=1; in1=in2=0; }
     adder_t(coeff_t coef, int i1, int i2) : c(coef), in1(i1), in2(i2) {}
-    coeff_t c; int in1; int in2; 
+    coeff_t c; int in1; int in2;
 };
 
 void compute_gen_set(genset_t &result, int cost, vector<adder_t> &adders, int start) {
@@ -55,7 +55,7 @@ void compute_gen_set(genset_t &result, int cost, vector<adder_t> &adders, int st
     bool last = start == (adders.size()-1);
     coeff_t c1 = adders[ adders[start].in1 ].c;
     coeff_t c2 = adders[ adders[start].in2 ].c;
-      
+
     for(int sign = 0; sign <= 1; ++sign) {
 	/* no shift by 0 for sign=1(minus) */
 	int minshift;
@@ -118,8 +118,8 @@ void compute_gen_set(const adj_t *adj) {
 
 
 /* cost of 1 adjacency matrix */
-adj_t::adj_t() { 
-    cost = 1; 
+adj_t::adj_t() {
+    cost = 1;
     in1 = in2 = 0;
     pred = NULL;
 }
@@ -156,7 +156,7 @@ int adj_t::num_outputs() {
 //_|i|1|2|3
 //i|- 2 2 1
 //1|  -   1
-//2|    -  
+//2|    -
 //3|      -
 void adj_t::output() const {
     printf("_|i");
@@ -175,7 +175,7 @@ void adj_t::output() const {
 }
 
 void adj_t::output_in(int c) const {
-    if(c >= cost) 
+    if(c >= cost)
 	return;
     else {
 	if(pred!=NULL)
@@ -186,7 +186,7 @@ void adj_t::output_in(int c) const {
 	else                  printf("  ");
     }
 }
- 
+
 void adj_t::output_dot(int base) const {
     const adj_t *p = this;
     while(p!=NULL) {
@@ -216,7 +216,7 @@ void generate_adjs(int cost) {
 			printf("n=%d\n",n++);
 		    }
 		    if(compute_gen_sets && adjnew->is_valid()) {
-			printf("> GEN: ", dest.size()); fflush(stdout); 
+			printf("> GEN: ", dest.size()); fflush(stdout);
 			compute_gen_set(adjnew);
 			--compute_gen_sets;
 		    }
@@ -234,11 +234,11 @@ void output_adjs(int cost) {
     int nvalid=0;
     printf("=============== cost=%d ==================\n", cost);
     for(adjiter_t i=adjvec.begin(); i!=adjvec.end(); ++i) {
-	if((*i)->is_valid()) { 
+	if((*i)->is_valid()) {
 	    nvalid++;
 	    (*i)->output();
 	    if(COMPUTE_GEN_SETS) {
-		printf("> GEN "); 
+		printf("> GEN ");
 		output_gen_set(GENSETS[*i]);
 	    }
 	}
@@ -282,7 +282,7 @@ void output_stats() {
     }
     printf("Total: " COEFF_FMT "\n", total);
     printf(COEFF_FMT " missing\n", total - (MAX_PRINT>>1));
-} 
+}
 
 int main(int argc, char **argv) {
     if(argc==1) {
@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
     }
     printf("\nGEN_COUNT = %d\n", GEN_COUNT);
     printf("expected = %d\n", MAX_PRINT >> 1);
-    printf("NCALLS = %ld\n", NCALLS); 
+    printf("NCALLS = %ld\n", NCALLS);
 
     output_stats();
     //output_dot(maxcost);

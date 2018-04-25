@@ -26,7 +26,7 @@ using namespace std;
 #include "hmetis_graph_writer.h"
 static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output_file_name, const int num_parts);
 //TODO: CHANGE THIS HARDCODING
-static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe "); 
+static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis-1.5-WIN32/shmetis.exe ");
 #endif
 
 /* #define DUMP_PB_GRAPH 1 */
@@ -34,7 +34,7 @@ static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 
-void try_pack(t_packer_opts *packer_opts, 
+void try_pack(t_packer_opts *packer_opts,
         const t_arch * arch,
 		const t_model *user_models,
         const t_model *library_models,
@@ -47,7 +47,7 @@ void try_pack(t_packer_opts *packer_opts,
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
     std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
-	const t_model *cur_model; 
+	const t_model *cur_model;
 	int num_models;
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
@@ -85,7 +85,7 @@ void try_pack(t_packer_opts *packer_opts,
             ++num_p_outputs;
         }
     }
-	
+
 	vtr::printf_info("\n");
 	vtr::printf_info("After removing unused inputs...\n");
 	vtr::printf_info("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
@@ -93,7 +93,7 @@ void try_pack(t_packer_opts *packer_opts,
 
 	vtr::printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
-    list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns, 
+    list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns,
                                 atom_molecules,
                                 expected_lowest_cost_pb_gnode,
                                 num_packing_patterns);
@@ -151,7 +151,7 @@ void try_pack(t_packer_opts *packer_opts,
 
 		// Print each block's partition
 		vtr::printf_info("Partitioning complete\n");
-		
+
 		vector<vector<AtomBlockId>> print_partitions(num_parts);
 		for (auto blk_id : atom_ctx.nlist.blocks()) {
 			print_partitions[partitions[blk_id]].push_back(blk_id);
@@ -166,7 +166,7 @@ void try_pack(t_packer_opts *packer_opts,
 #endif
 
     do_clustering(arch, list_of_pack_molecules, num_models,
-            packer_opts->global_clocks, is_clock, 
+            packer_opts->global_clocks, is_clock,
             atom_molecules,
             expected_lowest_cost_pb_gnode,
             packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
@@ -205,10 +205,10 @@ void try_pack(t_packer_opts *packer_opts,
 }
 
 float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_switch, float &R_switch, float &Cout_switch){
-	/* Fetches delay, resistance and output capacitance of the architecture switch at switch_index. 
+	/* Fetches delay, resistance and output capacitance of the architecture switch at switch_index.
 	Returns the total delay through the switch. Used to calculate inter-cluster net delay. */
 
-	/* The intrinsic delay may depend on fanin to the switch. If the delay map of a 
+	/* The intrinsic delay may depend on fanin to the switch. If the delay map of a
 	   switch from the architecture file has multiple (#inputs, delay) entries, we
 	   interpolate/extrapolate to get the delay at 'switch_fanin'. */
     auto& device_ctx = g_vpr_ctx.device();
@@ -217,7 +217,7 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	R_switch = device_ctx.arch_switch_inf[switch_index].R;
 	Cout_switch = device_ctx.arch_switch_inf[switch_index].Cout;
 
-	/* The delay through a loaded switch is its intrinsic (unloaded) 
+	/* The delay through a loaded switch is its intrinsic (unloaded)
 	delay plus the product of its resistance and output capacitance. */
 	return Tdel_switch + R_switch * Cout_switch;
 }
@@ -226,7 +226,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 
 	/* Looks through all the atom blocks to find and mark all the clocks, by setting
 	 * the corresponding entry by adding the clock to is_clock.
-     * global_clocks is used 
+     * global_clocks is used
 	 * only for an error check.                                                */
 
 	int num_clocks = 0;
@@ -250,7 +250,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 	 * locally generated clocks.                                             */
 
 	if (num_clocks > 1 && global_clocks) {
-		vtr::printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__,
 				"All %d clocks will be treated as global.\n", num_clocks);
 	}
 
@@ -270,7 +270,7 @@ static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output
 	// Check that # of lines in output file matches # of blocks/vertices
 	auto& atom_ctx = g_vpr_ctx.atom();
 	VTR_ASSERT((int)atom_ctx.nlist.blocks().size() == count(istreambuf_iterator<char>(fp), istreambuf_iterator<char>(), '\n'));
-	
+
 	partitions.resize(atom_ctx.nlist.blocks().size());
 
 	// Reset the filestream to the beginning and reread

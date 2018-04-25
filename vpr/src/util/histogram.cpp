@@ -10,8 +10,8 @@
 
 void print_histogram(std::vector<HistogramBucket> histogram) {
     size_t char_width = 80;
-    
-    //Determine the maximum count 
+
+    //Determine the maximum count
     size_t max_count = 0.;
     for(HistogramBucket bucket : histogram) {
         max_count = std::max(max_count, bucket.count);

@@ -15,8 +15,8 @@ namespace pugiutil {
             std::string msg = load_result.description();
             auto line = location_data.line(load_result.offset);
             auto col = location_data.col(load_result.offset);
-            throw XmlError("Unable to load XML file '" + filename + "', " + msg 
-                           + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")", 
+            throw XmlError("Unable to load XML file '" + filename + "', " + msg
+                           + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
                            filename.c_str(), line);
         }
 
@@ -29,14 +29,14 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    pugi::xml_node get_first_child(const pugi::xml_node node, 
-                                   const std::string& child_name, 
+    pugi::xml_node get_first_child(const pugi::xml_node node,
+                                   const std::string& child_name,
                                    const loc_data& loc_data,
                                    const ReqOpt req_opt) {
 
         pugi::xml_node child = node.child(child_name.c_str());
         if(!child && req_opt == REQUIRED) {
-            throw XmlError("Missing required child node '" + child_name + "' in parent node '" + node.name() + "'", 
+            throw XmlError("Missing required child node '" + child_name + "' in parent node '" + node.name() + "'",
                            loc_data.filename(), loc_data.line(node));
         }
         return child;
@@ -49,14 +49,14 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    pugi::xml_node get_single_child(const pugi::xml_node node, 
-                                    const std::string& child_name, 
+    pugi::xml_node get_single_child(const pugi::xml_node node,
+                                    const std::string& child_name,
                                     const loc_data& loc_data,
                                     const ReqOpt req_opt) {
         pugi::xml_node child = get_first_child(node, child_name, loc_data, req_opt);
 
         if(child && child.next_sibling(child_name.c_str())) {
-            throw XmlError("Multiple child '" + child_name + "' nodes found in parent node '" + node.name() + "' (only one expected)", 
+            throw XmlError("Multiple child '" + child_name + "' nodes found in parent node '" + node.name() + "' (only one expected)",
                            loc_data.filename(), loc_data.line(node));
         }
 
@@ -69,8 +69,8 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    size_t count_children(const pugi::xml_node node, 
-                          const std::string& child_name, 
+    size_t count_children(const pugi::xml_node node,
+                          const std::string& child_name,
                           const loc_data& loc_data,
                           const ReqOpt req_opt) {
         size_t count = 0;
@@ -92,7 +92,7 @@ namespace pugiutil {
     //  node - The parent xml node
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    size_t count_children(const pugi::xml_node node, 
+    size_t count_children(const pugi::xml_node node,
                           const loc_data& loc_data,
                           const ReqOpt req_opt) {
         size_t count = std::distance(node.begin(), node.end());
@@ -219,7 +219,7 @@ namespace pugiutil {
             }
         }
     }
-                        
+
 
     //Counts the number of attributes on the specified node
     //
@@ -239,14 +239,14 @@ namespace pugiutil {
 
         return count;
     }
-    
+
     //Gets a named property on an node and returns it.
     //
     //  node - The xml node
     //  attr_name - The attribute name
     //  loc_data - XML file location data
     //  req_opt - Whether the peropry is required (will error if required and not found) or optional. Defaults to REQUIRED
-    pugi::xml_attribute get_attribute(const pugi::xml_node node, 
+    pugi::xml_attribute get_attribute(const pugi::xml_node node,
                                       const std::string& attr_name,
                                       const loc_data& loc_data,
                                       const ReqOpt req_opt) {

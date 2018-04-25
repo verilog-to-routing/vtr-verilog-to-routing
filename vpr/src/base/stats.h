@@ -34,7 +34,7 @@ double linear_regression_vector(const std::vector<T>& vals, size_t start_x = 0) 
 	for (size_t x = start_x; x < vals.size(); ++x) {
 		x_avg += x;
 		y_avg += vals[x];
-	} 
+	}
 	x_avg /= (double) n;
 	y_avg /= (double) n;
 

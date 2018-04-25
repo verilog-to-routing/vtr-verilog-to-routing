@@ -18,7 +18,7 @@ static void PrintPb_types_recPower(FILE* Echo,
 
 /* Output the data from architecture data so user can verify it
  * was interpretted correctly. */
-void EchoArch(const char *EchoFile, const t_type_descriptor* Types, 
+void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
               const int NumTypes, const t_arch *arch) {
 	int i, j;
 	FILE * Echo;

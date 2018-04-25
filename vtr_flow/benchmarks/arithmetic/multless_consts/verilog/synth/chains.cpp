@@ -1,7 +1,7 @@
 #include "chains.h"
 #include <map>
 
-#define CKPR if(PRINT_CHAINS || PRINT_INSTRS) 
+#define CKPR if(PRINT_CHAINS || PRINT_INSTRS)
 int MAX_NPRINT = 5;
 bool PRINT_INSTRS = false;
 bool PRINT_CHAINS = false;
@@ -36,10 +36,10 @@ void output_current_chain(cost_t dest_cost, coeff_t coeff) {
 	(void)dest_cost;
     if(PRINT_CHAINS /*&& coeff <= MAX_PRINT*/) {
 	if(PRINT_CHAINS_MODE == CHAINS_PLAIN)
-	    CUR_CHAIN->output(cerr); 
+	    CUR_CHAIN->output(cerr);
 	else {
 	    cerr << "    CHAIN(" << coeff << ", ";
-	    CUR_CHAIN->output_c(cerr); 
+	    CUR_CHAIN->output_c(cerr);
 	    cerr << "); \n";
 	}
     }
@@ -77,7 +77,7 @@ inline void insert(cost_t dest_cost, coeff_t coeff) {
 	COSTVECS[dest_cost].push_back(coeff);
     }
     CKPR {
-	if(CUR_CHAIN!=0) { delete CUR_CHAIN; CUR_CHAIN = 0; } 
+	if(CUR_CHAIN!=0) { delete CUR_CHAIN; CUR_CHAIN = 0; }
     }
 }
 
@@ -90,10 +90,10 @@ void _insert_all_sumdiffs(bool is_left, cost_t dest_cost, coeff_t num1, coeff_t 
 	    CKPR { CUR_CHAIN = new add_chain(dest_cost, num1, num2, SUM(is_left, shift)); }
 	    insert(dest_cost, fundamental(sum));
 	    if(diff > 0) {
-		CKPR CUR_CHAIN = new add_chain(dest_cost, num1, num2, DIFF(is_left, shift)); 
+		CKPR CUR_CHAIN = new add_chain(dest_cost, num1, num2, DIFF(is_left, shift));
 	    }
 	    else {
-		CKPR CUR_CHAIN = new add_chain(dest_cost, num1, num2, RDIFF(is_left, shift)); 
+		CKPR CUR_CHAIN = new add_chain(dest_cost, num1, num2, RDIFF(is_left, shift));
 		diff = -diff;
 	    }
 	    insert(dest_cost, fundamental(diff));
@@ -140,7 +140,7 @@ void generate_leapfrog2(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
 	compute_all_sumdiffs(leap1, *s1, 1);
 	for(amiter_t l1 = leap1.begin(); l1 != leap1.end(); ++l1) {
 	    for(cfviter_t s2 = src2.begin(); s2 != src2.end(); ++s2) {
-		coeff_t prod = (*l1).first * (*s2); 
+		coeff_t prod = (*l1).first * (*s2);
 		if(prod < MAX_NUM) {
 		    addmap_t leap2;
 		    prod = fundamental(prod);
@@ -175,11 +175,11 @@ void generate_leapfrog3(cost_t src1_cost, cost_t src3_cost, cost_t dest_cost) {
 			compute_all_sumdiffs(leap3, prod, (*l1).first);
 			for(amiter_t l3 = leap3.begin(); l3 != leap3.end(); ++l3) {
 			    CKPR CUR_CHAIN = new leapfrog3_chain(
-			       dest_cost, *s1, *s3, 
+			       dest_cost, *s1, *s3,
 			       (*l1).second,
 			       (*l2).second,
 			       (*l3).second);
-			       
+
 			    insert(dest_cost, (*l3).first);
 			}
 		    }
@@ -223,7 +223,7 @@ void output_stats() {
     printf("Total: " COEFF_FMT "\n", total);
     printf(COEFF_FMT " missing\n", total - (MAX_PRINT>>1));
     delete [] count;
-} 
+}
 
 void output_costs() {
     if(PRINT_COSTS_MODE == COSTS_C) {
@@ -240,10 +240,10 @@ void output_costs() {
     }
     if(PRINT_COSTS_MODE == COSTS_C) cerr << " };";
     cerr << "\n";
-} 
+}
 
-// The following macro checks whether we already generated all required coefficients 
-#define CK if(GEN_COUNT < (MAX_PRINT>>1)) 
+// The following macro checks whether we already generated all required coefficients
+#define CK if(GEN_COUNT < (MAX_PRINT>>1))
 
 int main(int argc, char **argv) {
     if(argc==1) {
@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
     output_coeffs(6);
 
     output_stats();
-    if(PRINT_COSTS) 
+    if(PRINT_COSTS)
 	output_costs();
     delete GEN; delete COSTVECS;
     return 0;

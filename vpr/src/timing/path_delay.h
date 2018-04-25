@@ -11,21 +11,21 @@
 
 #ifdef PATH_COUNTING /* Path counting options: */
 	#define DISCOUNT_FUNCTION_BASE 100
-	/* The base of the exponential discount function used to calculate 
-	forward and backward path weights. Higher values discount paths 
+	/* The base of the exponential discount function used to calculate
+	forward and backward path weights. Higher values discount paths
 	with higher slacks more greatly. */
-	
+
 	#define FINAL_DISCOUNT_FUNCTION_BASE DISCOUNT_FUNCTION_BASE
 	/* The base of the exponential disount function used to calculate
-	path criticality from forward and backward weights. Higher values 
-	discount paths with higher slacks more greatly. By default, this 
+	path criticality from forward and backward weights. Higher values
+	discount paths with higher slacks more greatly. By default, this
 	is the same as the original discount function base. */
-	
+
 	#define PACK_PATH_WEIGHT 1
 	#define TIMING_GAIN_PATH_WEIGHT PACK_PATH_WEIGHT
 	#define PLACE_PATH_WEIGHT 0
 	#define ROUTE_PATH_WEIGHT 0
-	/* The percentage of total criticality taken from path criticality 
+	/* The percentage of total criticality taken from path criticality
 	as opposed to timing criticality. A value of 0 uses only timing
 	criticality; a value of 1 uses only path criticality. */
 #endif

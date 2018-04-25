@@ -1,17 +1,17 @@
 /***
  * this defines the structures for the adders if no file but optimization are requested
- * these are computed individually using adder_tree of each specific bit lenght 
- * 
+ * these are computed individually using adder_tree of each specific bit lenght
+ *
  * TODO there is no way to modify this structure at the moment or allow odin to overwrite these at runtime
- * one interesting thing to do would be to wrap vtr within odin and parse the result to optimize the given circuit 
- * and run through all the possible branches of the adder size since each bits can have different dependency down the line 
+ * one interesting thing to do would be to wrap vtr within odin and parse the result to optimize the given circuit
+ * and run through all the possible branches of the adder size since each bits can have different dependency down the line
  * and having Odin optimize these would allow for even faster circuit specif adder.
- * 
+ *
  * P.S it is extremely slow! running every branch for each adder_tree up to 128 bit took 4 days on 4 cores.
- * 
+ *
  * P.S.2 we can currently achieve this manualy using the bash script contained in vtr_flow/aritmetic_tasks/soft_adder
  */
- 
+
 #include "adders.h"
 #include "types.h"
 #include <stdlib.h>
@@ -22,7 +22,7 @@
 
 std::vector<adder_def_t*> list_of_adder_def;
 
-char adder_def_predefined[][32] = 
+char adder_def_predefined[][32] =
 {
 	"ripple,0",
 	"fixed,1",
@@ -165,7 +165,7 @@ void populate_adder_def()
 		std::string type(strtok(adder_def_predefined[lined],","));
 		if(type == "ripple")			out->type_of_adder = ripple;
 		else if (type == "fixed")		out->type_of_adder = fixed_step;
-		
+
 		out->next_step_size = strtol(strtok(NULL,","),NULL,10);
 		list_of_adder_def.push_back(out);
 	}
@@ -179,7 +179,7 @@ void read_adder_def_file(const char *input_file_name)
 	out->type_of_adder = ripple;
 
 	FILE *input_file = fopen(input_file_name,"r");
-	
+
 	const size_t line_size = 128;
 	char line_buf[line_size];
 	char *line = line_buf;

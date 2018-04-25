@@ -7,7 +7,7 @@ namespace vtr {
 
 //A std::vector container which is indexed by K (instead of size_t).
 //
-//The main use of this container is to behave like a std::vector which is 
+//The main use of this container is to behave like a std::vector which is
 //indexed by a vtr::StrongId.
 //
 //If you need more std::map-like (instead of std::vector-like) behaviour see
@@ -16,18 +16,18 @@ template<typename K, typename V>
 class vector : private std::vector<V> {
     public:
         //Pass through std::vector's types
-        using typename std::vector<V>::value_type; 
-        using typename std::vector<V>::allocator_type; 
-        using typename std::vector<V>::reference; 
-        using typename std::vector<V>::const_reference; 
-        using typename std::vector<V>::pointer; 
-        using typename std::vector<V>::const_pointer; 
-        using typename std::vector<V>::iterator; 
-        using typename std::vector<V>::const_iterator; 
-        using typename std::vector<V>::reverse_iterator; 
-        using typename std::vector<V>::const_reverse_iterator; 
-        using typename std::vector<V>::difference_type; 
-        using typename std::vector<V>::size_type; 
+        using typename std::vector<V>::value_type;
+        using typename std::vector<V>::allocator_type;
+        using typename std::vector<V>::reference;
+        using typename std::vector<V>::const_reference;
+        using typename std::vector<V>::pointer;
+        using typename std::vector<V>::const_pointer;
+        using typename std::vector<V>::iterator;
+        using typename std::vector<V>::const_iterator;
+        using typename std::vector<V>::reverse_iterator;
+        using typename std::vector<V>::const_reverse_iterator;
+        using typename std::vector<V>::difference_type;
+        using typename std::vector<V>::size_type;
 
         //Pass through std::vector's methods
         using std::vector<V>::vector;
@@ -67,21 +67,21 @@ class vector : private std::vector<V> {
 
         //Don't include operator[] and at() from std::vector,
         //since we redine them to take K instead of size_t
-        reference operator[](const K id) { 
+        reference operator[](const K id) {
             auto i = size_t(id);
-            return std::vector<V>::operator[](i); 
+            return std::vector<V>::operator[](i);
         }
-        const_reference operator[](const K id) const { 
+        const_reference operator[](const K id) const {
             auto i = size_t(id);
-            return std::vector<V>::operator[](i); 
+            return std::vector<V>::operator[](i);
         }
-        reference at(const K id) { 
+        reference at(const K id) {
             auto i = size_t(id);
-            return std::vector<V>::at(i); 
+            return std::vector<V>::at(i);
         }
         const_reference at(const K id) const {
             auto i = size_t(id);
-            return std::vector<V>::at(i); 
+            return std::vector<V>::at(i);
         }
 };
 

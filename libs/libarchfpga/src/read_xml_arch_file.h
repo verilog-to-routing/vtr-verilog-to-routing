@@ -3,7 +3,7 @@
 
 #include "arch_types.h"
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -21,7 +21,7 @@ XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
 const char* get_arch_file_name();
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

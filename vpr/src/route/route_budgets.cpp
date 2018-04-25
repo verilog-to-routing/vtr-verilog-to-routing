@@ -1,18 +1,18 @@
 /* This loads and manipulates the routing budgets. The budgets can be set
  * using different algorithms. The user chooses which algorithm to use using
- * the --routing_budgets_algorithm option. The minimax-PERT algorithm [H. Youssef, 
- * R. B. Lin and E. Shragowitz, "Bounds on net delays for VLSI circuits," 
- * in IEEE Transactions on Circuits and Systems II: Analog and Digital Signal 
+ * the --routing_budgets_algorithm option. The minimax-PERT algorithm [H. Youssef,
+ * R. B. Lin and E. Shragowitz, "Bounds on net delays for VLSI circuits,"
+ * in IEEE Transactions on Circuits and Systems II: Analog and Digital Signal
  * Processing, vol. 39, no. 11, pp. 815-824, Nov 1992.] uses weights
  * and slacks to calculate how much slack to allocate each connection. Slack
  * allocated = slack * weight / max_weight_of_all_paths_through_the_connection.
  * The weight here is the delay of the connection. The other method of slack allocating
  * is to set the max budgets as a scale of the delays by the pin criticality, and setting
- * the min budgets to zero. 
+ * the min budgets to zero.
  * This is implemented in order to consider hold time during routing.
- * With these minimum and maximum budgets, a target budget is found using RCV 
- * (R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve 
- * FPGA Timing While Repairing Short-Path Violations," in IEEE Transactions 
+ * With these minimum and maximum budgets, a target budget is found using RCV
+ * (R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve
+ * FPGA Timing While Repairing Short-Path Violations," in IEEE Transactions
  * on Computer-Aided Design of Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.)
  * The routing cost function tries to get the delay closest to the target.
  */
@@ -154,7 +154,7 @@ void route_budgets::calculate_delay_targets(ClusterNetId net_id, ClusterPinId pi
 
 void route_budgets::allocate_slack_using_weights(vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
     /*The minimax PERT algorithm uses a weight based approach to allocate slack for each connection
-     * The formula used where c is a connection is 
+     * The formula used where c is a connection is
      * slack_allocated(c) = (slack(c)*weight(c)/max_weight_of_all_path_through(c)).
      * Weights here are defined as the delay for the connections
      * Values for conditions in the while loops are pulled from the RCV paper*/
@@ -197,7 +197,7 @@ void route_budgets::allocate_slack_using_weights(vtr::vector_map<ClusterNetId, f
     }
 
     /*Post basic algorithm processing
-     *This prevents wasting resources by allowing the minimum budgets to go below 
+     *This prevents wasting resources by allowing the minimum budgets to go below
      * the lower bound so it will reflect absolute minimum delays in order to meet long path timing*/
     iteration = 0;
     max_budget_change = 900e-12;
@@ -299,7 +299,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
         bool keep_in_bounds, slack_allocated_type slack_type) {
     /*This function uses weights to calculate how much slack to allocate to a connection.
      The weights are deteremined by how much delay of the whole path is present in this connection*/
-    
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -360,7 +360,7 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
     /*
      *There may be multiple atom netlist pins connected to this CLB pin. Iterate through them all
      * Take the minimum of the atom pin slack as the CLB pin slack
-     * minimum slack is used since it is guarantee then to be freed from long path problems 
+     * minimum slack is used since it is guarantee then to be freed from long path problems
      */
     float clb_min_slack = delay_upper_bound[net_id][ipin];
     for (const AtomPinId pin : netlist_pin_lookup.connected_atom_pins(clb_pin)) {
@@ -397,7 +397,7 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
 float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
         analysis_type analysis_type, tatum::NodeId timing_node) {
     /*The total path delay through a connection is calculated using the arrival and required time
-     * Arrival time describes how long it took to arrive at this node and thus is the value for the 
+     * Arrival time describes how long it took to arrive at this node and thus is the value for the
      * delay before this node. The required time describes the time it should arrive this node.
      * To get the future path delay, take the required time at the sink of the longest/shortest path
      * and subtract the required time of the current node from it. The combination of the past
@@ -420,7 +420,7 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 
     /*To get the maximum path delay, we need
      * maximum arrival tag + (maximum sink required time - minimum current required time)*/
-    
+
     auto max_arrival_tag_iter = find_maximum_tag(arrival_tags);
     auto min_required_tag_iter = find_minimum_tag(required_tags);
 
@@ -476,11 +476,11 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(vtr::vector_ma
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id);
 
-            /* Pin criticality is between 0 and 1. 
-             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
-             * so shift down by 0.01) and cut off at 0.  This means that all pins with small 
-             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
-             * else becomes a bit less critical. This effect becomes more pronounced if 
+            /* Pin criticality is between 0 and 1.
+             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
+             * so shift down by 0.01) and cut off at 0.  This means that all pins with small
+             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything
+             * else becomes a bit less critical. This effect becomes more pronounced if
              * max_criticality is set lower. */
             // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
             pin_criticality = max(pin_criticality - (1.0 - router_opts.max_criticality), 0.0);
@@ -547,7 +547,7 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(vtr::vector_map<
 }
 
 void route_budgets::update_congestion_times(ClusterNetId net_id) {
-    /*Calling this function indicates this net is congested in 
+    /*Calling this function indicates this net is congested in
      this routing iteration. This vector keeps the number of
      consecutive times this net is congested */
     num_times_congested[net_id]++;

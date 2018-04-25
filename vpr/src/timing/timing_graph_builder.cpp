@@ -34,7 +34,7 @@ tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& dat
 
 TimingGraphBuilder::TimingGraphBuilder(const AtomNetlist& netlist,
                    AtomLookup& netlist_lookup)
-    : netlist_(netlist) 
+    : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , netlist_clock_drivers_(find_netlist_logical_clock_drivers(netlist_)) {
     //pass
@@ -190,7 +190,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
 
                 AtomNetId clock_net = netlist_.pin_net(output_pin);
                 vtr::printf_warning(__FILE__, __LINE__, "Inferred implicit clock source %s for netlist clock %s (possibly data used as clock)\n",
-                                    netlist_.pin_name(output_pin).c_str(), netlist_.net_name(clock_net).c_str()); 
+                                    netlist_.pin_name(output_pin).c_str(), netlist_.net_name(clock_net).c_str());
 
                 //This type of situation often requires cutting paths between the implicit clock source and
                 //it's inputs which can cause dangling combinational nodes. Do not error if this occurs.
@@ -306,7 +306,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                         //Is the sink a clock generator?
                         if (sink_tnode && clock_generator_tnodes.count(sink_tnode)) {
                             //Do not create the edge
-                            vtr::printf_warning(__FILE__, __LINE__, 
+                            vtr::printf_warning(__FILE__, __LINE__,
                                 "Timing edge from %s to %s will not be created since %s has been identified as a clock generator\n",
                                 netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                         } else {
@@ -347,7 +347,7 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
 
     NodeId driver_tnode = netlist_lookup_.atom_pin_tnode(driver_pin);
     VTR_ASSERT(driver_tnode);
-    
+
     for(AtomPinId sink_pin : netlist_.net_sinks(net)) {
         NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin);
         VTR_ASSERT(sink_tnode);
@@ -387,7 +387,7 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
             AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
 
             if(scc_set.count(sink_node)) {
-                vtr::printf_warning(__FILE__, __LINE__, "Arbitrarily disabling timing graph edge %zu (%s -> %s) to break combinational loop\n", 
+                vtr::printf_warning(__FILE__, __LINE__, "Arbitrarily disabling timing graph edge %zu (%s -> %s) to break combinational loop\n",
                                                          edge, netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                 return edge;
             }

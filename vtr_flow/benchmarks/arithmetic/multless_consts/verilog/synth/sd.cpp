@@ -24,14 +24,14 @@ int main(int argc, char **argv) {
     srand(time(0));
     init_synth(argc-1, argv+1);
 
-    double totalcsd = 0.0, totalbits = 0.0, 
+    double totalcsd = 0.0, totalbits = 0.0,
 	   totalopt = 0.0;
 
     for(int n = 0; n < NTESTS; ++n) {
 	create_random_problem(1);
 	if(PRINT_TARGETS) {
 	    cout << "  /* ";
-	    print_set("targets:", TARGETS, 0, cout); 
+	    print_set("targets:", TARGETS, 0, cout);
 	    cout << " */ " << endl;
 	}
 	totalcsd += csdcost(TARGETS);

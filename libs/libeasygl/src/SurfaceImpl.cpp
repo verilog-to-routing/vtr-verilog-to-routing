@@ -15,7 +15,7 @@ void SurfaceImpl::setSurface(
 #endif
         ) {
     //We load the surface via cairo, and specify the custom cairo deleter
-    //std::shared_ptr handles reference counting will automaticly 
+    //std::shared_ptr handles reference counting will automaticly
     //cleans-up the image data when there are no more references
 #ifdef USE_CAIRO_SURFACE
     mSurface = std::shared_ptr<cairo_surface_t>(cairo_image_surface_create_from_png(filePath), cairo_surface_destroy);
@@ -23,7 +23,7 @@ void SurfaceImpl::setSurface(
         case CAIRO_STATUS_SUCCESS:
             return;
         case CAIRO_STATUS_NULL_POINTER:
-            std::cerr << "Oops we messed up on our end." << std::endl << 
+            std::cerr << "Oops we messed up on our end." << std::endl <<
                     "Please notify Vaughn that Harry screwed up." << std::endl;
             break;
         case CAIRO_STATUS_NO_MEMORY:

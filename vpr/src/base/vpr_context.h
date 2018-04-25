@@ -50,14 +50,14 @@ struct AtomContext : public Context {
 
 //State relating to timing
 //
-//This should contain only data structures related to timing analysis, 
+//This should contain only data structures related to timing analysis,
 //or related timing analysis algorithmic state.
 struct TimingContext : public Context {
     /********************************************************************
      Timing
      ********************************************************************/
 
-    //The current timing graph. 
+    //The current timing graph.
     //This represents the timing dependencies between pins of the atom netlist
     std::shared_ptr<tatum::TimingGraph> graph;
 
@@ -90,10 +90,10 @@ struct TimingContext : public Context {
     int num_tnodes; /* Number of nodes (pins) in the timing graph */
     t_tnode* tnodes; /* [0..num_tnodes - 1] nodes in the timing graph */
     int num_tnode_levels; /* Number of levels in the timing graph. */
-    std::vector<std::vector<int>> tnodes_at_level; /* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    
+    std::vector<std::vector<int>> tnodes_at_level; /* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of
                                    * the timing graph, to make topological searches easier. Level-0 nodes are
                                    * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
-                                   * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of 
+                                   * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of
                                    * nodes with level at most N-1. */
 
 };
@@ -103,7 +103,7 @@ struct TimingContext : public Context {
 //This should contain only data structures describing the targeted device.
 struct DeviceContext : public Context {
     /*********************************************************************
-     Physical FPGA architecture 
+     Physical FPGA architecture
      *********************************************************************/
     /* x and y dimensions of the FPGA itself */
     DeviceGrid grid; /* FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1] */
@@ -148,14 +148,14 @@ struct DeviceContext : public Context {
 
     /*
      * switch_fanin_remap is only used for printing out switch fanin stats (the -switch_stats option)
-     * array index: [0..(num_arch_switches-1)]; 
+     * array index: [0..(num_arch_switches-1)];
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    std::map<int, int> *switch_fanin_remap; 
+    std::map<int, int> *switch_fanin_remap;
 
     /*******************************************************************
-     Architecture 
+     Architecture
      ********************************************************************/
     t_arch arch;
 
@@ -174,7 +174,7 @@ struct DeviceContext : public Context {
 
 //State relating to power analysis
 //
-//This should contain only data structures related to power analysis, 
+//This should contain only data structures related to power analysis,
 //or related power analysis algorithmic state.
 struct PowerContext : public Context {
     /*******************************************************************
@@ -195,7 +195,7 @@ struct PowerContext : public Context {
 
 //State relating to clustering
 //
-//This should contain only data structures that describe the current 
+//This should contain only data structures that describe the current
 //clustering/packing, or related clusterer/packer algorithmic state.
 struct ClusteringContext : public Context {
     /********************************************************************
@@ -207,7 +207,7 @@ struct ClusteringContext : public Context {
 
 //State relating to placement
 //
-//This should contain only data structures that describe the current placement, 
+//This should contain only data structures that describe the current placement,
 //or related placer algorithm state.
 struct PlacementContext : public Context {
     //Clustered block placement locations
@@ -222,7 +222,7 @@ struct PlacementContext : public Context {
 
 //State relating to routing
 //
-//This should contain only data structures that describe the current routing implementation, 
+//This should contain only data structures that describe the current routing implementation,
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
@@ -253,10 +253,10 @@ struct RoutingContext : public Context {
 //It is divided up into separate sub-contexts of logically related data structures.
 //
 //Each sub-context can be accessed via member functions which return a reference to the sub-context:
-//  * The default the member function (e.g. device()) return an const (immutable) reference providing 
+//  * The default the member function (e.g. device()) return an const (immutable) reference providing
 //    read-only access to the context. This should be the preferred form, as the compiler will detect
 //    unintentional state changes.
-//  * The 'mutable' member function (e.g. mutable_device()) will return a non-const (mutable) reference 
+//  * The 'mutable' member function (e.g. mutable_device()) will return a non-const (mutable) reference
 //    allowing modification of the context. This should only be used on an as-needed basis.
 //
 //Typical usage in VPR would be to call the appropriate accessor to get a reference to the context of

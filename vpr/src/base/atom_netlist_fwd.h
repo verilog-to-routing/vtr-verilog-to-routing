@@ -14,7 +14,7 @@ class AtomLookup;
  * Ids
  *
  * The AtomNetlist uses unique IDs to identify any component of the netlist.
- * To avoid type-conversion errors (e.g. passing an AtomPinId where an AtomNetId 
+ * To avoid type-conversion errors (e.g. passing an AtomPinId where an AtomNetId
  * was expected), we use vtr::StrongId's to disallow such conversions. See
  * vtr_strong_id.h for details.
  */

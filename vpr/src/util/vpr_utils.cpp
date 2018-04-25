@@ -67,15 +67,15 @@ static void alloc_and_load_blk_pin_from_port_pin();
  * Then, check that whether start_pin_index and end_pin_index are specified. If    *
  * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
  * Otherwise, mark down all the pins in that port.                                 */
-static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name, 
-		char * port_name, int end_pin_index, int start_pin_index, char * src_string, 
+static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name,
+		char * port_name, int end_pin_index, int start_pin_index, char * src_string,
 		int line, int ** idirect_from_blk_pin, int ** direct_type_from_blk_pin);
 
 /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
  * direct_type_from_blk_pin with direct_type from start_pin_index to               *
  * end_pin_index.                                                                  */
-static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype, 
-		int iport, int ** idirect_from_blk_pin, int idirect, 
+static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype,
+		int iport, int ** idirect_from_blk_pin, int idirect,
 		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string);
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node);
@@ -105,7 +105,7 @@ const t_model* find_model(const t_model* models, const std::string& name, bool r
 
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required) {
     VTR_ASSERT(model);
-    
+
     for(const t_model_ports* model_ports : {model->inputs, model->outputs}) {
         for(const t_model_ports* port = model_ports; port != nullptr; port = port->next) {
             if (port->name == name) {
@@ -167,22 +167,22 @@ void sync_grid_to_blocks() {
 			|| (blk_x + cluster_ctx.clb_nlist.block_type(blk_id)->width - 1) > int(device_ctx.grid.width() - 1)
 				|| (blk_y + cluster_ctx.clb_nlist.block_type(blk_id)->height - 1) > int(device_ctx.grid.height() - 1)
 				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type(blk_id)->capacity)) {
-			VPR_THROW(VPR_ERROR_PLACE, "Block %zu is at invalid location (%d, %d, %d).\n", 
+			VPR_THROW(VPR_ERROR_PLACE, "Block %zu is at invalid location (%d, %d, %d).\n",
 					size_t(blk_id), blk_x, blk_y, blk_z);
 		}
 
 		/* Check types match */
 		if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.grid[blk_x][blk_y].type) {
-            VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
+            VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
 					blk_x, blk_y,
-					cluster_ctx.clb_nlist.block_type(blk_id)->name, 
+					cluster_ctx.clb_nlist.block_type(blk_id)->name,
 					device_ctx.grid[blk_x][blk_y].type->name);
 		}
 
 		/* Check already in use */
 		if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
 				&& (INVALID_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
-            VPR_THROW(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n", 
+            VPR_THROW(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
 					blk_x, blk_y, blk_z);
 		}
 
@@ -246,7 +246,7 @@ IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntype
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs)
     : IntraLbPbPinLookup(rhs.block_types_, rhs.num_types_) {
-    //nop 
+    //nop
 }
 
 IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
@@ -433,7 +433,7 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 *   sink_pb_pin_id: The physical pin index of the sink pin on the block
 *
 *  Returns a tuple containing
-*   ClusterNetId: Corresponds to the net connected to the sink pin 
+*   ClusterNetId: Corresponds to the net connected to the sink pin
 *                 INVALID if not an external CLB pin, or if it's an output (driver pin)
 *   clb_pin: Physical pin index, same as sink_pb_pin_id but potentially with an offset (if z is defined)
 *            -1 if not an external CLB pin, or if it's an output (driver pin)
@@ -450,7 +450,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
     VTR_ASSERT_MSG(pb_routes[sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
-    
+
     //Walk back from the sink to the CLB input pin
     int curr_pb_pin_id = sink_pb_pin_id;
     int next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
@@ -484,7 +484,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
 }
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
-// Given a clb_pin index on a this function will return the corresponding 
+// Given a clb_pin index on a this function will return the corresponding
 // pin index on the pb_type (accounting for the possible z-coordinate offset).
 int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -589,17 +589,17 @@ bool is_empty_type(t_type_ptr type) {
     return type == device_ctx.EMPTY_TYPE;
 }
 
-/* Each node in the pb_graph for a top-level pb_type can be uniquely identified 
+/* Each node in the pb_graph for a top-level pb_type can be uniquely identified
  * by its pins. Since the pins in a cluster of a certain type are densely indexed,
- * this function will find the pin index (int pin_count_in_cluster) of the first 
- * pin for a given pb_graph_node, and use this index value as unique identifier 
+ * this function will find the pin index (int pin_count_in_cluster) of the first
+ * pin for a given pb_graph_node, and use this index value as unique identifier
  * for the node.
  */
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 	t_pb_graph_pin first_input_pin;
 	t_pb_graph_pin first_output_pin;
 	int node_id;
-	
+
 	if (pb_graph_node->num_input_pins != nullptr) {
 		/* If input port exists on this node, return the index of the first
 		 * input pin as node_id.
@@ -619,7 +619,7 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 	}
 }
 
-void get_class_range_for_block(const ClusterBlockId blk_id, 
+void get_class_range_for_block(const ClusterBlockId blk_id,
 		int *class_low,
 		int *class_high) {
 
@@ -633,7 +633,7 @@ void get_class_range_for_block(const ClusterBlockId blk_id,
 	*class_high = (place_ctx.block_locs[blk_id].z + 1) * (type->num_class / type->capacity) - 1;
 }
 
-void get_pin_range_for_block(const ClusterBlockId blk_id, 
+void get_pin_range_for_block(const ClusterBlockId blk_id,
 		int *pin_low,
 		int *pin_high) {
 
@@ -799,7 +799,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
 
     //Keep track of how many atom ports were checked.
     //
-    //We need to do this since we iterate over the pb's ports and 
+    //We need to do this since we iterate over the pb's ports and
     //may miss some atom ports if there is a mismatch
     size_t checked_ports = 0;
 
@@ -814,7 +814,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         auto port_id = atom_ctx.nlist.find_atom_port(blk_id, pb_model_port);
 
         if(port_id) { //Port is used by the atom
-             
+
             //In compressed form the atom netlist stores only in-use pins,
             //so we can query the number of required pins directly
             int required_atom_pins = atom_ctx.nlist.port_pins(port_id).size();
@@ -962,7 +962,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     //Get the model port
     const t_model_ports* model_port = netlist.port_model(port_id);
     VTR_ASSERT(model_port);
-    
+
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
@@ -972,14 +972,14 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
 	const t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	
+
 	pb_graph_node = cluster_ctx.clb_nlist.block_pb(iblock)->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
 
-	/* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins, 
+	/* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins,
 	bring it back down to 0..num_pins-1 range for easier analysis */
 	ipin %= (pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins);
-		
+
 	if(ipin < pb_type->num_input_pins) {
 		count = ipin;
 		for(i = 0; i < pb_graph_node->num_input_ports; i++) {
@@ -1327,7 +1327,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                     }
                     /* All atom blocks are open for this molecule, place back in queue */
                     if (i == get_array_size_of_molecule(cur_molecule)) {
-                        cur_molecule->valid = true;	
+                        cur_molecule->valid = true;
                     }
                 }
             }
@@ -1348,7 +1348,7 @@ void free_pb_stats(t_pb *pb) {
         pb->pb_stats->hillgain.clear();
         pb->pb_stats->connectiongain.clear();
         pb->pb_stats->num_pins_of_net_in_pb.clear();
-        
+
         if(pb->pb_stats->feasible_blocks) {
             free(pb->pb_stats->feasible_blocks);
         }
@@ -1389,17 +1389,17 @@ void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
 	 * [0...device_ctx.num_block_types-1][0...blk_pin_count-1]                                */
 
 	/* If either one of the arrays is not allocated and loaded, it is        *
-	 * corrupted, so free both of them.                                      */ 
+	 * corrupted, so free both of them.                                      */
 	if ((f_port_from_blk_pin == nullptr && f_port_pin_from_blk_pin != nullptr)
 		|| (f_port_from_blk_pin != nullptr && f_port_pin_from_blk_pin == nullptr)){
 		free_port_pin_from_blk_pin();
 	}
-	
-	/* If the arrays are not allocated and loaded, allocate it.              */ 
+
+	/* If the arrays are not allocated and loaded, allocate it.              */
 	if (f_port_from_blk_pin == nullptr && f_port_pin_from_blk_pin == nullptr) {
 		alloc_and_load_port_pin_from_blk_pin();
 	}
-	
+
 	/* Return the port and port_pin for the pin.                             */
 	*port = f_port_from_blk_pin[blk_type_index][blk_pin];
 	*port_pin = f_port_pin_from_blk_pin[blk_type_index][blk_pin];
@@ -1415,13 +1415,13 @@ void free_port_pin_from_blk_pin() {
 
 	int itype;
     auto& device_ctx = g_vpr_ctx.device();
-	
+
 	if (f_port_from_blk_pin != nullptr) {
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_port_from_blk_pin[itype]);
 		}
 		free(f_port_from_blk_pin);
-		
+
 		f_port_from_blk_pin = nullptr;
 	}
 
@@ -1430,14 +1430,14 @@ void free_port_pin_from_blk_pin() {
 			free(f_port_pin_from_blk_pin[itype]);
 		}
 		free(f_port_pin_from_blk_pin);
-		
+
 		f_port_pin_from_blk_pin = nullptr;
 	}
 
 }
 
 static void alloc_and_load_port_pin_from_blk_pin() {
-	
+
 	/* Allocates and loads f_port_from_blk_pin and f_port_pin_from_blk_pin   *
 	 * arrays.                                                               *
 	 *                                                                       *
@@ -1453,7 +1453,7 @@ static void alloc_and_load_port_pin_from_blk_pin() {
 	temp_port_from_blk_pin = (int **) vtr::malloc(device_ctx.num_block_types* sizeof(int*));
 	temp_port_pin_from_blk_pin = (int **) vtr::malloc(device_ctx.num_block_types* sizeof(int*));
 	for (itype = 1; itype < device_ctx.num_block_types; itype++) {
-		
+
 		blk_pin_count = device_ctx.block_types[itype].num_pins;
 
 		temp_port_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
@@ -1490,7 +1490,7 @@ static void alloc_and_load_port_pin_from_blk_pin() {
 	f_port_pin_from_blk_pin = temp_port_pin_from_blk_pin;
 }
 
-void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin, 
+void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin,
 		int * blk_pin) {
 
 	/* This mapping is needed since there are two different netlist          *
@@ -1502,7 +1502,7 @@ void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin,
 	 * pin a port pin corresponds to.                                        *
 	 * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
 
-	/* If the array is not allocated and loaded, allocate it.                */ 
+	/* If the array is not allocated and loaded, allocate it.                */
 	if (f_blk_pin_from_port_pin == nullptr) {
 		alloc_and_load_blk_pin_from_port_pin();
 	}
@@ -1521,9 +1521,9 @@ void free_blk_pin_from_port_pin() {
 
 	int itype, iport, num_ports;
     auto& device_ctx = g_vpr_ctx.device();
-	
+
 	if (f_blk_pin_from_port_pin != nullptr) {
-		
+
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			num_ports = device_ctx.block_types[itype].pb_type->num_ports;
 			for (iport = 0; iport < num_ports; iport++) {
@@ -1532,7 +1532,7 @@ void free_blk_pin_from_port_pin() {
 			free(f_blk_pin_from_port_pin[itype]);
 		}
 		free(f_blk_pin_from_port_pin);
-		
+
 		f_blk_pin_from_port_pin = nullptr;
 	}
 
@@ -1557,13 +1557,13 @@ static void alloc_and_load_blk_pin_from_port_pin() {
 		for (iport = 0; iport < num_ports; iport++) {
 			num_port_pins = device_ctx.block_types[itype].pb_type->ports[iport].num_pins;
 			temp_blk_pin_from_port_pin[itype][iport] = (int *) vtr::malloc(num_port_pins * sizeof(int));
-			
+
 			for(iport_pin = 0; iport_pin < num_port_pins; iport_pin ++) {
 				temp_blk_pin_from_port_pin[itype][iport][iport_pin] = OPEN;
 			}
 		}
 	}
-	
+
 	/* Load the values */
 	/* itype starts from 1 since device_ctx.block_types[0] is the EMPTY_TYPE. */
 	for (itype = 1; itype < device_ctx.num_block_types; itype++) {
@@ -1577,7 +1577,7 @@ static void alloc_and_load_blk_pin_from_port_pin() {
 			}
 		}
 	}
-	
+
 	/* Sets the file_scope variables to point at the arrays. */
 	f_blk_pin_from_port_pin = temp_blk_pin_from_port_pin;
 }
@@ -1599,7 +1599,7 @@ static void alloc_and_load_blk_pin_from_port_pin() {
  *                                                                                     *
  ***************************************************************************************/
 
-void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, 
+void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 		int * end_pin_index, char * pb_type_name, char * port_name){
 
 	/* Parses out the pb_type_name and port_name from the direct passed in.   *
@@ -1615,7 +1615,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 	if (find_format == nullptr) {
 		/* Format "pb_type_name.port_name" */
 		*start_pin_index = *end_pin_index = -1;
-			
+
         if(strlen(src_string) + 1 <= MAX_STRING_LEN + 1) {
             strcpy (source_string, src_string);
         } else {
@@ -1633,7 +1633,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-					"The end_pin_index and start_pin_index can be the same.\n", 
+					"The end_pin_index and start_pin_index can be the same.\n",
 					line, src_string);
 			exit(1);
 		}
@@ -1645,40 +1645,40 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
             //sscanf
 			if (source_string[ichar] == '.')
 				source_string[ichar] = ' ';
-			if (source_string[ichar] == '[') 
+			if (source_string[ichar] == '[')
 				source_string[ichar] = ' ';
 		}
 
-		match_count = sscanf(source_string, "%s %s %d:%d]", 
-								pb_type_name, port_name, 
+		match_count = sscanf(source_string, "%s %s %d:%d]",
+								pb_type_name, port_name,
 								end_pin_index, start_pin_index);
 		if (match_count != 4){
 			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-					"The end_pin_index and start_pin_index can be the same.\n", 
+					"The end_pin_index and start_pin_index can be the same.\n",
 					line, src_string);
 			exit(1);
 		}
 		if (*end_pin_index < 0 || *start_pin_index < 0) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, the pin_index in "
-					"[end_pin_index:start_pin_index] should not be a negative value.\n", 
+					"[end_pin_index:start_pin_index] should not be a negative value.\n",
 					line, src_string);
 			exit(1);
 		}
 		if ( *end_pin_index < *start_pin_index) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid from_pin - %s, the end_pin_index in "
-					"[end_pin_index:start_pin_index] should not be less than start_pin_index.\n", 
+					"[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
 					line, src_string);
 			exit(1);
 		}
 	}
 }
 
-static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype, 
-		int iport, int ** idirect_from_blk_pin, int idirect, 
+static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype,
+		int iport, int ** idirect_from_blk_pin, int idirect,
 		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string) {
 
 	/* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
@@ -1691,7 +1691,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 	// Mark pins with indices from start_pin_index to end_pin_index, inclusive
 	for (iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
 		get_blk_pin_from_port_pin(itype, iport, iport_pin, &iblk_pin);
-								
+
 		//iterate through all segment connections and check if all Fc's are 0
 		bool all_fcs_0 = true;
         for (const auto& fc_spec : device_ctx.block_types[itype].fc_specs) {
@@ -1707,11 +1707,11 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 		// Check the fc for the pin, direct chain link only if fc == 0
 		if (all_fcs_0) {
 			idirect_from_blk_pin[itype][iblk_pin] = idirect;
-							
+
 			// Check whether the pins are marked, errors out if so
 			if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
 				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-						"[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n", 
+						"[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
 						line, src_string);
 			} else {
 				direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
@@ -1721,8 +1721,8 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
 }
 
-static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name, 
-		char * port_name, int end_pin_index, int start_pin_index, char * src_string, 
+static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name,
+		char * port_name, int end_pin_index, int start_pin_index, char * src_string,
 		int line, int ** idirect_from_blk_pin, int ** direct_type_from_blk_pin) {
 
 	/* Go through all the ports in all the blocks to find the port that has the same   *
@@ -1751,19 +1751,19 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 						vtr::printf_error(__FILE__, __LINE__,
 								"[LINE %d] Invalid pin - %s, the end_pin_index in "
 								"[end_pin_index:start_pin_index] should "
-								"be less than the num_port_pins %d.\n", 
+								"be less than the num_port_pins %d.\n",
 								line, src_string, num_port_pins);
 						exit(1);
 					}
 
 					// Check whether the pin indices are specified
 					if (start_pin_index >= 0 || end_pin_index >= 0) {
-						mark_direct_of_pins(start_pin_index, end_pin_index, itype, 
-								iport, idirect_from_blk_pin, idirect, 
+						mark_direct_of_pins(start_pin_index, end_pin_index, itype,
+								iport, idirect_from_blk_pin, idirect,
 								direct_type_from_blk_pin, direct_type, line, src_string);
 					} else {
-						mark_direct_of_pins(0, num_port_pins-1, itype, 
-								iport, idirect_from_blk_pin, idirect, 
+						mark_direct_of_pins(0, num_port_pins-1, itype,
+								iport, idirect_from_blk_pin, idirect,
 								direct_type_from_blk_pin, direct_type, line, src_string);
 					}
 				} // Do nothing if port_name does not match
@@ -1773,7 +1773,7 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 
 }
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, 
+void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 		int *** idirect_from_blk_pin, int *** direct_type_from_blk_pin) {
 
 	/* Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.    *
@@ -1797,22 +1797,22 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	int itype, iblk_pin, idirect, num_type_pins;
 	int ** temp_idirect_from_blk_pin, ** temp_direct_type_from_blk_pin;
 
-	char to_pb_type_name[MAX_STRING_LEN+1], to_port_name[MAX_STRING_LEN+1], 
+	char to_pb_type_name[MAX_STRING_LEN+1], to_port_name[MAX_STRING_LEN+1],
 			from_pb_type_name[MAX_STRING_LEN+1], from_port_name[MAX_STRING_LEN+1];
 	int to_start_pin_index = -1, to_end_pin_index = -1;
 	int from_start_pin_index = -1, from_end_pin_index = -1;
     auto& device_ctx = g_vpr_ctx.device();
-		
+
 	/* Allocate and initialize the values to OPEN (-1). */
 	temp_idirect_from_blk_pin = (int **) vtr::malloc(device_ctx.num_block_types * sizeof(int *));
 	temp_direct_type_from_blk_pin = (int **) vtr::malloc(device_ctx.num_block_types * sizeof(int *));
 	for (itype = 1; itype < device_ctx.num_block_types; itype++) {
-		
+
 		num_type_pins = device_ctx.block_types[itype].num_pins;
 
 		temp_idirect_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
 		temp_direct_type_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
-	
+
 		/* Initialize values to OPEN */
 		for (iblk_pin = 0; iblk_pin < num_type_pins; iblk_pin++) {
 			temp_idirect_from_blk_pin[itype][iblk_pin] = OPEN;
@@ -1823,29 +1823,29 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	/* Load the values */
 	// Go through directs and find pins with possible direct connections
 	for (idirect = 0; idirect < num_directs; idirect++) {
-		
+
 		// Parse out the pb_type and port name, possibly pin_indices from from_pin
-		parse_direct_pin_name(directs[idirect].from_pin, directs[idirect].line, 
+		parse_direct_pin_name(directs[idirect].from_pin, directs[idirect].line,
 				&from_end_pin_index, &from_start_pin_index, from_pb_type_name, from_port_name);
 
 		// Parse out the pb_type and port name, possibly pin_indices from to_pin
 		parse_direct_pin_name(directs[idirect].to_pin, directs[idirect].line,
 				&to_end_pin_index, &to_start_pin_index, to_pb_type_name, to_port_name);
-		
+
 		/* Now I have all the data that I need, I could go through all the block pins   *
 		 * in all the blocks to find all the pins that could have possible direct       *
 		 * connections. Mark all down all those pins with the idirect the pins belong   *
 		 * to and whether it is a source or a sink of the direct connection.            */
-		
+
 		// Find blocks with the same name as from_pb_type_name and from_port_name
-		mark_direct_of_ports (idirect, SOURCE, from_pb_type_name, from_port_name, 
-				from_end_pin_index, from_start_pin_index, directs[idirect].from_pin, 
+		mark_direct_of_ports (idirect, SOURCE, from_pb_type_name, from_port_name,
+				from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
 				directs[idirect].line,
 				temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin);
 
 		// Then, find blocks with the same name as to_pb_type_name and from_port_name
-		mark_direct_of_ports (idirect, SINK, to_pb_type_name, to_port_name, 
-				to_end_pin_index, to_start_pin_index, directs[idirect].to_pin, 
+		mark_direct_of_ports (idirect, SINK, to_pb_type_name, to_port_name,
+				to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
 				directs[idirect].line,
 				temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin);
 
@@ -1858,7 +1858,7 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 
 /*
  * this function is only called by print_switch_usage()
- * at the point of this function call, every switch type / fanin combination 
+ * at the point of this function call, every switch type / fanin combination
  * has a unique index.
  * but for switch usage analysis, we need to convert the index back to the
  * type / fanin combination
@@ -1876,7 +1876,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
                 *switch_index = iswitch;
                 *fanin = itr->first;
                 return 0;
-            } 
+            }
         }
     }
     *switch_index = -1;
@@ -1888,9 +1888,9 @@ static int convert_switch_index(int *switch_index, int *fanin) {
 /*
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
- * NOTE: to speed up this function, for XXX uni-directional arch XXX, the most efficient 
+ * NOTE: to speed up this function, for XXX uni-directional arch XXX, the most efficient
  * way is to change the device_ctx.rr_nodes data structure (let it store the inward switch index,
- * instead of outward switch index list): --> instead of using a nested loop of 
+ * instead of outward switch index list): --> instead of using a nested loop of
  *     for (inode in rr_nodes) {
  *         for (iedges in edges) {
  *             get switch type;
@@ -1905,7 +1905,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  *     }
  * now since device_ctx.rr_nodes does not contain the switch type inward to the current node,
  * we have to use an extra loop to setup the information of inward switch first.
- */ 
+ */
 void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1929,7 +1929,7 @@ void print_switch_usage() {
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
-            if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
+            if (inward_switch_inf[to_node_index].count(switch_index) == 0)
                 inward_switch_inf[to_node_index][switch_index] = 0;
             //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index] ++;
@@ -1960,7 +1960,7 @@ void print_switch_usage() {
         char *s_name = device_ctx.arch_switch_inf[iswitch].name;
         float s_area = device_ctx.arch_switch_inf[iswitch].mux_trans_size;
         vtr::printf_info(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
-        
+
         map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
             vtr::printf_info("\t\tnumber of fanin: %d", itr->first);
@@ -1986,7 +1986,7 @@ void print_usage_by_wire_length() {
     auto& device_ctx = g_vpr_ctx.device();
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         if (device_ctx.rr_nodes[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
-            //int length = abs(device_ctx.rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh() 
+            //int length = abs(device_ctx.rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh()
             //             - device_ctx.rr_nodes[inode].get_xlow() - rr_node[inode].get_ylow());
             int length = device_ctx.rr_nodes[inode].get_length();
             if (rr_node_route_inf[inode].occ() > 0) {
@@ -2005,7 +2005,7 @@ void print_usage_by_wire_length() {
         total_wires += itr->second;
     }
     vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
-    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) 
+    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++)
         vtr::printf_info("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
     for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
         float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
@@ -2034,7 +2034,7 @@ AtomBlockId find_tnode_atom_block(int inode) {
         VTR_ASSERT(timing_ctx.tnodes[i_opin_node].type == TN_INPAD_OPIN ||timing_ctx.tnodes[i_opin_node].type == TN_FF_OPIN);
 
         pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_opin_node);
-        
+
     } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
         //A sink does not map directly to a netlist pin,
         //so we go back to its input pin

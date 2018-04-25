@@ -3,7 +3,7 @@ struct op {
        sub: res = r1 - r2
        shl: res = r1 << sh
        shr: res = r1 >> sh
-       cmul: res = c * r1 
+       cmul: res = c * r1
        addshl: res = r1 + (r2 << sh)
        subshl: res = r1 - (r2 << sh)
        shlsub: res = (r1 << sh) - r2
@@ -12,7 +12,7 @@ struct op {
   static const char* ID[]; // = { "+", "-", "<<", ">>", "*", "-", "+ <<", "- <<", "<< -" };
   static const char* DOTATTRS[];
 
-    type_t type; 
+    type_t type;
     coeff_t c;
     reg_t r1, r2, res;
     int sh;
@@ -32,7 +32,7 @@ struct op {
 
     static op* addshl(reg_t res, reg_t r1, reg_t r2, int sh, coeff_t c=0) {
         return new op(ADDSHL, c, r1, r2, res, sh); }
-    static op* subshl(reg_t res, reg_t r1, reg_t r2, int sh, coeff_t c=0) { 
+    static op* subshl(reg_t res, reg_t r1, reg_t r2, int sh, coeff_t c=0) {
         return new op(SUBSHL, c, r1, r2, res, sh); }
     static op* shlsub(reg_t res, reg_t r1, reg_t r2, int sh, coeff_t c=0) {
         return new op(SHLSUB, c, r1, r2, res, sh); }

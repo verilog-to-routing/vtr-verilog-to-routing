@@ -27,14 +27,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include<sys/types.h>
 #include<stdint.h>
 
-// Constructor 
+// Constructor
 hashtable_t* create_hashtable(int store_size);
 
 struct hashtable_t_t
 {
 	int count;
 	int store_size;
-	hashtable_node_t **store;	
+	hashtable_node_t **store;
 
 	// Adds an item to the hashtable.
 	void   (*add)                (hashtable_t *h, const void *key, size_t key_length, void *item);
@@ -54,8 +54,8 @@ struct hashtable_t_t
 
 struct hashtable_node_t_t
 {
-	size_t key_length;  
-	void *key;	
+	size_t key_length;
+	void *key;
 	void *item;
 	hashtable_node_t *next;
 };

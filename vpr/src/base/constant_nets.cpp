@@ -9,12 +9,12 @@
 void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method) {
 
     if (method == CONSTANT_NET_GLOBAL) {
-        /* 
+        /*
          * Treat constant nets (e.g. gnd/vcc) as globals so they are not routed.
-         * Identifying these nets as constants is more robust than the previous 
+         * Identifying these nets as constants is more robust than the previous
          * approach (exact name match to gnd/vcc).
          *
-         * Note that by not routing constant nets we are implicitly assuming that all pins 
+         * Note that by not routing constant nets we are implicitly assuming that all pins
          * in the FPGA can be tied to gnd/vcc, and hence we do not need to route them.
          */
         for (ClusterNetId net : nlist.nets()) {
@@ -33,7 +33,7 @@ void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method
           *
           * TODO: We should ultimately make this architecture driven (e.g. specify which
           *       pins which can be tied to gnd/vcc), and then route from those pins to
-          *       deliver any constants to those primitive input pins which can not be directly 
+          *       deliver any constants to those primitive input pins which can not be directly
           *       tied directly to gnd/vcc.
           */
     }

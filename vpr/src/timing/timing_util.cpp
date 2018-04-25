@@ -317,9 +317,9 @@ float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyze
             auto arrival_tags = hold_analyzer.hold_tags(node, tatum::TagType::DATA_ARRIVAL);
             auto required_tags = hold_analyzer.hold_tags(node, tatum::TagType::DATA_REQUIRED);
             tatum::NodeId origin_node = find_origin_node_for_hold_slack(arrival_tags, required_tags, slack);
-            
+
             VTR_ASSERT(origin_node);
-            
+
             /*Retrieve the source and sink clb blocks corresponding to these timing nodes*/
             AtomPinId origin_pin = atom_ctx.lookup.tnode_atom_pin(origin_node);
             AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
@@ -531,12 +531,12 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags
 //
-// Criticality (in [0., 1.]) represents how timing-critical something is, 
+// Criticality (in [0., 1.]) represents how timing-critical something is,
 // 0. is non-critical and 1. is most-critical.
 //
 // This returns 'relaxed per constraint' criticaly as defined in:
 //
-//     M. Wainberg and V. Betz, "Robust Optimization of Multiple Timing Constraints," 
+//     M. Wainberg and V. Betz, "Robust Optimization of Multiple Timing Constraints,"
 //         IEEE CAD, vol. 34, no. 12, pp. 1942-1953, Dec. 2015. doi: 10.1109/TCAD.2015.2440316
 //
 // which handles the trade-off between different timing constraints in multi-clock circuits.
@@ -570,7 +570,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         float worst_slack = iter->second;
 
         if (worst_slack < 0.) {
-            //We shift slacks and required time by the most negative slack 
+            //We shift slacks and required time by the most negative slack
             //**in the domain**, to ensure criticality is bounded within [0., 1.]
             //
             //This corresponds to the 'relaxed' criticality from Wainberg et. al.

@@ -26,10 +26,10 @@ std::unique_ptr<SetupHoldTimingInfo> make_no_op_timing_info();
 
 
 //Generic inteface which provides functionality to update (but not
-//access) timing information.  
+//access) timing information.
 //
-//This is useful for algorithms which know they need to update timing 
-//information (e.g. because they have made a change to the implementation) 
+//This is useful for algorithms which know they need to update timing
+//information (e.g. because they have made a change to the implementation)
 //but do not care *what* timing information is updated (e.g. setup vs hold)
 class TimingInfo {
     public:
@@ -125,15 +125,15 @@ class HoldTimingInfo : public virtual TimingInfo {
 //This is useful for algorithms which require access to both setup and hold timing
 //information (e.g. simulatneously optimizing setup and hold)
 //
-//This class supports both the SetupTimingInfo and HoldTimingInfo interfaces and 
-//can be used in place of them in any algorithm requiring setup or hold related 
+//This class supports both the SetupTimingInfo and HoldTimingInfo interfaces and
+//can be used in place of them in any algorithm requiring setup or hold related
 //information.
 //
 //Implementation Note:
 //  This class uses multiple inheritence, which is OK in this case for the following reasons:
-//      * The inheritance is virtual avoiding the diamon problem (i.e. there is only 
+//      * The inheritance is virtual avoiding the diamon problem (i.e. there is only
 //        one base TimingInfo class instance)
-//      * Both SetupTimingInfo and HoldTimingInfo are purely abstract classes so there 
+//      * Both SetupTimingInfo and HoldTimingInfo are purely abstract classes so there
 //        is no data to be duplicated
 class SetupHoldTimingInfo : public SetupTimingInfo, public HoldTimingInfo {
     public:

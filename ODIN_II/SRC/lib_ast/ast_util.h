@@ -11,7 +11,7 @@ void initial_node(ast_node_t *node, ids id, int line_number, int file_number, in
 
 void allocate_children_to_node(ast_node_t* node, int num_children, ...);
 void add_child_to_node(ast_node_t* node, ast_node_t *child);
-void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);  
+void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);
 void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node);
 ast_node_t *ast_node_deep_copy(ast_node_t *node);
 

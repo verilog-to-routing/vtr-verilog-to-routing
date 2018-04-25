@@ -7,7 +7,7 @@
 
 namespace vtr {
 
-//A half-open range specification for a matrix dimension [begin_index, last_index), 
+//A half-open range specification for a matrix dimension [begin_index, last_index),
 //with valid indicies from [begin_index() ... end_index()-1], provided size() > 0.
 class DimRange {
     public:
@@ -31,7 +31,7 @@ class DimRange {
 //Each instance of this class peels off one-dimension and returns a NdOffsetMatrixProxy representing
 //the resulting sub-matrix. This is repeated recursively until we hit the 1-dimensional base-case.
 //
-//Since this expansion happens at compiler time all the proxy classes get optimized away, 
+//Since this expansion happens at compiler time all the proxy classes get optimized away,
 //yielding both high performance and generality.
 //
 //Recursive case: N-dimensional array
@@ -119,16 +119,16 @@ class NdOffsetMatrixProxy<T,1> {
 };
 
 //Base class for an N-dimensional matrix supporting arbitrary index ranges per dimension.
-//This class implements all of the matrix handling (lifetime etc.) except for indexing 
-//(which is implemented in the NdOffsetMatrix class). Indexing is split out to allows specialization 
+//This class implements all of the matrix handling (lifetime etc.) except for indexing
+//(which is implemented in the NdOffsetMatrix class). Indexing is split out to allows specialization
 //of indexing for N = 1.
 //
 //Implementation:
 //
-//This class uses a single linear array to store the matrix in c-style (row major) 
+//This class uses a single linear array to store the matrix in c-style (row major)
 //order. That is, the right-most index is laid out contiguous memory.
 //
-//This should improve memory usage (no extra pointers to store for each dimension), 
+//This should improve memory usage (no extra pointers to store for each dimension),
 //and cache locality (less indirection via pointers, predictable strides).
 //
 //The indicies are calculated based on the dimensions to access the appropriate elements.
@@ -162,7 +162,7 @@ class NdOffsetMatrixBase {
             resize(dim_ranges, value);
         }
     public: //Accessors
-        //Returns the size of the matrix (number of elements) 
+        //Returns the size of the matrix (number of elements)
         size_t size() const {
             //Size is the product of all dimension sizes
             size_t cnt = dim_size(0);
@@ -279,8 +279,8 @@ class NdOffsetMatrixBase {
         std::unique_ptr<T[]> data_ = nullptr;
 };
 
-//An N-dimensional matrix supporting arbitrary (continuous) index ranges 
-//per dimension. 
+//An N-dimensional matrix supporting arbitrary (continuous) index ranges
+//per dimension.
 //
 //If no second template parameter is provided defaults to a 2-dimensional
 //matrix
@@ -298,7 +298,7 @@ class NdOffsetMatrixBase {
 //
 //      //A 2-dimensional matrix with indicies [2..6][5..9]
 //      // Note that C++ requires one more set of curly brace than you would expect
-//      NdOffsetMatrix<int,2> m2({{{2,7},{5,10}}}); 
+//      NdOffsetMatrix<int,2> m2({{{2,7},{5,10}}});
 //
 //      //A 3-dimensional matrix with indicies [0..4][0..9][0..19]
 //      NdOffsetMatrix<int,3> m3({5,10,20});
@@ -341,7 +341,7 @@ class NdOffsetMatrix : public NdOffsetMatrixBase<T,N> {
             VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
             VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
-            //The elements are stored in zero-indexed form, so adjust for any 
+            //The elements are stored in zero-indexed form, so adjust for any
             //non-zero minimum index in this dimension
             size_t effective_index = index - this->dim_ranges_[0].begin_index();
 
@@ -360,7 +360,7 @@ class NdOffsetMatrix : public NdOffsetMatrixBase<T,N> {
 
         //Access an element
         //
-        //Returns a proxy-object to allow chained array-style indexing 
+        //Returns a proxy-object to allow chained array-style indexing
         NdOffsetMatrixProxy<T,N-1> operator[](size_t index) {
             //Call the const version, since returned by value don't need to worry about const
             return const_cast<const NdOffsetMatrix<T,N>*>(this)->operator[](index);

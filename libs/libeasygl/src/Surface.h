@@ -28,10 +28,10 @@ class Surface {
         friend void draw_surface(const Surface& surface, float x, float y);
 
         friend void swap(Surface& lhs, Surface& rhs);
-		
-		
+
+
         //We use the PIMPL idiom to avoid the main graphics.h
-        //interface becoming dependant on cario headers, which 
+        //interface becoming dependant on cario headers, which
         //may not be availabe if graphics is disabled
         std::unique_ptr<SurfaceImpl> impl_;
 };

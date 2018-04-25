@@ -55,7 +55,7 @@ t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 
 void free_int_list(t_linked_int ** int_list_head_ptr) {
 
-	/* This routine truly frees (calls free) all the integer list elements    * 
+	/* This routine truly frees (calls free) all the integer list elements    *
 	 * on the linked list pointed to by *head, and sets head = NULL.          */
 
 	t_linked_int *linked_int, *next_linked_int;

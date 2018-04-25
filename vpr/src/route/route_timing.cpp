@@ -25,7 +25,7 @@
 #include "routing_predictor.h"
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
-#include "route_profiling.h" 
+#include "route_profiling.h"
 
 #include "timing_info.h"
 #include "timing_util.h"
@@ -238,7 +238,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     }
 
     /* Set delay of global signals to zero. Non-global net delays are set by
-       update_net_delays_from_route_tree() inside timing_driven_route_net(), 
+       update_net_delays_from_route_tree() inside timing_driven_route_net(),
        which is only called for non-global nets. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
@@ -268,11 +268,11 @@ bool try_timing_driven_route(t_router_opts router_opts,
     int itry; //Routing iteration number
 
     /*
-     * On the first routing iteration ignore congestion to get reasonable net 
-     * delay estimates. Set criticalities to 1 when timing analysis is on to 
-     * optimize timing, and to 0 when timing analysis is off to optimize routability. 
-     * 
-     * Subsequent iterations use the net delays from the previous iteration. 
+     * On the first routing iteration ignore congestion to get reasonable net
+     * delay estimates. Set criticalities to 1 when timing analysis is on to
+     * optimize timing, and to 0 when timing analysis is off to optimize routability.
+     *
+     * Subsequent iterations use the net delays from the previous iteration.
      */
     print_route_status_header();
     timing_driven_route_structs route_structs;
@@ -665,7 +665,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
     // after this point the route tree is correct
-    // remaining_targets from this point on are the **pin indices** that have yet to be routed 
+    // remaining_targets from this point on are the **pin indices** that have yet to be routed
     auto& remaining_targets = connections_inf.get_remaining_targets();
 
     // calculate criticality of remaining target pins
@@ -674,11 +674,11 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
             auto clb_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
             pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, clb_pin);
 
-            /* Pin criticality is between 0 and 1. 
-             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
-             * so shift down by 0.01) and cut off at 0.  This means that all pins with small 
-             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
-             * else becomes a bit less critical. This effect becomes more pronounced if 
+            /* Pin criticality is between 0 and 1.
+             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
+             * so shift down by 0.01) and cut off at 0.  This means that all pins with small
+             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything
+             * else becomes a bit less critical. This effect becomes more pronounced if
              * max_criticality is set lower. */
             // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
             pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
@@ -1000,7 +1000,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         // since all connections will be rerouted for this net, clear all of net's forced reroute flags
         connections_inf.clear_force_reroute_for_net();
 
-        // when we don't prune the tree, we also don't know the sink node indices 
+        // when we don't prune the tree, we also don't know the sink node indices
         // thus we'll use functions that act on pin indices like mark_ends instead
         // of their versions that act on node indices directly like mark_remaining_ends
         mark_ends(net_id);
@@ -1024,7 +1024,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         rt_root = prune_route_tree(rt_root, connections_inf);
 
         //Now that the tree has been pruned, we can free the old traceback
-        // NOTE: this must happen *after* pruning since it changes the 
+        // NOTE: this must happen *after* pruning since it changes the
         //       recorded congestion
         pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
         free_traceback(net_id);
@@ -1121,8 +1121,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 
         float zero = 0.0;
         //after budgets are loaded, calculate delay cost as described by RCV paper
-        /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
-         * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
+        /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
+         * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
          * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
         if (budgeting_inf.if_set()) {
             tot_cost += (short_path_crit + target_criticality) * max(zero, target_delay - tot_cost);
@@ -1204,9 +1204,9 @@ static void timing_driven_expand_neighbours(t_heap *current,
         if (to_type == IPIN) {
             //Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
-            if (   to_xlow < target_xlow 
+            if (   to_xlow < target_xlow
                 || to_ylow < target_ylow
-                || to_xhigh > target_xhigh 
+                || to_xhigh > target_xhigh
                 || to_yhigh > target_yhigh) {
                 continue;
             }
@@ -1238,15 +1238,15 @@ static void timing_driven_add_to_heap(const float criticality_fac, const float b
                 budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
                 next, from_node, to_node, iconn, target_node);
     } else {
-        //The 'to_node' which we just expanded to has non-configurable 
+        //The 'to_node' which we just expanded to has non-configurable
         //out-going edges which must also be expanded.
         //
         //Note that we only call the recursive version if there *are* non-configurable
-        //edges since creating/destroying the 'visited' tracker is very expensive (since 
+        //edges since creating/destroying the 'visited' tracker is very expensive (since
         //it is in the router's inner loop). Since non-configurable edges are relatively
         //rare this is reasonable.
         //
-        //TODO: use a more efficient method of tracking visited nodes (e.g. if 
+        //TODO: use a more efficient method of tracking visited nodes (e.g. if
         //      non-configurable edges become more common)
         std::set<int> visited;
         timing_driven_expand_node_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
@@ -1343,7 +1343,7 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
      *
-     * new_costs.total_cost: is this "known" backward cost + an expected cost to get to the target.   
+     * new_costs.total_cost: is this "known" backward cost + an expected cost to get to the target.
      *
      * new_costs.R_upstream: is the upstream resistance at the end of this node
      */
@@ -1388,8 +1388,8 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
 
     if (budgeting_inf.if_set()) {
         //If budgets specified calculate cost as described by RCV paper:
-        //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While 
-        //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of 
+        //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
+        //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
         //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
 
         //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
@@ -1440,7 +1440,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
                      + num_segs_ortho_dir * ortho_data.T_linear
                      + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
                      + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
-                     + R_upstream * (  num_segs_same_dir * same_data.C_load 
+                     + R_upstream * (  num_segs_same_dir * same_data.C_load
                                      + num_segs_ortho_dir * ortho_data.C_load)
                      + ipin_data.T_linear;
 
@@ -1614,7 +1614,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
     rlim = (int) (ceil(sqrt((float) area / (float) num_sinks)));
 
     success = false;
-    /* determine quickly a feasible bin radius to route sink for high fanout nets 
+    /* determine quickly a feasible bin radius to route sink for high fanout nets
      this is necessary to prevent super long runtimes for high fanout nets; in best case, a reduction in complexity from O(N^2logN) to O(NlogN) (Swartz fast router)
      */
     linked_rt_edge = rt_node->u.child_list;
@@ -1752,7 +1752,7 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
 }
 
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
-    /* Early exit code for cases where it is obvious that a successful route will not be found 
+    /* Early exit code for cases where it is obvious that a successful route will not be found
        Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
 
     if (wirelength_info.used_wirelength_ratio() > FIRST_ITER_WIRELENTH_LIMIT) {

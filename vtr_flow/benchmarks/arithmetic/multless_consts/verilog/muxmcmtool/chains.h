@@ -219,9 +219,9 @@ struct mult_chain : public chain {
     this->value = chain_c->value;
     this->c1 = chain_c->c1;
     this->c2 = chain_c->c2;
-    this->c = chain_c->c;        
+    this->c = chain_c->c;
     }
-    
+
     void output(ostream &os) const {
     os << c << " " << cost;
     os << " mult " << c1 << " " << c2 << endl;
@@ -248,7 +248,7 @@ struct add_chain : public chain {
     this->c1 = chain_c->c1;
     this->c2 = chain_c->c2;
     this->sp = chain_c->sp;
-    this->c = chain_c->c;        
+    this->c = chain_c->c;
     }
     void output(ostream &os) const {
     os << c << " " << cost;
@@ -283,7 +283,7 @@ struct leapfrog2_chain : public chain {
     this->sp1 = chain_c->sp1;
     this->sp2 = chain_c->sp2;
     leap1 = compute_sp(c1, 1, sp1);
-    this->c = chain_c->c;        
+    this->c = chain_c->c;
     }
     void get_ops(oplist_t &l, reg_t dest, reg_t src, reg_t (tmpreg)()) {
     reg_t leap1reg = tmpreg(), t1 = tmpreg(), t2 = tmpreg();
@@ -329,7 +329,7 @@ struct leapfrog3_chain : public chain {
     this->sp3 = chain_c->sp3;
     leap1 = compute_sp(c1, 1, sp1);
     leap2 = compute_sp(leap1, c1, sp2);
-    this->c = chain_c->c;        
+    this->c = chain_c->c;
     }
     void get_ops(oplist_t &l, reg_t dest, reg_t src, reg_t (tmpreg)()) {
     reg_t leap1reg = tmpreg(), leap2reg = tmpreg(), t1 = tmpreg(), t2 = tmpreg();

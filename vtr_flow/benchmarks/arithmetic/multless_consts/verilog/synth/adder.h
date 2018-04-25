@@ -43,7 +43,7 @@ typedef list<adag_node*> nodelist_t;
 struct multi_adag_node : public adag_node {
     multi_adag_node(reg_t reg);
     multi_adag_node(coeff_t c, bool is_targ, reg_t reg);
-    multi_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp, 
+    multi_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
 		    adag_node *src1, adag_node *src2);
     void add_summand(adag_node *s, int scale);
     void output(ostream &os);
@@ -56,7 +56,7 @@ struct multi_adag_node : public adag_node {
 class binary_adag_node : public adag_node {
 public:
     binary_adag_node(reg_t reg); /* input node */
-    binary_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp, 
+    binary_adag_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
 		     adag_node *src1, adag_node *src2);
     void output(ostream &os);
     coeff_t compute_coeff();
@@ -67,7 +67,7 @@ private:
 };
 
  /*******************************************************************************
- * adag 
+ * adag
  *******************************************************************************/
 class adag {
 public:
@@ -75,10 +75,10 @@ public:
     adag_node *lookup_coeff(coeff_t c);
     adag_node *lookup_input();
     adag_node *set_input_node(reg_t reg);
-    adag_node *add_binary_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp, 
+    adag_node *add_binary_node(coeff_t c, bool is_targ, reg_t reg, sp_t sp,
 			       adag_node *src1, adag_node *src2);
     adag_node *add_node(adag_node *n);
-    adag_node *add_adder(adder *a, reg_t dest, reg_t (tmpreg)(), 
+    adag_node *add_adder(adder *a, reg_t dest, reg_t (tmpreg)(),
 			 adder *(get_adder)(coeff_t));
 
     adag_node *to_multi(adag_node *n);
@@ -104,10 +104,10 @@ public:
 
     cfset_t outputs;
     vector<nodelist_t> nodes_at;
-    liveness_t liveness, gen_at, kill_at; 
+    liveness_t liveness, gen_at, kill_at;
     rlmap_t gen, kill;
     nodemap_t nodes;
-    int max_depth, nregs;   
+    int max_depth, nregs;
     map<reg_t, reg_t> assigned; /* registers */
     bool verbose;
 };

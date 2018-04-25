@@ -3,7 +3,7 @@
  * July 17, 2009
  * pb_graph creates the internal routing edges that join together the different
  * pb_types modes within a pb_type
- * 
+ *
  * Daniel Chen
  * July, 2013
  * Pb_graph checks implemented:
@@ -99,11 +99,11 @@ static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const t_pb_graph_edge_comparator & edge1,
 				const t_pb_graph_edge_comparator & edge2);
-static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin, 
+static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 	const int i_pin, map<int, int>& edges_map, int* line_num);
 
 /**
- * Allocate memory into types and load the pb graph with interconnect edges 
+ * Allocate memory into types and load the pb graph with interconnect edges
  */
 void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
@@ -171,7 +171,7 @@ void echo_pb_graph(char * filename) {
 static int check_pb_graph() {
 
 	int i, num_errors;
-	/* TODO: Error checks to do 
+	/* TODO: Error checks to do
 	 1.  All pin and edge connections are bidirectional and match each other
 	 3.  All ports are unique in a pb_type
 	 4.  Number of pb of a pb_type in graph is the same as requested number
@@ -577,9 +577,9 @@ static void alloc_and_load_mode_interconnect(
 			break;
 
 		default:
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), mode->interconnect[i].line_num, 
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), mode->interconnect[i].line_num,
 					"Unknown interconnect %d for mode %s in pb_type %s, input %s, output %s\n",
-					mode->interconnect[i].type, mode->name, 
+					mode->interconnect[i].type, mode->name,
 					pb_graph_parent_node->pb_type->name,mode->interconnect[i].input_string,
 					mode->interconnect[i].output_string);
 		}
@@ -623,13 +623,13 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 		VTR_ASSERT(tokens[i].type != TOKEN_NULL);
 		if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
 			if (in_squig_bracket) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"{ inside { in port %s\n", port_string);
 			}
 			in_squig_bracket = true;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if (!in_squig_bracket) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"No matching '{' for '}' in port %s\n", port_string);
 			}
             (*num_sets)++;
@@ -643,7 +643,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 
 	if (in_squig_bracket) {
 		(*num_sets)++;
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 			"No matching '{' for '}' in port %s\n", port_string);
 	}
 
@@ -656,17 +656,17 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 		VTR_ASSERT(tokens[i].type != TOKEN_NULL);
 		if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
 			if (in_squig_bracket) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"{ inside { in port %s\n", port_string);
 			}
 			in_squig_bracket = true;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if ((*num_ptrs)[curr_set] == 0) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"No data contained in {} in port %s\n", port_string);
 			}
 			if (!in_squig_bracket) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"No matching '{' for '}' in port %s\n", port_string);
 			}
             curr_set++;
@@ -679,7 +679,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                         interconnect_error_check, is_input_to_interc, tokens, &i,
                         &((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
             } catch(VprError& e) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"Syntax error processing port string '%s' (%s)\n", port_string, e.what());
             }
             VTR_ASSERT(success);
@@ -695,7 +695,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 }
 
 /**
- * Creates edges to connect all input pins to output pins 
+ * Creates edges to connect all input pins to output pins
  */
 static void alloc_and_load_complete_interc_edges(
 		t_interconnect *interconnect,
@@ -802,7 +802,7 @@ static void alloc_and_load_direct_interc_edges(
     int pins_per_set = num_input_ptrs[0];
     for (int i = 0; i < num_output_sets; ++i) {
         if (pins_per_set != num_output_ptrs[i]) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
                 "Direct interconnect sets must have an equal number of input pins and output pins. "
                 "Input set has %d input pins but output set %d has %d output pins\n", pins_per_set, i, num_output_ptrs[i]);
         }
@@ -839,12 +839,12 @@ static void alloc_and_load_direct_interc_edges(
     for (int iset = 0; iset < num_output_sets; ++iset) {
         for (int ipin = 0; ipin < pins_per_set; ++ipin) {
             t_pb_graph_pin* output_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
-            
+
             //Allocate space for output pin set's in-coming edge (one edge per pin)
             output_pin->input_edges = (t_pb_graph_edge**) vtr::realloc(output_pin->input_edges,
                                                    (output_pin->num_input_edges + 1) * sizeof(t_pb_graph_edge*));
 
-            int ipin_edge = output_pin->num_input_edges; 
+            int ipin_edge = output_pin->num_input_edges;
             int iedge = iset * pins_per_set + ipin;
             output_pin->input_edges[ipin_edge] = &edges[iedge];
             output_pin->num_input_edges += 1;
@@ -885,7 +885,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
 	if (num_output_sets != 1) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
 			"Mux must have one output\n");
 	}
 
@@ -920,7 +920,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
 	/* Load connections between pins and record these updates in the edges */
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
 		if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
 				"# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
 		}
 		edges[i_inset].input_pins = (t_pb_graph_pin**) vtr::calloc(
@@ -941,7 +941,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
 			edges[i_inset].output_pins[i_inpin] = output_pb_graph_node_pin_ptrs[0][i_inpin];
 
 			if (i_inpin != 0) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
 					"Bus-based mux not yet supported, will consider for future work\n");
 			}
 			edges[i_inset].interconnect = interconnect;
@@ -955,7 +955,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
  * populate array of pb graph pins for a single variable of type pb_type[int:int].port[int:int]
  * pb_graph_pins: pointer to array from [0..num_port_pins] of pb_graph_pin pointers
  * tokens: array of tokens to scan
- * num_pins: current number of pins in pb_graph_pin array 
+ * num_pins: current number of pins in pb_graph_pin array
  */
 static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		const t_pb_graph_node *pb_graph_parent_node,
@@ -1000,7 +1000,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 			if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 				return false; //clb[abc
 			}
-			pb_msb = vtr::atoi(tokens[*token_index].data); 
+			pb_msb = vtr::atoi(tokens[*token_index].data);
             VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-siginificant-bit must be non-negative");
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
@@ -1027,13 +1027,13 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 			/* Check to make sure indices from user match internal data structures for the indices of the parent */
 			if ((pb_lsb != pb_msb)
 					&& (pb_lsb != pb_graph_parent_node->placement_index)) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"Incorrect placement index for %s, expected index %d", tokens[0].data,
 						pb_graph_parent_node->placement_index);
 			}
 
 			if ((pb_lsb != pb_msb)) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"Cannot specify range for a parent pb: '%s'", tokens[0].data);
 			}
 
@@ -1082,7 +1082,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                         /* Check range of children pb */
                         if (pb_lsb < 0 || pb_lsb >= max_pb_node_array ||
                             pb_msb < 0 || pb_msb >= max_pb_node_array) {
-                            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+                            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                 "Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
                                 mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
                         }
@@ -1094,14 +1094,14 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                 }
             }
         } else {
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 				"Parent pb node '%s' missing", pb_graph_parent_node->pb_type->name);
 		}
 	}
-    
+
 	if (!found) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-			"Unknown pb_type name %s, not defined in namespace of mode %s", 
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+			"Unknown pb_type name %s, not defined in namespace of mode %s",
 			pb_name, mode->name);
 	}
 
@@ -1121,11 +1121,11 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
 	if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
 				0) == nullptr) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 			"Failed to find port name %s", port_name);
 	}
 
-	
+
 	if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
 		(*token_index)++;
 		if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
@@ -1189,7 +1189,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             int idx = prev_num_pins + i * (abs(pin_msb - pin_lsb) + 1) + j;
 			(*pb_graph_pins)[idx] = get_pb_graph_pin_from_name(port_name, &pb_node_array[ipb], ipin);
 			if ((*pb_graph_pins)[idx] == nullptr ) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 					"Pin %s.%s[%d] cannot be found",
 						pb_node_array[ipb].pb_type->name, port_name, ipin);
 			}
@@ -1203,24 +1203,24 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 				if (pb_node_array == pb_graph_parent_node) {
 					if (is_input_to_interc) {
 						if (iport->type != IN_PORT) {
-							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 								"Input to interconnect from parent is not an input or clock pin");
 						}
 					} else {
 						if (iport->type != OUT_PORT) {
-							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 								"Output from interconnect from parent is not an input or clock pin");
 						}
 					}
 				} else {
 					if (is_input_to_interc) {
 						if (iport->type != OUT_PORT) {
-							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 								"output from interconnect from parent is not an input or clock pin");
 						}
 					} else {
 						if (iport->type != IN_PORT) {
-							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
+							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
 								"Input to interconnect from parent is not an input or clock pin");
 						}
 					}
@@ -1315,8 +1315,8 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
                     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                         if ((   (width == 0 && side == LEFT)
-                             || (height == type->height - 1 && side == TOP) 
-                             || (width == type->width - 1 && side == RIGHT) 
+                             || (height == type->height - 1 && side == TOP)
+                             || (width == type->width - 1 && side == RIGHT)
                              || (height == 0 && side == BOTTOM))
                             && ipin < type->num_pins) {
                             //On a side, with pins still to allocate
@@ -1339,7 +1339,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
         std::vector<int> output_pins;
         for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
             int iclass = type->pin_class[pin_num];
-            
+
             if (type->class_inf[iclass].type == RECEIVER) {
                 input_pins.push_back(pin_num);
             } else {
@@ -1380,8 +1380,8 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
                     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                         if ((   (width == 0 && side == LEFT)
-                             || (height == type->height - 1 && side == TOP) 
-                             || (width == type->width - 1 && side == RIGHT) 
+                             || (height == type->height - 1 && side == TOP)
+                             || (width == type->width - 1 && side == RIGHT)
                              || (height == 0 && side == BOTTOM))
                             && ipin < output_pins.size()) {
                             //On a perimeter side, with pins still to allocate
@@ -1618,15 +1618,15 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 	}
 }
 
-/* Date:July 10th, 2013												
- * Author: Daniel Chen											
+/* Date:July 10th, 2013
+ * Author: Daniel Chen
  * Purpose: This subroutine traverses through all the pb_nodes within
  *			the pb_graph and checks for various misspecified architectures,
- *			such as repeated edges between two pins. 
+ *			such as repeated edges between two pins.
  */
 
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node){
-	
+
 	int i, j, k;
 	int line_num = 0;
 	map<int, int> logic_equivalent_pins_map;
@@ -1671,12 +1671,12 @@ static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node){
 	}
 }
 
-/* Date:July 10th, 2013												
- * Author: Daniel Chen											
+/* Date:July 10th, 2013
+ * Author: Daniel Chen
  * Purpose: This subroutine traverses through all the edges associated
- *			 with a single pb_graph_pin and checks for repeated edges connected	
+ *			 with a single pb_graph_pin and checks for repeated edges connected
  *			 to it. Note: This only checks for incoming edges at a pin, since
- *			 all edges must land on a pin, by traversing all the incoming 
+ *			 all edges must land on a pin, by traversing all the incoming
  *			 edges of all the pins, all edges are checked exactly once.
  */
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
@@ -1699,19 +1699,19 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
 			edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
 			ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info,0));
 			if(!ret_edges_map.second){
-				// Print out the connection that already exists in the map and then the new one 
+				// Print out the connection that already exists in the map and then the new one
 				// we are trying to insert into the map.
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num, 
-					"Duplicate edges detected between: \n" 
+				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num,
+					"Duplicate edges detected between: \n"
 					"%s[%d].%s[%d]--->%s[%d].%s[%d] \n"
 					"Found edges on line %d and %d.\n",
-					ret_edges_map.first->first.input_pin->parent_node->pb_type->name, 
+					ret_edges_map.first->first.input_pin->parent_node->pb_type->name,
 					ret_edges_map.first->first.input_pin->parent_node->placement_index,
-					ret_edges_map.first->first.input_pin->port->name, 
+					ret_edges_map.first->first.input_pin->port->name,
 					ret_edges_map.first->first.input_pin->pin_number,
 					ret_edges_map.first->first.output_pin->parent_node->pb_type->name,
 					ret_edges_map.first->first.output_pin->parent_node->placement_index,
-					ret_edges_map.first->first.output_pin->port->name, 
+					ret_edges_map.first->first.output_pin->port->name,
 					ret_edges_map.first->first.output_pin->pin_number,
 					ret_edges_map.first->first.parent_edge->interconnect->line_num,
 					cur_edge->interconnect->line_num);
@@ -1722,31 +1722,31 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
 	edges_map.clear();
 }
 
-/* Date:July 9th, 2013												
- * Author: Daniel Chen											
- * Purpose: Less-than operator for t_pb_graph_edge_comparator,	
- *			 used for comparing key types in edges_map that		
- *			 checks for repeated edges in the pb_graph		
+/* Date:July 9th, 2013
+ * Author: Daniel Chen
+ * Purpose: Less-than operator for t_pb_graph_edge_comparator,
+ *			 used for comparing key types in edges_map that
+ *			 checks for repeated edges in the pb_graph
  */
 static bool operator<(const t_pb_graph_edge_comparator & edge1,
 				const t_pb_graph_edge_comparator & edge2){
-	return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) || 
+	return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) ||
 		(edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
 }
 
-/* Date:July 19th, 2013												
- * Author: Daniel Chen											
- * Purpose: This subroutine ensures that an input port declared as 	
+/* Date:July 19th, 2013
+ * Author: Daniel Chen
+ * Purpose: This subroutine ensures that an input port declared as
  *			logically-equivalent have pins that connect to the exact (cannot
  *			be a subset) same pins. i_pin == 0 indicates cur_pin is the first
  *			pin of an logically-equivalent port, we use its outgoing edges
- *			to compare with the rest of the pins in the port. 
+ *			to compare with the rest of the pins in the port.
  */
-static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin, 
+static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 	const int i_pin, map<int, int>& logic_equivalent_pins_map, int* line_num){
 
 	int i, j, edge_count;
-	t_pb_graph_edge* cur_edge; 
+	t_pb_graph_edge* cur_edge;
 	bool pins_equivalent = true;
 
 	if(i_pin == 0){
@@ -1764,7 +1764,7 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 			else{
 				// Rest of the pins of an equivalent port, they should connect to the
 				// same set of pins
-				if(logic_equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) == 
+				if(logic_equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) ==
 					logic_equivalent_pins_map.end()){
 					// Could not find the outpin that cur_pin connects to
 					pins_equivalent = false;

@@ -75,7 +75,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
-    argparse::ArgValue<sched_type> anneal_sched_type; 
+    argparse::ArgValue<sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;

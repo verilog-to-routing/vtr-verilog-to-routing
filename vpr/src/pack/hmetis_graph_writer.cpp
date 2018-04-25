@@ -4,9 +4,9 @@
 * Brief summary of formatting
 * ===========================
 * Hypergraph H = (V, Eh) with V vertices and Eh hyperedges stored in plain text file.
-* Contains |Eh|+1 lines if vertices weightless, and |Eh|+|V|+1 lines if weighted. 
+* Contains |Eh|+1 lines if vertices weightless, and |Eh|+|V|+1 lines if weighted.
 * Lines starting with ‘%’ are comments.
-*	
+*
 * First line contains 2 or 3 integers:
 *	(1) |Eh| = # of hyperedges
 *	(2) |V| = # of vertices
@@ -31,7 +31,7 @@
 *
 * This example translates to the following input hypergraph file:
 *		4 7
-*		1 2 
+*		1 2
 *		1 7 5 6
 *		5 6 4
 *		2 3 4
@@ -66,7 +66,7 @@ void write_hmetis_graph(std::string &file_name) {
 	fp.open(file_name, fstream::out | fstream::trunc);
 
 	/* Prints out general info for easy error checking*/
-	if (!fp.is_open() || !fp.good()) { 
+	if (!fp.is_open() || !fp.good()) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 			"couldn't open file \"%s\" for generating hypergraph file\n", file_name.c_str());
 	}
@@ -74,9 +74,9 @@ void write_hmetis_graph(std::string &file_name) {
 
 	auto& atom_ctx = g_vpr_ctx.atom();
 
-	/* Possible fmt values	
+	/* Possible fmt values
 	*		omitted - unweighted graph
-	*		1		- weighted Eh 
+	*		1		- weighted Eh
 	*		10		- weighted V
 	*		11		- weighted Eh & V
 	*/
@@ -116,7 +116,7 @@ void write_hmetis_graph(std::string &file_name) {
 
 }
 
-/* Function to write if the hypergraph has unweighted edges 
+/* Function to write if the hypergraph has unweighted edges
 *  The ith line written has the vertices connected by Eh_i
 */
 void write_unweighted_edges(fstream &fp) {
@@ -141,7 +141,7 @@ void write_weighted_edges(fstream &fp) {
 	// For each net, write all the blocks connected to that net
 	for (auto net_id : atom_ctx.nlist.nets()) {
 		int net_weight = 0;	//TODO: Find a good metric for weight of the net
-		
+
 		fp << endl;
 		for (auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
 			fp << size_t(atom_ctx.nlist.pin_block(pin_id)) + 1 << " ";

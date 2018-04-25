@@ -33,7 +33,7 @@
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */
 vtr::NdMatrix<std::vector<int>,3> alloc_and_load_switch_block_conn(const size_t nodes_per_chan,
-                                const e_switch_block_type switch_block_type, 
+                                const e_switch_block_type switch_block_type,
                                 const int Fs) {
 
 	/* Currently Fs must be 3 since each track maps once to each other side */
@@ -47,7 +47,7 @@ vtr::NdMatrix<std::vector<int>,3> alloc_and_load_switch_block_conn(const size_t 
 				if (from_side != to_side) {
 					switch_block_conn[from_side][to_side][from_track].resize(1);
 
-					switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(from_side, to_side, 
+					switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(from_side, to_side,
                                                                                   from_track, switch_block_type, nodes_per_chan);
 				} else { /* from_side == to_side -> no connection. */
 					switch_block_conn[from_side][to_side][from_track].clear();

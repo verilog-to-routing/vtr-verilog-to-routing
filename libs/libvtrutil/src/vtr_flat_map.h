@@ -19,23 +19,23 @@ flat_map<K,V> make_flat_map(std::vector<std::pair<K, V>> vec) {
 }
 
 //
-// flat_map is a (nearly) std::map compatible container which uses a vector 
-// as it's underlying storage. Internally the stored elements are kept sorted 
+// flat_map is a (nearly) std::map compatible container which uses a vector
+// as it's underlying storage. Internally the stored elements are kept sorted
 // allowing efficient look-up in O(logN) time via binary search.
 //
 // This container is typically useful in the following scenarios:
-//    * Reduced memory usage if key/value are small (std::map needs to store pointers to 
+//    * Reduced memory usage if key/value are small (std::map needs to store pointers to
 //      other BST nodes which can add substantial overhead for small keys/values)
-//    * Faster search/iteration by exploiting data locality (all elments are in continguous 
+//    * Faster search/iteration by exploiting data locality (all elments are in continguous
 //      memory enabling better spatial locality)
 //
 // The container deviates from the behaviour of std::map in the following important ways:
 //    * Insertion/erase takes O(N) instead of O(logN) time
 //    * Iterators may be invalidated on insertion/erase (i.e. if the vector is reallocated)
 //
-// The slow insertion/erase performance makes this container poorly suited to maps that 
-// frequently add/remove new keys. If this is required you likely want std::map or 
-// std::unordered_map. However if the map is constructed once and then repeatedly quieried, 
+// The slow insertion/erase performance makes this container poorly suited to maps that
+// frequently add/remove new keys. If this is required you likely want std::map or
+// std::unordered_map. However if the map is constructed once and then repeatedly quieried,
 // consider using the range or vector-based constructors which initializes the flat_map in
 // O(NlogN) time.
 //
@@ -169,7 +169,7 @@ class flat_map {
 
         //Erase at iterator
         void erase(const_iterator position) {
-            vec_.erase(position); 
+            vec_.erase(position);
         }
 
         //Erase range
@@ -211,7 +211,7 @@ class flat_map {
         }
 
         const_iterator find(const key_type& key) const {
-            auto iter = lower_bound(key); 
+            auto iter = lower_bound(key);
             if(iter != end() && iter->first == key) {
                 //Found
                 return iter;
@@ -224,16 +224,16 @@ class flat_map {
         }
 
         iterator lower_bound(const key_type& key) {
-            const_iterator const_iter = const_cast<const flat_map*>(this)->lower_bound(key); 
+            const_iterator const_iter = const_cast<const flat_map*>(this)->lower_bound(key);
             return convert_to_iterator(const_iter);
         }
 
         const_iterator lower_bound(const key_type& key) const {
-            return std::lower_bound(begin(), end(), key, value_comp()); 
+            return std::lower_bound(begin(), end(), key, value_comp());
         }
 
         iterator upper_bound(const key_type& key) {
-            const_iterator const_iter = const_cast<const flat_map*>(this)->upper_bound(key); 
+            const_iterator const_iter = const_cast<const flat_map*>(this)->upper_bound(key);
             return convert_to_iterator(const_iter);
         }
 

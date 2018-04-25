@@ -1,4 +1,4 @@
-/* 
+/*
  Feasibility filter used during packing that determines if various necessary conditions for legality are met
 
  Important for 2 reasons:
@@ -12,7 +12,7 @@
 
  Implementation details:
  a) Definition of a pin class - If there exists a path (ignoring directionality of connections) from pin A to pin B and pin A and pin B are of the same type (input, output, or clock), then pin A and pin B are in the same pin class.  Otherwise, pin A and pin B are in different pin classes.
- b) Code Identifies pin classes.  Given a candidate solution  
+ b) Code Identifies pin classes.  Given a candidate solution
 
  Author: Jason Luu
  Date: May 16, 2012

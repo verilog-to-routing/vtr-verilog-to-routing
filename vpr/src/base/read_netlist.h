@@ -1,7 +1,7 @@
 /**
  * Author: Jason Luu
  * Date: May 2009
- * 
+ *
  * Read a circuit netlist in XML format and populate the netlist data structures for VPR
  */
 
@@ -10,7 +10,7 @@
 
 #include "vpr_types.h"
 
-ClusteredNetlist read_netlist(const char *net_file, 
+ClusteredNetlist read_netlist(const char *net_file,
 		const t_arch *arch,
         bool verify_file_digests);
 

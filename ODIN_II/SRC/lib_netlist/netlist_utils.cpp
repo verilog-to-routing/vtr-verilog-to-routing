@@ -101,7 +101,7 @@ nnode_t *free_nnode(nnode_t *to_free)
 
 		for (int i = 0; i < to_free->num_input_pins; i++)
 			to_free->input_pins[i] = (npin_t*)vtr::free(to_free->input_pins[i]);
-			
+
 		to_free->input_pins = (npin_t**)vtr::free(to_free->input_pins);
 
 		for (int i = 0; i < to_free->num_output_pins; i++)

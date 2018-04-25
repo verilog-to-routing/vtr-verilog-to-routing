@@ -1,4 +1,4 @@
-/* 
+/*
   Functions to creates, manipulate, and free the lb_type_rr_node graph that represents interconnect within a logic block type.
 
   Author: Jason Luu

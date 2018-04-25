@@ -84,8 +84,8 @@ struct t_placer_statistics {
 };
 
 #define MAX_INV_TIMING_COST 1.e9
-/* Stops inverse timing cost from going to infinity with very lax timing constraints, 
-which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing. 
+/* Stops inverse timing cost from going to infinity with very lax timing constraints,
+which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing.
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
@@ -148,7 +148,7 @@ static t_pl_blocks_to_be_moved blocks_affected;
  * of the net bounding box in each dimension, divided by the average    *
  * number of tracks in that direction; for other cost functions they    *
  * will never be used.                                                  *
- */                
+ */
 static float** chanx_place_cost_fac; //[0...device_ctx.grid.width()-2]
 static float** chany_place_cost_fac; //[0...device_ctx.grid.height()-2]
 
@@ -268,18 +268,18 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 
 static e_swap_result assess_swap(float delta_c, float t);
 
-static bool find_to(t_type_ptr type, float rlim, 
-		int x_from, int y_from, 
+static bool find_to(t_type_ptr type, float rlim,
+		int x_from, int y_from,
 		int *px_to, int *py_to, int *pz_to);
 static void find_to_location(t_type_ptr type, float rlim,
-		int x_from, int y_from, 
+		int x_from, int y_from,
 		int *px_to, int *py_to, int *pz_to);
 
 static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
-		
+
 static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm, float& bb_delta_c, float& timing_delta_c, float& delay_delta_c);
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
@@ -326,7 +326,7 @@ void try_place(t_placer_opts placer_opts,
 		t_chan_width_dist chan_width_dist, t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
-		t_timing_inf timing_inf, 
+		t_timing_inf timing_inf,
 #endif
         t_direct_inf *directs, int num_directs) {
 
@@ -483,11 +483,11 @@ void try_place(t_placer_opts placer_opts,
     vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
             cost, bb_cost, timing_cost, delay_cost);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-        vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
+        vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
                 1e9*critical_path.delay());
-        vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
+        vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9*timing_info->setup_total_negative_slack());
-        vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+        vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
                 1e9*timing_info->setup_worst_negative_slack());
         vtr::printf_info("\n");
 
@@ -502,10 +502,10 @@ void try_place(t_placer_opts placer_opts,
                      "%10s %7s %10s %8s "
                      "%7s %7s %7s %6s "
                      "%9s %6s\n",
-                     "-------", 
-                     "-------", "----------", "----------", "----------", 
-                     "----------", "-------", "----------", "--------", 
-                     "-------", "-------", "-------", "------", 
+                     "-------",
+                     "-------", "----------", "----------", "----------",
+                     "----------", "-------", "----------", "--------",
+                     "-------", "-------", "-------", "------",
                      "---------", "------");
 	vtr::printf_info("%7s "
                      "%7s %10s %10s %10s "
@@ -514,7 +514,7 @@ void try_place(t_placer_opts placer_opts,
                      "%9s %6s\n",
                      "T",
                      "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
-                     "P to P Del", "CPD", "sTNS", "sWNS", 
+                     "P to P Del", "CPD", "sTNS", "sWNS",
                      "Ac Rate", "Std Dev", "R limit", "Exp",
                      "Tot Moves", "Alpha");
 	vtr::printf_info("%7s "
@@ -522,13 +522,13 @@ void try_place(t_placer_opts placer_opts,
                      "%10s %7s %10s %8s "
                      "%7s %7s %7s %6s "
                      "%9s %6s\n",
-                     "-------", 
-                     "-------", "----------", "----------", "----------", 
-                     "----------", "-------", "----------", "--------", 
-                     "-------", "-------", "-------", "------", 
+                     "-------",
+                     "-------", "----------", "----------", "----------",
+                     "----------", "-------", "----------", "--------",
+                     "-------", "-------", "-------", "------",
                      "---------", "------");
 
-	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
+	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d",
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
 
     //Draw the initial placement
@@ -544,7 +544,7 @@ void try_place(t_placer_opts placer_opts,
 		move_lim = 1;
 
 	if (placer_opts.inner_loop_recompute_divider != 0) {
-		inner_recompute_limit = (int) 
+		inner_recompute_limit = (int)
 			(0.5 + (float) move_lim	/ (float) placer_opts.inner_loop_recompute_divider);
     } else {
 		/*don't do an inner recompute */
@@ -585,8 +585,8 @@ void try_place(t_placer_opts placer_opts,
 #endif
             *timing_info);
 
-		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, crit_exponent, inner_recompute_limit, &stats, 
+		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
+			move_lim, crit_exponent, inner_recompute_limit, &stats,
 			&cost, &bb_cost, &timing_cost, &delay_cost,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -605,7 +605,7 @@ void try_place(t_placer_opts placer_opts,
 			new_bb_cost = recompute_bb_cost();
 			if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-						"in try_place: new_bb_cost = %g, old bb_cost = %g\n", 
+						"in try_place: new_bb_cost = %g, old bb_cost = %g\n",
 						new_bb_cost, bb_cost);
 			}
 			bb_cost = new_bb_cost;
@@ -652,7 +652,7 @@ void try_place(t_placer_opts placer_opts,
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             critical_path = timing_info->least_slack_critical_path();
             sTNS = timing_info->setup_total_negative_slack();
-            sWNS = timing_info->setup_worst_negative_slack(); 
+            sWNS = timing_info->setup_worst_negative_slack();
         }
 
         vtr::printf_info("%7.3f "
@@ -660,10 +660,10 @@ void try_place(t_placer_opts placer_opts,
                          "%-10.5g %7.3f % 10.3g % 8.3f "
                          "%7.4f %7.4f %7.4f %6.3f"
                          "%9d %6.3f\n",
-                         oldt, 
-                         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, 
-                         place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,  
-                         success_rat, std_dev, rlim, crit_exponent, 
+                         oldt,
+                         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost,
+                         place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,
+                         success_rat, std_dev, rlim, crit_exponent,
                          tot_iter, t / oldt);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -711,8 +711,8 @@ void try_place(t_placer_opts placer_opts,
 
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
-	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, crit_exponent, inner_recompute_limit, &stats, 
+	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
+			move_lim, crit_exponent, inner_recompute_limit, &stats,
 			&cost, &bb_cost, &timing_cost, &delay_cost,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -748,13 +748,13 @@ void try_place(t_placer_opts placer_opts,
                      "%-10.5g %7.3f % 10.3g % 8.3f "
                      "%7.4f %7.4f %7.4f %6.3f"
                      "%9d %6.3f\n",
-                      t, 
-                      stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, 
+                      t,
+                      stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost,
                       place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,
                       success_rat, std_dev, rlim, crit_exponent,
                       tot_iter, 0.);
 
-	// TODO:  
+	// TODO:
 	// 1. print a message about number of aborted moves.
 	// 2. add some subroutine hierarchy!  Too big!
 
@@ -805,15 +805,15 @@ void try_place(t_placer_opts placer_opts,
 
 		/* Print critical path delay. */
 		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns", 
+		vtr::printf_info("Placement estimated critical path delay: %g ns",
                 1e9*critical_path.delay(), get_critical_path_delay());
 #ifdef ENABLE_CLASSIC_VPR_STA
 		vtr::printf_info(" (classic VPR STA %g ns)", get_critical_path_delay());
 #endif
         vtr::printf("\n");
-        vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
+        vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9*timing_info->setup_total_negative_slack());
-        vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+        vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
                 1e9*timing_info->setup_worst_negative_slack());
         vtr::printf_info("\n");
 
@@ -834,10 +834,10 @@ void try_place(t_placer_opts placer_opts,
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
 			cost, bb_cost, timing_cost, width_fac);
-	vtr::printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
+	vtr::printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n",
 			cost, bb_cost, timing_cost, delay_cost);
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-	 
+
 	// Print out swap statistics
 	size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
@@ -850,7 +850,7 @@ void try_place(t_placer_opts placer_opts,
 	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
 	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
 	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
-	
+
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
@@ -870,7 +870,7 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, 
+	float * inverse_prev_bb_cost,
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
@@ -1004,7 +1004,7 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 
 /*only count non-global connections */
 static int count_connections() {
-	
+
 	int count = 0;
 
 	auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1131,7 +1131,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
 				place_algorithm, timing_tradeoff,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr);
-		
+
 		if (swap_result == ACCEPTED) {
 			num_accepted++;
 			av += *cost_ptr;
@@ -1152,7 +1152,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
 	if (num_accepted != move_lim) {
-		vtr::printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__,
 				"Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
 	}
 
@@ -1168,7 +1168,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
-	/* Find all the blocks affected when b_from is swapped with b_to. 
+	/* Find all the blocks affected when b_from is swapped with b_to.
 	 * Returns abort_swap.                  */
 
 	int imoved_blk, imacro;
@@ -1204,7 +1204,7 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = true;
 		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = true;
 		blocks_affected.num_moved_blocks ++;
-				
+
 	} else if (b_to != INVALID_BLOCK_ID) {
 
 		// Does not allow a swap with a macro yet
@@ -1222,7 +1222,7 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 		place_ctx.block_locs[b_from].x = x_to;
 		place_ctx.block_locs[b_from].y = y_to;
 		place_ctx.block_locs[b_from].z = z_to;
-		
+
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
 		blocks_affected.moved_blocks[imoved_blk].block_num = b_from;
@@ -1235,7 +1235,7 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 		blocks_affected.moved_blocks[imoved_blk].swapped_to_was_empty = false;
 		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = false;
 		blocks_affected.num_moved_blocks ++;
-				
+
 		imoved_blk = blocks_affected.num_moved_blocks;
 		blocks_affected.moved_blocks[imoved_blk].block_num = b_to;
 		blocks_affected.moved_blocks[imoved_blk].xold = x_to;
@@ -1249,14 +1249,14 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 		blocks_affected.num_moved_blocks ++;
 
 	} // Finish swapping the blocks and setting up blocks_affected
-			
+
 	return (abort_swap);
 
 }
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to) {
 
-	/* Finds and set ups the affected_blocks array. 
+	/* Finds and set ups the affected_blocks array.
 	 * Returns abort_swap. */
 
 	int imacro, imember;
@@ -1268,7 +1268,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	
+
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
@@ -1276,18 +1276,18 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
 	if ( imacro != -1) {
 		// b_from is part of a macro, I need to swap the whole macro
-		
+
 		// Record down the relative position of the swap
 		x_swap_offset = x_to - x_from;
 		y_swap_offset = y_to - y_from;
 		z_swap_offset = z_to - z_from;
-		
+
 		for (imember = 0; imember < pl_macros[imacro].num_blocks && abort_swap == false; imember++) {
 
 			// Gets the new from and to info for every block in the macro
 			// cannot use the old from and to info
 			curr_b_from = pl_macros[imacro].members[imember].blk_index;
-			
+
 			curr_x_from = place_ctx.block_locs[curr_b_from].x;
 			curr_y_from = place_ctx.block_locs[curr_b_from].y;
 			curr_z_from = place_ctx.block_locs[curr_b_from].z;
@@ -1295,16 +1295,16 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 			curr_x_to = curr_x_from + x_swap_offset;
 			curr_y_to = curr_y_from + y_swap_offset;
 			curr_z_to = curr_z_from + z_swap_offset;
-			
+
 			//Make sure that the swap_to location is valid
             //It must be:
-            // * chip, and 
+            // * chip, and
             // * match the correct block type
             //
             //Note that we need to explicitly check that the types match, since the device floorplan is not
             //(neccessarily) translationally invariant for an arbitrary macro
 			if (   curr_x_to < 1 || curr_x_to >= int(device_ctx.grid.width())
-                || curr_y_to < 1 || curr_y_to >= int(device_ctx.grid.height()) 
+                || curr_y_to < 1 || curr_y_to >= int(device_ctx.grid.height())
                 || curr_z_to < 0
                 || device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.clb_nlist.block_type(curr_b_from)) {
 				abort_swap = true;
@@ -1313,7 +1313,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 			}
 		} // Finish going through all the blocks in the macro
 
-	} else { 
+	} else {
 		// This is not a macro - I could use the from and to info from before
 		abort_swap = setup_blocks_affected(b_from, x_to, y_to, z_to);
 
@@ -1352,7 +1352,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	float bb_delta_c = 0;
 	float timing_delta_c = 0;
 	float delay_delta_c = 0.0;
-	
+
 	/* Pick a random block to be swapped with another random block    */
 	auto b_from = ClusterBlockId(vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1));
 
@@ -1396,20 +1396,20 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	 * Also check that whether those are the only 2 blocks         *
 	 * to be moved - check for carry chains and other placement    *
 	 * macros.                                                     */
-	
+
 	/* Check whether the from_block is part of a macro first.      *
 	 * If it is, the whole macro has to be moved. Calculate the    *
 	 * x, y, z offsets of the swap to maintain relative placements *
 	 * of the blocks. Abort the swap if the to_block is part of a  *
 	 * macro (not supported yet).                                  */
-	
+
 	bool abort_swap = find_affected_blocks(b_from, x_to, y_to, z_to);
 
 	if (abort_swap == false) {
 
 		// Find all the nets affected by this swap and update thier bounding box
 		int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, bb_delta_c, timing_delta_c, delay_delta_c);
-			
+
 		if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			/*in this case we redefine delta_c as a combination of timing and bb.  *
 			 *additionally, we normalize all values, therefore delta_c is in       *
@@ -1423,13 +1423,13 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 		/* 1 -> move accepted, 0 -> rejected. */
 		e_swap_result keep_switch = assess_swap(delta_c, t);
-		
+
 		if (keep_switch == ACCEPTED) {
 			*cost = *cost + delta_c;
 			*bb_cost = *bb_cost + bb_delta_c;
-	
+
 			if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-				/*update the point_to_point_timing_cost and point_to_point_delay_cost 
+				/*update the point_to_point_timing_cost and point_to_point_delay_cost
 				 * values from the temporary values */
 				*timing_cost = *timing_cost + timing_delta_c;
 				*delay_cost = *delay_cost + delay_delta_c;
@@ -1444,7 +1444,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 				bb_coords[net_id] = ts_bb_coord_new[net_id];
 				if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
 					bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
-			
+
 				net_cost[net_id] = temp_net_cost[net_id];
 
 				/* negative temp_net_cost value is acting as a flag. */
@@ -1475,7 +1475,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 					place_ctx.grid_blocks[x_from][y_from].usage--;
 					place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = EMPTY_BLOCK_ID;
 				}
-			
+
 			} // Finish updating clb for all blocks
 
 		} else { /* Move was rejected.  */
@@ -1519,7 +1519,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
 		blocks_affected.num_moved_blocks = 0;
-		
+
 		return ABORTED;
 	}
 }
@@ -1547,13 +1547,13 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
 
 			if (cluster_ctx.clb_nlist.net_is_global(net_id))
 				continue; //Global nets are assumed to span the whole chip, and do not effect costs
-			
+
             //Record effected nets
             record_affected_net(net_id, num_affected_nets);
 
             //Update the net bounding boxes
             //
-            //Do not update the net cost here since it should only be updated 
+            //Do not update the net cost here since it should only be updated
             //once per net, not once per pin.
             update_net_bb(net_id, iblk, blk, blk_pin);
 
@@ -1579,7 +1579,7 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets) {
     //Record effected nets
-    if (temp_net_cost[net] < 0.) { 
+    if (temp_net_cost[net] < 0.) {
         //Net not marked yet.
         ts_nets_to_update[num_affected_nets] = net;
         num_affected_nets++;
@@ -1608,7 +1608,7 @@ static void update_net_bb(const ClusterNetId net, int iblk, const ClusterBlockId
 
         //Incremental bounding box update
         update_bb(net, &ts_bb_coord_new[net],
-                &ts_bb_edge_new[net], 
+                &ts_bb_edge_new[net],
                 blocks_affected.moved_blocks[iblk].xold + pin_width_offset,
                 blocks_affected.moved_blocks[iblk].yold + pin_height_offset,
                 blocks_affected.moved_blocks[iblk].xnew + pin_width_offset,
@@ -1655,12 +1655,12 @@ static void update_td_delta_costs(const ClusterNetId net, const ClusterPinId pin
     }
 }
 
-static bool find_to(t_type_ptr type, float rlim, 
-		int x_from, int y_from, 
+static bool find_to(t_type_ptr type, float rlim,
+		int x_from, int y_from,
 		int *px_to, int *py_to, int *pz_to) {
 
-	/* Returns the point to which I want to swap, properly range limited. 
-	 * rlim must always be between 1 and device_ctx.grid.width() - 2 (inclusive) for this routine  
+	/* Returns the point to which I want to swap, properly range limited.
+	 * rlim must always be between 1 and device_ctx.grid.width() - 2 (inclusive) for this routine
 	 * to work. Note -2 for no perim channels
 	 */
 
@@ -1676,7 +1676,7 @@ static bool find_to(t_type_ptr type, float rlim,
     auto grid_type = grid[x_from][y_from].type;
 	VTR_ASSERT(type == grid_type);
 
-	int rlx = min<float>(grid.width() - 1, rlim); 
+	int rlx = min<float>(grid.width() - 1, rlim);
 	int rly = min<float>(grid.height() - 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	active_area = 4 * rlx * rly;
 
@@ -1706,9 +1706,9 @@ static bool find_to(t_type_ptr type, float rlim,
 			num_tries++;
 		}
 
-		find_to_location(type, rlim, x_from, y_from, 
+		find_to_location(type, rlim, x_from, y_from,
 				px_to, py_to, pz_to);
-		
+
 		if((x_from == *px_to) && (y_from == *py_to)) {
 			is_legal = false;
 		} else if(*px_to > max_x || *px_to < min_x || *py_to > max_y || *py_to < min_y) {
@@ -1740,7 +1740,7 @@ static bool find_to(t_type_ptr type, float rlim,
 }
 
 static void find_to_location(t_type_ptr type, float rlim,
-		int x_from, int y_from, 
+		int x_from, int y_from,
 		int *px_to, int *py_to, int *pz_to) {
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1749,7 +1749,7 @@ static void find_to_location(t_type_ptr type, float rlim,
 	int itype = type->index;
 
 
-	int rlx = min<float>(grid.width() - 1, rlim); 
+	int rlx = min<float>(grid.width() - 1, rlim);
 	int rly = min<float>(grid.height() - 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	int active_area = 4 * rlx * rly;
 
@@ -1843,10 +1843,10 @@ static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin) {
 		int delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
 		int delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
 
-        /* Note: This heuristic only considers delta_x and delta_y, a much better heuristic 
+        /* Note: This heuristic only considers delta_x and delta_y, a much better heuristic
          *       would be to to create a more comprehensive lookup table.
          *
-         *       In particular this aproach does not accurately capture the effect of fast 
+         *       In particular this aproach does not accurately capture the effect of fast
          *       carry-chain connections.
          */
         delay_source_to_sink = get_delta_delay(delta_x, delta_y);
@@ -1877,7 +1877,7 @@ static void comp_td_point_to_point_delays() {
 * values for all connections that have changed.                   */
 static void update_td_cost() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	
+
 	/* Go through all the blocks moved. */
 	for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		ClusterBlockId bnum = blocks_affected.moved_blocks[iblk].block_num;
@@ -2063,7 +2063,7 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 static void alloc_and_load_placement_structs(
 	float place_cost_exp, t_placer_opts placer_opts,
 	t_direct_inf *directs, int num_directs) {
-	
+
 	int max_pins_per_clb, i;
 	unsigned int ipin;
 
@@ -2127,7 +2127,7 @@ static void alloc_and_load_placement_structs(
     bb_updated_before.resize(num_nets, NOT_UPDATED_YET);
 
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
-		
+
 	alloc_and_load_net_pin_indices();
 
 	alloc_and_load_try_swap_structs();
@@ -2151,7 +2151,7 @@ static void alloc_and_load_net_pin_indices() {
 
 	/* Allocate for maximum size. */
 	net_pin_indices.resize(cluster_ctx.clb_nlist.blocks().size());
-	
+
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
 		net_pin_indices[blk_id].resize(max_pins_per_clb);
 
@@ -2183,7 +2183,7 @@ static void alloc_and_load_try_swap_structs() {
 	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
 	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));
 	blocks_affected.num_moved_blocks = 0;
-	
+
 }
 
 /* This routine finds the bounding box of each net from scratch (i.e.   *
@@ -2368,7 +2368,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new) {
 	pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width_offset[pnum];
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height_offset[pnum];
-	
+
 	xmin = x;
 	ymin = y;
 	xmax = x;
@@ -2423,11 +2423,11 @@ static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 	 * The x and y coordinates are the pin's x and y coordinates.         */
 	/* IO blocks are considered to be one cell in for simplicity.         */
     //TODO: account for multiple physical pin instances per logical pin
-	
+
 	t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
-		
+
 	xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
 	ynew = max(min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 	xold = max(min<int>(xold, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
@@ -2605,7 +2605,7 @@ static void alloc_legal_placements() {
 
 	legal_pos = (t_legal_pos **) vtr::malloc(device_ctx.num_block_types * sizeof(t_legal_pos *));
 	num_legal_pos = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
-	
+
 	/* Initialize all occupancy to zero. */
 
 	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
@@ -2698,7 +2698,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 			break;
 		}
 	}
-	
+
 	return (macro_can_be_placed);
 }
 
@@ -2715,24 +2715,24 @@ static int try_place_macro(int itype, int ipos, int imacro){
 	x = legal_pos[itype][ipos].x;
 	y = legal_pos[itype][ipos].y;
 	z = legal_pos[itype][ipos].z;
-			
+
 	// If that location is occupied, do nothing.
 	if (place_ctx.grid_blocks[x][y].blocks[z] != EMPTY_BLOCK_ID) {
 		return (macro_placed);
-	} 
-	
+	}
+
 	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, x, y, z);
 
 	if (macro_can_be_placed) {
-		
+
 		// Place down the macro
 		macro_placed = true;
 		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
-					
+
 			member_x = x + pl_macros[imacro].members[imember].x_offset;
 			member_y = y + pl_macros[imacro].members[imember].y_offset;
 			member_z = z + pl_macros[imacro].members[imember].z_offset;
-					
+
             ClusterBlockId iblk = pl_macros[imacro].members[imember].blk_index;
 			place_ctx.block_locs[iblk].x = member_x;
 			place_ctx.block_locs[iblk].y = member_y;
@@ -2742,9 +2742,9 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			place_ctx.grid_blocks[member_x][member_y].usage++;
 
 			// Could not ensure that the randomiser would not pick this location again
-			// So, would have to do a lazy removal - whenever I come across a block that could not be placed, 
+			// So, would have to do a lazy removal - whenever I come across a block that could not be placed,
 			// go ahead and remove it from the legal_pos[][] array
-						
+
 		} // Finish placing all the members in the macro
 
 	} // End of this choice of legal_pos
@@ -2765,10 +2765,10 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 
 	/* Macros are harder to place.  Do them first */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
-		
+
 		// Every macro are not placed in the beginnning
 		macro_placed = false;
-		
+
 		// Assume that all the blocks in the macro are of the same type
 		blk_id = pl_macros[imacro].members[0].blk_index;
 		itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
@@ -2776,13 +2776,13 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 					"Initial placement failed.\n"
 					"Could not place macro length %d with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
+					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
 					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
 		for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-			
+
 			// Choose a random position for the head
 			ipos = vtr::irand(free_locations[itype] - 1);
 
@@ -2790,10 +2790,10 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			macro_placed = try_place_macro(itype, ipos, imacro);
 
 		} // Finished all tries
-		
-		
+
+
 		if (macro_placed == false){
-			// if a macro still could not be placed after macros_max_num_tries times, 
+			// if a macro still could not be placed after macros_max_num_tries times,
 			// go through the chip exhaustively to find a legal placement for the macro
 			// place the macro on the first location that is legal
 			// then set macro_placed = true;
@@ -2813,7 +2813,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 						"Initial placement failed.\n"
 						"Could not place macro length %d with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-						"Please manually size the FPGA because VPR can't do this yet.\n", 
+						"Please manually size the FPGA because VPR can't do this yet.\n",
 						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
@@ -2842,16 +2842,16 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 		if (!(is_io_type(cluster_ctx.clb_nlist.block_type(blk_id)) && pad_loc_type == USER)) {
 
 		    /* Randomly select a free location of the appropriate type for blk_id.
-			 * We have a linearized list of all the free locations that can 
+			 * We have a linearized list of all the free locations that can
 			 * accomodate a block of that type in free_locations[itype].
 			 * Choose one randomly and put blk_id there. Then we don't want to pick
 			 * that location again, so remove it from the free_locations array.
 			 */
 			itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
 			if (free_locations[itype] <= 0) {
-				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
+				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 						"Initial placement failed.\n"
-						"Could not place block %s (#%zu); no free locations of type %s (#%d).\n", 
+						"Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
 						cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
@@ -2872,13 +2872,13 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
                 place_ctx.block_locs[blk_id].is_fixed = true;
  			}
 
-			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the 
-			* legal positions in legal_pos to remove the entry (choice) we just used, but faster to 
-			* just move the last entry in legal_pos to the spot we just used and decrement the 
+			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
+			* legal positions in legal_pos to remove the entry (choice) we just used, but faster to
+			* just move the last entry in legal_pos to the spot we just used and decrement the
 			* count of free_locations. */
 			legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
 			free_locations[itype]--;
-			
+
 		}
 	}
 }
@@ -2900,12 +2900,12 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		const char *pad_loc_file) {
 
 	/* Randomly places the blocks to create an initial placement. We rely on
-	 * the legal_pos array already being loaded.  That legal_pos[itype] is an 
+	 * the legal_pos array already being loaded.  That legal_pos[itype] is an
 	 * array that gives every legal value of (x,y,z) that can accomodate a block.
 	 * The number of such locations is given by num_legal_pos[itype].
 	 */
 	int itype, x, y, z, ipos;
-	int *free_locations; /* [0..device_ctx.num_block_types-1]. 
+	int *free_locations; /* [0..device_ctx.num_block_types-1].
 						  * Stores how many locations there are for this type that *might* still be free.
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
 						  * as you look for a free location.
@@ -2918,8 +2918,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	for (itype = 0; itype < device_ctx.num_block_types; itype++) {
 		free_locations[itype] = num_legal_pos[itype];
 	}
-	
-	/* We'll use the grid to record where everything goes. Initialize to the grid has no 
+
+	/* We'll use the grid to record where everything goes. Initialize to the grid has no
 	 * blocks placed anywhere.
 	 */
 	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
@@ -2950,7 +2950,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			x = legal_pos[itype][ipos].x;
 			y = legal_pos[itype][ipos].y;
 			z = legal_pos[itype][ipos].z;
-			
+
 			// Check if that location is occupied.  If it is, remove from legal_pos
 			if (place_ctx.grid_blocks[x][y].blocks[z] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[x][y].blocks[z] != INVALID_BLOCK_ID) {
 				legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
@@ -3068,7 +3068,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 		}
 	}
 
-	/* Now compute the inverse of the average number of tracks per channel * 
+	/* Now compute the inverse of the average number of tracks per channel *
 	 * between high and low.  Take to specified power.                     */
 
 	for (size_t high = 0; high < device_ctx.grid.width(); high++)
@@ -3081,7 +3081,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 		}
 }
 
-static void check_place(float bb_cost, float timing_cost, 
+static void check_place(float bb_cost, float timing_cost,
 		enum e_place_algorithm place_algorithm,
 		float delay_cost) {
 
@@ -3103,7 +3103,7 @@ static void check_place(float bb_cost, float timing_cost,
 	//vtr::printf_info("bb_cost recomputed from scratch: %g\n", bb_cost_check);
 	if (fabs(bb_cost_check - bb_cost) > bb_cost * ERROR_TOL) {
 		vtr::printf_error(__FILE__, __LINE__,
-				"bb_cost_check: %g and bb_cost: %g differ in check_place.\n", 
+				"bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
 				bb_cost_check, bb_cost);
 		error++;
 	}
@@ -3113,14 +3113,14 @@ static void check_place(float bb_cost, float timing_cost,
 		//vtr::printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
 		if (fabs(timing_cost_check - timing_cost) > timing_cost * ERROR_TOL) {
 			vtr::printf_error(__FILE__, __LINE__,
-					"timing_cost_check: %g and timing_cost: %g differ in check_place.\n", 
+					"timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
 					timing_cost_check, timing_cost);
 			error++;
 		}
 		//vtr::printf_info("delay_cost recomputed from scratch: %g\n", delay_cost_check);
 		if (fabs(delay_cost_check - delay_cost) > delay_cost * ERROR_TOL) {
 			vtr::printf_error(__FILE__, __LINE__,
-					"delay_cost_check: %g and delay_cost: %g differ in check_place.\n", 
+					"delay_cost_check: %g and delay_cost: %g differ in check_place.\n",
 					delay_cost_check, delay_cost);
 			error++;
 		}
@@ -3137,7 +3137,7 @@ static void check_place(float bb_cost, float timing_cost,
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Block at grid location (%zu,%zu) overused. Usage is %d.\n", 
+						"Block at grid location (%zu,%zu) overused. Usage is %d.\n",
 						i, j, place_ctx.grid_blocks[i][j].usage);
 				error++;
 			}
@@ -3155,7 +3155,7 @@ static void check_place(float bb_cost, float timing_cost,
 				}
 				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
 					vtr::printf_error(__FILE__, __LINE__,
-							"Block %zu location conflicts with grid(%zu,%zu) data.\n", 
+							"Block %zu location conflicts with grid(%zu,%zu) data.\n",
 							size_t(bnum), i, j);
 					error++;
 				}
@@ -3179,14 +3179,14 @@ static void check_place(float bb_cost, float timing_cost,
 			error++;
 		}
 	bdone.clear();
-	
+
 	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
-		
+
 		head_iblk = pl_macros[imacro].members[0].blk_index;
-		
+
 		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
-			
+
 			member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
@@ -3195,11 +3195,11 @@ static void check_place(float bb_cost, float timing_cost,
 			member_z = place_ctx.block_locs[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
 
 			// Check the place_ctx.block_locs data structure first
-			if (place_ctx.block_locs[member_iblk].x != member_x 
-					|| place_ctx.block_locs[member_iblk].y != member_y 
+			if (place_ctx.block_locs[member_iblk].x != member_x
+					|| place_ctx.block_locs[member_iblk].y != member_y
 					|| place_ctx.block_locs[member_iblk].z != member_z) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n", 
+						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
 				error++;
 			}
@@ -3207,7 +3207,7 @@ static void check_place(float bb_cost, float timing_cost,
 			// Then check the place_ctx.grid data structure
 			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n", 
+						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
 				error++;
 			}
@@ -3233,7 +3233,7 @@ static void print_clb_placement(const char *fname) {
 	FILE *fp;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
-	
+
 	fp = vtr::fopen(fname, "w");
 	fprintf(fp, "Complex block placements:\n\n");
 
@@ -3241,8 +3241,8 @@ static void print_clb_placement(const char *fname) {
 	for(auto i : cluster_ctx.clb_nlist.blocks()) {
 		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
 	}
-	
-	fclose(fp);	
+
+	fclose(fp);
 }
 #endif
 

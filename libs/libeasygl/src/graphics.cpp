@@ -1,5 +1,5 @@
-/*                                                                         
- * Easygl Version 3.0                                                       
+/*
+ * Easygl Version 3.0
  * Originally written by Vaughn Betz (vaughn@eecg.utoronto.ca)
  * Win32 port by Paul Leventis (pleventi@altera.com)
  * Enhanced version by William Chow (wchow@altera.com)
@@ -19,7 +19,7 @@
  * V4.0 Jan. 2017 - Harry Liang and Davis Wu                                *
  * - Integrated with Cairo to allow transparency. Direct X11 drawing used   *
  *   when alpha = 1 (255) as it is faster than using Cairo's layer above    *
- *   X11. Also added double buffering, png file bitmap drawing, and the     * 
+ *   X11. Also added double buffering, png file bitmap drawing, and the     *
  *   ability to draw in screen coordinates that don't pan or zoom.          *
  *                                                                          *
  * V3.0 May 2014 - June 2014 (Matthew J.P. Walker)                          *
@@ -170,7 +170,7 @@
  * graphics are zoomed in.  Rewrote PostScript engine to shrink the output  *
  * and make it easier to read.  Made drawscreen a callback function passed  *
  * in rather than a global.  Graphics attribute calls are more efficient -- *
- * they check if they have to change anything before doing it.              * 
+ * they check if they have to change anything before doing it.              *
  *                                                                          *
  * October 27, 1995:  Added the message area, a callback function for       *
  * interacting with user button clicks, and implemented a workaround for a  *
@@ -179,22 +179,22 @@
  * Jan. 13, 1995:  Modified to incorporate PostScript Support.              */
 
 /**************************** Top-level summary ******************************
-This graphics package provides API for client program that wishes to implement 
+This graphics package provides API for client program that wishes to implement
 a graphical user interface. The client program will first call init_graphics()
 for initial setup, which includes opening up an application window, setting up
-the specified window_name and background colour, creating sublevel windows, 
-etc. Then the program will call a few more setup functions such as 
+the specified window_name and background colour, creating sublevel windows,
+etc. Then the program will call a few more setup functions such as
 set_visible_world(), which sets up world coordinates, create_button(), which sets up
-menu buttons, and update_message(), which updates status bar message. After 
+menu buttons, and update_message(), which updates status bar message. After
 all the setup, the program will call the main routine for the graphics,
-event_loop(), which will take control of the program until the "Proceed" 
-button is pressed. Event_loop() directly communicates with X11/Win32 to 
-receive event notifications, and it either calls other event-handling 
-functions in the graphics package or callbacks passed as function pointers 
-from the client program. The most important callback function which the 
-client should provide is drawscreen(). Whenever the graphics need to be 
-redrawn, drawscreen() will be called. There are a number drawing routines 
-which the client can use to update the graphic contexts (ie. setcolor, 
+event_loop(), which will take control of the program until the "Proceed"
+button is pressed. Event_loop() directly communicates with X11/Win32 to
+receive event notifications, and it either calls other event-handling
+functions in the graphics package or callbacks passed as function pointers
+from the client program. The most important callback function which the
+client should provide is drawscreen(). Whenever the graphics need to be
+redrawn, drawscreen() will be called. There are a number drawing routines
+which the client can use to update the graphic contexts (ie. setcolor,
 setfontsize, setlinewidth, and setlinestyle) and draw simple shapes as
 desired. When the program is done executing the graphics, it should call
 close_graphics() to release all drawing structures and close the graphics.*/
@@ -254,8 +254,8 @@ using namespace std;
 
 // Some X11 implementations overflow with sufficiently large pixel
 // coordinates and start drawing strangely. We will clip all pixels
-// to lie in the range below. Don't want to make this too small as 
-// clipping an x-coordinate but not a y-coordinate can happen, 
+// to lie in the range below. Don't want to make this too small as
+// clipping an x-coordinate but not a y-coordinate can happen,
 // and that makes the slope of lines change, etc.
 #define MAXPIXEL 32000.f
 #define MINPIXEL -32000.f
@@ -280,20 +280,20 @@ using namespace std;
 #include <windows.h>
 #include <windowsx.h>
 
-/* Using large values of pixel limits in order to preserve the slope of diagonal 
+/* Using large values of pixel limits in order to preserve the slope of diagonal
  * lines when their endpoints are clipped (one at a time) to these pixel limits.
  * However, if these values are too large, then Windows will not draw the lines
  * when zoomed way in. I have increased MAXPIXEL and MINPIXEL to these values so
- * the diagonal lines do not change slope when zoomed way in. Also, I have tested 
- * to make sure these values are safe. Adding one more digit to these values 
- * may cause problems when zoomed way in. 
+ * the diagonal lines do not change slope when zoomed way in. Also, I have tested
+ * to make sure these values are safe. Adding one more digit to these values
+ * may cause problems when zoomed way in.
  * MW, June 2013.
  */
 #define MAXPIXEL 21474836.f
 #define MINPIXEL -21474836.f
 
 /* Windows work in degrees, where as X11 and PostScript both work in radians.
- * Thus, a conversion is needed for Windows. 
+ * Thus, a conversion is needed for Windows.
  */
 #define DEGTORAD(x) ((x)/180.*PI)
 #endif /* Win32 preprocessor Directives */
@@ -315,7 +315,7 @@ typedef enum {
  * width, height: button size, in pixels.
  * xleft, ytop: coordinates, in pixels, of the top-left corner of the button relative to its
  *    containing (menu) window.
- * fcn: a callback function that is called when the button is pressed. This function takes one 
+ * fcn: a callback function that is called when the button is pressed. This function takes one
  *    argument, a function pointer to the routine that can draw the graphics area (user routine).
  * win, hwnd:  X11 and Win32 data pointer to the window, respectively.
  * button_type: indicates if this button displays text, a polygon or is just a separator.
@@ -369,7 +369,7 @@ typedef struct {
  *					in PostScript (point, 1/72 of inch) coordinates
  * ps_xmult and ps_ymult: world to PostScript transformation factors (number of
  *							PostScript coordinates per world coordinate)
- * s_to_ps_xmult and s_to_ps_ymult: Transform from screen (pixel) space to 
+ * s_to_ps_xmult and s_to_ps_ymult: Transform from screen (pixel) space to
  *                                   postscript. typeset points per pixel.
  */
 typedef struct {
@@ -400,7 +400,7 @@ typedef struct {
 
 static t_gl_state gl_state;
 
-// Stores all the menu buttons created. Initialize the button pointer 
+// Stores all the menu buttons created. Initialize the button pointer
 // and num_buttons for safety.
 static t_button_state button_state = {nullptr, 0};
 
@@ -564,7 +564,7 @@ static void x11_event_loop(void (*act_on_mousebutton)
     void (*act_on_keypress)(char key_pressed, int keysym),
     void (*drawscreen) ());
 
-static bool x11_drop_redundant_panning (const XEvent& report, 
+static bool x11_drop_redundant_panning (const XEvent& report,
                unsigned int& last_skipped_button_press_button);
 static void x11_redraw_all_if_needed (void (*drawscreen) ());
 static Bool x11_test_if_exposed(Display *disp, XEvent *event_ptr,
@@ -595,7 +595,7 @@ static unsigned long x11_convert_to_xcolor (t_color color);
 /* Helper function called by init_graphics(). Not visible to client program. */
 static void win32_init_graphics(const char* window_name);
 
-/* Callback functions for the top-level window and 3 sub-windows.  
+/* Callback functions for the top-level window and 3 sub-windows.
  * Windows uses an odd mix of events and callbacks, so it needs these.
  */
 static LRESULT CALLBACK WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -605,8 +605,8 @@ static LRESULT CALLBACK WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LP
 
 // For Win32, need to save pointers to these callback functions at file
 // scope, since windows has a bizarre event loop structure where you poll
-// for events, but then dispatch the event and get  called via a callback 
-// from windows (WIN32_GraphicsWND, below).  I can't figure out why windows 
+// for events, but then dispatch the event and get  called via a callback
+// from windows (WIN32_GraphicsWND, below).  I can't figure out why windows
 // does things this way, but it is what makes saving these function pointers
 // necessary.  VB.
 static void (*win32_mouseclick_ptr)(float x, float y, t_event_buttonPressed button_info);
@@ -706,7 +706,7 @@ t_bound_box scrn_to_world(const t_bound_box& box) {
 }
 
 /* Translates from world (client program) coordinates to screen coordinates
- * (pixels) in the x direction.  Add 0.5 at end for extra half-pixel accuracy. 
+ * (pixels) in the x direction.  Add 0.5 at end for extra half-pixel accuracy.
  */
 static int xworld_to_scrn(float worldx) {
     return static_cast<int> (xworld_to_scrn_fl(worldx) + 0.5);
@@ -714,19 +714,19 @@ static int xworld_to_scrn(float worldx) {
 
 static float xworld_to_scrn_fl(float worldx) {
     if (gl_state.currentcoordinatesystem == GL_SCREEN) return worldx;
-    
+
     float winx;
 
     winx = (worldx - trans_coord.xleft) * trans_coord.wtos_xmult;
 
-    /* Avoids overflow in the X11/Win32  routines.  This will allow horizontal 
+    /* Avoids overflow in the X11/Win32  routines.  This will allow horizontal
      * and vertical lines to be drawn correctly regardless of zooming, but   *
      * will cause diagonal lines that go way off screen to change their      *
      * slope as you zoom in.  The only way I can think of to completely fix  *
      * this problem is to do all the clipping in advance in floating point,  *
      * then convert to integers and call   Windows.  This is a lot of extra  *
      * coding, and means that coordinates will be clipped twice, even though *
-     * this "Super Zoom" problem won't occur unless users zoom way in on     * 
+     * this "Super Zoom" problem won't occur unless users zoom way in on     *
      * the graphics.                                                         */
 
     winx = max(winx, MINPIXEL);
@@ -736,7 +736,7 @@ static float xworld_to_scrn_fl(float worldx) {
 }
 
 /* Translates from world (client program) coordinates to screen coordinates
- * (pixels) in the y direction.  Add 0.5 at end for extra half-pixel accuracy. 
+ * (pixels) in the y direction.  Add 0.5 at end for extra half-pixel accuracy.
  */
 static int yworld_to_scrn(float worldy) {
     return static_cast<int> (yworld_to_scrn_fl(worldy) + 0.5);
@@ -744,7 +744,7 @@ static int yworld_to_scrn(float worldy) {
 
 static float yworld_to_scrn_fl(float worldy) {
     if (gl_state.currentcoordinatesystem == GL_SCREEN) return worldy;
-    
+
     float winy;
 
     winy = (worldy - trans_coord.ytop) * trans_coord.wtos_ymult;
@@ -791,7 +791,7 @@ static float yrad_to_scrn (float yrad) {
         return (fabs (yrad * trans_coord.wtos_ymult));
     }
 }
- 
+
 
 /* translation from world or screen coords to PostScript coordinates in the x direction */
 static float x_to_post(float x) {
@@ -822,8 +822,8 @@ static bool use_cairo()
 }
 #endif
 
-/* Sets the current graphics context colour to cindex, regardless of whether we think it is 
- * needed or not. 
+/* Sets the current graphics context colour to cindex, regardless of whether we think it is
+ * needed or not.
  */
 static void force_setcolor(int cindex) {
     gl_state.foreground_color = t_color::predef_colors[cindex];
@@ -938,7 +938,7 @@ void setcolor(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b, uint_fast8_t a) {
 }
 
 /* Sets the current graphics context color to the index that corresponds to the
- * string name passed in.  Slower, but maybe more convenient for simple 
+ * string name passed in.  Slower, but maybe more convenient for simple
  * client code.
  */
 void setcolor_by_name(string cname) {
@@ -961,7 +961,7 @@ t_color getcolor() {
 }
 
 /* Sets the current linestyle to linestyle in the graphics context.
- * Note SOLID is 0 and DASHED is 1 for linestyle. 
+ * Note SOLID is 0 and DASHED is 1 for linestyle.
  * capstyle can be 0 (butt), or 1 (round)
  */
 static void force_setlinestyle(int linestyle, int capstyle) {
@@ -975,7 +975,7 @@ static void force_setlinestyle(int linestyle, int capstyle) {
         static int x_vals[2] = {LineSolid, LineOnOffDash};
         XSetLineAttributes(x11_state.display, x11_state.current_gc, gl_state.currentlinewidth,
             x_vals[linestyle], capstyle == 0 ? CapButt : CapRound, JoinMiter);
-        
+
         // CAIRO DASH
         static double dashes[] = {
             5.0,  /* ink */
@@ -985,7 +985,7 @@ static void force_setlinestyle(int linestyle, int capstyle) {
         {
             cairo_set_dash(x11_state.ctx, dashes, 2, 0);
         }
-        else 
+        else
         {
             cairo_set_dash(x11_state.ctx, dashes, 0, 0);
         }
@@ -1031,7 +1031,7 @@ static void force_setlinestyle(int linestyle, int capstyle) {
     }
 }
 
-/* Change the linestyle in the graphics context only if it differs from the current 
+/* Change the linestyle in the graphics context only if it differs from the current
  * linestyle.
  */
 void setlinestyle(int linestyle, int capstyle) {
@@ -1040,7 +1040,7 @@ void setlinestyle(int linestyle, int capstyle) {
 }
 
 /* Sets current linewidth in the graphics context.
- * linewidth should be greater than or equal to 0 to make any sense. 
+ * linewidth should be greater than or equal to 0 to make any sense.
  */
 static void force_setlinewidth(int linewidth) {
     gl_state.currentlinewidth = linewidth;
@@ -1052,7 +1052,7 @@ static void force_setlinewidth(int linewidth) {
         static int x_vals[2] = {LineSolid, LineOnOffDash};
         XSetLineAttributes(x11_state.display, x11_state.current_gc, linewidth,
             x_vals[gl_state.currentlinestyle], gl_state.currentlinecap == 0 ? CapButt : CapRound, JoinMiter);
-        
+
         // CAIRO
         cairo_set_line_width(x11_state.ctx, linewidth);
 #else /* Win32 */
@@ -1089,7 +1089,7 @@ void setlinewidth(int linewidth) {
         force_setlinewidth(linewidth);
 }
 
-/* Force the selected fontsize to be applied to the graphics context, 
+/* Force the selected fontsize to be applied to the graphics context,
  * whether or not it appears to match the current fontsize. This is necessary
  * when switching between postscript and window out, for example.
  * Valid point sizes are between 1 and MAX_FONT_SIZE.
@@ -1149,7 +1149,7 @@ void settextattrs(int pointsize, int degrees) {
     }
 }
 
-/* Puts a triangle in the poly array for button[bnum]. Haven't made this work for 
+/* Puts a triangle in the poly array for button[bnum]. Haven't made this work for
  * win32 yet and instead put "U", "D" excetra on the arrow buttons.
  * VB To-do: make work for win32 someday.
  */
@@ -1203,7 +1203,7 @@ static void map_button(int bnum) {
             button_state.button[bnum].ytop,
             button_state.button[bnum].width,
             button_state.button[bnum].height,
-            win32_state.hButtonsWnd, 
+            win32_state.hButtonsWnd,
 			(HMENU) (200 + (intptr_t) bnum),
             (HINSTANCE) GetWindowLongPtr(win32_state.hMainWnd, GWLP_HINSTANCE),
             NULL
@@ -1257,7 +1257,7 @@ void create_button(const char *prev_button_text, const char *button_text,
 
     space = 8;
 
-    /* Only allow new buttons that are text or separator (not poly) types.                  
+    /* Only allow new buttons that are text or separator (not poly) types.
      * They can also only go after buttons that are text buttons.
      */
 
@@ -1384,7 +1384,7 @@ void init_graphics(const std::string& window_name, const t_color& background) {
 
     gl_state.disp_type = SCREEN;
     gl_state.background_color = background;
-    
+
     // The Win32 and X11 APIs use C-strings.
     const char* cstring_window_name = window_name.c_str();
 
@@ -1499,8 +1499,8 @@ update_ps_transform() {
         trans_coord.ps_xmult = (trans_coord.ps_xmult * trans_coord.ps_ymult < 0) ?
             -trans_coord.ps_ymult : trans_coord.ps_ymult;
     }
-    
-    // /The user can also draw in screen coordinates, so we also need a 
+
+    // /The user can also draw in screen coordinates, so we also need a
     // transformation from screen coordinates to postscript.
     trans_coord.s_to_ps_xmult = trans_coord.ps_xmult * trans_coord.stow_xmult;
     trans_coord.s_to_ps_ymult = trans_coord.ps_ymult * trans_coord.stow_ymult;
@@ -1528,13 +1528,13 @@ static bool is_droppable_event(
 #endif
 }
 
-/* The program's main event loop.  Must be passed a user routine        
- * drawscreen which redraws the screen.  It handles all window resizing 
- * zooming etc. itself.  
- * The three other callbacks are optional -- they can be NULL if you don't 
- * want to use them in your program. If non-NULL, they are called when the user 
- * clicks a mouse button, moves the mouse or presses the keyboard while the 
- * cursor is in the graphics area. 
+/* The program's main event loop.  Must be passed a user routine
+ * drawscreen which redraws the screen.  It handles all window resizing
+ * zooming etc. itself.
+ * The three other callbacks are optional -- they can be NULL if you don't
+ * want to use them in your program. If non-NULL, they are called when the user
+ * clicks a mouse button, moves the mouse or presses the keyboard while the
+ * cursor is in the graphics area.
  */
 void
 event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed button_info),
@@ -1546,21 +1546,21 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
         cerr << "Error in event_loop: drawscreen is NULL, but it is a mandatory callback.\n";
         exit(1);
     }
-    
+
     // The following settings are useful for automarking in courses.
-    if (gl_state.redirect_to_postscript) 
+    if (gl_state.redirect_to_postscript)
         postscript (drawscreen);
-    
+
     if (gl_state.disable_event_loop)  // Avoids hanging the automarker when students call the event_loop
         return;
-    
+
 #ifdef X11
     x11_event_loop(act_on_mousebutton, act_on_mousemove, act_on_keypress, drawscreen);
 #else /* Win32 */
 
-    // For event handling with Win32, need to set these file scope function 
-    // pointers, then dispatch the event and get called via callbacks from 
-    // Windows (eg. WIN32_GraphicsWND()). Actual event handling is done 
+    // For event handling with Win32, need to set these file scope function
+    // pointers, then dispatch the event and get called via callbacks from
+    // Windows (eg. WIN32_GraphicsWND()). Actual event handling is done
     // in these Win32-specific callback functions.
 
     MSG msg;
@@ -1652,9 +1652,9 @@ static int
 rect_off_screen(float x1, float y1, float x2, float y2) {
     // No pre-clip if you're in screen coordinates; user should know where he/she is
     // drawing that case so not necessary to pre-clip for speed.
-    if (gl_state.currentcoordinatesystem == GL_SCREEN) 
+    if (gl_state.currentcoordinatesystem == GL_SCREEN)
         return 0;
-    
+
     float xmin, xmax, ymin, ymax;
 
     xmin = min(trans_coord.xleft, trans_coord.xright);
@@ -1689,7 +1689,7 @@ t_bound_box get_visible_world() {
         );
 }
 
-/* Returns the limits of the user-drawable window (graphics area) in screen 
+/* Returns the limits of the user-drawable window (graphics area) in screen
  * coordinates.
  */
 t_bound_box get_visible_screen() {
@@ -1700,7 +1700,7 @@ t_bound_box get_visible_screen() {
             trans_coord.top_width - 1 - MWIDTH, 0)
             );
 }
-    
+
 
 bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold) {
     return world_to_scrn(test).area() > screen_area_threshold;
@@ -1792,7 +1792,7 @@ drawrect(float x1, float y1, float x2, float y2) {
         yt = min(yw1, yw2);
         width = abs(xw1 - xw2);
         height = abs(yw1 - yw2);
-        
+
         if (use_cairo())
         {
             cairo_rectangle(x11_state.ctx, xl, yt, width, height);
@@ -1803,7 +1803,7 @@ drawrect(float x1, float y1, float x2, float y2) {
             XDrawRectangle(x11_state.display, *(x11_state.draw_area),
                 x11_state.current_gc, xl, yt, width, height);
         }
-        
+
 #else /* Win32 */
         if (xw1 > xw2) {
             int temp = xw1;
@@ -1871,7 +1871,7 @@ fillrect(float x1, float y1, float x2, float y2) {
         yt = min(yw1, yw2);
         width = abs(xw1 - xw2);
         height = abs(yw1 - yw2);
-        
+
         if (use_cairo())
         {
             cairo_rectangle(x11_state.ctx, xl, yt, width, height);
@@ -1976,14 +1976,14 @@ drawellipticarc(float xc, float yc, float radx, float rady, float startang, floa
         fprintf(gl_state.ps, "%.2f %.2f translate\n", x_to_post(xc), y_to_post(yc));
         fprintf(gl_state.ps, "%.2f 1 scale\n",
             fabs(x_to_post(radx) - x_to_post(0)) / fabs(y_to_post(rady) - y_to_post(0)));
-        fprintf(gl_state.ps, "0 0 %.2f %.2f %.2f %s\n", 
+        fprintf(gl_state.ps, "0 0 %.2f %.2f %.2f %s\n",
             fabs(x_to_post(rady) - x_to_post(0)), startang,
             startang + angextent, (angextent < 0) ? "drawarcn" : "drawarc");
         fprintf(gl_state.ps, "grestore\n");
     }
 }
 
-/* Startang is relative to the Window's positive x direction.  Angles in degrees.  
+/* Startang is relative to the Window's positive x direction.  Angles in degrees.
  */
 void
 drawarc(float xc, float yc, float rad, float startang,
@@ -1991,8 +1991,8 @@ drawarc(float xc, float yc, float rad, float startang,
     drawellipticarc(xc, yc, rad, rad, startang, angextent);
 }
 
-/* Fills a elliptic arc.  Startang is relative to the Window's positive x   
- * direction.  Angles in degrees.                                           
+/* Fills a elliptic arc.  Startang is relative to the Window's positive x
+ * direction.  Angles in degrees.
  */
 
 void fillellipticarc(
@@ -2070,7 +2070,7 @@ fillellipticarc(float xc, float yc, float radx, float rady, float startang,
         fprintf(gl_state.ps, "%.2f %.2f translate\n", x_to_post(xc), y_to_post(yc));
         fprintf(gl_state.ps, "%.2f 1 scale\n",
             fabs(x_to_post(radx) - x_to_post(0)) / fabs(y_to_post(rady) - y_to_post(0)));
-        fprintf(gl_state.ps, "%.2f %.2f %.2f 0 0 %s\n", 
+        fprintf(gl_state.ps, "%.2f %.2f %.2f 0 0 %s\n",
             fabs(x_to_post(rady) - x_to_post(0)), startang,
             startang + angextent, (angextent < 0) ? "fillarcn" : "fillarc");
         fprintf(gl_state.ps, "grestore\n");
@@ -2086,7 +2086,7 @@ void fillarc(float xc, float yc, float rad, float startang, float angextent) {
 }
 
 
-// For speed, use a fixed size polygon point buffer when possible (no dynamic 
+// For speed, use a fixed size polygon point buffer when possible (no dynamic
 // memory allocation). Dynamically allocate an arbitrary size buffer only when
 // necessary.
 #define MAX_FIXED_POLY_PTS 100
@@ -2226,7 +2226,7 @@ void drawtext(const t_point& text_center, const std::string& text, float boundx,
  */
 void drawtext(float xc, float yc, const std::string& str_text, float boundx, float boundy) {
     // Need a C-string to call the low-level (X11 or win32) apis.
-    const char* text = str_text.c_str();  
+    const char* text = str_text.c_str();
     int text_byte_length = strlen(text);
     float angle = PI * gl_state.currentfontrotation / 180.;
     float abscos = fabs(cos(angle));
@@ -2243,7 +2243,7 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
         // if the largest bbox the text could have is off the screen, don't even load the font.
         return;
     }
-    
+
     float trans_xmult, trans_ymult;
     if (gl_state.currentcoordinatesystem == GL_WORLD) {
         trans_xmult = trans_coord.stow_xmult;
@@ -2356,8 +2356,8 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
 
     width = (int) (textsize.cx * abscos + textsize.cy*abssin);
     height = (int) (textsize.cx * abssin + textsize.cy*abscos);
-#endif	
-    
+#endif
+
     // Text width and height in whatever coordinate system the user has active (SCREEN or WORLD)
     float coord_width = width * trans_xmult;
     float coord_height = height * trans_ymult;
@@ -2380,7 +2380,7 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
     //     of a bounding rectangle, but note that they will change based on rotation and
     //     whether or not the text contains non short letters like 'p' or 'b').
     //
-    // Also, it should be noted that with rotation, 
+    // Also, it should be noted that with rotation,
     // XftFont.{height,descent,ascent,max_advance_width} cannot be trusted.
     // You would have to take those values from an unrotated font.
 #ifdef X11
@@ -2535,11 +2535,11 @@ draw_message() {
 #ifdef X11
         XClearWindow(x11_state.display, x11_state.textarea);
 
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                     x11_convert_to_xcolor(t_color::predef_colors[WHITE]));
         XDrawRectangle(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, 0,
             trans_coord.top_width - MWIDTH, T_AREA_HEIGHT);
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                     x11_convert_to_xcolor(t_color::predef_colors[BLACK]));
         XDrawLine(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, T_AREA_HEIGHT - 1,
             trans_coord.top_width - MWIDTH, T_AREA_HEIGHT - 1);
@@ -2616,7 +2616,7 @@ zoom_out(void (*drawscreen) ()) {
 /* Zooms in by a factor of ZOOM_FACTOR */
 static void
 handle_zoom_in(float x, float y, void (*drawscreen) ()) {
-    //make xright - xleft = 0.6 of the original distance 
+    //make xright - xleft = 0.6 of the original distance
     trans_coord.xleft = x - (x - trans_coord.xleft) / ZOOM_FACTOR;
     trans_coord.xright = x + (trans_coord.xright - x) / ZOOM_FACTOR;
     //make ybot - ytop = 0.6 of the original distance
@@ -2706,8 +2706,8 @@ translate_right(void (*drawscreen) ()) {
     drawscreen();
 }
 
-/* Panning is enabled by pressing and holding down mouse wheel 
- * (or middle mouse button) 
+/* Panning is enabled by pressing and holding down mouse wheel
+ * (or middle mouse button)
  */
 static void
 panning_execute(int x, int y, void (*drawscreen) ()) {
@@ -2775,7 +2775,7 @@ update_win(int x[2], int y[2], void (*drawscreen)()) {
  * diagonally opposed corners, and zoom in on this area.         */
 static void
 adjustwin(void (*drawscreen) ()) {
-#ifdef X11	
+#ifdef X11
 
     XEvent report;
     int corner, xold, yold, x[2], y[2];
@@ -2797,7 +2797,7 @@ adjustwin(void (*drawscreen) ()) {
                 x11_handle_configure_notify(report, drawscreen);
                 break;
             case ButtonPress:
-#ifdef VERBOSE 
+#ifdef VERBOSE
                 printf("Got a buttonpress.\n");
                 printf("Window ID is: %ld.\n", report.xbutton.window);
                 printf("Location (%d, %d).\n", report.xbutton.x,
@@ -2807,7 +2807,7 @@ adjustwin(void (*drawscreen) ()) {
                 x[corner] = report.xbutton.x;
                 y[corner] = report.xbutton.y;
                 if (corner == 0) {
-                    /*	XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | 
+                    /*	XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask |
                             StructureNotifyMask | ButtonPressMask | PointerMotionMask); */
                 } else {
                     update_win(x, y, drawscreen);
@@ -2816,7 +2816,7 @@ adjustwin(void (*drawscreen) ()) {
                 break;
             case MotionNotify:
                 if (corner) {
-#ifdef VERBOSE 
+#ifdef VERBOSE
                     printf("Got a MotionNotify Event.\n");
                     printf("x: %d    y: %d\n", report.xmotion.x, report.xmotion.y);
 #endif
@@ -2842,8 +2842,8 @@ adjustwin(void (*drawscreen) ()) {
                     set_draw_mode(DRAW_NORMAL);
                 }
                 break;
-                
-            default:    
+
+            default:
                 break;  // Other event type: ignore it.
         }
     }
@@ -2954,8 +2954,8 @@ close_graphics() {
     if (!DestroyWindow(win32_state.hMainWnd))
         WIN32_DRAW_ERROR();
 
-    // free the window class (type information held by MS Windows) 
-    // for each of the four window types we created.  Otherwise a 
+    // free the window class (type information held by MS Windows)
+    // for each of the four window types we created.  Otherwise a
     // later call to init_graphics to open the graphics window up again
     // will fail.
     if (!UnregisterClassW(szAppName, GetModuleHandle(NULL)))
@@ -3063,7 +3063,7 @@ int init_postscript(const char *fname) {
     fprintf(gl_state.ps, "/grey55 { .55 setgray } def\n");
     fprintf(gl_state.ps, "/grey75 { .75 setgray } def\n");
     fprintf(gl_state.ps, "/red { 1 0 0 setrgbcolor } def\n");
-    fprintf(gl_state.ps, "/orange { 1 0.65 0 setrgbcolor } def\n");   
+    fprintf(gl_state.ps, "/orange { 1 0.65 0 setrgbcolor } def\n");
     fprintf(gl_state.ps, "/yellow { 1 1 0 setrgbcolor } def\n");
     fprintf(gl_state.ps, "/green { 0 1 0 setrgbcolor } def\n");
     fprintf(gl_state.ps, "/cyan { 0 1 1 setrgbcolor } def\n");
@@ -3122,10 +3122,10 @@ void close_postscript() {
     update_transform(); /* Ensure screen world reflects any changes      *
 	* made while printing.                          */
 
-    /* Need to make sure that we really set up the graphics context.  
-     * The current font set indicates the last font used in a postscript call, 
+    /* Need to make sure that we really set up the graphics context.
+     * The current font set indicates the last font used in a postscript call,
      * etc., *NOT* the font set in the X11 or Win32 graphics context.  Force the
-     * current font, colour etc. to be applied to the graphics context, so 
+     * current font, colour etc. to be applied to the graphics context, so
      * subsequent drawing commands work properly.
      */
 
@@ -3285,7 +3285,7 @@ build_default_menu() {
 
 /* Return information useful for debugging.
  * Used to return the top-level window object too, but that made graphics.h
- * export all windows and X11 headers to the client program, so VB deleted 
+ * export all windows and X11 headers to the client program, so VB deleted
  * that object (mainwnd) from this structure.
  */
 void get_report_structure(t_report *report) {
@@ -3342,7 +3342,7 @@ void set_draw_mode(enum e_draw_mode draw_mode) {
             WIN32_SELECT_ERROR();
 #endif
     }
-    // We've changed which graphics context is active. Make sure the 
+    // We've changed which graphics context is active. Make sure the
     // current graphics drawing state is applied to the active context.
     force_setcolor(gl_state.foreground_color);
     force_setlinestyle(gl_state.currentlinestyle, gl_state.currentlinecap);
@@ -3352,7 +3352,7 @@ void set_draw_mode(enum e_draw_mode draw_mode) {
 
 void change_button_text(const char *button_name, const char *new_button_text) {
     /* Change the text on a button with button_name to new_button_text.
-     * Not a strictly necessary function, since you could intead just 
+     * Not a strictly necessary function, since you could intead just
      * destroy button_name and make a new buton.
      */
     int i, bnum;
@@ -3410,7 +3410,7 @@ void set_drawing_buffer(t_draw_to draw_mode) {
 #ifdef WIN32	// https://www.gamedev.net/topic/411559-win32-double-buffering/, http://stackoverflow.com/questions/14153387/double-buffering-win32-c, http://stackoverflow.com/questions/3895305/winapi-double-buffering
 	static HDC bufDC = CreateCompatibleDC(win32_state.hGraphicsDC);
 	HBITMAP bufBMP = CreateCompatibleBitmap(win32_state.hGraphicsDC, trans_coord.top_width, trans_coord.top_height);
-	if (draw_mode == ON_SCREEN) 
+	if (draw_mode == ON_SCREEN)
 	{
 		if (win32_state.hGraphicsDC == bufDC)
 		{
@@ -3437,7 +3437,7 @@ void set_drawing_buffer(t_draw_to draw_mode) {
 void copy_off_screen_buffer_to_screen() {
 #ifdef X11
     if (x11_state.draw_area != &x11_state.draw_buffer) return;
-    
+
     XCopyArea(x11_state.display, x11_state.draw_buffer, x11_state.toplevel, x11_state.current_gc,
             0, 0, x11_state.attributes.width, x11_state.attributes.height, 0, 0);
 
@@ -3448,7 +3448,7 @@ void copy_off_screen_buffer_to_screen() {
 
     XFlush(x11_state.display);
 #endif /* X11 */
-	
+
 #ifdef WIN32
 	BitBlt(win32_state.hGraphicsDCPassive, 0, 0, trans_coord.top_width, trans_coord.top_height, win32_state.hGraphicsDC, 0, 0, SRCCOPY);
 #endif	// <Addition/Mod: Charles>
@@ -3475,7 +3475,7 @@ void draw_surface(const Surface& surface, float x, float y) {
 }
 
 void draw_surface(const Surface& surface, t_point upper_left) {
-    draw_surface (surface, upper_left.x, upper_left.y);   
+    draw_surface (surface, upper_left.x, upper_left.y);
 }
 
 /***********************************************
@@ -3501,7 +3501,7 @@ static void init_cairo() {
 }
 #endif // !WIN32 <Modification>
 
-/* 
+/*
  * Functions that are helpful for automarking below. Call before the student
  * could possibly call event_loop
  */
@@ -3604,7 +3604,7 @@ static void x11_init_graphics(const char *window_name) {
     xr_textcolor.green = 0x0;
     xr_textcolor.blue = 0x0;
     xr_textcolor.alpha = 0xffff;
-    
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"  // Old style casts in these macros.
     XftColorAllocValue(
@@ -3634,7 +3634,7 @@ static void x11_init_graphics(const char *window_name) {
     /* Initialize draw_buffer for XDraw calls and XftDraw calls */
     // get window attributes
     XGetWindowAttributes(x11_state.display, x11_state.toplevel, &(x11_state.attributes));
-    x11_state.draw_buffer = XCreatePixmap(x11_state.display, x11_state.toplevel, 
+    x11_state.draw_buffer = XCreatePixmap(x11_state.display, x11_state.toplevel,
         x11_state.attributes.width, x11_state.attributes.height, x11_state.attributes.depth);
     x11_state.draw_buffer_draw = XftDrawCreate(
         x11_state.display,
@@ -3642,7 +3642,7 @@ static void x11_init_graphics(const char *window_name) {
         x11_state.visual_info.visual,
         x11_state.colormap_to_use
     );
-    
+
     // initialize draw_area to screen
     set_drawing_buffer(ON_SCREEN);
 
@@ -3653,7 +3653,7 @@ static void x11_init_graphics(const char *window_name) {
     force_setlinestyle(gl_state.currentlinestyle);
     force_setlinewidth(gl_state.currentlinewidth);
 
-    // Need a non-const name to pass to XStringListTo... 
+    // Need a non-const name to pass to XStringListTo...
     // (even though X11 won't change it).
     char *window_name_copy = static_cast<char *>(my_malloc(BUFSIZE * sizeof (char)));
     strncpy(window_name_copy, window_name, BUFSIZE);
@@ -3696,7 +3696,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
 
     Atom wmDeleteMessage = XInternAtom(x11_state.display, "WM_DELETE_WINDOW", false);
     XSetWMProtocols(x11_state.display, x11_state.toplevel, &wmDeleteMessage, 1);
-    
+
 #define OFF 1
 #define ON 0
 
@@ -3706,12 +3706,12 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
         XSync(x11_state.display, false);
         XNextEvent(x11_state.display, &report);
 #ifdef VERBOSE
-        cout << "Got an event of type: " << report.type << endl; 
-#endif 
+        cout << "Got an event of type: " << report.type << endl;
+#endif
 
         if (x11_drop_redundant_panning (report, last_skipped_button_press_button))
             continue;  // Drop this event
-        
+
         switch (report.type) {
             case Expose:
 #ifdef VERBOSE
@@ -3726,7 +3726,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                 x11_handle_configure_notify(report, drawscreen);
                 break;
             case ButtonPress:
-#ifdef VERBOSE 
+#ifdef VERBOSE
                 printf("Got a ButtonPress.\n");
                 printf("Window ID is: %ld.\n", report.xbutton.window);
                 printf("Button pressed is: %d.\n(left click is 1; right click is 3; "
@@ -3774,7 +3774,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                     }
                 } else { /* A menu button was pressed. */
                     bnum = x11_which_button(report.xbutton.window);
-#ifdef VERBOSE 
+#ifdef VERBOSE
                     printf("Button number is %d\n", bnum);
 #endif
                     if (button_state.button[bnum].enabled) {
@@ -3807,24 +3807,24 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                         panning_off();
                         break;
                     default:
-                        break;  
+                        break;
                 }
                 break;
             case MotionNotify:
-#ifdef VERBOSE 
+#ifdef VERBOSE
 //                printf("Got a MotionNotify Event.\n");
 //                printf("x: %d    y: %d\n", report.xmotion.x, report.xmotion.y);
 #endif
                 if (pan_state.panning_enabled)
                     panning_execute(report.xmotion.x, report.xmotion.y, drawscreen);
                 else if (gl_state.get_mouse_move_input &&
-                        act_on_mousemove != nullptr && 
+                        act_on_mousemove != nullptr &&
                         report.xmotion.x <= trans_coord.top_width - MWIDTH &&
                         report.xmotion.y <= trans_coord.top_height - T_AREA_HEIGHT)
                     act_on_mousemove(xscrn_to_world(report.xmotion.x), yscrn_to_world(report.xmotion.y));
                 break;
             case KeyPress:
-#ifdef VERBOSE 
+#ifdef VERBOSE
                 printf("Got a KeyPress Event.\n");
 #endif
                 if (gl_state.get_keypress_input) {
@@ -3837,10 +3837,10 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
 
                     length = XLookupString(&report.xkey, keyb_buffer, max_bytes, &keysym,
                         &composestatus);
-#ifdef VERBOSE 
-                    cout << "char: " << keyb_buffer[0] << " char as int: " << (int) keyb_buffer[0] 
+#ifdef VERBOSE
+                    cout << "char: " << keyb_buffer[0] << " char as int: " << (int) keyb_buffer[0]
                                       << " keysym: " << keysym << endl;
-#endif            
+#endif
 
                     keyb_buffer[length] = '\0'; /* terminating NULL */
                     if (act_on_keypress != nullptr)
@@ -3859,7 +3859,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                     return;
                 }
                 break;
-                
+
             default:
                 break;  // Ignore other events
         }
@@ -3877,12 +3877,12 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
 // like button presses - they have press *and release* events. There is
 // logic to ignore the release event in the case where it's already dropped
 // the press one.
-// If this routine returns true, the event loop should drop an event (not 
+// If this routine returns true, the event loop should drop an event (not
 // process the event passed into this routine). If this routine returns false,
 // the calling routine should process the event in report.
-static bool x11_drop_redundant_panning (const XEvent& report, 
+static bool x11_drop_redundant_panning (const XEvent& report,
                unsigned int& last_skipped_button_press_button) {
-    
+
    if (is_droppable_event(&report) && XQLength(x11_state.display) > 0) {
         if (report.type == ButtonPress) {
             last_skipped_button_press_button = report.xbutton.button;
@@ -3934,7 +3934,7 @@ static void x11_build_textarea() {
 
     x11_state.textarea = XCreateSimpleWindow(x11_state.display, x11_state.toplevel, 0,
         trans_coord.top_height - T_AREA_HEIGHT, trans_coord.display_width - MWIDTH,
-        T_AREA_HEIGHT, 0, x11_convert_to_xcolor(t_color::predef_colors[BLACK]), 
+        T_AREA_HEIGHT, 0, x11_convert_to_xcolor(t_color::predef_colors[BLACK]),
         x11_convert_to_xcolor(t_color::predef_colors[LIGHTGREY]));
 
     x11_state.textarea_draw = XftDrawCreate(
@@ -3955,8 +3955,8 @@ static void x11_build_textarea() {
     XMapWindow(x11_state.display, x11_state.textarea);
 }
 
-/* Returns True if the event passed in is an exposure event. Note that 
- * the bool type returned by this function is defined in Xlib.h.         
+/* Returns True if the event passed in is an exposure event. Note that
+ * the bool type returned by this function is defined in Xlib.h.
  */
 static Bool x11_test_if_exposed(Display *disp, XEvent *event_ptr, XPointer dummy) {
     (void) disp; // suppress unused warning
@@ -4010,10 +4010,10 @@ static void x11_drawbut(int bnum) {
 
         x = button_state.button[bnum].xleft;
         y = button_state.button[bnum].ytop;
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                   x11_convert_to_xcolor(t_color::predef_colors[WHITE]));
         XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y + 1, x + width, y + 1);
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                 x11_convert_to_xcolor(t_color::predef_colors[BLACK]) );
         XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y, x + width, y);
         return;
@@ -4023,10 +4023,10 @@ static void x11_drawbut(int bnum) {
     thick = 2;
     /* Draw top and left edges of 3D box. */
     if (ispressed) {
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                 x11_convert_to_xcolor(t_color::predef_colors[BLACK]));
     } else {
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                 x11_convert_to_xcolor(t_color::predef_colors[WHITE]));
     }
 
@@ -4050,10 +4050,10 @@ static void x11_drawbut(int bnum) {
 
     /* Draw bottom and right edges of 3D box. */
     if (ispressed) {
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                 x11_convert_to_xcolor(t_color::predef_colors[WHITE]));
     } else {
-        XSetForeground(x11_state.display, x11_state.gc_menus, 
+        XSetForeground(x11_state.display, x11_state.gc_menus,
                 x11_convert_to_xcolor(t_color::predef_colors[BLACK]));
     }
     mypoly[0].x = 0;
@@ -4126,8 +4126,8 @@ static int x11_which_button(Window win) {
     return (0);
 }
 
-/* Shows when the menu is active or inactive by colouring the 
- * buttons.                                                   
+/* Shows when the menu is active or inactive by colouring the
+ * buttons.
  */
 static void x11_turn_on_off(int pressed) {
     int i;
@@ -4142,11 +4142,11 @@ static void x11_drawmenu() {
     int i;
 
     XClearWindow(x11_state.display, x11_state.menu);
-    XSetForeground(x11_state.display, x11_state.gc_menus, 
+    XSetForeground(x11_state.display, x11_state.gc_menus,
             x11_convert_to_xcolor(t_color::predef_colors[WHITE]) );
     XDrawRectangle(x11_state.display, x11_state.menu, x11_state.gc_menus, 0, 0, MWIDTH,
         trans_coord.top_height);
-    XSetForeground(x11_state.display, x11_state.gc_menus, 
+    XSetForeground(x11_state.display, x11_state.gc_menus,
             x11_convert_to_xcolor(t_color::predef_colors[BLACK]) );
     XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, 0, trans_coord.top_height - 1,
         MWIDTH, trans_coord.top_height - 1);
@@ -4164,22 +4164,22 @@ static void x11_handle_expose(const XEvent& report, void (*drawscreen) ()) {
     printf("Count is: %d.\n", report.xexpose.count);
     printf("Window ID is: %ld.\n", report.xexpose.window);
 #endif
-    
+
     if (report.xexpose.count != 0)
         return;  // More exposes coming.
-    
+
     gl_state.redraw_needed = true;  // We will have to redraw eventually.
     x11_redraw_all_if_needed (drawscreen);
 }
 
 
 static void x11_redraw_all_if_needed (void (*drawscreen) ()) {
-    // Only redraw if this is (the last Expose or ConfigureNotify 
+    // Only redraw if this is (the last Expose or ConfigureNotify
     // in a series (we sometimes get a lot for a window expose or size
-    // change, and some have a count of 0). We redraw everything for all 
-    // exposes; trying to redraw only subwindows is problematic when we're 
+    // change, and some have a count of 0). We redraw everything for all
+    // exposes; trying to redraw only subwindows is problematic when we're
     // dropping expose events.
-    if (XQLength(x11_state.display) > 0) { 
+    if (XQLength(x11_state.display) > 0) {
         // Check if we have events waiting, and peek at them only if we do
         // XPeekEvent blocks if there are no events, and we don't want that.
         XEvent next_event;
@@ -4187,12 +4187,12 @@ static void x11_redraw_all_if_needed (void (*drawscreen) ()) {
         if (next_event.type == Expose || next_event.type == ConfigureNotify)
           return;
     }
-    
-    // We could get here via a code path that doesn't need a redraw (no expose yet).
-    if (!gl_state.redraw_needed) 
-        return;  
 
-    
+    // We could get here via a code path that doesn't need a redraw (no expose yet).
+    if (!gl_state.redraw_needed)
+        return;
+
+
 #ifdef VERBOSE
     cout << "Redrawing everything\n";
 #endif
@@ -4212,7 +4212,7 @@ static void x11_redraw_all_if_needed (void (*drawscreen) ()) {
         );
     // Update the pointers in the current drawing state to the new buffers and
     // init_cairo again.
-    set_drawing_buffer(gl_state.current_draw_to);  
+    set_drawing_buffer(gl_state.current_draw_to);
 
     drawscreen();
     x11_drawmenu();
@@ -4230,7 +4230,7 @@ static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen)
     printf("Got a ConfigureNotify.\n");
     printf("New width: %d  New height: %d.\n", trans_coord.top_width, trans_coord.top_height);
 #endif
-    
+
     x11_redraw_all_if_needed (drawscreen);
 }
 
@@ -4262,7 +4262,7 @@ static unsigned long x11_convert_to_xcolor (t_color rgb_color) {
     xcolor = shift_merge_based_on_mask(xcolor, red, x11_state.visual_info.red_mask);
     xcolor = shift_merge_based_on_mask(xcolor, green, x11_state.visual_info.green_mask);
     xcolor = shift_merge_based_on_mask(xcolor, blue, x11_state.visual_info.blue_mask);
-    
+
     return (xcolor);
 }
 
@@ -4437,7 +4437,7 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
             // WC : added to solve window resizing problem
         case WM_GETMINMAXINFO:
-            // set the MINMAXINFO structure pointer 
+            // set the MINMAXINFO structure pointer
             lpMinMaxInfo = (MINMAXINFO FAR *) lParam;
             lpMinMaxInfo->ptMinTrackSize.x = trans_coord.display_width / 2;
             lpMinMaxInfo->ptMinTrackSize.y = trans_coord.display_height / 2;
@@ -4457,11 +4457,11 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
 
             // Controls graphics: does zoom in or zoom out depending on direction of mousewheel scrolling.
-            // Only the window with the input focus will receive this message. In our case, the top-level 
+            // Only the window with the input focus will receive this message. In our case, the top-level
             // window has the input focus, thus the code will not work if put in WIN32_GraphicsWND.
         case WM_MOUSEWHEEL:
             // t_event_buttonPressed is used as a structure for storing information about a mouse
-            // button press event. This information can be passed back to and used by a client 
+            // button press event. This information can be passed back to and used by a client
             // program.
             t_event_buttonPressed button_info;
             win32_handle_button_info(button_info, message, wParam);
@@ -4573,9 +4573,9 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
         // if program was still executing the "Window" command and drawing rubber band
 
         if (win32_state.windowAdjustFlag == WAITING_FOR_SECOND_CORNER_POINT) {
-            /* ps.rcPaint specifies the screen coordinates of the window's client area 
-             * in which drawing is requested. This information is used to indicate that 
-             * the application window has been minimized and then restored. If so, need 
+            /* ps.rcPaint specifies the screen coordinates of the window's client area
+             * in which drawing is requested. This information is used to indicate that
+             * the application window has been minimized and then restored. If so, need
              * to redraw the screen before drawing new rubber band.
              */
             if (ps.rcPaint.right == (trans_coord.top_width - MWIDTH - 1)
@@ -4595,7 +4595,7 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
                 WIN32_SELECT_ERROR();
 
             // Don't need to erase old rubber band if the window has been minimized and
-            // restored, because previous drawings were invalidated when the window was 
+            // restored, because previous drawings were invalidated when the window was
             // minimized.
             if (ps.rcPaint.right != (trans_coord.top_width - MWIDTH - 1)
                 || ps.rcPaint.bottom != (trans_coord.top_height - T_AREA_HEIGHT - 1)) {
@@ -4630,7 +4630,7 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
 static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam, LPARAM lParam,
     int &X, int &Y, RECT &oldAdjustRect) {
     // t_event_buttonPressed is used as a structure for storing information about a mouse
-    // button press event. This information can be passed back to and used by a client 
+    // button press event. This information can be passed back to and used by a client
     // program.
     t_event_buttonPressed button_info;
     win32_handle_button_info(button_info, message, wParam);
@@ -4641,7 +4641,7 @@ static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam
             win32_mouseclick_ptr(xscrn_to_world(LOWORD(lParam)), yscrn_to_world(HIWORD(lParam)),
                                 button_info);
     } else {
-        // Special handling for the "Window" command, which takes multiple clicks. 
+        // Special handling for the "Window" command, which takes multiple clicks.
         // First you push the button, then you click for one corner, then you click for the other
         // corner.
         if (win32_state.windowAdjustFlag == WAITING_FOR_FIRST_CORNER_POINT) {
@@ -4676,12 +4676,12 @@ static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam
 static void
 win32_GraphicsWND_handle_WM_MBUTTONDOWN(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     // t_event_buttonPressed is used as a structure for storing information about a mouse
-    // button press event. This information can be passed back to and used by a client 
+    // button press event. This information can be passed back to and used by a client
     // program.
     t_event_buttonPressed button_info;
     win32_handle_button_info(button_info, message, wParam);
 
-    // get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
+    // get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros
     // to extract the coordinates because these macros can return incorrect results
     // on systems with multiple monitors.
     int xPos, yPos;
@@ -4730,7 +4730,7 @@ win32_GraphicsWND_handle_WM_MOUSEMOVE(LPARAM lParam, int &X, int &Y, RECT &oldAd
 
         return;
     } else if (pan_state.panning_enabled) {
-        // get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros 
+        // get x- and y- coordinates of the cursor. Do not use LOWORD or HIWORD macros
         // to extract the coordinates because these macros can return incorrect results
         // on systems with multiple monitors.
         int xPos, yPos;
@@ -4970,7 +4970,7 @@ static void win32_invalidate_screen(void) {
 }
 
 static void win32_reset_state() {
-    // Not sure exactly what needs to be reset to NULL etc. 
+    // Not sure exactly what needs to be reset to NULL etc.
     // Resetting everthing to be safe.
     win32_state.hGraphicsPen = 0;
     win32_state.hGraphicsBrush = 0;
@@ -4999,7 +4999,7 @@ static void win32_drain_message_queue() {
 }
 
 static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam, bool draw_screen) {
-    // zDelta indicates the distance which the mouse wheel is rotated. 
+    // zDelta indicates the distance which the mouse wheel is rotated.
     // The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
     // WHEEL_DELTA is the value for scrolling the mouse wheel by one increment.
     short zDelta;
@@ -5049,10 +5049,10 @@ static void win32_handle_button_info(t_event_buttonPressed &button_info,
     else
         button_info.ctrl_pressed = false;
 
-    /* Parameter "message" indicates what button is pressed: pass 1 for left click, 
-     * 3 for right click, 2 for scroll wheel click, 4 for scroll wheel forward rotate, 
-     * and 5 for scroll wheel backward rotate. 
-     * We follow this convention in order to be consistent for both X11 and WIN32.         
+    /* Parameter "message" indicates what button is pressed: pass 1 for left click,
+     * 3 for right click, 2 for scroll wheel click, 4 for scroll wheel forward rotate,
+     * and 5 for scroll wheel backward rotate.
+     * We follow this convention in order to be consistent for both X11 and WIN32.
      */
     switch (message) {
         case (WM_LBUTTONDOWN):
@@ -5067,7 +5067,7 @@ static void win32_handle_button_info(t_event_buttonPressed &button_info,
         case (WM_MOUSEWHEEL):
             short zDelta;
             zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-            // Positive value for zDelta indicates that the wheel was rotated forward, 
+            // Positive value for zDelta indicates that the wheel was rotated forward,
             // away from user, and negative value indicates wheel rotated backward.
             if (zDelta > 0)
                 button_info.button = 4;
@@ -5091,8 +5091,8 @@ static void win32_handle_button_info(t_event_buttonPressed &button_info,
 
 static void _drawcurve(t_point *points, int npoints, int fill) {
     /* Draw a beizer curve.
-     * Must have 3I+1 points, since each Beizer curve needs 3 points and we also 
-     * need an initial starting point 
+     * Must have 3I+1 points, since each Beizer curve needs 3 points and we also
+     * need an initial starting point
      */
     float xmin, ymin, xmax, ymax;
     int i;

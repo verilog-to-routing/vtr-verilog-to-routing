@@ -66,19 +66,19 @@ public:
 
 /* wires may be grouped in a channel according to their start points. i.e. at a given channel segment with L=4, there are up to
    four 'types' of L=4 wires: those that start in this channel segment, those than end in this channel segment, and two types
-   that are in between. here we return the number of wire types. 
+   that are in between. here we return the number of wire types.
    the current connection block metrics code can only deal with channel segments that carry wires of only one length (i.e. L=4).
    this may be enhanced in the future. */
 int get_num_wire_types(const int num_segments, const t_segment_inf *segment_inf);
 
 /* calculates all the connection block metrics and returns them through the cb_metrics variable */
-void get_conn_block_metrics(const t_type_ptr block_type, int *****tracks_connected_to_pin, const int num_segments, const t_segment_inf *segment_inf, 
+void get_conn_block_metrics(const t_type_ptr block_type, int *****tracks_connected_to_pin, const int num_segments, const t_segment_inf *segment_inf,
 		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, Conn_Block_Metrics *cb_metrics);
 /* adjusts the connection block until the appropriate wire metric has hit it's target value. the pin metric is kept constant
    within some tolerance */
 void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance,
-		const t_type_ptr block_type, int *****pin_to_track_connections, 
-		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, 
+		const t_type_ptr block_type, int *****pin_to_track_connections,
+		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf,
 		const int num_segments, const t_segment_inf *segment_inf);
 
 

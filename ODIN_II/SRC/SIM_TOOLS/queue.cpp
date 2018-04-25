@@ -41,18 +41,18 @@ queue_t* create_queue()
 	q->tail = NULL;
 	q->count = 0;
 
-	q->add        = ___queue_add; 
-	q->remove     = ___queue_remove; 
-	q->remove_all = ___queue_remove_all; 
-	q->is_empty   = ___queue_is_empty; 
-	q->destroy    = ___queue_destroy; 
+	q->add        = ___queue_add;
+	q->remove     = ___queue_remove;
+	q->remove_all = ___queue_remove_all;
+	q->is_empty   = ___queue_is_empty;
+	q->destroy    = ___queue_destroy;
 
 	return q;
 }
 
 void ___queue_destroy(queue_t *q)
 {
-	while (q->remove(q)); 
+	while (q->remove(q));
 	vtr::free(q);
 }
 
@@ -76,36 +76,36 @@ void ___queue_add(queue_t *q, void *item)
 
 void* ___queue_remove(queue_t *q)
 {
-	void *item = NULL; 
+	void *item = NULL;
 	if (!q->is_empty(q))
 	{
 		queue_node_t *node = q->head;
 		item = node->item;
 		q->head = node->next;
 		vtr::free(node);
-		q->count--;	
+		q->count--;
 
 		if (!q->count)
 		{
-			q->head = NULL; 
-			q->tail = NULL; 
+			q->head = NULL;
+			q->tail = NULL;
 		}
-	}	
+	}
 	return item;
 }
 
 void **___queue_remove_all(queue_t *q)
 {
-	void **items = NULL; 
+	void **items = NULL;
 	if (!q->is_empty(q))
 	{
-		items = (void **)vtr::malloc(q->count * sizeof(void *)); 
-		int count = 0; 
+		items = (void **)vtr::malloc(q->count * sizeof(void *));
+		int count = 0;
 		void *item;
 		while ((item = q->remove(q)))
-			items[count++] = item; 
+			items[count++] = item;
 	}
-	return items; 
+	return items;
 }
 
 int ___queue_is_empty (queue_t *q)

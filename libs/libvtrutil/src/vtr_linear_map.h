@@ -23,8 +23,8 @@ namespace vtr {
 //memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
 //where max_key is the largest key that has been inserted.
 //
-//As with a std::vector, it is the caller's responsibility to ensure there is sufficient space 
-//when a given index/key before it is accessed. The exception to this are the find() and insert() 
+//As with a std::vector, it is the caller's responsibility to ensure there is sufficient space
+//when a given index/key before it is accessed. The exception to this are the find() and insert()
 //methods which handle non-existing keys gracefully.
 template<class K, class T, class Sentinel=DefaultSentinel<K>>
 class linear_map {
@@ -189,16 +189,16 @@ class linear_map {
         }
 
         iterator lower_bound(const key_type& key) {
-            const_iterator const_iter = const_cast<const linear_map*>(this)->lower_bound(key); 
+            const_iterator const_iter = const_cast<const linear_map*>(this)->lower_bound(key);
             return convert_to_iterator(const_iter);
         }
 
         const_iterator lower_bound(const key_type& key) const {
-            return find(key); 
+            return find(key);
         }
 
         iterator upper_bound(const key_type& key) {
-            const_iterator const_iter = const_cast<const linear_map*>(this)->upper_bound(key); 
+            const_iterator const_iter = const_cast<const linear_map*>(this)->upper_bound(key);
             return convert_to_iterator(const_iter);
         }
 
@@ -229,8 +229,8 @@ class linear_map {
         }
 
     public:
-        friend void swap(linear_map& lhs, linear_map& rhs) { 
-            std::swap(lhs.vec_, rhs.vec_); 
+        friend void swap(linear_map& lhs, linear_map& rhs) {
+            std::swap(lhs.vec_, rhs.vec_);
         }
 
     private:

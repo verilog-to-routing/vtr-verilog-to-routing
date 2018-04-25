@@ -13,7 +13,7 @@
 int get_max_pins_per_net();
 
 bool try_timing_driven_route(t_router_opts router_opts,
-		vtr::vector_map<ClusterNetId, float *> &net_delay, 
+		vtr::vector_map<ClusterNetId, float *> &net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -26,7 +26,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
 		t_router_opts router_opts,
 		CBRR& connections_inf,
         RouterStats& connections_routed,
-		float* pin_criticality, 
+		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
@@ -35,7 +35,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 		float criticality_exp, float astar_fac, float bend_cost,
 		CBRR& connections_inf,
         RouterStats& connections_routed,
-		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 
+		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink,
 		float *net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
@@ -52,7 +52,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         std::vector<int>& modified_rr_node_inf, RouterStats& router_stats);
 
 struct timing_driven_route_structs {
-    // data while timing driven route is active 
+    // data while timing driven route is active
     float* pin_criticality; /* [1..max_pins_per_net-1] */
     int* sink_order; /* [1..max_pins_per_net-1] */
     t_rt_node** rt_node_of_sink; /* [1..max_pins_per_net-1] */

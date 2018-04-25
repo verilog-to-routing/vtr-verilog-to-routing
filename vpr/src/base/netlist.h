@@ -4,7 +4,7 @@
 /*
  * Summary
  * =======
- * This file defines the Netlist class, which stores the connectivity information 
+ * This file defines the Netlist class, which stores the connectivity information
  * of the components in a netlist. It is the base class for AtomNetlist and ClusteredNetlist.
  *
  * Overview
@@ -393,15 +393,15 @@
  * Interactions with other netlists
  * --------------------------------
  * Currently, the AtomNetlist and ClusteredNetlist are both derived from Netlist. The AtomNetlist has primitive
- * specific details (t_model, TruthTable), and handles all operations with the atoms. The ClusteredNetlist 
+ * specific details (t_model, TruthTable), and handles all operations with the atoms. The ClusteredNetlist
  * contains information on the CLB (Clustered Logic Block) level, which includes the physical description of the
  * blocks (t_type_descriptor), as well as the internal hierarchy and wiring (t_pb/t_pb_route).
  *
  * The calling-conventions of the functions in the AtomNetlist and ClusteredNetlist is as follows:
- *    
+ *
  *    Functions where the derived class (Atom/Clustered) calls the base class (Netlist)
  *       create_*()
- *       
+ *
  *    Functions where the base class calls the derived class (Non-Virtual Interface idiom as described
  *    https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Non-Virtual_Interface)
  *       remove_*()
@@ -429,7 +429,7 @@
 template<typename I>
 class IdMap;
 
-template<typename BlockId, typename PortId, typename PinId, typename NetId> 
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
 class Netlist {
     public: //Public Types
         typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator              block_iterator;
@@ -438,7 +438,7 @@ class Netlist {
         typedef typename vtr::vector_map<NetId, NetId>::const_iterator                  net_iterator;
         typedef typename vtr::vector_map<PinId, PinId>::const_iterator                  pin_iterator;
         typedef typename vtr::vector_map<PortId, PortId>::const_iterator                port_iterator;
-        
+
         typedef typename vtr::Range<block_iterator> block_range;
         typedef typename vtr::Range<attr_iterator>  attr_range;
         typedef typename vtr::Range<param_iterator> param_range;
@@ -506,7 +506,7 @@ class Netlist {
 
         //Returns a range of all clock pins associated with the specified block
         pin_range           block_clock_pins(const BlockId blk_id) const;
-        
+
         //Returns a range of all ports associated with the specified block
         port_range          block_ports(const BlockId blk_id) const;
 
@@ -623,7 +623,7 @@ class Netlist {
         //Returns true if the net is driven by a constant pin (i.e. its value never changes)
         bool                net_is_constant(const NetId net_id) const;
 
-        //Removes a net from the netlist. 
+        //Removes a net from the netlist.
         //This will mark the net's pins as having no associated.
         //  net_id  : The net to be removed
         void remove_net(const NetId net_id);
@@ -634,7 +634,7 @@ class Netlist {
         //  pin_id  : The pin to be removed from the net
         void remove_net_pin(const NetId net_id, const PinId pin_id);
 
-        /* 
+        /*
          * Aggregates
          */
         //Returns a range consisting of all blocks in the netlist
@@ -645,7 +645,7 @@ class Netlist {
 
         //Returns a range consisting of all nets in the netlist
         net_range   nets() const;
-        
+
         //Returns a range consisting of all pins in the netlist
         pin_range   pins() const;
 
@@ -706,7 +706,7 @@ class Netlist {
 
         //Merges sink_net into driver_net
         //After merging driver_net will contain all the sinks of sink_net
-        //  driver_net: The net which includes the driver pin 
+        //  driver_net: The net which includes the driver pin
         //  sink_net: The target net to be merged into driver_net (must have no driver pin)
         void merge_nets(const NetId driver_net, const NetId sink_net);
 
@@ -718,7 +718,7 @@ class Netlist {
         // This function should be used in the case where a netlist is fully modified
         void remove_and_compress();
 
-        //This should be called after completing a series of netlist modifications 
+        //This should be called after completing a series of netlist modifications
         //(e.g. removing blocks/ports/pins/nets).
         //
         //Marks netlist components which have become redundant due to other removals
@@ -778,7 +778,7 @@ class Netlist {
         //Returns the StringId of the specifed string if it exists or StringId::INVALID() if not
         //  str : The string to look for
         StringId    find_string(const std::string& str) const;
-        
+
         //Returns the BlockId of the specifed block if it exists or BlockId::INVALID() if not
         //  name_id : The block name to look for
         BlockId     find_block(const StringId name_id) const;
@@ -786,7 +786,7 @@ class Netlist {
         //Returns the NetId of the specifed port if it exists or NetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
         NetId       find_net(const StringId name_id) const;
-        
+
         /*
          * Mutators
          */
@@ -884,7 +884,7 @@ class Netlist {
         bool valid_string_id(StringId string_id) const;
 
     protected: //Protected virtual functions implemented in derived classes
-        //The functions follow the Non-Virtual Interface (NVI) idiom, and 
+        //The functions follow the Non-Virtual Interface (NVI) idiom, and
         //are called from this class in their respective non-impl() functions.
         virtual void shrink_to_fit_impl() = 0;
 

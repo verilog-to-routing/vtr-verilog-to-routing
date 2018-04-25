@@ -12,7 +12,7 @@ namespace vtr {
  * It also enables the easy use of range-based-for loops.
  *
  * For example:
- *      
+ *
  *      class My Data {
  *          public:
  *              typdef std::vector<int>::const_iterator my_iter;
