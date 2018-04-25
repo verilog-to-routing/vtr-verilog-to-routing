@@ -685,35 +685,37 @@ int get_seg_start(
 int get_seg_end(const t_seg_details * seg_details, const int itrack, const int istart,
         const int chan_num, const int seg_max) {
 
-    int seg_end = 0;
+
+    if (seg_details[itrack].longline) {
+        return seg_max;
+    }
+
     if (seg_details[itrack].seg_end >= 0) {
+        return seg_details[itrack].seg_end;
+    }
 
-        seg_end = seg_details[itrack].seg_end;
+    int len = seg_details[itrack].length;
+    int ofs = seg_details[itrack].start;
 
-    } else {
+    /* Normal endpoint */
+    int seg_end = istart + len - 1;
 
-        int len = seg_details[itrack].length;
-        int ofs = seg_details[itrack].start;
-
-        /* Normal endpoint */
-        seg_end = istart + len - 1;
-
-        /* If start is against edge it may have been clipped */
-        if (1 == istart) {
-            /* If the (staggered) startpoint of first full wire wasn't
-             * also 1, we must be the clipped wire */
-            int first_full = (len - (chan_num % len) + ofs - 1) % len + 1;
-            if (first_full > 1) {
-                /* then we stop just before the first full seg */
-                seg_end = first_full - 1;
-            }
-        }
-
-        /* Clip against far edge */
-        if (seg_end > seg_max) {
-            seg_end = seg_max;
+    /* If start is against edge it may have been clipped */
+    if (1 == istart) {
+        /* If the (staggered) startpoint of first full wire wasn't
+         * also 1, we must be the clipped wire */
+        int first_full = (len - (chan_num % len) + ofs - 1) % len + 1;
+        if (first_full > 1) {
+            /* then we stop just before the first full seg */
+            seg_end = first_full - 1;
         }
     }
+
+    /* Clip against far edge */
+    if (seg_end > seg_max) {
+        seg_end = seg_max;
+    }
+
     return seg_end;
 }
 
