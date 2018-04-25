@@ -1331,7 +1331,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vector_
         //to indicate an undriven net it should not be dropped during the update
         pin_collection = update_valid_refs(pin_collection, pin_id_map, {NET_DRIVER_INDEX});
 
-        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
+        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection.begin() + 1, pin_collection.end()), "All sinks should be valid");
     }
 
     rebuild_net_refs_impl(pin_id_map);

@@ -26,8 +26,13 @@ bool are_contiguous(vtr::vector_map<T, T>& values) {
 //Returns true if all elements in the vector 'values' evaluate true
 template<typename Container>
 bool all_valid(const Container& values) {
-    for (auto val : values) {
-        if (!val) {
+    return all_valid(std::begin(values), std::end(values));
+}
+
+template<typename Iterator>
+bool all_valid(Iterator first, Iterator last) {
+    for (auto iter = first; iter != last; ++iter) {
+        if (!*iter) {
             return false;
         }
     }
