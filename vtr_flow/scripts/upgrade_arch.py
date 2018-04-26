@@ -657,8 +657,8 @@ def upgrade_switch_types(arch):
         
         switch_type = switch_tag.attrib['type']
 
-        if switch_type in ['buffer', 'pass_trans']:
-            if switch_type == 'buffer':
+        if switch_type in ['buffered', 'pass_trans']:
+            if switch_type == 'buffered':
                 switch_type = "tristate"
             else:
                 assert switch_type == 'pass_trans'
