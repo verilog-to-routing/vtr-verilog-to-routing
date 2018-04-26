@@ -300,7 +300,7 @@ t_seg_details *alloc_and_load_seg_details(
             seg_details[cur_track].cb = (bool *) vtr::malloc(length * sizeof (bool));
             seg_details[cur_track].sb = (bool *) vtr::malloc((length + 1) * sizeof (bool));
             for (j = 0; j < length; ++j) {
-                if (is_global_graph) {
+                if (is_global_graph || seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
@@ -309,7 +309,7 @@ t_seg_details *alloc_and_load_seg_details(
                 }
             }
             for (j = 0; j < (length + 1); ++j) {
-                if (is_global_graph) {
+                if (is_global_graph || seg_details[cur_track].longline) {
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
