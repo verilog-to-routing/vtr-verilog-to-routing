@@ -54,8 +54,6 @@ Architecture based off Stratix IV
 		<segmentlist>
 			<segment freq="1.000000" length="longline" name="global_longline" type="bidir" Rmetal="11.064550" Cmetal="4.727860e-14">
                 <wire_switch name="0"/>
-                <sb type="pattern">1 1</sb>
-                <cb type="pattern">1</cb>
                 <opin_switch name="0"/>
 			</segment>
 			<segment freq="1.000000" length="4" name="L4" type="bidir" Rmetal="11.064550" Cmetal="4.727860e-14">
