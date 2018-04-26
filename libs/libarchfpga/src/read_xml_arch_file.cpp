@@ -2692,20 +2692,39 @@ static void ProcessSegments(pugi::xml_node Parent,
 		 (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,
 		 0.);*/
 
+        //Set of expected subtags (exact subtags are dependant on parameters)
+        std::vector<std::string> expected_subtags;
+
+        if (!(*Segs)[i].longline) {
+            //Long line doesn't accpet <sb> or <cb> since it assumes full population
+            expected_subtags.push_back("sb");
+            expected_subtags.push_back("cb");
+        }
+
 		/* Get the type */
 		tmp = get_attribute(Node, "type", loc_data).value();
 		if (0 == strcmp(tmp, "bidir")) {
 			(*Segs)[i].directionality = BI_DIRECTIONAL;
+
+            //Bidir requires the following tags
+            expected_subtags.push_back("wire_switch");
+            expected_subtags.push_back("opin_switch");
 		}
 
 		else if (0 == strcmp(tmp, "unidir")) {
 			(*Segs)[i].directionality = UNI_DIRECTIONAL;
+
+            //Unidir requires the following tags
+            expected_subtags.push_back("mux");
 		}
 
 		else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", tmp);
 		}
+
+        //Verify only expected sub-tags are found
+        expect_only_children(Node, expected_subtags, loc_data);
 
 		/* Get the wire and opin switches, or mux switch if unidir */
 		if (UNI_DIRECTIONAL == (*Segs)[i].directionality) {
