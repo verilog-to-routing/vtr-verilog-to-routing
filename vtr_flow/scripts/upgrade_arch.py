@@ -35,6 +35,7 @@ supported_upgrades = [
     "upgrade_connection_block_input_switch",
     "upgrade_switch_types",
     "rename_fc_attributes",
+    "longline_no_sb_cb",
 ]
 
 def parse_args():
@@ -109,6 +110,11 @@ def main():
 
     if "rename_fc_attributes" in args.features:
         result = rename_fc_attributes(arch)
+        if result:
+            modified = True
+
+    if "longline_no_sb_cb" in args.features:
+        result = remove_longline_sb_cb(arch)
         if result:
             modified = True
 
@@ -681,6 +687,32 @@ def rename_fc_attributes(arch):
                 fc_tag.attrib[attr.replace("default_", "")] = val
                 changed = True
     return changed
+
+def remove_longline_sb_cb(arch):
+    """
+    Drops <sb> and <cb> of any <segment> types with length="longline",
+    since we now assume longlines have full switch block/connection block 
+    populations
+    """
+
+    longline_segment_tags = arch.findall(".//segment[@length='longline']")
+
+    changed = False
+    for longline_segment_tag in longline_segment_tags:
+        assert longline_segment_tag.tag == 'segment'
+        assert longline_segment_tag.attrib['length'] == 'longline'
+
+        child_sb_tags = longline_segment_tag.findall("./sb")
+        child_cb_tags = longline_segment_tag.findall("./cb")
+
+        for cb_sb_tag in child_sb_tags + child_cb_tags:
+            assert cb_sb_tag.tag == 'cb' or cb_sb_tag.tag == 'sb'
+            print >>sys.stderr, "Warning: Removing invalid {} tag for longline segment".format(cb_sb_tag.tag)
+            longline_segment_tag.remove(cb_sb_tag)
+            changed = True
+
+    return changed
+
 
 def get_port_names(string):
     ports = []
