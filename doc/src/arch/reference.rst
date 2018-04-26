@@ -1597,8 +1597,10 @@ The ``<segment>`` tag and its contents are described below.
         A unique alphanumeric name to identify this segment type.
 
     :req_param length:
-        Either the number of logic blocks spanned by each segment, or the keyword longline.
+        Either the number of logic blocks spanned by each segment, or the keyword ``longline``.
         Longline means segments of this type span the entire FPGA array.
+
+        .. note:: ``longline`` is only supported on with ``bidir`` routing
 
     :req_param freq:
         The supply of routing tracks composed of this type of segment.
@@ -1636,6 +1638,8 @@ The ``<segment>`` tag and its contents are described below.
     Note that there a 7 entries in the integer list for a length 6 wire.
     For a length L wire there must be L+1 entries separated by spaces.
 
+    .. note:: Can not be specified for ``longline`` segments (which assume full switch block population)
+
 .. arch:tag:: <cb type="pattern">int list</cb>
 
     This tag describes the connection block depopulation (as illustrated by the circles in :numref:`fig_sb_pattern`) for this particular wire segment.
@@ -1645,23 +1649,29 @@ The ``<segment>`` tag and its contents are described below.
     Note that there a 6 entries in the integer list for a length 6 wire.
     For a length L wire there must be L entries separated by spaces.
 
+    .. note:: Can not be specified for ``longline`` segments (which assume full connection block population)
+
 .. arch:tag:: <mux name="string"/>
 
-    .. warning:: Option for UNIDIRECTIONAL only.
+    :req_param name: Name of the mux switch type used to drive this type of segment.
+
+    .. note:: For UNIDIRECTIONAL only.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
 
 .. arch:tag:: <wire_switch name="string"/>
 
-    .. warning:: Option for BIDIRECTIONAL only.
+    :req_param name: Name of the switch type used by other wires to drive this type of segment.
+
+    .. note:: For BIDIRECTIONAL only.
 
     Tag must be included and the name must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the wire switch in your architecture.
 
 .. arch:tag:: <opin_switch name="string"/>
 
-    .. warning:: Option for BIDIRECTIONAL only.
+    .. note:: For BIDIRECTIONAL only.
 
-    :req_param name: The index of the switch type used by clb and pad output pins to drive this type of segment.
+    :req_param name: Name of the switch type used by block pins to drive this type of segment.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the output pin switch in your architecture.
 
