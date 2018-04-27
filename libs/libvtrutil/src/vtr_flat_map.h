@@ -7,7 +7,7 @@
 
 namespace vtr {
 
-//Forward delcaration
+//Forward declaration
 template<class K, class V, class Compare=std::less<K>>
 class flat_map;
 

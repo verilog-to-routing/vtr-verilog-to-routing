@@ -147,7 +147,7 @@
 
 namespace vtr {
 
-//Forward delcare the class (needed for operator declarations)
+//Forward declare the class (needed for operator declarations)
 template<typename tag, typename T, T sentinel>
 class StrongId;
 
