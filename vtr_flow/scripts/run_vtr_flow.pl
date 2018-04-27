@@ -45,9 +45,12 @@ use File::Copy;
 use FindBin;
 use File::Find;
 use File::Basename;
+use Time::HiRes;
 
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
 use XML::TreePP;
+
+my $vtr_flow_start_time = Time::HiRes::gettimeofday();
 
 # Check the parameters.  Note PERL does not consider the script itself a parameter.
 my $number_arguments = @ARGV;
@@ -1082,6 +1085,9 @@ if ( !$error_code ) {
 	system "rm -f *.echo";
 	print "OK";
 }
+
+printf("        (took %.2f seconds)", Time::HiRes::gettimeofday() - $vtr_flow_start_time);
+
 print "\n";
 
 exit $error_code;
