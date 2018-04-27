@@ -27,7 +27,7 @@ using namespace std;
  * in vpr_utils.                                                             */
 #define MAX_STRING_LEN 128
 
-/******************** File-scope variables delcarations **********************/
+/******************** File-scope variables declarations **********************/
 
 /* These three mappings are needed since there are two different netlist *
  * conventions - in the cluster level, ports and port pins are used      *
