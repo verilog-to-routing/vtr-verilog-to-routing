@@ -75,7 +75,7 @@ int size_all_file_items_list;
 short to_view_parse;
 
 /*
- * File-scope function delcarations
+ * File-scope function declarations
  */
 void graphVizOutputPreproc(FILE *yyin, std::string path, char *file);
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
