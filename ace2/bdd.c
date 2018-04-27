@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "ace.h"
 #include "misc/vec/vecPtr.h"
 #include "bdd.h"
@@ -6,6 +8,14 @@
 
 //#include "vecPtr.h"
 //#include "cudd.h"
+
+int check_pi_status(Abc_Obj_t * obj);
+void ace_bdd_count_paths(DdManager * mgr, DdNode * bdd, int * num_one_paths,
+		int * num_zero_paths);
+double calc_cube_switch_prob(DdManager * mgr, DdNode * bdd, ace_cube_t * cube,
+		Vec_Ptr_t * inputs, int phase);
+double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
+		ace_cube_t * cube, Vec_Ptr_t * inputs, double P1, int phase);
 
 void ace_bdd_get_literals(Abc_Ntk_t * ntk, st__table ** lit_st_table,
 		Vec_Ptr_t ** literals) {
@@ -19,7 +29,7 @@ void ace_bdd_get_literals(Abc_Ntk_t * ntk, st__table ** lit_st_table,
 	{
 		if (Abc_ObjIsCi(obj)) {
 			st__insert(*lit_st_table, (char*) obj,
-					(char*) Vec_PtrSize(*literals));
+					(char*) Vec_PtrSize( *literals));
 			Vec_PtrPush(*literals, obj);
 		}
 	}
@@ -184,9 +194,9 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 	/* Get literal index for this bdd node. */
 	//assert(0);
 	i = Cudd_Regular(bdd)->index;
-	pi = Vec_PtrEntry(inputs, i);
+	pi = (Abc_Obj_t*) Vec_PtrEntry((Vec_Ptr_t*) inputs, i);
 
-	current_prob = malloc(sizeof(double));
+	current_prob = (double*) malloc(sizeof(double));
 
 	if (Cudd_IsComplement(bdd)) {
 		bdd_if1 = Cudd_E(bdd);
@@ -278,7 +288,7 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
 
 	/* Get literal index for this bdd node. */
 	i = Cudd_Regular(bdd)->index;
-	pi = Vec_PtrEntry(inputs, i);
+	pi = (Abc_Obj_t*) Vec_PtrEntry((Vec_Ptr_t*) inputs, i);
 	info = Ace_ObjInfo(pi);
 
 	if (Cudd_IsComplement(bdd)) {
@@ -333,7 +343,7 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 		return 0.5;
 	}
 
-	bdd = obj->pData;
+	bdd = (DdNode*) obj->pData;
 	n0 = n1 = 0;
 	ace_bdd_count_paths(mgr, bdd, &n1, &n0);
 

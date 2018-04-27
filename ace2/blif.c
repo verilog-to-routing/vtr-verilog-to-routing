@@ -3,6 +3,7 @@
 
 #include "ace.h"
 #include "blif.h"
+bool blif_clock_from_latch(char * latch_line, char * clk_name);
 
 bool blif_clock_from_latch(char * latch_line, char * clk_name) {
 	char * pos;

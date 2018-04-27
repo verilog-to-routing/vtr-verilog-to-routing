@@ -1,6 +1,9 @@
 #include "ace.h"
+#include "depth.h"
 
 #include "base/abc/abc.h"
+
+int calc_depth(Abc_Obj_t * obj);
 
 int calc_depth(Abc_Obj_t * obj) {
 	int i, depth;

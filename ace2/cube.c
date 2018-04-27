@@ -19,7 +19,7 @@ ace_cube_t * ace_cube_dup(ace_cube_t * cube) {
 	assert(cube != NULL);
 	assert(cube->num_literals > 0);
 
-	cube_copy = malloc(sizeof(ace_cube_t));
+	cube_copy = (ace_cube_t*) malloc(sizeof(ace_cube_t));
 	cube_copy->static_prob = cube->static_prob;
 	cube_copy->num_literals = cube->num_literals;
 	cube_copy->cube = set_new (2 * cube->num_literals);
@@ -49,7 +49,7 @@ ace_cube_t * ace_cube_new_dc(int num_literals) {
 	int i;
 	ace_cube_t * new_cube;
 
-	new_cube = malloc(sizeof(ace_cube_t));
+	new_cube = (ace_cube_t*) malloc(sizeof(ace_cube_t));
 	new_cube->num_literals = num_literals;
 	new_cube->static_prob = 1.0;
 	new_cube->cube = set_new (2 * num_literals);

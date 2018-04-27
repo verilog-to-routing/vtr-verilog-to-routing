@@ -7,9 +7,11 @@
 
 #include "base/abc/abc.h"
 
+bool check_if_fanout_is_po(Abc_Ntk_t * ntk, Abc_Obj_t * obj);
+
 char * hdl_name_ptr = NULL;
 
-bool check_if_fanout_is_po(Abc_Ntk_t * ntk, Abc_Obj_t * obj) {
+bool check_if_fanout_is_po(Abc_Ntk_t * /*ntk*/, Abc_Obj_t * obj) {
 	Abc_Obj_t * fanout;
 	int i;
 

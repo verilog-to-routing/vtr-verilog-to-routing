@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "ace.h"
 #include "io_ace.h"
@@ -14,6 +15,15 @@
 #include "base/main/main.h"
 #include "base/io/ioAbc.h"
 //#include "vecInt.h"
+
+#include "vtr_assert.h"
+
+void print_status(Abc_Ntk_t * ntk);
+void alloc_and_init_activity_info(Abc_Ntk_t * ntk);
+void ace_update_latch_probs(Abc_Ntk_t * ntk);
+void print_node_bdd(Abc_Ntk_t * ntk);
+void print_nodes(Vec_Ptr_t * nodes);
+int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name);
 
 st__table * ace_info_hash_table;
 
@@ -40,6 +50,8 @@ void print_status(Abc_Ntk_t * ntk) {
 		case ACE_OLD:
 			printf("%d: OLD\n", i);
 			break;
+        default:
+            VTR_ASSERT_MSG(false, "Invalid ABC object info status");
 		}
 	}
 }
@@ -89,26 +101,26 @@ void print_node_bdd(Abc_Ntk_t * ntk) {
 
 	Abc_NtkForEachNode(ntk, obj, i)
 	{
-		DdNode * node = obj->pData;
+		DdNode * node = (DdNode*) obj->pData;
 
 		printf("Object: %d\n", obj->Id);
 		fflush(0);
 		//printf("Fanin: %d\n", Abc_ObjFaninNum(obj)); fflush(0);
 		while (1) {
-			if (node == Cudd_ReadOne(ntk->pManFunc)) {
+			if (node == Cudd_ReadOne((DdManager*)ntk->pManFunc)) {
 				//printf("one!\n");
 				break;
-			} else if (node == Cudd_ReadLogicZero(ntk->pManFunc)) {
+			} else if (node == Cudd_ReadLogicZero((DdManager*)ntk->pManFunc)) {
 				//printf("zero!\n");
 				break;
 			}
 
-			printf("\tVar: %hd (%08x)\n", Cudd_Regular(node)->index,
-					(unsigned int) node);
+			printf("\tVar: %hd (%08" PRIXPTR ")\n", Cudd_Regular(node)->index,
+					(uintptr_t) node);
 			fflush(0);
 
 			DdNode * first_node;
-			DdGen* gen = Cudd_FirstNode(ntk->pManFunc, node, &first_node);
+			DdGen* gen = Cudd_FirstNode((DdManager*) ntk->pManFunc, node, &first_node);
             Cudd_GenFree(gen);
 			node = Cudd_E(node);
 
@@ -218,10 +230,10 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	fflush(0);
 	Abc_NtkForEachLatchOutput(ntk, obj, i)
 	{
-		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
+		Ace_Obj_Info_t * info2 = Ace_ObjInfo(obj);
 
-		info->switch_act = info->switch_prob;
-		assert(info->switch_act >= 0.0);
+		info2->switch_act = info2->switch_prob;
+		assert(info2->switch_act >= 0.0);
 	}
 	Abc_NtkForEachPi(ntk, obj, i)
 	{
@@ -235,22 +247,22 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	/* Do latches first, then logic after */
 	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_all, obj, i)
 	{
-		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
+		Ace_Obj_Info_t * info2 = Ace_ObjInfo(obj);
 
 		switch (Abc_ObjType(obj)) {
 		case ABC_OBJ_PI:
 			if (strcmp(Abc_ObjName(obj), clk_name) == 0) {
-				info->switch_act = 2;
-				info->switch_prob = 1;
-				info->static_prob = 0.5;
+				info2->switch_act = 2;
+				info2->switch_prob = 1;
+				info2->static_prob = 0.5;
 			} else {
-				info->switch_act = info->switch_prob;
+				info2->switch_act = info2->switch_prob;
 			}
 			break;
 
 		case ABC_OBJ_BO:
 		case ABC_OBJ_LATCH:
-			info->switch_act = info->switch_prob;
+			info2->switch_act = info2->switch_prob;
 			break;
 
 		default:
@@ -260,13 +272,13 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 
 	Vec_PtrForEachEntry(Abc_Obj_t*, nodes_logic, obj, i)
 	{
-		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
-		//Ace_Obj_Info_t * fanin_info;
+		Ace_Obj_Info_t * info2 = Ace_ObjInfo(obj);
+		//Ace_Obj_Info_t * fanin_info2;
 
 		assert(Abc_ObjType(obj) == ABC_OBJ_NODE);
 
 		if (Abc_ObjFaninNum(obj) < 1) {
-			info->switch_act = 0.0;
+			info2->switch_act = 0.0;
 			continue;
 		} else {
 			Vec_Ptr_t * literals = Vec_PtrAlloc(0);
@@ -278,11 +290,11 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 			{
 				Vec_PtrPush(literals, fanin);
 			}
-			info->switch_act = ace_bdd_calc_switch_act(ntk->pManFunc, obj,
+			info2->switch_act = ace_bdd_calc_switch_act((DdManager*)ntk->pManFunc, obj,
 					literals);
 			Vec_PtrFree(literals);
 		}
-		assert(info->switch_act >= 0);
+		assert(info2->switch_act >= 0);
 	}
     Vec_PtrFree(nodes_logic);
     Vec_PtrFree(latches_in_cycles_vec);
@@ -358,7 +370,7 @@ int main(int argc, char * argv[]) {
 	// Alloc Aux Info Array
 
 	// Full Allocation
-	Ace_Obj_Info_t * info = calloc(Abc_NtkObjNum(ntk), sizeof(Ace_Obj_Info_t));
+	Ace_Obj_Info_t * info = (Ace_Obj_Info_t*) calloc(Abc_NtkObjNum(ntk), sizeof(Ace_Obj_Info_t));
 	ace_info_hash_table = st__init_table(st__ptrcmp, st__ptrhash);
 
 	int objNum = 0;

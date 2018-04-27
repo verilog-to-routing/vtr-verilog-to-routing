@@ -1,5 +1,7 @@
 #include "cycle.h"
 #include "ace.h"
+bool in_cycle(Abc_Ntk_t * ntk, int obj_id_to_find, Abc_Obj_t * starting_obj_ptr,
+		int flag);
 
 bool in_cycle(Abc_Ntk_t * ntk, int obj_id_to_find, Abc_Obj_t * starting_obj_ptr,
 		int flag) {

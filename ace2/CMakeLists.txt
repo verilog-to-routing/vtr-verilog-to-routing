@@ -5,24 +5,27 @@ project("ace2")
 file(GLOB_RECURSE EXEC_HEADERS *.h)
 file(GLOB_RECURSE EXEC_SOURCES *.c)
 
+#Compile as C++
+set_source_files_properties(${EXEC_SOURCES} PROPERTIES LANGUAGE CXX)
+
 add_definitions(-DLIN)
 
 #Create the executable
 add_executable(ace ${EXEC_SOURCES} ${EXEC_HEADERS})
 target_link_libraries(ace
                         libabc
+                        libvtrutil
                         ${CMAKE_DL_LIBS})
 
-#ACE includes some ABC headers which cause warnings - we suppress them here
+#ACE uses some ABC functions (st__insert) which cause warnings - we suppress them here
 set(ACE_SUPPRESS_FLAGS 
-        -Wno-pointer-to-int-cast
         -Wno-int-to-pointer-cast
         )
 
-include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
 foreach(flag ${ACE_SUPPRESS_FLAGS})
-    CHECK_C_COMPILER_FLAG(${flag} C_COMPILER_SUPPORTS_${flag})
-    if(C_COMPILER_SUPPORTS_${flag})
+    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+    if(CXX_COMPILER_SUPPORTS_${flag})
         target_compile_options(ace PRIVATE ${flag})
     endif()
 endforeach()

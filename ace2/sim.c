@@ -4,7 +4,13 @@
 #include "bdd/cudd/cudd.h"
 #include "bdd/cudd/cuddInt.h"
 
-void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int cycle) {
+void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int cycle);
+int * getFaninValues(Abc_Obj_t * obj_ptr);
+ace_status_t getFaninStatus(Abc_Obj_t * obj_ptr);
+void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle);
+void update_FFs(Abc_Ntk_t * ntk);
+
+void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * /*nodes*/, int cycle) {
 	Abc_Obj_t * obj;
 	Ace_Obj_Info_t * info;
 	int i;
@@ -135,7 +141,7 @@ int * getFaninValues(Abc_Obj_t * obj_ptr) {
 		return NULL;
 	}
 
-	faninValues = malloc(Abc_ObjFaninNum(obj_ptr) * sizeof(int));
+	faninValues = (int*) malloc(Abc_ObjFaninNum(obj_ptr) * sizeof(int));
 	Abc_ObjForEachFanin(obj_ptr, fanin, i)
 	{
 		info = Ace_ObjInfo(fanin);
@@ -169,7 +175,7 @@ ace_status_t getFaninStatus(Abc_Obj_t * obj_ptr) {
 	return ACE_OLD;
 }
 
-void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle) {
+void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int /*cycle*/) {
 	Abc_Obj_t * obj;
 	Ace_Obj_Info_t * info;
 	int i;
@@ -204,11 +210,11 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle) {
 				if (Abc_ObjIsNode(obj)) {
 					faninValues = getFaninValues(obj);
 					assert(faninValues);
-					dd_node = Cudd_Eval(ntk->pManFunc, obj->pData, faninValues);
+					dd_node = Cudd_Eval((DdManager*) ntk->pManFunc, (DdNode*) obj->pData, faninValues);
 					assert(Cudd_IsConstant(dd_node));
-					if (dd_node == Cudd_ReadOne(ntk->pManFunc)) {
+					if (dd_node == Cudd_ReadOne((DdManager*) ntk->pManFunc)) {
 						value = 1;
-					} else if (dd_node == Cudd_ReadLogicZero(ntk->pManFunc)) {
+					} else if (dd_node == Cudd_ReadLogicZero((DdManager*) ntk->pManFunc)) {
 						value = 0;
 					} else {
 						assert(0);
@@ -282,7 +288,7 @@ void update_FFs(Abc_Ntk_t * ntk) {
 }
 
 void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles,
-		double threshold) {
+		double /*threshold*/) {
 	Abc_Obj_t * obj;
 	Ace_Obj_Info_t * info;
 	int i;
