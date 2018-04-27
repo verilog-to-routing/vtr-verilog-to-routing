@@ -1,3 +1,6 @@
+#include "vtr_assert.h"
+#include "vtr_time.h" //For some reason this causes compilation errors if included below the std headers on with g++-5
+
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -15,8 +18,6 @@
 #include "base/main/main.h"
 #include "base/io/ioAbc.h"
 //#include "vecInt.h"
-
-#include "vtr_assert.h"
 
 void print_status(Abc_Ntk_t * ntk);
 void alloc_and_init_activity_info(Abc_Ntk_t * ntk);
@@ -323,6 +324,7 @@ void prob_epsilon_fix(double * d) {
 }
 
 int main(int argc, char * argv[]) {
+    vtr::ScopedFinishTimer t("Ace");
 	FILE * BLIF = NULL;
 	FILE * IN_ACT = NULL;
 	FILE * OUT_ACT = stdout;
