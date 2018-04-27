@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 
 #include "vtr_error.h"
+#include "vtr_time.h"
 
 #include "argparse.hpp"
 
@@ -73,6 +74,7 @@ void parse_adder_def_file();
 
 int main(int argc, char **argv)
 {
+    vtr::ScopedFinishTimer t("Odin II");
 	int num_types=0;
 
 	/* Some initialization */
