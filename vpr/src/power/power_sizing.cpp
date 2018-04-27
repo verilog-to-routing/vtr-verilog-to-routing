@@ -37,7 +37,7 @@ using namespace std;
 /************************ FILE SCOPE *********************************/
 static double f_MTA_area;
 
-/************************* FUNCTION DELCARATIONS ********************/
+/************************* FUNCTION DECLARATIONS ********************/
 static double power_count_transistors_connectionbox();
 static double power_count_transistors_mux(t_mux_arch * mux_arch);
 static double power_count_transistors_mux_node(t_mux_node * mux_node,

@@ -89,7 +89,7 @@
 //#define DEBUG_LUT_MASK
 
 //
-//File local type delcarations
+//File local type declarations
 //
 std::ostream& operator<<(std::ostream& os, vtr::LogicValue val);
 
@@ -101,7 +101,7 @@ std::ostream& operator<<(std::ostream& os, vtr::LogicValue val);
 };*/
 
 //
-// File local function delcarations
+// File local function declarations
 //
 std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
@@ -881,7 +881,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
             verilog_os_ << indent(depth) << ");\n" ;
 
-            //Wire delcarations
+            //Wire declarations
             verilog_os_ << "\n";
             verilog_os_ << indent(depth+1) << "//Wires\n";
             for(auto& kv : logical_net_drivers_) {

@@ -84,7 +84,7 @@ else()
         "-Wformat=2"                    #Sanity checks for printf-like formatting
         "-Wno-format-nonliteral"        # But don't worry about non-literal formtting (i.e. run-time printf format strings)
         "-Wlogical-op"                  #Checks for logical op when bit-wise expected
-        "-Wmissing-declarations"        #Warn if a global function is defined with no delcaration
+        "-Wmissing-declarations"        #Warn if a global function is defined with no declaration
         "-Wmissing-include-dirs"        #Warn if a user include directory is missing
         "-Wredundant-decls"             #Warn if there are overlapping declarations
         "-Wswitch-default"              #Warn if a switch has no default

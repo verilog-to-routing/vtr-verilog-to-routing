@@ -2,7 +2,7 @@
 
 namespace tatum {
 
-//Forward delcaration
+//Forward declaration
 struct DomainPair;
 struct IoConstraint;
 class TimingConstraints;
