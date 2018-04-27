@@ -28,7 +28,7 @@
 #include "power_cmos_tech.h"
 #include "globals.h"
 
-/************************* FUNCTION DELCARATIONS ********************/
+/************************* FUNCTION DECLARATIONS ********************/
 static float power_calc_node_switching_v(float capacitance, float density,
 		float period, float voltage);
 static void power_calc_transistor_capacitance(float *C_d, float *C_s,
