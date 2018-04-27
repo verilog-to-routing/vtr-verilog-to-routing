@@ -290,6 +290,7 @@ my $results_path = "${temp_dir}output.txt";
 
 my $error;
 my $error_code = 0;
+my $error_status = "OK";
 
 my $arch_param;
 my $cluster_size;
@@ -379,7 +380,9 @@ my ($architecture_name_error, $tmp_path, $arch_suffix) = fileparse($architecture
 my $architecture_file_name = $architecture_name . $arch_suffix;
 my $error_architecture_file_name = join "", $architecture_name, "_error", $arch_suffix;
 
-print "$architecture_name/$benchmark_name...";
+
+my $arch_benchmark_id_str = "$architecture_name/$benchmark_name...";
+printf("%-54s", $arch_benchmark_id_str);
 
 # Get Memory Size
 my $mem_size = -1;
@@ -394,7 +397,7 @@ my $xml_tree = $tpp->parsefile($architecture_file_path);
 # Get lut size
 my $lut_size = xml_find_LUT_Kvalue($xml_tree);
 if ( $lut_size < 1 ) {
-	print "failed: cannot determine arch LUT k-value";
+	$error_status = "failed: cannot determine arch LUT k-value";
 	$error_code = 1;
 }
 
@@ -481,7 +484,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 			}
 		}
 		else {
-			print "failed: odin";
+			$error_status = "failed: odin";
 			$error_code = 1;
 		}
 	}
@@ -576,7 +579,7 @@ time;
                 $odin_output_file_name, $abc_raw_output_file_name, $abc_output_file_name);
 
         if ($q ne "success") {
-            print "failed: to restore multi-clock latch info";
+            $error_status = "failed: to restore multi-clock latch info";
             $error_code = 1;
 
         }
@@ -590,7 +593,7 @@ time;
 		}
 	}
 	else {
-		print "failed: abc";
+		$error_status = "failed: abc";
 		$error_code = 1;
 	}
 }
@@ -609,7 +612,7 @@ if (    $starting_stage <= $stage_idx_ace
             $ace_clk_file_name, $abc_output_file_name);
 
 	if ($q ne "success") {
-		print "failed: ace clock extraction (only single clock activiy estimation is supported)";
+		$error_status = "failed: ace clock extraction (only single clock activiy estimation is supported)";
         $error_code = 1;
     }
 
@@ -637,7 +640,7 @@ if (    $starting_stage <= $stage_idx_ace
                     $odin_output_file_name, $ace_raw_output_blif_name, $ace_output_blif_name);
 
             if ($q ne "success") {
-                print "failed: to restore multi-clock latch info";
+                $error_status = "failed: to restore multi-clock latch info";
                 $error_code = 1;
 
             }
@@ -648,7 +651,7 @@ if (    $starting_stage <= $stage_idx_ace
 			}
 		}
 		else {
-			print "failed: ace";
+			$error_status = "failed: ace";
 			$error_code = 1;
 		}
 	}
@@ -677,7 +680,7 @@ if (    $starting_stage <= $stage_idx_prevpr
 		}
 	}
 	else {
-		print "failed: prevpr";
+		$error_status = "failed: prevpr";
 		$error_code = 1;
 	}
 }
@@ -907,7 +910,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }        
             if ($verify_rr_graph){
                 if (! -e $rr_graph_out_file || -z $rr_graph_out_file) {
-                    print("failed: vpr (no RR graph file produced)");
+                    $error_status = "failed: vpr (no RR graph file produced)";
                     $error_code = 1;
                 }
                 push( @vpr_args, "--read_rr_graph" );				  
@@ -950,7 +953,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                             );
 
                 if ($diff_result ne "success") {
-                    print(" RR Graph XML output not consistent when reloaded ");
+                    $error_status = " RR Graph XML output not consistent when reloaded ";
                     $error_code = 1;
                 }
             }
@@ -1012,19 +1015,19 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                         $/ = "\n";    # Restore for normal behaviour later in script
 
                         if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
-                            print("failed: formal verification");
+                            $error_status = "failed: formal verification";
                             $error_code = 1;
                         }
                     } else {
-                        print("failed: no CEC output");
+                        $error_status = "failed: no CEC output";
                         $error_code = 1;
                     }
                 } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
-                    print("failed: formal verification");
+                    $error_status = "failed: formal verification";
                     $error_code = 1;
                 }
             } else {
-                print("failed: no DSEC output");
+                $error_status = "failed: no DSEC output";
                 $error_code = 1;
             }
         }
@@ -1045,7 +1048,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
 		}
 	} else {
-		print("failed: vpr");
+		$error_status = "failed: vpr";
 		$error_code = 1;
 	}
 }
@@ -1081,12 +1084,9 @@ close(RESULTS);
 #system "rm -f core.*";
 #system "rm -f gc.txt";
 
-if ( !$error_code ) {
-	system "rm -f *.echo";
-	print "OK";
-}
+my $elapsed_time_str = sprintf("(took %.2f seconds)", Time::HiRes::gettimeofday() - $vtr_flow_start_time);
 
-printf("        (took %.2f seconds)", Time::HiRes::gettimeofday() - $vtr_flow_start_time);
+printf(" %-15s %19s", $error_status, $elapsed_time_str);
 
 print "\n";
 
