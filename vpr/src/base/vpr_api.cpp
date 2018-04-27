@@ -267,7 +267,7 @@ void vpr_init(const int argc, const char **argv,
 
     if (vpr_setup->PowerOpts.do_power) {
         //Load the net activity file for power estimation
-        vtr::ScopedPrintTimer t("Load Activity File");
+        vtr::ScopedActionTimer t("Load Activity File");
         auto& power_ctx = g_vpr_ctx.mutable_power();
         power_ctx.atom_net_power = read_activity(atom_ctx.nlist, vpr_setup->FileNameOpts.ActFile.c_str());
     }
@@ -276,13 +276,13 @@ void vpr_init(const int argc, const char **argv,
     if (vpr_setup->TimingEnabled) {
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
-            vtr::ScopedPrintTimer t("Build Timing Graph");
+            vtr::ScopedActionTimer t("Build Timing Graph");
             timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph();
             vtr::printf("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             vtr::printf("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
         }
         {
-            vtr::ScopedPrintTimer t("Load Timing Constraints");
+            vtr::ScopedActionTimer t("Load Timing Constraints");
             timing_ctx.constraints = read_sdc2(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
         }
     }
@@ -436,7 +436,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
-    vtr::ScopedPrintTimer timer("Packing");
+    vtr::ScopedActionTimer timer("Packing");
 
     /* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of
      a block through an opin switch to a length-4 wire, then through a wire switch to another
@@ -497,7 +497,7 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
-    vtr::ScopedPrintTimer timer("Load Packing");
+    vtr::ScopedActionTimer timer("Load Packing");
 
     VTR_ASSERT_MSG(!vpr_setup.FileNameOpts.NetFile.empty(),
             "Must have valid .net filename to load packing");
@@ -535,7 +535,7 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
-    vtr::ScopedPrintTimer timer("Placement");
+    vtr::ScopedActionTimer timer("Placement");
 
     try_place(vpr_setup.PlacerOpts,
               vpr_setup.AnnealSched,
@@ -558,7 +558,7 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
-    vtr::ScopedPrintTimer timer("Load Placement");
+    vtr::ScopedActionTimer timer("Load Placement");
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& filename_opts = vpr_setup.FileNameOpts;
@@ -657,7 +657,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
-    vtr::ScopedPrintTimer timer("Routing");
+    vtr::ScopedActionTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
@@ -686,7 +686,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
 }
 
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
-    vtr::ScopedPrintTimer timer("Routing");
+    vtr::ScopedActionTimer timer("Routing");
 
     auto& router_opts = vpr_setup.RouterOpts;
     int min_W = binary_search_place_and_route(vpr_setup.PlacerOpts,
@@ -709,7 +709,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
 }
 
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width) {
-    vtr::ScopedPrintTimer timer("Load Routing");
+    vtr::ScopedActionTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)");
     }
