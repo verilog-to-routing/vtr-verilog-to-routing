@@ -407,53 +407,33 @@ sub run_single_task {
 
 
 	if ( $system_type eq "local" ) {
-		if ( $processors == 1 ) {
-            foreach my $action (@actions) {
-                my ($run_dir, $command, $runtime_estimate) = @$action;
-                if($runtime_estimate >= 0) {
-                    print strftime "Current time: %b-%d %I:%M %p.  ", localtime;
-                    print "Expected runtime of next benchmark: " . $runtime_estimate . "\n";
-                }
+        my $thread_work   = Thread::Queue->new();
+        my $thread_result = Thread::Queue->new();
+        my $thread_return_code = Thread::Queue->new();
+        my $threads       = $processors;
 
-                chdir( $run_dir );
+        foreach my $action (@actions) {
+            my ($run_dir, $command, $runtime_estimate) = @$action;
 
-                my $status = system( $command );
+            $thread_work->enqueue("$run_dir||||$command");
 
-                my $return_code = $status >> 8; #Must shift by 8 bits to get real exit code
+        }
 
+        my @pool = map { threads->create( \&do_work, $thread_work, $thread_result, $thread_return_code ) } 1 .. $threads;
+
+        for ( 1 .. $threads ) {
+            while ( my $result = $thread_result->dequeue ) {
+                chomp($result);
+                print $result . "\n";
+            }
+            while (my $return_code = $thread_return_code->dequeue) {
                 if($return_code != 0) {
                     $num_failures += 1;
                 }
-			}
-		} else {
-			my $thread_work   = Thread::Queue->new();
-			my $thread_result = Thread::Queue->new();
-			my $thread_return_code = Thread::Queue->new();
-			my $threads       = $processors;
-
-            foreach my $action (@actions) {
-                my ($run_dir, $command, $runtime_estimate) = @$action;
-
-                $thread_work->enqueue("$run_dir||||$command");
-
             }
+        }
 
-			my @pool = map { threads->create( \&do_work, $thread_work, $thread_result, $thread_return_code ) } 1 .. $threads;
-
-			for ( 1 .. $threads ) {
-				while ( my $result = $thread_result->dequeue ) {
-					chomp($result);
-					print $result . "\n";
-				}
-                while (my $return_code = $thread_return_code->dequeue) {
-                    if($return_code != 0) {
-                        $num_failures += 1;
-                    }
-                }
-			}
-
-			$_->join for @pool;
-		}
+        $_->join for @pool;
 	} else {
         die("Unrecognized job system '$system_type'");
     }
@@ -474,11 +454,11 @@ sub do_work {
 			last;
 		}
 
-		my $return_status = system "cd $dir; $command > thread_${tid}.out";
+		my $return_status = system "cd $dir; $command > vtr_flow.out";
         my $exit_code = $return_status >> 8; #Shift to get real exit code
 
-		open( OUT_FILE, "$dir/thread_${tid}.out" )
-		  or die "Cannot open $dir/thread_${tid}.out: $!";
+		open( OUT_FILE, "$dir/vtr_flow.out" )
+		  or die "Cannot open $dir/vtr_flow.out: $!";
 		my $sys_output = do { local $/; <OUT_FILE> };
 
 		#$sys_output =~ s/\n//g;
