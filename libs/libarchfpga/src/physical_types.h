@@ -750,7 +750,7 @@ struct t_pin_to_pin_annotation {
  *
  *  There is a t_pb_graph_node for each instance of the pb_type (i.e. t_pb_type may describe
  *  num_pb instances of the type, with each instance represented as a t_pb_graph_node).
- *  The distinction between the pb_type and the pb_graph_node is neccessary since the 'position'
+ *  The distinction between the pb_type and the pb_graph_node is necessary since the 'position'
  *  of a particular instance in the cluster is important when routing the cluster (since the routing
  *  accessible from each position may be different).
  *
