@@ -61,7 +61,7 @@ vtr_flow/benchmarks/titan_other_blif/*.blif
 #
 ODIN_II/log
 ODIN_II/regression_test/runs
-ODIN_II/OUTPUT
+ODIN_II/OUTPUT/*
 
 #
 #C/C++

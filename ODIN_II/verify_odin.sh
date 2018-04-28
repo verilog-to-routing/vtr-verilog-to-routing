@@ -86,31 +86,29 @@ function micro_test() {
 #1
 #bench
 function regression_test() {
-	for benchmark in regression_test/benchmark/full/*.v
+	
+	mkdir -p regression_test/runs/full
+	mkdir -p OUTPUT
+	
+	for test_verilog in regression_test/benchmark/full/*.v
 	do 
-		basename=${benchmark%.v}
+	
+		rm -Rf OUTPUT/*
+		
+		basename=${test_verilog%.v}
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output	
-		DIR="regression_test/runs/full/$test_name" && mkdir -p $DIR
 		
-		cp $benchmark $DIR/circuit.v
-		cp $input_vectors $DIR/circuit_input
-		cp $output_vectors $DIR/circuit_output
+		(./odin_II -E \
+		-a "../libs/libarchfpga/arch/sample_arch.xml" \
+		-V "$test_verilog" \
+		-t "$input_vectors" \
+		-T "$output_vectors" \
+			&> regression_test/runs/full/$test_name.log && [ -e OUTPUT/output_vectors ] && echo " --- PASSED == $test_verilog") \
+    	|| (echo " -X- FAILED == $test_verilog" && echo $test_verilog >> regression_test/runs/failure.log)
+    	
 	done
-
-	
-	ls regression_test/runs/full | xargs -P$1 -I test_dir /bin/bash -c \
-		' ./odin_II -E -V regression_test/runs/full/test_dir/circuit.v \
-			-t regression_test/runs/full/test_dir/circuit_input \
-			-T regression_test/runs/full/test_dir/circuit_output \
-			-o regression_test/runs/full/test_dir/temp.blif \
-			-sim_dir regression_test/runs/full/test_dir/ \
-				&> regression_test/runs/full/test_dir/log \
-    	&& echo " --- PASSED == regression_test/runs/full/test_dir" \
-    	|| (echo " -X- FAILED == regression_test/runs/full/test_dir" \
-    		&& echo regression_test/runs/full/test_dir >> regression_test/runs/failure.log)'
-
 }
 
 #1				#2
@@ -161,25 +159,12 @@ function syntax_test() {
 ### starts here
 
 #in MB
-MIN_MEMORY_PER_PROC=4096
 NB_OF_PROC=1
-
-freeMEM=`free -mt | grep Total | awk '{print $4}'`
-MAX_PROC=$[freeMEM/MIN_MEMORY_PER_PROC]
 
 if [[ "$2" -gt "0" ]]
 then
 	NB_OF_PROC=$2
-	MEM_PER_PROC=$[freeMEM/NB_OF_PROC]
-	echo "Trying to run benchmark on $NB_OF_PROC processes with ~$MEM_PER_PROC MB per/proc (incl. swap)"
-	
-	if [[ "$NB_OF_PROC" -gt "$MAX_PROC" ]]
-	then
-		echo " $NB_OF_PROC would crash the system, we need a hard minimum of $MIN_MEMORY_PER_PROC MB per process"
-		echo " Setting the number of process to $MAX_PROC"
-		
-		NB_OF_PROC=$MAX_PROC
-	fi
+	echo "Trying to run benchmark on $NB_OF_PROC processes"
 fi
 
 
