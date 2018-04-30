@@ -205,6 +205,7 @@ void vpr_init(const int argc, const char **argv,
     vpr_setup->TimingEnabled = options->timing_analysis;
     vpr_setup->device_layout = options->device_layout;
     vpr_setup->constant_net_method = options->constant_net_method;
+    vpr_setup->clock_modeling_method = options->clock_modeling_method;
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());

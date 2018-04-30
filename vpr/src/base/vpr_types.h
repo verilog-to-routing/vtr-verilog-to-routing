@@ -29,6 +29,7 @@
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
+#include "clock_modeling.h"
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -1147,6 +1148,7 @@ struct t_vpr_setup {
 	t_power_opts PowerOpts;
     std::string device_layout;
     e_constant_net_method constant_net_method; //How constant nets should be handled
+    e_clock_modeling_method clock_modeling_method; //How clocks should be handled
 };
 
 class RouteStatus {

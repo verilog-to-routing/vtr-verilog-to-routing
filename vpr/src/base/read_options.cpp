@@ -1,5 +1,6 @@
 #include "read_options.h"
 #include "constant_nets.h"
+#include "clock_modeling.h"
 #include "vpr_error.h"
 
 #include "argparse.hpp"
@@ -298,6 +299,29 @@ struct ParseExtPinUtil {
     }
 };
 
+struct ParseClockModelingMethod {
+    e_clock_modeling_method from_str(std::string str) {
+        if      (str == "ideal")   return IDEAL_CLOCK;
+        else if (str == "route") return ROUTED_CLOCK;
+        std::stringstream msg;
+        msg << "Invalid conversion from '"
+            << str
+            << "' to e_clock_modeling_method (expected one of: "
+            << argparse::join(default_choices(), ", ") << ")";
+        throw argparse::ArgParseConversionError(msg.str());
+    }
+
+    std::string to_str(e_clock_modeling_method val) {
+        if (val == IDEAL_CLOCK) return "ideal";
+        VTR_ASSERT(val == ROUTED_CLOCK);
+        return "route";
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"ideal", "route"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -449,6 +473,14 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("global")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<e_clock_modeling_method,ParseClockModelingMethod>(
+        args.clock_modeling_method, "--clock_modeling_method")
+            .help("Specifies how clocks are handled\n"
+                  " * ideal: Treat the clock pins as ideal (i.e. not routed)\n"
+                  " * route: Treat the clock pins as normal nets\n"
+                  "          (i.e. routed through regular routing)\n")
+            .default_value("ideal")
+            .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& file_grp = parser.add_argument_group("file options");
 

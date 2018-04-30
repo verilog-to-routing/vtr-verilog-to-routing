@@ -49,6 +49,7 @@ struct t_options {
     argparse::ArgValue<std::string> device_layout;
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
+    argparse::ArgValue<e_clock_modeling_method> clock_modeling_method;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
