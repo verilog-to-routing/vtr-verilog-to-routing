@@ -38,7 +38,8 @@ void create_rr_graph(
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
         int *num_rr_switches,
-        int *Warnings);
+        int *Warnings,
+        bool route_clock);
 
 void free_rr_graph();
 

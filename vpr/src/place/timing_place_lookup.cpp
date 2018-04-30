@@ -239,7 +239,8 @@ static void alloc_routing_structs(t_router_opts router_opts,
             router_opts.trim_obs_channels,
             directs, num_directs,
             &device_ctx.num_rr_switches,
-            &warnings);
+            &warnings,
+            router_opts.route_clock);
 
     alloc_and_load_rr_node_route_structs();
 

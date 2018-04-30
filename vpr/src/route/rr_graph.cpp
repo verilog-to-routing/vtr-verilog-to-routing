@@ -77,13 +77,15 @@ struct t_pin_loc {
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
         const vtr::Matrix<int>& Fc, const t_type_ptr Type, const std::vector<bool>& perturb_switch_pattern,
         const e_directionality directionality,
-        const int num_seg_types, const int *sets_per_seg_type);
+        const int num_seg_types, const int *sets_per_seg_type,
+        bool route_clock);
 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(
         const e_pin_type pin_type,
         const int seg_type_tracks, const int Fc,
         const t_type_ptr Type, const bool perturb_switch_pattern,
-        const e_directionality directionality);
+        const e_directionality directionality,
+        bool route_clock);
 
 static void advance_to_next_block_side(t_type_ptr Type, int& width_offset, int& height_offset, e_side& side);
 
@@ -245,7 +247,8 @@ static void build_rr_graph(
         const t_direct_inf *directs, const int num_directs,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings);
+        int *Warnings,
+        bool route_clock);
 
 /******************* Subroutine definitions *******************************/
 
@@ -262,7 +265,8 @@ void create_rr_graph(
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
         int *num_rr_switches,
-        int *Warnings) {
+        int *Warnings,
+        bool route_clock) {
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
         load_rr_file(
@@ -298,7 +302,8 @@ void create_rr_graph(
                 directs, num_directs,
                 &det_routing_arch->wire_to_rr_ipin_switch,
                 num_rr_switches,
-                Warnings);
+                Warnings,
+                route_clock);
     }
 
     //Write out rr graph file if needed
@@ -332,7 +337,8 @@ static void build_rr_graph(
         const int num_directs,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings) {
+        int *Warnings,
+        bool route_clock) {
 
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
@@ -546,7 +552,7 @@ static void build_rr_graph(
 
         ipin_to_track_map[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                 Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
-                num_seg_types, sets_per_seg_type);
+                num_seg_types, sets_per_seg_type, route_clock);
 
 
         track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(
@@ -565,7 +571,7 @@ static void build_rr_graph(
                     max_chan_width, num_seg_types, segment_inf);
             opin_to_track_map[i] = alloc_and_load_pin_to_track_map(DRIVER,
                     Fc_out[i], &types[i], perturb_opins, directionality,
-                    num_seg_types, sets_per_seg_type);
+                    num_seg_types, sets_per_seg_type, route_clock);
         }
     }
     /* END OPIN MAP */
@@ -1587,7 +1593,8 @@ void alloc_and_load_edges_and_switches(std::vector<t_rr_node>& L_rr_node,
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
         const vtr::Matrix<int>& Fc, const t_type_ptr Type, const std::vector<bool>& perturb_switch_pattern,
         const e_directionality directionality,
-        const int num_seg_types, const int *sets_per_seg_type) {
+        const int num_seg_types, const int *sets_per_seg_type,
+        bool route_clock) {
 
     /* get the maximum number of tracks that any pin can connect to */
     size_t max_pin_tracks = 0;
@@ -1636,7 +1643,8 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 
         /* get pin connections to tracks of the current segment type */
         auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type,
-                num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
+                num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality,
+                route_clock);
 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
            now load up 'result' array with these connections, but offset them so they are relative to the channel
@@ -1670,7 +1678,8 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
         const int num_seg_type_tracks, const int Fc,
         const t_type_ptr Type, const bool perturb_switch_pattern,
-        const e_directionality directionality) {
+        const e_directionality directionality,
+        bool route_clock) {
 
     /* Note: currently a single value of Fc is used across each pin. In the future
        the looping below will have to be modified if we want to account for pin-based
@@ -1736,7 +1745,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
             continue;
 
         /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
-        if (Type->is_global_pin[pin])
+        if (Type->is_global_pin[pin] && !route_clock)
             continue;
 
         for (int width = 0; width < Type->width; ++width) {
