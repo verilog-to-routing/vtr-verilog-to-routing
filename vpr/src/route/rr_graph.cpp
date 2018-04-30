@@ -447,8 +447,15 @@ static void build_rr_graph(
             for (int j = 0; j < device_ctx.block_types[i].num_pins; ++j) {
                 for (int k = 0; k < num_seg_types; k++) {
 #ifdef VERBOSE
-                    vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
-                            device_ctx.block_types[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
+                    vtr::printf_info("Fc Actual Values: type = %s, pin = %d (%s), "
+                        "seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
+                        device_ctx.block_types[i].name,
+                        j,
+                        block_type_pin_index_to_name(&device_ctx.block_types[i], j).c_str(),
+                        k,
+                        segment_inf[k].name,
+                        Fc_out[i][j][k],
+                        Fc_in[i][j][k]);
 #endif /* VERBOSE */
                     VTR_ASSERT_MSG(Fc_out[i][j][k] == 0 || Fc_in[i][j][k] == 0,
                             "Pins must be inputs or outputs (i.e. can not have both non-zero Fc_out and Fc_in)");
