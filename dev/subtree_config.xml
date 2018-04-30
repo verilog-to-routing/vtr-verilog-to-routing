@@ -1,0 +1,27 @@
+<subtrees>
+    <subtree 
+        name="abc" 
+        internal_path="abc" 
+        external_url="https://github.com/berkeley-abc/abc.git"
+        default_external_ref="master"/>
+    <subtree 
+        name="libargparse"
+        internal_path="libs/EXTERNAL/libargparse"
+        external_url="https://github.com/kmurray/libargparse.git"
+        default_external_ref="master"/>
+    <subtree 
+        name="libblifparse" 
+        internal_path="libs/EXTERNAL/libblifparse" 
+        external_url="https://github.com/kmurray/libblifparse.git" 
+        default_external_ref="master"/>
+    <subtree 
+        name="libsdcparse" 
+        internal_path="libs/EXTERNAL/libsdcparse" 
+        external_url="https://github.com/kmurray/libsdcparse.git" 
+        default_external_ref="master"/>
+    <subtree 
+        name="libtatum" 
+        internal_path="libs/EXTERNAL/libtatum" 
+        external_url="https://github.com/kmurray/tatum.git" 
+        default_external_ref="master"/>
+</subtrees>

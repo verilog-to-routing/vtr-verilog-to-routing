@@ -341,45 +341,81 @@ $ make
 ```
 this turns on more extensive assertion checking and re-builds VTR.
 
-# External Libraries Using Subtrees
-Some libraries used by VTR are developed in other repositories and integrated using git subtrees.
+# External Subtrees
+VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
-Currently these includes:
-* libsdcparse       [from git@github.com:kmurray/libsdcparse.git]
-* libblifparse      [from git@github.com:kmurray/libblifparse.git]
-* libtatum          [from git@github.com:kmurray/tatum.git]
+To simplify the process of working with subtrees we use the `dev/update_external_subtrees.py` script.
 
-As an example consider libsdcparse:
+For instance, running `./dev/update_external_subtrees.py --list` from the VTR root it shows the subtrees:
+```
+Component: abc             Path: abc                            URL: https://github.com/berkeley-abc/abc.git       URL_Ref: master
+Component: libargparse     Path: libs/EXTERNAL/libargparse      URL: https://github.com/kmurray/libargparse.git    URL_Ref: master
+Component: libblifparse    Path: libs/EXTERNAL/libblifparse     URL: https://github.com/kmurray/libblifparse.git   URL_Ref: master
+Component: libsdcparse     Path: libs/EXTERNAL/libsdcparse      URL: https://github.com/kmurray/libsdcparse.git    URL_Ref: master
+Component: libtatum        Path: libs/EXTERNAL/libtatum         URL: https://github.com/kmurray/tatum.git          URL_Ref: master
+```
 
-1. To begin add the sub-project as a remote:
+Code included in VTR by subtrees should *not be modified within the VTR source tree*.
+Instead changes should be made in the relevant up-stream repository, and then synced into the VTR tree.
 
-    ` git remote add -f github-libsdcparse git@github.com:kmurray/libsdcparse.git `
+### Updating an existing Subtree
+1. From the VTR root run: `./dev/external_subtrees.py $SUBTREE_NAME`, where `$SUBTREE_NAME` is the name of an existing subtree.
 
-2. To initially add the library (first time the library is added only):
+    For example to update the `libtatum` subtree:
+    ```shell
+    ./dev/external_subtrees.py --update libtatum
+    ```
 
-    ` git subtree add --prefix libs/EXTERNAL/libsdcparse github-libsdcparse master --squash `
+### Adding a new Subtree
 
-    Note the '--squash' option which prevents the whole up-stream history from being merged into the current repository.
+To add a new external subtree to VTR do the following:
 
-3. To update a library (subsequently):
+1. Add the subtree specification to `dev/subtree_config.xml`.
 
-    ` git subtree pull --prefix libs/EXTERNAL/libsdcparse github-libsdcparse master --squash `
+    For example to add a subtree name `libfoo` from the `master` branch of `https://github.com/kmurray/libfoo.git` to `libs/EXTERNAL/libfoo` you would add:
+    ```xml
+    <subtree 
+        name="libfoo"
+        internal_path="libs/EXTERNAL/libfoo"
+        external_url="https://github.com/kmurray/libfoo.git"
+        default_external_ref="master"/>
+    ```
+    within the existing `<subtrees>` tag.
 
-    Note the '--squash' option which prevents the whole up-stream history from being merged into the current repository.
+    Note that the internal_path directory should not already exist.
 
-    If you have made local changes to the subtree and pushed them to the parent repository, you may encounter a merge conflict
-    during the above pull (caused by divergent commit IDs between the main and parent repositories).
-    You will need to re-split the subtree so that subtree pull finds the correct common ancestor:
+    You can confirm it works by running: `def/external_subtrees.py --list`:
+    ```
+    Component: abc             Path: abc                            URL: https://github.com/berkeley-abc/abc.git       URL_Ref: master
+    Component: libargparse     Path: libs/EXTERNAL/libargparse      URL: https://github.com/kmurray/libargparse.git    URL_Ref: master
+    Component: libblifparse    Path: libs/EXTERNAL/libblifparse     URL: https://github.com/kmurray/libblifparse.git   URL_Ref: master
+    Component: libsdcparse     Path: libs/EXTERNAL/libsdcparse      URL: https://github.com/kmurray/libsdcparse.git    URL_Ref: master
+    Component: libtatum        Path: libs/EXTERNAL/libtatum         URL: https://github.com/kmurray/tatum.git          URL_Ref: master
+    Component: libfoo          Path: libs/EXTERNAL/libfoo           URL: https://github.com/kmurray/libfoo.git         URL_Ref: master
+    ```
+    which shows libfoo is now recognized.
 
-    ` git subtree split --rejoin -P libs/EXTERNAL/libsdcparse/ `
+2. Run `./dev/update_external_subtrees.py $SUBTREE_NAME` to add the subtree.
 
-    You can then re-try the subtree pull as described above.
+    For the `libfoo` example above this would be:
+    ```shell
+    ./dev/update_external_subtrees.py libfoo
+    ```
 
-4. [This is unusual, be sure you really mean to do this!] To push local changes to the upstream subtree
+    This will create two commits to the repository. 
+    The first will squash all the upstream changes, the second will merge those changes into the current branch.
 
-    ` git subtree push --prefix libs/EXTERNAL/libsdcparse github-libsdcparse master `
 
-For more details see [here](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/) for a good overview.
+### Subtree Rational
+
+VTR uses subtrees to allow easy tracking of upstream dependencies.
+
+Their main advantages included:
+ * Works out-of-the-box: no actions needed post checkout to pull in dependencies (e.g. no `git submodule update --init --recursive`)
+ * Simplified upstream version tracking
+ * Potential for local changes (although in VTR we do not use this to make keeping in sync easier)
+
+See [here](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/) for a more detailed discussion.
 
 # Finding Bugs with Coverity
 [Coverity Scan](https://scan.coverity.com) is a static code analysis service which can be used to detect bugs.
