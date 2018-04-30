@@ -8,6 +8,7 @@
 #ifndef LB_TYPE_RR_GRAPH_H
 #define LB_TYPE_RR_GRAPH_H
 
+#include <algorithm>
 #include "pack_types.h"
 
 /**************************************************************************
@@ -60,9 +61,21 @@ struct t_lb_type_rr_node {
 struct t_lb_type_rr_graph {
     std::vector<t_lb_type_rr_node> nodes;
 
-    std::vector<int> external_sources; //External source nodes
-    std::vector<int> external_sinks; //External sink nodes
-    std::vector<int> external_routing; //External routing nodes
+    std::vector<int> external_sources; //External source node indices
+    std::vector<int> external_sinks; //External sink node indices
+    std::vector<int> external_routing; //External routing node indices
+
+    bool is_external_sink(int inode) const {
+        return std::find(external_sinks.begin(), external_sinks.end(), inode) != external_sinks.end();
+    }
+
+    bool is_external_source(int inode) const {
+        return std::find(external_sources.begin(), external_sources.end(), inode) != external_sources.end();
+    }
+
+    bool is_external_routing(int inode) const {
+        return std::find(external_routing.begin(), external_routing.end(), inode) != external_routing.end();
+    }
 };
 
 
@@ -70,8 +83,8 @@ struct t_lb_type_rr_graph {
 std::vector <t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph();
 
 /* Accessor functions */
-int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type);
-int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type);
+int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId pin);
+int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId pin);
 int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node);
 
 /* Debug functions */

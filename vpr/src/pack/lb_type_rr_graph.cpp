@@ -44,9 +44,7 @@ constexpr float EXTERNAL_INTERCONNECT_COST = 1000.; /* set cost high to avoid us
 static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type, 
 													 t_lb_type_rr_graph& lb_type_rr_graph);
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
-														t_lb_type_rr_graph& lb_type_rr_graph,
-														const int ext_rr_index,
-                                                        const std::map<int,float>& cluster_pin_to_max_Fc);
+														t_lb_type_rr_graph& lb_type_rr_graph);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
 static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_rr_graph);
 
@@ -74,13 +72,15 @@ std::vector<t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph() {
 ******************************************************************************************/
 
 /* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type) {
-	return lb_type->pb_graph_head->total_pb_pins;
+int get_lb_type_rr_graph_ext_source_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
+    VTR_ASSERT(lb_rr_graph.external_sources.size() > 0);
+    return lb_rr_graph.external_sources[0];
 }
 
-/* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type) {
-	return lb_type->pb_graph_head->total_pb_pins + 1;
+/* Return external sink index for logic block type internal routing resource graph */
+int get_lb_type_rr_graph_ext_sink_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
+    VTR_ASSERT(lb_rr_graph.external_sinks.size() > 0);
+    return lb_rr_graph.external_sinks[0];
 }
 
 /* Returns total number of modes that this lb_type_rr_node can take */
@@ -144,14 +144,10 @@ void echo_lb_type_rr_graphs(char *filename, const std::vector<t_lb_type_rr_graph
 */
 static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type, 
 													 t_lb_type_rr_graph& lb_type_rr_graph) {
-	t_pb_type *pb_type;
-	t_pb_graph_node *pb_graph_head;
-	int ext_source_index, ext_sink_index, ext_rr_index;
-	
 	VTR_ASSERT(lb_type_rr_graph.nodes.empty());
 
-	pb_type = lb_type->pb_type;
-	pb_graph_head = lb_type->pb_graph_head;
+	t_pb_type* pb_type = lb_type->pb_type;
+	t_pb_graph_node* pb_graph_head = lb_type->pb_graph_head;
 
 	/* Indices [0..total_pb_pins - 1] have a 1-to-1 matching with a pb_graph_pin
 	   Index total_pb_pins represents all external sources to logic block type
@@ -159,20 +155,10 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 	   Index total_pin_pins + 2 represents feedback connections from external rr graph back into cluster
 	   All nodes after total_pin_pins + 2 are other nodes that do not have a corresponding pb_graph_pin (eg. a sink node that is driven by one or more pb_graph_pins of a primitive)
 	*/
-	lb_type_rr_graph.nodes.resize(pb_graph_head->total_pb_pins + 3);
+	lb_type_rr_graph.nodes.resize(pb_graph_head->total_pb_pins);
 
-	/* Define the external source, sink, and external interconnect for the routing resource graph of the logic block type */
-	ext_source_index = pb_graph_head->total_pb_pins;
-	ext_sink_index = pb_graph_head->total_pb_pins + 1;
-	ext_rr_index = pb_graph_head->total_pb_pins + 2;
-
-	VTR_ASSERT(	lb_type_rr_graph.nodes[ext_source_index].type == NUM_LB_RR_TYPES && 
-			lb_type_rr_graph.nodes[ext_sink_index].type == NUM_LB_RR_TYPES);
-
-    //Record the external nodes
-    lb_type_rr_graph.external_sources.push_back(ext_source_index);
-    lb_type_rr_graph.external_sinks.push_back(ext_sink_index);
-    lb_type_rr_graph.external_routing.push_back(ext_rr_index);
+    //Allocate all the internal RR nodes and edges
+	alloc_and_load_lb_type_rr_graph_for_pb_graph_node(pb_graph_head, lb_type_rr_graph);
 
     //Build a pin-to-fc_spec look-up
     // Note that since we really only care about unconnected (fc_value == 0) cases,
@@ -188,6 +174,21 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             }
         }
     }
+#if 0
+	/* Define the external source, sink, and external interconnect for the routing resource graph of the logic block type */
+	ext_source_index = lb_type_rr_graph.nodes.size();
+	ext_sink_index = lb_type_rr_graph.nodes.size() + 1;
+	ext_rr_index = lb_type_rr_graph.nodes.size() + 2;
+    lb_type_rr_graph.nodes.resize(lb_type_rr_graph.nodes.size() + 3);
+
+	VTR_ASSERT(	lb_type_rr_graph.nodes[ext_source_index].type == NUM_LB_RR_TYPES && 
+			lb_type_rr_graph.nodes[ext_sink_index].type == NUM_LB_RR_TYPES);
+
+    //Record the external nodes
+    lb_type_rr_graph.external_sources.push_back(ext_source_index);
+    lb_type_rr_graph.external_sinks.push_back(ext_sink_index);
+    lb_type_rr_graph.external_routing.push_back(ext_rr_index);
+
 
 	/*******************************************************************************
 	* Build logic block source node 
@@ -271,8 +272,64 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             }
 		}
 	}	
+#else
 
-	alloc_and_load_lb_type_rr_graph_for_pb_graph_node(pb_graph_head, lb_type_rr_graph, ext_rr_index, pin_to_max_fc);
+    //Build external source node
+    int ext_src_index = lb_type_rr_graph.nodes.size();
+    lb_type_rr_graph.external_sources.push_back(ext_src_index);
+    lb_type_rr_graph.nodes.emplace_back();
+    lb_type_rr_graph.nodes[ext_src_index].type = LB_SOURCE;
+    lb_type_rr_graph.nodes[ext_src_index].capacity = pb_type->num_input_pins + pb_type->num_clock_pins; //Worst case, all external sources
+    lb_type_rr_graph.nodes[ext_src_index].outedges.resize(1);
+
+    //Build external sink node
+    int ext_sink_index = lb_type_rr_graph.nodes.size();
+    lb_type_rr_graph.external_sinks.push_back(ext_sink_index);
+    lb_type_rr_graph.nodes.emplace_back();
+    lb_type_rr_graph.nodes[ext_sink_index].type = LB_SINK;
+    lb_type_rr_graph.nodes[ext_sink_index].capacity = pb_type->num_output_pins; //Worst case, all external sources
+    lb_type_rr_graph.nodes[ext_sink_index].outedges.resize(1);
+
+    //Build external RR node
+    int ext_rr_index = lb_type_rr_graph.nodes.size();
+    lb_type_rr_graph.external_routing.push_back(ext_rr_index);
+    lb_type_rr_graph.nodes.emplace_back();
+    lb_type_rr_graph.nodes[ext_rr_index].type = LB_INTERMEDIATE;
+    lb_type_rr_graph.nodes[ext_rr_index].capacity = pb_type->num_input_pins + pb_type->num_clock_pins + pb_type->num_output_pins; //Worst case, all external
+    lb_type_rr_graph.nodes[ext_rr_index].outedges.resize(1);
+
+    //Edges from cluster outputs to external RR node
+	for(int iport = 0; iport < pb_graph_head->num_output_ports; iport++) {
+		for(int ipin = 0; ipin < pb_graph_head->num_output_pins[iport]; ipin++) {
+            int cluster_pin = pb_graph_head->output_pins[iport][ipin].pin_count_in_cluster;
+            lb_type_rr_graph.nodes[cluster_pin].outedges[0].emplace_back(ext_rr_index, EXTERNAL_INTERCONNECT_COST);
+        }
+    }
+
+    //Edges from external RR node to cluster data inputs
+	for(int iport = 0; iport < pb_graph_head->num_input_ports; iport++) {
+		for(int ipin = 0; ipin < pb_graph_head->num_input_pins[iport]; ipin++) {
+            int cluster_pin = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
+            lb_type_rr_graph.nodes[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+        }
+    }
+
+    //Edges from external RR node to cluster clock inputs
+	for(int iport = 0; iport < pb_graph_head->num_clock_ports; iport++) {
+		for(int ipin = 0; ipin < pb_graph_head->num_clock_pins[iport]; ipin++) {
+            int cluster_pin = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
+            lb_type_rr_graph.nodes[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+        }
+    }
+
+    //Edge from external source to external RR node
+    lb_type_rr_graph.nodes[ext_src_index].outedges[0].emplace_back(ext_rr_index, EXTERNAL_INTERCONNECT_COST);
+
+    //Edge from external RR node to external sink
+    lb_type_rr_graph.nodes[ext_rr_index].outedges[0].emplace_back(ext_sink_index, EXTERNAL_INTERCONNECT_COST);
+
+#endif
+
 
     lb_type_rr_graph.nodes.shrink_to_fit();
 }
@@ -284,9 +341,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
    repeats this on all children of the pb_graph_node
 */
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
-													t_lb_type_rr_graph &lb_type_rr_graph,
-													const int ext_rr_index,
-                                                    const std::map<int,float>& cluster_pin_to_max_Fc) {
+													t_lb_type_rr_graph &lb_type_rr_graph) {
 	t_pb_type *pb_type;
 	int pin_index;
 	t_pb_graph_pin *pb_pin;
@@ -400,7 +455,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 			for(int ipb_type = 0; ipb_type < pb_type->modes[imode].num_pb_type_children; ipb_type++) {
 				for(int ipb = 0; ipb < pb_type->modes[imode].pb_type_children[ipb_type].num_pb; ipb++) {
 					alloc_and_load_lb_type_rr_graph_for_pb_graph_node(
-						&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_graph, ext_rr_index, cluster_pin_to_max_Fc);
+						&pb_graph_node->child_pb_graph_nodes[imode][ipb_type][ipb], lb_type_rr_graph);
 				}
 			}
 		}
@@ -440,23 +495,12 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 					/* load intermediate indices */
 					pb_pin = &pb_graph_node->output_pins[iport][ipin];
 					pin_index = pb_pin->pin_count_in_cluster;
-					num_modes = 1; /* One edge to external sinks */
 					lb_type_rr_graph.nodes[pin_index].type = LB_INTERMEDIATE;
 
 					/* alloc and load rr node info */
 					lb_type_rr_graph.nodes[pin_index].capacity = 1;
 					lb_type_rr_graph.nodes[pin_index].pb_graph_pin = pb_pin;
-
-					lb_type_rr_graph.nodes[pin_index].outedges.resize(num_modes);
-
-					/* Load one edge to external opin */;
-                    int cluster_pin = pb_pin->pin_count_in_cluster;
-                    auto itr = cluster_pin_to_max_Fc.find(cluster_pin);
-                    VTR_ASSERT_MSG(itr != cluster_pin_to_max_Fc.end(), "Fc must be specified for pin");
-                    if (itr->second != 0.) {
-                        //This pin connects to global routing
-                        lb_type_rr_graph.nodes[pin_index].outedges[0].emplace_back(ext_rr_index, INTERNAL_INTERCONNECT_COST);
-                    }
+					lb_type_rr_graph.nodes[pin_index].outedges.resize(1);
 				}			
 			}
 		} else {

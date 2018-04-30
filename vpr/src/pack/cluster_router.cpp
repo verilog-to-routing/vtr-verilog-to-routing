@@ -533,7 +533,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		/* Add terminals */
 
         //Default assumption is that the source is outside the current cluster (will be overriden later if required)
-		int source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
+		int source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, pin_id);
 		lb_nets[ipos].terminals.push_back(source_terminal);
 
         AtomPinId net_driver_pin_id = atom_ctx.nlist.net_driver(net_id);
@@ -546,7 +546,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 
 	if(atom_ctx.nlist.port_type(port_id) == PortType::OUTPUT) {
         //The current pin is the net driver, overwrite the default driver at index 0
-		VTR_ASSERT_MSG(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type), "Default driver must be external source");
+		VTR_ASSERT_MSG(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, pin_id), "Default driver must be external source");
 
         VTR_ASSERT(atom_ctx.nlist.pin_type(pin_id) == PinType::DRIVER);
 
@@ -562,7 +562,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
             //Not all of the pins are within the cluster
 			if(lb_nets[ipos].terminals.size() == 1) {
                 //Only the source has been specified so far, must add cluster-external sink
-				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id);
 				lb_nets[ipos].terminals.push_back(sink_terminal);
 				lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
 			} else {
@@ -578,7 +578,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 				lb_nets[ipos].atom_pins.push_back(sink_atom_pin);
 
                 //Create external sink at terminal 1
-				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id);
 				lb_nets[ipos].terminals[1] = sink_terminal;
 				lb_nets[ipos].atom_pins[1] = AtomPinId::INVALID();
 			}
@@ -601,7 +601,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		VTR_ASSERT(lb_type_graph.nodes[sink_index].type == LB_SINK);
 
 		if(lb_nets[ipos].terminals.size() == atom_ctx.nlist.net_pins(net_id).size() &&
-			lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+			lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id)) {
 
 		    /* If all sinks of net are all contained in the logic block, then the net does 
              * not need to route out of the logic block, so can replace the external sink 
@@ -632,14 +632,14 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
             VTR_ASSERT_SAFE_MSG(lb_type_graph.nodes[inode].type == LB_SOURCE, "Driver must be a source RR node");
             VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an assoicated atom pin");
             VTR_ASSERT_SAFE_MSG(atom_ctx.nlist.pin_type(atom_pin) == PinType::DRIVER, "Source RR must be associated with a driver pin in atom netlist");
-            if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
+            if (inode == get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, atom_pin)) {
                 ++num_extern_sources;
             }
         } else {
             //Net sink
             VTR_ASSERT_SAFE_MSG(lb_type_graph.nodes[inode].type == LB_SINK, "Non-driver must be a sink");
 
-            if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+            if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id)) {
                 //External sink may have multiple potentially matching atom pins, so it's atom pin is left invalid
                 VTR_ASSERT_SAFE_MSG(!atom_pin, "Cluster external sink should have no valid atom pin");
                 ++num_extern_sinks;
@@ -695,10 +695,10 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		/* Net driver pin takes 0th position in terminals */
 		int sink_terminal;
 		VTR_ASSERT(lb_nets[ipos].terminals[0] == pb_graph_pin->pin_count_in_cluster);
-		lb_nets[ipos].terminals[0] = get_lb_type_rr_graph_ext_source_index(lb_type);		
+		lb_nets[ipos].terminals[0] = get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, pin_id);		
 
 		/* source terminal is now coming from outside logic block, do not need to route signal out of logic block */
-		sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
+		sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id);
 		if(lb_nets[ipos].terminals[1] == sink_terminal) {
 			lb_nets[ipos].terminals[1] = lb_nets[ipos].terminals.back();
 			lb_nets[ipos].terminals.pop_back();
@@ -752,20 +752,20 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
         lb_nets[ipos].atom_pins[iterm] = lb_nets[ipos].atom_pins.back();
         lb_nets[ipos].atom_pins.pop_back();
 		
-		if(lb_nets[ipos].terminals.size() == 1 && lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
+		if(lb_nets[ipos].terminals.size() == 1 && lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, pin_id)) {
 			/* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
-			lb_nets[ipos].terminals.push_back(get_lb_type_rr_graph_ext_sink_index(lb_type));
+			lb_nets[ipos].terminals.push_back(get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id));
             lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
 		}
 
 		if(lb_nets[ipos].terminals.size() > 1 &&
-			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type) && 
-			lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
+			lb_nets[ipos].terminals[1] != get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id) && 
+			lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, pin_id)) {
 			
 			/* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
 			int terminal = lb_nets[ipos].terminals[1];
 			lb_nets[ipos].terminals.push_back(terminal);
-			lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type);
+			lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type, lb_type_graph, pin_id);
 
 			AtomPinId pin = lb_nets[ipos].atom_pins[1];
 			lb_nets[ipos].atom_pins.push_back(pin);
@@ -776,7 +776,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	if(lb_nets[ipos].terminals.size() == 1 && 
-		lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type)) {
+		lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type, lb_type_graph, pin_id)) {
 		/* This net is not routed, remove from list of nets in lb */
 		lb_nets[ipos] = lb_nets.back();
 		lb_nets.pop_back();
@@ -1184,16 +1184,18 @@ static std::string describe_lb_type_rr_node(int inode,
     std::string description;
 
     const t_lb_type_rr_node& rr_node = (*router_data->lb_type_graph).nodes[inode];
-    t_type_ptr lb_type = router_data->lb_type;
 
     const t_pb_graph_pin* pb_graph_pin = rr_node.pb_graph_pin;
 
     if (pb_graph_pin) {
         description += "'" + describe_pb_graph_pin(pb_graph_pin) + "'";
-    } else if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
+    } else if (router_data->lb_type_graph->is_external_routing(inode)) {
+        VTR_ASSERT(rr_node.type == LB_INTERMEDIATE);
+        description = "cluster-external routing (LB_INTERMEDIATE)";
+    } else if (router_data->lb_type_graph->is_external_source(inode)) {
         VTR_ASSERT(rr_node.type == LB_SOURCE);
         description = "cluster-external source (LB_SOURCE)";
-    } else if (inode == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
+    } else if (router_data->lb_type_graph->is_external_sink(inode)) {
         VTR_ASSERT(rr_node.type == LB_SINK);
         description = "cluster-external sink (LB_SINK)";
     } else if (rr_node.type == LB_SINK) {
