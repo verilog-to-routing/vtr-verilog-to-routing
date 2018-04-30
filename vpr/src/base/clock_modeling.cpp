@@ -20,3 +20,4 @@ void ClockModeling::treat_clock_pins_as_non_globals() {
         }
     }
 }
+
