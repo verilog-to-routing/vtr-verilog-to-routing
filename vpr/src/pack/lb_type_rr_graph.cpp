@@ -178,7 +178,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     lb_type_rr_graph.external_sources.push_back(ext_src_index);
     lb_type_rr_graph.nodes.emplace_back();
     lb_type_rr_graph.nodes[ext_src_index].type = LB_SOURCE;
-    lb_type_rr_graph.nodes[ext_src_index].capacity = pb_type->num_input_pins + pb_type->num_clock_pins; //Worst case, all external sources
+    lb_type_rr_graph.nodes[ext_src_index].capacity = 0; //Updated below
     lb_type_rr_graph.nodes[ext_src_index].outedges.resize(1);
 
     //Build external sink node
@@ -186,7 +186,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     lb_type_rr_graph.external_sinks.push_back(ext_sink_index);
     lb_type_rr_graph.nodes.emplace_back();
     lb_type_rr_graph.nodes[ext_sink_index].type = LB_SINK;
-    lb_type_rr_graph.nodes[ext_sink_index].capacity = pb_type->num_output_pins; //Worst case, all external sources
+    lb_type_rr_graph.nodes[ext_sink_index].capacity = 0; //Update below
     lb_type_rr_graph.nodes[ext_sink_index].outedges.resize(1);
 
     //Build external RR node
@@ -194,7 +194,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     lb_type_rr_graph.external_routing.push_back(ext_rr_index);
     lb_type_rr_graph.nodes.emplace_back();
     lb_type_rr_graph.nodes[ext_rr_index].type = LB_INTERMEDIATE;
-    lb_type_rr_graph.nodes[ext_rr_index].capacity = pb_type->num_input_pins + pb_type->num_clock_pins + pb_type->num_output_pins; //Worst case, all external
+    lb_type_rr_graph.nodes[ext_rr_index].capacity = 0; //Updated below
     lb_type_rr_graph.nodes[ext_rr_index].outedges.resize(1);
 
     //Edges from cluster outputs to external RR node
@@ -203,6 +203,10 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->output_pins[iport][ipin].pin_count_in_cluster;
             if (pin_to_max_fc[cluster_pin] != 0.) {
                 lb_type_rr_graph.nodes[cluster_pin].outedges[0].emplace_back(ext_rr_index, EXTERNAL_INTERCONNECT_COST);
+
+                //Requires capacity on external RR node and external sink
+                ++lb_type_rr_graph.nodes[ext_rr_index].capacity;
+                ++lb_type_rr_graph.nodes[ext_sink_index].capacity;
             }
         }
     }
@@ -213,6 +217,10 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
             if (pin_to_max_fc[cluster_pin] != 0.) {
                 lb_type_rr_graph.nodes[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+
+                //Requires capacity on external RR node and external source
+                ++lb_type_rr_graph.nodes[ext_rr_index].capacity;
+                ++lb_type_rr_graph.nodes[ext_src_index].capacity;
             }
         }
     }
@@ -223,6 +231,10 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
             if (pin_to_max_fc[cluster_pin] != 0.) {
                 lb_type_rr_graph.nodes[ext_rr_index].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+
+                //Requires capacity on external RR node and external source
+                ++lb_type_rr_graph.nodes[ext_rr_index].capacity;
+                ++lb_type_rr_graph.nodes[ext_src_index].capacity;
             }
         }
     }
