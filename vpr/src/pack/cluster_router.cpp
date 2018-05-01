@@ -1188,33 +1188,37 @@ static std::string describe_lb_type_rr_node(int inode,
 
     if (pb_graph_pin) {
         description += "'" + describe_pb_graph_pin(pb_graph_pin) + "'";
-    } else if (router_data->lb_type_graph->is_external_routing(inode)) {
-        VTR_ASSERT(rr_node.type == LB_INTERMEDIATE);
-        description = "cluster-external routing (LB_INTERMEDIATE)";
-    } else if (router_data->lb_type_graph->is_external_source(inode)) {
-        VTR_ASSERT(rr_node.type == LB_SOURCE);
-        description = "cluster-external source (LB_SOURCE)";
-    } else if (router_data->lb_type_graph->is_external_sink(inode)) {
-        VTR_ASSERT(rr_node.type == LB_SINK);
-        description = "cluster-external sink (LB_SINK)";
-    } else if (rr_node.type == LB_SINK) {
-        description = "cluster-internal sink (LB_SINK accessible via architecture pins: ";
-
-        //To account for equivalent pins multiple pins may route to a single sink.
-        //As a result we need to fin all the nodes which connect to this sink in order
-        //to give user-friendly pin names
-        std::vector<std::string> pin_descriptions;
-        std::vector<int> pin_rrs = find_incoming_rr_nodes(inode, router_data);
-        for (int pin_rr_idx : pin_rrs) {
-            const t_pb_graph_pin* pin_pb_gpin = (*router_data->lb_type_graph).nodes[pin_rr_idx].pb_graph_pin;
-            pin_descriptions.push_back(describe_pb_graph_pin(pin_pb_gpin));
+    } else if (rr_node.type == LB_INTERMEDIATE) {
+        if (router_data->lb_type_graph->is_external_node(inode)) {
+            description = "cluster-external routing (LB_INTERMEDIATE)";
+        } else {
+            description = "cluster-internal routing (LB_INTERMEDIATE)";
         }
-
-        description += vtr::join(pin_descriptions, ", ");
-        description += ")";
-
     } else if (rr_node.type == LB_SOURCE) {
-        description = "cluster-internal source (LB_SOURCE)";
+        if (router_data->lb_type_graph->is_external_node(inode)) {
+            description = "cluster-external source (LB_SOURCE)";
+        } else {
+            description = "cluster-internal source (LB_SOURCE)";
+        }
+    } else if (rr_node.type == LB_SINK) {
+        if (router_data->lb_type_graph->is_external_node(inode)) {
+            description = "cluster-external sink (LB_SINK)";
+        } else {
+            description = "cluster-internal sink (LB_SINK accessible via architecture pins: ";
+
+            //To account for equivalent pins multiple pins may route to a single sink.
+            //As a result we need to fin all the nodes which connect to this sink in order
+            //to give user-friendly pin names
+            std::vector<std::string> pin_descriptions;
+            std::vector<int> pin_rrs = find_incoming_rr_nodes(inode, router_data);
+            for (int pin_rr_idx : pin_rrs) {
+                const t_pb_graph_pin* pin_pb_gpin = (*router_data->lb_type_graph).nodes[pin_rr_idx].pb_graph_pin;
+                pin_descriptions.push_back(describe_pb_graph_pin(pin_pb_gpin));
+            }
+
+            description += vtr::join(pin_descriptions, ", ");
+            description += ")";
+        }
     } else {
         description = "<unkown lb_type_rr_node>";
     }

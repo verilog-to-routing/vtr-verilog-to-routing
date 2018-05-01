@@ -216,15 +216,11 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     }
 
     //Build default external source node
-    t_lb_type_rr_external_info default_ext_src_info = create_extern_src_rr_nodes(lb_type_rr_graph);
-    lb_type_rr_graph.default_external_src_rr_info_idx_ = lb_type_rr_graph.external_rr_info_.size();
-    lb_type_rr_graph.external_rr_info_.push_back(default_ext_src_info);
+    auto default_src_extern_id = lb_type_rr_graph.add_external_rr_info(create_extern_src_rr_nodes(lb_type_rr_graph));
+    lb_type_rr_graph.set_default_external_src_rr_info(default_src_extern_id);
 
-    t_lb_type_rr_external_info default_ext_sink_info = create_extern_sink_rr_nodes(lb_type_rr_graph);
-    lb_type_rr_graph.default_external_sink_rr_info_idx_ = lb_type_rr_graph.external_rr_info_.size();
-    lb_type_rr_graph.external_rr_info_.push_back(default_ext_sink_info);
-
-    lb_type_rr_graph.class_to_external_rr_info_idx_.resize(lb_type->num_class, OPEN);
+    auto default_sink_extern_id = lb_type_rr_graph.add_external_rr_info(create_extern_sink_rr_nodes(lb_type_rr_graph));
+    lb_type_rr_graph.set_default_external_sink_rr_info(default_sink_extern_id);
 
     //Allocate a source/sink/external to each different class type
     // Note that the class type is specified from an external viewpoint, so an 
@@ -232,20 +228,23 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     // DRIVER becomes a sink.
     for (int iclass = 0; iclass < lb_type->num_class; ++iclass) {
         if (zero_fc_classes.count(iclass)) {
-            lb_type_rr_graph.class_to_external_rr_info_idx_[iclass] = lb_type_rr_graph.external_rr_info_.size();
+            int extern_id = OPEN;
 
             if (lb_type->class_inf[iclass].type == RECEIVER) {
-                lb_type_rr_graph.external_rr_info_.push_back(create_extern_src_rr_nodes(lb_type_rr_graph));
+                extern_id = lb_type_rr_graph.add_external_rr_info(create_extern_src_rr_nodes(lb_type_rr_graph));
             } else { 
                 VTR_ASSERT(lb_type->class_inf[iclass].type == DRIVER);
-                lb_type_rr_graph.external_rr_info_.push_back(create_extern_sink_rr_nodes(lb_type_rr_graph));
+                extern_id = lb_type_rr_graph.add_external_rr_info(create_extern_sink_rr_nodes(lb_type_rr_graph));
             }
+
+            lb_type_rr_graph.set_class_external_rr_info(iclass, extern_id);
+
         } else { //Non-zero Fc, use default
             if (lb_type->class_inf[iclass].type == RECEIVER) {
-                lb_type_rr_graph.class_to_external_rr_info_idx_[iclass] = lb_type_rr_graph.default_external_src_rr_info_idx_;
+                lb_type_rr_graph.set_class_external_rr_info(iclass, default_src_extern_id);
             } else { 
                 VTR_ASSERT(lb_type->class_inf[iclass].type == DRIVER);
-                lb_type_rr_graph.class_to_external_rr_info_idx_[iclass] = lb_type_rr_graph.default_external_sink_rr_info_idx_;
+                lb_type_rr_graph.set_class_external_rr_info(iclass, default_sink_extern_id);
             }
         }
     }
@@ -298,10 +297,16 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
         }
     }
 
+    auto& default_ext_src_info = lb_type_rr_graph.default_external_src_rr_info();
+    auto& default_ext_sink_info = lb_type_rr_graph.default_external_sink_rr_info();
+
     //Edge from between source/sink routing
     // This uses the (high) external interconnect cost to make feedback routing 
     // outside the cluster expensive (so feedback within the cluster is preferred)
     lb_type_rr_graph.nodes[default_ext_sink_info.routing_node].outedges[0].emplace_back(default_ext_src_info.routing_node, EXTERNAL_INTERCONNECT_COST);
+
+    //Ensure the src routing node has capacity to handle all potential feedback connections
+    lb_type_rr_graph.nodes[default_ext_src_info.routing_node].capacity += lb_type_rr_graph.nodes[default_ext_sink_info.routing_node].capacity;
 
     lb_type_rr_graph.nodes.shrink_to_fit();
 }
