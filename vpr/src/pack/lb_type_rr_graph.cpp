@@ -638,7 +638,7 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
 
         for (int imode = 0; imode < node.num_modes(); ++imode) {
             for (int iedge = 0; iedge < node.num_fanout(imode); ++iedge) {
-                os << "\tnode" << inode << " -> " << "node" << node.outedges[imode][iedge].node_index << " [label=\"m" << imode << "\"];\n";
+                os << "\tnode" << inode << " -> " << "node" << node.outedges[imode][iedge].node_index << " [label=\"m" << imode << "\\n" << node.outedges[imode][iedge].intrinsic_cost << "\"];\n";
             }
         }
     }
