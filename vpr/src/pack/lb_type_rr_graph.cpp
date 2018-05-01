@@ -22,6 +22,7 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <fstream>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -32,6 +33,7 @@
 #include "globals.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
+#include "vpr_utils.h"
 
 using namespace std;
 
@@ -47,6 +49,8 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 														t_lb_type_rr_graph& lb_type_rr_graph);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
 static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_rr_graph);
+static void print_lb_type_rr_graph_dot(std::string filename, const t_lb_type_rr_graph& lb_rr_graph);
+static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_graph& lb_rr_graph);
 
 /*****************************************************************************************
 * Constructor/Destructor functions 
@@ -115,10 +119,10 @@ int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
 
 /* Output all logic block type pb graphs */
 void echo_lb_type_rr_graphs(char *filename, const std::vector<t_lb_type_rr_graph>& lb_type_rr_graphs) {
-	FILE *fp;
-	fp = vtr::fopen(filename, "w");
-
     auto& device_ctx = g_vpr_ctx.device();
+
+	FILE* fp = vtr::fopen(filename, "w");
+
 	for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
 		if(&device_ctx.block_types[itype] != device_ctx.EMPTY_TYPE) {
 			fprintf(fp, "--------------------------------------------------------------\n");
@@ -130,6 +134,16 @@ void echo_lb_type_rr_graphs(char *filename, const std::vector<t_lb_type_rr_graph
 	}
 
 	fclose(fp);
+
+	for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
+		if(&device_ctx.block_types[itype] == device_ctx.EMPTY_TYPE) continue;
+
+        std::string fname = filename;
+        fname += ".";
+        fname += device_ctx.block_types[itype].name;
+
+        print_lb_type_rr_graph_dot(fname, lb_type_rr_graphs[itype]);
+    }
 }
 
 
@@ -511,3 +525,57 @@ static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_r
 	}
 }
 
+static void print_lb_type_rr_graph_dot(std::string filename, const t_lb_type_rr_graph& lb_rr_graph) {
+    std::ofstream ofs(filename);
+    print_lb_type_rr_graph_dot(ofs, lb_rr_graph);
+
+}
+
+static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_graph& lb_rr_graph) {
+    os << "digraph G {\n";
+    os << "\tnode[shape=record]\n";
+
+    std::map<std::string,std::vector<int>> pb_port_to_rr_nodes;
+    for (int inode = 0; inode < lb_rr_graph.nodes.size(); ++inode) {
+        const auto& node = lb_rr_graph.nodes[inode];
+        os << "\tnode" << inode << "[label=\"{Node(" << inode << ") ";
+        if (node.type == LB_SOURCE) {
+            os << "SRC";
+        } else if (node.type == LB_SINK) {
+            os << "SINK";
+        } else if (node.type == LB_INTERMEDIATE) {
+            os << "INTER";
+        } else {
+            VTR_ASSERT(false);
+        }
+        if (node.pb_graph_pin) {
+            std::string pb_pin_name = describe_pb_graph_pin(node.pb_graph_pin);
+            os << " | { " << pb_pin_name << " }";
+
+            std::string key(pb_pin_name.begin(), pb_pin_name.begin() + pb_pin_name.find_last_of("[")); //Trim off trailing pin index
+            pb_port_to_rr_nodes[key].push_back(inode);
+        }
+        os << " | { capacity=" << node.capacity << " }";
+        os << "}\"]\n";
+    }
+
+    for (auto kv : pb_port_to_rr_nodes) {
+        os << "\t{rank = same; "; 
+        for (auto inode : kv.second) {
+            os << "node" << inode << "; ";
+        }
+        os << "};\n"; 
+    }
+
+    for (int inode = 0; inode < lb_rr_graph.nodes.size(); ++inode) {
+        const auto& node = lb_rr_graph.nodes[inode];
+
+        for (int imode = 0; imode < node.num_modes(); ++imode) {
+            for (int iedge = 0; iedge < node.num_fanout(imode); ++iedge) {
+                os << "\tnode" << inode << " -> " << "node" << node.outedges[imode][iedge].node_index << " [label=\"m" << imode << "\"];\n";
+            }
+        }
+    }
+
+    os << "}\n";
+}

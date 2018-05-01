@@ -49,6 +49,10 @@ struct t_lb_type_rr_node {
 		intrinsic_cost = 0;
 	}
 
+    short num_modes() const { 
+        return outedges.size();
+    }
+
     short num_fanout(int mode) const { 
         VTR_ASSERT(mode < (int)outedges.size());
         return outedges[mode].size();
