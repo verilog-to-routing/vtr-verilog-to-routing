@@ -413,8 +413,9 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
             if (seen_sides.count(side_offset)) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Duplicate pin location side/offset specification."
-                        " Only a single <loc> per side, xoffset/offset/side is permitted.\n");
+                        " Only a single <loc> per side/xoffset/yoffset is permitted.\n");
             }
+            seen_sides.insert(side_offset);
 
 
 			/* Go through lists of pins */
