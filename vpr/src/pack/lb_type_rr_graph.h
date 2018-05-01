@@ -68,6 +68,7 @@ struct t_lb_type_rr_external_info {
  * The routing resource graph for a logic cluster type
  */
 struct t_lb_type_rr_graph {
+    //The set of nodes in the graph
     std::vector<t_lb_type_rr_node> nodes;
 
     public:

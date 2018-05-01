@@ -644,6 +644,11 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
         } else {
             VTR_ASSERT(false);
         }
+        if (lb_rr_graph.is_external_default_node(inode)) {
+            os << " \\nExternal (Default)";
+        } else if (lb_rr_graph.is_external_non_default_node(inode)) {
+            os << " \\nExternal";
+        }
         if (node.pb_graph_pin) {
             std::string pb_pin_name = describe_pb_graph_pin(node.pb_graph_pin);
             os << " | { " << pb_pin_name << " }";
@@ -669,6 +674,7 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
         os << "]\n";
     }
 
+    //Group related nodes on the same level
     for (auto kv : pb_port_to_rr_nodes) {
         os << "\t{rank = same; "; 
         for (auto inode : kv.second) {
