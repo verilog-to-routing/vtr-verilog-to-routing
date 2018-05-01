@@ -59,34 +59,106 @@ struct t_lb_type_rr_node {
     }
 };
 
+struct t_lb_type_rr_external_info {
+    int src_sink_node = OPEN;
+    int routing_node = OPEN;
+};
+
 /*
  * The routing resource graph for a logic cluster type
  */
 struct t_lb_type_rr_graph {
     std::vector<t_lb_type_rr_node> nodes;
 
-    std::vector<int> external_sources; //External source node indices
-    std::vector<int> external_sinks; //External sink node indices
-    std::vector<int> external_routing; //External routing node indices
-
     bool is_external_sink(int inode) const {
-        return std::find(external_sinks.begin(), external_sinks.end(), inode) != external_sinks.end();
+        VTR_ASSERT(false);
+        return false;
     }
 
     bool is_external_source(int inode) const {
-        return std::find(external_sources.begin(), external_sources.end(), inode) != external_sources.end();
+        VTR_ASSERT(false);
+        return false;
     }
 
     bool is_external_routing(int inode) const {
-        return std::find(external_routing.begin(), external_routing.end(), inode) != external_routing.end();
+        VTR_ASSERT(false);
+        return false;
     }
-};
 
-struct t_lb_type_rr_external_info {
-    int sink = OPEN;
-    int source = OPEN;
-    int source_routing = OPEN;
-    int sink_routing = OPEN;
+    bool is_external_default_node(int inode) const {
+        return is_external_node(inode, default_external_src_rr_info_idx_)
+            || is_external_node(inode, default_external_sink_rr_info_idx_);
+    }
+
+    bool is_external_non_default_node(int inode) const {
+        for (int iextern = 0; iextern != external_rr_info_.size(); ++iextern) {
+            if (iextern == default_external_src_rr_info_idx_) continue;
+            if (iextern == default_external_sink_rr_info_idx_) continue;
+
+            if (is_external_node(inode, iextern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool is_external_node(int inode) const {
+        return is_external_default_node(inode) || is_external_non_default_node(inode);    
+    }
+
+    bool is_external_src_sink_node(int inode) const {
+        for (int iextern = 0; iextern != external_rr_info_.size(); ++iextern) {
+
+            if (is_external_src_sink(inode, iextern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::vector<int> node_classes(int inode) const {
+        std::vector<int> classes;
+        
+        for (int iclass = 0; iclass < class_to_external_rr_info_idx_.size(); ++iclass) {
+            int iextern = class_to_external_rr_info_idx_[iclass];
+
+            if (is_external_node(inode, iextern)) {
+                classes.push_back(iclass);
+            }
+        }
+
+        return classes;
+    }
+
+    const t_lb_type_rr_external_info& default_external_src_rr_info() const {
+        return external_rr_info_[default_external_src_rr_info_idx_];
+    }
+    const t_lb_type_rr_external_info& default_external_sink_rr_info() const {
+        return external_rr_info_[default_external_sink_rr_info_idx_];
+    }
+
+    const t_lb_type_rr_external_info& external_rr_info(int iclass) const {
+        return external_rr_info_[class_to_external_rr_info_idx_[iclass]];
+    }
+
+    std::vector<t_lb_type_rr_external_info> external_rr_info_;
+    std::vector<int> class_to_external_rr_info_idx_; //[0..num_class-1]
+    int default_external_sink_rr_info_idx_ = OPEN;
+    int default_external_src_rr_info_idx_ = OPEN;
+
+    private:
+        bool is_external_src_sink(int inode, int iextern) const {
+            return inode == external_rr_info_[iextern].src_sink_node;
+        }
+
+        bool is_external_routing(int inode, int iextern) const {
+            return inode == external_rr_info_[iextern].routing_node;
+        }
+
+        bool is_external_node(int inode, int iextern) const {
+            return is_external_src_sink(inode, iextern)
+                || is_external_routing(inode, iextern);
+        }
 };
 
 /* Constructors/Destructors */

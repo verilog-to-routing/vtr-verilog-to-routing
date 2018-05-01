@@ -48,7 +48,8 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
 														t_lb_type_rr_graph& lb_type_rr_graph);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
-static t_lb_type_rr_external_info create_extern_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph);
+static t_lb_type_rr_external_info create_extern_src_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph);
+static t_lb_type_rr_external_info create_extern_sink_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph);
 static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_rr_graph);
 static void print_lb_type_rr_graph_dot(std::string filename, const t_lb_type_rr_graph& lb_rr_graph);
 static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_graph& lb_rr_graph);
@@ -78,14 +79,12 @@ std::vector<t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph() {
 
 /* Return external source index for logic block type internal routing resource graph */
 int get_lb_type_rr_graph_ext_source_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
-    VTR_ASSERT(lb_rr_graph.external_sources.size() > 0);
-    return lb_rr_graph.external_sources[0];
+    return lb_rr_graph.default_external_src_rr_info().src_sink_node;
 }
 
 /* Return external sink index for logic block type internal routing resource graph */
 int get_lb_type_rr_graph_ext_sink_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
-    VTR_ASSERT(lb_rr_graph.external_sinks.size() > 0);
-    return lb_rr_graph.external_sinks[0];
+    return lb_rr_graph.default_external_sink_rr_info().src_sink_node;
 }
 
 /* Returns total number of modes that this lb_type_rr_node can take */
@@ -136,12 +135,13 @@ void echo_lb_type_rr_graphs(char *filename, const std::vector<t_lb_type_rr_graph
 
 	fclose(fp);
 
+    std::string basename = vtr::split_ext(filename)[0];
 	for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
 		if(&device_ctx.block_types[itype] == device_ctx.EMPTY_TYPE) continue;
 
-        std::string fname = filename;
-        fname += ".";
+        std::string fname = basename + ".";
         fname += device_ctx.block_types[itype].name;
+        fname += ".echo";
 
         print_lb_type_rr_graph_dot(fname, lb_type_rr_graphs[itype]);
     }
@@ -216,15 +216,37 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     }
 
     //Build default external source node
-    t_lb_type_rr_external_info default_ext_info = create_extern_rr_nodes(lb_type_rr_graph);
+    t_lb_type_rr_external_info default_ext_src_info = create_extern_src_rr_nodes(lb_type_rr_graph);
+    lb_type_rr_graph.default_external_src_rr_info_idx_ = lb_type_rr_graph.external_rr_info_.size();
+    lb_type_rr_graph.external_rr_info_.push_back(default_ext_src_info);
+
+    t_lb_type_rr_external_info default_ext_sink_info = create_extern_sink_rr_nodes(lb_type_rr_graph);
+    lb_type_rr_graph.default_external_sink_rr_info_idx_ = lb_type_rr_graph.external_rr_info_.size();
+    lb_type_rr_graph.external_rr_info_.push_back(default_ext_sink_info);
+
+    lb_type_rr_graph.class_to_external_rr_info_idx_.resize(lb_type->num_class, OPEN);
 
     //Allocate a source/sink/external to each different class type
-    std::vector<t_lb_type_rr_external_info> class_to_extern_info(lb_type->num_class);
+    // Note that the class type is specified from an external viewpoint, so an 
+    // external RECIEVER becomes a source within the logic block, and an external 
+    // DRIVER becomes a sink.
     for (int iclass = 0; iclass < lb_type->num_class; ++iclass) {
         if (zero_fc_classes.count(iclass)) {
-            class_to_extern_info[iclass] = create_extern_rr_nodes(lb_type_rr_graph);
-        } else {
-            class_to_extern_info[iclass] = default_ext_info;
+            lb_type_rr_graph.class_to_external_rr_info_idx_[iclass] = lb_type_rr_graph.external_rr_info_.size();
+
+            if (lb_type->class_inf[iclass].type == RECEIVER) {
+                lb_type_rr_graph.external_rr_info_.push_back(create_extern_src_rr_nodes(lb_type_rr_graph));
+            } else { 
+                VTR_ASSERT(lb_type->class_inf[iclass].type == DRIVER);
+                lb_type_rr_graph.external_rr_info_.push_back(create_extern_sink_rr_nodes(lb_type_rr_graph));
+            }
+        } else { //Non-zero Fc, use default
+            if (lb_type->class_inf[iclass].type == RECEIVER) {
+                lb_type_rr_graph.class_to_external_rr_info_idx_[iclass] = lb_type_rr_graph.default_external_src_rr_info_idx_;
+            } else { 
+                VTR_ASSERT(lb_type->class_inf[iclass].type == DRIVER);
+                lb_type_rr_graph.class_to_external_rr_info_idx_[iclass] = lb_type_rr_graph.default_external_sink_rr_info_idx_;
+            }
         }
     }
 
@@ -234,13 +256,13 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->output_pins[iport][ipin].pin_count_in_cluster;
             int iclass = lb_type->pin_class[cluster_pin];
 
-            const auto& ext_rr_info = class_to_extern_info[iclass];
+            const auto& ext_rr_info = lb_type_rr_graph.external_rr_info(iclass);
 
-            lb_type_rr_graph.nodes[cluster_pin].outedges[0].emplace_back(ext_rr_info.sink_routing, EXTERNAL_INTERCONNECT_COST);
+            lb_type_rr_graph.nodes[cluster_pin].outedges[0].emplace_back(ext_rr_info.routing_node, INTERNAL_INTERCONNECT_COST);
 
             //Requires capacity on external routing sink node and external sink
-            ++lb_type_rr_graph.nodes[ext_rr_info.sink_routing].capacity;
-            ++lb_type_rr_graph.nodes[ext_rr_info.sink].capacity;
+            ++lb_type_rr_graph.nodes[ext_rr_info.routing_node].capacity;
+            ++lb_type_rr_graph.nodes[ext_rr_info.src_sink_node].capacity;
         }
     }
 
@@ -250,13 +272,13 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
             int iclass = lb_type->pin_class[cluster_pin];
 
-            const auto& ext_rr_info = class_to_extern_info[iclass];
+            const auto& ext_rr_info = lb_type_rr_graph.external_rr_info(iclass);
 
-            lb_type_rr_graph.nodes[ext_rr_info.source_routing].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+            lb_type_rr_graph.nodes[ext_rr_info.routing_node].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
 
             //Requires capacity on external RR node and external source
-            ++lb_type_rr_graph.nodes[ext_rr_info.source_routing].capacity;
-            ++lb_type_rr_graph.nodes[ext_rr_info.source].capacity;
+            ++lb_type_rr_graph.nodes[ext_rr_info.routing_node].capacity;
+            ++lb_type_rr_graph.nodes[ext_rr_info.src_sink_node].capacity;
         }
     }
 
@@ -266,25 +288,20 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
             int iclass = lb_type->pin_class[cluster_pin];
 
-            const auto& ext_rr_info = class_to_extern_info[iclass];
+            const auto& ext_rr_info = lb_type_rr_graph.external_rr_info(iclass);
 
-            lb_type_rr_graph.nodes[ext_rr_info.source_routing].outedges[0].emplace_back(cluster_pin, EXTERNAL_INTERCONNECT_COST);
+            lb_type_rr_graph.nodes[ext_rr_info.routing_node].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
 
             //Requires capacity on external RR node and external source
-            ++lb_type_rr_graph.nodes[ext_rr_info.source_routing].capacity;
-            ++lb_type_rr_graph.nodes[ext_rr_info.source].capacity;
+            ++lb_type_rr_graph.nodes[ext_rr_info.routing_node].capacity;
+            ++lb_type_rr_graph.nodes[ext_rr_info.src_sink_node].capacity;
         }
     }
 
-    //Edge from default external source to external RR node
-    lb_type_rr_graph.nodes[default_ext_info.source].outedges[0].emplace_back(default_ext_info.source_routing, EXTERNAL_INTERCONNECT_COST);
-
-    //Edge from external RR node to external sink
-    lb_type_rr_graph.nodes[default_ext_info.sink_routing].outedges[0].emplace_back(default_ext_info.sink, EXTERNAL_INTERCONNECT_COST);
-
     //Edge from between source/sink routing
-    //lb_type_rr_graph.nodes[default_ext_info.source_routing].outedges[0].emplace_back(default_ext_info.sink_routing, EXTERNAL_INTERCONNECT_COST);
-    lb_type_rr_graph.nodes[default_ext_info.sink_routing].outedges[0].emplace_back(default_ext_info.source_routing, EXTERNAL_INTERCONNECT_COST);
+    // This uses the (high) external interconnect cost to make feedback routing 
+    // outside the cluster expensive (so feedback within the cluster is preferred)
+    lb_type_rr_graph.nodes[default_ext_sink_info.routing_node].outedges[0].emplace_back(default_ext_src_info.routing_node, EXTERNAL_INTERCONNECT_COST);
 
     lb_type_rr_graph.nodes.shrink_to_fit();
 }
@@ -516,41 +533,48 @@ static float get_cost_of_pb_edge(t_pb_graph_edge* /*edge*/) {
 	return 1;
 }
 
-static t_lb_type_rr_external_info create_extern_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph) {
-    //Build default external source node
+static t_lb_type_rr_external_info create_extern_src_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph) {
     t_lb_type_rr_external_info ext_info;
-    ext_info.source = lb_type_rr_graph.nodes.size();
-    lb_type_rr_graph.nodes.emplace_back();
-    lb_type_rr_graph.nodes[ext_info.source].type = LB_SOURCE;
-    lb_type_rr_graph.nodes[ext_info.source].capacity = 0;
-    lb_type_rr_graph.nodes[ext_info.source].outedges.resize(1);
 
-    //Build default external routing for source node
-    ext_info.source_routing = lb_type_rr_graph.nodes.size();
+    //Build external source node
+    ext_info.src_sink_node = lb_type_rr_graph.nodes.size();
     lb_type_rr_graph.nodes.emplace_back();
-    lb_type_rr_graph.nodes[ext_info.source_routing].type = LB_INTERMEDIATE;
-    lb_type_rr_graph.nodes[ext_info.source_routing].capacity = 0;
-    lb_type_rr_graph.nodes[ext_info.source_routing].outedges.resize(1);
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].type = LB_SOURCE;
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].capacity = 0;
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].outedges.resize(1);
 
-    //Build default external routing for sink node
-    ext_info.sink_routing = lb_type_rr_graph.nodes.size();
+    //Build external routing for source node
+    ext_info.routing_node = lb_type_rr_graph.nodes.size();
     lb_type_rr_graph.nodes.emplace_back();
-    lb_type_rr_graph.nodes[ext_info.sink_routing].type = LB_INTERMEDIATE;
-    lb_type_rr_graph.nodes[ext_info.sink_routing].capacity = 0;
-    lb_type_rr_graph.nodes[ext_info.sink_routing].outedges.resize(1);
-
-    //Build default external sink node
-    ext_info.sink = lb_type_rr_graph.nodes.size();
-    lb_type_rr_graph.nodes.emplace_back();
-    lb_type_rr_graph.nodes[ext_info.sink].type = LB_SINK;
-    lb_type_rr_graph.nodes[ext_info.sink].capacity = 0;
-    lb_type_rr_graph.nodes[ext_info.sink].outedges.resize(1);
+    lb_type_rr_graph.nodes[ext_info.routing_node].type = LB_INTERMEDIATE;
+    lb_type_rr_graph.nodes[ext_info.routing_node].capacity = 0;
+    lb_type_rr_graph.nodes[ext_info.routing_node].outedges.resize(1);
 
     //Add edge from source to source routing
-    lb_type_rr_graph.nodes[ext_info.source].outedges[0].emplace_back(ext_info.source_routing, EXTERNAL_INTERCONNECT_COST);
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].outedges[0].emplace_back(ext_info.routing_node, INTERNAL_INTERCONNECT_COST);
+
+    return ext_info;
+}
+
+static t_lb_type_rr_external_info create_extern_sink_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph) {
+    t_lb_type_rr_external_info ext_info;
+
+    //Build external routing for sink node
+    ext_info.routing_node = lb_type_rr_graph.nodes.size();
+    lb_type_rr_graph.nodes.emplace_back();
+    lb_type_rr_graph.nodes[ext_info.routing_node].type = LB_INTERMEDIATE;
+    lb_type_rr_graph.nodes[ext_info.routing_node].capacity = 0;
+    lb_type_rr_graph.nodes[ext_info.routing_node].outedges.resize(1);
+
+    //Build external sink node
+    ext_info.src_sink_node = lb_type_rr_graph.nodes.size();
+    lb_type_rr_graph.nodes.emplace_back();
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].type = LB_SINK;
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].capacity = 0;
+    lb_type_rr_graph.nodes[ext_info.src_sink_node].outedges.resize(1);
 
     //Add edge from sink_routing to sink
-    lb_type_rr_graph.nodes[ext_info.sink_routing].outedges[0].emplace_back(ext_info.sink, EXTERNAL_INTERCONNECT_COST);
+    lb_type_rr_graph.nodes[ext_info.routing_node].outedges[0].emplace_back(ext_info.src_sink_node, INTERNAL_INTERCONNECT_COST);
 
     return ext_info;
 }
@@ -598,6 +622,7 @@ static void print_lb_type_rr_graph_dot(std::string filename, const t_lb_type_rr_
 }
 
 static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_graph& lb_rr_graph) {
+    os << "#This is a graphviz DOT file. To view interactively try a tool like xdot.\n";
     os << "digraph G {\n";
     os << "\tnode[shape=record]\n";
 
@@ -622,7 +647,21 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
             pb_port_to_rr_nodes[key].push_back(inode);
         }
         os << " | { capacity=" << node.capacity << " }";
-        os << "}\"]\n";
+        if (lb_rr_graph.is_external_src_sink_node(inode)) {
+            os << " | { class=";
+            for (int iclass : lb_rr_graph.node_classes(inode)) {
+                os << iclass << " ";
+            }
+            os << " }";
+        }
+        os << "}\"";
+
+        if (lb_rr_graph.is_external_default_node(inode)) {
+            os << " fillcolor=lightblue style=filled";
+        } else if (lb_rr_graph.is_external_non_default_node(inode)) {
+            os << " fillcolor=green style=filled";
+        }
+        os << "]\n";
     }
 
     for (auto kv : pb_port_to_rr_nodes) {
