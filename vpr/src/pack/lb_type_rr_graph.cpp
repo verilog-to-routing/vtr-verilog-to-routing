@@ -161,7 +161,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
 													 t_lb_type_rr_graph& lb_type_rr_graph) {
 	VTR_ASSERT(lb_type_rr_graph.nodes.empty());
 
-	t_pb_type* pb_type = lb_type->pb_type;
 	t_pb_graph_node* pb_graph_head = lb_type->pb_graph_head;
 
 	/* 
@@ -632,7 +631,7 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
     os << "\tnode[shape=record]\n";
 
     std::map<std::string,std::vector<int>> pb_port_to_rr_nodes;
-    for (int inode = 0; inode < lb_rr_graph.nodes.size(); ++inode) {
+    for (int inode = 0; inode < (int) lb_rr_graph.nodes.size(); ++inode) {
         const auto& node = lb_rr_graph.nodes[inode];
         os << "\tnode" << inode << "[label=\"{Node(" << inode << ") ";
         if (node.type == LB_SOURCE) {
@@ -683,7 +682,7 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
         os << "};\n"; 
     }
 
-    for (int inode = 0; inode < lb_rr_graph.nodes.size(); ++inode) {
+    for (int inode = 0; inode < (int) lb_rr_graph.nodes.size(); ++inode) {
         const auto& node = lb_rr_graph.nodes[inode];
 
         for (int imode = 0; imode < node.num_modes(); ++imode) {

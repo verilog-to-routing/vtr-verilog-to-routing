@@ -80,7 +80,7 @@ struct t_lb_type_rr_graph {
 
         //Returns true if inode is a non-default external src/sink/routing node
         bool is_external_non_default_node(int inode) const {
-            for (int iextern = 0; iextern != external_rr_info_.size(); ++iextern) {
+            for (int iextern = 0; iextern != (int) external_rr_info_.size(); ++iextern) {
                 if (iextern == default_external_src_rr_info_idx_) continue;
                 if (iextern == default_external_sink_rr_info_idx_) continue;
 
@@ -98,7 +98,7 @@ struct t_lb_type_rr_graph {
 
         //Returns true if inode an external src/sink node
         bool is_external_src_sink_node(int inode) const {
-            for (int iextern = 0; iextern != external_rr_info_.size(); ++iextern) {
+            for (int iextern = 0; iextern != (int) external_rr_info_.size(); ++iextern) {
 
                 if (is_external_src_sink(inode, iextern)) {
                     return true;
@@ -111,7 +111,7 @@ struct t_lb_type_rr_graph {
         std::vector<int> node_classes(int inode) const {
             std::vector<int> classes;
             
-            for (int iclass = 0; iclass < class_to_external_rr_info_idx_.size(); ++iclass) {
+            for (int iclass = 0; iclass < (int) class_to_external_rr_info_idx_.size(); ++iclass) {
                 int iextern = class_to_external_rr_info_idx_[iclass];
 
                 if (is_external_node(inode, iextern)) {
@@ -157,10 +157,10 @@ struct t_lb_type_rr_graph {
 
         //Sets the external routing info for iclass to iextern
         void set_class_external_rr_info(int iclass, int iextern) {
-            if (class_to_external_rr_info_idx_.size() == 0 || iclass > class_to_external_rr_info_idx_.size() - 1) {
+            if (class_to_external_rr_info_idx_.size() == 0 || iclass > (int) class_to_external_rr_info_idx_.size() - 1) {
                 class_to_external_rr_info_idx_.resize(iclass + 1, OPEN);
             }
-            VTR_ASSERT(iclass < class_to_external_rr_info_idx_.size());
+            VTR_ASSERT(iclass < (int) class_to_external_rr_info_idx_.size());
             class_to_external_rr_info_idx_[iclass] = iextern;
         }
 
