@@ -97,6 +97,22 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 		fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
 		fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);
 		fprintf(Echo, "\tindex: %d\n", Types[i].index);
+        fprintf(Echo, "\tpin_classes: %d\n", Types[i].num_class);
+        for (int iclass = 0; iclass < Types[i].num_class; ++iclass) {
+            fprintf(Echo, "\t\tpin_class: %d\n", iclass);
+            std::string class_type_str = "<unkown>";
+            if (Types[i].class_inf[iclass].type == DRIVER) {
+                class_type_str = "DRIVER";
+            } else if (Types[i].class_inf[iclass].type == RECEIVER) {
+                class_type_str = "RECEIVER";
+            }
+            fprintf(Echo, "\t\t\ttype: %s\n", class_type_str.c_str());
+            fprintf(Echo, "\t\t\tpins:");
+            for (int ipin = 0; ipin < Types[i].class_inf[iclass].num_pins; ++ipin) {
+                fprintf(Echo, " %d", Types[i].class_inf[iclass].pinlist[ipin]);
+            }
+            fprintf(Echo, "\n");
+        }
 		if (Types[i].pb_type) {
 			PrintPb_types_rec(Echo, Types[i].pb_type, 2);
 		}
