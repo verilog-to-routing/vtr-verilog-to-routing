@@ -82,6 +82,12 @@ struct t_lb_type_rr_graph {
     }
 };
 
+struct t_lb_type_rr_external_info {
+    int sink = OPEN;
+    int source = OPEN;
+    int source_routing = OPEN;
+    int sink_routing = OPEN;
+};
 
 /* Constructors/Destructors */
 std::vector <t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph();
