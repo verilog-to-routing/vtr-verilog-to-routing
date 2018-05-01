@@ -97,7 +97,6 @@ static std::string describe_lb_type_rr_node(int inode,
 
 static std::vector<int> find_congested_rr_nodes(const t_lb_type_rr_graph& lb_type_graph,
                                                 const t_lb_rr_node_stats* lb_rr_node_stats);
-static std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin);
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_data* router_data);
 static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,
                                                const t_lb_router_data* router_data);
@@ -1241,17 +1240,6 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const t_lb_router_d
         }
     }
     return incoming_rr_nodes;
-}
-
-static std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin) {
-    VTR_ASSERT(pb_graph_pin);
-    std::string description;
-    description += pb_graph_pin->parent_node->pb_type->name;
-    description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
-    description += '.';
-    description += pb_graph_pin->port->name;
-    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
-    return description;
 }
 
 static std::string describe_congested_rr_nodes(const std::vector<int>& congested_rr_nodes,

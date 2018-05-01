@@ -34,6 +34,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 void sync_grid_to_blocks();
 
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index);
+std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin);
 
 /**************************************************************
 * Intra-Logic Block Utility Functions

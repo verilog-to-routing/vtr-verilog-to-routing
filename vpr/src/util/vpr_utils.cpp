@@ -239,6 +239,18 @@ std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index) {
     return "<UNKOWN>";
 }
 
+std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin) {
+    VTR_ASSERT(pb_graph_pin);
+    std::string description;
+    description += pb_graph_pin->parent_node->pb_type->name;
+    description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
+    description += '.';
+    description += pb_graph_pin->port->name;
+    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
+    return description;
+}
+
+
 IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntypes)
     : block_types_(block_types)
     , num_types_(ntypes) {
