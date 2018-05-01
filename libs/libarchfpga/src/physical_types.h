@@ -311,12 +311,17 @@ struct t_power_usage {
 /* FPGA Physical Logic Blocks data types                                                         */
 /*************************************************************************************************/
 
-/* A class of CLB pins that share common properties
+/*
+ * A class of CLB pins that share common properties
  * port_name: name of this class of pins
- * type:  DRIVER or RECEIVER (what is this pinclass?)              *
- * num_pins:  The number of logically equivalent pins forming this *
- *           class.                                                *
- * pinlist[]:  List of clb pin numbers which belong to this class. */
+ * type:  DRIVER or RECEIVER (what is this pinclass?
+ *        Note this is from the perspective of something _outside_ the logic block,
+ *        so a top level block input is a RECIEVER, and a top level block output 
+ *        is a DRIVER.
+ * num_pins:  The number of logically equivalent pins forming this
+ *           class.
+ * pinlist[]:  List of clb pin numbers which belong to this class.
+ */
 struct t_class {
 	enum e_pin_type type;
 	int num_pins;
