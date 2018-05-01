@@ -78,7 +78,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 		fprintf(Echo, "\twidth: %d\n", Types[i].width);
 		fprintf(Echo, "\theight: %d\n", Types[i].height);
 		for (const t_fc_specification& fc_spec : Types[i].fc_specs) {
-            fprintf(Echo, "fc_value_type: ");
+            fprintf(Echo, "\tfc_value_type: ");
             if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
                 fprintf(Echo, "ABSOLUTE");
             } else if (fc_spec.fc_value_type == e_fc_value_type::FRACTIONAL) {
@@ -87,7 +87,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
                 VTR_ASSERT(false);
             }
             fprintf(Echo, " fc_value: %f", fc_spec.fc_value);
-            fprintf(Echo, " segment: %s", arch->Segments[fc_spec.seg_index].name);
+            fprintf(Echo, " segment: '%s'", arch->Segments[fc_spec.seg_index].name);
             fprintf(Echo, " pins:");
             for (int pin : fc_spec.pins) {
                 fprintf(Echo, " %d", pin);
