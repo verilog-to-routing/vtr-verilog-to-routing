@@ -1168,13 +1168,41 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 
 int get_lb_type_rr_graph_ext_source_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
     //TODO: find real source
-    return lb_rr_graph.class_external_rr_info(0).src_sink_node;
+
+    //Initial hack, the external source with the most classes
+    int ext_source = OPEN;
+    size_t max_classes = 0;
+    for (int inode = 0; inode < (int) lb_rr_graph.nodes.size(); ++inode) {
+        if (lb_rr_graph.nodes[inode].type == LB_SOURCE && lb_rr_graph.is_external_node(inode)) {
+            size_t num_classes = lb_rr_graph.node_classes(inode).size();
+            if (num_classes > max_classes) {
+                max_classes = num_classes;
+                ext_source = inode;
+            }
+        }
+    }
+
+    return ext_source;
 }
 
 /* Return external sink index for logic block type internal routing resource graph */
 int get_lb_type_rr_graph_ext_sink_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
     //TODO: find real sink
-    return lb_rr_graph.class_external_rr_info(7).src_sink_node;
+
+    //Initial hack, the external sink with the most classes
+    int ext_sink = OPEN;
+    size_t max_classes = 0;
+    for (int inode = 0; inode < (int) lb_rr_graph.nodes.size(); ++inode) {
+        if (lb_rr_graph.nodes[inode].type == LB_SINK && lb_rr_graph.is_external_node(inode)) {
+            size_t num_classes = lb_rr_graph.node_classes(inode).size();
+            if (num_classes > max_classes) {
+                max_classes = num_classes;
+                ext_sink = inode;
+            }
+        }
+    }
+
+    return ext_sink;
 }
 
 static std::vector<int> find_congested_rr_nodes(const t_lb_type_rr_graph& lb_type_graph,
