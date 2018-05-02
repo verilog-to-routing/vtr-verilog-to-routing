@@ -1230,6 +1230,9 @@ static std::string describe_lb_type_rr_node(int inode,
 
     if (pb_graph_pin) {
         description += "'" + describe_pb_graph_pin(pb_graph_pin) + "'";
+        description += " (";
+        description += lb_rr_type_str[rr_node.type];
+        description += ")";
     } else if (rr_node.type == LB_INTERMEDIATE) {
         if (router_data->lb_type_graph->is_external_node(inode)) {
             description = "cluster-external routing (LB_INTERMEDIATE)";
