@@ -192,7 +192,7 @@ struct more_sinks_than {
     }
 };
 
-static WirelengthInfo calculate_wirelength_info();
+static WirelengthInfo calculate_wirelength_info(bool route_clock);
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
@@ -233,7 +233,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     RouterCongestionMode router_congestion_mode = RouterCongestionMode::NORMAL;
 
     //Initialize and properly size the lookups for profiling
-    profiling::profiling_initialization(get_max_pins_per_net());
+    profiling::profiling_initialization(get_max_pins_per_net(router_opts.route_clock));
 
     //sort so net with most sinks is routed first.
     auto sorted_nets = std::vector<ClusterNetId>(cluster_ctx.clb_nlist.nets().begin(), cluster_ctx.clb_nlist.nets().end());
@@ -258,14 +258,14 @@ bool try_timing_driven_route(t_router_opts router_opts,
        update_net_delays_from_route_tree() inside timing_driven_route_net(),
        which is only called for non-global nets. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
+        if (cluster_ctx.clb_nlist.net_is_global(net_id) && !router_opts.route_clock) {
             for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
                 net_delay[net_id][ipin] = 0.;
             }
         }
     }
 
-    CBRR connections_inf{};
+    CBRR connections_inf(router_opts.route_clock);
     VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
     route_budgets budgeting_inf;
@@ -361,7 +361,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
         overuse_info = calculate_overuse_info();
-        wirelength_info = calculate_wirelength_info();
+        wirelength_info = calculate_wirelength_info(router_opts.route_clock);
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
 
         if (timing_info) {
@@ -613,7 +613,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
 
     if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
         is_routed = true;
-    } else if (cluster_ctx.clb_nlist.net_is_global(net_id)) { /* Skip global nets. */
+    } else if (cluster_ctx.clb_nlist.net_is_global(net_id) && !router_opts.route_clock) {
+        /* Skip global nets. */
         is_routed = true;
     } else if (should_route_net(net_id, connections_inf, true) == false) {
         is_routed = true;
@@ -630,7 +631,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 rt_node_of_sink,
                 net_delay[net_id],
                 netlist_pin_lookup,
-                timing_info, budgeting_inf);
+                timing_info, budgeting_inf,
+                router_opts.route_clock);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
 
@@ -649,11 +651,12 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
  * Suggest using a timing_driven_route_structs struct. Memory is managed for you
  */
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
-        int **sink_order_ptr, t_rt_node *** rt_node_of_sink_ptr) {
+        int **sink_order_ptr, t_rt_node *** rt_node_of_sink_ptr,
+        bool route_clock) {
 
     /* Allocates all the structures needed only by the timing-driven router.   */
 
-    int max_pins_per_net = get_max_pins_per_net();
+    int max_pins_per_net = get_max_pins_per_net(route_clock);
     int max_sinks = std::max(max_pins_per_net - 1, 0);
 
     float *pin_criticality = (float *) vtr::malloc(max_sinks * sizeof (float));
@@ -686,11 +689,12 @@ void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
     free_route_tree_timing_structs();
 }
 
-timing_driven_route_structs::timing_driven_route_structs() {
+timing_driven_route_structs::timing_driven_route_structs(bool route_clock) {
     alloc_timing_driven_route_structs(
             &pin_criticality,
             &sink_order,
-            &rt_node_of_sink
+            &rt_node_of_sink,
+            route_clock
             );
 }
 
@@ -722,13 +726,13 @@ void reduce_budgets_if_congested(route_budgets &budgeting_inf,
     }
 }
 
-int get_max_pins_per_net() {
+int get_max_pins_per_net(bool route_clock) {
 	int max_pins_per_net = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_global(net_id))
+        if (!cluster_ctx.clb_nlist.net_is_global(net_id) || route_clock)
             max_pins_per_net = max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 
@@ -754,7 +758,8 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         float *pin_criticality, int min_incremental_reroute_fanout,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
+        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf,
+        bool route_clock) {
 
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -847,7 +852,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
     update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id);
 
-    if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+    if (!cluster_ctx.clb_nlist.net_is_global(net_id) || route_clock) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
                 VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
@@ -1829,7 +1834,7 @@ static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
 }
 
 // incremental rerouting resources class definitions
-Connection_based_routing_resources::Connection_based_routing_resources() :
+Connection_based_routing_resources::Connection_based_routing_resources(bool route_clock) :
 current_inet(NO_PREVIOUS), // not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
 last_stable_critical_path_delay{0.0f},
 critical_path_growth_tolerance{1.001f},
@@ -1852,7 +1857,7 @@ connection_delay_optimality_tolerance{1.1f}
 
     // can have as many targets as sink pins (total number of pins - SOURCE pin)
     // supposed to be used as persistent vector growing with push_back and clearing at the start of each net routing iteration
-    auto max_sink_pins_per_net = std::max(get_max_pins_per_net() - 1, 0);
+    auto max_sink_pins_per_net = std::max(get_max_pins_per_net(route_clock) - 1, 0);
     remaining_targets.reserve(max_sink_pins_per_net);
     reached_rt_sinks.reserve(max_sink_pins_per_net);
 
@@ -2053,7 +2058,7 @@ static OveruseInfo calculate_overuse_info() {
     return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
 }
 
-static WirelengthInfo calculate_wirelength_info() {
+static WirelengthInfo calculate_wirelength_info(bool route_clock) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2069,7 +2074,7 @@ static WirelengthInfo calculate_wirelength_info() {
     }
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (!cluster_ctx.clb_nlist.net_is_global(net_id)
+        if ((!cluster_ctx.clb_nlist.net_is_global(net_id) || route_clock)
                 && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
             get_num_bends_and_length(net_id, &bends, &wirelength, &segments);

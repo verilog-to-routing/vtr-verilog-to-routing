@@ -10,7 +10,7 @@
 #include "route_common.h"
 #include "router_stats.h"
 
-int get_max_pins_per_net();
+int get_max_pins_per_net(bool route_clock);
 
 bool try_timing_driven_route(t_router_opts router_opts,
 		vtr::vector_map<ClusterNetId, float *> &net_delay,
@@ -38,11 +38,12 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink,
 		float *net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
+        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf,
+        bool route_clock);
 
 
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
-        int **sink_order_ptr, t_rt_node *** rt_node_of_sink_ptr);
+        int **sink_order_ptr, t_rt_node *** rt_node_of_sink_ptr, bool route_clock);
 void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
         t_rt_node ** rt_node_of_sink);
 
@@ -57,7 +58,7 @@ struct timing_driven_route_structs {
     int* sink_order; /* [1..max_pins_per_net-1] */
     t_rt_node** rt_node_of_sink; /* [1..max_pins_per_net-1] */
 
-    timing_driven_route_structs();
+    timing_driven_route_structs(bool route_clock);
     ~timing_driven_route_structs();
 };
 
