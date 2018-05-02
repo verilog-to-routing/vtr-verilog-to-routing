@@ -343,7 +343,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 				}
 
 				router_data->explore_id_index++;
-				if(router_data->explore_id_index > 2000000000) {
+				if(router_data->explore_id_index >= std::numeric_limits<decltype(router_data->explore_id_index)>::max()) {
 					/* overflow protection */
 					for(unsigned int id = 0; id < lb_type_graph.nodes.size(); id++) {
 						router_data->explored_node_tb[id].explored_id = OPEN;
