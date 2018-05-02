@@ -309,7 +309,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
                         int sink_rr_node = lb_nets[inet].terminals[itarget];
 
                         if (debug_clustering) {
-                            vtr::printf("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
+                            vtr::printf("No possible routing path from %s to %s: needed for netlist net '%s' from net pin '%s'",
                                         describe_lb_type_rr_node(driver_rr_node, router_data).c_str(),
                                         describe_lb_type_rr_node(sink_rr_node, router_data).c_str(),
                                         atom_nlist.net_name(net_id).c_str(),
