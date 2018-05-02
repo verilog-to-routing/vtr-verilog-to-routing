@@ -74,48 +74,6 @@ std::vector<t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph() {
 }
 
 /*****************************************************************************************
-* Accessor functions 
-******************************************************************************************/
-
-/* Return external source index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_source_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
-    //TODO: find real class
-    return lb_rr_graph.class_external_rr_info(0).src_sink_node;
-}
-
-/* Return external sink index for logic block type internal routing resource graph */
-int get_lb_type_rr_graph_ext_sink_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
-    //TODO: find real class
-    return lb_rr_graph.class_external_rr_info(7).src_sink_node;
-}
-
-/* Returns total number of modes that this lb_type_rr_node can take */
-int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
-	int num_modes = 1;
-	t_pb_graph_node *pb_graph_node;
-	t_pb_type *pb_type;
-	if(lb_type_rr_node.pb_graph_pin != nullptr) {
-		if(lb_type_rr_node.pb_graph_pin->port->type == OUT_PORT) {
-			pb_graph_node = lb_type_rr_node.pb_graph_pin->parent_node->parent_pb_graph_node;
-			if (pb_graph_node == nullptr) {
-				/* Top level logic block output pins connect to external routing */
-				num_modes = 1;
-			} else {
-				pb_type = pb_graph_node->pb_type;
-				num_modes = pb_type->num_modes;
-			}
-		} else {
-			pb_type = lb_type_rr_node.pb_graph_pin->parent_node->pb_type;
-			num_modes = pb_type->num_modes;
-			if(num_modes == 0) {
-				num_modes = 1; /* The rr graph is designed so that minimum number for a mode is 1 */
-			}
-		}
-	}
-	return num_modes;
-}
-
-/*****************************************************************************************
 * Debug functions 
 ******************************************************************************************/
 
@@ -599,7 +557,7 @@ static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_r
 		fprintf(fp, "\tType: %s\n", lb_rr_type_str[(int) lb_type_rr_graph.nodes[inode].type]);
 		fprintf(fp, "\tCapacity: %d\n", lb_type_rr_graph.nodes[inode].capacity);
 		fprintf(fp, "\tIntrinsic Cost: %g\n", lb_type_rr_graph.nodes[inode].intrinsic_cost);
-		for(int imode = 0; imode < get_num_modes_of_lb_type_rr_node(lb_type_rr_graph.nodes[inode]); imode++) {
+		for(int imode = 0; imode < lb_type_rr_graph.nodes[inode].num_modes(); imode++) {
             fprintf(fp, "\tMode: %d   # Outedges: %d\n\t\t", imode, lb_type_rr_graph.nodes[inode].num_fanout(imode));
             int count = 0;
             for(int iedge = 0; iedge < lb_type_rr_graph.nodes[inode].num_fanout(imode); iedge++) {

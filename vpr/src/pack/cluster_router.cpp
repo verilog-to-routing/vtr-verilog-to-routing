@@ -92,6 +92,9 @@ static void reset_explored_node_tb(t_lb_router_data *router_data);
 static void save_and_reset_lb_route(t_lb_router_data *router_data);
 static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace);
 
+int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId pin);
+int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId pin);
+
 static std::string describe_lb_type_rr_node(int inode,
                                             const t_lb_router_data* router_data);
 
@@ -591,7 +594,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 
         //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
-		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph.nodes[pin_index]) == 1);
+		VTR_ASSERT(lb_type_graph.nodes[pin_index].num_modes() == 1);
 		VTR_ASSERT(lb_type_graph.nodes[pin_index].num_fanout(0) == 1);
 		
 		/* We actually route to the sink (to handle logically equivalent pins).
@@ -713,7 +716,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		unsigned int iterm;
 
 
-		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph.nodes[pin_index]) == 1);
+		VTR_ASSERT(lb_type_graph.nodes[pin_index].num_modes() == 1);
 		VTR_ASSERT(lb_type_graph.nodes[pin_index].num_fanout(0) == 1);
 		int sink_index = lb_type_graph.nodes[pin_index].outedges[0][0].node_index;
 		VTR_ASSERT(lb_type_graph.nodes[sink_index].type == LB_SINK);
@@ -1161,6 +1164,17 @@ static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 		saved_lb_nets[inet].rt_tree = lb_nets[inet].rt_tree;
 		lb_nets[inet].rt_tree = nullptr;
 	}
+}
+
+int get_lb_type_rr_graph_ext_source_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
+    //TODO: find real source
+    return lb_rr_graph.class_external_rr_info(0).src_sink_node;
+}
+
+/* Return external sink index for logic block type internal routing resource graph */
+int get_lb_type_rr_graph_ext_sink_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
+    //TODO: find real sink
+    return lb_rr_graph.class_external_rr_info(7).src_sink_node;
 }
 
 static std::vector<int> find_congested_rr_nodes(const t_lb_type_rr_graph& lb_type_graph,

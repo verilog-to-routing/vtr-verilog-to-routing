@@ -163,11 +163,6 @@ struct t_lb_type_rr_graph {
 /* Constructors/Destructors */
 std::vector <t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph();
 
-/* Accessor functions */
-int get_lb_type_rr_graph_ext_source_index(t_type_ptr lb_type, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId pin);
-int get_lb_type_rr_graph_ext_sink_index(t_type_ptr lb_type, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId pin);
-int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node);
-
 /* Debug functions */
 void echo_lb_type_rr_graphs(char *filename, const std::vector<t_lb_type_rr_graph>& lb_type_rr_graphs);
 
