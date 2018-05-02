@@ -79,12 +79,14 @@ std::vector<t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph() {
 
 /* Return external source index for logic block type internal routing resource graph */
 int get_lb_type_rr_graph_ext_source_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
-    return lb_rr_graph.default_external_src_rr_info().src_sink_node;
+    //TODO: find real class
+    return lb_rr_graph.class_external_rr_info(0).src_sink_node;
 }
 
 /* Return external sink index for logic block type internal routing resource graph */
 int get_lb_type_rr_graph_ext_sink_index(t_type_ptr /*lb_type*/, const t_lb_type_rr_graph& lb_rr_graph, const AtomPinId /*pin*/) {
-    return lb_rr_graph.default_external_sink_rr_info().src_sink_node;
+    //TODO: find real class
+    return lb_rr_graph.class_external_rr_info(7).src_sink_node;
 }
 
 /* Returns total number of modes that this lb_type_rr_node can take */
@@ -215,11 +217,11 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
     }
 
     //Build default external source node
-    auto default_src_extern_id = lb_type_rr_graph.add_external_rr_info(create_extern_src_rr_nodes(lb_type_rr_graph));
-    lb_type_rr_graph.set_default_external_src_rr_info(default_src_extern_id);
+    auto default_ext_src_info = create_extern_src_rr_nodes(lb_type_rr_graph);
+    auto default_src_extern_id = lb_type_rr_graph.add_external_rr_info(default_ext_src_info);
 
-    auto default_sink_extern_id = lb_type_rr_graph.add_external_rr_info(create_extern_sink_rr_nodes(lb_type_rr_graph));
-    lb_type_rr_graph.set_default_external_sink_rr_info(default_sink_extern_id);
+    auto default_ext_sink_info = create_extern_sink_rr_nodes(lb_type_rr_graph);
+    auto default_sink_extern_id = lb_type_rr_graph.add_external_rr_info(default_ext_sink_info);
 
     //Allocate a source/sink/external to each different class type
     // Note that the class type is specified from an external viewpoint, so an 
@@ -254,7 +256,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->output_pins[iport][ipin].pin_count_in_cluster;
             int iclass = lb_type->pin_class[cluster_pin];
 
-            const auto& ext_rr_info = lb_type_rr_graph.external_rr_info(iclass);
+            const auto& ext_rr_info = lb_type_rr_graph.class_external_rr_info(iclass);
 
             lb_type_rr_graph.nodes[cluster_pin].outedges[0].emplace_back(ext_rr_info.routing_node, INTERNAL_INTERCONNECT_COST);
 
@@ -270,7 +272,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
             int iclass = lb_type->pin_class[cluster_pin];
 
-            const auto& ext_rr_info = lb_type_rr_graph.external_rr_info(iclass);
+            const auto& ext_rr_info = lb_type_rr_graph.class_external_rr_info(iclass);
 
             lb_type_rr_graph.nodes[ext_rr_info.routing_node].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
 
@@ -286,7 +288,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             int cluster_pin = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
             int iclass = lb_type->pin_class[cluster_pin];
 
-            const auto& ext_rr_info = lb_type_rr_graph.external_rr_info(iclass);
+            const auto& ext_rr_info = lb_type_rr_graph.class_external_rr_info(iclass);
 
             lb_type_rr_graph.nodes[ext_rr_info.routing_node].outedges[0].emplace_back(cluster_pin, INTERNAL_INTERCONNECT_COST);
 
@@ -295,9 +297,6 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
             ++lb_type_rr_graph.nodes[ext_rr_info.src_sink_node].capacity;
         }
     }
-
-    auto& default_ext_src_info = lb_type_rr_graph.default_external_src_rr_info();
-    auto& default_ext_sink_info = lb_type_rr_graph.default_external_sink_rr_info();
 
     //Edge from between source/sink routing
     // This uses the (high) external interconnect cost to make feedback routing 
@@ -643,9 +642,7 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
         } else {
             VTR_ASSERT(false);
         }
-        if (lb_rr_graph.is_external_default_node(inode)) {
-            os << " \\nExternal (Default)";
-        } else if (lb_rr_graph.is_external_non_default_node(inode)) {
+        if (lb_rr_graph.is_external_node(inode)) {
             os << " \\nExternal";
         }
         if (node.pb_graph_pin) {
@@ -665,10 +662,8 @@ static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_grap
         }
         os << "}\"";
 
-        if (lb_rr_graph.is_external_default_node(inode)) {
+        if (lb_rr_graph.is_external_node(inode)) {
             os << " fillcolor=lightblue style=filled";
-        } else if (lb_rr_graph.is_external_non_default_node(inode)) {
-            os << " fillcolor=green style=filled";
         }
         os << "]\n";
     }

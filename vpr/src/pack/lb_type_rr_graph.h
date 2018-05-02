@@ -72,28 +72,9 @@ struct t_lb_type_rr_graph {
     std::vector<t_lb_type_rr_node> nodes;
 
     public:
-        //Returns true if inode is a default external src/sink/routing node
-        bool is_external_default_node(int inode) const {
-            return is_external_node(inode, default_external_src_rr_info_idx_)
-                || is_external_node(inode, default_external_sink_rr_info_idx_);
-        }
-
-        //Returns true if inode is a non-default external src/sink/routing node
-        bool is_external_non_default_node(int inode) const {
-            for (int iextern = 0; iextern != (int) external_rr_info_.size(); ++iextern) {
-                if (iextern == default_external_src_rr_info_idx_) continue;
-                if (iextern == default_external_sink_rr_info_idx_) continue;
-
-                if (is_external_node(inode, iextern)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         //Returns true if inode an external src/sink/routing node
         bool is_external_node(int inode) const {
-            return is_external_default_node(inode) || is_external_non_default_node(inode);    
+            return is_external_src_sink_node(inode) || is_external_routing_node(inode);    
         }
 
         //Returns true if inode an external src/sink node
@@ -106,11 +87,21 @@ struct t_lb_type_rr_graph {
             }
             return false;
         }
+        bool is_external_routing_node(int inode) const {
+            for (int iextern = 0; iextern != (int) external_rr_info_.size(); ++iextern) {
+
+                if (is_external_routing(inode, iextern)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         //Returns the set of pin classes assoicated with inode (only non-empty for external src/sink nodes)
         std::vector<int> node_classes(int inode) const {
             std::vector<int> classes;
             
+            //NOTE: implemented as a linear search, can be made faster if required (currently used only for debug info)
             for (int iclass = 0; iclass < (int) class_to_external_rr_info_idx_.size(); ++iclass) {
                 int iextern = class_to_external_rr_info_idx_[iclass];
 
@@ -122,19 +113,9 @@ struct t_lb_type_rr_graph {
             return classes;
         }
 
-        //Returns information about the default external source + routing nodes
-        const t_lb_type_rr_external_info& default_external_src_rr_info() const {
-            return external_rr_info_[default_external_src_rr_info_idx_];
-        }
-
-        //Returns information about the default external sink + routing nodes
-        const t_lb_type_rr_external_info& default_external_sink_rr_info() const {
-            return external_rr_info_[default_external_sink_rr_info_idx_];
-        }
-
         //Returns information about the external src/sink + routing nodes for the 
         //iclass'th pin class
-        const t_lb_type_rr_external_info& external_rr_info(int iclass) const {
+        const t_lb_type_rr_external_info& class_external_rr_info(int iclass) const {
             return external_rr_info_[class_to_external_rr_info_idx_[iclass]];
         }
 
@@ -143,16 +124,6 @@ struct t_lb_type_rr_graph {
         int add_external_rr_info(t_lb_type_rr_external_info external_rr_info) {
             external_rr_info_.push_back(external_rr_info);
             return external_rr_info_.size() - 1;
-        }
-
-        //Sets the default external source routing info to iextern
-        void set_default_external_src_rr_info(int iextern) {
-            default_external_src_rr_info_idx_ = iextern;
-        }
-
-        //Sets the default external sink routing info to iextern
-        void set_default_external_sink_rr_info(int iextern) {
-            default_external_sink_rr_info_idx_ = iextern;
         }
 
         //Sets the external routing info for iclass to iextern
@@ -187,9 +158,6 @@ struct t_lb_type_rr_graph {
     private: //Data
         std::vector<t_lb_type_rr_external_info> external_rr_info_;
         std::vector<int> class_to_external_rr_info_idx_; //[0..num_class-1]
-        int default_external_sink_rr_info_idx_ = OPEN;
-        int default_external_src_rr_info_idx_ = OPEN;
-
 };
 
 /* Constructors/Destructors */
