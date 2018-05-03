@@ -97,6 +97,7 @@ void try_pack(t_packer_opts *packer_opts,
                                 atom_molecules,
                                 expected_lowest_cost_pb_gnode,
                                 num_packing_patterns);
+    std::vector<t_lb_type_rr_graph_info> lb_type_rr_graph_infos = profile_lb_type_rr_graphs(lb_type_rr_graphs);
 	vtr::printf_info("Finish prepacking.\n");
 
 	if(packer_opts->auto_compute_inter_cluster_net_delay) {
@@ -178,6 +179,7 @@ void try_pack(t_packer_opts *packer_opts,
             packer_opts->connection_driven,
             packer_opts->packer_algorithm,
             lb_type_rr_graphs,
+            lb_type_rr_graph_infos,
             packer_opts->device_layout,
             packer_opts->debug_clustering,
             packer_opts->enable_pin_feasibility_filter

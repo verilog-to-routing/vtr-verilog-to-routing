@@ -23,6 +23,7 @@
 #include <vector>
 #include <cmath>
 #include <fstream>
+#include <queue>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -50,6 +51,8 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
 static t_lb_type_rr_external_info create_extern_src_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph);
 static t_lb_type_rr_external_info create_extern_sink_rr_nodes(t_lb_type_rr_graph& lb_type_rr_graph);
+static t_lb_type_rr_graph_info profile_lb_type_rr_graph(const t_lb_type_rr_graph& lb_type_rr_graph);
+
 static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_rr_graph);
 static void print_lb_type_rr_graph_dot(std::string filename, const t_lb_type_rr_graph& lb_rr_graph);
 static void print_lb_type_rr_graph_dot(std::ostream& os, const t_lb_type_rr_graph& lb_rr_graph);
@@ -540,6 +543,83 @@ static t_lb_type_rr_external_info create_extern_sink_rr_nodes(t_lb_type_rr_graph
     return ext_info;
 }
 
+std::vector<t_lb_type_rr_graph_info> profile_lb_type_rr_graphs(const std::vector<t_lb_type_rr_graph>& lb_type_rr_graphs) {
+    std::vector<t_lb_type_rr_graph_info> graph_infos;
+    for (size_t itype = 0; itype < lb_type_rr_graphs.size(); ++itype) {
+        auto graph_info = profile_lb_type_rr_graph(lb_type_rr_graphs[itype]);
+
+        for (size_t inode = 0; inode < lb_type_rr_graphs[itype].nodes.size(); ++inode) {
+            vtr::printf("Type %d Node %zu - Reachable: ", itype, inode);
+            for (auto sink : graph_info.reachable_nodes(inode)) {
+                vtr::printf(" %d", sink);
+            }
+            vtr::printf("\n");
+        }
+
+        graph_infos.push_back(graph_info);
+    }
+    return graph_infos;
+}
+
+static t_lb_type_rr_graph_info profile_lb_type_rr_graph(const t_lb_type_rr_graph& lb_rr_graph) {
+    t_lb_type_rr_graph_info graph_info(lb_rr_graph.nodes.size());
+
+    //We now expand from each node in the graph and record it's accessible (transitive fanout) nodes
+    for (size_t src_node = 0; src_node < lb_rr_graph.nodes.size(); ++src_node) {
+
+        //Breadth-first search
+        std::queue<int> q;
+        std::set<int> visited;
+        q.push(src_node);
+        while (!q.empty()) {
+            int inode = q.front();
+            q.pop();
+
+            visited.insert(inode);
+
+            const auto& node = lb_rr_graph.nodes[inode];
+
+            for (int imode = 0; imode < node.num_modes(); ++imode) {
+                for (int iedge = 0; iedge < node.num_fanout(imode); ++iedge) {
+                    int to_node = node.outedges[imode][iedge].node_index;
+
+                    if (visited.count(to_node)) continue;
+
+                    q.push(to_node);
+                }
+            }
+        }
+
+        graph_info.add_reachable(src_node, visited.begin(), visited.end());
+    }
+
+    //Determine the accessible sinks/sources per node
+    std::vector<std::vector<int>> external_sources_reaching(lb_rr_graph.nodes.size());
+    for (size_t inode = 0; inode < lb_rr_graph.nodes.size(); ++inode) {
+        std::vector<int> reachable_external_sinks;
+
+        bool is_external_src = lb_rr_graph.nodes[inode].type == LB_SOURCE
+                               && lb_rr_graph.is_external_src_sink_node(inode);
+
+        for (int ireachable : graph_info.reachable_nodes(inode)) {
+            if (lb_rr_graph.nodes[ireachable].type == LB_SINK
+                && lb_rr_graph.is_external_src_sink_node(ireachable)) {
+                reachable_external_sinks.push_back(ireachable);
+            }
+
+            if (is_external_src) {
+                external_sources_reaching[ireachable].push_back(inode);
+            }
+        }
+        graph_info.add_external_sinks_reachable(inode, reachable_external_sinks.begin(), reachable_external_sinks.end());
+    }
+
+    for (size_t inode = 0; inode < lb_rr_graph.nodes.size(); ++inode) {
+        graph_info.add_external_sources_reaching(inode, external_sources_reaching[inode].begin(), external_sources_reaching[inode].end());
+    }
+
+    return graph_info;
+}
 
 /* Print logic block type routing resource graph */
 static void print_lb_type_rr_graph(FILE *fp, const t_lb_type_rr_graph& lb_type_rr_graph) {

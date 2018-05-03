@@ -24,6 +24,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm,
 		const std::vector<t_lb_type_rr_graph>& lb_type_rr_graphs,
+		const std::vector<t_lb_type_rr_graph_info>& lb_type_rr_graph_infos,
         std::string device_layout_name,
         bool debug_clustering,
         bool enable_pin_feasibility_filter

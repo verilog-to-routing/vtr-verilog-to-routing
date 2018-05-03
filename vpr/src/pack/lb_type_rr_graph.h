@@ -87,6 +87,7 @@ struct t_lb_type_rr_graph {
             }
             return false;
         }
+
         bool is_external_routing_node(int inode) const {
             for (int iextern = 0; iextern != (int) external_rr_info_.size(); ++iextern) {
 
@@ -160,11 +161,62 @@ struct t_lb_type_rr_graph {
         std::vector<int> class_to_external_rr_info_idx_; //[0..num_class-1]
 };
 
+//Auxilary information about an RR graph
+class t_lb_type_rr_graph_info {
+    public:
+        t_lb_type_rr_graph_info(size_t num_nodes)
+            : reachable_nodes_(num_nodes)
+            , external_sources_reaching_(num_nodes)
+            , external_sinks_reachable_(num_nodes) {}
+
+
+        //Returns the nodes reachable (downstream) from inode
+        const std::vector<int>& reachable_nodes(int inode) const {
+            return reachable_nodes_[inode];
+        }
+
+        bool is_reachable(int inode, int idest) const {
+            return std::find(reachable_nodes_[inode].begin(), reachable_nodes_[inode].end(), idest) != reachable_nodes_[inode].end();
+        }
+
+        const std::vector<int>& external_sources_reaching(int inode) const {
+            return external_sources_reaching_[inode];
+        }
+
+        const std::vector<int>& external_sinks_reachable(int inode) const {
+            return external_sinks_reachable_[inode];
+        }
+
+    public:
+        template<class Iterator>
+        void add_reachable(int inode, Iterator first, Iterator last) {
+            reachable_nodes_[inode].insert(reachable_nodes_[inode].end(), first, last);
+        }
+
+        template<class Iterator>
+        void add_external_sources_reaching(int inode, Iterator first, Iterator last) {
+            external_sources_reaching_[inode].insert(external_sources_reaching_[inode].begin(), first, last);
+        }
+
+        template<class Iterator>
+        void add_external_sinks_reachable(int inode, Iterator first, Iterator last) {
+            external_sinks_reachable_[inode].insert(external_sinks_reachable_[inode].end(), first, last);
+        }
+    private:
+        std::vector<std::vector<int>> reachable_nodes_;
+        std::vector<std::vector<int>> external_sources_reaching_;
+        std::vector<std::vector<int>> external_sinks_reachable_;
+};
+
 /* Constructors/Destructors */
-std::vector <t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph();
+std::vector<t_lb_type_rr_graph> alloc_and_load_all_lb_type_rr_graph();
+
+std::vector<t_lb_type_rr_graph_info> profile_lb_type_rr_graphs(const std::vector<t_lb_type_rr_graph>& lb_type_rr_graphs);
 
 /* Debug functions */
 void echo_lb_type_rr_graphs(char *filename, const std::vector<t_lb_type_rr_graph>& lb_type_rr_graphs);
+
+
 
 #endif
 

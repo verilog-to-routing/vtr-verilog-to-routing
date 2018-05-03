@@ -122,11 +122,17 @@ struct t_intra_lb_net {
     std::vector<int> terminals;			/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
     std::vector<AtomPinId> atom_pins;	/* AtomPin's associated with each terminal */
     std::vector<bool> fixed_terminals;  /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
-	t_lb_trace *rt_tree;				/* Route tree head */
+	t_lb_trace *rt_tree = nullptr;      /* Route tree head */
+
+    static constexpr int DRIVER_INDEX = 0;
+    static constexpr int POTENTIAL_EXTERNAL_SINK_INDEX = 1;
 	
-	t_intra_lb_net() {
-        atom_net_id = AtomNetId::INVALID();
-		rt_tree = nullptr;
+	t_intra_lb_net()
+
+        //Initially driver at index zero, and
+        //external sink at index one are uninitalized
+        : terminals(2, OPEN)
+        , atom_pins(2, AtomPinId::INVALID()) {
 	}
 };
 
@@ -183,6 +189,7 @@ struct t_explored_node_tb {
 struct t_lb_router_data {
 	/* Physical Architecture Info */
     const t_lb_type_rr_graph* lb_type_graph;	/* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
+    const t_lb_type_rr_graph_info* lb_type_graph_info;	/* Pointer auxilary information about the rr graph */
 	
 	/* Logical Netlist Info */
     std::vector<t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */
