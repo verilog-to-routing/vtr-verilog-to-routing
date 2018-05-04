@@ -634,6 +634,7 @@ static std::vector<t_intra_lb_net>::iterator find_lb_net(std::vector<t_intra_lb_
                     return lb_net.atom_net_id == atom_net;
                 });
 }
+
 //Returns an iterator to the lb net corresponding to the specified atom_net
 // Will create the lb net if it doesn't already exist
 static std::vector<t_intra_lb_net>::iterator find_create_lb_net(std::vector<t_intra_lb_net>& lb_nets, const AtomNetId atom_net) {
@@ -780,7 +781,8 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
     if ((lb_net_iter->terminals[DRIVER_IDX] == OPEN || !driver_is_internal(*lb_net_iter, lb_rr_graph)) 
         && (lb_net_iter->terminals[EXT_SINK_IDX] == OPEN || !sink_is_internal(lb_net_iter->terminals[EXT_SINK_IDX], lb_rr_graph))
         && (lb_net_iter->terminals.size() == 2)) {
-        //The driver and external sink are either OPEN (i.e. removed) or external RR nodes, and there are no other internal sinks
+        //The driver and external sink are either OPEN (i.e. removed) or external RR nodes,
+        //and there are no other internal sinks
         //
         //This means the net has been completely removed from this cluster (no internal driver, 
         //no internal sinks).
@@ -792,7 +794,6 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
         //External Driver
         if (lb_net_iter->terminals[DRIVER_IDX] == OPEN) {
             //Share with add_pin_from_rt_teriminal
-            //VTR_ASSERT(atom_ctx.nlist.pin_type(pin_id) != PinType::DRIVER);
             add_lb_external_driver(*lb_net_iter, *router_data);
         }
 
