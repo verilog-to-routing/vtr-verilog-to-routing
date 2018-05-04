@@ -33,8 +33,35 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 
 void sync_grid_to_blocks();
 
+//Returns the name (format: 'type_name.port_name[i]') of the specified pin_index on the given type
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index);
+
+//Returns a short description of the specified pb_graph_pin
+// Example: 'CLB.cout[0]'
 std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin);
+
+//Returns the hierarchical name of the specified pb_graph_pin
+// Example: '/CLB[0]/BLE[4]/adder[0].cout[0]'
+// Which indicates the pin cout[0] is located on the 1st adder, in the 4th BLE of a CLB
+std::string describe_pb_graph_pin_hierarchy(const t_pb_graph_pin* pb_graph_pin);
+
+//Returns the hierarchical name of the specified pb_graph_node
+// Example: '/CLB[0]/BLE[4]/adder[0]'
+// Which indicates the node is located on the 1st adder, in the 4th BLE of a CLB
+std::string describe_pb_graph_node_hierarchy(const t_pb_graph_node* pb_graph_node);
+
+//Returns the hierarchical name of the specified pb_graph_edge
+// Example: '/CLB[0]/BLE[4]/interconnect:carry_out'
+// Which indicates the edge represents the interconnect named 'carry_out' in the 4th BLE of a CLB
+std::string describe_pb_graph_edge_hierarchy(const t_pb_graph_edge* pb_graph_edge);
+
+//Returns the hierarchical name of the specified pb_type 
+// Example: '/clb[default]/BLE[arithmetic]/adder
+// Which indicates the type represents an adder in the arithmetic mode of a BLE, within the default mode of a CLB
+std::string describe_pb_type_hierarchy(const t_pb_type* pb_type);
+
+//Returns the first common parent node of first and second
+const t_pb_graph_node* find_common_parent(const t_pb_graph_node* first, const t_pb_graph_node* second);
 
 /**************************************************************
 * Intra-Logic Block Utility Functions

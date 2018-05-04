@@ -245,11 +245,103 @@ std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin) {
     description += pb_graph_pin->parent_node->pb_type->name;
     description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
     description += '.';
-    description += pb_graph_pin->port->name;
-    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
     return description;
 }
 
+std::string describe_pb_graph_pin_hierarchy(const t_pb_graph_pin* pb_graph_pin) {
+    VTR_ASSERT(pb_graph_pin);
+
+    //Parent nodes
+    std::string description = describe_pb_graph_node_hierarchy(pb_graph_pin->parent_node);
+
+    //Pin
+    description += ".";
+    description += pb_graph_pin->port->name;
+    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
+
+    return description;
+}
+
+std::string describe_pb_graph_node_hierarchy(const t_pb_graph_node* pb_graph_node) {
+    VTR_ASSERT(pb_graph_node);
+    std::string description;
+
+    //Parents
+    const t_pb_graph_node* node = pb_graph_node;
+    while (node) {
+        description = "/" + std::string(node->pb_type->name) + "[" + std::to_string(node->placement_index) + "]" + description;
+
+        node = node->parent_pb_graph_node;
+    }
+
+    return description;
+}
+
+std::string describe_pb_graph_edge_hierarchy(const t_pb_graph_edge* pb_graph_edge) {
+    VTR_ASSERT(pb_graph_edge);
+    std::string description;
+
+    VTR_ASSERT(pb_graph_edge->num_input_pins > 0);
+    VTR_ASSERT(pb_graph_edge->num_output_pins > 0);
+
+    const t_pb_graph_node* common_parent = find_common_parent(pb_graph_edge->input_pins[0]->parent_node, pb_graph_edge->output_pins[0]->parent_node);
+    VTR_ASSERT(common_parent);
+
+    description += describe_pb_graph_node_hierarchy(common_parent);
+    description += "/interconnect:";
+    description += pb_graph_edge->interconnect->name;
+
+    return description;
+}
+
+std::string describe_pb_type_hierarchy(const t_pb_type* pb_type) {
+    VTR_ASSERT(pb_type);
+    std::string description;
+
+    std::string mode_name = "";
+    const t_pb_type* type = pb_type;
+    while (type) {
+        std::string type_description = "/" + std::string(type->name);
+
+        if (type != pb_type) {
+            type_description += "[" + mode_name + "]";
+        }
+
+        description = type_description + description;
+
+
+        t_mode* parent_mode = type->parent_mode;
+
+        if (parent_mode) {
+            mode_name = parent_mode->name;
+            type = parent_mode->parent_pb_type;
+        } else {
+            break;
+        }
+    }
+
+    return description;
+}
+
+const t_pb_graph_node* find_common_parent(const t_pb_graph_node* first, const t_pb_graph_node* second) {
+
+    const t_pb_graph_node* first_node = first;
+
+    while (first_node) {
+        const t_pb_graph_node* second_node = second;
+        while (second_node) {
+            if (first_node == second_node) {
+                return first_node;
+            }
+
+            second_node = second_node->parent_pb_graph_node;
+        }
+        first_node  = first_node->parent_pb_graph_node;
+    }
+
+    //No common parent
+    return nullptr;
+}
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntypes)
     : block_types_(block_types)
