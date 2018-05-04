@@ -67,6 +67,14 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 static void print_pack_molecules(const char *fname,
 		const t_pack_patterns *list_of_pack_patterns, const int num_pack_patterns,
 		const t_pack_molecule *list_of_molecules);
+static void print_pack_pattern(FILE* fp, 
+                               const t_pack_patterns& pack_pattern);
+static void print_pack_pattern_block(FILE* fp, 
+                               const t_pack_pattern_block* pack_pattern_block,
+                               int depth);
+static void print_pack_pattern_connection(FILE* fp, 
+                               const t_pack_pattern_connections* conn,
+                               int depth);
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id);
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node *curr_pb_graph_node, float *cost);
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
@@ -1059,12 +1067,8 @@ static void print_pack_molecules(const char *fname,
 	fprintf(fp, "# of pack patterns %d\n", num_pack_patterns);
 		
 	for (i = 0; i < num_pack_patterns; i++) {
-        VTR_ASSERT(list_of_pack_patterns[i].root_block);
-		fprintf(fp, "pack pattern index %d block count %d name %s root %s\n",
-				list_of_pack_patterns[i].index,
-				list_of_pack_patterns[i].num_blocks,
-				list_of_pack_patterns[i].name,
-				list_of_pack_patterns[i].root_block->pb_type->name);
+        print_pack_pattern(fp, list_of_pack_patterns[i]);
+        fprintf(fp, "\n");
 	}
 
 	list_of_molecules_current = list_of_molecules;
@@ -1099,6 +1103,55 @@ static void print_pack_molecules(const char *fname,
 
 	fclose(fp);
 }
+
+static void print_pack_pattern(FILE* fp, 
+                               const t_pack_patterns& pack_pattern) {
+
+    VTR_ASSERT(pack_pattern.root_block);
+    fprintf(fp, "pack_pattern_index: %d block_count: %d name: '%s' root: '%s' is_chain: %d",
+            pack_pattern.index,
+            pack_pattern.num_blocks,
+            pack_pattern.name,
+            pack_pattern.root_block->pb_type->name,
+            pack_pattern.is_chain);
+    if (pack_pattern.chain_root_pin) {
+        fprintf(fp, " chain_root_pin: '%s'",
+                describe_pb_graph_pin_hierarchy(pack_pattern.chain_root_pin).c_str());
+    } else {
+        fprintf(fp, " chain_root_pin: none");
+    }
+    fprintf(fp, "\n");
+
+    print_pack_pattern_block(fp, pack_pattern.root_block, 1);
+}
+
+static void print_pack_pattern_block(FILE* fp, 
+                               const t_pack_pattern_block* pack_pattern_block,
+                               int depth) {
+    fprintf(fp, "%sblock: %s",
+            vtr::indent(depth, "  ").c_str(),
+            describe_pb_type_hierarchy(pack_pattern_block->pb_type).c_str());
+    if (!pack_pattern_block->connections) {
+        fprintf(fp, " (no outgoing pack patterns)");
+    }
+    fprintf(fp, "\n");
+
+    for (t_pack_pattern_connections* conn = pack_pattern_block->connections; conn != nullptr; conn = conn->next) {
+        if (conn->from_block != pack_pattern_block) continue; //Only print connections where current is source
+        print_pack_pattern_connection(fp, conn, depth + 1);
+        print_pack_pattern_block(fp, conn->to_block, depth + 2);
+    }
+}
+
+static void print_pack_pattern_connection(FILE* fp, 
+                               const t_pack_pattern_connections* conn,
+                               int depth) {
+    fprintf(fp, "%sconn: %s -> %s\n",
+            vtr::indent(depth, "  ").c_str(),
+            describe_pb_graph_pin_hierarchy(conn->from_pin).c_str(),
+            describe_pb_graph_pin_hierarchy(conn->to_pin).c_str());
+}
+
 
 /* Search through all primitives and return the lowest cost primitive that fits this atom block */
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id) {
