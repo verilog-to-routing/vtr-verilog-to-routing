@@ -37,7 +37,7 @@ static int add_pattern_name_to_hash(t_hash **nhash,
 		const char *pattern_name, int *ncount);
 static void discover_pattern_names_in_pb_graph_node(
 		t_pb_graph_node *pb_graph_node, t_hash **nhash,
-		int *ncount);
+		int *ncount, int depth);
 static void forward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
 static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
@@ -106,8 +106,9 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	nhash = alloc_hash_table();
 	ncount = 0;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
+        vtr::printf("Looking for pack patterns within %s\n", device_ctx.block_types[i].name);
 		discover_pattern_names_in_pb_graph_node(
-				device_ctx.block_types[i].pb_graph_head, nhash, &ncount);
+				device_ctx.block_types[i].pb_graph_head, nhash, &ncount, 1);
 	}
 
 	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(ncount, nhash);
@@ -115,6 +116,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
 	for (i = 0; i < ncount; i++) {
 		for (j = 0; j < device_ctx.num_block_types; j++) {
+            vtr::printf("Creating pack pattern %d for %s\n", i, device_ctx.block_types[j].name);
 			expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.block_types[j].pb_graph_head);
 			if (expansion_edge == nullptr) {
 				continue;
@@ -178,7 +180,7 @@ static int add_pattern_name_to_hash(t_hash **nhash,
  */
 static void discover_pattern_names_in_pb_graph_node(
 		t_pb_graph_node *pb_graph_node, t_hash **nhash,
-		int *ncount) {
+		int *ncount, int depth) {
 	int i, j, k, m;
 	int index;
 	bool hasPattern;
@@ -195,26 +197,26 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 			hasPattern = false;
-			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = true;
-					index =
-							add_pattern_name_to_hash(nhash,
+					index = add_pattern_name_to_hash(nhash,
 									pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
 									ncount);
-					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices
-							== nullptr) {
+					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
 						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								vtr::malloc(
-										pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+								vtr::malloc( pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+                    vtr::printf("%sFound pack pattern '%s' (index %d) to input pin %s[%d].%s[%d]\n", 
+                                vtr::indent(depth, "  ").c_str(),
+                                pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                index,
+                                pb_graph_node->pb_type->name,
+                                pb_graph_node->placement_index,
+                                pb_graph_node->input_pins[i][j].port->name,
+                                pb_graph_node->input_pins[i][j].pin_number
+                                );
 				}								
 			}
 			if (hasPattern == true) {
@@ -227,26 +229,26 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 			hasPattern = false;
-			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = true;
-					index =
-							add_pattern_name_to_hash(nhash,
+					index = add_pattern_name_to_hash(nhash,
 									pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
 									ncount);
-					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices
-							== nullptr) {
+					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
 						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								vtr::malloc(
-										pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+								vtr::malloc( pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+                    vtr::printf("%sFound pack pattern '%s' (index %d) from output pin %s[%d].%s[%d]\n", 
+                                vtr::indent(depth, "  ").c_str(),
+                                pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                index,
+                                pb_graph_node->pb_type->name,
+                                pb_graph_node->placement_index,
+                                pb_graph_node->output_pins[i][j].port->name,
+                                pb_graph_node->output_pins[i][j].pin_number
+                                );
 				}
 			}
 			if (hasPattern == true) {
@@ -259,26 +261,26 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
 			hasPattern = false;
-			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = true;
-					index =
-							add_pattern_name_to_hash(nhash,
+					index = add_pattern_name_to_hash(nhash,
 									pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
 									ncount);
-					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices
-							== nullptr) {
+					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices == nullptr) {
 						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								vtr::malloc(
-										pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+								vtr::malloc( pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
+                    vtr::printf("%sFound pack pattern '%s' (index %d) to clock pin %s[%d].%s[%d]\n", 
+                                vtr::indent(depth, "  ").c_str(),
+                                pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                index,
+                                pb_graph_node->pb_type->name,
+                                pb_graph_node->placement_index,
+                                pb_graph_node->clock_pins[i][j].port->name,
+                                pb_graph_node->clock_pins[i][j].pin_number
+                                );
 				}
 			}
 			if (hasPattern == true) {
@@ -289,15 +291,11 @@ static void discover_pattern_names_in_pb_graph_node(
 	}
 
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-				j++) {
-			for (k = 0;
-					k
-							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-					k++) {
+		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 				discover_pattern_names_in_pb_graph_node(
 						&pb_graph_node->child_pb_graph_nodes[i][j][k], nhash,
-						ncount);
+						ncount, depth + 1);
 			}
 		}
 	}
@@ -343,6 +341,8 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 		nlist[curr_pattern->index].root_block = nullptr;
 		nlist[curr_pattern->index].is_chain = false;
 		nlist[curr_pattern->index].index = curr_pattern->index;
+        vtr::printf("Allocating Pack Pattern %d: %s\n", curr_pattern->index, curr_pattern->name);
+
 		curr_pattern = get_next_hash(nhash, &hash_iter);
 	}
 	return nlist;
@@ -386,8 +386,13 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
 				for (m = 0; m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
-					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m]
-							== pattern_index) {
+					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
+                        vtr::printf("Found expansion edge on input pin %s.%s[%d] edge %d pattern %d\n",
+                                    pb_graph_node->pb_type->name,
+                                    pb_graph_node->input_pins[i][j].port->name,
+                                    pb_graph_node->input_pins[i][j].pin_number,
+                                    k,
+                                    pattern_index);
 						return pb_graph_node->input_pins[i][j].output_edges[k];
 					}
 				}
@@ -399,8 +404,13 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
 				for (m = 0; m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
-					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m]
-							== pattern_index) {
+					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
+                        vtr::printf("Found expansion edge on output pin %s.%s[%d] edge %d pattern %d\n",
+                                    pb_graph_node->pb_type->name,
+                                    pb_graph_node->output_pins[i][j].port->name,
+                                    pb_graph_node->output_pins[i][j].pin_number,
+                                    k,
+                                    pattern_index);
 						return pb_graph_node->output_pins[i][j].output_edges[k];
 					}
 				}
@@ -412,8 +422,13 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
 			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
 				for (m = 0; m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
-					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m]
-							== pattern_index) {
+					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
+                        vtr::printf("Found expansion edge on clock pin %s.%s[%d] edge %d pattern %d\n",
+                                    pb_graph_node->pb_type->name,
+                                    pb_graph_node->clock_pins[i][j].port->name,
+                                    pb_graph_node->clock_pins[i][j].pin_number,
+                                    k,
+                                    pattern_index);
 						return pb_graph_node->clock_pins[i][j].output_edges[k];
 					}
 				}
@@ -424,8 +439,7 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
 			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-				edge = find_expansion_edge_of_pattern(pattern_index,
-						&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+				edge = find_expansion_edge_of_pattern(pattern_index, &pb_graph_node->child_pb_graph_nodes[i][j][k]);
 				if (edge != nullptr) {
 					return edge;
 				}
@@ -460,6 +474,9 @@ static void forward_expand_pack_pattern_from_edge(
 		return;
 	}
 
+    vtr::printf("Forward expanding pattern %d edge (%s)\n",
+                curr_pattern_index,
+                describe_pb_graph_edge_hierarchy(expansion_edge).c_str());
 	found = false;
 	for (i = 0; i < expansion_edge->num_output_pins; i++) {
 		if (expansion_edge->output_pins[i]->parent_node->pb_type->num_modes == 0) {
@@ -471,8 +488,7 @@ static void forward_expand_pack_pattern_from_edge(
 
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
 			if (destination_pb_graph_node->temp_scratch_pad == nullptr
-					|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index
-							!= curr_pattern_index) {
+					|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index != curr_pattern_index) {
 				destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
 				destination_block->block_id = *L_num_blocks;
@@ -586,21 +602,27 @@ static void backward_expand_pack_pattern_from_edge(
 		return;
 	}
 
+    vtr::printf("Backward expanding pattern %d edge (%s)\n",
+                curr_pattern_index,
+                describe_pb_graph_edge_hierarchy(expansion_edge).c_str());
 	found = false;
 	for (i = 0; i < expansion_edge->num_input_pins; i++) {
-		if (expansion_edge->input_pins[i]->parent_node->pb_type->num_modes
-				== 0) {
+		if (expansion_edge->input_pins[i]->parent_node->pb_type->num_modes == 0) {
 			source_pb_graph_node = expansion_edge->input_pins[i]->parent_node;
 			VTR_ASSERT(found == false);
 			/* Check assumption that each forced net has only one fan-out */
 			/* This is the source node for destination */
 			found = true;
 
+            vtr::printf("\tBackward expanding pattern %d edge input pin '%s' (no modes)\n",
+                        curr_pattern_index,
+                        describe_pb_graph_pin_hierarchy(expansion_edge->input_pins[i]).c_str());
+
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
-			source_block =
-					(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
+			source_block = (t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
 			if (source_block == nullptr
-					|| source_block->pattern_index != curr_pattern_index) {
+                || source_block->pattern_index != curr_pattern_index) {
+
 				source_block = (t_pack_pattern_block *)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
@@ -609,21 +631,19 @@ static void backward_expand_pack_pattern_from_edge(
 				source_block->pattern_index = curr_pattern_index;
 				source_block->pb_type = source_pb_graph_node->pb_type;
 
-				if (list_of_packing_patterns[curr_pattern_index].root_block
-						== nullptr) {
-					list_of_packing_patterns[curr_pattern_index].root_block =
-							source_block;
+                vtr::printf("\tAdding pattern %d source block %s[%d]\n",
+                            curr_pattern_index,
+                            source_pb_graph_node->pb_type->name,
+                            source_pb_graph_node->placement_index);
+
+				if (list_of_packing_patterns[curr_pattern_index].root_block == nullptr) {
+					list_of_packing_patterns[curr_pattern_index].root_block = source_block;
+                    vtr::printf("\t\tAdded as pattern %d root block\n", curr_pattern_index);
 				}
 
-				for (iport = 0; iport < source_pb_graph_node->num_input_ports;
-						iport++) {
-					for (ipin = 0;
-							ipin < source_pb_graph_node->num_input_pins[iport];
-							ipin++) {
-						for (iedge = 0;
-								iedge
-										< source_pb_graph_node->input_pins[iport][ipin].num_input_edges;
-								iedge++) {
+				for (iport = 0; iport < source_pb_graph_node->num_input_ports; iport++) {
+					for (ipin = 0; ipin < source_pb_graph_node->num_input_pins[iport]; ipin++) {
+						for (iedge = 0; iedge < source_pb_graph_node->input_pins[iport][ipin].num_input_edges; iedge++) {
 							backward_expand_pack_pattern_from_edge(
 									source_pb_graph_node->input_pins[iport][ipin].input_edges[iedge],
 									list_of_packing_patterns,
@@ -633,15 +653,9 @@ static void backward_expand_pack_pattern_from_edge(
 						}
 					}
 				}
-				for (iport = 0; iport < source_pb_graph_node->num_output_ports;
-						iport++) {
-					for (ipin = 0;
-							ipin < source_pb_graph_node->num_output_pins[iport];
-							ipin++) {
-						for (iedge = 0;
-								iedge
-										< source_pb_graph_node->output_pins[iport][ipin].num_output_edges;
-								iedge++) {
+				for (iport = 0; iport < source_pb_graph_node->num_output_ports; iport++) {
+					for (ipin = 0; ipin < source_pb_graph_node->num_output_pins[iport]; ipin++) {
+						for (iedge = 0; iedge < source_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
 							forward_expand_pack_pattern_from_edge(
 									source_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
 									list_of_packing_patterns,
@@ -649,15 +663,9 @@ static void backward_expand_pack_pattern_from_edge(
 						}
 					}
 				}
-				for (iport = 0; iport < source_pb_graph_node->num_clock_ports;
-						iport++) {
-					for (ipin = 0;
-							ipin < source_pb_graph_node->num_clock_pins[iport];
-							ipin++) {
-						for (iedge = 0;
-								iedge
-										< source_pb_graph_node->clock_pins[iport][ipin].num_input_edges;
-								iedge++) {
+				for (iport = 0; iport < source_pb_graph_node->num_clock_ports; iport++) {
+					for (ipin = 0; ipin < source_pb_graph_node->num_clock_pins[iport]; ipin++) {
+						for (iedge = 0; iedge < source_pb_graph_node->clock_pins[iport][ipin].num_input_edges; iedge++) {
 							backward_expand_pack_pattern_from_edge(
 									source_pb_graph_node->clock_pins[iport][ipin].input_edges[iedge],
 									list_of_packing_patterns,
@@ -695,6 +703,10 @@ static void backward_expand_pack_pattern_from_edge(
 				pack_pattern_connection->next = destination_block->connections;
 				destination_block->connections = pack_pattern_connection;
 
+                vtr::printf("\tAdding connection %s -> %s\n",
+                            describe_pb_graph_pin_hierarchy(pack_pattern_connection->from_pin).c_str(),
+                            describe_pb_graph_pin_hierarchy(pack_pattern_connection->to_pin).c_str());
+
 				if (source_block == destination_block) {
 					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 							"Invalid packing pattern defined. Source and destination block are the same (%s).\n",
@@ -713,16 +725,14 @@ static void backward_expand_pack_pattern_from_edge(
 				}
 			} else {
 				for (j = 0; j < expansion_edge->input_pins[i]->num_input_edges; j++) {
-					if (expansion_edge->input_pins[i]->input_edges[j]->infer_pattern
-							== true) {
+					if (expansion_edge->input_pins[i]->input_edges[j]->infer_pattern == true) {
 						backward_expand_pack_pattern_from_edge(
 								expansion_edge->input_pins[i]->input_edges[j],
 								list_of_packing_patterns, curr_pattern_index,
 								destination_pin, destination_block, L_num_blocks);
 					} else {
 						for (k = 0; k < expansion_edge->input_pins[i]->input_edges[j]->num_pack_patterns; k++) {
-							if (expansion_edge->input_pins[i]->input_edges[j]->pack_pattern_indices[k]
-									== curr_pattern_index) {
+							if (expansion_edge->input_pins[i]->input_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
 								VTR_ASSERT(found == false);
 								/* Check assumption that each forced net has only one fan-out */
 								found = true;
