@@ -11,11 +11,13 @@ struct t_pack_pattern_connections;
 struct t_pack_pattern_block {
 	int pattern_index; /* index of pattern that this block is a part of */
 	const t_pb_type *pb_type; /* pb_type that this block is an instance of */
-	t_pack_pattern_connections *connections; /* linked list of connections of logic blocks in pattern */
+	t_pack_pattern_connections *connections; /* linked list of connections involving this block (as either a from or to block) */
 	int block_id;
 };
 
-/* Describes connections of s_pack_pattern_block */
+/* Describes connections of t_pack_pattern_block 
+ * Note that each t_pack_pattern_block has a unique copy of the connections it is involved with 
+ */
 struct t_pack_pattern_connections {
 	t_pack_pattern_block *from_block;
 	t_pb_graph_pin *from_pin;
@@ -23,7 +25,7 @@ struct t_pack_pattern_connections {
 	t_pack_pattern_block *to_block;
 	t_pb_graph_pin *to_pin;
 
-	t_pack_pattern_connections *next;
+	t_pack_pattern_connections *next; //The next connection in the linked list
 };
 
 struct t_pack_patterns {

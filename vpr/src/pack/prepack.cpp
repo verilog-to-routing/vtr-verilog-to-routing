@@ -661,27 +661,29 @@ static void backward_expand_pack_pattern_from_edge(
 				}
 			}
 			if (destination_pin != nullptr) {
-				VTR_ASSERT(
-						((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
-				source_block =
-						(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
-				pack_pattern_connection = (t_pack_pattern_connections *)vtr::calloc(1,
-						sizeof(t_pack_pattern_connections));
+				VTR_ASSERT( ((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
+
+				source_block = (t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
+
+                //Create the connection
+				pack_pattern_connection = (t_pack_pattern_connections *)vtr::calloc(1, sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
-				pack_pattern_connection->from_pin =
-						expansion_edge->input_pins[i];
+				pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
 				pack_pattern_connection->to_block = destination_block;
 				pack_pattern_connection->to_pin = destination_pin;
+
+                //Add the new connection to the source block
 				pack_pattern_connection->next = source_block->connections;
 				source_block->connections = pack_pattern_connection;
 
-				pack_pattern_connection = (t_pack_pattern_connections *)vtr::calloc(1,
-						sizeof(t_pack_pattern_connections));
+                //Create a duplicate connection to store with the sink block
+				pack_pattern_connection = (t_pack_pattern_connections *)vtr::calloc(1, sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
-				pack_pattern_connection->from_pin =
-						expansion_edge->input_pins[i];
+				pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
 				pack_pattern_connection->to_block = destination_block;
 				pack_pattern_connection->to_pin = destination_pin;
+
+                //Add the duplicate connection to the destination block
 				pack_pattern_connection->next = destination_block->connections;
 				destination_block->connections = pack_pattern_connection;
 
