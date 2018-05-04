@@ -77,6 +77,16 @@ std::array<std::string,2> split_ext(const std::string& filename) {
     return name_ext;
 }
 
+std::string indent(int depth, std::string indent) {
+    std::string result;
+
+    for (int i = 0; i < depth; i++) {
+        result += indent;
+    }
+    
+    return result;
+}
+
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
     auto pos = input.find(search);
 

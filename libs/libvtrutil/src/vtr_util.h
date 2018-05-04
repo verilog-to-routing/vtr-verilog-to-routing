@@ -37,6 +37,9 @@ namespace vtr {
     //  For example, the path "/home/user/my_files/test.blif" -> "/home/user/my_files/"
     std::string dirname(const std::string& path);
 
+    //Returns a string presenting an indent of depth
+    std::string indent(int depth, std::string indent="    ");
+
     //Joins a sequence by a specified delimeter
     //  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
     //  would return "home/user/my_files/test.blif"
