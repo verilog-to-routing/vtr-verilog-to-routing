@@ -132,6 +132,16 @@ struct BlifAllocCallback : public blifparse::Callback {
             VTR_ASSERT_MSG(!blk_model->outputs->next, ".names model has multiple output ports");
             VTR_ASSERT_MSG(blk_model->outputs->size == 1, ".names model has non-single-bit output");
 
+            //Check if the output net already has a driver
+            std::string output_net_name = nets[nets.size()-1];
+            AtomNetId output_net_id = curr_model().create_net(output_net_name);
+            AtomPinId output_net_driver_pin_id = curr_model().net_driver(output_net_id);
+            if (output_net_driver_pin_id != AtomPinId::INVALID()) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
+                          "Net '%s' already has a driver (multi-driven nets are not supported)",
+                          output_net_name.c_str());
+            }
+
             //Convert the single-output cover to a netlist truth table
             AtomNetlist::TruthTable truth_table;
             for(const auto& row : so_cover) {
@@ -184,9 +194,8 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
 
             //Create output
-            AtomNetId net_id = curr_model().create_net(nets[nets.size()-1]);
             AtomPortId output_port_id = curr_model().create_port(blk_id, blk_model->outputs);
-            curr_model().create_pin(output_port_id, 0, net_id, PinType::DRIVER, output_is_const);
+            curr_model().create_pin(output_port_id, 0, output_net_id, PinType::DRIVER, output_is_const);
         }
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
