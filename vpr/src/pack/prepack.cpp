@@ -29,6 +29,17 @@ using namespace std;
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "echo_files.h"
+#include "pb_graph_walker.h"
+
+/*
+ * Local Data Types
+ */
+
+struct t_pack_pattern_connection {
+    t_pb_graph_pin* from_pin;
+    t_pb_graph_pin* to_pin;
+    std::string pattern_name;
+};
 
 /*****************************************/
 /*Local Function Declaration			 */
@@ -80,6 +91,11 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
+static void init_pack_patterns();
+static std::vector<t_pack_pattern_connection> collect_type_pack_pattern_connections(t_type_ptr type);
+static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern);
+static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& pattern, int node, int depth, std::set<int>& visited);
+
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -101,6 +117,8 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	t_pack_patterns *list_of_packing_patterns;
 	t_pb_graph_edge *expansion_edge;
     auto& device_ctx = g_vpr_ctx.device();
+
+    init_pack_patterns();
 
 	/* alloc and initialize array of packing patterns based on architecture complex blocks */
 	nhash = alloc_hash_table();
@@ -1317,5 +1335,184 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	}
 }
 
+//Walks the PB graph collecting any pack patterns found on edges
+class PbGraphPackPatternCollector : public PbGraphWalker {
+    public:
+        void on_edge(t_pb_graph_edge* edge) override {
+            if (edge->num_pack_patterns < 1) return;
 
+            for (int ipin = 0; ipin < edge->num_input_pins; ++ipin) {
+                for (int opin = 0; opin < edge->num_output_pins; ++opin) {
+                    for (int ipattern = 0; ipattern < edge->num_pack_patterns; ++ipattern) {
+                        t_pack_pattern_connection conn;
+                        conn.from_pin = edge->input_pins[ipin];
+                        conn.to_pin = edge->output_pins[opin];
+                        conn.pattern_name = edge->pack_pattern_names[ipattern];
+                        
+                        pack_pattern_connections.push_back(conn);
+                    }
+                }
+            }
+        }
+
+        std::vector<t_pack_pattern_connection> pack_pattern_connections;
+};
+
+static void init_pack_patterns() {
+    std::vector<t_pack_patterns*> pack_patterns;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        std::vector<t_pack_pattern_connection> pack_pattern_connections = collect_type_pack_pattern_connections(&device_ctx.block_types[itype]);
+
+        if (pack_pattern_connections.empty()) continue;
+
+        vtr::printf("TYPE: %s\n", device_ctx.block_types[itype].name);
+
+        for (auto conn : pack_pattern_connections) {
+            vtr::printf("pack_pattern '%s' conn: %s -> %s\n", 
+                        conn.pattern_name.c_str(),
+                        describe_pb_graph_pin_hierarchy(conn.from_pin).c_str(),
+                        describe_pb_graph_pin_hierarchy(conn.to_pin).c_str());
+
+        }
+
+        t_pack_pattern pack_pattern;
+
+        //Create the nodes
+        std::map<t_pb_graph_node*, int> pb_graph_node_to_pattern_node_id;
+        for (auto conn : pack_pattern_connections) {
+            t_pb_graph_pin* from_pin = conn.from_pin;
+            t_pb_graph_pin* to_pin = conn.to_pin;
+
+            if (from_pin) {
+                t_pb_graph_node* from_node = from_pin->parent_node;
+                if (!pb_graph_node_to_pattern_node_id.count(from_node)) {
+                    //Create
+                    int pattern_node_id = pack_pattern.nodes.size();
+                    pack_pattern.nodes.emplace_back(from_node);
+
+                    //Save ID
+                    pb_graph_node_to_pattern_node_id[from_node] = pattern_node_id;
+                }
+
+                if (!from_node->parent_pb_graph_node) { //Top-level block
+                    //Mark as chain root (or verify consistent)
+                    if (!pack_pattern.is_chain) {
+                        pack_pattern.is_chain = true;
+                        pack_pattern.root_node_id = pb_graph_node_to_pattern_node_id[from_node];
+                    } else {
+                        VTR_ASSERT(pack_pattern.root_node_id == pb_graph_node_to_pattern_node_id[from_node]);
+                    }
+                }
+            }
+
+            if (to_pin) {
+                t_pb_graph_node* to_node = to_pin->parent_node;
+                if (!pb_graph_node_to_pattern_node_id.count(to_node)) {
+                    //Create
+                    int pattern_node_id = pack_pattern.nodes.size();
+                    pack_pattern.nodes.emplace_back(to_node);
+
+                    //Save ID
+                    pb_graph_node_to_pattern_node_id[to_node] = pattern_node_id;
+                }
+
+                if (!to_node->parent_pb_graph_node) { //Top-level block
+                    //Mark as chain root (or verify consistent)
+                    if (!pack_pattern.is_chain) {
+                        pack_pattern.is_chain = true;
+                        pack_pattern.root_node_id = pb_graph_node_to_pattern_node_id[to_node];
+                    } else {
+                        VTR_ASSERT(pack_pattern.root_node_id == pb_graph_node_to_pattern_node_id[to_node]);
+                    }
+                }
+            }
+        }
+
+        //Create the edges
+        std::map<std::pair<t_pb_graph_pin*,t_pb_graph_pin*>, int> conn_to_pattern_edge;
+        for (auto conn : pack_pattern_connections) {
+            auto key = std::make_pair(conn.from_pin, conn.to_pin);
+            if (!conn_to_pattern_edge.count(key)) {
+                //Find connected nodes
+                VTR_ASSERT(pb_graph_node_to_pattern_node_id.count(conn.from_pin->parent_node));
+                VTR_ASSERT(pb_graph_node_to_pattern_node_id.count(conn.to_pin->parent_node));
+                int from_node_id = pb_graph_node_to_pattern_node_id[conn.from_pin->parent_node];
+                int to_node_id = pb_graph_node_to_pattern_node_id[conn.to_pin->parent_node];
+
+                //Create edge
+                int edge_id = pack_pattern.edges.size();
+                pack_pattern.edges.emplace_back(); 
+
+                pack_pattern.edges[edge_id].from_node_id = from_node_id;
+                pack_pattern.edges[edge_id].to_node_id = to_node_id;
+                pack_pattern.edges[edge_id].from_pin = conn.from_pin;
+                pack_pattern.edges[edge_id].to_pin = conn.to_pin;
+
+                //Save ID
+                conn_to_pattern_edge[key] = edge_id;
+
+
+                //Add edge references to connected nodes
+                pack_pattern.nodes[from_node_id].out_edge_ids.push_back(edge_id);
+                pack_pattern.nodes[to_node_id].in_edge_ids.push_back(edge_id);
+            }
+        }
+
+        if (!pack_pattern.is_chain) {
+            //Record the non-chain root
+            //
+            //If this is a chain structure it's root has already been recorded,
+            //otherwise look for the node with no incoming pattern edges
+            for (int inode = 0; inode < (int) pack_pattern.nodes.size(); ++inode) {
+                if (pack_pattern.nodes[inode].in_edge_ids.empty()) {
+                    VTR_ASSERT_MSG(pack_pattern.root_node_id == OPEN, "Only one pack pattern root node");
+                    pack_pattern.root_node_id = inode;
+                }
+            }
+        }
+        
+
+        print_pack_pattern_debug(stdout, pack_pattern);        
+    }
+}
+
+static std::vector<t_pack_pattern_connection> collect_type_pack_pattern_connections(t_type_ptr type) {
+    PbGraphPackPatternCollector collector;
+
+    collector.walk(type->pb_graph_head);
+
+    return collector.pack_pattern_connections;
+}
+
+static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern) {
+    VTR_ASSERT(pattern.root_node_id != OPEN);
+    fprintf(fp, "pack_pattern: %s root: %s (#%d)\n",
+                pattern.name.c_str(),
+                describe_pb_graph_node_hierarchy(pattern.nodes[pattern.root_node_id].pb_graph_node).c_str(),
+                pattern.root_node_id);
+
+    std::set<int> visited;
+    print_pack_pattern_debug_recurr(fp, pattern, pattern.root_node_id, 1, visited);
+}
+
+static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& pattern, int node, int depth, std::set<int>& visited) {
+    if (visited.count(node)) return;
+    visited.insert(node);
+
+    fprintf(fp, "%snode: %s (#%d)\n",
+            vtr::indent(depth, "  ").c_str(),
+            describe_pb_graph_node_hierarchy(pattern.nodes[node].pb_graph_node).c_str(),
+            node);
+
+    for (int out_edge : pattern.nodes[node].out_edge_ids) {
+        fprintf(fp, "%sedge: %s -> %s\n",
+                vtr::indent(depth + 1, "  ").c_str(),
+                describe_pb_graph_pin_hierarchy(pattern.edges[out_edge].from_pin).c_str(),
+                describe_pb_graph_pin_hierarchy(pattern.edges[out_edge].to_pin).c_str());
+        int out_node = pattern.edges[out_edge].to_node_id;
+        print_pack_pattern_debug_recurr(fp, pattern, out_node, depth+2, visited); 
+    }
+}
 

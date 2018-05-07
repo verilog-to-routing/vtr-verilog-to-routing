@@ -7,6 +7,52 @@
 #include "logic_types.h"
 #include "physical_types.h"
 
+//An edge in a pack pattern graph
+struct t_pack_pattern_edge {
+    int from_node_id = OPEN; //From node's id in t_pack_pattern::nodes
+    int to_node_id = OPEN; //To node's id in t_pack_pattern::nodes
+    t_pb_graph_pin* from_pin = nullptr; //Driving PB graph pin
+    t_pb_graph_pin* to_pin = nullptr; //Sink PB graph pin
+};
+
+//A node in a pack pattern graph
+struct t_pack_pattern_node {
+    t_pack_pattern_node(t_pb_graph_node* node)
+        : pb_graph_node(node) {}
+
+    t_pb_graph_node* pb_graph_node = nullptr; //Associated PB graph node
+
+    std::vector<int> in_edge_ids; //Incoming edge ids in t_pack_pattern::edges
+    std::vector<int> out_edge_ids; //Outgoing edge ids in t_pack_pattern::edges
+};
+
+//A pack pattern represented as a graph
+//
+//This is usually a strict tree, unless is_chain is true
+struct t_pack_pattern {
+    //The name of the pack pattern
+    std::string name;
+
+    //The root node id of the pattern
+    int root_node_id = OPEN;
+
+    //If true represents a chain-like structure which 
+    //stretches accross multiple logic blocks
+    //
+    //Note that if this is a chain, then the graph is not
+    //strictly a tree, but the root (top-level) will have both
+    //in-coming and out-going edges forming a loop.
+    bool is_chain = false; 
+
+    //The set of edges in the pack pattern graph
+    std::vector<t_pack_pattern_node> nodes;
+
+    //The set of nodes in the pack pattern graph
+    std::vector<t_pack_pattern_edge> edges;
+};
+
+
+//OLD
 struct t_pack_pattern_connections;
 struct t_pack_pattern_block {
 	int pattern_index; /* index of pattern that this block is a part of */
