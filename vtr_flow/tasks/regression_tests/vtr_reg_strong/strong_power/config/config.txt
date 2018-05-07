@@ -28,4 +28,4 @@ parse_file=vpr_power.txt
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_power.txt
