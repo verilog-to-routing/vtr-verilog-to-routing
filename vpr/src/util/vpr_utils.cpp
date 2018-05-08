@@ -244,8 +244,7 @@ std::string describe_primitive_pb_graph_pin_type(const t_pb_graph_pin* pb_graph_
     std::string description;
     description += pb_graph_pin->parent_node->pb_type->name;
     description += '.';
-    description += pb_graph_pin->port->name;
-    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
+    description += describe_pb_graph_pin_port(pb_graph_pin);
     return description;
 }
 
@@ -255,6 +254,13 @@ std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin) {
     description += pb_graph_pin->parent_node->pb_type->name;
     description += "[" + std::to_string(pb_graph_pin->parent_node->placement_index) + "]";
     description += '.';
+    description += describe_pb_graph_pin_port(pb_graph_pin);
+    return description;
+}
+
+std::string describe_pb_graph_pin_port(const t_pb_graph_pin* pb_graph_pin) {
+    VTR_ASSERT(pb_graph_pin);
+    std::string description;
     description += pb_graph_pin->port->name;
     description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
     return description;
@@ -268,8 +274,7 @@ std::string describe_pb_graph_pin_hierarchy(const t_pb_graph_pin* pb_graph_pin) 
 
     //Pin
     description += ".";
-    description += pb_graph_pin->port->name;
-    description += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
+    description += describe_pb_graph_pin_port(pb_graph_pin);
 
     return description;
 }
