@@ -73,7 +73,12 @@ std::vector<std::set<MoleculeDFA::Match>> MoleculeDFA::dfa_step(const std::vecto
 void MoleculeDFA::collect_accepted(std::set<Match>& accepted_matches, const std::vector<std::set<Match>>& current_matches) const {
     for (int istate = 0; istate < (int) states_.size(); ++istate) {
         if (states_[istate].accepting) {
-            accepted_matches.insert(current_matches[istate].begin(), current_matches[istate].end());
+            for (const auto& match : current_matches[istate]) {
+
+                Match accepted_match = match;
+                accepted_match.accepted_state = istate;
+                accepted_matches.insert(accepted_match);
+            }
         }
     }
 }
