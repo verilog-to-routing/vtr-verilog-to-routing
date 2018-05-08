@@ -697,10 +697,12 @@ void ProcessLutClass(t_pb_type *lut_pb_type) {
             if (input_spec.instance_name() == lut_pb_type->name) {
                 //Driver
                 interconn_to_annotate = output_direct;
-            } else {
-                VTR_ASSERT(output_spec.instance_name() == lut_pb_type->name);
+            } else if (output_spec.instance_name() == lut_pb_type->name) {
                 //Sink
                 interconn_to_annotate = input_direct;
+            } else {
+                //Interconnect unrelated to this class
+                continue;
             }
 
             interconn_to_annotate->annotations = (t_pin_to_pin_annotation*) vtr::realloc(interconn_to_annotate->annotations, ++interconn_to_annotate->num_annotations * sizeof(t_pin_to_pin_annotation));
