@@ -804,7 +804,7 @@ struct t_pb_graph_node {
 
     //Returns the number of pins on this graph node
     //  Note this is the total for all ports on this node exluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
-    int num_pins() {
+    int num_pins() const {
         int npins = 0;
 
         for(int iport = 0; iport < num_input_ports; ++iport) {
@@ -820,6 +820,14 @@ struct t_pb_graph_node {
         }
 
         return npins;
+    }
+
+    int num_modes() const {
+        return pb_type->num_modes;
+    }
+
+    bool is_primitive() const {
+        return num_modes() == 0;
     }
 };
 
