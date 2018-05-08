@@ -12,6 +12,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <queue>
 #include <map>
 using namespace std;
 
@@ -30,6 +32,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "echo_files.h"
 #include "pb_graph_walker.h"
+#include "molecule_dfa.h"
 
 /*
  * Local Data Types
@@ -94,8 +97,13 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 static void init_pack_patterns();
 static std::map<std::string,std::vector<t_pack_pattern_connection>> collect_type_pack_pattern_connections(t_type_ptr type);
 static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::vector<t_pack_pattern_connection>& connections);
+static std::vector<t_netlist_pack_pattern> abstract_pack_patterns(const std::vector<t_pack_pattern>& arch_pack_patterns);
+static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_pack_pattern);
+static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_pattern> netlist_pack_patterns);
 static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern);
 static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& pattern, int node, int depth, std::set<int>& visited);
+static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern);
+static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& arch_pattern);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -1360,9 +1368,11 @@ class PbGraphPackPatternCollector : public PbGraphWalker {
 };
 
 static void init_pack_patterns() {
-    std::vector<t_pack_pattern> pack_patterns;
+    std::vector<t_pack_pattern> arch_pack_patterns;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
     for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
         const auto& pack_pattern_connections = collect_type_pack_pattern_connections(&device_ctx.block_types[itype]);
 
@@ -1371,11 +1381,31 @@ static void init_pack_patterns() {
         for (auto kv : pack_pattern_connections) {
             t_pack_pattern pack_pattern = build_pack_pattern(kv.first, kv.second);
 
-            pack_patterns.push_back(pack_pattern);
+            arch_pack_patterns.push_back(pack_pattern);
+
+
+            std::ofstream ofs("arch_pack_pattern." + pack_pattern.name + ".echo");
+            write_arch_pack_pattern_dot(ofs, pack_pattern);
 
             print_pack_pattern_debug(stdout, pack_pattern);        
         }
     }
+
+    std::vector<t_netlist_pack_pattern> netlist_pack_patterns = abstract_pack_patterns(arch_pack_patterns);
+
+    for (const auto& pack_pattern : netlist_pack_patterns) {
+        std::ofstream ofs("netlist_pack_pattern." + pack_pattern.name + ".echo");
+        write_netlist_pack_pattern_dot(ofs, pack_pattern);
+    }
+
+    MoleculeDFA pack_pattern_matcher = build_pack_pattern_matcher(netlist_pack_patterns);
+
+    pack_pattern_matcher.match_all(atom_ctx.nlist);
+
+    //std::vector<t_netlist_pack_pattern> netlist_pack_patterns;
+    //for (const auto& pattern : arch_pack_patterns) {
+        //abstract_pack_pattern(netlist_pack_patterns, pattern);
+    //}
 }
 
 static std::map<std::string,std::vector<t_pack_pattern_connection>> collect_type_pack_pattern_connections(t_type_ptr type) {
@@ -1386,15 +1416,186 @@ static std::map<std::string,std::vector<t_pack_pattern_connection>> collect_type
     return collector.pack_pattern_connections;
 }
 
+static std::vector<t_netlist_pack_pattern> abstract_pack_patterns(const std::vector<t_pack_pattern>& arch_pack_patterns) {
+    std::vector<t_netlist_pack_pattern> netlist_pack_patterns;
+
+    for (auto arch_pattern : arch_pack_patterns) {
+        auto netlist_pattern = abstract_pack_pattern(arch_pattern);
+        netlist_pack_patterns.push_back(netlist_pattern);
+    }
+
+    return netlist_pack_patterns;
+}
+
+static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_pattern) {
+
+    struct EdgeInfo {
+        EdgeInfo(int from_node, int from_edge, int out_edge)
+            : from_arch_node(from_node)
+            , from_arch_edge(from_edge)
+            , out_arch_edge(out_edge) {}
+
+        int from_arch_node = OPEN; //Last primitive node we came from
+        int from_arch_edge = OPEN; //Last primitive edge we came from
+        int out_arch_edge = OPEN; //Edge to current node
+    };
+
+    std::vector<EdgeInfo> arch_abstract_edges;
+
+    //Breadth-First traversal of arch pack pattern graph, 
+    //to record which primitives are reachable from each other.
+    //
+    //The resulting edges are abstracted from the 
+    //pb_graph hierarchy and contain only primitives (no intermediate
+    //hiearchy)
+    std::set<int> visited;
+    std::queue<EdgeInfo> q;
+
+    q.emplace(arch_pattern.root_node_id, OPEN, OPEN); //Starting at root
+
+    while (!q.empty()) {
+        EdgeInfo info = q.front();
+        q.pop();
+
+        int curr_node = arch_pattern.edges[info.out_arch_edge].to_node_id;
+
+        if (visited.count(curr_node)) continue; //Don't revisit to avoid loops
+        visited.insert(curr_node);
+        
+        bool is_primitive = arch_pattern.nodes[curr_node].pb_graph_node->is_primitive();
+
+        if (is_primitive) {
+            //Record the primitive-to-primitive edge used to reach this node
+            arch_abstract_edges.push_back(info);
+        }
+
+        //Expand out edges
+        for (auto out_edge : arch_pattern.nodes[curr_node].out_edge_ids) {
+
+            if (is_primitive) {
+                //Expanding from a primitive, use the current node as from
+                q.emplace(curr_node, out_edge, out_edge);
+            } else {
+                //Expanding from a non-primitive, re-use the previous primtiive as from
+                q.emplace(info.from_arch_node, info.from_arch_edge, out_edge);
+            }
+        }
+    }
+
+
+    //
+    //Build the netlist pattern from the edges collected above
+    //
+    t_netlist_pack_pattern netlist_pattern;
+    netlist_pattern.name = arch_pattern.name;
+
+    std::map<int,int> arch_to_netlist_pattern_node;
+
+    for (auto arch_abstract_edge : arch_abstract_edges) {
+
+        if (arch_abstract_edge.out_arch_edge == OPEN) {
+            //Root
+
+            int root_node = OPEN;
+
+            int arch_node = arch_abstract_edge.from_arch_node;
+            if (arch_to_netlist_pattern_node.count(arch_node)) {
+                //Existing
+                root_node = arch_to_netlist_pattern_node[arch_node];
+            } else {
+                //Create
+                root_node = netlist_pattern.nodes.size();
+                netlist_pattern.nodes.emplace_back();
+
+                //Initialize
+                netlist_pattern.nodes[root_node].model_type = arch_pattern.nodes[arch_node].pb_graph_node->pb_type->model;
+
+                //Save Id
+                arch_to_netlist_pattern_node[arch_node] = root_node;
+            }
+
+            //Assign root
+            VTR_ASSERT(netlist_pattern.root_node == OPEN);
+            netlist_pattern.root_node = root_node;
+        } else {
+            //Edge
+
+            //Find or create to node
+            int netlist_to_node = OPEN;
+            int arch_to_node = arch_pattern.edges[arch_abstract_edge.out_arch_edge].to_node_id;
+            t_pb_graph_pin* to_pin = arch_pattern.edges[arch_abstract_edge.out_arch_edge].to_pin;
+            if (arch_to_netlist_pattern_node.count(arch_to_node)) {
+                //Existing
+                netlist_to_node = arch_to_netlist_pattern_node[arch_to_node];
+            } else {
+                //Create
+                netlist_to_node = netlist_pattern.nodes.size();
+                netlist_pattern.nodes.emplace_back();
+
+                //Initialize
+                netlist_pattern.nodes[netlist_to_node].model_type = to_pin->parent_node->pb_type->model;
+
+                //Save Id
+                arch_to_netlist_pattern_node[arch_to_node] = netlist_to_node;
+            }
+            VTR_ASSERT(netlist_to_node != OPEN);
+
+
+            //Find or create from node
+            int netlist_from_node = OPEN;
+            int arch_from_node = arch_abstract_edge.from_arch_node;
+            t_pb_graph_pin* from_pin = arch_pattern.edges[arch_abstract_edge.from_arch_edge].from_pin;
+            if (arch_to_netlist_pattern_node.count(arch_from_node)) {
+                //Existing
+                netlist_from_node = arch_to_netlist_pattern_node[arch_from_node];
+            } else {
+                //Create
+                netlist_from_node = netlist_pattern.nodes.size(); //Reserve Id
+                netlist_pattern.nodes.emplace_back();
+
+                //Initialize
+                netlist_pattern.nodes[netlist_from_node].model_type = from_pin->parent_node->pb_type->model;
+
+                //Save Id
+                arch_to_netlist_pattern_node[arch_from_node] = netlist_from_node;
+            }
+            VTR_ASSERT(netlist_from_node != OPEN);
+
+            //Create edge
+            int netlist_edge = netlist_pattern.edges.size();
+            netlist_pattern.edges.emplace_back();
+
+            //Initialize
+            netlist_pattern.edges[netlist_edge].from_model = from_pin->parent_node->pb_type->model;
+            netlist_pattern.edges[netlist_edge].from_model_port = from_pin->port->model_port;
+            netlist_pattern.edges[netlist_edge].from_port_pin = from_pin->pin_number;
+
+            netlist_pattern.edges[netlist_edge].to_model = to_pin->parent_node->pb_type->model;
+            netlist_pattern.edges[netlist_edge].to_model_port = to_pin->port->model_port;
+            netlist_pattern.edges[netlist_edge].to_port_pin = to_pin->pin_number;
+
+            netlist_pattern.edges[netlist_edge].from_node_id = netlist_from_node;
+            netlist_pattern.edges[netlist_edge].to_node_id = netlist_to_node;
+
+            //Update node refs
+            netlist_pattern.nodes[netlist_from_node].out_edge_ids.push_back(netlist_edge);
+            netlist_pattern.nodes[netlist_to_node].in_edge_ids.push_back(netlist_edge);
+        }
+    }
+
+
+    return netlist_pattern;
+}
+
 static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::vector<t_pack_pattern_connection>& connections) {
     t_pack_pattern pack_pattern;
+    pack_pattern.name = pattern_name;
 
     for (auto conn : connections) {
         vtr::printf("pack_pattern '%s' conn: %s -> %s\n", 
                     conn.pattern_name.c_str(),
                     describe_pb_graph_pin_hierarchy(conn.from_pin).c_str(),
                     describe_pb_graph_pin_hierarchy(conn.to_pin).c_str());
-
     }
 
     //Create the nodes
@@ -1528,3 +1729,81 @@ static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& patt
     }
 }
 
+
+static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_pattern> netlist_pack_patterns) {
+    MoleculeDFA dfa;
+
+    int start_state = dfa.add_state(false);
+    dfa.set_start_state(start_state);
+
+    for (auto& pattern : netlist_pack_patterns) {
+        int lut_ff_accept_state = dfa.add_state(true);
+
+        dfa.add_state_transition(start_state, lut_ff_accept_state, pattern.edges[0]);
+    }
+
+    std::ofstream ofs("dfa.dot");
+    dfa.write_dot(ofs);
+
+    return dfa;
+}
+
+static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& arch_pattern) {
+    os << "#Dot file of architecture pack pattern graph\n";
+    os << "digraph " << arch_pattern.name << " {\n";
+
+    for (size_t inode = 0; inode < arch_pattern.nodes.size(); ++inode) {
+        os << "N" << inode;
+        
+        os << " [";
+
+        os << "label=\"" << describe_pb_graph_node_hierarchy(arch_pattern.nodes[inode].pb_graph_node) << "\"";
+
+        os << "];\n";
+    }
+
+    for (size_t iedge = 0; iedge < arch_pattern.edges.size(); ++iedge) {
+        os << "N" << arch_pattern.edges[iedge].from_node_id << " -> N" << arch_pattern.edges[iedge].to_node_id;
+        os << " [";
+
+        os << "label=\"" ;
+        os << describe_pb_graph_pin_port(arch_pattern.edges[iedge].from_pin);
+        os << "\\n -> ";
+        os << describe_pb_graph_pin_port(arch_pattern.edges[iedge].to_pin);
+        os << "\"";
+
+        os << "];\n";
+    }
+
+    os << "}\n";
+}
+
+static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern) {
+    os << "#Dot file of netlist pack pattern graph\n";
+    os << "digraph " << netlist_pattern.name << " {\n";
+
+    for (size_t inode = 0; inode < netlist_pattern.nodes.size(); ++inode) {
+        os << "N" << inode;
+        
+        os << " [";
+
+        os << "label=\"" << netlist_pattern.nodes[inode].model_type->name << "\"";
+
+        os << "];\n";
+    }
+
+    for (size_t iedge = 0; iedge < netlist_pattern.edges.size(); ++iedge) {
+        os << "N" << netlist_pattern.edges[iedge].from_node_id << " -> N" << netlist_pattern.edges[iedge].to_node_id;
+        os << " [";
+
+        os << "label=\"" ;
+        os << netlist_pattern.edges[iedge].from_model_port->name << "[" << netlist_pattern.edges[iedge].from_port_pin << "]";
+        os << "\\n -> ";
+        os << netlist_pattern.edges[iedge].to_model_port->name << "[" << netlist_pattern.edges[iedge].to_port_pin << "]";
+        os << "\"";
+
+        os << "];\n";
+    }
+
+    os << "}\n";
+}

@@ -51,6 +51,35 @@ struct t_pack_pattern {
     std::vector<t_pack_pattern_edge> edges;
 };
 
+struct t_netlist_pack_pattern_edge {
+    int from_node_id = OPEN;
+    int to_node_id = OPEN;
+
+    t_model* from_model = nullptr;
+    t_model_ports* from_model_port = nullptr;
+    int from_port_pin; //Pin index within from_model_port
+
+    t_model* to_model = nullptr;
+    t_model_ports* to_model_port = nullptr;
+    int to_port_pin; //Pin index within to_model_port
+};
+
+struct t_netlist_pack_pattern_node {
+    t_model* model_type = nullptr;
+
+    std::vector<int> in_edge_ids;
+    std::vector<int> out_edge_ids;
+};
+
+struct t_netlist_pack_pattern {
+    std::string name;
+
+    int root_node = OPEN;
+
+    std::vector<t_netlist_pack_pattern_node> nodes;
+    std::vector<t_netlist_pack_pattern_edge> edges;
+};
+
 
 //OLD
 struct t_pack_pattern_connections;
