@@ -55,6 +55,7 @@
 #include "arch_types.h"
 #include "arch_util.h"
 #include "arch_error.h"
+#include "echo_arch.h"
 
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
@@ -95,6 +96,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
+static void ProcessPb_TypeClasses(t_pb_type* pb_type);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -1152,16 +1154,9 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 
         check_leaf_pb_model_timing_consistency(pb_type, arch);
 
-		/* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
-		if (pb_type->class_type == LUT_CLASS) {
-			ProcessLutClass(pb_type);
-		} else if (pb_type->class_type == MEMORY_CLASS) {
-			ProcessMemoryClass(pb_type);
-		} else {
-			/* other leaf pb_type do not have modes */
-			pb_type->num_modes = 0;
-			VTR_ASSERT(count_children(Parent, "mode", loc_data, OPTIONAL) == 0);
-		}
+        /* other leaf pb_type do not have modes */
+        pb_type->num_modes = 0;
+        VTR_ASSERT(count_children(Parent, "mode", loc_data, OPTIONAL) == 0);
 	} else {
 		/* container pb_type, process modes */
 		VTR_ASSERT(pb_type->class_type == UNKNOWN_CLASS);
@@ -1587,6 +1582,30 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 
 	Cur = get_single_child(Parent, "interconnect", loc_data);
 	ProcessInterconnect(Cur, mode, loc_data);
+}
+
+//Processes special classes annotated on pb_types
+// Note that this is called after the full pb_type hierarchy has been
+// elaborated since it may require processing interconnect information
+// which may not have yet been constructed when the class attribute was originally tagged
+static void ProcessPb_TypeClasses(t_pb_type* pb_type) {
+
+
+    /* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
+    if (pb_type->class_type == LUT_CLASS) {
+        ProcessLutClass(pb_type);
+        return;
+    } else if (pb_type->class_type == MEMORY_CLASS) {
+        ProcessMemoryClass(pb_type);
+        return;
+    }
+
+    for (int imode = 0; imode < pb_type->num_modes; ++imode) {
+        t_mode* mode = &pb_type->modes[imode];
+        for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
+            ProcessPb_TypeClasses(&mode->pb_type_children[ichild]);
+        }
+    }
 }
 
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
@@ -2575,6 +2594,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Type->pb_type = new t_pb_type;
 		Type->pb_type->name = vtr::strdup(Type->name);
 		ProcessPb_Type(CurType, Type->pb_type, nullptr, arch, loc_data);
+        ProcessPb_TypeClasses(Type->pb_type);
 		Type->num_pins = Type->capacity
 				* (Type->pb_type->num_input_pins
 						+ Type->pb_type->num_output_pins
