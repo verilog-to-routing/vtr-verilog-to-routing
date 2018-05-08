@@ -1453,8 +1453,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
     }
 }
 
-static void echo_pb_rec(const t_pb_graph_node *pb_graph_node, const int level,
-		FILE *fp) {
+static void echo_pb_rec(const t_pb_graph_node *pb_graph_node, const int level, FILE *fp) {
 
 	int i, j, k;
 
@@ -1464,34 +1463,34 @@ static void echo_pb_rec(const t_pb_graph_node *pb_graph_node, const int level,
 			pb_graph_node->pb_type->num_pb);
 
 	if (pb_graph_node->parent_pb_graph_node) {
-		print_tabs(fp, level + 1);
+		print_tabs(fp, level+1);
 		fprintf(fp, "Parent Block: type \"%s\" index %d \n",
 				pb_graph_node->parent_pb_graph_node->pb_type->name,
 				pb_graph_node->parent_pb_graph_node->placement_index);
 	}
 
-	print_tabs(fp, level);
+	print_tabs(fp, level+1);
 	fprintf(fp, "Input Ports: total ports %d\n",
 			pb_graph_node->num_input_ports);
 	echo_pb_pins(pb_graph_node->input_pins, pb_graph_node->num_input_ports,
-			level, fp);
-	print_tabs(fp, level);
+			level+1, fp);
+	print_tabs(fp, level+1);
 	fprintf(fp, "Output Ports: total ports %d\n",
 			pb_graph_node->num_output_ports);
 	echo_pb_pins(pb_graph_node->output_pins, pb_graph_node->num_output_ports,
-			level, fp);
-	print_tabs(fp, level);
+			level+1, fp);
+	print_tabs(fp, level+1);
 	fprintf(fp, "Clock Ports: total ports %d\n",
 			pb_graph_node->num_clock_ports);
 	echo_pb_pins(pb_graph_node->clock_pins, pb_graph_node->num_clock_ports,
-			level, fp);
-	print_tabs(fp, level);
+			level+1, fp);
+	print_tabs(fp, level+1);
 	for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
 		fprintf(fp, "Input class %d: %d pins, ", i,
 				pb_graph_node->input_pin_class_size[i]);
 	}
 	fprintf(fp, "\n");
-	print_tabs(fp, level);
+	print_tabs(fp, level+1);
 	for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
 		fprintf(fp, "Output class %d: %d pins, ", i,
 				pb_graph_node->output_pin_class_size[i]);
@@ -1499,14 +1498,14 @@ static void echo_pb_rec(const t_pb_graph_node *pb_graph_node, const int level,
 	fprintf(fp, "\n");
 
 	if (pb_graph_node->pb_type->num_modes > 0) {
-		print_tabs(fp, level);
+		print_tabs(fp, level+1);
 		fprintf(fp, "Children:\n");
 	}
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
 		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
 			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 				echo_pb_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k],
-						level + 1, fp);
+						level + 2, fp);
 			}
 		}
 	}
@@ -1517,8 +1516,6 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 
 	int i, j, k, m;
 	t_port *port;
-
-	print_tabs(fp, level);
 
 	for (i = 0; i < num_ports; i++) {
 		port = pb_graph_pins[i][0].port;
@@ -1567,13 +1564,14 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 			}
 			for (k = 0; k < pb_graph_pins[i][j].num_input_edges; k++) {
 				print_tabs(fp, level + 2);
-				fprintf(fp, "Input edge %d num inputs %d num outputs %d\n", k,
+				fprintf(fp, "Input edge %d num inputs %d num outputs %d infer_pattern %d\n", k,
 						pb_graph_pins[i][j].input_edges[k]->num_input_pins,
-						pb_graph_pins[i][j].input_edges[k]->num_output_pins);
+						pb_graph_pins[i][j].input_edges[k]->num_output_pins,
+						pb_graph_pins[i][j].input_edges[k]->infer_pattern);
 				print_tabs(fp, level + 3);
 				fprintf(fp, "Input edge inputs\n");
 				for (m = 0; m < pb_graph_pins[i][j].input_edges[k]->num_input_pins; m++) {
-					print_tabs(fp, level + 3);
+					print_tabs(fp, level + 4);
 					fprintf(fp, "pin number %d port_name \"%s\"\n",
 							pb_graph_pins[i][j].input_edges[k]->input_pins[m]->pin_number,
 							pb_graph_pins[i][j].input_edges[k]->input_pins[m]->port->name);
@@ -1581,7 +1579,7 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 				print_tabs(fp, level + 3);
 				fprintf(fp, "Input edge outputs\n");
 				for (m = 0; m < pb_graph_pins[i][j].input_edges[k]->num_output_pins; m++) {
-					print_tabs(fp, level + 3);
+					print_tabs(fp, level + 4);
 					fprintf(fp,
 							"pin number %d port_name \"%s\" parent type \"%s\" parent index %d\n",
 							pb_graph_pins[i][j].input_edges[k]->output_pins[m]->pin_number,
@@ -1589,16 +1587,25 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 							pb_graph_pins[i][j].input_edges[k]->output_pins[m]->parent_node->pb_type->name,
 							pb_graph_pins[i][j].input_edges[k]->output_pins[m]->parent_node->placement_index);
 				}
+				print_tabs(fp, level + 3);
+				fprintf(fp, "Input edge pack patterns\n");
+				for (m = 0; m < pb_graph_pins[i][j].input_edges[k]->num_pack_patterns; m++) {
+					print_tabs(fp, level + 4);
+					fprintf(fp,
+							"pack_pattern: %s\n",
+							pb_graph_pins[i][j].input_edges[k]->pack_pattern_names[m]);
+				}
 			}
 			for (k = 0; k < pb_graph_pins[i][j].num_output_edges; k++) {
 				print_tabs(fp, level + 2);
-				fprintf(fp, "Output edge %d num inputs %d num outputs %d\n", k,
+				fprintf(fp, "Output edge %d num inputs %d num outputs %d infer_pattern %d\n", k,
 						pb_graph_pins[i][j].output_edges[k]->num_input_pins,
-						pb_graph_pins[i][j].output_edges[k]->num_output_pins);
+						pb_graph_pins[i][j].output_edges[k]->num_output_pins,
+						pb_graph_pins[i][j].output_edges[k]->infer_pattern);
 				print_tabs(fp, level + 3);
 				fprintf(fp, "Output edge inputs\n");
 				for (m = 0; m < pb_graph_pins[i][j].output_edges[k]->num_input_pins; m++) {
-					print_tabs(fp, level + 3);
+					print_tabs(fp, level + 4);
 					fprintf(fp, "pin number %d port_name \"%s\"\n",
 							pb_graph_pins[i][j].output_edges[k]->input_pins[m]->pin_number,
 							pb_graph_pins[i][j].output_edges[k]->input_pins[m]->port->name);
@@ -1606,12 +1613,20 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 				print_tabs(fp, level + 3);
 				fprintf(fp, "Output edge outputs\n");
 				for (m = 0; m < pb_graph_pins[i][j].output_edges[k]->num_output_pins; m++) {
-					print_tabs(fp, level + 3);
+					print_tabs(fp, level + 4);
 					fprintf(fp, "pin number %d port_name \"%s\" parent type \"%s\" parent index %d\n",
 							pb_graph_pins[i][j].output_edges[k]->output_pins[m]->pin_number,
 							pb_graph_pins[i][j].output_edges[k]->output_pins[m]->port->name,
 							pb_graph_pins[i][j].output_edges[k]->output_pins[m]->parent_node->pb_type->name,
 							pb_graph_pins[i][j].output_edges[k]->output_pins[m]->parent_node->placement_index);
+				}
+				print_tabs(fp, level + 3);
+				fprintf(fp, "Output edge pack patterns\n");
+				for (m = 0; m < pb_graph_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
+					print_tabs(fp, level + 4);
+					fprintf(fp,
+							"pack_pattern: %s\n",
+							pb_graph_pins[i][j].output_edges[k]->pack_pattern_names[m]);
 				}
 			}
 		}
