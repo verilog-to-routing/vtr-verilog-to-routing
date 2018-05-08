@@ -36,8 +36,14 @@ void sync_grid_to_blocks();
 //Returns the name (format: 'type_name.port_name[i]') of the specified pin_index on the given type
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index);
 
+//Returns a short description of the specified primitive pin associated with pb_graph_pin
+// Example: 'BLE.cout[0]'
+std::string describe_primitive_pb_graph_pin_type(const t_pb_graph_pin* pb_graph_pin);
+
 //Returns a short description of the specified pb_graph_pin
-// Example: 'CLB.cout[0]'
+// Unlike describe_primitive_pb_graph_pin_type(), this includes the cluster placement index
+// of the type
+// Example: 'BLE[4].cout[0]'
 std::string describe_pb_graph_pin(const t_pb_graph_pin* pb_graph_pin);
 
 //Returns the hierarchical name of the specified pb_graph_pin
