@@ -94,8 +94,8 @@ my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
 my $specific_vpr_stage      = "";
-my $keep_intermediate_files = 0;
-my $keep_result_files       = 0;
+my $keep_intermediate_files = 1;
+my $keep_result_files       = 1;
 my $has_memory              = 1;
 my $timing_driven           = "on";
 my $min_chan_width          = -1; 
@@ -113,7 +113,7 @@ my $min_hard_adder_size		= 1;
 my $congestion_analysis		= "";
 my $switch_usage_analysis   = "";
 
-my $track_memory_usage      = 0;
+my $track_memory_usage      = 1;
 my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
 my $limit_memory_usage      = -1;
@@ -127,6 +127,7 @@ my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc             = 0;
+my $enable_gui		    = 0;
 my $routing_budgets_algorithm = "disable";
 
 while ( $token = shift(@ARGV) ) {
@@ -151,14 +152,17 @@ while ( $token = shift(@ARGV) ) {
             $specific_vpr_stage = "";
         }
     }
-	elsif ( $token eq "-keep_intermediate_files" ) {
-		$keep_intermediate_files = 1;
+	elsif ( $token eq "-delete_intermediate_files" ) {
+		$keep_intermediate_files = 0;
 	}
-    elsif ( $token eq "-keep_result_files" ) {
-        $keep_result_files = 1;
+    elsif ( $token eq "-delete_result_files" ) {
+        $keep_result_files = 0;
     }
     elsif ( $token eq "-track_memory_usage" ) {
         $track_memory_usage = 1;
+    }
+    elsif ( $token eq "-enable_gui" ) {
+	$enable_gui = 1;
     }
     elsif ( $token eq "-limit_memory_usage" ) {
         $limit_memory_usage = shift(@ARGV);
@@ -733,6 +737,12 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "$congestion_analysis");
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
+		#run VPR with GUI
+		if ($enable_gui) {
+			push( @vpr_args, "--disp");
+			push( @vpr_args, "on");
+			
+	 	}
 
 
 		$q = &system_with_timeout(
@@ -793,7 +803,11 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, @forwarded_vpr_args);
 				push( @vpr_args, "$congestion_analysis");
 				push( @vpr_args, "$switch_usage_analysis");
-
+				#run VPR with GUI		
+				if ($enable_gui) {
+					push( @vpr_args, "--disp");
+					push( @vpr_args, "on");
+	 			}
 
 				$q = &system_with_timeout(
 					$vpr_path, "vpr.crit_path.out",
@@ -848,7 +862,12 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
-
+		#run VPR with GUI
+		if ($enable_gui) {
+			push( @vpr_args, "--disp");
+			push( @vpr_args, "on");	
+	 	}
+	
         $q = &system_with_timeout(
 			   $vpr_path, "vpr.out",
 			   $timeout, $temp_dir,
@@ -929,6 +948,11 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             push( @vpr_args, "$switch_usage_analysis");
             push( @vpr_args, @forwarded_vpr_args);
             push( @vpr_args, $specific_vpr_stage);
+	    #run VPR with GUI
+	    if ($enable_gui) {
+			push( @vpr_args, "--disp");
+			push( @vpr_args, "on");		
+	    }
 
 			#run vpr again with a different name and additional parameters
 
@@ -1111,12 +1135,11 @@ sub system_with_timeout {
 	unshift @_, "valgrind";
         splice @_, 4, 0, , @valgrind_args, $program;
     }
-    # Use a memory tracker to call executable if checking for memory usage
-    if ($track_memory_usage) {
-        my $program = shift @_;
-        unshift @_, $memory_tracker;
-        splice @_, 4, 0, @memory_tracker_args, $program;
-    }
+    # Use a memory tracker to call executable usr/bin/time
+    my $program = shift @_;
+    unshift @_, $memory_tracker;
+    splice @_, 4, 0, @memory_tracker_args, $program;
+    
     if ($limit_memory_usage > 0) {
         my $program = shift @_;
         unshift @_, "bash";
