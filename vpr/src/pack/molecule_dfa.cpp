@@ -117,6 +117,7 @@ bool MoleculeDFA::matches(Match& new_match, const Match& old_match, const t_netl
 
 bool MoleculeDFA::block_matches(AtomPinId& from_pin, AtomPinId& to_pin, const AtomBlockId from_blk, 
                                 const t_netlist_pack_pattern_edge& pattern_edge, const AtomNetlist& netlist) const {
+#if 0
     t_model* from_blk_model = pattern_edge.from_model;
     t_model* to_blk_model = pattern_edge.to_model;
     VTR_ASSERT(from_blk_model);
@@ -176,6 +177,7 @@ bool MoleculeDFA::block_matches(AtomPinId& from_pin, AtomPinId& to_pin, const At
             return true;
         }
     }
+#endif
 
     return false; //No match found
 }
@@ -197,17 +199,19 @@ void MoleculeDFA::write_dot(std::ostream& os) {
 
     }
 
+#if 0
     for (size_t itrans = 0; itrans < transitions_.size(); ++itrans) {
         os << "\tS" << transitions_[itrans].from_state << " -> S" << transitions_[itrans].next_state;
         os << " [";
         os << "label=\"";
         os << "T" << itrans <<":\\n";
-        os << transitions_[itrans].pack_pattern_edge.from_model->name << "." << transitions_[itrans].pack_pattern_edge.from_model_port->name << "[" << transitions_[itrans].pack_pattern_edge.from_port_pin << "]";
+        os << transitions_[itrans].pack_pattern_edge.from_model->name << ":" << transitions_[itrans].pack_pattern_edge.from_model_port->name << "[" << transitions_[itrans].pack_pattern_edge.from_port_pin << "]";
         os << "\\n-> ";
-        os << transitions_[itrans].pack_pattern_edge.to_model->name << "." << transitions_[itrans].pack_pattern_edge.to_model_port->name << "[" << transitions_[itrans].pack_pattern_edge.to_port_pin << "]";
+        os << transitions_[itrans].pack_pattern_edge.to_model->name << ":" << transitions_[itrans].pack_pattern_edge.to_model_port->name << "[" << transitions_[itrans].pack_pattern_edge.to_port_pin << "]";
         os << "\"";
         os << "];\n";
     }
+#endif
 
     os << "}";
 }

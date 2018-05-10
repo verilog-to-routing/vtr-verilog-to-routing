@@ -829,6 +829,10 @@ struct t_pb_graph_node {
     bool is_primitive() const {
         return num_modes() == 0;
     }
+
+    bool is_top_level() const {
+        return parent_pb_graph_node == nullptr;
+    }
 };
 
 

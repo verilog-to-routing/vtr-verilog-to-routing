@@ -11,16 +11,14 @@
 struct t_pack_pattern_edge {
     int from_node_id = OPEN; //From node's id in t_pack_pattern::nodes
     int to_node_id = OPEN; //To node's id in t_pack_pattern::nodes
-    t_pb_graph_pin* from_pin = nullptr; //Driving PB graph pin
-    t_pb_graph_pin* to_pin = nullptr; //Sink PB graph pin
 };
 
 //A node in a pack pattern graph
 struct t_pack_pattern_node {
-    t_pack_pattern_node(t_pb_graph_node* node)
-        : pb_graph_node(node) {}
+    t_pack_pattern_node(t_pb_graph_pin* pin)
+        : pb_graph_pin(pin) {}
 
-    t_pb_graph_node* pb_graph_node = nullptr; //Associated PB graph node
+    t_pb_graph_pin* pb_graph_pin = nullptr; //Associated PB graph pin
 
     std::vector<int> in_edge_ids; //Incoming edge ids in t_pack_pattern::edges
     std::vector<int> out_edge_ids; //Outgoing edge ids in t_pack_pattern::edges
@@ -34,7 +32,7 @@ struct t_pack_pattern {
     std::string name;
 
     //The root node id of the pattern
-    int root_node_id = OPEN;
+    std::vector<int> root_node_ids;
 
     //If true represents a chain-like structure which 
     //stretches accross multiple logic blocks
@@ -44,24 +42,26 @@ struct t_pack_pattern {
     //in-coming and out-going edges forming a loop.
     bool is_chain = false; 
 
-    //The set of edges in the pack pattern graph
+    //The set of pins in the pack pattern graph
     std::vector<t_pack_pattern_node> nodes;
 
-    //The set of nodes in the pack pattern graph
+    //The set of edges in the pack pattern graph
     std::vector<t_pack_pattern_edge> edges;
 };
 
+struct t_netlist_pack_pattern_pin {
+    int node_id = OPEN; //Associated node in netlist pack pattern graph
+
+    t_model* model = nullptr;
+    t_model_ports* model_port = nullptr;
+    int port_pin = OPEN; //Pin index within model_port
+
+    bool required = false;
+};
+
 struct t_netlist_pack_pattern_edge {
-    int from_node_id = OPEN;
-    int to_node_id = OPEN;
-
-    t_model* from_model = nullptr;
-    t_model_ports* from_model_port = nullptr;
-    int from_port_pin; //Pin index within from_model_port
-
-    t_model* to_model = nullptr;
-    t_model_ports* to_model_port = nullptr;
-    int to_port_pin; //Pin index within to_model_port
+    t_netlist_pack_pattern_pin from_pin;
+    std::vector<t_netlist_pack_pattern_pin> to_pins;
 };
 
 struct t_netlist_pack_pattern_node {
@@ -78,6 +78,17 @@ struct t_netlist_pack_pattern {
 
     std::vector<t_netlist_pack_pattern_node> nodes;
     std::vector<t_netlist_pack_pattern_edge> edges;
+
+    int create_node() {
+        nodes.emplace_back();
+        return nodes.size() - 1;
+
+    }
+
+    int create_edge() {
+        edges.emplace_back();
+        return edges.size() - 1;
+    }
 };
 
 

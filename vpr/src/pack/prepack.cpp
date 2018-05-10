@@ -44,6 +44,28 @@ struct t_pack_pattern_connection {
     std::string pattern_name;
 };
 
+struct Match {
+    struct Edge {
+        Edge(AtomPinId from, AtomPinId to, int edge_id, int sink_idx)
+            : from_pin(from)
+            , to_pin(to)
+            , pattern_edge_id(edge_id)
+            , pattern_edge_sink(sink_idx) {}
+
+        AtomPinId from_pin;
+        AtomPinId to_pin;
+        int pattern_edge_id = OPEN; //Pattern edge which matched these pins
+        int pattern_edge_sink = OPEN; //Matching sink number within pattern edge
+    };
+
+    //Evaluates true when the match is non-empty
+    operator bool() {
+        return netlist_edges.size() > 0;
+    }
+
+    std::vector<Edge> netlist_edges;
+};
+
 /*****************************************/
 /*Local Function Declaration			 */
 /*****************************************/
@@ -100,8 +122,15 @@ static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::ve
 static std::vector<t_netlist_pack_pattern> abstract_pack_patterns(const std::vector<t_pack_pattern>& arch_pack_patterns);
 static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_pack_pattern);
 static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_pattern> netlist_pack_patterns);
+static Match match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+static bool match_largest_recur(Match& match, const AtomBlockId blk, int pattern_node_id, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
+static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pattern_node& pattern_node, const AtomNetlist& netlist);
+static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin);
+static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
 static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern);
 static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& pattern, int node, int depth, std::set<int>& visited);
+static void print_match(const Match& match, const AtomNetlist& netlist);
 static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern);
 static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& arch_pattern);
 
@@ -133,7 +162,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	nhash = alloc_hash_table();
 	ncount = 0;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
-        vtr::printf("Looking for pack patterns within %s\n", device_ctx.block_types[i].name);
+        //vtr::printf("Looking for pack patterns within %s\n", device_ctx.block_types[i].name);
 		discover_pattern_names_in_pb_graph_node(
 				device_ctx.block_types[i].pb_graph_head, nhash, &ncount, 1);
 	}
@@ -143,7 +172,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
 	for (i = 0; i < ncount; i++) {
 		for (j = 0; j < device_ctx.num_block_types; j++) {
-            vtr::printf("Creating pack pattern %d for %s\n", i, device_ctx.block_types[j].name);
+            //vtr::printf("Creating pack pattern %d for %s\n", i, device_ctx.block_types[j].name);
 			expansion_edge = find_expansion_edge_of_pattern(i, device_ctx.block_types[j].pb_graph_head);
 			if (expansion_edge == nullptr) {
 				continue;
@@ -235,15 +264,15 @@ static void discover_pattern_names_in_pb_graph_node(
 								vtr::malloc( pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
 					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
-                    vtr::printf("%sFound pack pattern '%s' (index %d) to input pin %s[%d].%s[%d]\n", 
-                                vtr::indent(depth, "  ").c_str(),
-                                pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
-                                index,
-                                pb_graph_node->pb_type->name,
-                                pb_graph_node->placement_index,
-                                pb_graph_node->input_pins[i][j].port->name,
-                                pb_graph_node->input_pins[i][j].pin_number
-                                );
+                    //vtr::printf("%sFound pack pattern '%s' (index %d) to input pin %s[%d].%s[%d]\n", 
+                                //vtr::indent(depth, "  ").c_str(),
+                                //pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                //index,
+                                //pb_graph_node->pb_type->name,
+                                //pb_graph_node->placement_index,
+                                //pb_graph_node->input_pins[i][j].port->name,
+                                //pb_graph_node->input_pins[i][j].pin_number
+                                //);
 				}								
 			}
 			if (hasPattern == true) {
@@ -267,15 +296,15 @@ static void discover_pattern_names_in_pb_graph_node(
 								vtr::malloc( pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
 					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
-                    vtr::printf("%sFound pack pattern '%s' (index %d) from output pin %s[%d].%s[%d]\n", 
-                                vtr::indent(depth, "  ").c_str(),
-                                pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
-                                index,
-                                pb_graph_node->pb_type->name,
-                                pb_graph_node->placement_index,
-                                pb_graph_node->output_pins[i][j].port->name,
-                                pb_graph_node->output_pins[i][j].pin_number
-                                );
+                    //vtr::printf("%sFound pack pattern '%s' (index %d) from output pin %s[%d].%s[%d]\n", 
+                                //vtr::indent(depth, "  ").c_str(),
+                                //pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                //index,
+                                //pb_graph_node->pb_type->name,
+                                //pb_graph_node->placement_index,
+                                //pb_graph_node->output_pins[i][j].port->name,
+                                //pb_graph_node->output_pins[i][j].pin_number
+                                //);
 				}
 			}
 			if (hasPattern == true) {
@@ -299,15 +328,15 @@ static void discover_pattern_names_in_pb_graph_node(
 								vtr::malloc( pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
 					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
-                    vtr::printf("%sFound pack pattern '%s' (index %d) to clock pin %s[%d].%s[%d]\n", 
-                                vtr::indent(depth, "  ").c_str(),
-                                pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
-                                index,
-                                pb_graph_node->pb_type->name,
-                                pb_graph_node->placement_index,
-                                pb_graph_node->clock_pins[i][j].port->name,
-                                pb_graph_node->clock_pins[i][j].pin_number
-                                );
+                    //vtr::printf("%sFound pack pattern '%s' (index %d) to clock pin %s[%d].%s[%d]\n", 
+                                //vtr::indent(depth, "  ").c_str(),
+                                //pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                //index,
+                                //pb_graph_node->pb_type->name,
+                                //pb_graph_node->placement_index,
+                                //pb_graph_node->clock_pins[i][j].port->name,
+                                //pb_graph_node->clock_pins[i][j].pin_number
+                                //);
 				}
 			}
 			if (hasPattern == true) {
@@ -368,7 +397,7 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 		nlist[curr_pattern->index].root_block = nullptr;
 		nlist[curr_pattern->index].is_chain = false;
 		nlist[curr_pattern->index].index = curr_pattern->index;
-        vtr::printf("Allocating Pack Pattern %d: %s\n", curr_pattern->index, curr_pattern->name);
+        //vtr::printf("Allocating Pack Pattern %d: %s\n", curr_pattern->index, curr_pattern->name);
 
 		curr_pattern = get_next_hash(nhash, &hash_iter);
 	}
@@ -414,12 +443,12 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
 				for (m = 0; m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
-                        vtr::printf("Found expansion edge on input pin %s.%s[%d] edge %d pattern %d\n",
-                                    pb_graph_node->pb_type->name,
-                                    pb_graph_node->input_pins[i][j].port->name,
-                                    pb_graph_node->input_pins[i][j].pin_number,
-                                    k,
-                                    pattern_index);
+                        //vtr::printf("Found expansion edge on input pin %s.%s[%d] edge %d pattern %d\n",
+                                    //pb_graph_node->pb_type->name,
+                                    //pb_graph_node->input_pins[i][j].port->name,
+                                    //pb_graph_node->input_pins[i][j].pin_number,
+                                    //k,
+                                    //pattern_index);
 						return pb_graph_node->input_pins[i][j].output_edges[k];
 					}
 				}
@@ -432,12 +461,12 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
 				for (m = 0; m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
-                        vtr::printf("Found expansion edge on output pin %s.%s[%d] edge %d pattern %d\n",
-                                    pb_graph_node->pb_type->name,
-                                    pb_graph_node->output_pins[i][j].port->name,
-                                    pb_graph_node->output_pins[i][j].pin_number,
-                                    k,
-                                    pattern_index);
+                        //vtr::printf("Found expansion edge on output pin %s.%s[%d] edge %d pattern %d\n",
+                                    //pb_graph_node->pb_type->name,
+                                    //pb_graph_node->output_pins[i][j].port->name,
+                                    //pb_graph_node->output_pins[i][j].pin_number,
+                                    //k,
+                                    //pattern_index);
 						return pb_graph_node->output_pins[i][j].output_edges[k];
 					}
 				}
@@ -450,12 +479,12 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
 				for (m = 0; m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
-                        vtr::printf("Found expansion edge on clock pin %s.%s[%d] edge %d pattern %d\n",
-                                    pb_graph_node->pb_type->name,
-                                    pb_graph_node->clock_pins[i][j].port->name,
-                                    pb_graph_node->clock_pins[i][j].pin_number,
-                                    k,
-                                    pattern_index);
+                        //vtr::printf("Found expansion edge on clock pin %s.%s[%d] edge %d pattern %d\n",
+                                    //pb_graph_node->pb_type->name,
+                                    //pb_graph_node->clock_pins[i][j].port->name,
+                                    //pb_graph_node->clock_pins[i][j].pin_number,
+                                    //k,
+                                    //pattern_index);
 						return pb_graph_node->clock_pins[i][j].output_edges[k];
 					}
 				}
@@ -501,9 +530,9 @@ static void forward_expand_pack_pattern_from_edge(
 		return;
 	}
 
-    vtr::printf("Forward expanding pattern %d edge (%s)\n",
-                curr_pattern_index,
-                describe_pb_graph_edge_hierarchy(expansion_edge).c_str());
+    //vtr::printf("Forward expanding pattern %d edge (%s)\n",
+                //curr_pattern_index,
+                //describe_pb_graph_edge_hierarchy(expansion_edge).c_str());
 	found = false;
 	for (i = 0; i < expansion_edge->num_output_pins; i++) {
 		if (expansion_edge->output_pins[i]->parent_node->pb_type->num_modes == 0) {
@@ -629,9 +658,9 @@ static void backward_expand_pack_pattern_from_edge(
 		return;
 	}
 
-    vtr::printf("Backward expanding pattern %d edge (%s)\n",
-                curr_pattern_index,
-                describe_pb_graph_edge_hierarchy(expansion_edge).c_str());
+    //vtr::printf("Backward expanding pattern %d edge (%s)\n",
+                //curr_pattern_index,
+                //describe_pb_graph_edge_hierarchy(expansion_edge).c_str());
 	found = false;
 	for (i = 0; i < expansion_edge->num_input_pins; i++) {
 		if (expansion_edge->input_pins[i]->parent_node->pb_type->num_modes == 0) {
@@ -641,9 +670,9 @@ static void backward_expand_pack_pattern_from_edge(
 			/* This is the source node for destination */
 			found = true;
 
-            vtr::printf("\tBackward expanding pattern %d edge input pin '%s' (no modes)\n",
-                        curr_pattern_index,
-                        describe_pb_graph_pin_hierarchy(expansion_edge->input_pins[i]).c_str());
+            //vtr::printf("\tBackward expanding pattern %d edge input pin '%s' (no modes)\n",
+                        //curr_pattern_index,
+                        //describe_pb_graph_pin_hierarchy(expansion_edge->input_pins[i]).c_str());
 
 			/* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
 			source_block = (t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
@@ -658,14 +687,14 @@ static void backward_expand_pack_pattern_from_edge(
 				source_block->pattern_index = curr_pattern_index;
 				source_block->pb_type = source_pb_graph_node->pb_type;
 
-                vtr::printf("\tAdding pattern %d source block %s[%d]\n",
-                            curr_pattern_index,
-                            source_pb_graph_node->pb_type->name,
-                            source_pb_graph_node->placement_index);
+                //vtr::printf("\tAdding pattern %d source block %s[%d]\n",
+                            //curr_pattern_index,
+                            //source_pb_graph_node->pb_type->name,
+                            //source_pb_graph_node->placement_index);
 
 				if (list_of_packing_patterns[curr_pattern_index].root_block == nullptr) {
 					list_of_packing_patterns[curr_pattern_index].root_block = source_block;
-                    vtr::printf("\t\tAdded as pattern %d root block\n", curr_pattern_index);
+                    //vtr::printf("\t\tAdded as pattern %d root block\n", curr_pattern_index);
 				}
 
 				for (iport = 0; iport < source_pb_graph_node->num_input_ports; iport++) {
@@ -730,9 +759,9 @@ static void backward_expand_pack_pattern_from_edge(
 				pack_pattern_connection->next = destination_block->connections;
 				destination_block->connections = pack_pattern_connection;
 
-                vtr::printf("\tAdding connection %s -> %s\n",
-                            describe_pb_graph_pin_hierarchy(pack_pattern_connection->from_pin).c_str(),
-                            describe_pb_graph_pin_hierarchy(pack_pattern_connection->to_pin).c_str());
+                //vtr::printf("\tAdding connection %s -> %s\n",
+                            //describe_pb_graph_pin_hierarchy(pack_pattern_connection->from_pin).c_str(),
+                            //describe_pb_graph_pin_hierarchy(pack_pattern_connection->to_pin).c_str());
 
 				if (source_block == destination_block) {
 					vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
@@ -1372,40 +1401,79 @@ static void init_pack_patterns() {
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& netlist = atom_ctx.nlist;
 
+    //For every complex block
     for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        //Collect the pack pattern connections defined in the architecture
         const auto& pack_pattern_connections = collect_type_pack_pattern_connections(&device_ctx.block_types[itype]);
 
         vtr::printf("TYPE: %s\n", device_ctx.block_types[itype].name);
 
+        //Convert each set of connections to an architecture pack pattern
         for (auto kv : pack_pattern_connections) {
             t_pack_pattern pack_pattern = build_pack_pattern(kv.first, kv.second);
 
             arch_pack_patterns.push_back(pack_pattern);
 
 
+            //Debug
             std::ofstream ofs("arch_pack_pattern." + pack_pattern.name + ".echo");
             write_arch_pack_pattern_dot(ofs, pack_pattern);
-
             print_pack_pattern_debug(stdout, pack_pattern);        
         }
     }
 
+    //Covert the architectural pack patterns to netlist pack patterns
     std::vector<t_netlist_pack_pattern> netlist_pack_patterns = abstract_pack_patterns(arch_pack_patterns);
 
+    //Debug
     for (const auto& pack_pattern : netlist_pack_patterns) {
         std::ofstream ofs("netlist_pack_pattern." + pack_pattern.name + ".echo");
         write_netlist_pack_pattern_dot(ofs, pack_pattern);
     }
 
-    MoleculeDFA pack_pattern_matcher = build_pack_pattern_matcher(netlist_pack_patterns);
+    //Find the largest matches in the netlist
+    std::vector<Match> largest_matches;
+    std::map<AtomBlockId,int> atom_largest_match;
 
-    pack_pattern_matcher.match_all(atom_ctx.nlist);
+    for (auto& pattern : netlist_pack_patterns) {
+        for (auto root_blk : netlist.blocks()) {
+            auto match = match_largest(root_blk, pattern, netlist);
 
-    //std::vector<t_netlist_pack_pattern> netlist_pack_patterns;
-    //for (const auto& pattern : arch_pack_patterns) {
-        //abstract_pack_pattern(netlist_pack_patterns, pattern);
-    //}
+            if (match.netlist_edges.empty()) continue;
+
+            //Speculatively add match
+            int imatch = largest_matches.size();
+            largest_matches.push_back(match);
+
+            bool match_used = false;
+            for (auto& edge : match.netlist_edges) {
+                for (AtomBlockId atom_blk : {netlist.pin_block(edge.from_pin), netlist.pin_block(edge.to_pin)}) {
+                    if (!atom_largest_match.count(atom_blk)) {
+                        atom_largest_match[atom_blk] = imatch; //First
+                        match_used = true;
+                    } else {
+                        int imatch_curr = atom_largest_match[atom_blk];
+
+                        if (largest_matches[imatch_curr].netlist_edges.size() < match.netlist_edges.size()) {
+                            //New max
+                            atom_largest_match[atom_blk] = imatch;
+                            match_used = true;
+                        }
+                    }
+                }
+            }
+
+            if (!match_used) {
+                largest_matches.pop_back(); //Unused so drop match
+            }
+        }
+    }
+
+    for (auto match : largest_matches) {
+        print_match(match, netlist);
+    }
 }
 
 static std::map<std::string,std::vector<t_pack_pattern_connection>> collect_type_pack_pattern_connections(t_type_ptr type) {
@@ -1427,166 +1495,6 @@ static std::vector<t_netlist_pack_pattern> abstract_pack_patterns(const std::vec
     return netlist_pack_patterns;
 }
 
-static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_pattern) {
-
-    struct EdgeInfo {
-        EdgeInfo(int from_node, int from_edge, int out_edge)
-            : from_arch_node(from_node)
-            , from_arch_edge(from_edge)
-            , out_arch_edge(out_edge) {}
-
-        int from_arch_node = OPEN; //Last primitive node we came from
-        int from_arch_edge = OPEN; //Last primitive edge we came from
-        int out_arch_edge = OPEN; //Edge to current node
-    };
-
-    std::vector<EdgeInfo> arch_abstract_edges;
-
-    //Breadth-First traversal of arch pack pattern graph, 
-    //to record which primitives are reachable from each other.
-    //
-    //The resulting edges are abstracted from the 
-    //pb_graph hierarchy and contain only primitives (no intermediate
-    //hiearchy)
-    std::set<int> visited;
-    std::queue<EdgeInfo> q;
-
-    q.emplace(arch_pattern.root_node_id, OPEN, OPEN); //Starting at root
-
-    while (!q.empty()) {
-        EdgeInfo info = q.front();
-        q.pop();
-
-        int curr_node = arch_pattern.edges[info.out_arch_edge].to_node_id;
-
-        if (visited.count(curr_node)) continue; //Don't revisit to avoid loops
-        visited.insert(curr_node);
-        
-        bool is_primitive = arch_pattern.nodes[curr_node].pb_graph_node->is_primitive();
-
-        if (is_primitive) {
-            //Record the primitive-to-primitive edge used to reach this node
-            arch_abstract_edges.push_back(info);
-        }
-
-        //Expand out edges
-        for (auto out_edge : arch_pattern.nodes[curr_node].out_edge_ids) {
-
-            if (is_primitive) {
-                //Expanding from a primitive, use the current node as from
-                q.emplace(curr_node, out_edge, out_edge);
-            } else {
-                //Expanding from a non-primitive, re-use the previous primtiive as from
-                q.emplace(info.from_arch_node, info.from_arch_edge, out_edge);
-            }
-        }
-    }
-
-
-    //
-    //Build the netlist pattern from the edges collected above
-    //
-    t_netlist_pack_pattern netlist_pattern;
-    netlist_pattern.name = arch_pattern.name;
-
-    std::map<int,int> arch_to_netlist_pattern_node;
-
-    for (auto arch_abstract_edge : arch_abstract_edges) {
-
-        if (arch_abstract_edge.out_arch_edge == OPEN) {
-            //Root
-
-            int root_node = OPEN;
-
-            int arch_node = arch_abstract_edge.from_arch_node;
-            if (arch_to_netlist_pattern_node.count(arch_node)) {
-                //Existing
-                root_node = arch_to_netlist_pattern_node[arch_node];
-            } else {
-                //Create
-                root_node = netlist_pattern.nodes.size();
-                netlist_pattern.nodes.emplace_back();
-
-                //Initialize
-                netlist_pattern.nodes[root_node].model_type = arch_pattern.nodes[arch_node].pb_graph_node->pb_type->model;
-
-                //Save Id
-                arch_to_netlist_pattern_node[arch_node] = root_node;
-            }
-
-            //Assign root
-            VTR_ASSERT(netlist_pattern.root_node == OPEN);
-            netlist_pattern.root_node = root_node;
-        } else {
-            //Edge
-
-            //Find or create to node
-            int netlist_to_node = OPEN;
-            int arch_to_node = arch_pattern.edges[arch_abstract_edge.out_arch_edge].to_node_id;
-            t_pb_graph_pin* to_pin = arch_pattern.edges[arch_abstract_edge.out_arch_edge].to_pin;
-            if (arch_to_netlist_pattern_node.count(arch_to_node)) {
-                //Existing
-                netlist_to_node = arch_to_netlist_pattern_node[arch_to_node];
-            } else {
-                //Create
-                netlist_to_node = netlist_pattern.nodes.size();
-                netlist_pattern.nodes.emplace_back();
-
-                //Initialize
-                netlist_pattern.nodes[netlist_to_node].model_type = to_pin->parent_node->pb_type->model;
-
-                //Save Id
-                arch_to_netlist_pattern_node[arch_to_node] = netlist_to_node;
-            }
-            VTR_ASSERT(netlist_to_node != OPEN);
-
-
-            //Find or create from node
-            int netlist_from_node = OPEN;
-            int arch_from_node = arch_abstract_edge.from_arch_node;
-            t_pb_graph_pin* from_pin = arch_pattern.edges[arch_abstract_edge.from_arch_edge].from_pin;
-            if (arch_to_netlist_pattern_node.count(arch_from_node)) {
-                //Existing
-                netlist_from_node = arch_to_netlist_pattern_node[arch_from_node];
-            } else {
-                //Create
-                netlist_from_node = netlist_pattern.nodes.size(); //Reserve Id
-                netlist_pattern.nodes.emplace_back();
-
-                //Initialize
-                netlist_pattern.nodes[netlist_from_node].model_type = from_pin->parent_node->pb_type->model;
-
-                //Save Id
-                arch_to_netlist_pattern_node[arch_from_node] = netlist_from_node;
-            }
-            VTR_ASSERT(netlist_from_node != OPEN);
-
-            //Create edge
-            int netlist_edge = netlist_pattern.edges.size();
-            netlist_pattern.edges.emplace_back();
-
-            //Initialize
-            netlist_pattern.edges[netlist_edge].from_model = from_pin->parent_node->pb_type->model;
-            netlist_pattern.edges[netlist_edge].from_model_port = from_pin->port->model_port;
-            netlist_pattern.edges[netlist_edge].from_port_pin = from_pin->pin_number;
-
-            netlist_pattern.edges[netlist_edge].to_model = to_pin->parent_node->pb_type->model;
-            netlist_pattern.edges[netlist_edge].to_model_port = to_pin->port->model_port;
-            netlist_pattern.edges[netlist_edge].to_port_pin = to_pin->pin_number;
-
-            netlist_pattern.edges[netlist_edge].from_node_id = netlist_from_node;
-            netlist_pattern.edges[netlist_edge].to_node_id = netlist_to_node;
-
-            //Update node refs
-            netlist_pattern.nodes[netlist_from_node].out_edge_ids.push_back(netlist_edge);
-            netlist_pattern.nodes[netlist_to_node].in_edge_ids.push_back(netlist_edge);
-        }
-    }
-
-
-    return netlist_pattern;
-}
-
 static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::vector<t_pack_pattern_connection>& connections) {
     t_pack_pattern pack_pattern;
     pack_pattern.name = pattern_name;
@@ -1599,7 +1507,7 @@ static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::ve
     }
 
     //Create the nodes
-    std::map<t_pb_graph_node*, int> pb_graph_node_to_pattern_node_id;
+    std::map<t_pb_graph_pin*, int> pb_graph_pin_to_pattern_node_id;
     for (auto conn : connections) {
         VTR_ASSERT(conn.pattern_name == pattern_name);
 
@@ -1607,46 +1515,26 @@ static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::ve
         t_pb_graph_pin* to_pin = conn.to_pin;
 
         if (from_pin) {
-            t_pb_graph_node* from_node = from_pin->parent_node;
-            if (!pb_graph_node_to_pattern_node_id.count(from_node)) {
+            //t_pb_graph_node* from_node = from_pin->parent_node;
+            if (!pb_graph_pin_to_pattern_node_id.count(from_pin)) {
                 //Create
                 int pattern_node_id = pack_pattern.nodes.size();
-                pack_pattern.nodes.emplace_back(from_node);
+                pack_pattern.nodes.emplace_back(from_pin);
 
                 //Save ID
-                pb_graph_node_to_pattern_node_id[from_node] = pattern_node_id;
-            }
-
-            if (!from_node->parent_pb_graph_node) { //Top-level block
-                //Mark as chain root (or verify consistent)
-                if (!pack_pattern.is_chain) {
-                    pack_pattern.is_chain = true;
-                    pack_pattern.root_node_id = pb_graph_node_to_pattern_node_id[from_node];
-                } else {
-                    VTR_ASSERT(pack_pattern.root_node_id == pb_graph_node_to_pattern_node_id[from_node]);
-                }
+                pb_graph_pin_to_pattern_node_id[from_pin] = pattern_node_id;
             }
         }
 
         if (to_pin) {
-            t_pb_graph_node* to_node = to_pin->parent_node;
-            if (!pb_graph_node_to_pattern_node_id.count(to_node)) {
+            //t_pb_graph_node* to_node = to_pin->parent_node;
+            if (!pb_graph_pin_to_pattern_node_id.count(to_pin)) {
                 //Create
                 int pattern_node_id = pack_pattern.nodes.size();
-                pack_pattern.nodes.emplace_back(to_node);
+                pack_pattern.nodes.emplace_back(to_pin);
 
                 //Save ID
-                pb_graph_node_to_pattern_node_id[to_node] = pattern_node_id;
-            }
-
-            if (!to_node->parent_pb_graph_node) { //Top-level block
-                //Mark as chain root (or verify consistent)
-                if (!pack_pattern.is_chain) {
-                    pack_pattern.is_chain = true;
-                    pack_pattern.root_node_id = pb_graph_node_to_pattern_node_id[to_node];
-                } else {
-                    VTR_ASSERT(pack_pattern.root_node_id == pb_graph_node_to_pattern_node_id[to_node]);
-                }
+                pb_graph_pin_to_pattern_node_id[to_pin] = pattern_node_id;
             }
         }
     }
@@ -1657,10 +1545,10 @@ static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::ve
         auto key = std::make_pair(conn.from_pin, conn.to_pin);
         if (!conn_to_pattern_edge.count(key)) {
             //Find connected nodes
-            VTR_ASSERT(pb_graph_node_to_pattern_node_id.count(conn.from_pin->parent_node));
-            VTR_ASSERT(pb_graph_node_to_pattern_node_id.count(conn.to_pin->parent_node));
-            int from_node_id = pb_graph_node_to_pattern_node_id[conn.from_pin->parent_node];
-            int to_node_id = pb_graph_node_to_pattern_node_id[conn.to_pin->parent_node];
+            VTR_ASSERT(pb_graph_pin_to_pattern_node_id.count(conn.from_pin));
+            VTR_ASSERT(pb_graph_pin_to_pattern_node_id.count(conn.to_pin));
+            int from_node_id = pb_graph_pin_to_pattern_node_id[conn.from_pin];
+            int to_node_id = pb_graph_pin_to_pattern_node_id[conn.to_pin];
 
             //Create edge
             int edge_id = pack_pattern.edges.size();
@@ -1668,8 +1556,6 @@ static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::ve
 
             pack_pattern.edges[edge_id].from_node_id = from_node_id;
             pack_pattern.edges[edge_id].to_node_id = to_node_id;
-            pack_pattern.edges[edge_id].from_pin = conn.from_pin;
-            pack_pattern.edges[edge_id].to_pin = conn.to_pin;
 
             //Save ID
             conn_to_pattern_edge[key] = edge_id;
@@ -1681,25 +1567,218 @@ static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::ve
         }
     }
 
-    if (!pack_pattern.is_chain) {
-        //Record the non-chain root
-        //
-        //If this is a chain structure it's root has already been recorded,
-        //otherwise look for the node with no incoming pattern edges
-        for (int inode = 0; inode < (int) pack_pattern.nodes.size(); ++inode) {
-            if (pack_pattern.nodes[inode].in_edge_ids.empty()) {
-                VTR_ASSERT_MSG(pack_pattern.root_node_id == OPEN, "Only one pack pattern root node");
-                pack_pattern.root_node_id = inode;
-            }
+    //Record roots
+    for (size_t inode = 0; inode < pack_pattern.nodes.size(); ++inode) {
+        if (pack_pattern.nodes[inode].in_edge_ids.empty()) {
+            pack_pattern.root_node_ids.push_back(inode);
         }
-    } else {
-        VTR_ASSERT_MSG(pack_pattern.root_node_id != OPEN, "Non-chain root must have been found");
     }
-        
+
     return pack_pattern;
 }
 
-static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern) {
+
+static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_pattern) {
+    t_netlist_pack_pattern netlist_pattern;
+    netlist_pattern.name = arch_pattern.name;
+
+    struct EdgeInfo {
+        EdgeInfo(int from_node, int from_edge, int via_edge, int curr_node)
+            : from_arch_node(from_node)
+            , from_arch_edge(from_edge)
+            , via_arch_edge(via_edge)
+            , curr_arch_node(curr_node) {}
+
+        int from_arch_node = OPEN; //Last primitive node we came from
+        int from_arch_edge = OPEN; //Last primitive edge we came from
+        int via_arch_edge = OPEN; //Edge to current node
+        int curr_arch_node = OPEN; //Current node
+
+    };
+
+
+    //Breadth-First Traversal of arch pack pattern graph, 
+    //to record which primitives are reachable from each other.
+    //
+    //The resulting edges are abstracted from the 
+    //pb_graph hierarchy and contain only primitives (no intermediate
+    //hiearchy)
+    //
+    //Note that to get the full set of possible edges we perform a BFT
+    //from each primitive/top-level node
+    std::vector<EdgeInfo> arch_abstract_edges;
+    for (int root_node : arch_pattern.root_node_ids) {
+        std::set<int> visited;
+        std::queue<EdgeInfo> q;
+
+        vtr::printf("BFT from root %d\n", root_node);
+
+        q.emplace(OPEN, OPEN, OPEN, root_node); //Starting at root
+
+        while (!q.empty()) {
+            EdgeInfo info = q.front();
+            q.pop();
+
+            int curr_node = info.curr_arch_node;
+
+            if (visited.count(curr_node)) continue; //Don't revisit to avoid loops
+            visited.insert(curr_node);
+            
+            bool is_primitive = arch_pattern.nodes[curr_node].pb_graph_pin->parent_node->is_primitive();
+            bool is_top = arch_pattern.nodes[curr_node].pb_graph_pin->parent_node->is_top_level();
+            vtr::printf(" Visiting %d via %d (is_prim: %d)\n", curr_node, info.via_arch_edge, is_primitive);
+
+            if ((is_primitive || is_top) && info.from_arch_edge != OPEN && info.via_arch_edge != OPEN) {
+                //Record the primitive-to-primitive edge used to reach this node
+                arch_abstract_edges.push_back(info);
+                vtr::printf("  Recording Abstract Edge from node %d (via edge %d) -> node %d (via edge %d)\n", info.from_arch_node, info.from_arch_edge, curr_node, info.via_arch_edge);
+            }
+
+            //Expand out edges
+            for (auto out_edge : arch_pattern.nodes[curr_node].out_edge_ids) {
+
+                int next_node = arch_pattern.edges[out_edge].to_node_id;
+
+                if (is_primitive || curr_node == root_node) {
+                    //Expanding from a primitive, use the current node as from
+                    q.emplace(curr_node, out_edge, out_edge, next_node);
+                } else {
+                    //Expanding from a non-primitive, re-use the previous primtiive as from
+                    q.emplace(info.from_arch_node, info.from_arch_edge, out_edge, next_node);
+                }
+            }
+        }
+    }
+
+
+    //
+    //Build the netlist pattern from the edges collected above
+    //
+    std::map<t_pb_graph_pin*,int> pb_graph_pin_to_netlist_pattern_node;
+    std::map<t_pb_graph_node*,int> pb_graph_node_to_netlist_pattern_node;
+
+    std::map<t_pb_graph_pin*,int> pb_graph_pin_to_netlist_pattern_edge;
+
+    for (auto arch_abstract_edge : arch_abstract_edges) {
+
+        //Find or create from node
+        int netlist_from_node = OPEN;
+        t_pb_graph_pin* from_pin = arch_pattern.nodes[arch_abstract_edge.from_arch_node].pb_graph_pin;
+        if (pb_graph_pin_to_netlist_pattern_node.count(from_pin)) {
+            //Existing
+            netlist_from_node = pb_graph_pin_to_netlist_pattern_node[from_pin];
+        } else if (pb_graph_node_to_netlist_pattern_node.count(from_pin->parent_node)) {
+            //Existing
+            netlist_from_node = pb_graph_node_to_netlist_pattern_node[from_pin->parent_node];
+        } else if (from_pin->parent_node->is_top_level()) {
+            //Create
+            netlist_from_node = netlist_pattern.create_node();
+
+            //Default initialization
+
+            //Save Id
+            pb_graph_pin_to_netlist_pattern_node[from_pin] = netlist_from_node;
+        } else {
+            //Create
+            netlist_from_node = netlist_pattern.create_node();
+
+            //Initialize
+            netlist_pattern.nodes[netlist_from_node].model_type = from_pin->parent_node->pb_type->model;
+
+            //Save Id
+            pb_graph_node_to_netlist_pattern_node[from_pin->parent_node] = netlist_from_node;
+        }
+        VTR_ASSERT(netlist_from_node != OPEN);
+
+        //Find or create to node
+        int netlist_to_node = OPEN;
+        t_pb_graph_pin* to_pin = arch_pattern.nodes[arch_abstract_edge.curr_arch_node].pb_graph_pin;
+        if (pb_graph_pin_to_netlist_pattern_node.count(to_pin)) {
+            //Existing
+            netlist_to_node = pb_graph_pin_to_netlist_pattern_node[to_pin];
+        } else if (pb_graph_node_to_netlist_pattern_node.count(to_pin->parent_node)) {
+            //Existing
+            netlist_to_node = pb_graph_node_to_netlist_pattern_node[to_pin->parent_node];
+        } else if (to_pin->parent_node->is_top_level()) {
+            //Create
+            netlist_to_node = netlist_pattern.create_node();
+
+            //Default initialization
+
+            //Save Id
+            pb_graph_pin_to_netlist_pattern_node[to_pin] = netlist_to_node;
+        } else {
+            //Create
+            netlist_to_node = netlist_pattern.create_node();
+
+            //Initialize
+            netlist_pattern.nodes[netlist_to_node].model_type = to_pin->parent_node->pb_type->model;
+
+            //Save Id
+            pb_graph_node_to_netlist_pattern_node[to_pin->parent_node] = netlist_to_node;
+        }
+        VTR_ASSERT(netlist_to_node != OPEN);
+
+        //Create edge
+
+        int netlist_edge = OPEN;
+        if (pb_graph_pin_to_netlist_pattern_edge.count(from_pin)) {
+            //Existing
+            netlist_edge = pb_graph_pin_to_netlist_pattern_edge[from_pin];
+        } else {
+            //create
+            netlist_edge = netlist_pattern.create_edge();
+
+            //Initialize
+            netlist_pattern.edges[netlist_edge].from_pin.node_id = netlist_from_node;
+            if (!pb_graph_pin_to_netlist_pattern_node.count(from_pin)) {
+                //Only initialze these fields for non source/sink
+                netlist_pattern.edges[netlist_edge].from_pin.model = from_pin->parent_node->pb_type->model;
+                netlist_pattern.edges[netlist_edge].from_pin.model_port = from_pin->port->model_port;
+                netlist_pattern.edges[netlist_edge].from_pin.port_pin = from_pin->pin_number;
+            }
+
+            //Update node ref
+            netlist_pattern.nodes[netlist_from_node].out_edge_ids.push_back(netlist_edge);
+
+            //Save Id
+            pb_graph_pin_to_netlist_pattern_edge[from_pin] = netlist_edge;
+        }
+
+        //Add sink
+        t_netlist_pack_pattern_pin sink_pin;
+        sink_pin.node_id = netlist_to_node;
+        if (!pb_graph_pin_to_netlist_pattern_node.count(to_pin)) {
+            sink_pin.model = to_pin->parent_node->pb_type->model;
+            sink_pin.model_port = to_pin->port->model_port;
+            sink_pin.port_pin = to_pin->pin_number;
+        }
+
+        netlist_pattern.edges[netlist_edge].to_pins.push_back(sink_pin);
+
+        //Update node refs
+        netlist_pattern.nodes[netlist_to_node].in_edge_ids.push_back(netlist_edge);
+    }
+
+    //Record the root
+    for (size_t inode = 0; inode < netlist_pattern.nodes.size(); ++inode) {
+        if (netlist_pattern.nodes[inode].in_edge_ids.empty()) {
+            if (netlist_pattern.root_node != OPEN) {
+                VPR_THROW(VPR_ERROR_ARCH, 
+                        "Pack pattern '%s' has multiple roots (a link is probably missing causing the pattern to be disconnected)",
+                        netlist_pattern.name.c_str());
+            }
+            VTR_ASSERT(netlist_pattern.root_node == OPEN);
+            netlist_pattern.root_node = inode;
+        }
+    }
+    VTR_ASSERT(netlist_pattern.root_node != OPEN);
+
+    return netlist_pattern;
+}
+
+static void print_pack_pattern_debug(FILE* /*fp*/, const t_pack_pattern& /*pattern*/) {
+#if 0
     VTR_ASSERT(pattern.root_node_id != OPEN);
     fprintf(fp, "pack_pattern: %s root: %s (#%d)\n",
                 pattern.name.c_str(),
@@ -1708,9 +1787,11 @@ static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern) {
 
     std::set<int> visited;
     print_pack_pattern_debug_recurr(fp, pattern, pattern.root_node_id, 1, visited);
+#endif
 }
 
-static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& pattern, int node, int depth, std::set<int>& visited) {
+static void print_pack_pattern_debug_recurr(FILE* /*fp*/, const t_pack_pattern& /*pattern*/, int /*node*/, int /*depth*/, std::set<int>& /*visited*/) {
+#if 0
     if (visited.count(node)) return;
     visited.insert(node);
 
@@ -1727,6 +1808,7 @@ static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& patt
         int out_node = pattern.edges[out_edge].to_node_id;
         print_pack_pattern_debug_recurr(fp, pattern, out_node, depth+2, visited); 
     }
+#endif
 }
 
 
@@ -1737,6 +1819,7 @@ static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_p
     dfa.set_start_state(start_state);
 
     for (auto& pattern : netlist_pack_patterns) {
+        //TODO: Build DFA graph from netlist pattern graph
         int lut_ff_accept_state = dfa.add_state(true);
 
         dfa.add_state_transition(start_state, lut_ff_accept_state, pattern.edges[0]);
@@ -1748,6 +1831,117 @@ static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_p
     return dfa;
 }
 
+static Match match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+    //vtr::printf("Matching Pattern %s\n", pattern.name.c_str());
+    Match match;
+    if (match_largest_recur(match, blk, pattern.root_node, pattern, netlist)) {
+        return match; 
+    }
+    return Match(); //No match, return empty
+}
+
+static bool match_largest_recur(Match& match, const AtomBlockId blk, int pattern_node_id, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+
+    if (!matches_pattern_node(blk, pattern.nodes[pattern_node_id], netlist)) {
+        return false; 
+    }
+
+    for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) {
+        const auto& pattern_edge = pattern.edges[pattern_edge_id];
+
+        AtomPinId from_pin = find_matching_pin(netlist.block_output_pins(blk), pattern_edge.from_pin, netlist);
+        if (!from_pin) {
+            //No matching driver pin
+            return false;
+        }
+
+        AtomNetId net = netlist.pin_net(from_pin);
+        auto net_sinks = netlist.net_sinks(net);
+
+        for (size_t isink = 0; isink < pattern_edge.to_pins.size(); ++isink) {
+            const auto& to_pattern_pin = pattern_edge.to_pins[isink];
+
+            AtomPinId to_pin = find_matching_pin(net_sinks, to_pattern_pin, netlist);
+            if (!to_pin) {
+
+                if (to_pattern_pin.required) {
+                    //Required: give-up
+                    return false;
+                } else {
+                    //Optional: try next pattern pin
+                    continue;
+                }
+            }
+
+            //Valid match between netlist from_pin/to_pin and from_pattern_pin/to_pattern_pin
+            //Add it to the match
+            match.netlist_edges.emplace_back(from_pin, to_pin, pattern_edge_id, isink);
+
+            //Collect any downstream matches recursively
+            AtomBlockId to_blk = netlist.pin_block(to_pin);
+            bool subtree_matched = match_largest_recur(match, to_blk, to_pattern_pin.node_id, pattern, netlist);
+
+            if (!subtree_matched) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist) {
+
+    for (AtomPinId pin : pin_range) {
+        if (matches_pattern_pin(pin, pattern_pin, netlist)) {
+            return pin;
+        }
+    }
+
+    return AtomPinId::INVALID(); //No match
+}
+
+static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pattern_node& pattern_node, const AtomNetlist& netlist) {
+    if (pattern_node.model_type == nullptr) {
+        return true; //Wildcard
+    }
+    return netlist.block_model(blk) == pattern_node.model_type;
+}
+
+static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin) {
+    return (pattern_pin.model == nullptr
+            && pattern_pin.model_port == nullptr
+            && pattern_pin.port_pin == OPEN);
+}
+
+static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist) {
+
+    if (is_wildcard_pin(pattern_pin)) {
+        return true; //Wildcard
+    }
+
+    if (netlist.block_model(netlist.pin_block(from_pin)) != pattern_pin.model
+        || netlist.port_model(netlist.pin_port(from_pin)) != pattern_pin.model_port
+        || netlist.pin_port_bit(from_pin) != (BitIndex) pattern_pin.port_pin) {
+        return false;
+    }
+
+    return true;
+}
+
+static void print_match(const Match& match, const AtomNetlist& netlist) {
+    vtr::printf("Netlist Match:\n");
+    for (auto& edge : match.netlist_edges) {
+        vtr::printf("  %s -> %s (%s -> %s) (pattern edge #%d.%d)\n", 
+                netlist.pin_name(edge.from_pin).c_str(),
+                netlist.pin_name(edge.to_pin).c_str(),
+                netlist.block_model(netlist.pin_block(edge.from_pin))->name,
+                netlist.block_model(netlist.pin_block(edge.to_pin))->name,
+                edge.pattern_edge_id,
+                edge.pattern_edge_sink);
+    }
+}
+
 static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& arch_pattern) {
     os << "#Dot file of architecture pack pattern graph\n";
     os << "digraph " << arch_pattern.name << " {\n";
@@ -1757,7 +1951,7 @@ static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& 
         
         os << " [";
 
-        os << "label=\"" << describe_pb_graph_node_hierarchy(arch_pattern.nodes[inode].pb_graph_node) << "\"";
+        os << "label=\"" << describe_pb_graph_pin_hierarchy(arch_pattern.nodes[inode].pb_graph_pin) << " (#" << inode << ")\"";
 
         os << "];\n";
     }
@@ -1767,9 +1961,7 @@ static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& 
         os << " [";
 
         os << "label=\"" ;
-        os << describe_pb_graph_pin_port(arch_pattern.edges[iedge].from_pin);
-        os << "\\n -> ";
-        os << describe_pb_graph_pin_port(arch_pattern.edges[iedge].to_pin);
+        os << "(#" << iedge << ")";
         os << "\"";
 
         os << "];\n";
@@ -1782,27 +1974,59 @@ static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pac
     os << "#Dot file of netlist pack pattern graph\n";
     os << "digraph " << netlist_pattern.name << " {\n";
 
+    //Nodes
     for (size_t inode = 0; inode < netlist_pattern.nodes.size(); ++inode) {
         os << "N" << inode;
         
         os << " [";
 
-        os << "label=\"" << netlist_pattern.nodes[inode].model_type->name << "\"";
+        os << "label=\"";
+        if (netlist_pattern.nodes[inode].model_type) {
+            os << netlist_pattern.nodes[inode].model_type->name;
+        } else {
+            os << "*";
+        }
+        os << " (#" << inode << ")";
+        os << "\"";
 
         os << "];\n";
     }
 
+    //Edges
     for (size_t iedge = 0; iedge < netlist_pattern.edges.size(); ++iedge) {
-        os << "N" << netlist_pattern.edges[iedge].from_node_id << " -> N" << netlist_pattern.edges[iedge].to_node_id;
-        os << " [";
+        const auto& edge = netlist_pattern.edges[iedge];
 
-        os << "label=\"" ;
-        os << netlist_pattern.edges[iedge].from_model_port->name << "[" << netlist_pattern.edges[iedge].from_port_pin << "]";
-        os << "\\n -> ";
-        os << netlist_pattern.edges[iedge].to_model_port->name << "[" << netlist_pattern.edges[iedge].to_port_pin << "]";
-        os << "\"";
+        const auto& from_pin = edge.from_pin;
+        for (size_t isink = 0; isink < edge.to_pins.size(); ++isink) {
+            const auto& to_pin = edge.to_pins[isink];
 
-        os << "];\n";
+            os << "N" << edge.from_pin.node_id << " -> N" << edge.to_pins[isink].node_id;
+            os << " [";
+
+            os << "label=\"" ;
+
+            os << "(#" << iedge << "." << isink << ")\\n";
+            if (is_wildcard_pin(from_pin)) {
+                os << "*";
+            } else {
+                os << from_pin.model_port->name << "[" << from_pin.port_pin << "]";
+            }
+            os << "\\n -> ";
+            if (is_wildcard_pin(to_pin)) {
+                os << "*";
+            } else {
+                os << to_pin.model_port->name << "[" << to_pin.port_pin << "]";
+            }
+            os << "\"";
+
+            if (to_pin.required) {
+                os << " style=solid";
+            } else {
+                os << " style=dashed";
+            }
+
+            os << "];\n";
+        }
     }
 
     os << "}\n";
