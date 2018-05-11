@@ -1731,17 +1731,32 @@ static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_p
         netlist_pattern.nodes[netlist_to_node].in_edge_ids.push_back(netlist_edge);
     }
 
-    //Record the root
+    //Record the roots
+    std::vector<int> roots;
     for (size_t inode = 0; inode < netlist_pattern.nodes.size(); ++inode) {
-        if (netlist_pattern.nodes[inode].in_edge_ids.empty()) {
-            if (netlist_pattern.root_node != OPEN) {
-                VPR_THROW(VPR_ERROR_ARCH, 
-                        "Pack pattern '%s' has multiple roots (a link is probably missing causing the pattern to be disconnected)",
-                        netlist_pattern.name.c_str());
-            }
-            VTR_ASSERT(netlist_pattern.root_node == OPEN);
-            netlist_pattern.root_node = inode;
+        if (netlist_pattern.nodes[inode].is_root()) {
+            roots.push_back(inode);
         }
+    }
+
+    //Should have a single root
+    if (roots.size() == 1) {
+        VTR_ASSERT(netlist_pattern.root_node == OPEN);
+        netlist_pattern.root_node = roots[0];
+    } else {
+        std::string msg = vtr::string_fmt("Pack pattern '%s' has multiple roots (pack pattern "
+                                          "connection(s) are likely missing causing the pattern "
+                                          "to be disconnected)\n",
+                                          netlist_pattern.name.c_str());
+
+        msg += vtr::string_fmt("  Involved nodes:\n");
+        for (auto root : roots) {
+            if (netlist_pattern.nodes[root].model_type) {
+                msg += vtr::string_fmt("%s\n", netlist_pattern.nodes[root].model_type->name);
+            }
+        }
+
+        VPR_THROW(VPR_ERROR_ARCH, msg.c_str());
     }
     VTR_ASSERT(netlist_pattern.root_node != OPEN);
 
