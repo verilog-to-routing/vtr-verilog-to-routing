@@ -14,6 +14,7 @@
 #include <cstring>
 #include <fstream>
 #include <queue>
+#include <stack>
 #include <map>
 using namespace std;
 
@@ -121,16 +122,25 @@ static std::map<std::string,std::vector<t_pack_pattern_connection>> collect_type
 static t_pack_pattern build_pack_pattern(std::string pattern_name, const std::vector<t_pack_pattern_connection>& connections);
 static std::vector<t_netlist_pack_pattern> abstract_pack_patterns(const std::vector<t_pack_pattern>& arch_pack_patterns);
 static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_pack_pattern);
-static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_pattern> netlist_pack_patterns);
-static Match match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
-static bool match_largest_recur(Match& match, const AtomBlockId blk, int pattern_node_id, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+
+static std::vector<Match> collect_pattern_matches_in_netlist(const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+static std::set<AtomBlockId> collect_internal_blocks_in_match(const Match& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+
+static Match match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
+static bool match_largest_recur(Match& match, const AtomBlockId blk, 
+                                int pattern_node_id, const t_netlist_pack_pattern& pattern,
+                                const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
+
 static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
+static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
+                                   const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
+static AtomBlockId find_parent_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+static bool matches_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
 static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pattern_node& pattern_node, const AtomNetlist& netlist);
+static bool is_wildcard_node(const t_netlist_pack_pattern_node& pattern_node);
 static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin);
 static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
-static void print_pack_pattern_debug(FILE* fp, const t_pack_pattern& pattern);
-static void print_pack_pattern_debug_recurr(FILE* fp, const t_pack_pattern& pattern, int node, int depth, std::set<int>& visited);
-static void print_match(const Match& match, const AtomNetlist& netlist);
+static void print_match(const Match& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
 static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern);
 static void write_arch_pack_pattern_dot(std::ostream& os, const t_pack_pattern& arch_pattern);
 
@@ -1420,7 +1430,6 @@ static void init_pack_patterns() {
             //Debug
             std::ofstream ofs("arch_pack_pattern." + pack_pattern.name + ".echo");
             write_arch_pack_pattern_dot(ofs, pack_pattern);
-            print_pack_pattern_debug(stdout, pack_pattern);        
         }
     }
 
@@ -1433,46 +1442,8 @@ static void init_pack_patterns() {
         write_netlist_pack_pattern_dot(ofs, pack_pattern);
     }
 
-    //Find the largest matches in the netlist
-    std::vector<Match> largest_matches;
-    std::map<AtomBlockId,int> atom_largest_match;
-
-    for (auto& pattern : netlist_pack_patterns) {
-        for (auto root_blk : netlist.blocks()) {
-            auto match = match_largest(root_blk, pattern, netlist);
-
-            if (match.netlist_edges.empty()) continue;
-
-            //Speculatively add match
-            int imatch = largest_matches.size();
-            largest_matches.push_back(match);
-
-            bool match_used = false;
-            for (auto& edge : match.netlist_edges) {
-                for (AtomBlockId atom_blk : {netlist.pin_block(edge.from_pin), netlist.pin_block(edge.to_pin)}) {
-                    if (!atom_largest_match.count(atom_blk)) {
-                        atom_largest_match[atom_blk] = imatch; //First
-                        match_used = true;
-                    } else {
-                        int imatch_curr = atom_largest_match[atom_blk];
-
-                        if (largest_matches[imatch_curr].netlist_edges.size() < match.netlist_edges.size()) {
-                            //New max
-                            atom_largest_match[atom_blk] = imatch;
-                            match_used = true;
-                        }
-                    }
-                }
-            }
-
-            if (!match_used) {
-                largest_matches.pop_back(); //Unused so drop match
-            }
-        }
-    }
-
-    for (auto match : largest_matches) {
-        print_match(match, netlist);
+    for (const auto& pack_pattern : netlist_pack_patterns) {
+        auto matches = collect_pattern_matches_in_netlist(pack_pattern, netlist);
     }
 }
 
@@ -1672,7 +1643,7 @@ static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_p
             netlist_from_node = pb_graph_node_to_netlist_pattern_node[from_pin->parent_node];
         } else if (from_pin->parent_node->is_top_level()) {
             //Create
-            netlist_from_node = netlist_pattern.create_node();
+            netlist_from_node = netlist_pattern.create_node(true);
 
             //Default initialization
 
@@ -1680,7 +1651,7 @@ static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_p
             pb_graph_pin_to_netlist_pattern_node[from_pin] = netlist_from_node;
         } else {
             //Create
-            netlist_from_node = netlist_pattern.create_node();
+            netlist_from_node = netlist_pattern.create_node(false);
 
             //Initialize
             netlist_pattern.nodes[netlist_from_node].model_type = from_pin->parent_node->pb_type->model;
@@ -1701,7 +1672,7 @@ static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_p
             netlist_to_node = pb_graph_node_to_netlist_pattern_node[to_pin->parent_node];
         } else if (to_pin->parent_node->is_top_level()) {
             //Create
-            netlist_to_node = netlist_pattern.create_node();
+            netlist_to_node = netlist_pattern.create_node(true);
 
             //Default initialization
 
@@ -1709,7 +1680,7 @@ static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_p
             pb_graph_pin_to_netlist_pattern_node[to_pin] = netlist_to_node;
         } else {
             //Create
-            netlist_to_node = netlist_pattern.create_node();
+            netlist_to_node = netlist_pattern.create_node(false);
 
             //Initialize
             netlist_pattern.nodes[netlist_to_node].model_type = to_pin->parent_node->pb_type->model;
@@ -1777,70 +1748,202 @@ static t_netlist_pack_pattern abstract_pack_pattern(const t_pack_pattern& arch_p
     return netlist_pattern;
 }
 
-static void print_pack_pattern_debug(FILE* /*fp*/, const t_pack_pattern& /*pattern*/) {
-#if 0
-    VTR_ASSERT(pattern.root_node_id != OPEN);
-    fprintf(fp, "pack_pattern: %s root: %s (#%d)\n",
-                pattern.name.c_str(),
-                describe_pb_graph_node_hierarchy(pattern.nodes[pattern.root_node_id].pb_graph_node).c_str(),
-                pattern.root_node_id);
+static std::vector<Match> collect_pattern_matches_in_netlist(const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+    std::vector<Match> matches;
 
-    std::set<int> visited;
-    print_pack_pattern_debug_recurr(fp, pattern, pattern.root_node_id, 1, visited);
-#endif
-}
+    std::set<AtomBlockId> covered_blks;
 
-static void print_pack_pattern_debug_recurr(FILE* /*fp*/, const t_pack_pattern& /*pattern*/, int /*node*/, int /*depth*/, std::set<int>& /*visited*/) {
-#if 0
-    if (visited.count(node)) return;
-    visited.insert(node);
+    for (auto blk : netlist.blocks()) {
+        if (covered_blks.count(blk)) continue; //Already in molecule
+        if (!matches_pattern_root(blk, pattern, netlist)) continue; //Not a valid root
 
-    fprintf(fp, "%snode: %s (#%d)\n",
-            vtr::indent(depth, "  ").c_str(),
-            describe_pb_graph_node_hierarchy(pattern.nodes[node].pb_graph_node).c_str(),
-            node);
+        //Initially the current block is the only candidate
+        std::stack<AtomBlockId> root_candidates;
+        root_candidates.push(blk);
 
-    for (int out_edge : pattern.nodes[node].out_edge_ids) {
-        fprintf(fp, "%sedge: %s -> %s\n",
-                vtr::indent(depth + 1, "  ").c_str(),
-                describe_pb_graph_pin_hierarchy(pattern.edges[out_edge].from_pin).c_str(),
-                describe_pb_graph_pin_hierarchy(pattern.edges[out_edge].to_pin).c_str());
-        int out_node = pattern.edges[out_edge].to_node_id;
-        print_pack_pattern_debug_recurr(fp, pattern, out_node, depth+2, visited); 
+        //Collect any root candidates upstream of the current blk
+        while (root_candidates.top()) {
+            AtomBlockId next_root_candidate = find_parent_pattern_root(root_candidates.top(), pattern, netlist); 
+
+            if (!next_root_candidate) break; //No more potential roots
+            if (covered_blks.count(next_root_candidate)) break; //Already used
+
+            root_candidates.push(next_root_candidate);
+
+            VTR_ASSERT_SAFE(matches_pattern_root(next_root_candidate, pattern, netlist));
+        }
+
+
+        //Try each candidate root from the most upstream downward
+        // This ensures we get the largest match from the most upstream root connected to the
+        // original blk
+        Match match;
+        while (!match && !root_candidates.empty()) {
+            match = match_largest(root_candidates.top(), pattern, covered_blks, netlist);
+            root_candidates.pop();
+        }
+
+        if (match) {
+            //Save the match
+            matches.push_back(match);
+
+            //Record the blocks covered so blocks don't end up in multiple matches
+            auto match_blocks = collect_internal_blocks_in_match(match, pattern, netlist);
+            covered_blks.insert(match_blocks.begin(), match_blocks.end());
+
+            print_match(match, pattern, netlist);
+        }
     }
-#endif
+
+    return matches;
 }
 
+static std::set<AtomBlockId> collect_internal_blocks_in_match(const Match& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+    std::set<AtomBlockId> blocks;
 
-static MoleculeDFA build_pack_pattern_matcher(const std::vector<t_netlist_pack_pattern> netlist_pack_patterns) {
-    MoleculeDFA dfa;
+    for (auto match_edge : match.netlist_edges) {
+        int pattern_from_node = pattern.edges[match_edge.pattern_edge_id].from_pin.node_id;
+        int pattern_to_node = pattern.edges[match_edge.pattern_edge_id].to_pins[match_edge.pattern_edge_sink].node_id;
 
-    int start_state = dfa.add_state(false);
-    dfa.set_start_state(start_state);
+        if (pattern.nodes[pattern_from_node].is_internal()) {
+            blocks.insert(netlist.pin_block(match_edge.from_pin));
+        }
 
-    for (auto& pattern : netlist_pack_patterns) {
-        //TODO: Build DFA graph from netlist pattern graph
-        int lut_ff_accept_state = dfa.add_state(true);
-
-        dfa.add_state_transition(start_state, lut_ff_accept_state, pattern.edges[0]);
+        if (pattern.nodes[pattern_to_node].is_internal()) {
+            blocks.insert(netlist.pin_block(match_edge.to_pin));
+        }
     }
 
-    std::ofstream ofs("dfa.dot");
-    dfa.write_dot(ofs);
-
-    return dfa;
+    return blocks;
 }
 
-static Match match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
-    //vtr::printf("Matching Pattern %s\n", pattern.name.c_str());
+static Match match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
     Match match;
-    if (match_largest_recur(match, blk, pattern.root_node, pattern, netlist)) {
+    if (match_largest_recur(match, blk, pattern.root_node, pattern, excluded_blocks, netlist)) {
         return match; 
     }
     return Match(); //No match, return empty
 }
 
-static bool match_largest_recur(Match& match, const AtomBlockId blk, int pattern_node_id, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+static bool match_largest_recur(Match& match, const AtomBlockId blk, 
+                                int pattern_node_id, const t_netlist_pack_pattern& pattern,
+                                const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
+
+    if (excluded_blocks.count(blk) && pattern.nodes[pattern_node_id].is_internal()) {
+        //Block is already part of another match, and is matching an internal node of the pattern
+        return false;
+    }
+
+    if (!matches_pattern_node(blk, pattern.nodes[pattern_node_id], netlist)) {
+        return false; 
+    }
+
+    for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) {
+        const auto& pattern_edge = pattern.edges[pattern_edge_id];
+        const auto& from_pattern_pin = pattern_edge.from_pin;
+
+        AtomPinId from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, excluded_blocks, netlist);
+        if (!from_pin) {
+            //No matching driver pin
+            if (from_pattern_pin.required) {
+                //Required: give-up
+                return false;
+            } else {
+                //Optional: try next edge
+                continue;
+            }
+        }
+
+        AtomNetId net = netlist.pin_net(from_pin);
+        auto net_sinks = netlist.net_sinks(net);
+
+        for (size_t isink = 0; isink < pattern_edge.to_pins.size(); ++isink) {
+            const auto& to_pattern_pin = pattern_edge.to_pins[isink];
+            const auto& to_pattern_node = pattern.nodes[to_pattern_pin.node_id];
+
+            AtomPinId to_pin = find_matching_pin(net_sinks, to_pattern_pin, excluded_blocks, netlist);
+            if (!to_pin || (excluded_blocks.count(netlist.pin_block(to_pin)) && to_pattern_node.is_internal())) {
+                //No valid to_pin (either doesn't match pattern, or is on an excluded block)
+
+                if (to_pattern_pin.required) {
+                    //Required: give-up
+                    return false;
+                } else {
+                    //Optional: try next pattern pin
+                    continue;
+                }
+            }
+
+            //Valid match between netlist from_pin/to_pin and from_pattern_pin/to_pattern_pin
+            //Add it to the match
+            match.netlist_edges.emplace_back(from_pin, to_pin, pattern_edge_id, isink);
+
+            //Collect any downstream matches recursively
+            AtomBlockId to_blk = netlist.pin_block(to_pin);
+            bool subtree_matched = match_largest_recur(match, to_blk, to_pattern_pin.node_id, pattern, excluded_blocks, netlist);
+
+            if (!subtree_matched) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
+                                   const AtomNetlist& netlist) {
+    return find_matching_pin(pin_range, pattern_pin, {}, netlist);
+}
+
+static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
+                                   const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
+
+    for (AtomPinId pin : pin_range) {
+        if (matches_pattern_pin(pin, pattern_pin, netlist)) {
+
+            if (excluded_blocks.count(netlist.pin_block(pin))) {
+                continue;
+            } else {
+                return pin;
+            }
+        }
+    }
+
+    return AtomPinId::INVALID(); //No match
+}
+
+//Returns a parent block of blk, if it is also a valid root for pattern
+static AtomBlockId find_parent_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+    int pattern_node_id = pattern.root_node;
+
+    VTR_ASSERT_SAFE(matches_pattern_root(blk, pattern, netlist));
+
+    //Find an upstream block which is also a valid root
+    for (auto pins : {netlist.block_input_pins(blk), netlist.block_clock_pins(blk)}) { //Current blocks inputs
+        for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) { //Root out edges
+            for (const auto& pattern_pin : pattern.edges[pattern_edge_id].to_pins) { //Edge pins
+
+                //Do the inputs of the current block match the output edges of the root pattern?
+                AtomPinId to_pin = find_matching_pin(pins, pattern_pin, netlist);
+                if (!to_pin) continue;
+
+                AtomNetId in_net = netlist.pin_net(to_pin);
+                AtomBlockId from_blk = netlist.net_driver_block(in_net);
+
+                if (!matches_pattern_root(from_blk, pattern, netlist)) continue;
+
+                return from_blk;
+            }
+        }
+    }
+
+    return AtomBlockId::INVALID();
+}
+
+//Returns true if matches the pattern root node (and it's out-going edges)
+static bool matches_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+    int pattern_node_id = pattern.root_node;
 
     if (!matches_pattern_node(blk, pattern.nodes[pattern_node_id], netlist)) {
         return false; 
@@ -1872,40 +1975,20 @@ static bool match_largest_recur(Match& match, const AtomBlockId blk, int pattern
                     continue;
                 }
             }
-
-            //Valid match between netlist from_pin/to_pin and from_pattern_pin/to_pattern_pin
-            //Add it to the match
-            match.netlist_edges.emplace_back(from_pin, to_pin, pattern_edge_id, isink);
-
-            //Collect any downstream matches recursively
-            AtomBlockId to_blk = netlist.pin_block(to_pin);
-            bool subtree_matched = match_largest_recur(match, to_blk, to_pattern_pin.node_id, pattern, netlist);
-
-            if (!subtree_matched) {
-                return false;
-            }
         }
     }
-
     return true;
 }
 
-static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist) {
-
-    for (AtomPinId pin : pin_range) {
-        if (matches_pattern_pin(pin, pattern_pin, netlist)) {
-            return pin;
-        }
-    }
-
-    return AtomPinId::INVALID(); //No match
-}
-
 static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pattern_node& pattern_node, const AtomNetlist& netlist) {
-    if (pattern_node.model_type == nullptr) {
+    if (is_wildcard_node(pattern_node)) {
         return true; //Wildcard
     }
     return netlist.block_model(blk) == pattern_node.model_type;
+}
+
+static bool is_wildcard_node(const t_netlist_pack_pattern_node& pattern_node) {
+    return pattern_node.model_type == nullptr;
 }
 
 static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin) {
@@ -1929,16 +2012,24 @@ static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_p
     return true;
 }
 
-static void print_match(const Match& match, const AtomNetlist& netlist) {
-    vtr::printf("Netlist Match:\n");
+static void print_match(const Match& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
+    vtr::printf("Netlist Match to %s:\n", pattern.name.c_str());
     for (auto& edge : match.netlist_edges) {
-        vtr::printf("  %s -> %s (%s -> %s) (pattern edge #%d.%d)\n", 
+        int pattern_from_node_id = pattern.edges[edge.pattern_edge_id].from_pin.node_id;
+        int pattern_to_node_id = pattern.edges[edge.pattern_edge_id].to_pins[edge.pattern_edge_sink].node_id;
+        vtr::printf("  %s -> %s (%s%s -> %s%s) (pattern edge #%d.%d)\n", 
                 netlist.pin_name(edge.from_pin).c_str(),
                 netlist.pin_name(edge.to_pin).c_str(),
                 netlist.block_model(netlist.pin_block(edge.from_pin))->name,
+                (pattern.nodes[pattern_from_node_id].is_external()) ? "*" : "",
                 netlist.block_model(netlist.pin_block(edge.to_pin))->name,
+                (pattern.nodes[pattern_to_node_id].is_external()) ? "*" : "",
                 edge.pattern_edge_id,
                 edge.pattern_edge_sink);
+    }
+    for (auto blk : collect_internal_blocks_in_match(match, pattern, netlist)) {
+        vtr::printf("\tInternal match block: %s (%zu)\n", netlist.block_name(blk).c_str(), size_t(blk));
+
     }
 }
 
@@ -1988,6 +2079,10 @@ static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pac
         }
         os << " (#" << inode << ")";
         os << "\"";
+
+        if (netlist_pattern.nodes[inode].is_external()) {
+            os << " shape=invhouse";
+        }
 
         os << "];\n";
     }

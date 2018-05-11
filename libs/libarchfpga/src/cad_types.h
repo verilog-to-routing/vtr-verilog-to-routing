@@ -65,10 +65,22 @@ struct t_netlist_pack_pattern_edge {
 };
 
 struct t_netlist_pack_pattern_node {
+    t_netlist_pack_pattern_node(bool external)
+        : is_external_(external) {}
+
     t_model* model_type = nullptr;
 
     std::vector<int> in_edge_ids;
     std::vector<int> out_edge_ids;
+
+    bool is_leaf() const { return out_edge_ids.size() == 0; }
+    bool is_root() const { return in_edge_ids.size() == 0; }
+
+    bool is_external() const { return is_external_; }
+    bool is_internal() const { return !is_external(); }
+
+    private:
+        bool is_external_; //Indicates node is external (i.e. outside a cluster)
 };
 
 struct t_netlist_pack_pattern {
@@ -79,8 +91,8 @@ struct t_netlist_pack_pattern {
     std::vector<t_netlist_pack_pattern_node> nodes;
     std::vector<t_netlist_pack_pattern_edge> edges;
 
-    int create_node() {
-        nodes.emplace_back();
+    int create_node(bool external) {
+        nodes.emplace_back(external);
         return nodes.size() - 1;
 
     }
