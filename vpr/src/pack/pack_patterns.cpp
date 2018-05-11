@@ -7,6 +7,7 @@
 #include <fstream>
 #include <stack>
 #include <queue>
+#include <algorithm>
 
 /*
  * Local Data Types
@@ -63,15 +64,12 @@ static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pat
 static bool is_wildcard_node(const t_netlist_pack_pattern_node& pattern_node);
 static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin);
 static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
-static void print_match(const NetlistPatternMatch& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
-static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern);
-static void write_arch_pack_pattern_dot(std::ostream& os, const t_arch_pack_pattern& arch_pattern);
 
 /*
  * Global Function Implementations
  */
 
-std::vector<t_arch_pack_pattern> init_arch_pack_patterns(const DeviceContext& device_ctx) {
+std::vector<t_arch_pack_pattern> identify_arch_pack_patterns(const DeviceContext& device_ctx) {
     std::vector<t_arch_pack_pattern> arch_pack_patterns;
 
     //For every complex block
@@ -79,18 +77,13 @@ std::vector<t_arch_pack_pattern> init_arch_pack_patterns(const DeviceContext& de
         //Collect the pack pattern connections defined in the architecture
         const auto& pack_pattern_connections = collect_type_pack_pattern_connections(&device_ctx.block_types[itype]);
 
-        vtr::printf("TYPE: %s\n", device_ctx.block_types[itype].name);
+        //vtr::printf("TYPE: %s\n", device_ctx.block_types[itype].name);
 
         //Convert each set of connections to an architecture pack pattern
         for (auto kv : pack_pattern_connections) {
             t_arch_pack_pattern pack_pattern = build_pack_pattern(kv.first, kv.second);
 
             arch_pack_patterns.push_back(pack_pattern);
-
-
-            //Debug
-            std::ofstream ofs("arch_pack_pattern." + pack_pattern.name + ".echo");
-            write_arch_pack_pattern_dot(ofs, pack_pattern);
         }
     }
 
@@ -112,6 +105,16 @@ std::vector<t_netlist_pack_pattern> abstract_arch_pack_patterns(const std::vecto
     return netlist_pack_patterns;
 }
 
+t_netlist_pack_pattern create_atom_default_pack_pattern() {
+    t_netlist_pack_pattern atom_pack_pattern;
+
+    //A single internal wild-card node
+    atom_pack_pattern.root_node = atom_pack_pattern.create_node(false);
+
+    atom_pack_pattern.name = ATOM_DEFAULT_PACK_PATTERN_NAME;
+
+    return atom_pack_pattern;
+}
 
 
 std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
@@ -154,35 +157,168 @@ std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netl
             matches.push_back(match);
 
             //Record the blocks covered so blocks don't end up in multiple matches
-            auto match_blocks = collect_internal_blocks_in_match(match, pattern, netlist);
-            covered_blks.insert(match_blocks.begin(), match_blocks.end());
-
-            print_match(match, pattern, netlist);
+            covered_blks.insert(match.internal_blocks.begin(), match.internal_blocks.end());
         }
     }
 
     return matches;
 }
 
-std::set<AtomBlockId> collect_internal_blocks_in_match(const NetlistPatternMatch& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
-    std::set<AtomBlockId> blocks;
+std::vector<NetlistPatternMatch> filter_netlist_pattern_matches(std::vector<NetlistPatternMatch> unfiltered_matches) {
+    std::vector<NetlistPatternMatch> filtered_matches;
 
-    for (auto match_edge : match.netlist_edges) {
-        int pattern_from_node = pattern.edges[match_edge.pattern_edge_id].from_pin.node_id;
-        int pattern_to_node = pattern.edges[match_edge.pattern_edge_id].to_pins[match_edge.pattern_edge_sink].node_id;
+    //Sort the matches by descending size
+    auto by_match_size = [](const NetlistPatternMatch& lhs , NetlistPatternMatch& rhs) {
+        return lhs.internal_blocks.size() > rhs.internal_blocks.size();
+    };
+    std::sort(unfiltered_matches.begin(), unfiltered_matches.end(), by_match_size);
 
-        if (pattern.nodes[pattern_from_node].is_internal()) {
-            blocks.insert(netlist.pin_block(match_edge.from_pin));
-        }
+    //Walk through the matches in descending order of size,
+    //recording those with no overlaps
+    std::set<AtomBlockId> covered_blocks;
+    for (auto& netlist_match : unfiltered_matches) {
 
-        if (pattern.nodes[pattern_to_node].is_internal()) {
-            blocks.insert(netlist.pin_block(match_edge.to_pin));
+        const auto& internal_blocks = netlist_match.internal_blocks;
+
+        auto not_covered = [&](const AtomBlockId blk) {
+            return !covered_blocks.count(blk);
+        };
+
+        if (std::all_of(internal_blocks.begin(), internal_blocks.end(), not_covered)) {
+            //Add
+            filtered_matches.push_back(netlist_match);
+            
+            //Record the covered blocks so any smaller patterns which include these
+            //blocks are rejected
+            covered_blocks.insert(internal_blocks.begin(), internal_blocks.end());
         }
     }
 
-    return blocks;
+    return filtered_matches;
 }
 
+void print_match(const NetlistPatternMatch& match, const AtomNetlist& netlist) {
+    vtr::printf("Netlist Match to %s:\n", match.pattern_name.c_str());
+    for (auto& edge : match.netlist_edges) {
+        AtomBlockId from_blk = netlist.pin_block(edge.from_pin);
+        AtomBlockId to_blk = netlist.pin_block(edge.to_pin);
+
+        bool from_external = (std::find(match.external_blocks.begin(), match.external_blocks.end(), from_blk) != match.external_blocks.end());
+        bool to_external = (std::find(match.external_blocks.begin(), match.external_blocks.end(), to_blk) != match.external_blocks.end());
+
+        vtr::printf("  %s -> %s (%s%s -> %s%s) (pattern edge #%d.%d)\n", 
+                netlist.pin_name(edge.from_pin).c_str(),
+                netlist.pin_name(edge.to_pin).c_str(),
+                netlist.block_model(netlist.pin_block(edge.from_pin))->name,
+                (from_external) ? "*" : "",
+                netlist.block_model(netlist.pin_block(edge.to_pin))->name,
+                (to_external) ? "*" : "",
+                edge.pattern_edge_id,
+                edge.pattern_edge_sink);
+    }
+
+    for (auto blk : match.internal_blocks) {
+        vtr::printf("\tInternal match block: %s (%zu)\n", netlist.block_name(blk).c_str(), size_t(blk));
+    }
+
+    for (auto blk : match.external_blocks) {
+        vtr::printf("\tExternal match block: %s (%zu)\n", netlist.block_name(blk).c_str(), size_t(blk));
+    }
+}
+
+void write_arch_pack_pattern_dot(std::ostream& os, const t_arch_pack_pattern& arch_pattern) {
+    os << "#Dot file of architecture pack pattern graph\n";
+    os << "digraph " << arch_pattern.name << " {\n";
+
+    for (size_t inode = 0; inode < arch_pattern.nodes.size(); ++inode) {
+        os << "N" << inode;
+        
+        os << " [";
+
+        os << "label=\"" << describe_pb_graph_pin_hierarchy(arch_pattern.nodes[inode].pb_graph_pin) << " (#" << inode << ")\"";
+
+        os << "];\n";
+    }
+
+    for (size_t iedge = 0; iedge < arch_pattern.edges.size(); ++iedge) {
+        os << "N" << arch_pattern.edges[iedge].from_node_id << " -> N" << arch_pattern.edges[iedge].to_node_id;
+        os << " [";
+
+        os << "label=\"" ;
+        os << "(#" << iedge << ")";
+        os << "\"";
+
+        os << "];\n";
+    }
+
+    os << "}\n";
+}
+
+void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern) {
+    os << "#Dot file of netlist pack pattern graph\n";
+    os << "digraph " << netlist_pattern.name << " {\n";
+
+    //Nodes
+    for (size_t inode = 0; inode < netlist_pattern.nodes.size(); ++inode) {
+        os << "N" << inode;
+        
+        os << " [";
+
+        os << "label=\"";
+        if (netlist_pattern.nodes[inode].model_type) {
+            os << netlist_pattern.nodes[inode].model_type->name;
+        } else {
+            os << "*";
+        }
+        os << " (#" << inode << ")";
+        os << "\"";
+
+        if (netlist_pattern.nodes[inode].is_external()) {
+            os << " shape=invhouse";
+        }
+
+        os << "];\n";
+    }
+
+    //Edges
+    for (size_t iedge = 0; iedge < netlist_pattern.edges.size(); ++iedge) {
+        const auto& edge = netlist_pattern.edges[iedge];
+
+        const auto& from_pin = edge.from_pin;
+        for (size_t isink = 0; isink < edge.to_pins.size(); ++isink) {
+            const auto& to_pin = edge.to_pins[isink];
+
+            os << "N" << edge.from_pin.node_id << " -> N" << edge.to_pins[isink].node_id;
+            os << " [";
+
+            os << "label=\"" ;
+
+            os << "(#" << iedge << "." << isink << ")\\n";
+            if (is_wildcard_pin(from_pin)) {
+                os << "*";
+            } else {
+                os << from_pin.model_port->name << "[" << from_pin.port_pin << "]";
+            }
+            os << "\\n -> ";
+            if (is_wildcard_pin(to_pin)) {
+                os << "*";
+            } else {
+                os << to_pin.model_port->name << "[" << to_pin.port_pin << "]";
+            }
+            os << "\"";
+
+            if (to_pin.required) {
+                os << " style=solid";
+            } else {
+                os << " style=dashed";
+            }
+
+            os << "];\n";
+        }
+    }
+
+    os << "}\n";
+}
 /*
  * Local Function Implementations
  */
@@ -494,6 +630,7 @@ static t_netlist_pack_pattern abstract_arch_pack_pattern(const t_arch_pack_patte
 static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
     NetlistPatternMatch match;
     if (match_largest_recur(match, blk, pattern.root_node, pattern, excluded_blocks, netlist)) {
+        match.pattern_name = pattern.name;
         return match; 
     }
     return NetlistPatternMatch(); //No match, return empty
@@ -510,6 +647,13 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
 
     if (!matches_pattern_node(blk, pattern.nodes[pattern_node_id], netlist)) {
         return false; 
+    }
+
+    if (pattern.nodes[pattern_node_id].is_internal()) {
+        match.internal_blocks.push_back(blk);
+    } else {
+        VTR_ASSERT(pattern.nodes[pattern_node_id].is_external());
+        match.external_blocks.push_back(blk);
     }
 
     for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) {
@@ -686,117 +830,3 @@ static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_p
     return true;
 }
 
-static void print_match(const NetlistPatternMatch& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
-    vtr::printf("Netlist Match to %s:\n", pattern.name.c_str());
-    for (auto& edge : match.netlist_edges) {
-        int pattern_from_node_id = pattern.edges[edge.pattern_edge_id].from_pin.node_id;
-        int pattern_to_node_id = pattern.edges[edge.pattern_edge_id].to_pins[edge.pattern_edge_sink].node_id;
-        vtr::printf("  %s -> %s (%s%s -> %s%s) (pattern edge #%d.%d)\n", 
-                netlist.pin_name(edge.from_pin).c_str(),
-                netlist.pin_name(edge.to_pin).c_str(),
-                netlist.block_model(netlist.pin_block(edge.from_pin))->name,
-                (pattern.nodes[pattern_from_node_id].is_external()) ? "*" : "",
-                netlist.block_model(netlist.pin_block(edge.to_pin))->name,
-                (pattern.nodes[pattern_to_node_id].is_external()) ? "*" : "",
-                edge.pattern_edge_id,
-                edge.pattern_edge_sink);
-    }
-    for (auto blk : collect_internal_blocks_in_match(match, pattern, netlist)) {
-        vtr::printf("\tInternal match block: %s (%zu)\n", netlist.block_name(blk).c_str(), size_t(blk));
-
-    }
-}
-
-static void write_arch_pack_pattern_dot(std::ostream& os, const t_arch_pack_pattern& arch_pattern) {
-    os << "#Dot file of architecture pack pattern graph\n";
-    os << "digraph " << arch_pattern.name << " {\n";
-
-    for (size_t inode = 0; inode < arch_pattern.nodes.size(); ++inode) {
-        os << "N" << inode;
-        
-        os << " [";
-
-        os << "label=\"" << describe_pb_graph_pin_hierarchy(arch_pattern.nodes[inode].pb_graph_pin) << " (#" << inode << ")\"";
-
-        os << "];\n";
-    }
-
-    for (size_t iedge = 0; iedge < arch_pattern.edges.size(); ++iedge) {
-        os << "N" << arch_pattern.edges[iedge].from_node_id << " -> N" << arch_pattern.edges[iedge].to_node_id;
-        os << " [";
-
-        os << "label=\"" ;
-        os << "(#" << iedge << ")";
-        os << "\"";
-
-        os << "];\n";
-    }
-
-    os << "}\n";
-}
-
-static void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern) {
-    os << "#Dot file of netlist pack pattern graph\n";
-    os << "digraph " << netlist_pattern.name << " {\n";
-
-    //Nodes
-    for (size_t inode = 0; inode < netlist_pattern.nodes.size(); ++inode) {
-        os << "N" << inode;
-        
-        os << " [";
-
-        os << "label=\"";
-        if (netlist_pattern.nodes[inode].model_type) {
-            os << netlist_pattern.nodes[inode].model_type->name;
-        } else {
-            os << "*";
-        }
-        os << " (#" << inode << ")";
-        os << "\"";
-
-        if (netlist_pattern.nodes[inode].is_external()) {
-            os << " shape=invhouse";
-        }
-
-        os << "];\n";
-    }
-
-    //Edges
-    for (size_t iedge = 0; iedge < netlist_pattern.edges.size(); ++iedge) {
-        const auto& edge = netlist_pattern.edges[iedge];
-
-        const auto& from_pin = edge.from_pin;
-        for (size_t isink = 0; isink < edge.to_pins.size(); ++isink) {
-            const auto& to_pin = edge.to_pins[isink];
-
-            os << "N" << edge.from_pin.node_id << " -> N" << edge.to_pins[isink].node_id;
-            os << " [";
-
-            os << "label=\"" ;
-
-            os << "(#" << iedge << "." << isink << ")\\n";
-            if (is_wildcard_pin(from_pin)) {
-                os << "*";
-            } else {
-                os << from_pin.model_port->name << "[" << from_pin.port_pin << "]";
-            }
-            os << "\\n -> ";
-            if (is_wildcard_pin(to_pin)) {
-                os << "*";
-            } else {
-                os << to_pin.model_port->name << "[" << to_pin.port_pin << "]";
-            }
-            os << "\"";
-
-            if (to_pin.required) {
-                os << " style=solid";
-            } else {
-                os << " style=dashed";
-            }
-
-            os << "];\n";
-        }
-    }
-
-    os << "}\n";
-}

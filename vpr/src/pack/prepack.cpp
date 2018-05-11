@@ -84,6 +84,9 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
+static std::vector<t_pack_molecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
+static t_pack_molecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist);
+static bool verify_molecules_contain_all_atoms(const std::vector<t_pack_molecule>& molecules, const AtomNetlist& netlist);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1321,16 +1324,132 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	}
 }
 
+struct PackMolecule {
+    NetlistPatternMatch pattern_match;
+
+    int num_ext_inputs;
+    float base_gain;
+};
+
 
 std::vector<t_pack_molecule> prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx) {
-    std::vector<t_pack_molecule> molecules;
 
-    auto arch_pack_patterns = init_arch_pack_patterns(device_ctx);
+    //Identify the architecural pack patterns
+    auto arch_pack_patterns = identify_arch_pack_patterns(device_ctx);
+
+    //Debug
+    for (auto& arch_pattern : arch_pack_patterns) {
+        std::ofstream ofs("arch_pack_pattern." + arch_pattern.name + ".echo");
+        write_arch_pack_pattern_dot(ofs, arch_pattern);
+    }
+
+    //Convert them to netlist patterns
     auto netlist_pack_patterns = abstract_arch_pack_patterns(arch_pack_patterns);
 
-    for (auto& pack_pattern : netlist_pack_patterns) {
-        auto netlist_pattern_matches = collect_pattern_matches_in_netlist(pack_pattern, atom_ctx.nlist);
+    //Add the default atom pattern to match any blocks not covered by
+    //an architectural pattern
+    netlist_pack_patterns.push_back(create_atom_default_pack_pattern());
+
+    //Debug
+    for (auto& netlist_pattern : netlist_pack_patterns) {
+        std::ofstream ofs("netlist_pack_pattern." + netlist_pattern.name + ".echo");
+        write_netlist_pack_pattern_dot(ofs, netlist_pattern);
+    }
+
+    //Find the matching patterns in the netlist
+    std::vector<NetlistPatternMatch> raw_netlist_matches;
+    for (auto& netlist_pattern : netlist_pack_patterns) {
+        auto netlist_pattern_matches = collect_pattern_matches_in_netlist(netlist_pattern, atom_ctx.nlist);
+
+        //Debug
+        if (netlist_pattern.name != ATOM_DEFAULT_PACK_PATTERN_NAME) {
+            for (auto match : netlist_pattern_matches) {
+                if (match.internal_blocks.empty()) continue;
+                print_match(match, atom_ctx.nlist);
+            }
+        }
+
+        raw_netlist_matches.insert(raw_netlist_matches.end(), netlist_pattern_matches.begin(), netlist_pattern_matches.end());
+    }
+
+    //It is possible that multiple patterns have matched the same netlist blocks,
+    //filter them so they are non-overlapping
+    auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
+
+
+    //Convert the final matches to molecules for use during packing
+    auto molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
+
+    verify_molecules_contain_all_atoms(molecules, atom_ctx.nlist);
+
+    return molecules;
+}
+
+static std::vector<t_pack_molecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
+    std::vector<t_pack_molecule> molecules;
+
+    for (auto& match : netlist_matches) {
+        molecules.push_back(create_molecule(match, netlist));
     }
 
     return molecules;
+}
+
+static t_pack_molecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist) {
+    t_pack_molecule molecule;
+
+    //TODO: Create
+    if (match.pattern_name == ATOM_DEFAULT_PACK_PATTERN_NAME) {
+        molecule.type = MOLECULE_SINGLE_ATOM;
+    } else {
+        molecule.type = MOLECULE_FORCED_PACK;
+    }
+    molecule.atom_block_ids.insert(molecule.atom_block_ids.end(), match.internal_blocks.begin(), match.internal_blocks.end());
+
+    return molecule;
+}
+
+static bool verify_molecules_contain_all_atoms(const std::vector<t_pack_molecule>& molecules, const AtomNetlist& netlist) {
+    //Record atom blocks
+    std::set<AtomBlockId> netlist_blocks(netlist.blocks().begin(), netlist.blocks().end());
+
+    //Record molecule blocks
+    std::set<AtomBlockId> molecule_blocks;
+    for (auto& molecule : molecules) {
+        molecule_blocks.insert(molecule.atom_block_ids.begin(), molecule.atom_block_ids.end());
+    }
+
+    std::set<AtomBlockId> in_molecules_but_not_netlist;
+    std::set_difference(molecule_blocks.begin(), molecule_blocks.end(),
+                        netlist_blocks.begin(), netlist_blocks.end(),
+                        std::inserter(in_molecules_but_not_netlist, in_molecules_but_not_netlist.begin()));
+
+    std::set<AtomBlockId> in_netlist_but_not_molecules;
+    std::set_difference(netlist_blocks.begin(), netlist_blocks.end(),
+                        molecule_blocks.begin(), molecule_blocks.end(),
+                        std::inserter(in_netlist_but_not_molecules, in_netlist_but_not_molecules.begin()));
+
+    if (!in_molecules_but_not_netlist.empty() || !in_netlist_but_not_molecules.empty()) {
+        std::string msg = vtr::string_fmt("Inconsistent blocks in netlist and molecules\n");
+
+
+        if (!in_molecules_but_not_netlist.empty()) {
+            msg += vtr::string_fmt("  The following blocks are in molecules but missing from netlist:\n");
+            for (auto blk : in_molecules_but_not_netlist) {
+                msg += vtr::string_fmt("    %s\n", netlist.block_name(blk).c_str());
+            }
+        }
+
+        if (!in_netlist_but_not_molecules.empty()) {
+            msg += vtr::string_fmt("  The following blocks are in netlist but missing from molecules:\n");
+            for (auto blk : in_netlist_but_not_molecules) {
+                msg += vtr::string_fmt("    %s\n", netlist.block_name(blk).c_str());
+            }
+        }
+
+        VPR_THROW(VPR_ERROR_PACK, msg.c_str());
+    }
+
+    VTR_ASSERT(in_molecules_but_not_netlist.empty() && in_netlist_but_not_molecules.empty());
+    return true;
 }

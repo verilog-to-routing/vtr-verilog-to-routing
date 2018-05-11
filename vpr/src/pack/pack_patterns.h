@@ -114,17 +114,27 @@ struct NetlistPatternMatch {
 
     //Evaluates true when the match is non-empty
     operator bool() {
-        return netlist_edges.size() > 0;
+        return netlist_edges.size() > 0 || internal_blocks.size() > 0 || external_blocks.size() > 0;
     }
 
+    std::string pattern_name;
     std::vector<Edge> netlist_edges;
+
+    std::vector<AtomBlockId> internal_blocks;
+    std::vector<AtomBlockId> external_blocks;
 };
 
+constexpr auto ATOM_DEFAULT_PACK_PATTERN_NAME = "vpr_default_atom_pattern";
 
-std::vector<t_arch_pack_pattern> init_arch_pack_patterns(const DeviceContext& device_ctx);
+
+std::vector<t_arch_pack_pattern> identify_arch_pack_patterns(const DeviceContext& device_ctx);
 std::vector<t_netlist_pack_pattern> abstract_arch_pack_patterns(const std::vector<t_arch_pack_pattern>& arch_pack_patterns);
+t_netlist_pack_pattern create_atom_default_pack_pattern();
 
 std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
-std::set<AtomBlockId> collect_internal_blocks_in_match(const NetlistPatternMatch& match, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
+std::vector<NetlistPatternMatch> filter_netlist_pattern_matches(std::vector<NetlistPatternMatch> matches);
 
+void print_match(const NetlistPatternMatch& match, const AtomNetlist& netlist);
+void write_arch_pack_pattern_dot(std::ostream& os, const t_arch_pack_pattern& arch_pattern);
+void write_netlist_pack_pattern_dot(std::ostream& os, const t_netlist_pack_pattern& netlist_pattern);
 #endif
