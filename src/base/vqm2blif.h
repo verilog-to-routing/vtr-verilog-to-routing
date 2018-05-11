@@ -65,6 +65,11 @@
 //============================================================================================
 //				DATA STRUCTURES
 //============================================================================================
+
+struct t_subckt_param_attr {
+    std::string name;
+    std::string value;
+};
  
 typedef struct s_blif_subckt{
 	string inst_name;
@@ -74,6 +79,9 @@ typedef struct s_blif_subckt{
 	portmap input_cnxns;
 	
 	portmap output_cnxns;
+
+    std::vector<t_subckt_param_attr> params;
+    std::vector<t_subckt_param_attr> attrs;
 	
 } t_blif_subckt;
 /* 				Subcircuit Structure

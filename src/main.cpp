@@ -914,6 +914,21 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 
 		assert (!temp_subckt.output_cnxns.empty());	//all blocks must have an output
 
+        //Pass through parameters
+        for (int iparam = 0; iparam < vqm_node->number_of_params; ++iparam) {
+            t_subckt_param_attr param;
+            t_node_parameter* vqm_param = vqm_node->array_of_params[iparam];
+            param.name = vqm_param->name;
+
+            if (vqm_param->type == NODE_PARAMETER_STRING) {
+                param.value = vqm_param->value.string_value;
+            } else {
+                assert (vqm_param->type == NODE_PARAMETER_INTEGER);
+                param.value = std::to_string(vqm_param->value.integer_value);
+            }
+            temp_subckt.params.push_back(param);
+        }
+
 		//Verify that all ports specified in the VQM node were successfully mapped before 
 		//committing the subcircuit to the BLIF structure.			
 		if (verbose_mode){
@@ -1638,7 +1653,14 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pi
 					debug,
                     last);
 		if (!debug && eblif_format) {
-			outfile << ".cname " << temp_subckt->inst_name << "\n\n" ;
+			outfile << ".cname " << temp_subckt->inst_name << "\n" ;
+            for (auto& param : temp_subckt->params) {
+                outfile << ".param " << param.name << " " << param.value << "\n";
+            }
+            for (auto& attr : temp_subckt->attrs) {
+                outfile << ".attr " << attr.name << " " << attr.value << "\n";
+            }
+			outfile << "\n" ;
         }
 	}
 }
