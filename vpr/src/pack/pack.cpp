@@ -73,6 +73,7 @@ void try_pack(t_packer_opts *packer_opts,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
+    auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     size_t num_p_inputs = 0;
@@ -97,6 +98,8 @@ void try_pack(t_packer_opts *packer_opts,
                                 atom_molecules,
                                 expected_lowest_cost_pb_gnode,
                                 num_packing_patterns);
+
+    auto molecules = prepack(device_ctx, atom_ctx);
     std::vector<t_lb_type_rr_graph_info> lb_type_rr_graph_infos = profile_lb_type_rr_graphs(lb_type_rr_graphs);
 	vtr::printf_info("Finish prepacking.\n");
 
