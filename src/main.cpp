@@ -1694,6 +1694,8 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 
 	int ports_dumped = 1;
 
+    std::vector<std::string> port_strings;
+
 	while(temp_port){
 		for (int i = 0; i < temp_port->size; i++, ports_dumped++){
 			//loop through a port's size
@@ -1728,36 +1730,34 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 					pin_name = append_index_to_str (pin_name, temp_cnxn->wire_index);
 				}
 
-				outfile << indent << port_name << "=" << pin_name;
+                port_strings.push_back(port_name + "=" + pin_name);
 
             } else {
                 //Pin is unused
                 if (print_unused) {
                     if(is_input) {
                         //i.e. connect unconnected inputs to the 'unconn' net
-                        outfile << indent << port_name << "=" << pin_name;
+                        port_strings.push_back(port_name + "=" + pin_name);
                     } else {
                         //i.e. connect disconnected outputs to a uniquely named net
-                        outfile << indent << port_name << "=subckt" << s_index << "~" << port_name << "~unconn";
+                        port_strings.push_back(port_name + "=subckt" + std::to_string(s_index) + "~" + port_name + "~unconn");
                     }
                 }
-            }
-
-            if (print_unused || pin_used) {
-
-                bool last_entry = (last && temp_port->next == NULL && i == temp_port->size - 1);
-
-                if(!last_entry) {
-                    outfile << " \\";
-                }
-                    
-                outfile << "\n";
             }
 		}
 
 		//print the next port's information
 		temp_port = temp_port->next;
 	}
+
+    for (size_t i = 0; i < port_strings.size(); ++i) {
+        outfile << indent << port_strings[i];
+
+        if (!(last && i == port_strings.size() - 1)) {
+            outfile << " \\";
+        }
+        outfile << "\n";
+    }
 }
 
 size_t count_print_pins(t_model_ports* temp_port, portmap* map, t_boolean print_unused) {
