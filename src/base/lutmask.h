@@ -46,9 +46,7 @@ public:
 
 	//	*****PRINT FUNCTIONS*****
 	// - Each print the LUT data in to a different source in a specified format.
-	void print ( lp_mode );				//prints the data to stdout
-	void print ( lp_mode, const char* );	//opens a file to print the data to.
-	void print ( lp_mode, ofstream& );		//passed a file to print the data to.
+	void print ( lp_mode, ostream&, t_boolean eblif_format );		//passed a file to print the data to.
 };
 
 //============================================================================================
@@ -247,26 +245,8 @@ string BlifLut::get_outport (){
 
 //============================================================================================
 //============================================================================================
-
-void BlifLut::print (lp_mode print_mode, const char* filename){
-//  Print LUT to a new file as indicated by filename
-
-	ofstream out_file (filename, ios_base::app);
-	if (out_file.is_open()){
-		print (print_mode, out_file);
-
-		out_file.close();
-	} else {
-		cout << "ERROR: Cannot open file "<< filename << ".\n";
-		exit(1);
-	}
-}
-
-//============================================================================================
-//============================================================================================
-
-void BlifLut::print (lp_mode print_mode, ofstream& out_file){
-// Print LUT to a pre-opened file indicated by out_file.
+void BlifLut::print (lp_mode print_mode, ostream& out_file, t_boolean eblif_format){
+    // Print LUT to a pre-opened file indicated by out_file.
 
 	//assert the LUT has inputs, a lutmask, and a truth table established
 	assert (col_mask.any());
@@ -275,115 +255,57 @@ void BlifLut::print (lp_mode print_mode, ofstream& out_file){
 
 	assert ((print_mode == VERBOSE_PRINT)||(print_mode == BLIF_PRINT));
 
-	if (out_file.is_open()){
-		if (print_mode == VERBOSE_PRINT){
-			//Print verbose introduction
-			if (!inst_name.empty()){
-				out_file << "Name: " << inst_name << endl;
-			}
-			out_file << "Lutmask: " << lutmask << endl ;
-			out_file << "Colmask: " << col_mask << endl ;
-			out_file << "Ports: ";
-		} else {
-			//Print blif introduction
-			if (!inst_name.empty()){
-				out_file << "\n# " << inst_name << endl;
-			}
-			out_file << ".names ";
-		}
-		
-		//Print port names
-		for (int i = 5; i >= 0; i--){
-			//only print used ports
-			if (col_mask.test(i)){
-				if (!inports[i].empty()){
-					out_file << inports[i] << " ";
-				} else {
-					cout << "ERROR: LUT Input used and not named." << endl;
-					exit(1);
-				}
-			}
-		}
+    if (print_mode == VERBOSE_PRINT){
+        //Print verbose introduction
+        if (!inst_name.empty()){
+            out_file << "Name: " << inst_name << endl;
+        }
+        out_file << "Lutmask: " << lutmask << endl ;
+        out_file << "Colmask: " << col_mask << endl ;
+        out_file << "Ports: ";
+    } else {
+        //Print blif introduction
+        if (!inst_name.empty() && !eblif_format){
+            out_file << "\n# " << inst_name << endl;
+        }
+        out_file << ".names ";
+    }
+    
+    //Print port names
+    for (int i = 5; i >= 0; i--){
+        //only print used ports
+        if (col_mask.test(i)){
+            if (!inports[i].empty()){
+                out_file << inports[i] << " ";
+            } else {
+                cout << "ERROR: LUT Input used and not named." << endl;
+                exit(1);
+            }
+        }
+    }
 
-		//Every LUT must have an output!
-		assert (!outport.empty());
-		out_file << outport << endl;
+    //Every LUT must have an output!
+    assert (!outport.empty());
+    out_file << outport << endl;
 
-		//Print the truth table
-		for(tt_vec::iterator it = truth_table.begin(); it != truth_table.end(); it++){
-			//Each entry in ttvec is a row of the truth table
-			for (int i = 5; i >= 0; i--){
-				//Only print the columns of used inputs
-				if (col_mask.test(i)){
-					out_file << it->test(i);	//outputs 1 or 0 depending on the bit test.
-				}
-			}
-			out_file << " 1" << endl ;
-		}
-
-	} 
+    //Print the truth table
+    for(tt_vec::iterator it = truth_table.begin(); it != truth_table.end(); it++){
+        //Each entry in ttvec is a row of the truth table
+        for (int i = 5; i >= 0; i--){
+            //Only print the columns of used inputs
+            if (col_mask.test(i)){
+                out_file << it->test(i);	//outputs 1 or 0 depending on the bit test.
+            }
+        }
+        out_file << " 1" << endl ;
+    }
+    if (!inst_name.empty() && eblif_format){
+        out_file << ".cname " << inst_name << "\n" << endl;
+    }
 }
 
 //============================================================================================
 //============================================================================================
-
-void BlifLut::print ( lp_mode print_mode ){
-// Print the LUT to standard output.
-
-	//cannot print the truth table if there's no inputs!
-	assert (col_mask.any());
-	assert ((print_mode == VERBOSE_PRINT)||(print_mode == BLIF_PRINT));
-
-	if (print_mode == VERBOSE_PRINT){
-		//Print verbose introduction
-		if (!inst_name.empty()){
-			cout << "Name: " << inst_name << endl;
-		}
-		cout << "Lutmask: " << lutmask << endl ;
-		cout << "Colmask: " << col_mask << endl ;
-		cout << "Ports: ";
-	} else {
-		//Print blif introduction
-		if (!inst_name.empty()){
-			cout << "# " << inst_name << endl;
-		}
-		cout << ".names ";
-	}
-	
-	//Print port names
-	for (int i = 5; i >= 0; i--){
-		//only print used inputs
-		if (col_mask.test(i)){
-			if (!inports[i].empty()){
-				cout << inports[i] << " ";
-			} else {
-				cout << "ERROR: LUT Port used and not named." << endl;
-				exit(1);
-			}
-		}
-	}
-	
-	//Every LUT must have an output!
-	assert (!outport.empty());
-	cout << outport << endl;
-
-	//print the truth table
-	for(tt_vec::iterator it = truth_table.begin(); it != truth_table.end(); it++){
-		//each entry in a ttvec is a row of the truth table
-		for (int i = 5; i >= 0; i--){
-			//only print the columns of used inputs
-			if (col_mask.test(i)){
-				cout << it->test(i);	//returns 1 or 0 depending on the bit test.
-			}
-		}
-		cout << " 1" << endl ;
-	}
-	cout << endl ;
-}
-
-//============================================================================================
-//============================================================================================
-
 typedef vector<BlifLut> lutvec;
 
 #endif

@@ -12,7 +12,7 @@ void print_usage (t_boolean terminate){
 	cout << "USAGE:\n" ;
 	cout << "\tvqm2blif -vqm <VQM file>.vqm -arch <ARCH file>.xml\n" ;
 	cout << "OPTIONAL FLAGS:\n" ;
-	cout << "\t-out <OUT file>.blif\n" ;
+	cout << "\t-out <OUT file>\n" ;
 	cout << "\t-elab [none | modes | modes_timing*]\n" ;
 	cout << "\t-clean [none | buffers | all*]\n" ;
 	cout << "\t-buffouts\n" ;
@@ -20,6 +20,7 @@ void print_usage (t_boolean terminate){
     cout << "\t-multiclock_primitives\n";
     cout << "\t-include_unused_subckt_pins\n";
     cout << "\t-remove_const_nets\n";
+    cout << "\t-eblif_format\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
