@@ -288,7 +288,7 @@ void update_FFs(Abc_Ntk_t * ntk) {
 }
 
 void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles,
-		double /*threshold*/) {
+		double threshold __unused) {
 	Abc_Obj_t * obj;
 	Ace_Obj_Info_t * info;
 	int i;
