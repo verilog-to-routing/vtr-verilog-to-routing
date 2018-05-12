@@ -10,9 +10,12 @@
 
 /********************** Local defines and types *****************************/
 
-#define BUF_FLAG 1
-#define PTRANS_FLAG 2
-#define BUF_AND_PTRANS_FLAG 3
+#define IS_BUFFER 			0x1
+#define IS_PASSGATE 			0x2
+#define BOTH_BUFFER_AND_PASSGATE	(IS_BUFFER | IS_PASSGATE)
+
+const char *TYPES_STR[] = {"none", "buffered", "pass gate", "both buffered and pass gate", NULL};
+
 
 /*********************** Subroutines local to this module *******************/
 
@@ -32,7 +35,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
     int *num_edges_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
     int *total_edges_to_node; /* [0..device_ctx.num_rr_nodes-1] */
-    char *switch_types_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
+    unsigned char *switch_types_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
     int inode, iedge, to_node, num_edges;
     short switch_type;
     t_rr_type rr_type, to_rr_type;
@@ -50,7 +53,7 @@ void check_rr_graph(const t_graph_type graph_type,
     total_edges_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes, sizeof (int));
     num_edges_from_current_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes,
             sizeof (int));
-    switch_types_from_current_to_node = (char *) vtr::calloc(device_ctx.num_rr_nodes,
+    switch_types_from_current_to_node = (unsigned char *) vtr::calloc(device_ctx.num_rr_nodes,
             sizeof (char));
 
     for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
@@ -93,9 +96,9 @@ void check_rr_graph(const t_graph_type graph_type,
             }
 
             if (device_ctx.rr_switch_inf[switch_type].buffered)
-                switch_types_from_current_to_node[to_node] |= BUF_FLAG;
+                switch_types_from_current_to_node[to_node] |= IS_BUFFER;
             else
-                switch_types_from_current_to_node[to_node] |= PTRANS_FLAG;
+                switch_types_from_current_to_node[to_node] |= IS_PASSGATE;
 
         } /* End for all edges of node. */
 
@@ -108,17 +111,19 @@ void check_rr_graph(const t_graph_type graph_type,
                 if ((to_rr_type != CHANX && to_rr_type != CHANY)
                         || (rr_type != CHANX && rr_type != CHANY)) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "in check_rr_graph: node %d connects to node %d %d times.\n", inode, to_node, num_edges_from_current_to_node[to_node]);
+                            "in check_rr_graph: node %d (%s) connects to node %d (%s) %d times - multi-connection only for CHAN->CHAN.\n",
+			    inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_from_current_to_node[to_node]);
                 } else {
                     /* Between two wire segments.  Two connections are legal only if  *
                      * one connection is a buffer and the other is a pass transistor. */
-
                     if (num_edges_from_current_to_node[to_node] != 2) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                "in check_rr_graph: node %d connects to node %d %d times.\n", inode, to_node, num_edges_from_current_to_node[to_node]);
-                    } else if (switch_types_from_current_to_node[to_node] != BUF_AND_PTRANS_FLAG) {
+                                "in check_rr_graph: node %d connects to node %d %d times.\n",
+				inode, to_node, num_edges_from_current_to_node[to_node]);
+                    } else if (switch_types_from_current_to_node[to_node] != BOTH_BUFFER_AND_PASSGATE) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                "in check_rr_graph: node %d connects to node %d %d times but edges are not a buffer and pass transisitor.\n", inode, to_node, num_edges_from_current_to_node[to_node]);
+                                "in check_rr_graph: %d edges between node %d and node %d but edges are not a buffer and a pass gate (actually %s).\n",
+				num_edges_from_current_to_node[to_node], inode, to_node, TYPES_STR[switch_types_from_current_to_node[to_node]]);
                     }
                 }
             }
@@ -324,7 +329,6 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     switch (rr_type) {
 
         case SOURCE:
-
             if (ptc_num >= type->num_class
                     || type->class_inf[ptc_num].type != DRIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -334,11 +338,9 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
             }
-
             break;
 
         case SINK:
-
             if (ptc_num >= type->num_class
                     || type->class_inf[ptc_num].type != RECEIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -351,13 +353,11 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             break;
 
         case OPIN:
-
             if (ptc_num >= type->num_pins
                     || type->class_inf[type->pin_class[ptc_num]].type != DRIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
-
             if (capacity != 1) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
@@ -404,8 +404,6 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 nodes_per_chan = 1;
                 tracks_per_node = device_ctx.chan_width.y_list[xlow];
             }
-
-
             if (capacity != tracks_per_node) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
@@ -426,8 +424,6 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             /* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
              * If such a node was ever used in a final routing (not just in an rr_graph), other       *
              * error checks in check_routing will catch it.                                           */
-
-
 
             //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
             bool check_for_out_edges = true;
@@ -499,7 +495,7 @@ static void check_unbuffered_edges(int from_node) {
         if (device_ctx.rr_switch_inf[from_switch_type].buffered)
             continue;
 
-        /* We know that we have a pass transitor from from_node to to_node.  Now *
+        /* We know that we have a pass transistor from from_node to to_node. Now *
          * check that there is a corresponding edge from to_node back to         *
          * from_node.                                                            */
 
