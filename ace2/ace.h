@@ -19,6 +19,8 @@
 #define MAX(a,b) 				(a > b ? a : b)
 #endif
 
+#define __unused 			__attribute__((unused))
+
 #define ACE_P0TO1(P1,PS)		((P1)==0.0)?0.0:(((P1)==1.0)?1.0:0.5*PS/(1.0-(P1)))
 #define ACE_P1TO0(P1,PS)		((P1)==0.0)?1.0:(((P1)==0.0)?0.0:0.5*PS/(P1))
 
