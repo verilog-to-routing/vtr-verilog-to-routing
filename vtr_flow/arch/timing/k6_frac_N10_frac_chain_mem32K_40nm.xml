@@ -560,8 +560,6 @@
                 <output name="Q" num_pins="1" port_class="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock"/>
                 <T_setup value="66e-12" port="ff.D" clock="clk"/>
-                <T_setup value="66e-12" port="ff.D" clock="clk"/>
-                <T_hold value="37e-12" port="ff.D" clock="clk"/>
                 <T_hold value="37e-12" port="ff.D" clock="clk"/>
                 <T_clock_to_Q max="124e-12" min="60e-12" port="ff.Q" clock="clk"/>
               </pb_type>
