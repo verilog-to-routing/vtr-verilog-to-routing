@@ -7,10 +7,13 @@
 #define CLUSTER_PLACEMENT_H
 #include "arch_types.h"
 
-t_cluster_placement_stats *alloc_and_load_cluster_placement_stats();
+std::vector<t_cluster_placement_stats> alloc_and_load_cluster_placement_stats();
+
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
-		const t_pack_molecule *molecule,
+		const PackMolecules& molecules,
+		const PackMoleculeId molecule_id,
+        const MoleculeStats& molecule_stats,
 		t_pb_graph_node **primitives_list);
 void commit_primitive(t_cluster_placement_stats *cluster_placement_stats,
 		const t_pb_graph_node *primitive);

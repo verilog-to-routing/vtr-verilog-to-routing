@@ -9,6 +9,10 @@ MoleculeBlockId PackMolecule::root_block() const {
     return root_block_;
 }
 
+AtomBlockId PackMolecule::root_block_atom() const {
+    return block_atom(root_block());
+}
+
 
 //Aggregates
 PackMolecule::block_range PackMolecule::blocks() const {

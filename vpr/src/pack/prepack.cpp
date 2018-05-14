@@ -84,7 +84,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
-static vtr::vector<PackMoleculeId,PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
+static PackMolecules create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
 static PackMolecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist);
 static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(const vtr::vector<PackMoleculeId,PackMolecule>& molecules);
 static bool verify_molecules_contain_all_atoms(const PackMolecules& molecules, const AtomNetlist& netlist);
@@ -1371,22 +1371,27 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
 
     //Convert the final matches to molecules for use during packing
-    PackMolecules molecules;
-
-    molecules.pack_molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
-    molecules.atom_molecules = build_atom_molecules_lookup(molecules.pack_molecules);
+    PackMolecules molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
 
     verify_molecules_contain_all_atoms(molecules, atom_ctx.nlist);
 
     return molecules;
 }
 
-static vtr::vector<PackMoleculeId,PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
-    vtr::vector<PackMoleculeId,PackMolecule> molecules;
+static PackMolecules create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
+    PackMolecules molecules;
 
     for (auto& match : netlist_matches) {
-        molecules.push_back(create_molecule(match, netlist));
+        //Reserve Id
+        PackMoleculeId molecule_id = molecules.pack_molecules.size();
+        molecules.pack_molecule_ids.push_back(molecule_id);
+
+        //Build molecule
+        molecules.pack_molecules.push_back(create_molecule(match, netlist));
     }
+
+    //Reverse look-up from atom to molecule
+    molecules.atom_molecules = build_atom_molecules_lookup(molecules.pack_molecules);
 
     return molecules;
 }

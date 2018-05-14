@@ -8,13 +8,14 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "atom_netlist_fwd.h"
+#include "pack_molecules.h"
 
 //#define USE_HMETIS 1
 
-void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
+void do_clustering(const t_arch *arch,
 		int num_models, bool global_clocks, 
         const std::unordered_set<AtomNetId>& is_clock,
-        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        const PackMolecules& molecules,
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven,
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,

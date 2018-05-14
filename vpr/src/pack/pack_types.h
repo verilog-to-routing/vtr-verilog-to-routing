@@ -12,6 +12,7 @@
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "lb_type_rr_graph.h"
+#include "pack_molecules.h"
 
 //Forward declaration
 struct t_pack_molecule;
@@ -235,5 +236,50 @@ struct t_lb_router_data {
 		pres_con_fac = 1;
 	}
 };
+
+
+class MoleculeStats {
+    public:
+        int max_num_ext_inputs() const {
+            return max_num_ext_inputs_;
+        }
+
+        int max_num_blocks() const {
+            return max_num_ext_inputs_;
+        }
+
+
+        bool valid(PackMoleculeId id) const {
+            return info_[id].valid;
+        }
+
+        bool num_ext_inputs(PackMoleculeId id) const {
+            return info_[id].num_ext_inputs;
+        }
+
+        bool num_blocks(PackMoleculeId id) const {
+            return info_[id].num_blocks;
+        }
+
+        float base_gain(PackMoleculeId id) const {
+            return info_[id].base_gain;
+        }
+
+    private:
+        friend MoleculeStats build_molecule_stats(const PackMolecules& molecules, const AtomNetlist& netlist);
+
+        struct Info {
+            int num_ext_inputs = OPEN;
+            int num_blocks = OPEN;
+            float base_gain = std::numeric_limits<float>::quiet_NaN();
+            bool valid = true;
+        };
+
+        int max_num_ext_inputs_ = OPEN;
+        int max_num_blocks_ = OPEN;
+
+        vtr::vector<PackMoleculeId,Info> info_;
+};
+
 
 #endif

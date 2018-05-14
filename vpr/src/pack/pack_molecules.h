@@ -36,6 +36,7 @@ class PackMolecule {
     public: //Accessors
         //General 
         MoleculeBlockId root_block() const;
+        AtomBlockId root_block_atom() const;
 
         //Aggregates
         block_range blocks() const;
@@ -105,13 +106,16 @@ class PackMolecule {
 
 void write_pack_molecule_dot(std::ostream& os, const PackMolecule& molecule, const AtomNetlist& netlist);
 
+
 struct pack_molecule_id_tag;
 typedef vtr::StrongId<pack_molecule_id_tag> PackMoleculeId;
 
 struct PackMolecules {
     vtr::vector<PackMoleculeId,PackMolecule> pack_molecules; //Set of pack molecules
 
-    std::multimap<AtomBlockId,PackMoleculeId> atom_molecules; //Look-up from atom primitives to containing molecules
+    std::vector<PackMoleculeId> pack_molecule_ids; //Unique molecule ids within pack_molecules
+
+    std::multimap<AtomBlockId,PackMoleculeId> atom_molecules; //Reverse look-up from atom primitives to containing molecules
 };
 
 #endif

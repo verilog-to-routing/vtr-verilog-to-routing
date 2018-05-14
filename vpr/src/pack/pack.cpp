@@ -45,13 +45,9 @@ void try_pack(t_packer_opts *packer_opts,
 #endif
         ) {
     std::unordered_set<AtomNetId> is_clock;
-    std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
     std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
 	const t_model *cur_model; 
 	int num_models;
-	t_pack_patterns *list_of_packing_patterns;
-	int num_packing_patterns;
-	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 #ifdef USE_HMETIS
 	vtr::vector_map<AtomBlockId,int> partitions;
 #endif
@@ -93,14 +89,6 @@ void try_pack(t_packer_opts *packer_opts,
 		atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
 
 	vtr::printf_info("Begin prepacking.\n");
-#if 0
-	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
-    list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns, 
-                                atom_molecules,
-                                expected_lowest_cost_pb_gnode,
-                                num_packing_patterns);
-#endif
-
     PackMolecules molecules = prepack(device_ctx, atom_ctx);
     std::vector<t_lb_type_rr_graph_info> lb_type_rr_graph_infos = profile_lb_type_rr_graphs(lb_type_rr_graphs);
 	vtr::printf_info("Finish prepacking.\n");
@@ -171,9 +159,9 @@ void try_pack(t_packer_opts *packer_opts,
 	}
 #endif
 
-    do_clustering(arch, list_of_pack_molecules, num_models,
+    do_clustering(arch, num_models,
             packer_opts->global_clocks, is_clock, 
-            atom_molecules,
+            molecules,
             expected_lowest_cost_pb_gnode,
             packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
             packer_opts->timing_driven, packer_opts->cluster_seed_type,
@@ -195,16 +183,6 @@ void try_pack(t_packer_opts *packer_opts,
             , timing_inf
 #endif
             );
-
-	/*free list_of_pack_molecules*/
-	free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
-
-	cur_pack_molecule = list_of_pack_molecules;
-	while (cur_pack_molecule != nullptr){
-		cur_pack_molecule = list_of_pack_molecules->next;
-		delete list_of_pack_molecules;
-		list_of_pack_molecules = cur_pack_molecule;
-	}
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Netlist conversion complete.\n");
