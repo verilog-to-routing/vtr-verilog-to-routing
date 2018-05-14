@@ -245,9 +245,15 @@ PortType Netlist<BlockId, PortId, PinId, NetId>::port_type(const PortId port_id)
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 std::string Netlist<BlockId, PortId, PinId, NetId>::pin_name(const PinId pin_id) const {
     BlockId blk = pin_block(pin_id);
+
+    return block_name(blk) + "." + pin_name_non_hierarchical(pin_id);
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+std::string Netlist<BlockId, PortId, PinId, NetId>::pin_name_non_hierarchical(const PinId pin_id) const {
     PortId port = pin_port(pin_id);
 
-    return block_name(blk) + "." + port_name(port) + "[" + std::to_string(pin_port_bit(pin_id)) + "]";
+    return port_name(port) + "[" + std::to_string(pin_port_bit(pin_id)) + "]";
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>

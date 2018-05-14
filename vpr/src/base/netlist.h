@@ -563,7 +563,18 @@ class Netlist {
          * Pins
          */
         //Returns the constructed name (derived from block and port) for the specified pin
+        //Note that this name will be unique within the netlist.
+        //
+        //Format: <block_name>.<port_name>[<pin_bit_index>]
+        //Example: my_block.my_port[0]
         std::string pin_name(const PinId pin_id) const;
+
+        //Returns the pin name excluding the parent block name
+        //Note that this name may *not* be unique within the netlist.
+        //
+        //Format: <port_name>[<pin_bit_index>]
+        //Example: my_port[0]
+        std::string pin_name_non_hierarchical(const PinId pin_id) const;
 
         //Returns the type of the specified pin
         PinType     pin_type(const PinId pin_id) const;
