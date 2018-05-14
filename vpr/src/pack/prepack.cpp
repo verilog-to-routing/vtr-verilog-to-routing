@@ -84,9 +84,10 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
-static std::vector<PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
+static vtr::vector<PackMoleculeId,PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
 static PackMolecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist);
-static bool verify_molecules_contain_all_atoms(const std::vector<PackMolecule>& molecules, const AtomNetlist& netlist);
+static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(const vtr::vector<PackMoleculeId,PackMolecule>& molecules);
+static bool verify_molecules_contain_all_atoms(const PackMolecules& molecules, const AtomNetlist& netlist);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1323,7 +1324,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	}
 }
 
-std::vector<PackMolecule> prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx) {
+PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx) {
 
     //Identify the architecural pack patterns
     auto arch_pack_patterns = identify_arch_pack_patterns(device_ctx);
@@ -1365,19 +1366,23 @@ std::vector<PackMolecule> prepack(const DeviceContext& device_ctx, const AtomCon
 
     //It is possible that multiple patterns have matched the same netlist blocks,
     //filter them so they are non-overlapping
+    //
+    //TODO: Think about whether we should leave multiple molecule options to the packer...
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
 
-
     //Convert the final matches to molecules for use during packing
-    auto molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
+    PackMolecules molecules;
+
+    molecules.pack_molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
+    molecules.atom_molecules = build_atom_molecules_lookup(molecules.pack_molecules);
 
     verify_molecules_contain_all_atoms(molecules, atom_ctx.nlist);
 
     return molecules;
 }
 
-static std::vector<PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
-    std::vector<PackMolecule> molecules;
+static vtr::vector<PackMoleculeId,PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
+    vtr::vector<PackMoleculeId,PackMolecule> molecules;
 
     for (auto& match : netlist_matches) {
         molecules.push_back(create_molecule(match, netlist));
@@ -1472,13 +1477,29 @@ static PackMolecule create_molecule(const NetlistPatternMatch& match, const Atom
     return molecule;
 }
 
-static bool verify_molecules_contain_all_atoms(const std::vector<PackMolecule>& molecules, const AtomNetlist& netlist) {
+static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(const vtr::vector<PackMoleculeId,PackMolecule>& molecules) {
+    std::multimap<AtomBlockId,PackMoleculeId> atom_molecules;
+
+    size_t idx = 0;
+    for (const auto& molecule : molecules) {
+        PackMoleculeId molecule_id(idx);
+
+        for (MoleculeBlockId molecule_blk_id : molecule.blocks()) {
+            AtomBlockId atom_blk_id = molecule.block_atom(molecule_blk_id);
+            
+            atom_molecules.insert({atom_blk_id, molecule_id});
+        }
+    }
+    return atom_molecules;
+}
+
+static bool verify_molecules_contain_all_atoms(const PackMolecules& molecules, const AtomNetlist& netlist) {
     //Record atom blocks
     std::set<AtomBlockId> netlist_blocks(netlist.blocks().begin(), netlist.blocks().end());
 
     //Record molecule blocks
     std::set<AtomBlockId> molecule_blocks;
-    for (const PackMolecule& molecule : molecules) {
+    for (const PackMolecule& molecule : molecules.pack_molecules) {
         for (auto& block_id : molecule.blocks()) {
             molecule_blocks.insert(molecule.block_atom(block_id));
         }

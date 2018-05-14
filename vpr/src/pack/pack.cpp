@@ -93,13 +93,15 @@ void try_pack(t_packer_opts *packer_opts,
 		atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
 
 	vtr::printf_info("Begin prepacking.\n");
+#if 0
 	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
     list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns, 
                                 atom_molecules,
                                 expected_lowest_cost_pb_gnode,
                                 num_packing_patterns);
+#endif
 
-    auto molecules = prepack(device_ctx, atom_ctx);
+    PackMolecules molecules = prepack(device_ctx, atom_ctx);
     std::vector<t_lb_type_rr_graph_info> lb_type_rr_graph_infos = profile_lb_type_rr_graphs(lb_type_rr_graphs);
 	vtr::printf_info("Finish prepacking.\n");
 

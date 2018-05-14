@@ -1,4 +1,4 @@
-#include "pack_molecule.h"
+#include "pack_molecules.h"
 
 #include "atom_netlist.h"
 #include "vtr_assert.h"

@@ -1,6 +1,7 @@
 #ifndef VPR_PACK_MOLECULE_H
 #define VPR_PACK_MOLECULE_H
 #include <vector>
+#include <map>
 #include <iosfwd>
 
 #include "vtr_strong_id.h"
@@ -103,5 +104,14 @@ class PackMolecule {
 };
 
 void write_pack_molecule_dot(std::ostream& os, const PackMolecule& molecule, const AtomNetlist& netlist);
+
+struct pack_molecule_id_tag;
+typedef vtr::StrongId<pack_molecule_id_tag> PackMoleculeId;
+
+struct PackMolecules {
+    vtr::vector<PackMoleculeId,PackMolecule> pack_molecules; //Set of pack molecules
+
+    std::multimap<AtomBlockId,PackMoleculeId> atom_molecules; //Look-up from atom primitives to containing molecules
+};
 
 #endif
