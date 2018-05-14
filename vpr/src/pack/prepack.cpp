@@ -84,9 +84,9 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
-static std::vector<t_pack_molecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
-static t_pack_molecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist);
-static bool verify_molecules_contain_all_atoms(const std::vector<t_pack_molecule>& molecules, const AtomNetlist& netlist);
+static std::vector<PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
+static PackMolecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist);
+static bool verify_molecules_contain_all_atoms(const std::vector<PackMolecule>& molecules, const AtomNetlist& netlist);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1323,15 +1323,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	}
 }
 
-struct PackMolecule {
-    NetlistPatternMatch pattern_match;
-
-    int num_ext_inputs;
-    float base_gain;
-};
-
-
-std::vector<t_pack_molecule> prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx) {
+std::vector<PackMolecule> prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx) {
 
     //Identify the architecural pack patterns
     auto arch_pack_patterns = identify_arch_pack_patterns(device_ctx);
@@ -1384,8 +1376,8 @@ std::vector<t_pack_molecule> prepack(const DeviceContext& device_ctx, const Atom
     return molecules;
 }
 
-static std::vector<t_pack_molecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
-    std::vector<t_pack_molecule> molecules;
+static std::vector<PackMolecule> create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist) {
+    std::vector<PackMolecule> molecules;
 
     for (auto& match : netlist_matches) {
         molecules.push_back(create_molecule(match, netlist));
@@ -1394,28 +1386,102 @@ static std::vector<t_pack_molecule> create_molecules(const std::vector<NetlistPa
     return molecules;
 }
 
-static t_pack_molecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist) {
-    t_pack_molecule molecule;
+static PackMolecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist) {
+    PackMolecule molecule;
 
-    //TODO: Create
-    if (match.pattern_name == ATOM_DEFAULT_PACK_PATTERN_NAME) {
-        molecule.type = MOLECULE_SINGLE_ATOM;
-    } else {
-        molecule.type = MOLECULE_FORCED_PACK;
+    std::map<AtomBlockId,MoleculeBlockId> atom_to_molecule_block;
+
+    for (auto atom_blk : match.internal_blocks) {
+        MoleculeBlockId id = molecule.create_block(PackMolecule::BlockType::INTERNAL, atom_blk);
+        atom_to_molecule_block[atom_blk] = id;
     }
-    molecule.atom_block_ids.insert(molecule.atom_block_ids.end(), match.internal_blocks.begin(), match.internal_blocks.end());
+
+    for (auto atom_blk : match.external_blocks) {
+        MoleculeBlockId id = molecule.create_block(PackMolecule::BlockType::EXTERNAL, atom_blk);
+        atom_to_molecule_block[atom_blk] = id;
+    }
+
+    std::map<AtomPinId,MoleculePinId> atom_to_molecule_pin;
+    std::map<MoleculePinId,MoleculeEdgeId> molecule_driver_pin_to_edge;
+    for (const auto& netlist_edge : match.netlist_edges) {
+
+        //Find or create driver pin
+        AtomPinId atom_driver_pin = netlist_edge.from_pin;
+        VTR_ASSERT(netlist.pin_type(atom_driver_pin) == PinType::DRIVER);
+        AtomBlockId atom_driver_block = netlist.pin_block(atom_driver_pin);
+
+        VTR_ASSERT(atom_to_molecule_block.count(atom_driver_block));
+        MoleculeBlockId molecule_driver_block = atom_to_molecule_block[atom_driver_block];
+
+        MoleculePinId molecule_driver_pin;
+        if (!atom_to_molecule_pin.count(atom_driver_pin)) {
+            //Create
+            molecule_driver_pin = molecule.create_pin(molecule_driver_block, atom_driver_pin, false);
+            atom_to_molecule_pin[atom_driver_pin] = molecule_driver_pin;
+        } else {
+            //Existing
+            molecule_driver_pin = atom_to_molecule_pin[atom_driver_pin];
+        }
+
+        //Find or create sink pin
+        AtomPinId atom_sink_pin = netlist_edge.to_pin;
+        VTR_ASSERT(netlist.pin_type(atom_sink_pin) == PinType::SINK);
+        AtomBlockId atom_sink_block = netlist.pin_block(atom_sink_pin);
+
+        VTR_ASSERT(atom_to_molecule_block.count(atom_sink_block));
+        MoleculeBlockId molecule_sink_block = atom_to_molecule_block[atom_sink_block];
+
+        MoleculePinId molecule_sink_pin;
+        if (!atom_to_molecule_pin.count(atom_sink_pin)) {
+            //Create
+            molecule_sink_pin = molecule.create_pin(molecule_sink_block, atom_sink_pin, true);
+            atom_to_molecule_pin[atom_sink_pin] = molecule_sink_pin;
+        } else {
+            //Existing
+            molecule_sink_pin = atom_to_molecule_pin[atom_sink_pin];
+        }
+
+        //Find or create the edge
+        MoleculeEdgeId molecule_edge;
+        if (!molecule_driver_pin_to_edge.count(molecule_driver_pin)) {
+            //Create
+            molecule_edge = molecule.create_edge(molecule_driver_pin);
+            molecule_driver_pin_to_edge[molecule_driver_pin] = molecule_edge;
+        } else {
+            //Existing
+            molecule_edge = molecule_driver_pin_to_edge[molecule_driver_pin];
+        }
+
+        //Record the edge between source/sink
+        molecule.add_edge_sink(molecule_edge, molecule_sink_pin);
+    }
+
+    //Record the root
+    for (auto& block : molecule.blocks()) {
+        if (molecule.block_input_pins(block).empty()) {
+            VTR_ASSERT(!molecule.root_block());
+            molecule.set_root_block(block);
+        }
+    }
+
+#if 0
+    std::ofstream ofs("pack_molecule.echo");
+    write_pack_molecule_dot(ofs, molecule, netlist); //Debug
+#endif
 
     return molecule;
 }
 
-static bool verify_molecules_contain_all_atoms(const std::vector<t_pack_molecule>& molecules, const AtomNetlist& netlist) {
+static bool verify_molecules_contain_all_atoms(const std::vector<PackMolecule>& molecules, const AtomNetlist& netlist) {
     //Record atom blocks
     std::set<AtomBlockId> netlist_blocks(netlist.blocks().begin(), netlist.blocks().end());
 
     //Record molecule blocks
     std::set<AtomBlockId> molecule_blocks;
-    for (auto& molecule : molecules) {
-        molecule_blocks.insert(molecule.atom_block_ids.begin(), molecule.atom_block_ids.end());
+    for (const PackMolecule& molecule : molecules) {
+        for (auto& block_id : molecule.blocks()) {
+            molecule_blocks.insert(molecule.block_atom(block_id));
+        }
     }
 
     std::set<AtomBlockId> in_molecules_but_not_netlist;

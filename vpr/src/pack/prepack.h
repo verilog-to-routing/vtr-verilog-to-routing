@@ -10,8 +10,9 @@
 #include "atom_netlist_fwd.h"
 #include "arch_types.h"
 #include "vpr_types.h"
+#include "pack_molecule.h"
 
-std::vector<t_pack_molecule> prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx);
+std::vector<PackMolecule> prepack(const DeviceContext& device_ctx, const AtomContext& atom_ctx);
 
 t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns);
 void free_list_of_pack_patterns(t_pack_patterns *list_of_pack_patterns, const int num_packing_patterns);
