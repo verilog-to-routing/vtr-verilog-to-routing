@@ -1,3 +1,5 @@
+#include "vtr_assert.h"
+
 #include "ace.h"
 #include "sim.h"
 
@@ -59,7 +61,7 @@ void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * /*nodes*/, int cycle) {
 
 					default:
 						printf("Bad Value\n");
-						assert(0);
+						VTR_ASSERT(0);
 						break;
 					}
 				}
@@ -110,7 +112,7 @@ void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * /*nodes*/, int cycle) {
 
 					default:
 						printf("Bad value\n");
-						assert(FALSE);
+						VTR_ASSERT(FALSE);
 						break;
 					}
 				}
@@ -130,7 +132,7 @@ int * getFaninValues(Abc_Obj_t * obj_ptr) {
 		info = Ace_ObjInfo(fanin);
 		if (info->status == ACE_UNDEF) {
 			printf("Fan-in is undefined\n");
-			assert(FALSE);
+			VTR_ASSERT(FALSE);
 		} else if (info->status == ACE_NEW) {
 			break;
 		}
@@ -209,15 +211,15 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int /*cycle*/) {
 			case ACE_NEW:
 				if (Abc_ObjIsNode(obj)) {
 					faninValues = getFaninValues(obj);
-					assert(faninValues);
+					VTR_ASSERT(faninValues);
 					dd_node = Cudd_Eval((DdManager*) ntk->pManFunc, (DdNode*) obj->pData, faninValues);
-					assert(Cudd_IsConstant(dd_node));
+					VTR_ASSERT(Cudd_IsConstant(dd_node));
 					if (dd_node == Cudd_ReadOne((DdManager*) ntk->pManFunc)) {
 						value = 1;
 					} else if (dd_node == Cudd_ReadLogicZero((DdManager*) ntk->pManFunc)) {
 						value = 0;
 					} else {
-						assert(0);
+						VTR_ASSERT(0);
 					}
 					free(faninValues);
 				} else {
@@ -239,12 +241,12 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int /*cycle*/) {
 				info->num_ones += info->value;
 				break;
 			default:
-				assert(0);
+				VTR_ASSERT(0);
 				break;
 			}
 			break;
 		default:
-			assert(0);
+			VTR_ASSERT(0);
 			break;
 		}
 	}
@@ -288,13 +290,13 @@ void update_FFs(Abc_Ntk_t * ntk) {
 }
 
 void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles,
-		double /*threshold*/) {
+		double threshold) {
 	Abc_Obj_t * obj;
 	Ace_Obj_Info_t * info;
 	int i;
 
-	assert(max_cycles > 0);
-	assert(threshold > 0.0);
+	VTR_ASSERT(max_cycles > 0);
+	VTR_ASSERT(threshold > 0.0);
 
 //	srand((unsigned) time(NULL));
 
@@ -325,12 +327,12 @@ void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles,
 	{
 		info = Ace_ObjInfo(obj);
 		info->static_prob = info->num_ones / (double) max_cycles;
-		assert(info->static_prob >= 0.0 && info->static_prob <= 1.0);
+		VTR_ASSERT(info->static_prob >= 0.0 && info->static_prob <= 1.0);
 		info->switch_prob = info->num_toggles / (double) max_cycles;
-		assert(info->switch_prob >= 0.0 && info->switch_prob <= 1.0);
+		VTR_ASSERT(info->switch_prob >= 0.0 && info->switch_prob <= 1.0);
 
-		assert(info->switch_prob - EPSILON <= 2.0 * (1.0 - info->static_prob));
-		assert(info->switch_prob - EPSILON <= 2.0 * (info->static_prob));
+		VTR_ASSERT(info->switch_prob - EPSILON <= 2.0 * (1.0 - info->static_prob));
+		VTR_ASSERT(info->switch_prob - EPSILON <= 2.0 * (info->static_prob));
 
 		info->status = ACE_SIM;
 	}

@@ -1,3 +1,4 @@
+#include "vtr_assert.h"
 #include "cube.h"
 #include "bdd.h"
 
@@ -16,8 +17,8 @@ ace_cube_t * ace_cube_dup(ace_cube_t * cube) {
 	int i;
 	ace_cube_t * cube_copy;
 
-	assert(cube != NULL);
-	assert(cube->num_literals > 0);
+	VTR_ASSERT(cube != NULL);
+	VTR_ASSERT(cube->num_literals > 0);
 
 	cube_copy = (ace_cube_t*) malloc(sizeof(ace_cube_t));
 	cube_copy->static_prob = cube->static_prob;
@@ -63,8 +64,8 @@ ace_cube_t * ace_cube_new_dc(int num_literals) {
 }
 
 void ace_cube_free(ace_cube_t * cube) {
-	assert(cube != NULL);
-	assert(cube->cube != NULL);
+	VTR_ASSERT(cube != NULL);
+	VTR_ASSERT(cube->cube != NULL);
 	free(cube->cube);
 	free(cube);
 }

@@ -1,3 +1,5 @@
+#include "vtr_assert.h"
+
 #include "cycle.h"
 #include "ace.h"
 bool in_cycle(Abc_Ntk_t * ntk, int obj_id_to_find, Abc_Obj_t * starting_obj_ptr,
@@ -27,7 +29,7 @@ bool in_cycle(Abc_Ntk_t * ntk, int obj_id_to_find, Abc_Obj_t * starting_obj_ptr,
 	 {
 	 // Get BI of latch
 	 fanin_ptr = Abc_ObjFanin0(Abc_ObjFanin0(starting_obj_ptr));
-	 assert(fanin_ptr);
+	 VTR_ASSERT(fanin_ptr);
 
 	 return (in_cycle(ntk, obj_id_to_find, fanin_ptr, flag));
 	 }

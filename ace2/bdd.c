@@ -1,5 +1,7 @@
 #include <inttypes.h>
 
+#include "vtr_assert.h"
+
 #include "ace.h"
 #include "misc/vec/vecPtr.h"
 #include "bdd.h"
@@ -86,7 +88,7 @@ int ace_bdd_build_network_bdds(
 	int i;
 	Vec_Ptr_t * nodes;
 
-	assert(Vec_PtrSize(inputs) > 0);
+	VTR_ASSERT(Vec_PtrSize(inputs) > 0);
 
 	nodes = Abc_NtkDfsSeq(ntk);
 
@@ -111,8 +113,8 @@ int ace_bdd_build_network_bdds(
 		switch (info->status)
 		{
 			case ACE_SIM:
-			assert (info->static_prob >= 0.0 && info->static_prob <= 1.0);
-			assert (info->switch_prob >= 0.0 && info->switch_prob <= 1.0);
+			VTR_ASSERT (info->static_prob >= 0.0 && info->static_prob <= 1.0);
+			VTR_ASSERT (info->switch_prob >= 0.0 && info->switch_prob <= 1.0);
 
 			if (!st_lookup(leaves, (char*) obj, NULL))
 			{
@@ -128,7 +130,7 @@ int ace_bdd_build_network_bdds(
 			break;
 
 			case ACE_UNDEF:
-			assert(0);
+			VTR_ASSERT(0);
 			if (check_pi_status(obj))
 			{
 				while(1)
@@ -149,14 +151,14 @@ int ace_bdd_build_network_bdds(
 			break;
 
 			case ACE_DEF:
-			assert(info->static_prob >= 0 && info->static_prob <= 1.0);
-			assert(info->switch_prob >= 0 && info->switch_prob <= 1.0);
+			VTR_ASSERT(info->static_prob >= 0 && info->static_prob <= 1.0);
+			VTR_ASSERT(info->switch_prob >= 0 && info->switch_prob <= 1.0);
 			break;
 
 			case ACE_NEW:
 			case ACE_OLD:
 			default:
-			assert(0);
+			VTR_ASSERT(0);
 		}
 	}
 
@@ -192,7 +194,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 	}
 
 	/* Get literal index for this bdd node. */
-	//assert(0);
+	//VTR_ASSERT(0);
 	i = Cudd_Regular(bdd)->index;
 	pi = (Abc_Obj_t*) Vec_PtrEntry((Vec_Ptr_t*) inputs, i);
 
@@ -210,11 +212,11 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 
 	then_prob = calc_cube_switch_prob_recur(mgr, bdd_if1, cube, inputs, visited,
 			phase);
-	assert(then_prob + EPSILON >= 0 && then_prob - EPSILON <= 1);
+	VTR_ASSERT(then_prob + EPSILON >= 0 && then_prob - EPSILON <= 1);
 
 	else_prob = calc_cube_switch_prob_recur(mgr, bdd_if0, cube, inputs, visited,
 			phase);
-	assert(else_prob + EPSILON >= 0 && else_prob - EPSILON <= 1);
+	VTR_ASSERT(else_prob + EPSILON >= 0 && else_prob - EPSILON <= 1);
 
 	switch (node_get_literal (cube->cube, i)) {
 	case ZERO:
@@ -235,7 +237,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd,
 
 	st__insert(visited, (char *) bdd, (char *) current_prob);
 
-	assert(*current_prob + EPSILON >= 0 && *current_prob - EPSILON < 1.0);
+	VTR_ASSERT(*current_prob + EPSILON >= 0 && *current_prob - EPSILON < 1.0);
 	return (*current_prob);
 }
 
@@ -250,7 +252,7 @@ double calc_cube_switch_prob(DdManager * mgr, DdNode * bdd, ace_cube_t * cube,
 
 	st__free_table(visited);
 
-	assert(sp + EPSILON >= 0. && sp - EPSILON <= 1.0);
+	VTR_ASSERT(sp + EPSILON >= 0. && sp - EPSILON <= 1.0);
 	return (sp);
 }
 
@@ -264,9 +266,9 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
 	ace_cube_t * cube0, *cube1;
 	Ace_Obj_Info_t * info;
 
-	assert(inputs != NULL);
-	assert(Vec_PtrSize(inputs) > 0);
-	assert(P1 >= 0);
+	VTR_ASSERT(inputs != NULL);
+	VTR_ASSERT(Vec_PtrSize(inputs) > 0);
+	VTR_ASSERT(P1 >= 0);
 
 	if (bdd == Cudd_ReadLogicZero(mgr)) {
 		if (phase != 1)
@@ -274,7 +276,7 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
 		prob = calc_cube_switch_prob(mgr, bdd_next, cube, inputs, phase);
 		prob *= P1;
 
-		assert(prob + EPSILON >= 0. && prob - EPSILON <= 1.);
+		VTR_ASSERT(prob + EPSILON >= 0. && prob - EPSILON <= 1.);
 		return (prob * P1);
 	} else if (bdd == Cudd_ReadOne(mgr)) {
 		if (phase != 0)
@@ -282,7 +284,7 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
 		prob = calc_cube_switch_prob(mgr, bdd_next, cube, inputs, phase);
 		prob *= P1;
 
-		assert(prob + EPSILON >= 0. && prob - EPSILON <= 1.);
+		VTR_ASSERT(prob + EPSILON >= 0. && prob - EPSILON <= 1.);
 		return (prob * P1);
 	}
 
@@ -315,8 +317,8 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd,
 			inputs, P1 * (1.0 - info->static_prob), phase);
 	ace_cube_free(cube0);
 
-	assert(switch_prob_t + EPSILON >= 0. && switch_prob_t - EPSILON <= 1.);
-	assert(switch_prob_e + EPSILON >= 0. && switch_prob_e - EPSILON <= 1.);
+	VTR_ASSERT(switch_prob_t + EPSILON >= 0. && switch_prob_t - EPSILON <= 1.);
+	VTR_ASSERT(switch_prob_e + EPSILON >= 0. && switch_prob_e - EPSILON <= 1.);
 
 	return (switch_prob_t + switch_prob_e);
 }
@@ -333,7 +335,7 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 	DdNode * bdd;
 
 	d = info->depth;
-	assert(d > 0);
+	VTR_ASSERT(d > 0);
 	d = (int) d * 0.4;
 	if (d < 1) {
 		d = 1;
@@ -361,10 +363,10 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 		prob_epsilon_fix(&fanin_info->prob0to1);
 		prob_epsilon_fix(&fanin_info->prob1to0);
 
-		assert(
+		VTR_ASSERT(
 				fanin_info->prob0to1 + EPSILON >= 0.
 						&& fanin_info->prob0to1 - EPSILON <= 1.0);
-		assert(
+		VTR_ASSERT(
 				fanin_info->prob1to0 + EPSILON >= 0.
 						&& fanin_info->prob1to0 - EPSILON <= 1.0);
 	}

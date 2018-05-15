@@ -1,6 +1,6 @@
 #include <stdlib.h>
-#include <assert.h>
 
+#include "vtr_assert.h"
 
 #include "ace.h"
 #include "io_ace.h"
@@ -36,7 +36,7 @@ void ace_io_print_activity(Abc_Ntk_t * ntk, FILE * fp) {
 
 	Abc_NtkForEachObj(ntk, obj, i)
 	{
-		assert(obj->pCopy);
+		VTR_ASSERT(obj->pCopy);
 		obj_new = obj->pCopy;
 
 		Ace_Obj_Info_t * info = Ace_ObjInfo(obj);
@@ -71,7 +71,7 @@ void ace_io_print_activity(Abc_Ntk_t * ntk, FILE * fp) {
 
 		default:
 			//printf("Unkown Type: %d\n", Abc_ObjType(obj));
-			//assert(0);
+			//VTR_ASSERT(0);
 			break;
 		}
 
@@ -237,10 +237,10 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 			printf("Cannot open input file\n");
 			error = ACE_ERROR;
 		} else {
-			assert(p >= 0.0 && p <= 1.0);
-			assert(d >= 0.0 && d <= 1.0);
-			assert(d <= 2.0 * p);
-			assert(d <= 2.0 * (1.0 - p));
+			VTR_ASSERT(p >= 0.0 && p <= 1.0);
+			VTR_ASSERT(d >= 0.0 && d <= 1.0);
+			VTR_ASSERT(d <= 2.0 * p);
+			VTR_ASSERT(d <= 2.0 * (1.0 - p));
 
 			Abc_NtkForEachPi(ntk, obj_ptr, i)
 			{
@@ -271,7 +271,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 
 			// Read real PIs activity values from file
 			res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
-            assert(res);
+            VTR_ASSERT(res);
 			while (!feof(in_file_desc)) {
 				sscanf(line, "%s %lf %lf\n", pi_name, &static_prob,
 						&switch_prob);
@@ -285,8 +285,8 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 				}
 				pi_obj_ptr = Abc_NtkObj(ntk, pi_obj_id);
 
-				assert(static_prob >= 0.0 && static_prob <= 1.0);
-				assert(switch_prob >= 0.0 && switch_prob <= 1.0);
+				VTR_ASSERT(static_prob >= 0.0 && static_prob <= 1.0);
+				VTR_ASSERT(switch_prob >= 0.0 && switch_prob <= 1.0);
 
 				info = Ace_ObjInfo(pi_obj_ptr);
 				info->static_prob = static_prob;
@@ -294,7 +294,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 				info->switch_act = switch_prob;
 
 				res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
-                assert(res);
+                VTR_ASSERT(res);
 			}
 		} else if (pi_format == ACE_VEC) {
 			printf("Reading vector file...\n");
@@ -307,10 +307,10 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
             char* res;
 
 			res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
-            assert(res);
+            VTR_ASSERT(res);
 			while (!feof(in_file_desc)) {
 				res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
-                assert(res);
+                VTR_ASSERT(res);
 				num_vec++;
 			}
 			Abc_NtkForEachPi(ntk, obj_ptr, i)
@@ -327,7 +327,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 
 			num_vec = 0;
 			res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
-            assert(res);
+            VTR_ASSERT(res);
 			while (!feof(in_file_desc)) {
 				sscanf(line, "%s\n", vector);
 
@@ -338,7 +338,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 					error = ACE_ERROR;
 					break;
 				}
-				assert(strlen(vector) == num_Pi);
+				VTR_ASSERT(strlen(vector) == num_Pi);
 
 				if (num_vec == 0) {
 					Abc_NtkForEachPi(ntk, obj_ptr, i)
@@ -366,14 +366,14 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 				}
 
 				res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
-                assert(res);
+                VTR_ASSERT(res);
 				num_vec++;
 			}
 
 			if (!error) {
 				Abc_NtkForEachPi(ntk, obj_ptr, i)
 				{
-                    assert(num_vec > 0);
+                    VTR_ASSERT(num_vec > 0);
 
 					info = Ace_ObjInfo(obj_ptr);
 					info->static_prob = (double) high[i] / (double) num_vec;
