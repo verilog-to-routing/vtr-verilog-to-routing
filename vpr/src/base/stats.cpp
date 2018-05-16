@@ -28,7 +28,6 @@ using namespace std;
 #include "RoutingDelayCalculator.h"
 
 #include "timing_util.h"
-#include "VprTimingGraphNameResolver.h"
 #include "tatum/TimingReporter.hpp"
 
 /********************** Subroutines local to this module *********************/

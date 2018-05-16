@@ -13,6 +13,8 @@
 #include "atom_delay_calc.h"
 #include "clb_delay_calc.h"
 
+class VprTimingGraphResolver; //Forward declaration
+
 class PostClusterDelayCalculator : public tatum::DelayCalculator {
 
 public:
@@ -25,6 +27,8 @@ public:
     tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 
 private:
+    friend VprTimingGraphResolver;
+
     //Returns the generic edge delay
     tatum::Time calc_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
 

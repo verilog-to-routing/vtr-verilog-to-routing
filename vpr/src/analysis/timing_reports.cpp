@@ -10,9 +10,9 @@
 #include "timing_info.h"
 #include "timing_util.h"
 
-#include "VprTimingGraphNameResolver.h"
+#include "VprTimingGraphResolver.h"
 
-void generate_setup_timing_stats(const SetupTimingInfo& timing_info, bool detailed_reports) {
+void generate_setup_timing_stats(const SetupTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, bool detailed_reports) {
 #ifdef ENABLE_CLASSIC_VPR_STA
     vtr::printf("\n");
     vtr::printf("New Timing Stats\n");
@@ -24,7 +24,7 @@ void generate_setup_timing_stats(const SetupTimingInfo& timing_info, bool detail
 
     print_setup_timing_summary(*timing_ctx.constraints, *timing_info.setup_analyzer());
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
     resolver.set_detailed(detailed_reports);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -34,13 +34,13 @@ void generate_setup_timing_stats(const SetupTimingInfo& timing_info, bool detail
     timing_reporter.report_unconstrained_setup("report_unconstrained_timing.setup.rpt", *timing_info.setup_analyzer());
 }
 
-void generate_hold_timing_stats(const HoldTimingInfo& timing_info, bool detailed_reports) {
+void generate_hold_timing_stats(const HoldTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, bool detailed_reports) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     print_hold_timing_summary(*timing_ctx.constraints, *timing_info.hold_analyzer());
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
     resolver.set_detailed(detailed_reports);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
