@@ -2954,14 +2954,14 @@ static void draw_crit_path() {
     }
 
     //Get the worst timing path
-    auto paths = path_collector.collect_worst_setup_paths(*timing_ctx.graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
+    auto paths = path_collector.collect_worst_setup_timing_paths(*timing_ctx.graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
 
     //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
     int i = 0;
-    for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
+    for(tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
 

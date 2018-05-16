@@ -28,6 +28,7 @@ void generate_setup_timing_stats(const SetupTimingInfo& timing_info) {
     tatum::TimingReporter timing_reporter(name_resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_setup("report_timing.setup.rpt", *timing_info.setup_analyzer());
+    timing_reporter.report_skew_setup("report_skew.setup.rpt", *timing_info.setup_analyzer());
     timing_reporter.report_unconstrained_setup("report_unconstrained_timing.setup.rpt", *timing_info.setup_analyzer());
 }
 
@@ -41,5 +42,6 @@ void generate_hold_timing_stats(const HoldTimingInfo& timing_info) {
     tatum::TimingReporter timing_reporter(name_resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_hold("report_timing.hold.rpt", *timing_info.hold_analyzer());
+    timing_reporter.report_skew_hold("report_skew.hold.rpt", *timing_info.hold_analyzer());
     timing_reporter.report_unconstrained_hold("report_unconstrained_timing.hold.rpt", *timing_info.hold_analyzer());
 }
