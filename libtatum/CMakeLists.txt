@@ -106,6 +106,8 @@ target_include_directories(libtatum PUBLIC ${LIB_TATUM_INCLUDE_DIRS})
 if (TATUM_USE_EXECUTION_ENGINE STREQUAL "cilk")
     message(STATUS "Tatum: will support parallel execution using '${TATUM_USE_EXECUTION_ENGINE}'")
 
+    message(WARNING "Tatum: Cilk Plus support is deprecated and will be removed in the future")
+
     #Compile with parallel support
     # Since we the analyzer's are C++ templates, clients must compile
     # with cilk to enable parallel analysis
