@@ -27,10 +27,16 @@ def parse_args():
                         default=None,
                         help="Specifies the external reference (revision/branch). If unspecified uses the subtree default (usually master).")
 
-    parser.add_argument("--list",
+    exclusive_group = parser.add_mutually_exclusive_group()
+    exclusive_group.add_argument("--list",
                         action="store_true",
                         default=False,
-                        help="External components to upgrade")
+                        help="List known components")
+
+    exclusive_group.add_argument("--update",
+                        action="store_true",
+                        default=False,
+                        help="Update components subtrees")
 
     parser.add_argument("-n", "--dry_run",
                         action="store_true",
@@ -105,6 +111,8 @@ def update_component(args, subtree_info):
 
     if args.list:
         return #List only
+    else:
+        assert args.update
 
     assert external_ref != None
 
@@ -114,7 +122,7 @@ def update_component(args, subtree_info):
         #Create
         action = 'add'
         message = "{name}: Adding '{path}/' as an external git subtree from {url} {rev}".format(
-                                                                      name=component_name,
+                                                                      name=subtree_info.name,
                                                                       path=subtree_info.internal_path,
                                                                       url=subtree_info.external_url,
                                                                       rev=external_ref)
@@ -122,7 +130,7 @@ def update_component(args, subtree_info):
         #Pull
         action = 'pull'
         message = "{name}: Updating '{path}/' (external git subtree from {url} {rev})".format(
-                                                                      name=component_name,
+                                                                      name=subtree_info.name,
                                                                       path=subtree_info.internal_path,
                                                                       url=subtree_info.external_url,
                                                                       rev=external_ref)
