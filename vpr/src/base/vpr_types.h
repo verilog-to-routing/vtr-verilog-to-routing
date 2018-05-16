@@ -862,6 +862,7 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
+    bool detailed_timing_reports;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *

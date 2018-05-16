@@ -110,8 +110,10 @@ struct t_options {
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
 
+    /* Analysis options */
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
+    argparse::ArgValue<bool> detailed_timing_reports;
 
 };
 

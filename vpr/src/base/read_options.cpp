@@ -751,6 +751,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool,ParseOnOff>(args.detailed_timing_reports, "--detailed_timing_reports")
+            .help("Produces more detailed information in timing reports"
+                  " (e.g. breakdown of delays into architectural components)")
+            .default_value("off")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& power_grp = parser.add_argument_group("power analysis options");
 

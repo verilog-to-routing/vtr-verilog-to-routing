@@ -1050,8 +1050,8 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
         //Timing stats
         vtr::printf("\n");
-        generate_hold_timing_stats(*timing_info);
-        generate_setup_timing_stats(*timing_info);
+        generate_hold_timing_stats(*timing_info, vpr_setup.AnalysisOpts.detailed_timing_reports);
+        generate_setup_timing_stats(*timing_info, vpr_setup.AnalysisOpts.detailed_timing_reports);
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
