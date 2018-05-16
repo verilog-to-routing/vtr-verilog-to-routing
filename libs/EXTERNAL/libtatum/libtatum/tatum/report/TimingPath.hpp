@@ -79,6 +79,26 @@ class TimingPathElem {
         EdgeId incomming_edge_;
 };
 
+//One sub-path of a timing path (e.g. clock launch path, data path, clock capture path)
+class TimingSubPath {
+    public:
+        typedef std::vector<TimingPathElem>::const_iterator path_elem_iterator;
+        typedef util::Range<path_elem_iterator> path_elem_range;
+
+    public:
+        TimingSubPath() = default;
+        TimingSubPath(std::vector<TimingPathElem> elems)
+            : elements_(elems) {}
+
+        path_elem_range elements() const { 
+            return util::make_range(elements_.begin(),
+                                    elements_.end());
+        }
+
+    private:
+        std::vector<TimingPathElem> elements_;
+};
+
 
 //A collection of timing path elements which form
 //a timing path.
@@ -90,15 +110,15 @@ class TimingPath {
     public:
         TimingPath() = default;
         TimingPath(const TimingPathInfo& info,
-                   std::vector<TimingPathElem> clock_launch_elems,
-                   std::vector<TimingPathElem> data_arrival_elems,
-                   std::vector<TimingPathElem> clock_capture_elems,
+                   TimingSubPath clock_launch_path,
+                   TimingSubPath data_arrival_path,
+                   TimingSubPath clock_capture_path,
                    const TimingPathElem& data_required_elem,
                    const TimingTag& slack)
             : path_info_(info)
-            , clock_launch_elements_(clock_launch_elems)
-            , data_arrival_elements_(data_arrival_elems)
-            , clock_capture_elements_(clock_capture_elems)
+            , clock_launch_path_(clock_launch_path)
+            , data_arrival_path_(data_arrival_path)
+            , clock_capture_path_(clock_capture_path)
             , data_required_element_(data_required_elem)
             , slack_tag_(slack) {
             //pass
@@ -107,19 +127,16 @@ class TimingPath {
     public:
         const TimingPathInfo& path_info() const { return path_info_; }
 
-        path_elem_range clock_launch_elements() const {
-            return util::make_range(clock_launch_elements_.begin(),
-                                    clock_launch_elements_.end());
+        const TimingSubPath& clock_launch_path() const {
+            return clock_launch_path_;
         }
 
-        path_elem_range data_arrival_elements() const {
-            return util::make_range(data_arrival_elements_.begin(),
-                                    data_arrival_elements_.end());
+        const TimingSubPath& data_arrival_path() const {
+            return data_arrival_path_;
         }
 
-        path_elem_range clock_capture_elements() const {
-            return util::make_range(clock_capture_elements_.begin(),
-                                    clock_capture_elements_.end());
+        const TimingSubPath& clock_capture_path() const {
+            return clock_capture_path_;
         }
 
         TimingPathElem data_required_element() const {
@@ -131,9 +148,9 @@ class TimingPath {
     private:
         TimingPathInfo path_info_;
 
-        std::vector<TimingPathElem> clock_launch_elements_;
-        std::vector<TimingPathElem> data_arrival_elements_;
-        std::vector<TimingPathElem> clock_capture_elements_;
+        TimingSubPath clock_launch_path_;
+        TimingSubPath data_arrival_path_;
+        TimingSubPath clock_capture_path_;
         TimingPathElem data_required_element_;
         TimingTag slack_tag_;
 };

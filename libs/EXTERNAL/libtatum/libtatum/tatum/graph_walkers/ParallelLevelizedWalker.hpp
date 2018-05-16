@@ -43,7 +43,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
 #elif defined(TATUM_USE_TBB)
             tbb::combinable<size_t> unconstrained_counter(zero);
 
-            tbb::parallel_for_each(nodes, [&](auto node) {
+            tbb::parallel_for_each(nodes.begin(), nodes.end(), [&](auto node) {
                 bool constrained = visitor.do_arrival_pre_traverse_node(tg, tc, node);
 
                 if(!constrained) {
@@ -82,7 +82,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
 #elif defined(TATUM_USE_TBB)
             tbb::combinable<size_t> unconstrained_counter(zero);
 
-            tbb::parallel_for_each(po, [&](auto node) {
+            tbb::parallel_for_each(po.begin(), po.end(), [&](auto node) {
                 bool constrained = visitor.do_required_pre_traverse_node(tg, tc, node);
 
                 if(!constrained) {
@@ -111,7 +111,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
                     visitor.do_arrival_traverse_node(tg, tc, dc, *iter);
                 }
 #elif defined(TATUM_USE_TBB)
-                tbb::parallel_for_each(level_nodes, [&](auto node) {
+                tbb::parallel_for_each(level_nodes.begin(), level_nodes.end(), [&](auto node) {
                     visitor.do_arrival_traverse_node(tg, tc, dc, node);
                 });
 #else //Serial
@@ -130,7 +130,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
                     visitor.do_required_traverse_node(tg, tc, dc, *iter);
                 }
 #elif defined(TATUM_USE_TBB)
-                tbb::parallel_for_each(level_nodes, [&](auto node) {
+                tbb::parallel_for_each(level_nodes.begin(), level_nodes.end(), [&](auto node) {
                     visitor.do_required_traverse_node(tg, tc, dc, node);
                 });
 #else //Serial
@@ -148,7 +148,7 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
                 visitor.do_slack_traverse_node(tg, dc, *iter);
             }
 #elif defined(TATUM_USE_TBB)
-            tbb::parallel_for_each(nodes, [&](auto node) {
+            tbb::parallel_for_each(nodes.begin(), nodes.end(), [&](auto node) {
                 visitor.do_slack_traverse_node(tg, dc, node);
             });
 #else //Serial
@@ -169,10 +169,10 @@ class ParallelLevelizedWalker : public TimingGraphWalker {
                 visitor.do_reset_edge(*edge_iter);
             }
 #elif defined(TATUM_USE_TBB)
-            tbb::parallel_for_each(nodes, [&](auto node) {
+            tbb::parallel_for_each(nodes.begin(), nodes.end(), [&](auto node) {
                 visitor.do_reset_node(node);
             });
-            tbb::parallel_for_each(edges, [&](auto edge) {
+            tbb::parallel_for_each(edges.begin(), edges.end(), [&](auto edge) {
                 visitor.do_reset_edge(edge);
             });
 #else //Serial

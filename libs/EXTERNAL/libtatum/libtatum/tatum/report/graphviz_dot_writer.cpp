@@ -89,8 +89,6 @@ void GraphvizDotWriter::write_dot_format(std::ostream& os,
                                          const std::map<NodeId,std::vector<TimingTag>>& node_tags,
                                          const std::map<NodeId,std::vector<TimingTag>>& node_slacks,
                                          TimingType timing_type) {
-    TATUM_ASSERT(timing_type == TimingType::SETUP || timing_type == TimingType::HOLD);
-
     os << "digraph G {" << std::endl;
     os << "\tnode[shape=record]" << std::endl;
 
@@ -174,16 +172,28 @@ void GraphvizDotWriter::write_dot_edge(std::ostream& os, const EdgeId edge, cons
             color = CLOCK_CAPTURE_EDGE_COLOR;
             if (timing_type == TimingType::SETUP) {
                 os << "\\n"<< -delay_calc_.setup_time(tg_, edge) << " (-tsu)";
+            } else if (timing_type == TimingType::HOLD) {
+                os << "\\n"<< delay_calc_.hold_time(tg_, edge) << " (thld)";
             } else {
-                //Hold
-                TATUM_ASSERT(timing_type == TimingType::HOLD);
+                TATUM_ASSERT(timing_type == TimingType::UNKOWN);
+                //Create both setup and hold edges if type is unknown
+                os << "\\n"<< -delay_calc_.setup_time(tg_, edge) << " (-tsu)";
                 os << "\\n"<< delay_calc_.hold_time(tg_, edge) << " (thld)";
             }
         } else if(edge_type == EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
             color = CLOCK_LAUNCH_EDGE_COLOR;
             os << "\\n" << delay_calc_.max_edge_delay(tg_, edge) << " (tcq)";
         } else {
-            os << "\\n" << delay_calc_.max_edge_delay(tg_, edge);
+            //Combinational edge
+            if (timing_type == TimingType::SETUP) {
+                os << "\\n" << delay_calc_.max_edge_delay(tg_, edge);
+            } else if (timing_type == TimingType::HOLD) {
+                os << "\\n" << delay_calc_.min_edge_delay(tg_, edge);
+            } else {
+                TATUM_ASSERT(timing_type == TimingType::UNKOWN);
+                os << "\\n" << delay_calc_.max_edge_delay(tg_, edge) << " (tmax)";
+                os << "\\n" << delay_calc_.min_edge_delay(tg_, edge) << " (tmin)";
+            }
         }
 
         if(tg_.edge_disabled(edge)) {

@@ -1,12 +1,13 @@
-Tatum: A Fast, Flexible Static Timing Analysis (STA) Engine for Digital Circuits
-================================================================================
+#Tatum: A Fast, Flexible Static Timing Analysis (STA) Engine for Digital Circuits
+[![Build Status](https://travis-ci.org/kmurray/tatum.svg?branch=master)](https://travis-ci.org/kmurray/tatum)
+
 ##Overview
 Tatum is primarily a library (`libtatum`) which provides a fast and flexible Static Timing Analysis (STA) engine for digital circuits.
 
 Tatum is a block-based timing analyzer suitable for integration with Computer-Aided Design (CAD) tools used to optimize and implement digital circuits.
 Tatum supports both setup (max) and hold (min) analysis, clock skew and multiple clocks.
 
-Tatum operates on an abstract *timing graph* constructed by the host application, can be configured to use an application defined delay calculator.
+Tatum operates on an abstract *timing graph* constructed by the host application, and can be configured to use an application defined delay calculator.
 
 Tatum is optimized for high performance, as required by optimizing CAD tools.
 In particular:
@@ -19,6 +20,6 @@ I had need for a high performance, flexible STA engine for my PhD research into 
 I could find no suitable open source STA engines, and wrote my own.
 
 ##Origin of the Name
-A *tatum* is a unit of time used in the computational analysis of music \[[1]\], named after the famous Jazz pianist [Art Tatum](https://en.wikipedia.org/wiki/Art_Tatum).
+A *tatum* is a unit of time used in the computational analysis of music \[[1]\], named after Jazz pianist [Art Tatum](https://en.wikipedia.org/wiki/Art_Tatum).
 
 [1]: http://web.media.mit.edu/~tristan/phd/dissertation/chapter3.html#x1-390003.4.3
