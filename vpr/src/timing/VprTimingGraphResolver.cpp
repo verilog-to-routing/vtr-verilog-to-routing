@@ -143,17 +143,15 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::Time driver_clb_delay = delay_calc_.get_driver_clb_cached_delay(edge, delay_type);
         tatum::Time sink_clb_delay = delay_calc_.get_sink_clb_cached_delay(edge, delay_type);
 
-        VTR_ASSERT(!std::isnan(driver_clb_delay.value()));
-
-        VTR_ASSERT(!std::isnan(sink_clb_delay.value()));
-
         ClusterNetId src_net = cluster_ctx.clb_nlist.pin_net(src_pin);
         VTR_ASSERT(src_net == cluster_ctx.clb_nlist.pin_net(sink_pin));
         tatum::Time net_delay = tatum::Time(delay_calc_.inter_cluster_delay(src_net, 
                                                                 0, 
                                                                 cluster_ctx.clb_nlist.pin_net_index(sink_pin)));
 
-        VTR_ASSERT(driver_clb_delay >= 0.);
+        VTR_ASSERT(driver_clb_delay.valid());
+        VTR_ASSERT(net_delay.valid());
+        VTR_ASSERT(sink_clb_delay.valid());
 
         tatum::DelayComponent driver_component;
         //driver_component.inst_name = cluster_ctx.clb_nlist.block_name(src_blk);
@@ -163,23 +161,19 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         driver_component.delay = driver_clb_delay;
         components.push_back(driver_component);
 
-        if (net_delay != 0.) {
-            tatum::DelayComponent net_component;
-            //net_component.inst_name = cluster_ctx.clb_nlist.net_name(src_net);
-            net_component.type_name = "inter-block routing";
-            net_component.delay = net_delay;
-            components.push_back(net_component);
-        }
+        tatum::DelayComponent net_component;
+        //net_component.inst_name = cluster_ctx.clb_nlist.net_name(src_net);
+        net_component.type_name = "inter-block routing";
+        net_component.delay = net_delay;
+        components.push_back(net_component);
 
-        if (sink_clb_delay != 0.) {
-            tatum::DelayComponent sink_component;
-            //sink_component.inst_name = cluster_ctx.clb_nlist.block_name(sink_blk);
-            sink_component.type_name = "intra '";
-            sink_component.type_name += cluster_ctx.clb_nlist.block_type(sink_blk)->name;
-            sink_component.type_name += "' routing";
-            sink_component.delay = sink_clb_delay;
-            components.push_back(sink_component);
-        }
+        tatum::DelayComponent sink_component;
+        //sink_component.inst_name = cluster_ctx.clb_nlist.block_name(sink_blk);
+        sink_component.type_name = "intra '";
+        sink_component.type_name += cluster_ctx.clb_nlist.block_type(sink_blk)->name;
+        sink_component.type_name += "' routing";
+        sink_component.delay = sink_clb_delay;
+        components.push_back(sink_component);
     }
 
     return components;
