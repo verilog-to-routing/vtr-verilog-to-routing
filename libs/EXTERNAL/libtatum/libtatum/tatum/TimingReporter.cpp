@@ -670,7 +670,13 @@ Time TimingReporter::report_timing_clock_subpath(std::ostream& os,
         if (!delay_breakdown.components.empty()) {
             //Application provided detailed delay breakdown of edge delay, report it
             for (auto& delay_component : delay_breakdown.components) {
-                std::string point = "| " + delay_component.inst_name + " (" + delay_component.type_name + ")";
+                std::string point = "|";
+                if (!delay_component.inst_name.empty()) {
+                    point += " " + delay_component.inst_name;
+                }
+                if (!delay_component.type_name.empty()) {
+                    point += " (" + delay_component.type_name + ")";
+                }
                 path += delay_component.delay;
                 path_helper.update_print_path(os, point, path);
             }
@@ -730,7 +736,13 @@ Time TimingReporter::report_timing_data_arrival_subpath(std::ostream& os,
         if (!delay_breakdown.components.empty()) {
             //Application provided detailed delay breakdown of edge delay, report it
             for (auto& delay_component : delay_breakdown.components) {
-                std::string point = "| " + delay_component.inst_name + " (" + delay_component.type_name + ")";
+                std::string point = "|";
+                if (!delay_component.inst_name.empty()) {
+                    point += " " + delay_component.inst_name;
+                }
+                if (!delay_component.type_name.empty()) {
+                    point += " (" + delay_component.type_name + ")";
+                }
                 path += delay_component.delay;
                 path_helper.update_print_path(os, point, path);
             }
