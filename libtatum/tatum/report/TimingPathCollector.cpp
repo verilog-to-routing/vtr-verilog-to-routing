@@ -28,9 +28,7 @@ std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_gra
 
     //Add the slacks of all sink
     for(NodeId node : timing_graph.logical_outputs()) {
-        std::cout << node << "\n";
         for(TimingTag tag : tag_retriever.slacks(node)) {
-            std::cout << "\ttag slack: "<< tag.time() << "\n";
             tags_and_sinks.emplace_back(tag,node);
         }
     }
@@ -49,7 +47,6 @@ std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_gra
         NodeId sink_node = tag_node.node;
         TimingTag sink_tag = tag_node.tag;
 
-        std::cout << "Node: " << sink_node << "tag slack: "<< sink_tag.time() << "\n";
         TimingPath path = detail::trace_path(timing_graph, tag_retriever, sink_tag.launch_clock_domain(), sink_tag.capture_clock_domain(), sink_node); 
 
         paths.push_back(path);
