@@ -10,6 +10,9 @@ struct SkewPath {
     TimingSubPath clock_launch_path;
     TimingSubPath clock_capture_path;
 
+    NodeId data_launch_node;
+    NodeId data_capture_node;
+
     Time clock_launch_arrival;
     Time clock_capture_arrival;
     Time clock_constraint;

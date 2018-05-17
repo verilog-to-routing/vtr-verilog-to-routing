@@ -43,5 +43,6 @@ TimingSubPath trace_skew_clock_capture_path(const TimingGraph& timing_graph,
                                             const NodeId data_capture_node);
 
 Time calc_path_delay(const TimingSubPath& path);
+Time path_end(const TimingSubPath& path);
 }} //namespace
 #endif
