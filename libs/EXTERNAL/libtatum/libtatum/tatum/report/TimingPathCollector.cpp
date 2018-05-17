@@ -15,24 +15,41 @@ std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, 
 std::vector<TimingPath> collect_worst_timing_paths(const TimingGraph& timing_graph, const detail::TagRetriever& tag_retriever, size_t npaths) {
     std::vector<TimingPath> paths;
 
-    //Sort the sinks by slack
-    std::map<TimingTag,NodeId,TimingTagValueComp> tags_and_sinks;
+    struct TagNode {
+        TagNode(TimingTag t, NodeId n)
+            : tag(t), node(n) {}
+
+        TimingTag tag;
+        NodeId node;
+
+    };
+
+    std::vector<TagNode> tags_and_sinks;
 
     //Add the slacks of all sink
     for(NodeId node : timing_graph.logical_outputs()) {
+        std::cout << node << "\n";
         for(TimingTag tag : tag_retriever.slacks(node)) {
-            tags_and_sinks.emplace(tag,node);
+            std::cout << "\ttag slack: "<< tag.time() << "\n";
+            tags_and_sinks.emplace_back(tag,node);
         }
     }
+
+    //Sort in ascending slack order so most negative slacks are first
+    auto ascending_slack_order = [](const TagNode& lhs, const TagNode& rhs) {
+        return lhs.tag.time() < rhs.tag.time();
+    };
+    std::sort(tags_and_sinks.begin(), tags_and_sinks.end(), ascending_slack_order);
+
 
     //Trace the paths for each tag/node pair
     // The the map will sort the nodes and tags from worst to best slack (i.e. ascending slack order),
     // so the first pair is the most critical end-point
-    for(const auto& kv : tags_and_sinks) {
-        NodeId sink_node;
-        TimingTag sink_tag;
-        std::tie(sink_tag, sink_node) = kv;
+    for(const auto& tag_node : tags_and_sinks) {
+        NodeId sink_node = tag_node.node;
+        TimingTag sink_tag = tag_node.tag;
 
+        std::cout << "Node: " << sink_node << "tag slack: "<< sink_tag.time() << "\n";
         TimingPath path = detail::trace_path(timing_graph, tag_retriever, sink_tag.launch_clock_domain(), sink_tag.capture_clock_domain(), sink_node); 
 
         paths.push_back(path);
