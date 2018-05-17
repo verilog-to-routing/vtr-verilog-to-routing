@@ -1,3 +1,9 @@
+---
+name: Bug report
+about: Create a report to help us improve
+
+---
+
 <!--- Provide a general summary of the issue in the Title above -->
 
 #### Expected Behaviour
@@ -15,8 +21,7 @@
 <!-- (e.g. architecture file, netlist) to reproduce, if relevant. -->
 1. 
 2. 
-3. 
-4. 
+
 
 #### Context
 <!--- How has this issue affected you? What are you trying to accomplish? -->
