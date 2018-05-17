@@ -24,7 +24,7 @@ inline bool nearly_equal(const float lhs, const float rhs, const float abs_err_t
     float abs_err = absolute_error(lhs, rhs);
     float rel_err = relative_error(lhs, rhs);
 
-    return (abs_err <= abs_err_tol) && (rel_err <= rel_err_tol);
+    return (abs_err <= abs_err_tol) || (rel_err <= rel_err_tol);
 }
 
 }} //namspace

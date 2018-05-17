@@ -67,13 +67,55 @@ std::vector<SkewPath> collect_worst_skew_paths(const TimingGraph& timing_graph, 
             //Constant generators do not have skew
             if (is_const_gen_tag(data_launch_elem.tag())) continue;
 
-            NodeId launch_node = data_launch_elem.node();
+            path.data_launch_node = data_launch_elem.node();
+            path.data_capture_node = node;
 
-            path.clock_launch_path = detail::trace_skew_clock_launch_path(timing_graph, tag_retriever, path.launch_domain, path.capture_domain, launch_node);
-            path.clock_capture_path = detail::trace_skew_clock_capture_path(timing_graph, tag_retriever, path.launch_domain, path.capture_domain, node);
+            path.clock_launch_path = detail::trace_clock_launch_path(timing_graph, tag_retriever, path.launch_domain, path.capture_domain, path.data_launch_node);
+            path.clock_capture_path = detail::trace_clock_capture_path(timing_graph, tag_retriever, path.launch_domain, path.capture_domain, path.data_capture_node);
 
-            path.clock_launch_arrival = calc_path_delay(path.clock_launch_path);
-            path.clock_capture_arrival = calc_path_delay(path.clock_capture_path);
+            if (path.clock_launch_path.elements().empty()) {
+                //Primary input
+                path.clock_launch_arrival = data_launch_elem.tag().time();
+
+                //Adjust for input delay
+                if (timing_type == TimingType::SETUP) {
+                    path.clock_launch_arrival -= timing_constraints.input_constraint(path.data_launch_node, path.launch_domain, DelayType::MAX);
+                } else {
+                    TATUM_ASSERT(timing_type == TimingType::HOLD);
+                    path.clock_launch_arrival -= timing_constraints.input_constraint(path.data_launch_node, path.launch_domain, DelayType::MIN);
+                }
+            } else {
+                //FF source
+                path.clock_launch_arrival = path_end(path.clock_launch_path);
+            }
+
+            if (path.clock_capture_path.elements().empty()) {
+                //Primary output
+                path.clock_capture_arrival = required_tag.time();
+
+                //Adjust for output delay and clock uncertainty
+                if (timing_type == TimingType::SETUP) {
+                    path.clock_capture_arrival += timing_constraints.output_constraint(path.data_capture_node, path.capture_domain, DelayType::MAX);
+                } else {
+                    TATUM_ASSERT(timing_type == TimingType::HOLD);
+                    path.clock_capture_arrival += timing_constraints.output_constraint(path.data_capture_node, path.capture_domain, DelayType::MIN);
+                }
+                //TODO: need to think about why we don't need to adjust for uncertainty on these paths...
+            } else {
+                //FF capture
+                path.clock_capture_arrival = path_end(path.clock_capture_path);
+
+                //Adjust for clock uncertainty
+                if (timing_type == TimingType::SETUP) {
+                    path.clock_capture_arrival -= timing_constraints.setup_clock_uncertainty(path.launch_domain, path.capture_domain);
+                } else {
+                    TATUM_ASSERT(timing_type == TimingType::HOLD);
+                    path.clock_capture_arrival += timing_constraints.hold_clock_uncertainty(path.launch_domain, path.capture_domain);
+                }
+            }
+
+
+            //Record period constraint
             if (timing_type == TimingType::SETUP) {
                 path.clock_constraint = timing_constraints.setup_constraint(path.launch_domain, path.capture_domain);
             } else {

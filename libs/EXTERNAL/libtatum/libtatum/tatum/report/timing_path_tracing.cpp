@@ -269,6 +269,15 @@ Time calc_path_delay(const TimingSubPath& path) {
     }
 }
 
+Time path_end(const TimingSubPath& path) {
+    if (path.elements().size() > 0) {
+        TimingTag last_arrival = (--path.elements().end())->tag();
+        return last_arrival.time();
+    } else {
+        return Time(0.);
+    }
+}
+
 NodeId find_startpoint(const TimingSubPath& path) {
     TATUM_ASSERT(path.elements().size() > 0);
 
