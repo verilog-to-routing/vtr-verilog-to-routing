@@ -16,16 +16,16 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
 
         tatum::EdgeDelayBreakdown edge_delay_breakdown(tatum::EdgeId edge, tatum::DelayType delay_type) const override;
 
-        void set_detailed(bool value);
+        void set_detail_level(e_timing_report_detail report_detail);
     private:
-        bool detailed() const;
+        e_timing_report_detail detail_level() const;
         std::vector<tatum::DelayComponent> interconnect_delay_breakdown(tatum::EdgeId edge, DelayType) const;
 
         const AtomNetlist& netlist_;
         const AtomLookup& netlist_lookup_;
         const tatum::TimingGraph& timing_graph_;
         const AnalysisDelayCalculator& delay_calc_;
-        bool detailed_ = false;
+        e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
 };
 
 #endif

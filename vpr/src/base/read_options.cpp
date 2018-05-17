@@ -235,6 +235,26 @@ struct ParseConstantNetMethod {
     }
 };
 
+struct ParseTimingReportDetail {
+    e_timing_report_detail from_str(std::string str) {
+        if      (str == "netlist")      return e_timing_report_detail::NETLIST;
+        else if (str == "aggregated")   return e_timing_report_detail::AGGREGATED;
+        std::stringstream msg;
+        msg << "Invalid conversion from '" << str << "' to e_timing_report_detail (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+        throw argparse::ArgParseConversionError(msg.str());
+    }
+
+    std::string to_str(e_timing_report_detail val) {
+        if (val == e_timing_report_detail::NETLIST) return "netlist";
+        VTR_ASSERT(val == e_timing_report_detail::AGGREGATED);
+        return "aggregated";
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"netlist", "aggregated"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -751,10 +771,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    analysis_grp.add_argument<bool,ParseOnOff>(args.detailed_timing_reports, "--detailed_timing_reports")
-            .help("Produces more detailed information in timing reports"
-                  " (e.g. breakdown of delays into architectural components)")
-            .default_value("off")
+    analysis_grp.add_argument<e_timing_report_detail,ParseTimingReportDetail>(args.timing_report_detail, "--timing_report_detail")
+            .help("Controls how much detail is provided in timing reports.\n"
+                  " * netlist: Shows only netlist pins\n"
+                  " * aggregated: Like 'netlist', but also shows aggregated intra-block/iter-block delays\n"
+                  //" * routing: Lke 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n" //TODO: implement
+                  )
+            .default_value("netlist")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 

@@ -26,7 +26,7 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
 tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::EdgeId edge, tatum::DelayType tatum_delay_type) const {
     tatum::EdgeDelayBreakdown edge_delay_breakdown;
 
-    if (edge && detailed()) {
+    if (edge && detail_level() == e_timing_report_detail::AGGREGATED) {
         auto edge_type = timing_graph_.edge_type(edge);
 
         DelayType delay_type; //TODO: should unify vpr/tatum DelayType
@@ -179,10 +179,10 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
     return components;
 }
 
-bool VprTimingGraphResolver::detailed() const {
-    return detailed_;
+e_timing_report_detail VprTimingGraphResolver::detail_level() const {
+    return detail_level_;
 }
 
-void VprTimingGraphResolver::set_detailed(bool value) {
-    detailed_ = value;
+void VprTimingGraphResolver::set_detail_level(e_timing_report_detail report_detail) {
+    detail_level_ = report_detail;
 }

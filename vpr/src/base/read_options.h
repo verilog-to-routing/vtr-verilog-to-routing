@@ -113,7 +113,7 @@ struct t_options {
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
-    argparse::ArgValue<bool> detailed_timing_reports;
+    argparse::ArgValue<e_timing_report_detail> timing_report_detail;
 
 };
 

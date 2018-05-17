@@ -827,6 +827,12 @@ enum e_routing_budgets_algorithm {
     MINIMAX, SCALE_DELAY, DISABLE
 };
 
+enum class e_timing_report_detail {
+    NETLIST,            //Only show netlist elements
+    AGGREGATED,         //Show aggregated intra-block and inter-block delays
+    //DETAILED_ROUTING, //Show inter-block routing resources used
+};
+
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
@@ -862,7 +868,7 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
-    bool detailed_timing_reports;
+    e_timing_report_detail timing_report_detail;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *
