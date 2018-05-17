@@ -5,8 +5,7 @@
 
 #### Related Issue
 <!--- Pull requests should be related to open issues -->
-<!--- If suggesting a new feature or change, please discuss it in an issue first -->
-<!--- If fixing a bug, there should be an issue describing it with steps to reproduce -->
+<!--- Please discuss new features/changes in an issue first -->
 <!--- Please link to the issue here: -->
 
 #### Motivation and Context
@@ -19,14 +18,13 @@
 
 #### Types of changes
 <!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
-- [ ] Bug fix (change which fixes an issue)
-- [ ] New feature (change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change)
+- [x] New feature (change which adds functionality)
+- [ ] Breaking change (feature that would cause existing functionality to change)
 
 #### Checklist:
 <!--- Go over all the following points, and put an `x` in all the boxes that apply. -->
 <!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->
+- [ ] I have added tests to cover my feature
+- [ ] All new and existing tests passed
 - [ ] My change requires a change to the documentation
 - [ ] I have updated the documentation accordingly
-- [ ] I have added tests to cover my changes
-- [ ] All new and existing tests passed
