@@ -208,6 +208,7 @@ void TimingReporter::report_timing(std::ostream& os,
         os << "#Path " << ++i << "\n";
         report_timing_path(os, path);
         os << "\n";
+        os.flush();
     }
 
     os << "#End of timing report\n";
