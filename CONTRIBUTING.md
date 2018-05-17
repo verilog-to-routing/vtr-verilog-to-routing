@@ -74,7 +74,7 @@ This information helps us to quickly reproduce (and hopefully fix) the issue:
 
     Tell us what version of VTR you are using (e.g. the output of `vpr --version`), which Operating System and compiler you are using, or any other relevant information about where or how you are building/running VTR.
 
-Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new) on our issue tracker.
+Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new?template=bug_report.md) on our issue tracker.
 
 If you know how to fix the issue, or already have it coded-up, please also consider [submitting the fix](#submitting-code-to-vtr).
 This is likely the fastest way to get bugs fixed!
@@ -107,7 +107,7 @@ Typically, simple enhancements, and those which are broadly useful to a wide gro
 Features which are not generally useful, or useful to only a small group of users will tend to get lower priority.
 (Of course [coding the enhancement yourself](#submitting-code-to-vtr) is an easy way to bypass this challenge).
 
-Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new) on our issue tracker.
+Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new?template=feature_request.md) on our issue tracker.
 
 ### Submitting Code to VTR
 VTR welcomes external contributions.
