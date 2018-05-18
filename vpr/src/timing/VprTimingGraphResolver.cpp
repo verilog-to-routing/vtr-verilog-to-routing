@@ -24,7 +24,7 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
 }
 
 tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::EdgeId edge, tatum::DelayType tatum_delay_type) const {
-    tatum::EdgeDelayBreakdown edge_delay_breakdown;
+    tatum::EdgeDelayBreakdown delay_breakdown;
 
     if (edge && detail_level() == e_timing_report_detail::AGGREGATED) {
         auto edge_type = timing_graph_.edge_type(edge);
@@ -38,7 +38,7 @@ tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::Ed
         }
 
         if (edge_type == tatum::EdgeType::INTERCONNECT) {
-            edge_delay_breakdown.components = interconnect_delay_breakdown(edge, delay_type);
+            delay_breakdown.components = interconnect_delay_breakdown(edge, delay_type);
         } else {
             //Primtiive edge
             //
@@ -87,11 +87,11 @@ tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::Ed
                 }
             }
 
-            edge_delay_breakdown.components.push_back(component);
+            delay_breakdown.components.push_back(component);
         }
     }
 
-    return edge_delay_breakdown;
+    return delay_breakdown;
 }
 
 std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_breakdown(tatum::EdgeId edge, DelayType delay_type) const {
