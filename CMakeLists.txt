@@ -23,7 +23,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     add_compile_options(${WARN_FLAGS})
     add_compile_options(-std=c++14)
 
-    set(FLEX_BISON_WARN_SUPPRESS_FLAGS -Wno-switch-default -Wno-unused-parameter -Wno-missing-declarations)
+    set(FLEX_BISON_WARN_SUPPRESS_FLAGS -Wno-switch-default -Wno-unused-parameter -Wno-sign-compare -Wno-missing-declarations)
 endif()
 
 add_subdirectory(libtatum)
