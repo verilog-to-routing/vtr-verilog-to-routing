@@ -868,6 +868,8 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
+
+    int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
 };
 

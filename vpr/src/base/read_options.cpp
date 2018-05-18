@@ -771,6 +771,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument(args.timing_report_npaths, "--timing_report_npaths")
+            .help("Controls how many timing paths are reported.")
+            .default_value("100")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument<e_timing_report_detail,ParseTimingReportDetail>(args.timing_report_detail, "--timing_report_detail")
             .help("Controls how much detail is provided in timing reports.\n"
                   " * netlist: Shows only netlist pins\n"

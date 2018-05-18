@@ -463,6 +463,8 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     }
 
     analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
+
+    analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
 }
 
