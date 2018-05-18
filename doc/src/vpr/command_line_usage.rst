@@ -672,7 +672,7 @@ Analysis Options
 
     Controls the level of detail included in generated timing reports.
 
-        * ``netlist``: Timing reports shows only netlist primitive pins.
+        * ``netlist``: Timing reports show only netlist primitive pins.
 
           For example:
 
