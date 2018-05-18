@@ -110,15 +110,15 @@ class TimingPath {
     public:
         TimingPath() = default;
         TimingPath(const TimingPathInfo& info,
-                   TimingSubPath clock_launch_path,
-                   TimingSubPath data_arrival_path,
-                   TimingSubPath clock_capture_path,
+                   TimingSubPath clock_launch,
+                   TimingSubPath data_arrival,
+                   TimingSubPath clock_capture,
                    const TimingPathElem& data_required_elem,
                    const TimingTag& slack)
             : path_info_(info)
-            , clock_launch_path_(clock_launch_path)
-            , data_arrival_path_(data_arrival_path)
-            , clock_capture_path_(clock_capture_path)
+            , clock_launch_path_(clock_launch)
+            , data_arrival_path_(data_arrival)
+            , clock_capture_path_(clock_capture)
             , data_required_element_(data_required_elem)
             , slack_tag_(slack) {
             //pass

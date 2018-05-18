@@ -25,7 +25,7 @@ add_flex_bison_dependency(TatumLexer TatumParser)
 #targets for output vars to be defined
 set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
                             ${BISON_vpr_timing_graph_parser_OUTPUTS}
-                            PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
+                            PROPERTIES COMPILE_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS}")
 
 
 #Treat .c as CXX
