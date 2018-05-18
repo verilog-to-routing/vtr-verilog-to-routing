@@ -148,33 +148,10 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
 
     **Default:** ``R``
 
-.. option:: --full_stats
-
-    Print out some extra statistics about the circuit and its routing useful for wireability analysis.
-
-    **Default:** off
-
 .. option:: --echo_file { on | off }
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
-
-    **Default:** ``off``
-
-.. option:: --gen_post_synthesis_netlist { on | off }
-
-    Generates the Verilog and SDF files for the post-synthesized circuit.
-    The Verilog file can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
-
-    The Verilog file contains instantiated modules of the primitives in the circuit.
-    Currently VPR can generate Verilog files for circuits that only contain LUTs, Flip Flops, IOs, Multipliers, and BRAMs.
-    The Verilog description of these primitives are in the primitives.v file.
-    To simulate the post-synthesized circuit, one must include the generated Verilog file and also the primitives.v Verilog file, in the simulation directory.
-
-    .. seealso:: :ref:`timing_simulation_tutorial`
-
-    If one wants to generate the post-synthesized Verilog file of a circuit that contains a primitive other than those mentioned above, he/she should contact the VTR team to have the source code updated.
-    Furthermore to perform simulation on that circuit the Verilog description of that new primitive must be appended to the primitives.v file as a separate module.
 
     **Default:** ``off``
 
@@ -654,6 +631,159 @@ The following options are only valid when the router is in timing-driven mode (t
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
 
     **Default:** ``disable``
+
+.. _analysis_options:
+
+Analysis Options
+^^^^^^^^^^^^^^^^
+
+.. option:: --full_stats
+
+    Print out some extra statistics about the circuit and its routing useful for wireability analysis.
+
+    **Default:** off
+
+.. option:: --gen_post_synthesis_netlist { on | off }
+
+    Generates the Verilog and SDF files for the post-synthesized circuit.
+    The Verilog file can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
+
+    The Verilog file contains instantiated modules of the primitives in the circuit.
+    Currently VPR can generate Verilog files for circuits that only contain LUTs, Flip Flops, IOs, Multipliers, and BRAMs.
+    The Verilog description of these primitives are in the primitives.v file.
+    To simulate the post-synthesized circuit, one must include the generated Verilog file and also the primitives.v Verilog file, in the simulation directory.
+
+    .. seealso:: :ref:`timing_simulation_tutorial`
+
+    If one wants to generate the post-synthesized Verilog file of a circuit that contains a primitive other than those mentioned above, he/she should contact the VTR team to have the source code updated.
+    Furthermore to perform simulation on that circuit the Verilog description of that new primitive must be appended to the primitives.v file as a separate module.
+
+    **Default:** ``off``
+
+.. option:: --timing_report_npaths { int }
+
+    Controls how many timing paths are reported.
+
+    .. note:: The number of paths reported may be less than the specified value, if the circuit has fewer paths.
+
+    **Default:** ``100``
+
+.. option:: --timing_report_detail { netlist | aggregated }
+
+    Controls the level of detail included in generated timing reports.
+
+        * ``netlist``: Timing reports shows only netlist primitive pins.
+
+          For example:
+
+            .. code-block:: none
+            
+                #Path 150
+                Startpoint: top^cur_state~3_FF_NODE.Q[0] (.latch clocked by top^clk)
+                Endpoint  : top^finish_FF_NODE.D[0] (.latch clocked by top^clk)
+                Path Type : setup
+
+                Point                                                             Incr      Path
+                --------------------------------------------------------------------------------
+                clock top^clk (rise edge)                                        0.000     0.000
+                clock source latency                                             0.000     0.000
+                top^clk.inpad[0] (.input)                                        0.000     0.000
+                top^cur_state~3_FF_NODE.clk[0] (.latch)                          0.042     0.042
+                top^cur_state~3_FF_NODE.Q[0] (.latch) [clock-to-output]          0.124     0.166
+                n1168.in[4] (.names)                                             0.475     0.641
+                n1168.out[0] (.names)                                            0.261     0.902
+                top^finish_FF_NODE.D[0] (.latch)                                 0.000     0.902
+                data arrival time                                                          0.902
+
+                clock top^clk (rise edge)                                        0.000     0.000
+                clock source latency                                             0.000     0.000
+                top^clk.inpad[0] (.input)                                        0.000     0.000
+                top^finish_FF_NODE.clk[0] (.latch)                               0.042     0.042
+                clock uncertainty                                                0.000     0.042
+                cell setup time                                                 -0.066    -0.024
+                data required time                                                        -0.024
+                --------------------------------------------------------------------------------
+                data required time                                                        -0.024
+                data arrival time                                                         -0.902
+                --------------------------------------------------------------------------------
+                slack (VIOLATED)                                                          -0.926
+
+        * ``aggregated``: Timing reports show netlist pins, and an aggregated summary of intra-block and inter-block routing delays.
+
+          For example:
+
+            .. code-block:: none
+
+                #Path 150
+                Startpoint: top^cur_state~3_FF_NODE.Q[0] (.latch clocked by top^clk)
+                Endpoint  : top^finish_FF_NODE.D[0] (.latch clocked by top^clk)
+                Path Type : setup
+
+                Point                                                             Incr      Path
+                --------------------------------------------------------------------------------
+                clock top^clk (rise edge)                                        0.000     0.000
+                clock source latency                                             0.000     0.000
+                top^clk.inpad[0] (.input)                                        0.000     0.000
+                | (intra 'io' routing)                                           0.042     0.042
+                | (inter-block routing)                                          0.000     0.042
+                | (intra 'clb' routing)                                          0.000     0.042
+                top^cur_state~3_FF_NODE.clk[0] (.latch)                          0.000     0.042
+                | (primitive '.latch' Tcq_max)                                   0.124     0.166
+                top^cur_state~3_FF_NODE.Q[0] (.latch) [clock-to-output]          0.000     0.166
+                | (intra 'clb' routing)                                          0.045     0.211
+                | (inter-block routing)                                          0.335     0.546
+                | (intra 'clb' routing)                                          0.095     0.641
+                n1168.in[4] (.names)                                             0.000     0.641
+                | (primitive '.names' combinational delay)                       0.261     0.902
+                n1168.out[0] (.names)                                            0.000     0.902
+                | (intra 'clb' routing)                                          0.000     0.902
+                top^finish_FF_NODE.D[0] (.latch)                                 0.000     0.902
+                data arrival time                                                          0.902
+
+                clock top^clk (rise edge)                                        0.000     0.000
+                clock source latency                                             0.000     0.000
+                top^clk.inpad[0] (.input)                                        0.000     0.000
+                | (intra 'io' routing)                                           0.042     0.042
+                | (inter-block routing)                                          0.000     0.042
+                | (intra 'clb' routing)                                          0.000     0.042
+                top^finish_FF_NODE.clk[0] (.latch)                               0.000     0.042
+                clock uncertainty                                                0.000     0.042
+                cell setup time                                                 -0.066    -0.024
+                data required time                                                        -0.024
+                --------------------------------------------------------------------------------
+                data required time                                                        -0.024
+                data arrival time                                                         -0.902
+                --------------------------------------------------------------------------------
+                slack (VIOLATED)                                                          -0.926
+
+            where each line prefixed with ``|`` (pipe character) represent a sub-delay of an edge within the timing graph.
+
+            For instance:
+            
+            .. code-block:: none
+                
+                top^cur_state~3_FF_NODE.Q[0] (.latch) [clock-to-output]          0.000     0.166
+                | (intra 'clb' routing)                                          0.045     0.211
+                | (inter-block routing)                                          0.335     0.546
+                | (intra 'clb' routing)                                          0.095     0.641
+                n1168.in[4] (.names)                                             0.000     0.641
+
+            indicates that between the netlist pins ``top^cur_state~3_FF_NODE.Q[0]`` and ``n1168.in[4]`` there are delays of:
+
+              * ``45`` ps from the ``.latch`` output pin to an output pin of a ``clb`` block,
+              * ``335`` ps through the general inter-block routing fabric, and
+              * ``95`` ps from the input pin of a ``clb`` block to the ``.names`` input.
+
+            Similarly, we can observe that the connection between ``n1168.out[0]`` and ``top^finish_FF_NODE.D[0]`` is contained entirely within the same ``clb`` block, and does not use the general inter-block routing network:
+
+            .. code-block:: none
+
+                n1168.out[0] (.names)                                            0.000     0.902
+                | (intra 'clb' routing)                                          0.000     0.902
+                top^finish_FF_NODE.D[0] (.latch)                                 0.000     0.902
+                
+
+    **Default:** ``netlist``
 
 .. _power_estimation_options:
 
