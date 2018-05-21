@@ -498,6 +498,15 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, con
     }
 }
 
+static int pin_index_by_num(const t_class &class_inf, int num) {
+	for (int index = 0; index < class_inf.num_pins; ++index) {
+		if (num == class_inf.pinlist[index]) {
+			return index;
+		}
+	}
+	return -1;
+}
+
 /* Blocks were initialized from the architecture file. This function checks
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
@@ -561,12 +570,14 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
             pin = get_first_child(pin_class, "pin", loc_data, OPTIONAL);
             while (pin) {
-                auto index = get_attribute(pin, "index", loc_data).as_uint();
                 auto num = get_attribute(pin, "ptc", loc_data).as_uint();
-                if (num != class_inf.pinlist[index]) {
+                auto index = pin_index_by_num(class_inf, num);
+
+                if (index < 0) {
                     vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                            "Architecture file does not match RR graph's block pin list");
+                            "Architecture file does not match RR graph's block pin list: invalid ptc for pin class");
                 }
+
                 if (pin.child_value() != block_type_pin_index_to_name(&block_info, class_inf.pinlist[index])) {
                     vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                             "Architecture file does not match RR graph's block pin list");
