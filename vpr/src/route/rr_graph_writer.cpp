@@ -226,8 +226,8 @@ void write_rr_block_types(fstream &fp) {
             for (int iPin = 0; iPin < class_inf.num_pins; iPin++) {
                 auto pin = class_inf.pinlist[iPin];
                 fp << vtr::string_fmt(
-                    "\t\t\t\t<pin index=\"%d\" ptc=\"%d\">%s</pin>\n",
-                    iPin, pin, block_type_pin_index_to_name(&btype, pin).c_str());
+                    "\t\t\t\t<pin ptc=\"%d\">%s</pin>\n",
+                    pin, block_type_pin_index_to_name(&btype, pin).c_str());
             }
             fp << "\t\t\t</pin_class>" << endl;
         }
