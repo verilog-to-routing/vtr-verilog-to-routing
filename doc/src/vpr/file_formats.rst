@@ -707,12 +707,9 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
     :req_param type:
         This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``.
 
-.. arch:tag:: <pin index="class_pin_index" ptc="block_pin_index">name</pin>
+.. arch:tag:: <pin ptc="block_pin_index">name</pin>
 
         This required subtag of ``pin_class`` describes its pins.
-
-    :req_param index:
-        The index of the pin within the ``pin_class``.
 
     :req_param ptc:
         The index of the pin within the ``block_type``.
@@ -838,24 +835,24 @@ An example of what a generated routing resource graph file would look like is sh
         <block_types>
             <block_type id="0" name="io" width="1" height="1">
                 <pin_class type="input">
-                    <pin index="0" ptc="0">DATIN[0]</pin>
-                    <pin index="1" ptc="1">DATIN[1]</pin>
-                    <pin index="2" ptc="2">DATIN[2]</pin>
-                    <pin index="3" ptc="3">DATIN[3]</pin>
+                    <pin ptc="0">DATIN[0]</pin>
+                    <pin ptc="1">DATIN[1]</pin>
+                    <pin ptc="2">DATIN[2]</pin>
+                    <pin ptc="3">DATIN[3]</pin>
                 </pin_class>
                 <pin_class type="output">
-                    <pin index="0" ptc="4">DATOUT[0]</pin>
-                    <pin index="1" ptc="5">DATOUT[1]</pin>
-                    <pin index="2" ptc="6">DATOUT[2]</pin>
-                    <pin index="3" ptc="7">DATOUT[3]</pin>
+                    <pin ptc="4">DATOUT[0]</pin>
+                    <pin ptc="5">DATOUT[1]</pin>
+                    <pin ptc="6">DATOUT[2]</pin>
+                    <pin ptc="7">DATOUT[3]</pin>
                 </pin_class>
             </block_type>
             <block_type id="1" name="buf" width="1" height="1">
                 <pin_class type="input">
-                    <pin index="0" ptc="0">IN</pin>
+                    <pin ptc="0">IN</pin>
                 </pin_class>
                 <pin_class type="output">
-                    <pin index="0" ptc="1">OUT</pin>
+                    <pin ptc="1">OUT</pin>
                 </pin_class>
             </block_type>
         </block_types>
