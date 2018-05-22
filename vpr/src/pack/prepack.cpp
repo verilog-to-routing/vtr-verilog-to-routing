@@ -1383,7 +1383,7 @@ static PackMolecules create_molecules(const std::vector<NetlistPatternMatch> net
 
     for (auto& match : netlist_matches) {
         //Reserve Id
-        PackMoleculeId molecule_id = molecules.pack_molecules.size();
+        PackMoleculeId molecule_id = PackMoleculeId(molecules.pack_molecules.size());
         molecules.pack_molecule_ids.push_back(molecule_id);
 
         //Build molecule
