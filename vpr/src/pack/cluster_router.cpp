@@ -74,7 +74,7 @@ static void free_lb_net_rt(t_lb_trace *lb_trace);
 static void free_lb_trace(t_lb_trace *lb_trace);
 static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPinId pin_id);
 
-static void update_external_connections(t_intra_lb_net& net, t_lb_router_data& router_data);
+static void update_required_external_connections(t_intra_lb_net& net, t_lb_router_data& router_data);
 
 static std::vector<t_intra_lb_net>::iterator find_lb_net(std::vector<t_intra_lb_net>& lb_nets, const AtomNetId atom_net);
 static std::vector<t_intra_lb_net>::iterator find_create_lb_net(std::vector<t_intra_lb_net>& lb_nets, const AtomNetId atom_net);
@@ -579,13 +579,13 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
     //
 
     //Add external driver/sink if needed
-    update_external_connections(*lb_net_iter, *router_data);
+    update_required_external_connections(*lb_net_iter, *router_data);
 
     VTR_ASSERT_SAFE(check_lb_net(*lb_net_iter, lb_rr_graph));
 }
 
 //Adds the external source/sink to an intera_lb_net if required
-static void update_external_connections(t_intra_lb_net& net, t_lb_router_data& router_data) {
+static void update_required_external_connections(t_intra_lb_net& net, t_lb_router_data& router_data) {
 	const t_lb_type_rr_graph& lb_rr_graph = *router_data.lb_type_graph;
 
     //External Driver
@@ -786,7 +786,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
         lb_nets.erase(lb_net_iter); 
     } else {
         //Add external driver/sink if needed
-        update_external_connections(*lb_net_iter, *router_data);
+        update_required_external_connections(*lb_net_iter, *router_data);
     }
 
     VTR_ASSERT_SAFE(check_lb_net(*lb_net_iter, lb_rr_graph));
