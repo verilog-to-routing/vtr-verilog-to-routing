@@ -318,7 +318,7 @@ struct t_pack_molecule {
  * Contains linked lists to placement locations based on status of primitive
  */
 struct t_cluster_placement_stats {
-	int num_pb_types = OPEN; /* num primitive pb_types inside complex block */
+	int num_pb_types = 0; /* num primitive pb_types inside complex block */
 	PackMoleculeId curr_molecule; /* current molecule being considered for packing */
 	t_cluster_placement_primitive **valid_primitives = nullptr; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight = nullptr; /* ptrs to primitives currently being considered */
