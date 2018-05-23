@@ -879,7 +879,7 @@ static void alloc_and_init_clustering(const PackMolecules& molecules,
 	unclustered_list_head_size = molecule_stats.max_num_ext_inputs() + 1;
 	unclustered_list_head = (t_molecule_link *) vtr::calloc(unclustered_list_head_size , sizeof(t_molecule_link));
 
-	for (int i = 0; i <= unclustered_list_head_size; i++) {
+	for (int i = 0; i < unclustered_list_head_size; i++) {
 		unclustered_list_head[i].next = nullptr;
 	}
 
