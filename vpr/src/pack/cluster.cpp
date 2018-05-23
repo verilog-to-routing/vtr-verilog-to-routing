@@ -161,8 +161,8 @@ static void check_for_duplicate_inputs ();
 
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb);
 
-static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size);
+static void add_molecule_to_pb_stats_candidates(const PackMolecules& molecules, const PackMoleculeId molecule_id, const MoleculeStats& molecule_stats,
+		std::map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size);
 
 static void alloc_and_init_clustering(const PackMolecules& molecules,
         const MoleculeStats& molecule_stats,
@@ -210,6 +210,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		const t_cluster_placement_stats& cluster_placement_stats,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data);
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data, 
+        const PackMolecules& molecules,
         MoleculeStats& atom_molecules);
 
 static void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clustered_blk_id,
@@ -267,11 +268,14 @@ static void start_new_cluster(
 
 static PackMoleculeId get_highest_gain_molecule(
 		t_pb *cur_pb,
+        const PackMolecules& molecules,
         const MoleculeStats& molecule_stats,
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats& cluster_placement_stats,
 		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		const ClusterBlockId cluster_index);
+
+static bool exists_free_primitives_for_molecule(const PackMolecule& molecule, t_cluster_placement_stats& cluster_placement_stats);
 
 static PackMoleculeId get_molecule_for_cluster(
 		t_pb *cur_pb,
@@ -287,22 +291,23 @@ static void check_clustering();
 
 static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>& blocks_checked);
 
-static PackMoleculeId get_highest_gain_seed_molecule(int * seedindex, const MoleculeStats& molecule_stats, bool getblend);
+static PackMoleculeId get_highest_gain_seed_molecule(int * seedindex, const PackMolecules& molecules, const MoleculeStats& molecule_stats, bool getblend);
 
-static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
+static float get_molecule_gain(const PackMolecules& molecules, const PackMoleculeId molecule_id, const MoleculeStats& molecule_stats, std::map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 
 static void print_block_criticalities(const char * fname);
 
 static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
+                                              const PackMolecules& molecules,
                                               const MoleculeStats& molecule_stats,
 											  t_pb_stats *pb_stats,
 											  vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets);
 
 static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
 
-static void revalid_molecules(const t_pb* pb, MoleculeStats& atom_molecules);
+static void revalid_molecules(const t_pb* pb, const PackMolecules& molecules, MoleculeStats& molecule_stats);
 
 MoleculeStats build_molecule_stats(const PackMolecules& molecules, const AtomNetlist& netlist);
 int count_molecule_blocks(const PackMolecule& molecule);
@@ -526,9 +531,9 @@ void do_clustering(const t_arch *arch,
 		}
 
 		if (cluster_seed_type == VPACK_BLEND) {
-			istart = get_highest_gain_seed_molecule(&seedindex, molecule_stats, true);
+			istart = get_highest_gain_seed_molecule(&seedindex, molecules, molecule_stats, true);
 		} else if (cluster_seed_type == VPACK_TIMING) {
-			istart = get_highest_gain_seed_molecule(&seedindex, molecule_stats, false);
+			istart = get_highest_gain_seed_molecule(&seedindex, molecules, molecule_stats, false);
 		} else {/*max input seed*/
 			istart = get_seed_logical_molecule_with_most_ext_inputs(molecule_stats);
 		}
@@ -700,9 +705,9 @@ void do_clustering(const t_arch *arch,
 						blocks_since_last_analysis += num_blocks_hill_added;
 					}
 					if (cluster_seed_type == VPACK_BLEND) {
-						istart = get_highest_gain_seed_molecule(&seedindex, molecule_stats, true);
+						istart = get_highest_gain_seed_molecule(&seedindex, molecules, molecule_stats, true);
 					} else if (cluster_seed_type == VPACK_TIMING) {
-						istart = get_highest_gain_seed_molecule(&seedindex, molecule_stats, false);
+						istart = get_highest_gain_seed_molecule(&seedindex, molecules, molecule_stats, false);
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(molecule_stats);
 					}
@@ -723,7 +728,7 @@ void do_clustering(const t_arch *arch,
 			} else {
 				/* Free up data structures and requeue used molecules */
 				num_used_type_instances[cluster_ctx.clb_nlist.block_type(clb_index)]--;
-                revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index), molecule_stats);
+                revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index), molecules, molecule_stats);
 				cluster_ctx.clb_nlist.remove_block(clb_index);
 				cluster_ctx.clb_nlist.compress();
 				num_clb--;
@@ -807,51 +812,44 @@ static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb) {
 }
 
 /* Add blk to list of feasible blocks sorted according to gain */
-static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size) {
+static void add_molecule_to_pb_stats_candidates(const PackMolecules& molecules, const PackMoleculeId molecule_id, const MoleculeStats& molecule_stats,
+		std::map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size) {
 	int i, j;
 
 	for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
-		if (pb->pb_stats->feasible_blocks[i] == molecule) {
+		if (pb->pb_stats->feasible_blocks[i] == molecule_id) {
 			return; /* already in queue, do nothing */
 		}
 	}
 
-	if (pb->pb_stats->num_feasible_blocks
-			>= max_queue_size - 1) {
+	if (pb->pb_stats->num_feasible_blocks >= max_queue_size - 1) {
 		/* maximum size for array, remove smallest gain element and sort */
-		if (get_molecule_gain(molecule, gain)
-				> get_molecule_gain(pb->pb_stats->feasible_blocks[0], gain)) {
+		if (get_molecule_gain(molecules, molecule_id, molecule_stats, gain) > get_molecule_gain(molecules, pb->pb_stats->feasible_blocks[0], molecule_stats, gain)) {
 			/* single loop insertion sort */
 			for (j = 0; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
-				if (get_molecule_gain(molecule, gain)
-						<= get_molecule_gain(
-								pb->pb_stats->feasible_blocks[j + 1], gain)) {
-					pb->pb_stats->feasible_blocks[j] = molecule;
+				if (get_molecule_gain(molecules, molecule_id, molecule_stats, gain) <= get_molecule_gain(molecules, pb->pb_stats->feasible_blocks[j + 1], molecule_stats, gain)) {
+					pb->pb_stats->feasible_blocks[j] = molecule_id;
 					break;
 				} else {
-					pb->pb_stats->feasible_blocks[j] =
-							pb->pb_stats->feasible_blocks[j + 1];
+					pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j + 1];
 				}
 			}
 			if (j == pb->pb_stats->num_feasible_blocks - 1) {
-				pb->pb_stats->feasible_blocks[j] = molecule;
+				pb->pb_stats->feasible_blocks[j] = molecule_id;
 			}
 		}
 	} else {
 		/* Expand array and single loop insertion sort */
 		for (j = pb->pb_stats->num_feasible_blocks - 1; j >= 0; j--) {
-			if (get_molecule_gain(pb->pb_stats->feasible_blocks[j], gain)
-					> get_molecule_gain(molecule, gain)) {
-				pb->pb_stats->feasible_blocks[j + 1] =
-						pb->pb_stats->feasible_blocks[j];
+			if (get_molecule_gain(molecules, pb->pb_stats->feasible_blocks[j], molecule_stats, gain) > get_molecule_gain(molecules, molecule_id, molecule_stats, gain)) {
+				pb->pb_stats->feasible_blocks[j + 1] = pb->pb_stats->feasible_blocks[j];
 			} else {
-				pb->pb_stats->feasible_blocks[j + 1] = molecule;
+				pb->pb_stats->feasible_blocks[j + 1] = molecule_id;
 				break;
 			}
 		}
 		if (j < 0) {
-			pb->pb_stats->feasible_blocks[0] = molecule;
+			pb->pb_stats->feasible_blocks[0] = molecule_id;
 		}
 		pb->pb_stats->num_feasible_blocks++;
 	}
@@ -1194,8 +1192,8 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	pb->pb_stats->output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
 	pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
+	pb->pb_stats->feasible_blocks = std::vector<PackMoleculeId>(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE);
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
-	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
 	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
@@ -1229,13 +1227,11 @@ static enum e_block_pack_status try_pack_molecule(
         const PackMolecules& molecules,
         const PackMoleculeId molecule_id,
         MoleculeStats& molecule_stats,
-		t_pb_graph_node **primitives_list,
+		vtr::vector<MoleculeBlockId,t_pb_graph_node*>&  primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
         bool debug_clustering,
         bool enable_pin_feasibility_filter) {
-	int molecule_size, failed_location;
-	int i;
 	enum e_block_pack_status block_pack_status;
 	t_pb *parent;
 	t_pb *cur_pb;
@@ -1247,31 +1243,33 @@ static enum e_block_pack_status try_pack_molecule(
 	
 	block_pack_status = BLK_STATUS_UNDEFINED;
 
-	molecule_size = molecule_stats.num_blocks(molecule_id);
-	failed_location = 0;
+    std::vector<AtomBlockId> placed_atoms;
+
+    auto& molecule = molecules.pack_molecules[molecule_id];
 
 	while (block_pack_status != BLK_PASSED) {
-		if (get_next_primitive_list(cluster_placement_stats, molecule_id, primitives_list)) {
+		if (get_next_primitive_list(cluster_placement_stats, molecules, molecule_id, molecule_stats, primitives_list)) {
 			block_pack_status = BLK_PASSED;
 			
-			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
-				VTR_ASSERT((primitives_list[i] == nullptr) == (!molecule->atom_block_ids[i]));
-				failed_location = i + 1;
-				if (molecule->atom_block_ids[i]) {
-					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
-						chain_root_pin = molecule->pack_pattern->chain_root_pin;
-						is_root_of_chain = true;
-					} else {
-						chain_root_pin = nullptr;
-						is_root_of_chain = false;
-					}
-					block_pack_status = try_place_atom_block_rec(
-							primitives_list[i],
-							molecule->atom_block_ids[i], pb, &parent,
-							max_models, max_cluster_size, clb_index,
-							cluster_placement_stats, is_root_of_chain, chain_root_pin, router_data);
-				}
+            for (auto molecule_blk : molecule.blocks()) {
+                AtomBlockId atom_blk = molecule.block_atom(molecule_blk);
+                VTR_ASSERT(atom_blk);
+
+                //TODO: remove these?
+                chain_root_pin = nullptr;
+                is_root_of_chain = false;
+
+                block_pack_status = try_place_atom_block_rec(
+                        primitives_list[molecule_blk],
+                        atom_blk, pb, &parent,
+                        max_models, max_cluster_size, clb_index,
+                        cluster_placement_stats, is_root_of_chain, chain_root_pin, router_data);
+
+                if (block_pack_status != BLK_PASSED) break;
+
+                placed_atoms.push_back(atom_blk);
 			}
+
 			if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
 				/* Check if pin usage is feasible for the current packing assigment */
 				reset_lookahead_pins_used(pb);
@@ -1280,6 +1278,7 @@ static enum e_block_pack_status try_pack_molecule(
 					block_pack_status = BLK_FAILED_FEASIBLE;
 				}
 			}
+
 			if (block_pack_status == BLK_PASSED) {
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
@@ -1292,10 +1291,10 @@ static enum e_block_pack_status try_pack_molecule(
 					 TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
 					 */
 					VTR_ASSERT(block_pack_status == BLK_PASSED);
-					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
+					if (molecule.blocks().size() > 2) {
 						/* Chained molecules often take up lots of area and are important, 
                          * if a chain is packed in, want to rename logic block to match chain name */
-                        AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
+                        AtomBlockId chain_root_blk_id = molecule.root_block_atom();
 						cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
 						while(cur_pb != nullptr) {
 						    free(cur_pb->name);
@@ -1303,34 +1302,28 @@ static enum e_block_pack_status try_pack_molecule(
 						    cur_pb = cur_pb->parent_pb;
                         }
 					}
-					for (i = 0; i < molecule_size; i++) {
-                        if (molecule->atom_block_ids[i]) {
-							/* invalidate all molecules that share atom block with current molecule */
+                    for (auto molecule_blk : molecule.blocks()) {
+                        AtomBlockId atom_blk = molecule.block_atom(molecule_blk);
 
-                            auto rng = atom_molecules.equal_range(molecule->atom_block_ids[i]);
-                            for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                                t_pack_molecule* cur_molecule = kv.second;
-                                cur_molecule->valid = false;
-                            }
+                        /* invalidate all molecules that share atom block with current molecule */
+                        auto rng = molecules.atom_molecules.equal_range(atom_blk);
+                        for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                            PackMoleculeId related_molecule_id = kv.second;
+                            molecule_stats.set_valid(related_molecule_id, false);
+                        }
 
-							commit_primitive(cluster_placement_stats, primitives_list[i]);
-						}
+                        commit_primitive(cluster_placement_stats, primitives_list[molecule_blk]);
 					}
 				}
 			}
 			if (block_pack_status != BLK_PASSED) {
-				for (i = 0; i < failed_location; i++) {
-					if (molecule->atom_block_ids[i]) {
-						remove_atom_from_target(router_data, molecule->atom_block_ids[i]);
-					}
-				}
-				for (i = 0; i < failed_location; i++) {					
-					if (molecule->atom_block_ids[i]) {
-						revert_place_atom_block(
-								molecule->atom_block_ids[i],
-								router_data,
-                                atom_molecules);
-					}
+				for (AtomBlockId atom_blk : placed_atoms) {
+                    remove_atom_from_target(router_data, atom_blk);
+                    revert_place_atom_block(
+                            atom_blk,
+                            router_data,
+                            molecules,
+                            molecule_stats);
 				}
 			}
 		} else {
@@ -1467,6 +1460,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 /* Revert trial atom block iblock and free up memory space accordingly 
  */
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
+    const PackMolecules& molecules,
     MoleculeStats& molecule_stats) {
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -1488,7 +1482,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *
 		 */
 
 		t_pb* next = pb->parent_pb;
-        revalid_molecules(pb, molecule_stats);
+        revalid_molecules(pb, molecules, molecule_stats);
 		free_pb(pb);
 		pb = next;
 
@@ -1505,7 +1499,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *
 					/* If the code gets here, then that means that placing the initial seed molecule 
                      * failed, don't free the actual complex block itself as the seed needs to find 
                      * another placement */
-                    revalid_molecules(pb, molecule_stats);
+                    revalid_molecules(pb, molecules, molecule_stats);
 					free_pb(pb);
 				}
 			}
@@ -1799,9 +1793,6 @@ static void update_cluster_stats(
         const SetupTimingInfo& timing_info) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
-
-	int molecule_size;
-	int iblock;
 	t_pb *cur_pb, *cb;
 
 	/* TODO: what a scary comment from Vaughn, we'll have to watch out for this causing problems */
@@ -1817,14 +1808,12 @@ static void update_cluster_stats(
 	 * benchmarks actually generate local clocks (all come from pads).  */
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-	molecule_size = get_array_size_of_molecule(molecule);
 	cb = nullptr;
 
-	for (iblock = 0; iblock < molecule_size; iblock++) {
-        auto blk_id = molecule->atom_block_ids[iblock];
-		if (!blk_id) {
-			continue;
-		}
+    auto& molecule = molecules.pack_molecules[molecule_id];
+	for (auto molecule_blk : molecule.blocks()) {
+        AtomBlockId blk_id = molecule.block_atom(molecule_blk);
+		VTR_ASSERT(blk_id);
 
         //Update atom netlist mapping
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
@@ -1898,7 +1887,7 @@ static void update_cluster_stats(
 
 static void start_new_cluster(
 		std::vector<t_cluster_placement_stats>& cluster_placement_stats,
-		t_pb_graph_node **primitives_list,
+		vtr::vector<MoleculeBlockId,t_pb_graph_node*>&  primitives_list,
         const PackMolecules& molecules,
 		const PackMoleculeId molecule_id,
         MoleculeStats& molecule_stats,
@@ -1924,7 +1913,8 @@ static void start_new_cluster(
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
-    AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
+    auto& molecule = molecules.pack_molecules[molecule_id];
+    AtomBlockId root_atom = molecule.root_block_atom();
 	const std::string& root_atom_name = atom_ctx.nlist.block_name(root_atom);
 	const t_model* root_model = atom_ctx.nlist.block_model(root_atom);
 
@@ -1962,12 +1952,14 @@ static void start_new_cluster(
         for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
             pb->mode = j;
                 
-            reset_cluster_placement_stats(&cluster_placement_stats[type->index]);
+            reset_cluster_placement_stats(cluster_placement_stats[type->index]);
             set_mode_cluster_placement_stats(pb->pb_graph_node, j);
 
-            auto pack_result = try_pack_molecule(&cluster_placement_stats[type->index],
-                                            atom_molecules,
-                                            molecule, primitives_list, pb,
+            auto pack_result = try_pack_molecule(cluster_placement_stats[type->index],
+                                            molecules,
+                                            molecule_id,
+                                            molecule_stats,
+                                            primitives_list, pb,
                                             num_models, max_cluster_size, clb_index,
                                             detailed_routing_stage, *router_data,
                                             debug_clustering,
@@ -1995,11 +1987,9 @@ static void start_new_cluster(
 
     if (!success) {
         //Explored all candidates
-        if (molecule->type == MOLECULE_FORCED_PACK) {
+        if (molecule.blocks().size() > 1) {
             vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                    "Can not find any logic block that can implement molecule.\n"
-                    "\tPattern %s %s\n", 
-                    molecule->pack_pattern->name,
+                    "Can not find any logic block that can implement molecule %s.\n",
                     root_atom_name.c_str());
         } else {
             vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
@@ -2029,8 +2019,9 @@ Molecule selection priority:
 	2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
 	3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
 */
-static t_pack_molecule *get_highest_gain_molecule(
+static PackMoleculeId get_highest_gain_molecule(
 		t_pb *cur_pb,
+        const PackMolecules& molecules,
         const MoleculeStats& molecule_stats,
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats& cluster_placement_stats,
@@ -2043,10 +2034,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	 * blocks it returns ClusterBlockId::INVALID().                                */
 
 	int j, index, count;
-	bool success;
 
-	t_pack_molecule *molecule;
-	molecule = nullptr;
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	if (gain_mode == HILL_CLIMBING) {
@@ -2061,25 +2049,14 @@ static t_pack_molecule *get_highest_gain_molecule(
 		for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
 			if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
 
-                auto rng = molecule_stats.atom_molecules.equal_range(blk_id);
+                auto rng = molecules.atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                    molecule = kv.second;
-					if (molecule->valid) {
-						success = true;
-						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-							if (molecule->atom_block_ids[j]) {
-								VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-								auto blk_id2 = molecule->atom_block_ids[j];
-								if (!exists_free_primitive_for_atom_block(cluster_placement_stats, blk_id2)) { 
-                                    /* TODO: debating whether to check if placement exists for molecule 
-                                     * (more robust) or individual atom blocks (faster) */
-									success = false;
-									break;
-								}
-							}
-						}
-						if (success) {
-							add_molecule_to_pb_stats_candidates(molecule,
+                    PackMoleculeId molecule_id = kv.second;
+					if (molecule_stats.valid(molecule_id)) {
+                        auto& molecule = molecules.pack_molecules[molecule_id];
+
+						if (exists_free_primitives_for_molecule(molecule, cluster_placement_stats)) {
+							add_molecule_to_pb_stats_candidates(molecules, molecule_id, molecule_stats,
 									cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE);
 						}
                     }
@@ -2107,25 +2084,14 @@ static t_pack_molecule *get_highest_gain_molecule(
 
 			if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
 
-                auto rng = molecule_stats.atom_molecules.equal_range(blk_id);
+                auto rng = molecules.atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                    molecule = kv.second;
-					if (molecule->valid) {
-						success = true;
-						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-							if (molecule->atom_block_ids[j]) {
-								VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-								auto blk_id2 = molecule->atom_block_ids[j];
-								if (!exists_free_primitive_for_atom_block(cluster_placement_stats, blk_id2)) { 
-                                    /* TODO: debating whether to check if placement exists for molecule (more 
-                                     * robust) or individual atom blocks (faster) */
-									success = false;
-									break;
-								}
-							}
-						}
-						if (success) {
-							add_molecule_to_pb_stats_candidates(molecule,
+                    PackMoleculeId molecule_id = kv.second;
+					if (molecule_stats.valid(molecule_id)) {
+                        auto& molecule = molecules.pack_molecules[molecule_id];
+
+						if (exists_free_primitives_for_molecule(molecule, cluster_placement_stats)) {
+							add_molecule_to_pb_stats_candidates(molecules, molecule_id, molecule_stats,
 									cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
 							count++;
 						}
@@ -2143,31 +2109,21 @@ static t_pack_molecule *get_highest_gain_molecule(
 	   ) {
 		if(cur_pb->pb_stats->transitive_fanout_candidates == nullptr) {
 			/* First time finding transitive fanout candidates therefore alloc and load them */
-			cur_pb->pb_stats->transitive_fanout_candidates = new vector<t_pack_molecule *>;
+			cur_pb->pb_stats->transitive_fanout_candidates = new vector<PackMoleculeId>;
 			load_transitive_fanout_candidates(cluster_index,
+                                              molecules,
                                               molecule_stats,
 											  cur_pb->pb_stats,
 											  clb_inter_blk_nets);
 
 			/* Only consider candidates that pass a very simple legality check */
 			for(int i = 0; i < (int) cur_pb->pb_stats->transitive_fanout_candidates->size(); i++) {
-				molecule = (*cur_pb->pb_stats->transitive_fanout_candidates)[i];
-				if (molecule->valid) {
-					success = true;
-					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-						if (molecule->atom_block_ids[j]) {
-							VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-							auto blk_id = molecule->atom_block_ids[j];
-							if (!exists_free_primitive_for_atom_block(cluster_placement_stats, blk_id)) { 
-                                /* TODO: debating whether to check if placement exists for molecule (more 
-                                 * robust) or individual atom blocks (faster) */
-								success = false;
-								break;
-							}
-						}
-					}
-					if (success) {
-						add_molecule_to_pb_stats_candidates(molecule,
+				PackMoleculeId molecule_id = (*cur_pb->pb_stats->transitive_fanout_candidates)[i];
+				if (molecule_stats.valid(molecule_id)) {
+                    auto& molecule = molecules.pack_molecules[molecule_id];
+
+                    if (exists_free_primitives_for_molecule(molecule, cluster_placement_stats)) {
+						add_molecule_to_pb_stats_candidates(molecules, molecule_id, molecule_stats,
 								cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE,AAPACK_MAX_TRANSITIVE_EXPLORE));
 					}
 				}
@@ -2181,18 +2137,34 @@ static t_pack_molecule *get_highest_gain_molecule(
 	}
 
 	/* Grab highest gain molecule */
-	molecule = nullptr;
+	PackMoleculeId molecule_id;
 	for (j = 0; j < cur_pb->pb_stats->num_feasible_blocks; j++) {
 		if (cur_pb->pb_stats->num_feasible_blocks != 0) {
 			cur_pb->pb_stats->num_feasible_blocks--;
 			index = cur_pb->pb_stats->num_feasible_blocks;
-			molecule = cur_pb->pb_stats->feasible_blocks[index];
-			VTR_ASSERT(molecule->valid == true);
-			return molecule;
+			molecule_id = cur_pb->pb_stats->feasible_blocks[index];
+			VTR_ASSERT(molecule_stats.valid(molecule_id));
+			return molecule_id;
 		}
 	}
 
-	return molecule;
+	return molecule_id;
+}
+
+static bool exists_free_primitives_for_molecule(const PackMolecule& molecule, t_cluster_placement_stats& cluster_placement_stats) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    for (auto molecule_blk : molecule.blocks()) {
+        AtomBlockId atom_blk = molecule.block_atom(molecule_blk);
+        VTR_ASSERT(atom_ctx.lookup.atom_clb(atom_blk) == ClusterBlockId::INVALID());
+        if (!exists_free_primitive_for_atom_block(cluster_placement_stats, atom_blk)) { 
+            /* TODO: debating whether to check if placement exists for molecule 
+             * (more robust) or individual atom blocks (faster) */
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /*****************************************/
@@ -2200,7 +2172,6 @@ static PackMoleculeId get_molecule_for_cluster(
 		t_pb *cur_pb,
         const PackMolecules& molecules,
         const MoleculeStats& molecule_stats,
-        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const bool allow_unrelated_clustering,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats& cluster_placement_stats,
@@ -2216,7 +2187,7 @@ static PackMoleculeId get_molecule_for_cluster(
 
 	/* If cannot pack into primitive, try packing into cluster */
 
-	best_molecule = get_highest_gain_molecule(cur_pb, molecule_stats,
+	best_molecule = get_highest_gain_molecule(cur_pb, molecules, molecule_stats,
 			NOT_HILL_CLIMBING, cluster_placement_stats, clb_inter_blk_nets, cluster_index);
 
 	/* If no blocks have any gain to the current cluster, the code above *
@@ -2224,14 +2195,13 @@ static PackMoleculeId get_molecule_for_cluster(
 	 * common with the cluster may still be inserted into the cluster.   */
 
 	if (allow_unrelated_clustering) {
-		if (best_molecule == nullptr) {
+		if (!best_molecule) {
 			if (*num_unrelated_clustering_attempts == 0) {
-				best_molecule =
-						get_free_molecule_with_most_ext_inputs_for_cluster(
-                                molecules,
-                                molecule_stats,
-								cur_pb,
-								cluster_placement_stats);
+				best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster(
+                                    molecules,
+                                    molecule_stats,
+                                    cur_pb,
+                                    cluster_placement_stats);
 				(*num_unrelated_clustering_attempts)++;
 			}
 		} else {
@@ -2350,7 +2320,7 @@ static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>&
 	}
 }
 
-static PackMoleculeId get_highest_gain_seed_molecule(int * seedindex, const MoleculeStats& molecule_stats bool getblend) {
+static PackMoleculeId get_highest_gain_seed_molecule(int * seedindex, const PackMolecules& molecules, const MoleculeStats& molecule_stats, bool getblend) {
 	/* Do_timing_analysis must be called before this, or this function 
 	 * will return garbage. Returns molecule with most critical block;
 	 * if block belongs to multiple molecules, return the biggest molecule. */
@@ -2371,12 +2341,12 @@ static PackMoleculeId get_highest_gain_seed_molecule(int * seedindex, const Mole
 
 		if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
 
-            auto rng = molecule_stats.atom_molecules.equal_range(blk_id);
+            auto rng = molecules.atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                PackMoleculeId molecule = kv.second;
-				if (molecule_stats.info[molecule].valid) {
-					if (!best || molecule_stats.info[best].base_gain < molecule_stats.info[molecule].base_gain) {
-						best = molecule;
+                PackMoleculeId molecule_id = kv.second;
+				if (molecule_stats.valid(molecule_id)) {
+					if (!best || molecule_stats.base_gain(best) < molecule_stats.base_gain(molecule_id)) {
+						best = molecule_id;
 					}
 				}
             }
@@ -2395,45 +2365,46 @@ static PackMoleculeId get_highest_gain_seed_molecule(int * seedindex, const Mole
         + molecule_base_gain*some_factor 
         - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
-static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain) {
+static float get_molecule_gain(const PackMolecules& molecules, const PackMoleculeId molecule_id, const MoleculeStats& molecule_stats, std::map<AtomBlockId, float> &blk_gain) {
 	float gain;
-	int i;
 	int num_introduced_inputs_of_indirectly_related_block;
     auto& atom_ctx = g_vpr_ctx.atom();
 
+    auto& molecule = molecules.pack_molecules[molecule_id];
 	gain = 0;
 	num_introduced_inputs_of_indirectly_related_block = 0;
-	for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
-        auto blk_id = molecule->atom_block_ids[i];
-		if (blk_id) {
-			if(blk_gain.count(blk_id) > 0) {
-				gain += blk_gain[blk_id];
-			} else {
-				/* This block has no connection with current cluster, penalize molecule for having this block 
-				 */
-                for(auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
-                    auto net_id = atom_ctx.nlist.pin_net(pin_id);
-                    VTR_ASSERT(net_id);
+    for (auto molecule_blk_id : molecule.blocks()) {
+        AtomBlockId atom_blk = molecule.block_atom(molecule_blk_id);
+        VTR_ASSERT(atom_blk);
 
-                    auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
-                    VTR_ASSERT(driver_pin_id);
+        if(blk_gain.count(atom_blk) > 0) {
+            gain += blk_gain[atom_blk];
+        } else {
+            /* This block has no connection with current cluster, penalize molecule for having this block 
+             */
+            for(auto pin_id : atom_ctx.nlist.block_input_pins(atom_blk)) {
+                auto net_id = atom_ctx.nlist.pin_net(pin_id);
+                VTR_ASSERT(net_id);
 
-                    auto driver_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
+                auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+                VTR_ASSERT(driver_pin_id);
 
-                    num_introduced_inputs_of_indirectly_related_block++;
-                    for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
-                        if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
-                            //valid block which is driver (and hence not an input)
-                            num_introduced_inputs_of_indirectly_related_block--;
-                            break;
-                        }
+                auto driver_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
+
+                num_introduced_inputs_of_indirectly_related_block++;
+                for (auto molecule_blk_id2 : molecule.blocks()) {
+                    AtomBlockId atom_blk2 = molecule.block_atom(molecule_blk_id2);
+                    if (driver_blk_id == atom_blk2) {
+                        //valid block which is driver (and hence not an input)
+                        num_introduced_inputs_of_indirectly_related_block--;
+                        break;
                     }
                 }
-			}
-		}
+            }
+        }
 	}
 
-	gain += molecule->base_gain * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
+	gain += molecule_stats.base_gain(molecule_id) * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
 	gain -= num_introduced_inputs_of_indirectly_related_block * (0.001);
 
 	return gain;
@@ -2785,6 +2756,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 
 /* Score unclustered atoms that are two hops away from current cluster */
 static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
+                                              const PackMolecules& molecules,
                                               const MoleculeStats& molecule_stats,
 											  t_pb_stats *pb_stats,
 											  vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets) {
@@ -2802,29 +2774,29 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                             auto blk_id = atom_ctx.nlist.pin_block(tpin);
 							if(atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
 								/* This transitive atom is not packed, score and add */
-								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
+								auto &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
 
 								if(pb_stats->gain.count(blk_id) == 0) {
 									pb_stats->gain[blk_id] = 0.001;									
 								} else {
 									pb_stats->gain[blk_id] += 0.001;									
 								}
-                                auto rng = molecule_stats.atom_molecules.equal_range(blk_id);
+                                auto rng = molecules.atom_molecules.equal_range(blk_id);
                                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                                    t_pack_molecule* molecule = kv.second;
-									if (molecule->valid) {
+                                    PackMoleculeId molecule_id = kv.second;
+									if (molecule_stats.valid(molecule_id)) {
 										unsigned int imol = 0;
 
 										/* The number of potential molecules is heavily bounded so 
                                          * this O(N) operation should be safe since N is small */
 										for(imol = 0; imol < transitive_fanout_candidates.size(); imol++) {
-											if(molecule == transitive_fanout_candidates[imol]) {
+											if(molecule_id == transitive_fanout_candidates[imol]) {
 												break;
 											}
 										}
 										if(imol == transitive_fanout_candidates.size()) {
 											/* not in candidate list, add to list */
-											transitive_fanout_candidates.push_back(molecule);
+											transitive_fanout_candidates.push_back(molecule_id);
 										}
 									}
                                 }
@@ -2898,7 +2870,7 @@ static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candi
     return model_candidates;
 }
 
-static void revalid_molecules(const t_pb* pb, MoleculeStats& molecule_stats) {
+static void revalid_molecules(const t_pb* pb, const PackMolecules& molecules, MoleculeStats& molecule_stats) {
 	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
 	if (pb_type->blif_model == nullptr) {
@@ -2906,7 +2878,7 @@ static void revalid_molecules(const t_pb* pb, MoleculeStats& molecule_stats) {
 		for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
 			for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != nullptr; j++) {
 				if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-					revalid_molecules(&pb->child_pbs[i][j], molecule_stats);
+					revalid_molecules(&pb->child_pbs[i][j], molecules, molecule_stats);
 				}
 			}
         }
@@ -2922,21 +2894,24 @@ static void revalid_molecules(const t_pb* pb, MoleculeStats& molecule_stats) {
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            auto rng = molecule_stats.equal_range(blk_id);
+            auto rng = molecules.atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                t_pack_molecule* cur_molecule = kv.second;
-                if (cur_molecule->valid == false) {
-                    int i;
-                    for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-                        if (cur_molecule->atom_block_ids[i]) {
-                            if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
-                                break;
-                            }
+                PackMoleculeId cur_molecule_id = kv.second;
+                if (!molecule_stats.valid(cur_molecule_id)) {
+                    auto& cur_molecule = molecules.pack_molecules[cur_molecule_id];
+
+                    bool all_atoms_valid = true;
+                    for (auto molecule_blk_id : cur_molecule.blocks()) {
+                        AtomBlockId atom_blk = cur_molecule.block_atom(molecule_blk_id);
+                        if (atom_ctx.lookup.atom_clb(atom_blk) != ClusterBlockId::INVALID()) {
+                            all_atoms_valid = false;
+                            break;
                         }
                     }
+
                     /* All atom blocks are open for this molecule, place back in queue */
-                    if (i == get_array_size_of_molecule(cur_molecule)) {
-                        cur_molecule->valid = true;	
+                    if (all_atoms_valid) {
+                        molecule_stats.set_valid(cur_molecule_id, true);
                     }
                 }
             }
@@ -2945,31 +2920,31 @@ static void revalid_molecules(const t_pb* pb, MoleculeStats& molecule_stats) {
 }
 
 
-MoleculeStats build_molecule_stats(const PackMolecules& molecules, const AtomNetlist& netlist);
+MoleculeStats build_molecule_stats(const PackMolecules& molecules, const AtomNetlist& netlist) {
     MoleculeStats stats;
 
     for (const PackMolecule& molecule : molecules.pack_molecules) {
-        MoleculeInfo info;
+        MoleculeStats::Info info;
 
         info.num_blocks = count_molecule_blocks(molecule);
         info.num_ext_inputs = count_molecule_ext_inputs(molecule, netlist);
 
-        molecule_stats.push_back(info);
+        stats.info_.push_back(info);
     }
 
     VTR_ASSERT(molecules.pack_molecules.size() > 0);
 
     //Max external inputs
-    auto get_ext_inputs = [](const MoleculeInfo& info) {
-        return info.num_ext_inputs;
+    auto cmp_ext_inputs = [](const MoleculeStats::Info& lhs, const MoleculeStats::Info& rhs) {
+        return lhs.num_ext_inputs < rhs.num_ext_inputs;
     };
-    stats.max_num_ext_inputs = *std::max_element(stats.info.begin(), stats.info.end(), get_ext_inputs);
+    stats.max_num_ext_inputs_ = std::max_element(stats.info_.begin(), stats.info_.end(), cmp_ext_inputs)->num_ext_inputs;
 
     //Max blocks
-    auto get_num_blocks = [](const MoleculeInfo& info) {
-        return info.num_block;
+    auto cmp_num_blocks = [](const MoleculeStats::Info& lhs, const MoleculeStats::Info& rhs) {
+        return lhs.num_blocks < rhs.num_blocks;
     };
-    stats.max_num_blocks = *std::max_element(stats.info.begin(), stats.info.end(), get_num_blocks);
+    stats.max_num_blocks_ = std::max_element(stats.info_.begin(), stats.info_.end(), cmp_num_blocks)->num_blocks;
 
     return stats;
 }
@@ -2991,23 +2966,23 @@ int count_molecule_ext_inputs(const PackMolecule& molecule, const AtomNetlist& n
     //Count inputs of all internal blocks
     int total_inputs = 0;
     for (auto molecule_blk_id : molecule.blocks()) {
-        AtomBlockId atom_blk_id = molecule.atom_block();
+        AtomBlockId atom_blk_id = molecule.block_atom(molecule_blk_id);
 
-        if (molecule.block_type(blk_id) != PackMolecule::BlockType::INTERNAL) continue;
+        if (molecule.block_type(molecule_blk_id) != PackMolecule::BlockType::INTERNAL) continue;
 
-        total_inputs += netlist.block_input_pins(atom_blk_id);
-        total_inputs += netlist.block_clock_pins(atom_blk_id);
+        total_inputs += netlist.block_input_pins(atom_blk_id).size();
+        total_inputs += netlist.block_clock_pins(atom_blk_id).size();
     }
 
     //Subtract away connections contained within the molecule
     int ext_inputs = total_inputs;
     for (auto molecule_edge_id : molecule.edges()) {
         auto molecule_driver_pin_id = molecule.edge_driver(molecule_edge_id);
-        auto molecule_driver_blk_id = molecule.pin_block(pin);
+        auto molecule_driver_blk_id = molecule.pin_block(molecule_driver_pin_id);
         if (molecule.block_type(molecule_driver_blk_id) != PackMolecule::BlockType::INTERNAL) continue;
         
         for (auto molecule_sink_pin_id : molecule.edge_sinks(molecule_edge_id)) {
-            auto molecule_sink_blk_id = molecule.pin_block(pin);
+            auto molecule_sink_blk_id = molecule.pin_block(molecule_sink_pin_id);
             if (molecule.block_type(molecule_sink_blk_id) != PackMolecule::BlockType::INTERNAL) continue;
 
             //Both driver and sink are internal to this molecule, so remove it from the external input count

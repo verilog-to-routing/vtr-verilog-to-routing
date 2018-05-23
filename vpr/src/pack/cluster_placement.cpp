@@ -837,8 +837,7 @@ bool exists_free_primitive_for_atom_block(
 
 	/* might have a primitive in flight that's still valid */
 	if (cluster_placement_stats.in_flight) {
-		if (primitive_type_feasible(blk_id,
-				cluster_placement_stats.in_flight->pb_graph_node->pb_type)) {
+		if (primitive_type_feasible(blk_id, cluster_placement_stats.in_flight->pb_graph_node->pb_type)) {
 			return true;
 		}
 	}
@@ -848,8 +847,7 @@ bool exists_free_primitive_for_atom_block(
 		if (cluster_placement_stats.valid_primitives[i]->next_primitive == nullptr) {
 			continue; /* no more primitives of this type available */
 		}
-		if (primitive_type_feasible(blk_id,
-				cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
+		if (primitive_type_feasible(blk_id, cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats.valid_primitives[i];
 			cur = cluster_placement_stats.valid_primitives[i]->next_primitive;
 			while (cur) {

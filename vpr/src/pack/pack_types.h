@@ -50,7 +50,7 @@ struct t_pb_stats {
                                             this high fanout net to determine the 
                                             next candidate atom */
 	bool explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
-	std::vector<t_pack_molecule *> *transitive_fanout_candidates;
+	std::vector<PackMoleculeId> *transitive_fanout_candidates;
 
 	/* How many pins of each atom net are contained in the *
 	 * currently open pb?                                  */
@@ -71,7 +71,7 @@ struct t_pb_stats {
 	/* Array of feasible blocks to select from [0..max_array_size-1] 
 	 Sorted in ascending gain order so that the last cluster_ctx.blocks is the most desirable (this makes it easy to pop blocks off the list
 	 */
-	t_pack_molecule **feasible_blocks;
+    std::vector<PackMoleculeId> feasible_blocks;
 	int num_feasible_blocks; /* [0..num_marked_models-1] */
 };
 
@@ -263,6 +263,10 @@ class MoleculeStats {
 
         float base_gain(PackMoleculeId id) const {
             return info_[id].base_gain;
+        }
+    public:
+        void set_valid(PackMoleculeId id, bool value) {
+            info_[id].valid = value;
         }
 
     private:
