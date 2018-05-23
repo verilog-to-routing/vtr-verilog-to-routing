@@ -553,6 +553,7 @@ void do_clustering(const t_arch *arch,
 			ClusterBlockId clb_index(num_clb);
 			
 			/* start a new cluster and reset all stats */
+            vtr::printf("Starting new cluster with molecule %zu\n", size_t(istart));
 			start_new_cluster(cluster_placement_stats, primitives_list,
 					molecules, istart, molecule_stats, clb_index, 
 					num_used_type_instances,
@@ -600,6 +601,7 @@ void do_clustering(const t_arch *arch,
 					clb_index);
 			prev_molecule = istart;
 			while (next_molecule && prev_molecule != next_molecule) {
+                vtr::printf("Trying to pack new molecule %zu\n", size_t(next_molecule));
 				block_pack_status = try_pack_molecule(
 						cur_cluster_placement_stats, 
                         molecules,
@@ -711,9 +713,10 @@ void do_clustering(const t_arch *arch,
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(molecule_stats);
 					}
-				} else
+				} else {
 					/*cluster seed is max input (since there is no timing information)*/
 					istart = get_seed_logical_molecule_with_most_ext_inputs(molecule_stats);
+                }
 				
 				/* store info that will be used later in packing from pb_stats and free the rest */
 				t_pb_stats *pb_stats = cluster_ctx.clb_nlist.block_pb(clb_index)->pb_stats;
@@ -1066,31 +1069,15 @@ static PackMoleculeId get_molecule_by_num_ext_inputs(
 	 * to get a atom block regardless of clock constraints just set clocks_ *
 	 * avail > 0.                                                      */
 
-	bool success = false;;
-
 	t_molecule_link* prev_ptr = &unclustered_list_head[ext_inps];
 	t_molecule_link* ptr = unclustered_list_head[ext_inps].next;
 	while (ptr != nullptr) {
 		/* TODO: Get better candidate atom block in future, eg. return most timing critical or some other smarter metric */
         PackMoleculeId molecule_id = ptr->molecule_id;
-		if (!molecule_stats.valid(molecule_id)) {
+		if (molecule_stats.valid(molecule_id)) {
             const PackMolecule& molecule = molecules.pack_molecules[molecule_id];
 
-			success = true;
-			for (auto molecule_blk_id : molecule.blocks()) {
-                auto atom_blk_id = molecule.block_atom(molecule_blk_id);
-
-                if (!atom_blk_id) continue;
-
-                if (!exists_free_primitive_for_atom_block(cluster_placement_stats, atom_blk_id)) { 
-                    /* TODO: I should be using a better filtering check especially when I'm 
-                     * dealing with multiple clock/multiple global reset signals where the clock/reset 
-                     * packed in matters, need to do later when I have the circuits to check my work */
-                    success = false;
-                    break;
-                }
-			}
-			if (success == true) {
+            if (exists_free_primitives_for_molecule(molecule, cluster_placement_stats)) {
 				return molecule_id;
 			}
 			prev_ptr = ptr;
@@ -1309,6 +1296,7 @@ static enum e_block_pack_status try_pack_molecule(
                         auto rng = molecules.atom_molecules.equal_range(atom_blk);
                         for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
                             PackMoleculeId related_molecule_id = kv.second;
+                            vtr::printf("Invalidating molecule %zu for atom '%s' from molecule %zu\n", related_molecule_id, atom_ctx.nlist.block_name(atom_blk).c_str(), molecule_id);
                             molecule_stats.set_valid(related_molecule_id, false);
                         }
 
@@ -1367,6 +1355,8 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
+        vtr::printf("Placing atom primitive block '%s' in cluster '%s' of type '%s'\n",
+                    atom_ctx.nlist.block_name(blk_id).c_str(), cb->name, cb->pb_graph_node->pb_type->name);
 	}
 
 	/* Create siblings if siblings are not allocated */

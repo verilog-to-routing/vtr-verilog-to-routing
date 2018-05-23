@@ -125,15 +125,16 @@ struct t_intra_lb_net {
     std::vector<bool> fixed_terminals;  /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
 	t_lb_trace *rt_tree = nullptr;      /* Route tree head */
 
+    int external_sink_index = OPEN;
+
     static constexpr int DRIVER_INDEX = 0;
     static constexpr int POTENTIAL_EXTERNAL_SINK_INDEX = 1;
 	
 	t_intra_lb_net()
 
-        //Initially driver at index zero, and
-        //external sink at index one are uninitalized
-        : terminals(2, OPEN)
-        , atom_pins(2, AtomPinId::INVALID()) {
+        //Initially driver at index zero is uninitalized
+        : terminals(1, OPEN)
+        , atom_pins(1, AtomPinId::INVALID()) {
 	}
 };
 

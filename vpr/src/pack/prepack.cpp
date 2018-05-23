@@ -1493,6 +1493,7 @@ static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(con
             
             atom_molecules.insert({atom_blk_id, molecule_id});
         }
+        ++idx;
     }
     return atom_molecules;
 }

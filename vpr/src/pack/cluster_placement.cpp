@@ -84,8 +84,8 @@ std::vector<t_cluster_placement_stats> alloc_and_load_cluster_placement_stats() 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
 		if (device_ctx.EMPTY_TYPE != &device_ctx.block_types[i]) {
 			cluster_placement_stats[i].valid_primitives = (t_cluster_placement_primitive **) vtr::calloc(
-					get_max_primitives_in_pb_type(device_ctx.block_types[i].pb_type)
- 							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
+					get_max_primitives_in_pb_type(device_ctx.block_types[i].pb_type) + 1,
+                    sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
 			load_cluster_placement_stats_for_pb_graph_node(
 					cluster_placement_stats[i],
 					device_ctx.block_types[i].pb_graph_head);
@@ -156,8 +156,10 @@ bool get_next_primitive_list(
 		if (cluster_placement_stats.valid_primitives[i]->next_primitive == nullptr) {
 			continue; /* no more primitives of this type available */
 		}
-		if (primitive_type_feasible(molecules.pack_molecules[molecule_id].root_block_atom(),
-				cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
+        AtomBlockId atom_root = molecules.pack_molecules[molecule_id].root_block_atom();
+        t_pb_type* pb_type = cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type;
+        vtr::printf("Checking if molecule root '%s' is feasible in primitive '%s'\n", g_vpr_ctx.atom().nlist.block_name(atom_root).c_str(), pb_type->name);
+		if (primitive_type_feasible(atom_root, pb_type)) {
 			prev = cluster_placement_stats.valid_primitives[i];
 			cur = cluster_placement_stats.valid_primitives[i]->next_primitive;
 			while (cur) {
@@ -333,37 +335,31 @@ static void load_cluster_placement_stats_for_pb_graph_node(
 	const t_pb_type *pb_type = pb_graph_node->pb_type;
 	bool success;
 	if (pb_type->modes == nullptr) {
-		placement_primitive = (t_cluster_placement_primitive *) vtr::calloc(1,
-				sizeof(t_cluster_placement_primitive));
+		placement_primitive = (t_cluster_placement_primitive *) vtr::calloc(1, sizeof(t_cluster_placement_primitive));
 		placement_primitive->pb_graph_node = pb_graph_node;
 		placement_primitive->valid = true;
 		pb_graph_node->cluster_placement_primitive = placement_primitive;
-		placement_primitive->base_cost = compute_primitive_base_cost(
-				pb_graph_node);
+		placement_primitive->base_cost = compute_primitive_base_cost(pb_graph_node);
 		success = false;
 		i = 0;
 		while (success == false) {
 			if (cluster_placement_stats.valid_primitives[i] == nullptr
-					|| cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type
-							== pb_graph_node->pb_type) {
+					|| cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type == pb_graph_node->pb_type) {
 				if (cluster_placement_stats.valid_primitives[i] == nullptr) {
-					cluster_placement_stats.valid_primitives[i] = (t_cluster_placement_primitive *) vtr::calloc(1,
-							sizeof(t_cluster_placement_primitive)); /* head of linked list is empty, makes it easier to remove nodes later */
+					cluster_placement_stats.valid_primitives[i] = (t_cluster_placement_primitive *) vtr::calloc(1, sizeof(t_cluster_placement_primitive));
+                    /* head of linked list is empty, makes it easier to remove nodes later */
 					cluster_placement_stats.num_pb_types++;
 				}
 				success = true;
-				placement_primitive->next_primitive =
-						cluster_placement_stats.valid_primitives[i]->next_primitive;
-				cluster_placement_stats.valid_primitives[i]->next_primitive =
-						placement_primitive;
+				placement_primitive->next_primitive = cluster_placement_stats.valid_primitives[i]->next_primitive;
+				cluster_placement_stats.valid_primitives[i]->next_primitive = placement_primitive;
 			}
 			i++;
 		}
 	} else {
 		for (i = 0; i < pb_type->num_modes; i++) {
 			for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-				for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
+				for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					load_cluster_placement_stats_for_pb_graph_node(
 							cluster_placement_stats,
 							&pb_graph_node->child_pb_graph_nodes[i][j][k]);
@@ -378,7 +374,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(
  * Costing is done to try to pack blocks closer to existing primitives
  *  actual value based on closest common ancestor to committed placement, the farther the ancestor, the less reduction in cost there is
  * Side effects: All cluster_placement_primitives may be invalidated/costed in this algorithm
- *               Al intermediate queues are requeued
+ *               All intermediate queues are requeued
  */
 void commit_primitive(t_cluster_placement_stats& cluster_placement_stats,
 		const t_pb_graph_node *primitive) {
