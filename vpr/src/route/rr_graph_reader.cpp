@@ -563,7 +563,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
                         "Architecture file does not match RR graph's block type");
             }
 
-            if (class_inf.num_pins != count_children(pin_class, "pin", loc_data)) {
+            if (class_inf.num_pins != (int) count_children(pin_class, "pin", loc_data)) {
                 vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                         "Incorrect number of pins in %d pin_class in block %s", classNum, block_info.name);
             }
