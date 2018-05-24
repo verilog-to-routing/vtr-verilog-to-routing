@@ -1272,8 +1272,10 @@ static void draw_rr_chan(int inode, const t_color color) {
         }
 
         if (switchpoint_min == 0) {
-            //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in());
+            if (dir != BI_DIRECTION) {
+                //Draw a mux at the start of each wire, labelled with it's size (#inputs)
+                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in());
+            }
         } else {
             //Draw arrows and label with switch point
             if (k == coord_min) {
@@ -1295,8 +1297,10 @@ static void draw_rr_chan(int inode, const t_color color) {
         }
 
         if (switchpoint_max == 0) {
-            //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in());
+            if (dir != BI_DIRECTION) {
+                //Draw a mux at the start of each wire, labelled with it's size (#inputs)
+                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in());
+            }
         } else {
             //Draw arrows and label with switch point
             if (k == coord_max) {
