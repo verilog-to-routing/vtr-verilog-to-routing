@@ -26,7 +26,7 @@ override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
-BUILD_DIR=./build
+BUILD_DIR=./build/$(BUILD_TYPE)
 GENERATED_MAKEFILE := $(BUILD_DIR)/Makefile
 
 #Check for the cmake exectuable
@@ -58,8 +58,8 @@ ifeq ($(CMAKE),)
 	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
 endif
 	@ mkdir -p $(BUILD_DIR)
-	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) ../.. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) ../..
 
 #Forward any targets that are not named 'distclean' to the generated Makefile
 ifneq ($(MAKECMDGOALS),distclean)
