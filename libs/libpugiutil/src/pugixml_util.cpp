@@ -182,14 +182,15 @@ namespace pugiutil {
         }
     }
 
-    //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.
-    //Note this does not check whether the attribues in 'attribute_names' actually exist; for that use get_attribute().
+    //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node' with an additional explanation.
+    //Note this does not check whether the attribues in 'attribute_names' actually exist.
     //
     //  node - The parent xml node
     //  attribute_names - expected attribute names
     //  loc_data - XML file location data
     void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
+                            std::string explanation,
                             const loc_data& loc_data) {
 
         for (auto attrib : node.attributes()) {
@@ -199,7 +200,13 @@ namespace pugiutil {
                                   attrib_name);
             if (iter == attribute_names.end()) {
                 std::string msg =  "Unexpected attribute '" + attrib_name + "'"
-                                 + " found on node '" + node.name() + "'.";
+                                 + " found on node '" + node.name() + "'";
+
+                if (!explanation.empty()) {
+                    msg += explanation;
+                }
+
+                msg += ".";
 
                 if (attribute_names.size() > 0) {
                     msg += " Expected (possibly) one of: ";
@@ -220,6 +227,17 @@ namespace pugiutil {
         }
     }
 
+    //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.
+    //Note this does not check whether the attribues in 'attribute_names' actually exist; for that use get_attribute().
+    //
+    //  node - The parent xml node
+    //  attribute_names - expected attribute names
+    //  loc_data - XML file location data
+    void expect_only_attributes(const pugi::xml_node node,
+                            std::vector<std::string> attribute_names,
+                            const loc_data& loc_data) {
+        expect_only_attributes(node, attribute_names, "", loc_data);
+    }
 
     //Counts the number of attributes on the specified node
     //

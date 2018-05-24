@@ -151,6 +151,16 @@ namespace pugiutil {
                             std::vector<std::string> attribute_names,
                             const loc_data& loc_data);
 
+    //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node' with an additional explanation.
+    //Note this does not check whether the attribues in 'attribute_names' actually exist.
+    //
+    //  node - The parent xml node
+    //  attribute_names - expected attribute names
+    //  loc_data - XML file location data
+    void expect_only_attributes(const pugi::xml_node node,
+                            std::vector<std::string> attribute_names,
+                            std::string explanation,
+                            const loc_data& loc_data);
 
     //Counts the number of attributes on the specified node
     //
