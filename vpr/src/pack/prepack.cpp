@@ -1555,7 +1555,7 @@ static void write_pack_molecules(std::ostream& os, const PackMolecules& molecule
     auto& netlist = g_vpr_ctx.atom().nlist;
     os << "#Atom Molecules\n";
     for (auto atom : netlist.blocks()) {
-        os << "Atom (" << size_t(atom) << ") '" << netlist.block_name(atom) << "':\n";
+        os << "Atom(" << size_t(atom) << "): '" << netlist.block_name(atom) << "'\n";
         auto range = molecules.atom_molecules.equal_range(atom);
         for (auto kv : vtr::make_range(range.first, range.second)) {
             PackMoleculeId molecule_id = kv.second;
@@ -1568,7 +1568,7 @@ static void write_pack_molecules(std::ostream& os, const PackMolecules& molecule
 static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules, const PackMoleculeId molecule_id) {
     auto& netlist = g_vpr_ctx.atom().nlist;
 
-    os << "Molecule (" << size_t(molecule_id) << ")\n";
+    os << "Molecule(" << size_t(molecule_id) << "):\n";
     auto& molecule = molecules.pack_molecules[molecule_id];
     for (auto blk : molecule.blocks()) {
         AtomBlockId atom = molecule.block_atom(blk);
@@ -1580,14 +1580,14 @@ static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules
             VTR_ASSERT(molecule.block_type(blk) == PackMolecule::BlockType::EXTERNAL);
             os << "External";
         }
-        os << " Block (" << size_t(blk) << "): " << netlist.block_name(atom) << "\n";
+        os << " Block(" << size_t(blk) << "): '" << netlist.block_name(atom) << "'\n";
     }
 
     for (auto edge : molecule.edges()) {
         MoleculePinId driver_pin = molecule.edge_driver(edge);
         AtomPinId atom_driver_pin = molecule.pin_atom(driver_pin);
         AtomNetId atom_net = netlist.pin_net(atom_driver_pin);
-        os << "\t Edge (" << size_t(edge) << "): Net '" << netlist.net_name(atom_net) << "'\n";
+        os << "\tEdge(" << size_t(edge) << "): Net '" << netlist.net_name(atom_net) << "'\n";
         for (MoleculePinId sink_pin : molecule.edge_sinks(edge)) {
             AtomPinId atom_sink_pin = molecule.pin_atom(sink_pin);
             VTR_ASSERT(netlist.pin_net(atom_sink_pin) == atom_net);
