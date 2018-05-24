@@ -486,10 +486,7 @@ static float try_place_molecule(
                                                                      root);
 
     if (molecule_placement.legal) {
-        int list_size = molecule_stats.num_blocks(molecule_id);
-        VTR_ASSERT(list_size == (int) molecule.blocks().size());
-
-        primitives_list.assign(list_size, nullptr);
+        primitives_list.assign(molecule.blocks().size(), nullptr);
 
         for (auto molecule_blk : molecule.blocks()) {
             VTR_ASSERT_SAFE(molecule_placement.block_locations.count(molecule_blk));

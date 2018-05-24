@@ -1489,6 +1489,7 @@ static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(con
         PackMoleculeId molecule_id(idx);
 
         for (MoleculeBlockId molecule_blk_id : molecule.blocks()) {
+            if (molecule.block_type(molecule_blk_id) != PackMolecule::BlockType::INTERNAL) continue;
             AtomBlockId atom_blk_id = molecule.block_atom(molecule_blk_id);
             
             atom_molecules.insert({atom_blk_id, molecule_id});
