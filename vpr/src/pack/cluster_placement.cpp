@@ -597,6 +597,7 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
                     //so the entire molecule is illegal
                     placement = MoleculePlaceInfo(); //Reset
                     VTR_ASSERT(!placement.legal);
+                    VTR_ASSERT(placement.cost == HUGE_POSITIVE_FLOAT);
                     return placement;
                 }
             }

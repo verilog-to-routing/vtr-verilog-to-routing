@@ -13,6 +13,10 @@ AtomBlockId PackMolecule::root_block_atom() const {
     return block_atom(root_block());
 }
 
+float PackMolecule::base_gain() const {
+    return base_gain_;
+}
+
 
 //Aggregates
 PackMolecule::block_range PackMolecule::blocks() const {
@@ -111,8 +115,13 @@ void PackMolecule::add_edge_sink(MoleculeEdgeId edge, MoleculePinId sink) {
     VTR_ASSERT(!pins_[sink].edge);
     pins_[sink].edge = edge;
 }
+
 void PackMolecule::set_root_block(MoleculeBlockId root) {
     root_block_ = root;
+}
+
+void PackMolecule::set_base_gain(float value) {
+    base_gain_ = value;
 }
 
 MoleculeBlockId PackMolecule::alloc_block() {

@@ -42,6 +42,8 @@ struct t_arch_pack_pattern {
 
     //The set of edges in the pack pattern graph
     std::vector<t_arch_pack_pattern_edge> edges;
+
+    float base_cost = 0.;
 };
 
 struct t_netlist_pack_pattern_pin {
@@ -83,6 +85,9 @@ struct t_netlist_pack_pattern {
 
     int root_node = OPEN;
 
+
+    float base_cost = 0.;
+
     std::vector<t_netlist_pack_pattern_node> nodes;
     std::vector<t_netlist_pack_pattern_edge> edges;
 
@@ -122,6 +127,7 @@ struct NetlistPatternMatch {
 
     std::vector<AtomBlockId> internal_blocks;
     std::vector<AtomBlockId> external_blocks;
+    float base_cost = 0.;
 };
 
 constexpr auto ATOM_DEFAULT_PACK_PATTERN_NAME = "vpr_default_atom_pattern";

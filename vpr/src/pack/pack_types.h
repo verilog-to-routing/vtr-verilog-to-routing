@@ -254,15 +254,16 @@ class MoleculeStats {
             return info_[id].valid;
         }
 
-        bool num_ext_inputs(PackMoleculeId id) const {
+        int num_ext_inputs(PackMoleculeId id) const {
             return info_[id].num_ext_inputs;
         }
 
-        bool num_blocks(PackMoleculeId id) const {
+        int num_blocks(PackMoleculeId id) const {
             return info_[id].num_blocks;
         }
 
         float base_gain(PackMoleculeId id) const {
+            VTR_ASSERT_SAFE(!std::isnan(info_[id].base_gain));
             return info_[id].base_gain;
         }
     public:

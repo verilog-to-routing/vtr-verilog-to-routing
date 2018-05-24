@@ -350,7 +350,6 @@ static t_arch_pack_pattern build_pack_pattern(std::string pattern_name, const st
         t_pb_graph_pin* to_pin = conn.to_pin;
 
         if (from_pin) {
-            //t_pb_graph_node* from_node = from_pin->parent_node;
             if (!pb_graph_pin_to_pattern_node_id.count(from_pin)) {
                 //Create
                 int pattern_node_id = pack_pattern.nodes.size();
@@ -362,7 +361,6 @@ static t_arch_pack_pattern build_pack_pattern(std::string pattern_name, const st
         }
 
         if (to_pin) {
-            //t_pb_graph_node* to_node = to_pin->parent_node;
             if (!pb_graph_pin_to_pattern_node_id.count(to_pin)) {
                 //Create
                 int pattern_node_id = pack_pattern.nodes.size();
@@ -409,6 +407,16 @@ static t_arch_pack_pattern build_pack_pattern(std::string pattern_name, const st
         }
     }
 
+    //Calculate the base cost of the pattern based on the nodes involved
+    std::set<t_pb_graph_node*> seen_pb_graph_nodes;
+    for (size_t inode = 0; inode < pack_pattern.nodes.size(); ++inode) {
+        t_pb_graph_node* pb_graph_node = pack_pattern.nodes[inode].pb_graph_pin->parent_node;
+
+        if (seen_pb_graph_nodes.count(pb_graph_node)) continue;
+
+        pack_pattern.base_cost += compute_primitive_base_cost(pb_graph_node);
+    }
+
     return pack_pattern;
 }
 
@@ -416,6 +424,7 @@ static t_arch_pack_pattern build_pack_pattern(std::string pattern_name, const st
 static t_netlist_pack_pattern abstract_arch_pack_pattern(const t_arch_pack_pattern& arch_pattern) {
     t_netlist_pack_pattern netlist_pattern;
     netlist_pattern.name = arch_pattern.name;
+    netlist_pattern.base_cost = arch_pattern.base_cost;
 
     struct EdgeInfo {
         EdgeInfo(int from_node, int from_edge, int via_edge, int curr_node)
@@ -631,6 +640,7 @@ static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_p
     NetlistPatternMatch match;
     if (match_largest_recur(match, blk, pattern.root_node, pattern, excluded_blocks, netlist)) {
         match.pattern_name = pattern.name;
+        match.base_cost = pattern.base_cost;
         return match; 
     }
     return NetlistPatternMatch(); //No match, return empty

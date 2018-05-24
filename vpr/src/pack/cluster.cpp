@@ -313,6 +313,8 @@ MoleculeStats build_molecule_stats(const PackMolecules& molecules, const AtomNet
 int count_molecule_blocks(const PackMolecule& molecule);
 int count_molecule_ext_inputs(const PackMolecule& molecule, const AtomNetlist& netlist);
 
+static std::vector<t_type_ptr> find_candidate_types_for_molecule(const PackMolecule& molecule, 
+                                                                 const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types);
 /*****************************************/
 /*globally accessible function*/
 void do_clustering(const t_arch *arch,
@@ -1904,13 +1906,9 @@ static void start_new_cluster(
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
     auto& molecule = molecules.pack_molecules[molecule_id];
-    AtomBlockId root_atom = molecule.root_block_atom();
-	const std::string& root_atom_name = atom_ctx.nlist.block_name(root_atom);
-	const t_model* root_model = atom_ctx.nlist.block_model(root_atom);
 
-    auto itr = primitive_candidate_block_types.find(root_model);
-    VTR_ASSERT(itr != primitive_candidate_block_types.end());
-    std::vector<t_type_ptr> candidate_types = itr->second;
+    std::string molecule_name = atom_ctx.nlist.block_name(molecule.root_block_atom()); //TODO: choose a better name
+    std::vector<t_type_ptr> candidate_types = find_candidate_types_for_molecule(molecule, primitive_candidate_block_types);
 
     //We sort the candidate types in ascending order by their current utilization.
     //This means that the packer will prefer to use types with lower utilization.
@@ -1963,8 +1961,8 @@ static void start_new_cluster(
             if (pb->name != nullptr) {
                 free(pb->name);
             }
-            pb->name = vtr::strdup(root_atom_name.c_str());
-            clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
+            pb->name = vtr::strdup(molecule_name.c_str());
+            clb_index = clb_nlist->create_block(molecule_name.c_str(), pb, type);
             break;
         } else {
             //Free failed clustering and try again
@@ -1980,12 +1978,12 @@ static void start_new_cluster(
         if (molecule.blocks().size() > 1) {
             vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
                     "Can not find any logic block that can implement molecule %s.\n",
-                    root_atom_name.c_str());
+                    molecule_name.c_str());
         } else {
             vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
                     "Can not find any logic block that can implement molecule.\n"
-                    "\tAtom %s (%s)\n",
-                    root_atom_name.c_str(), root_model->name);
+                    "\tAtom %s\n",
+                    molecule_name.c_str());
         }
     }
 
@@ -2918,6 +2916,7 @@ MoleculeStats build_molecule_stats(const PackMolecules& molecules, const AtomNet
 
         info.num_blocks = count_molecule_blocks(molecule);
         info.num_ext_inputs = count_molecule_ext_inputs(molecule, netlist);
+        info.base_gain = molecule.base_gain();
 
         stats.info_.push_back(info);
     }
@@ -2981,4 +2980,43 @@ int count_molecule_ext_inputs(const PackMolecule& molecule, const AtomNetlist& n
     }
 
     return ext_inputs;
+}
+
+static std::vector<t_type_ptr> find_candidate_types_for_molecule(const PackMolecule& molecule, 
+                                                                 const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types) {
+    std::set<t_type_ptr> candidate_types;
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    //Collect the set of models required for this molecule
+    std::set<const t_model*> internal_models;
+    for (auto molecule_blk_id : molecule.blocks()) {
+        if (molecule.block_type(molecule_blk_id) != PackMolecule::BlockType::INTERNAL) continue;
+
+        AtomBlockId atom_blk_id = molecule.block_atom(molecule_blk_id);
+        internal_models.insert(atom_ctx.nlist.block_model(atom_blk_id));
+    }
+
+    //Find the set of blocks which contain all the required models
+    size_t i = 0;
+    for (auto model : internal_models) {
+        auto itr = primitive_candidate_block_types.find(model);
+        VTR_ASSERT(itr != primitive_candidate_block_types.end());
+
+        std::set<t_type_ptr> sorted_candidates(itr->second.begin(), itr->second.end());
+        if (i == 0) {
+            candidate_types = sorted_candidates;
+        } else {
+
+            std::set<t_type_ptr> intersection;
+            std::set_intersection(candidate_types.begin(), candidate_types.end(),
+                                  sorted_candidates.begin(), sorted_candidates.end(),
+                                  std::inserter(intersection, intersection.begin()));
+
+            candidate_types = intersection;
+        }
+        ++i;
+    }
+    
+    return std::vector<t_type_ptr>(candidate_types.begin(), candidate_types.end());
 }

@@ -61,20 +61,20 @@ enum class ScreenUpdatePriority {
     MAJOR = 1 
 };
 
-#define MAX_SHORT 32767
+constexpr int MAX_SHORT = 32767;
 
 /* Values large enough to be way out of range for any data, but small enough
  to allow a small number to be added to them without going out of range. */
-#define HUGE_POSITIVE_FLOAT 1.e30
-#define HUGE_NEGATIVE_FLOAT -1.e30
+constexpr float HUGE_POSITIVE_FLOAT = 1.e30;
+constexpr float HUGE_NEGATIVE_FLOAT = -1.e30;
 
 /* Used to avoid floating-point errors when comparing values close to 0 */
-#define EPSILON 1.e-15
-#define NEGATIVE_EPSILON -1.e-15
+constexpr float EPSILON = 1.e-15;
+constexpr float NEGATIVE_EPSILON = -1.e-15;
 
-#define HIGH_FANOUT_NET_LIM 64 /* All nets with this number of sinks or more are considered high fanout nets */
+constexpr int HIGH_FANOUT_NET_LIM = 64; /* All nets with this number of sinks or more are considered high fanout nets */
 
-#define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
+constexpr float FIRST_ITER_WIRELENTH_LIMIT = 0.85; /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);

@@ -1363,7 +1363,11 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
     //filter them so they are non-overlapping
     //
     //TODO: Think about whether we should leave multiple molecule options to the packer...
+#if 1
+    auto final_netlist_matches = raw_netlist_matches;
+#else
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
+#endif
 
     //Convert the final matches to molecules for use during packing
     PackMolecules molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
@@ -1472,6 +1476,14 @@ static PackMolecule create_molecule(const NetlistPatternMatch& match, const Atom
             molecule.set_root_block(block);
         }
     }
+
+    //Determine the gain
+    //
+    // In the event of multiple molecules with the same atom block pattern, 
+    // bias to use the molecule with less costly physical resources first
+    // TODO: Need to normalize magical number 100
+    float base_gain = molecule.blocks().size() - (match.base_cost / 100);
+    molecule.set_base_gain(base_gain);
 
 #if 0
     std::ofstream ofs("pack_molecule.echo");
@@ -1596,5 +1608,6 @@ static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules
             os << "\t\t" << netlist.pin_name(atom_driver_pin) << " -> " << netlist.pin_name(atom_sink_pin) << ")\n";
         }
     }
+    os << "\tBase Gain: " << molecule.base_gain() << "\n";
 }
 
