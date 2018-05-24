@@ -30,7 +30,11 @@ void generate_setup_timing_stats(const SetupTimingInfo& timing_info, const Analy
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_setup("report_timing.setup.rpt", *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
-    timing_reporter.report_skew_setup("report_skew.setup.rpt", *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+
+    if (analysis_opts.timing_report_skew) {
+        timing_reporter.report_skew_setup("report_skew.setup.rpt", *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+    }
+
     timing_reporter.report_unconstrained_setup("report_unconstrained_timing.setup.rpt", *timing_info.setup_analyzer());
 }
 
@@ -46,6 +50,10 @@ void generate_hold_timing_stats(const HoldTimingInfo& timing_info, const Analysi
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_hold("report_timing.hold.rpt", *timing_info.hold_analyzer(), analysis_opts.timing_report_npaths);
-    timing_reporter.report_skew_hold("report_skew.hold.rpt", *timing_info.hold_analyzer(), analysis_opts.timing_report_npaths);
+
+    if (analysis_opts.timing_report_skew) {
+        timing_reporter.report_skew_hold("report_skew.hold.rpt", *timing_info.hold_analyzer(), analysis_opts.timing_report_npaths);
+    }
+
     timing_reporter.report_unconstrained_hold("report_unconstrained_timing.hold.rpt", *timing_info.hold_analyzer());
 }

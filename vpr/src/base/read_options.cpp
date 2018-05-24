@@ -785,6 +785,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("netlist")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool,ParseOnOff>(args.timing_report_skew, "--timing_report_skew")
+            .help("Controls whether skew timing reports are generated\n")
+            .default_value("off")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& power_grp = parser.add_argument_group("power analysis options");
 

@@ -466,6 +466,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
+    analysis_opts.timing_report_skew = Options.timing_report_skew;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,

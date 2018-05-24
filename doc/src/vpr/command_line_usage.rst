@@ -785,6 +785,13 @@ Analysis Options
 
     **Default:** ``netlist``
 
+.. option:: --timing_report_skew { on | off }
+
+    Controls whether clock skew timing reports are generated.
+
+    **Default:** ``off``
+
+        
 .. _power_estimation_options:
 
 Power Estimation Options

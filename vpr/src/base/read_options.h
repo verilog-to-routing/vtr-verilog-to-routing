@@ -115,6 +115,7 @@ struct t_options {
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
+    argparse::ArgValue<bool> timing_report_skew;
 
 };
 
