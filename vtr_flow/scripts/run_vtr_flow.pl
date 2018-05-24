@@ -505,46 +505,53 @@ if (    $starting_stage <= $stage_idx_abc
     #
     #Some key points on the script used:
     #
-	#  strash : The strash command (which build's ABC's internal AIG) is needed before scleanup, 
-    #           otherwise scleanup will fail with “Only works for structurally hashed networks”.
+	#  strash : The strash command (which build's ABC's internal AIG) is needed before clean-up 
+    #           related commands (e.g. ifraig) otherwise they will fail with “Only works for 
+    #           structurally hashed networks”.
     #  
-	#  if –K #: This should appear as the final step before writing the optimized netlist.
-    #           In recent versions, ABC does not remember that LUT size you want to techmap to.
-    #           As a result, specifying if -K # early in the script causes ABC techmap to 2-LUTs, 
-    #           greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
+	#  if –K #: This command techmaps the logic to LUTS. It should appear as the (near) final step 
+    #           before writing the optimized netlist. In recent versions, ABC does not remember 
+    #           that LUT size you want to techmap to. As a result, specifying if -K # early in 
+    #           the script causes ABC techmap to 2-LUTs, greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
+    #
+    # The current script is based off the one used by YOSYS and on discussions with Alan Mishchenko (ABC author). 
+    # On 2018/04/28 Alan suggested the following:
+    #   (1) run synthesis commands such as "dc2" after "ifraig" and "scorr" (this way more equivalences are typically found - improves quality)
+    #   (2) run "ifraig" before "scorr" (this way comb equivalences are removed before seq equivalences are computed - improves runtime)
+    #   (3) run "dch -f" immediately before mapping "if" (this alone greatly improves both area and delay of mapping)
+    #   (4) no need to run "scleanup" if "scorr" is used ("scorr" internally performs "scleanup" - improves runtime)
+    #   (5) no need to run"dc2" if "dch -f" is used, alternatively run "dc2; dch -f" (this will take more runtime but may not improve quality)
+    #   (6) the only place to run "strash" is after technology mapping (if the script is run more than once - can improve quality)
     my $abc_commands="
 echo '';
 echo 'Load Netlist';
 echo '============';
 read $odin_output_file_name;
-print_stats;
 time;
 
 echo '';
-echo 'Latch Info';
+echo 'Circuit Info';
 echo '==========';
+print_stats;
 print_latch;
+time;
 
 echo '';
-echo 'Logic Opt';
+echo 'LUT Costs';
 echo '=========';
-resyn;
-resyn2;
-print_stats;
+print_lut;
 time;
 
 echo '';
-echo 'Clean';
-echo '=====';
+echo 'Logic Opt + Techmap';
+echo '===================';
 strash;
-scleanup -v
-print_stats;
-time;
-
-echo '';
-echo 'Techmap';
-echo '=======';
+ifraig -v;
+scorr -v;
+dc2 -v;
+dch -f;
 if -K $lut_size -v;
+mfs2 -v;
 print_stats;
 time;
 
