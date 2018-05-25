@@ -33,30 +33,18 @@ void check_rr_graph(const t_graph_type graph_type,
         const DeviceGrid& grid,
         const int num_rr_switches, const t_type_ptr types) {
 
-    int *num_edges_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
-    int *total_edges_to_node; /* [0..device_ctx.num_rr_nodes-1] */
-    unsigned char *switch_types_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
-    int inode, iedge, to_node, num_edges;
-    short switch_type;
-    t_rr_type rr_type, to_rr_type;
-    enum e_route_type route_type;
-    bool is_fringe_warning_sent;
-    t_type_ptr type;
-
-    route_type = DETAILED;
+    e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;
     }
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    total_edges_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes, sizeof (int));
-    num_edges_from_current_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes,
-            sizeof (int));
-    switch_types_from_current_to_node = (unsigned char *) vtr::calloc(device_ctx.num_rr_nodes,
-            sizeof (char));
+    auto total_edges_to_node = std::vector<int>(device_ctx.num_rr_nodes);
+    auto num_edges_from_current_to_node = std::vector<int>(device_ctx.num_rr_nodes);
+    auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.num_rr_nodes);
 
-    for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 
         /* Ignore any uninitialized rr_graph nodes */
         if ((device_ctx.rr_nodes[inode].type() == SOURCE)
@@ -65,15 +53,15 @@ void check_rr_graph(const t_graph_type graph_type,
             continue;
         }
 
-        rr_type = device_ctx.rr_nodes[inode].type();
-        num_edges = device_ctx.rr_nodes[inode].num_edges();
+        t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+        int num_edges = device_ctx.rr_nodes[inode].num_edges();
 
         check_rr_node(inode, route_type, device_ctx);
 
         /* Check all the connectivity (edges, etc.) information.                    */
 
-        for (iedge = 0; iedge < num_edges; iedge++) {
-            to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+        for (int iedge = 0; iedge < num_edges; iedge++) {
+            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
             check_rr_edge(inode, iedge, to_node);
 
@@ -86,7 +74,7 @@ void check_rr_graph(const t_graph_type graph_type,
             num_edges_from_current_to_node[to_node]++;
             total_edges_to_node[to_node]++;
 
-            switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+            auto switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
             if (switch_type < 0 || switch_type >= num_rr_switches) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -102,28 +90,28 @@ void check_rr_graph(const t_graph_type graph_type,
 
         } /* End for all edges of node. */
 
-        for (iedge = 0; iedge < num_edges; iedge++) {
-            to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+        for (int iedge = 0; iedge < num_edges; iedge++) {
+            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
             if (num_edges_from_current_to_node[to_node] > 1) {
-                to_rr_type = device_ctx.rr_nodes[to_node].type();
+                t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
 
                 if ((to_rr_type != CHANX && to_rr_type != CHANY)
                         || (rr_type != CHANX && rr_type != CHANY)) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "in check_rr_graph: node %d (%s) connects to node %d (%s) %d times - multi-connection only for CHAN->CHAN.\n",
-			    inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_from_current_to_node[to_node]);
+                            inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_from_current_to_node[to_node]);
                 } else {
                     /* Between two wire segments.  Two connections are legal only if  *
                      * one connection is a buffer and the other is a pass transistor. */
                     if (num_edges_from_current_to_node[to_node] != 2) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                 "in check_rr_graph: node %d connects to node %d %d times.\n",
-				inode, to_node, num_edges_from_current_to_node[to_node]);
+                                inode, to_node, num_edges_from_current_to_node[to_node]);
                     } else if (switch_types_from_current_to_node[to_node] != BOTH_BUFFER_AND_PASSGATE) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                 "in check_rr_graph: %d edges between node %d and node %d but edges are not a buffer and a pass gate (actually %s).\n",
-				num_edges_from_current_to_node[to_node], inode, to_node, TYPES_STR[switch_types_from_current_to_node[to_node]]);
+                                num_edges_from_current_to_node[to_node], inode, to_node, TYPES_STR[switch_types_from_current_to_node[to_node]]);
                     }
                 }
             }
@@ -139,10 +127,10 @@ void check_rr_graph(const t_graph_type graph_type,
 
     /* I built a list of how many edges went to everything in the code above -- *
      * now I check that everything is reachable.                                */
-    is_fringe_warning_sent = false;
+    bool is_fringe_warning_sent = false;
 
-    for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        rr_type = device_ctx.rr_nodes[inode].type();
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+        t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
 
         if (rr_type != SOURCE) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(inode)) {
@@ -153,7 +141,7 @@ void check_rr_graph(const t_graph_type graph_type,
                  */
                 bool is_chain = false;
                 if (rr_type == IPIN) {
-                    type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
+                    t_type_ptr type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
                     for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
                         if (fc_spec.fc_value == 0 && fc_spec.seg_index == 0) {
                             is_chain = true;
@@ -200,10 +188,6 @@ void check_rr_graph(const t_graph_type graph_type,
             }
         }
     }
-
-    free(num_edges_from_current_to_node);
-    free(total_edges_to_node);
-    free(switch_types_from_current_to_node);
 }
 
 static bool rr_node_is_global_clb_ipin(int inode) {
