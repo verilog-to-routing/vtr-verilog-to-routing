@@ -19,6 +19,7 @@ circuit_list_add=styr.blif
 arch_list_add=k4_n4_v7_bidir.xml
 arch_list_add=k4_n4_v7_longline_bidir.xml
 arch_list_add=k4_n4_v7_l1_bidir.xml
+arch_list_add=k4_n4_v7_bidir_pass_gate.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
