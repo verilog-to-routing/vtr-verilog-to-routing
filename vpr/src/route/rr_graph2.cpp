@@ -2065,10 +2065,15 @@ static void get_switch_type(
         }
     }
 
-    /* Take the larger switch if there are two */
-    if (forward_switch && backward_switch) {
-        VTR_ASSERT_MSG(device_ctx.arch_switch_inf[from_node_switch].type() == device_ctx.arch_switch_inf[to_node_switch].type(), "Same switch type");
-        VTR_ASSERT_MSG(device_ctx.arch_switch_inf[from_node_switch].directionality() == e_directionality::BI_DIRECTIONAL, "Bi-dir switches");
+    /* Take the larger switch if there are two of the same type */
+    if (forward_switch 
+        && backward_switch 
+        && (device_ctx.arch_switch_inf[from_node_switch].type() == device_ctx.arch_switch_inf[to_node_switch].type())) {
+
+        //Sanity checks
+        VTR_ASSERT_SAFE_MSG(device_ctx.arch_switch_inf[from_node_switch].type() == device_ctx.arch_switch_inf[to_node_switch].type(), "Same switch type");
+        VTR_ASSERT_MSG(device_ctx.arch_switch_inf[to_node_switch].directionality() == e_directionality::BI_DIRECTIONAL, "Bi-dir to switch");
+        VTR_ASSERT_MSG(device_ctx.arch_switch_inf[from_node_switch].directionality() == e_directionality::BI_DIRECTIONAL, "Bi-dir from switch");
 
         /* Take the smaller index unless the other
          * switch is bigger (smaller R). */
