@@ -8,15 +8,6 @@
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 
-/********************** Local defines and types *****************************/
-
-#define IS_BUFFER 			0x1
-#define IS_PASSGATE 			0x2
-#define BOTH_BUFFER_AND_PASSGATE	(IS_BUFFER | IS_PASSGATE)
-
-const char *TYPES_STR[] = {"none", "buffered", "pass gate", "both buffered and pass gate", NULL};
-
-
 /*********************** Subroutines local to this module *******************/
 
 static bool rr_node_is_global_clb_ipin(int inode);
@@ -41,7 +32,6 @@ void check_rr_graph(const t_graph_type graph_type,
     auto& device_ctx = g_vpr_ctx.device();
 
     auto total_edges_to_node = std::vector<int>(device_ctx.num_rr_nodes);
-    auto num_edges_from_current_to_node = std::vector<int>(device_ctx.num_rr_nodes);
     auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.num_rr_nodes);
 
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
@@ -60,6 +50,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
         /* Check all the connectivity (edges, etc.) information.                    */
 
+        std::map<int,std::vector<int>> edges_from_current_to_node;
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
@@ -71,7 +62,7 @@ void check_rr_graph(const t_graph_type graph_type,
                         "\tEdge is out of range.\n", inode, to_node);
             }
 
-            num_edges_from_current_to_node[to_node]++;
+            edges_from_current_to_node[to_node].push_back(iedge);
             total_edges_to_node[to_node]++;
 
             auto switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
@@ -82,42 +73,50 @@ void check_rr_graph(const t_graph_type graph_type,
                         "\tSwitch type is out of range.\n",
                         inode, switch_type);
             }
-
-            if (device_ctx.rr_switch_inf[switch_type].buffered)
-                switch_types_from_current_to_node[to_node] |= IS_BUFFER;
-            else
-                switch_types_from_current_to_node[to_node] |= IS_PASSGATE;
-
         } /* End for all edges of node. */
 
+        //Check that multiple edges between the same from/to nodes make sense
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
-            if (num_edges_from_current_to_node[to_node] > 1) {
-                t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
+            if (edges_from_current_to_node[to_node].size() == 1) continue; //Single edges are always OK
 
-                if ((to_rr_type != CHANX && to_rr_type != CHANY)
-                        || (rr_type != CHANX && rr_type != CHANY)) {
-                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "in check_rr_graph: node %d (%s) connects to node %d (%s) %d times - multi-connection only for CHAN->CHAN.\n",
-                            inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_from_current_to_node[to_node]);
-                } else {
-                    /* Between two wire segments.  Two connections are legal only if  *
-                     * one connection is a buffer and the other is a pass transistor. */
-                    if (num_edges_from_current_to_node[to_node] != 2) {
-                        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                "in check_rr_graph: node %d connects to node %d %d times.\n",
-                                inode, to_node, num_edges_from_current_to_node[to_node]);
-                    } else if (switch_types_from_current_to_node[to_node] != BOTH_BUFFER_AND_PASSGATE) {
-                        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                "in check_rr_graph: %d edges between node %d and node %d but edges are not a buffer and a pass gate (actually %s).\n",
-                                num_edges_from_current_to_node[to_node], inode, to_node, TYPES_STR[switch_types_from_current_to_node[to_node]]);
-                    }
-                }
+            VTR_ASSERT_MSG(edges_from_current_to_node[to_node].size() > 1, "Expect multiple edges");
+
+            t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
+
+            //Only expect chan <-> chan connections to have multiple edges
+            if ((to_rr_type != CHANX && to_rr_type != CHANY)
+                || (rr_type != CHANX && rr_type != CHANY)) {
+                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                        "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN->CHAN.\n",
+                        inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], edges_from_current_to_node[to_node].size());
             }
 
-            num_edges_from_current_to_node[to_node] = 0;
-            switch_types_from_current_to_node[to_node] = 0;
+            //Between two wire segments
+            VTR_ASSERT_MSG(to_rr_type == CHANX || to_rr_type == CHANY, "Expect channel type");
+            VTR_ASSERT_MSG(rr_type == CHANX || rr_type == CHANY, "Expect channel type");
+
+            //While multiple connections between the same wires can be electrically legal,
+            //they are redundant if they are of the same switch type.
+            //
+            //Identify any such edges with identical switches
+            std::map<short,int> switch_counts;
+            for (auto edge : edges_from_current_to_node[to_node]) {
+                auto edge_switch = device_ctx.rr_nodes[inode].edge_switch(edge);
+
+                switch_counts[edge_switch]++;
+            }
+
+            //Tell the user about any redundant edges
+            for (auto kv : switch_counts) {
+                if (kv.second <= 1) continue;
+
+                auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
+
+                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)", 
+                          inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
+            }
         }
 
         /* Slow test could leave commented out most of the time. */

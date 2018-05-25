@@ -1015,14 +1015,15 @@ struct t_segment_inf {
 };
 
 enum class SwitchType {
-    TRISTATE,   //A tri-stateable buffer
-    MUX,        //A (buffered) mux (uni-dir)
-    PASS_GATE,  //A pass transitor switch (bi-dir)
-    SHORT,      //A non-configurable electrically shorted connection (bi-dir)
-    BUFFER,     //A non-configurable buffer (uni-dir)
-    INVALID,    //Unspecified, usually an error
-    NUM_SWITCH_TYPES = INVALID
+    MUX = 0,        //A configurable (buffered) mux (single-driver)
+    TRISTATE,       //A configurable tristate-able buffer (multi-driver)
+    PASS_GATE,      //A configurable pass transitor switch (multi-driver)
+    SHORT,          //A non-configurable electrically shorted connection (multi-driver)
+    BUFFER,         //A non-configurable non-tristate-able buffer (uni-driver)
+    INVALID,        //Unspecified, usually an error
+    NUM_SWITCH_TYPES
 };
+constexpr std::array<const char*,size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID" }};
 
 enum class BufferSize {
     AUTO,
