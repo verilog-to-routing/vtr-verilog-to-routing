@@ -27,4 +27,6 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params = --echo_file on
+#   The real test parameter is turning on echo file generation
+#   We set a non-standard seed to avoid a spurious routing failure at the relaxed channel width (this can be removed in the future if it routes with the default seed)
+script_params = --echo_file on -seed 2
