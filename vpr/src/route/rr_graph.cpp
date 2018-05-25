@@ -2312,7 +2312,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         t_rr_edge_info_set rr_edges_to_create;
 
         int opin_node_index = get_rr_node_index(L_rr_node_indices, i, j, OPIN, pin_index, side);
-        VTR_ASSERT(opin_node_index >= 0);
+        if (opin_node_index < 0) continue; //No valid from node
 
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
 
