@@ -1069,6 +1069,9 @@ struct t_arch_switch_inf {
         //Returns true if this switch type is configurable
         bool configurable() const;
 
+        //Returns whether the switch's directionality (e.g. BI_DIR, UNI_DIR)
+        e_directionality directionality() const;
+
         //Returns the intrinsic delay of this switch
         float Tdel(int fanin=UNDEFINED_FANIN) const;
 
