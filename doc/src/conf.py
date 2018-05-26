@@ -57,6 +57,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sdcdomain',
     'archdomain',
+    'rrgraphdomain',
 ]
 
 if have_sphinxcontrib_bibtex:

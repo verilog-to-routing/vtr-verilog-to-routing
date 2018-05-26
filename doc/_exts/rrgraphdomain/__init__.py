@@ -1,0 +1,1 @@
+from rrgraphdomain import setup
