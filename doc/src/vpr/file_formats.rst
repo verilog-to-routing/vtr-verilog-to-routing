@@ -594,7 +594,7 @@ Channel
 
 The channel information is contained within the ``channels`` subtag. This describes the minimum and maximum channel width within the architecture. Each ``channels`` tag has the following subtags:
 
-.. arch:tag:: <channel chan_width_max="int" x_min="int" y_min="int" x_max="int" y_max="int"/>
+.. rrgraph:tag:: <channel chan_width_max="int" x_min="int" y_min="int" x_max="int" y_max="int"/>
 
     This is a required subtag that contains information about the general channel width information. This stores the channel width between x or y directed channels.
 
@@ -604,7 +604,7 @@ The channel information is contained within the ``channels`` subtag. This descri
     :req_param x_min y_min x_max y_max:
         Stores the minimum and maximum value of x and y coordinate within the lists.
 
-.. arch:tag:: <x_list index="int" info="int"/>  <y_list index="int" info="int"/>
+.. rrgraph:tag:: <x_list index="int" info="int"/>  <y_list index="int" info="int"/>
 
         These are a required subtags that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array.
 
@@ -621,7 +621,7 @@ Switches
 
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each switch tag has a ``switch`` subtag.
 
-.. arch:tag:: <switch id="int" name="unique_identifier" buffered="int" type="{mux|tristate|pass_gate|short|buffer}" configurable="int">
+.. rrgraph:tag:: <switch id="int" name="unique_identifier" type="{mux|tristate|pass_gate|short|buffer}">
 
     :req_param id:
         A unique identifier for that type of switch.
@@ -629,20 +629,10 @@ A ``switches`` tag contains all the switches and its information within the FPGA
     :req_param name:
         An optional general identifier for the switch.
 
-    :req_param buffered:
-        An integer value that describes whether the switch includes a buffer. 1 means a buffer is included.
-
     :req_param type:
-        See arch doc.
+        See :ref:`architecture switch description <arch_switches>`.
 
-    :opt_param configurable:
-        Indicates whether the switch is configurable (``1``) or non-configurable (``0``).
-
-        **Default**: ``1``
-
-        .. seealso:: :ref:`Architecture Switches <arch_switches>`
-
-.. arch:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
+.. rrgraph:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
 
         This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
 
@@ -652,7 +642,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
     :opt_param Tdel:
         Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout.
 
-.. arch:tag:: <sizing mux_trans_size="int" buf_size="float"/>
+.. rrgraph:tag:: <sizing mux_trans_size="int" buf_size="float"/>
 
         The sizing information contains all the information needed for area calculation.
 
@@ -667,7 +657,7 @@ Segments
 
 The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision. Each segment is then enclosed in its own ``segment`` tag.
 
-.. arch:tag:: <segment id="int" name="unique_identifier">
+.. rrgraph:tag:: <segment id="int" name="unique_identifier">
 
     :req_param id:
         The index of this segment.
@@ -675,7 +665,7 @@ The ``segments`` tag contains all the segments and its information. Note again t
     :req_param name:
         The name of this segment.
 
-.. arch:tag:: <timing R_per_meter="float" C_per_meter="float">
+.. rrgraph:tag:: <timing R_per_meter="float" C_per_meter="float">
 
         This optional tag defines the timing information of this segment.
 
@@ -687,7 +677,7 @@ Blocks
 
 The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. Information here is checked to make sure it corresponds with the architecture. It contains the following subtags:
 
-.. arch:tag:: <block_type id="int" name="unique_identifier" width="int" height="int">
+.. rrgraph:tag:: <block_type id="int" name="unique_identifier" width="int" height="int">
 
         This describes generation information about the block using the following attributes:
 
@@ -700,14 +690,14 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
     :req_param width, height:
         The width and height of a large block in grid tiles.
 
-.. arch:tag:: <pin_class type="pin_type">
+.. rrgraph:tag:: <pin_class type="pin_type">
 
         This optional subtag of ``block_type`` describes groups of pins in configurable logic blocks that share common properties.
 
     :req_param type:
         This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``.
 
-.. arch:tag:: <pin ptc="block_pin_index">name</pin>
+.. rrgraph:tag:: <pin ptc="block_pin_index">name</pin>
 
         This required subtag of ``pin_class`` describes its pins.
 
@@ -722,7 +712,7 @@ Grid
 
 The ``grid`` tag contains information about the grid of the FPGA. Information here is checked to make sure it corresponds with the architecture. Each grid tag has one subtag as outlined below:
 
-.. arch:tag:: <grid_loc x="int" y="int" block_type_id="int" width_offset="int" height_offset="int">
+.. rrgraph:tag:: <grid_loc x="int" y="int" block_type_id="int" width_offset="int" height_offset="int">
 
     :req_param x, y:
         The x and y  coordinate location of this grid tile.
@@ -738,7 +728,7 @@ Nodes
 
 The ``rr_nodes`` tag stores information about each node for the routing resource graph. These nodes describe each wire and each logic block pin as represented by nodes.
 
-.. arch:tag:: <node id="int" type="unique_type" direction="unique_direction" capacity="int">
+.. rrgraph:tag:: <node id="int" type="unique_type" direction="unique_direction" capacity="int">
 
     :req_param id:
         The index of the particular routing resource node
@@ -757,7 +747,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
     :req_param capacity:
         The number of routes that can use this node.
 
-.. arch:tag:: <loc xlow="int" ylow="int" xhigh="int" yhigh="int" side="{LEFT|RIGHT|TOP|BOTTOM}" ptc="int">
+.. rrgraph:tag:: <loc xlow="int" ylow="int" xhigh="int" yhigh="int" side="{LEFT|RIGHT|TOP|BOTTOM}" ptc="int">
 
     Contains location information for this node. For pins or segments of length one, xlow = xhigh and ylow = yhigh.
 
@@ -772,7 +762,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
     :req_param ptc:
         This is the pin, track, or class number that depends on the rr_node type.
 
-.. arch:tag:: <timing R="float" C="float">
+.. rrgraph:tag:: <timing R="float" C="float">
 
     This optional subtag contains information used for timing analysis
 
@@ -782,7 +772,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
     :req_param C:
         The total capacitance of this node. This includes the metal capacitance, input capacitance of all the switches hanging off the node, the output capacitance of all the switches to the node, and the connection box buffer capacitances that hangs off it.
 
-.. arch:tag:: <segment segment_id="int">
+.. rrgraph:tag:: <segment segment_id="int">
 
       This optional subtag describes the information of the segment that connects to the node.
 
@@ -794,7 +784,7 @@ Edges
 
 The final subtag is the ``rr_edges`` tag that encloses information about all the edges between nodes. Each ``rr_edges`` tag contains multiple subtags:
 
-.. arch:tag:: <edge src_node="int" sink_node="int" switch_id="int"/>
+.. rrgraph:tag:: <edge src_node="int" sink_node="int" switch_id="int"/>
 
     This subtag repeats every edge that connects nodes together in the graph.
 

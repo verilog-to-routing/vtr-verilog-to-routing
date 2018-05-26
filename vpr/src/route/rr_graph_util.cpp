@@ -6,41 +6,6 @@
 #include "globals.h"
 #include "rr_graph_util.h"
 
-t_linked_edge *
-insert_in_edge_list(t_linked_edge * head, const int edge, const short iswitch, t_rr_edge_dir edge_dir) {
-
-	/* Inserts a new element at the head of a linked list.  Returns the new head *
-	 * of the list.  One argument is the address of the head of a list of free   *
-	 * edge_list elements.  If there are any elements on this free list, the new *
-	 * element is taken from it.  Otherwise a new one is malloced.               */
-
-	t_linked_edge *linked_edge;
-
-	linked_edge = (t_linked_edge *) vtr::malloc(sizeof(t_linked_edge));
-
-	linked_edge->edge = edge;
-	linked_edge->iswitch = iswitch;
-	linked_edge->edge_dir = edge_dir;
-	linked_edge->next = head;
-
-	return linked_edge;
-}
-
-#if 0
-void
-free_linked_edge_soft(INOUT t_linked_edge * edge_ptr,
-		INOUT t_linked_edge ** free_list_head_ptr)
-{
-
-	/* This routine does a soft free of the structure pointed to by edge_ptr by *
-	 * adding it to the free list.  You have to pass in the address of the      *
-	 * head of the free list.                                                   */
-
-	edge_ptr->next = *free_list_head_ptr;
-	*free_list_head_ptr = edge_ptr;
-}
-#endif
-
 int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 
 	/* Returns the segment number (distance along the channel) of the connection *

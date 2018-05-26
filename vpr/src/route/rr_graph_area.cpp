@@ -184,7 +184,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 				case CHANY:
 					iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
 
-					if (device_ctx.rr_switch_inf[iswitch].buffered) {
+					if (device_ctx.rr_switch_inf[iswitch].buffered()) {
 						iseg = seg_index_of_sblock(from_node, to_node);
 						shared_buffer_trans[iseg] = max(shared_buffer_trans[iseg],
 								sharable_switch_trans[iswitch]);
@@ -548,7 +548,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
             unsharable_switch_trans[i] = 0.;
         } else {
 
-            if (device_ctx.rr_switch_inf[i].buffered == false) {
+            if (!device_ctx.rr_switch_inf[i].buffered()) {
                 Rpass = device_ctx.rr_switch_inf[i].R;
             } else { /* Buffer.  Set Rpass = Rbuf = 1/2 Rtotal. */
                 Rpass = device_ctx.rr_switch_inf[i].R / 2.;
@@ -556,7 +556,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 
             unsharable_switch_trans[i] = trans_per_R(Rpass, R_minW_nmos);
 
-            if (device_ctx.rr_switch_inf[i].configurable) {
+            if (device_ctx.rr_switch_inf[i].configurable()) {
                 //Configurable switches use SRAM
                 unsharable_switch_trans[i] += trans_sram_bit;
             }
@@ -585,7 +585,7 @@ alloc_and_load_sharable_switch_trans(int num_switch,
 
 	for (i = 0; i < num_switch; i++) {
 
-		if (device_ctx.rr_switch_inf[i].buffered == false) {
+		if (!device_ctx.rr_switch_inf[i].buffered()) {
 			sharable_switch_trans[i] = 0.;
 		} else { /* Buffer.  Set Rbuf = Rpass = 1/2 Rtotal. */
 			Rbuf = device_ctx.rr_switch_inf[i].R / 2.;

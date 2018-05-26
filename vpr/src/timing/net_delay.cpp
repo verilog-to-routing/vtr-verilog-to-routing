@@ -344,7 +344,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 		child_node = linked_rc_edge->child;
 		C_downstream = load_rc_tree_C(child_node);
 
-		if (device_ctx.rr_switch_inf[iswitch].buffered == false)
+		if (!device_ctx.rr_switch_inf[iswitch].buffered())
 			C += C_downstream;
 
 		linked_rc_edge = linked_rc_edge->next;

@@ -13,6 +13,22 @@ enum e_seg_details_type {
 	SEG_DETAILS_X, SEG_DETAILS_Y
 };
 
+struct t_rr_edge_info {
+    t_rr_edge_info(int from, int to, int type)
+        : from_node(from), to_node(to), switch_type(type) {}
+
+    int from_node = OPEN;
+    int to_node = OPEN;
+    int switch_type = OPEN;
+
+    friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
+        return std::tie(lhs.from_node, lhs.to_node, lhs.switch_type) <
+               std::tie(rhs.from_node, rhs.to_node, rhs.switch_type);
+    }
+};
+
+typedef std::set<t_rr_edge_info> t_rr_edge_info_set;
+
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
@@ -122,9 +138,9 @@ bool is_sblock(
 int get_bidir_opin_connections(
 		const int i, const int j,
 		const int ipin,
-		t_linked_edge **edge_list,
+        const int from_rr_node,
+        t_rr_edge_info_set& rr_edges_to_create,
 		const t_pin_to_track_lookup& opin_to_track_map,
-		bool *L_rr_edge_done,
 		const t_rr_node_indices& L_rr_node_indices,
 		const t_seg_details *seg_details);
 
@@ -135,9 +151,9 @@ int get_unidir_opin_connections(
 		const int seg_type_index,
 		const t_rr_type chan_type,
 		const t_seg_details *seg_details,
-		t_linked_edge **edge_list_ptr,
+        const int from_rr_node,
+        t_rr_edge_info_set& rr_edges_to_create,
         vtr::NdMatrix<int,3>& Fc_ofs,
-		bool *L_rr_edge_done,
 		const int max_len,
 		const int max_chan_width,
 		const t_rr_node_indices& L_rr_node_indices,
@@ -145,7 +161,9 @@ int get_unidir_opin_connections(
 
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
-		t_linked_edge **edge_list_ptr, const t_rr_node_indices& L_rr_node_indices,
+        int from_rr_node,
+        t_rr_edge_info_set& rr_edges_to_create,
+        const t_rr_node_indices& L_rr_node_indices,
 		const t_track_to_pin_lookup& track_to_pin_lookup, t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
@@ -162,13 +180,13 @@ int get_track_to_tracks(
         const DeviceGrid& grid,
 		const int Fs_per_side,
 		short ******sblock_pattern,
-		t_linked_edge **edge_list,
+        const int from_rr_node,
+        t_rr_edge_info_set& rr_edges_to_create,
 		const t_seg_details *from_seg_details,
 		const t_seg_details *to_seg_details,
 		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
 		const t_rr_node_indices& L_rr_node_indices,
-		bool *L_rr_edge_done,
 		const vtr::NdMatrix<std::vector<int>,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map);
 

@@ -65,7 +65,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 					switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
 					Cin = device_ctx.rr_switch_inf[switch_index].Cin;
 					Cout = device_ctx.rr_switch_inf[switch_index].Cout;
-					buffered = device_ctx.rr_switch_inf[switch_index].buffered;
+					buffered = device_ctx.rr_switch_inf[switch_index].buffered();
 
 					/* If both the switch from inode to to_node and the switch from *
 					 * to_node back to inode use bidirectional switches (i.e. pass  *

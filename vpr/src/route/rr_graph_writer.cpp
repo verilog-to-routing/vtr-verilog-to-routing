@@ -167,12 +167,13 @@ void write_rr_switches(fstream &fp) {
         } else {
             VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type %d\n", rr_switch.type());
         }
+        fp << "\"";
 
         if (rr_switch.name) {
-            fp << "\" name=\"" << rr_switch.name;
+            fp << " name=\"" << rr_switch.name << "\"";
         }
-        fp << "\" buffered=\"" << (int) rr_switch.buffered;
-        fp << "\" configurable=\"" << (int) rr_switch.configurable << "\">" << endl;
+        fp << ">" << endl;
+
         fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.R <<
                 "\" Cin=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cin <<
                 "\" Cout=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cout <<

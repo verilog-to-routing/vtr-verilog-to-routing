@@ -109,7 +109,7 @@ bool t_rr_node::edge_is_configurable(short iedge) const {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    return device_ctx.rr_switch_inf[iswitch].configurable;
+    return device_ctx.rr_switch_inf[iswitch].configurable();
 }
 
 float t_rr_node::R() const {
@@ -207,7 +207,7 @@ void t_rr_node::partition_edges() {
     auto& device_ctx = g_vpr_ctx.device();
     auto is_configurable = [&](const t_rr_edge& edge) {
         auto iswitch =  edge.switch_id;
-        return device_ctx.rr_switch_inf[iswitch].configurable;
+        return device_ctx.rr_switch_inf[iswitch].configurable();
     };
 
     //Partition the edges so the first set of edges are all configurable, and the later are not

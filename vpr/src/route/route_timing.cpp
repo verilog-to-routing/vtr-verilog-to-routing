@@ -1353,7 +1353,7 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
 
     //Switch info
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
-    bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
+    bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
 
