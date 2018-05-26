@@ -3149,8 +3149,8 @@ static void check_place(float bb_cost, float timing_cost,
 
 				if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
-							"Block %zu type does not match grid location (%zu,%zu) type.\n",
-							size_t(bnum), i, j);
+							"Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
+							size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
 					error++;
 				}
 				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
