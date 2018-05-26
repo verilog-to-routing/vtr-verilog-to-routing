@@ -443,7 +443,7 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
     float R_upstream = 0.;
     if (parent_rt_node) {
         int iswitch = rt_node->parent_switch;
-        bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
+        bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
 
         if (!switch_buffered) {
                 R_upstream += parent_rt_node->R_upstream; //Parent upstream R
@@ -472,7 +472,7 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
 
             float C_downstream_child = load_new_subtree_C_downstream(edge->child);
 
-            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered) {
+            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
                 C_downstream += C_downstream_child;
             }
         }
@@ -502,7 +502,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	parent_rt_node = rt_node->parent_node;
 	iswitch = rt_node->parent_switch;
 
-	while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered == false) {
+	while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
 		rt_node = parent_rt_node;
 		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;
@@ -639,7 +639,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     vtr::printf("%srt_node: %d (%s)", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
 
     if (rt_node->parent_switch != OPEN) {
-        bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable;
+        bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
         if (!parent_edge_configurable) {
             vtr::printf("*");
         }
@@ -987,7 +987,7 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
 
         bool reached_non_configurably = false;
         if (node->parent_node) {
-            reached_non_configurably = !device_ctx.rr_switch_inf[node->parent_switch].configurable;
+            reached_non_configurably = !device_ctx.rr_switch_inf[node->parent_switch].configurable();
         }
 
         if (reached_non_configurably && !force_prune) {
@@ -1220,7 +1220,7 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	int inode = root->inode;
 	short iswitch = root->parent_switch;
 	if (root->parent_node) {
-		if (device_ctx.rr_switch_inf[iswitch].buffered) {
+		if (device_ctx.rr_switch_inf[iswitch].buffered()) {
 			if (root->R_upstream != device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R) {
 				vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
 					device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R);
@@ -1263,7 +1263,7 @@ bool is_valid_route_tree(const t_rt_node* root) {
 			return false;
 		}
 
-		if (!device_ctx.rr_switch_inf[edge->iswitch].buffered)
+		if (!device_ctx.rr_switch_inf[edge->iswitch].buffered())
 			C_downstream_children += edge->child->C_downstream;
 
 		if (!is_valid_route_tree(edge->child)) {

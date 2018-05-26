@@ -291,12 +291,12 @@ static void draw_pin_to_pin(int opin, int ipin);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
 						   bool buffered, bool switch_configurable);
 static void draw_chany_to_chany_edge(int from_node, int to_node,
-									 int to_track, short switch_type, bool configurable);
+									 int to_track, short switch_type);
 static void draw_chanx_to_chanx_edge(int from_node, int to_node,
-									 int to_track, short switch_type, bool configurable);
+									 int to_track, short switch_type);
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node,
 									 int chany_track, enum e_edge_dir edge_dir,
-									 short switch_type, bool configurable);
+									 short switch_type);
 static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
 static bool draw_if_net_highlighted (ClusterNetId inet);
 static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
@@ -1423,7 +1423,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chanx_edge(inode, to_node,
-						to_ptc_num, switch_type, edge_configurable);
+						to_ptc_num, switch_type);
 				break;
 
 			case CHANY:
@@ -1438,7 +1438,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
-						to_ptc_num, FROM_X_TO_Y, switch_type, edge_configurable);
+						to_ptc_num, FROM_X_TO_Y, switch_type);
 				break;
 
 			default:
@@ -1487,7 +1487,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
-						from_ptc_num, FROM_Y_TO_X, switch_type, edge_configurable);
+						from_ptc_num, FROM_Y_TO_X, switch_type);
 				break;
 
 			case CHANY:
@@ -1502,7 +1502,7 @@ static void draw_rr_edges(int inode) {
                 }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chany_to_chany_edge(inode, to_node,
-						to_ptc_num, switch_type, edge_configurable);
+						to_ptc_num, switch_type);
 				break;
 
 			default:
@@ -1534,7 +1534,7 @@ static void draw_x(float x, float y, float size) {
 
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		int chany_node, int chany_track, enum e_edge_dir edge_dir,
-		short switch_type, bool configurable) {
+		short switch_type) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1597,16 +1597,16 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[chanx_node].node_highlighted) {
         if (edge_dir == FROM_X_TO_Y) {
-            draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
+            draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable());
         } else {
-            draw_rr_switch(x2, y2, x1, y1, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
+            draw_rr_switch(x2, y2, x1, y1, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable());
         }
     }
 }
 
 
 static void draw_chanx_to_chanx_edge(int from_node, int to_node,
-		int to_track, short switch_type, bool configurable) {
+		int to_track, short switch_type) {
 
 	/* Draws a connection between two x-channel segments.  Passing in the track *
 	 * numbers allows this routine to be used for both rr_graph and routing     *
@@ -1687,13 +1687,13 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
-		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
+		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable());
 	}
 }
 
 
 static void draw_chany_to_chany_edge(int from_node, int to_node,
-		int to_track, short switch_type, bool configurable) {
+		int to_track, short switch_type) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1773,7 +1773,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
-		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered, configurable);
+		draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable());
 	}
 }
 
@@ -2051,7 +2051,6 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
         int iedge = find_edge(prev_node, inode);
         auto switch_type = device_ctx.rr_nodes[prev_node].edge_switch(iedge);
-        bool edge_configurable = device_ctx.rr_nodes[prev_node].edge_is_configurable(iedge);
 
         switch (rr_type) {
 
@@ -2079,14 +2078,14 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
                     case CHANX: {
                         draw_chanx_to_chanx_edge(prev_node, inode,
-                                itrack, switch_type, edge_configurable);
+                                itrack, switch_type);
                         break;
                     }
                     case CHANY: {
                         int prev_track = get_track_num(prev_node, chanx_track,
                                 chany_track);
                         draw_chanx_to_chany_edge(inode, itrack, prev_node,
-                                prev_track, FROM_Y_TO_X, switch_type, edge_configurable);
+                                prev_track, FROM_Y_TO_X, switch_type);
                         break;
                     }
                     case OPIN: {
@@ -2115,12 +2114,12 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
                         int prev_track = get_track_num(prev_node, chanx_track,
                                 chany_track);
                         draw_chanx_to_chany_edge(prev_node, prev_track, inode,
-                                itrack, FROM_X_TO_Y, switch_type, edge_configurable);
+                                itrack, FROM_X_TO_Y, switch_type);
                         break;
                     }
                     case CHANY: {
                         draw_chany_to_chany_edge(prev_node, inode,
-                                itrack, switch_type, edge_configurable);
+                                itrack, switch_type);
                         break;
                     }
                     case OPIN: {

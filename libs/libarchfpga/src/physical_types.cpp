@@ -59,6 +59,14 @@ SwitchType t_rr_switch_inf::type() const {
     return type_;
 }
 
+bool t_rr_switch_inf::buffered() const {
+    return switch_type_is_buffered(type());
+}
+
+bool t_rr_switch_inf::configurable() const {
+    return switch_type_is_configurable(type());
+}
+
 void t_rr_switch_inf::set_type(SwitchType type_val) {
     type_ = type_val;
 }

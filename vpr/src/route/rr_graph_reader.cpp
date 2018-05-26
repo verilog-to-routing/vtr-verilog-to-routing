@@ -229,8 +229,6 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
             VPR_THROW(VPR_ERROR_ROUTE, "Invalid switch type '%s'\n", switch_type_str.c_str());
         }
         rr_switch.set_type(switch_type);
-        rr_switch.buffered = get_attribute(Switch, "buffered", loc_data).as_bool();
-        rr_switch.configurable = get_attribute(Switch, "configurable", loc_data, OPTIONAL).as_bool(true);
         SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
         if (SwitchSubnode) {
             rr_switch.R = get_attribute(SwitchSubnode, "R", loc_data).as_float();

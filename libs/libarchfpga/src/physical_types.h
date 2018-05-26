@@ -1060,6 +1060,7 @@ struct t_arch_switch_inf {
         e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
         float power_buffer_size = 0.;
     public:
+        //Returns the type of switch
         SwitchType type() const;
 
         //Returns true if this switch type isolates its input and output into
@@ -1108,8 +1109,6 @@ struct t_arch_switch_inf {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 struct t_rr_switch_inf {
-	bool buffered = false;
-    bool configurable = true;
 	float R = 0.;
 	float Cin = 0.;
 	float Cout = 0.;
@@ -1120,7 +1119,16 @@ struct t_rr_switch_inf {
 	e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
 	float power_buffer_size = 0.;
     public:
+        //Returns the type of switch
         SwitchType type() const;
+
+        //Returns true if this switch type isolates its input and output into
+        //seperate DC-connected subcircuits
+        bool buffered() const;
+
+        //Returns true if this switch type is configurable
+        bool configurable() const;
+
     public:
         void set_type(SwitchType type_val);
     private:

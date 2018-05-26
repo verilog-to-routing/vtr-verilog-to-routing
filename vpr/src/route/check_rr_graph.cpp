@@ -475,7 +475,7 @@ static void check_unbuffered_edges(int from_node) {
 
         from_switch_type = device_ctx.rr_nodes[from_node].edge_switch(from_edge);
 
-        if (device_ctx.rr_switch_inf[from_switch_type].buffered)
+        if (device_ctx.rr_switch_inf[from_switch_type].buffered())
             continue;
 
         /* We know that we have a pass transistor from from_node to to_node. Now *

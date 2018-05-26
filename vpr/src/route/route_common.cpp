@@ -1729,7 +1729,7 @@ void print_traceback(const t_trace* trace) {
             vtr::printf(" !"); //End of branch
         }
 
-        if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable) {
+        if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable()) {
             vtr::printf("*"); //Reached non-configurably
         }
 
