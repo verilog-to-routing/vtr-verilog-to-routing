@@ -129,8 +129,7 @@ void free_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay,
     vtr::free_chunk_memory(chunk_list_ptr);
 }
 
-void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_delay,
-                                 bool route_clock) {
+void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_delay) {
 
 	/* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
 	 * is the Elmore delay from the net source to the appropriate sink.  Both    *
@@ -151,7 +150,7 @@ void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_del
 	rc_edge_free_list = nullptr;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id) && !route_clock) {
+		if (cluster_ctx.clb_nlist.net_is_global(net_id)) {
 			load_one_constant_net_delay(net_delay, net_id, 0.);
 		} else {
 			rc_root = alloc_and_load_rc_tree(net_id, &rc_node_free_list,

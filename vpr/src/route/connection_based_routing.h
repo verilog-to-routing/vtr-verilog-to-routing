@@ -30,7 +30,7 @@ class Connection_based_routing_resources {
 	// order does not matter
 	std::vector<t_rt_node*> reached_rt_sinks;
 public:
-	Connection_based_routing_resources(bool route_clock);
+	Connection_based_routing_resources();
 	// adding to the resources when they are reached during pruning
 	// mark rr sink node as something that still needs to be reached
 	void toreach_rr_sink(int rr_sink_node) {remaining_targets.push_back(rr_sink_node);}

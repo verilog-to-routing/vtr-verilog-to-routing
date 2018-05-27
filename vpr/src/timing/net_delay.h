@@ -8,7 +8,6 @@ vtr::vector_map<ClusterNetId, float *> alloc_net_delay(vtr::t_chunk *chunk_list_
 void free_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay,
 		vtr::t_chunk *chunk_list_ptr);
 
-void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_delay,
-                                 bool route_clock);
+void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_delay);
 
 #endif

@@ -6,6 +6,7 @@ enum e_clock_modeling {
     ROUTED_CLOCK //Treat the clock pins as normal nets (i.e. routed)
 };
 
+
 namespace ClockModeling
 {
     /* Removes global pin flag from clock pins.

@@ -256,8 +256,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			router_opts.trim_obs_channels,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
-			&warning_count,
-            router_opts.route_clock);
+			&warning_count);
 
 	clock_t end = clock();
 
@@ -315,8 +314,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			router_opts.trim_obs_channels,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
-			&warning_count,
-            router_opts.route_clock);
+			&warning_count);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);
