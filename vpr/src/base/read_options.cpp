@@ -684,7 +684,8 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.RouteChanWidth, "--route_chan_width")
-            .help("Specifies a fixed channel width to route at.")
+            .help("Specifies a fixed channel width to route at."
+                  " A value of -1 indicates that the minimum channel width should be determined")
             .default_value("-1")
             .metavar("CHANNEL_WIDTH");
 
