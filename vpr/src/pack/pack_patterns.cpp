@@ -661,9 +661,21 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
 
     if (pattern.nodes[pattern_node_id].is_internal()) {
         match.internal_blocks.push_back(blk);
+
+        //Internal block matches take priority over external block matches,
+        //so remove from external blocks if already matched to an external block
+        auto itr = std::find(match.external_blocks.begin(), match.external_blocks.end(), blk);
+        if (itr != match.external_blocks.end()) {
+            match.external_blocks.erase(itr);
+        }
     } else {
         VTR_ASSERT(pattern.nodes[pattern_node_id].is_external());
-        match.external_blocks.push_back(blk);
+        bool already_matched_as_internal = (std::find(match.internal_blocks.begin(), match.internal_blocks.end(), blk) != match.internal_blocks.end());
+        if (already_matched_as_internal) {
+            return false;
+        } else {
+            match.external_blocks.push_back(blk);
+        }
     }
 
     for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) {
@@ -702,17 +714,23 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
                 }
             }
 
-            //Valid match between netlist from_pin/to_pin and from_pattern_pin/to_pattern_pin
-            //Add it to the match
-            match.netlist_edges.emplace_back(from_pin, to_pin, pattern_edge_id, isink);
-
             //Collect any downstream matches recursively
             AtomBlockId to_blk = netlist.pin_block(to_pin);
             bool subtree_matched = match_largest_recur(match, to_blk, to_pattern_pin.node_id, pattern, excluded_blocks, netlist);
 
             if (!subtree_matched) {
-                return false;
+                if (to_pattern_pin.required) {
+                    //Required: give-up
+                    return false;
+                } else {
+                    //Optional: try next pattern pin
+                    continue;
+                }
             }
+
+            //Valid match between netlist from_pin/to_pin and from_pattern_pin/to_pattern_pin
+            //Add it to the match
+            match.netlist_edges.emplace_back(from_pin, to_pin, pattern_edge_id, isink);
         }
     }
 
