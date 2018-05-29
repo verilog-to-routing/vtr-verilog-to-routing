@@ -1485,11 +1485,6 @@ static PackMolecule create_molecule(const NetlistPatternMatch& match, const Atom
     float base_gain = molecule.blocks().size() - (match.base_cost / 100);
     molecule.set_base_gain(base_gain);
 
-#if 0
-    std::ofstream ofs("pack_molecule.echo");
-    write_pack_molecule_dot(ofs, molecule, netlist); //Debug
-#endif
-
     return molecule;
 }
 
@@ -1587,13 +1582,15 @@ static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules
         AtomBlockId atom = molecule.block_atom(blk);
         
         os << "\t";
+        os << "Block(" << size_t(blk) << ") ";
         if (molecule.block_type(blk) == PackMolecule::BlockType::INTERNAL) {
             os << "Internal";
         } else {
             VTR_ASSERT(molecule.block_type(blk) == PackMolecule::BlockType::EXTERNAL);
             os << "External";
         }
-        os << " Block(" << size_t(blk) << "): '" << netlist.block_name(atom) << "'\n";
+        os << ": '" << netlist.block_name(atom) << "'";
+        os << " (" << netlist.block_model(atom)->name << ")\n";
     }
 
     for (auto edge : molecule.edges()) {
@@ -1609,5 +1606,6 @@ static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules
         }
     }
     os << "\tBase Gain: " << molecule.base_gain() << "\n";
+    os << "\tRoot: Block(" << size_t(molecule.root_block()) << ")\n";
 }
 
