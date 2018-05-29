@@ -56,14 +56,15 @@ static float try_place_molecule(
 		t_pb_graph_node *root,
         vtr::vector<MoleculeBlockId,t_pb_graph_node*>&  primitives_list);
 
-static t_pb_graph_node* try_place_molecule_atom_recurr(AtomBlockId atom_blk,
-                                                       t_pb_graph_node* pb_node,
-                                                       const std::set<t_pb_graph_node*>& used_pb_nodes);
 static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
                                                    const MoleculeBlockId molecule_block, 
                                                    MoleculePlaceInfo partial_placement,
                                                    t_pb_graph_node* pb_node,
                                                    int depth=0);
+
+static t_pb_graph_node* try_place_molecule_atom(AtomBlockId atom_blk,
+                                                       t_pb_graph_node* pb_node,
+                                                       const std::set<t_pb_graph_node*>& used_pb_nodes);
 
 static bool expand_forced_pack_molecule_placement(
 		const t_pack_molecule *molecule,
@@ -165,39 +166,36 @@ bool get_next_primitive_list(
 		if (cluster_placement_stats.valid_primitives[i]->next_primitive == nullptr) {
 			continue; /* no more primitives of this type available */
 		}
-        AtomBlockId atom_root = molecules.pack_molecules[molecule_id].root_block_atom();
         t_pb_type* pb_type = cluster_placement_stats.valid_primitives[i]->next_primitive->pb_graph_node->pb_type;
-        vtr::printf("Checking if molecule root '%s' is feasible in primitive '%s'\n", g_vpr_ctx.atom().nlist.block_name(atom_root).c_str(), pb_type->name);
-		//if (primitive_type_feasible(atom_root, pb_type)) {
-			prev = cluster_placement_stats.valid_primitives[i];
-			cur = cluster_placement_stats.valid_primitives[i]->next_primitive;
-			while (cur) {
-				/* remove invalid nodes lazily when encountered */
-				while (cur && cur->valid == false) {
-					prev->next_primitive = cur->next_primitive;
-					cur->next_primitive = cluster_placement_stats.invalid;
-					cluster_placement_stats.invalid = cur;
-					cur = prev->next_primitive;
-				}
-				if (cur == nullptr) {
-					break;
-				}
-				/* try place molecule at root location cur */
-				cost = try_place_molecule(
-                        molecules,
-                        molecule_id,
-                        molecule_stats,
-                        cur->pb_graph_node,
-						primitives_list);
-				if (cost < lowest_cost) {
-					lowest_cost = cost;
-					best = cur;
-					before_best = prev;
-				}
-				prev = cur;
-				cur = cur->next_primitive;
-			}
-		//}
+        vtr::printf("Checking if molecule '%s' is feasible rooted at primitive '%s'\n", molecules.pack_molecules[molecule_id].name().c_str(), pb_type->name);
+        prev = cluster_placement_stats.valid_primitives[i];
+        cur = cluster_placement_stats.valid_primitives[i]->next_primitive;
+        while (cur) {
+            /* remove invalid nodes lazily when encountered */
+            while (cur && cur->valid == false) {
+                prev->next_primitive = cur->next_primitive;
+                cur->next_primitive = cluster_placement_stats.invalid;
+                cluster_placement_stats.invalid = cur;
+                cur = prev->next_primitive;
+            }
+            if (cur == nullptr) {
+                break;
+            }
+            /* try place molecule at root location cur */
+            cost = try_place_molecule(
+                    molecules,
+                    molecule_id,
+                    molecule_stats,
+                    cur->pb_graph_node,
+                    primitives_list);
+            if (cost < lowest_cost) {
+                lowest_cost = cost;
+                best = cur;
+                before_best = prev;
+            }
+            prev = cur;
+            cur = cur->next_primitive;
+        }
 	}
 	if (best == nullptr) {
 		/* failed to find a placement */
@@ -487,7 +485,6 @@ static float try_place_molecule(
 		t_pb_graph_node *root,
         vtr::vector<MoleculeBlockId,t_pb_graph_node*>&  primitives_list) {
 
-#if 1
     const PackMolecule& molecule = molecules.pack_molecules[molecule_id];
 
     MoleculePlaceInfo empty_placement;
@@ -502,7 +499,7 @@ static float try_place_molecule(
                                                                      root,
                                                                      1);
 
-    vtr::printf("    Proposed molecule placement:\n");
+    vtr::printf("    Proposed molecule placement: (cost %f)\n", molecule_placement.cost);
     if (molecule_placement.legal) {
         primitives_list.assign(molecule.blocks().size(), nullptr);
 
@@ -525,76 +522,6 @@ static float try_place_molecule(
     }
 
     return molecule_placement.cost;
-#else
-	float cost = HUGE_POSITIVE_FLOAT;
-        int list_size = molecule_stats.num_blocks(molecule_id);
-
-    const PackMolecule& molecule = molecules.pack_molecules[molecule_id];
-
-	if (primitive_type_feasible(molecule.root_block_atom(), root->pb_type)) {
-
-		if (root->cluster_placement_primitive->valid == true) {
-            primitives_list.assign(primitives_list.size(), nullptr);
-
-            cost = root->cluster_placement_primitive->base_cost
-                    + root->cluster_placement_primitive->incremental_cost;
-
-            primitives_list[molecule.root_block()] = root;
-
-            if (is_force_pack_molecule(molecule_stats, molecule_id)) {
-                if (!expand_forced_pack_molecule_placement(molecule,
-                        molecule->pack_pattern->root_block, primitives_list,
-                        &cost)) {
-                    return HUGE_POSITIVE_FLOAT;
-                }
-            }
-
-            for (int i = 0; i < list_size; i++) {
-                VTR_ASSERT( (primitives_list[i] == nullptr) == (!molecule->atom_block_ids[i]));
-                for (int j = 0; j < list_size; j++) {
-                    if(i != j) {
-                        if(primitives_list[i] != nullptr && primitives_list[i] == primitives_list[j]) {
-                            return HUGE_POSITIVE_FLOAT;
-                        }
-                    }
-                }
-            }
-		}
-	}
-	return cost;
-#endif
-}
-
-static t_pb_graph_node* try_place_molecule_atom_recurr(AtomBlockId atom_blk, t_pb_graph_node* pb_node, const std::set<t_pb_graph_node*>& used_pb_nodes) {
-    if (used_pb_nodes.count(pb_node)) {
-        return nullptr; //Already in use
-    }
-
-    if (pb_node->is_primitive()) {
-        if (primitive_type_feasible(atom_blk, pb_node->pb_type)
-            && pb_node->cluster_placement_primitive->valid) {
-            return pb_node; //Primitive match
-         }
-
-        return nullptr; //Primitive mismatch
-    }
-
-    //Not primitive, recursively search children
-    VTR_ASSERT(!pb_node->is_primitive());
-
-    for (int imode = 0; imode < pb_node->num_modes(); ++imode) {
-        for (int ichild_type = 0; ichild_type < pb_node->num_pb_type_children(imode); ++ichild_type) {
-            for (int ichild = 0; ichild < pb_node->num_pb_type_child_pb(imode, ichild_type); ++ichild) {
-                t_pb_graph_node *child_pb_node = &pb_node->child_pb_graph_nodes[imode][ichild_type][ichild];
-                t_pb_graph_node* legal_child = try_place_molecule_atom_recurr(atom_blk, child_pb_node, used_pb_nodes); 
-                if (legal_child) { //Legal within child sub-nodes
-                    return legal_child;
-                }
-            }
-        }
-    }
-
-    return nullptr; //No match within children
 }
 
 static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule, const MoleculeBlockId molecule_block, 
@@ -632,9 +559,12 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
 
         AtomBlockId atom_blk = molecule.block_atom(molecule_block);
 
-        vtr::printf("%sTrying to place internal molecule block %zu in %s\n", vtr::indent(depth).c_str(), size_t(molecule_block), describe_pb_graph_node_hierarchy(pb_node).c_str());
+        vtr::printf("%sTrying to place internal molecule block %zu (%s) in %s\n", vtr::indent(depth).c_str(), size_t(molecule_block),
+                g_vpr_ctx.atom().nlist.block_model(molecule.block_atom(molecule_block))->name,
+                describe_pb_graph_node_hierarchy(pb_node).c_str());
+
         //Find a valid placement location for the atom associated with this block in the molecule
-        t_pb_graph_node* atom_loc = try_place_molecule_atom_recurr(atom_blk, pb_node, placement.used_pb_nodes);
+        t_pb_graph_node* atom_loc = try_place_molecule_atom(atom_blk, pb_node, placement.used_pb_nodes);
 
         if (atom_loc) {
             //Recursively try to place the sub-tree rooted at the current molecule block
@@ -654,7 +584,8 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
                     MoleculeBlockId molecule_subtree_block = molecule.pin_block(molecule_sink_pin_id);
 
                     //Try placing the molecule sub-tree within the same parent as the current atom,
-                    //if it isn't valid repeatedly retry placing into the grand-parent pb node (up to the root).
+                    //if it isn't valid, retry placing into the grand-parent pb node (this is done
+                    //repeatedly up to the root).
                     //
                     //This ensures that atoms prefer to stay in the same parent pb_node if possible
                     t_pb_graph_node* subtree_pb_node = atom_loc->parent_pb_graph_node;
@@ -681,145 +612,37 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
     return placement;
 }
 
-#if 0
-static void try_place_molecule_recurr(const PackMolecule& molecule, const MoleculeBlockId molecule_block, 
-                                      t_pb_graph_node* pb_node,
-                                      MoleculePlaceInfo& partial_placement,
-                                      int depth) {
-    MoleculePlaceInfo placement;
+static t_pb_graph_node* try_place_molecule_atom(AtomBlockId atom_blk, t_pb_graph_node* pb_node, const std::set<t_pb_graph_node*>& used_pb_nodes) {
+    if (used_pb_nodes.count(pb_node)) {
+        return nullptr; //Already in use
+    }
 
-    vtr::printf("%sTrying to Placing Molecule block %zu in %s\n", vtr::indent(depth).c_str(), size_t(molecule_block), pb_node->pb_type->name);
-    if (molecule.block_type(molecule_block) == PackMolecule::BlockType::EXTERNAL) {
-        //Recurse down to internal blocks
+    if (pb_node->is_primitive()) {
+        if (primitive_type_feasible(atom_blk, pb_node->pb_type)
+            && pb_node->cluster_placement_primitive->valid) {
+            return pb_node; //Primitive match
+         }
 
-        //For every molecule block subtree fanning out from the current external molecule block
-        for (auto molecule_driver_pin_id : molecule.block_output_pins(molecule_block)) {
-            auto molecule_edge_id = molecule.pin_edge(molecule_driver_pin_id);
+        return nullptr; //Primitive mismatch
+    }
 
-            for (auto molecule_sink_pin_id : molecule.edge_sinks(molecule_edge_id)) {
-                MoleculeBlockId molecule_subtree_block = molecule.pin_block(molecule_sink_pin_id);
+    //Not primitive, recursively search children
+    VTR_ASSERT(!pb_node->is_primitive());
 
-                //See if the subtree is valid at the current pb_node
-                vtr::printf("%sRecursing through external block %zu\n", vtr::indent(depth).c_str(), size_t(molecule_block));
-                MoleculePlaceInfo subtree_placement = try_place_molecule_recurr(molecule, molecule_subtree_block, pb_node, depth+1);
-                if (subtree_placement.legal) {
-                    //Add the subtree to the current placement
-                    placement.block_locations.insert(subtree_placement.block_locations.begin(),
-                                                     subtree_placement.block_locations.end());
-                    placement.cost += subtree_placement.cost;
-                } else {
-                    VTR_ASSERT(!subtree_placement.legal);
-                    //No legal location found for the next molecule block subtree,
-                    //so the entire molecule is illegal
-                    placement = MoleculePlaceInfo(); //Reset
-                    VTR_ASSERT(!placement.legal);
-                    VTR_ASSERT(placement.cost == HUGE_POSITIVE_FLOAT);
-                    return placement;
+    for (int imode = 0; imode < pb_node->num_modes(); ++imode) {
+        for (int ichild_type = 0; ichild_type < pb_node->num_pb_type_children(imode); ++ichild_type) {
+            for (int ichild = 0; ichild < pb_node->num_pb_type_child_pb(imode, ichild_type); ++ichild) {
+                t_pb_graph_node *child_pb_node = &pb_node->child_pb_graph_nodes[imode][ichild_type][ichild];
+                t_pb_graph_node* legal_child = try_place_molecule_atom(atom_blk, child_pb_node, used_pb_nodes); 
+                if (legal_child) { //Legal within child sub-nodes
+                    return legal_child;
                 }
-            }
-        }
-    } else {
-        VTR_ASSERT(molecule.block_type(molecule_block) == PackMolecule::BlockType::INTERNAL);
-
-        if (!pb_node->is_primitive()) {
-            //Recurse through intermediate pb_node's
-
-            vtr::printf("%sRecursing through intermediate pb_node %s for block %zu\n", vtr::indent(depth).c_str(), pb_node->pb_type->name, size_t(molecule_block));
-            for (int iport = 0; iport < pb_node->num_output_ports; ++iport) {
-                for (int ipin = 0; ipin < pb_node->num_output_pins[iport]; ++ipin) {
-                    t_pb_graph_pin* src_pin = &pb_node->output_pins[iport][ipin];
-
-                    for (int iedge = 0; iedge < src_pin->num_output_edges; ++iedge) {
-                        t_pb_graph_edge* out_edge = src_pin->output_edges[iedge];
-
-                        for (int isink = 0; isink < out_edge->num_output_pins; ++isink) {
-                            t_pb_graph_pin* sink_pin = out_edge->output_pins[isink];
-                            t_pb_graph_node* sink_pb_node = sink_pin->parent_node;
-
-                            placement = try_place_molecule_recurr(molecule, molecule_block, sink_pb_node, depth+1);
-
-                            //Currently we stop at the first legal placement found
-                            //TODO: consider continuing to search for the lowest cost legal subtree?
-                            if (placement.legal) {
-                                return placement;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            VTR_ASSERT(pb_node->is_primitive());
-            vtr::printf("%sReached primitive pb_node %s for block %zu\n", vtr::indent(depth).c_str(), pb_node->pb_type->name, size_t(molecule_block));
-            if (primitive_type_feasible(molecule.block_atom(molecule_block), pb_node->pb_type)
-                && pb_node->cluster_placement_primitive->valid) {
-                vtr::printf("%sLegal\n", vtr::indent(depth).c_str());
-
-                //Record this location as legal
-                placement.legal = true;
-                placement.block_locations[molecule_block] = pb_node;
-                placement.cost = pb_node->cluster_placement_primitive->base_cost
-                                 + pb_node->cluster_placement_primitive->incremental_cost;
-                
-                //For every molecule block subtree fanning out from the current molecule block
-                for (auto molecule_driver_pin_id : molecule.block_output_pins(molecule_block)) {
-                    auto molecule_edge_id = molecule.pin_edge(molecule_driver_pin_id);
-
-                    for (auto molecule_sink_pin_id : molecule.edge_sinks(molecule_edge_id)) {
-                        MoleculeBlockId molecule_subtree_block = molecule.pin_block(molecule_sink_pin_id);
-                        
-
-                        //Check all placement locations in the fanout of the current architecture node
-                        MoleculePlaceInfo subtree_placement;
-                        for (int iport = 0; iport < pb_node->num_output_ports; ++iport) {
-                            for (int ipin = 0; ipin < pb_node->num_output_pins[iport]; ++ipin) {
-                                t_pb_graph_pin* src_pin = &pb_node->output_pins[iport][ipin];
-
-                                for (int iedge = 0; iedge < src_pin->num_output_edges; ++iedge) {
-                                    t_pb_graph_edge* out_edge = src_pin->output_edges[iedge];
-
-                                    for (int isink = 0; isink < out_edge->num_output_pins; ++isink) {
-                                        t_pb_graph_pin* sink_pin = out_edge->output_pins[isink];
-                                        t_pb_graph_node* sink_pb_node = sink_pin->parent_node;
-
-                                        //Recurse to see if this is a legal location for the subtree
-                                        subtree_placement = try_place_molecule_recurr(molecule, molecule_subtree_block, sink_pb_node, depth+1);
-
-                                        //Currently we stop at the first legal subtree found
-                                        //TODO: consider continuing to search for the lowest cost legal subtree?
-                                        if (subtree_placement.legal) break;
-                                    }
-                                    if (subtree_placement.legal) break;
-                                }
-                                if (subtree_placement.legal) break;
-                            }
-                            if (subtree_placement.legal) break;
-                        }
-
-                        if (subtree_placement.legal) {
-                            //Add the subtree to the current placement
-                            placement.block_locations.insert(subtree_placement.block_locations.begin(),
-                                                             subtree_placement.block_locations.end());
-                            placement.cost += subtree_placement.cost;
-                        } else {
-                            VTR_ASSERT(!subtree_placement.legal);
-                            //No legal location found for the next molecule block subtree,
-                            //so the entire molecule is illegal
-                            placement = MoleculePlaceInfo(); //Reset
-                            VTR_ASSERT(!placement.legal);
-                            VTR_ASSERT(placement.cost == HUGE_POSITIVE_FLOAT);
-                            return placement;
-                        }
-                    }
-                }
-            } else {
-                vtr::printf("%sIllegal\n", vtr::indent(depth).c_str());
             }
         }
     }
 
-    return placement;
+    return nullptr; //No match within children
 }
-#endif
 
 /**
  * Expand molecule at pb_graph_node
