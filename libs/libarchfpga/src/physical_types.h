@@ -826,6 +826,14 @@ struct t_pb_graph_node {
         return pb_type->num_modes;
     }
 
+    int num_pb_type_children(int imode) const {
+        return pb_type->modes[imode].num_pb_type_children;
+    }
+
+    int num_pb_type_child_pb(int imode, int ichild_type) const {
+        return pb_type->modes[imode].pb_type_children[ichild_type].num_pb;
+    }
+
     bool is_primitive() const {
         return num_modes() == 0;
     }
