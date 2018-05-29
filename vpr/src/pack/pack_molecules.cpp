@@ -17,6 +17,10 @@ float PackMolecule::base_gain() const {
     return base_gain_;
 }
 
+std::string PackMolecule::name() const {
+    return name_;
+}
+
 
 //Aggregates
 PackMolecule::block_range PackMolecule::blocks() const {
@@ -122,6 +126,10 @@ void PackMolecule::set_root_block(MoleculeBlockId root) {
 
 void PackMolecule::set_base_gain(float value) {
     base_gain_ = value;
+}
+
+void PackMolecule::set_name(std::string value) {
+    name_ = value;
 }
 
 MoleculeBlockId PackMolecule::alloc_block() {

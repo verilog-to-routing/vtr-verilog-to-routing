@@ -38,6 +38,7 @@ class PackMolecule {
         MoleculeBlockId root_block() const;
         AtomBlockId root_block_atom() const;
         float base_gain() const;
+        std::string name() const;
 
         //Aggregates
         block_range blocks() const;
@@ -68,6 +69,7 @@ class PackMolecule {
 
         void set_root_block(MoleculeBlockId root);
         void set_base_gain(float value);
+        void set_name(std::string value);
     private:
         MoleculeBlockId alloc_block();
         MoleculePinId alloc_pin();
@@ -106,6 +108,7 @@ class PackMolecule {
         vtr::vector<MoleculeEdgeId,Edge> edges_;
 
         float base_gain_;
+        std::string name_;
 };
 
 void write_pack_molecule_dot(std::ostream& os, const PackMolecule& molecule, const AtomNetlist& netlist);

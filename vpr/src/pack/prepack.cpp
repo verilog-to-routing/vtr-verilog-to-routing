@@ -86,6 +86,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 
 static PackMolecules create_molecules(const std::vector<NetlistPatternMatch> netlist_matches, const AtomNetlist& netlist);
 static PackMolecule create_molecule(const NetlistPatternMatch& match, const AtomNetlist& netlist);
+static std::string name_molecule(const NetlistPatternMatch& match, PackMolecule& molecule);
 static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(const vtr::vector<PackMoleculeId,PackMolecule>& molecules);
 static bool verify_molecules_contain_all_atoms(const PackMolecules& molecules, const AtomNetlist& netlist);
 
@@ -1485,7 +1486,26 @@ static PackMolecule create_molecule(const NetlistPatternMatch& match, const Atom
     float base_gain = molecule.blocks().size() - (match.base_cost / 100);
     molecule.set_base_gain(base_gain);
 
+    molecule.set_name(name_molecule(match, molecule));
+
     return molecule;
+}
+
+static std::string name_molecule(const NetlistPatternMatch& match, PackMolecule& molecule) {
+    //Find first non-external block
+    std::string internal_block_name;
+    for (auto molecule_blk : molecule.blocks()) {
+        auto atom_name = g_vpr_ctx.atom().nlist.block_name(molecule.block_atom(molecule_blk));
+
+        internal_block_name = atom_name; 
+
+        if (molecule.block_type(molecule_blk) == PackMolecule::BlockType::INTERNAL) {
+            break; //Preferr to name based on internal molecule, otherwise use external
+        }
+    }
+    VTR_ASSERT(!internal_block_name.empty());
+
+    return match.pattern_name + ":" + internal_block_name;
 }
 
 static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(const vtr::vector<PackMoleculeId,PackMolecule>& molecules) {
@@ -1607,5 +1627,6 @@ static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules
     }
     os << "\tBase Gain: " << molecule.base_gain() << "\n";
     os << "\tRoot: Block(" << size_t(molecule.root_block()) << ")\n";
+    os << "\tName: " << molecule.name() << "\n";
 }
 
