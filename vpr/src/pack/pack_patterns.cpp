@@ -51,6 +51,9 @@ static t_netlist_pack_pattern abstract_arch_pack_pattern(const t_arch_pack_patte
 
 
 static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
+static bool match_largest_prefer_internal(NetlistPatternMatch& match, const AtomBlockId blk, 
+                                          int pattern_node_id, const t_netlist_pack_pattern& pattern,
+                                          const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
 static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId blk, 
                                 int pattern_node_id, const t_netlist_pack_pattern& pattern,
                                 const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
@@ -638,12 +641,37 @@ static t_netlist_pack_pattern abstract_arch_pack_pattern(const t_arch_pack_patte
 
 static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
     NetlistPatternMatch match;
-    if (match_largest_recur(match, blk, pattern.root_node, pattern, excluded_blocks, netlist)) {
+    if (match_largest_prefer_internal(match, blk, pattern.root_node, pattern, excluded_blocks, netlist)) {
         match.pattern_name = pattern.name;
         match.base_cost = pattern.base_cost;
         return match; 
     }
     return NetlistPatternMatch(); //No match, return empty
+}
+
+static bool match_largest_prefer_internal(NetlistPatternMatch& match, const AtomBlockId blk, 
+                                          int pattern_node_id, const t_netlist_pack_pattern& pattern,
+                                          const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
+    bool pattern_node_external = pattern.nodes[pattern_node_id].is_external();
+
+    if (pattern_node_external) {
+        //Prefer matching to an internal node first
+        VTR_ASSERT_MSG(pattern.nodes[pattern_node_id].out_edge_ids.size() == 1, "Assume single fanout external root");
+        int pattern_edge_id = pattern.nodes[pattern_node_id].out_edge_ids[0];
+        const auto& pattern_edge = pattern.edges[pattern_edge_id];
+        if (pattern_edge.to_pins.size() == 1) { //If a pattern has multiple fanout from external route we can't match to internal
+            const auto& to_pattern_pin = pattern_edge.to_pins[0];
+            const auto& to_pattern_node = pattern.nodes[to_pattern_pin.node_id];
+            VTR_ASSERT_MSG(to_pattern_node.is_internal(), "Assume single level of external root nodes");
+
+            if (match_largest_recur(match, blk, to_pattern_pin.node_id, pattern, excluded_blocks, netlist)) {
+                return true;
+            }
+        }
+    }
+
+    //Fallback to external match
+    return match_largest_recur(match, blk, pattern_node_id, pattern, excluded_blocks, netlist);
 }
 
 static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId blk, 

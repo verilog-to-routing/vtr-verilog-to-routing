@@ -607,7 +607,7 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
             }
         } else {
             //No valid internal block location
-            placement.legal = false;
+            placement = MoleculePlaceInfo(); //Invalid
         }
     }
     return placement;

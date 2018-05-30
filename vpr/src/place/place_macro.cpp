@@ -76,15 +76,17 @@ static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         vtr::printf("Checking Block %s for macro head\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 
-        for (ClusterPinId sink_pin : clb_nlist.block_input_pins(blk_id)) {
+        int num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->num_pins;
+        for (int sink_ipin = 0; sink_ipin < num_blk_pins; sink_ipin++) {
 
-            auto sink_itype = clb_nlist.block_type(blk_id)->index;
-            auto sink_ipin = clb_nlist.pin_physical_index(sink_pin);
+            auto sink_type = clb_nlist.block_type(blk_id);
+            ClusterPinId sink_pin = clb_nlist.block_pin(blk_id, sink_ipin);
 			ClusterNetId sink_net = clb_nlist.block_net(blk_id, sink_ipin);
 
-			int sink_idirect = f_idirect_from_blk_pin[sink_itype][sink_ipin];
+			int sink_idirect = f_idirect_from_blk_pin[sink_type->index][sink_ipin];
+            auto sink_dir = f_direct_type_from_blk_pin[sink_type->index][sink_ipin]; 
 
-            vtr::printf("  Checking input pin: %s\n", clb_nlist.pin_name(sink_pin).c_str(), (sink_net) ? clb_nlist.net_name(sink_net).c_str() : "N/A");
+            vtr::printf("  Checking input pin: %s\n", block_type_pin_index_to_name(sink_type, sink_ipin).c_str());
 			// Identify potential macro head blocks (i.e. start of a macro)
             //
             // The input SINK (to_pin) of a potential HEAD macro must have:
@@ -95,22 +97,24 @@ static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> 
             // blocks in the middle of a chain with internal connections are not detected has potential
             // head blocks.
 
+            if (sink_dir != SINK) continue; //Wrong pin direction
             if (sink_idirect == OPEN) continue; //Not a direct connection
-            if (sink_net != ClusterNetId::INVALID() && net_is_driven_by_direct(sink_net)) continue; //Connected net via to direct
+            if (sink_net != ClusterNetId::INVALID() && net_is_driven_by_direct(sink_net)) continue; //Connected to net via direct
 
-            for (ClusterPinId driver_pin : clb_nlist.block_output_pins(blk_id)) {
+            for (int driver_ipin = 0; driver_ipin < num_blk_pins; driver_ipin++) {
 
-                auto driver_itype = clb_nlist.block_type(blk_id)->index;
-                auto driver_ipin = clb_nlist.pin_physical_index(driver_pin);
+                auto driver_type = clb_nlist.block_type(blk_id);
+                ClusterPinId driver_pin = clb_nlist.block_pin(blk_id, driver_ipin);
                 ClusterNetId driver_net = clb_nlist.block_net(blk_id, driver_ipin);
-
-                int driver_idirect = f_idirect_from_blk_pin[driver_itype][driver_ipin];
+                int driver_idirect = f_idirect_from_blk_pin[driver_type->index][driver_ipin];
+                auto driver_dir = f_direct_type_from_blk_pin[driver_type->index][driver_ipin];
 
                 // Confirm whether this is a head macro
                 //
                 // The output SOURCE (from_pin) of a true head macro will:
                 //  * drive another block with the same direct connection
-                if (sink_idirect != driver_idirect) continue; //Different direct
+                if (driver_dir != SOURCE) continue; //Wrong pin direction
+                if (sink_idirect != driver_idirect) continue; //Different direct connection
                 if (driver_net == ClusterNetId::INVALID()) continue; //No connected downstream blocks
                     
                 vtr::printf("    Checking output pin: %s net: %s\n", clb_nlist.pin_name(driver_pin).c_str(), clb_nlist.net_name(driver_net).c_str());
