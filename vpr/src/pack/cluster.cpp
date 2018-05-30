@@ -869,13 +869,14 @@ static void alloc_and_init_clustering(const PackMolecules& molecules,
 	/* Allocates the main data structures used for clustering and properly *
 	 * initializes them.                                                   */
 
-    //Sort into decreasing gain order
-    //Sort in decreasing order (i.e. highest gain at index 0)
-    auto cmp_gain_descending = [&](const PackMoleculeId lhs, const PackMoleculeId rhs) {
-        return molecule_stats.base_gain(lhs) > molecule_stats.base_gain(rhs);
+    //Sort into ascending gain order (i.e. lowest gain at index 0)
+    //When this is inserted into the list below it is reversed, so the final
+    //ordering is descending
+    auto cmp_gain_ascending = [&](const PackMoleculeId lhs, const PackMoleculeId rhs) {
+        return molecule_stats.base_gain(lhs) < molecule_stats.base_gain(rhs);
     };
     std::vector<PackMoleculeId> molecule_ids_by_desc_gain = molecules.pack_molecule_ids;
-    std::sort(molecule_ids_by_desc_gain.begin(), molecule_ids_by_desc_gain.end(), cmp_gain_descending);
+    std::sort(molecule_ids_by_desc_gain.begin(), molecule_ids_by_desc_gain.end(), cmp_gain_ascending);
 
 	/* alloc and load list of molecules to pack */
 	unclustered_list_head_size = molecule_stats.max_num_ext_inputs() + 1;
@@ -895,6 +896,15 @@ static void alloc_and_init_clustering(const PackMolecules& molecules,
 		unclustered_list_head[ext_inps].next = next_ptr;
 		next_ptr++;
 	}
+
+    for (int i = 0; i < unclustered_list_head_size; ++i) {
+        t_molecule_link* ptr = unclustered_list_head[i].next;
+        vtr::printf("Free Inputs: %d\n", i);
+        while (ptr) {
+            vtr::printf("  Molecule %d\n", size_t(ptr->molecule_id));
+            ptr = ptr->next;
+        }
+    }
 
 	/* load net info */
     auto& atom_ctx = g_vpr_ctx.atom();

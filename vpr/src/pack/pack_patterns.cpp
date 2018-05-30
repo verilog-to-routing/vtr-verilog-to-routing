@@ -120,11 +120,16 @@ t_netlist_pack_pattern create_atom_default_pack_pattern() {
 std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
     std::vector<NetlistPatternMatch> matches;
 
+    bool pattern_root_is_internal = pattern.nodes[pattern.root_node].is_internal();
+
     std::set<AtomBlockId> covered_blks;
 
     for (auto blk : netlist.blocks()) {
-        if (covered_blks.count(blk)) continue; //Already in molecule
+        if (pattern_root_is_internal && covered_blks.count(blk)) continue; //Already in molecule
         if (!matches_pattern_root(blk, pattern, netlist)) continue; //Not a valid root
+        vtr::printf("Matching at block %s for pattern %s\n",
+                    g_vpr_ctx.atom().nlist.block_name(blk).c_str(),
+                    pattern.name.c_str());
 
         //Initially the current block is the only candidate
         std::stack<AtomBlockId> root_candidates;
@@ -135,7 +140,11 @@ std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netl
             AtomBlockId next_root_candidate = find_parent_pattern_root(root_candidates.top(), pattern, netlist); 
 
             if (!next_root_candidate) break; //No more potential roots
-            if (covered_blks.count(next_root_candidate)) break; //Already used
+            if (pattern_root_is_internal && covered_blks.count(next_root_candidate)) break; //Already used
+
+            vtr::printf("  Candidate block %s for pattern %s\n",
+                        g_vpr_ctx.atom().nlist.block_name(next_root_candidate).c_str(),
+                        pattern.name.c_str());
 
             root_candidates.push(next_root_candidate);
 
@@ -148,11 +157,15 @@ std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netl
         // original blk
         NetlistPatternMatch match;
         while (!match && !root_candidates.empty()) {
+            vtr::printf("\tMatching from root candidate %s for pattern %s\n",
+                        g_vpr_ctx.atom().nlist.block_name(root_candidates.top()).c_str(),
+                        pattern.name.c_str());
             match = match_largest(root_candidates.top(), pattern, covered_blks, netlist);
             root_candidates.pop();
         }
 
         if (match) {
+            vtr::printf("\t\tMatched!\n");
             //Save the match
             matches.push_back(match);
 
@@ -175,7 +188,8 @@ std::vector<NetlistPatternMatch> filter_netlist_pattern_matches(std::vector<Netl
 
     //Remove matches with no internal blocks
     auto non_empty_internal_blocks = [](const NetlistPatternMatch& lhs) {
-        return lhs.internal_blocks.size() > 0;
+        //return lhs.internal_blocks.size() > 0;
+        return true;
     };
     std::copy_if(unfiltered_matches.begin(), unfiltered_matches.end(), std::back_inserter(filtered_matches),
                  non_empty_internal_blocks);
@@ -645,7 +659,8 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
         return false; 
     }
 
-    if (pattern.nodes[pattern_node_id].is_internal()) {
+    bool pattern_node_internal = pattern.nodes[pattern_node_id].is_internal();
+    if (pattern_node_internal) {
         match.internal_blocks.push_back(blk);
 
         //Internal block matches take priority over external block matches,
@@ -668,7 +683,15 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
         const auto& pattern_edge = pattern.edges[pattern_edge_id];
         const auto& from_pattern_pin = pattern_edge.from_pin;
 
-        AtomPinId from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, excluded_blocks, netlist);
+        AtomPinId from_pin;
+        if (pattern_node_internal) {
+            //An internal block can't be shared, so pass excluded_blocks
+            from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, excluded_blocks, netlist);
+        } else {
+            //An external block can be shared so don't consider excluded
+            from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, netlist);
+        }
+
         if (!from_pin) {
             //No matching driver pin
             if (from_pattern_pin.required) {

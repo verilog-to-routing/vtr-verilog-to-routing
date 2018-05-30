@@ -119,7 +119,7 @@ struct NetlistPatternMatch {
 
     //Evaluates true when the match is non-empty
     operator bool() {
-        return netlist_edges.size() > 0 || internal_blocks.size() > 0 || external_blocks.size() > 0;
+        return netlist_edges.size() > 0 || internal_blocks.size() > 0;
     }
 
     std::string pattern_name;
