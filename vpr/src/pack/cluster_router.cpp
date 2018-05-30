@@ -1395,9 +1395,11 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
     const auto& lb_type_graph = *router_data->lb_type_graph;
     const auto& lb_rr_node_stats = router_data->lb_rr_node_stats;
 
+    std::map<AtomNetId,int> atom_to_intra_lb_net;
     std::multimap<size_t,AtomNetId> congested_rr_node_to_nets; //From rr_node to net
     for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
         AtomNetId atom_net = lb_nets[inet].atom_net_id;
+        atom_to_intra_lb_net.emplace(atom_net, inet);
         
         //Walk the traceback to find congested RR nodes for each net
         std::queue<t_lb_trace> q;
@@ -1440,6 +1442,17 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
             AtomNetId net = itr->second;
             description += vtr::string_fmt("\tNet: %s\n",
                     atom_ctx.nlist.net_name(net).c_str());
+
+            VTR_ASSERT(atom_to_intra_lb_net.count(net));
+            int inet = atom_to_intra_lb_net[net];
+            for (size_t iterm = 0; iterm < lb_nets[inet].terminals.size(); ++iterm) {
+                if (iterm == t_intra_lb_net::DRIVER_INDEX) {
+                    description += vtr::string_fmt("\t\tDriver RR: #%d\n", lb_nets[inet].terminals[iterm]);
+                } else {
+                    description += vtr::string_fmt("\t\tSink   RR: #%d\n", lb_nets[inet].terminals[iterm]);
+
+                }
+            }
         }
 
     }
