@@ -1498,7 +1498,13 @@ static std::string name_molecule(const NetlistPatternMatch& match, PackMolecule&
     }
     VTR_ASSERT(!internal_block_name.empty());
 
-    return match.pattern_name + ":" + internal_block_name;
+    if (match.pattern_name == ATOM_DEFAULT_PACK_PATTERN_NAME) {
+        //Just the atom name
+        return internal_block_name;
+    } else {
+        //First atom name prefixed with pattern name
+        return match.pattern_name + ":" + internal_block_name;
+    }
 }
 
 static std::multimap<AtomBlockId,PackMoleculeId> build_atom_molecules_lookup(const vtr::vector<PackMoleculeId,PackMolecule>& molecules) {
