@@ -1776,39 +1776,23 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 	 * end_pin_index.                                                                  */
 
 	int iport_pin, iblk_pin;
-    auto& device_ctx = g_vpr_ctx.device();
 
 	// Mark pins with indices from start_pin_index to end_pin_index, inclusive
 	for (iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
 		get_blk_pin_from_port_pin(itype, iport, iport_pin, &iblk_pin);
 								
-		//iterate through all segment connections and check if all Fc's are 0
-		bool all_fcs_0 = true;
-        for (const auto& fc_spec : device_ctx.block_types[itype].fc_specs) {
-            for(int ipin : fc_spec.pins) {
-                if(iblk_pin == ipin && fc_spec.fc_value > 0) {
-                    all_fcs_0 = false;
-                    break;
-                }
-            }
-            if(!all_fcs_0) break;
-        }
-
 		// Check the fc for the pin, direct chain link only if fc == 0
-		if (all_fcs_0) {
-			idirect_from_blk_pin[itype][iblk_pin] = idirect;
-							
-			// Check whether the pins are marked, errors out if so
-			if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
-				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-						"[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n", 
-						line, src_string);
-			} else {
-				direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
-			}
-		}
+        idirect_from_blk_pin[itype][iblk_pin] = idirect;
+                        
+        // Check whether the pins are marked, errors out if so
+        if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
+            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                    "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n", 
+                    line, src_string);
+        } else {
+            direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
+        }
 	} // Finish marking all the pins
-
 }
 
 static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name, 
@@ -1882,10 +1866,7 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	 * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
 	 * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
 	 * chain conneciton.                                                                *
-	 *                                                                                  *
-	 * Stores the pointers to the two 2D arrays in the addresses passed in.             *
-	 *                                                                                  *
-	 * The two arrays are freed by the caller(s).                                       */
+	 *                                                                                  */
 
     VTR_ASSERT_MSG(idirect_from_blk_pin.empty(), "Direct connection look-up should be empty");
     VTR_ASSERT_MSG(direct_type_from_blk_pin.empty(), "Direct connection look-up should be empty");
