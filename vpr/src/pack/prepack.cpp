@@ -1360,15 +1360,8 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
         raw_netlist_matches.insert(raw_netlist_matches.end(), netlist_pattern_matches.begin(), netlist_pattern_matches.end());
     }
 
-    //It is possible that multiple patterns have matched the same netlist blocks,
-    //filter them so they are non-overlapping
-    //
-    //TODO: Think about whether we should leave multiple molecule options to the packer...
-#if 1
-    auto final_netlist_matches = raw_netlist_matches;
-#else
+    //Some matches may be redundant or invalid (e.g. match only external blocks), so remove them
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
-#endif
 
     //Convert the final matches to molecules for use during packing
     PackMolecules molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);

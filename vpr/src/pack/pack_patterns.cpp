@@ -173,26 +173,12 @@ std::vector<NetlistPatternMatch> filter_netlist_pattern_matches(std::vector<Netl
     };
     std::sort(unfiltered_matches.begin(), unfiltered_matches.end(), by_match_size);
 
-    //Walk through the matches in descending order of size,
-    //recording those with no overlaps
-    std::set<AtomBlockId> covered_blocks;
-    for (auto& netlist_match : unfiltered_matches) {
-
-        const auto& internal_blocks = netlist_match.internal_blocks;
-
-        auto not_covered = [&](const AtomBlockId blk) {
-            return !covered_blocks.count(blk);
-        };
-
-        if (std::all_of(internal_blocks.begin(), internal_blocks.end(), not_covered)) {
-            //Add
-            filtered_matches.push_back(netlist_match);
-            
-            //Record the covered blocks so any smaller patterns which include these
-            //blocks are rejected
-            covered_blocks.insert(internal_blocks.begin(), internal_blocks.end());
-        }
-    }
+    //Remove matches with no internal blocks
+    auto non_empty_internal_blocks = [](const NetlistPatternMatch& lhs) {
+        return lhs.internal_blocks.size() > 0;
+    };
+    std::copy_if(unfiltered_matches.begin(), unfiltered_matches.end(), std::back_inserter(filtered_matches),
+                 non_empty_internal_blocks);
 
     return filtered_matches;
 }

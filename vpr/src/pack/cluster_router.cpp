@@ -698,6 +698,9 @@ static void add_lb_external_sink(t_intra_lb_net& net, const t_lb_router_data& ro
 
     //Find a valid external sink node
     int external_sink_rr = get_lb_rr_graph_ext_sink(net, lb_rr_graph, lb_rr_graph_info);
+    if (external_sink_rr == OPEN) {
+        return;
+    }
     VTR_ASSERT(external_sink_rr != OPEN);
 
     //Note where the external sink is located within the cluster net
@@ -1294,9 +1297,12 @@ int get_lb_rr_graph_ext_sink(const t_intra_lb_net& lb_net, const t_lb_type_rr_gr
 
     //Now that we have a set of valid sinks, pick the best one
 
-    //TODO: For now we just pick the first. Should do something better...
-    VTR_ASSERT(!driver_reachable_external_sinks.empty());
-    return *driver_reachable_external_sinks.begin();
+    if (driver_reachable_external_sinks.empty()) {
+        return OPEN; //No external sink reachable, assume will be set by another atom in the cluster
+    } else {
+        //TODO: For now we just pick the first. Should do something better...
+        return *driver_reachable_external_sinks.begin();
+    }
 }
 
 static std::vector<int> find_congested_rr_nodes(const t_lb_type_rr_graph& lb_type_graph,

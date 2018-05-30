@@ -1241,8 +1241,12 @@ static enum e_block_pack_status try_pack_molecule(
 			block_pack_status = BLK_PASSED;
 			
             for (auto molecule_blk : molecule.blocks()) {
+                if (molecule.block_type(molecule_blk) == PackMolecule::BlockType::EXTERNAL) continue;
+
                 AtomBlockId atom_blk = molecule.block_atom(molecule_blk);
                 VTR_ASSERT(atom_blk);
+
+                if (primitives_list[molecule_blk] == nullptr) continue;
 
                 //TODO: remove these?
                 chain_root_pin = nullptr;
@@ -1280,6 +1284,7 @@ static enum e_block_pack_status try_pack_molecule(
 					 TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
 					 */
 					VTR_ASSERT(block_pack_status == BLK_PASSED);
+#if 0
 					if (molecule.blocks().size() > 2) {
 						/* Chained molecules often take up lots of area and are important, 
                          * if a chain is packed in, want to rename logic block to match chain name */
@@ -1291,8 +1296,14 @@ static enum e_block_pack_status try_pack_molecule(
 						    cur_pb = cur_pb->parent_pb;
                         }
 					}
+#endif
                     for (auto molecule_blk : molecule.blocks()) {
+                        if (molecule.block_type(molecule_blk) == PackMolecule::BlockType::EXTERNAL) continue;
+
                         AtomBlockId atom_blk = molecule.block_atom(molecule_blk);
+                        VTR_ASSERT(atom_blk);
+
+                        if (primitives_list[molecule_blk] == nullptr) continue;
 
                         /* invalidate all molecules that share atom block with current molecule */
                         auto rng = molecules.atom_molecules.equal_range(atom_blk);
@@ -1804,6 +1815,7 @@ static void update_cluster_stats(
 
     auto& molecule = molecules.pack_molecules[molecule_id];
 	for (auto molecule_blk : molecule.blocks()) {
+        if (molecule.block_type(molecule_blk) == PackMolecule::BlockType::EXTERNAL) continue;
         AtomBlockId blk_id = molecule.block_atom(molecule_blk);
 		VTR_ASSERT(blk_id);
 
@@ -1907,7 +1919,7 @@ static void start_new_cluster(
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
     auto& molecule = molecules.pack_molecules[molecule_id];
 
-    std::string molecule_name = atom_ctx.nlist.block_name(molecule.root_block_atom()); //TODO: choose a better name
+    std::string molecule_name = molecule.name(); //TODO: choose a better name
     std::vector<t_type_ptr> candidate_types = find_candidate_types_for_molecule(molecule, primitive_candidate_block_types);
 
     //We sort the candidate types in ascending order by their current utilization.
@@ -1975,16 +1987,18 @@ static void start_new_cluster(
 
     if (!success) {
         //Explored all candidates
-        if (molecule.blocks().size() > 1) {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                    "Can not find any logic block that can implement molecule %s.\n",
-                    molecule_name.c_str());
-        } else {
-            vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                    "Can not find any logic block that can implement molecule.\n"
-                    "\tAtom %s\n",
-                    molecule_name.c_str());
+        std::string msg;
+        msg += "Can not find any logic block that can implement molecule '" + molecule_name + "' consisting of:\n";
+
+        auto& molecule = molecules.pack_molecules[molecule_id];
+        for (auto molecule_blk : molecule.blocks()) {
+            if (molecule.block_type(molecule_blk) == PackMolecule::BlockType::EXTERNAL) continue;
+
+            auto atom_blk = molecule.block_atom(molecule_blk);
+            msg += vtr::string_fmt("\tAtom %s (%s)\n", atom_ctx.nlist.block_name(atom_blk).c_str(), atom_ctx.nlist.block_model(atom_blk)->name);
         }
+
+        VPR_THROW(VPR_ERROR_PACK, msg.c_str());
     }
 
     VTR_ASSERT(success);
