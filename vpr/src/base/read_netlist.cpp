@@ -51,7 +51,8 @@ static int add_net_to_hash(t_hash **nhash, const char *net_name,
 		int *ncount);
 
 static void load_external_nets_and_cb(const std::vector<std::string>& circuit_clocks,
-		ClusteredNetlist& clb_nlist);
+                                      e_clock_modeling_method clock_modeling_method,
+                                      ClusteredNetlist& clb_nlist);
 
 static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route);
 
@@ -70,7 +71,10 @@ static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBl
  * Initializes the clb_nlist with info from a netlist
  * net_file - Name of the netlist file to read
  */
-ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests) {
+ClusteredNetlist read_netlist(const char *net_file,
+                              const t_arch* arch,
+                              bool verify_file_digests,
+                              e_clock_modeling_method clock_modeling_method) {
 	clock_t begin = clock();
 	size_t bcount = 0;
 	std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
@@ -207,7 +211,7 @@ ClusteredNetlist read_netlist(const char *net_file, const t_arch* arch, bool ver
         /* TODO: Add additional check to make sure net connections match */
 		mark_constant_generators(clb_nlist);
 
-        load_external_nets_and_cb(circuit_clocks, clb_nlist);
+        load_external_nets_and_cb(circuit_clocks, clock_modeling_method, clb_nlist);
     } catch(pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_NET_F, e.filename_c_str(), e.line(),
                   "Error loading post-pack netlist (%s)", e.what());
@@ -834,7 +838,9 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 /**
  * This function updates the nets list and the connections between that list and the complex block
  */
-static void load_external_nets_and_cb(const std::vector<std::string>& circuit_clocks, ClusteredNetlist& clb_nlist) {
+static void load_external_nets_and_cb(const std::vector<std::string>& circuit_clocks,
+                                      e_clock_modeling_method clock_modeling_method,
+                                      ClusteredNetlist& clb_nlist) {
 	int j, k, ipin, num_tokens;
 	int ext_ncount = 0;
 	t_hash **ext_nhash;
@@ -971,6 +977,11 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					clb_nlist.net_name(net_id).c_str());
 			}
 		}
+		if (clock_modeling_method == ROUTED_CLOCK) {
+            // Do not check if nets contain clocks since clock nets are considered as regular nets
+            // and are routed using inter-block routing when ROUTED_CLOCK option is selected
+            continue;
+        }
 		for (j = 0; j < num_tokens; j++) {
 			if (0 == clb_nlist.net_name(net_id).compare(circuit_clocks[j].c_str())) {
 				VTR_ASSERT(clb_nlist.net_is_global(net_id));

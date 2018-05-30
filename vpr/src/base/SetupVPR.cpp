@@ -22,6 +22,7 @@ using namespace std;
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
+#include "clock_modeling.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
@@ -62,7 +63,8 @@ void SetupVPR(t_options *Options,
               vector <t_lb_type_rr_node> **PackerRRGraphs,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
-              t_power_opts * PowerOpts) {
+              t_power_opts * PowerOpts,
+              e_clock_modeling_method * clock_modeling_method) {
 	int i;
     using argparse::Provenance;
 
@@ -196,7 +198,12 @@ void SetupVPR(t_options *Options,
 	vtr::printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
+
+    if (*clock_modeling_method == ROUTED_CLOCK) {
+        ClockModeling::treat_clock_pins_as_non_globals();
+    }
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
 		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH),*PackerRRGraphs);
 	}
 

@@ -92,7 +92,8 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
         vector <t_lb_type_rr_node> **PackerRRGraph,
         t_segment_inf ** Segments, t_timing_inf * Timing,
         bool * ShowGraphics, int *GraphPause,
-        t_power_opts * PowerOpts);
+        t_power_opts * PowerOpts,
+        e_clock_modeling_method * clock_modeling_method);
 /* Check inputs are reasonable */
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */

@@ -235,7 +235,8 @@ void vpr_init(const int argc, const char **argv,
             &vpr_setup->Timing,
             &vpr_setup->ShowGraphics,
             &vpr_setup->GraphPause,
-            &vpr_setup->PowerOpts);
+            &vpr_setup->PowerOpts,
+            &vpr_setup->clock_modeling_method);
 
     /* Check inputs are reasonable */
     CheckArch(*arch);
@@ -505,11 +506,14 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    // TODO: It is undesirable to pass clock_modeling_method as an input.
     cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(),
                                          &arch,
-                                         vpr_setup.FileNameOpts.verify_file_digests);
+                                         vpr_setup.FileNameOpts.verify_file_digests,
+                                         vpr_setup.clock_modeling_method);
 
     process_constant_nets(cluster_ctx.clb_nlist, vpr_setup.constant_net_method);
+
 }
 
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -968,11 +972,12 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
         vector <t_lb_type_rr_node> **PackerRRGraph,
         t_segment_inf ** Segments, t_timing_inf * Timing,
         bool * ShowGraphics, int *GraphPause,
-        t_power_opts * PowerOpts) {
+        t_power_opts * PowerOpts,
+        e_clock_modeling_method * clock_modeling_method) {
     SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
             user_models, library_models, NetlistOpts, PackerOpts, PlacerOpts,
             AnnealSched, RouterOpts, AnalysisOpts, RoutingArch, PackerRRGraph, Segments, Timing,
-            ShowGraphics, GraphPause, PowerOpts);
+            ShowGraphics, GraphPause, PowerOpts, clock_modeling_method);
 }
 
 void vpr_check_arch(const t_arch& Arch) {
