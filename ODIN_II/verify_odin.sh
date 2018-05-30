@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 #1
 trap ctrl_c INT
 
@@ -11,7 +11,7 @@ function exit_program() {
 	    line_count=$(wc -l < regression_test/runs/failure.log)
 		fail_count=$[ fail_count+line_count ]
 	fi
-	
+
 	if [ $fail_count -gt "0" ]
 	then
 		echo "Failed $fail_count"
@@ -19,7 +19,7 @@ function exit_program() {
 	else
 		echo "no run failure!"
 	fi
-	
+
 	exit $fail_count
 }
 
@@ -28,25 +28,25 @@ function ctrl_c() {
 	echo ""
 	echo "** EXITED FORCEFULLY **"
     fail_count=123456789
-	exit_program 
+	exit_program
 }
 
 function micro_test() {
 	for benchmark in regression_test/benchmark/micro/*.v
-	do 
+	do
 		basename=${benchmark%.v}
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
-		output_vectors="$basename"_output	
+		output_vectors="$basename"_output
 		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR
-		
+
 		cp $benchmark $DIR/circuit.v
 		cp $input_vectors $DIR/circuit_input
 		cp $output_vectors $DIR/circuit_output
 		cp ../libs/libarchfpga/arch/sample_arch.xml $DIR/arch.xml
 	done
 
-	
+
 	#verilog
 	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
 	'./odin_II -E \
@@ -86,20 +86,20 @@ function micro_test() {
 #1
 #bench
 function regression_test() {
-	
+
 	mkdir -p regression_test/runs/full
 	mkdir -p OUTPUT
-	
+
 	for test_verilog in regression_test/benchmark/full/*.v
-	do 
-	
+	do
+
 		rm -Rf OUTPUT/*
-		
+
 		basename=${test_verilog%.v}
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
-		output_vectors="$basename"_output	
-		
+		output_vectors="$basename"_output
+
 		(./odin_II -E \
 		-a "../libs/libarchfpga/arch/sample_arch.xml" \
 		-V "$test_verilog" \
@@ -107,7 +107,7 @@ function regression_test() {
 		-T "$output_vectors" \
 			&> regression_test/runs/full/$test_name.log && [ -e OUTPUT/output_vectors ] && echo " --- PASSED == $test_verilog") \
     	|| (echo " -X- FAILED == $test_verilog" && echo $test_verilog >> regression_test/runs/failure.log)
-    	
+
 	done
 }
 
@@ -115,14 +115,14 @@ function regression_test() {
 #benchmark dir	N_trhead
 function arch_test() {
 	for benchmark in regression_test/benchmark/arch/*.v
-	do 
+	do
     	basename=${benchmark%.v}
     	test_name=${basename##*/}
 		DIR="regression_test/runs/arch/$test_name" && mkdir -p $DIR
-		
+
 		cp $benchmark $DIR/circuit.v
 	done
-	
+
 	ls regression_test/runs/arch | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/runs/arch/test_dir/circuit.v \
 				-o regression_test/runs/arch/test_dir/temp.blif \
@@ -137,11 +137,11 @@ function arch_test() {
 #benchmark dir	N_trhead
 function syntax_test() {
 	for benchmark in regression_test/benchmark/syntax/*.v
-	do 
+	do
     	basename=${benchmark%.v}
     	test_name=${basename##*/}
 		DIR="regression_test/runs/syntax/$test_name" && mkdir -p $DIR
-		
+
 		cp $benchmark $DIR/circuit.v
 	done
 
@@ -176,46 +176,53 @@ START=$(date +%s%3N)
 case $1 in
 
 	"arch")
-		arch_test $NB_OF_PROC 
+		arch_test $NB_OF_PROC
 		;;
-	
+
 	"syntax")
-		syntax_test $NB_OF_PROC 
+		syntax_test $NB_OF_PROC
 		;;
-		
-	"micro") 
-		micro_test $NB_OF_PROC 
+
+	"micro")
+		micro_test $NB_OF_PROC
 		;;
-		
-	"regression") 
-		regression_test $NB_OF_PROC 
+
+	"regression")
+		regression_test $NB_OF_PROC
 		;;
-		
-	"vtr_basic") 
+
+  "full_suite")
+    arch_test $NB_OF_PROC
+    syntax_test $NB_OF_PROC
+    micro_test $NB_OF_PROC
+    regression_test $NB_OF_PROC
+    ;;
+
+	"vtr_basic")
 		cd ..
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic
 		cd ODIN_II
 		;;
-	
+
 	"vtr_strong")
 		cd ..
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_strong
 		cd ODIN_II
 		;;
-		
-	"pre_commit")  
-		arch_test $NB_OF_PROC 
-		syntax_test $NB_OF_PROC 
-		micro_test $NB_OF_PROC 
-		regression_test $NB_OF_PROC 
+
+	"pre_commit")
+		arch_test $NB_OF_PROC
+		syntax_test $NB_OF_PROC
+		micro_test $NB_OF_PROC
+		regression_test $NB_OF_PROC
 		cd ..
-		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic 
+		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_strong
 		cd ODIN_II
 		;;
-		
-	*) 
-		echo 'nothing to run, ./verify_odin [ arch, syntax, micro, full, regression, vtr_basic, vtr_strong or pre_commit ] [ nb_of_process ]' 
+
+	*)
+		echo 'nothing to run, ./verify_odin [ arch, syntax, micro, regression, vtr_basic, vtr_strong or pre_commit ] [ nb_of_process ]'
 		;;
 esac
 
@@ -223,5 +230,3 @@ END=$(date +%s%3N)
 echo "ran test in: $(( ((END-START)/1000)/60 )):$(( ((END-START)/1000)%60 )).$(( (END-START)%1000 )) [m:s.ms]"
 exit_program
 ### end here
-
-

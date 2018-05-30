@@ -83,7 +83,7 @@ while ( $token = shift(@ARGV) ) {
         $num_cpu = int($1);
 	} elsif ($token eq "quick_test") {
 		run_quick_test();
-	} else {	
+	} else {
 		if ($token =~ /(.*)\//) {
 			$token = $1;
 		}
@@ -111,14 +111,14 @@ if ( $#tests == -1) {
 	  . "\n"
 	  . "Notes: <TEST> argument is of the format: <project>_reg_<suite>\n"
 	  . "See <vtr_flow_path>/tasks/regression_tests for more information.\n"
-	  . "\n"	  
+	  . "\n"
 	  . "Currently available:\n"
 	  . "	- vtr_reg_basic\n"
 	  . "	- vtr_reg_strong\n"
 	  . "	- vtr_reg_nightly\n"
 	  . "	- vtr_reg_weekly\n"
 	  . "\n"
-	  . "If you wish to add your own test, place it in 
+	  . "If you wish to add your own test, place it in
       . <vtr_flow_path>/tasks/regression_tests\n"
 	  . "\n";
 }
@@ -208,7 +208,7 @@ sub check_override {
 		parse_single_test("check");
 		exit "Checked results.";
 	}
-	
+
 	if ($calc_geomean) {
 		parse_single_test("calculate");
 		exit "Calculated results.";
@@ -235,7 +235,7 @@ sub check_override {
 						"min_chan_width"	,
 						"crit_path_delay"
 						);
-			
+
 			my %units = (
 						"revision"		, ""		,
 						"date"			, ""		,
@@ -258,7 +258,7 @@ sub check_override {
 
 			open( QOR_FILE, "$test_dir/qor_geomean.txt" );
 			my $output = <QOR_FILE>;
-			my @first_line = split( /\t/, trim($output) );			
+			my @first_line = split( /\t/, trim($output) );
 			my @backwards = reverse <QOR_FILE>;
 
 format STDOUT_TOP =
@@ -268,32 +268,32 @@ format STDOUT_TOP =
 .
 write;
 
-			while( @backwards ) {		
+			while( @backwards ) {
 				my @last_line = split( /\t/, trim( shift(@backwards) ) );
 				my @new_last_line;
 
 				foreach my $param (@data) {
-					
+
 					# Get column (index) of each qor metric
 					my $index = List::Util::first { @first_line[$_] eq $param } 0 .. $#first_line;
 
 					# If index is out-of-bounds or metric cannot be found
 					if ( $index > @last_line or $index eq "" ) {
 						push( @new_last_line, sprintf( $precision{$param}, "-" ) . $units{$param} );
-					}	
+					}
 					# If valid number, add it onto line to be printed with appropriate sig figs. and units
 					elsif ( Scalar::Util::looks_like_number(@last_line[$index]) ) {
 						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
 					}
 					# For dates of format dd/mm/yy
-					elsif ( @last_line[$index] =~ m/^\d{2}\/\d{2}\/\d{2}$/ or @last_line[$index] ne "" ) { 
+					elsif ( @last_line[$index] =~ m/^\d{2}\/\d{2}\/\d{2}$/ or @last_line[$index] ne "" ) {
 						push( @new_last_line, sprintf( $precision{$param}, @last_line[$index] ) . $units{$param} );
 					}
 					else {
 						push( @new_last_line, sprintf( $precision{$param}, "-" ) . $units{$param} );
 					}
 				}
- 
+
 format STDOUT =
 | @||||||| | @||||||||| | @|||||||||||||| | @||||||||||||||||||| | @|||||||||||| | @||||||||||||||| | @|||||||||||||||| |
 @new_last_line;
@@ -308,7 +308,7 @@ write;
 }
 
 sub run_single_test {
-	if ($first) { 
+	if ($first) {
 		print "=============================================\n";
 		print "    Verilog-to-Routing Regression Testing    \n";
 		print "=============================================\n";
@@ -393,7 +393,7 @@ sub run_quick_test {
 		print " [FAILED]\n\n";
 	}
 
-	chdir ("..");	
+	chdir ("..");
 }
 
 sub run_odin_test {
@@ -401,28 +401,28 @@ sub run_odin_test {
 
 	chdir ("ODIN_II") or die "Failed to change to directory ./ODIN_II: $!";
 
-    my $return_status = 0;
+  my $return_status = 0;
 	if ( $token eq "odin_reg_micro" ) {
 		$return_status = system("./verify_odin.sh micro $num_cpu");
-	} elsif ( $token eq "odin_reg_full" ) {
+	} elsif ( $token eq "odin_reg" ) {
 		$return_status = system("./verify_odin.sh regression $num_cpu");
 	} elsif ( $token eq "odin_reg_arch" ) {
 		$return_status = system("./verify_odin.sh arch $num_cpu");
 	} elsif ( $token eq "odin_reg_syntax" ) {
 		$return_status = system("./verify_odin.sh syntax $num_cpu");
+	} elsif ( $token eq "odin_reg_full" ) {
+		$return_status = system("./verify_odin.sh full_suite $num_cpu");
 	} else {
-        die("Unrecognized odin test $token");
-    }
+    die("Unrecognized odin test $token");
+  }
 
-	chdir ("..");	
+	chdir ("..");
 
-    #Perl is obtuse, and requires you to manually shift the return value by 8 bits
-    #to get the real exit code from a call to system(). There must be a better way to do this....
-    
+  #Perl is obtuse, and requires you to manually shift the return value by 8 bits
+  #to get the real exit code from a call to system(). There must be a better way to do this....
 	# odin return the number of failure as its exit code
-	
-    my $exit_code = $return_status >> 8;
-    return $exit_code;
+  my $exit_code = $return_status >> 8;
+  return $exit_code;
 }
 
 sub trim($) {
