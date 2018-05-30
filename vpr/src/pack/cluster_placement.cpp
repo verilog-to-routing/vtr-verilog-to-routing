@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <queue>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -62,9 +63,14 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
                                                    t_pb_graph_node* pb_node,
                                                    int depth=0);
 
-static t_pb_graph_node* try_place_molecule_atom(AtomBlockId atom_blk,
-                                                       t_pb_graph_node* pb_node,
-                                                       const std::set<t_pb_graph_node*>& used_pb_nodes);
+static t_pb_graph_node* try_place_molecule_block(const PackMolecule& molecule, const MoleculeBlockId molecule_blk,
+                                                 const MoleculePlaceInfo& partial_placement,
+                                                 t_pb_graph_node* pb_node);
+
+static bool molecule_block_upstream_connections_feasible(const PackMolecule& molecule, const MoleculeBlockId molecule_blk, 
+                                                  const MoleculePlaceInfo& partial_placement, t_pb_graph_node* pb_node);
+
+static bool cluster_routing_path_feasible(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink);
 
 static bool expand_forced_pack_molecule_placement(
 		const t_pack_molecule *molecule,
@@ -408,13 +414,8 @@ void commit_primitive(t_cluster_placement_stats& cluster_placement_stats,
 		valid_mode = pb_graph_node->pb_type->parent_mode->index;
 		pb_graph_node = pb_graph_node->parent_pb_graph_node;
 		for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-			for (j = 0;
-					j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-					j++) {
-				for (k = 0;
-						k
-								< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
+			for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+				for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
 					if (&pb_graph_node->child_pb_graph_nodes[i][j][k] != skip) {
 						update_primitive_cost_or_status(
 								&pb_graph_node->child_pb_graph_nodes[i][j][k],
@@ -560,11 +561,11 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
         AtomBlockId atom_blk = molecule.block_atom(molecule_block);
 
         vtr::printf("%sTrying to place internal molecule block %zu (%s) in %s\n", vtr::indent(depth).c_str(), size_t(molecule_block),
-                g_vpr_ctx.atom().nlist.block_model(molecule.block_atom(molecule_block))->name,
+                g_vpr_ctx.atom().nlist.block_model(atom_blk)->name,
                 describe_pb_graph_node_hierarchy(pb_node).c_str());
 
         //Find a valid placement location for the atom associated with this block in the molecule
-        t_pb_graph_node* atom_loc = try_place_molecule_atom(atom_blk, pb_node, placement.used_pb_nodes);
+        t_pb_graph_node* atom_loc = try_place_molecule_block(molecule, molecule_block, placement, pb_node);
 
         if (atom_loc) {
             //Recursively try to place the sub-tree rooted at the current molecule block
@@ -612,28 +613,34 @@ static MoleculePlaceInfo try_place_molecule_recurr(const PackMolecule& molecule,
     return placement;
 }
 
-static t_pb_graph_node* try_place_molecule_atom(AtomBlockId atom_blk, t_pb_graph_node* pb_node, const std::set<t_pb_graph_node*>& used_pb_nodes) {
-    if (used_pb_nodes.count(pb_node)) {
+static t_pb_graph_node* try_place_molecule_block(const PackMolecule& molecule, const MoleculeBlockId molecule_blk,
+                                                 const MoleculePlaceInfo& partial_placement,
+                                                 t_pb_graph_node* pb_node) {
+    if (partial_placement.used_pb_nodes.count(pb_node)) {
         return nullptr; //Already in use
     }
 
     if (pb_node->is_primitive()) {
-        if (primitive_type_feasible(atom_blk, pb_node->pb_type)
-            && pb_node->cluster_placement_primitive->valid) {
+        if (pb_node->cluster_placement_primitive->valid
+            && primitive_type_feasible(molecule.block_atom(molecule_blk), pb_node->pb_type)
+            && molecule_block_upstream_connections_feasible(molecule, molecule_blk, partial_placement, pb_node)) {
             return pb_node; //Primitive match
-         }
+        }
 
         return nullptr; //Primitive mismatch
     }
 
     //Not primitive, recursively search children
+    //
+    //TODO: Could speed-up by tracing pack pattern annotations in arch,
+    //      instead of enumerating legal placements (?)
     VTR_ASSERT(!pb_node->is_primitive());
 
     for (int imode = 0; imode < pb_node->num_modes(); ++imode) {
         for (int ichild_type = 0; ichild_type < pb_node->num_pb_type_children(imode); ++ichild_type) {
             for (int ichild = 0; ichild < pb_node->num_pb_type_child_pb(imode, ichild_type); ++ichild) {
                 t_pb_graph_node *child_pb_node = &pb_node->child_pb_graph_nodes[imode][ichild_type][ichild];
-                t_pb_graph_node* legal_child = try_place_molecule_atom(atom_blk, child_pb_node, used_pb_nodes); 
+                t_pb_graph_node* legal_child = try_place_molecule_block(molecule, molecule_blk, partial_placement, child_pb_node); 
                 if (legal_child) { //Legal within child sub-nodes
                     return legal_child;
                 }
@@ -642,6 +649,65 @@ static t_pb_graph_node* try_place_molecule_atom(AtomBlockId atom_blk, t_pb_graph
     }
 
     return nullptr; //No match within children
+}
+
+static bool molecule_block_upstream_connections_feasible(const PackMolecule& molecule, const MoleculeBlockId molecule_blk, 
+                                                  const MoleculePlaceInfo& partial_placement, t_pb_graph_node* pb_node) {
+    for (auto molecule_sink_pin : molecule.block_input_pins(molecule_blk)) {
+        auto molecule_edge = molecule.pin_edge(molecule_sink_pin);
+        auto molecule_driver_pin = molecule.edge_driver(molecule_edge);
+        auto molecule_driver_blk = molecule.pin_block(molecule_driver_pin);
+
+        const t_pb_graph_pin* sink_pin = find_corresponding_pb_graph_pin(pb_node, molecule.pin_atom(molecule_sink_pin));
+        VTR_ASSERT(sink_pin);
+
+        //Verify there is a path from src to sink
+        const t_pb_graph_pin* driver_pin = nullptr;
+        auto itr = partial_placement.block_locations.find(molecule_driver_blk);
+        if (itr == partial_placement.block_locations.end()) {
+            //External block connection
+
+            //TODO: instead of skipping check, verify that 'correct' top-level pin can reach the corresponding sink
+            continue;
+        } else {
+            VTR_ASSERT(itr != partial_placement.block_locations.end());
+            t_pb_graph_node* driver_loc = itr->second;
+
+            driver_pin = find_corresponding_pb_graph_pin(driver_loc, molecule.pin_atom(molecule_driver_pin));
+        }
+        VTR_ASSERT(driver_pin);
+
+        if (!cluster_routing_path_feasible(driver_pin, sink_pin)) {
+            return false; //Infeasible
+        }
+    }
+
+    return true; //Feasible
+}
+
+static bool cluster_routing_path_feasible(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) {
+    //Simple BFS (for now) from driver to sink
+    std::queue<const t_pb_graph_pin*> q;
+    q.push(driver);
+
+    while (!q.empty()) {
+        const t_pb_graph_pin* pin = q.front();
+        q.pop();
+
+        if (pin == sink) return true;
+
+        //Expand neighbours
+        for (int iedge = 0; iedge < pin->num_output_edges; ++iedge) {
+            t_pb_graph_edge* edge = pin->output_edges[iedge];
+
+            for (int ipin = 0; ipin < edge->num_output_pins; ++ipin) {
+                t_pb_graph_pin* sink_pin = edge->output_pins[ipin];
+                q.push(sink_pin);
+            }
+        }
+    }
+
+    return false; //No path
 }
 
 /**
