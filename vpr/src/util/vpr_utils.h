@@ -128,10 +128,17 @@ int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin);
 //Returns the port matching name within pb_gnode
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
 
-//Returns the graph pin matching name at pin index
+//Returns the pb graph pin matching port_name at pin index in pb_gnode
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index);
 
-AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
+//Returns the pb graph pin associated with the specified atom pin [only valid after clustring]
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
+
+//Returns the pb graph pin on pb_gnode corresponding to the type/pin index of specified atom pin
+const t_pb_graph_pin* find_corresponding_pb_graph_pin(const t_pb_graph_node* pb_gnode, AtomPinId atom_pin);
+
+//Returns the pb graph pin on pb_node which corresponds to atom_pin (or nullptr if none)
+t_pb_graph_pin* find_pb_pin(t_pb_graph_node* pb_node, AtomPinId atom_pin);
 
 //Returns the block type matching name, or nullptr (if not found)
 t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types);
@@ -149,7 +156,7 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type *cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *model_port, const int model_pin, const t_pb_graph_node *pb_graph_node);
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
+AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);

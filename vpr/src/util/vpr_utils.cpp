@@ -1179,6 +1179,17 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
     return nullptr;
 }
 
+//Returns the pb graph pin on pb_gnode corresponding to the type/port bit index of specified atom pin
+const t_pb_graph_pin* find_corresponding_pb_graph_pin(const t_pb_graph_node* pb_gnode, AtomPinId atom_pin) {
+    auto& nlist = g_vpr_ctx.atom().nlist;
+
+    AtomBlockId atom_blk = nlist.pin_block(atom_pin);
+    VTR_ASSERT_MSG(pb_gnode->pb_type->model == nlist.block_model(atom_blk), "Primitive types must match");
+
+    AtomPortId atom_port = nlist.pin_port(atom_pin);
+    return find_pb_graph_pin(pb_gnode, nlist.port_model(atom_port)->name, nlist.pin_port_bit(atom_pin));
+}
+
 /* Recusively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node) {
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
