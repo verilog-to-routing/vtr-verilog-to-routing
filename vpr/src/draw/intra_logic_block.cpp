@@ -149,7 +149,7 @@ void draw_internal_draw_subblk() {
 			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) 
 				continue;
 
-			/* Don't draw if tile is empty. This includes corners. */
+			/* Don't draw if tile is empty. */
 			if (device_ctx.grid[i][j].type == device_ctx.EMPTY_TYPE)
 				continue;
 
@@ -396,7 +396,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 			int tot_len = type_len + name_len;
 			char* blk_tag = (char *)vtr::malloc((tot_len + 8) * sizeof(char));
 
-			sprintf (blk_tag, "%s(%s)", pb_type->name, pb->name);
+			sprintf (blk_tag, "%s (%s)", pb_type->name, pb->name);
 
 			drawtext(
 				t_point(abs_bbox.get_xcenter(), abs_bbox.get_ycenter()),
@@ -453,9 +453,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const t_b
 			t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
 			// don't go farther if 0 modes
-			if (pb_child_type == nullptr || pb_child_type->num_modes == 0) {
-				continue;
-			}
+            if (pb_child_type == nullptr) {
+                continue;
+            }
 
 			// now recurse
 			draw_internal_pb(clb_index, child_pb, abs_bbox, type);
