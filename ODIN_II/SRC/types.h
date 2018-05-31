@@ -428,26 +428,6 @@ struct chain_information_t_t
 	int num_bits;
 };
 
-typedef enum{
-	rca 			= 0,	// Ripple carry Adder
-	csla 			= 1, 	// Carry select adders
-	bec_csla 	= 2 	// binary to excess carry Select Adder
-}type_of_adder_e;
-
-// char type_of_adder_s[] =
-// {
-// 	"rca",
-// 	"csla",
-// 	"bec_csla"
-// }
-
-// to define type of adder in cmd line
-struct adder_def_t_t
-{
-	type_of_adder_e type_of_adder;
-	int next_step_size;
-};
-
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
 struct nnode_t_t

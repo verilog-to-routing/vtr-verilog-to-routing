@@ -21,7 +21,7 @@ long long int my_power(long long int x, long long int y);
 long long int pow2(int to_the_power);
 
 char *make_string_based_on_id(nnode_t *node);
-char *make_simple_name(char *input, const char *flatten_string, char flatten_char);
+std::string make_simple_name(char *input, const char *flatten_string, char flatten_char);
 
 void *my_malloc_struct(size_t bytes_to_alloc);
 
@@ -52,4 +52,3 @@ void error_message(short error_type, int line_number, int file, const char *mess
 void warning_message(short error_type, int line_number, int file, const char *message, ...);
 
 #endif
-

@@ -541,31 +541,25 @@ char *make_string_based_on_id(nnode_t *node)
 /*---------------------------------------------------------------------------------------------
  *  (function: make_simple_name )
  *-------------------------------------------------------------------------------------------*/
-char *make_simple_name(char *input, const char *flatten_string, char flatten_char)
+std::string make_simple_name(char *input, const char *flatten_string, char flatten_char)
 {
-	unsigned int i;
-	unsigned int j;
-	char *return_string = NULL;
-	oassert(input != NULL);
+	oassert(input);
 
-	return_string = (char*)malloc(sizeof(char)*(strlen(input)+1));
+	std::string input_str = input;
+	std::string flatten_str = flatten_string;
 
-	for (i = 0; i < strlen(input); i++)
+	std::string return_str;
+
+	for (int i = 0; i < input_str.length(); i++)
 	{
-		return_string[i] = input[i];
-		for (j = 0; j < strlen(flatten_string); j++)
-		{
-			if (input[i] == flatten_string[j])
-			{
-				return_string[i] = flatten_char;
-				break;
-			}
-		}
+		std::size_t candidate = flatten_str.find(input_str[i]);
+		if (candidate != std::string::npos)
+			return_str += flatten_char;
+		else
+			return_str += input[i];
 	}
 
-	return_string[strlen(input)] = '\0';
-
-	return return_string;
+	return return_str;
 }
 
 /*-----------------------------------------------------------------------

@@ -31,6 +31,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_memory.h"
 
+void print_vizualizer_node_type_to_file(int index_in_stack, nnode_t *current_node, FILE *fp);
+void print_vizualizer_nodes_to_file(int i, int j, short input, nnode_t *current_node, nnode_t *next_node, FILE *fp);
+
 void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number);
 void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_t *netllist);
 
@@ -62,6 +65,55 @@ void graphVizOutputNetlist(std::string path, const char* name, short marker_valu
 	fclose(fp);
 }
 
+void print_vizualizer_node_type_to_file(int index_in_stack, nnode_t *current_node, FILE *fp)
+{
+	std::string temp_string = make_simple_name(current_node->name, "^-+.", '_');
+	if (index_in_stack == 0)
+	{
+		fprintf(fp, "\t%s [shape=box,color=red];\n", temp_string.c_str());
+	}
+	else
+	{
+		switch(current_node->type)
+		{
+			case FF_NODE :	//fallthrough
+			case BUF_NODE:		fprintf(fp, "\t%s [shape=box];\n", temp_string.c_str());	return;
+			case INPUT_NODE:	fprintf(fp, "\t%s [shape=triangle];\n", temp_string.c_str());	return;
+			case CLOCK_NODE:	fprintf(fp, "\t%s [shape=triangle];\n", temp_string.c_str());	return;
+			case OUTPUT_NODE:	fprintf(fp, "\t%s_O [shape=triangle];\n", temp_string.c_str());	return;
+			default:					fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string.c_str(), current_node->forward_level, current_node->backward_level); return;
+
+		}
+	}
+}
+
+void print_vizualizer_nodes_to_file(int i, int j, short input, nnode_t *current_node, nnode_t *next_node, FILE *fp)
+{
+	if(!current_node || !next_node)
+		return;
+
+	/* renaming for output nodes */
+	std::string cur_str = make_simple_name(current_node->name, "^-+.", '_');
+	cur_str += (!input && current_node->type == OUTPUT_NODE)?"_O":"";
+
+	std::string next_str = make_simple_name(next_node->name, "^-+.", '_');
+	next_str +=	(!input && next_node->type == OUTPUT_NODE)?"_O":"";
+
+	if(input)
+	{
+		fprintf(fp, "\t\"%s\" -> \"%s\"", next_str.c_str(), cur_str.c_str());
+		if (current_node->input_pins[j]->name)
+			fprintf(fp, "[label=\"%s\"]", current_node->input_pins[j]->name);
+	}
+	else
+	{
+		fprintf(fp, "\t\"%s\" -> \"%s\"", cur_str.c_str(), next_str.c_str());
+		if (current_node->output_pins[i]->net->fanout_pins[j]->name)
+			fprintf(fp, "[label=\"%s\"]", current_node->output_pins[i]->net->fanout_pins[j]->name);
+	}
+	fprintf(fp, ";\n");
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traversal_start()
  *-------------------------------------------------------------------------------------------*/
@@ -87,94 +139,36 @@ void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number)
+void depth_first_traverse_visualize(nnode_t *current_node, FILE *fp, int traverse_mark_number)
 {
 	int i, j;
 	nnode_t *next_node;
-	nnet_t *next_net;
 
-	if (node->traverse_visited == traverse_mark_number)
+	if (current_node->traverse_visited == traverse_mark_number)
 	{
 		return;
 	}
 	else
 	{
-		/* ELSE - this is a new node so depth visit it */
-		char *temp_string;
-		char *temp_string2;
-
 		/* mark that we have visitied this node now */
-		node->traverse_visited = traverse_mark_number;
+		current_node->traverse_visited = traverse_mark_number;
+		print_vizualizer_node_type_to_file(1,current_node,fp);
 
-		temp_string = make_simple_name(node->name, "^-+.", '_');
-		if ((node->type == FF_NODE) || (node->type == BUF_NODE))
+		for (i = 0; i < current_node->num_output_pins; i++)
 		{
-			fprintf(fp, "\t\"%s\" [shape=box];\n", temp_string);
-		}
-		else if (node->type == INPUT_NODE)
-		{
-			fprintf(fp, "\t\"%s\" [shape=triangle];\n", temp_string);
-		}
-		else if (node->type == CLOCK_NODE)
-		{
-			fprintf(fp, "\t\"%s\" [shape=triangle];\n", temp_string);
-		}
-		else if (node->type == OUTPUT_NODE)
-		{
-			fprintf(fp, "\t\"%s_O\" [shape=triangle];\n", temp_string);
-		}
-		else
-		{
-			fprintf(fp, "\t\"%s\"\n", temp_string);
-		}
-		vtr::free(temp_string);
-
-		for (i = 0; i < node->num_output_pins; i++)
-		{
-			if (node->output_pins[i]->net == NULL)
+			if (!current_node->output_pins[i] \
+			|| !current_node->output_pins[i]->net)
 				continue;
 
-
-			next_net = node->output_pins[i]->net;
-			for (j = 0; j < next_net->num_fanout_pins; j++)
+			for (j = 0 ;j < current_node->output_pins[i]->net->num_fanout_pins ;j++)
 			{
-				next_node = next_net->fanout_pins[j]->node;
-				if (next_node == NULL)
+				if (!current_node->output_pins[i]->net->fanout_pins[j] \
+				|| !current_node->output_pins[i]->net->fanout_pins[j]->node)
 					continue;
-// To see just combinational stuff...also comment above triangels and box
-//				if ((next_node->type == FF_NODE) || (next_node->type == INPUT_NODE) || (next_node->type == OUTPUT_NODE))
-//					continue;
-//				if ((node->type == FF_NODE) || (node->type == INPUT_NODE) || (node->type == OUTPUT_NODE))
-//					continue;
 
-				temp_string = make_simple_name(node->name, "^-+.", '_');
-				temp_string2 = make_simple_name(next_node->name, "^-+.", '_');
-				/* renaming for output nodes */
-				if (node->type == OUTPUT_NODE)
-				{
-					/* renaming for output nodes */
-                    char* temp_string_old = temp_string;
-					temp_string = (char*)vtr::malloc(sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string_old);
-                    free(temp_string_old);
-				}
-				if (next_node->type == OUTPUT_NODE)
-				{
-					/* renaming for output nodes */
-                    char* temp_string2_old = temp_string2;
-					temp_string2 = (char*)vtr::malloc(sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2_old);
-                    free(temp_string2_old);
-				}
+				next_node = current_node->output_pins[i]->net->fanout_pins[j]->node;
 
-				fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2);
-				if (next_net->fanout_pins[j]->name)
-					fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
-				fprintf(fp, ";\n");
-
-				vtr::free(temp_string);
-				vtr::free(temp_string2);
-
+				print_vizualizer_nodes_to_file(i,j, 0, current_node, next_node, fp);
 				/* recursive call point */
 				depth_first_traverse_visualize(next_node, fp, traverse_mark_number);
 			}
@@ -207,190 +201,68 @@ void graphVizOutputCombinationalNet(std::string path, const char* name, short ma
 
 /*---------------------------------------------------------------------------------------------
  * (function: forward_traversal_net_graph_display()
- *	TODO check if stack of node is freed
  *-------------------------------------------------------------------------------------------*/
 void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *node)
 {
-	int j, k;
-	nnode_t** stack_of_nodes;
-	int index_in_stack = 0;
-	int num_stack_of_nodes = 1;
-	char *temp_string;
-	char *temp_string2;
-
-	stack_of_nodes = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*1);
-	stack_of_nodes[0] = node;
-
-	while (index_in_stack != num_stack_of_nodes)
+	std::vector<nnode_t*> stack_of_nodes;
+	stack_of_nodes.push_back(node);
+	for(int i=0; i < stack_of_nodes.size(); i++)
 	{
-		nnode_t *current_node = stack_of_nodes[index_in_stack];
-
-		/* mark it */
-		current_node->traverse_visited = marker_value;
-
-		/* printout the details of it */
-		temp_string = make_simple_name(current_node->name, "^-+.", '_');
-		if (index_in_stack == 0)
-		{
-			fprintf(fp, "\t%s [shape=box,color=red];\n", temp_string);
-		}
-		else if ((current_node->type == FF_NODE) || (current_node->type == BUF_NODE))
-		{
-			fprintf(fp, "\t%s [shape=box];\n", temp_string);
-		}
-		else if (current_node->type == INPUT_NODE)
-		{
-			fprintf(fp, "\t%s [shape=triangle];\n", temp_string);
-		}
-		else if (current_node->type == CLOCK_NODE)
-		{
-			fprintf(fp, "\t%s [shape=triangle];\n", temp_string);
-		}
-		else if (current_node->type == OUTPUT_NODE)
-		{
-			fprintf(fp, "\t%s_O [shape=triangle];\n", temp_string);
-		}
-		else
-		{
-			fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
-		}
-		vtr::free(temp_string);
+		stack_of_nodes[i]->traverse_visited = marker_value;
+		print_vizualizer_node_type_to_file(i,node,fp);
 
 		/* at each node visit all the outputs */
-		for (j = 0; j < current_node->num_output_pins; j++)
+		for (int j = 0; j < stack_of_nodes[i]->num_output_pins; j++)
 		{
-			if (current_node->output_pins[j] == NULL)
+			if (stack_of_nodes[i]->output_pins[j] == NULL\
+			|| stack_of_nodes[i]->output_pins[j]->net == NULL)
 				continue;
 
-			for (k = 0; k < current_node->output_pins[j]->net->num_fanout_pins; k++)
+			for (int k = 0; k < stack_of_nodes[i]->output_pins[j]->net->num_fanout_pins; k++)
 			{
-				if ((current_node->output_pins[j] == NULL) || (current_node->output_pins[j]->net == NULL) || ( current_node->output_pins[j]->net->fanout_pins[k] == NULL))
+				if(!stack_of_nodes[i]->output_pins[j]->net->fanout_pins[k]\
+				|| !stack_of_nodes[i]->output_pins[j]->net->fanout_pins[k]->node)
 					continue;
 
 				/* visit the fanout point */
-				nnode_t *next_node = current_node->output_pins[j]->net->fanout_pins[k]->node;
-
-				if (next_node == NULL)
-					continue;
-
-				temp_string = make_simple_name(current_node->name, "^-+.", '_');
-				temp_string2 = make_simple_name(next_node->name, "^-+.", '_');
-				if (current_node->type == OUTPUT_NODE)
-				{
-					/* renaming for output nodes */
-					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string);
-				}
-				if (next_node->type == OUTPUT_NODE)
-				{
-					/* renaming for output nodes */
-					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2);
-				}
-
-				fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2, current_node->output_pins[j]->net->fanout_pins[k]->name);
-
-				vtr::free(temp_string);
-				vtr::free(temp_string2);
-
+				nnode_t *next_node = stack_of_nodes[i]->output_pins[j]->net->fanout_pins[k]->node;
 				if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE))
-				{
-					/* IF - not visited yet then add to list */
-					stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*)*(num_stack_of_nodes+1));
-					stack_of_nodes[num_stack_of_nodes] = next_node;
-					num_stack_of_nodes ++;
-				}
+					stack_of_nodes.push_back(next_node);
+
+				print_vizualizer_nodes_to_file(j,k,0, stack_of_nodes[i], next_node, fp);
 			}
 		}
-
-		/* process next element in net */
-		index_in_stack ++;
 	}
 }
 
 /*---------------------------------------------------------------------------------------------
  * (function: backward_traversal_net_graph_display()
- *	TODO check if stack of node is freed
  *-------------------------------------------------------------------------------------------*/
 void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *node)
 {
-	int j;
-	char *temp_string;
-	char *temp_string2;
-	nnode_t** stack_of_nodes;
-	int index_in_stack = 0;
-	int num_stack_of_nodes = 1;
-
-	stack_of_nodes = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*1);
-	stack_of_nodes[0] = node;
-
-	while (index_in_stack != num_stack_of_nodes)
+	std::vector<nnode_t*> stack_of_nodes;
+	stack_of_nodes.push_back(node);
+	for (int i=0; i != stack_of_nodes.size(); i++)
 	{
-		nnode_t *current_node = stack_of_nodes[index_in_stack];
-
 		/* mark it */
-		current_node->traverse_visited = marker_value;
-
-		/* printout the details of it */
-		temp_string = make_simple_name(current_node->name, "^-+.", '_');
-		if (index_in_stack != 0)
-		{
-			if ((current_node->type == FF_NODE) || (current_node->type == BUF_NODE))
-			{
-				fprintf(fp, "\t%s [shape=box];\n", temp_string);
-			}
-			else if (current_node->type == INPUT_NODE)
-			{
-				fprintf(fp, "\t%s [shape=triangle];\n", temp_string);
-			}
-			else if (current_node->type == CLOCK_NODE)
-			{
-				fprintf(fp, "\t%s [shape=triangle];\n", temp_string);
-			}
-			else if (current_node->type == OUTPUT_NODE)
-			{
-				fprintf(fp, "\t%s_O [shape=triangle];\n", temp_string);
-			}
-			else
-			{
-				fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
-			}
-		}
-		vtr::free(temp_string);
+		stack_of_nodes[i]->traverse_visited = marker_value;
+		print_vizualizer_node_type_to_file(i,node,fp);
 
 		/* at each node visit all the outputs */
-		for (j = 0; j < current_node->num_input_pins; j++)
+		for (int j = 0; j < stack_of_nodes[i]->num_input_pins; j++)
 		{
-			if (current_node->input_pins[j] == NULL)
-				continue;
-
-			if ((current_node->input_pins[j] == NULL) || (current_node->input_pins[j]->net == NULL) || (current_node->input_pins[j]->net->driver_pin == NULL))
+			if(!stack_of_nodes[i]->input_pins[j]\
+			|| !stack_of_nodes[i]->input_pins[j]->net \
+			|| !stack_of_nodes[i]->input_pins[j]->net->driver_pin \
+			|| !stack_of_nodes[i]->input_pins[j]->net->driver_pin->node)
 				continue;
 
 			/* visit the fanout point */
-			nnode_t *next_node = current_node->input_pins[j]->net->driver_pin->node;
-
-			if (next_node == NULL)
-				continue;
-
-			temp_string = make_simple_name(current_node->name, "^-+.", '_');
-			temp_string2 = make_simple_name(next_node->name, "^-+.", '_');
-
-			fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
-
-			vtr::free(temp_string);
-			vtr::free(temp_string2);
-
+			nnode_t *next_node = stack_of_nodes[i]->input_pins[j]->net->driver_pin->node;
 			if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE))
-			{
-				/* IF - not visited yet then add to list */
-				stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*)*(num_stack_of_nodes+1));
-				stack_of_nodes[num_stack_of_nodes] = next_node;
-				num_stack_of_nodes ++;
-			}
-		}
+				stack_of_nodes.push_back(next_node);
 
-		/* process next element in net */
-		index_in_stack ++;
+			print_vizualizer_nodes_to_file(i,j,1, stack_of_nodes[i], next_node, fp);
+		}
 	}
 }
