@@ -676,7 +676,6 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
 
         for (size_t isink = 0; isink < pattern_edge.to_pins.size(); ++isink) {
             const auto& to_pattern_pin = pattern_edge.to_pins[isink];
-            const auto& to_pattern_node = pattern.nodes[to_pattern_pin.node_id];
 
             AtomPinId to_pin = find_matching_pin(net_sinks, to_pattern_pin, netlist);
             if (!to_pin) {
