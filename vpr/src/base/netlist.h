@@ -429,9 +429,14 @@
 template<typename I>
 class IdMap;
 
-template<typename BlockId, typename PortId, typename PinId, typename NetId> 
+template<typename BlockIdType, typename PortIdType, typename PinIdType, typename NetIdType> 
 class Netlist {
     public: //Public Types
+        typedef BlockIdType BlockId;
+        typedef PortIdType PortId;
+        typedef PinIdType PinId;
+        typedef NetIdType NetId;
+
         typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator              block_iterator;
         typedef typename std::unordered_map<std::string, std::string>::const_iterator   attr_iterator;
         typedef typename std::unordered_map<std::string, std::string>::const_iterator   param_iterator;
