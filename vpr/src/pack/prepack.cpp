@@ -1364,12 +1364,17 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
     }
 
     { //Debug
-        std::ofstream ofs_matches("pack_pattern_matches.echo");
+        std::ofstream ofs_matches("pack_pattern_matches.raw.echo");
         write_pack_pattern_matches(ofs_matches, raw_netlist_matches, atom_ctx.nlist);
     }
 
     //Some matches may be redundant or invalid (e.g. match only external blocks), so remove them
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
+
+    { //Debug
+        std::ofstream ofs_matches("pack_pattern_matches.filtered.echo");
+        write_pack_pattern_matches(ofs_matches, final_netlist_matches, atom_ctx.nlist);
+    }
 
     //Convert the final matches to molecules for use during packing
     PackMolecules molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
