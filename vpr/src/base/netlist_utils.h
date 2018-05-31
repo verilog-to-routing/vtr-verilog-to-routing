@@ -2,7 +2,52 @@
 #define NETLIST_UTILS_H
 
 #include "vtr_vector_map.h"
+#include "vtr_vector.h"
 #include <set>
+#include <queue>
+
+template<class Netlist>
+std::vector<typename Netlist::BlockId> topological_block_order(const Netlist& netlist) {
+    std::vector<typename Netlist::BlockId> topo_nodes;
+
+    //Walk through all blocks recording number of inputs, and saving the root blocks (no inputs)
+    std::queue<typename Netlist::BlockId> q;
+    vtr::vector<typename Netlist::BlockId, size_t> block_input_counts(netlist.blocks().size());
+    for (auto blk : netlist.blocks()) {
+        size_t block_inputs = netlist.block_input_pins(blk).size() + netlist.block_clock_pins(blk).size();
+        block_input_counts[blk] = block_inputs;
+
+        if (block_inputs == 0) {
+            q.push(blk); //root
+        }
+    }
+
+    //Breadth-first traversal from roots to sinks in topological order
+    while (!q.empty()) {
+        auto blk = q.front();
+        q.pop();
+        VTR_ASSERT(block_input_counts[blk] == 0);
+
+        topo_nodes.push_back(blk); //Record block
+
+        for (auto driver_pin : netlist.block_output_pins(blk)) {
+            auto net = netlist.pin_net(driver_pin);
+
+            for (auto sink_pin : netlist.net_sinks(net)) {
+                auto sink_blk = netlist.pin_block(sink_pin);
+
+                VTR_ASSERT(block_input_counts[sink_blk] > 0);
+                --block_input_counts[sink_blk];
+
+                if (block_input_counts[sink_blk] == 0) {
+                    q.push(sink_blk);
+                }
+            }
+        }
+    }
+
+    return topo_nodes;
+}
 
 /*
 *
