@@ -92,6 +92,9 @@ static bool verify_molecules_contain_all_atoms(const PackMolecules& molecules, c
 
 static void write_pack_molecules(std::ostream& os, const PackMolecules& molecules);
 static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules, const PackMoleculeId molecule_id);
+
+static void write_pack_pattern_matches(std::ostream& os, const std::vector<NetlistPatternMatch>& raw_netlist_matches, const AtomNetlist& netlist);
+static void write_pack_pattern_match(std::ostream& os, const NetlistPatternMatch& match, const AtomNetlist& netlist);
 /*****************************************/
 /*Function Definitions					 */
 /*****************************************/
@@ -1360,6 +1363,9 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
         raw_netlist_matches.insert(raw_netlist_matches.end(), netlist_pattern_matches.begin(), netlist_pattern_matches.end());
     }
 
+    std::ofstream ofs_matches("pack_pattern_matches.echo");
+    write_pack_pattern_matches(ofs_matches, raw_netlist_matches, atom_ctx.nlist);
+
     //Some matches may be redundant or invalid (e.g. match only external blocks), so remove them
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
 
@@ -1367,8 +1373,8 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
     PackMolecules molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
 
     //Debug
-    std::ofstream ofs("pack_molecules.echo");
-    write_pack_molecules(ofs, molecules);
+    std::ofstream ofs_molecules("pack_molecules.echo");
+    write_pack_molecules(ofs_molecules, molecules);
 
     verify_molecules_contain_all_atoms(molecules, atom_ctx.nlist);
 
@@ -1629,3 +1635,25 @@ static void write_pack_molecule(std::ostream& os, const PackMolecules& molecules
     os << "\tName: " << molecule.name() << "\n";
 }
 
+static void write_pack_pattern_matches(std::ostream& os, const std::vector<NetlistPatternMatch>& raw_netlist_matches, const AtomNetlist& netlist) {
+    os << "#Netlist pattern matches\n";
+    size_t i = 0;
+    for (auto& match : raw_netlist_matches) {
+        os <<"Match: " << i << "\n";
+        write_pack_pattern_match(os, match, netlist);
+        os << "\n";
+
+        ++i;
+    }
+}
+
+static void write_pack_pattern_match(std::ostream& os, const NetlistPatternMatch& match, const AtomNetlist& netlist) {
+    os << "\tPattern: " << match.pattern_name << "\n";
+    for (auto blk : match.internal_blocks) {
+        os << "\tInternal Block: " << netlist.block_name(blk) << "\n";
+    }
+    for (auto blk : match.external_blocks) {
+        os << "\tExternal Block: " << netlist.block_name(blk) << "\n";
+    }
+    os << "\tBase Cost: " << match.base_cost << "\n";
+}
