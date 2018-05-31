@@ -120,11 +120,12 @@ t_netlist_pack_pattern create_atom_default_pack_pattern() {
 std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
     std::vector<NetlistPatternMatch> matches;
 
-    bool pattern_root_is_internal = pattern.nodes[pattern.root_node].is_internal();
-
-    for (auto blk : netlist.blocks()) {
-        if (!matches_pattern_root(blk, pattern, netlist)) continue; //Not a valid root
-
+    //Walk through all the blocks in the netlist and see if they match the current pattern
+    //
+    //Note that we walk through the blocks in topological order to ensure:
+    //  1) The 'highest' block in a pattern is matched first,
+    //  2) consistency, even if the blocks are re-ordered the topological structure is the same
+    for (auto blk : topological_block_order(netlist)) {
         vtr::printf("Matching at block %s for pattern %s\n",
                     g_vpr_ctx.atom().nlist.block_name(blk).c_str(),
                     pattern.name.c_str());
