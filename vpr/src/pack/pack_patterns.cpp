@@ -64,6 +64,7 @@ static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pat
 static bool is_wildcard_node(const t_netlist_pack_pattern_node& pattern_node);
 static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin);
 static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
+static bool match_covered(const NetlistPatternMatch& match, const std::map<std::string,std::set<AtomBlockId>>& pattern_covered_blocks);
 
 /*
  * Global Function Implementations
@@ -146,19 +147,27 @@ std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netl
 std::vector<NetlistPatternMatch> filter_netlist_pattern_matches(std::vector<NetlistPatternMatch> unfiltered_matches) {
     std::vector<NetlistPatternMatch> filtered_matches;
 
-    //Sort the matches by descending size
-    auto by_match_size = [](const NetlistPatternMatch& lhs , NetlistPatternMatch& rhs) {
-        return lhs.internal_blocks.size() > rhs.internal_blocks.size();
+    //Sort the matches in descending order based on the following criteria:
+    //   1) Size
+    //   2) Base cost
+    //Note that we use a stable sort to maintain the topological order in which the matches were found
+    auto by_preference = [&](const NetlistPatternMatch& lhs, const NetlistPatternMatch& rhs) {
+        return std::make_tuple(lhs.internal_blocks.size(), lhs.base_cost) > 
+               std::make_tuple(rhs.internal_blocks.size(), rhs.base_cost);
     };
-    std::sort(unfiltered_matches.begin(), unfiltered_matches.end(), by_match_size);
+    std::stable_sort(unfiltered_matches.begin(), unfiltered_matches.end(), by_preference);
 
-    //Remove matches with no internal blocks
-    auto non_empty_internal_blocks = [](const NetlistPatternMatch& lhs) {
-        //return lhs.internal_blocks.size() > 0;
-        return true;
-    };
-    std::copy_if(unfiltered_matches.begin(), unfiltered_matches.end(), std::back_inserter(filtered_matches),
-                 non_empty_internal_blocks);
+
+    std::map<std::string,std::set<AtomBlockId>> pattern_covered_blocks;
+    for (auto& match : unfiltered_matches) {
+        if (match.internal_blocks.empty()) continue; //Don't keep empty matches
+
+        if (match_covered(match, pattern_covered_blocks)) continue; //Each atom should appear in at most one molecule per pack pattern type
+
+        pattern_covered_blocks[match.pattern_name].insert(match.internal_blocks.begin(), match.internal_blocks.end());
+
+        filtered_matches.push_back(match);
+    }
 
     return filtered_matches;
 }
@@ -832,5 +841,13 @@ static bool matches_pattern_pin(const AtomPinId from_pin, const t_netlist_pack_p
     }
 
     return true;
+}
+
+static bool match_covered(const NetlistPatternMatch& match, const std::map<std::string,std::set<AtomBlockId>>& pattern_covered_blocks) {
+    for (auto blk : match.internal_blocks) {
+        auto itr = pattern_covered_blocks.find(match.pattern_name);
+        if (itr != pattern_covered_blocks.end() && itr->second.count(blk)) return true; 
+    }
+    return false;
 }
 
