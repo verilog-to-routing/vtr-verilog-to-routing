@@ -16,7 +16,7 @@ clks = list(set(matches))
 
 print("Clocks found:")
 for clk in clks:
-	print "  ", clk
+	print("  ", clk)
 
 if len(clks) == 1:
 	with open(sys.argv[1], 'w+') as fp:
