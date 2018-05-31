@@ -50,13 +50,10 @@ static t_arch_pack_pattern build_pack_pattern(std::string pattern_name, const st
 static t_netlist_pack_pattern abstract_arch_pack_pattern(const t_arch_pack_pattern& arch_pack_pattern);
 
 
-static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
-static bool match_largest_prefer_internal(NetlistPatternMatch& match, const AtomBlockId blk, 
-                                          int pattern_node_id, const t_netlist_pack_pattern& pattern,
-                                          const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
+static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
 static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId blk, 
                                 int pattern_node_id, const t_netlist_pack_pattern& pattern,
-                                const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
+                                const AtomNetlist& netlist);
 
 static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
 static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
@@ -125,55 +122,20 @@ std::vector<NetlistPatternMatch> collect_pattern_matches_in_netlist(const t_netl
 
     bool pattern_root_is_internal = pattern.nodes[pattern.root_node].is_internal();
 
-    std::set<AtomBlockId> covered_blks;
-
     for (auto blk : netlist.blocks()) {
-        if (pattern_root_is_internal && covered_blks.count(blk)) continue; //Already in molecule
         if (!matches_pattern_root(blk, pattern, netlist)) continue; //Not a valid root
+
         vtr::printf("Matching at block %s for pattern %s\n",
                     g_vpr_ctx.atom().nlist.block_name(blk).c_str(),
                     pattern.name.c_str());
 
-        //Initially the current block is the only candidate
-        std::stack<AtomBlockId> root_candidates;
-        root_candidates.push(blk);
-
-        //Collect any root candidates upstream of the current blk
-        while (root_candidates.top()) {
-            AtomBlockId next_root_candidate = find_parent_pattern_root(root_candidates.top(), pattern, netlist); 
-
-            if (!next_root_candidate) break; //No more potential roots
-            if (pattern_root_is_internal && covered_blks.count(next_root_candidate)) break; //Already used
-
-            vtr::printf("  Candidate block %s for pattern %s\n",
-                        g_vpr_ctx.atom().nlist.block_name(next_root_candidate).c_str(),
-                        pattern.name.c_str());
-
-            root_candidates.push(next_root_candidate);
-
-            VTR_ASSERT_SAFE(matches_pattern_root(next_root_candidate, pattern, netlist));
-        }
-
-
-        //Try each candidate root from the most upstream downward
-        // This ensures we get the largest match from the most upstream root connected to the
-        // original blk
-        NetlistPatternMatch match;
-        while (!match && !root_candidates.empty()) {
-            vtr::printf("\tMatching from root candidate %s for pattern %s\n",
-                        g_vpr_ctx.atom().nlist.block_name(root_candidates.top()).c_str(),
-                        pattern.name.c_str());
-            match = match_largest(root_candidates.top(), pattern, covered_blks, netlist);
-            root_candidates.pop();
-        }
+        NetlistPatternMatch match = match_largest(blk, pattern, netlist);
 
         if (match) {
-            vtr::printf("\t\tMatched!\n");
+            vtr::printf("\tMatched!\n");
             //Save the match
             matches.push_back(match);
 
-            //Record the blocks covered so blocks don't end up in multiple matches
-            covered_blks.insert(match.internal_blocks.begin(), match.internal_blocks.end());
         }
     }
 
@@ -639,49 +601,45 @@ static t_netlist_pack_pattern abstract_arch_pack_pattern(const t_arch_pack_patte
     return netlist_pattern;
 }
 
-static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
+static NetlistPatternMatch match_largest(AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
     NetlistPatternMatch match;
-    if (match_largest_prefer_internal(match, blk, pattern.root_node, pattern, excluded_blocks, netlist)) {
-        match.pattern_name = pattern.name;
-        match.base_cost = pattern.base_cost;
-        return match; 
-    }
-    return NetlistPatternMatch(); //No match, return empty
-}
+    match.pattern_name = pattern.name;
+    match.base_cost = pattern.base_cost;
 
-static bool match_largest_prefer_internal(NetlistPatternMatch& match, const AtomBlockId blk, 
-                                          int pattern_node_id, const t_netlist_pack_pattern& pattern,
-                                          const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
-    bool pattern_node_external = pattern.nodes[pattern_node_id].is_external();
 
-    if (pattern_node_external) {
-        //Prefer matching to an internal node first
-        VTR_ASSERT_MSG(pattern.nodes[pattern_node_id].out_edge_ids.size() == 1, "Assume single fanout external root");
-        int pattern_edge_id = pattern.nodes[pattern_node_id].out_edge_ids[0];
+    //Prefer matching to an internal node first (i.e. skipping the first external node),
+    //provided it has only a single fanout to an internal node
+    //
+    //For instance, this allows us to match a carry-chain, even if there is no net driving the chain input.
+    bool pattern_root_external = pattern.nodes[pattern.root_node].is_external();
+    bool pattern_root_single_fanout = (pattern.nodes[pattern.root_node].out_edge_ids.size() == 1);
+    if (pattern_root_external && pattern_root_single_fanout) {
+        VTR_ASSERT_MSG(pattern.nodes[pattern.root_node].out_edge_ids.size() == 1, "Assume single fanout external root");
+        int pattern_edge_id = pattern.nodes[pattern.root_node].out_edge_ids[0];
         const auto& pattern_edge = pattern.edges[pattern_edge_id];
         if (pattern_edge.to_pins.size() == 1) { //If a pattern has multiple fanout from external route we can't match to internal
             const auto& to_pattern_pin = pattern_edge.to_pins[0];
             const auto& to_pattern_node = pattern.nodes[to_pattern_pin.node_id];
             VTR_ASSERT_MSG(to_pattern_node.is_internal(), "Assume single level of external root nodes");
 
-            if (match_largest_recur(match, blk, to_pattern_pin.node_id, pattern, excluded_blocks, netlist)) {
-                return true;
+            //Match to the first internal node
+            if (match_largest_recur(match, blk, to_pattern_pin.node_id, pattern, netlist)) {
+                return match;
             }
         }
     }
 
-    //Fallback to external match
-    return match_largest_recur(match, blk, pattern_node_id, pattern, excluded_blocks, netlist);
+    //Fall back to matching external root node
+    if (match_largest_recur(match, blk, pattern.root_node, pattern, netlist)) {
+        return match; 
+    }
+
+    return NetlistPatternMatch(); //No match, return empty
 }
 
 static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId blk, 
                                 int pattern_node_id, const t_netlist_pack_pattern& pattern,
-                                const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
-
-    if (excluded_blocks.count(blk) && pattern.nodes[pattern_node_id].is_internal()) {
-        //Block is already part of another match, and is matching an internal node of the pattern
-        return false;
-    }
+                                const AtomNetlist& netlist) {
 
     if (!matches_pattern_node(blk, pattern.nodes[pattern_node_id], netlist)) {
         return false; 
@@ -690,35 +648,16 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
     bool pattern_node_internal = pattern.nodes[pattern_node_id].is_internal();
     if (pattern_node_internal) {
         match.internal_blocks.push_back(blk);
-
-        //Internal block matches take priority over external block matches,
-        //so remove from external blocks if already matched to an external block
-        auto itr = std::find(match.external_blocks.begin(), match.external_blocks.end(), blk);
-        if (itr != match.external_blocks.end()) {
-            match.external_blocks.erase(itr);
-        }
     } else {
         VTR_ASSERT(pattern.nodes[pattern_node_id].is_external());
-        bool already_matched_as_internal = (std::find(match.internal_blocks.begin(), match.internal_blocks.end(), blk) != match.internal_blocks.end());
-        if (already_matched_as_internal) {
-            return false;
-        } else {
-            match.external_blocks.push_back(blk);
-        }
+        match.external_blocks.push_back(blk);
     }
 
     for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) {
         const auto& pattern_edge = pattern.edges[pattern_edge_id];
         const auto& from_pattern_pin = pattern_edge.from_pin;
 
-        AtomPinId from_pin;
-        if (pattern_node_internal) {
-            //An internal block can't be shared, so pass excluded_blocks
-            from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, excluded_blocks, netlist);
-        } else {
-            //An external block can be shared so don't consider excluded
-            from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, netlist);
-        }
+        AtomPinId from_pin = find_matching_pin(netlist.block_output_pins(blk), from_pattern_pin, netlist);
 
         if (!from_pin) {
             //No matching driver pin
@@ -738,9 +677,9 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
             const auto& to_pattern_pin = pattern_edge.to_pins[isink];
             const auto& to_pattern_node = pattern.nodes[to_pattern_pin.node_id];
 
-            AtomPinId to_pin = find_matching_pin(net_sinks, to_pattern_pin, excluded_blocks, netlist);
-            if (!to_pin || (excluded_blocks.count(netlist.pin_block(to_pin)) && to_pattern_node.is_internal())) {
-                //No valid to_pin (either doesn't match pattern, or is on an excluded block)
+            AtomPinId to_pin = find_matching_pin(net_sinks, to_pattern_pin, netlist);
+            if (!to_pin) {
+                //No valid to_pin
 
                 if (to_pattern_pin.required) {
                     //Required: give-up
@@ -753,7 +692,7 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
 
             //Collect any downstream matches recursively
             AtomBlockId to_blk = netlist.pin_block(to_pin);
-            bool subtree_matched = match_largest_recur(match, to_blk, to_pattern_pin.node_id, pattern, excluded_blocks, netlist);
+            bool subtree_matched = match_largest_recur(match, to_blk, to_pattern_pin.node_id, pattern, netlist);
 
             if (!subtree_matched) {
                 if (to_pattern_pin.required) {

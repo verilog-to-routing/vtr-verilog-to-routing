@@ -1363,8 +1363,10 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
         raw_netlist_matches.insert(raw_netlist_matches.end(), netlist_pattern_matches.begin(), netlist_pattern_matches.end());
     }
 
-    std::ofstream ofs_matches("pack_pattern_matches.echo");
-    write_pack_pattern_matches(ofs_matches, raw_netlist_matches, atom_ctx.nlist);
+    { //Debug
+        std::ofstream ofs_matches("pack_pattern_matches.echo");
+        write_pack_pattern_matches(ofs_matches, raw_netlist_matches, atom_ctx.nlist);
+    }
 
     //Some matches may be redundant or invalid (e.g. match only external blocks), so remove them
     auto final_netlist_matches = filter_netlist_pattern_matches(raw_netlist_matches);
@@ -1372,9 +1374,10 @@ PackMolecules prepack(const DeviceContext& device_ctx, const AtomContext& atom_c
     //Convert the final matches to molecules for use during packing
     PackMolecules molecules = create_molecules(final_netlist_matches, atom_ctx.nlist);
 
-    //Debug
-    std::ofstream ofs_molecules("pack_molecules.echo");
-    write_pack_molecules(ofs_molecules, molecules);
+    { //Debug
+        std::ofstream ofs_molecules("pack_molecules.echo");
+        write_pack_molecules(ofs_molecules, molecules);
+    }
 
     verify_molecules_contain_all_atoms(molecules, atom_ctx.nlist);
 

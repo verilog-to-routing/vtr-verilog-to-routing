@@ -101,6 +101,17 @@ struct t_netlist_pack_pattern {
         edges.emplace_back();
         return edges.size() - 1;
     }
+
+    bool node_required(int node_id) const {
+        //A node is required if any of it's out-going edge to_pins
+        //are required
+        for (auto edge_id : nodes[node_id].out_edge_ids) {
+            for (auto& pin : edges[edge_id].to_pins) {
+                if (pin.required) return true;
+            }
+        }
+        return false;
+    }
 };
 
 struct NetlistPatternMatch {
