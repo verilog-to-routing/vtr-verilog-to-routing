@@ -1,0 +1,1 @@
+critical_path_delay;vpr.out;Final critical path:\s*(.*)\s*ns

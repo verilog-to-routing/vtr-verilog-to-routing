@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "arch_util.h"
 
+#include "soft_logic_def_parser.h"
 #include "globals.h"
 #include "types.h"
 #include "netlist_utils.h"
@@ -57,9 +58,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "subtractions.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
-#define DEFAULT_RUN_DIRECTORY "REGRESSION_TESTS/SIM/"
-
 
 size_t current_parse_file;
 t_arch Arch;
@@ -129,8 +127,18 @@ int main(int argc, char **argv)
 		//find_hard_adders_for_sub();
 		register_hard_blocks();
 
-		/* get odin soft_logic adder definition file */
-		parse_adder_def_file();
+		/* get odin soft_logic definition file */
+    if(!hard_adders && strcmp(global_args.adder_def,"ripple")!=0)
+    {
+      printf("Reading sof_logic definition file\n");
+      if(strcmp(global_args.adder_def,"optimized")==0)
+      {
+        std::string path = vtr::dirname(argv[0]) + "odin.soft_config";
+        read_soft_def_file(path.c_str());
+      }
+      else
+        read_soft_def_file(global_args.adder_def);
+    }
 
 		global_param_table_sc = sc_new_string_cache();
 
@@ -287,19 +295,6 @@ void print_usage()
 			"         (Eg: FF_NODE will create a single port with all flipflops) \n"
 	);
 	fflush(stdout);
-}
-// tab separated values for adder_def
-void parse_adder_def_file()
-{
-	if(hard_adders || strcmp(global_args.adder_def,"ripple")==0)
-		return;
-
-	else if(strcmp(global_args.adder_def,"optimized")==0)
-		populate_adder_def();
-
-	else	// we do have a define file! read it!
-		read_adder_def_file(global_args.adder_def);
-
 }
 
 struct ParseInitRegState {

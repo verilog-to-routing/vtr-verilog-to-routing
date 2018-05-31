@@ -1,0 +1,1413 @@
+.model adder_tree_top
+.inputs top^clk top^isum0_0_0_0~0 top^isum0_0_0_0~1 top^isum0_0_0_0~2 \
+ top^isum0_0_0_0~3 top^isum0_0_0_0~4 top^isum0_0_0_0~5 top^isum0_0_0_0~6 \
+ top^isum0_0_0_1~0 top^isum0_0_0_1~1 top^isum0_0_0_1~2 top^isum0_0_0_1~3 \
+ top^isum0_0_0_1~4 top^isum0_0_0_1~5 top^isum0_0_0_1~6 top^isum0_0_1_0~0 \
+ top^isum0_0_1_0~1 top^isum0_0_1_0~2 top^isum0_0_1_0~3 top^isum0_0_1_0~4 \
+ top^isum0_0_1_0~5 top^isum0_0_1_0~6 top^isum0_0_1_1~0 top^isum0_0_1_1~1 \
+ top^isum0_0_1_1~2 top^isum0_0_1_1~3 top^isum0_0_1_1~4 top^isum0_0_1_1~5 \
+ top^isum0_0_1_1~6 top^isum0_1_0_0~0 top^isum0_1_0_0~1 top^isum0_1_0_0~2 \
+ top^isum0_1_0_0~3 top^isum0_1_0_0~4 top^isum0_1_0_0~5 top^isum0_1_0_0~6 \
+ top^isum0_1_0_1~0 top^isum0_1_0_1~1 top^isum0_1_0_1~2 top^isum0_1_0_1~3 \
+ top^isum0_1_0_1~4 top^isum0_1_0_1~5 top^isum0_1_0_1~6 top^isum0_1_1_0~0 \
+ top^isum0_1_1_0~1 top^isum0_1_1_0~2 top^isum0_1_1_0~3 top^isum0_1_1_0~4 \
+ top^isum0_1_1_0~5 top^isum0_1_1_0~6 top^isum0_1_1_1~0 top^isum0_1_1_1~1 \
+ top^isum0_1_1_1~2 top^isum0_1_1_1~3 top^isum0_1_1_1~4 top^isum0_1_1_1~5 \
+ top^isum0_1_1_1~6
+.outputs top^sum~0 top^sum~1 top^sum~2 top^sum~3 top^sum~4 top^sum~5 top^sum~6\
+ top^sum~7
+
+.names gnd
+.names unconn
+.names vcc
+1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~96 gnd gnd top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~101
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~106 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~103 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~101 top.adder_tree_branch+L1_0^ADD~0^MUX_2~105
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~105 top^sum~7_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~98 gnd gnd top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~103
+001 1
+010 1
+100 1
+111 1
+
+.latch top^isum0_0_0_0~0 top^sum0_0_0_0~0_FF_NODE re top^clk 3
+
+.names top^sum0_0_0_0~0_FF_NODE top^sum0_0_0_1~0_FF_NODE top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XOR~155
+01 1
+10 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XOR~155 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XOR~201 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XOR~109
+01 1
+10 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XOR~109 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XOR~247 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_XOR~63
+01 1
+10 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^LOGICAL_XOR~63 top^sum~0_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XOR~109 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XOR~247 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64
+11 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~70
+0 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~70 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_XNOR~67 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_XOR~65 top.adder_tree_branch+L1_0^ADD~0^MUX_2~69
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~69 top^sum~1_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~76
+0 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~76 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~73 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~71 top.adder_tree_branch+L1_0^ADD~0^MUX_2~75
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~75 top^sum~2_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~82
+0 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~82 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~79 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~77 top.adder_tree_branch+L1_0^ADD~0^MUX_2~81
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~81 top^sum~3_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~88
+0 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~88 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~85 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~83 top.adder_tree_branch+L1_0^ADD~0^MUX_2~87
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~87 top^sum~4_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~94
+0 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~94 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~91 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~89 top.adder_tree_branch+L1_0^ADD~0^MUX_2~93
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~93 top^sum~5_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~100
+0 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~100 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~97 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~95 top.adder_tree_branch+L1_0^ADD~0^MUX_2~99
+1-1- 1
+-1-1 1
+
+.latch top.adder_tree_branch+L1_0^ADD~0^MUX_2~99 top^sum~6_FF_NODE re top^clk 3
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~64 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_NOT~106
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XOR~155 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XOR~201 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110
+11 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~116
+0 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~116 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XNOR~113 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XOR~111 top.adder_tree_branch+L2_0^ADD~9^MUX_2~115
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^MUX_2~115 top.adder_tree_branch+L2_1^ADD~18^MUX_2~253 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_XOR~65
+01 1
+10 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^MUX_2~115 top.adder_tree_branch+L2_1^ADD~18^MUX_2~253 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~66
+11 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~66 top.adder_tree_branch+L2_0^ADD~9^MUX_2~121 top.adder_tree_branch+L2_1^ADD~18^MUX_2~259 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~71
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_AND~66 top.adder_tree_branch+L2_0^ADD~9^MUX_2~121 top.adder_tree_branch+L2_1^ADD~18^MUX_2~259 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~72
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~72 top.adder_tree_branch+L2_0^ADD~9^MUX_2~127 top.adder_tree_branch+L2_1^ADD~18^MUX_2~265 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~77
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~72 top.adder_tree_branch+L2_0^ADD~9^MUX_2~127 top.adder_tree_branch+L2_1^ADD~18^MUX_2~265 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~78
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~78 top.adder_tree_branch+L2_0^ADD~9^MUX_2~133 top.adder_tree_branch+L2_1^ADD~18^MUX_2~271 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~83
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~78 top.adder_tree_branch+L2_0^ADD~9^MUX_2~133 top.adder_tree_branch+L2_1^ADD~18^MUX_2~271 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~84
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~84 top.adder_tree_branch+L2_0^ADD~9^MUX_2~139 top.adder_tree_branch+L2_1^ADD~18^MUX_2~277 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~89
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~84 top.adder_tree_branch+L2_0^ADD~9^MUX_2~139 top.adder_tree_branch+L2_1^ADD~18^MUX_2~277 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~90
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~90 top.adder_tree_branch+L2_0^ADD~9^MUX_2~145 top.adder_tree_branch+L2_1^ADD~18^MUX_2~283 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~95
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~90 top.adder_tree_branch+L2_0^ADD~9^MUX_2~145 top.adder_tree_branch+L2_1^ADD~18^MUX_2~283 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~96
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^MUX_2~115 top.adder_tree_branch+L2_1^ADD~18^MUX_2~253 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_XNOR~67
+00 1
+11 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^MUX_2~115 top.adder_tree_branch+L2_1^ADD~18^MUX_2~253 top.adder_tree_branch+L1_0^ADD~0^LOGICAL_OR~68
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_OR~68 top.adder_tree_branch+L2_0^ADD~9^MUX_2~121 top.adder_tree_branch+L2_1^ADD~18^MUX_2~259 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~73
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^LOGICAL_OR~68 top.adder_tree_branch+L2_0^ADD~9^MUX_2~121 top.adder_tree_branch+L2_1^ADD~18^MUX_2~259 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~74
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~74 top.adder_tree_branch+L2_0^ADD~9^MUX_2~127 top.adder_tree_branch+L2_1^ADD~18^MUX_2~265 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~79
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~74 top.adder_tree_branch+L2_0^ADD~9^MUX_2~127 top.adder_tree_branch+L2_1^ADD~18^MUX_2~265 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~80
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~80 top.adder_tree_branch+L2_0^ADD~9^MUX_2~133 top.adder_tree_branch+L2_1^ADD~18^MUX_2~271 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~85
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~80 top.adder_tree_branch+L2_0^ADD~9^MUX_2~133 top.adder_tree_branch+L2_1^ADD~18^MUX_2~271 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~86
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~86 top.adder_tree_branch+L2_0^ADD~9^MUX_2~139 top.adder_tree_branch+L2_1^ADD~18^MUX_2~277 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~91
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~86 top.adder_tree_branch+L2_0^ADD~9^MUX_2~139 top.adder_tree_branch+L2_1^ADD~18^MUX_2~277 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~92
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~92 top.adder_tree_branch+L2_0^ADD~9^MUX_2~145 top.adder_tree_branch+L2_1^ADD~18^MUX_2~283 top.adder_tree_branch+L1_0^ADD~0^ADDER_FUNC~97
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~92 top.adder_tree_branch+L2_0^ADD~9^MUX_2~145 top.adder_tree_branch+L2_1^ADD~18^MUX_2~283 top.adder_tree_branch+L1_0^ADD~0^CARRY_FUNC~98
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~122
+0 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~122 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~119 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~117 top.adder_tree_branch+L2_0^ADD~9^MUX_2~121
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~128
+0 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~128 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~125 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~123 top.adder_tree_branch+L2_0^ADD~9^MUX_2~127
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~134
+0 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~134 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~131 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~129 top.adder_tree_branch+L2_0^ADD~9^MUX_2~133
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~140
+0 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~140 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~137 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~135 top.adder_tree_branch+L2_0^ADD~9^MUX_2~139
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~146
+0 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~110 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_NOT~146 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~143 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~141 top.adder_tree_branch+L2_0^ADD~9^MUX_2~145
+1-1- 1
+-1-1 1
+
+.names top^sum0_0_0_0~0_FF_NODE top^sum0_0_0_1~0_FF_NODE top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156
+11 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~162
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~162 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XNOR~159 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XOR~157 top.adder_tree_branch+L3_0^ADD~27^MUX_2~161
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^MUX_2~161 top.adder_tree_branch+L3_1^ADD~36^MUX_2~207 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XOR~111
+01 1
+10 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^MUX_2~161 top.adder_tree_branch+L3_1^ADD~36^MUX_2~207 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~112
+11 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~112 top.adder_tree_branch+L3_0^ADD~27^MUX_2~167 top.adder_tree_branch+L3_1^ADD~36^MUX_2~213 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~117
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_AND~112 top.adder_tree_branch+L3_0^ADD~27^MUX_2~167 top.adder_tree_branch+L3_1^ADD~36^MUX_2~213 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~118
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~118 top.adder_tree_branch+L3_0^ADD~27^MUX_2~173 top.adder_tree_branch+L3_1^ADD~36^MUX_2~219 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~123
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~118 top.adder_tree_branch+L3_0^ADD~27^MUX_2~173 top.adder_tree_branch+L3_1^ADD~36^MUX_2~219 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~124
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~124 top.adder_tree_branch+L3_0^ADD~27^MUX_2~179 top.adder_tree_branch+L3_1^ADD~36^MUX_2~225 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~129
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~124 top.adder_tree_branch+L3_0^ADD~27^MUX_2~179 top.adder_tree_branch+L3_1^ADD~36^MUX_2~225 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~130
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~130 top.adder_tree_branch+L3_0^ADD~27^MUX_2~185 top.adder_tree_branch+L3_1^ADD~36^MUX_2~231 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~135
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~130 top.adder_tree_branch+L3_0^ADD~27^MUX_2~185 top.adder_tree_branch+L3_1^ADD~36^MUX_2~231 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~136
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~136 top.adder_tree_branch+L3_0^ADD~27^MUX_2~191 top.adder_tree_branch+L3_1^ADD~36^MUX_2~237 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~141
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^MUX_2~161 top.adder_tree_branch+L3_1^ADD~36^MUX_2~207 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_XNOR~113
+00 1
+11 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^MUX_2~161 top.adder_tree_branch+L3_1^ADD~36^MUX_2~207 top.adder_tree_branch+L2_0^ADD~9^LOGICAL_OR~114
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_OR~114 top.adder_tree_branch+L3_0^ADD~27^MUX_2~167 top.adder_tree_branch+L3_1^ADD~36^MUX_2~213 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~119
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^LOGICAL_OR~114 top.adder_tree_branch+L3_0^ADD~27^MUX_2~167 top.adder_tree_branch+L3_1^ADD~36^MUX_2~213 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~120
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~120 top.adder_tree_branch+L3_0^ADD~27^MUX_2~173 top.adder_tree_branch+L3_1^ADD~36^MUX_2~219 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~125
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~120 top.adder_tree_branch+L3_0^ADD~27^MUX_2~173 top.adder_tree_branch+L3_1^ADD~36^MUX_2~219 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~126
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~126 top.adder_tree_branch+L3_0^ADD~27^MUX_2~179 top.adder_tree_branch+L3_1^ADD~36^MUX_2~225 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~131
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~126 top.adder_tree_branch+L3_0^ADD~27^MUX_2~179 top.adder_tree_branch+L3_1^ADD~36^MUX_2~225 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~132
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~132 top.adder_tree_branch+L3_0^ADD~27^MUX_2~185 top.adder_tree_branch+L3_1^ADD~36^MUX_2~231 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~137
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~132 top.adder_tree_branch+L3_0^ADD~27^MUX_2~185 top.adder_tree_branch+L3_1^ADD~36^MUX_2~231 top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~138
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_0^ADD~9^CARRY_FUNC~138 top.adder_tree_branch+L3_0^ADD~27^MUX_2~191 top.adder_tree_branch+L3_1^ADD~36^MUX_2~237 top.adder_tree_branch+L2_0^ADD~9^ADDER_FUNC~143
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~168
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~168 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~165 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~163 top.adder_tree_branch+L3_0^ADD~27^MUX_2~167
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~174
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~174 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~171 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~169 top.adder_tree_branch+L3_0^ADD~27^MUX_2~173
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~180
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~180 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~177 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~175 top.adder_tree_branch+L3_0^ADD~27^MUX_2~179
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~186
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~186 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~183 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~181 top.adder_tree_branch+L3_0^ADD~27^MUX_2~185
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~192
+0 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~156 top.adder_tree_branch+L3_0^ADD~27^LOGICAL_NOT~192 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~189 top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~187 top.adder_tree_branch+L3_0^ADD~27^MUX_2~191
+1-1- 1
+-1-1 1
+
+.latch top^isum0_0_0_0~1 top^sum0_0_0_0~1_FF_NODE re top^clk 3
+
+.names top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_1~1_FF_NODE top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XOR~157
+01 1
+10 1
+
+.names top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_1~1_FF_NODE top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~158
+11 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~158 top^sum0_0_0_0~2_FF_NODE top^sum0_0_0_1~2_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~163
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_AND~158 top^sum0_0_0_0~2_FF_NODE top^sum0_0_0_1~2_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~164
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~164 top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~169
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~164 top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~170
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~170 top^sum0_0_0_0~4_FF_NODE top^sum0_0_0_1~4_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~175
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~170 top^sum0_0_0_0~4_FF_NODE top^sum0_0_0_1~4_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~176
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~176 top^sum0_0_0_0~5_FF_NODE top^sum0_0_0_1~5_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~181
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~176 top^sum0_0_0_0~5_FF_NODE top^sum0_0_0_1~5_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~182
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~182 top^sum0_0_0_0~6_FF_NODE top^sum0_0_0_1~6_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~187
+001 1
+010 1
+100 1
+111 1
+
+.names top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_1~1_FF_NODE top.adder_tree_branch+L3_0^ADD~27^LOGICAL_XNOR~159
+00 1
+11 1
+
+.names top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_1~1_FF_NODE top.adder_tree_branch+L3_0^ADD~27^LOGICAL_OR~160
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_OR~160 top^sum0_0_0_0~2_FF_NODE top^sum0_0_0_1~2_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~165
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^LOGICAL_OR~160 top^sum0_0_0_0~2_FF_NODE top^sum0_0_0_1~2_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~166
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~166 top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~171
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~166 top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~172
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~172 top^sum0_0_0_0~4_FF_NODE top^sum0_0_0_1~4_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~177
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~172 top^sum0_0_0_0~4_FF_NODE top^sum0_0_0_1~4_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~178
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~178 top^sum0_0_0_0~5_FF_NODE top^sum0_0_0_1~5_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~183
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~178 top^sum0_0_0_0~5_FF_NODE top^sum0_0_0_1~5_FF_NODE top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~184
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_0^ADD~27^CARRY_FUNC~184 top^sum0_0_0_0~6_FF_NODE top^sum0_0_0_1~6_FF_NODE top.adder_tree_branch+L3_0^ADD~27^ADDER_FUNC~189
+001 1
+010 1
+100 1
+111 1
+
+.latch top^isum0_0_0_0~2 top^sum0_0_0_0~2_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_0~3 top^sum0_0_0_0~3_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_0~4 top^sum0_0_0_0~4_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_0~5 top^sum0_0_0_0~5_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_0~6 top^sum0_0_0_0~6_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~0 top^sum0_0_0_1~0_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~1 top^sum0_0_0_1~1_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~2 top^sum0_0_0_1~2_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~3 top^sum0_0_0_1~3_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~4 top^sum0_0_0_1~4_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~5 top^sum0_0_0_1~5_FF_NODE re top^clk 3
+
+.latch top^isum0_0_0_1~6 top^sum0_0_0_1~6_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_0~0 top^sum0_0_1_0~0_FF_NODE re top^clk 3
+
+.names top^sum0_0_1_0~0_FF_NODE top^sum0_0_1_1~0_FF_NODE top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XOR~201
+01 1
+10 1
+
+.names top^sum0_0_1_0~0_FF_NODE top^sum0_0_1_1~0_FF_NODE top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202
+11 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~208
+0 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~208 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XNOR~205 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XOR~203 top.adder_tree_branch+L3_1^ADD~36^MUX_2~207
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~214
+0 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~214 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~211 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~209 top.adder_tree_branch+L3_1^ADD~36^MUX_2~213
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~220
+0 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~220 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~217 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~215 top.adder_tree_branch+L3_1^ADD~36^MUX_2~219
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~226
+0 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~226 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~223 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~221 top.adder_tree_branch+L3_1^ADD~36^MUX_2~225
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~232
+0 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~232 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~229 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~227 top.adder_tree_branch+L3_1^ADD~36^MUX_2~231
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~238
+0 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~202 top.adder_tree_branch+L3_1^ADD~36^LOGICAL_NOT~238 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~235 top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~233 top.adder_tree_branch+L3_1^ADD~36^MUX_2~237
+1-1- 1
+-1-1 1
+
+.latch top^isum0_0_1_0~1 top^sum0_0_1_0~1_FF_NODE re top^clk 3
+
+.names top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_1~1_FF_NODE top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XOR~203
+01 1
+10 1
+
+.names top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_1~1_FF_NODE top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~204
+11 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~204 top^sum0_0_1_0~2_FF_NODE top^sum0_0_1_1~2_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~209
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_AND~204 top^sum0_0_1_0~2_FF_NODE top^sum0_0_1_1~2_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~210
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~210 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~215
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~210 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~216
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~216 top^sum0_0_1_0~4_FF_NODE top^sum0_0_1_1~4_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~221
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~216 top^sum0_0_1_0~4_FF_NODE top^sum0_0_1_1~4_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~222
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~222 top^sum0_0_1_0~5_FF_NODE top^sum0_0_1_1~5_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~227
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~222 top^sum0_0_1_0~5_FF_NODE top^sum0_0_1_1~5_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~228
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~228 top^sum0_0_1_0~6_FF_NODE top^sum0_0_1_1~6_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~233
+001 1
+010 1
+100 1
+111 1
+
+.names top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_1~1_FF_NODE top.adder_tree_branch+L3_1^ADD~36^LOGICAL_XNOR~205
+00 1
+11 1
+
+.names top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_1~1_FF_NODE top.adder_tree_branch+L3_1^ADD~36^LOGICAL_OR~206
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_OR~206 top^sum0_0_1_0~2_FF_NODE top^sum0_0_1_1~2_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~211
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^LOGICAL_OR~206 top^sum0_0_1_0~2_FF_NODE top^sum0_0_1_1~2_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~212
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~212 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~217
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~212 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~218
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~218 top^sum0_0_1_0~4_FF_NODE top^sum0_0_1_1~4_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~223
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~218 top^sum0_0_1_0~4_FF_NODE top^sum0_0_1_1~4_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~224
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~224 top^sum0_0_1_0~5_FF_NODE top^sum0_0_1_1~5_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~229
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~224 top^sum0_0_1_0~5_FF_NODE top^sum0_0_1_1~5_FF_NODE top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~230
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_1^ADD~36^CARRY_FUNC~230 top^sum0_0_1_0~6_FF_NODE top^sum0_0_1_1~6_FF_NODE top.adder_tree_branch+L3_1^ADD~36^ADDER_FUNC~235
+001 1
+010 1
+100 1
+111 1
+
+.latch top^isum0_0_1_0~2 top^sum0_0_1_0~2_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_0~3 top^sum0_0_1_0~3_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_0~4 top^sum0_0_1_0~4_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_0~5 top^sum0_0_1_0~5_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_0~6 top^sum0_0_1_0~6_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~0 top^sum0_0_1_1~0_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~1 top^sum0_0_1_1~1_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~2 top^sum0_0_1_1~2_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~3 top^sum0_0_1_1~3_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~4 top^sum0_0_1_1~4_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~5 top^sum0_0_1_1~5_FF_NODE re top^clk 3
+
+.latch top^isum0_0_1_1~6 top^sum0_0_1_1~6_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_0~0 top^sum0_1_0_0~0_FF_NODE re top^clk 3
+
+.names top^sum0_1_0_0~0_FF_NODE top^sum0_1_0_1~0_FF_NODE top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XOR~293
+01 1
+10 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XOR~293 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XOR~339 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XOR~247
+01 1
+10 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XOR~293 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XOR~339 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248
+11 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~254
+0 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~254 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XNOR~251 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XOR~249 top.adder_tree_branch+L2_1^ADD~18^MUX_2~253
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~260
+0 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~260 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~257 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~255 top.adder_tree_branch+L2_1^ADD~18^MUX_2~259
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~266
+0 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~266 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~263 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~261 top.adder_tree_branch+L2_1^ADD~18^MUX_2~265
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~272
+0 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~272 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~269 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~267 top.adder_tree_branch+L2_1^ADD~18^MUX_2~271
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~278
+0 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~278 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~275 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~273 top.adder_tree_branch+L2_1^ADD~18^MUX_2~277
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~284
+0 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~248 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_NOT~284 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~281 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~279 top.adder_tree_branch+L2_1^ADD~18^MUX_2~283
+1-1- 1
+-1-1 1
+
+.names top^sum0_1_0_0~0_FF_NODE top^sum0_1_0_1~0_FF_NODE top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294
+11 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~300
+0 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~300 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XNOR~297 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XOR~295 top.adder_tree_branch+L3_2^ADD~45^MUX_2~299
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^MUX_2~299 top.adder_tree_branch+L3_3^ADD~54^MUX_2~345 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XOR~249
+01 1
+10 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^MUX_2~299 top.adder_tree_branch+L3_3^ADD~54^MUX_2~345 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~250
+11 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~250 top.adder_tree_branch+L3_2^ADD~45^MUX_2~305 top.adder_tree_branch+L3_3^ADD~54^MUX_2~351 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~255
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_AND~250 top.adder_tree_branch+L3_2^ADD~45^MUX_2~305 top.adder_tree_branch+L3_3^ADD~54^MUX_2~351 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~256
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~256 top.adder_tree_branch+L3_2^ADD~45^MUX_2~311 top.adder_tree_branch+L3_3^ADD~54^MUX_2~357 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~261
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~256 top.adder_tree_branch+L3_2^ADD~45^MUX_2~311 top.adder_tree_branch+L3_3^ADD~54^MUX_2~357 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~262
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~262 top.adder_tree_branch+L3_2^ADD~45^MUX_2~317 top.adder_tree_branch+L3_3^ADD~54^MUX_2~363 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~267
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~262 top.adder_tree_branch+L3_2^ADD~45^MUX_2~317 top.adder_tree_branch+L3_3^ADD~54^MUX_2~363 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~268
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~268 top.adder_tree_branch+L3_2^ADD~45^MUX_2~323 top.adder_tree_branch+L3_3^ADD~54^MUX_2~369 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~273
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~268 top.adder_tree_branch+L3_2^ADD~45^MUX_2~323 top.adder_tree_branch+L3_3^ADD~54^MUX_2~369 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~274
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~274 top.adder_tree_branch+L3_2^ADD~45^MUX_2~329 top.adder_tree_branch+L3_3^ADD~54^MUX_2~375 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~279
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^MUX_2~299 top.adder_tree_branch+L3_3^ADD~54^MUX_2~345 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_XNOR~251
+00 1
+11 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^MUX_2~299 top.adder_tree_branch+L3_3^ADD~54^MUX_2~345 top.adder_tree_branch+L2_1^ADD~18^LOGICAL_OR~252
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_OR~252 top.adder_tree_branch+L3_2^ADD~45^MUX_2~305 top.adder_tree_branch+L3_3^ADD~54^MUX_2~351 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~257
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^LOGICAL_OR~252 top.adder_tree_branch+L3_2^ADD~45^MUX_2~305 top.adder_tree_branch+L3_3^ADD~54^MUX_2~351 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~258
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~258 top.adder_tree_branch+L3_2^ADD~45^MUX_2~311 top.adder_tree_branch+L3_3^ADD~54^MUX_2~357 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~263
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~258 top.adder_tree_branch+L3_2^ADD~45^MUX_2~311 top.adder_tree_branch+L3_3^ADD~54^MUX_2~357 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~264
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~264 top.adder_tree_branch+L3_2^ADD~45^MUX_2~317 top.adder_tree_branch+L3_3^ADD~54^MUX_2~363 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~269
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~264 top.adder_tree_branch+L3_2^ADD~45^MUX_2~317 top.adder_tree_branch+L3_3^ADD~54^MUX_2~363 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~270
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~270 top.adder_tree_branch+L3_2^ADD~45^MUX_2~323 top.adder_tree_branch+L3_3^ADD~54^MUX_2~369 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~275
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~270 top.adder_tree_branch+L3_2^ADD~45^MUX_2~323 top.adder_tree_branch+L3_3^ADD~54^MUX_2~369 top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~276
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L2_1^ADD~18^CARRY_FUNC~276 top.adder_tree_branch+L3_2^ADD~45^MUX_2~329 top.adder_tree_branch+L3_3^ADD~54^MUX_2~375 top.adder_tree_branch+L2_1^ADD~18^ADDER_FUNC~281
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~306
+0 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~306 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~303 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~301 top.adder_tree_branch+L3_2^ADD~45^MUX_2~305
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~312
+0 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~312 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~309 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~307 top.adder_tree_branch+L3_2^ADD~45^MUX_2~311
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~318
+0 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~318 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~315 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~313 top.adder_tree_branch+L3_2^ADD~45^MUX_2~317
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~324
+0 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~324 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~321 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~319 top.adder_tree_branch+L3_2^ADD~45^MUX_2~323
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~330
+0 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~294 top.adder_tree_branch+L3_2^ADD~45^LOGICAL_NOT~330 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~327 top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~325 top.adder_tree_branch+L3_2^ADD~45^MUX_2~329
+1-1- 1
+-1-1 1
+
+.latch top^isum0_1_0_0~1 top^sum0_1_0_0~1_FF_NODE re top^clk 3
+
+.names top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_1~1_FF_NODE top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XOR~295
+01 1
+10 1
+
+.names top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_1~1_FF_NODE top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~296
+11 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~296 top^sum0_1_0_0~2_FF_NODE top^sum0_1_0_1~2_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~301
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_AND~296 top^sum0_1_0_0~2_FF_NODE top^sum0_1_0_1~2_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~302
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~302 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~307
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~302 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~308
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~308 top^sum0_1_0_0~4_FF_NODE top^sum0_1_0_1~4_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~313
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~308 top^sum0_1_0_0~4_FF_NODE top^sum0_1_0_1~4_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~314
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~314 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~319
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~314 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~320
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~320 top^sum0_1_0_0~6_FF_NODE top^sum0_1_0_1~6_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~325
+001 1
+010 1
+100 1
+111 1
+
+.names top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_1~1_FF_NODE top.adder_tree_branch+L3_2^ADD~45^LOGICAL_XNOR~297
+00 1
+11 1
+
+.names top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_1~1_FF_NODE top.adder_tree_branch+L3_2^ADD~45^LOGICAL_OR~298
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_OR~298 top^sum0_1_0_0~2_FF_NODE top^sum0_1_0_1~2_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~303
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^LOGICAL_OR~298 top^sum0_1_0_0~2_FF_NODE top^sum0_1_0_1~2_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~304
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~304 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~309
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~304 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~310
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~310 top^sum0_1_0_0~4_FF_NODE top^sum0_1_0_1~4_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~315
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~310 top^sum0_1_0_0~4_FF_NODE top^sum0_1_0_1~4_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~316
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~316 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~321
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~316 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~322
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_2^ADD~45^CARRY_FUNC~322 top^sum0_1_0_0~6_FF_NODE top^sum0_1_0_1~6_FF_NODE top.adder_tree_branch+L3_2^ADD~45^ADDER_FUNC~327
+001 1
+010 1
+100 1
+111 1
+
+.latch top^isum0_1_0_0~2 top^sum0_1_0_0~2_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_0~3 top^sum0_1_0_0~3_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_0~4 top^sum0_1_0_0~4_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_0~5 top^sum0_1_0_0~5_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_0~6 top^sum0_1_0_0~6_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~0 top^sum0_1_0_1~0_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~1 top^sum0_1_0_1~1_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~2 top^sum0_1_0_1~2_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~3 top^sum0_1_0_1~3_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~4 top^sum0_1_0_1~4_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~5 top^sum0_1_0_1~5_FF_NODE re top^clk 3
+
+.latch top^isum0_1_0_1~6 top^sum0_1_0_1~6_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_0~0 top^sum0_1_1_0~0_FF_NODE re top^clk 3
+
+.names top^sum0_1_1_0~0_FF_NODE top^sum0_1_1_1~0_FF_NODE top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XOR~339
+01 1
+10 1
+
+.names top^sum0_1_1_0~0_FF_NODE top^sum0_1_1_1~0_FF_NODE top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340
+11 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~346
+0 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~346 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XNOR~343 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XOR~341 top.adder_tree_branch+L3_3^ADD~54^MUX_2~345
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~352
+0 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~352 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~349 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~347 top.adder_tree_branch+L3_3^ADD~54^MUX_2~351
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~358
+0 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~358 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~355 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~353 top.adder_tree_branch+L3_3^ADD~54^MUX_2~357
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~364
+0 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~364 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~361 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~359 top.adder_tree_branch+L3_3^ADD~54^MUX_2~363
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~370
+0 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~370 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~367 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~365 top.adder_tree_branch+L3_3^ADD~54^MUX_2~369
+1-1- 1
+-1-1 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~376
+0 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~340 top.adder_tree_branch+L3_3^ADD~54^LOGICAL_NOT~376 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~373 top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~371 top.adder_tree_branch+L3_3^ADD~54^MUX_2~375
+1-1- 1
+-1-1 1
+
+.latch top^isum0_1_1_0~1 top^sum0_1_1_0~1_FF_NODE re top^clk 3
+
+.names top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_1~1_FF_NODE top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XOR~341
+01 1
+10 1
+
+.names top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_1~1_FF_NODE top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~342
+11 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~342 top^sum0_1_1_0~2_FF_NODE top^sum0_1_1_1~2_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~347
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_AND~342 top^sum0_1_1_0~2_FF_NODE top^sum0_1_1_1~2_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~348
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~348 top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~353
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~348 top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~354
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~354 top^sum0_1_1_0~4_FF_NODE top^sum0_1_1_1~4_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~359
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~354 top^sum0_1_1_0~4_FF_NODE top^sum0_1_1_1~4_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~360
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~360 top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~365
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~360 top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~366
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~366 top^sum0_1_1_0~6_FF_NODE top^sum0_1_1_1~6_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~371
+001 1
+010 1
+100 1
+111 1
+
+.names top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_1~1_FF_NODE top.adder_tree_branch+L3_3^ADD~54^LOGICAL_XNOR~343
+00 1
+11 1
+
+.names top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_1~1_FF_NODE top.adder_tree_branch+L3_3^ADD~54^LOGICAL_OR~344
+1- 1
+-1 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_OR~344 top^sum0_1_1_0~2_FF_NODE top^sum0_1_1_1~2_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~349
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^LOGICAL_OR~344 top^sum0_1_1_0~2_FF_NODE top^sum0_1_1_1~2_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~350
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~350 top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~355
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~350 top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~356
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~356 top^sum0_1_1_0~4_FF_NODE top^sum0_1_1_1~4_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~361
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~356 top^sum0_1_1_0~4_FF_NODE top^sum0_1_1_1~4_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~362
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~362 top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~367
+001 1
+010 1
+100 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~362 top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~368
+011 1
+101 1
+110 1
+111 1
+
+.names top.adder_tree_branch+L3_3^ADD~54^CARRY_FUNC~368 top^sum0_1_1_0~6_FF_NODE top^sum0_1_1_1~6_FF_NODE top.adder_tree_branch+L3_3^ADD~54^ADDER_FUNC~373
+001 1
+010 1
+100 1
+111 1
+
+.latch top^isum0_1_1_0~2 top^sum0_1_1_0~2_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_0~3 top^sum0_1_1_0~3_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_0~4 top^sum0_1_1_0~4_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_0~5 top^sum0_1_1_0~5_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_0~6 top^sum0_1_1_0~6_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~0 top^sum0_1_1_1~0_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~1 top^sum0_1_1_1~1_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~2 top^sum0_1_1_1~2_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~3 top^sum0_1_1_1~3_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~4 top^sum0_1_1_1~4_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~5 top^sum0_1_1_1~5_FF_NODE re top^clk 3
+
+.latch top^isum0_1_1_1~6 top^sum0_1_1_1~6_FF_NODE re top^clk 3
+
+.names top^sum~0_FF_NODE top^sum~0
+1 1
+
+.names top^sum~1_FF_NODE top^sum~1
+1 1
+
+.names top^sum~2_FF_NODE top^sum~2
+1 1
+
+.names top^sum~3_FF_NODE top^sum~3
+1 1
+
+.names top^sum~4_FF_NODE top^sum~4
+1 1
+
+.names top^sum~5_FF_NODE top^sum~5
+1 1
+
+.names top^sum~6_FF_NODE top^sum~6
+1 1
+
+.names top^sum~7_FF_NODE top^sum~7
+1 1
+
+.end
+

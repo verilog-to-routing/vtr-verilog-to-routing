@@ -341,7 +341,7 @@ void define_add_function(nnode_t *node, short /*type*/, FILE *out)
 	oassert(node->output_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[1] > 0);
 
-	/* Write out the model adder  */
+	/* Write out th	bec_csla 	= 3 	// binary to excess carry Select Addere model adder  */
 	if (configuration.fixed_hard_adder != 0)
 	{
 		count += fprintf(out, " adder");
@@ -1109,7 +1109,7 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 							mark2 = strcmp(component_s[1], component_o[1]);
 						else
 						{
-                            assert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
+              oassert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
 							mark1 = strcmp(component_s[0], component_o[1]);
 							mark2 = strcmp(component_s[1], component_o[0]);
 						}
@@ -1307,7 +1307,7 @@ void fetch_blk_size(int full_width, int *blk_size, type_of_adder_e *my_type);
 void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, nnode_t *node, nnode_t *current_adder, short subtraction);
 nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_t *node, short mark);
 nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
-
+nnode_t **make_full_adder(nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
 /*---------------------------------------------------------------------------------------------
  * gets the adder blk size at a certain point in the adder using a define file input
  *-------------------------------------------------------------------------------------------*/
@@ -1317,7 +1317,7 @@ void fetch_blk_size(int full_width, int *blk_size, type_of_adder_e *my_type)
 	if((int)list_of_adder_def.size() < full_width)
 	{
 		*blk_size = full_width;
-		*my_type = ripple;
+		*my_type = rca;
 		return;
 	}
 	//the file defines how to recursively call the adder list for each size
@@ -1468,10 +1468,10 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
 /***---------------------------------------------------------------------------------------------
  *
  * bit # :  	| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
- * blk_type:	  R->[heterogenous         ]->R
- *                   [blk size and blk type]
+ * blk_type:	  R->[heterogenous      		]
+ *                   [blk size and blk type		]
  *
- * the first and last bit are ripple carry adders, everything between could be anything
+ * the first bit is built from an/xor gate, everything between could be anything
  * create a single adder block using adder_type_definition file input to select blk size and type
  *-------------------------------------------------------------------------------------------*/
 nnode_t *instantiate_add_w_carry_block(int *width, nnode_t *node, nnode_t *initial_carry, int start_pin, short mark, netlist_t *netlist, int current_counter, short subtraction)
@@ -1487,41 +1487,122 @@ nnode_t *instantiate_add_w_carry_block(int *width, nnode_t *node, nnode_t *initi
 	int last_pin_id = width[0]-1;
 	int blk_last_pin_id = start_pin+blk_size-1;
 
-	nnode_t *previous_carry = initial_carry;
+	nnode_t *new_carry = initial_carry;
 	nnode_t *previous_carry_gnd = netlist->gnd_node;
 	nnode_t *previous_carry_vcc = netlist->vcc_node;
 
+	//for bec_csla
+	nnode_t *previous_and = NULL;
+	nnode_t *previous_sum = NULL;
+
 	int i = start_pin;
+	// adjust for other adder type since the first adder is always
+	if(i == 0 && my_type != rca)
+	{
+		blk_size--;
+		start_pin++;
+	}
+
+	//don't optimize too small of a circuit
+	if(blk_size <= 1)
+	{
+		my_type = rca;
+	}
+
 	while( i < start_pin+blk_size)
 	{
 		nnode_t *current_adder = NULL;
-		// the first adder has no purpose of being speculative
-		if(i == 0 || my_type == ripple)
+		// the first adder has no purpose of building fancy stuff since theres no gain
+		// Ripple Carry Adder
+		if(i < start_pin || my_type == rca)
 		{
 			//build adder
-			current_adder = make_adder(ADDER_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
+			current_adder = make_adder(ADDER_FUNC, current_adder, new_carry, width, i, netlist, node, subtraction, mark);
 			if(i<last_pin_id|| !subtraction)
-				previous_carry = make_adder(CARRY_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
+				 new_carry = make_adder(CARRY_FUNC, current_adder, new_carry, width, i, netlist, node, subtraction, mark);
 		}
-		else if(my_type == fixed_step)
+		//Carry Select Adder
+		else if(my_type == csla)
 		{
 			//build adder bound to gnd and vcc with output muxes
-			nnode_t *current_adder_gnd = current_adder = make_adder(ADDER_FUNC, current_adder, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+			nnode_t *current_adder_gnd = NULL;
+			current_adder_gnd = make_adder(ADDER_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
 			if(i != last_pin_id || !subtraction)
-				previous_carry_gnd = make_adder(CARRY_FUNC, current_adder, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+				previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
 
-			nnode_t *current_adder_vcc = make_adder(ADDER_FUNC, current_adder, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+			nnode_t *current_adder_vcc = make_adder(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
 			if(i != last_pin_id || !subtraction)
-				previous_carry_vcc = make_adder(CARRY_FUNC, current_adder, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+				previous_carry_vcc = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
 
 			//remap adder so that we connect the output to the mux
-			current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
+			current_adder = make_mux_2to1(new_carry, current_adder_vcc, current_adder_gnd, node, mark);
 			// build carry output MUX for last carry node of block
-			if(i == blk_last_pin_id || !subtraction)
-				previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+			if(i == blk_last_pin_id && (i != last_pin_id || !subtraction))
+				new_carry = make_mux_2to1(new_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
+		}
+		//binary to excess Carry Select Adder
+		else if(my_type == bec_csla)
+		{
+			nnode_t *carry_out_gnd = NULL;
+			nnode_t *sum_out_gnd = NULL;
+			sum_out_gnd = make_adder(ADDER_FUNC, sum_out_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+			if(i<last_pin_id|| !subtraction)
+				 previous_carry_gnd = make_adder(CARRY_FUNC, sum_out_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
+
+				/*---------------------------------------------------------------------------------------------
+				 * build a bianry excess adder formula is
+				 *	if n == 0
+				 *		BEC[0] = NOT(in[0])
+				 *	else
+				 * 		BEC[n] = (XOR(in[n],AND(in[0],in[1],in[2]..,in[n-1]))
+				 *-------------------------------------------------------------------------------------------*/
+			nnode_t *output_node = NULL;
+			nnode_t *new_and = NULL;
+
+			if( i == start_pin )
+			{
+				output_node = make_not_gate(node, mark);
+				connect_nodes(sum_out_gnd,0, output_node, 0);
+			}
+			else
+			{
+				if( i+1 > start_pin )
+				{
+					new_and = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, mark);
+					connect_nodes(previous_and,0, new_and, 0);
+					connect_nodes(previous_sum,0, new_and, 1);
+				}
+				output_node = make_2port_gate(LOGICAL_XOR, 1, 1, 1, node, mark);
+				connect_nodes(new_and,0, output_node, 0);
+				connect_nodes(sum_out_gnd,0, output_node, 1);
+			}
+			current_adder = make_mux_2to1(new_carry, output_node, sum_out_gnd, node, mark);
+
+			if(i == start_pin)
+			{
+				previous_and = previous_sum = new_and = sum_out_gnd;
+			}
+			else
+			{
+				previous_and = new_and;
+				previous_sum = sum_out_gnd;
+			}
+
+			//we also need the carry if needed cout = ( s[n] == 1 && bec[n] != 1 )
+			if(i == blk_last_pin_id && (i != last_pin_id || !subtraction))
+			{
+				nnode_t *new_not_cells = make_not_gate(node, mark);
+				connect_nodes(output_node, 0, new_not_cells, 1);
+
+				new_and = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, mark);
+				connect_nodes(sum_out_gnd,0, new_and, 0);
+				connect_nodes(new_not_cells,0, new_and, 1);
+
+				new_carry = make_mux_2to1(new_carry, new_and, carry_out_gnd, node, mark);
+			}
 		}
 		connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
 		i++;
 	}
-	return instantiate_add_w_carry_block(width, node, previous_carry, i, mark, netlist, current_counter+1, subtraction);
+	return instantiate_add_w_carry_block(width, node, new_carry, i, mark, netlist, current_counter+1, subtraction);
 }

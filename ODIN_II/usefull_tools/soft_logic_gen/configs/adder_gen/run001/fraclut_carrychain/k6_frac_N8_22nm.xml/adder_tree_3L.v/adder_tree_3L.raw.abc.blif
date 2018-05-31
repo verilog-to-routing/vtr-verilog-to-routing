@@ -1,0 +1,950 @@
+# Benchmark "adder_tree_top" written by ABC on Thu May 31 02:23:58 2018
+.model adder_tree_top
+.inputs top^clk top^isum0_0_0_0~0 top^isum0_0_0_0~1 top^isum0_0_0_0~2 \
+ top^isum0_0_0_0~3 top^isum0_0_0_0~4 top^isum0_0_0_0~5 top^isum0_0_0_0~6 \
+ top^isum0_0_0_1~0 top^isum0_0_0_1~1 top^isum0_0_0_1~2 top^isum0_0_0_1~3 \
+ top^isum0_0_0_1~4 top^isum0_0_0_1~5 top^isum0_0_0_1~6 top^isum0_0_1_0~0 \
+ top^isum0_0_1_0~1 top^isum0_0_1_0~2 top^isum0_0_1_0~3 top^isum0_0_1_0~4 \
+ top^isum0_0_1_0~5 top^isum0_0_1_0~6 top^isum0_0_1_1~0 top^isum0_0_1_1~1 \
+ top^isum0_0_1_1~2 top^isum0_0_1_1~3 top^isum0_0_1_1~4 top^isum0_0_1_1~5 \
+ top^isum0_0_1_1~6 top^isum0_1_0_0~0 top^isum0_1_0_0~1 top^isum0_1_0_0~2 \
+ top^isum0_1_0_0~3 top^isum0_1_0_0~4 top^isum0_1_0_0~5 top^isum0_1_0_0~6 \
+ top^isum0_1_0_1~0 top^isum0_1_0_1~1 top^isum0_1_0_1~2 top^isum0_1_0_1~3 \
+ top^isum0_1_0_1~4 top^isum0_1_0_1~5 top^isum0_1_0_1~6 top^isum0_1_1_0~0 \
+ top^isum0_1_1_0~1 top^isum0_1_1_0~2 top^isum0_1_1_0~3 top^isum0_1_1_0~4 \
+ top^isum0_1_1_0~5 top^isum0_1_1_0~6 top^isum0_1_1_1~0 top^isum0_1_1_1~1 \
+ top^isum0_1_1_1~2 top^isum0_1_1_1~3 top^isum0_1_1_1~4 top^isum0_1_1_1~5 \
+ top^isum0_1_1_1~6
+.outputs top^sum~0 top^sum~1 top^sum~2 top^sum~3 top^sum~4 top^sum~5 \
+ top^sum~6 top^sum~7
+
+.latch       n132 top^sum~7_FF_NODE  0
+.latch       n136 top^sum0_0_0_0~0_FF_NODE  0
+.latch       n141 top^sum~0_FF_NODE  0
+.latch       n146 top^sum~1_FF_NODE  0
+.latch       n151 top^sum~2_FF_NODE  0
+.latch       n156 top^sum~3_FF_NODE  0
+.latch       n161 top^sum~4_FF_NODE  0
+.latch       n166 top^sum~5_FF_NODE  0
+.latch       n171 top^sum~6_FF_NODE  0
+.latch       n175 top^sum0_0_0_0~1_FF_NODE  0
+.latch       n179 top^sum0_0_0_0~2_FF_NODE  0
+.latch       n183 top^sum0_0_0_0~3_FF_NODE  0
+.latch       n187 top^sum0_0_0_0~4_FF_NODE  0
+.latch       n191 top^sum0_0_0_0~5_FF_NODE  0
+.latch       n195 top^sum0_0_0_0~6_FF_NODE  0
+.latch       n199 top^sum0_0_0_1~0_FF_NODE  0
+.latch       n203 top^sum0_0_0_1~1_FF_NODE  0
+.latch       n207 top^sum0_0_0_1~2_FF_NODE  0
+.latch       n211 top^sum0_0_0_1~3_FF_NODE  0
+.latch       n215 top^sum0_0_0_1~4_FF_NODE  0
+.latch       n219 top^sum0_0_0_1~5_FF_NODE  0
+.latch       n223 top^sum0_0_0_1~6_FF_NODE  0
+.latch       n227 top^sum0_0_1_0~0_FF_NODE  0
+.latch       n231 top^sum0_0_1_0~1_FF_NODE  0
+.latch       n235 top^sum0_0_1_0~2_FF_NODE  0
+.latch       n239 top^sum0_0_1_0~3_FF_NODE  0
+.latch       n243 top^sum0_0_1_0~4_FF_NODE  0
+.latch       n247 top^sum0_0_1_0~5_FF_NODE  0
+.latch       n251 top^sum0_0_1_0~6_FF_NODE  0
+.latch       n255 top^sum0_0_1_1~0_FF_NODE  0
+.latch       n259 top^sum0_0_1_1~1_FF_NODE  0
+.latch       n263 top^sum0_0_1_1~2_FF_NODE  0
+.latch       n267 top^sum0_0_1_1~3_FF_NODE  0
+.latch       n271 top^sum0_0_1_1~4_FF_NODE  0
+.latch       n275 top^sum0_0_1_1~5_FF_NODE  0
+.latch       n279 top^sum0_0_1_1~6_FF_NODE  0
+.latch       n283 top^sum0_1_0_0~0_FF_NODE  0
+.latch       n287 top^sum0_1_0_0~1_FF_NODE  0
+.latch       n291 top^sum0_1_0_0~2_FF_NODE  0
+.latch       n295 top^sum0_1_0_0~3_FF_NODE  0
+.latch       n299 top^sum0_1_0_0~4_FF_NODE  0
+.latch       n303 top^sum0_1_0_0~5_FF_NODE  0
+.latch       n307 top^sum0_1_0_0~6_FF_NODE  0
+.latch       n311 top^sum0_1_0_1~0_FF_NODE  0
+.latch       n315 top^sum0_1_0_1~1_FF_NODE  0
+.latch       n319 top^sum0_1_0_1~2_FF_NODE  0
+.latch       n323 top^sum0_1_0_1~3_FF_NODE  0
+.latch       n327 top^sum0_1_0_1~4_FF_NODE  0
+.latch       n331 top^sum0_1_0_1~5_FF_NODE  0
+.latch       n335 top^sum0_1_0_1~6_FF_NODE  0
+.latch       n339 top^sum0_1_1_0~0_FF_NODE  0
+.latch       n343 top^sum0_1_1_0~1_FF_NODE  0
+.latch       n347 top^sum0_1_1_0~2_FF_NODE  0
+.latch       n351 top^sum0_1_1_0~3_FF_NODE  0
+.latch       n355 top^sum0_1_1_0~4_FF_NODE  0
+.latch       n359 top^sum0_1_1_0~5_FF_NODE  0
+.latch       n363 top^sum0_1_1_0~6_FF_NODE  0
+.latch       n367 top^sum0_1_1_1~0_FF_NODE  0
+.latch       n371 top^sum0_1_1_1~1_FF_NODE  0
+.latch       n375 top^sum0_1_1_1~2_FF_NODE  0
+.latch       n379 top^sum0_1_1_1~3_FF_NODE  0
+.latch       n383 top^sum0_1_1_1~4_FF_NODE  0
+.latch       n387 top^sum0_1_1_1~5_FF_NODE  0
+.latch       n391 top^sum0_1_1_1~6_FF_NODE  0
+
+.names n260 n299_1 n279_1 n302 n301 n266 n132
+--0100 1
+0--100 1
+-10-00 1
+01--00 1
+--0111 1
+0--111 1
+-10-11 1
+01--11 1
+-101-- 1
+01-1-- 1
+0-0--- 1
+.names n265 n266 n278 top^sum0_0_1_0~5_FF_NODE top^sum0_0_1_1~5_FF_NODE \
+ n261 n260
+-10000 1
+1-0000 1
+11-000 1
+110-00 1
+-01110 1
+0-1110 1
+00-110 1
+001-10 1
+1100-0 1
+0011-0 1
+00-001 1
+000-01 1
+101-01 1
+011-01 1
+11-111 1
+100-11 1
+010-11 1
+111-11 1
+0000-1 1
+1010-1 1
+0110-1 1
+1001-1 1
+0101-1 1
+1111-1 1
+.names n262 top^sum0_0_0_0~5_FF_NODE top^sum0_0_0_1~5_FF_NODE n264 n261
+-000 1
+0-00 1
+00-0 1
+-111 1
+1-11 1
+11-1 1
+.names n263_1 top^sum0_0_0_0~4_FF_NODE top^sum0_0_0_1~4_FF_NODE \
+ top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE n262
+--111 1
+-1-11 1
+1-1-1 1
+11--1 1
+1-11- 1
+11-1- 1
+-11-- 1
+.names top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_0~2_FF_NODE \
+ top^sum0_0_0_1~2_FF_NODE top^sum0_0_0_1~1_FF_NODE top^sum0_0_0_1~0_FF_NODE \
+ top^sum0_0_0_0~0_FF_NODE n263_1
+--1111 1
+-1-111 1
+1-1-11 1
+11--11 1
+1-11-- 1
+11-1-- 1
+-11--- 1
+.names top^sum0_0_0_0~6_FF_NODE top^sum0_0_0_1~6_FF_NODE \
+ top^sum0_0_1_0~6_FF_NODE top^sum0_0_1_1~6_FF_NODE n264
+0000 1
+1100 1
+1010 1
+0110 1
+1001 1
+0101 1
+0011 1
+1111 1
+.names n262 top^sum0_0_0_0~5_FF_NODE top^sum0_0_0_1~5_FF_NODE n265
+000 1
+110 1
+101 1
+011 1
+.names n271_1 n272 n267_1 n268 n270 n266
+---01 0
+--0-1 0
+--00- 0
+01-0- 0
+010-- 0
+.names n263_1 top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE \
+ top^sum0_0_0_0~4_FF_NODE top^sum0_0_0_1~4_FF_NODE n267_1
+-0000 1
+0-000 1
+00-00 1
+-1110 1
+1-110 1
+11-10 1
+-1101 1
+1-101 1
+11-01 1
+-0011 1
+0-011 1
+00-11 1
+.names n269 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE \
+ top^sum0_0_1_0~4_FF_NODE top^sum0_0_1_1~4_FF_NODE n268
+-0000 1
+0-000 1
+00-00 1
+-1110 1
+1-110 1
+11-10 1
+-1101 1
+1-101 1
+11-01 1
+-0011 1
+0-011 1
+00-11 1
+.names top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_0~2_FF_NODE \
+ top^sum0_0_1_1~2_FF_NODE top^sum0_0_1_1~1_FF_NODE top^sum0_0_1_1~0_FF_NODE \
+ top^sum0_0_1_0~0_FF_NODE n269
+--1111 1
+-1-111 1
+1-1-11 1
+11--11 1
+1-11-- 1
+11-1-- 1
+-11--- 1
+.names n269 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE n263_1 \
+ top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE n270
+---000 0
+---110 0
+---101 0
+---011 0
+000--- 0
+110--- 0
+101--- 0
+011--- 0
+.names n269 top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE n263_1 \
+ top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE n271_1
+---100 0
+---010 0
+---001 0
+---111 0
+100--- 0
+010--- 0
+001--- 0
+111--- 0
+.names n273 n275_1 n276 n277 n274 n272
+--011 1
+-0-11 1
+-00-1 1
+0---1 1
+0-01- 1
+00-1- 1
+000-- 1
+.names top^sum0_0_0_0~0_FF_NODE top^sum0_0_0_1~0_FF_NODE \
+ top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_1~1_FF_NODE top^sum0_0_0_0~2_FF_NODE \
+ top^sum0_0_0_1~2_FF_NODE n273
+--0000 1
+-0-000 1
+0--000 1
+-00-00 1
+0-0-00 1
+--1110 1
+11-110 1
+111-10 1
+--1101 1
+11-101 1
+111-01 1
+--0011 1
+-0-011 1
+0--011 1
+-00-11 1
+0-0-11 1
+.names top^sum0_0_1_0~0_FF_NODE top^sum0_0_1_1~0_FF_NODE \
+ top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_1~1_FF_NODE top^sum0_0_1_0~2_FF_NODE \
+ top^sum0_0_1_1~2_FF_NODE n274
+--1100 1
+11-100 1
+111-00 1
+--0010 1
+-0-010 1
+0--010 1
+-00-10 1
+0-0-10 1
+--0001 1
+-0-001 1
+0--001 1
+-00-01 1
+0-0-01 1
+--1111 1
+11-111 1
+111-11 1
+.names top^sum0_0_0_0~0_FF_NODE top^sum0_0_0_1~0_FF_NODE \
+ top^sum0_0_0_0~1_FF_NODE top^sum0_0_0_1~1_FF_NODE n275_1
+-000 1
+0-00 1
+1110 1
+1101 1
+-011 1
+0-11 1
+.names top^sum0_0_1_0~0_FF_NODE top^sum0_0_1_1~0_FF_NODE \
+ top^sum0_0_1_0~1_FF_NODE top^sum0_0_1_1~1_FF_NODE n276
+-000 1
+0-00 1
+1110 1
+1101 1
+-011 1
+0-11 1
+.names top^sum0_0_0_0~0_FF_NODE top^sum0_0_1_0~0_FF_NODE \
+ top^sum0_0_1_1~0_FF_NODE top^sum0_0_0_1~0_FF_NODE n277
+0--0 0
+1--1 0
+-00- 0
+-11- 0
+.names n269 top^sum0_0_1_0~4_FF_NODE top^sum0_0_1_1~4_FF_NODE \
+ top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE n278
+--111 1
+-1-11 1
+1-1-1 1
+11--1 1
+1-11- 1
+11-1- 1
+-11-- 1
+.names n286 n280 n297 n298 n300 n279_1
+-0000 1
+-0110 1
+0-101 1
+0-011 1
+1000- 1
+-110- 1
+-101- 1
+1011- 1
+.names n281 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE n283_1 \
+ top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE n280
+---000 0
+---110 0
+---101 0
+---011 0
+000--- 0
+110--- 0
+101--- 0
+011--- 0
+.names n282 top^sum0_1_0_0~4_FF_NODE top^sum0_1_0_1~4_FF_NODE \
+ top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE n281
+--111 1
+-1-11 1
+1-1-1 1
+11--1 1
+1-11- 1
+11-1- 1
+-11-- 1
+.names top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_0~2_FF_NODE \
+ top^sum0_1_0_1~2_FF_NODE top^sum0_1_0_1~1_FF_NODE top^sum0_1_0_1~0_FF_NODE \
+ top^sum0_1_0_0~0_FF_NODE n282
+--1111 1
+-1-111 1
+1-1-11 1
+11--11 1
+1-11-- 1
+11-1-- 1
+-11--- 1
+.names n284 top^sum0_1_1_0~4_FF_NODE top^sum0_1_1_1~4_FF_NODE \
+ top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE n283_1
+--111 1
+-1-11 1
+1-1-1 1
+11--1 1
+1-11- 1
+11-1- 1
+-11-- 1
+.names top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_0~2_FF_NODE \
+ top^sum0_1_1_1~2_FF_NODE top^sum0_1_1_1~1_FF_NODE top^sum0_1_1_1~0_FF_NODE \
+ top^sum0_1_1_0~0_FF_NODE n284
+--1111 1
+-1-111 1
+1-1-11 1
+11--11 1
+1-11-- 1
+11-1-- 1
+-11--- 1
+.names n290 n291_1 n287_1 n288 n289 n286
+---01 0
+--0-1 0
+--00- 0
+01-0- 0
+010-- 0
+.names n282 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE \
+ top^sum0_1_0_0~4_FF_NODE top^sum0_1_0_1~4_FF_NODE n287_1
+-0000 1
+0-000 1
+00-00 1
+-1110 1
+1-110 1
+11-10 1
+-1101 1
+1-101 1
+11-01 1
+-0011 1
+0-011 1
+00-11 1
+.names n284 top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE \
+ top^sum0_1_1_0~4_FF_NODE top^sum0_1_1_1~4_FF_NODE n288
+-0000 1
+0-000 1
+00-00 1
+-1110 1
+1-110 1
+11-10 1
+-1101 1
+1-101 1
+11-01 1
+-0011 1
+0-011 1
+00-11 1
+.names n282 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE n284 \
+ top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE n289
+---000 0
+---110 0
+---101 0
+---011 0
+000--- 0
+110--- 0
+101--- 0
+011--- 0
+.names n282 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE n284 \
+ top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE n290
+---100 0
+---010 0
+---001 0
+---111 0
+100--- 0
+010--- 0
+001--- 0
+111--- 0
+.names n292 n294 n295_1 n296 n293 n291_1
+--011 1
+-0-11 1
+-00-1 1
+0---1 1
+0-01- 1
+00-1- 1
+000-- 1
+.names top^sum0_1_1_0~0_FF_NODE top^sum0_1_1_1~0_FF_NODE \
+ top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_1~1_FF_NODE top^sum0_1_1_0~2_FF_NODE \
+ top^sum0_1_1_1~2_FF_NODE n292
+--0000 1
+-0-000 1
+0--000 1
+-00-00 1
+0-0-00 1
+--1110 1
+11-110 1
+111-10 1
+--1101 1
+11-101 1
+111-01 1
+--0011 1
+-0-011 1
+0--011 1
+-00-11 1
+0-0-11 1
+.names top^sum0_1_0_0~0_FF_NODE top^sum0_1_0_1~0_FF_NODE \
+ top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_1~1_FF_NODE top^sum0_1_0_0~2_FF_NODE \
+ top^sum0_1_0_1~2_FF_NODE n293
+--1100 1
+11-100 1
+111-00 1
+--0010 1
+-0-010 1
+0--010 1
+-00-10 1
+0-0-10 1
+--0001 1
+-0-001 1
+0--001 1
+-00-01 1
+0-0-01 1
+--1111 1
+11-111 1
+111-11 1
+.names top^sum0_1_0_0~0_FF_NODE top^sum0_1_0_1~0_FF_NODE \
+ top^sum0_1_0_0~1_FF_NODE top^sum0_1_0_1~1_FF_NODE n294
+-000 1
+0-00 1
+1110 1
+1101 1
+-011 1
+0-11 1
+.names top^sum0_1_1_0~0_FF_NODE top^sum0_1_1_1~0_FF_NODE \
+ top^sum0_1_1_0~1_FF_NODE top^sum0_1_1_1~1_FF_NODE n295_1
+-000 1
+0-00 1
+1110 1
+1101 1
+-011 1
+0-11 1
+.names top^sum0_1_0_0~0_FF_NODE top^sum0_1_1_0~0_FF_NODE \
+ top^sum0_1_1_1~0_FF_NODE top^sum0_1_0_1~0_FF_NODE n296
+0--0 0
+1--1 0
+-00- 0
+-11- 0
+.names n281 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE \
+ top^sum0_1_0_0~6_FF_NODE top^sum0_1_0_1~6_FF_NODE n297
+-0000 1
+0-000 1
+00-00 1
+-1110 1
+1-110 1
+11-10 1
+-1101 1
+1-101 1
+11-01 1
+-0011 1
+0-011 1
+00-11 1
+.names n283_1 top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE \
+ top^sum0_1_1_0~6_FF_NODE top^sum0_1_1_1~6_FF_NODE n298
+-0000 1
+0-000 1
+00-00 1
+-1110 1
+1-110 1
+11-10 1
+-1101 1
+1-101 1
+11-01 1
+-0011 1
+0-011 1
+00-11 1
+.names n286 n300 n299_1
+00 1
+11 1
+.names n281 n283_1 top^sum0_1_0_0~5_FF_NODE top^sum0_1_0_1~5_FF_NODE \
+ top^sum0_1_1_0~5_FF_NODE top^sum0_1_1_1~5_FF_NODE n300
+100000 1
+010000 1
+001000 1
+111000 1
+000100 1
+110100 1
+101100 1
+011100 1
+000010 1
+110010 1
+101010 1
+011010 1
+100110 1
+010110 1
+001110 1
+111110 1
+000001 1
+110001 1
+101001 1
+011001 1
+100101 1
+010101 1
+001101 1
+111101 1
+100011 1
+010011 1
+001011 1
+111011 1
+000111 1
+110111 1
+101111 1
+011111 1
+.names n265 n278 top^sum0_0_1_0~5_FF_NODE top^sum0_0_1_1~5_FF_NODE n301
+0000 1
+1100 1
+1010 1
+0110 1
+1001 1
+0101 1
+0011 1
+1111 1
+.names n309 n310 n304 n306 n303_1 n305 n302
+---110 0
+--0-10 0
+00--10 0
+---101 0
+--0-01 0
+00--01 0
+--01-- 0
+000--- 0
+.names n272 n271_1 n270 n303_1
+--1 0
+10- 0
+.names n290 n291_1 n289 n287_1 n288 n304
+--100 1
+01-00 1
+-0010 1
+1-010 1
+-0001 1
+1-001 1
+--111 1
+01-11 1
+.names n267_1 n268 n305
+10 1
+01 1
+.names n272 n307_1 n291_1 n308 n306
+--10 0
+--01 0
+10-- 0
+01-- 0
+.names n269 n263_1 top^sum0_0_0_0~3_FF_NODE top^sum0_0_0_1~3_FF_NODE \
+ top^sum0_0_1_0~3_FF_NODE top^sum0_0_1_1~3_FF_NODE n307_1
+100000 1
+010000 1
+001000 1
+111000 1
+000100 1
+110100 1
+101100 1
+011100 1
+000010 1
+110010 1
+101010 1
+011010 1
+100110 1
+010110 1
+001110 1
+111110 1
+000001 1
+110001 1
+101001 1
+011001 1
+100101 1
+010101 1
+001101 1
+111101 1
+100011 1
+010011 1
+001011 1
+111011 1
+000111 1
+110111 1
+101111 1
+011111 1
+.names n282 n284 top^sum0_1_0_0~3_FF_NODE top^sum0_1_0_1~3_FF_NODE \
+ top^sum0_1_1_0~3_FF_NODE top^sum0_1_1_1~3_FF_NODE n308
+100000 1
+010000 1
+001000 1
+111000 1
+000100 1
+110100 1
+101100 1
+011100 1
+000010 1
+110010 1
+101010 1
+011010 1
+100110 1
+010110 1
+001110 1
+111110 1
+000001 1
+110001 1
+101001 1
+011001 1
+100101 1
+010101 1
+001101 1
+111101 1
+100011 1
+010011 1
+001011 1
+111011 1
+000111 1
+110111 1
+101111 1
+011111 1
+.names n272 n291_1 n308 n307_1 n309
+0--0 0
+1--1 0
+-00- 0
+-11- 0
+.names n312 n314 n315_1 n316 n313 n311_1 n310
+--1100 1
+-0-100 1
+-01-00 1
+1---00 1
+--1111 1
+-0-111 1
+-01-11 1
+1---11 1
+1-11-- 1
+10-1-- 1
+101--- 1
+.names n275_1 n277 n276 n311_1
+-01 1
+1-1 1
+10- 1
+.names n294 n296 n295_1 n292 n293 n312
+-0100 1
+1-100 1
+10-00 1
+-1010 1
+0-010 1
+01-10 1
+-1001 1
+0-001 1
+01-01 1
+-0111 1
+1-111 1
+10-11 1
+.names n273 n274 n313
+00 1
+11 1
+.names n275_1 n276 n277 n314
+000 1
+110 1
+101 1
+011 1
+.names n294 n295_1 n296 n315_1
+100 1
+010 1
+001 1
+111 1
+.names top^sum0_0_0_0~0_FF_NODE top^sum0_0_0_1~0_FF_NODE \
+ top^sum0_0_1_0~0_FF_NODE top^sum0_0_1_1~0_FF_NODE n317 n316
+10001 1
+01001 1
+00101 1
+11101 1
+00011 1
+11011 1
+10111 1
+01111 1
+.names top^sum0_1_0_0~0_FF_NODE top^sum0_1_0_1~0_FF_NODE \
+ top^sum0_1_1_0~0_FF_NODE top^sum0_1_1_1~0_FF_NODE n317
+1000 1
+0100 1
+0010 1
+1110 1
+0001 1
+1101 1
+1011 1
+0111 1
+.names n317 top^sum0_0_0_0~0_FF_NODE top^sum0_0_0_1~0_FF_NODE \
+ top^sum0_0_1_0~0_FF_NODE top^sum0_0_1_1~0_FF_NODE n141
+10000 1
+01000 1
+00100 1
+11100 1
+00010 1
+11010 1
+10110 1
+01110 1
+00001 1
+11001 1
+10101 1
+01101 1
+10011 1
+01011 1
+00111 1
+11111 1
+.names n314 n315_1 n316 n146
+000 1
+110 1
+101 1
+011 1
+.names n314 n315_1 n316 n311_1 n312 n313 n151
+-00000 1
+1-0000 1
+10-000 1
+-11100 1
+0-1100 1
+01-100 1
+-11010 1
+0-1010 1
+01-010 1
+-00110 1
+1-0110 1
+10-110 1
+-11001 1
+0-1001 1
+01-001 1
+-00101 1
+1-0101 1
+10-101 1
+-00011 1
+1-0011 1
+10-011 1
+-11111 1
+0-1111 1
+01-111 1
+.names n306 n309 n310 n156
+000 1
+-11 1
+1-1 1
+.names n309 n310 n306 n303_1 n304 n305 n161
+--1000 1
+00-000 1
+-10100 1
+1-0100 1
+-10010 1
+1-0010 1
+--1110 1
+00-110 1
+-10001 1
+1-0001 1
+--1101 1
+00-101 1
+--1011 1
+00-011 1
+-10111 1
+1-0111 1
+.names n299_1 n301 n302 n266 n166
+0000 1
+1100 1
+1010 1
+0110 1
+1001 1
+0101 1
+0011 1
+1111 1
+.names n299_1 n302 n301 n266 n260 n279_1 n171
+-10000 1
+1-0000 1
+-11100 1
+1-1100 1
+11--00 1
+-01010 1
+0-1010 1
+-00110 1
+0-0110 1
+00--10 1
+-01001 1
+0-1001 1
+-00101 1
+0-0101 1
+00--01 1
+-10011 1
+1-0011 1
+-11111 1
+1-1111 1
+11--11 1
+.names top^sum~0_FF_NODE top^sum~0
+1 1
+.names top^sum~1_FF_NODE top^sum~1
+1 1
+.names top^sum~2_FF_NODE top^sum~2
+1 1
+.names top^sum~3_FF_NODE top^sum~3
+1 1
+.names top^sum~4_FF_NODE top^sum~4
+1 1
+.names top^sum~5_FF_NODE top^sum~5
+1 1
+.names top^sum~6_FF_NODE top^sum~6
+1 1
+.names top^sum~7_FF_NODE top^sum~7
+1 1
+.names top^isum0_0_0_0~0 n136
+1 1
+.names top^isum0_0_0_0~1 n175
+1 1
+.names top^isum0_0_0_0~2 n179
+1 1
+.names top^isum0_0_0_0~3 n183
+1 1
+.names top^isum0_0_0_0~4 n187
+1 1
+.names top^isum0_0_0_0~5 n191
+1 1
+.names top^isum0_0_0_0~6 n195
+1 1
+.names top^isum0_0_0_1~0 n199
+1 1
+.names top^isum0_0_0_1~1 n203
+1 1
+.names top^isum0_0_0_1~2 n207
+1 1
+.names top^isum0_0_0_1~3 n211
+1 1
+.names top^isum0_0_0_1~4 n215
+1 1
+.names top^isum0_0_0_1~5 n219
+1 1
+.names top^isum0_0_0_1~6 n223
+1 1
+.names top^isum0_0_1_0~0 n227
+1 1
+.names top^isum0_0_1_0~1 n231
+1 1
+.names top^isum0_0_1_0~2 n235
+1 1
+.names top^isum0_0_1_0~3 n239
+1 1
+.names top^isum0_0_1_0~4 n243
+1 1
+.names top^isum0_0_1_0~5 n247
+1 1
+.names top^isum0_0_1_0~6 n251
+1 1
+.names top^isum0_0_1_1~0 n255
+1 1
+.names top^isum0_0_1_1~1 n259
+1 1
+.names top^isum0_0_1_1~2 n263
+1 1
+.names top^isum0_0_1_1~3 n267
+1 1
+.names top^isum0_0_1_1~4 n271
+1 1
+.names top^isum0_0_1_1~5 n275
+1 1
+.names top^isum0_0_1_1~6 n279
+1 1
+.names top^isum0_1_0_0~0 n283
+1 1
+.names top^isum0_1_0_0~1 n287
+1 1
+.names top^isum0_1_0_0~2 n291
+1 1
+.names top^isum0_1_0_0~3 n295
+1 1
+.names top^isum0_1_0_0~4 n299
+1 1
+.names top^isum0_1_0_0~5 n303
+1 1
+.names top^isum0_1_0_0~6 n307
+1 1
+.names top^isum0_1_0_1~0 n311
+1 1
+.names top^isum0_1_0_1~1 n315
+1 1
+.names top^isum0_1_0_1~2 n319
+1 1
+.names top^isum0_1_0_1~3 n323
+1 1
+.names top^isum0_1_0_1~4 n327
+1 1
+.names top^isum0_1_0_1~5 n331
+1 1
+.names top^isum0_1_0_1~6 n335
+1 1
+.names top^isum0_1_1_0~0 n339
+1 1
+.names top^isum0_1_1_0~1 n343
+1 1
+.names top^isum0_1_1_0~2 n347
+1 1
+.names top^isum0_1_1_0~3 n351
+1 1
+.names top^isum0_1_1_0~4 n355
+1 1
+.names top^isum0_1_1_0~5 n359
+1 1
+.names top^isum0_1_1_0~6 n363
+1 1
+.names top^isum0_1_1_1~0 n367
+1 1
+.names top^isum0_1_1_1~1 n371
+1 1
+.names top^isum0_1_1_1~2 n375
+1 1
+.names top^isum0_1_1_1~3 n379
+1 1
+.names top^isum0_1_1_1~4 n383
+1 1
+.names top^isum0_1_1_1~5 n387
+1 1
+.names top^isum0_1_1_1~6 n391
+1 1
+.end

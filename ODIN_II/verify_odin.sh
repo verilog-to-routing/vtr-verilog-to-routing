@@ -1,6 +1,7 @@
 #!/bin/bash
 #1
 trap ctrl_c INT
+SHELL=/bin/bash
 
 fail_count=0
 
@@ -50,6 +51,7 @@ function micro_test() {
 	#verilog
 	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
 	'./odin_II -E \
+    --adder_type ripple \
 		-V regression_test/runs/micro/test_dir/circuit.v \
 		-t regression_test/runs/micro/test_dir/circuit_input \
 		-T regression_test/runs/micro/test_dir/circuit_output \
@@ -57,12 +59,14 @@ function micro_test() {
 		-sim_dir regression_test/runs/micro/test_dir/ \
 		&> regression_test/runs/micro/test_dir/log \
 	&& ./odin_II -E \
+    --adder_type ripple \
 		-b regression_test/runs/micro/test_dir/tempa.blif \
 		-t regression_test/runs/micro/test_dir/circuit_input \
 		-T regression_test/runs/micro/test_dir/circuit_output \
 		-sim_dir regression_test/runs/micro/test_dir/ \
 		&> regression_test/runs/micro/test_dir/log \
 	&& ./odin_II -E \
+    --adder_type ripple \
 		-a regression_test/runs/micro/test_dir/arch.xml \
 		-V regression_test/runs/micro/test_dir/circuit.v \
 		-t regression_test/runs/micro/test_dir/circuit_input \
@@ -71,6 +75,7 @@ function micro_test() {
 		-sim_dir regression_test/runs/micro/test_dir/ \
 		&> regression_test/runs/micro/test_dir/log \
 	&& ./odin_II -E \
+    --adder_type ripple \
 		-a regression_test/runs/micro/test_dir/arch.xml \
 		-b regression_test/runs/micro/test_dir/tempb.blif \
 		-t regression_test/runs/micro/test_dir/circuit_input \
@@ -100,12 +105,20 @@ function regression_test() {
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
 
+    echo "./odin_II -E \
+    --adder_type ripple \
+		-a ../libs/libarchfpga/arch/sample_arch.xml \
+		-V $test_verilog \
+		-t $input_vectors \
+		-T $output_vectors" > regression_test/runs/full/$test_name.log
+
 		(./odin_II -E \
+    --adder_type "ripple" \
 		-a "../libs/libarchfpga/arch/sample_arch.xml" \
 		-V "$test_verilog" \
 		-t "$input_vectors" \
 		-T "$output_vectors" \
-			&> regression_test/runs/full/$test_name.log && [ -e OUTPUT/output_vectors ] && echo " --- PASSED == $test_verilog") \
+			&>> regression_test/runs/full/$test_name.log && [ -e OUTPUT/output_vectors ] && echo " --- PASSED == $test_verilog") \
     	|| (echo " -X- FAILED == $test_verilog" && echo $test_verilog >> regression_test/runs/failure.log)
 
 	done
@@ -125,6 +138,7 @@ function arch_test() {
 
 	ls regression_test/runs/arch | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/runs/arch/test_dir/circuit.v \
+        --adder_type ripple \
 				-o regression_test/runs/arch/test_dir/temp.blif \
 				-sim_dir regression_test/runs/arch/test_dir/ \
 					&> regression_test/runs/arch/test_dir/log \
@@ -147,6 +161,7 @@ function syntax_test() {
 
 	ls regression_test/runs/syntax | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/runs/syntax/test_dir/circuit.v \
+        --adder_type ripple \
 				-o regression_test/runs/syntax/test_dir/temp.blif \
 				-sim_dir regression_test/runs/syntax/test_dir/ \
 					&> regression_test/runs/syntax/test_dir/log \
