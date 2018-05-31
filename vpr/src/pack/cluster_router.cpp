@@ -790,9 +790,9 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
     } else {
         //Add external driver/sink if needed
         update_required_external_connections(*lb_net_iter, *router_data);
-    }
 
-    VTR_ASSERT_SAFE(check_lb_net(*lb_net_iter, lb_rr_graph));
+        VTR_ASSERT_SAFE(check_lb_net(*lb_net_iter, lb_rr_graph));
+    }
 }
 
 static bool check_lb_net(const t_intra_lb_net& lb_net, const t_lb_type_rr_graph& lb_rr_graph) {
