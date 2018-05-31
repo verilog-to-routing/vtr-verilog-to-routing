@@ -235,8 +235,7 @@ void vpr_init(const int argc, const char **argv,
             &vpr_setup->Timing,
             &vpr_setup->ShowGraphics,
             &vpr_setup->GraphPause,
-            &vpr_setup->PowerOpts,
-            &vpr_setup->clock_modeling_method);
+            &vpr_setup->PowerOpts);
 
     /* Check inputs are reasonable */
     CheckArch(*arch);
@@ -972,12 +971,11 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
         vector <t_lb_type_rr_node> **PackerRRGraph,
         t_segment_inf ** Segments, t_timing_inf * Timing,
         bool * ShowGraphics, int *GraphPause,
-        t_power_opts * PowerOpts,
-        e_clock_modeling_method * clock_modeling_method) {
+        t_power_opts * PowerOpts) {
     SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
             user_models, library_models, NetlistOpts, PackerOpts, PlacerOpts,
             AnnealSched, RouterOpts, AnalysisOpts, RoutingArch, PackerRRGraph, Segments, Timing,
-            ShowGraphics, GraphPause, PowerOpts, clock_modeling_method);
+            ShowGraphics, GraphPause, PowerOpts);
 }
 
 void vpr_check_arch(const t_arch& Arch) {

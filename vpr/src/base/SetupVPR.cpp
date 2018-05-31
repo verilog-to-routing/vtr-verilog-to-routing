@@ -63,8 +63,7 @@ void SetupVPR(t_options *Options,
               vector <t_lb_type_rr_node> **PackerRRGraphs,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
-              t_power_opts * PowerOpts,
-              e_clock_modeling_method * clock_modeling_method) {
+              t_power_opts * PowerOpts) {
 	int i;
     using argparse::Provenance;
 
@@ -199,7 +198,7 @@ void SetupVPR(t_options *Options,
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 
-    if (*clock_modeling_method == ROUTED_CLOCK) {
+    if (Options->clock_modeling_method == ROUTED_CLOCK) {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
 
