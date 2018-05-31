@@ -56,10 +56,6 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
                                 const AtomNetlist& netlist);
 
 static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin, const AtomNetlist& netlist);
-static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
-                                   const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist);
-static AtomBlockId find_parent_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
-static bool matches_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist);
 static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pattern_node& pattern_node, const AtomNetlist& netlist);
 static bool is_wildcard_node(const t_netlist_pack_pattern_node& pattern_node);
 static bool is_wildcard_pin(const t_netlist_pack_pattern_pin& pattern_pin);
@@ -724,91 +720,12 @@ static bool match_largest_recur(NetlistPatternMatch& match, const AtomBlockId bl
 
 static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
                                    const AtomNetlist& netlist) {
-    return find_matching_pin(pin_range, pattern_pin, {}, netlist);
-}
-
-static AtomPinId find_matching_pin(const AtomNetlist::pin_range pin_range, const t_netlist_pack_pattern_pin& pattern_pin,
-                                   const std::set<AtomBlockId>& excluded_blocks, const AtomNetlist& netlist) {
-
     for (AtomPinId pin : pin_range) {
         if (matches_pattern_pin(pin, pattern_pin, netlist)) {
-
-            if (excluded_blocks.count(netlist.pin_block(pin))) {
-                continue;
-            } else {
-                return pin;
-            }
+            return pin;
         }
     }
-
     return AtomPinId::INVALID(); //No match
-}
-
-//Returns a parent block of blk, if it is also a valid root for pattern
-static AtomBlockId find_parent_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
-    int pattern_node_id = pattern.root_node;
-
-    VTR_ASSERT_SAFE(matches_pattern_root(blk, pattern, netlist));
-
-    //Find an upstream block which is also a valid root
-    for (auto pins : {netlist.block_input_pins(blk), netlist.block_clock_pins(blk)}) { //Current blocks inputs
-        for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) { //Root out edges
-            for (const auto& pattern_pin : pattern.edges[pattern_edge_id].to_pins) { //Edge pins
-
-                //Do the inputs of the current block match the output edges of the root pattern?
-                AtomPinId to_pin = find_matching_pin(pins, pattern_pin, netlist);
-                if (!to_pin) continue;
-
-                AtomNetId in_net = netlist.pin_net(to_pin);
-                AtomBlockId from_blk = netlist.net_driver_block(in_net);
-
-                if (!matches_pattern_root(from_blk, pattern, netlist)) continue;
-
-                return from_blk;
-            }
-        }
-    }
-
-    return AtomBlockId::INVALID();
-}
-
-//Returns true if matches the pattern root node (and it's out-going edges)
-static bool matches_pattern_root(const AtomBlockId blk, const t_netlist_pack_pattern& pattern, const AtomNetlist& netlist) {
-    int pattern_node_id = pattern.root_node;
-
-    if (!matches_pattern_node(blk, pattern.nodes[pattern_node_id], netlist)) {
-        return false; 
-    }
-
-    for (int pattern_edge_id : pattern.nodes[pattern_node_id].out_edge_ids) {
-        const auto& pattern_edge = pattern.edges[pattern_edge_id];
-
-        AtomPinId from_pin = find_matching_pin(netlist.block_output_pins(blk), pattern_edge.from_pin, netlist);
-        if (!from_pin) {
-            //No matching driver pin
-            return false;
-        }
-
-        AtomNetId net = netlist.pin_net(from_pin);
-        auto net_sinks = netlist.net_sinks(net);
-
-        for (size_t isink = 0; isink < pattern_edge.to_pins.size(); ++isink) {
-            const auto& to_pattern_pin = pattern_edge.to_pins[isink];
-
-            AtomPinId to_pin = find_matching_pin(net_sinks, to_pattern_pin, netlist);
-            if (!to_pin) {
-
-                if (to_pattern_pin.required) {
-                    //Required: give-up
-                    return false;
-                } else {
-                    //Optional: try next pattern pin
-                    continue;
-                }
-            }
-        }
-    }
-    return true;
 }
 
 static bool matches_pattern_node(const AtomBlockId blk, const t_netlist_pack_pattern_node& pattern_node, const AtomNetlist& netlist) {
