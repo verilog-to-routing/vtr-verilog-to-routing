@@ -296,7 +296,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("FPGA Architecture description file (XML)");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
-            .help("Circuit file (or circuit name if --blif_file specified)");
+            .help("Circuit file (or circuit name if --circuit_file specified)");
 
 
     auto& stage_grp = parser.add_argument_group("stage options");
