@@ -616,8 +616,6 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 	oassert(node->num_input_pins > 0);
 
-	nnode_t *carry_node_in = netlist->gnd_node;
-
 	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
 
 	if(node->num_input_port_sizes == 2)
@@ -628,7 +626,7 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	width[input_a] = node->input_port_sizes[0];
 	width[input_b] = node->input_port_sizes[1];
 
-	instantiate_add_w_carry_block(width, node, carry_node_in, 0, mark, netlist, 1, 0);
+	instantiate_add_w_carry_block(width, node, mark, netlist, 0);
 
 	vtr::free(width);
 }
@@ -645,8 +643,6 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 
 	oassert(node->num_input_pins > 0);
 
-	nnode_t *carry_node_in = netlist->vcc_node;
-
 	int *width = (int*)vtr::malloc(pinout_count * sizeof(int));
 	width[out] = node->output_port_sizes[0];
 
@@ -661,7 +657,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		width[input_b] = node->input_port_sizes[1];
 	}
 
-	instantiate_add_w_carry_block(width, node, carry_node_in, 0, mark, netlist, 1, 1);
+	instantiate_add_w_carry_block(width, node, mark, netlist, 1);
 
 	vtr::free(width);
 }

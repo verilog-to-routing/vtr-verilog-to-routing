@@ -544,22 +544,15 @@ char *make_string_based_on_id(nnode_t *node)
 std::string make_simple_name(char *input, const char *flatten_string, char flatten_char)
 {
 	oassert(input);
+	oassert(flatten_string);
 
 	std::string input_str = input;
 	std::string flatten_str = flatten_string;
 
-	std::string return_str;
+	for (int i = 0; i < flatten_str.length(); i++)
+		std::replace( input_str.begin(), input_str.end(), flatten_str[i], flatten_char);
 
-	for (int i = 0; i < input_str.length(); i++)
-	{
-		std::size_t candidate = flatten_str.find(input_str[i]);
-		if (candidate != std::string::npos)
-			return_str += flatten_char;
-		else
-			return_str += input[i];
-	}
-
-	return return_str;
+	return input_str;
 }
 
 /*-----------------------------------------------------------------------

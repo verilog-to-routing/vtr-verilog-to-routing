@@ -28,6 +28,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 #include <vector>
 #include <string>
+#include <iostream>
+#include <fstream>
+
+#include "vtr_memory.h"
+
 
 /*
 file.txt =
@@ -55,39 +60,53 @@ std::map<std::string,soft_sub_structure*> soft_def_map;
 
 void read_soft_def_file(const char *input_file_name)
 {
-	soft_def_map["+_0"] = NULL;
-	soft_def_map["/_0"] = NULL;
-	soft_def_map["%_0"] = NULL;
-	soft_def_map["<<_0"] = NULL;
-
 	FILE *input_file = fopen(input_file_name,"r");
+  if(input_file)
+  {
+		soft_def_map[std::string("+_0")] = NULL;
+		soft_def_map[std::string("/_0")] = NULL;
+		soft_def_map[std::string("%_0")] = NULL;
+		soft_def_map[std::string("<<_0")] = NULL;
 
-	char line_buf[128];
-	while (fgets(line_buf, 128, input_file) != NULL)
-	{
-		std::string operation_name						=	strtok(line_buf,",");
-		int operation_bitsize									=	std::stoi(strtok(NULL,","),nullptr);
-		std::string soft_hard									= strtok(NULL,",");
-		std::string sub_structure_name				=	strtok(NULL,",");
-		int sub_structure_bitsize							=	std::stoi(strtok(NULL,","),nullptr);
+		char line_buf[640];
+		while (fgets(line_buf, 640, input_file) != NULL)
+		{
+			char *point_to = line_buf;
+			char *tokens[5];
+			int i=0;
+			while(i < 5 && (tokens[i++] = strtok(point_to,",")) != NULL)
+				point_to = NULL;
 
-		std::string lookup = operation_name + "_0";
+			if(i != 5)
+				continue;
 
-		auto candidate = soft_def_map.find(lookup);
-		if(candidate == soft_def_map.end() \
-		|| operation_bitsize < 1 \
-	 	|| operation_bitsize > sub_structure_bitsize \
-		|| !(soft_hard == "hard" || soft_hard == "soft")
-		)
-			continue;
+			std::string operation_name(tokens[0]);
+			int operation_bitsize				=	strtol(tokens[1],NULL,10);
+			std::string soft_hard(tokens[2]);
+			std::string sub_structure_name(tokens[3]);
+			int sub_structure_bitsize		=	strtol(tokens[4],NULL,10);
 
-		std::string key_map = operation_name + "_" + std::to_string(operation_bitsize);
-		soft_def_map[key_map] = (soft_sub_structure*)malloc(sizeof(soft_sub_structure));
-			soft_def_map["+_0"]->type = soft_hard;
-			soft_def_map["+_0"]->name = sub_structure_name;
-			soft_def_map["+_0"]->bitsize = sub_structure_bitsize;
-	}
-	fclose(input_file);
+			std::string lookup = operation_name + "_0";
+
+			auto candidate = soft_def_map.find(lookup);
+			if(candidate == soft_def_map.end() \
+			|| operation_bitsize < 1 \
+		 	|| operation_bitsize < sub_structure_bitsize \
+			|| (soft_hard != "hard" && soft_hard != "soft")
+			){
+				continue;
+			}
+
+			std::string key_map = operation_name + "_" + tokens[1];
+			soft_sub_structure* def = (soft_sub_structure*)vtr::malloc(sizeof(soft_sub_structure));
+			def->type = strdup(tokens[2]);
+			def->name = strdup(tokens[3]);
+			def->bitsize = sub_structure_bitsize;
+
+			soft_def_map[key_map] = def;
+		}
+		fclose(input_file);
+  }
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -95,7 +114,8 @@ void read_soft_def_file(const char *input_file_name)
  *-------------------------------------------------------------------------------------------*/
 soft_sub_structure *fetch_blk(std::string op, int width)
 {
-	std::string lookup = op+"_"+std::to_string(width);
+	std::string lookup = op + "_" + std::to_string(width);
+
 	auto candidate = soft_def_map.find(lookup);
 	if(candidate == soft_def_map.end())
 		return NULL;

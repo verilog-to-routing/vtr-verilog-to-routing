@@ -40,15 +40,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "types.h"
 
-typedef struct soft_sub_structure_t soft_sub_structure;
-struct soft_sub_structure_t
+typedef struct soft_sub_structure_t
 {
-  std::string type;
-	std::string name;
+  char *type;
+	char *name;
 	int bitsize;
-};
-
-extern std::map<std::string,soft_sub_structure*> soft_def_map;
+}soft_sub_structure;
 
 void read_soft_def_file(const char *input_file_name);
 soft_sub_structure *fetch_blk(std::string, int width);
