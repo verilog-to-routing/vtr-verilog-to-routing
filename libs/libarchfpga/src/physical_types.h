@@ -30,7 +30,9 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <limits>
+#include <numeric>
 
 #include "vtr_ndmatrix.h"
 
@@ -59,6 +61,39 @@ struct t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
+
+/* FIXME: Use a smarter data structure. */
+class t_metadata_as {
+    std::string value_;
+
+public:
+    t_metadata_as(std::string v) : value_(v) {}
+    t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
+    int as_int() const;
+    double as_double() const;
+    std::string as_string() const { return value_; }
+    std::pair<int, int> as_int_pair() const;
+    std::vector<int> as_int_vector() const;
+};
+
+struct t_metadata_dict : std::unordered_map<std::string, std::vector<t_metadata_as> > {
+
+    inline bool has(std::string key) {
+        return (this->count(key) >= 1);
+    }
+
+    inline std::vector<t_metadata_as>* get(std::string key) {
+        if (this->count(key) < 1) {
+            return nullptr;
+        }
+        return &((*this)[key]);
+    }
+
+    void add(std::string key, std::string value) {
+        this->emplace(key, std::vector<t_metadata_as>());
+        (*this)[key].push_back(t_metadata_as(value));
+    }
+};
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -549,6 +584,8 @@ typedef const t_type_descriptor* t_type_ptr;
  *      int num_output_pins: A count of the total number of output pins
  *      timing: Timing matrix of block [0..num_inputs-1][0..num_outputs-1]
  *      parent_mode: mode of the parent block
+ *      t_mode_power: ???
+ *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_pb_type {
 	char* name = nullptr;
@@ -575,6 +612,8 @@ struct t_pb_type {
 
 	/* Power related members */
 	t_pb_type_power * pb_type_power = nullptr;
+
+	t_metadata_dict *meta = nullptr;
 };
 
 /** Describes an operational mode of a clustered logic block
@@ -589,6 +628,8 @@ struct t_pb_type {
  *      num_interconnect: Total number of interconnect tags specified by user
  *      parent_pb_type: Which parent contains this mode
  *      index: Index of mode in array with other modes
+ *      t_mode_power: ???
+ *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_mode {
 	char* name;
@@ -601,6 +642,8 @@ struct t_mode {
 
 	/* Power related members */
 	t_mode_power * mode_power;
+
+	t_metadata_dict *meta = nullptr;
 };
 
 /** Describes an interconnect edge inside a cluster
@@ -1004,7 +1047,8 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?                                          */
+ *                       the track?                                          *
+ * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
 	char *name;
 	int frequency;
@@ -1022,6 +1066,7 @@ struct t_segment_inf {
 	bool *sb;
 	int sb_len;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
+	t_metadata_dict *meta = nullptr;
 };
 
 enum class SwitchType {
