@@ -1188,10 +1188,10 @@ static void timing_driven_expand_neighbours(t_heap *current,
                 || to_ylow > target_ylow + highfanout_rlim) {
                 continue; /* Node is outside high fanout bin. */
             }
-        } else if (to_xhigh < bounding_box.xmin
-                   || to_xlow > bounding_box.xmax
-                   || to_yhigh < bounding_box.ymin
-                   || to_ylow > bounding_box.ymax) {
+        } else if (to_xhigh < bounding_box.xmin //Strictly left of BB left-edge
+                   || to_xlow > bounding_box.xmax //Strictly right of BB right-edge
+                   || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
+                   || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
             continue; /* Node is outside (expanded) bounding box. */
         }
 

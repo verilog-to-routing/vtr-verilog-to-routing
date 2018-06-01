@@ -127,6 +127,7 @@ struct t_draw_state {
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
 	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
 	e_draw_routing_costs show_routing_costs;
+    int show_routing_bb = OPEN;
 	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
 	int max_sub_blk_lvl = 0;
 	int show_blk_internal = 0;

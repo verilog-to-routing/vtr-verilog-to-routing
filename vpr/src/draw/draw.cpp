@@ -264,6 +264,7 @@ static void toggle_nets(void (*drawscreen)());
 static void toggle_rr(void (*drawscreen)());
 static void toggle_congestion(void (*drawscreen)());
 static void toggle_routing_congestion_cost(void (*drawscreen)());
+static void toggle_routing_bounding_box(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
 
 static void drawscreen();
@@ -273,12 +274,14 @@ static void drawnets();
 static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion();
 static void draw_routing_costs();
+static void draw_routing_bb();
 static void draw_crit_path();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
 static void act_on_mouse_over(float x, float y);
 static void deselect_all();
 
+static void draw_routed_net(ClusterNetId net);
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
 static void draw_rr();
 static void draw_rr_edges(int from_node);
@@ -373,10 +376,12 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
+			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
 		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
 			destroy_button("Cong. Cost");
+			destroy_button("Route BB");
             if(setup_timing_info) {
                 destroy_button("Crit. Path");
             }
@@ -387,6 +392,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
+			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
             if(setup_timing_info) {
                 create_button("Cong. Cost", "Crit. Path", toggle_crit_path);
             }
@@ -521,6 +527,10 @@ static void redraw_screen() {
         if (draw_state->show_routing_costs != DRAW_NO_ROUTING_COSTS) {
             draw_routing_costs();
         }
+
+        if (draw_state->show_routing_bb != OPEN) {
+            draw_routing_bb();
+        }
 	}
 
 	draw_logical_connections();
@@ -602,6 +612,27 @@ static void toggle_routing_congestion_cost(void (*drawscreen_ptr)()) {
 	draw_state->show_routing_costs = new_state;
 
 	if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
+		update_message(draw_state->default_message);
+    }
+    drawscreen_ptr();
+}
+
+static void toggle_routing_bounding_box(void (*drawscreen_ptr)()) {
+	t_draw_state* draw_state = get_draw_state_vars();
+
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    if (route_ctx.route_bb.size() == 0) {
+        return; //Nothing to draw
+    } else if ((size_t) draw_state->show_routing_bb == route_ctx.route_bb.size()) {
+        draw_state->show_routing_bb = OPEN; //Done going through all BB
+    } else if (draw_state->show_routing_bb == OPEN) {
+        draw_state->show_routing_bb = 0; //Start at first BB
+    } else {
+        ++draw_state->show_routing_bb; //Next net BB
+    }
+
+	if (draw_state->show_routing_bb == OPEN) {
 		update_message(draw_state->default_message);
     }
     drawscreen_ptr();
@@ -1104,6 +1135,59 @@ static void draw_routing_costs() {
         }
 	}
     draw_color_map_legend(cmap);
+}
+
+static void draw_routing_bb() {
+
+	t_draw_state* draw_state = get_draw_state_vars();
+
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    VTR_ASSERT(draw_state->show_routing_bb != OPEN);
+    VTR_ASSERT(draw_state->show_routing_bb < (int) route_ctx.route_bb.size());
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    auto net_id = ClusterNetId(draw_state->show_routing_bb);
+    const t_bb* bb = &route_ctx.route_bb[net_id];
+
+    //The router considers an RR node to be 'within' the the bounding box if it
+    //is *loosely* greater (i.e. greater than or equal) the left/bottom edges, and
+    //it is *loosely* less (i.e. less than or equal) the right/top edges.
+    //
+    //In the graphics we represent this by drawing the BB so that legal RR node start/end points
+    //are contained within the drawn box. Since VPR associates each x/y channel location to
+    //the right/top of the tile with the same x/y cordinates, this means we draw the box so that:
+    //  * The left edge is to the left of the channel at bb xmin (including the channel at xmin)
+    //  * The bottom edge is to the below of the channel at bb ymin (including the channel at ymin)
+    //  * The right edge is to the right of the channel at bb xmax (including the channel at xmax)
+    //  * The top edge is to the right of the channel at bb ymax (including the channel at ymax)
+    //Since tile_x/tile_y correspond to the drawing coordinates the block at grid x/y's bottom-left corner
+    //this means we need to shift the top/right drawn co-ordinate one tile + channel width right/up so
+    //the drawn box contains the top/right channels
+    int draw_xlow = draw_coords->tile_x[bb->xmin];
+    int draw_ylow = draw_coords->tile_y[bb->ymin];
+    int draw_xhigh = draw_coords->tile_x[bb->xmax] + 2*draw_coords->get_tile_width();
+    int draw_yhigh = draw_coords->tile_y[bb->ymax] + 2*draw_coords->get_tile_height();
+
+    setcolor(RED);
+    drawrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
+
+    t_color fill = SKYBLUE;
+    fill.alpha *= 0.3;
+    setcolor(fill);
+    fillrect(draw_xlow, draw_ylow, draw_xhigh, draw_yhigh);
+    
+    draw_routed_net(net_id);
+
+
+    std::string msg;;
+    msg += "Showing BB";
+    msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin) + ", " + std::to_string(bb->xmax) + ", " + std::to_string(bb->ymax) + ")";
+    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(net_id) + "'";
+    msg += " (#" + std::to_string(size_t(net_id)) + ")";
+    update_message(msg.c_str());
 }
 
 void draw_rr() {
@@ -1949,67 +2033,73 @@ void draw_get_rr_pin_coords(t_rr_node* node, float *xcen, float *ycen) {
 * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
 * that are not coloured black (useful for drawing over the rr_graph).       */
 static void drawroute(enum e_draw_net_type draw_net_type) {
-	t_draw_state* draw_state = get_draw_state_vars();
-
 	/* Next free track in each channel segment if routing is GLOBAL */
 
-	int inode;
-	t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	setlinestyle(SOLID);
 
 	/* Now draw each net, one by one.      */
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Don't draw global nets. */
-			continue;
+        if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == BLACK)
+            continue;
 
-		if (route_ctx.trace_head[net_id] == nullptr) /* No routing.  Skip.  (Allows me to draw */
-			continue; /* partially complete routes).            */
+        draw_routed_net(net_id);
+	} /* End for (each net) */
+}
 
-		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == BLACK)
-			continue;
+static void draw_routed_net(ClusterNetId net_id) {
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-		tptr = route_ctx.trace_head[net_id]; /* SOURCE to start */
-		inode = tptr->index;
+	t_draw_state* draw_state = get_draw_state_vars();
 
-        std::vector<int> rr_nodes_to_draw;
+    if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Don't draw global nets. */
+        return;
+
+    if (route_ctx.trace_head[net_id] == nullptr) /* No routing.  Skip.  (Allows me to draw */
+        return; /* partially complete routes).            */
+
+    t_trace* tptr = route_ctx.trace_head[net_id]; /* SOURCE to start */
+    int inode = tptr->index;
+
+    std::vector<int> rr_nodes_to_draw;
+    rr_nodes_to_draw.push_back(inode);
+    for (;;) {
+        tptr = tptr->next;
+        inode = tptr->index;
+
+        if (draw_if_net_highlighted(net_id)) {
+            /* If a net has been highlighted, highlight the whole net in *
+             * the same color.											 */
+            draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
+            draw_state->draw_rr_node[inode].node_highlighted = true;
+        } else {
+            /* If not highlighted, draw the node in default color. */
+            draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+        }
+
         rr_nodes_to_draw.push_back(inode);
-		for (;;) {
-			tptr = tptr->next;
-			inode = tptr->index;
 
-			if (draw_if_net_highlighted(net_id)) {
-				/* If a net has been highlighted, highlight the whole net in *
-				 * the same color.											 */
-				draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
-				draw_state->draw_rr_node[inode].node_highlighted = true;
-			} else {
-				/* If not highlighted, draw the node in default color. */
-				draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-			}
+        if (tptr->iswitch == OPEN) { //End of branch
+            draw_partial_route(rr_nodes_to_draw);
+            rr_nodes_to_draw.clear();
 
+            /* Skip the next segment */
+            tptr = tptr->next;
+            if (tptr == nullptr)
+                break;
+            inode = tptr->index;
             rr_nodes_to_draw.push_back(inode);
 
-			if (tptr->iswitch == OPEN) { //End of branch
-                draw_partial_route(rr_nodes_to_draw);
-                rr_nodes_to_draw.clear();
+        }
 
-                /* Skip the next segment */
-				tptr = tptr->next;
-				if (tptr == nullptr)
-					break;
-				inode = tptr->index;
-                rr_nodes_to_draw.push_back(inode);
+    } /* End loop over traceback. */
 
-			}
-
-		} /* End loop over traceback. */
-
-        draw_partial_route(rr_nodes_to_draw);
-	} /* End for (each net) */
+    draw_partial_route(rr_nodes_to_draw);
 }
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
