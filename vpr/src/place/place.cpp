@@ -1340,11 +1340,6 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 	num_ts_called ++;
 
-    if((int) cluster_ctx.clb_nlist.blocks().size() == 0) {
-        //Empty netlist, no valid swap possible
-        return ABORTED;
-    }
-
 	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
 	 * use cost functions that can go negative.                          */
 
@@ -1353,17 +1348,22 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	float timing_delta_c = 0;
 	float delay_delta_c = 0.0;
 
-	/* Pick a random block to be swapped with another random block    */
-	auto b_from = ClusterBlockId(vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1));
+	/* Pick a random block to be swapped with another random block. */
+	ClusterBlockId b_from = ClusterBlockId(0);
+	std::unordered_set<ClusterBlockId> skipped;
+	while (true) {
+		if (skipped.size() == cluster_ctx.clb_nlist.blocks().size()) {
+			return ABORTED;
+		}
 
-	/* If the pins are fixed we never move them from their initial    *
-	 * random locations.  The code below could be made more efficient *
-	 * by using the fact that pins appear first in the block list,    *
-	 * but this shouldn't cause any significant slowdown and won't be *
-	 * broken if I ever change the parser so that the pins aren't     *
-	 * necessarily at the start of the block list.                    */
-	while (place_ctx.block_locs[b_from].is_fixed == true) {
-		b_from = (ClusterBlockId)vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1);
+		b_from = ClusterBlockId(vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1));
+
+		// If the pins are fixed we never move them from their initial
+		// locations.
+		if (place_ctx.block_locs[b_from].is_fixed != true) {
+			break;
+		}
+		skipped.insert(b_from);
 	}
 
 	int x_from = place_ctx.block_locs[b_from].x;
