@@ -38,6 +38,8 @@ sub calc_geomean;
 sub check_golden;
 sub expand_user_path;
 sub get_important_file;
+sub parse_single_flow_run;
+sub aggregate_single_flow_runs;
 
 # Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
@@ -140,11 +142,12 @@ sub parse_single_task {
 	my @config_data = <CONFIG>;
 	close(CONFIG);
 
-	my @circuits;
+	my @archs_list;
+	my @circuits_list;
+	my @script_params_list;
 	my $parse_file;
 	my $qor_parse_file;
         my $second_parse_file;
-	my @archs;
         my $counter = 0;
 	foreach my $line (@config_data) {
 
@@ -159,12 +162,12 @@ sub parse_single_task {
 		my $value = trim( $data[1] );
 
 		if ( $key eq "circuit_list_add" ) {
-			push( @circuits, $value );
-		}
-		elsif ( $key eq "arch_list_add" ) {
-			push( @archs, $value );
-		}
-		elsif ( $key eq "parse_file" ) {
+			push( @circuits_list, $value );
+		} elsif ( $key eq "arch_list_add" ) {
+			push( @archs_list, $value );
+		} elsif ( $key eq "script_params_list_add" ) {
+			push( @script_params_list, $value );
+		} elsif ( $key eq "parse_file" ) {
                         if ($counter eq 1){
                                     #second time parse file
                                     $second_parse_file = expand_user_path($value);
@@ -176,11 +179,16 @@ sub parse_single_task {
                             $parse_file = expand_user_path($value);
                             $counter = $counter + 1;
                         }
-		}
-		elsif ( $key eq "qor_parse_file" ) {
+		} elsif ( $key eq "qor_parse_file" ) {
 			$qor_parse_file = expand_user_path($value);
 		}
 	}
+
+    if (!@script_params_list) {
+        #Add a default empty param if none otherwise specified
+        #(i.e. only base params)
+        push(@script_params_list, "");
+    }
 
 	# PARSE CONFIG FILE
 	if ( $parse_file eq "" ) {
@@ -217,118 +225,111 @@ sub parse_single_task {
 	
 	my $run_path = "$task_path/${run_prefix}${exp_id}";
 
-	my $first = 1;
-	open( OUTPUT_FILE, ">$run_path/parse_results.txt" );
-	foreach my $arch (@archs) {
-		foreach my $circuit (@circuits) {
-            my $cmd = "$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $parse_file > $run_path/$arch/$circuit/parse_results.txt";
+    my @first_run_result_files;
+    my @second_run_result_files;
+    my @qor_run_result_files;
 
-            my $ret = system($cmd);
-            if ($ret != 0) {
-                print "System command '$cmd' failed\n";
-                exit $FAILED_PARSE_EXIT_CODE;
-            }
-
-			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results.txt" );
-            # first line is heading
-			my $output = <RESULTS_FILE>;
-			if ($first) {
-				print OUTPUT_FILE "arch\tcircuit\t$output";
-				$first = 0;
-			}
-            # second line is actual value
-			my $output = <RESULTS_FILE>;
-			close(RESULTS_FILE);
-			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-		}
-	}
-	close(OUTPUT_FILE);
-
-    #parse the second file the same way as the first if checking rr graph
-    if($second_parse_file){
-        my $run_path = "$task_path/${run_prefix}${exp_id}";
-
-	my $first = 1;
-	open( OUTPUT_FILE, ">$run_path/parse_results_2.txt" );
-	foreach my $arch (@archs) {
-		foreach my $circuit (@circuits) {
-		    my $cmd = "$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $second_parse_file > $run_path/$arch/$circuit/parse_results_2.txt";
-
-            my $ret = system($cmd);
-            if ($ret != 0) {
-                print "System command '$cmd' failed\n";
-                exit $FAILED_PARSE_EXIT_CODE;
-            }
-
-			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results_2.txt" );
-            # first line is heading
-			my $output = <RESULTS_FILE>;
-			if ($first) {
-				print OUTPUT_FILE "arch\tcircuit\t$output";
-				$first = 0;
-			}
-            # second line is actual value
-			my $output = <RESULTS_FILE>;
-			close(RESULTS_FILE);
-			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-		}
-	}
-	close(OUTPUT_FILE);
-    }
-
-    if ($pretty_print_results) {
-        pretty_print_table("$run_path/parse_results.txt");
-        if ($second_parse_file) {
-            pretty_print_table("$run_path/parse_results_2.txt");
-        }
-    }
-
-	if ($parse_qor) {
-		my $first = 1;
-		open( OUTPUT_FILE, ">$run_path/qor_results.txt" );
-		foreach my $arch (@archs) {
-			foreach my $circuit (@circuits) {
-				my $cmd = "$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $qor_parse_file > $run_path/$arch/$circuit/qor_results.txt";
-
-                my $ret = system($cmd);
-                if ($ret != 0) {
-                    print "System command '$cmd' failed\n";
-                    exit $FAILED_PARSE_EXIT_CODE;
+	foreach my $arch (@archs_list) {
+		foreach my $circuit (@circuits_list) {
+            foreach my $script_params (@script_params_list) {
+                my $script_params_dirname = "common";
+                if ($script_params ne "") {
+                    $script_params_dirname .= "_" . $script_params;
+                    $script_params_dirname =~ s/ /_/g;
                 }
 
-				open( RESULTS_FILE, "$run_path/$arch/$circuit/qor_results.txt" );
-				my $output = <RESULTS_FILE>;
-				if ($first) {
-					print OUTPUT_FILE "arch\tcircuit\t$output";
-					$first = 0;
-				}
-				my $output = <RESULTS_FILE>;
-				close(RESULTS_FILE);
-				print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-			}
+                #First run parse
+                my $work_dir = "$run_path/$arch/$circuit/$script_params_dirname";
+                my $output_filepath = "$work_dir/parse_results.txt";
+                my $config_prefix = "arch\tcircuit\tscript_params";
+                my $config_values = "arch=$arch" . " circuit=$circuit" . " script_params=$script_params_dirname";
+                parse_single_flow_run($work_dir, $config_values, $parse_file, $output_filepath);
+                push(@first_run_result_files, $output_filepath);
+
+                if($second_parse_file){
+                    my $output_filepath = "$work_dir/parse_results_2.txt";
+                    parse_single_flow_run($work_dir, $config_values, $second_parse_file, $output_filepath);
+                    push(@second_run_result_files, $output_filepath);
+                }
+
+                if ($parse_qor) {
+                    my $output_filepath = "$work_dir/qor_results.txt";
+                    parse_single_flow_run($work_dir, $config_values, $qor_parse_file, $output_filepath);
+                    push(@qor_run_result_files, $output_filepath);
+                }
+            }
 		}
-		close(OUTPUT_FILE);
 	}
+
+    if (@first_run_result_files) {
+        aggregate_single_flow_runs(\@first_run_result_files, "$run_path/parse_results.txt");
+    }
+    if (@second_run_result_files) {
+        aggregate_single_flow_runs(\@second_run_result_files, "$run_path/parse_results_2.txt");
+    }
+    if (@qor_run_result_files) {
+        aggregate_single_flow_runs(\@qor_run_result_files, "$run_path/qor_results.txt");
+    }
 
 	if ($create_golden) {
-		copy( "$run_path/parse_results.txt",
-			"$run_path/../config/golden_results.txt" );
+		copy( "$run_path/parse_results.txt", "$run_path/../config/golden_results.txt" );
 	}
 
-        if ($second_parse_file){
-            #don't check with golden results, just check the two files
-            return check_two_files ( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$run_path/parse_results_2.txt", 0);
-            
-        }
+    if ($second_parse_file){
+        #don't check with golden results, just check the two files
+        return check_two_files ( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$run_path/parse_results_2.txt", 0);
+        
+    }
 
 	if ($check_golden) {
         #Returns 1 if failed
-            if ($second_parse_file eq ""){
-                return check_two_files( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$task_path/config/golden_results.txt", $check_golden);
-            }
+        if ($second_parse_file eq ""){
+            return check_two_files( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$task_path/config/golden_results.txt", $check_golden);
+        }
 	}
 
     return 0; #Pass
+}
+
+sub parse_single_flow_run {
+    my ($run_dir, $config_values, $parse_file, $output_file_path) = @_;
+
+    my $cmd = join(" ", "$vtr_flow_path/scripts/parse_vtr_flow.pl", $run_dir, $parse_file, $config_values, "> $output_file_path");
+
+    my $ret = system($cmd);
+    if ($ret != 0) {
+        print "System command '$cmd' failed\n";
+        exit $FAILED_PARSE_EXIT_CODE;
+    }
+    pretty_print_table($output_file_path);
+}
+
+sub aggregate_single_flow_runs {
+    my ($parse_result_files, $output_file_path) = @_;
+
+    my $first = 0;
+
+	open(OUTPUT_FILE, ">$output_file_path" );
+
+    my $size = @$parse_result_files;
+    for (my $i=0; $i < $size; $i++) {
+        my $result_file = @$parse_result_files[$i];
+
+        open(RESULT_FILE, $result_file);
+        my @lines = <RESULT_FILE>;
+        close(RESULT_FILE);
+
+        if ($i == 0) {
+            #First file add header
+            print OUTPUT_FILE $lines[0];
+        } 
+
+        #Data
+        print OUTPUT_FILE $lines[1];
+
+    }
+    close(OUTPUT_FILE);
+    pretty_print_table($output_file_path);
 }
 
 sub summarize_qor {

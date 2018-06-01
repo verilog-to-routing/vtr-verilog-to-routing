@@ -3,12 +3,13 @@
 # This script is used to extract statistics from a single execution of the VTR flow
 #
 # Usage:
-#	parse_vtr_flow.pl <parse_path> <parse_config_file>
+#	parse_vtr_flow.pl <parse_path> <parse_config_file> [<extra_param> ...]
 #
 # Parameters:
 #	parse_path: Directory path that contains the files that will be 
 #					parsed (vpr.out, odin.out, etc).
 #	parse_config_file: Path to the Parse Configuration File
+#	extra_param: Extra key=value pairs to be added to the output
 ###################################################################################
 
 
@@ -19,11 +20,12 @@ use File::Spec;
 sub expand_user_path;
 
 if ( $#ARGV + 1 < 2 ) {
-	print "usage: parse_vtr_flow.pl <path_to_output_files> <config_file>\n";
+	print "usage: parse_vtr_flow.pl <path_to_output_files> <config_file> [<extra_param> ...]\n";
 	exit(-1);
 }
-my $parse_path = expand_user_path(shift);
-my $parse_config_file = expand_user_path(shift);
+my $parse_path = expand_user_path(shift(@ARGV));
+my $parse_config_file = expand_user_path(shift(@ARGV));
+my @extra_params = @ARGV;
 
 if ( !-r $parse_config_file ) {
 	die "Cannot find parse file ($parse_config_file)\n";
@@ -46,11 +48,20 @@ foreach my $line (@parse_lines) {
 }
 
 # attributes to parse become headings
+for my $extra_param (@extra_params) {
+    my ($param_name, $param_value) = split('=', $extra_param);
+    print $param_name . "\t";
+}
+
 for my $parse_entry (@parse_data) {
     print @$parse_entry[0] . "\t";
 }
 print "\n";
 
+for my $extra_param (@extra_params) {
+    my ($param_name, $param_value) = split('=', $extra_param);
+    print $param_value . "\t";
+}
 my $count = 0;
 for my $parse_entry (@parse_data) {
 	my $file_to_parse = "@$parse_entry[1]";

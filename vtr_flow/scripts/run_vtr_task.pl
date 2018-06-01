@@ -172,9 +172,10 @@ sub run_single_task {
 	my $script_default = "run_vtr_flow.pl";
 	my $script         = $script_default;
 	my $script_path;
-	my $script_params = $shared_script_params;  # start with the shared ones then build unique ones
-	my @circuits;
-	my @archs;
+	my $script_params_common = $shared_script_params;  # start with the shared ones then build unique ones
+	my @circuits_list;
+	my @archs_list;
+	my @script_params_list;
 	my $cmos_tech_path = "";
 
 	my $task     = shift(@_);
@@ -205,29 +206,23 @@ sub run_single_task {
 		my $value = trim( $data[1] );
 		if ( $key eq "circuits_dir" ) {
 			$circuits_dir = $value;
-		}
-		elsif ( $key eq "archs_dir" ) {
+		} elsif ( $key eq "archs_dir" ) {
 			$archs_dir = $value;
-		}
-		elsif ( $key eq "sdc_dir" ) {
+		} elsif ( $key eq "sdc_dir" ) {
 			$sdc_dir = $value;
-		}
-		elsif ( $key eq "circuit_list_add" ) {
-			push( @circuits, $value );
-		}
-		elsif ( $key eq "arch_list_add" ) {
-			push( @archs, $value );
-		}
-		elsif ( $key eq "script_path" ) {
+		} elsif ( $key eq "circuit_list_add" ) {
+			push( @circuits_list, $value );
+		} elsif ( $key eq "arch_list_add" ) {
+			push( @archs_list, $value );
+		} elsif ( $key eq "script_params_list_add" ) {
+			push( @script_params_list, $value );
+		} elsif ( $key eq "script_path" ) {
 			$script = $value;
-		}
-		elsif ( $key eq "script_params" ) {
-			$script_params .= ' ' . $value;
-		}
-		elsif ( $key eq "cmos_tech_behavior" ) {
+		} elsif ( $key eq "script_params" || $key eq "script_params_common") {
+			$script_params_common .= ' ' . $value;
+		} elsif ( $key eq "cmos_tech_behavior" ) {
 			$cmos_tech_path = $value;
-		}
-		elsif ($key eq "parse_file"
+		} elsif ($key eq "parse_file"
 			or $key eq "qor_parse_file"
 			or $key eq "pass_requirements_file" )
 		{
@@ -244,10 +239,10 @@ sub run_single_task {
 
 		# This is hack to automatically add the option '-temp_dir .' if using the run_vtr_flow.pl script
 		# This ensures that a 'temp' folder is not created in each circuit directory
-		if ( !( $script_params =~ /-temp_dir/ ) ) {
+		if ( !( $script_params_common =~ /-temp_dir/ ) ) {
             #-temp_dir must come before the script_params, so that it gets picked up by run_vtr_flow
             # and not passed on as an argument to a tool (e.g. VPR)
- 			$script_params = " -temp_dir . " . $script_params;
+ 			$script_params_common = " -temp_dir . " . $script_params_common;
 		}
 	}
 	else {
@@ -285,8 +280,14 @@ sub run_single_task {
 		$sdc_dir = "$vtr_flow_path/sdc";
 	}
 
-	(@circuits) or die "No circuits specified for task $task";
-	(@archs)    or die "No architectures specified for task $task";
+	(@circuits_list) or die "No circuits specified for task $task";
+	(@archs_list)    or die "No architectures specified for task $task";
+
+    if (!@script_params_list) {
+        #Add a default empty param if none otherwise specified
+        #(i.e. only base params)
+        push(@script_params_list, "");
+    }
 
 	# Check script
 	$script = expand_user_path($script);
@@ -304,12 +305,12 @@ sub run_single_task {
 	}
 
     # Check architectures
-    foreach my $arch (@archs) {
+    foreach my $arch (@archs_list) {
         (-f "$archs_dir/$arch") or die "Architecture file not found ($archs_dir/$arch)";
     }
 
     # Check circuits
-    foreach my $circuit (@circuits) {
+    foreach my $circuit (@circuits_list) {
         (-f "$circuits_dir/$circuit") or die "Circuit file not found ($circuits_dir/$circuit)";
     }
 
@@ -328,7 +329,7 @@ sub run_single_task {
 			die
 			  "Cannot find CMOS technology behavior file for $task ($script). Looked for $task_dir/config/$cmos_tech_path or $vtr_flow_path/tech/$cmos_tech_path";
 		}
-		$script_params = $script_params . " -cmos_tech $cmos_tech_path";
+		$script_params_common .= " -cmos_tech $cmos_tech_path";
 	}
 
 	# Check if golden file exists
@@ -352,51 +353,49 @@ sub run_single_task {
 	chmod( 0775, $run_dir );
 	chdir($run_dir) or die "Failed to change to directory ($run_dir): $!";
 
-	# Create the directory structure
-	# Make this seperately from file script
-	# just in case failure occurs creating directory
-	foreach my $arch (@archs) {
-		make_path( "$arch", { mode => 0775 } ) or die "Failed to create directory ($arch): $!";
-		chmod( 0775, "$arch" );
-		foreach my $circuit (@circuits) {
-			mkdir( "$arch/$circuit", 0775 )
-			  or die "Failed to create directory $arch/$circuit: $!";
-			chmod( 0775, "$arch/$circuit" );
-		}
-	}
-
 	##############################################################
     # Build up the list of commands to run
 	##############################################################
     my @actions;
-    foreach my $circuit (@circuits) {
-        foreach my $arch (@archs) {
+    foreach my $circuit (@circuits_list) {
+        foreach my $arch (@archs_list) {
+            foreach my $params (@script_params_list) {
 
-            #Determine the directory where to run
-            my $dir = "$task_dir/$run_dir/${arch}/${circuit}";
+                my $full_params = $script_params_common;
+                my $full_params_dirname = "common";
+                if ($params ne "") {
+                    $full_params .= " " . $params;
+                    $full_params_dirname .= "_" . $params;
+                    $full_params_dirname =~ s/ /_/g; #Convert spaces to underscores for directory name
+                }
 
+                #Determine the directory where to run
+                my $dir = "$task_dir/$run_dir/${arch}/${circuit}/${full_params_dirname}";
 
-            #Build the command to run
-            my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params" ;
+                my $name = "${arch}/${circuit}/${full_params_dirname}";
 
-            #Determine the SDC file name
-            my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
-            my $sdc = "$sdc_dir/$sdc_name";
-            if( -r $sdc) {
-                $command .= " --sdc_file $sdc";
+                #Build the command to run
+                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch -name $name $full_params " ;
+
+                #Determine the SDC file name
+                my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
+                my $sdc = "$sdc_dir/$sdc_name";
+                if( -r $sdc) {
+                    $command .= " --sdc_file $sdc";
+                }
+
+                #Add a hint about the minimum channel width (potentially saves run-time)
+                my $expected_min_W = ret_expected_min_W($circuit, $arch, $golden_results_file);
+                if($expected_min_W > 0) {
+                    $command .= " --min_route_chan_width_hint $expected_min_W";
+                }
+
+                #Estimate runtime
+                my $runtime_estimate = ret_expected_runtime($circuit, $arch, $golden_results_file);
+
+                my @action = [$dir, $command, $runtime_estimate];
+                push(@actions, @action);
             }
-
-            #Add a hint about the minimum channel width (potentially saves run-time)
-            my $expected_min_W = ret_expected_min_W($circuit, $arch, $golden_results_file);
-            if($expected_min_W > 0) {
-                $command .= " --min_route_chan_width_hint $expected_min_W";
-            }
-
-            #Estimate runtime
-            my $runtime_estimate = ret_expected_runtime($circuit, $arch, $golden_results_file);
-
-            my @action = [$dir, $command, $runtime_estimate];
-            push(@actions, @action);
         }
     }
 
@@ -454,11 +453,11 @@ sub do_work {
 			last;
 		}
 
+		make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
 		my $return_status = system "cd $dir; $command > vtr_flow.out";
         my $exit_code = $return_status >> 8; #Shift to get real exit code
 
-		open( OUT_FILE, "$dir/vtr_flow.out" )
-		  or die "Cannot open $dir/vtr_flow.out: $!";
+		open( OUT_FILE, "$dir/vtr_flow.out" ) or die "Cannot open $dir/vtr_flow.out: $!";
 		my $sys_output = do { local $/; <OUT_FILE> };
 
 		#$sys_output =~ s/\n//g;

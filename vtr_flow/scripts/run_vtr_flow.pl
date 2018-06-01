@@ -129,6 +129,7 @@ my $check_place             = 0;
 my $use_old_abc             = 0;
 my $enable_gui		    = 0;
 my $routing_budgets_algorithm = "disable";
+my $run_name = "";
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -243,6 +244,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-use_old_abc"){
             $use_old_abc = 1;
+    }
+    elsif ( $token eq "-name"){
+            $run_name = shift(@ARGV);
     }
     # else forward the argument
 	else {
@@ -385,8 +389,10 @@ my $architecture_file_name = $architecture_name . $arch_suffix;
 my $error_architecture_file_name = join "", $architecture_name, "_error", $arch_suffix;
 
 
-my $arch_benchmark_id_str = "$architecture_name/$benchmark_name...";
-printf("%-54s", $arch_benchmark_id_str);
+if ($run_name eq "") {
+    $run_name = "$architecture_name/$benchmark_name";
+}
+printf("%-54s", $run_name);
 
 # Get Memory Size
 my $mem_size = -1;
