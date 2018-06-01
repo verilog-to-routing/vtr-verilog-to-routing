@@ -291,13 +291,40 @@ For people not working on CAD, you can probably leave all the options to their d
     Controls whether the pin counting feasibility filter is used during clustering.
     When enabled the clustering engine counts the number of available pins in groups/classes of mutually connected pins within a cluster.
     These counts are used to quickly filter out candidate primitives/atoms/molecules for which the cluster has insufficient pins to route (without performing a full routing).
-    This reduces run-time, but should have no impact on quality.
+    This reduces packing run-time.
 
     **Default:** ``on``
 
+.. option:: --target_ext_pin_util { <float> | <float>,<float> }
+
+    Sets the external pin utilization target for clusters. 
+    This determines how many pin the clustering engine will aim to use in a given cluster before closing it and opening a new cluster.
+    
+    Setting this to ``1.0`` guides the packer to pack as densely as possible (i.e. keep adding molecules to the cluster until 100% of cluster external pins are used).
+    Setting this to a lower value will guide the packer to pack less densely, and instead creating more clusters.
+    In the limit setting this to ``0.0`` will cause the packer to create a new cluster for each molecule.
+    
+    Typically packing less densely improves routability, at the cost of using more clusters.
+    
+    If one values are specified it is interpretted as specifying the overall pin utilization target (e.g. ``0.7`` would set the target input pin utilization to ``0.7`` and target output pin utilization to ``0.7``).
+    If two values are specified separated by a comma this is interpretted as specifying the input and output pin target utilizations respectively (e.g. ``0.7,0.9`` would set the target input pin utilization to ``0.7``, and the target output pin utilization to ``0.9``).
+
+    .. note:: 
+
+        This option is only a guideline. 
+        If a molecule  (e.g. a carry-chain with many inputs) would not otherwise fit into a cluster type at the specified target utilization the packer will fallback to using all pins (i.e. a target utilization of ``1.0``). 
+
+    .. note::
+    
+        This option requires :option:`--clustering_pin_feasibility_filter` to be enabled for non-unity pin utilization targets.
+
+    **Default:** ``1.0``
+
+
 .. option:: --debug_clustering {on | off}
 
-    Controls verbose clustering output (useful for debugging architecture packing problems).
+    Controls verbose clustering output. 
+    Useful for debugging architecture packing problems.
 
     **Default:** ``off``
 

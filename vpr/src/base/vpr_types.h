@@ -109,6 +109,13 @@ enum e_block_pack_status {
     BLK_STATUS_UNDEFINED
 };
 
+//Specifies the utilization of external input/output pins
+//during packing
+struct t_ext_pin_util {
+    float input_pin_util = 1.;
+    float output_pin_util = 1.;
+};
+
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
 struct t_pack_molecule;
@@ -229,12 +236,16 @@ struct t_pb {
     const t_pb* root_pb() const {
 
         const t_pb* curr_pb = this;
-        while(curr_pb->parent_pb != nullptr) {
+        while(!is_root()) {
             curr_pb = curr_pb->parent_pb;
         }
 
         VTR_ASSERT(curr_pb->parent_pb == nullptr);
         return curr_pb;
+    }
+
+    bool is_root() const {
+        return parent_pb == nullptr;
     }
 
     //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
@@ -700,6 +711,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	bool debug_clustering;
     bool enable_pin_feasibility_filter;
+    t_ext_pin_util target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

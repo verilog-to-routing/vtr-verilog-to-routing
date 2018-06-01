@@ -26,7 +26,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name,
         bool debug_clustering,
-        bool enable_pin_feasibility_filter
+        bool enable_pin_feasibility_filter,
+        t_ext_pin_util target_ext_pin_util
 #ifdef USE_HMETIS
 		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif
