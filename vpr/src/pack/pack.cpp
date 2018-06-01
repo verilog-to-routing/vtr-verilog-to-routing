@@ -180,7 +180,8 @@ void try_pack(t_packer_opts *packer_opts,
             lb_type_rr_graphs,
             packer_opts->device_layout,
             packer_opts->debug_clustering,
-            packer_opts->enable_pin_feasibility_filter
+            packer_opts->enable_pin_feasibility_filter,
+            packer_opts->target_external_pin_util
 #ifdef USE_HMETIS
 			, partitions
 #endif

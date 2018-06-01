@@ -254,6 +254,49 @@ struct ParseTimingReportDetail {
         return {"netlist", "aggregated"};
     }
 };
+struct ParseExtPinUtil {
+    t_ext_pin_util from_str(std::string str) {
+        auto elements = vtr::split(str, ",");
+
+        t_ext_pin_util target_ext_pin_util;
+        if (elements.size() == 1) {
+            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+            target_ext_pin_util.output_pin_util = vtr::atof(elements[0]);
+        } else if (elements.size() == 2) {
+            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+            target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to t_ext_pin_util (expected either a single float value, or two float values separted by a comma)";
+            throw argparse::ArgParseConversionError(msg.str());
+        }
+
+        if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
+            std::stringstream msg;
+            msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
+            throw argparse::ArgParseConversionError(msg.str());
+        }
+        if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
+            std::stringstream msg;
+            msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
+            throw argparse::ArgParseConversionError(msg.str());
+        }
+
+        return target_ext_pin_util;
+    }
+
+    std::string to_str(t_ext_pin_util val) {
+        if (val.input_pin_util == val.output_pin_util) {
+            return std::to_string(val.input_pin_util);
+        } else {
+            return vtr::join({std::to_string(val.input_pin_util), std::to_string(val.output_pin_util)}, ",");
+        }
+    }
+    
+    std::vector<std::string> default_choices() {
+        return {};
+    }
+};
 
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
@@ -296,7 +339,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("FPGA Architecture description file (XML)");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
-            .help("Circuit file (or circuit name if --blif_file specified)");
+            .help("Circuit file (or circuit name if --circuit_file specified)");
 
 
     auto& stage_grp = parser.add_argument_group("stage options");
@@ -538,8 +581,21 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " groups/classes of mutually connected pins within a cluster."
                   " These counts are used to quickly filter out candidate primitives/atoms/molecules"
                   " for which the cluster has insufficient pins to route (without performing a full routing)."
-                  " This reduces run-time, but should have no impact on quality.")
+                  " This reduces packer run-time")
             .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument<t_ext_pin_util,ParseExtPinUtil>(args.target_external_pin_util, "--target_ext_pin_util")
+            .help("Sets the external pin utilization target during clustering."
+                  " This determines how many pin the clustering engine will aim to use before starting a new cluster."
+                  " Setting this to 1.0 guides the packer to pack as densely as possible (i.e. try to use 100% of cluster external pins)."
+                  " Setting this to a lower value will guide the packer to pack less densely, instead creating more clusters."
+                  " In the limit setting this to 0.0 will cause the packer to create a new cluster for each packing molecule."
+                  " Typically packing less densely improves routability, at the cost of using more clusters."
+                  " Note that this is only a guideline, the packer will use up to 1.0 utilization if a molecule would not otherwise not in any cluster type."
+
+                  " If two values are specified separated by a comma (e.g. '0.7,0.9') this is interpretted as specifying the input and output pin target utilizations respectively")
+            .default_value("1.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")
@@ -971,5 +1027,13 @@ static bool verify_args(const t_options& args) {
 				"--route_chan_width option must be specified if --read_rr_graph is requested (%s)\n",
                 args.read_rr_graph_file.argument_name().c_str());
     }
+
+    if (!args.enable_clustering_pin_feasibility_filter && (args.target_external_pin_util.value().input_pin_util != 1. || args.target_external_pin_util.value().output_pin_util != 1.)) {
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"%s option must be enabled for non-unity %s\n",
+                args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
+                args.target_external_pin_util.argument_name().c_str());
+    }
+
     return true;
 }

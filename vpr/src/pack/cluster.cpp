@@ -93,6 +93,8 @@ using namespace std;
 				  *from sources (the farther one being made slightly *
 				  *more critical)                                    */
 
+constexpr t_ext_pin_util FULL_EXTERNAL_PIN_UTIL;
+
 enum e_gain_update {
 	GAIN, NO_GAIN
 };
@@ -174,7 +176,7 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id);
 static void compute_and_mark_lookahead_pins_used_for_pin(
 		const t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id);
 static void commit_lookahead_pins_used(t_pb *cur_pb);
-static bool check_lookahead_pins_used(t_pb *cur_pb);
+static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_pin_util);
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
 static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_memory_blk);
 
@@ -196,7 +198,8 @@ static enum e_block_pack_status try_pack_molecule(
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
         bool debug_clustering,
-        bool enable_pin_feasibility_filter);
+        bool enable_pin_feasibility_filter,
+        t_ext_pin_util max_external_pin_util);
 static enum e_block_pack_status try_place_atom_block_rec(
 		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
@@ -306,7 +309,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name,
         bool debug_clustering,
-        bool enable_pin_feasibility_filter
+        bool enable_pin_feasibility_filter,
+        t_ext_pin_util target_ext_pin_util
 #ifdef USE_HMETIS
 		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif
@@ -594,7 +598,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						primitives_list, cluster_ctx.clb_nlist.block_pb(clb_index), num_models,
 						max_cluster_size, clb_index, detailed_routing_stage, router_data,
                         debug_clustering,
-                        enable_pin_feasibility_filter);
+                        enable_pin_feasibility_filter,
+                        target_ext_pin_util);
 				prev_molecule = next_molecule;
 
                 auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
@@ -1243,7 +1248,8 @@ static enum e_block_pack_status try_pack_molecule(
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
         bool debug_clustering,
-        bool enable_pin_feasibility_filter) {
+        bool enable_pin_feasibility_filter,
+        t_ext_pin_util max_external_pin_util) {
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
@@ -1287,8 +1293,8 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Check if pin usage is feasible for the current packing assigment */
 				reset_lookahead_pins_used(pb);
 				try_update_lookahead_pins_used(pb);
-				if (!check_lookahead_pins_used(pb)) {
-					block_pack_status = BLK_FAILED_FEASIBLE;
+				if (!check_lookahead_pins_used(pb, max_external_pin_util)) {
+                    block_pack_status = BLK_FAILED_FEASIBLE;
 				}
 			}
 			if (block_pack_status == BLK_PASSED) {
@@ -1978,7 +1984,8 @@ static void start_new_cluster(
                                             num_models, max_cluster_size, clb_index,
                                             detailed_routing_stage, *router_data,
                                             debug_clustering,
-                                            enable_pin_feasibility_filter);
+                                            enable_pin_feasibility_filter,
+                                            FULL_EXTERNAL_PIN_UTIL);
 
             success = (pack_result == BLK_PASSED);
         }
@@ -2712,7 +2719,7 @@ int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const i
 }
 
 /* Check if the number of available inputs/outputs for a pin class is sufficient for speculatively packed blocks */
-static bool check_lookahead_pins_used(t_pb *cur_pb) {
+static bool check_lookahead_pins_used(t_pb *cur_pb, t_ext_pin_util max_external_pin_util) {
 	int i, j;
 	const t_pb_type *pb_type = cur_pb->pb_graph_node->pb_type;
 	bool success;
@@ -2721,14 +2728,27 @@ static bool check_lookahead_pins_used(t_pb *cur_pb) {
 
 	if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
 		for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class && success; i++) {
-			if (cur_pb->pb_stats->lookahead_input_pins_used[i].size() > (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]) {
+            size_t class_size = cur_pb->pb_graph_node->input_pin_class_size[i];
+            if (cur_pb->is_root()) {
+                //Scale the class size by the specified utilization.
+                //We clip to 1 to prevent class sizes of one from being scaled to zero.
+                class_size = std::max<size_t>(1, max_external_pin_util.input_pin_util * class_size);
+            }
+
+			if (cur_pb->pb_stats->lookahead_input_pins_used[i].size() > class_size) {
 				success = false;
 			}
 		}
 
-		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class && success;
-				i++) {
-			if (cur_pb->pb_stats->lookahead_output_pins_used[i].size() > (unsigned int)cur_pb->pb_graph_node->output_pin_class_size[i]) {
+		for (i = 0; i < cur_pb->pb_graph_node->num_output_pin_class && success; i++) {
+            size_t class_size = cur_pb->pb_graph_node->output_pin_class_size[i];
+            if (cur_pb->is_root()) {
+                //Scale the class size by the specified utilization.
+                //We clip to 1 to prevent class sizes of one from being scaled to zero.
+                class_size = std::max<size_t>(1, max_external_pin_util.output_pin_util * class_size);
+            }
+
+			if (cur_pb->pb_stats->lookahead_output_pins_used[i].size() > class_size) {
 				success = false;
 			}
 		}
@@ -2737,8 +2757,7 @@ static bool check_lookahead_pins_used(t_pb *cur_pb) {
 			for (i = 0; success && i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (cur_pb->child_pbs[i] != nullptr) {
 					for (j = 0; success && j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
-						success = check_lookahead_pins_used(
-								&cur_pb->child_pbs[i][j]);
+						success = check_lookahead_pins_used(&cur_pb->child_pbs[i][j], max_external_pin_util);
 					}
 				}
 			}
