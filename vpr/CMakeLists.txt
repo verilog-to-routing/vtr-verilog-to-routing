@@ -44,3 +44,14 @@ if (VPR_USE_SIGNAL_HANDLER)
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
+
+#
+# Unit Tests
+#
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_vpr ${TEST_SOURCES})
+target_link_libraries(test_vpr
+	                libcatch
+                        libvpr)
+
+add_test(NAME test_vpr COMMAND test_vpr --use-colour=yes)
