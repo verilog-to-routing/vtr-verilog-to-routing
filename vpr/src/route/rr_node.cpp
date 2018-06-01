@@ -104,12 +104,101 @@ short t_rr_node::length() const {
 	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
+bool t_rr_node::found_at(int x, int y) {
+    switch (type_) {
+    case CHANX: {
+        VTR_ASSERT(ylow_ == yhigh_);
+
+        return ((ylow_ == y) && ((x >= xlow_) && (x <= xhigh_)));
+    }
+    case CHANY: {
+        VTR_ASSERT(xlow_ == xhigh_);
+
+        return ((xlow_ == x) && ((y >= ylow_) && (y <= yhigh_)));
+    }
+    default:
+        return ((x == xlow_) && (y == ylow_));
+    }
+}
+
+short t_rr_node::get_iedge(int sink_node, short switch_id) {
+    for (auto e : edges()) {
+        if (sink_node == edges_[e].sink_node && switch_id == edges_[e].switch_id) {
+            return e;
+        }
+    }
+    VTR_ASSERT(false);
+    return -1;
+}
+
 bool t_rr_node::edge_is_configurable(short iedge) const {
     auto iswitch =  edge_switch(iedge);
 
     auto& device_ctx = g_vpr_ctx.device();
 
     return device_ctx.rr_switch_inf[iswitch].configurable();
+}
+
+std::string* t_rr_node::metadata(std::string key) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    if (device_ctx.rr_node_metadata.count(this) == 0) {
+        return nullptr;
+    }
+
+    auto& data = device_ctx.rr_node_metadata.at(this);
+    if (data.count(key) == 0) {
+        return nullptr;
+    }
+    auto& value = data.at(key);
+    return &value;
+}
+
+void t_rr_node::add_metadata(std::string key, std::string value) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    if (device_ctx.rr_node_metadata.count(this) == 0) {
+        device_ctx.rr_node_metadata.emplace(this, std::map<std::string,std::string>());
+    }
+    auto& data = device_ctx.rr_node_metadata.at(this);
+
+    data.emplace(key, value);
+}
+
+std::string* t_rr_node::edge_metadata(short iedge, std::string key) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    if (device_ctx.rr_edge_metadata.count(this) == 0) {
+        return nullptr;
+    }
+    auto& edata = device_ctx.rr_edge_metadata.at(this);
+
+    if (edata.count(iedge) == 0) {
+        return nullptr;
+    }
+    auto& data = edata[iedge];
+
+    if (data.count(key) == 0) {
+        return nullptr;
+    }
+    auto& value = data.at(key);
+    return &value;
+}
+
+void t_rr_node::add_edge_metadata(short iedge, std::string key, std::string value) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    if (device_ctx.rr_edge_metadata.count(this) == 0) {
+        device_ctx.rr_edge_metadata.emplace(this, std::unordered_map<short,std::map<std::string,std::string>>());
+    }
+    auto& edata = device_ctx.rr_edge_metadata.at(this);
+
+    if (edata.count(iedge) == 0) {
+        edata.emplace(iedge, std::map<std::string,std::string>());
+    }
+    auto& data = edata[iedge];
+
+    data.emplace(key, value);
 }
 
 float t_rr_node::R() const {

@@ -66,6 +66,8 @@ class t_rr_node {
         t_rr_type type() const { return type_; }
         const char *type_string() const; /* Retrieve type as a string */
 
+        std::string* metadata(std::string key);
+
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
         edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
         edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
@@ -74,8 +76,11 @@ class t_rr_node {
         short num_configurable_edges() const { return num_configurable_edges_; }
         short num_non_configurable_edges() const { return num_edges() - num_configurable_edges(); }
 
+        short get_iedge(int sink_node, short switch_id);
+
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
+        std::string* edge_metadata(short iedge, std::string key);
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
 
@@ -86,6 +91,8 @@ class t_rr_node {
         signed short length() const;
 
         short capacity() const;
+
+        bool found_at(int x, int y);
 
         short ptc_num() const;
         short pin_num() const; //Same as ptc_num() but checks that type() is consistent
@@ -102,7 +109,6 @@ class t_rr_node {
 
         float R() const;
         float C() const;
-
 
     public: //Mutators
         void set_type(t_rr_type new_type);
@@ -121,6 +127,10 @@ class t_rr_node {
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
         void set_edge_is_configurable(short iedge, bool is_configurable);
+
+        void add_metadata(std::string key, std::string value);
+        void add_edge_metadata(short iedge, std::string key, std::string value);
+
         void set_fan_in(short);
 
         void set_coordinates(short x1, short y1, short x2, short y2);
