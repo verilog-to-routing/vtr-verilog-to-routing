@@ -46,6 +46,9 @@ namespace vtr {
     template<typename Container>
     std::string join(Container container, std::string delim);
 
+    template<typename T>
+    std::string join(std::initializer_list<T> list, std::string delim);
+
     /*
      * Legacy c-style function replacements, typically these add extra error checking
      * and/or correct 'unexpected' behaviour of the standard c-functions
@@ -97,6 +100,11 @@ namespace vtr {
     template<typename Container>
     std::string join(Container container, std::string delim) {
         return join(std::begin(container), std::end(container), delim);
+    }
+
+    template<typename T>
+    std::string join(std::initializer_list<T> list, std::string delim) {
+        return join(list.begin(), list.end(), delim);
     }
 }
 
