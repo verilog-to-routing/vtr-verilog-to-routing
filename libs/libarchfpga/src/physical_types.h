@@ -919,6 +919,27 @@ public:
     // Returns a string containing the hierarchical type name of the pb_graph_node
     // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
+
+    //Returns the number of input pins on this graph node
+    int total_input_pins() const {
+        return std::accumulate(num_input_pins, num_input_pins + num_input_ports, 0);
+    }
+
+    //Returns the number of output pins on this graph node
+    int total_output_pins() const {
+        return std::accumulate(num_output_pins, num_output_pins + num_output_ports, 0);
+    }
+
+    //Returns the number of clockpins on this graph node
+    int total_clock_pins() const {
+        return std::accumulate(num_clock_pins, num_clock_pins + num_clock_ports, 0);
+    }
+
+    //Returns the number of pins on this graph node
+    //  Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
+    int num_pins() const {
+	    return total_input_pins() + total_output_pins() + total_clock_pins();
+    }
 };
 
 
