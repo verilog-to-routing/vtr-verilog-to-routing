@@ -173,6 +173,15 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
 
      **Default:** ``global``
 
+.. option:: --clock_modeling_method {ideal | route}
+
+    Specifies how clock nets are handled:
+
+     * ``ideal``: Treat clock pins as ideal (i.e. clock nets are not routed)
+     * ``route``: Treat clock nets as normal nets (i.e. routed using inter-block routing)
+
+     **Default:** ``ideal``
+
 .. _netlist_options:
 
 Netlist Options

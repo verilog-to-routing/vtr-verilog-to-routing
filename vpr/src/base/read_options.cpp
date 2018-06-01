@@ -475,10 +475,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     gen_grp.add_argument<e_clock_modeling_method,ParseClockModelingMethod>(
         args.clock_modeling_method, "--clock_modeling_method")
-            .help("Specifies how clocks are handled\n"
-                  " * ideal: Treat the clock pins as ideal (i.e. not routed)\n"
+            .help("Specifies how clock nets are handled\n"
+                  " * ideal: Treat clock pins as ideal\n"
+                  "          (i.e. clock nets are not routed)\n"
                   " * route: Treat the clock pins as normal nets\n"
-                  "          (i.e. routed through regular routing)\n")
+                  "          (i.e. routed using inter-block routing)\n")
             .default_value("ideal")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
