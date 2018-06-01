@@ -130,6 +130,8 @@ my $use_old_abc             = 0;
 my $enable_gui		    = 0;
 my $routing_budgets_algorithm = "disable";
 my $run_name = "";
+my $expect_fail = 0;
+my $verbosity = 0;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -247,6 +249,12 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
+    }
+    elsif ( $token eq "-expect_fail"){
+            $expect_fail = 1;
+    }
+    elsif ( $token eq "-verbose"){
+            $expect_fail = shift(@ARGV);
     }
     # else forward the argument
 	else {
@@ -990,7 +998,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                             );
 
                 if ($diff_result ne "success") {
-                    $error_status = " RR Graph XML output not consistent when reloaded ";
+                    $error_status = "failed: vpr (RR Graph XML output not consistent when reloaded)";
                     $error_code = 1;
                 }
             }
@@ -1085,7 +1093,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
 		}
 	} else {
-		$error_status = "failed: vpr";
+		$error_status = "failed: vpr ($q)";
 		$error_code = 1;
 	}
 }
@@ -1114,12 +1122,21 @@ print RESULTS "error=$error\n";
 
 close(RESULTS);
 
-# Clean up files not used that take up a lot of space
-
-#system "rm -f *.blif";
-#system "rm -f *.xml";
-#system "rm -f core.*";
-#system "rm -f gc.txt";
+if ($expect_fail) {
+    if ($error_code != 0) {
+        #Failed as expected, invert message
+        $error_code = 0;
+        $error_status = "OK";
+        if ($verbosity > 0) {
+            $error_status .= "(as expected " . $error_status . ")";
+        } else {
+            $error_status .= "*";
+        }
+    } else {
+        #Passed when expected failure
+        $error_status = "failed: expected to fail but was " . $error_status;
+    }
+}
 
 my $elapsed_time_str = sprintf("(took %.2f seconds)", Time::HiRes::gettimeofday() - $vtr_flow_start_time);
 
@@ -1233,7 +1250,7 @@ sub system_with_timeout {
 				return "crashed";
 			}
 			elsif ( $return_code != 0 ) {
-				return "exited";
+				return "exited with return code $return_code";
 			}
 			else {
 				return "success";
@@ -1487,3 +1504,4 @@ sub get_clocks {
 
     return @clocks;
 }
+

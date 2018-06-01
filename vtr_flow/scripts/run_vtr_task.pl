@@ -44,7 +44,10 @@ use POSIX qw(strftime);
 sub trim;
 sub run_single_task;
 sub do_work;
+sub get_result_file_metrics;
 sub ret_expected_runtime;
+sub ret_expected_min_W;
+sub ret_expected_vpr_status;
 
 # Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
@@ -374,8 +377,15 @@ sub run_single_task {
 
                 my $name = "${arch}/${circuit}/${full_params_dirname}";
 
+                #Do we expect a specific status?
+                my $expect_fail = "";
+                my $expected_vpr_status = ret_expected_vpr_status($circuit, $arch, $full_params_dirname, $golden_results_file);
+                if ($expected_vpr_status ne "success" and $expected_vpr_status ne "Unkown") {
+                    $expect_fail = "-expect_fail";
+                }
+
                 #Build the command to run
-                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch -name $name $full_params " ;
+                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $expect_fail -name $name $full_params";
 
                 #Determine the SDC file name
                 my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
@@ -385,13 +395,13 @@ sub run_single_task {
                 }
 
                 #Add a hint about the minimum channel width (potentially saves run-time)
-                my $expected_min_W = ret_expected_min_W($circuit, $arch, $golden_results_file);
+                my $expected_min_W = ret_expected_min_W($circuit, $arch, $full_params_dirname, $golden_results_file);
                 if($expected_min_W > 0) {
                     $command .= " --min_route_chan_width_hint $expected_min_W";
                 }
 
                 #Estimate runtime
-                my $runtime_estimate = ret_expected_runtime($circuit, $arch, $golden_results_file);
+                my $runtime_estimate = ret_expected_runtime($circuit, $arch, $full_params_dirname, $golden_results_file);
 
                 my @action = [$dir, $command, $runtime_estimate];
                 push(@actions, @action);
@@ -486,137 +496,143 @@ sub expand_user_path {
 	return $str;
 }
 
+#Returns a hash corresponding to the first row from a parse_results.txt/golden_results.txt file
+#which matches the given set of keys.
+#
+#If none is found, returns an empty hash
+sub get_result_file_metrics {
+    my ($results_file_path, $keys_ref) = @_;
+    my %keys = %{$keys_ref};
+
+    my %metrics;
+
+    if ( -r $results_file_path) {
+
+        #Load the results file
+        open( RESULTS, $results_file_path );
+        my @lines = <RESULTS>;
+        close(RESULTS);
+
+        my $header_line = shift(@lines);
+        my @headers     = map(trim($_), split( /\t/, $header_line ));
+
+        #Build hash look-up from name to index
+        my %index;
+        @index{@headers} = ( 0 .. $#headers );
+
+        #Check that the required keys exist
+        my $missing_keys = 0;
+        foreach my $key (keys %keys) {
+            if (not exists $index{$key}) {
+                $missing_keys++;
+            }
+        }
+
+        if ($missing_keys == 0) {
+
+            #Find the entry which matches the key values
+            my @line_array;
+            foreach my $line (@lines) {
+                @line_array = map(trim($_), split( /\t/, $line ));
+
+                #Check all key values match
+                my $found = 1;
+                foreach my $key (keys %keys) {
+                    my $value = @line_array[$index{$key}];
+
+                    if ($value ne $keys{$key}) {
+                        $found = 0;
+                        last;
+                    }
+                }
+
+                if ($found) {
+                    #Matching row, build hash of entry row
+                    for my $metric_name (keys %index) {
+                        $metrics{$metric_name} = @line_array[$index{$metric_name}];
+                    }
+                    last;
+                }
+            }
+        }
+    }
+
+    return %metrics;
+}
+
 sub ret_expected_runtime {
 	my $circuit_name             = shift;
 	my $arch_name                = shift;
+    my $script_params            = shift;
 	my $golden_results_file_path = shift;
 	my $seconds                  = 0;
 
-    if( not -r $golden_results_file_path) {
-        return "Unknown";
+    my %keys = (
+        "arch" => $arch_name,
+        "circuit" => $circuit_name,
+        "script_params" => $script_params,
+    );
+
+    my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
+
+    if (not exists $metrics{'vtr_flow_elapsed_time'}) {
+        return "Unkown";
     }
 
-	open( GOLDEN, $golden_results_file_path );
-	my @lines = <GOLDEN>;
-	close(GOLDEN);
-
-	my $header_line = shift(@lines);
-	my @headers     = map(trim($_), split( /\t/, $header_line ));
-
-	my %index;
-	@index{@headers} = ( 0 .. $#headers );
-
-	my @line_array;
-	my $found = 0;
-	foreach my $line (@lines) {
-		@line_array = split( /\t/, $line );
-		if ( $arch_name eq @line_array[0] and $circuit_name eq @line_array[1] )
-		{
-			$found = 1;
-			last;
-		}
-	}
-
-	if ( not $found ) {
-		return "Unknown";
-	}
-
-	my $location = $index{"pack_time"};
-	if ($location) {
-        my $val = @line_array[$location];
-        if($val > 0.) {
-            $seconds += $val;
-        }
-	}
-	my $location = $index{"place_time"};
-	if ($location) {
-        my $val = @line_array[$location];
-        if($val > 0.) {
-            $seconds += $val;
-        }
-	}
-	my $location = $index{"min_chan_width_route_time"};
-	if ($location) {
-        my $val = @line_array[$location];
-        if($val > 0.) {
-            $seconds += $val;
-        }
-	}
-	my $location = $index{"crit_path_route_time"};
-	if ($location) {
-        my $val = @line_array[$location];
-        if($val > 0.) {
-            $seconds += $val;
-        }
-	}
-	my $location = $index{"route_time"};
-	if ($location) {
-        my $val = @line_array[$location];
-        if($val > 0.) {
-            $seconds += $val;
-        }
-	}
-
-	if ( $seconds != 0 ) {
-		if ( $seconds < 60 ) {
-			my $str = sprintf( "%.0f seconds", $seconds );
-			return $str;
-		}
-		elsif ( $seconds < 3600 ) {
-			my $min = $seconds / 60;
-			my $str = sprintf( "%.0f minutes", $min );
-			return $str;
-		}
-		else {
-			my $hour = $seconds / 60 / 60;
-			my $str = sprintf( "%.0f hours", $hour );
-			return $str;
-		}
-	}
-	else {
-		return "Unknown";
-	}
+    $seconds = $metrics{'vtr_flow_elapsed_time'};
+    if ( $seconds < 60 ) {
+        my $str = sprintf( "%.0f seconds", $seconds );
+        return $str;
+    } elsif ( $seconds < 3600 ) {
+        my $min = $seconds / 60;
+        my $str = sprintf( "%.0f minutes", $min );
+        return $str;
+    } else {
+        my $hour = $seconds / 60 / 60;
+        my $str = sprintf( "%.0f hours", $hour );
+        return $str;
+    }
 }
 
 sub ret_expected_min_W {
 	my $circuit_name             = shift;
 	my $arch_name                = shift;
+    my $script_params            = shift;
 	my $golden_results_file_path = shift;
-	my $seconds                  = 0;
 
-    my $expected_min_W = -1;
+    my %keys = (
+        "arch" => $arch_name,
+        "circuit" => $circuit_name,
+        "script_params" => $script_params,
+    );
 
-    if( -r $golden_results_file_path) {
-        #File exists, look-up the golden min channel width
-        open( GOLDEN, $golden_results_file_path );
-        my @lines = <GOLDEN>;
-        close(GOLDEN);
+    my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
 
-        my $header_line = shift(@lines);
-        my @headers     = map(trim($_), split( /\t/, $header_line ));
-
-        my %index;
-        @index{@headers} = ( 0 .. $#headers );
-
-
-        my @line_array;
-        my $found = 0;
-        foreach my $line (@lines) {
-            @line_array = split( /\t/, $line );
-            if ( $arch_name eq @line_array[0] and $circuit_name eq @line_array[1] )
-            {
-                $found = 1;
-                last;
-            }
-        }
-
-        if ($found) {
-            my $location = $index{"min_chan_width"};
-            if ($location) {
-                $expected_min_W = @line_array[$location];
-            } 
-        }
+    if (not exists $metrics{'min_chan_width'}) {
+        return -1;
     }
 
-    return $expected_min_W;
+    return $metrics{'min_chan_width'};
 }
+
+sub ret_expected_vpr_status {
+	my $circuit_name             = shift;
+	my $arch_name                = shift;
+    my $script_params            = shift;
+	my $golden_results_file_path = shift;
+
+    my %keys = (
+        "arch" => $arch_name,
+        "circuit" => $circuit_name,
+        "script_params" => $script_params,
+    );
+
+    my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
+
+    if (not exists $metrics{'vpr_status'}) {
+        return "Unkown";
+    }
+
+    return $metrics{'vpr_status'};
+}
+
