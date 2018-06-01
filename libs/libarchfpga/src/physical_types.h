@@ -807,24 +807,25 @@ struct t_pb_graph_node {
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
+    //Returns the number of input pins on this graph node
+    int total_input_pins() const {
+        return std::accumulate(num_input_pins, num_input_pins + num_input_ports, 0);
+    }
+
+    //Returns the number of output pins on this graph node
+    int total_output_pins() const {
+        return std::accumulate(num_output_pins, num_output_pins + num_output_ports, 0);
+    }
+
+    //Returns the number of clockpins on this graph node
+    int total_clock_pins() const {
+        return std::accumulate(num_clock_pins, num_clock_pins + num_clock_ports, 0);
+    }
+
     //Returns the number of pins on this graph node
     //  Note this is the total for all ports on this node exluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
-    int num_pins() {
-        int npins = 0;
-
-        for(int iport = 0; iport < num_input_ports; ++iport) {
-            npins += num_input_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_output_ports; ++iport) {
-            npins += num_output_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_clock_ports; ++iport) {
-            npins += num_clock_pins[iport];
-        }
-
-        return npins;
+    int num_pins() const {
+	return total_input_pins() + total_output_pins() + total_clock_pins();
     }
 };
 
