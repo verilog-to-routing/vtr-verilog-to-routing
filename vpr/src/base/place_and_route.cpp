@@ -228,13 +228,24 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                 scale_factor = 1.1;
             }
 
-            if ((high - low) <= 1 * udsd_multiplier)
+            if ((high - std::max(low,0)) <= 1 * udsd_multiplier) { //No more steps
                 final = high;
-            if (low != -1) {
-                current = (high + low) / scale_factor;
-            } else {
-                current = high / scale_factor; /* haven't found lower bound yet */
             }
+
+            if (low != -1) { //Have lower-bound, step to midpoint
+                current = (high + low) / scale_factor;
+            } else { //Haven't found lower bound yet
+                current = high / scale_factor;
+
+                if (std::abs(current - high) < udsd_multiplier) {
+                    //If high and scale_factor are both small, we might have ended
+                    //up with no change in current.
+                    //In that case, ensure we reduce current by at least the track multiplier
+                    current = high - udsd_multiplier;
+                }
+                VTR_ASSERT(current < high);
+            }
+
         } else { /* last route not successful */
             if (success && Fc_clipped) {
                 vtr::printf_info("Routing rejected, Fc_output was too high.\n");
@@ -243,10 +254,11 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
             low = current;
             if (high != -1) {
 
-                if ((high - low) <= 1 * udsd_multiplier)
+                if ((high - low) <= 1 * udsd_multiplier) { //No more steps
                     final = high;
+                }
 
-                current = (high + low) / scale_factor;
+                current = (high + low) / scale_factor; //Step to midpoint
             } else {
                 if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
                     /* FOR Wneed = f(Fs) search */
@@ -258,6 +270,14 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                     }
                 } else {
                     current = low * scale_factor; /* Haven't found upper bound yet */
+
+                    if (std::abs(current - low) < udsd_multiplier) {
+                        //If high and scale_factor are both small, we might have ended
+                        //up with no change in current.
+                        //In that case, ensure we increase current by at least the track multiplier
+                        current = high + udsd_multiplier;
+                    }
+                    VTR_ASSERT(current > low);
                 }
             }
         }
