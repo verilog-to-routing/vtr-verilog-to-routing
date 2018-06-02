@@ -496,15 +496,11 @@ sub expand_user_path {
 	return $str;
 }
 
-#Returns a hash corresponding to the first row from a parse_results.txt/golden_results.txt file
-#which matches the given set of keys.
-#
-#If none is found, returns an empty hash
-sub get_result_file_metrics {
-    my ($results_file_path, $keys_ref) = @_;
-    my %keys = %{$keys_ref};
+#Returns a hash mapping the name to column index in the results file
+sub get_result_file_keys {
+    my ($results_file_path) = @_;
 
-    my %metrics;
+    my %index;
 
     if ( -r $results_file_path) {
 
@@ -517,18 +513,52 @@ sub get_result_file_metrics {
         my @headers     = map(trim($_), split( /\t/, $header_line ));
 
         #Build hash look-up from name to index
-        my %index;
         @index{@headers} = ( 0 .. $#headers );
+    }
+
+    return %index;
+}
+
+#Returns a hash corresponding to the first row from a parse_results.txt/golden_results.txt file
+#which matches the given set of keys.
+#
+#If none is found, returns an empty hash
+sub get_result_file_metrics {
+    my ($results_file_path, $keys_ref) = @_;
+    my %keys = %{$keys_ref};
+
+    my %metrics;
+
+    if ( -r $results_file_path) {
+
+        my %index = get_result_file_keys($results_file_path);
+
+        #Skip checking for script_params if not included in the results file
+        #
+        #Note that this is a temporary work-around since not all golden results have been
+        #updated to record the script params
+        #
+        #TODO: Once all golden results updated, remove this check to unconditionally
+        #check for script params
+        if (not exists $index{'script_params'}) {
+            delete $keys{'script_params'};
+        }
 
         #Check that the required keys exist
         my $missing_keys = 0;
         foreach my $key (keys %keys) {
+
             if (not exists $index{$key}) {
                 $missing_keys++;
             }
         }
 
         if ($missing_keys == 0) {
+
+            #Load the results file
+            open( RESULTS, $results_file_path );
+            my @lines = <RESULTS>;
+            close(RESULTS);
 
             #Find the entry which matches the key values
             my @line_array;
