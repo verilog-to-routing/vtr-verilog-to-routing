@@ -93,7 +93,7 @@ using namespace std;
 				  *from sources (the farther one being made slightly *
 				  *more critical)                                    */
 
-constexpr t_ext_pin_util FULL_EXTERNAL_PIN_UTIL;
+const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL;
 
 enum e_gain_update {
 	GAIN, NO_GAIN
