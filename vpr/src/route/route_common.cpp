@@ -401,6 +401,27 @@ std::vector<int> collect_congested_rr_nodes() {
     return congested_rr_nodes;
 }
 
+//Returns a vector from [0..device_ctx.num_rr_nodes-1] containing the set of nets using each RR node
+std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.num_rr_nodes);
+    for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
+        t_trace* trace_elem = route_ctx.trace_head[inet];
+        while (trace_elem) {
+            int rr_node = trace_elem->index;
+
+            rr_node_nets[rr_node].insert(inet);
+
+            trace_elem = trace_elem->next;
+        }
+    }
+    return rr_node_nets;
+}
+
+
 void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac) {
 

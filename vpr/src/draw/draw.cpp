@@ -329,7 +329,6 @@ static int find_edge(int prev_inode, int inode);
 
 t_color to_t_color(vtr::Color<float> color);
 static void draw_color_map_legend(const vtr::ColorMap& cmap);
-std::vector<std::set<ClusterNetId>> collect_rr_node_nets();
 
 t_color get_block_type_color(t_type_ptr type);
 t_color lighten_color(t_color color, float amount);
@@ -960,7 +959,7 @@ static void draw_congestion() {
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
-    //valued nodes re not overdrawn by lower value ones (e.g. when zoomed-out far)
+    //valued nodes are not overdrawn by lower value ones (e.g. when zoomed-out far)
     auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
 		short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
         short lhs_capacity = device_ctx.rr_nodes[lhs_node].capacity();
@@ -3319,25 +3318,6 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap) {
     drawrect(legend);
 
     set_coordinate_system(GL_WORLD);
-}
-
-std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.num_rr_nodes);
-    for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace_elem = route_ctx.trace_head[inet];
-        while (trace_elem) {
-            int rr_node = trace_elem->index;
-
-            rr_node_nets[rr_node].insert(inet);
-
-            trace_elem = trace_elem->next;
-        }
-    }
-    return rr_node_nets;
 }
 
 t_color get_block_type_color(t_type_ptr type) {
