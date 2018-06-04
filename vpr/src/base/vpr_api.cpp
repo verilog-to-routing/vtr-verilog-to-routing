@@ -609,7 +609,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             VTR_ASSERT(router_opts.doRouting == STAGE_LOAD);
 
             //Load a previous routing
-            route_status = vpr_load_routing(vpr_setup, arch, chan_width);
+            route_status = vpr_load_routing(vpr_setup, arch, chan_width, timing_info, net_delay);
         }
 
         //Post-implementation
@@ -708,7 +708,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
     return RouteStatus(status, min_W);
 }
 
-RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width) {
+RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay) {
     vtr::ScopedActionTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_THROW(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)");
@@ -721,6 +721,13 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
 
     //Load the routing from a file
     read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests);
+
+    if (vpr_setup.Timing.timing_analysis_enabled) {
+        //Update timing info
+        load_net_delay_from_routing(net_delay);
+
+        timing_info->update();
+    }
 
     return RouteStatus(true, fixed_channel_width);
 }
