@@ -384,6 +384,23 @@ bool feasible_routing() {
 	return (true);
 }
 
+//Returns all RR nodes in the current routing which are congested
+std::vector<int> collect_congested_rr_nodes() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    std::vector<int> congested_rr_nodes;
+	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+		short occ = route_ctx.rr_node_route_inf[inode].occ();
+        short capacity = device_ctx.rr_nodes[inode].capacity();
+
+        if (occ > capacity) {
+            congested_rr_nodes.push_back(inode);
+        }
+    }
+    return congested_rr_nodes;
+}
+
 void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac) {
 

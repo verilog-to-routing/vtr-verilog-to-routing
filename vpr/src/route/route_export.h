@@ -24,6 +24,8 @@ bool try_route(int width_fac, t_router_opts router_opts,
 
 bool feasible_routing();
 
+std::vector<int> collect_congested_rr_nodes();
+
 t_clb_opins_used alloc_route_structs();
 
 void free_route_structs();

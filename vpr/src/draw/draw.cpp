@@ -40,6 +40,7 @@ using namespace std;
 #include "atom_netlist.h"
 #include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
+#include "route_export.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
@@ -937,18 +938,14 @@ static void draw_congestion() {
     //Record min/max congestion
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-    std::vector<int> congested_rr_nodes;
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    std::vector<int> congested_rr_nodes = collect_congested_rr_nodes();
+	for (int inode : congested_rr_nodes) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
 
         max_congestion_ratio = std::max(max_congestion_ratio, congestion_ratio);
-
-        if (congestion_ratio > 1.) {
-            congested_rr_nodes.push_back(inode);
-        }
     }
 
     char msg[vtr::bufsize];
