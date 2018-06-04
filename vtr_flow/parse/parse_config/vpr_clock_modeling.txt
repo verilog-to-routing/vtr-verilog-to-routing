@@ -27,6 +27,7 @@ placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sT
 placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
 
 #General Routing Metrics
+num_global_nets;vpr.out;Number of global nets: (.*)
 num_routed_nets;vpr.out;Number of routed nets \(nonglobal\): (.*)
 
 #VPR Min W Routing Metrics

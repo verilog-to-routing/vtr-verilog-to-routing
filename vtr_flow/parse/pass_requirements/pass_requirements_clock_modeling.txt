@@ -5,6 +5,7 @@ routed_wirelength;RangeAbs;0.60;1.50;5
 crit_path_routed_wirelength;Range;0.60;1.50
 pack_time;RangeAbs;0.10;10.0;2
 place_time;RangeAbs;0.10;10.0;2
+num_global_nets;Equal
 num_routed_nets;Equal
 min_chan_width_route_time;RangeAbs;0.10;10.0;2
 crit_path_route_time;RangeAbs;0.10;10.0;2

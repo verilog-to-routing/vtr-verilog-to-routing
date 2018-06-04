@@ -186,6 +186,7 @@ void length_and_bends_stats() {
 	vtr::printf_info("\n");
 
 	av_length = (float) total_length / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+	vtr::printf_info("Number of global nets: %d\n", num_global_nets);
 	vtr::printf_info("Number of routed nets (nonglobal): %d\n", (int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("Wire length results (in units of 1 clb segments)...\n");
 	vtr::printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
