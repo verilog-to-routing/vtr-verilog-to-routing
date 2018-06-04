@@ -141,11 +141,11 @@ static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
         float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
-        float target_delay, float short_path_crit);
+        float target_delay, float short_path_crit, RouterStats& router_stats);
 
 static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, RouterStats& router_stats);
 
 static void timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
@@ -919,7 +919,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
                     target_criticality, num_sinks, sink_node, astar_fac,
                     highfanout_rlim, budgeting_inf, max_delay, min_delay,
-                    target_delay, short_path_crit);
+                    target_delay, short_path_crit, router_stats);
         }
 
         free_heap_data(cheapest);
@@ -1155,7 +1155,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
         float astar_fac, int highfanout_rlim, route_budgets& budgeting_inf, float max_delay, float min_delay,
-        float target_delay, float short_path_crit) {
+        float target_delay, float short_path_crit, RouterStats& router_stats) {
 
     /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
      * the expanded bounding box specified in bounding_box are not added to the     *
@@ -1214,14 +1214,14 @@ static void timing_driven_expand_neighbours(t_heap *current,
 
         timing_driven_add_to_heap(criticality_fac, bend_cost, astar_fac,
                 budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                current, inode, to_node, iconn, target_node);
+                current, inode, to_node, iconn, target_node, router_stats);
     } /* End for all neighbours */
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
+        const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, RouterStats& router_stats) {
 
     t_heap* next = alloc_heap_data();
     next->index = to_node;
@@ -1256,6 +1256,7 @@ static void timing_driven_add_to_heap(const float criticality_fac, const float b
     }
 
     add_to_heap(next);
+    ++router_stats.heap_pushes;
 }
 
 //Updates current (path step and costs) to account for the step taken to reach to_node
@@ -2042,6 +2043,7 @@ static void print_route_status(int itry, double elapsed_sec, const RouterStats& 
     constexpr int HEAP_OP_SCI_PRECISION = 2;
     pretty_print_uint(" ", router_stats.heap_pushes, HEAP_OP_DIGITS, HEAP_OP_SCI_PRECISION);
     pretty_print_uint(" ", router_stats.heap_pops, HEAP_OP_DIGITS, HEAP_OP_SCI_PRECISION);
+    VTR_ASSERT(router_stats.heap_pops <= router_stats.heap_pushes);
 
     //Rerouted nets
     constexpr int NET_ROUTED_DIGITS = 7;
