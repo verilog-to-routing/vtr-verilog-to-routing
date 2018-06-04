@@ -6,9 +6,18 @@ find_package(Git QUIET)
 if(GIT_FOUND)
     exec_program(${GIT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}
                  ARGS describe --always --long --dirty
-                 OUTPUT_VARIABLE VTR_VCS_REVISION)
+                 OUTPUT_VARIABLE VTR_VCS_REVISION
+                 RETURN_VALUE GIT_DESCRIBE_RETURN_VALUE)
+
+    if(NOT GIT_DESCRIBE_RETURN_VALUE EQUAL 0)
+        #Git describe failed, usually this means we
+        #aren't in a git repo -- so don't set a VCS 
+        #revision
+        set(VTR_VCS_REVISION "unkown")
+    endif()
 else()
-    set(VTR_VCS_REVISION "")
+    #Couldn't find git, so can't look-up VCS revision
+    set(VTR_VCS_REVISION "unkown")
 endif()
 
 
@@ -24,6 +33,7 @@ endif()
 
 #Other build meta-data
 string(TIMESTAMP VTR_BUILD_TIMESTAMP)
+set(VTR_BUILD_TIMESTAMP "${VTR_BUILD_TIMESTAMP} (${VTR_BUILD_TYPE} build)")
 
 message(STATUS "VTR Version: ${VTR_VERSION}")
 

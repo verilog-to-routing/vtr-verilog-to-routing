@@ -13,6 +13,8 @@ extern PrintHandlerWarning printf_warning;
 extern PrintHandlerError printf_error;
 extern PrintHandlerDirect printf_direct;
 
+void set_log_file(const char* filename);
+
 } //namespace
 
 

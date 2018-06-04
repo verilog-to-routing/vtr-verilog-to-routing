@@ -5,6 +5,6 @@ namespace vtr {
     void srandom(int seed);
     unsigned int get_current_random();
     int irand(int imax);
-    float frand(void);
+    float frand();
 } //namespace
 #endif

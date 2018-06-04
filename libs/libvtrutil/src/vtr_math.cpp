@@ -25,17 +25,18 @@ int ipow(int base, int exp) {
    Meant for maps where both key and element are numbers.
    This is specifically enforced by the explicit instantiations below this function. i.e. only templates
    using those types listed in the explicit instantiations below are allowed */
-template<typename X, typename Y> Y linear_interpolate_or_extrapolate(std::map<X,Y> *xy_map, X requested_x){
+template<typename X, typename Y> Y linear_interpolate_or_extrapolate(const std::map<X,Y> *xy_map, X requested_x){
 	Y result;
 
 	/* the intention of this function is to interpolate/extrapolate. we can't do so with less than 2 values in the xy_map */
 	if (xy_map->size() < 2){
-        throw VtrError("linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs", __FILE__, __LINE__); 
+        throw VtrError("linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs", __FILE__, __LINE__);
 	}
 
-	if (xy_map->count(requested_x) == 1){
+    auto itr = xy_map->find(requested_x);
+	if (itr != xy_map->end()){
 		/* requested x already exists in the x,y map */
-		result = (*xy_map)[requested_x];
+		result = itr->second;
 	} else {
 		/* requested x does not exist in the x,y map. need to interpolate/extrapolate */
 
@@ -79,7 +80,7 @@ template<typename X, typename Y> Y linear_interpolate_or_extrapolate(std::map<X,
 
 	return result;
 }
-template double linear_interpolate_or_extrapolate(std::map<int,double> *xy_map, int requested_x);	/* (int,double) */
-template double linear_interpolate_or_extrapolate(std::map<double,double> *xy_map, double requested_x);	/* (double,double) */
+template double linear_interpolate_or_extrapolate(const std::map<int,double> *xy_map, int requested_x);	/* (int,double) */
+template double linear_interpolate_or_extrapolate(const std::map<double,double> *xy_map, double requested_x);	/* (double,double) */
 
 }

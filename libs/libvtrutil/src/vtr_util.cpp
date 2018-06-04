@@ -3,6 +3,7 @@
 #include <cerrno> //For errno
 #include <cstring>
 #include <memory>
+#include <sstream>
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -13,7 +14,7 @@
 namespace vtr {
 
 
-char *out_file_prefix = NULL; /* used by fopen */
+std::string out_file_prefix; /* used by fopen */
 static int file_line_number = 0; /* file in line number being parsed (used by fgets) */
 static int cont; /* line continued? (used by strtok)*/
 
@@ -51,13 +52,29 @@ std::vector<std::string> split(const std::string& text, const std::string delims
             curr_tok += c;
         }
     }
-    
+
     //Add last token
     if(!curr_tok.empty()) {
         //Save it
         tokens.push_back(curr_tok);
-    } 
+    }
     return tokens;
+}
+
+//Splits off the name and extension (including ".") of the specified filename
+std::array<std::string,2> split_ext(const std::string& filename) {
+    std::array<std::string,2> name_ext;
+    auto pos = filename.find_last_of('.');
+
+    if (pos == std::string::npos) {
+        //No extension
+        pos = filename.size();
+    }
+
+    name_ext[0] = std::string(filename, 0, pos);
+    name_ext[1] = std::string(filename, pos, filename.size() - pos);
+
+    return name_ext;
 }
 
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
@@ -109,13 +126,13 @@ std::string string_fmt(const char* fmt, ...) {
 //Returns a std::string formatted using a printf-style format string taking
 //an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
-    
+
     // We need to copy the args so we don't change them before the true formating
     va_list va_args_copy;
     va_copy(va_args_copy, args);
 
     //Determine the formatted length using a copy of the args
-    int len = std::vsnprintf(nullptr, 0, fmt, va_args_copy); 
+    int len = std::vsnprintf(nullptr, 0, fmt, va_args_copy);
 
     va_end(va_args_copy); //Clean-up
 
@@ -159,7 +176,7 @@ std::string dirname(const std::string& path) {
         if(path[0] == '/') {
             str += "/";
         }
-            
+
         //Join all except the last path element
         str += join(elements.begin(), elements.end() - 1, "/");
 
@@ -191,31 +208,50 @@ char* strncpy(char *dest, const char *src, size_t size) {
 }
 
 char* strdup(const char *str) {
-    size_t Len;
-    char *Dst;
 
-    if (str == NULL ) {
-        return NULL ;
+    if (str == nullptr ) {
+        return nullptr ;
     }
 
-    Len = 1 + std::strlen(str);
-    Dst = (char *) vtr::malloc(Len * sizeof(char));
-    std::memcpy(Dst, str, Len);
-
-    return Dst;
+    size_t Len = std::strlen(str);
+    //use calloc to already make the last char '\0'
+    return (char *)std::memcpy(vtr::calloc(Len+1, sizeof(char)), str, Len);;
 }
 
-int atoi(const char *str) {
+template<class T>
+T atoT(const std::string& value, const std::string& type_name) {
+    //The c version of atof doesn't catch errors.
+    //
+    //This version uses stringstream to detect conversion errors
+    std::istringstream ss(value);
 
-    /* Returns the integer represented by the first part of the character       *
-     * string.                                              */
+    T val;
+    ss >> val;
 
-    if (str[0] < '0' || str[0] > '9') {
-        if (!(str[0] == '-' && str[1] >= '0' && str[1] <= '9')) {
-            throw VtrError(string_fmt("Expected integer instead of '%s'", str), __FILE__, __LINE__);
-        }
+    if(ss.fail() || !ss.eof()) {
+        //Failed to convert, or did not consume all input
+        std::stringstream msg;
+        msg << "Failed to convert string '" << value << "' to " << type_name;
+        throw VtrError(msg.str(), __FILE__, __LINE__);
     }
-    return std::atoi(str);
+
+    return val;
+}
+
+int atoi(const std::string& value) {
+    return atoT<int>(value, "int");
+}
+
+double atod(const std::string& value) {
+    return atoT<double>(value, "double");
+}
+
+float atof(const std::string& value) {
+    return atoT<float>(value, "float");
+}
+
+unsigned atou(const std::string& value) {
+    return atoT<unsigned>(value, "unsigned int");
 }
 
 char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
@@ -233,12 +269,12 @@ char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 
     val = std::strtok(ptr, tokens);
     for (;;) {
-        if (val != NULL || cont == 0)
+        if (val != nullptr || cont == 0)
             return (val);
 
         /* return unless we have a null value and a continuation line */
-        if (vtr::fgets(buf, BUFSIZE, fp) == NULL )
-            return (NULL );
+        if (vtr::fgets(buf, bufsize, fp) == nullptr )
+            return (nullptr );
 
         val = std::strtok(buf, tokens);
     }
@@ -247,24 +283,24 @@ char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 FILE* fopen(const char *fname, const char *flag) {
     FILE *fp;
     size_t Len;
-    char *new_fname = NULL;
+    char *new_fname = nullptr;
     file_line_number = 0;
 
     /* Appends a prefix string for output files */
-    if (out_file_prefix) {
+    if (!out_file_prefix.empty()) {
         if (std::strchr(flag, 'w')) {
             Len = 1; /* NULL char */
-            Len += std::strlen(out_file_prefix);
+            Len += std::strlen(out_file_prefix.c_str());
             Len += std::strlen(fname);
             new_fname = (char *) vtr::malloc(Len * sizeof(char));
-            strcpy(new_fname, out_file_prefix);
+            strcpy(new_fname, out_file_prefix.c_str());
             strcat(new_fname, fname);
             fname = new_fname;
         }
     }
 
-    if (NULL == (fp = std::fopen(fname, flag))) {
-        throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__, __LINE__);        
+    if (nullptr == (fp = std::fopen(fname, flag))) {
+        throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__, __LINE__);
     }
 
     if (new_fname)
@@ -273,10 +309,14 @@ FILE* fopen(const char *fname, const char *flag) {
     return (fp);
 }
 
+int fclose(FILE* f) {
+    return std::fclose(f);
+}
+
 char* fgets(char *buf, int max_size, FILE * fp) {
     /* Get an input line, update the line number and cut off *
      * any comment part.  A \ at the end of a line with no   *
-     * comment part (#) means continue. vtr::fgets should give * 
+     * comment part (#) means continue. vtr::fgets should give *
      * identical results for Windows (\r\n) and Linux (\n)   *
      * newlines, since it replaces each carriage return \r   *
      * by a newline character \n.  Returns NULL after EOF.     */
@@ -293,7 +333,7 @@ char* fgets(char *buf, int max_size, FILE * fp) {
 
         if (std::feof(fp)) { /* end of file */
             if (i == 0) {
-                return NULL ; /* required so we can write while (vtr::fgets(...) != NULL) */
+                return nullptr ; /* required so we can write while (vtr::fgets(...) != NULL) */
             } else { /* no newline before end of file - last line must be returned */
                 buf[i] = '\0';
                 return buf;
@@ -325,9 +365,9 @@ char* fgets(char *buf, int max_size, FILE * fp) {
 
     /* Buffer is full but line has not terminated, so error */
     throw VtrError(string_fmt("Error on line %d -- line is too long for input buffer.\n"
-                              "All lines must be at most %d characters long.\n", BUFSIZE - 2),
+                              "All lines must be at most %d characters long.\n", bufsize - 2),
                     __FILE__, __LINE__);
-    return NULL;
+    return nullptr;
 }
 
 /*
@@ -341,7 +381,7 @@ int get_file_line_number_of_last_opened_file() {
 bool file_exists(const char* filename) {
     FILE * file;
 
-    if (filename == NULL ) {
+    if (filename == nullptr ) {
         return false;
     }
 
@@ -353,25 +393,25 @@ bool file_exists(const char* filename) {
     return false;
 }
 
-/* Date:July 17th, 2013                                
- * Author: Daniel Chen                                
- * Purpose: Checks the file extension of an file to ensure 
- *            correct file format. Returns true if format is 
+/* Date:July 17th, 2013
+ * Author: Daniel Chen
+ * Purpose: Checks the file extension of an file to ensure
+ *            correct file format. Returns true if format is
  *            correct, and false otherwise.
- * Note:    This is probably a fragile check, but at least 
+ * Note:    This is probably a fragile check, but at least
  *            should prevent common problems such as swapping
- *            architecture file and blif file on the VPR 
- *            command line. 
+ *            architecture file and blif file on the VPR
+ *            command line.
  */
 
-bool check_file_name_extension(const char* file_name, 
+bool check_file_name_extension(const char* file_name,
                                const char* file_extension){
     const char* str;
     int len_extension;
 
     len_extension = std::strlen(file_extension);
     str = std::strstr(file_name, file_extension);
-    if(str == NULL || (*(str + len_extension) != '\0')){
+    if(str == nullptr || (*(str + len_extension) != '\0')){
         return false;
     }
 
@@ -379,9 +419,9 @@ bool check_file_name_extension(const char* file_name,
 }
 
 std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum) {
-    std::unique_ptr<char[]> buf(new char[vtr::BUFSIZE]);
+    std::unique_ptr<char[]> buf(new char[vtr::bufsize]);
 
-    const char* line = vtr::fgets(buf.get(), vtr::BUFSIZE, InFile);
+    const char* line = vtr::fgets(buf.get(), vtr::bufsize, InFile);
 
     ++(*LineNum);
 

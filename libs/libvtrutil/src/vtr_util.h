@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+#include <cstdarg>
+#include <array>
 
 namespace vtr {
 
@@ -10,6 +12,9 @@ namespace vtr {
     //The split strings (excluding the delimiters) are returned
     std::vector<std::string> split(const char* text, const std::string delims=" \t\n");
     std::vector<std::string> split(const std::string& text, const std::string delims=" \t\n");
+
+    //Splits off the name and extension (including ".") of the specified filename
+    std::array<std::string,2> split_ext(const std::string& filename);
 
     //Returns 'input' with the first instance of 'search' replaced with 'replace'
     std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
@@ -38,28 +43,39 @@ namespace vtr {
     template<typename Iter>
     std::string join(Iter begin, Iter end, std::string delim);
 
+    template<typename Container>
+    std::string join(Container container, std::string delim);
+
+    template<typename T>
+    std::string join(std::initializer_list<T> list, std::string delim);
+
     /*
      * Legacy c-style function replacements, typically these add extra error checking
      * and/or correct 'unexpected' behaviour of the standard c-functions
      */
-    constexpr size_t BUFSIZE = 32768; /* Maximum line length for various parsing proc. */
+    constexpr size_t bufsize = 32768; /* Maximum line length for various parsing proc. */
     char* strncpy(char *dest, const char *src, size_t size);
     char* strdup(const char *str);
-    int atoi(const char *str);
     char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
     FILE* fopen(const char *fname, const char *flag);
+    int fclose(FILE* f);
     char* fgets(char *buf, int max_size, FILE * fp);
+
+    int atoi(const std::string& value);
+    unsigned atou(const std::string& value);
+    float atof(const std::string& value);
+    double atod(const std::string& value);
 
     /*
      * File utilities
      */
     int get_file_line_number_of_last_opened_file();
     bool file_exists(const char * filename);
-    bool check_file_name_extension(const char* file_name, 
+    bool check_file_name_extension(const char* file_name,
                                    const char* file_extension);
 
 
-    extern char *out_file_prefix;
+    extern std::string out_file_prefix;
 
     /*
      * Legacy ReadLine Tokening
@@ -79,6 +95,16 @@ namespace vtr {
             }
         }
         return joined_str;
+    }
+
+    template<typename Container>
+    std::string join(Container container, std::string delim) {
+        return join(std::begin(container), std::end(container), delim);
+    }
+
+    template<typename T>
+    std::string join(std::initializer_list<T> list, std::string delim) {
+        return join(list.begin(), list.end(), delim);
     }
 }
 

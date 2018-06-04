@@ -16,7 +16,7 @@
  * Using a plain basic type is poor style since it makes it unclear that the parameter is
  * an Id.
  *
- * A better example is to use a typdef:
+ * A better example is to use a typedef:
  *
  *      typedef int NetId;
  *
@@ -59,14 +59,14 @@
  *      count_net_teriminals(blk_id); //Compiler Error: NetId expected!
  *
  * StrongId is a template which implements the basic features of an Id, but disallows silent conversions
- * between different types of Ids. It uses another 'tag' type (passsed as the first template parameter)
+ * between different types of Ids. It uses another 'tag' type (passed as the first template parameter)
  * to uniquely identify the type of the Id (preventing conversions between different types of Ids).
  *
  * Usage
  * =====
  *
  * The StrongId template class takes one required and three optional template parameters:
- *    
+ *
  *    1) Tag        - the unique type used to identify this type of Ids [Required]
  *    2) T          - the underlying integral id type (default: int) [Optional]
  *    3) T sentinel - a value representing an invalid Id (default: -1) [Optional]
@@ -74,17 +74,17 @@
  * If no value is supllied during construction the StrongId is initialized to the invalid/sentinel value.
  *
  * Example 1: default definition
- *      
+ *
  *      struct net_id_tag;
  *      typedef StrongId<net_id_tag> NetId; //Internally stores an integer Id, -1 represents invalid
  *
  * Example 2: definition with custom underlying type
- *      
+ *
  *      struct blk_id_tag;
  *      typedef StrongId<net_id_tag,size_t> BlkId; //Internally stores a size_t Id, -1 represents invalid
  *
  * Example 3: definition with custom underlying type and custom sentinel value
- *      
+ *
  *      struct pin_id_tag;
  *      typedef StrongId<net_id_tag,size_t,0> PinId; //Internally stores a size_t Id, 0 represents invalid
  *
@@ -131,7 +131,7 @@
  *      if(my_id_one) //True my_id_one is valid
  *
  * Example 6: Indexing data structures
- *      
+ *
  *      struct my_id_tag;
  *      typedef StrongId<net_id_tag> MyId; //Internally stores an integer Id, -1 represents invalid
  *
@@ -143,10 +143,11 @@
  */
 #include <type_traits> //for std::is_integral
 #include <cstddef> //for std::size_t
+#include <functional> //for std::hash
 
 namespace vtr {
 
-//Forward delcare the class (needed for operator declarations)
+//Forward declare the class (needed for operator declarations)
 template<typename tag, typename T, T sentinel>
 class StrongId;
 
@@ -176,7 +177,7 @@ class StrongId {
         constexpr StrongId() : id_(sentinel) {}
 
         //Only allow explict constructions from a raw Id (no automatic conversions)
-        explicit StrongId(T id): id_(id) {}
+        explicit constexpr StrongId(T id): id_(id) {}
 
         //Allow some explicit conversion to useful types
 

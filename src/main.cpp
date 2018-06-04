@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
 	//***PARSER STRUCTURES***
 	t_module* my_module;	//holds information about a module from the VQM Parser
 	
-	struct s_arch arch;
+	t_arch arch;
     arch.power = NULL; //Must explicitly set power to null, so that libarchfpga 
                        //doesn't attempt to read in power info if it doesn't exist
 

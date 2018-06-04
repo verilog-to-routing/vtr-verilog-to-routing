@@ -8,11 +8,11 @@ namespace vtr {
  *
  * It allows conveniently returning a range from a single function call
  * without having to explicity expose the underlying container, or make two
- * explicit calls to retireive the associated begin and end iterators.
+ * explicit calls to retrieve the associated begin and end iterators.
  * It also enables the easy use of range-based-for loops.
  *
  * For example:
- *      
+ *
  *      class My Data {
  *          public:
  *              typdef std::vector<int>::const_iterator my_iter;
@@ -60,7 +60,13 @@ class Range {
  *  auto my_range = vtr::make_range(my_vec.begin(), my_vec.end());
  */
 template<typename T>
-Range<T> make_range(T b, T e) { return Range<T>(b, e); }
+auto make_range(T b, T e) { return Range<T>(b, e); }
+
+/*
+ * Creates a vtr::Range from a container
+ */
+template<typename Container>
+auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
 
 } //namespace
 

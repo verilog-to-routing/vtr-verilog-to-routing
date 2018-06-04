@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <algorithm>
 #include "pugixml_util.hpp"
 #include "pugixml_loc.hpp"
 

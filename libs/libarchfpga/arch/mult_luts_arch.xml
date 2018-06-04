@@ -1,11 +1,11 @@
-  <architecture>
+<architecture>
 
   <!-- jluu and ken: ODIN II specific config -->
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
+      <port name="a" combinational_sink_ports="out"/>
+      <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
       <port name="out"/>
@@ -44,21 +44,36 @@
 
   <!-- jluu and ken: Physical descriptions begin -->
 <!-- <layout width="20" height="20"/> -->
-<layout auto="1.0"/>
+<layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="memory" startx="2" starty="1" repeatx="5" priority="20"/>
+        <col type="EMPTY" startx="2" repeatx="5" starty="1" priority="19"/>
+        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="mult_36" startx="4" starty="1" repeatx="5" priority="20"/>
+        <col type="EMPTY" startx="4" repeatx="5" starty="1" priority="19"/>
+        </auto_layout>
+</layout>
     <device>
-      <sizing R_minW_nmos="5726.870117" R_minW_pmos="15491.700195" ipin_mux_trans_size="1.000000"/>
-      <timing C_ipin_cblock="1.191000e-14" T_ipin_cblock="1.482000e-10"/>
+      <sizing R_minW_nmos="5726.870117" R_minW_pmos="15491.700195"/>
       <area grid_logic_tile_area="30000.000000"/>
       <chan_width_distr>
-        <io width="1.000000"/>
         <x distr="uniform" peak="1.000000"/>
         <y distr="uniform" peak="1.000000"/>
       </chan_width_distr>
       <switch_block type="wilton" fs="3"/>
-    </device>
+    <connection_block input_switch_name="ipin_cblock"/>
+        </device>
     <switchlist>
       <switch type="mux" name="0" R="94.841003" Cin="1.537000e-14" Cout="2.194000e-13" Tdel="6.562000e-11" mux_trans_size="10.000000" buf_size="1"/>
-    </switchlist>
+    <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+        <switch type="mux" name="ipin_cblock" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10" mux_trans_size="1.000000" buf_size="auto"/>
+        </switchlist>
     <segmentlist>
       <segment freq="1.000000" length="4" type="unidir" Rmetal="11.064550" Cmetal="4.727860e-14">
         <mux name="0"/>
@@ -91,7 +106,7 @@
           </interconnect>
         </mode>
 
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.125"/>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -104,11 +119,7 @@
           <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
-        <gridlocations>
-          <loc type="perimeter" priority="10"/>
-        </gridlocations>
-
-      </pb_type>
+        </pb_type>
       <pb_type name="clb">
         
           <input name="I" num_pins="56" equivalent="true"/>
@@ -166,12 +177,9 @@
             <complete name="complete2" input="clb.clk" output="ble[7:0].clk"/>
             <direct name="direct1" input="ble[7:0].out" output="clb.O"/>
           </interconnect>
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.125"/>
         <pinlocations pattern="spread"/>
-        <gridlocations>
-          <loc type="fill" priority="1"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
 
       <pb_type name="memory" height="4">
           <input name="addr1" num_pins="16"/>
@@ -536,12 +544,9 @@
 
 
 
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.125"/>
         <pinlocations pattern="spread"/>
-        <gridlocations>
-          <loc type="col" start="2" repeat="5" priority="2"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
 
       <!-- This is the 36*36 uniform mult -->
       <pb_type name="mult_36" height="3">
@@ -565,7 +570,8 @@
                     <input name="a" num_pins="9"/>
                     <input name="b" num_pins="9"/>
                     <output name="out" num_pins="18"/>
-                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="{a b}" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="a" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="b" out_port="out"/>
                   </pb_type>
 
                   <interconnect>
@@ -593,7 +599,7 @@
                     <C_constant C="1.89e-13" in_port="divisible_mult_18x18.b" out_port="mult_9x9_slice[1:0].B_cfg"/>
                   </direct>
                   <direct name="out2out" input="mult_9x9_slice[1:0].OUT_cfg" output="divisible_mult_18x18.out">
-                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="mult_9x9_slice[1:0].OUT_cfg" out_port ="divisible_mult_18x18.out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="mult_9x9_slice[1:0].OUT_cfg" out_port="divisible_mult_18x18.out"/>
                     <C_constant C="1.89e-13" in_port="mult_9x9_slice[1:0].OUT_cfg" out_port="divisible_mult_18x18.out"/>
                   </direct>
                 </interconnect>
@@ -605,11 +611,12 @@
                   <input name="B_cfg" num_pins="18"/>
                   <output name="OUT_cfg" num_pins="36"/>
 
-                  <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1"  area="1000">
+                  <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" area="1000">
                     <input name="a" num_pins="18"/>
                     <input name="b" num_pins="18"/>
                     <output name="out" num_pins="36"/>
-                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="{a b}" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="a" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="b" out_port="out"/>
                   </pb_type>
 
                   <interconnect>
@@ -653,7 +660,7 @@
                 <C_constant C="1.89e-13" in_port="mult_36.b" out_port="divisible_mult_18x18[1:0].a"/>
               </direct>
               <direct name="out2out" input="divisible_mult_18x18[1:0].out" output="mult_36.out">
-                <delay_constant max="2.03e-13" min="1.89e-13" in_port="divisible_mult_18x18[1:0].out" out_port ="mult_36.out"/>
+                <delay_constant max="2.03e-13" min="1.89e-13" in_port="divisible_mult_18x18[1:0].out" out_port="mult_36.out"/>
                 <C_constant C="1.89e-13" in_port="divisible_mult_18x18[1:0].out" out_port="mult_36.out"/>
               </direct>
             </interconnect>
@@ -669,7 +676,8 @@
                 <input name="a" num_pins="36"/>
                 <input name="b" num_pins="36"/>
                 <output name="out" num_pins="72"/>
-                <delay_constant max="2.03e-13" min="1.89e-13" in_port="{a b}" out_port="out"/>
+                <delay_constant max="2.03e-13" min="1.89e-13" in_port="a" out_port="out"/>
+                <delay_constant max="2.03e-13" min="1.89e-13" in_port="b" out_port="out"/>
               </pb_type>
 
               <interconnect>
@@ -705,12 +713,9 @@
 
 
 
-        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.125"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.125"/>
         <pinlocations pattern="spread"/>
 
-        <gridlocations>
-          <loc type="col" start="4" repeat="5" priority="2"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
     </complexblocklist>
   </architecture>

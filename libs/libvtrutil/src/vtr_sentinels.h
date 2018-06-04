@@ -18,6 +18,13 @@ class DefaultSentinel {
         constexpr static T INVALID() { return T(); }
 };
 
+//Specialization for pointer types
+template<class T>
+class DefaultSentinel<T*> {
+    public:
+        constexpr static T* INVALID() { return nullptr; }
+};
+
 //The sentile value is a specified value of the type
 template<class T, T val>
 class CustomSentinel {

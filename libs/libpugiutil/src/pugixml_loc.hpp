@@ -13,7 +13,7 @@ namespace pugiutil {
     //pugi offset to line/col data based on: https://stackoverflow.com/questions/21003471/convert-pugixmls-result-offset-to-column-line
     class loc_data {
         public:
-            loc_data() {}
+            loc_data() = default;
 
             loc_data(std::string filename_val)
                 : filename_(filename_val) {

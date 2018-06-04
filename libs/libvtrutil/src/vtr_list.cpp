@@ -5,14 +5,14 @@
 
 namespace vtr {
 
-struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
+t_linked_vptr *insert_in_vptr_list(t_linked_vptr *head, void *vptr_to_add) {
 
 	/* Inserts a new element at the head of a linked list of void pointers. *
 	 * Returns the new head of the list.                                    */
 
-	struct s_linked_vptr *linked_vptr;
+	t_linked_vptr *linked_vptr;
 
-	linked_vptr = (struct s_linked_vptr *) vtr::malloc(sizeof(struct s_linked_vptr));
+	linked_vptr = (t_linked_vptr *) vtr::malloc(sizeof(t_linked_vptr));
 
 	linked_vptr->data_vptr = vptr_to_add;
 	linked_vptr->next = head;
@@ -21,11 +21,11 @@ struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr
 
 /* Deletes the element at the head of a linked list of void pointers. *
  * Returns the new head of the list.                                    */
-struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head) {
-	struct s_linked_vptr *linked_vptr;
+t_linked_vptr *delete_in_vptr_list(t_linked_vptr *head) {
+	t_linked_vptr *linked_vptr;
 
-	if (head == NULL )
-		return NULL ;
+	if (head == nullptr )
+		return nullptr ;
 	linked_vptr = head->next;
 	free(head);
 	return linked_vptr; /* New head of the list */
@@ -41,7 +41,7 @@ t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 
 	t_linked_int *linked_int;
 
-	if (*free_list_head_ptr != NULL ) {
+	if (*free_list_head_ptr != nullptr ) {
 		linked_int = *free_list_head_ptr;
 		*free_list_head_ptr = linked_int->next;
 	} else {
@@ -55,20 +55,20 @@ t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 
 void free_int_list(t_linked_int ** int_list_head_ptr) {
 
-	/* This routine truly frees (calls free) all the integer list elements    * 
+	/* This routine truly frees (calls free) all the integer list elements    *
 	 * on the linked list pointed to by *head, and sets head = NULL.          */
 
 	t_linked_int *linked_int, *next_linked_int;
 
 	linked_int = *int_list_head_ptr;
 
-	while (linked_int != NULL ) {
+	while (linked_int != nullptr ) {
 		next_linked_int = linked_int->next;
 		free(linked_int);
 		linked_int = next_linked_int;
 	}
 
-	*int_list_head_ptr = NULL;
+	*int_list_head_ptr = nullptr;
 }
 
 } //namespace
