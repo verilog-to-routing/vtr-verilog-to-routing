@@ -34,3 +34,4 @@ regression_tests/vtr_reg_strong/strong_default_fc_pinlocs
 regression_tests/vtr_reg_strong/strong_bidir
 regression_tests/vtr_reg_strong/strong_detailed_timing
 regression_tests/vtr_reg_strong/strong_target_pin_util
+regression_tests/vtr_reg_strong/strong_clock_modeling
