@@ -60,7 +60,8 @@ my $processors             = 1;
 my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
 my $system_type            = "local";
-my $shared_script_params = "";
+my $shared_script_params   = "";
+my $verbosity              = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -78,6 +79,10 @@ while ( $token = shift(@ARGV) ) {
 	# Check for -p N or -j N
 	elsif ( $token eq "-p" or $token eq "-j" ) {
 		$processors = int( shift(@ARGV) );
+	}
+
+	elsif ( $token eq "-verbosity") {
+		$verbosity = int( shift(@ARGV) );
 	}
 
     # Treat the remainder of the command line options as script parameters shared by all tasks
@@ -424,6 +429,9 @@ sub run_single_task {
         foreach my $action (@actions) {
             my ($run_dir, $command, $runtime_estimate) = @$action;
 
+            if ($verbosity > 0) {
+                print "$command\n";
+            }
             $thread_work->enqueue("$run_dir||||$command");
 
         }
