@@ -348,51 +348,6 @@ struct ParseTimingReportDetail {
         return {"netlist", "aggregated"};
     }
 };
-#if 0
-struct ParseExtPinUtil {
-    ConvertedValue<t_ext_pin_util> from_str(std::string str) {
-        auto elements = vtr::split(str, ",");
-
-        t_ext_pin_util target_ext_pin_util;
-        if (elements.size() == 1) {
-            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
-            target_ext_pin_util.output_pin_util = vtr::atof(elements[0]);
-        } else if (elements.size() == 2) {
-            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
-            target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
-        } else {
-            std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to t_ext_pin_util (expected either a single float value, or two float values separted by a comma)";
-            throw argparse::ArgParseConversionError(msg.str());
-        }
-
-        if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
-            std::stringstream msg;
-            msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
-            throw argparse::ArgParseConversionError(msg.str());
-        }
-        if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
-            std::stringstream msg;
-            msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
-            throw argparse::ArgParseConversionError(msg.str());
-        }
-
-        return target_ext_pin_util;
-    }
-
-    std::string to_str(t_ext_pin_util val) {
-        if (val.input_pin_util == val.output_pin_util) {
-            return std::to_string(val.input_pin_util);
-        } else {
-            return vtr::join({std::to_string(val.input_pin_util), std::to_string(val.output_pin_util)}, ",");
-        }
-    }
-    
-    std::vector<std::string> default_choices() {
-        return {};
-    }
-};
-#endif
 
 struct ParseClockModelingMethod {
     ConvertedValue<e_clock_modeling_method> from_str(std::string str) {
@@ -722,15 +677,33 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
-            .help("Sets the external pin utilization target during clustering."
-                  " This determines how many pin the clustering engine will aim to use before starting a new cluster."
-                  " Setting this to 1.0 guides the packer to pack as densely as possible (i.e. try to use 100% of cluster external pins)."
-                  " Setting this to a lower value will guide the packer to pack less densely, instead creating more clusters."
-                  " In the limit setting this to 0.0 will cause the packer to create a new cluster for each packing molecule."
-                  " Typically packing less densely improves routability, at the cost of using more clusters."
-                  " Note that this is only a guideline, the packer will use up to 1.0 utilization if a molecule would not otherwise not in any cluster type."
-
-                  " If two values are specified separated by a comma (e.g. '0.7,0.9') this is interpretted as specifying the input and output pin target utilizations respectively")
+            .help("Sets the external pin utilization target during clustering.\n"
+                  "Value Ranges:\n"
+                  "* 1.0: The packer to pack as densely as possible (i.e. try\n"
+                  "       to use 100% of cluster external pins)\n"
+                  "* 0.0: The packer to pack as loosely as possible (i.e. each\n"
+                  "       block will contain a single mollecule) Values in\n"
+                  "       between trade-off pin usage and packing density\n"
+                  "\n"
+                  "Typically packing less densely improves routability, at\n"
+                  "the cost of using more clusters. Note that this is only\n"
+                  "a guideline, the packer will use up to 1.0 utilization if\n"
+                  "a molecule would not otherwise not in any cluster type.\n"
+                  "\n"
+                  "This option can take multiple specifications in several\n"
+                  "formats:\n"
+                  "* Single Value (e.g. '0.7'): the input pin utilization for\n"
+                  "                             all block types (output pin\n"
+                  "                             utilization defaults to 1.0)\n"
+                  "* Double Value (e.g. '0.7,0.8'): the input and output pin\n"
+                  "                             utilization for all block types\n"
+                  "* Block Value (e.g. 'clb:0.7', 'clb:0.7,0.8'): the pin\n"
+                  "                             utilization for a specific\n"
+                  "                             block type\n"
+                  "These can be used in combination. For example:\n"
+                  "   '--target_ext_pin_util 0.9 clb:0.7'\n"
+                  "would set the input pin utilization of clb blocks to 0.7,\n"
+                  "and all other blocks to 0.9.\n")
             .nargs('+')
             .default_value({"1.0"})
             .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1165,7 +1138,7 @@ static bool verify_args(const t_options& args) {
                 args.read_rr_graph_file.argument_name().c_str());
     }
 
-    if (!args.enable_clustering_pin_feasibility_filter && args.target_external_pin_util.provenance() == Provenance::SPECIFIED) {
+    if (!args.enable_clustering_pin_feasibility_filter && (args.target_external_pin_util.provenance() == Provenance::SPECIFIED)) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"%s option must be enabled for %s to have any effect\n",
                 args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),

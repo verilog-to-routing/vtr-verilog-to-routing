@@ -110,11 +110,36 @@ enum e_block_pack_status {
     BLK_STATUS_UNDEFINED
 };
 
-//Specifies the utilization of external input/output pins
-//during packing
 struct t_ext_pin_util {
+    t_ext_pin_util() = default;
+    t_ext_pin_util(float in, float out)
+        : input_pin_util(in), output_pin_util(out) {}
+
     float input_pin_util = 1.;
     float output_pin_util = 1.;
+};
+
+//Specifies the utilization of external input/output pins
+//during packing
+class t_ext_pin_util_targets {
+public:
+    t_ext_pin_util_targets() = default;
+    t_ext_pin_util_targets(float default_in_util, float default_out_util);
+
+    //Returns the input pin util of the specified block (or default if unspecified)
+    t_ext_pin_util get_pin_util(std::string block_type_name) const;
+
+public:
+    //Sets the pin util for the specified block type
+    //Returns true if non-default was previously set
+    void set_block_pin_util(std::string block_type_name, t_ext_pin_util target);
+
+    //Sets the default pin util
+    //Returns true if a default was previously set
+    void set_default_pin_util(t_ext_pin_util target);
+private:
+    t_ext_pin_util defaults_;
+    std::map<std::string,t_ext_pin_util> overrides_;
 };
 
 /* these are defined later, but need to declare here because it is used */
@@ -712,7 +737,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	bool debug_clustering;
     bool enable_pin_feasibility_filter;
-    t_ext_pin_util target_external_pin_util;
+    t_ext_pin_util_targets target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

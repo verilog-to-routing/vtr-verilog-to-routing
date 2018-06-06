@@ -44,7 +44,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
-static t_ext_pin_util parse_target_external_pin_util(std::vector<std::string> specs);
+static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
@@ -516,34 +516,71 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     return ipin_cblock_switch_index;
 }
 
-static t_ext_pin_util parse_target_external_pin_util(std::vector<std::string> specs) {
+static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs) {
 
-    t_ext_pin_util target_ext_pin_util;
-    if (specs.empty()) return target_ext_pin_util;
+    t_ext_pin_util_targets targets (1., 1.);
+    bool default_set = false;
+    std::set<std::string> seen_block_types;
 
-    auto elements = vtr::split(specs[0], ",");
-    if (elements.size() == 1) {
-        target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
-        target_ext_pin_util.output_pin_util = vtr::atof(elements[0]);
-    } else if (elements.size() == 2) {
-        target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
-        target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
-    } else {
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << specs[0] << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
-        VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+    for (auto spec : specs) {
+        t_ext_pin_util target_ext_pin_util(1., 1.);
+
+        auto block_values = vtr::split(spec, ":");
+        std::string block_type;
+        std::string values;
+        if (block_values.size() == 2) {
+            block_type = block_values[0];
+            values = block_values[1];
+        } else if (block_values.size() == 1) {
+            values = block_values[0];
+        } else {
+            std::stringstream msg;
+            msg << "In valid block pin utilization specification '" << spec << "' (expected at most one ':' between block name and values";
+            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+        }
+
+        auto elements = vtr::split(values, ",");
+        if (elements.size() == 1) {
+            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+        } else if (elements.size() == 2) {
+            target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+            target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
+            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+        }
+
+        if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
+            std::stringstream msg;
+            msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
+            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+        }
+        if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
+            std::stringstream msg;
+            msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
+            VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+        }
+
+        if (block_type.empty()) {
+            //Default value
+            if (default_set) {
+                std::stringstream msg;
+                msg << "Only one default pin utilization should be specified";
+                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+            }
+            targets.set_default_pin_util(target_ext_pin_util);
+            default_set = true;
+        } else {
+            if (seen_block_types.count(block_type)) {
+                std::stringstream msg;
+                msg << "Only one pin utilization should be specified for block type '" << block_type << "'";
+                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+            }
+
+            seen_block_types.insert(block_type);
+        }
     }
 
-    if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
-        std::stringstream msg;
-        msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
-        VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-    }
-    if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
-        std::stringstream msg;
-        msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
-        VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
-    }
-
-    return target_ext_pin_util;
+    return targets;
 }
