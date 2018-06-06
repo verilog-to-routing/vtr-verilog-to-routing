@@ -1,5 +1,6 @@
 #include "argparse_util.hpp"
 #include <cstring>
+#include <algorithm>
 
 namespace argparse {
 
@@ -36,6 +37,16 @@ namespace argparse {
 
         }
         return false;
+    }
+
+    bool is_valid_choice(std::string str, const std::vector<std::string>& choices) {
+        if (choices.empty()) return true;
+
+        auto find_iter = std::find(choices.begin(), choices.end(), str);
+        if (find_iter == choices.end()) {
+            return false;
+        }
+        return true;
     }
 
     std::string toupper(std::string str) {

@@ -22,6 +22,9 @@ namespace argparse {
     //'-' or '--' followed by one or more letters
     bool is_argument(std::string str, const std::map<std::string,std::shared_ptr<Argument>>& arg_map);
 
+    //Returns true if str is in choices, or choices is empty
+    bool is_valid_choice(std::string str, const std::vector<std::string>& choices);
+
     //Returns 'str' interpreted as type T
     // Throws an exception if conversion fails
     template<typename T> 
