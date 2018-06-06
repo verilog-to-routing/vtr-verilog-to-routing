@@ -1,1 +1,8 @@
-critical_path_delay;vpr.out;Final critical path:\s*(.*)\s*ns
+#VPR Analysis (final implementation) Metrics
+critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+
+#Area Metrics
+logic_block_area_total;vpr.out;Total logic block area .*: (.*)
+
+#Power related
+total_power;*.power;^Total\s+(.*?)\s+

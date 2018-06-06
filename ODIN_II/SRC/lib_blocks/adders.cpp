@@ -1490,8 +1490,7 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 	//set the default
 	int blk_size 							= width[0];
 	nnode_t *initial_carry 		= (subtraction)? netlist->vcc_node: netlist->gnd_node;
-
-	for(int start_pin=0, current_counter=0 ; start_pin<width[0]; start_pin+=blk_size, current_counter++)
+	for(int start_pin=0, current_counter=1 ; start_pin<width[0]; start_pin+=blk_size, current_counter++)
 	{
 		std::string my_type 			= "soft";
 		std::string sub_structure = "default";
@@ -1501,9 +1500,8 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 		if(def)
 		{
 			//don't optimize the first
-			if(current_counter == 0 || blk_size == 1)
+			if(current_counter == 1 || blk_size == 1)
 			{
-				printf("using experimental soft_logic optimization \n\tfor node :%s ! target:<%d> \n[START]~", node->name, width[0]-start_pin);
 				my_type 			= "soft";
 				blk_size 			= 1;
 				sub_structure = "default";
@@ -1513,12 +1511,18 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 				my_type 			= def->type;
 				sub_structure = def->name;
 				blk_size 			= (def->bitsize > blk_size)? blk_size: def->bitsize;
-
 			}
+
+			/* pretty print info */
+			if(current_counter == 1)
+				printf("\n::%s\n[target-bit_size:<%d>START]~", node->name, width[0]-start_pin);
+
 			printf("~[<%s><%s>::%d]~",my_type.c_str(), sub_structure.c_str(), blk_size);
 
-			if(blk_size+start_pin == width[0])
-				printf("~[END] \n ====== nb_of_sub_nodes: %d ====== \n\n", current_counter);
+			if(blk_size+start_pin == width[0]){
+				printf("~[END::sub_module_count:<%d>] \n", current_counter);
+				fflush(stdout);
+			}
 		}
 
 		nnode_t *previous_carry = initial_carry;

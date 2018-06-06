@@ -59,6 +59,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+#define DEFAULT_OUTPUT "OUTPUT/"
+
 size_t current_parse_file;
 t_arch Arch;
 global_args_t global_args;
@@ -67,7 +69,6 @@ int block_tag;
 
 void set_default_config();
 void get_options(int argc, char **argv);
-void print_usage();
 void parse_adder_def_file();
 
 int main(int argc, char **argv)
@@ -128,9 +129,8 @@ int main(int argc, char **argv)
 		register_hard_blocks();
 
 		/* get odin soft_logic definition file */
-    if(!hard_adders && strcmp(global_args.adder_def,"ripple")!=0)
+    if(!hard_adders && strcmp(global_args.adder_def,"default")!=0)
     {
-      printf("Reading sof_logic definition file\n");
       if(strcmp(global_args.adder_def,"optimized")==0)
       {
         std::string path = vtr::dirname(argv[0]) + "odin.soft_config";
@@ -243,60 +243,6 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-/*
- * Prints usage information for Odin II. This should be kept up to date with the latest
- * features added to Odin II.
- */
-void print_usage()
-{
-	printf
-	(
-			"USAGE: odin_II.exe [-c <Configuration> | -b <BLIF> | -V <Verilog HDL>]\n"
-			"  -c <XML Configuration File>\n"
-			"  -V <Verilog HDL File>\n"
-			"  -b <BLIF File>\n"
-			" Other options:\n"
-			"  -o <output_path and file name>\n"
-			"  -a <architecture_file_in_VPR6.0_form>\n"
-			"  -G Output netlist graph in graphviz .dot format. (net.dot, opens with dotty)\n"
-			"  -A Output AST graph in .dot format.\n"
-			"  -W Print all warnings. (Can be substantial.) \n"
-			"  -h Print help\n"
-			"  --carryskip <skip size>"
-			"\n"
-			" SIMULATION: Always produces input_vectors, output_vectors,\n"
-			"             and ModelSim test.do file.\n"
-			"  Activate simulation with either: \n"
-			"  -g <Number of random test vectors to generate>\n"
-			"     -L <Comma-separated list of primary inputs to hold \n"
-			"         high at cycle 0, and low for all subsequent cycles.>\n"
-			"     -H <Comma-separated list of primary inputs to hold low at \n"
-			"         cycle 0, and high for all subsequent cycles.>\n"
-			"     -3 Generate three valued logic. (Default is binary.)\n"
-			"     -r <Random seed> (Default is 0.)\n"
-			"  -t <input vector file>: Supply a predefined input vector file\n"
-			"  -U Default initial register value. Set to -U0, -U1 or -UX (unknown). Default: X\n"
-
-			" Other Simulation Options: \n"
-			"  -T <output vector file>: Supply an output vector file to check output\n"
-			"                            vectors against.\n"
-			"  -E Output after both edges of the clock.\n"
-			"     (Default is to output only after the falling edge.)\n"
-			"  -R Output after rising edge of the clock only.\n"
-			"     (Default is to output only after the falling edge.)\n"
-			"  -p <Comma-separated list of additional pins/nodes to monitor\n"
-			"      during simulation.>\n"
-			"     Eg: \"-p input~0,input~1\" monitors pin 0 and 1 of input, \n"
-			"       or \"-p input\" monitors all pins of input as a single port. \n"
-			"       or \"-p input~\" monitors all pins of input as separate ports. (split) \n"
-			"     - Note: Non-existent pins are ignored. \n"
-			"     - Matching is done via strstr so general strings will match \n"
-			"       all similar pins and nodes.\n"
-			"         (Eg: FF_NODE will create a single port with all flipflops) \n"
-	);
-	fflush(stdout);
-}
-
 struct ParseInitRegState {
     int from_str(std::string str) {
         if      (str == "0") return 0;
@@ -381,7 +327,7 @@ void get_options(int argc, char** argv) {
 
     other_grp.add_argument(global_args.adder_def, "--adder_type")
             .help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
-	        .default_value("ripple")
+	        .default_value("default")
 	        .metavar("INPUT_FILE")
 	        ;
 
@@ -419,7 +365,7 @@ void get_options(int argc, char** argv) {
 
     other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
             .help("Directory output for simulation")
-            .default_value("OUTPUT/")
+            .default_value(DEFAULT_OUTPUT)
             .metavar("SIMULATION_DIRECTORY");
 
     other_sim_grp.add_argument(global_args.sim_generate_three_valued_logic, "-3")
@@ -476,6 +422,12 @@ void get_options(int argc, char** argv) {
     if (global_args.write_ast_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.output_ast_graphs = global_args.write_ast_as_dot;
     }
+    if (configuration.debug_output_path == DEFAULT_OUTPUT) {
+        configuration.debug_output_path = std::string(global_args.sim_directory);
+    }
+    if (global_args.adder_def.provenance() == argparse::Provenance::SPECIFIED) {
+        printf("using experimental soft_logic optimization \n");
+    }
 }
 
 /*---------------------------------------------------------------------------
@@ -491,7 +443,7 @@ void set_default_config()
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
 	configuration.output_preproc_source = 0;
-	configuration.debug_output_path = std::string(".");
+	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
 	configuration.arch_file = NULL;
 
 	configuration.fixed_hard_multiplier = 0;
