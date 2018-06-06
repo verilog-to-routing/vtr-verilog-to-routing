@@ -578,6 +578,7 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
                 VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
             }
 
+            targets.set_block_pin_util(block_type, target_ext_pin_util);
             seen_block_types.insert(block_type);
         }
     }
