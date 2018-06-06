@@ -1,8 +1,28 @@
 #ifndef ARGPARSE_VALUE_HPP
 #define ARGPARSE_VALUE_HPP
 #include <iostream>
+#include "argparse_error.hpp"
 
 namespace argparse {
+
+    template<class T>
+    class ConvertedValue {
+        public:
+            typedef T value_type;
+        public:
+            void set_value(T val) { errored_ = false; value_ = val; }
+            void set_error(std::string msg) { errored_ = true; error_msg_ = msg; }
+
+            T value() const { return value_; }
+            std::string error() const { return error_msg_; }
+
+            operator bool() { return valid(); }
+            bool valid() const { return !errored_; }
+        private:
+            T value_;
+            std::string error_msg_;
+            bool errored_ = true;
+    };
 
     //How the value associated with an argumetn was initialized
     enum class Provenance {
@@ -41,9 +61,24 @@ namespace argparse {
             const std::string& argument_name() const { return argument_name_; }
 
         public: //Mutators
+            void set(ConvertedValue<T> val, Provenance prov) {
+                if (!val.valid()) {
+                    //If the value didn't convert properly, it should
+                    //have an error message so raise it
+                    throw ArgParseConversionError(val.error());
+                }
+                value_ = val.value();
+                provenance_ = prov;
+            }
+
             void set(T val, Provenance prov) {
                 value_ = val;
                 provenance_ = prov;
+            }
+
+            T& mutable_value(Provenance prov) {
+                provenance_ = prov;
+                return value_;
             }
 
             void set_argument_group(std::string grp) {

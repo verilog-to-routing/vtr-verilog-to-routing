@@ -236,9 +236,9 @@ namespace argparse {
         } else if (arg.nargs() == '?') {
             metavar = "[" + base_metavar + "]";
         } else if (arg.nargs() == '+') {
-            metavar = base_metavar + " [" + base_metavar + "]";
+            metavar = base_metavar + " [" + base_metavar + " ...]";
         } else if (arg.nargs() == '*') {
-            metavar = "[" + base_metavar + " [" + base_metavar + "...]]";
+            metavar = "[" + base_metavar + " [" + base_metavar + " ...]]";
         } else {
             assert(false);
         }

@@ -45,13 +45,21 @@ namespace argparse {
             //Specifies the epilog text at the bottom of the help description
             ArgumentParser& epilog(std::string prog);
 
-            //Adds an argument or option with a single name
+            //Adds an argument or option with a single name (single value)
             template<typename T, typename Converter=DefaultConverter<T>>
             Argument& add_argument(ArgValue<T>& dest, std::string option);
 
-            //Adds an option with a long and short option name
+            //Adds an option with a long and short option name (single value)
             template<typename T, typename Converter=DefaultConverter<T>>
             Argument& add_argument(ArgValue<T>& dest, std::string long_opt, std::string short_opt);
+
+            //Adds an argument or option with a single name (multi value)
+            template<typename T, typename Converter=DefaultConverter<T>>
+            Argument& add_argument(ArgValue<std::vector<T>>& dest, std::string option);
+
+            //Adds an option with a long and short option name (multi value)
+            template<typename T, typename Converter=DefaultConverter<T>>
+            Argument& add_argument(ArgValue<std::vector<T>>& dest, std::string long_opt, std::string short_opt);
 
             //Adds a group to collect related arguments
             ArgumentGroup& add_argument_group(std::string description_str);
@@ -116,13 +124,21 @@ namespace argparse {
     class ArgumentGroup {
         public:
 
-            //Adds an argument or option with a single name
+            //Adds an argument or option with a single name (single value)
             template<typename T, typename Converter=DefaultConverter<T>>
             Argument& add_argument(ArgValue<T>& dest, std::string option);
 
-            //Adds an option with a long and short option name
+            //Adds an option with a long and short option name (single value)
             template<typename T, typename Converter=DefaultConverter<T>>
             Argument& add_argument(ArgValue<T>& dest, std::string long_opt, std::string short_opt);
+
+            //Adds an argument or option with a multi name (multi value)
+            template<typename T, typename Converter=DefaultConverter<T>>
+            Argument& add_argument(ArgValue<std::vector<T>>& dest, std::string option);
+
+            //Adds an option with a long and short option name (multi value)
+            template<typename T, typename Converter=DefaultConverter<T>>
+            Argument& add_argument(ArgValue<std::vector<T>>& dest, std::string long_opt, std::string short_opt);
 
             //Adds an epilog to the group
             ArgumentGroup& epilog(std::string str);
@@ -153,12 +169,14 @@ namespace argparse {
     class Argument {
         public:
             Argument(std::string long_opt, std::string short_opt);
-        public: //Mutators
+        public: //Configuration Mutators
             //Sets the hlep text
             Argument& help(std::string help_str);
 
             //Sets the defuault value
             Argument& default_value(const std::string& default_val);
+            Argument& default_value(const std::vector<std::string>& default_val);
+            Argument& default_value(const std::initializer_list<std::string>& default_val);
 
             //Sets the action
             Argument& action(Action action);
@@ -181,11 +199,15 @@ namespace argparse {
             //Sets where this option appears in the help
             Argument& show_in(ShowIn show);
 
+        public: //Option setting mutators
             //Sets the target value to the specified default
             virtual void set_dest_to_default() = 0;
 
             //Sets the target value to the specified value
             virtual void set_dest_to_value(std::string value) = 0;
+
+            //Adds the specified value to the taget values
+            virtual void add_value_to_dest(std::string value) = 0;
 
             //Set the target value to true
             virtual void set_dest_to_true() = 0;
@@ -238,8 +260,11 @@ namespace argparse {
             //Returns true if this is a positional argument
             bool positional() const;
 
-            //Returns treu if the default_value() was set
+            //Returns true if the default_value() was set
             bool default_set() const;
+
+            //Returns true if the proposed value is legal
+            virtual bool is_valid_value(std::string value) = 0;
         public: //Lifetime
             virtual ~Argument() {}
             Argument(const Argument&) = default;
@@ -259,15 +284,14 @@ namespace argparse {
             Action action_ = Action::STORE;
             bool required_ = false;
 
-            std::string default_value_;
+            std::vector<std::string> default_value_;
 
             std::string group_name_;
             ShowIn show_in_ = ShowIn::USAGE_AND_HELP;
             bool default_set_ = false;
     };
 
-
-    template<typename T, typename Converter=DefaultConverter<T>>
+    template<typename T, typename Converter>
     class SingleValueArgument : public Argument {
         public: //Constructors
             SingleValueArgument(ArgValue<T>& dest, std::string long_opt, std::string short_opt)
@@ -290,6 +314,10 @@ namespace argparse {
                 dest_.set(Converter().from_str(value), Provenance::SPECIFIED);
                 dest_.set_argument_name(name());
                 dest_.set_argument_group(group_name());
+            }
+
+            void add_value_to_dest(std::string /*value*/) override {
+                throw ArgParseError("Single value option can not have multiple values set");
             }
 
             void set_dest_to_true() override {
@@ -318,6 +346,16 @@ namespace argparse {
             void reset_dest() override {
                 dest_ = ArgValue<T>();
             }
+
+            bool is_valid_value(std::string value) override {
+                auto converted_value = Converter().from_str(value);
+
+                if (!converted_value) {
+                    return false;
+                }
+                return is_valid_choice(value, choices());
+            }
+
         private: //Data
             ArgValue<T>& dest_;
     };
@@ -337,6 +375,10 @@ namespace argparse {
                 dest_.set_argument_group(group_name());
             }
 
+            void add_value_to_dest(std::string /*value*/) override {
+                throw ArgParseError("Single value option can not have multiple values set");
+            }
+
             void set_dest_to_value(std::string value) override {
                 if (dest_.provenance() == Provenance::SPECIFIED
                     && dest_.argument_name() == name()) {
@@ -349,13 +391,19 @@ namespace argparse {
             }
 
             void set_dest_to_true() override {
-                dest_.set(true, Provenance::SPECIFIED);
+                ConvertedValue<bool> val;
+                val.set_value(true);
+
+                dest_.set(val, Provenance::SPECIFIED);
                 dest_.set_argument_name(name());
                 dest_.set_argument_group(group_name());
             }
 
             void set_dest_to_false() override {
-                dest_.set(false, Provenance::SPECIFIED);
+                ConvertedValue<bool> val;
+                val.set_value(false);
+
+                dest_.set(val, Provenance::SPECIFIED);
                 dest_.set_argument_name(name());
                 dest_.set_argument_group(group_name());
             }
@@ -368,9 +416,92 @@ namespace argparse {
             void reset_dest() override {
                 dest_ = ArgValue<bool>();
             }
+
+            bool is_valid_value(std::string value) override {
+                auto converted_value = Converter().from_str(value);
+
+                if (!converted_value) {
+                    return false;
+                }
+                return is_valid_choice(value, choices());
+            }
         private: //Data
             ArgValue<bool>& dest_;
     };
+
+    template<typename T, typename Converter>
+    class MultiValueArgument : public Argument {
+        public: //Constructors
+            MultiValueArgument(ArgValue<T>& dest, std::string long_opt, std::string short_opt)
+                : Argument(long_opt, short_opt)
+                , dest_(dest)
+                {}
+
+        public: //Mutators
+            void set_dest_to_default() override {
+                ConvertedValue<T> val;
+                val.set_value(T());
+
+                dest_.set(val, Provenance::DEFAULT);
+                dest_.set_argument_name(name());
+                dest_.set_argument_group(group_name());
+            }
+
+            void set_dest_to_value(std::string /*value*/) override {
+                throw ArgParseError("Multi-value option can not be set to a single value");
+            }
+
+            void add_value_to_dest(std::string value) override {
+                if (dest_.provenance() == Provenance::SPECIFIED
+                    && dest_.argument_name() != name()) {
+                    throw ArgParseError("Argument destination already set by " + dest_.argument_name() + " (trying to set from " + name() + ")");
+                }
+
+                auto& target = dest_.mutable_value(Provenance::SPECIFIED);
+
+                //Insert is more general than push_back
+                auto converted_value = Converter().from_str(value);
+                if (!converted_value) {
+                    throw ArgParseConversionError(converted_value.error());
+                }
+                target.insert(std::end(target), converted_value.value());
+
+                dest_.set_argument_name(name());
+                dest_.set_argument_group(group_name());
+            }
+
+            void set_dest_to_true() override {
+                throw ArgParseError("Non-boolean destination can not be set true");
+            }
+            void set_dest_to_false() override {
+                throw ArgParseError("Non-boolean destination can not be set false");
+            }
+
+            bool valid_action() override {
+                //Sanity check that we aren't processing a boolean action with a non-boolean destination
+                if (action() != Action::STORE) {
+                    throw ArgParseError("Unexpected action (expected STORE)");
+                }
+                return true;
+            }
+
+            void reset_dest() override {
+                dest_ = ArgValue<T>();
+            }
+
+            bool is_valid_value(std::string value) override {
+                auto converted_value = Converter().from_str(value);
+
+                if (!converted_value) {
+                    return false;
+                }
+                return is_valid_choice(value, choices());
+            }
+        private: //Data
+            ArgValue<T>& dest_;
+    };
+
+
 } //namespace
 
 #include "argparse.tpp"

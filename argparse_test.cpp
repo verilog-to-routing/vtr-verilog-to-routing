@@ -2,6 +2,7 @@
 #include "argparse_util.hpp"
 
 using argparse::ArgValue;
+using argparse::ConvertedValue;
 
 #define TEST
 
@@ -85,23 +86,29 @@ struct Args {
 
     ArgValue<bool> full_stats;
     ArgValue<bool> gen_post_synthesis_netlist;
+
+    ArgValue<std::vector<float>> one_or_more;
+    ArgValue<std::vector<float>> zero_or_more;
 };
 
 bool expect_pass(argparse::ArgumentParser& parser, std::vector<std::string> cmd_line);
 bool expect_fail(argparse::ArgumentParser& parser, std::vector<std::string> cmd_line);
 
 struct OnOff {
-    bool from_str(std::string str) {
-        if      (str == "on")  return true;
-        else if (str == "off") return false;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to boolean (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<bool> from_str(std::string str) {
+        ConvertedValue<bool> converted_value;
+
+        if      (str == "on")  converted_value.set_value(true);
+        else if (str == "off") converted_value.set_value(false);
+        else                   converted_value.set_error("Invalid argument value");
+        return converted_value;
     }
 
-    std::string to_str(bool val) {
-        if (val) return "on";
-        return "off";
+    ConvertedValue<std::string> to_str(bool val) {
+        ConvertedValue<std::string> converted_value;
+        if (val) converted_value.set_value("on");
+        else     converted_value.set_value("off");
+        return converted_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -450,6 +457,13 @@ int main(
             .help("Signal activities file for all nets (see documentation).")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    auto& test_grp = parser.add_argument_group("test options");
+
+    test_grp.add_argument(args.one_or_more, "--one_or_more")
+            .nargs('+');
+    test_grp.add_argument(args.zero_or_more, "--zero_or_more")
+            .nargs('*');
+
 #ifndef TEST
     auto specified_args = parser.parse_args(argc, argv);
     for(auto& arg : specified_args) {
@@ -476,6 +490,18 @@ int main(
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j3"}, //No-space for single letter arg
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j 3"}, //Space in short arg (but one string)
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j3", "--analysis"}, //Space in short arg (but one string)
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--one_or_more", "3.24"}, //Single value argument
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--one_or_more", "3.24", "10", "29"}, //Multiple values
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--zero_or_more"}, //No values
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--zero_or_more", "234"}, //One values
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--zero_or_more", "234", "254", "1.23"}, //Multiple values
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--zero_or_more", "234", "254", "1.23", "--one_or_more", "284"}, //* followed by +
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--zero_or_more", "--one_or_more", "284"}, //* followed by +
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--one_or_more", "284", "--zero_or_more", }, //+ followed by *
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--one_or_more", "284", "--zero_or_more", "798"}, //+ followed by *
+        {"my_arch6.xml", "--analysis", "--one_or_more", "3.24", "10", "29", "my_circuit6.blif"}, //positional after nargs='+'
+        {"my_arch6.xml", "--analysis", "--one_or_more", "3.24", "10", "29", "my_circuit6.blif"}, //positional after nargs='+'
+        {"my_arch6.xml", "--analysis", "--zero_or_more", "3.24", "10", "29", "my_circuit6.blif"}, //positional after nargs='*'
     };
 
     int num_failed = 0;
@@ -483,7 +509,7 @@ int main(
         bool pass = expect_pass(parser, cmd_line);
 
         if(!pass) {
-            std::cout << "Failed to parse: '" << argparse::join(cmd_line, " ") << "'" << std::endl;
+            std::cout << "       Failed to parse: '" << argparse::join(cmd_line, " ") << "'" << std::endl;
             ++num_failed;
         }
     }
@@ -502,13 +528,14 @@ int main(
         {"my_arch16.xml", "my_circuit16.blif", "--analysis", "--slack_definition", "Z"}, //Valid type, but wrong choice
         {"my_arch17.xml", "my_circuit17.blif"}, //Missing required
         {"my_arch6.xml", "my_circuit6.blif", "--analysis", "-j", "3.4"}, //Float when expected unsigned
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--one_or_more"}, //Expected at least one argument
     };
 
     for(const auto& cmd_line : fail_cases) {
         bool pass = expect_fail(parser, cmd_line);
 
         if(!pass) {
-            std::cout << "Parsed successfully when expected failure: '" << argparse::join(cmd_line, " ") << "'" << std::endl;
+            std::cout << "       Parsed successfully when expected failure: '" << argparse::join(cmd_line, " ") << "'" << std::endl;
             ++num_failed;
         }
     }
@@ -527,14 +554,14 @@ bool expect_pass(argparse::ArgumentParser& parser, std::vector<std::string> cmd_
         parser.parse_args_throw(cmd_line);
     } catch(const argparse::ArgParseHelp&) {
         parser.reset_destinations();
-        std::cout << "Parsed help OK [PASS]" << std::endl;
+        std::cout << "[PASS] Parsed help OK" << std::endl;
         return true;
     } catch(const argparse::ArgParseError& err) {
-        std::cout << err.what() << "  [FAIL]" << std::endl;
+        std::cout << "[FAIL] " << err.what() << std::endl;
         parser.reset_destinations();
         return false;
     }
-    std::cout << "Parsed OK [PASS]" << std::endl;
+    std::cout << "[PASS] Parsed OK" << std::endl;
     parser.reset_destinations();
     return true;
 }
@@ -543,11 +570,11 @@ bool expect_fail(argparse::ArgumentParser& parser, std::vector<std::string> cmd_
     try {
         parser.parse_args_throw(cmd_line);
     } catch(const argparse::ArgParseError& err) {
-        std::cout << err.what() << "  [PASS]" << std::endl;
+        std::cout << "[PASS] " << err.what() << std::endl;
         parser.reset_destinations();
         return true;
     }
-    std::cout << "Parsed OK when expected fail [FAIL]" << std::endl;
+    std::cout << "[FAIL] Parsed OK when expected fail" << std::endl;
     parser.reset_destinations();
     return false;
 }
