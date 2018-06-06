@@ -10,6 +10,7 @@
 #include "vtr_util.h"
 
 using argparse::Provenance;
+using argparse::ConvertedValue;
 
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
 static void set_conditional_defaults(t_options& args);
@@ -31,17 +32,25 @@ t_options read_options(int argc, const char** argv) {
 }
 
 struct ParseOnOff {
-    bool from_str(std::string str) {
-        if      (str == "on")  return true;
-        else if (str == "off") return false;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to boolean (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<bool> from_str(std::string str) {
+        ConvertedValue<bool> conv_value;
+        if      (str == "on")  conv_value.set_value(true);
+        else if (str == "off") conv_value.set_value(false);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to boolean (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;;
     }
 
-    std::string to_str(bool val) {
-        if (val) return "on";
-        return "off";
+    ConvertedValue<std::string> to_str(bool val) {
+        ConvertedValue<std::string> conv_value;
+
+        if (val) conv_value.set_value("on");
+        else conv_value.set_value("off");
+
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -50,20 +59,30 @@ struct ParseOnOff {
 };
 
 struct ParseCircuitFormat {
-    e_circuit_format from_str(std::string str) {
-        if      (str == "auto")  return e_circuit_format::AUTO;
-        else if (str == "blif") return e_circuit_format::BLIF;
-        else if (str == "eblif") return e_circuit_format::EBLIF;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_circuit_format> from_str(std::string str) {
+        ConvertedValue<e_circuit_format> conv_value;
+        if      (str == "auto")  conv_value.set_value(e_circuit_format::AUTO);
+        else if (str == "blif") conv_value.set_value(e_circuit_format::BLIF);
+        else if (str == "eblif") conv_value.set_value(e_circuit_format::EBLIF);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_circuit_format val) {
-        if (val == e_circuit_format::AUTO) return "auto";
-        else if (val == e_circuit_format::BLIF) return "blif";
-        VTR_ASSERT(val == e_circuit_format::EBLIF);
-        return "eblif";
+    ConvertedValue<std::string> to_str(e_circuit_format val) {
+        ConvertedValue<std::string> conv_value;
+
+        if (val == e_circuit_format::AUTO) conv_value.set_value("auto");
+        else if (val == e_circuit_format::BLIF) conv_value.set_value("blif");
+        else {
+            VTR_ASSERT(val == e_circuit_format::EBLIF);
+            conv_value.set_value("eblif");
+        }
+
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -71,20 +90,29 @@ struct ParseCircuitFormat {
     }
 };
 struct ParseRoutePredictor {
-    e_routing_failure_predictor from_str(std::string str) {
-        if      (str == "safe")  return SAFE;
-        else if (str == "aggressive") return AGGRESSIVE;
-        else if (str == "off") return OFF;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_routing_failure_predictor (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_routing_failure_predictor> from_str(std::string str) {
+        ConvertedValue<e_routing_failure_predictor> conv_value;
+        if      (str == "safe")  conv_value.set_value(SAFE);
+        else if (str == "aggressive") conv_value.set_value(AGGRESSIVE);
+        else if (str == "off") conv_value.set_value(OFF);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_routing_failure_predictor (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_routing_failure_predictor val) {
-        if (val == SAFE) return "safe";
-        else if (val == AGGRESSIVE) return "aggressive";
-        VTR_ASSERT(val == OFF);
-        return "off";
+    ConvertedValue<std::string> to_str(e_routing_failure_predictor val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == SAFE) conv_value.set_value("safe");
+        else if (val == AGGRESSIVE) conv_value.set_value("aggressive");
+        else {
+            VTR_ASSERT(val == OFF);
+            conv_value.set_value("off");
+        }
+
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -93,18 +121,26 @@ struct ParseRoutePredictor {
 };
 
 struct ParseRouterAlgorithm {
-    e_router_algorithm from_str(std::string str) {
-        if      (str == "breadth_first")  return BREADTH_FIRST;
-        else if (str == "timing_driven") return TIMING_DRIVEN;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_router_algorithm> from_str(std::string str) {
+        ConvertedValue<e_router_algorithm> conv_value;
+        if      (str == "breadth_first") conv_value.set_value(BREADTH_FIRST);
+        else if (str == "timing_driven") conv_value.set_value(TIMING_DRIVEN);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_router_algorithm val) {
-        if (val == BREADTH_FIRST) return "breadth_first";
-        VTR_ASSERT(val == TIMING_DRIVEN);
-        return "timing_driven";
+    ConvertedValue<std::string> to_str(e_router_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == BREADTH_FIRST) conv_value.set_value("breadth_first");
+        else {
+            VTR_ASSERT(val == TIMING_DRIVEN);
+            conv_value.set_value("timing_driven");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -113,20 +149,29 @@ struct ParseRouterAlgorithm {
 };
 
 struct RouteBudgetsAlgorithm {
-    e_routing_budgets_algorithm from_str(std::string str) {
-        if      (str == "minimax")  return MINIMAX;
-        else if (str == "scale_delay") return SCALE_DELAY;
-        else if (str == "disable") return DISABLE;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_routing_budget_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_routing_budgets_algorithm> from_str(std::string str) {
+        ConvertedValue<e_routing_budgets_algorithm> conv_value;
+        if      (str == "minimax") conv_value.set_value(MINIMAX);
+        else if (str == "scale_delay") conv_value.set_value(SCALE_DELAY);
+        else if (str == "disable") conv_value.set_value(DISABLE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_routing_budget_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+
+        return conv_value;
     }
 
-    std::string to_str(e_routing_budgets_algorithm val) {
-        if (val == MINIMAX) return "minimax";
-        if (val == DISABLE) return "disable";
-        VTR_ASSERT(val == SCALE_DELAY);
-        return "scale_delay";
+    ConvertedValue<std::string> to_str(e_routing_budgets_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == MINIMAX) conv_value.set_value("minimax");
+        else if (val == DISABLE) conv_value.set_value("disable");
+        else {
+            VTR_ASSERT(val == SCALE_DELAY);
+            conv_value.set_value("scale_delay");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -135,18 +180,26 @@ struct RouteBudgetsAlgorithm {
 };
 
 struct ParseRouteType {
-    e_route_type from_str(std::string str) {
-        if      (str == "global")  return GLOBAL;
-        else if (str == "detailed") return DETAILED;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_route_type> from_str(std::string str) {
+        ConvertedValue<e_route_type> conv_value;
+        if      (str == "global")  conv_value.set_value(GLOBAL);
+        else if (str == "detailed") conv_value.set_value(DETAILED);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_route_type val) {
-        if (val == GLOBAL) return "global";
-        VTR_ASSERT(val == DETAILED);
-        return "detailed";
+    ConvertedValue<std::string> to_str(e_route_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == GLOBAL) conv_value.set_value("global");
+        else {
+            VTR_ASSERT(val == DETAILED);
+            conv_value.set_value("detailed");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -155,18 +208,26 @@ struct ParseRouteType {
 };
 
 struct ParseBaseCost {
-    e_base_cost_type from_str(std::string str) {
-        if      (str == "delay_normalized")  return DELAY_NORMALIZED;
-        else if (str == "demand_only") return DEMAND_ONLY;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_base_cost_type> from_str(std::string str) {
+        ConvertedValue<e_base_cost_type> conv_value;
+        if      (str == "delay_normalized") conv_value.set_value(DELAY_NORMALIZED);
+        else if (str == "demand_only") conv_value.set_value(DEMAND_ONLY);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_base_cost_type val) {
-        if (val == DELAY_NORMALIZED) return "delay_normalized";
-        VTR_ASSERT(val == DEMAND_ONLY);
-        return "demand_only";
+    ConvertedValue<std::string> to_str(e_base_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == DELAY_NORMALIZED) conv_value.set_value("delay_normalized");
+        else {
+            VTR_ASSERT(val == DEMAND_ONLY);
+            conv_value.set_value("demand_only");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -175,18 +236,26 @@ struct ParseBaseCost {
 };
 
 struct ParsePlaceAlgorithm {
-    e_place_algorithm from_str(std::string str) {
-        if      (str == "bounding_box")  return BOUNDING_BOX_PLACE;
-        else if (str == "path_timing_driven") return PATH_TIMING_DRIVEN_PLACE;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_place_algorithm> from_str(std::string str) {
+        ConvertedValue<e_place_algorithm> conv_value;
+        if      (str == "bounding_box") conv_value.set_value(BOUNDING_BOX_PLACE);
+        else if (str == "path_timing_driven") conv_value.set_value(PATH_TIMING_DRIVEN_PLACE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_place_algorithm val) {
-        if (val == BOUNDING_BOX_PLACE) return "bounding_box";
-        VTR_ASSERT(val == PATH_TIMING_DRIVEN_PLACE);
-        return "path_timing_driven";
+    ConvertedValue<std::string> to_str(e_place_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == BOUNDING_BOX_PLACE) conv_value.set_value("bounding_box");
+        else {
+            VTR_ASSERT(val == PATH_TIMING_DRIVEN_PLACE);
+            conv_value.set_value("path_timing_driven");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -195,20 +264,28 @@ struct ParsePlaceAlgorithm {
 };
 
 struct ParseClusterSeed {
-    e_cluster_seed from_str(std::string str) {
-        if      (str == "timing")  return VPACK_TIMING;
-        else if (str == "max_inputs") return VPACK_MAX_INPUTS;
-        else if (str == "blend") return VPACK_BLEND;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_cluster_seed> from_str(std::string str) {
+        ConvertedValue<e_cluster_seed> conv_value;
+        if      (str == "timing")  conv_value.set_value(VPACK_TIMING);
+        else if (str == "max_inputs") conv_value.set_value(VPACK_MAX_INPUTS);
+        else if (str == "blend") conv_value.set_value(VPACK_BLEND);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_cluster_seed val) {
-        if (val == VPACK_TIMING) return "timing";
-        else if (val == VPACK_MAX_INPUTS) return "max_inputs";
-        VTR_ASSERT(val == VPACK_BLEND);
-        return "blend";
+    ConvertedValue<std::string> to_str(e_cluster_seed val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == VPACK_TIMING) conv_value.set_value("timing");
+        else if (val == VPACK_MAX_INPUTS) conv_value.set_value("max_inputs");
+        else {
+            VTR_ASSERT(val == VPACK_BLEND);
+            conv_value.set_value("blend");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -217,18 +294,26 @@ struct ParseClusterSeed {
 };
 
 struct ParseConstantNetMethod {
-    e_constant_net_method from_str(std::string str) {
-        if      (str == "global") return CONSTANT_NET_GLOBAL;
-        else if (str == "route")  return CONSTANT_NET_ROUTE;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_constant_net_method (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_constant_net_method> from_str(std::string str) {
+        ConvertedValue<e_constant_net_method> conv_value;
+        if      (str == "global") conv_value.set_value(CONSTANT_NET_GLOBAL);
+        else if (str == "route")  conv_value.set_value(CONSTANT_NET_ROUTE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_constant_net_method (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_constant_net_method val) {
-        if (val == CONSTANT_NET_GLOBAL) return "global";
-        VTR_ASSERT(val == CONSTANT_NET_ROUTE);
-        return "route";
+    ConvertedValue<std::string> to_str(e_constant_net_method val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == CONSTANT_NET_GLOBAL) conv_value.set_value("global");
+        else {
+            VTR_ASSERT(val == CONSTANT_NET_ROUTE);
+            conv_value.set_value("route");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -237,26 +322,35 @@ struct ParseConstantNetMethod {
 };
 
 struct ParseTimingReportDetail {
-    e_timing_report_detail from_str(std::string str) {
-        if      (str == "netlist")      return e_timing_report_detail::NETLIST;
-        else if (str == "aggregated")   return e_timing_report_detail::AGGREGATED;
-        std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' to e_timing_report_detail (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_timing_report_detail> from_str(std::string str) {
+        ConvertedValue<e_timing_report_detail> conv_value;
+        if      (str == "netlist")    conv_value.set_value(e_timing_report_detail::NETLIST);
+        else if (str == "aggregated") conv_value.set_value(e_timing_report_detail::AGGREGATED);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_timing_report_detail (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_timing_report_detail val) {
-        if (val == e_timing_report_detail::NETLIST) return "netlist";
-        VTR_ASSERT(val == e_timing_report_detail::AGGREGATED);
-        return "aggregated";
+    ConvertedValue<std::string> to_str(e_timing_report_detail val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_timing_report_detail::NETLIST) conv_value.set_value("netlist");
+        else {
+            VTR_ASSERT(val == e_timing_report_detail::AGGREGATED);
+            conv_value.set_value("aggregated");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
         return {"netlist", "aggregated"};
     }
 };
+#if 0
 struct ParseExtPinUtil {
-    t_ext_pin_util from_str(std::string str) {
+    ConvertedValue<t_ext_pin_util> from_str(std::string str) {
         auto elements = vtr::split(str, ",");
 
         t_ext_pin_util target_ext_pin_util;
@@ -298,23 +392,32 @@ struct ParseExtPinUtil {
         return {};
     }
 };
+#endif
 
 struct ParseClockModelingMethod {
-    e_clock_modeling_method from_str(std::string str) {
-        if      (str == "ideal")   return IDEAL_CLOCK;
-        else if (str == "route") return ROUTED_CLOCK;
-        std::stringstream msg;
-        msg << "Invalid conversion from '"
-            << str
-            << "' to e_clock_modeling_method (expected one of: "
-            << argparse::join(default_choices(), ", ") << ")";
-        throw argparse::ArgParseConversionError(msg.str());
+    ConvertedValue<e_clock_modeling_method> from_str(std::string str) {
+        ConvertedValue<e_clock_modeling_method> conv_value;
+        if      (str == "ideal") conv_value.set_value(IDEAL_CLOCK);
+        else if (str == "route") conv_value.set_value(ROUTED_CLOCK);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_clock_modeling_method (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
     }
 
-    std::string to_str(e_clock_modeling_method val) {
-        if (val == IDEAL_CLOCK) return "ideal";
-        VTR_ASSERT(val == ROUTED_CLOCK);
-        return "route";
+    ConvertedValue<std::string> to_str(e_clock_modeling_method val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == IDEAL_CLOCK) conv_value.set_value("ideal");
+        else {
+            VTR_ASSERT(val == ROUTED_CLOCK);
+            conv_value.set_value("route");
+        }
+        return conv_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -618,7 +721,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<t_ext_pin_util,ParseExtPinUtil>(args.target_external_pin_util, "--target_ext_pin_util")
+    pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
             .help("Sets the external pin utilization target during clustering."
                   " This determines how many pin the clustering engine will aim to use before starting a new cluster."
                   " Setting this to 1.0 guides the packer to pack as densely as possible (i.e. try to use 100% of cluster external pins)."
@@ -628,7 +731,8 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " Note that this is only a guideline, the packer will use up to 1.0 utilization if a molecule would not otherwise not in any cluster type."
 
                   " If two values are specified separated by a comma (e.g. '0.7,0.9') this is interpretted as specifying the input and output pin target utilizations respectively")
-            .default_value("1.0")
+            .nargs('+')
+            .default_value({"1.0"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")
@@ -1061,9 +1165,9 @@ static bool verify_args(const t_options& args) {
                 args.read_rr_graph_file.argument_name().c_str());
     }
 
-    if (!args.enable_clustering_pin_feasibility_filter && (args.target_external_pin_util.value().input_pin_util != 1. || args.target_external_pin_util.value().output_pin_util != 1.)) {
+    if (!args.enable_clustering_pin_feasibility_filter && args.target_external_pin_util.provenance() == Provenance::SPECIFIED) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"%s option must be enabled for non-unity %s\n",
+				"%s option must be enabled for %s to have any effect\n",
                 args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
                 args.target_external_pin_util.argument_name().c_str());
     }

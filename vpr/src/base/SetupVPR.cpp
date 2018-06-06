@@ -1,5 +1,6 @@
 #include <cstring>
 #include <vector>
+#include <sstream>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -43,6 +44,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
+static t_ext_pin_util parse_target_external_pin_util(std::vector<std::string> specs);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
@@ -406,7 +408,7 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->beta = Options.beta_clustering;
 	PackerOpts->debug_clustering = Options.debug_clustering;
 	PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
-	PackerOpts->target_external_pin_util = Options.target_external_pin_util;
+	PackerOpts->target_external_pin_util = parse_target_external_pin_util(Options.target_external_pin_util);
     PackerOpts->target_device_utilization = Options.target_device_utilization;
 
     //TODO: document?
@@ -514,3 +516,34 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     return ipin_cblock_switch_index;
 }
 
+static t_ext_pin_util parse_target_external_pin_util(std::vector<std::string> specs) {
+
+    t_ext_pin_util target_ext_pin_util;
+    if (specs.empty()) return target_ext_pin_util;
+
+    auto elements = vtr::split(specs[0], ",");
+    if (elements.size() == 1) {
+        target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+        target_ext_pin_util.output_pin_util = vtr::atof(elements[0]);
+    } else if (elements.size() == 2) {
+        target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+        target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
+    } else {
+        std::stringstream msg;
+        msg << "Invalid conversion from '" << specs[0] << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
+        VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+    }
+
+    if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
+        std::stringstream msg;
+        msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
+        VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+    }
+    if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
+        std::stringstream msg;
+        msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
+        VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+    }
+
+    return target_ext_pin_util;
+}
