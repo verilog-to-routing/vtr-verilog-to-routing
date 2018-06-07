@@ -36,8 +36,8 @@ function get_geomean() {
   CRIT_W="1.0"
   SIZE_W="1.0"
   DIV_W=$(echo $CRIT_W $SIZE_W | awk '{ print $0+$1 }')
-  OUT_CRIT=0
-  OUT_SIZE=0
+  OUT_CRIT="1.0"
+  OUT_SIZE="1.0"
   count=0
 
   while $IFS read critical_path_delay logic_block_area_total; do
