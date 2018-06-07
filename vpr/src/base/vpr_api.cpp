@@ -68,6 +68,8 @@ using namespace std;
 #include "check_route.h"
 #include "constant_nets.h"
 
+#include "pack_report.h"
+
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
 #include "tatum/echo_writer.hpp"
@@ -512,6 +514,11 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                          vpr_setup.clock_modeling_method);
 
     process_constant_nets(cluster_ctx.clb_nlist, vpr_setup.constant_net_method);
+
+    {
+        std::ofstream ofs("packing_pin_util.rpt");
+        report_packing_pin_usage(ofs, g_vpr_ctx);
+    }
 
 }
 

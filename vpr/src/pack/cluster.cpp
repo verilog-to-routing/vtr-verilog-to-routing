@@ -93,7 +93,8 @@ using namespace std;
 				  *from sources (the farther one being made slightly *
 				  *more critical)                                    */
 
-t_ext_pin_util FULL_EXTERNAL_PIN_UTIL;
+//Constant allowing all cluster pins to be used
+const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
 
 enum e_gain_update {
 	GAIN, NO_GAIN
@@ -310,7 +311,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         std::string device_layout_name,
         bool debug_clustering,
         bool enable_pin_feasibility_filter,
-        t_ext_pin_util target_ext_pin_util
+        const t_ext_pin_util_targets& ext_pin_util_targets
 #ifdef USE_HMETIS
 		, vtr::vector_map<AtomBlockId, int>& partitions
 #endif
@@ -566,6 +567,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                 vtr::printf("."); //Progress dot for seed-block
             }
 			fflush(stdout);
+
+            t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
 			update_cluster_stats(istart, clb_index,
                     is_clock, //Set of clock nets
                     is_clock, //Set of global nets (currently all clocks)
@@ -1978,6 +1981,11 @@ static void start_new_cluster(
             reset_cluster_placement_stats(&cluster_placement_stats[type->index]);
             set_mode_cluster_placement_stats(pb->pb_graph_node, j);
 
+            //Note that since we are starting a new cluster, we use FULL_EXTERNAL_PIN_UTIL,
+            //which allows all cluster pins to be used. This ensures that if we have a large
+            //molecule which would otherwise exceed the external pin utilization targets it
+            //can use the full set of cluster pins when selected as the seed block -- ensuring
+            //it is still implementable.
             auto pack_result = try_pack_molecule(&cluster_placement_stats[type->index],
                                             atom_molecules,
                                             molecule, primitives_list, pb,
