@@ -23,6 +23,7 @@
 #include "vtr_util.h"
 #include "graphics.h"
 #include "vpr_types.h"
+#include "vtr_color_map.h"
 using namespace std;
 
 enum e_draw_crit_path {
@@ -70,6 +71,14 @@ enum e_draw_routing_costs {
     DRAW_LOG_PRES_ROUTING_COSTS,
     DRAW_BASE_ROUTING_COSTS,
     DRAW_ROUTING_COST_MAX
+};
+
+enum e_draw_pin_util {
+    DRAW_NO_BLOCK_PIN_UTIL = 0,
+    DRAW_BLOCK_PIN_UTIL_TOTAL,
+    DRAW_BLOCK_PIN_UTIL_INPUTS,
+    DRAW_BLOCK_PIN_UTIL_OUTPUTS,
+    DRAW_PIN_UTIL_MAX
 };
 
 enum e_draw_net_type {
@@ -127,6 +136,7 @@ struct t_draw_state {
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
 	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
 	e_draw_routing_costs show_routing_costs;
+    e_draw_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
     int show_routing_bb = OPEN;
 	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
 	int max_sub_blk_lvl = 0;
@@ -140,6 +150,7 @@ struct t_draw_state {
 	t_draw_rr_node *draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
+    std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
 
 	t_draw_state() = default;
 

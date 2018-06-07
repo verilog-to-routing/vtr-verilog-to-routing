@@ -267,6 +267,7 @@ static void toggle_congestion(void (*drawscreen)());
 static void toggle_routing_congestion_cost(void (*drawscreen)());
 static void toggle_routing_bounding_box(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
+static void toggle_pin_usage(void (*drawscreen_ptr)());
 
 static void drawscreen();
 static void redraw_screen();
@@ -310,6 +311,7 @@ static std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
 static bool highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
+static void draw_reset_blk_colors();
 static void draw_reset_blk_color(ClusterBlockId blk_id);
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
@@ -332,6 +334,8 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap);
 
 t_color get_block_type_color(t_type_ptr type);
 t_color lighten_color(t_color color, float amount);
+
+static void set_block_colours_by_pin_usage();
 
 /********************** Subroutine definitions ******************************/
 
@@ -369,8 +373,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 		if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
+			create_button("Blk Internal", "Blk Pin Util", toggle_pin_usage);
             if(setup_timing_info) {
-                create_button("Blk Internal", "Crit. Path", toggle_crit_path);
+                create_button("Blk Pin Util", "Crit. Path", toggle_crit_path);
             }
 		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
@@ -389,7 +394,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 				&& draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
-			create_button("Blk Internal", "Toggle RR", toggle_rr);
+			create_button("Blk Internal", "Blk Pin Util", toggle_pin_usage);
+			create_button("Blk Pin Util", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
@@ -487,6 +493,12 @@ static void redraw_screen() {
 
 	setfontsize(14);
 
+    if (draw_state->show_blk_pin_util != DRAW_NO_BLOCK_PIN_UTIL) {
+        set_block_colours_by_pin_usage();
+    } else {
+        draw_reset_blk_colors();
+    }
+
 	drawplace();
 
 	if (draw_state->show_blk_internal) {
@@ -505,6 +517,7 @@ static void redraw_screen() {
 		}
 
         draw_crit_path();
+
 	} else { /* ROUTING on screen */
 
 		switch (draw_state->show_nets) {
@@ -520,13 +533,9 @@ static void redraw_screen() {
 
         draw_crit_path();
 
-		if (draw_state->show_congestion != DRAW_NO_CONGEST) {
-			draw_congestion();
-		}
+        draw_congestion();
 
-        if (draw_state->show_routing_costs != DRAW_NO_ROUTING_COSTS) {
-            draw_routing_costs();
-        }
+        draw_routing_costs();
 
         if (draw_state->show_routing_bb != OPEN) {
             draw_routing_bb();
@@ -534,6 +543,11 @@ static void redraw_screen() {
 	}
 
 	draw_logical_connections();
+
+    if (draw_state->color_map) {
+        draw_color_map_legend(*draw_state->color_map);
+        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
 }
 
 static void toggle_nets(void (*drawscreen_ptr)()) {
@@ -653,6 +667,17 @@ void toggle_blk_internal(void (*drawscreen_ptr)()) {
 		draw_state->show_blk_internal = 0;
 
 	drawscreen_ptr();
+}
+
+static void toggle_pin_usage(void (*drawscreen_ptr)()) {
+	t_draw_state *draw_state = get_draw_state_vars();
+
+	e_draw_pin_util new_state = (enum e_draw_pin_util) (((int)draw_state->show_blk_pin_util + 1)
+														  % ((int)DRAW_PIN_UTIL_MAX));
+
+    draw_state->show_blk_pin_util = new_state;
+
+    drawscreen_ptr();
 }
 
 static void toggle_crit_path(void (*drawscreen_ptr)()) {
@@ -956,7 +981,7 @@ static void draw_congestion() {
     }
     update_message(msg);
 
-    vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g. when zoomed-out far)
@@ -1007,7 +1032,7 @@ static void draw_congestion() {
         bool node_congested = (occ > capacity);
         VTR_ASSERT(node_congested);
 
-        t_color color = to_t_color(cmap.color(congestion_ratio));
+        t_color color = to_t_color(cmap->color(congestion_ratio));
 
         switch (device_ctx.rr_nodes[inode].type()) {
             case CHANX: //fallthrough
@@ -1023,7 +1048,8 @@ static void draw_congestion() {
                 break;
         }
 	}
-    draw_color_map_legend(cmap);
+
+    draw_state->color_map = std::move(cmap);
 }
 
 static void draw_routing_costs() {
@@ -1099,7 +1125,7 @@ static void draw_routing_costs() {
     }
     update_message(msg);
 
-    vtr::PlasmaColorMap cmap(min_cost, max_cost);
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
     //are not overdrawn by lower value ones (e.g. when zoomed-out far)
@@ -1114,7 +1140,7 @@ static void draw_routing_costs() {
         float cost = rr_node_costs[inode];
         if (cost == min_cost) continue; //Hide minimum cost resources
 
-        t_color color = to_t_color(cmap.color(cost));
+        t_color color = to_t_color(cmap->color(cost));
 
         switch (device_ctx.rr_nodes[inode].type()) {
             case CHANX: //fallthrough
@@ -1130,7 +1156,8 @@ static void draw_routing_costs() {
                 break;
         }
 	}
-    draw_color_map_legend(cmap);
+
+    draw_state->color_map = std::move(cmap);
 }
 
 static void draw_routing_bb() {
@@ -3338,4 +3365,68 @@ t_color lighten_color(t_color color, float amount) {
     hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
 
     return hsl2color(hsl);
+}
+
+static void set_block_colours_by_pin_usage() {
+	t_draw_state* draw_state = get_draw_state_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::map<t_type_ptr,size_t> total_input_pins;
+    std::map<t_type_ptr,size_t> total_output_pins;
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        t_type_ptr type = &device_ctx.block_types[itype];
+        if (is_empty_type(type)) continue;
+
+        t_pb_type* pb_type = type->pb_type;
+
+        total_input_pins[type] = pb_type->num_input_pins + pb_type->num_clock_pins;
+        total_output_pins[type] = pb_type->num_output_pins;
+    }
+
+    auto blks = cluster_ctx.clb_nlist.blocks();
+    vtr::vector<ClusterBlockId,float> pin_util(blks.size());
+    for (auto blk : blks) {
+        auto type = cluster_ctx.clb_nlist.block_type(blk);
+
+        if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
+            pin_util[blk] = cluster_ctx.clb_nlist.block_pins(blk).size() / float(total_input_pins[type] + total_output_pins[type]);
+        } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_INPUTS) {
+            pin_util[blk] = (cluster_ctx.clb_nlist.block_input_pins(blk).size() + cluster_ctx.clb_nlist.block_clock_pins(blk).size()) / float(total_input_pins[type]);
+        } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
+            pin_util[blk] = (cluster_ctx.clb_nlist.block_output_pins(blk).size()) / float(total_output_pins[type]);
+        } else {
+            VTR_ASSERT(false);
+        }
+
+    }
+
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
+
+    for (auto blk : blks) {
+
+        t_color color = to_t_color(cmap->color(pin_util[blk]));
+        draw_state->block_color[blk] = color;
+    }
+
+    draw_state->color_map = std::move(cmap);
+
+    if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
+        update_message("Block Total Pin Utilization");
+    } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_INPUTS) {
+        update_message("Block Input Pin Utilization");
+
+    } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
+        update_message("Block Output Pin Utilization");
+    } else {
+        VTR_ASSERT(false);
+    }
+}
+
+static void draw_reset_blk_colors() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto blks = cluster_ctx.clb_nlist.blocks();
+    for (auto blk : blks) {
+        draw_reset_blk_color(blk);
+    }
 }
