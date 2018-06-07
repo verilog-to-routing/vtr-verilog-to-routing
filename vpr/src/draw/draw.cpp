@@ -335,7 +335,7 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap);
 t_color get_block_type_color(t_type_ptr type);
 t_color lighten_color(t_color color, float amount);
 
-static void set_block_colours_by_pin_usage();
+static void draw_block_pin_util();
 
 /********************** Subroutine definitions ******************************/
 
@@ -493,17 +493,11 @@ static void redraw_screen() {
 
 	setfontsize(14);
 
-    if (draw_state->show_blk_pin_util != DRAW_NO_BLOCK_PIN_UTIL) {
-        set_block_colours_by_pin_usage();
-    } else {
-        draw_reset_blk_colors();
-    }
+    draw_block_pin_util();
 
 	drawplace();
 
-	if (draw_state->show_blk_internal) {
-		draw_internal_draw_subblk();
-	}
+    draw_internal_draw_subblk();
 
 	if (draw_state->pic_on_screen == PLACEMENT) {
 		switch (draw_state->show_nets) {
@@ -515,8 +509,6 @@ static void redraw_screen() {
 			default:
 			break;
 		}
-
-        draw_crit_path();
 
 	} else { /* ROUTING on screen */
 
@@ -531,16 +523,14 @@ static void redraw_screen() {
 			break;
 		}
 
-        draw_crit_path();
-
         draw_congestion();
 
         draw_routing_costs();
 
-        if (draw_state->show_routing_bb != OPEN) {
-            draw_routing_bb();
-        }
+        draw_routing_bb();
 	}
+
+    draw_crit_path();
 
 	draw_logical_connections();
 
@@ -1163,6 +1153,10 @@ static void draw_routing_costs() {
 static void draw_routing_bb() {
 
 	t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->show_routing_bb == OPEN) {
+        return;
+    }
 
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3367,8 +3361,14 @@ t_color lighten_color(t_color color, float amount) {
     return hsl2color(hsl);
 }
 
-static void set_block_colours_by_pin_usage() {
+static void draw_block_pin_util() {
 	t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) {
+        draw_reset_blk_colors();
+		update_message(draw_state->default_message);
+        return;
+    }
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 

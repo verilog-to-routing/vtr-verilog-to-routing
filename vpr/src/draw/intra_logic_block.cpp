@@ -139,6 +139,10 @@ void draw_internal_init_blk() {
 
 
 void draw_internal_draw_subblk() {
+	t_draw_state* draw_state = get_draw_state_vars();
+	if (!draw_state->show_blk_internal) {
+        return;
+    }
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
