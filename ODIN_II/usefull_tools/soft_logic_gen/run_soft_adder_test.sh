@@ -1,142 +1,209 @@
 #!/bin/bash
-name=$1
-TASK_DIR=`pwd`/configs/$name
-VTR_TASK=../../ODIN_II/usefull_tools/soft_logic_gen/configs/$name
-TRACKER_DIR=`pwd`/track_completed
+VTR_TASK_TO_HOME=../..
+TRACKER_DIR=ODIN_II/usefull_tools/soft_logic_gen/track_completed
 cd ../../..
-HOME_DIR=`pwd`
-VTR_FLOW_DIR=`pwd`/vtr_flow
+VTR_HOME_DIR=`pwd`
+export VTR_HOME_DIR=$VTR_HOME_DIR
+INITIAL_BITSIZE=2
+END_BITSIZE=128
 
-if [ ! -d $TASK_DIR ]
-then
-  echo "not a valid test!"
-  exit 1
-fi
-
-mkdir -p $TRACKER_DIR
-
-#$Parse_result_file    critical_weight   size_weight power_weight
-#$1                   $2                $3          $4
-function get_geomean() {
-
-    #this should equal 1 !!
-    TOLERANCE="0.001"
-    TOT_WEIGHT_TOLERANCE=$(echo " 1.0 - $2 + $3 + $4 + $TOLERANCE " | bc -l)
-    if [ $(echo " $TOT_WEIGHT_TOLERANCE < 0 " | bc -l) || $(echo " $TOT_WEIGHT_TOLERANCE > ($TOLERANCE *2) " | bc -l) ]
-    then
-      exit 1;
-    fi
-
-    OUT_CRITICAL_PATH=0
-    OUT_SIZE=0
-    OUT_POWER=0
-
-    NB_OF_TEST=0
-
-    while $IFS read arch circuit critical_path_delay,logic_block_area_total,total_power; do
-        case $critical_path_delay in
-        ''|*[!0-9.]*) ;;
-        *)
-          OUT_CRITICAL_PATH=$(echo " l( $critical_path_delay )+ $OUT " | bc -l)
-          OUT_SIZE=$(echo " l( $logic_block_area_total )+ $OUT " | bc -l)
-          OUT_POWER=$(echo " l( $total_power )+ $OUT " | bc -l)
-          NB_OF_TEST=$((NB_OF_TEST+1))
-       ;;
-        esac
-    done <$1
-
-    OUT_CRITICAL_PATH=$(echo "e( $OUT_CRITICAL_PATH / $NB_OF_TEST )" | bc -l)
-    OUT_SIZE=$(echo "e( $OUT_SIZE / $NB_OF_TEST )" | bc -l)
-    OUT_POWER=$(echo "e( $OUT_POWER / $NB_OF_TEST )" | bc -l)
-
-    echo $(echo " $OUT_CRITICAL_PATH * $2 + $OUT_SIZE * $3 + $OUT_POWER * $4 " | bc -l)
+list_of_arch="\
+arch/timing/k6_N8_gate_boost_0.2V_22nm.xml \
+arch/timing/fraclut_carrychain/k6_frac_N8_22nm.xml \
+"
+function build_parse_file() {
+  #build parse file
+  printf "\
+    critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns \n\
+    logic_block_area_total;vpr.out;Total logic block area .*: (.*) \
+  " > $VTR_HOME_DIR/$TRACKER_DIR/parse.txt
 }
 
-#file_to_compare  new_value
-#$1              $2
-function compare_and_swap_results () {
-  if (( $(echo "$(cat $TRACKER_DIR/best_value ) >= $VAR" | bc ) ));
-  then
-      echo $1,$NEXT_SIZE > $TRACKER_DIR/best_name
-      echo $VAR > $TRACKER_DIR/best_value
-      echo "+,soft,$1,$NEXT_SIZE ... PASS setting new best: $VAR"
-  else
-      echo "+,soft,$1,$NEXT_SIZE ... PASS"
+#destination start end adder
+#$1           $2    $3  $4
+function fill_def_file() {
+  if [ ! -e $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin ]; then
+    touch $1
   fi
+
+  for BITWIDTH in $(eval echo {$2..$3}); do
+    echo "+,$BITWIDTH,soft,$4,$BITWIDTH" >> $1
+  done
 }
 
-#$ADDER_TYPE $VTR_FLOW_DIR   $TASK   $BIT_WIDTH   $TASK_DIR
-#$1          $2              $3      $4           $5
-function run_task() {
-    MAX_SIZE=$(( $4 ))
-    for NEXT_SIZE in $(eval echo {$MAX_SIZE..2}); do
+function get_geomean() {
+  ADDERS=$1
+  CRIT_W="1.0"
+  SIZE_W="1.0"
+  DIV_W=$(echo $CRIT_W $SIZE_W | awk '{ print $0+$1 }')
+  OUT_CRIT=0
+  OUT_SIZE=0
+  count=0
 
-        rm -Rf $5/run*
-        cat $TRACKER_DIR/current_config.odin > $HOME_DIR/ODIN_II/odin.soft_config
+  while $IFS read critical_path_delay logic_block_area_total; do
+      OUT_CRIT=$(echo $critical_path_delay $OUT_CRIT | awk '{ print $0*$1 }')
+      OUT_SIZE=$(echo $logic_block_area_total $OUT_SIZE | awk '{ print $0*$1 }')
+      count=$((count+=1))
+  done < $ADDERS
+  rm $ADDERS
+  OUT_CRIT=$(echo $OUT_CRIT $count | awk '{ print $0 ** (1.0/$1) }')
+  OUT_SIZE=$(echo $OUT_SIZE $count | awk '{ print $0 ** (1.0/$1) }')
 
-        $2/scripts/run_vtr_task.pl $VTR_TASK -p $(nproc --all) > $TRACKER_DIR/run_pass
-        if grep -q OK "$TRACKER_DIR/run_pass";
-        then
-            $2/scripts/parse_vtr_task.pl $VTR_TASK > /dev/null
-            VAR=$(get_geomean $5/run001/parse_results.txt)
+  WEIGHTED_SUM=$(echo $OUT_CRIT $CRIT_W $OUT_SIZE $SIZE_W $DIV_W | awk '{ print ($0*($1/$5))+($2*($3/$5)) }')
+  basename=${ADDERS%.results}
+  test_name=$(echo ${basename##*/} | tr "-" ',')
 
-            if (( $(echo "$(cat $TRACKER_DIR/best_value ) >= $VAR" | bc ) ));
-            then
-                echo $1,$NEXT_SIZE > $TRACKER_DIR/best_name
-                echo $VAR > $TRACKER_DIR/best_value
-                echo "+,soft,$1,$NEXT_SIZE ... PASS setting new best: $VAR"
-            else
-                echo "+,soft,$1,$NEXT_SIZE ... PASS"
-            fi
-        else
-            echo "+,soft,$1,$NEXT_SIZE ... FAILED"
-            mkdir -p $TRACKER_DIR/failure/$4
-            cat $TRACKER_DIR/run_pass > $TRACKER_DIR/failure/$4/$NEXT_SIZE.log
-        fi
+  echo "$test_name,$OUT_CRIT,$OUT_SIZE,$WEIGHTED_SUM" >> $VTR_HOME_DIR/$TRACKER_DIR/result-$BITWIDTH.csv
+  OUT="$test_name
+  $WEIGHTED_SUM"
+  echo $test_name $WEIGHTED_SUM
+}
 
+#$ADDER_TYPE $BIT_WIDTH MIN_SIZE
+#$1          $2         $3
+function build_task() {
+    ADDER_TYPE=$1
+    MIN_SIZE=$(( $2 ))
+    MAX_SIZE=$(( $3 ))
+
+    for NEXT_SIZE in $(eval echo {$MIN_SIZE..$MAX_SIZE}); do
+        v_counter=0
+        for verilogs in $VTR_HOME_DIR/$TRACKER_DIR/test_$MAX_SIZE/verilogs/*; do
+          a_counter=0
+          for xmls in $list_of_arch; do
+            TEST_DIR=$VTR_HOME_DIR/$TRACKER_DIR/test_$MAX_SIZE/${v_counter}_${a_counter}/${ADDER_TYPE}-${NEXT_SIZE}
+            mkdir -p $TEST_DIR
+
+            #get arch and verilog
+            cp $VTR_HOME_DIR/vtr_flow/$xmls $TEST_DIR/arch.xml
+            cp $verilogs $TEST_DIR/circuit.v
+            cp $VTR_HOME_DIR/$TRACKER_DIR/parse.txt $TEST_DIR/parse.txt
+
+            #build odin config
+            cat $TRACKER_DIR/current_config.odin > $TEST_DIR/odin.soft_config
+            for SIZE_IN in $(eval echo {$MAX_SIZE..$END_BITSIZE}); do
+              echo "+,$SIZE_IN,soft,$ADDER_TYPE,$NEXT_SIZE" >> $TEST_DIR/odin.soft_config
+            done
+            a_counter=$((a_counter+1))
+          done
+          v_counter=$((v_counter+1))
+        done
     done
 }
+#bitwidth
+#$1
+function run_parralel_tasks() {
+  #parralel this START
+  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | xargs -P$((`nproc`*2+1)) -I test_dir /bin/bash -c \
+  '
+  TEST_DIR=test_dir
+  echo "$VTR_HOME_DIR/ODIN_II/odin_II \
+    --adder_type $TEST_DIR/odin.soft_config \
+    -a $TEST_DIR/arch.xml \
+    -V $TEST_DIR/circuit.v \
+    -o $TEST_DIR/odin.blif" > $TEST_DIR/odin_result
 
-######### inital cleanup
+  $VTR_HOME_DIR/ODIN_II/odin_II \
+  --adder_type $TEST_DIR/odin.soft_config \
+  -a $TEST_DIR/arch.xml \
+  -V $TEST_DIR/circuit.v \
+  -o $TEST_DIR/odin.blif &>> $TEST_DIR/odin_result
 
-rm -Rf $TASK_DIR/run*
-rm -Rf $TRACKER_DIR
-mkdir $TRACKER_DIR
+  /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/run_vtr_flow.pl \
+  $TEST_DIR/odin.blif $TEST_DIR/arch.xml \
+  -temp_dir $TEST_DIR/run \
+  -starting_stage abc > $TEST_DIR/run_result
 
-INITIAL_BITSIZE=0
+  if grep -q OK "$TEST_DIR/run_result";then
+      /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/parse_vtr_flow.pl \
+      $TEST_DIR/run $TEST_DIR/parse.txt \
+      > $TEST_DIR/run/parse_results.txt
+      test_name=${TEST_DIR##*/}
+      tail -n +2 $TEST_DIR/run/parse_results.txt | tr -s [:blank:] > $TEST_DIR/../${test_name}.results
+      echo "$TEST_DIR ... PASS"
+  else
+      echo "$TEST_DIR ... FAILED"
+  fi
+  '
+  #END
+}
 
-touch $TRACKER_DIR/current_config.odin
+#bitwidth
+#$1
+function build_verilogs() {
+  sed -e "s/%%ADDER_BITS%%/$1/g" "$VTR_HOME_DIR/ODIN_II/usefull_tools/soft_logic_gen/verilogs/2L_tree_sync.v" > $VTR_HOME_DIR/$TRACKER_DIR/test_$1/verilogs/2L_add_tree_sync.v
+  sed -e "s/%%ADDER_BITS%%/$1/g" "$VTR_HOME_DIR/ODIN_II/usefull_tools/soft_logic_gen/verilogs/2L_tree_async.v" > $VTR_HOME_DIR/$TRACKER_DIR/test_$1/verilogs/2L_add_tree_async.v
+  sed -e "s/%%ADDER_BITS%%/$1/g" "$VTR_HOME_DIR/ODIN_II/usefull_tools/soft_logic_gen/verilogs/3L_tree_sync.v" > $VTR_HOME_DIR/$TRACKER_DIR/test_$1/verilogs/3L_add_tree_sync.v
+  sed -e "s/%%ADDER_BITS%%/$1/g" "$VTR_HOME_DIR/ODIN_II/usefull_tools/soft_logic_gen/verilogs/3L_tree_async.v" > $VTR_HOME_DIR/$TRACKER_DIR/test_$1/verilogs/3L_add_tree_async.v
+}
 
-for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..128}); do
-    ######### run baseline
-    echo "TESTING $BITWIDTH ##########"
-    echo ""
 
-    rm -Rf $TRACKER_DIR/verilog && mkdir -p $TRACKER_DIR/verilog
-    ## create test file
-    sed -e "s/%%LEVELS_OF_ADDER%%/2/g" -e "s/%%ADDER_BITS%%/$BITWIDTH/g" "$VTR_FLOW_DIR/benchmarks/arithmetic/adder_trees/verilog/adder_tree.v" > $TRACKER_DIR/verilog/adder_tree_2L.v
-    sed -e "s/%%LEVELS_OF_ADDER%%/3/g" -e "s/%%ADDER_BITS%%/$BITWIDTH/g" "$VTR_FLOW_DIR/benchmarks/arithmetic/adder_trees/verilog/adder_tree.v" > $TRACKER_DIR/verilog/adder_tree_3L.v
+######### inital cleanup ##########
 
-    rm -Rf $TASK_DIR/run*
-    cat $TRACKER_DIR/current_config.odin > $HOME_DIR/ODIN_II/odin.soft_config
+rm -Rf $VTR_HOME_DIR/$TRACKER_DIR
+mkdir -p $VTR_HOME_DIR/$TRACKER_DIR
 
-    $VTR_FLOW_DIR/scripts/run_vtr_task.pl $VTR_TASK -p $(nproc --all) > $TRACKER_DIR/run_pass
-    $VTR_FLOW_DIR/scripts/parse_vtr_task.pl $VTR_TASK > /dev/null
-    BASELINE=$(get_geomean $TASK_DIR/run001/parse_results.txt)
+#build files
+build_parse_file
 
-    echo "+,soft,default,$BITWIDTH" > $TRACKER_DIR/best_name
-    echo $BASELINE > $TRACKER_DIR/best_value
-    echo "+,soft,default,$BITWIDTH ... PASS INITIAL: $BASELINE"
+[ ! -e $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin ] && touch $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
 
-    cat $TRACKER_DIR/best_value >> $TRACKER_DIR/current_config_baseline.odin
+for BITWIDTH in $(eval echo {1..$((INITIAL_BITSIZE-1))}); do
+  echo "+,$BITWIDTH,soft,default,$BITWIDTH" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
+done
 
-    run_task  "csla" $VTR_FLOW_DIR $VTR_TASK $BITWIDTH $TASK_DIR
-    run_task  "bec_csla" $VTR_FLOW_DIR $VTR_TASK $BITWIDTH $TASK_DIR
+for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
+  echo ""
+  echo "TESTING $BITWIDTH ##########"
+  echo ""
 
-    BEST_RESULT=$(cat $TRACKER_DIR/best_value)
-    RATIO=$(echo "$BEST_RESULT / $BASELINE" | bc -l)
-    echo "$BEST_RESULT __ $RATIO" >> $TRACKER_DIR/current_config_values.odin
-    cat $TRACKER_DIR/best_name >> $TRACKER_DIR/current_config.odin
+  mkdir -p $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/verilogs
 
+  build_verilogs $BITWIDTH
+
+  build_task  "default"   $BITWIDTH $BITWIDTH
+  build_task  "csla"      1 $BITWIDTH
+  build_task  "bec_csla"  1 $BITWIDTH
+
+  rm -Rf $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/verilogs
+
+  run_parralel_tasks $BITWIDTH
+
+  #get dif for each arch_verilog pair vs default
+  for TEST_DIR in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*; do
+    #find default_values
+    d_t=$(cat $TEST_DIR/default-${BITWIDTH}.results | cut -d " " -f1)
+    d_s=$(cat $TEST_DIR/default-${BITWIDTH}.results | cut -d " " -f2)
+    #+1 for geomean
+    echo "1.0 1.0" >> $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results
+
+    for results_out in $TEST_DIR/*.results; do
+      test_name=${results_out##*/}
+      c_t=$(cat $results_out | cut -d " " -f1)
+      c_s=$(cat $results_out | cut -d " " -f2)
+      if [ $(echo $c_t $c_s | awk '{ print ($0>0 && $1>0)?1:0 }') ]; then
+        echo $(echo $c_t $d_t | awk '{ print ($0/$1) }') $(echo $c_s $d_s | awk '{ print ($0/$1) }') >> $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/$test_name
+      else
+        echo "1.0 1.0" >> $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/$test_name
+      fi
+    done
+  done
+
+  #get geomean of each adder_type and output to single file
+  #keep best adder in memory to output to odin_config
+  values=$(get_geomean $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results)
+  BEST_N=$(echo $values | cut -d " " -f1 )
+  BEST_V=$(echo $values | cut -d " " -f2 )
+  TOLERANCE="0.0001"
+  for ADDERS in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*.results; do
+    values=$(get_geomean $ADDERS)
+    TEMP_N=$(echo $values | cut -d " " -f1 )
+    TEMP_V=$(echo $values | cut -d " " -f2 )
+    if [ $(echo $TEMP_V $BEST_V $TOLERANCE | awk '{ print (($0+$2)<$1)?1:0 }') ]; then
+      BEST_N=$TEMP_N
+      BEST_V=$TEMP_V
+    fi
+  done
+  echo "+,$BITWIDTH,soft,$BEST_N" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
 
 done

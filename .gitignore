@@ -41,12 +41,14 @@ vtr_flow/benchmarks/titan_other_blif/*.blif
 # Cloud9 Directory
 #
 .c9/
+.buildconfig
 
 #
 # Log Files
 #
 *.log
 *.log.sh
+vgcore*
 
 #
 # VPR Result files

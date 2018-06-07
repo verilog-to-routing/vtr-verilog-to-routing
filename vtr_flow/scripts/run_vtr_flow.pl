@@ -98,7 +98,7 @@ my $keep_intermediate_files = 1;
 my $keep_result_files       = 1;
 my $has_memory              = 1;
 my $timing_driven           = "on";
-my $min_chan_width          = -1; 
+my $min_chan_width          = -1;
 my $max_router_iterations   = 50;
 my $lut_size                = -1;
 my $vpr_cluster_seed_type   = "";
@@ -118,7 +118,7 @@ my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
-my $valgrind 		    = 0;		
+my $valgrind 		    = 0;
 my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1", "--track-origins=yes");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
@@ -132,6 +132,8 @@ my $routing_budgets_algorithm = "disable";
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
+my $odin_adder_config_path = "default";
+my $use_odin_xml_config = 1;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -256,6 +258,15 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-verbose"){
             $expect_fail = shift(@ARGV);
     }
+		elsif ( $token eq "-adder_type"){
+			$odin_adder_config_path = shift(@ARGV);
+			if ( ($odin_adder_config_path ne "default") && ($odin_adder_config_path ne "optimized") ) {
+					$odin_adder_config_path = $vtr_flow_path . $odin_adder_config_path;
+			}
+		}
+		elsif ( $token eq "-disable_odin_xml" ){
+						$use_odin_xml_config = 0;
+		}
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
@@ -319,22 +330,22 @@ my $inputs_per_cluster = -1;
   or die "Architecture file not found ($architecture_file_path)";
 
 if ( !-e $sdc_file_path ) {
-	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
+	# open( OUTPUT_FILE, ">$sdc_file_path" );
 	# close ( OUTPUT_FILE );
 	my $sdc_file_path;
 }
 
 if ( !-e $pad_file_path ) {
-	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
+	# open( OUTPUT_FILE, ">$sdc_file_path" );
 	# close ( OUTPUT_FILE );
 	my $pad_file_path;
 }
 
-my $vpr_path; 
-if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) { 
-	$vpr_path = exe_for_platform("$vtr_flow_path/../vpr/vpr"); 
-	( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)"; 
-} 
+my $vpr_path;
+if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
+	$vpr_path = exe_for_platform("$vtr_flow_path/../vpr/vpr");
+	( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)";
+}
 
 my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
 if (    $stage_idx_odin >= $starting_stage
@@ -491,8 +502,16 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
 
 	if ( !$error_code ) {
-		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-			"-c", $odin_config_file_name );
+		if ( $use_odin_xml_config ) {
+			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+				"-c", $odin_config_file_name, "--adder_type", $odin_adder_config_path);
+		} else {
+			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+				"--adder_type", $odin_adder_config_path,
+				"-a", $temp_dir . $architecture_file_name,
+				"-V", $temp_dir . $circuit_file_name,
+				"-o", $temp_dir . $odin_output_file_name);
+		}
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
@@ -519,16 +538,16 @@ if (    $starting_stage <= $stage_idx_abc
     #
     #Some key points on the script used:
     #
-	#  strash : The strash command (which build's ABC's internal AIG) is needed before clean-up 
-    #           related commands (e.g. ifraig) otherwise they will fail with “Only works for 
+	#  strash : The strash command (which build's ABC's internal AIG) is needed before clean-up
+    #           related commands (e.g. ifraig) otherwise they will fail with “Only works for
     #           structurally hashed networks”.
-    #  
-	#  if –K #: This command techmaps the logic to LUTS. It should appear as the (near) final step 
-    #           before writing the optimized netlist. In recent versions, ABC does not remember 
-    #           that LUT size you want to techmap to. As a result, specifying if -K # early in 
+    #
+	#  if –K #: This command techmaps the logic to LUTS. It should appear as the (near) final step
+    #           before writing the optimized netlist. In recent versions, ABC does not remember
+    #           that LUT size you want to techmap to. As a result, specifying if -K # early in
     #           the script causes ABC techmap to 2-LUTs, greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
     #
-    # The current script is based off the one used by YOSYS and on discussions with Alan Mishchenko (ABC author). 
+    # The current script is based off the one used by YOSYS and on discussions with Alan Mishchenko (ABC author).
     # On 2018/04/28 Alan suggested the following:
     #   (1) run synthesis commands such as "dc2" after "ifraig" and "scorr" (this way more equivalences are typically found - improves quality)
     #   (2) run "ifraig" before "scorr" (this way comb equivalences are removed before seq equivalences are computed - improves runtime)
@@ -584,8 +603,8 @@ time;
     $abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
-    
-    #added so that valgrind will not run on abc because of existing memory errors 
+
+    #added so that valgrind will not run on abc because of existing memory errors
     if ($valgrind) {
             $valgrind = 0;
 	    $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
@@ -643,8 +662,8 @@ if (    $starting_stage <= $stage_idx_ace
 
 	{
 	  local $/ = undef;
-	  open(FILE, $ace_clk_file_path) or die "Can't read file '$ace_clk_file_path' ($!)\n";  
-	  $abc_clk_name = <FILE>; 
+	  open(FILE, $ace_clk_file_path) or die "Can't read file '$ace_clk_file_path' ($!)\n";
+	  $abc_clk_name = <FILE>;
 	  close (FILE);
 	}
 
@@ -657,7 +676,7 @@ if (    $starting_stage <= $stage_idx_ace
 			"-o", $ace_output_act_name,
 			"-s", $seed
 		);
-		
+
 		if ( -e $ace_raw_output_blif_path and $q eq "success") {
 
             # Restore Multi-Clock Latch Information from ODIN II that was striped out by ACE
@@ -672,7 +691,7 @@ if (    $starting_stage <= $stage_idx_ace
 
 			if ( !$keep_intermediate_files ) {
 				system "rm -f $abc_output_file_path";
-				system "rm -f $odin_output_file_path";				
+				system "rm -f $odin_output_file_path";
 			}
 		}
 		else {
@@ -692,11 +711,11 @@ if (    $starting_stage <= $stage_idx_prevpr
 	my $prevpr_success   = 1;
 	my $prevpr_input_blif_path;
 	if ($do_power) {
-		$prevpr_input_blif_path = $ace_output_blif_path; 
+		$prevpr_input_blif_path = $ace_output_blif_path;
 	} else {
 		$prevpr_input_blif_path = $abc_output_file_path;
 	}
-	
+
 	copy($prevpr_input_blif_path, $prevpr_output_file_path);
 
 	if ($prevpr_success) {
@@ -735,25 +754,25 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "$benchmark_name" );
 		push( @vpr_args, "--circuit_file"	);
 		push( @vpr_args, "$prevpr_output_file_name");
-		push( @vpr_args, "--timing_analysis" );   
+		push( @vpr_args, "--timing_analysis" );
 		push( @vpr_args, "$timing_driven");
 		push( @vpr_args, "--timing_driven_clustering" );
 		push( @vpr_args, "$timing_driven");
-		push( @vpr_args, "--cluster_seed_type" );       
+		push( @vpr_args, "--cluster_seed_type" );
 		push( @vpr_args, "$vpr_cluster_seed_type");
 		push( @vpr_args, "--routing_failure_predictor" );
 		push( @vpr_args, "$routing_failure_predictor");
 		if (-e $sdc_file_path){
-			push( @vpr_args, "--sdc_file" );				  
+			push( @vpr_args, "--sdc_file" );
 			push( @vpr_args, "$sdc_file_path");
 		}
 		if (-e $pad_file_path){
-			push( @vpr_args, "--fix_pins" );				  
+			push( @vpr_args, "--fix_pins" );
 			push( @vpr_args, "$pad_file_path");
 		}
                 push( @vpr_args, "--routing_budgets_algorithm" );
                 push( @vpr_args, "$routing_budgets_algorithm");
-		push( @vpr_args, "--seed");			 		  
+		push( @vpr_args, "--seed");
 		push( @vpr_args, "$seed");
 		push( @vpr_args, "$congestion_analysis");
 		push( @vpr_args, "$switch_usage_analysis");
@@ -762,15 +781,15 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		if ($enable_gui) {
 			push( @vpr_args, "--disp");
 			push( @vpr_args, "on");
-			
+
 	 	}
 
 
 		$q = &system_with_timeout(
-            $vpr_path, "vpr.out", 
+            $vpr_path, "vpr.out",
             $timeout, $temp_dir, @vpr_args
 		);
-    
+
 		if ( $timing_driven eq "on" ) {
 			# Critical path delay is nonsensical at minimum channel width because congestion constraints completely dominate the cost function.
 			# Additional channel width needs to be added so that there is a reasonable trade-off between delay and area
@@ -806,7 +825,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 push( @vpr_args, "--analysis" );
 				push( @vpr_args, "--circuit_file"	);
 				push( @vpr_args, "$prevpr_output_file_name");
-				push( @vpr_args, "--route_chan_width" );   
+				push( @vpr_args, "--route_chan_width" );
 				push( @vpr_args, "$min_chan_width" );
 				push( @vpr_args, "--max_router_iterations" );
 				push( @vpr_args, "$max_router_iterations");
@@ -816,7 +835,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "--gen_post_synthesis_netlist" );
 				push( @vpr_args, "$gen_post_synthesis_netlist");
 				if (-e $sdc_file_path){
-					push( @vpr_args, "--sdc_file");			 
+					push( @vpr_args, "--sdc_file");
 					push( @vpr_args, "$sdc_file_path");
 				}
                                 push( @vpr_args, "--routing_budgets_algorithm" );
@@ -824,7 +843,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, @forwarded_vpr_args);
 				push( @vpr_args, "$congestion_analysis");
 				push( @vpr_args, "$switch_usage_analysis");
-				#run VPR with GUI		
+				#run VPR with GUI
 				if ($enable_gui) {
 					push( @vpr_args, "--disp");
 					push( @vpr_args, "on");
@@ -851,33 +870,33 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "$benchmark_name" );
 		push( @vpr_args, "--circuit_file"	);
 		push( @vpr_args, "$prevpr_output_file_name");
-		push( @vpr_args, "--timing_analysis" );   
+		push( @vpr_args, "--timing_analysis" );
 		push( @vpr_args, "$timing_driven");
 		push( @vpr_args, "--timing_driven_clustering" );
 		push( @vpr_args, "$timing_driven");
-		push( @vpr_args, "--route_chan_width" );   
+		push( @vpr_args, "--route_chan_width" );
 		push( @vpr_args, "$min_chan_width" );
 		push( @vpr_args, "--max_router_iterations" );
 		push( @vpr_args, "$max_router_iterations");
-		push( @vpr_args, "--cluster_seed_type" );       
+		push( @vpr_args, "--cluster_seed_type" );
 		push( @vpr_args, "$vpr_cluster_seed_type");
 		push( @vpr_args, @vpr_power_args);
 		push( @vpr_args, "--gen_post_synthesis_netlist" );
 		push( @vpr_args, "$gen_post_synthesis_netlist");
 		if (-e $sdc_file_path){
-			push( @vpr_args, "--sdc_file" );				  
+			push( @vpr_args, "--sdc_file" );
 			push( @vpr_args, "$sdc_file_path");
 		}
 		if (-e $pad_file_path){
-			push( @vpr_args, "--fix_pins" );				  
+			push( @vpr_args, "--fix_pins" );
 			push( @vpr_args, "$pad_file_path");
-		}        
-		push( @vpr_args, "--seed");			 		  
+		}
+		push( @vpr_args, "--seed");
 		push( @vpr_args, "$seed");
                 push( @vpr_args, "--routing_budgets_algorithm" );
                 push( @vpr_args, "$routing_budgets_algorithm");
 		if ($verify_rr_graph || $rr_graph_error_check){
-			push( @vpr_args, "--write_rr_graph" );				  
+			push( @vpr_args, "--write_rr_graph" );
 			push( @vpr_args, $rr_graph_out_file);
 		}
 		push( @vpr_args, "$switch_usage_analysis");
@@ -886,9 +905,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		#run VPR with GUI
 		if ($enable_gui) {
 			push( @vpr_args, "--disp");
-			push( @vpr_args, "on");	
+			push( @vpr_args, "on");
 	 	}
-	
+
         $q = &system_with_timeout(
 			   $vpr_path, "vpr.out",
 			   $timeout, $temp_dir,
@@ -910,16 +929,16 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				copy( $architecture_file_path, $architecture_file_path_new_error);
 				$architecture_file_path = $architecture_file_path_new_error;
 			}
-			
+
             my @vpr_args;
             if ($rr_graph_error_check){
 				push( @vpr_args, $error_architecture_file_name );
 			}else{
 				push( @vpr_args, $architecture_file_name );
 			}
-			
+
             push( @vpr_args, "$benchmark_name" );
-                    	
+
 			#only perform routing for error check. Special care was taken prevent netlist check warnings
             if ($rr_graph_error_check){
 				push( @vpr_args, "--verify_file_digests" );
@@ -927,35 +946,35 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
             push( @vpr_args, "--circuit_file"	);
             push( @vpr_args, "$prevpr_output_file_name");
-            push( @vpr_args, "--timing_analysis" );   
+            push( @vpr_args, "--timing_analysis" );
             push( @vpr_args, "$timing_driven");
             push( @vpr_args, "--timing_driven_clustering" );
             push( @vpr_args, "$timing_driven");
-            push( @vpr_args, "--route_chan_width" );   
+            push( @vpr_args, "--route_chan_width" );
             push( @vpr_args, "$min_chan_width" );
             push( @vpr_args, "--max_router_iterations" );
             push( @vpr_args, "$max_router_iterations");
-            push( @vpr_args, "--cluster_seed_type" );       
+            push( @vpr_args, "--cluster_seed_type" );
             push( @vpr_args, "$vpr_cluster_seed_type");
             push( @vpr_args, @vpr_power_args);
             push( @vpr_args, "--gen_post_synthesis_netlist" );
             push( @vpr_args, "$gen_post_synthesis_netlist");
             if (-e $sdc_file_path){
-                push( @vpr_args, "--sdc_file" );				  
+                push( @vpr_args, "--sdc_file" );
                 push( @vpr_args, "$sdc_file_path");
             }
             if (-e $pad_file_path){
-                push( @vpr_args, "-fix_pins" );				  
+                push( @vpr_args, "-fix_pins" );
                 push( @vpr_args, "$pad_file_path");
-            }        
+            }
             if ($verify_rr_graph){
                 if (! -e $rr_graph_out_file || -z $rr_graph_out_file) {
                     $error_status = "failed: vpr (no RR graph file produced)";
                     $error_code = 1;
                 }
-                push( @vpr_args, "--read_rr_graph" );				  
+                push( @vpr_args, "--read_rr_graph" );
                 push( @vpr_args, $rr_graph_out_file);
-                push( @vpr_args, "--write_rr_graph" );				  
+                push( @vpr_args, "--write_rr_graph" );
                 push( @vpr_args, $rr_graph_out_file2);
             }
             push( @vpr_args, "--routing_budgets_algorithm" );
@@ -965,14 +984,14 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             } elsif ($check_place or $rr_graph_error_check){
 				push( @vpr_args, "--route");
             }
-                        
+
             push( @vpr_args, "$switch_usage_analysis");
             push( @vpr_args, @forwarded_vpr_args);
             push( @vpr_args, $specific_vpr_stage);
 	    #run VPR with GUI
 	    if ($enable_gui) {
 			push( @vpr_args, "--disp");
-			push( @vpr_args, "on");		
+			push( @vpr_args, "on");
 	    }
 
 			#run vpr again with a different name and additional parameters
@@ -1004,12 +1023,12 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }
         }
     }
-	
-	
-	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			
+
+
+	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)
 	if ($q eq "success") {
 		if($check_equivalent eq "on") {
-			
+
 			find(\&find_postsynthesis_netlist, ".");
 
             #Pick the netlist to verify against
@@ -1027,11 +1046,11 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 
             #First try ABC's Unbounded Sequential Equivalence Check (DSEC)
-			$q = &system_with_timeout($abc_path, 
+			$q = &system_with_timeout($abc_path,
 							"abc.sec.out",
 							$timeout,
 							$temp_dir,
-							"-c", 
+							"-c",
 							"dsec $reference_netlist $vpr_postsynthesis_netlist"
 			);
 
@@ -1041,15 +1060,15 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 my $sec_content = <SECOUT>;
                 close(SECOUT);
                 $/ = "\n";    # Restore for normal behaviour later in script
-			
+
                 if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
                     # This circuit has no latches, ABC's 'sec' command only supports circuits with latches.
                     # Re-try using ABC's Combinational Equivalence Check (CEC)
-                    $q = &system_with_timeout($abc_path, 
+                    $q = &system_with_timeout($abc_path,
                                     "abc.cec.out",
                                     $timeout,
                                     $temp_dir,
-                                    "-c", 
+                                    "-c",
                                     "cec $reference_netlist $vpr_postsynthesis_netlist;"
                     );
 
@@ -1161,7 +1180,7 @@ sub system_with_timeout {
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
     if ($valgrind) {
-        my $program = shift @_;        
+        my $program = shift @_;
 	unshift @_, "valgrind";
         splice @_, 4, 0, , @valgrind_args, $program;
     }
@@ -1169,18 +1188,18 @@ sub system_with_timeout {
     my $program = shift @_;
     unshift @_, $memory_tracker;
     splice @_, 4, 0, @memory_tracker_args, $program;
-    
+
     if ($limit_memory_usage > 0) {
         my $program = shift @_;
         unshift @_, "bash";
         # flatten array
         my $params = join(" ", @_[4 .. ($#_)]);
-        splice @_, 4, 1000, "-c", "ulimit -Sv $limit_memory_usage;" . $program . " " . $params; 
+        splice @_, 4, 1000, "-c", "ulimit -Sv $limit_memory_usage;" . $program . " " . $params;
     }
 	# ( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
 	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
-	
-	#start valgrind output on new line 
+
+	#start valgrind output on new line
 	if ($valgrind) {
 		print "\n";
 	}
@@ -1193,9 +1212,9 @@ sub system_with_timeout {
 		# Redirect STDOUT for vpr
 		chdir $_[3];
 
-		
-		open( STDOUT, "> $_[1]" );	
-		if (!$valgrind) {		
+
+		open( STDOUT, "> $_[1]" );
+		if (!$valgrind) {
 			open( STDERR, ">&STDOUT" );
 		}
 
@@ -1504,4 +1523,3 @@ sub get_clocks {
 
     return @clocks;
 }
-

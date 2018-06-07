@@ -77,18 +77,17 @@ void read_soft_def_file(const char *input_file_name)
 		while (fgets(line_buf, line_buffer_sz, input_file) != NULL && !error)
 		{
 			line_number += 1;
-			int len = strnlen(line_buf,line_buffer_sz+1);
-			if(len >= line_buffer_sz || len < 1)
+			int len = strnlen(line_buf,line_buffer_sz);
+			/* remove the newline */
+			if(len > 0 && line_buf[len-1] == '\n')
+				line_buf[len--] = '\0';
+
+			if(len < 1)
 			{
-				if(line_number == 1 || fgets(line_buf, line_buffer_sz, input_file) != NULL)
-					error =1;
 				break;
 			}
 			else
 			{
-				/* remove the newline */
-				if(line_buf[len-1] == '\n')
-					line_buf[len-1] = '\0';
 
 				char *temp_ptr = line_buf;
 				std::vector<std::string> tokens;
@@ -153,7 +152,7 @@ void read_soft_def_file(const char *input_file_name)
 			printf("ERROR line::%d\n",line_number);
 		}
 		else
-			printf("DONE\n");
+			printf("DONE read %d lines\n",line_number);
   }
 }
 
