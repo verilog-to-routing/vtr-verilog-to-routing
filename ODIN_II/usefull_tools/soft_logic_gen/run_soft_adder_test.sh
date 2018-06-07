@@ -28,17 +28,6 @@ echo "logic_block_area_total;vpr.out;Total logic block area .*: (.*)">> $VTR_HOM
 echo "total_power;*.power;^Total\s+(.*?)\s+" >> $VTR_HOME_DIR/$TRACKER_DIR/parse.txt
 }
 
-#destination start end adder
-#$1           $2    $3  $4
-function fill_def_file() {
-  if [ ! -e $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin ]; then
-    touch $1
-  fi
-
-  for BITWIDTH in $(eval echo {$2..$3}); do
-    echo "+,$BITWIDTH,soft,$4,$BITWIDTH" >> $1
-  done
-}
 
 function get_geomean() {
   ADDERS=$1
@@ -61,9 +50,9 @@ function get_geomean() {
       count=$((count+=1))
   done < $ADDERS
   rm $ADDERS
-  OUT_CRIT=$(echo $OUT_CRIT $count | awk '{ print ($1>0)? $0 ** (1.0/$1): 1.0}')
-  OUT_SIZE=$(echo $OUT_SIZE $count | awk '{ print ($1>0)? $0 ** (1.0/$1): 1.0}')
-  OUT_POWE=$(echo $OUT_POWE $count | awk '{ print ($1>0)? $0 ** (1.0/$1): 1.0}')
+  OUT_CRIT=$(echo $OUT_CRIT $count | awk '{ if($1>0) print $0 ** (1.0/$1); else print 1.0;}')
+  OUT_SIZE=$(echo $OUT_SIZE $count | awk '{ if($1>0) print $0 ** (1.0/$1); else print 1.0;}')
+  OUT_POWE=$(echo $OUT_POWE $count | awk '{ if($1>0) print $0 ** (1.0/$1); else print 1.0;}')
 
   WEIGHTED_SUM=$(echo $OUT_CRIT $CRIT_W $OUT_SIZE $SIZE_W $OUT_POWE $POWE_W  | awk '{ print ($0*$1)+($2*$3)+($4*$5) }')
 
@@ -80,6 +69,7 @@ function build_task() {
     ADDER_TYPE=$1
     MIN_SIZE=$(( $2 ))
     MAX_SIZE=$(( $3 ))
+    FILL_DEF_TO=$END_BITSIZE
 
     for NEXT_SIZE in $(eval echo {$MIN_SIZE..$MAX_SIZE}); do
         v_counter=0
@@ -96,9 +86,10 @@ function build_task() {
 
             #build odin config
             cat $TRACKER_DIR/current_config.odin > $TEST_DIR/odin.soft_config
-            for SIZE_IN in $(eval echo {$MAX_SIZE..$END_BITSIZE}); do
-              echo "+,$SIZE_IN,soft,$ADDER_TYPE,$NEXT_SIZE" >> $TEST_DIR/odin.soft_config
+            for bit_size in $(eval echo {$MAX_SIZE..$FILL_DEF_TO}); do
+              echo "+,$bit_size,soft,$ADDER_TYPE,$NEXT_SIZE" >> $TEST_DIR/odin.soft_config
             done
+
             a_counter=$((a_counter+1))
           done
           v_counter=$((v_counter+1))
@@ -135,20 +126,18 @@ function run_parralel_tasks() {
       /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/parse_vtr_flow.pl \
       $TEST_DIR/run $TEST_DIR/parse.txt \
       &> $TEST_DIR/run/parse_results.txt
-      test_name=${TEST_DIR##*/}
-      tail -n +2 $TEST_DIR/run/parse_results.txt > $TEST_DIR/../${test_name}.results
+
+      tail -n +2 $TEST_DIR/run/parse_results.txt > $TEST_DIR/../${TEST_DIR##*/}.results
       echo "$TEST_DIR ... PASS"
   else
 
       echo "$TEST_DIR ... FAILED"
   fi
-  # parent=$(readlink -f $TEST_DIR/..)
-  # self=$(readlink -f $TEST_DIR)
-  # mv $TEST_DIR $VTR_HOME_DIR/ODIN_II/usefull_tools/soft_logic_gen/track_completed/failures/${parent##*/}_${self##*/}
   rm -Rf $TEST_DIR
   '
   #END
 }
+
 
 #bitwidth
 #$1
@@ -170,7 +159,10 @@ build_parse_file
 
 [ ! -e $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin ] && touch $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
 
-for BITWIDTH in $(eval echo {1..$((INITIAL_BITSIZE-1))}); do
+START=1
+END=$((INITIAL_BITSIZE-1))
+
+for BITWIDTH in $(eval echo {$START..$END}); do
   echo "+,$BITWIDTH,soft,default,$BITWIDTH" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
 done
 
@@ -184,8 +176,8 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
   build_verilogs $BITWIDTH
 
   build_task  "default"   $BITWIDTH $BITWIDTH
-  build_task  "csla"      1 $BITWIDTH
-  build_task  "bec_csla"  1 $BITWIDTH
+  build_task  "csla"      "1" $BITWIDTH
+  build_task  "bec_csla"  "1" $BITWIDTH
 
   rm -Rf $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/verilogs
 
@@ -225,20 +217,25 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
   #get geomean of each adder_type and output to single file
   #keep best adder in memory to output to odin_config
   values=$(get_geomean $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results)
-  BEST_N=$(echo $values | cut -d "," -f1 )
-  BEST_V=$(echo $values | cut -d "," -f2 )
-  TOLERANCE="0.0001"
+  BEST_NAME=$(echo $values | cut -d "," -f1 )
+  BEST_VALUE=$(echo $values | cut -d "," -f2 )
+  rm $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results
+
   for ADDERS in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*.results; do
-    values=$(get_geomean $ADDERS)
-    TEMP_N=$(echo $values | cut -d "," -f1 )
-    TEMP_V=$(echo $values | cut -d "," -f2 )
-    if [ $(echo $TEMP_V $BEST_V $TOLERANCE | awk '{ print (($0+$2)<$1)?1:0 }') ]; then
-      BEST_N=$TEMP_N
-      BEST_V=$TEMP_V
+    temp_values=$(get_geomean $ADDERS)
+    TEMP_VALUE=$(echo $temp_values | cut -d "," -f2)
+    TEMP_NAME=$(echo $temp_values | cut -d "," -f1)
+
+    echo ">$TEMP_NAME,$TEMP_VALUE< | >$BEST_NAME,$BEST_VALUE< "
+
+    if [ "$(echo "$TEMP_VALUE < $BEST_VALUE"  | bc -l)" -ne "0" ]; then
+      BEST_NAME=$TEMP_NAME
+      BEST_VALUE=$TEMP_VALUE
     fi
-    rm -Rf $ADDERS
   done
-  BEST_N=$(echo $BEST_N | tr "-" ',')
-  echo "+,$BITWIDTH,soft,$BEST_N" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
+
+  echo "current best :: >$BEST_NAME< with adder >$BEST_VALUE<"
+  BEST_NAME=$(echo $BEST_NAME | tr "-" ',')
+  echo "+,$BITWIDTH,soft,$BEST_NAME" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
 
 done
