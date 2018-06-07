@@ -120,8 +120,11 @@ function run_parralel_tasks() {
       > $TEST_DIR/run/parse_results.txt
       test_name=${TEST_DIR##*/}
       tail -n +2 $TEST_DIR/run/parse_results.txt | tr -s [:blank:] > $TEST_DIR/../${test_name}.results
+      rm -Rf $TEST_DIR
       echo "$TEST_DIR ... PASS"
   else
+      mkdir -p $VTR_HOME_DIR/ODIN_II/odin_II/usefull_tools/soft_logic_gen/track_completed/failures
+      cp -Rf $TEST_DIR $VTR_HOME_DIR/ODIN_II/odin_II/usefull_tools/soft_logic_gen/track_completed/failures
       echo "$TEST_DIR ... FAILED"
   fi
   '
@@ -187,6 +190,7 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
         echo "1.0 1.0" >> $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/$test_name
       fi
     done
+    rm -Rf $TEST_DIR
   done
 
   #get geomean of each adder_type and output to single file
@@ -203,6 +207,7 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
       BEST_N=$TEMP_N
       BEST_V=$TEMP_V
     fi
+    rm -Rf $ADDERS
   done
   echo "+,$BITWIDTH,soft,$BEST_N" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
 
