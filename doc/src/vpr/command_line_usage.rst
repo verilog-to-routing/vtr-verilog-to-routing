@@ -306,7 +306,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``on``
 
-.. option:: --target_ext_pin_util { <float> | <float>,<float> | <string>:<float> | <string>:<float>,<float> }
+.. option:: --target_ext_pin_util { auto | <float> | <float>,<float> | <string>:<float> | <string>:<float>,<float> }
 
     Sets the external pin utilization target (fraction between 0.0 and 1.0) during clustering. 
     This determines how many pin the clustering engine will aim to use in a given cluster before closing it and opening a new cluster.
@@ -318,6 +318,8 @@ For people not working on CAD, you can probably leave all the options to their d
     Typically packing less densely improves routability, at the cost of using more clusters.
     
     This option can take several different types of values:
+
+    * ``auto`` VPR will automatically determine appropriate target utilizations.
     
     * ``<float>`` specifies the target input pin utilization for all block types.
 
@@ -336,7 +338,7 @@ For people not working on CAD, you can probably leave all the options to their d
         For example: 
 
           * ``clb:0.7`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization.
-          * ``clb:0.7,0.9`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization, nad 90% output pin utilization.
+          * ``clb:0.7,0.9`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization, and 90% output pin utilization.
 
     .. note:: 
 
@@ -363,7 +365,7 @@ For people not working on CAD, you can probably leave all the options to their d
     
         This option requires :option:`--clustering_pin_feasibility_filter` to be enabled.
 
-    **Default:** ``1.0``
+    **Default:** ``auto``
 
 
 .. option:: --debug_clustering {on | off}
