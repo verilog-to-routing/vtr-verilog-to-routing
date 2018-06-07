@@ -304,19 +304,53 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``on``
 
-.. option:: --target_ext_pin_util { <float> | <float>,<float> }
+.. option:: --target_ext_pin_util { <float> | <float>,<float> | <string>:<float> | <string>:<float>,<float> }
 
-    Sets the external pin utilization target for clusters. 
+    Sets the external pin utilization target (fraction between 0.0 and 1.0) during clustering. 
     This determines how many pin the clustering engine will aim to use in a given cluster before closing it and opening a new cluster.
     
-    Setting this to ``1.0`` guides the packer to pack as densely as possible (i.e. keep adding molecules to the cluster until 100% of cluster external pins are used).
+    Setting this to ``1.0`` guides the packer to pack as densely as possible (i.e. it will keep adding molecules to the cluster until no more can fit).
     Setting this to a lower value will guide the packer to pack less densely, and instead creating more clusters.
     In the limit setting this to ``0.0`` will cause the packer to create a new cluster for each molecule.
     
     Typically packing less densely improves routability, at the cost of using more clusters.
     
-    If one values are specified it is interpretted as specifying the overall pin utilization target (e.g. ``0.7`` would set the target input pin utilization to ``0.7`` and target output pin utilization to ``0.7``).
-    If two values are specified separated by a comma this is interpretted as specifying the input and output pin target utilizations respectively (e.g. ``0.7,0.9`` would set the target input pin utilization to ``0.7``, and the target output pin utilization to ``0.9``).
+    This option can take several different types of values:
+    
+    * ``<float>`` specifies the target input pin utilization for all block types.
+
+        For example: 
+        
+          * ``0.7`` specifies that all blocks should aim for 70% input pin utilization.
+
+    * ``<float>,<float>`` specifies the target input and output pin utilizations respectively for all block types.
+
+        For example: 
+
+          * ``0.7,0.9`` specifies that all blocks should aim for 70% input pin utilization, and 90% output pin utilization.
+
+    * ``<string>:<float>`` and ``<string>:<float>,<float>`` specify the target pin utilizations for a specific block type (as above).
+
+        For example: 
+
+          * ``clb:0.7`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization.
+          * ``clb:0.7,0.9`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization, nad 90% output pin utilization.
+
+    .. note:: 
+
+        If a pin utilization target is unspecified it defaults to 1.0 (i.e. 100% utilization).
+
+        For example:
+
+          * ``0.7`` leaves the output pin utilization unspecified, which is equivalent to ``0.7,1.0``.
+          * ``clb:0.7,0.9`` leaves the pin utilizations for all other block types unspecified, so they will assume a default utilization of ``1.0,1.0``.
+
+    This option can also take multiple space-separated values.
+    For example::
+
+        --target_ext_pin_util clb:0.5 dsp:0.9,0.7 0.8
+
+    would specify that ``clb`` blocks use a target input pin utilization of 50%, ``dsp`` blocks use a targets of 90% and 70% for inputs and outputs respectively, and all other blocks use an input pin utilization target of 80%.
 
     .. note:: 
 
@@ -325,7 +359,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     .. note::
     
-        This option requires :option:`--clustering_pin_feasibility_filter` to be enabled for non-unity pin utilization targets.
+        This option requires :option:`--clustering_pin_feasibility_filter` to be enabled.
 
     **Default:** ``1.0``
 
