@@ -3481,7 +3481,7 @@ static void draw_routing_util() {
             max_util = std::max(max_util, chany_util[x][y]);
         }
     }
-    max_util = std::max(max_util, 1.Selection_032f);
+    max_util = std::max(max_util, 1.f);
 
     std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
 
