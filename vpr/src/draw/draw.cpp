@@ -267,7 +267,7 @@ static void toggle_congestion(void (*drawscreen)());
 static void toggle_routing_congestion_cost(void (*drawscreen)());
 static void toggle_routing_bounding_box(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
-static void toggle_pin_usage(void (*drawscreen_ptr)());
+static void toggle_block_pin_util(void (*drawscreen_ptr)());
 
 static void drawscreen();
 static void redraw_screen();
@@ -373,7 +373,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 		if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
-			create_button("Blk Internal", "Blk Pin Util", toggle_pin_usage);
+			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
             if(setup_timing_info) {
                 create_button("Blk Pin Util", "Crit. Path", toggle_crit_path);
             }
@@ -394,7 +394,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 				&& draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
-			create_button("Blk Internal", "Blk Pin Util", toggle_pin_usage);
+			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
 			create_button("Blk Pin Util", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
@@ -659,14 +659,18 @@ void toggle_blk_internal(void (*drawscreen_ptr)()) {
 	drawscreen_ptr();
 }
 
-static void toggle_pin_usage(void (*drawscreen_ptr)()) {
+static void toggle_block_pin_util(void (*drawscreen_ptr)()) {
 	t_draw_state *draw_state = get_draw_state_vars();
 
-	e_draw_pin_util new_state = (enum e_draw_pin_util) (((int)draw_state->show_blk_pin_util + 1)
+	e_draw_block_pin_util new_state = (enum e_draw_block_pin_util) (((int)draw_state->show_blk_pin_util + 1)
 														  % ((int)DRAW_PIN_UTIL_MAX));
 
     draw_state->show_blk_pin_util = new_state;
 
+    if (new_state == DRAW_NO_BLOCK_PIN_UTIL) {
+        draw_reset_blk_colors();
+		update_message(draw_state->default_message);
+    }
     drawscreen_ptr();
 }
 
@@ -3364,8 +3368,6 @@ t_color lighten_color(t_color color, float amount) {
 static void draw_block_pin_util() {
 	t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) {
-        draw_reset_blk_colors();
-		update_message(draw_state->default_message);
         return;
     }
 

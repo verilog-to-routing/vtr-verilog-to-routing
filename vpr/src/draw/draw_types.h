@@ -73,7 +73,7 @@ enum e_draw_routing_costs {
     DRAW_ROUTING_COST_MAX
 };
 
-enum e_draw_pin_util {
+enum e_draw_block_pin_util {
     DRAW_NO_BLOCK_PIN_UTIL = 0,
     DRAW_BLOCK_PIN_UTIL_TOTAL,
     DRAW_BLOCK_PIN_UTIL_INPUTS,
@@ -136,7 +136,7 @@ struct t_draw_state {
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
 	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
 	e_draw_routing_costs show_routing_costs;
-    e_draw_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
+    e_draw_block_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
     int show_routing_bb = OPEN;
 	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
 	int max_sub_blk_lvl = 0;
