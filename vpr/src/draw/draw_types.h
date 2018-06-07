@@ -81,6 +81,14 @@ enum e_draw_block_pin_util {
     DRAW_PIN_UTIL_MAX
 };
 
+enum e_draw_routing_util {
+    DRAW_NO_ROUTING_UTIL,
+    DRAW_ROUTING_UTIL,
+    DRAW_ROUTING_UTIL_WITH_VALUE,
+    DRAW_ROUTING_UTIL_WITH_FORMULA,
+    DRAW_ROUTING_UTIL_MAX,
+};
+
 enum e_draw_net_type {
 	ALL_NETS, HIGHLIGHTED
 };
@@ -138,6 +146,7 @@ struct t_draw_state {
 	e_draw_routing_costs show_routing_costs;
     e_draw_block_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
     int show_routing_bb = OPEN;
+    e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
 	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
 	int max_sub_blk_lvl = 0;
 	int show_blk_internal = 0;

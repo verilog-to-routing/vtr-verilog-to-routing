@@ -266,6 +266,7 @@ static void toggle_rr(void (*drawscreen)());
 static void toggle_congestion(void (*drawscreen)());
 static void toggle_routing_congestion_cost(void (*drawscreen)());
 static void toggle_routing_bounding_box(void (*drawscreen_ptr)());
+static void toggle_routing_util(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
 static void toggle_block_pin_util(void (*drawscreen_ptr)());
 
@@ -277,6 +278,7 @@ static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion();
 static void draw_routing_costs();
 static void draw_routing_bb();
+static void draw_routing_util();
 static void draw_crit_path();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
@@ -336,6 +338,9 @@ t_color get_block_type_color(t_type_ptr type);
 t_color lighten_color(t_color color, float amount);
 
 static void draw_block_pin_util();
+vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type);
+vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type);
+vtr::Matrix<float> calculate_routing_util(t_rr_type rr_type);
 
 /********************** Subroutine definitions ******************************/
 
@@ -382,6 +387,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
+			create_button("Route BB", "Routing Util", toggle_routing_util);
 		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
@@ -399,6 +405,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
+			create_button("Route BB", "Routing Util", toggle_routing_util);
             if(setup_timing_info) {
                 create_button("Cong. Cost", "Crit. Path", toggle_crit_path);
             }
@@ -527,6 +534,8 @@ static void redraw_screen() {
 
         draw_routing_costs();
 
+        draw_routing_util();
+
         draw_routing_bb();
 	}
 
@@ -637,6 +646,19 @@ static void toggle_routing_bounding_box(void (*drawscreen_ptr)()) {
     }
 
 	if (draw_state->show_routing_bb == OPEN) {
+		update_message(draw_state->default_message);
+    }
+    drawscreen_ptr();
+}
+
+static void toggle_routing_util(void (*drawscreen_ptr)()) {
+	t_draw_state* draw_state = get_draw_state_vars();
+
+	e_draw_routing_util new_state = (enum e_draw_routing_util) (((int)draw_state->show_routing_util + 1)
+														  % ((int)DRAW_ROUTING_UTIL_MAX));
+	draw_state->show_routing_util = new_state;
+
+	if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
 		update_message(draw_state->default_message);
     }
     drawscreen_ptr();
@@ -3431,4 +3453,211 @@ static void draw_reset_blk_colors() {
     for (auto blk : blks) {
         draw_reset_blk_color(blk);
     }
+}
+
+static void draw_routing_util() {
+	t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
+        return;
+    }
+
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    auto chanx_usage = calculate_routing_usage(CHANX);
+    auto chany_usage = calculate_routing_usage(CHANY);
+
+    auto chanx_avail = calculate_routing_avail(CHANX);
+    auto chany_avail = calculate_routing_avail(CHANY);
+
+    auto chanx_util = calculate_routing_util(CHANX);
+    auto chany_util = calculate_routing_util(CHANY);
+
+    float min_util = 0.;
+    float max_util = -std::numeric_limits<float>::infinity();
+    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+            max_util = std::max(max_util, chanx_util[x][y]);
+            max_util = std::max(max_util, chany_util[x][y]);
+        }
+    }
+    max_util = std::max(max_util, 1.Selection_032f);
+
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
+
+    float tile_width = draw_coords->get_tile_width();
+    float tile_height = draw_coords->get_tile_height();
+
+    constexpr float ALPHA = 0.95;
+
+    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+
+            float sb_util = 0;
+            int chan_count = 0;
+            if (x > 0) {
+                float chan_util = chanx_util[x][y];
+                t_color chanx_color = to_t_color(cmap->color(chan_util));
+                chanx_color.alpha *= ALPHA;
+                setcolor(chanx_color);
+                t_bound_box bb(draw_coords->tile_x[x], draw_coords->tile_y[y] + 1*tile_height,
+                               draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y+1]);
+                fillrect(bb);
+
+                setcolor(BLACK);
+                if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
+                    drawtext_in(bb, vtr::string_fmt("%.2f", chan_util).c_str());
+                } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+                    drawtext_in(bb, vtr::string_fmt("%.2f = %.2f / %.2f", chan_util, chanx_usage[x][y], chanx_avail[x][y]).c_str());
+                }
+
+                sb_util += chan_util;
+                ++chan_count;
+            }
+
+            if (y > 0) {
+                float chan_util = chany_util[x][y];
+                t_color chany_color = to_t_color(cmap->color(chan_util));
+                chany_color.alpha *= ALPHA;
+                setcolor(chany_color);
+                t_bound_box bb(draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y],
+                               draw_coords->tile_x[x+1], draw_coords->tile_y[y] + 1*tile_height);
+                fillrect(bb);
+
+                setcolor(BLACK);
+                if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
+                    drawtext_in(bb, vtr::string_fmt("%.2f", chan_util).c_str());
+                } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+                    drawtext_in(bb, vtr::string_fmt("%.2f = %.2f / %.2f", chan_util, chanx_usage[x][y], chanx_avail[x][y]).c_str());
+                }
+
+                sb_util += chan_util;
+                ++chan_count;
+            }
+
+            //For now SB util is just average of surrounding channels
+            //TODO: calculate actual usage
+            sb_util += chanx_util[x+1][y];
+            chan_count += 1;
+            sb_util += chany_util[x][y+1];
+            chan_count += 1;
+
+            if (chan_count > 0) {
+                sb_util /= chan_count;
+                t_color sb_color = to_t_color(cmap->color(sb_util));
+                sb_color.alpha *= ALPHA;
+                setcolor(sb_color);
+                t_bound_box bb(draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y] + 1*tile_height,
+                               draw_coords->tile_x[x+1], draw_coords->tile_y[y+1]);
+                fillrect(bb);
+
+                setcolor(BLACK);
+                if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
+                    || draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+                    drawtext_in(bb, vtr::string_fmt("%.2f", sb_util).c_str());
+                }
+            }
+        }
+    }
+
+    draw_state->color_map = std::move(cmap);
+}
+
+vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
+    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    vtr::Matrix<float> usage({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
+
+    //Collect all the in-use RR nodes
+    std::set<int> rr_nodes;
+    for (auto net : cluster_ctx.clb_nlist.nets()) {
+        t_trace* tptr = route_ctx.trace_head[net];
+        while (tptr != nullptr) {
+            int inode = tptr->index; 
+
+            if (device_ctx.rr_nodes[inode].type() == rr_type) {
+                rr_nodes.insert(inode);
+            }
+            tptr = tptr->next;
+        }
+    }
+
+    //Record number of used resources in each x/y channel
+    for (int inode : rr_nodes) {
+        auto& rr_node = device_ctx.rr_nodes[inode];
+
+        if (rr_type == CHANX) {
+            VTR_ASSERT(rr_node.type() == CHANX);
+            VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
+
+            int y = rr_node.ylow();
+            for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
+                usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
+            }
+        } else {
+            VTR_ASSERT(rr_type == CHANY);
+            VTR_ASSERT(rr_node.type() == CHANY);
+            VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
+
+            int x = rr_node.xlow();
+            for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
+                usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
+            }
+        }
+    }
+    return usage;
+}
+
+vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
+    //Calculate the number of available resources in each x/y channel
+    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
+    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+        auto& rr_node = device_ctx.rr_nodes[inode];
+
+        if (rr_node.type() == CHANX && rr_type == CHANX) {
+            VTR_ASSERT(rr_node.type() == CHANX);
+            VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
+
+            int y = rr_node.ylow();
+            for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
+                avail[x][y] += rr_node.capacity();
+            }
+        } else if (rr_node.type() == CHANY && rr_type == CHANY) {
+            VTR_ASSERT(rr_node.type() == CHANY);
+            VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
+
+            int x = rr_node.xlow();
+            for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
+                avail[x][y] += rr_node.capacity();
+            }
+        }
+    }
+    return avail;
+}
+
+vtr::Matrix<float> calculate_routing_util(t_rr_type rr_type) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    auto usage = calculate_routing_usage(rr_type);
+    auto avail = calculate_routing_avail(rr_type);
+
+    //Normalize the util by the available resources
+    for (size_t x = 0; x < device_ctx.grid.width(); ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height(); ++y) {
+            if (usage[x][y] > 0.) {
+                VTR_ASSERT(avail[x][y] > 0.);
+                usage[x][y] /= avail[x][y];
+            }
+        }
+    }
+
+    return usage;
 }
