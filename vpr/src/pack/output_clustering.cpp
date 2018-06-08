@@ -30,8 +30,6 @@ using namespace std;
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
 
-//#define OUTPUT_BLIF /* Dump blif representation of logic block for debugging using formal verification */
-
 /****************** Static variables local to this module ************************/
 
 static t_pb_graph_pin ***pb_graph_pin_lookup_from_index_by_type = nullptr; /* [0..device_ctx.num_block_types-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */

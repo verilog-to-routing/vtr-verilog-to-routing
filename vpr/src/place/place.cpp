@@ -231,6 +231,8 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost);
 
+static ClusterBlockId pick_from_block();
+
 static void check_place(float bb_cost, float timing_cost,
 		enum e_place_algorithm place_algorithm,
 		float delay_cost);
@@ -1340,11 +1342,6 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 	num_ts_called ++;
 
-    if((int) cluster_ctx.clb_nlist.blocks().size() == 0) {
-        //Empty netlist, no valid swap possible
-        return ABORTED;
-    }
-
 	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
 	 * use cost functions that can go negative.                          */
 
@@ -1353,18 +1350,11 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 	float timing_delta_c = 0;
 	float delay_delta_c = 0.0;
 
-	/* Pick a random block to be swapped with another random block    */
-	auto b_from = ClusterBlockId(vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1));
-
-	/* If the pins are fixed we never move them from their initial    *
-	 * random locations.  The code below could be made more efficient *
-	 * by using the fact that pins appear first in the block list,    *
-	 * but this shouldn't cause any significant slowdown and won't be *
-	 * broken if I ever change the parser so that the pins aren't     *
-	 * necessarily at the start of the block list.                    */
-	while (place_ctx.block_locs[b_from].is_fixed == true) {
-		b_from = (ClusterBlockId)vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1);
-	}
+	/* Pick a random block to be swapped with another random block.   */
+    ClusterBlockId b_from = pick_from_block();
+    if (!b_from) {
+        return ABORTED; //No movable block found
+    }
 
 	int x_from = place_ctx.block_locs[b_from].x;
 	int y_from = place_ctx.block_locs[b_from].y;
@@ -1522,6 +1512,41 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 		return ABORTED;
 	}
+}
+
+//Pick a random block to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+static ClusterBlockId pick_from_block() {
+    /* Some blocks may be fixed, and should never be moved from their *
+     * initial positions. If we randomly selected such a block try    *
+     * another random block.                                          *
+     *                                                                *
+     * We need to track the blocks we have tried to avoid an infinite *
+     * loop if all blocks are fixed.                                  */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    std::unordered_set<ClusterBlockId> tried_from_blocks;
+
+    //So long as untried blocks remain
+    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
+
+        //Pick a block at random
+        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1));
+
+        //Record it as tried
+        tried_from_blocks.insert(b_from);
+
+        if (place_ctx.block_locs[b_from].is_fixed) {
+            continue; //Fixed location, try again
+        }
+
+        //Found a movable block
+        return b_from;
+    }
+
+    //No movable blocks found
+    return ClusterBlockId::INVALID();
 }
 
 //Puts all the nets changed by the current swap into nets_to_update,
