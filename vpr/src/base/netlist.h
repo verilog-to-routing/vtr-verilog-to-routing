@@ -580,6 +580,9 @@ class Netlist {
         //Returns the constructed name (derived from block and port) for the specified pin
         std::string pin_name(const PinId pin_id) const;
 
+        //Returns the constructed name (derived from block and port) for the specified pin
+        std::string port_bit_name(const PinId pin_id) const;
+
         //Returns the type of the specified pin
         PinType     pin_type(const PinId pin_id) const;
 
