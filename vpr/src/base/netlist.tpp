@@ -4,6 +4,30 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vpr_error.h"
+/*
+ *
+ * NetlistIdRemapper class implementation
+ *
+ */
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+BlockId NetlistIdRemapper<BlockId, PortId, PinId, NetId>::new_block_id(BlockId old_id) const {
+    return block_id_map_[old_id];
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+PortId NetlistIdRemapper<BlockId, PortId, PinId, NetId>::new_port_id(PortId old_id) const {
+    return port_id_map_[old_id];
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+PinId NetlistIdRemapper<BlockId, PortId, PinId, NetId>::new_pin_id(PinId old_id) const {
+    return pin_id_map_[old_id];
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+NetId NetlistIdRemapper<BlockId, PortId, PinId, NetId>::new_net_id(NetId old_id) const {
+    return net_id_map_[old_id];
+}
 
 /*
  *
@@ -1013,31 +1037,26 @@ void Netlist<BlockId, PortId, PinId, NetId>::remove_net_pin(const NetId net_id, 
  *
  */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void Netlist<BlockId, PortId, PinId, NetId>::remove_and_compress() {
+typename Netlist<BlockId, PortId, PinId, NetId>::IdRemapper Netlist<BlockId, PortId, PinId, NetId>::remove_and_compress() {
     remove_unused();
-    compress();
+    return compress();
 }
 
 //Compress the various netlist components to remove invalid entries
 // Note: this invalidates all Ids
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void Netlist<BlockId, PortId, PinId, NetId>::compress() {
-    vtr::vector_map<BlockId, BlockId> block_id_map(block_ids_.size());
-    vtr::vector_map<PortId, PortId> port_id_map(port_ids_.size());
-    vtr::vector_map<PinId, PinId> pin_id_map(pin_ids_.size());
-    vtr::vector_map<NetId, NetId> net_id_map(net_ids_.size());
-
+typename Netlist<BlockId, PortId, PinId, NetId>::IdRemapper Netlist<BlockId, PortId, PinId, NetId>::compress() {
     //Build the mappings from old to new id's, potentially
     //re-ordering for improved cache locality
     //
     //The vectors passed as parameters are initialized as a mapping from old to new index
     // e.g. block_id_map[old_id] == new_id
-    build_id_maps(block_id_map, port_id_map, pin_id_map, net_id_map);
+    IdRemapper id_remapper = build_id_maps();
 
-    clean_nets(net_id_map);
-    clean_pins(pin_id_map);
-    clean_ports(port_id_map);
-    clean_blocks(block_id_map);
+    clean_nets(id_remapper.net_id_map_);
+    clean_pins(id_remapper.pin_id_map_);
+    clean_ports(id_remapper.port_id_map_);
+    clean_blocks(id_remapper.block_id_map_);
     //TODO: clean strings
     //TODO: iterative cleaning?
 
@@ -1045,19 +1064,21 @@ void Netlist<BlockId, PortId, PinId, NetId>::compress() {
     // Note: net references must be rebuilt (to remove pins) before 
     //       the pin references can be rebuilt (to account for index changes
     //       due to pins being removed from the net)
-    rebuild_block_refs(pin_id_map, port_id_map);
-    rebuild_port_refs(block_id_map, pin_id_map);
-    rebuild_net_refs(pin_id_map); 
-    rebuild_pin_refs(port_id_map, net_id_map);
+    rebuild_block_refs(id_remapper.pin_id_map_, id_remapper.port_id_map_);
+    rebuild_port_refs(id_remapper.block_id_map_, id_remapper.pin_id_map_);
+    rebuild_net_refs(id_remapper.pin_id_map_); 
+    rebuild_pin_refs(id_remapper.port_id_map_, id_remapper.net_id_map_);
 
     //Re-build the lookups
     rebuild_lookups();
 
+    //Resize containers to exact size
+    shrink_to_fit();
+
     //Netlist is now clean
     dirty_ = false;
 
-    //Resize containers to exact size
-    shrink_to_fit();
+    return id_remapper;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
@@ -1106,14 +1127,13 @@ void Netlist<BlockId, PortId, PinId, NetId>::remove_unused() {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void Netlist<BlockId, PortId, PinId, NetId>::build_id_maps(vtr::vector_map<BlockId, BlockId>& block_id_map,
-    vtr::vector_map<PortId, PortId>& port_id_map,
-    vtr::vector_map<PinId, PinId>& pin_id_map,
-    vtr::vector_map<NetId, NetId>& net_id_map) {
-    block_id_map = compress_ids(block_ids_);
-    port_id_map = compress_ids(port_ids_);
-    pin_id_map = compress_ids(pin_ids_);
-    net_id_map = compress_ids(net_ids_);
+typename Netlist<BlockId, PortId, PinId, NetId>::IdRemapper Netlist<BlockId, PortId, PinId, NetId>::build_id_maps() {
+    IdRemapper id_remapper;
+    id_remapper.block_id_map_ = compress_ids(block_ids_);
+    id_remapper.port_id_map_ = compress_ids(port_ids_);
+    id_remapper.pin_id_map_ = compress_ids(pin_ids_);
+    id_remapper.net_id_map_ = compress_ids(net_ids_);
+    return id_remapper;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>

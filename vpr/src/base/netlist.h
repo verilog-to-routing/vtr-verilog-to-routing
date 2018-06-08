@@ -426,8 +426,22 @@
 
 
 //Forward declaration for private methods
-template<typename I>
-class IdMap;
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+class NetlistIdRemapper {
+    public:
+        BlockId new_block_id(BlockId old_blk) const;
+        PortId new_port_id(PortId old_port) const;
+        PinId new_pin_id(PinId old_pin) const;
+        NetId new_net_id(NetId old_net) const;
+
+    private:
+        friend Netlist<BlockId,PortId,PinId,NetId>;
+
+        vtr::vector_map<BlockId, BlockId> block_id_map_;
+        vtr::vector_map<PortId, PortId> port_id_map_;
+        vtr::vector_map<PinId, PinId> pin_id_map_;
+        vtr::vector_map<NetId, NetId> net_id_map_;
+};
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 class Netlist {
@@ -445,6 +459,8 @@ class Netlist {
         typedef typename vtr::Range<net_iterator>   net_range;
         typedef typename vtr::Range<pin_iterator>   pin_range;
         typedef typename vtr::Range<port_iterator>  port_range;
+
+        typedef NetlistIdRemapper<BlockId,PortId,PinId,NetId> IdRemapper;
 
     public:
         Netlist(std::string name="", std::string id="");
@@ -716,7 +732,7 @@ class Netlist {
          */
         //Wrapper for remove_unused() & compress()
         // This function should be used in the case where a netlist is fully modified
-        void remove_and_compress();
+        IdRemapper remove_and_compress();
 
         //This should be called after completing a series of netlist modifications
         //(e.g. removing blocks/ports/pins/nets).
@@ -729,11 +745,8 @@ class Netlist {
         //Compresses the netlist, removing any invalid and/or unreferenced
         //blocks/ports/pins/nets.
         //
-        //This is currently used by just the ClusteredNetlist, as it requires compression
-        //if a selected CLB fails to pack.
-        //
         //NOTE: this invalidates all existing IDs!
-        void compress();
+        IdRemapper compress();
 
     protected: //Protected Mutators
         //Create or return an existing block in the netlist
@@ -813,10 +826,7 @@ class Netlist {
         //Builds the new mappings from old to new IDs.
         //The various IdMap's should be initialized with invalid mappings
         //for all current ID's before being called.
-        void build_id_maps(vtr::vector_map<BlockId, BlockId>& block_id_map,
-            vtr::vector_map<PortId, PortId>& port_id_map,
-            vtr::vector_map<PinId, PinId>& pin_id_map,
-            vtr::vector_map<NetId, NetId>& net_id_map);
+        IdRemapper build_id_maps();
 
         //Removes invalid and reorders blocks
         void clean_blocks(const vtr::vector_map<BlockId, BlockId>& block_id_map);
