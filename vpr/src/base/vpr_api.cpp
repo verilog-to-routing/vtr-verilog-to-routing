@@ -1100,6 +1100,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
         free_timing_graph(slacks);
 #endif
     }
+
 }
 
 /* This function performs power estimation, and must be called

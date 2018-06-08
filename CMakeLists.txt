@@ -218,6 +218,7 @@ add_subdirectory(vpr)
 add_subdirectory(abc)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
+add_subdirectory(utils)
 
 #Add extra compilation flags to suppress warnings from some libraries/tools
 # Note that target_compile_options() *appends* to the current compilation options of
