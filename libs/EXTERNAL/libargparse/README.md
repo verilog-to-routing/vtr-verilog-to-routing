@@ -10,7 +10,7 @@ This avoids command-line related errors from showing up deep in the program exec
 Basic Usage
 ===========
 
-```
+```cpp
 #include "argparse.hpp"
 
 struct Args {
@@ -103,17 +103,22 @@ However this does not always provide sufficient flexibility.
 As a result libargparse also supports custom conversions, allowing user-defined mappings between command-line strings to program types.
 
 If we wanted to modify the above example so the '--bar' argument accepted the strings 'on' and 'off' (instead of the default 'true' and 'false') we would define a custom class as follows:
-```
+```cpp
 struct OnOff {
-    bool from_str(std::string str) {
-        if      (str == "on")  return true;
-        else if (str == "off") return false;
-        throw argparse::ArgParseConversionError("Invalid argument value");
+    ConvertedValue<bool> from_str(std::string str) {
+        ConvertedValue<bool> converted_value;
+
+        if      (str == "on")  converted_value.set_value(true);
+        else if (str == "off") converted_value.set_value(false);
+        else                   converted_value.set_error("Invalid argument value");
+        return converted_value;
     }
 
-    std::string to_str(bool val) {
-        if (val) return "on";
-        return "off";
+    ConvertedValue<std::string> to_str(bool val) {
+        ConvertedValue<std::string> converted_value;
+        if (val) converted_value.set_value("on");
+        else     converted_value.set_value("off");
+        return converted_value;
     }
 
     std::vector<std::string> default_choices() {
@@ -125,7 +130,7 @@ struct OnOff {
 Where the `from_str()` and `to_str()` define the conversions to and from a string, and `default_choices()` returns the set of valid choices. Note that default_choices() can return an empty vector to indicate there is no specified default set of choices.
 
 We then modify the ``add_argument()`` call to use our conversion object:
-```
+```cpp
     parser.add_argument<bool,OnOff>(args.enable_bar, "--bar")
         .help("Control whether bar is enabled")
         .default_value("off");
@@ -149,20 +154,18 @@ arguments:
 
 Advanced Usage
 ==============
-For more advanced usage such as argument groups see [argparse_test.cpp](argparse_test.cpp) and [src/argparse.hpp](argparse.hpp)
+For more advanced usage such as argument groups see [argparse_test.cpp](argparse_test.cpp) and [argparse.hpp](src/argparse.hpp).
 
 Future Work
 ===========
 libargparse is missing a variety of more advanced features found in Python's argparse, including (but not limited to):
-* nargs: '?', '*', '+', >1
 * action: append, count
 * subcommands
 * mutually exclusive options
-* prefix abbreviations
 * parsing only known args
 * concatenated short options (e.g. `-xvf`, for options `-x`, `-v`, `-f`)
 * equal concatenated option values (e.g. `--foo=VALUE`)
 
 Acknowledgements
 ================
-Python's [https://docs.python.org/2.7/library/argparse.html](argparse module)
+Python's [argparse module](https://docs.python.org/2.7/library/argparse.html)
