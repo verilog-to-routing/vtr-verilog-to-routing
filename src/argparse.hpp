@@ -273,6 +273,7 @@ namespace argparse {
             Argument& operator=(const Argument&&) = delete;
         protected:
             virtual bool valid_action() = 0;
+            std::vector<std::string> default_value_;
         private: //Data
             std::string long_opt_;
             std::string short_opt_;
@@ -284,7 +285,6 @@ namespace argparse {
             Action action_ = Action::STORE;
             bool required_ = false;
 
-            std::vector<std::string> default_value_;
 
             std::string group_name_;
             ShowIn show_in_ = ShowIn::USAGE_AND_HELP;
@@ -439,10 +439,12 @@ namespace argparse {
 
         public: //Mutators
             void set_dest_to_default() override {
-                ConvertedValue<T> val;
-                val.set_value(T());
+                auto& target = dest_.mutable_value(Provenance::DEFAULT);
+                for (auto default_str : default_value_) {
+                    auto val = Converter().from_str(default_str);
+                    target.insert(std::end(target), val.value());
+                }
 
-                dest_.set(val, Provenance::DEFAULT);
                 dest_.set_argument_name(name());
                 dest_.set_argument_group(group_name());
             }
