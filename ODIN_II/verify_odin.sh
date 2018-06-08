@@ -51,7 +51,7 @@ function micro_test() {
 	#verilog
 	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
 	'./odin_II -E \
-    --adder_type ripple \
+    --adder_type default \
 		-V regression_test/runs/micro/test_dir/circuit.v \
 		-t regression_test/runs/micro/test_dir/circuit_input \
 		-T regression_test/runs/micro/test_dir/circuit_output \
@@ -59,14 +59,14 @@ function micro_test() {
 		-sim_dir regression_test/runs/micro/test_dir/ \
 		&> regression_test/runs/micro/test_dir/log \
 	&& ./odin_II -E \
-    --adder_type ripple \
+    --adder_type default \
 		-b regression_test/runs/micro/test_dir/tempa.blif \
 		-t regression_test/runs/micro/test_dir/circuit_input \
 		-T regression_test/runs/micro/test_dir/circuit_output \
 		-sim_dir regression_test/runs/micro/test_dir/ \
 		&> regression_test/runs/micro/test_dir/log \
 	&& ./odin_II -E \
-    --adder_type ripple \
+    --adder_type default \
 		-a regression_test/runs/micro/test_dir/arch.xml \
 		-V regression_test/runs/micro/test_dir/circuit.v \
 		-t regression_test/runs/micro/test_dir/circuit_input \
@@ -75,7 +75,7 @@ function micro_test() {
 		-sim_dir regression_test/runs/micro/test_dir/ \
 		&> regression_test/runs/micro/test_dir/log \
 	&& ./odin_II -E \
-    --adder_type ripple \
+    --adder_type default \
 		-a regression_test/runs/micro/test_dir/arch.xml \
 		-b regression_test/runs/micro/test_dir/tempb.blif \
 		-t regression_test/runs/micro/test_dir/circuit_input \
@@ -106,14 +106,14 @@ function regression_test() {
 		output_vectors="$basename"_output
 
     echo "./odin_II -E \
-    --adder_type ripple \
+    --adder_type default \
 		-a ../libs/libarchfpga/arch/sample_arch.xml \
 		-V $test_verilog \
 		-t $input_vectors \
 		-T $output_vectors" > regression_test/runs/full/$test_name.log
 
 		(./odin_II -E \
-    --adder_type "ripple" \
+    --adder_type "default" \
 		-a "../libs/libarchfpga/arch/sample_arch.xml" \
 		-V "$test_verilog" \
 		-t "$input_vectors" \
@@ -138,7 +138,7 @@ function arch_test() {
 
 	ls regression_test/runs/arch | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/runs/arch/test_dir/circuit.v \
-        --adder_type ripple \
+        --adder_type default \
 				-o regression_test/runs/arch/test_dir/temp.blif \
 				-sim_dir regression_test/runs/arch/test_dir/ \
 					&> regression_test/runs/arch/test_dir/log \
@@ -161,7 +161,7 @@ function syntax_test() {
 
 	ls regression_test/runs/syntax | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/runs/syntax/test_dir/circuit.v \
-        --adder_type ripple \
+        --adder_type default \
 				-o regression_test/runs/syntax/test_dir/temp.blif \
 				-sim_dir regression_test/runs/syntax/test_dir/ \
 					&> regression_test/runs/syntax/test_dir/log \

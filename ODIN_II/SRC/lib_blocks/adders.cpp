@@ -1307,8 +1307,7 @@ int match_pins(nnode_t *node, nnode_t *next_node)
 void connect_output_pin_to_node(int *width, int current_pin, int output_pin_id, nnode_t *node, nnode_t *current_adder, short subtraction);
 nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_t *node, short mark);
 nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
-nnode_t **make_full_adder(nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
-nnode_t **make_bec(short is_first_pin, short construct_last_carry, nnode_t *previous_carry, nnode_t *current_sum, nnode_t *node, short mark);
+nnode_t *make_bec(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int *width, int current_pin, netlist_t *netlist, nnode_t *node, short subtraction, short mark);
 
 /*---------------------------------------------------------------------------------------------
  * connect adder type output pin to a node
@@ -1356,33 +1355,48 @@ nnode_t *make_mux_2to1(nnode_t *select, nnode_t *port_a, nnode_t *port_b, nnode_
 	return mux_2;
 }
 
-nnode_t **make_bec(short is_first_pin, short construct_last_carry, nnode_t *previous_carry, nnode_t *current_sum, nnode_t *node, short mark)
+nnode_t *make_bec(operation_list funct, nnode_t *current_adder, nnode_t *previous_carry, int* /* width */, int /* current_pin */, netlist_t *netlist, nnode_t *node, short /* subtraction */, short mark)
 {
-	nnode_t **bec_tuple = (nnode_t **)vtr::malloc(sizeof(nnode_t*)*2);
-
-	if(is_first_pin)
+	nnode_t *new_funct = NULL;
+	if(previous_carry == netlist->vcc_node)
 	{
-		bec_tuple[0] = make_not_gate(node, mark);
-		connect_nodes(current_sum, 0, bec_tuple[0], 0);
-
-		// patchy workaround to use the same function afterwards
-		// is optimized out by ABC anyways
-		bec_tuple[1] = make_not_gate(node, mark);
-		connect_nodes( bec_tuple[0], 0, bec_tuple[1], 0);
+		if(funct == ADDER_FUNC)
+		{
+			new_funct = make_not_gate(node, mark);
+			connect_nodes(current_adder, 0, new_funct, 0);
+		}
+		else if(funct == CARRY_FUNC)
+		{
+			new_funct = current_adder;
+		}
+	}
+	else if(previous_carry == netlist->gnd_node)
+	{
+		if(funct == ADDER_FUNC)
+		{
+			new_funct = current_adder;
+		}
+		else if(funct == CARRY_FUNC)
+		{
+			new_funct = netlist->gnd_node;
+		}
 	}
 	else
 	{
-		bec_tuple[0] = make_2port_gate(LOGICAL_XOR, 1, 1, 1, node, mark);
-		connect_nodes(previous_carry,0, bec_tuple[0], 0);
-		connect_nodes(current_sum,0, bec_tuple[0], 1);
-		if(construct_last_carry)
+		if(funct == ADDER_FUNC)
 		{
-			bec_tuple[1] = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, mark);
-			connect_nodes(previous_carry,0, bec_tuple[1], 0);
-			connect_nodes(current_sum,0, bec_tuple[1], 1);
+			new_funct = make_2port_gate(LOGICAL_XOR, 1, 1, 1, node, mark);
+			connect_nodes(previous_carry,0, new_funct, 0);
+			connect_nodes(current_adder,0, new_funct, 1);
+		}
+		else if(funct == CARRY_FUNC)
+		{
+			new_funct = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, mark);
+			connect_nodes(previous_carry,0, new_funct, 0);
+			connect_nodes(current_adder,0, new_funct, 1);
 		}
 	}
-	return bec_tuple;
+	return new_funct;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1393,6 +1407,7 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
 	//make a 2 bit 0r 3 bit sum or carry based on previous carry
 	nnode_t *new_funct = NULL;
 	short is_three_port_gate = 0;
+
 
 	if(previous_carry == netlist->gnd_node)
 	{
@@ -1430,11 +1445,25 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
 		//connect input a
 		if (current_pin < width[1])
 		{
-			remap_pin_to_new_node(node->input_pins[current_pin],new_funct, 0+is_three_port_gate);
+			npin_t *temp_pin = node->input_pins[current_pin];
+			if(temp_pin->net->driver_pin->node->type == GND_NODE)
+			{
+				connect_nodes(netlist->gnd_node,0, new_funct, 0+is_three_port_gate);
+				remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
+			}
+			else if(temp_pin->net->driver_pin->node->type == VCC_NODE)
+			{
+				connect_nodes(netlist->vcc_node,0, new_funct, 0+is_three_port_gate);
+				remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
+			}
+			else
+			{
+				remap_pin_to_new_node(temp_pin, new_funct, 0+is_three_port_gate);
+			}
 		}
 		else
 		{
-			add_input_pin_to_node(new_funct, get_zero_pin(netlist), 0+is_three_port_gate);
+			connect_nodes(netlist->gnd_node,0, new_funct, 0+is_three_port_gate);
 		}
 
 		//connect input b
@@ -1442,35 +1471,36 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
 		{
 			//pin a is neighbor to pin b
 			npin_t *temp_pin = node->input_pins[current_pin+width[1]];
-			if(subtraction)
+			if(temp_pin->net->driver_pin->node->type == GND_NODE)
 			{
-				if(temp_pin->net->driver_pin->node->type == GND_NODE)
-				{
-					add_input_pin_to_node(new_funct, get_one_pin(netlist), 1+is_three_port_gate);
-					remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
-				}
-				else if(temp_pin->net->driver_pin->node->type == VCC_NODE)
-				{
-					add_input_pin_to_node(new_funct, get_zero_pin(netlist), 1+is_three_port_gate);
-					remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
-				}
-				else
+				nnode_t* attach_to=(subtraction)? netlist->vcc_node: netlist->gnd_node;
+				connect_nodes(attach_to,0, new_funct, 1+is_three_port_gate);
+				remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
+			}
+			else if(temp_pin->net->driver_pin->node->type == VCC_NODE)
+			{
+				nnode_t* attach_to=(subtraction)? netlist->gnd_node: netlist->vcc_node;
+				connect_nodes(attach_to,0, new_funct, 1+is_three_port_gate);
+				remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
+			}
+			else
+			{
+				if(subtraction)
 				{
 					nnode_t *new_not_cells = make_not_gate(node, mark);
 					remap_pin_to_new_node(temp_pin, new_not_cells, 0);
 					connect_nodes(new_not_cells, 0, new_funct, 1+is_three_port_gate);
 				}
+				else
+				{
+					remap_pin_to_new_node(temp_pin, new_funct, 1+is_three_port_gate);
+				}
 			}
-			else
-				remap_pin_to_new_node(temp_pin, new_funct, 1+is_three_port_gate);
-
 		}
 		else
 		{
-			if(subtraction)
-				add_input_pin_to_node(new_funct, get_one_pin(netlist), 1+is_three_port_gate);
-			else
-				add_input_pin_to_node(new_funct, get_zero_pin(netlist), 1+is_three_port_gate);
+			nnode_t* attach_to=(subtraction)? netlist->vcc_node: netlist->gnd_node;
+			connect_nodes(attach_to,0, new_funct, 1+is_three_port_gate);
 		}
 	}
 	return new_funct;
@@ -1499,18 +1529,13 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 		soft_sub_structure *def = fetch_blk("+",width[0]-start_pin);
 		if(def)
 		{
-			//don't optimize the first
-			if(current_counter == 1 || blk_size == 1)
-			{
-				my_type 			= "soft";
-				blk_size 			= 1;
-				sub_structure = "default";
-			}
-			else
+			blk_size = (def->bitsize > blk_size)? blk_size: def->bitsize;
+
+			//don't optimize small circuit
+			if(blk_size != 1)
 			{
 				my_type 			= def->type;
 				sub_structure = def->name;
-				blk_size 			= (def->bitsize > blk_size)? blk_size: def->bitsize;
 			}
 
 			/* pretty print info */
@@ -1534,9 +1559,8 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 			/* set of flags for building purposes */
 			short construct_last_carry_flag = (i != width[0]-1 || !subtraction)? 1:0;
 			short last_pin_on_blk_flag 			= (i == start_pin+blk_size-1)? 1:0;
-			short first_pin_flag 						 = (i == start_pin)? 1:0;
 
-			if(my_type != "hard")
+			if(my_type == "soft")
 			{
 				// Ripple Carry Adder
 				if(sub_structure == "default"){
@@ -1572,10 +1596,9 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 					if(construct_last_carry_flag)
 						 previous_carry_gnd = make_adder(CARRY_FUNC, current_adder_gnd, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
 
-					nnode_t **bec_tuple = make_bec(first_pin_flag, construct_last_carry_flag, previous_carry_vcc, current_adder_gnd, node, mark);
-					nnode_t *current_adder_vcc = bec_tuple[0];
-					previous_carry_vcc = bec_tuple[1];
-					vtr::free(bec_tuple);
+					nnode_t *current_adder_vcc = make_bec(ADDER_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
+					if(construct_last_carry_flag)
+						previous_carry_vcc = make_bec(CARRY_FUNC, current_adder_gnd, previous_carry_vcc, width, i, netlist, node, subtraction, mark);
 
 					nnode_t *current_adder = make_mux_2to1(previous_carry, current_adder_vcc, current_adder_gnd, node, mark);
 
@@ -1590,7 +1613,7 @@ void instantiate_add_w_carry_block(int *width, nnode_t *node, short mark, netlis
 					return;
 				}
 			}
-			else // if(my_type == "hard") this is already checked
+			else // if(my_type == "hard")
 			{
 				// carry lookahead
 				// if(sub_structure == "cla")

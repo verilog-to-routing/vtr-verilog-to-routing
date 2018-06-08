@@ -337,7 +337,7 @@ void get_options(int argc, char** argv) {
             .help("Number of random test vectors to generate")
             .metavar("NUM_VECTORS");
 
-    rand_sim_grp.add_argument(global_args.sim_num_test_vectors, "-r")
+    rand_sim_grp.add_argument(global_args.sim_random_seed, "-r")
             .help("Random seed")
             .default_value("0")
             .metavar("SEED");

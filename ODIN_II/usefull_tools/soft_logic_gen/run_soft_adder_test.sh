@@ -99,21 +99,24 @@ function build_task() {
 #bitwidth
 #$1
 function run_parralel_tasks() {
-  #parralel this START
-  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | xargs -P$((`nproc`*2+1)) -I test_dir /bin/bash -c \
+
+  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep default | xargs -P$((`nproc`*2+1)) -I test_dir /bin/bash -c \
   '
   TEST_DIR=test_dir
+  mkdir -p $TEST_DIR/../OUTPUT
   echo "$VTR_HOME_DIR/ODIN_II/odin_II \
-    --adder_type $TEST_DIR/odin.soft_config \
     -a $TEST_DIR/arch.xml \
     -V $TEST_DIR/circuit.v \
-    -o $TEST_DIR/odin.blif" > $TEST_DIR/run_result
+    -o $TEST_DIR/odin.blif \
+    -g 100 \
+    -sim_dir $TEST_DIR/../OUTPUT/" > $TEST_DIR/run_result
 
   $VTR_HOME_DIR/ODIN_II/odin_II \
-  --adder_type $TEST_DIR/odin.soft_config \
-  -a $TEST_DIR/arch.xml \
-  -V $TEST_DIR/circuit.v \
-  -o $TEST_DIR/odin.blif &>> $TEST_DIR/run_result
+    -a $TEST_DIR/arch.xml \
+    -V $TEST_DIR/circuit.v \
+    -o $TEST_DIR/odin.blif \
+    -g 100 \
+    -sim_dir $TEST_DIR/../OUTPUT/ &>> $TEST_DIR/run_result
 
   /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/run_vtr_flow.pl \
   $TEST_DIR/odin.blif $TEST_DIR/arch.xml \
@@ -122,19 +125,70 @@ function run_parralel_tasks() {
   -temp_dir $TEST_DIR/run \
   -starting_stage abc &>> $TEST_DIR/run_result
 
+  /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/parse_vtr_flow.pl \
+  $TEST_DIR/run $TEST_DIR/parse.txt \
+  &> $TEST_DIR/run/parse_results.txt
+
+  tail -n +2 $TEST_DIR/run/parse_results.txt > $TEST_DIR/../default.results
+  echo "INITIALIZED"
+  rm -Rf $TEST_DIR
+  '
+
+  # #parralel this START
+  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep -v default | grep -v OUTPUT | xargs -P$((`nproc`*2+1)) -I test_dir /bin/bash -c \
+  '
+  TEST_DIR=test_dir
+  echo "$VTR_HOME_DIR/ODIN_II/odin_II \
+    --adder_type $TEST_DIR/odin.soft_config \
+    -a $TEST_DIR/arch.xml \
+    -V $TEST_DIR/circuit.v \
+    -o $TEST_DIR/odin.blif \
+    -t $TEST_DIR/../OUTPUT/input_vectors \
+    -T $TEST_DIR/../OUTPUT/output_vectors
+    -sim_dir $TEST_DIR/ \
+  && /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/run_vtr_flow.pl \
+      $TEST_DIR/odin.blif $TEST_DIR/arch.xml \
+      -power \
+      -cmos_tech $VTR_HOME_DIR/vtr_flow/tech/PTM_45nm/45nm.xml \
+      -temp_dir $TEST_DIR/run \
+      -starting_stage abc" > $TEST_DIR/run_result
+
+  $VTR_HOME_DIR/ODIN_II/odin_II \
+      --adder_type $TEST_DIR/odin.soft_config \
+      -a $TEST_DIR/arch.xml \
+      -V $TEST_DIR/circuit.v \
+      -o $TEST_DIR/odin.blif \
+      -t $TEST_DIR/../OUTPUT/input_vectors \
+      -T $TEST_DIR/../OUTPUT/output_vectors \
+      -sim_dir $TEST_DIR/ &>> $TEST_DIR/run_result \
+  && /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/run_vtr_flow.pl \
+      $TEST_DIR/odin.blif $TEST_DIR/arch.xml \
+      -power \
+      -cmos_tech $VTR_HOME_DIR/vtr_flow/tech/PTM_45nm/45nm.xml \
+      -temp_dir $TEST_DIR/run \
+      -starting_stage abc &>> $TEST_DIR/run_result
+
+  my_dir=$(readlink -f $TEST_DIR)
+  parent_dir=$(readlink -f $TEST_DIR/..)
+  test_bit=$(readlink -f $TEST_DIR/../..)
+
   if grep -q OK "$TEST_DIR/run_result";then
       /bin/perl $VTR_HOME_DIR/vtr_flow/scripts/parse_vtr_flow.pl \
       $TEST_DIR/run $TEST_DIR/parse.txt \
       &> $TEST_DIR/run/parse_results.txt
 
       tail -n +2 $TEST_DIR/run/parse_results.txt > $TEST_DIR/../${TEST_DIR##*/}.results
-      echo "$TEST_DIR ... PASS"
+      printf "<${test_bit##*/}-${parent_dir##*/}>\t<${my_dir##*/}> \t\t... PASS\n"
   else
-
-      echo "$TEST_DIR ... FAILED"
+      my_dir=$(readlink -f $TEST_DIR)
+      parent_dir=$(readlink -f $TEST_DIR/..)
+      test_bit=$(readlink -f $TEST_DIR/../..)
+      mv $TEST_DIR $TEST_DIR/../../../failures/${test_bit##*/}${parent_dir##*/}-${my_dir##*/}
+      printf "<${test_bit##*/}-${parent_dir##*/}>\t<${my_dir##*/}> \t\t... ERROR\n"
   fi
   rm -Rf $TEST_DIR
   '
+  rm -Rf $(find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep OUTPUT)
   #END
 }
 
@@ -185,13 +239,13 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
 
   #get dif for each arch_verilog pair vs default
   for TEST_DIR in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*; do
-    if [ -e $TEST_DIR/default-${BITWIDTH}.results ]; then
+    if [ -e $TEST_DIR/default.results ]; then
       #find default_values
-      sed -i 's/[\t ]/,/g' $TEST_DIR/default-${BITWIDTH}.results
-      default_critical=$(cat $TEST_DIR/default-${BITWIDTH}.results | cut -d "," -f1)
-      default_size=$(cat $TEST_DIR/default-${BITWIDTH}.results | cut -d "," -f2)
-      default_power=$(cat $TEST_DIR/default-${BITWIDTH}.results | cut -d "," -f3)
-      echo "1.0,1.0,1.0" >> $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results
+      sed -i 's/[\t ]/,/g' $TEST_DIR/default.results
+      default_critical=$(cat $TEST_DIR/default.results | cut -d "," -f1)
+      default_size=$(cat $TEST_DIR/default.results | cut -d "," -f2)
+      default_power=$(cat $TEST_DIR/default.results | cut -d "," -f3)
+      echo "1.0,1.0,1.0" >> $TEST_DIR/../default.results
 
       for results_out in $TEST_DIR/*.results; do
         test_name=${results_out##*/}
@@ -208,7 +262,7 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
           b=($2>0.0 && $3>0.0)?($2/$3):1.0;
           c=($4>0.0 && $5>0.0)?($4/$5):1.0;
           printf "%f,%f,%f\n",$a,$b,$c
-        }' >> $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/$test_name
+        }' >> $TEST_DIR/../$test_name
       done
     fi
     rm -Rf $TEST_DIR
@@ -216,10 +270,9 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
 
   #get geomean of each adder_type and output to single file
   #keep best adder in memory to output to odin_config
-  values=$(get_geomean $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results)
+  values=$(get_geomean $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default.results)
   BEST_NAME=$(echo $values | cut -d "," -f1 )
   BEST_VALUE=$(echo $values | cut -d "," -f2 )
-  rm $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default-${BITWIDTH}.results
 
   for ADDERS in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*.results; do
     temp_values=$(get_geomean $ADDERS)
