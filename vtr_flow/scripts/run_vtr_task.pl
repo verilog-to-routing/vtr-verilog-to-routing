@@ -420,13 +420,21 @@ sub run_single_task {
     my $num_failures = 0;
 
 
+    return run_actions(\@actions);
+}
+
+sub run_actions {
+    my ($actions) = @_;
+
+    my $num_failures = 0;
+
 	if ( $system_type eq "local" ) {
         my $thread_work   = Thread::Queue->new();
         my $thread_result = Thread::Queue->new();
         my $thread_return_code = Thread::Queue->new();
         my $threads       = $processors;
 
-        foreach my $action (@actions) {
+        foreach my $action (@$actions) {
             my ($run_dir, $command, $runtime_estimate) = @$action;
 
             if ($verbosity > 0) {
@@ -454,6 +462,7 @@ sub run_single_task {
 	} else {
         die("Unrecognized job system '$system_type'");
     }
+
     return $num_failures;
 }
 
