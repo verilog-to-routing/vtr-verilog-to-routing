@@ -160,12 +160,16 @@ if ( $#tasks == -1 ) {
 # Run tasks
 ##############################################################
 
-my $num_total_failures = 0;
+#Collect the actions for all tasks
+my @all_task_actions;
 foreach my $task (@tasks) {
 	chomp($task);
-	my $num_failures_in_task = run_single_task($task);
-    $num_total_failures += $num_failures_in_task;
+	my $task_actions = generate_single_task_actions($task);
+    push(@all_task_actions, @$task_actions);
 }
+
+#Run all the actions (potentially in parallel)
+my $num_total_failures = run_actions(\@all_task_actions);
 
 exit $num_total_failures;
 
@@ -173,7 +177,7 @@ exit $num_total_failures;
 # Subroutines
 ##############################################################
 
-sub run_single_task {
+sub generate_single_task_actions {
 	my $circuits_dir;
 	my $archs_dir;
 	my $sdc_dir        = "sdc";
@@ -189,9 +193,6 @@ sub run_single_task {
 	my $task     = shift(@_);
 	(my $task_dir = "$vtr_flow_path/tasks/$task") =~ s/\s+$//; # trim right white spaces for chdir to work on Windows
 	chdir($task_dir) or die "Task directory does not exist ($task_dir): $!\n";
-
-	print "\n$task\n";
-	print "-----------------------------------------\n";
 
 	# Get Task Config Info
 
@@ -380,7 +381,7 @@ sub run_single_task {
                 #Determine the directory where to run
                 my $dir = "$task_dir/$run_dir/${arch}/${circuit}/${full_params_dirname}";
 
-                my $name = "${arch}/${circuit}/${full_params_dirname}";
+                my $name = "'${task}: ${arch}/${circuit}/${full_params_dirname}'";
 
                 #Do we expect a specific status?
                 my $expect_fail = "";
@@ -420,7 +421,7 @@ sub run_single_task {
     my $num_failures = 0;
 
 
-    return run_actions(\@actions);
+    return \@actions;
 }
 
 sub run_actions {
