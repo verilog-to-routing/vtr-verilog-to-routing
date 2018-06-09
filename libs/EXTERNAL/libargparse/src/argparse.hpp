@@ -459,7 +459,13 @@ namespace argparse {
                     throw ArgParseError("Argument destination already set by " + dest_.argument_name() + " (trying to set from " + name() + ")");
                 }
 
+                auto previous_provenance = dest_.provenance();
+
                 auto& target = dest_.mutable_value(Provenance::SPECIFIED);
+
+                if (previous_provenance == Provenance::DEFAULT) {
+                    target.clear();
+                }
 
                 //Insert is more general than push_back
                 auto converted_value = Converter().from_str(value);
