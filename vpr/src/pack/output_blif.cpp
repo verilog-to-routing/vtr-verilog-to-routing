@@ -333,6 +333,12 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 		fprintf(fpout, "\n");
 		fprintf(fpout, "\n");
 
+        for (auto param : atom_ctx.nlist.block_params(atom_blk)) {
+            fprintf(fpout, ".param %s %s\n", param.first.c_str(), param.second.c_str());
+        }
+        for (auto attr : atom_ctx.nlist.block_attrs(atom_blk)) {
+            fprintf(fpout, ".attr %s %s\n", attr.first.c_str(), attr.second.c_str());
+        }
 
         /* Print output buffers */
         port = cur->outputs;
