@@ -64,6 +64,7 @@ my $check_golden = 0;
 my $calc_geomean = 0;
 my $display_qor = 0;
 my $num_cpu = 1;
+my $long_task_names = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -77,6 +78,8 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	} elsif ( $token eq "-display_qor" ) {
 		$display_qor = 1;
+	} elsif ( $token eq "-long_task_names" ) {
+		$long_task_names = 1;
 	} elsif ( $token eq "-j" ) { #-j N
 		$num_cpu = int(shift(@ARGV));
     } elsif ( $token =~ /^-j(\d+)$/ ) { #-jN
@@ -144,7 +147,7 @@ if ( $#tests > -1 ) {
             # Check for user overrides
             check_override();
             # Run regression test
-            $run_failures = run_single_test();
+            $run_failures = run_single_test($test);
             $first = 0;
             # Parse regression test
             parse_single_test(" ");
@@ -194,6 +197,10 @@ sub setup_single_test {
     #Enable parallel execution
     if ($num_cpu > 1) {
         $run_params = "-j " . $num_cpu . " " . $run_params;
+    }
+
+    if (!$long_task_names) {
+        $run_params = "-short_task_names " . $run_params;
     }
 }
 
@@ -308,6 +315,8 @@ write;
 }
 
 sub run_single_test {
+    my ($test) = @_;
+
 	if ($first) {
 		print "=============================================\n";
 		print "    Verilog-to-Routing Regression Testing    \n";
@@ -315,9 +324,11 @@ sub run_single_test {
 		$first = 0;
 	}
 
-	print "\nRunning regression test... \n";
-	chdir("$vtr_flow_path");
+	print "\nRunning $test\n";
+	print "-------------------------------------------------------------------------------\n";
 	print "scripts/run_vtr_task.pl $run_params \n";
+	print "\n";
+	chdir("$vtr_flow_path");
 	my $test_status = system("scripts/run_vtr_task.pl $run_params \n");
 	chdir("..");
 

@@ -62,6 +62,7 @@ my $show_runtime_estimates = 1;
 my $system_type            = "local";
 my $shared_script_params   = "";
 my $verbosity              = 0;
+my $short_task_names = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -108,6 +109,9 @@ while ( $token = shift(@ARGV) ) {
 
 	elsif ( $token eq "-hide_runtime" ) {
 		$show_runtime_estimates = 0;
+	}
+	elsif ( $token eq "-short_task_names" ) {
+		$short_task_names = 1;
 	}
 
 	elsif ( $token =~ /^-/ ) {
@@ -160,11 +164,17 @@ if ( $#tasks == -1 ) {
 # Run tasks
 ##############################################################
 
+my $common_task_prefix = "";
+
+if ($short_task_names) {
+    $common_task_prefix = find_common_task_prefix(\@tasks);
+}
+
 #Collect the actions for all tasks
 my @all_task_actions;
 foreach my $task (@tasks) {
 	chomp($task);
-	my $task_actions = generate_single_task_actions($task);
+	my $task_actions = generate_single_task_actions($task, $common_task_prefix);
     push(@all_task_actions, @$task_actions);
 }
 
@@ -190,7 +200,7 @@ sub generate_single_task_actions {
 	my @script_params_list;
 	my $cmos_tech_path = "";
 
-	my $task     = shift(@_);
+	my ($task, $common_prefix) = @_;
 	(my $task_dir = "$vtr_flow_path/tasks/$task") =~ s/\s+$//; # trim right white spaces for chdir to work on Windows
 	chdir($task_dir) or die "Task directory does not exist ($task_dir): $!\n";
 
@@ -341,6 +351,9 @@ sub generate_single_task_actions {
 		$script_params_common .= " -cmos_tech $cmos_tech_path";
 	}
 
+    my $task_name = $task;
+    $task =~ s/^$common_prefix//;
+
 	# Check if golden file exists
 	my $golden_results_file = "$task_dir/config/golden_results.txt";
 
@@ -381,7 +394,7 @@ sub generate_single_task_actions {
                 #Determine the directory where to run
                 my $dir = "$task_dir/$run_dir/${arch}/${circuit}/${full_params_dirname}";
 
-                my $name = "'${task}: ${arch}/${circuit}/${full_params_dirname}'";
+                my $name = sprintf("'%-25s %-54s'", "${task}:", "${arch}/${circuit}/${full_params_dirname}");
 
                 #Do we expect a specific status?
                 my $expect_fail = "";
@@ -684,3 +697,32 @@ sub ret_expected_vpr_status {
     return $metrics{'vpr_status'};
 }
 
+sub find_common_task_prefix {
+    my ($tasks) = @_;
+
+
+    my $first_task = @$tasks[0];
+    
+    my $index = 0;
+    my $common_prefix = "";
+    while (1) {
+        my $valid_prefix = 1;
+        for my $task (@$tasks) {
+
+            if ($task !~ m/^$common_prefix/) {
+                $valid_prefix = 0;
+                last;
+            }
+        }
+
+        if ($valid_prefix != 1) {
+            $common_prefix =~ s/.$//; #Drop last character since not common
+            last;
+        } else {
+            $common_prefix = substr($first_task, 0,  $index);
+            $index += 1;
+        }
+    }
+
+    return $common_prefix;
+}
