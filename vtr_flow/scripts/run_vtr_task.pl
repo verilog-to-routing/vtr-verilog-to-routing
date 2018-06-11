@@ -701,11 +701,19 @@ sub find_common_task_prefix {
     my ($tasks) = @_;
 
 
+
     my $first_task = @$tasks[0];
+
+    my $min_length = length($first_task);
+    foreach my $task (@$tasks) {
+        if (length($task) < $min_length) {
+            $min_length = length($task);
+        }
+    }
     
     my $index = 0;
     my $common_prefix = "";
-    while (1) {
+    while ($index < $min_length) {
         my $valid_prefix = 1;
         for my $task (@$tasks) {
 
