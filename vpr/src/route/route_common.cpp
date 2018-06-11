@@ -109,7 +109,6 @@ static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, 
 static t_linked_f_pointer *alloc_linked_f_pointer();
 
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
-static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
@@ -1145,7 +1144,7 @@ static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(con
 }
 
 
-static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
+vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
 
 	/* This routine loads the bounding box arrays used to limit the space  *
 	 * searched by the maze router when routing each net.  The search is   *
@@ -1163,6 +1162,13 @@ static vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
+
+    //Ensure bb_factor is bounded by the device size
+    //This ensures that if someone passes in an extremely large bb_factor 
+    //(e.g. std::numeric_limits<int>::max()) the later addition/subtraction 
+    //of bb_factor will not cause under/overflow
+    int max_dim = std::max<int>(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    bb_factor = std::min(bb_factor, max_dim);
 
     auto nets = cluster_ctx.clb_nlist.nets();
     route_bb.resize(nets.size());

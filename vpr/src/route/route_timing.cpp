@@ -35,6 +35,13 @@
 
 #define CONGESTED_SLOPE_VAL -0.04
 
+constexpr float CONGESTED_ITERATION_THRESHOLD_FACTOR = 0.8;
+
+enum class RouterCongestionMode {
+    NORMAL,
+    CONGESTED
+};
+
 class WirelengthInfo {
 public:
 
@@ -211,6 +218,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
      * must have already been allocated, and net_delay must have been allocated. *
      * Returns true if the routing succeeds, false otherwise.                    */
 
+    //Initially, the router runs normally trying to reduce congestion while
+    //balancing other metrics (timing, wirelength, run-time etc.)
+    RouterCongestionMode router_congestion_mode = RouterCongestionMode::NORMAL;
+
     //Initialize and properly size the lookups for profiling
     profiling::profiling_initialization(get_max_pins_per_net());
 
@@ -236,6 +247,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
     } else {
         VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
     }
+
+    float high_effort_congestion_mode_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
+    high_effort_congestion_mode_iteration_threshold = CONGESTED_ITERATION_THRESHOLD_FACTOR * router_opts.max_router_iterations;
 
     /* Set delay of global signals to zero. Non-global net delays are set by
        update_net_delays_from_route_tree() inside timing_driven_route_net(),
@@ -405,6 +419,13 @@ bool try_timing_driven_route(t_router_opts router_opts,
          * Prepare for the next iteration
          */
 
+        if (itry >= high_effort_congestion_mode_iteration_threshold) {
+            //We are approaching the maximum number of routing iterations,
+            //and still do not have a legal routing. Switch to a more congestion
+            //focused mode.
+            router_congestion_mode = RouterCongestionMode::CONGESTED;
+        }
+
         //Update pres_fac and resource costs
         if (itry == 1) {
             pres_fac = router_opts.initial_pres_fac;
@@ -436,16 +457,37 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
             } else {
                 bool stable_routing_configuration = true;
-                // only need to forcibly reroute if critical path grew significantly
-                if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay()))
-                    stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality,
-                        timing_info,
-                        netlist_pin_lookup,
-                        net_delay);
+
+                //If things are not too congested, then we should rip-up legal connections which are
+                //have poor delay characteristics
+                if (router_congestion_mode == RouterCongestionMode::NORMAL) {
+                    
+                    if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay())) {
+                        // only need to forcibly reroute if critical path grew significantly
+                        stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality,
+                            timing_info,
+                            netlist_pin_lookup,
+                            net_delay);
+                    }
+                } else {
+                    VTR_ASSERT(router_congestion_mode == RouterCongestionMode::CONGESTED);
+
+                    //The design appears to be congested:
+                    //  1) Don't re-route legal connections due to delay. This allows
+                    //     the router to focus on the actual congestion
+                    //  2) Increase the net bounding boxes to the whole device. This
+                    //     potentially allows the router to route around otherwise congested
+                    //     regions (at the cost of high run-time).
+
+                    //Blow away the router bounding boxes
+                    // TODO: BBs only really need to be updated the first time we enter CONGESTED mode
+                    route_ctx.route_bb = load_route_bb(std::numeric_limits<int>::max());
+                }
 
                 // not stable if any connection needs to be forcibly rerouted
-                if (stable_routing_configuration)
+                if (stable_routing_configuration) {
                     connections_inf.set_stable_critical_path_delay(critical_path.delay());
+                }
 
                 /*Check if rate of convergence is high enough, if not lower the budgets of certain nets*/
                 //reduce_budgets_if_congested(budgeting_inf, connections_inf, routing_predictor.get_slope(), itry);
