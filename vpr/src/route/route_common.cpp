@@ -374,7 +374,7 @@ bool feasible_routing() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
 			return (false);
 		}
@@ -389,7 +389,7 @@ std::vector<int> collect_congested_rr_nodes() {
     auto& route_ctx = g_vpr_ctx.routing();
 
     std::vector<int> congested_rr_nodes;
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
@@ -400,13 +400,14 @@ std::vector<int> collect_congested_rr_nodes() {
     return congested_rr_nodes;
 }
 
-//Returns a vector from [0..device_ctx.num_rr_nodes-1] containing the set of nets using each RR node
+/* Returns a vector from [0..device_ctx.rr_nodes.size()-1] containing the set
+ * of nets using each RR node */
 std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.num_rr_nodes);
+    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_nodes.size());
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
         t_trace* trace_elem = route_ctx.trace_head[inet];
         while (trace_elem) {
@@ -485,11 +486,11 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	 * changed.  THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO  *
 	 * DATE.                                                                     */
 
-	int inode, occ, capacity;
+	int occ, capacity;
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		occ = route_ctx.rr_node_route_inf[inode].occ();
 		capacity = device_ctx.rr_nodes[inode].capacity();
 
@@ -1048,7 +1049,7 @@ void alloc_and_load_rr_node_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    route_ctx.rr_node_route_inf.resize(device_ctx.num_rr_nodes);
+    route_ctx.rr_node_route_inf.resize(device_ctx.rr_nodes.size());
     reset_rr_node_route_structs();
 }
 
@@ -1060,9 +1061,9 @@ void reset_rr_node_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.num_rr_nodes));
+	VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_nodes.size()));
 
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
@@ -1913,7 +1914,7 @@ void print_invalid_routing_info() {
         }
     }
 
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = device_ctx.rr_nodes[inode].capacity();
 		if (occ > cap) {

@@ -31,10 +31,10 @@ void check_rr_graph(const t_graph_type graph_type,
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto total_edges_to_node = std::vector<int>(device_ctx.num_rr_nodes);
-    auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.num_rr_nodes);
+    auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
+    auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 
         /* Ignore any uninitialized rr_graph nodes */
         if ((device_ctx.rr_nodes[inode].type() == SOURCE)
@@ -56,7 +56,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
             check_rr_edge(inode, iedge, to_node);
 
-            if (to_node < 0 || to_node >= device_ctx.num_rr_nodes) {
+            if (to_node < 0 || to_node >= (int) device_ctx.rr_nodes.size()) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_graph: node %d has an edge %d.\n"
                         "\tEdge is out of range.\n", inode, to_node);
@@ -128,7 +128,7 @@ void check_rr_graph(const t_graph_type graph_type,
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
 
         if (rr_type != SOURCE) {

@@ -764,7 +764,7 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
 	draw_state->draw_rr_node = (t_draw_rr_node *) vtr::malloc(
-									device_ctx.num_rr_nodes * sizeof(t_draw_rr_node));
+									device_ctx.rr_nodes.size() * sizeof(t_draw_rr_node));
 
     draw_state->arch_info = arch;
 
@@ -808,10 +808,10 @@ void init_draw_coords(float width_val) {
 
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
-	if (device_ctx.num_rr_nodes != 0) {
+	if (device_ctx.rr_nodes.size() != 0) {
 		draw_state->draw_rr_node = (t_draw_rr_node *) vtr::realloc(draw_state->draw_rr_node,
-										(device_ctx.num_rr_nodes) * sizeof(t_draw_rr_node));
-		for (int i = 0; i < device_ctx.num_rr_nodes; i++) {
+										(device_ctx.rr_nodes.size()) * sizeof(t_draw_rr_node));
+		for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
 			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
 			draw_state->draw_rr_node[i].node_highlighted = false;
 		}
@@ -1091,8 +1091,8 @@ static void draw_routing_costs() {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    std::vector<float> rr_node_costs(device_ctx.num_rr_nodes, 0.);
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         float cost = 0.;
         if (   draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
@@ -1149,7 +1149,7 @@ static void draw_routing_costs() {
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
     //are not overdrawn by lower value ones (e.g. when zoomed-out far)
-    std::vector<int> nodes(device_ctx.num_rr_nodes);
+    std::vector<int> nodes(device_ctx.rr_nodes.size());
     std::iota(nodes.begin(), nodes.end(), 0);
     auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
         return rr_node_costs[lhs_node] < rr_node_costs[rhs_node];
@@ -1244,8 +1244,6 @@ void draw_rr() {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	int inode;
-
 	if (draw_state->draw_rr_toggle == DRAW_NO_RR || draw_state->draw_rr_toggle == DRAW_MOUSE_OVER_RR) {
 		setlinewidth(3);
 		drawroute(HIGHLIGHTED);
@@ -1255,7 +1253,7 @@ void draw_rr() {
 
 	setlinestyle(SOLID);
 
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		if (!draw_state->draw_rr_node[inode].node_highlighted)
 		{
 			/* If not highlighted node, assign color based on type. */
@@ -2364,7 +2362,6 @@ static void highlight_nets(char *message, int hit_node) {
  * de-highlight its fan_in and fan_out.
  */
 static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
-	int inode;
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2386,7 +2383,7 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         }
 
         /* Highlight the nodes that can fanin to this node in blue. */
-        for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
             for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
                 int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 if (fanout_node == node) {
@@ -2414,14 +2411,13 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
  *  It returns the hit RR node's ID (or OPEN if no hit)
  */
 static int draw_check_rr_node_hit (float click_x, float click_y) {
-	int inode;
 	int hit_node = OPEN;
 	t_bound_box bound_box;
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		switch (device_ctx.rr_nodes[inode].type()) {
 			case IPIN:
 			case OPIN:
@@ -2755,7 +2751,6 @@ static void deselect_all() {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-	int i;
 
 	/* Create some colour highlighting */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -2765,7 +2760,7 @@ static void deselect_all() {
 	for (auto net_id : cluster_ctx.clb_nlist.nets())
 		draw_state->net_color[net_id] = BLACK;
 
-	for (i = 0; i < device_ctx.num_rr_nodes; i++) {
+	for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
 		draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
 		draw_state->draw_rr_node[i].node_highlighted = false;
 	}
@@ -3621,7 +3616,7 @@ vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         auto& rr_node = device_ctx.rr_nodes[inode];
 
         if (rr_node.type() == CHANX && rr_type == CHANX) {

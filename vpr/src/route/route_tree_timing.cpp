@@ -31,7 +31,7 @@ using namespace std;
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                                              */
 
-static std::vector<t_rt_node *> rr_node_to_rt_node; /* [0..device_ctx.num_rr_nodes-1] */
+static std::vector<t_rt_node *> rr_node_to_rt_node; /* [0..device_ctx.rr_nodes.size()-1] */
 
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -80,7 +80,8 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.num_rr_nodes)
+    bool route_tree_structs_are_allocated =
+        (rr_node_to_rt_node.size() == size_t(device_ctx.rr_nodes.size())
 			                                 || rt_node_free_list != nullptr);
     if (route_tree_structs_are_allocated) {
         if (exists_ok) {
@@ -91,7 +92,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         }
 	}
 
-	rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.num_rr_nodes, nullptr);
+	rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.rr_nodes.size(), nullptr);
 
     return true;
 }

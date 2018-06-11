@@ -2020,8 +2020,7 @@ static OveruseInfo calculate_overuse_info() {
     size_t overused_nodes = 0;
     size_t total_overuse = 0;
     size_t worst_overuse = 0;
-    int inode;
-    for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
         if (overuse > 0) {
             overused_nodes += 1;
@@ -2030,7 +2029,7 @@ static OveruseInfo calculate_overuse_info() {
             worst_overuse = std::max(worst_overuse, size_t(overuse));
         }
     }
-    return OveruseInfo(device_ctx.num_rr_nodes, overused_nodes, total_overuse, worst_overuse);
+    return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
 }
 
 static WirelengthInfo calculate_wirelength_info() {
@@ -2040,7 +2039,7 @@ static WirelengthInfo calculate_wirelength_info() {
     size_t used_wirelength = 0;
     size_t available_wirelength = 0;
 
-    for (int i = 0; i < device_ctx.num_rr_nodes; ++i) {
+    for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
         if (device_ctx.rr_nodes[i].type() == CHANX || device_ctx.rr_nodes[i].type() == CHANY) {
             available_wirelength += device_ctx.rr_nodes[i].capacity() +
                     device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow() +
