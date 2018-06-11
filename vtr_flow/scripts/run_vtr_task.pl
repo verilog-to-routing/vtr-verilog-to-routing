@@ -308,6 +308,19 @@ sub generate_single_task_actions {
         push(@script_params_list, "");
     }
 
+    my @circuit_dups = find_duplicates(\@circuits_list);
+    if (@circuit_dups) {
+        die "Duplicate circuits specified for task $task '@circuit_dups'"
+    }
+    my @arch_dups = find_duplicates(\@archs_list);
+    if (@arch_dups) {
+        die "Duplicate architectures specified for task $task '@arch_dups'";
+    }
+    my @script_params_dups = find_duplicates(\@script_params_list);
+    if (@script_params_dups) {
+        die "Duplicate script parameters specified for task $task '@script_params_dups'";
+    }
+
 	# Check script
 	$script = expand_user_path($script);
 	if ( -e "$task_dir/config/$script" ) {
@@ -733,4 +746,16 @@ sub find_common_task_prefix {
     }
 
     return $common_prefix;
+}
+
+sub find_duplicates {
+    my ($list) = @_;
+
+    my @duplicates;
+    my %seen;
+    foreach my $str (@$list) {
+        next unless $seen{$str}++;
+        push(@duplicates, $str);
+    }
+    return @duplicates;
 }
