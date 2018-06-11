@@ -2686,7 +2686,7 @@ static bool should_apply_switch_override(int switch_override) {
     return false;
 }
 
-void partition_rr_graph_edges(const DeviceContext& device_ctx) {
+void partition_rr_graph_edges(DeviceContext& device_ctx) {
     for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
         device_ctx.rr_nodes[inode].partition_edges();
     }

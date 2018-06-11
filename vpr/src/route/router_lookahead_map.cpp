@@ -223,7 +223,7 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int 
    from the specified source to the specified target */
 float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
 	auto& device_ctx = g_vpr_ctx.device();
-	t_rr_node &from_node = device_ctx.rr_nodes[from_node_ind];
+    auto& from_node = device_ctx.rr_nodes[from_node_ind];
 
 	e_rr_type from_type = from_node.type();
 	int from_cost_index = from_node.cost_index();
@@ -441,7 +441,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &nod
 
 	int parent_ind = parent_entry.rr_node_ind;
 
-	t_rr_node &parent_node = device_ctx.rr_nodes[parent_ind];
+	auto& parent_node = device_ctx.rr_nodes[parent_ind];
 
 	for (int iedge = 0; iedge < parent_node.num_edges(); iedge++){
 		int child_node_ind = parent_node.edge_sink_node(iedge);
@@ -650,8 +650,8 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int *delta_y){
 	auto& device_ctx = g_vpr_ctx.device();
 
-	t_rr_node &from = device_ctx.rr_nodes[from_node_ind];
-	t_rr_node &to = device_ctx.rr_nodes[to_node_ind];
+	auto& from = device_ctx.rr_nodes[from_node_ind];
+	auto& to = device_ctx.rr_nodes[to_node_ind];
 
 	/* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
            chan coordinate is orthogonal to the wire */

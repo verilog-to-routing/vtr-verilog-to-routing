@@ -2020,7 +2020,7 @@ void draw_get_rr_pin_coords(int inode, float *xcen, float *ycen) {
 	draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], xcen, ycen);
 }
 
-void draw_get_rr_pin_coords(t_rr_node* node, float *xcen, float *ycen) {
+void draw_get_rr_pin_coords(const t_rr_node* node, float *xcen, float *ycen) {
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 

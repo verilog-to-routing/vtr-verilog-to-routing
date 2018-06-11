@@ -20,7 +20,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 void free_draw_structs();
 
 void draw_get_rr_pin_coords(int inode, float *xcen, float *ycen);
-void draw_get_rr_pin_coords(t_rr_node* node, float *xcen, float *ycen);
+void draw_get_rr_pin_coords(const t_rr_node* node, float *xcen, float *ycen);
 
 void draw_triangle_along_line(t_point start, t_point end, float relative_position=1., float arrow_size=DEFAULT_ARROW_SIZE);
 void draw_triangle_along_line(t_point loc, t_point start, t_point end, float arrow_size=DEFAULT_ARROW_SIZE);

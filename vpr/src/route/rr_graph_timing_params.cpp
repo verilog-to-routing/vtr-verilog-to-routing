@@ -39,6 +39,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	float *Couts_to_add; /* UDSD */
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
 	maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
@@ -197,7 +198,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     //Create the final flywieghted t_rr_rc_data
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(device_ctx.rr_nodes[inode].R(), rr_node_C[inode]));
+        mutable_device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(device_ctx.rr_nodes[inode].R(), rr_node_C[inode]));
     }
 
 	free(Couts_to_add);
