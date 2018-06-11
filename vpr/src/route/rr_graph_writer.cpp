@@ -95,7 +95,7 @@ void write_rr_node(fstream &fp) {
 
     fp << "\t<rr_nodes>" << endl;
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         fp << "\t\t<node";
         fp << " id=\"" << inode;
@@ -264,7 +264,7 @@ void write_rr_edges(fstream &fp) {
     auto& device_ctx = g_vpr_ctx.device();
     fp << "\t<rr_edges>" << endl;
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         for (int iedge = 0; iedge < node.num_edges(); iedge++) {
             fp << "\t\t<edge src_node=\"" << inode <<

@@ -147,9 +147,9 @@ void load_rr_file(const t_graph_type graph_type,
         /* Alloc rr nodes and count count nodes */
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
 
-        device_ctx.num_rr_nodes = count_children(next_component, "node", loc_data);
+        int num_rr_nodes = count_children(next_component, "node", loc_data);
 
-        device_ctx.rr_nodes.resize(device_ctx.num_rr_nodes);
+        device_ctx.rr_nodes.resize(num_rr_nodes);
         process_nodes(next_component, loc_data);
 
         /* Loads edges, switches, and node look up tables*/
@@ -170,7 +170,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_rr_node_indices(grid);
 
-        init_fan_in(device_ctx.rr_nodes, device_ctx.num_rr_nodes);
+        init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
 
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
@@ -384,7 +384,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
     int source_node;
     //count the number of edges and store it in a vector
     vector<int> num_edges_for_node;
-    num_edges_for_node.resize(device_ctx.num_rr_nodes, 0);
+    num_edges_for_node.resize(device_ctx.rr_nodes.size(), 0);
 
     while (edges) {
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
@@ -394,7 +394,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
     }
 
     //reset this vector in order to start count for num edges again
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         num_edges_for_node[inode] = 0;
     }
 
@@ -655,7 +655,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
      * Note that CHANX and CHANY 's x and y are swapped due to the chan and seg convention.
      * Push back temporary incorrect nodes for CHANX and CHANY to set the length of the vector*/
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         if (node.type() == SOURCE || node.type() == SINK) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
@@ -701,7 +701,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
 
     int count;
     /* CHANX and CHANY need to reevaluated with its ptc num as the correct index*/
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         if (node.type() == CHANX) {
             for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
@@ -746,7 +746,7 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //set the cost index in order to load the segment information, rr nodes should be set already
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         if (device_ctx.rr_nodes[inode].type() == SOURCE) {
             device_ctx.rr_nodes[inode].set_cost_index(SOURCE_COST_INDEX);
         } else if (device_ctx.rr_nodes[inode].type() == SINK) {
@@ -765,7 +765,7 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
     /*Go through each rr_node and use the segment ids to set CHANX and CHANY cost index*/
     rr_node = get_first_child(parent, "node", loc_data);
 
-    for (int i = 0; i < device_ctx.num_rr_nodes; i++) {
+    for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
         auto& node = device_ctx.rr_nodes[i];
 
         /*CHANX and CHANY cost index is dependent on the segment id*/

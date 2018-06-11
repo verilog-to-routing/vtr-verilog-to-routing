@@ -469,11 +469,11 @@ static void build_rr_graph(
     /* END FC */
 
     /* Alloc node lookups, count nodes, alloc rr nodes */
-    device_ctx.num_rr_nodes = 0;
+    int num_rr_nodes = 0;
 
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
-            &device_ctx.num_rr_nodes, chan_details_x, chan_details_y);
-    device_ctx.rr_nodes.resize(device_ctx.num_rr_nodes);
+            &num_rr_nodes, chan_details_x, chan_details_y);
+    device_ctx.rr_nodes.resize(num_rr_nodes);
 
     /* These are data structures used by the the unidir opin mapping. They are used
        to spread connections evenly for each segment type among the available
@@ -571,7 +571,7 @@ static void build_rr_graph(
     /* END OPIN MAP */
 
     bool Fc_clipped = false;
-    alloc_and_load_rr_graph(device_ctx.num_rr_nodes, device_ctx.rr_nodes, num_seg_types,
+    alloc_and_load_rr_graph(device_ctx.rr_nodes.size(), device_ctx.rr_nodes, num_seg_types,
             seg_details, chan_details_x, chan_details_y,
             track_to_pin_lookup, opin_to_track_map,
             switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
@@ -584,7 +584,7 @@ static void build_rr_graph(
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
-        for (int i = 0; i < device_ctx.num_rr_nodes; i++) {
+        for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
             if (device_ctx.rr_nodes[i].type() == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
                 device_ctx.rr_nodes[i].set_capacity(device_ctx.chan_width.x_list[ylow]);
@@ -720,8 +720,8 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
 
     int num_rr_switches = 0;
     // map key: switch index specified in arch; map value: fanin for that index
-    map<int, int> *inward_switch_inf = new map<int, int>[device_ctx.num_rr_nodes];
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    map<int, int> *inward_switch_inf = new map<int, int>[device_ctx.rr_nodes.size()];
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         const t_rr_node& from_node = device_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
@@ -734,7 +734,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     }
 
     // get unique index / fanin combination based on inward_switch_inf
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         map<int, int>::iterator itr;
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
             int switch_index = itr->first;
@@ -813,7 +813,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         auto& from_node = device_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
@@ -1234,7 +1234,6 @@ void free_rr_graph() {
     device_ctx.rr_node_indices.clear();
 
     device_ctx.rr_nodes.clear();
-    device_ctx.num_rr_nodes = 0;
 
     device_ctx.rr_node_indices.clear();
 
@@ -2192,7 +2191,7 @@ void dump_rr_graph(const char *file_name) {
 
     FILE *fp = vtr::fopen(file_name, "w");
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         print_rr_node(fp, device_ctx.rr_nodes, inode);
         fprintf(fp, "\n");
     }

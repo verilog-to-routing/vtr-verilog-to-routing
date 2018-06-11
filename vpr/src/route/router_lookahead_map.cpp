@@ -392,10 +392,10 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 	auto& device_ctx = g_vpr_ctx.device();
 
 	/* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
-	vector<bool> node_expanded( device_ctx.num_rr_nodes, false );
+	vector<bool> node_expanded( device_ctx.rr_nodes.size(), false );
 	/* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
 	   a candidate node onto the expansion queue */
-	vector<float> node_visited_costs( device_ctx.num_rr_nodes, -1.0 );
+	vector<float> node_visited_costs( device_ctx.rr_nodes.size(), -1.0 );
 	/* a priority queue for expansion */
 	priority_queue<PQ_Entry> pq;
 

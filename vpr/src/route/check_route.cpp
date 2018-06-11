@@ -64,7 +64,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 	int max_pins, inode, prev_node;
 	unsigned int ipin;
 	bool valid, connects;
-	bool * connected_to_route; /* [0 .. device_ctx.num_rr_nodes-1] */
+	bool * connected_to_route; /* [0 .. device_ctx.rr_nodes.size()-1] */
 	t_trace *tptr;
 	bool * pin_done;
 
@@ -90,7 +90,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
-	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
+	connected_to_route = (bool *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(bool));
 
 	max_pins = 0;
 	for (auto net_id : cluster_ctx.clb_nlist.nets())
@@ -563,8 +563,8 @@ void recompute_occupancy_from_scratch() {
 
 	/* First set the occupancy of everything to zero. */
 
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++)
-		route_ctx.rr_node_route_inf[inode].set_occ(0);
+	for (size_t inode_idx = 0; inode_idx < device_ctx.rr_nodes.size(); inode_idx++)
+		route_ctx.rr_node_route_inf[inode_idx].set_occ(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
@@ -655,9 +655,9 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-	if (inode < 0 || inode >= device_ctx.num_rr_nodes) {
+	if (inode < 0 || inode >= (int) device_ctx.rr_nodes.size()) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.num_rr_nodes - 1);
+				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_nodes.size() - 1);
 	}
 	check_rr_node(inode, route_type, device_ctx);
 }
@@ -669,7 +669,7 @@ static t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
     //Walk through the RR graph and recursively expand non-configurable edges
     //to collect the sets of non-configurably connected nodes
     auto& device_ctx = g_vpr_ctx.device();
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; ++inode) {
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         std::set<t_node_edge> edge_set;
 
         expand_non_configurable(inode, edge_set);

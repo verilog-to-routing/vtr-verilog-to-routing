@@ -101,7 +101,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	 * optimistic (but I still think it's pretty reasonable).                    */
     auto& device_ctx = g_vpr_ctx.device();
 
-	int *num_inputs_to_cblock; /* [0..device_ctx.num_rr_nodes-1], but all entries not    */
+	int *num_inputs_to_cblock; /* [0..device_ctx.rr_nodes.size()-1], but all entries not    */
 
 	/* corresponding to IPINs will be 0.           */
 
@@ -110,7 +110,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	float *unsharable_switch_trans, *sharable_switch_trans; /* [0..num_switch-1] */
 
 	t_rr_type from_rr_type, to_rr_type;
-	int from_node, to_node, iedge, num_edges, maxlen;
+	int iedge, num_edges, maxlen;
 	int iswitch, i, j, iseg, max_inputs_to_cblock;
 	float input_cblock_trans, shared_opin_buffer_trans;
 
@@ -144,7 +144,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
 
 	maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
@@ -156,7 +156,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
 			R_minW_nmos, R_minW_pmos);
 
-	for (from_node = 0; from_node < device_ctx.num_rr_nodes; from_node++) {
+	for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
 
 		from_rr_type = device_ctx.rr_nodes[from_node].type();
 
@@ -168,7 +168,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
-				to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
+				size_t to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
 				to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
@@ -308,12 +308,12 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
     auto& device_ctx = g_vpr_ctx.device();
 
 	bool * cblock_counted; /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
-	int *num_inputs_to_cblock; /* [0..device_ctx.num_rr_nodes-1], but all entries not    */
+	int *num_inputs_to_cblock; /* [0..device_ctx.rr_nodes.size()-1], but all entries not    */
 
 	/* corresponding to IPINs will be 0.           */
 
 	t_rr_type from_rr_type, to_rr_type;
-	int i, j, iseg, from_node, to_node, iedge, num_edges, maxlen;
+	int i, j, iseg, to_node, iedge, num_edges, maxlen;
 	int max_inputs_to_cblock;
 	float input_cblock_trans;
 
@@ -323,7 +323,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	   switches of all rr nodes. Thus we keep track of which muxes we have already
 	   counted via the variable below. */
 	bool *chan_node_switch_done;
-	chan_node_switch_done = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
+	chan_node_switch_done = (bool *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(bool));
 
 	/* The variable below is an accumulator variable that will add up all the   *
 	 * transistors in the routing.  Make double so that it doesn't stop         *
@@ -354,12 +354,12 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
 	maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
-	for (from_node = 0; from_node < device_ctx.num_rr_nodes; from_node++) {
+	for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
 
 		from_rr_type = device_ctx.rr_nodes[from_node].type();
 
@@ -495,7 +495,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 
 	float *trans_per_cblock; /* [0..max_inputs_to_cblock] */
 	float trans_count;
-	int i, num_inputs;
+	int num_inputs;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -508,7 +508,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 	 * buffer even when the number of inputs = 1 (i.e. no mux) because I assume  *
 	 * I need the drivability just for metal capacitance.                        */
 
-	for (i = 1; i <= max_inputs_to_cblock; i++){
+	for (int i = 1; i <= max_inputs_to_cblock; i++){
 		trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit,
 					device_ctx.rr_switch_inf[wire_to_ipin_switch].mux_trans_size);
 		trans_per_cblock[i] += device_ctx.rr_switch_inf[wire_to_ipin_switch].buf_size;
@@ -516,7 +516,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 
 	trans_count = 0.;
 
-	for (i = 0; i < device_ctx.num_rr_nodes; i++) {
+	for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
 		num_inputs = num_inputs_to_cblock[i];
 		trans_count += trans_per_cblock[num_inputs];
 	}

@@ -141,9 +141,9 @@ void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_del
 
 	t_rc_node *rc_node_free_list, *rc_root;
 	t_linked_rc_edge *rc_edge_free_list;
-	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..device_ctx.num_rr_nodes-1]  */
+	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..device_ctx.rr_nodes.size()-1]  */
 
-	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(device_ctx.num_rr_nodes,
+	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(device_ctx.rr_nodes.size(),
 			sizeof(t_linked_rc_ptr));
 
 	rc_node_free_list = nullptr;

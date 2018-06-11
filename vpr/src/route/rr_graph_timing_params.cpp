@@ -29,7 +29,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 *    separating tracks from the input connection block, if enabled by      *
 	 *    INCLUDE_TRACK_BUFFERS)                                    	    */
 
-	int inode, iedge, switch_index, to_node, maxlen;
+	int iedge, switch_index, maxlen;
+    size_t to_node;
 	int icblock, isblock, iseg_low, iseg_high;
 	float Cin, Cout;
 	t_rr_type from_rr_type, to_rr_type;
@@ -45,9 +46,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) vtr::calloc(maxlen, sizeof(float));
 
-    std::vector<float> rr_node_C(device_ctx.num_rr_nodes, 0.); //Stores the final C
+    std::vector<float> rr_node_C(device_ctx.rr_nodes.size(), 0.); //Stores the final C
 
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 
         //The C may have already been partly initialized (e.g. with metal capacitance)
         rr_node_C[inode] += device_ctx.rr_nodes[inode].C();
@@ -177,8 +178,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * Current structures only keep switch information from a node to the next node and
 	 * not the reverse.  Therefore I need to go through all the possible edges to figure
 	 * out what the Cout's should be */
-	Couts_to_add = (float *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(float));
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	Couts_to_add = (float *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(float));
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		for (iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
 			switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
 			to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
@@ -192,12 +193,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			}
 		}
 	}
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 		rr_node_C[inode] += Couts_to_add[inode];
 	}
 
     //Create the final flywieghted t_rr_rc_data
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         mutable_device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(device_ctx.rr_nodes[inode].R(), rr_node_C[inode]));
     }
 
