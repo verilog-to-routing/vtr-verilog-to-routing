@@ -93,7 +93,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
         const int num_seg_types);
 
 static void build_bidir_rr_opins(const int i, const int j, const e_side side,
-        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        std::vector<t_rr_node>& L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         t_rr_edge_info_set& created_rr_edges,
         const t_seg_details * seg_details,
@@ -120,7 +120,7 @@ static int get_opin_direct_connecions(
 
 static void alloc_and_load_rr_graph(
         const int num_nodes,
-        t_rr_node * L_rr_node, const int num_seg_types,
+        std::vector<t_rr_node>& L_rr_node, const int num_seg_types,
         const t_seg_details * seg_details,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_track_to_pin_lookup& track_to_pin_lookup,
@@ -169,7 +169,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(
 
 static void build_rr_sinks_sources(
         const int i, const int j,
-        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        std::vector<t_rr_node>& L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const int delayless_switch, const DeviceGrid& grid);
 
 static void build_rr_chan(
@@ -184,7 +184,7 @@ static void build_rr_chan(
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
         t_rr_edge_info_set& created_rr_edges,
-        t_rr_node * L_rr_node,
+        std::vector<t_rr_node>& L_rr_node,
         const int wire_to_ipin_switch,
         const enum e_directionality directionality);
 
@@ -201,7 +201,7 @@ static void rr_graph_externals(
         const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
         int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type);
 
-void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node,
+void alloc_and_load_edges_and_switches(std::vector<t_rr_node>& L_rr_node,
         t_rr_edge_info_set& created_rr_edges,
         const t_rr_edge_info_set& rr_edges_to_create);
 
@@ -473,7 +473,7 @@ static void build_rr_graph(
 
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
             &device_ctx.num_rr_nodes, chan_details_x, chan_details_y);
-    device_ctx.rr_nodes = new t_rr_node[device_ctx.num_rr_nodes];
+    device_ctx.rr_nodes.resize(device_ctx.num_rr_nodes);
 
     /* These are data structures used by the the unidir opin mapping. They are used
        to spread connections evenly for each segment type among the available
@@ -811,10 +811,10 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
    now we want to remap these indices to point into the global device_ctx.rr_switch_inf array
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        t_rr_node& from_node = device_ctx.rr_nodes[inode];
+        auto& from_node = device_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             const t_rr_node& to_node = device_ctx.rr_nodes[ from_node.edge_sink_node(iedge) ];
@@ -1067,7 +1067,7 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
 static void alloc_and_load_rr_graph(const int num_nodes,
-        t_rr_node * L_rr_node, const int num_seg_types,
+        std::vector<t_rr_node>& L_rr_node, const int num_seg_types,
         const t_seg_details * seg_details,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_track_to_pin_lookup& track_to_pin_lookup,
@@ -1162,7 +1162,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 }
 
 static void build_bidir_rr_opins(const int i, const int j, const e_side side,
-        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        std::vector<t_rr_node>& L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         t_rr_edge_info_set& created_rr_edges,
         const t_seg_details * seg_details,
@@ -1233,8 +1233,7 @@ void free_rr_graph() {
 
     device_ctx.rr_node_indices.clear();
 
-    delete[] device_ctx.rr_nodes;
-    device_ctx.rr_nodes = nullptr;
+    device_ctx.rr_nodes.clear();
     device_ctx.num_rr_nodes = 0;
 
     device_ctx.rr_node_indices.clear();
@@ -1251,7 +1250,7 @@ void free_rr_graph() {
 }
 
 static void build_rr_sinks_sources(const int i, const int j,
-        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        std::vector<t_rr_node>& L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const int delayless_switch, const DeviceGrid& grid) {
 
     /* Loads IPIN, SINK, SOURCE, and OPIN.
@@ -1378,7 +1377,7 @@ static void build_rr_sinks_sources(const int i, const int j,
     }
 }
 
-void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes) {
+void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes) {
     //Loads fan-ins for all nodes
 
     //Reset all fan-ins to zero
@@ -1409,7 +1408,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
         t_rr_edge_info_set& created_rr_edges,
-        t_rr_node * L_rr_node,
+        std::vector<t_rr_node>& L_rr_node,
         const int wire_to_ipin_switch,
         const enum e_directionality directionality) {
 
@@ -1571,7 +1570,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
     }
 }
 
-void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node,
+void alloc_and_load_edges_and_switches(std::vector<t_rr_node>& L_rr_node,
         t_rr_edge_info_set& created_rr_edges,
         const t_rr_edge_info_set& rr_edges_to_create) {
 
@@ -2202,7 +2201,7 @@ void dump_rr_graph(const char *file_name) {
 }
 
 /* Prints all the data about node inode to file fp.                    */
-void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
+void print_rr_node(FILE * fp, const std::vector<t_rr_node> &L_rr_node, int inode) {
 
     std::string info = describe_rr_node(inode);
     fprintf(fp, "%s\n", info.c_str());
@@ -2294,7 +2293,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
      * This routine adds the edges from opins to channels at the specified
      * grid location (i,j) and grid tile side
      */
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     *Fc_clipped = false;
 

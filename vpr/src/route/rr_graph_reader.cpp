@@ -149,7 +149,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         device_ctx.num_rr_nodes = count_children(next_component, "node", loc_data);
 
-        device_ctx.rr_nodes = new t_rr_node[device_ctx.num_rr_nodes];
+        device_ctx.rr_nodes.resize(device_ctx.num_rr_nodes);
         process_nodes(next_component, loc_data);
 
         /* Loads edges, switches, and node look up tables*/

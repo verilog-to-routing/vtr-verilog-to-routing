@@ -48,9 +48,9 @@ void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */
 //Returns a brief one-line summary of an RR node
 std::string describe_rr_node(int inode);
 
-void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
+void print_rr_node(FILE *fp, const std::vector<t_rr_node> &L_rr_node, int inode);
 
-void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes);
+void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes);
 
 #endif
 

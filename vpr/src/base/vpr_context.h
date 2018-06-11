@@ -129,7 +129,7 @@ struct DeviceContext : public Context {
 
     /* Structures to define the routing architecture of the FPGA.           */
     int num_rr_nodes;
-    t_rr_node *rr_nodes; /* [0..num_rr_nodes-1]          */
+    std::vector<t_rr_node> rr_nodes; /* [0..num_rr_nodes-1]          */
 
     int num_rr_indexed_data;
     t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */
