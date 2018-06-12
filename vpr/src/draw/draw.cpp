@@ -374,8 +374,9 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 
 	/* If it's the type of picture displayed has changed, set up the proper  *
 	 * buttons.                                                              */
-	if (draw_state->pic_on_screen != pic_on_screen_val) {
+	if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
 		if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
+            //Placement first to open
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
@@ -383,21 +384,24 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
                 create_button("Blk Pin Util", "Crit. Path", toggle_crit_path);
             }
 		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+            //Routing, opening after placement
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
 			create_button("Route BB", "Routing Util", toggle_routing_util);
 		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+            //Placement, opening after routing
+
+            //Clean-up routing specific-buttons
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
 			destroy_button("Cong. Cost");
 			destroy_button("Route BB");
-            if(setup_timing_info) {
-                destroy_button("Crit. Path");
-            }
+			destroy_button("Route Util");
 		} else if (pic_on_screen_val == ROUTING
 				&& draw_state->pic_on_screen == NO_PICTURE) {
+            //Routing opening first
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Blk Pin Util", toggle_block_pin_util);
