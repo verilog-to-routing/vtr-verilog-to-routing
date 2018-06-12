@@ -607,6 +607,12 @@ class BlackBoxInst : public Instance {
                 }
                 os << "\n";
             }
+
+            // Params
+            for(auto iter = params_.begin(); iter != params_.end(); ++iter) {
+                os << ".param " << iter->first << " " << iter->second << "\n";
+            }
+
             os << "\n";
         }
 
