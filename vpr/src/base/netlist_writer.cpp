@@ -832,7 +832,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
         void visit_atom_impl(const t_pb* atom) override {
             auto& atom_ctx = g_vpr_ctx.atom();
 
-            const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
+            auto atom_pb = atom_ctx.lookup.pb_atom(atom);
+            if (atom_pb == AtomBlockId::INVALID()) {
+                return;
+            }
+            const t_model* model = atom_ctx.nlist.block_model(atom_pb);
 
             if(model->name == std::string(MODEL_INPUT)) {
                 inputs_.emplace_back(make_io(atom, PortType::INPUT));
