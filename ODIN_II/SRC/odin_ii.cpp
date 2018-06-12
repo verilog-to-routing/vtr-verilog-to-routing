@@ -57,6 +57,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_util.h"
+#include "vtr_path.h"
 #include "vtr_memory.h"
 
 #define DEFAULT_OUTPUT "OUTPUT/"
