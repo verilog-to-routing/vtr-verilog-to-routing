@@ -326,6 +326,7 @@ class LutInst : public Instance {
                     os << " 1\n";
                 }
             }
+            os << "\n";
         }
 
         void print_sdf(std::ostream& os, int depth) override {
@@ -565,6 +566,12 @@ class BlackBoxInst : public Instance {
                 }
                 os << "\n";
             }
+
+            // Params
+            for(auto iter = params_.begin(); iter != params_.end(); ++iter) {
+                os << ".param " << iter->first << " " << iter->second << "\n";
+            }
+
             os << "\n";
         }
 
@@ -784,7 +791,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
         void visit_atom_impl(const t_pb* atom) override {
             auto& atom_ctx = g_vpr_ctx.atom();
 
-            const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
+            auto atom_pb = atom_ctx.lookup.pb_atom(atom);
+            if (atom_pb == AtomBlockId::INVALID()) {
+                return;
+            }
+            const t_model* model = atom_ctx.nlist.block_model(atom_pb);
 
             if(model->name == std::string(MODEL_INPUT)) {
                 inputs_.emplace_back(make_io(atom, PortType::INPUT));
@@ -803,8 +814,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             } else if(model->name == std::string("adder")) {
                 cell_instances_.push_back(make_adder_instance(atom));
             } else {
-                vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
-                            "Primitive '%s' not recognized by netlist writer\n", model->name);
+                cell_instances_.push_back(make_blackbox_instance(atom));
             }
         }
 
@@ -1549,6 +1559,108 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     output_port_conns[port->name].push_back(net);
                 }
+            }
+
+            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+        }
+
+        std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom)  {
+            auto& timing_ctx = g_vpr_ctx.timing();
+
+            const auto& top_pb_route = find_top_pb_route(atom);
+            const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
+            const t_pb_type* pb_type = pb_graph_node->pb_type;
+
+            std::string type_name = pb_type->model->name;
+            std::string inst_name = join_identifier(type_name, atom->name);
+            std::map<std::string,std::string> params;
+            std::map<std::string,std::vector<std::string>> input_port_conns;
+            std::map<std::string,std::vector<std::string>> output_port_conns;
+            std::vector<Arc> timing_arcs;
+            std::map<std::string,double> ports_tsu;
+            std::map<std::string,double> ports_tcq;
+
+            //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
+            std::map<tatum::NodeId,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
+
+            //Process the input ports
+            for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
+                for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                    const t_port* port = pin->port;
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+
+                    std::string net;
+                    if(!atom_net_id) {
+                        //Disconnected
+
+                    } else {
+                        //Connected
+                        auto src_tnode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::INPUT, iport, ipin);
+                    }
+
+                    input_port_conns[port->name].push_back(net);
+
+                }
+            }
+
+            //Process the output ports
+            for(int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
+
+                for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                    const t_port* port = pin->port;
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+
+                    std::string net;
+                    if(!atom_net_id) {
+                        //Disconnected
+                        net = "";
+                    } else {
+                        //Connected
+                        auto inode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUTPUT, iport, ipin);
+
+                    }
+
+                    output_port_conns[port->name].push_back(net);
+                }
+            }
+
+            //Process the clock ports
+            for(int iport = 0; iport < pb_graph_node->num_clock_ports; ++iport) {
+                for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
+                    const t_port* port = pin->port;
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+
+                    VTR_ASSERT(atom_net_id); //Must have a clock
+
+                    std::string net;
+                    if(!atom_net_id) {
+                        //Disconnected
+                        net = "";
+                    } else {
+                        //Connected
+                        auto src_tnode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::CLOCK, iport, ipin);
+                    }
+
+                    input_port_conns[port->name].push_back(net);
+                }
+            }
+
+            auto& atom_ctx = g_vpr_ctx.atom();
+            AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
+            for (auto param : atom_ctx.nlist.block_params(blk_id)) {
+                params[param.first] = param.second;
             }
 
             return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
