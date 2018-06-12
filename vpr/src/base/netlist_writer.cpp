@@ -367,6 +367,7 @@ class LutInst : public Instance {
                     os << " 1\n";
                 }
             }
+            os << "\n";
         }
 
         void print_sdf(std::ostream& os, int depth) override {
