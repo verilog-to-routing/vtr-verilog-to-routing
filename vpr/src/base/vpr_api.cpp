@@ -23,6 +23,7 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_version.h"
 #include "vtr_time.h"
+#include "vtr_path.h"
 #include "vtr_cilk.h"
 
 #include "vpr_types.h"

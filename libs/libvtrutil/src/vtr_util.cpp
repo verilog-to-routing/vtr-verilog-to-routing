@@ -5,8 +5,6 @@
 #include <memory>
 #include <sstream>
 
-#include <unistd.h>
-
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -63,22 +61,6 @@ std::vector<std::string> split(const std::string& text, const std::string delims
     return tokens;
 }
 
-//Splits off the name and extension (including ".") of the specified filename
-std::array<std::string,2> split_ext(const std::string& filename) {
-    std::array<std::string,2> name_ext;
-    auto pos = filename.find_last_of('.');
-
-    if (pos == std::string::npos) {
-        //No extension
-        pos = filename.size();
-    }
-
-    name_ext[0] = std::string(filename, 0, pos);
-    name_ext[1] = std::string(filename, pos, filename.size() - pos);
-
-    return name_ext;
-}
-
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
     auto pos = input.find(search);
 
@@ -106,6 +88,11 @@ std::string replace_all(const std::string& input, const std::string& search, con
     output += input.substr(last, pos - last); //Append anything in 'input' after the last match
 
     return output;
+}
+
+//Retruns true if str starts with prefix
+bool starts_with(std::string str, std::string prefix) {
+    return str.find(prefix) == 0;
 }
 
 //Returns a std::string formatted using a printf-style format string
@@ -155,63 +142,6 @@ std::string vstring_fmt(const char* fmt, va_list args) {
 
     //Build the string from the buffer
     return std::string(buf.get(), len);
-}
-
-std::string basename(const std::string& path) {
-    auto elements = split(path, "/");
-
-    std::string str;
-    if(elements.size() > 0) {
-        //Return the last path element
-        str = elements[elements.size() - 1];
-    }
-
-    return str;
-}
-
-std::string dirname(const std::string& path) {
-    auto elements = split(path, "/");
-
-    std::string str;
-    if(elements.size() > 0) {
-        //We need to start the dirname with a "/" if path started with one
-        if(path[0] == '/') {
-            str += "/";
-        }
-
-        //Join all except the last path element
-        str += join(elements.begin(), elements.end() - 1, "/");
-
-        //We append a final "/" to allow clients to just append directly to the
-        //returned value
-        str += "/";
-    }
-
-    return str;
-}
-
-
-std::string getcwd() {
-    constexpr size_t BUF_SIZE = 500;
-    char buf [BUF_SIZE];
-
-    if (::getcwd(buf, BUF_SIZE)) {
-        return std::string(buf);
-    }
-
-    //Check the global errno
-    int error = errno;
-
-    switch (error) {
-        case EACCES:
-            throw std::runtime_error("Access denied");
-
-        default: {
-            std::ostringstream str;
-            str << "Unrecognised error" << error;
-            throw std::runtime_error(str.str());
-        }
-    }
 }
 
 /* An alternate for strncpy since strncpy doesn't work as most

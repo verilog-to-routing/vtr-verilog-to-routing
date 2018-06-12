@@ -30,6 +30,7 @@
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_path.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_memory.h"

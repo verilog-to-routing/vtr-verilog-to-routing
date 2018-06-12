@@ -8,6 +8,7 @@
 #include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
+#include "vtr_path.h"
 
 using argparse::Provenance;
 using argparse::ConvertedValue;

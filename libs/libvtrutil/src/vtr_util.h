@@ -13,14 +13,14 @@ namespace vtr {
     std::vector<std::string> split(const char* text, const std::string delims=" \t\n");
     std::vector<std::string> split(const std::string& text, const std::string delims=" \t\n");
 
-    //Splits off the name and extension (including ".") of the specified filename
-    std::array<std::string,2> split_ext(const std::string& filename);
-
     //Returns 'input' with the first instance of 'search' replaced with 'replace'
     std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
 
     //Returns 'input' with all instances of 'search' replaced with 'replace'
     std::string replace_all(const std::string& input, const std::string& search, const std::string& replace);
+
+    //Retruns true if str starts with prefix
+    bool starts_with(std::string str, std::string prefix);
 
     //Returns a std::string formatted using a printf-style format string
     std::string string_fmt(const char* fmt, ...);
@@ -28,17 +28,6 @@ namespace vtr {
     //Returns a std::string formatted using a printf-style format string taking
     //an explicit va_list
     std::string vstring_fmt(const char* fmt, va_list args);
-
-    //Returns the basename of path (i.e. the last filename component)
-    //  For example, the path "/home/user/my_files/test.blif" -> "test.blif"
-    std::string basename(const std::string& path);
-
-    //Returns the dirname of path (i.e. everything except the last filename component)
-    //  For example, the path "/home/user/my_files/test.blif" -> "/home/user/my_files/"
-    std::string dirname(const std::string& path);
-
-    //Returns the current working directory
-    std::string getcwd();
 
     //Joins a sequence by a specified delimeter
     //  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
@@ -76,7 +65,6 @@ namespace vtr {
     bool file_exists(const char * filename);
     bool check_file_name_extension(const char* file_name,
                                    const char* file_extension);
-
 
     extern std::string out_file_prefix;
 
