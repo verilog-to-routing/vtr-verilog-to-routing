@@ -4,9 +4,7 @@
 ##### TUNING PARAMETER
 
 #weigth of different variables
-CRIT_W="1.0"
-SIZE_W="1.0"
-POWE_W="1.0"
+
 
 
 VTR_TASK_TO_HOME=../..
@@ -16,67 +14,155 @@ VTR_HOME_DIR=`pwd`
 export VTR_HOME_DIR=$VTR_HOME_DIR
 INITIAL_BITSIZE=2
 END_BITSIZE=128
+CURRENT_BITSIZE=0
 
+OUTPUT_SEPARATOR="~"
+
+
+######### inital cleanup ##########
+
+rm -Rf $VTR_HOME_DIR/$TRACKER_DIR
+mkdir -p $VTR_HOME_DIR/$TRACKER_DIR/failures
+
+[ ! -e $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin ] && touch $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
+
+
+######### build necessary variables ##########
 list_of_arch="\
 arch/timing/k6_N10_mem32K_40nm.xml \
 arch/timing/k6_frac_N10_mem32K_40nm.xml \
 "
-function build_parse_file() {
-  #build parse file
-echo "critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns" > $VTR_HOME_DIR/$TRACKER_DIR/parse.txt
-echo "logic_block_area_total;vpr.out;Total logic block area .*: (.*)">> $VTR_HOME_DIR/$TRACKER_DIR/parse.txt
-echo "total_power;*.power;^Total\s+(.*?)\s+" >> $VTR_HOME_DIR/$TRACKER_DIR/parse.txt
-}
+
+#what we are parsing
+MEASUREMENT_NAME=(
+"critical_path_delay"
+"logic_block_area_total"
+"total_power"
+"total_dyn"
+)
+
+critical_path_delay=0
+logic_block_area_total=1
+total_power=2
+total_dyn=3
+MEASUREMENT_ARRAY_LEN=4
+
+#build parse file
+printf "${MEASUREMENT_NAME[$critical_path_delay]};vpr.crit_path.out;Final critical path: (.*) ns\n\
+${MEASUREMENT_NAME[$logic_block_area_total]};vpr.out;Total logic block area .*: (.*)\n\
+${MEASUREMENT_NAME[$total_power]};*.power;^Total\s+(.*?)\s+\n\
+${MEASUREMENT_NAME[$total_dyn]};*.power;^Total\s+\S+\s+\S+\s+(.*?)\s+\n"> $VTR_HOME_DIR/$TRACKER_DIR/parse.txt
+
+#init the weigth list
+declare -a WEIGTH_LIST
+#set some manualy
+WEIGTH_LIST[$critical_path_delay]="1.0"
+WEIGTH_LIST[$logic_block_area_total]="1.0"
+WEIGTH_LIST[$total_power]="1.0"
+WEIGTH_LIST[$total_dyn]="100.0"
+
+
+#################################################
+
+
+DIV_W=$(echo ${WEIGTH_LIST[@]} | awk '{sum=0; for(var=1;var<=NF;var++) sum = sum+$var; print sum}' )
+WEIGTH_LIST=( $(echo $DIV_W ${WEIGTH_LIST[@]} | awk '{ for(var=2;var<=NF;var++) print $var/$1; }' ) )
+echo ${MEASUREMENT_NAME[@]} ${WEIGTH_LIST[@]} | awk '
+{ 
+	st1=1; 
+	st2=NF/2; 
+	print "RUNNING exploration using following weigths:"
+	for(var=st1;var<=st2;var++) 
+		printf "%s\t:: %f %\n",$(var),$(var+st2)*100.0; 
+}'
+
+#result file header
+printf "op,target_bit_size,soft_hard,circuit,bit_width,selected,overall_result" >> $VTR_HOME_DIR/$TRACKER_DIR/result.csv
+for (( i=0; i<${MEASUREMENT_ARRAY_LEN}; i++ )); do
+	printf ",${MEASUREMENT_NAME[$i]}" >> $VTR_HOME_DIR/$TRACKER_DIR/result.csv
+done
+printf "\n" >> $VTR_HOME_DIR/$TRACKER_DIR/result.csv
 
 
 function get_geomean() {
-  ADDERS=$1
+	ADDERS=$1
 
-  DIV_W=$(echo $CRIT_W $SIZE_W $POWE_W | awk '{ print 1.0*($0+$1+$2) }')
-  CRIT_W=$(echo $CRIT_W $DIV_W | awk '{ print 1.0*($0/$1) }')
-  SIZE_W=$(echo $SIZE_W $DIV_W | awk '{ print 1.0*($0/$1) }')
-  POWE_W=$(echo $POWE_W $DIV_W | awk '{ print 1.0*($0/$1) }')
+	declare -a RESULT_OUT=( $(for (( i=0; i<${MEASUREMENT_ARRAY_LEN}; i++ )); do echo "1.0"; done) )
+	while IFS=, read -a VALUE_LIST; do
+		RESULT_OUT=( $(echo ${VALUE_LIST[@]} ${RESULT_OUT[@]} | awk '
+		{ 
+			st1=1;
+			st2=NF/2;
+			for(var=st1;var<=st2;var++) 
+				print $(var)*$(var+st2); 
+		}' ) )
+	done < $ADDERS
+	
+	RESULT_OUT=( $(echo ${RESULT_OUT[@]} | awk '
+		{ 
+			for(var=1;var<=NF;var++) 
+			{
+				calc=$(var) ** (1.0/NF);
+				printf "%f\n",calc
+			}
+		}') 
+	)
+	
+	WEIGHTED_SUM=$(echo ${RESULT_OUT[@]} ${WEIGTH_LIST[@]} | awk '
+	{
+		st1=1;
+		st2=NF/2;
+		sum=0.0; 
+		for(var=st1;var<=st2;var++) 
+			sum += $(var)*$(var+st2); 
+		
+		print sum;
+	}' )
 
-
-  OUT_CRIT="1.0"
-  OUT_SIZE="1.0"
-  OUT_POWE="1.0"
-  count=0
-
-  while IFS=, read critical_path_delay logic_block_area_total total_power; do
-      OUT_CRIT=$(echo $critical_path_delay $OUT_CRIT | awk '{ print $0*$1 }')
-      OUT_SIZE=$(echo $logic_block_area_total $OUT_SIZE | awk '{ print $0*$1 }')
-      OUT_POWE=$(echo $total_power $OUT_POWE | awk '{ print $0*$1 }')
-      count=$((count+=1))
-  done < $ADDERS
-  rm $ADDERS
-  OUT_CRIT=$(echo $OUT_CRIT $count | awk '{ if($1>0) print $0 ** (1.0/$1); else print 1.0;}')
-  OUT_SIZE=$(echo $OUT_SIZE $count | awk '{ if($1>0) print $0 ** (1.0/$1); else print 1.0;}')
-  OUT_POWE=$(echo $OUT_POWE $count | awk '{ if($1>0) print $0 ** (1.0/$1); else print 1.0;}')
-
-  WEIGHTED_SUM=$(echo $OUT_CRIT $CRIT_W $OUT_SIZE $SIZE_W $OUT_POWE $POWE_W  | awk '{ print ($0*$1)+($2*$3)+($4*$5) }')
-
-  basename=${ADDERS%.results}
-  test_name=$(echo ${basename##*/})
-
-  echo "$test_name,$OUT_CRIT,$OUT_SIZE,$OUT_POWE,$WEIGHTED_SUM" >> $VTR_HOME_DIR/$TRACKER_DIR/result-$BITWIDTH.csv
-  echo "$test_name,$WEIGHTED_SUM"
+	basename=${ADDERS%.results}
+	basename=${basename##*/}
+	test_name=$(echo $basename | cut -d ${OUTPUT_SEPARATOR} -f1)
+	test_size=$(echo $basename | cut -d ${OUTPUT_SEPARATOR} -f2)
+	
+	
+	
+	#print to file for keeping
+	printf "+,${CURRENT_BITSIZE},soft,${test_name},${test_size}${OUTPUT_SEPARATOR}${WEIGHTED_SUM}" >> $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.csv
+	for (( i=0; i<${MEASUREMENT_ARRAY_LEN}; i++ )); do
+		printf ",${RESULT_OUT[$i]}" >> $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.csv
+	done
+	printf "\n" >> $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.csv
 }
 
-#$ADDER_TYPE $BIT_WIDTH MIN_SIZE
-#$1          $2         $3
+function normalize() {
+	for TEST_DIR in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*; do
+		for results_out in $TEST_DIR/*.results; do
+			echo $(cat $results_out) $(cat $TEST_DIR/default${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.results) | awk '
+			{ 
+				for(var=1;var<=NF/2;var++) 
+				{
+					result=$(var)/$(var+(NF/2));
+					end_token=(var != NF/2)? ",": "\n";
+					printf "%f%s",result, end_token;
+				}
+			}' >> $TEST_DIR/../${results_out##*/}
+		done
+	done
+}
+
+#$ADDER_TYPE MIN_SIZE
+#$1          $2
 function build_task() {
     ADDER_TYPE=$1
-    MIN_SIZE=$(( $2 ))
-    MAX_SIZE=$(( $3 ))
     FILL_DEF_TO=$END_BITSIZE
+    MIN=$2
 
-    for NEXT_SIZE in $(eval echo {$MIN_SIZE..$MAX_SIZE}); do
+    for NEXT_SIZE in $(eval echo {$MIN..$CURRENT_BITSIZE}); do
         v_counter=0
-        for verilogs in $VTR_HOME_DIR/$TRACKER_DIR/test_$MAX_SIZE/verilogs/*; do
+        for verilogs in $VTR_HOME_DIR/$TRACKER_DIR/test_$CURRENT_BITSIZE/verilogs/*; do
           a_counter=0
           for xmls in $list_of_arch; do
-            TEST_DIR=$VTR_HOME_DIR/$TRACKER_DIR/test_$MAX_SIZE/${v_counter}_${a_counter}/${ADDER_TYPE}-${NEXT_SIZE}
+            TEST_DIR=$VTR_HOME_DIR/$TRACKER_DIR/test_$CURRENT_BITSIZE/${v_counter}_${a_counter}/${ADDER_TYPE}${OUTPUT_SEPARATOR}${NEXT_SIZE}
             mkdir -p $TEST_DIR
 
             #get arch and verilog
@@ -86,7 +172,7 @@ function build_task() {
 
             #build odin config
             cat $TRACKER_DIR/current_config.odin > $TEST_DIR/odin.soft_config
-            for bit_size in $(eval echo {$MAX_SIZE..$FILL_DEF_TO}); do
+            for bit_size in $(eval echo {$CURRENT_BITSIZE..$FILL_DEF_TO}); do
               echo "+,$bit_size,soft,$ADDER_TYPE,$NEXT_SIZE" >> $TEST_DIR/odin.soft_config
             done
 
@@ -96,11 +182,13 @@ function build_task() {
         done
     done
 }
+
+
 #bitwidth
 #$1
 function run_parralel_tasks() {
 
-  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep default | xargs -P$((`nproc`*2+1)) -I test_dir /bin/bash -c \
+  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep default${OUTPUT_SEPARATOR}${CURRENT_BITSIZE} | xargs -P$(nproc) -I test_dir /bin/bash -c \
   '
   TEST_DIR=test_dir
   mkdir -p $TEST_DIR/../OUTPUT
@@ -129,13 +217,12 @@ function run_parralel_tasks() {
   $TEST_DIR/run $TEST_DIR/parse.txt \
   &> $TEST_DIR/run/parse_results.txt
 
-  tail -n +2 $TEST_DIR/run/parse_results.txt > $TEST_DIR/../default.results
+  tail -n +2 $TEST_DIR/run/parse_results.txt > $TEST_DIR/../${TEST_DIR##*/}.results
   echo "INITIALIZED"
-  rm -Rf $TEST_DIR
   '
 
   # #parralel this START
-  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep -v default | grep -v OUTPUT | xargs -P$((`nproc`*2+1)) -I test_dir /bin/bash -c \
+  find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep -v default${OUTPUT_SEPARATOR}${CURRENT_BITSIZE} | grep -v OUTPUT | xargs -P$(nproc) -I test_dir /bin/bash -c \
   '
   TEST_DIR=test_dir
   echo "$VTR_HOME_DIR/ODIN_II/odin_II \
@@ -183,10 +270,9 @@ function run_parralel_tasks() {
       my_dir=$(readlink -f $TEST_DIR)
       parent_dir=$(readlink -f $TEST_DIR/..)
       test_bit=$(readlink -f $TEST_DIR/../..)
-      mv $TEST_DIR $TEST_DIR/../../../failures/${test_bit##*/}${parent_dir##*/}-${my_dir##*/}
-      printf "<${test_bit##*/}-${parent_dir##*/}>\t<${my_dir##*/}> \t\t... ERROR\n"
+      mv $TEST_DIR/run_result $TEST_DIR/../../../failures/${test_bit##*/}${parent_dir##*/}_${my_dir##*/}
+      printf "<${test_bit##*/}_${parent_dir##*/}>\t<${my_dir##*/}> \t\t... ERROR\n"
   fi
-  rm -Rf $TEST_DIR
   '
   rm -Rf $(find $VTR_HOME_DIR/$TRACKER_DIR/test_$1/ -maxdepth 2 -mindepth 2 | grep OUTPUT)
   #END
@@ -203,16 +289,6 @@ function build_verilogs() {
 }
 
 
-######### inital cleanup ##########
-
-rm -Rf $VTR_HOME_DIR/$TRACKER_DIR
-mkdir -p $VTR_HOME_DIR/$TRACKER_DIR/failures
-
-#build files
-build_parse_file
-
-[ ! -e $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin ] && touch $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
-
 START=1
 END=$((INITIAL_BITSIZE-1))
 
@@ -224,71 +300,54 @@ for BITWIDTH in $(eval echo {$INITIAL_BITSIZE..$END_BITSIZE}); do
   echo ""
   echo "TESTING $BITWIDTH ##########"
   echo ""
+  
+  CURRENT_BITSIZE=$((BITWIDTH))
 
   mkdir -p $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/verilogs
 
   build_verilogs $BITWIDTH
 
-  build_task  "default"   $BITWIDTH $BITWIDTH
-  build_task  "csla"      "1" $BITWIDTH
-  build_task  "bec_csla"  "1" $BITWIDTH
+  build_task  "default"   $BITWIDTH
+  build_task  "csla"      "1"
+  #fix in the adder definition... other than full width, this won't work... IDK!!! :(
+  build_task  "bec_csla"  $BITWIDTH
 
   rm -Rf $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/verilogs
 
   run_parralel_tasks $BITWIDTH
 
   #get dif for each arch_verilog pair vs default
-  for TEST_DIR in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*; do
-    if [ -e $TEST_DIR/default.results ]; then
-      #find default_values
-      sed -i 's/[\t ]/,/g' $TEST_DIR/default.results
-      default_critical=$(cat $TEST_DIR/default.results | cut -d "," -f1)
-      default_size=$(cat $TEST_DIR/default.results | cut -d "," -f2)
-      default_power=$(cat $TEST_DIR/default.results | cut -d "," -f3)
-      echo "1.0,1.0,1.0" >> $TEST_DIR/../default.results
+  
+	normalize
+	rm -Rf $TEST_DIR
 
-      for results_out in $TEST_DIR/*.results; do
-        test_name=${results_out##*/}
-        sed -i 's/[\t ]/,/g' $results_out
 
-        temp_critical=$(cat $results_out | cut -d "," -f1)
-        temp_size=$(cat $results_out |  cut -d "," -f2)
-        temp_power=$(cat $results_out |  cut -d "," -f3)
+	touch $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${BITWIDTH}.csv
 
-        echo $temp_critical $default_critical $temp_size $default_size $temp_power $default_power | \
-        awk '
-        {
-          a=($0>0.0 && $1>0.0)?($0/$1):1.0;
-          b=($2>0.0 && $3>0.0)?($2/$3):1.0;
-          c=($4>0.0 && $5>0.0)?($4/$5):1.0;
-          printf "%f,%f,%f\n",$a,$b,$c
-        }' >> $TEST_DIR/../$test_name
-      done
-    fi
-    rm -Rf $TEST_DIR
-  done
-
-  #get geomean of each adder_type and output to single file
-  #keep best adder in memory to output to odin_config
-  values=$(get_geomean $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/default.results)
-  BEST_NAME=$(echo $values | cut -d "," -f1 )
-  BEST_VALUE=$(echo $values | cut -d "," -f2 )
-
+	
   for ADDERS in $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH/*.results; do
-    temp_values=$(get_geomean $ADDERS)
-    TEMP_VALUE=$(echo $temp_values | cut -d "," -f2)
-    TEMP_NAME=$(echo $temp_values | cut -d "," -f1)
-
-    echo ">$TEMP_NAME,$TEMP_VALUE< | >$BEST_NAME,$BEST_VALUE< "
-
-    if [ "$(echo "$TEMP_VALUE < $BEST_VALUE"  | bc -l)" -ne "0" ]; then
-      BEST_NAME=$TEMP_NAME
-      BEST_VALUE=$TEMP_VALUE
-    fi
+    get_geomean $ADDERS
   done
+  
+	#get best
+	OUTPUT_VALUES="123456789.0"
+	OUTPUT_NAME="ERROR"
+	
+	while IFS=${OUTPUT_SEPARATOR} read output_naming_schema output_result_schema ; do
+		TEMP_VALUES=$(echo $output_result_schema | cut -d ',' -f1)
+		
+		if [ "$(echo $TEMP_VALUES $OUTPUT_VALUES | awk '{ print ($1 < $2); }')" -eq "1" ]; then
+			OUTPUT_VALUES=$TEMP_VALUES
+			OUTPUT_NAME=$output_naming_schema
+		fi
 
-  echo "current best :: >$BEST_NAME< with adder >$BEST_VALUE<"
-  BEST_NAME=$(echo $BEST_NAME | tr "-" ',')
-  echo "+,$BITWIDTH,soft,$BEST_NAME" >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
+	done < $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.csv
 
+	echo $OUTPUT_NAME >> $VTR_HOME_DIR/$TRACKER_DIR/current_config.odin
+	rm -Rf $VTR_HOME_DIR/$TRACKER_DIR/test_$BITWIDTH
+	sed -e "s/${OUTPUT_SEPARATOR}/,,/g" "$VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.csv" > $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.reformatted.csv
+	sed -e "s/${OUTPUT_NAME},,/${OUTPUT_NAME},X,/g" "$VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.reformatted.csv" >> $VTR_HOME_DIR/$TRACKER_DIR/result.csv
+
+	rm -f $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.reformatted.csv
+	rm -f $VTR_HOME_DIR/$TRACKER_DIR/result${OUTPUT_SEPARATOR}${CURRENT_BITSIZE}.csv
 done
