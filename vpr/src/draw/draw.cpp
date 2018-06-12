@@ -3512,7 +3512,7 @@ static void draw_routing_util() {
                 if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
                     drawtext_in(bb, vtr::string_fmt("%.2f", chan_util).c_str());
                 } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    drawtext_in(bb, vtr::string_fmt("%.2f = %.2f / %.2f", chan_util, chanx_usage[x][y], chanx_avail[x][y]).c_str());
+                    drawtext_in(bb, vtr::string_fmt("%.2f = %.0f / %.0f", chan_util, chanx_usage[x][y], chanx_avail[x][y]).c_str());
                 }
 
                 sb_util += chan_util;
@@ -3532,7 +3532,7 @@ static void draw_routing_util() {
                 if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
                     drawtext_in(bb, vtr::string_fmt("%.2f", chan_util).c_str());
                 } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    drawtext_in(bb, vtr::string_fmt("%.2f = %.2f / %.2f", chan_util, chanx_usage[x][y], chanx_avail[x][y]).c_str());
+                    drawtext_in(bb, vtr::string_fmt("%.2f = %.0f / %.0f", chan_util, chany_usage[x][y], chany_avail[x][y]).c_str());
                 }
 
                 sb_util += chan_util;
