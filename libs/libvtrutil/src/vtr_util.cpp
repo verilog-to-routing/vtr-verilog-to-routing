@@ -5,6 +5,8 @@
 #include <memory>
 #include <sstream>
 
+#include <unistd.h>
+
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -186,6 +188,30 @@ std::string dirname(const std::string& path) {
     }
 
     return str;
+}
+
+
+std::string getcwd() {
+    constexpr size_t BUF_SIZE = 500;
+    char buf [BUF_SIZE];
+
+    if (::getcwd(buf, BUF_SIZE)) {
+        return std::string(buf);
+    }
+
+    //Check the global errno
+    int error = errno;
+
+    switch (error) {
+        case EACCES:
+            throw std::runtime_error("Access denied");
+
+        default: {
+            std::ostringstream str;
+            str << "Unrecognised error" << error;
+            throw std::runtime_error(str.str());
+        }
+    }
 }
 
 /* An alternate for strncpy since strncpy doesn't work as most
