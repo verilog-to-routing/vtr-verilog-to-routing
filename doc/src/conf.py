@@ -55,6 +55,7 @@ from vtr_version import get_vtr_version, get_vtr_release
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'sphinx.ext.graphviz',
     'sdcdomain',
     'archdomain',
     'rrgraphdomain',
