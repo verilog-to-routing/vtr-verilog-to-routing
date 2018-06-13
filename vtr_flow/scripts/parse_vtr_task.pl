@@ -659,6 +659,19 @@ sub check_two_files {
     my @second_test_params = map(trim($_), @second_test_params);
     my @first_test_params = map(trim($_), @first_test_params);
 
+    my %first_params_index;
+    my $i = 0;
+    foreach my $param (@first_test_params) {
+        $first_params_index{$param} = $i;
+        $i++;
+    }
+    my %second_params_index;
+    $i = 0;
+    foreach my $param (@second_test_params) {
+        $second_params_index{$param} = $i;
+        $i++;
+    }
+
 	# Check to ensure all parameters to compare are consistent
 	foreach $line (@pass_req_data) {
 
@@ -688,7 +701,7 @@ sub check_two_files {
         }
 
 		#Ensure item is in the first file
-		if ( !grep { $_ eq $name } @second_test_params ) {
+		if (!exists $second_params_index{$name}) {
                     if ($is_golden){
                         print "[ERROR] $name is not in the golden results file.\n";
                     }else{
@@ -698,7 +711,7 @@ sub check_two_files {
 		}
 
 		# Ensure item is in new results
-		if ( !grep { $_ eq $name } @first_test_params ) {
+		if (!exists $first_params_index{$name}) {
 		    if ($is_golden){
                         print "[ERROR] $name is not in the results file.\n";
                     }else{
@@ -724,27 +737,31 @@ sub check_two_files {
 		my @first_file_line   = split( /\t/, $line );
 		my @second_file_line = split( /\t/, shift @second_test_data );
 
-        my $second_file_arch = trim(@second_file_line[0]);
-        my $second_file_circuit = trim(@second_file_line[1]);
-        my $first_file_arch = trim(@first_file_line[0]);
-        my $first_file_circuit = trim(@first_file_line[1]);
+
+        my $second_file_arch = trim(@second_file_line[$second_params_index{'arch'}]);
+        my $second_file_circuit = trim(@second_file_line[$second_params_index{'circuit'}]);
+        my $second_file_script_params = trim(@second_file_line[$second_params_index{'script_params'}]);
+        my $first_file_arch = trim(@first_file_line[$first_params_index{'arch'}]);
+        my $first_file_circuit = trim(@first_file_line[$first_params_index{'circuit'}]);
+        my $first_file_script_params = trim(@first_file_line[$first_params_index{'script_params'}]);
 
 		if (   ( $first_file_circuit ne $first_file_circuit )
-			or ( $first_file_arch ne $first_file_arch ) ) {
+			or ( $first_file_arch ne $first_file_arch ) 
+			or ( $first_file_script_params ne $first_file_script_params )) {
             if ($is_golden){
-                print "[ERROR] Circuit/Architecture mismatch between golden results ($second_file_arch/$second_file_circuit) and result ($first_file_arch/$first_file_circuit).\n";
+                print "[ERROR] Circuit/Architecture/Script-Params mismatch between golden results ($second_file_arch/$second_file_circuit/$second_file_script_params) and result ($first_file_arch/$first_file_circuit/$first_file_script_params).\n";
             } else{
-                print "[ERROR] Circuit/Architecture mismatch between first result file ($first_file_arch/$first_file_circuit) and second result fule ($second_file_arch/$second_file_circuit).\n";
+                print "[ERROR] Circuit/Architecture/Script-Params mismatch between first result file($second_file_arch/$second_file_circuit/$second_file_script_params) and second result file ($first_file_arch/$first_file_circuit/$first_file_script_params).\n";
             }
             $failed += 1;
 			return $failed;
 		}
-		my $circuitarch = "$first_file_arch/$first_file_circuit";
+		my $circuitarch = "$first_file_arch/$first_file_circuit/$first_file_script_params";
 
 		# Check each parameter where the type determines what to check for
 		foreach my $value (@params) {
-			my $first_file_index = List::Util::first { $first_test_params[$_] eq $value } 0 .. $#first_test_params;
-			my $second_file_index = List::Util::first { $second_test_params[$_] eq $value } 0 .. $#second_test_params;
+			my $first_file_index = $first_params_index{$value};
+			my $second_file_index = $second_params_index{$value};
 			my $first_file_value   = trim(@first_file_line[$first_file_index]);
 			my $second_file_value = trim(@second_file_line[$second_file_index]);
 

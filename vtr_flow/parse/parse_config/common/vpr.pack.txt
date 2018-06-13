@@ -1,0 +1,13 @@
+#VPR Netlist statistics
+num_pre_packed_nets;vpr.out;\s*Nets\s*:\s*(\d+)
+num_pre_packed_blocks;vpr.out;\s*Blocks\s*:\s*(\d+)
+
+#VPR Packing Metrics
+num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
+num_post_packed_blocks;vpr.out;Netlist num_blocks:\s*(\d+)
+
+device_width;vpr.out;FPGA sized to (\d+) x \d+
+device_height;vpr.out;FPGA sized to \d+ x (\d+)
+
+#VPR Run-time Metrics
+pack_time;vpr.out;Packing took (.*) seconds

@@ -16,6 +16,7 @@
 use strict;
 use Cwd;
 use File::Spec;
+use File::Basename;
 
 sub expand_user_path;
 
@@ -31,9 +32,7 @@ if ( !-r $parse_config_file ) {
 	die "Cannot find parse file ($parse_config_file)\n";
 }
 
-open (PARSE_FILE, $parse_config_file);
-my @parse_lines = <PARSE_FILE>;
-close (PARSE_FILE);
+my @parse_lines = load_file_with_includes($parse_config_file);
 
 my @parse_data;
 my $file_to_parse;
@@ -114,4 +113,39 @@ sub expand_user_path {
 	my $str = shift;	
 	$str =~ s/^~\//$ENV{"HOME"}\//;
 	return $str;
+}
+
+
+sub load_file_with_includes {
+    my ($filepath) = @_;
+
+    my @lines;
+
+    foreach my $line (load_file_lines($filepath)) {
+        if ($line =~ m/^\s*%include\s+"(.*)"\s*$/) {
+            #Assume the included file is in the same direcotry
+            my $include_filepath = File::Spec->catfile(dirname($filepath), $1);
+            $include_filepath = Cwd::realpath($include_filepath);
+
+            #Load it's lines, note that this is done recursively to resolve all includes
+            my @included_file_lines = load_file_with_includes($include_filepath);
+            push(@lines, "#Starting %include $include_filepath\n");
+            push(@lines, @included_file_lines);
+            push(@lines, "#Finished %include $include_filepath\n");
+        } else {
+            push(@lines, $line);
+        }
+    }
+
+    return @lines;
+}
+
+sub load_file_lines {
+    my ($filepath) = @_;
+
+	open(FILE, "<$filepath" ) or die("Failed to open file $filepath");
+	my @lines = <FILE>;
+	close(FILE);
+
+    return @lines;
 }

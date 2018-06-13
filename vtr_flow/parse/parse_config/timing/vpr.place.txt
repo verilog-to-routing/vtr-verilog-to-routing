@@ -1,0 +1,6 @@
+%include "../common/vpr.place.txt"
+
+#VPR Place Timing Metrics
+placed_CPD_est;vpr.out;Placement estimated critical path delay: (.*) ns
+placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns

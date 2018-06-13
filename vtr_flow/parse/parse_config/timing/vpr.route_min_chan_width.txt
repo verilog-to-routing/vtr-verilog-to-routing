@@ -1,0 +1,10 @@
+%include "../common/vpr.route_min_chan_width.txt"
+
+#Area Metrics
+logic_block_area_total;vpr.out;Total logic block area .*: (.*)
+logic_block_area_used;vpr.out;Total used logic block area: (.*)
+min_chan_width_routing_area_total;vpr.out;Total routing area: (.*), per logic tile: .*
+min_chan_width_routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
+crit_path_routing_area_total;vpr.crit_path.out;Total routing area: (.*), per logic tile: .*
+crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per logic tile: (.*)
+

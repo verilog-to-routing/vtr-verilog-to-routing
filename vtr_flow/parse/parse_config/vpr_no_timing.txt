@@ -1,26 +1,12 @@
-vpr_status;output.txt;vpr_status=(.*)
-min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
-pack_time;vpr.out;Packing took (.*) seconds
-place_time;vpr.out;Placement took (.*) seconds
-min_chan_width_route_time;vpr.out;Routing took (.*) seconds
-num_pre_packed_nets;vpr.out;total nets: (\d+)
-num_pre_packed_blocks;vpr.out;total blocks: (\d+)
-num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
-num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
-num_io;vpr.out;Netlist inputs pins:\s*(\d+)
-num_outputs;vpr.out;Netlist output pins:\s*(\d+)
-num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
-num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
- 
-routed_wirelength;vpr.out;Total wirelength: (.*), average
+%include "common/vtr_flow.txt"
+%include "common/odin.txt"
+%include "common/abc.txt"
+%include "common/ace.txt"
 
-#Area Metrics
-device_width;vpr.out;FPGA sized to (\d+) x \d+
-device_height;vpr.out;FPGA sized to \d+ x (\d+)
-logic_block_area_total;vpr.out;Total logic block area .*: (.*)
-logic_block_area_used;vpr.out;Total used logic block area: (.*)
-min_chan_width_routing_area_total;vpr.out;Total routing area: (.*), per logic tile: .*
-min_chan_width_routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
+%include "common/vtr_benchmarks.txt"
 
-error;output.txt;error=(.*)
-
+%include "common/vpr.common.txt"
+%include "common/vpr.pack.txt"
+%include "common/vpr.place.txt"
+%include "common/vpr.route_min_chan_width.txt"
+%include "common/vpr.route_relaxed_chan_width.txt"

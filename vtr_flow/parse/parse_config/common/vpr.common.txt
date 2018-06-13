@@ -1,0 +1,6 @@
+#General
+vpr_revision;vpr.out;Revision:\s(.*);unknown
+vpr_status;output.txt;vpr_status=(.*)
+
+#Run-time Metrics
+max_vpr_mem;vpr.out;Maximum resident set size \(kbytes\): (\d+)

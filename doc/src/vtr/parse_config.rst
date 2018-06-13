@@ -9,7 +9,7 @@ Format
 ~~~~~~
 
 The configuration file contains one line for each value to be searched for.
-Each line contains a semicolon delimited triple in the following format::
+Each line contains a semicolon delimited tuple in the following format::
 
     <field_name>;<file_to_search_within>;<regex>;<default_value>
 
@@ -26,6 +26,14 @@ Each line contains a semicolon delimited triple in the following format::
 * ``<default_value>``: The default value for the given ``<field_name>`` if the ``<regex>`` does not match.
 
     If no ``<default_value>`` is specified the value ``-1`` is used.
+
+Or an include directive to import parsing patterns from a separate file::
+
+    %include "<filepath>"
+
+* ``<filepath>`` is a file containing additional parse specifications which will be included in the current file.
+
+Comments can be specified with ``#``. Anything following a ``#`` is ignored.
 
 Example File
 ~~~~~~~~~~~~
@@ -58,3 +66,5 @@ The following is an example parse configuration file:
     num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
     equiv;abc.out;Networks are (equivalent)
     error;output.txt;error=(.*)
+
+    %include "my_other_metrics.txt"     #Include metrics from the file 'my_other_metrics.txt'

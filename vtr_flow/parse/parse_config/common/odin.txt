@@ -1,0 +1,4 @@
+#Odin Run-time Metrics
+odin_synth_time;odin.out;Odin II took (.*) seconds
+max_odin_mem;odin.out;Maximum resident set size \(kbytes\): (\d+)
+
