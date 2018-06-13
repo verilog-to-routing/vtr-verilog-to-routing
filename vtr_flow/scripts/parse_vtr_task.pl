@@ -667,18 +667,22 @@ sub check_two_files {
 
 		my @data = split( /;/, $line );
 		my $name = trim( $data[0] );
-		$type{$name} = trim( $data[1] );
-		if ( trim( $data[1] ) eq "Range" ) {
-			$min_threshold{$name} = trim( $data[2] );
-			$max_threshold{$name} = trim( $data[3] );
-		} elsif (trim( $data[1] ) eq "RangeAbs") {
-			$min_threshold{$name} = trim( $data[2] );
-			$max_threshold{$name} = trim( $data[3] );
-			$abs_diff_threshold{$name} = trim( $data[4] ); #Third element is absolute threshold
-        } elsif (trim( $data[1] ) eq "Equal") {
+        my $check_arg = trim($data[1]);
+        my ($check_func) = $check_arg =~ m/(.*)\(/;
+        my ($check_func_args_str) = $check_arg =~ m/\((.*)\)/;
+        my @check_func_args = split( /,/, $check_func_args_str);
+		$type{$name} = trim($check_func);
+		if ( $check_func eq "Range" ) {
+			$min_threshold{$name} = trim( $check_func_args[0] );
+			$max_threshold{$name} = trim( $check_func_args[1] );
+		} elsif ($check_func eq "RangeAbs") {
+			$min_threshold{$name} = trim( $check_func_args[0] );
+			$max_threshold{$name} = trim( $check_func_args[1] );
+			$abs_diff_threshold{$name} = trim( $check_func_args[2] ); #Third element is absolute threshold
+        } elsif ($check_func eq "Equal") {
             #Pass
         } else {
-			print "[ERROR] $name has no comparison check specified (e.g. Range, RangeAbs, Equal).\n";
+			print "[ERROR] $name has no valid comparison check specified (e.g. Range, RangeAbs, Equal) (was '$check_func').\n";
             $failed += 1;
 			return $failed;
         }
@@ -760,6 +764,9 @@ sub check_two_files {
                     print "\t\tGolden Value: $second_file_value\n";
                     print "\t\tRatio: $ratio\n";
                     print "\t\tAbsDiff $abs_diff\n";
+                    print "\t\tMinRatio $min_threshold{$value}\n";
+                    print "\t\tMaxRatio $max_threshold{$value}\n";
+                    print "\t\tAbsThreshold $abs_diff_threshold{$value}\n";
                 }
 
                 if (    exists $abs_diff_threshold{$value}
