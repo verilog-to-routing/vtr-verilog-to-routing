@@ -1,0 +1,14 @@
+#VPR metrics at minimum channel width
+
+#Routing Metrics
+min_chan_width;Range(0.80,1.30)
+routed_wirelength;RangeAbs(0.60,1.50,5)
+
+#Area metrics
+logic_block_area_total;Range(0.8,1.3)
+logic_block_area_used;Range(0.8,1.3)
+min_chan_width_routing_area_total;Range(0.8,1.3)
+min_chan_width_routing_area_per_tile;Range(0.8,1.3)
+
+#Run-time metrics
+min_chan_width_route_time;RangeAbs(0.10,10.0,2)

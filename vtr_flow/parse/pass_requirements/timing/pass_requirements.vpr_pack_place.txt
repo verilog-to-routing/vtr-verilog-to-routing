@@ -1,0 +1,7 @@
+#Common metrics for VPR packing and placement with timing
+%include "../common/pass_requirements.vpr_pack_place.txt"
+
+#Timing metrics
+placed_CPD_est;Range(0.80,1.40)
+placed_setup_TNS_est;Range(0.80,1.40)
+placed_setup_WNS_est;Range(0.80,1.40)

@@ -1,0 +1,3 @@
+#Common VPR status metrics
+vpr_status;Equal()
+error;Equal()

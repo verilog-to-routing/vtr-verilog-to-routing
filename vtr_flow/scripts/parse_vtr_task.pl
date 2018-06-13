@@ -25,6 +25,7 @@ use strict;
 use Cwd;
 use File::Spec;
 use File::Copy;
+use File::Basename;
 use List::Util;
 use Math::BigInt;
 use POSIX qw/strftime/;
@@ -634,9 +635,8 @@ sub check_two_files {
         $failed += 1;
 		return $failed;
 	}
-	open( PASS_DATA, "<$pass_req_file" );
-	@pass_req_data = <PASS_DATA>;
-	close(PASS_DATA);
+
+	@pass_req_data = load_file_with_includes($pass_req_file);
 
 	if ( !-r $test_file_1 ) {
 		print "[ERROR] Failed to open $test_file_1: $!";
@@ -854,4 +854,38 @@ sub get_important_file {
 	elsif ( $file !~ /^\/.*/ ) {
 		die "Important file does not exist ($file)";
 	}
+}
+
+sub load_file_with_includes {
+    my ($filepath) = @_;
+
+    my @lines;
+
+    foreach my $line (load_file_lines($filepath)) {
+        if ($line =~ m/^\s*%include\s+"(.*)"\s*$/) {
+            #Assume the included file is in the same direcotry
+            my $include_filepath = File::Spec->catfile(dirname($filepath), $1);
+            $include_filepath = Cwd::realpath($include_filepath);
+
+            #Load it's lines, note that this is done recursively to resolve all includes
+            my @included_file_lines = load_file_with_includes($include_filepath);
+            push(@lines, "#Starting %include $include_filepath\n");
+            push(@lines, @included_file_lines);
+            push(@lines, "#Finished %include $include_filepath\n");
+        } else {
+            push(@lines, $line);
+        }
+    }
+
+    return @lines;
+}
+
+sub load_file_lines {
+    my ($filepath) = @_;
+
+	open(FILE, "<$filepath" ) or die("Failed to open file $filepath");
+	my @lines = <FILE>;
+	close(FILE);
+
+    return @lines;
 }

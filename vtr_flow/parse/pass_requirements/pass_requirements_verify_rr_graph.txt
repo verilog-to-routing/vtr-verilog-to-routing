@@ -1,4 +1,5 @@
-vpr_status;Equal()
+%include "common/pass_requirements.vpr_status.txt"
+
 crit_path_route_success_iteration;Equal()
 routed_wirelength;Equal()
 setup_TNS;Equal()
@@ -7,9 +8,5 @@ critical_path_delay;Equal()
 num_pre_packed_nets;Equal()
 num_pre_packed_blocks;Equal()
 num_post_packed_nets;Equal()
-num_clb;Equal()
-num_io;Equal()
-num_outputs;Equal()
-num_memories;Equal()
-num_mult;Equal()
-error;Equal()
+
+%include "common/pass_requirements.vtr_benchmarks.txt"
