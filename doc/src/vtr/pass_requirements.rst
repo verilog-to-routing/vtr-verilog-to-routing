@@ -23,20 +23,17 @@ File Format
 ~~~~~~~~~~~
 Each line of the file indicates a single metric, data type and allowable values in the following format::
 
-    <metric_name>;<type>;<min_value>;<max_value>
+    <metric>;<requirement>
 
-* **<metric_name>**: The identifier for the metric.
+* **<metric>**: The name of the metric.
 
-* **<type>**: The type of metric.
+* **<requirement>**: The metric's pass requirement.
 
-    Valid types are:
+    Valid requiremnt types are:
 
-    * ``range``: numerical values with the permissible range set by ``<min_value>`` and ``<max_value>``.
-    * ``string``: requires an exact match
-
-* **<min_value>**: Minimum allowed metric value (normalized to golden result).
-
-* **<max_value>**: Maximum allowed metric value (normalized to golden result).
+    * ``Equal()``: The metric value must exactly match the golden reference result.
+    * ``Range(<min_ratio>,<max_ratio>)``: The metric value (normalized to the golden result) must be between ``<min_ratio>`` and ``<max_ratio>``.
+    * ``RangeAbs(<min_ratio>,<max_ratio>,<abs_threshold>)``: The metric value (normalized to the golden result) must be between ``<min_ratio>`` and ``<max_ratio>``, *or* the metric's absolute value must be below ``<abs_threshold>``.
 
 In order for a ``Pass`` to be reported, **all** requirements must be met.
 For this reason, all of the specified metrics must be included in the parse results (see :ref:`vtr_parse_config`).
@@ -46,15 +43,6 @@ Example File
 
 .. code-block:: none
 
-    vpr_status;string
-    vpr_seconds;range;0.80;1.40
-    width;range;0.80;1.40
-    pack_time;range;0.80;1.40
-    place_time;range;0.80;1.40
-    route_time;range;0.80;1.40
-    num_pre_packed_nets;range;0.80;1.40
-    num_pre_packed_blocks;range;0.80;1.40
-    num_post_packed_nets;range;0.80;1.40
-    num_clb;range;0.80;1.40
-    num_outputs;range;0.80;1.40
-    error;string
+    vpr_status;Equal() #Pass if precisely equal
+    vpr_seconds;RangeAbs(0.80,1.40,2) #Pass if within -20%, or +40%, or absolute value less than 2
+    num_pre_packed_nets;Range(0.90,1.10) #Pass if withing +/-10%

@@ -11,7 +11,7 @@ Format
 The configuration file contains one line for each value to be searched for.
 Each line contains a semicolon delimited triple in the following format::
 
-    <field_name>;<file_to_search_within>;<regex_expression>
+    <field_name>;<file_to_search_within>;<regex>;<default_value>
 
 * ``<field_name>``: The name of the value to be searched for.
 
@@ -21,7 +21,11 @@ Each line contains a semicolon delimited triple in the following format::
 
 * ``<regex>``: A perl regular expression used to find the desired value.
 
-    The regex must contain a single grouping ``(`` ``)`` which will contain the desired value.
+    The regex must contain a single grouping ``(`` ``)`` which will contain the desired value to be recorded.
+
+* ``<default_value>``: The default value for the given ``<field_name>`` if the ``<regex>`` does not match.
+
+    If no ``<default_value>`` is specified the value ``-1`` is used.
 
 Example File
 ~~~~~~~~~~~~
