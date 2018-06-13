@@ -35,14 +35,16 @@ Each line of the file indicates a single metric, data type and allowable values 
     * ``Range(<min_ratio>,<max_ratio>)``: The metric value (normalized to the golden result) must be between ``<min_ratio>`` and ``<max_ratio>``.
     * ``RangeAbs(<min_ratio>,<max_ratio>,<abs_threshold>)``: The metric value (normalized to the golden result) must be between ``<min_ratio>`` and ``<max_ratio>``, *or* the metric's absolute value must be below ``<abs_threshold>``.
 
-Or an include directive to import metrics from a spearate file::
+Or an include directive to import metrics from a separate file::
 
-    %includ "<filepath>"
+    %include "<filepath>"
 
 * **<filepath>**: a relative path to another pass requirements file, whose metric pass requirements will be added to the current file.
 
 In order for a ``Pass`` to be reported, **all** requirements must be met.
 For this reason, all of the specified metrics must be included in the parse results (see :ref:`vtr_parse_config`).
+
+Comments can be specified with ``#``. Anything following a ``#`` is ignored.
 
 Example File
 ~~~~~~~~~~~~
