@@ -895,6 +895,7 @@ The following tags are common to all <pb_type> tags:
         Describes if the pins of the port are logically equivalent.
         Input logical equivalence means that the pin order can be swapped without changing functionality.
         For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
+        
         **default:** ``false``
 
     :opt_param is_non_clock_global:
