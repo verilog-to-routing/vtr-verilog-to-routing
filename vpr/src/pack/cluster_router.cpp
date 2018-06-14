@@ -273,7 +273,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 	}
 
 	/*	Iteratively remove congestion until a successful route is found.
-		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
+		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinitely */
 	router_data->pres_con_fac = router_data->params.pres_fac;
 	for(int iter = 0; iter < router_data->params.max_iterations && !is_routed && !is_impossible; iter++) {
 		unsigned int inet;
@@ -623,7 +623,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
         if (iterm == 0) {
             //Net driver
             VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SOURCE, "Driver must be a source RR node");
-            VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an assoicated atom pin");
+            VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an associated atom pin");
             VTR_ASSERT_SAFE_MSG(atom_ctx.nlist.pin_type(atom_pin) == PinType::DRIVER, "Source RR must be associated with a driver pin in atom netlist");
             if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
                 ++num_extern_sources;
@@ -637,7 +637,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
                 VTR_ASSERT_SAFE_MSG(!atom_pin, "Cluster external sink should have no valid atom pin");
                 ++num_extern_sinks;
             } else {
-                VTR_ASSERT_SAFE_MSG(atom_pin, "Intra-cluster sink must have an assoicated atom pin");
+                VTR_ASSERT_SAFE_MSG(atom_pin, "Intra-cluster sink must have an associated atom pin");
                 VTR_ASSERT_SAFE_MSG(atom_ctx.nlist.pin_type(atom_pin) == PinType::SINK, "Intra-cluster Sink RR must be associated with a sink pin in atom netlist");
             }
         }
