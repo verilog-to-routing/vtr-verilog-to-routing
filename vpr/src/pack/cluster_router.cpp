@@ -592,7 +592,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 
         //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
-		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
+		VTR_ASSERT(lb_type_graph[pin_index].num_modes == 1);
 		VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
 
 		/* We actually route to the sink (to handle logically equivalent pins).
@@ -714,7 +714,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		unsigned int iterm;
 
 
-		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
+		VTR_ASSERT(lb_type_graph[pin_index].num_modes == 1);
 		VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
 		int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
 		VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
