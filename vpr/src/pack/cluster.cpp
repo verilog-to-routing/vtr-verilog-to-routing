@@ -114,7 +114,7 @@ enum e_net_relation_to_clustered_block {
 };
 
 enum e_detailed_routing_stages {
-	E_DETAILED_ROUTE_AT_END_ONLY = 0, E_DETAILED_ROUTE_FOR_EACH_ATOM, E_DETAILED_ROUTE_END
+	E_DETAILED_ROUTE_AT_END_ONLY = 0, E_DETAILED_ROUTE_FOR_EACH_ATOM, E_DETAILED_ROUTE_INVALID
 };
 
 
@@ -544,7 +544,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	while (istart != nullptr) {
 		is_cluster_legal = false;
 		savedseedindex = seedindex;
-		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
+		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; detailed_routing_stage++) {
 			ClusterBlockId clb_index(num_clb);
 
 			/* start a new cluster and reset all stats */
