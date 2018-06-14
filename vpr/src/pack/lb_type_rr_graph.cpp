@@ -638,12 +638,12 @@ static void print_lb_type_rr_graph(FILE *fp, const std::vector<t_lb_type_rr_node
 		fprintf(fp, "\tIntrinsic Cost: %g\n", lb_type_rr_graph[inode].intrinsic_cost);
 		for(int imode = 0; imode < get_num_modes_of_lb_type_rr_node(lb_type_rr_graph[inode]); imode++) {
 			if(lb_type_rr_graph[inode].num_fanout != nullptr) {
-				fprintf(fp, "\tMode: %d   # Outedges: %d\n\t\t", imode, lb_type_rr_graph[inode].num_fanout[imode]);
+				fprintf(fp, "\tMode: %d   # Outedges: %d", imode, lb_type_rr_graph[inode].num_fanout[imode]);
 				int count = 0;
 				for(int iedge = 0; iedge < lb_type_rr_graph[inode].num_fanout[imode]; iedge++) {
 					if(count % 5 == 0) {
 						/* Formatting to prevent very long lines */
-						fprintf(fp, "\n");
+						fprintf(fp, "\n\t\t");
 					}
 					count++;
 					fprintf(fp, "(%d, %g) ", lb_type_rr_graph[inode].outedges[imode][iedge].node_index,
