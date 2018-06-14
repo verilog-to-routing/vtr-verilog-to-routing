@@ -106,7 +106,8 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
 ******************************************************************************************/
 #ifdef PRINT_INTRA_LB_ROUTE
 static void print_route(const char *filename, t_lb_router_data *router_data);
-static void print_trace(FILE *fp, t_lb_trace *trace);
+static void print_route(FILE *fp, t_lb_router_data *router_data);
+static void print_trace(FILE *fp, t_lb_trace *trace, t_lb_router_data *router_data);
 #endif
 
 /*****************************************************************************************
@@ -1084,15 +1085,19 @@ static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index) {
 /* Debug routine, print out current intra logic block route */
 static void print_route(const char *filename, t_lb_router_data *router_data) {
 	FILE *fp;
-	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 
 	fp = fopen(filename, "w");
-
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
 		fprintf(fp, "node %d occ %d cap %d\n", inode, router_data->lb_rr_node_stats[inode].occ, lb_type_graph[inode].capacity);
 	}
 
+	print_route(fp, router_data);
+	fclose(fp);
+}
+
+static void print_route(FILE *fp, t_lb_router_data *router_data) {
+	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	fprintf(fp, "\n\n----------------------------------------------------\n\n");
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1100,25 +1105,28 @@ static void print_route(const char *filename, t_lb_router_data *router_data) {
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		AtomNetId net_id = lb_nets[inet].atom_net_id;
 		fprintf(fp, "net %s num targets %d \n", atom_ctx.nlist.net_name(net_id).c_str(), (int)lb_nets[inet].terminals.size());
-		print_trace(fp, lb_nets[inet].rt_tree);
+		fprintf(fp, "\tS");
+		print_trace(fp, lb_nets[inet].rt_tree, router_data);
 		fprintf(fp, "\n\n");
 	}
-	fclose(fp);
 }
 
 /* Debug routine, print out trace of net */
-static void print_trace(FILE *fp, t_lb_trace *trace) {
+static void print_trace(FILE *fp, t_lb_trace *trace, t_lb_router_data *router_data) {
 	if(trace == NULL) {
-		fprintf(fp, "NULL");
+		fprintf(fp, " NULL");
 		return;
 	}
 	for(unsigned int ibranch = 0; ibranch < trace->next_nodes.size(); ibranch++) {
+		auto current_node = trace->current_node;
+		auto current_str = describe_lb_type_rr_node(current_node, router_data);
+		auto next_node = trace->next_nodes[ibranch].current_node;
+		auto next_str = describe_lb_type_rr_node(next_node, router_data);
 		if(trace->next_nodes.size() > 1) {
-			fprintf(fp, "B(%d-->%d) ", trace->current_node, trace->next_nodes[ibranch].current_node);
-		} else {
-			fprintf(fp, "(%d-->%d) ", trace->current_node, trace->next_nodes[ibranch].current_node);
+			fprintf(fp, "\n\tB");
 		}
-		print_trace(fp, &trace->next_nodes[ibranch]);
+		fprintf(fp, "(%d:%s-->%d:%s) ", current_node, current_str.c_str(), next_node, next_str.c_str());
+		print_trace(fp, &trace->next_nodes[ibranch], router_data);
 	}
 }
 #endif
@@ -1214,8 +1222,10 @@ static std::string describe_lb_type_rr_node(int inode,
 
     } else if (rr_node.type == LB_SOURCE) {
         description = "cluster-internal source (LB_SOURCE)";
+    } else if (rr_node.type == LB_INTERMEDIATE) {
+        description = "cluster-internal intermediate?";
     } else {
-        description = "<unkown lb_type_rr_node>";
+        description = "<unknown lb_type_rr_node>";
     }
 
     return description;
