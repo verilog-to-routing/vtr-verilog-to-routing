@@ -1795,3 +1795,20 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 	return pins_equivalent;
 }
 
+const t_pb_graph_edge *get_edge_between_pins(const t_pb_graph_pin *driver_pin, const t_pb_graph_pin *pin) {
+	if(driver_pin == nullptr || pin == nullptr) {
+		return nullptr;
+	}
+
+	auto node_index = pin->pin_count_in_cluster;
+	for(int iedge = 0; iedge < driver_pin->num_output_edges; iedge++) {
+		auto *edge = driver_pin->output_edges[iedge];
+		VTR_ASSERT(edge->num_output_pins == 1);
+
+		if(edge->output_pins[0]->pin_count_in_cluster == node_index) {
+			return edge;
+		}
+	}
+	
+	return nullptr;
+}

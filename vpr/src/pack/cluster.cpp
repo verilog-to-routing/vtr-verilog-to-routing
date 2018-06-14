@@ -95,7 +95,7 @@ enum e_net_relation_to_clustered_block {
 };
 
 enum e_detailed_routing_stages {
-	E_DETAILED_ROUTE_AT_END_ONLY = 0, E_DETAILED_ROUTE_FOR_EACH_ATOM, E_DETAILED_ROUTE_END
+	E_DETAILED_ROUTE_AT_END_ONLY = 0, E_DETAILED_ROUTE_FOR_EACH_ATOM, E_DETAILED_ROUTE_INVALID
 };
 
 
@@ -476,9 +476,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 	while (istart != nullptr) {
 		is_cluster_legal = false;
 		savedseedindex = seedindex;
-		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
-			/* start a new cluster */
-
+		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; detailed_routing_stage++) {
 			ClusterBlockId clb_index(num_clb);
 
             VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
