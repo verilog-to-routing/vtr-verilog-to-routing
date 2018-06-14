@@ -15,10 +15,7 @@ archs_dir=arch/timing
 # Add circuits to list to sweep
 circuit_list_add=bm_arithmetic_unused_bits.v
 circuit_list_add=bm_base_multiply.v
-circuit_list_add=bm_dag1_log_mod.v
 circuit_list_add=bm_dag1_mod.v
-circuit_list_add=bm_dag2_log_mod.v
-circuit_list_add=bm_dag2_mod.v
 circuit_list_add=bm_dag3_log_mod.v
 circuit_list_add=bm_dag3_lpm_log_mod.v
 circuit_list_add=bm_dag3_lpm_mod.v
