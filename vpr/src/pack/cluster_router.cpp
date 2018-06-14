@@ -367,26 +367,26 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 	if (is_routed) {
 		save_and_reset_lb_route(router_data);
 	} else {
-        //Unroutable
+		//Unroutable
+#ifdef PRINT_INTRA_LB_ROUTE
+		print_route("intra_lb_failed_route.echo", router_data);
+#endif
 
-        if (debug_clustering) {
-            if (!is_impossible) {
-                //Report the congested nodes and associated nets
-                auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
-                if (!congested_rr_nodes.empty()) {
-                    vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
-                }
-            }
-        }
+		if (debug_clustering) {
+			if (!is_impossible) {
+				//Report the congested nodes and associated nets
+				auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
+				if (!congested_rr_nodes.empty()) {
+					vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
+				}
+			}
+		}
 
-        //Clean-up
+		//Clean-up
 		for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 			free_lb_net_rt(lb_nets[inet].rt_tree);
 			lb_nets[inet].rt_tree = nullptr;
 		}
-#ifdef PRINT_INTRA_LB_ROUTE
-		print_route("intra_lb_failed_route.echo", router_data);
-#endif
 	}
 	return is_routed;
 }
