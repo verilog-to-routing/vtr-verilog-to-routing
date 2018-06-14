@@ -46,7 +46,7 @@ Every time the task is run a new ``run<#>`` directory is created to store the ou
 
     digraph {
         #Default style
-        node[shape=Mrecord, style=filled, fillcolor="/blues4/2:/blues4/3", gradientangle=270]
+        node[shape=Mrecord, style=filled, fillcolor="/blues4/2:/blues4/3", gradientangle=270, fontname="arial"]
 
         #Nodes
         node_task[label="\<task_name\>", fillcolor="/reds4/2:/reds4/3"];

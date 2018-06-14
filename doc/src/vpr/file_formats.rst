@@ -9,6 +9,7 @@ FPGA Architecture (.xml)
 The target FPGA architecture is specified as an architecture file.
 For details of this file format see :ref:`fpga_architecture_description`.
 
+.. _blif_format:
 .. _vpr_blif_file:
 
 BLIF Netlist (.blif)
