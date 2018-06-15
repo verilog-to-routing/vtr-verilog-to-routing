@@ -895,8 +895,6 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	/* create a node for this array reference */
 	ast_node_t* new_node, *node;
 	ast_node_t *node_copy;
-	/* store the operation type */
-	char temp[256];
 
     /* avoid uninitialized warning */
     new_node = NULL;
