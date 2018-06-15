@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 		//find_hard_adders_for_sub();
 		register_hard_blocks();
 
-		/* get odin soft_logic definition file */
+    /* get odin soft_logic definition file */
     std::string soft_distribution(global_args.adder_def);
     if(!hard_adders && soft_distribution == "default")
     {
