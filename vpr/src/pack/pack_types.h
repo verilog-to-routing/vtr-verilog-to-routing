@@ -146,7 +146,7 @@ struct t_lb_rr_node_stats {
 
 	t_lb_rr_node_stats() {
 		occ = 0;
-		mode = 0;
+		mode = -1;
 		historical_usage = 0;
 	}
 };

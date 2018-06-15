@@ -237,13 +237,13 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 			inode = pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-			router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : 0;
+			router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : -1;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 			inode = pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
-			router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : 0;
+			router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : -1;
 		}
 	}
 
@@ -257,7 +257,7 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
 				for(int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
 					for(int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
 						inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-						router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : 0;
+						router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : -1;
 					}
 				}
 			}
@@ -992,29 +992,30 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *ex
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node,
 	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout) {
 
-	int cur_node;
-	float cur_cost, incr_cost;
-	int usage;
-
-	t_expansion_node enode;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	t_lb_rr_node_stats *lb_rr_node_stats = router_data->lb_rr_node_stats;
 
-	cur_node = exp_node.node_index;
-	cur_cost = exp_node.cost;
+	auto cur_inode = exp_node.node_index;
+	auto cur_cost = exp_node.cost;
+	auto cur_mode = lb_rr_node_stats[cur_inode].mode;
 	t_lb_router_params params = router_data->params;
 
-	for (int mode = 0; mode < lb_type_graph[cur_node].num_modes; mode++) {
-		for(int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+	for (int mode = 0; mode < lb_type_graph[cur_inode].num_modes; mode++) {
+		/* If a mode has been forced, only add edges from that mode, otherwise add edges from all modes. */
+		if (cur_mode != -1 && mode != cur_mode) {
+			continue;
+		}
+		for(int iedge = 0; iedge < lb_type_graph[cur_inode].num_fanout[mode]; iedge++) {
 			/* Init new expansion node */
-			enode.prev_index = cur_node;
-			enode.node_index = lb_type_graph[cur_node].outedges[mode][iedge].node_index;
+			t_expansion_node enode;
+			enode.prev_index = cur_inode;
+			enode.node_index = lb_type_graph[cur_inode].outedges[mode][iedge].node_index;
 			enode.cost = cur_cost;
 
 			/* Determine incremental cost of using expansion node */
-			usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
-			incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
-			incr_cost += lb_type_graph[cur_node].outedges[mode][iedge].intrinsic_cost;
+			auto usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
+			auto incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
+			incr_cost += lb_type_graph[cur_inode].outedges[mode][iedge].intrinsic_cost;
 			incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;
 			if(usage > 0) {
 				incr_cost *= (usage * router_data->pres_con_fac);
@@ -1023,6 +1024,10 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 			/* Adjust cost so that higher fanout nets prefer higher fanout routing nodes while lower fanout nets prefer lower fanout routing nodes */
 			float fanout_factor = 1.0;
 			int next_mode = lb_rr_node_stats[enode.node_index].mode;
+			/* Assume first mode if a mode hasn't been forced. */
+			if (next_mode == -1) {
+				next_mode = 0;
+			}
 			if (lb_type_graph[enode.node_index].num_fanout[next_mode] > 1) {
 				fanout_factor = 0.85 + (0.25 / net_fanout);
 			} else {
