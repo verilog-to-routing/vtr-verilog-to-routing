@@ -371,11 +371,9 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 					vtr::printf("Routing was impossible!\n");
 				} else {
 					is_impossible = route_has_conflict(lb_nets[idx].rt_tree, router_data);
-				}
-				if (is_impossible) {
-					vtr::printf("Routing was impossible due to modes!\n");
-				} else {
-					vtr::printf("Routing succeeded!\n");
+					if (is_impossible) {
+						vtr::printf("Routing was impossible due to modes!\n");
+					}
 				}
 
 				router_data->explore_id_index++;
