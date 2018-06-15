@@ -379,7 +379,14 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 				}
 
 				router_data->explore_id_index++;
-				VTR_ASSERT(router_data->explore_id_index < 200000000);
+				if(router_data->explore_id_index > 2000000000) {
+					/* overflow protection */
+					for(unsigned int id = 0; id < lb_type_graph.size(); id++) {
+						router_data->explored_node_tb[id].explored_id = OPEN;
+						router_data->explored_node_tb[id].enqueue_id = OPEN;
+						router_data->explore_id_index = 1;
+					}
+				}
 			}
 
 			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT);
