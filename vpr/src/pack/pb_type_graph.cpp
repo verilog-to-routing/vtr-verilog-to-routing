@@ -1002,7 +1002,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 				return false; //clb[abc
 			}
 			pb_msb = vtr::atoi(tokens[*token_index].data);
-            VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-siginificant-bit must be non-negative");
+            VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 				if (!checkTokenType(tokens[*token_index],
@@ -1017,7 +1017,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 					return false; //clb[9:abc
 				}
 				pb_lsb = vtr::atoi(tokens[*token_index].data);
-                VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-siginificant-bit must be non-negative");
+                VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
 				(*token_index)++;
 				if (!checkTokenType(tokens[*token_index],
 						TOKEN_CLOSE_SQUARE_BRACKET)) {
@@ -1057,7 +1057,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                             return false;
                         }
                         pb_msb = vtr::atoi(tokens[*token_index].data);
-                        VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-siginificant-bit must be non-negative");
+                        VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
                         (*token_index)++;
                         if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
                             if (!checkTokenType(tokens[*token_index],
@@ -1072,7 +1072,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                 return false;
                             }
                             pb_lsb = vtr::atoi(tokens[*token_index].data);
-                            VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-siginificant-bit must be non-negative");
+                            VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                             (*token_index)++;
                             if (!checkTokenType(tokens[*token_index],
                                     TOKEN_CLOSE_SQUARE_BRACKET)) {
@@ -1133,7 +1133,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 			return false;
 		}
 		pin_msb = vtr::atoi(tokens[*token_index].data);
-        VTR_ASSERT_MSG(pin_msb >= 0, "Pin most-siginificant-bit must be non-negative");
+        VTR_ASSERT_MSG(pin_msb >= 0, "Pin most-significant-bit must be non-negative");
 		(*token_index)++;
 		if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 			if (!checkTokenType(tokens[*token_index],
@@ -1148,7 +1148,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 				return false;
 			}
 			pin_lsb = vtr::atoi(tokens[*token_index].data);
-            VTR_ASSERT_MSG(pin_lsb >= 0, "Pin most-siginificant-bit must be non-negative");
+            VTR_ASSERT_MSG(pin_lsb >= 0, "Pin most-significant-bit must be non-negative");
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index],
 					TOKEN_CLOSE_SQUARE_BRACKET)) {
