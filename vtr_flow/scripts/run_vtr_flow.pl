@@ -424,7 +424,9 @@ my $tpp      = XML::TreePP->new();
 my $xml_tree = $tpp->parsefile($architecture_file_path);
 
 # Get lut size
-my $lut_size = xml_find_LUT_Kvalue($xml_tree);
+if ( $lut_size < 1 ) {
+	$lut_size = xml_find_LUT_Kvalue($xml_tree);
+}
 if ( $lut_size < 1 ) {
 	$error_status = "failed: cannot determine arch LUT k-value";
 	$error_code = 1;
