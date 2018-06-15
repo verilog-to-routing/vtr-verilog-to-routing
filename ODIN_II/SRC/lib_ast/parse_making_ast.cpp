@@ -382,9 +382,9 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(char *num, int line_number)
+ast_node_t *newNumberNode(std::string num, bases base, signedness sign, int line_number)
 {
-	ast_node_t *current_node = create_tree_node_number(num, line_number, current_parse_file);
+	ast_node_t *current_node = create_tree_node_number(num, base, sign, line_number, current_parse_file);
 	return current_node;
 }
 
@@ -907,11 +907,10 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 		if( expression1->type == NUMBERS ){
 			int len1 = expression1->types.number.value;
 			long long powRes = pow(len1, len);
-			sprintf(temp, "%lld", powRes);
-			new_node = newNumberNode(vtr::strdup(temp), line_number);
+			new_node = create_tree_node_long_long_number(powRes,128, line_number, current_parse_file);
 		} else {
 			if (len == 0){
-				new_node = newNumberNode(vtr::strdup("1"), line_number);
+				new_node = create_tree_node_long_long_number(1, 128, line_number, current_parse_file);
 			} else {
 				new_node = expression1;
 				for(int i=1; i < len; ++i){
@@ -1488,18 +1487,11 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
-
-    char *number_0 = (char*)vtr::calloc(5,sizeof(char));
-    strcpy(number_0,"0");
-
-    char *number_31 = (char*)vtr::calloc(5,sizeof(char));
-    strcpy(number_31,"31");
-
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
-    ast_node_t *number_node_with_value_31 = newNumberNode(number_31, line_number);
+    ast_node_t *number_node_with_value_31 = create_tree_node_long_long_number(31, 128, line_number,current_parse_file);
 
-    ast_node_t *number_node_with_value_0 = newNumberNode(number_0, line_number);
+    ast_node_t *number_node_with_value_0 = create_tree_node_long_long_number(0, 128, line_number,current_parse_file);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
@@ -1773,11 +1765,9 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 /*--------------------------------------------------------------------------
  * (function: newConstant)
  *------------------------------------------------------------------------*/
-void newConstant(char *id, char *number, int line_number)
+void newConstant(char *id, ast_node_t *number_node, int line_number)
 {
 	long sc_spot;
-	ast_node_t *number_node = newNumberNode(number, line_number);
-
 	/* add the define character string to the parser and maintain the number around */
 	/* def_reduct */
 	if ((sc_spot = sc_add_string(defines_for_file_sc, id)) == -1)
@@ -2207,4 +2197,3 @@ ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *express
 
 	return new_node;
 }
-

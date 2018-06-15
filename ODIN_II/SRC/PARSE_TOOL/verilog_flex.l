@@ -20,7 +20,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 
 #include <stdio.h>
@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison.h"
 #include "vtr_util.h"
 #include <string>
+#include <algorithm>
 #include "string.h"
 
 /* the define below helps with watching the parser go token by token */
@@ -70,7 +71,7 @@ char* standardize_number(const char* input);
 <INITIAL>"input"			{ MP; return vINPUT;}
 <INITIAL>"integer"			{ MP; return vINTEGER;}
 <INITIAL>"module"			{ MP; return vMODULE;}
-<INITIAL>"function"			{ MP; return vFUNCTION;} 
+<INITIAL>"function"			{ MP; return vFUNCTION;}
 <INITIAL>"nand"				{ MP; return vNAND;}
 <INITIAL>"negedge"			{ MP; return vNEGEDGE;}
 <INITIAL>"nor"				{ MP; return vNOR;}
@@ -160,7 +161,7 @@ char* standardize_number(const char* input);
 <INITIAL>"&&"				{ MP; return voANDAND;}
 <INITIAL>"||"				{ MP; return voOROR;}
 <INITIAL>"<="				{ MP; return voLTE;}
-<INITIAL>"=>"				{ MP; return voPAL;} 
+<INITIAL>"=>"				{ MP; return voPAL;}
 <INITIAL>">="				{ MP; return voGTE;}
 <INITIAL>"<<"				{ MP; return voSLEFT;}
 <INITIAL>"<<<"				{ MP; return voSLEFT;}
@@ -185,26 +186,26 @@ char* standardize_number(const char* input);
 <INITIAL>`?[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
 
 	/*	signed numbers	*/
-<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; return vNOT_SUPPORT;}
-<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][bB][0-1_]*							{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][oO][0-7_]*							{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][dD][0-9_]*							{ MP; return vNOT_SUPPORT;}
+<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_BINARY; }
+<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_HEXADECIMAL; }
+<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_OCTAL; }
+<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_DECIMAL; }
+<INITIAL>'[sS][bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_BINARY; }
+<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_HEXADECIMAL; }
+<INITIAL>'[sS][oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_OCTAL; }
+<INITIAL>'[sS][dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vSIGNED_DECIMAL; }
 
-<INITIAL>[0-9_]+									{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
+<INITIAL>[0-9_]+									{ MP; yylval.num_value = standardize_number(yytext); return vINTEGRAL; }
 
 	/*	unsigned Numbers	*/
-<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
+<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_BINARY; }
+<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_HEXADECIMAL; }
+<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_OCTAL; }
+<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_DECIMAL; }
+<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_BINARY; }
+<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_HEXADECIMAL; }
+<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_OCTAL; }
+<INITIAL>'[dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vUNSIGNED_DECIMAL; }
 
 
 <INITIAL>#[0-9]+								{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
@@ -218,33 +219,19 @@ char* standardize_number(const char* input);
 <INITIAL>`timescale.*$              { MP; continue;}
 
 	/* Get the comments */
-<INITIAL>"/*"						{ MP; BEGIN COMMENT; continue;} /* begin state where we eat everything for comments*/ 
+<INITIAL>"/*"						{ MP; BEGIN COMMENT; continue;} /* begin state where we eat everything for comments*/
 <COMMENT>.							{ continue;}
 <COMMENT>"*/"						{ BEGIN 0; continue;}
-<INITIAL>"//"[^\n]*					{ MP; continue;}  
+<INITIAL>"//"[^\n]*					{ MP; continue;}
 
 
 <*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
 
-%%    
+%%
 
 char* standardize_number(const char* input)
 {
 	std::string input_number(input);
-	auto loc = input_number.find("\'");
-	size_t check_at = 0;
-	if(loc != std::string::npos)
-		check_at = loc;
-	
-	while(check_at < input_number.length())
-	{
-		if(input_number[check_at] == '_')
-			input_number.erase(input_number.begin()+check_at);
-		else
-		{
-			input_number[check_at] = tolower(input_number[check_at]);
-			check_at++;
-		}
-	}
+	input_number.erase(std::remove(input_number.begin(), input_number.end(), '_'), input_number.end());
 	return vtr::strdup(input_number.c_str());
 }

@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <stdarg.h>
 #include <math.h>
+#include <algorithm>
 #include "globals.h"
 #include "types.h"
 
@@ -209,106 +210,63 @@ ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_number*/)
+ast_node_t *create_tree_node_number(std::string input_number, bases base, signedness sign, int line_number, int /*file_number*/)
 {
-	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
-	char *string_pointer = number;
-	int index_string_pointer = 0;
-	char *temp_string;
+	oassert(sign != SIGNED && "ODIN_II does not support signed numbers" );
 	short flag_constant_decimal = FALSE;
+	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
 
-	/* find the ' character if it's a base */
-	for (string_pointer=number; *string_pointer; string_pointer++)
-	{
-		if (*string_pointer == '\'')
+		if(base == LONG_LONG)
 		{
-			break;
-		}
-		index_string_pointer++;
-	}
+			flag_constant_decimal = TRUE;
+			/* this is base d */
+			new_node->types.number.base = DEC;
+			new_node->types.number.size = input_number.length();
+			new_node->types.number.number = vtr::strdup(input_number.c_str());
+			/* size is for a constant that needs */
+			if (strcmp(new_node->types.number.number, "0") != 0)
+				new_node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size)+1))/log(2));
 
-	if (index_string_pointer == (int)strlen(number))
-	{
-		flag_constant_decimal = TRUE;
-		/* this is base d */
-		new_node->types.number.base = DEC;
-		/* reset to the front */
-		string_pointer = number;
+			else
+				new_node->types.number.binary_size = 1;
 
-		/* size is the rest of the string */
-		new_node->types.number.size = strlen((string_pointer));
-		/* assign the remainder of the number to a string */
-		new_node->types.number.number = vtr::strdup((string_pointer));
-	}
-	else
-	{
-		/* there is a base in the form: number[bhod]'number */
-		switch(tolower(*(string_pointer+1)))
-		{
-			case 'd':
-				new_node->types.number.base = DEC;
-				break;
-			case 'h':
-				new_node->types.number.base = HEX;
-				break;
-			case 'o':
-				new_node->types.number.base = OCT;
-				break;
-			case 'b':
-				new_node->types.number.base = BIN;
-				break;
-			default:
-				oassert(FALSE);
-				break;
-		}
-
-		/* check if the size matches the design specified size */
-		if(index_string_pointer > 0){
-			temp_string = vtr::strdup(number);
-			temp_string[index_string_pointer] = '\0';
-			/* size is the rest of the string */
-			new_node->types.number.is_full = 0;
-			new_node->types.number.size = atoi(temp_string);
-		}
-		else{
-			new_node->types.number.is_full = 1;
-			new_node->types.number.size = 1;
-		}
-
-		/* move to the digits */
-		string_pointer += 2;
-
-		/* assign the remainder of the number to a string */
-		new_node->types.number.number = vtr::strdup((string_pointer));
-	}
-
-	/* check for decimal numbers without the formal 2'd... format */
-	if (flag_constant_decimal == FALSE)
-	{
-		/* size describes how may bits */
-		new_node->types.number.binary_size = new_node->types.number.size;
-	}
-	else
-	{
-		/* size is for a constant that needs */
-		if (strcmp(new_node->types.number.number, "0") != 0)
-		{
-			new_node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size)+1))/log(2));
 		}
 		else
 		{
-			new_node->types.number.binary_size = 1;
+			new_node->types.number.base = base;
+			//no need to check since the parser has done that
+			auto loc = input_number.find("\'");
+			std::string number = input_number.substr(loc+2,input_number.size()-(loc+2));
+
+			if(loc > 0)
+			{
+				new_node->types.number.is_full = 0;
+				new_node->types.number.size = std::strtol(input_number.substr(0,loc).c_str(),NULL,10);
+				if(new_node->types.number.size > ODIN_STD_BITWIDTH-1)
+				{
+					printf("%d::WARNING input number is %d-bits but ODIN limit is %lu-bits \n",line_number,new_node->types.number.size,ODIN_STD_BITWIDTH-1);
+				}
+			}
+			else
+			{
+				new_node->types.number.is_full = 0;
+				new_node->types.number.size = ODIN_STD_BITWIDTH-1;
+			}
+			input_number = number;
+			new_node->types.number.binary_size = new_node->types.number.size;
+			new_node->types.number.number = vtr::strdup(input_number.c_str());
 		}
-	}
+
 	/* add in the values for all the numbers */
 	switch (new_node->types.number.base)
 	{
-		case(DEC):
+		case DEC:
 			// This will have limited width.
 			new_node->types.number.value = convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size);
 			new_node->types.number.binary_string = convert_long_long_to_bit_string(new_node->types.number.value, new_node->types.number.binary_size);
 			break;
-		case(HEX):
+
+		case HEX:
 			if(!is_dont_care_string(new_node->types.number.number)){
 				new_node->types.number.binary_size *= 4;
 				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,16); // This will have limited width.
@@ -319,27 +277,27 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
 			}
 			break;
-		case(OCT):
+
+		case OCT:
 			new_node->types.number.binary_size *= 3;
 			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,8); // This will have limited width.
 			// This will have full width.
 			new_node->types.number.binary_string = convert_oct_string_of_size_to_bit_string(new_node->types.number.number, new_node->types.number.binary_size);
 			break;
-		case(BIN):
-		{
+
+		case BIN:
 			if(new_node->types.number.is_full == 0){
 				// This will have limited width.
 				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
 				// This will have full width.
-
 			}
 			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
-		}
-		break;
-        default:
-            oassert(FALSE);
-            break;
-    }
+			break;
+
+    default:
+        oassert(FALSE);
+        break;
+  }
 
 	return new_node;
 
@@ -1418,4 +1376,3 @@ int get_range2D(ast_node_t* first_node)
 	}
 	return -1; // indicates no range
 }
-

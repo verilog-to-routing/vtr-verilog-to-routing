@@ -5,7 +5,7 @@ void add_tag_data();
 ast_node_t* create_node_w_type(ids id, int line_number, int file_number);
 ast_node_t* create_tree_node_id(char* string, int line_number, int file_number);
 ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit_size, int line_number, int file_number);
-ast_node_t *create_tree_node_number(char* number, int line_number, int file_number);
+ast_node_t *create_tree_node_number(std::string number, bases base, signedness sign, int line_number, int file_number);
 
 void initial_node(ast_node_t *node, ids id, int line_number, int file_number, int counter);
 
@@ -34,4 +34,3 @@ ast_node_t *node_is_constant(ast_node_t *node);
 ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_list op_id);
 ast_node_t *fold_unary(ast_node_t *child_0, operation_list op_id);
 int get_range2D(ast_node_t* first_node);
-

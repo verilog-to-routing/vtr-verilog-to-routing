@@ -39,6 +39,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TYPES_H
 #define TYPES_H
 
+#define ODIN_STD_BITWIDTH (sizeof(long long)*8)
+
 typedef struct config_t_t config_t;
 typedef struct global_args_t_t global_args_t;
 /* new struct for the global arguments of verify_blif function */
@@ -201,12 +203,18 @@ struct global_args_t_t
 
 typedef enum
 {
-	DEC,
-	HEX,
-	OCT,
-	BIN,
-	LONG_LONG,
+	DEC = 10,
+	HEX = 16,
+	OCT = 8,
+	BIN = 2,
+	LONG_LONG = 0
 } bases;
+
+typedef enum
+{
+	SIGNED,
+	UNSIGNED
+} signedness;
 
 typedef enum
 {
@@ -347,6 +355,7 @@ struct typ_t
 
 	struct
 	{
+		short sign;
 		short base;
 		int size;
 		int binary_size;

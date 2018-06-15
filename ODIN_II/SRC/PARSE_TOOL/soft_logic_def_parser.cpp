@@ -63,7 +63,7 @@ void read_soft_def_file(std::string input_file_name)
 	FILE *input_file = fopen(input_file_name.c_str(),"r");
   if(input_file)
   {
-		printf("Reading soft_logic definition file @ %s ... ", input_file_name);
+		printf("Reading soft_logic definition file @ %s ... ", input_file_name.c_str());
 
 		soft_def_map[std::string("+_0")] = NULL;
 		soft_def_map[std::string("/_0")] = NULL;

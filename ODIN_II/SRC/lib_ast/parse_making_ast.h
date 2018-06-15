@@ -11,7 +11,7 @@ void clean_up_parser_for_file();
 
 /* GENERAL PARSER NODES */
 ast_node_t *newSymbolNode(char *id, int line_number);
-ast_node_t *newNumberNode(char *num, int line_number);
+ast_node_t *newNumberNode(std::string num, bases base, signedness sign, int line_number);
 ast_node_t *newList(ids type_id, ast_node_t *expression);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );
@@ -71,7 +71,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 void next_module();
 void next_function();
-void newConstant(char *id, char *number, int line_number);
+void newConstant(char *id, ast_node_t *number, int line_number);
 ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number);
 
 void next_parsed_verilog_file(ast_node_t *file_items_list);

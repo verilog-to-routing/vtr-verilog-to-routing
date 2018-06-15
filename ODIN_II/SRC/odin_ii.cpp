@@ -130,13 +130,13 @@ int main(int argc, char **argv)
 		register_hard_blocks();
 
 		/* get odin soft_logic definition file */
-    std::string register_soft_sidtribution(global_args.adder_def);
-    if(!hard_adders && register_soft_sidtribution == "default")
+    std::string soft_distribution(global_args.adder_def);
+    if(!hard_adders && soft_distribution == "default")
     {
-      if(register_soft_sidtribution == "optimized")
-        register_soft_sidtribution = vtr::dirname(argv[0]) + "odin.soft_config";
+      if(soft_distribution == "optimized")
+        soft_distribution = vtr::dirname(argv[0]) + "odin.soft_config";
 
-      read_soft_def_file(register_soft_sidtribution);
+      read_soft_def_file(soft_distribution);
     }
 
 		global_param_table_sc = sc_new_string_cache();
