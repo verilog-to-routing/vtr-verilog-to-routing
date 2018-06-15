@@ -104,12 +104,15 @@ class vector : private std::vector<V> {
         //to iterate through the keys with a range-based for loop
         class key_iterator : public std::iterator<std::bidirectional_iterator_tag, key_type> {
             public:
-                using typename std::iterator<std::bidirectional_iterator_tag, K>::value_type; 
-                using typename std::iterator<std::bidirectional_iterator_tag, K>::iterator; 
-                using typename std::iterator<std::bidirectional_iterator_tag, K>::pointer; 
-                using typename std::iterator<std::bidirectional_iterator_tag, K>::reference; 
+                //We use the intermediate type my_iter to avoid a potential ambiguity for which
+                //clang generates errors and warnings
+                using my_iter = typename std::iterator<std::bidirectional_iterator_tag, K>;
+                using typename my_iter::value_type; 
+                using typename my_iter::iterator; 
+                using typename my_iter::pointer; 
+                using typename my_iter::reference; 
 
-                key_iterator(value_type init): value_(init) {}
+                key_iterator(key_iterator::value_type init): value_(init) {}
 
                 //vtr::vector assumes that the key time is convertable to size_t and
                 //that all the underlying IDs are zero-based and contiguous. That means
