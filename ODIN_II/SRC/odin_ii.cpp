@@ -130,15 +130,13 @@ int main(int argc, char **argv)
 		register_hard_blocks();
 
 		/* get odin soft_logic definition file */
-    if(!hard_adders && strcmp(global_args.adder_def,"default")!=0)
+    std::string register_soft_sidtribution(global_args.adder_def);
+    if(!hard_adders && register_soft_sidtribution == "default")
     {
-      if(strcmp(global_args.adder_def,"optimized")==0)
-      {
-        std::string path = vtr::dirname(argv[0]) + "odin.soft_config";
-        read_soft_def_file(path.c_str());
-      }
-      else
-        read_soft_def_file(global_args.adder_def);
+      if(register_soft_sidtribution == "optimized")
+        register_soft_sidtribution = vtr::dirname(argv[0]) + "odin.soft_config";
+
+      read_soft_def_file(register_soft_sidtribution);
     }
 
 		global_param_table_sc = sc_new_string_cache();
@@ -165,17 +163,25 @@ int main(int argc, char **argv)
 
 		//START ################# NETLIST OPTIMIZATION ############################
 
-			/* point for all netlist optimizations. */
-			printf("Performing Optimizations of the Netlist\n");
+		/* point for all netlist optimizations. */
+		printf("Performing Optimizations of the Netlist\n");
+    if(hard_multipliers)
+    {
 			/* Perform a splitting of the multipliers for hard block mults */
-		    reduce_operations(verilog_netlist, MULTIPLY);
+		  reduce_operations(verilog_netlist, MULTIPLY);
 			iterate_multipliers(verilog_netlist);
 			clean_multipliers();
+    }
 
+    if (sp_memory_list || dp_memory_list)
+    {
 			/* Perform a splitting of any hard block memories */
 			iterate_memories(verilog_netlist);
 			free_memory_lists();
+    }
 
+    if(hard_adders)
+    {
 			/* Perform a splitting of the adders for hard block add */
 			reduce_operations(verilog_netlist, ADD);
 			iterate_adders(verilog_netlist);
@@ -185,6 +191,7 @@ int main(int argc, char **argv)
 			reduce_operations(verilog_netlist, MINUS);
 			iterate_adders_for_sub(verilog_netlist);
 			clean_adders_for_sub();
+    }
 
 		//END ################# NETLIST OPTIMIZATION ############################
 

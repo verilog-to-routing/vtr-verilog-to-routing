@@ -58,9 +58,9 @@ blk_len_of_structure
 */
 std::map<std::string,soft_sub_structure*> soft_def_map;
 
-void read_soft_def_file(const char *input_file_name)
+void read_soft_def_file(std::string input_file_name)
 {
-	FILE *input_file = fopen(input_file_name,"r");
+	FILE *input_file = fopen(input_file_name.c_str(),"r");
   if(input_file)
   {
 		printf("Reading soft_logic definition file @ %s ... ", input_file_name);

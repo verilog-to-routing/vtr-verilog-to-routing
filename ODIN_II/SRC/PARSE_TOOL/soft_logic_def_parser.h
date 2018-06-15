@@ -47,7 +47,7 @@ typedef struct soft_sub_structure_t
 	int bitsize;
 }soft_sub_structure;
 
-void read_soft_def_file(const char *input_file_name);
+void read_soft_def_file(std::string input_file_name);
 soft_sub_structure *fetch_blk(std::string, int width);
 
 
