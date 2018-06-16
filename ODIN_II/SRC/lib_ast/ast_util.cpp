@@ -444,6 +444,11 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]);
 				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 
+				///TODO	WHats this?? comapreo bit string but usesd value ??? value is honestly not the right thing to look for...
+				// we should restrict ODIN to use binary representation only for easier support of 'x' and 'z' value..
+				// or at least it's the only thing that makes sense.
+				// also this gives us the ability to write our own math class for binary and ave better control of what is happening and better sense of it TO.
+				// this causes bugs.. theres a patchy workaround put in bit string but we need a better permannet fix.
 				for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
 				{
 					concat_top->types.concat.num_bit_strings ++;
@@ -631,21 +636,28 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		if (bit == -1)
 			bit = 0;
 
-		oassert(bit < var_node->types.number.binary_size);
-		if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '1')
+		if(bit < var_node->types.number.binary_size)
 		{
-			return_string = (char*)vtr::malloc(sizeof(char)*11+1); // ONE_VCC_CNS
-			sprintf(return_string, "ONE_VCC_CNS");
-		}
-		else if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '0')
-		{
-			return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
-			sprintf(return_string, "ZERO_GND_ZERO");
+			if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '1')
+			{
+				return_string = (char*)vtr::malloc(sizeof(char)*11+1); // ONE_VCC_CNS
+				sprintf(return_string, "ONE_VCC_CNS");
+			}
+			else if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '0')
+			{
+				return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
+				sprintf(return_string, "ZERO_GND_ZERO");
+			}
+			else
+			{
+				return_string = NULL;
+				oassert(FALSE);
+			}
 		}
 		else
 		{
-			return_string = NULL;
-			oassert(FALSE);
+			return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
+			sprintf(return_string, "ZERO_GND_ZERO");
 		}
 	}
 	else if (var_node->type == CONCATENATE)
