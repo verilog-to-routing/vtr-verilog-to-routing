@@ -1,4 +1,4 @@
-%include "vpr_standard.txt"
+%include "vpr_fixed_chan_width.txt"
 
 #Hard FPU packing metrics
 num_fpu;vpr.out;Netlist block_FPU blocks:\s*(\d+)
