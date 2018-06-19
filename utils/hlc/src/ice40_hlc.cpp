@@ -192,10 +192,10 @@ static std::string _sw_name_from_id(int i) {
  * Translate a block's coordinates into HLC coordinates.
  */
 static t_hlc_coord _translate_coords(int x, int y) {
-    return t_hlc_coord(x - 1, y - 1);
+    return t_hlc_coord(x - 2, y - 2);
 }
 static std::pair<int, int> _translate_coords(t_hlc_coord c) {
-    return std::make_pair(c.x + 1, c.y + 1);
+    return std::make_pair(c.x + 2, c.y + 2);
 }
 
 ICE40HLCWriterVisitor::ICE40HLCWriterVisitor(std::ostream& os)
