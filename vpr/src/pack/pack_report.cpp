@@ -60,22 +60,27 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
         os << "\t\tMax: " << max_inputs << " (" << max_inputs / float(total_input_pins[type]) << ")" << "\n";
         os << "\t\tAvg: " << avg_inputs << " (" << avg_inputs / float(total_input_pins[type]) << ")" << "\n";
         os << "\t\tMin: " << min_inputs << " (" << min_inputs / float(total_input_pins[type]) << ")" << "\n";
-        os << "\t\tHistogram:\n";
 
-        auto input_histogram = build_histogram(inputs_used[type], 10, 0, total_input_pins[type]);
-        for (auto line : format_histogram(input_histogram)) {
-            os << "\t\t" << line << "\n";
+        if (total_input_pins[type] != 0) {
+            os << "\t\tHistogram:\n";
+            auto input_histogram = build_histogram(inputs_used[type], 10, 0, total_input_pins[type]);
+            for (auto line : format_histogram(input_histogram)) {
+                os << "\t\t" << line << "\n";
+            }
         }
 
         os << "\tOutput Pin Usage:\n";
         os << "\t\tMax: " << max_outputs << " (" << max_outputs / float(total_output_pins[type]) << ")" << "\n";
         os << "\t\tAvg: " << avg_outputs << " (" << avg_outputs / float(total_output_pins[type]) << ")" << "\n";
         os << "\t\tMin: " << min_outputs << " (" << min_outputs / float(total_output_pins[type]) << ")" << "\n";
-        os << "\t\tHistogram:\n";
 
-        auto output_histogram = build_histogram(outputs_used[type], 10, 0, total_output_pins[type]);
-        for (auto line : format_histogram(output_histogram)) {
-            os << "\t\t" << line << "\n";
+        if (total_output_pins[type] != 0) {
+            os << "\t\tHistogram:\n";
+
+            auto output_histogram = build_histogram(outputs_used[type], 10, 0, total_output_pins[type]);
+            for (auto line : format_histogram(output_histogram)) {
+                os << "\t\t" << line << "\n";
+            }
         }
         os << "\n";
     }
