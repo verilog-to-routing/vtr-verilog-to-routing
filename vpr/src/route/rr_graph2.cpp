@@ -772,10 +772,13 @@ int get_bidir_opin_connections(
         if ((CHANY == to_type) && (tr_j < 1)) {
             continue;
         }
+        if (opin_to_track_map[type->index].empty()) {
+            continue;
+        }
 
         is_connected_track = false;
 
-        /* Itterate of the opin to track connections */
+        /* Iterate of the opin to track connections */
         for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][iside]) {
 
             /* Skip unconnected connections */
