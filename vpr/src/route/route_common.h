@@ -38,6 +38,7 @@ struct t_heap {
 	float backward_path_cost = 0.;
 	float R_upstream = 0.;
 	int index = OPEN;
+        float T_upstream = 0.;
 
     std::vector<t_heap_prev> previous;
 };
@@ -78,7 +79,7 @@ namespace heap_ {
 	void sift_up(size_t tail, t_heap* const hptr);
 	void push_back(t_heap* const hptr);
 	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
-		float backward_path_cost, float R_upstream);
+		float backward_path_cost, float R_upstream, float T_upstream);
 	bool is_valid();
 	void pop_heap();
 	void print_heap();

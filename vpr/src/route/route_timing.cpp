@@ -111,6 +111,7 @@ struct t_timing_driven_node_costs {
     float backward_cost = 0.;
     float total_cost = 0.;
     float R_upstream = 0.;
+    float T_incremental = 0.;
 };
 
 /*
@@ -159,10 +160,10 @@ static void timing_driven_expand_node_non_configurable_recurr(const float critic
 t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
     const float criticality_fac, const float bend_cost, const float astar_fac,
     const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-    const int from_node, const int to_node, const int iconn, const int target_node);
+    const int from_node, const int to_node, const int iconn, const int target_node, const float T_upstream);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
-        float criticality_fac, float R_upstream);
+        float criticality_fac, float R_upstream, int get_delay);
 
 static int get_expected_segs_to_target(int inode, int target_node,
         int *num_segs_ortho_dir_ptr);
@@ -1105,19 +1106,20 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
     int inode;
     t_rt_node *child_node;
     t_linked_rt_edge *linked_rt_edge;
-    float tot_cost, backward_path_cost, R_upstream;
+    float tot_cost, backward_path_cost, R_upstream, T_upstream;
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
         inode = rt_node->inode;
+        T_upstream = rt_node->Tdel;
         backward_path_cost = target_criticality * rt_node->Tdel;
 
         R_upstream = rt_node->R_upstream;
         tot_cost = backward_path_cost
                 + astar_fac
                 * get_timing_driven_expected_cost(inode, target_node,
-                target_criticality, R_upstream);
+                target_criticality, R_upstream, 0);
 
         float zero = 0.0;
         //after budgets are loaded, calculate delay cost as described by RCV paper
@@ -1135,7 +1137,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 #endif
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
-                backward_path_cost, R_upstream);
+                backward_path_cost, R_upstream, T_upstream);
 
         ++router_stats.heap_pushes;
     }
@@ -1230,6 +1232,7 @@ static void timing_driven_add_to_heap(const float criticality_fac, const float b
     next->cost = std::numeric_limits<float>::infinity(); //Not used directly
     next->backward_path_cost = current->backward_path_cost;
     next->R_upstream = current->R_upstream;
+    next->T_upstream = current->T_upstream;
 
     auto& device_ctx = g_vpr_ctx.device();
     if (device_ctx.rr_nodes[to_node].num_non_configurable_edges() == 0) {
@@ -1285,8 +1288,7 @@ static void timing_driven_expand_node(const float criticality_fac, const float b
     auto new_costs = evaluate_timing_driven_node_costs(old_costs,
                         criticality_fac, bend_cost, astar_fac,
                         budgeting_inf, max_delay, min_delay, target_delay, short_path_crit,
-                        from_node, to_node, iconn, target_node);
-
+                        from_node, to_node, iconn, target_node, current->T_upstream);
     //Record how we reached this node
     current->previous.emplace_back(to_node, from_node, iconn);
 
@@ -1297,6 +1299,7 @@ static void timing_driven_expand_node(const float criticality_fac, const float b
         current->backward_path_cost = new_costs.backward_cost;
         current->R_upstream = new_costs.R_upstream;
         current->index = to_node;
+	current->T_upstream += new_costs.T_incremental;
     }
 }
 
@@ -1338,7 +1341,7 @@ static void timing_driven_expand_node_non_configurable_recurr(const float critic
 t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
     const float criticality_fac, const float bend_cost, const float astar_fac,
     const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
-    const int from_node, const int to_node, const int iconn, const int target_node) {
+    const int from_node, const int to_node, const int iconn, const int target_node, const float T_upstream) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
@@ -1356,6 +1359,8 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered;
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
+    float total_delay_on_connection = 0.;
+
 
     //Node info
     float node_C = device_ctx.rr_nodes[to_node].C();
@@ -1373,7 +1378,10 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
     //Calculate delay
     float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C;
-
+    new_costs.T_incremental = Tdel;
+    total_delay_on_connection += T_upstream;
+    total_delay_on_connection += Tdel;
+    total_delay_on_connection += get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream, 1);
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
     new_costs.backward_cost += (1. - criticality_fac) * get_rr_cong_cost(to_node); //Congestion cost
@@ -1385,7 +1393,7 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
             new_costs.backward_cost += bend_cost; //Bend cost
         }
     }
-
+    float cost_from_budgets = 0;
     if (budgeting_inf.if_set()) {
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
@@ -1393,19 +1401,21 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
         //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
 
         //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
-        new_costs.total_cost += (short_path_crit + criticality_fac) * max(0.f, target_delay - new_costs.total_cost);
-        new_costs.total_cost += pow(max(0.f, new_costs.total_cost - max_delay), 2) / 100e-12;
-        new_costs.total_cost += pow(max(0.f, min_delay - new_costs.total_cost), 2) / 100e-12;
+        new_costs.total_cost += (short_path_crit + criticality_fac) * max(0.f, target_delay - total_delay_on_connection);
+        new_costs.total_cost += pow(max(0.f, total_delay_on_connection - max_delay), 2) / 100e-12;
+        new_costs.total_cost += pow(max(0.f, min_delay - total_delay_on_connection), 2) / 100e-12;
+        
     }
-
     //Update total cost
-    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream);
-    new_costs.total_cost = new_costs.backward_cost + astar_fac * expected_cost;
+    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream, 0);
+    new_costs.total_cost += new_costs.backward_cost + astar_fac * expected_cost;
+
+    
 
     return new_costs;
 }
 
-static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
+static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream, int get_delay) {
 
     /* Determines the expected cost (due to both delay and resource cost) to reach *
      * the target node from inode.  It doesn't include the cost of inode --       *
@@ -1444,6 +1454,10 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
                                      + num_segs_ortho_dir * ortho_data.C_load)
                      + ipin_data.T_linear;
 
+        if (get_delay){
+		return Tdel;
+	}
+        
         float expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
         return (expected_cost);
 #endif
