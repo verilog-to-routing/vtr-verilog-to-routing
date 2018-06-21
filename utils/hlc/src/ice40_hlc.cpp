@@ -371,10 +371,20 @@ static std::vector<int> _determine_lut_permutation(size_t num_inputs, const t_pb
     return permute;
 }
 
-static std::string hlc_tile(const t_pb_type* t) {
-    if(t->meta == nullptr || !t->meta->has("hlc_tile"))
-        return "UNKNOWN";
-    return t->meta->get("hlc_tile")->front().as_string();
+static std::string hlc_tile(const t_pb_type* t, int xoff, int yoff) {
+    std::string default_key = "hlc_tile";
+    std::string offset_key = default_key + "_" + std::to_string(xoff) + "_" + std::to_string(yoff);
+    std::string hlc_tile_name = "UNKNOWN";
+
+    if(t->meta != nullptr && t->meta->has(offset_key)) {
+        hlc_tile_name = t->meta->get(offset_key)->front().as_string();
+    } else if (t->meta != nullptr && t->meta->has(default_key)) {
+        hlc_tile_name = t->meta->get(default_key)->front().as_string();
+    }
+
+    std::cerr << "hlc_tile:" << hlc_tile_name << " from: " << t->name << std::endl;
+
+    return hlc_tile_name;
 }
 
 
@@ -418,7 +428,8 @@ void ICE40HLCWriterVisitor::set_tile(t_hlc_coord pos, std::string name) {
 }
 
 void ICE40HLCWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
-	auto& place_ctx = g_vpr_ctx.placement();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     current_blk_id_ = blk_id;
 
@@ -426,7 +437,12 @@ void ICE40HLCWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* cl
 	VTR_ASSERT(clb->pb_graph_node->pb_type);
 
     auto pb_type = clb->pb_graph_node->pb_type;
-    set_tile(_translate_coords(place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y), hlc_tile(pb_type));
+    int x = place_ctx.block_locs[blk_id].x;
+    int y = place_ctx.block_locs[blk_id].y;
+    int x_offset = device_ctx.grid[x][y].width_offset;;
+    int y_offset = device_ctx.grid[x][y].height_offset;;
+
+    set_tile(_translate_coords(x, y), hlc_tile(pb_type, x_offset, y_offset));
 
     if (pb_type->meta != nullptr && pb_type->meta->has("hlc_cell")) {
         std::string cell_name = pb_type->meta->get("hlc_cell")->front().as_string();
@@ -623,8 +639,8 @@ void ICE40HLCWriterVisitor::finish_impl() {
 
             // Find the driver for this global net
             std::string glb_net_name = "";
-			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-				ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+            for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+                ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
                 auto& block = place_ctx.block_locs[block_id];
 
                 auto hlcpos = _translate_coords(block.x, block.y);
@@ -647,7 +663,11 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 auto& block = place_ctx.block_locs[block_id];
                 std::string name = cluster_ctx.clb_nlist.port_bit_name(pin_id);
 
-                auto hlcpos = _translate_coords(block.x, block.y);
+                auto grid_tile = device_ctx.grid[block.x][block.y];
+                int x_offset = grid_tile.type->pin_width_offset[pin_index];
+                int y_offset = grid_tile.type->pin_height_offset[pin_index];
+
+                auto hlcpos = _translate_coords(block.x + x_offset, block.y + y_offset);
                 auto is_driver = drives_global_net(hlcpos, block.z);
                 if (is_driver.size() == 0) {
                     auto tile = output_.get_tile(hlcpos);
@@ -778,7 +798,9 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 // FIXME: Must be a better way to get the tile type
                 auto grid_pos = _translate_coords(hlcpos_edge);
                 auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
-                tile->name = hlc_tile(type->pb_type);
+                int x_offset = device_ctx.grid[grid_pos.first][grid_pos.second].width_offset;;
+                int y_offset = device_ctx.grid[grid_pos.first][grid_pos.second].height_offset;;
+                tile->name = hlc_tile(type->pb_type, x_offset, y_offset);
 
                 auto& c = tile->enable_edge(src_pname->as_string(), snk_pname->as_string(), hlc_sw_type);
                 if (verbose_) {
