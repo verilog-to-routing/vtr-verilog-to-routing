@@ -1317,9 +1317,6 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 	Prop = get_attribute(Parent, "port_class", loc_data, OPTIONAL).as_string(nullptr);
 	port->port_class = vtr::strdup(Prop);
 
-	Prop = get_attribute(Parent, "chain", loc_data, OPTIONAL).as_string(nullptr);
-	port->chain_name = vtr::strdup(Prop);
-
 	port->equivalent = get_attribute(Parent, "equivalent", loc_data, OPTIONAL).as_bool(false);
 	port->num_pins = get_attribute(Parent, "num_pins", loc_data).as_int(0);
 	port->is_non_clock_global = get_attribute(Parent,

@@ -665,7 +665,6 @@ struct t_port {
 
 	int index;
 	int port_index_by_type;
-	char *chain_name;
 
 	t_port_power *port_power;
 };
