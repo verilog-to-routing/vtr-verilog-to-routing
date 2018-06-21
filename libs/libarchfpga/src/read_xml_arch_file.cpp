@@ -523,12 +523,10 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			num_class += capacity * Type->pb_type->ports[i].num_pins;
 		}
 	}
-	Type->class_inf = (t_class*) vtr::calloc(num_class,
-			sizeof(t_class));
+	Type->class_inf = (t_class*) vtr::calloc(num_class, sizeof(t_class));
 	Type->num_class = num_class;
 	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
-	Type->is_global_pin = (bool*) vtr::malloc(
-        Type->num_pins * sizeof(bool)* capacity);
+	Type->is_global_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
 		Type->is_global_pin[i] = true;
@@ -541,10 +539,9 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	for (i = 0; i < capacity; ++i) {
 		for (j = 0; j < Type->pb_type->num_ports; ++j) {
 		if (Type->pb_type->ports[i].equivalent != PortEquivalence::NONE) {
-				Type->class_inf[num_class].num_pins =
-						Type->pb_type->ports[j].num_pins;
-				Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
-						sizeof(int) * Type->pb_type->ports[j].num_pins);
+				Type->class_inf[num_class].num_pins = Type->pb_type->ports[j].num_pins;
+				Type->class_inf[num_class].pinlist = (int *) vtr::malloc( sizeof(int) * Type->pb_type->ports[j].num_pins);
+                Type->class_inf[num_class].equivalence = Type->pb_type->ports[i].equivalent;
 			}
 
 			for (k = 0; k < Type->pb_type->ports[j].num_pins; ++k) {

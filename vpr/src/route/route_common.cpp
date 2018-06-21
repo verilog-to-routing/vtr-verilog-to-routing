@@ -902,7 +902,17 @@ vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing() {
 	return (best_routing);
 }
 
-/* TODO: super hacky, jluu comment, I need to rethink this whole function, without it, logically equivalent output pins incorrectly use more pins than needed.  I force that CLB output pin uses at most one output pin  */
+//Calculates how many (and allocates space for) OPINs which must be reserved to 
+//respect 'instance' equivalence.
+//
+//TODO: At the moment this makes a significant simplifying assumption. It reserves
+//      all OPINs not connected to external nets. This ensures each signal leaving
+//      the logic block uses only a single OPIN. This is a safe, but pessmistic
+//      behaviour, which prevents any logic duplication (e.g. duplicating LUTs/BLEs)
+//      to drive multiple OPINs which could aid routability.
+//
+//      Note that this only applies for 'intance' equivalence. 'full' equivalence
+//      does allow for multiple outputs to be used for a single signal.
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
 	/* Allocates and loads the data needed to make the router reserve some CLB  *
@@ -919,28 +929,36 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		type = cluster_ctx.clb_nlist.block_type(blk_id);
+
 		get_class_range_for_block(blk_id, &class_low, &class_high);
 		clb_opins_used_locally[blk_id].resize(type->num_class);
+
+        if(is_io_type(type)) continue;
 
         int pin_low = 0;
         int pin_high = 0;
         get_pin_range_for_block(blk_id, &pin_low, &pin_high);
 
 		for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
-			// another hack to avoid I/Os, whole function needs a rethink
-			if(is_io_type(type))
-				continue;
 
-			if ((cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) != ClusterNetId::INVALID()
-					&& cluster_ctx.clb_nlist.net_sinks(cluster_ctx.clb_nlist.block_net(blk_id, clb_pin)).size() == 0)
-					|| cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) == ClusterNetId::INVALID()) {
+            auto net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
+
+			if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
+                //There is no external net connected to this pin
 
 				iclass = type->pin_class[clb_pin];
 
-				if(type->class_inf[iclass].type == DRIVER) {
+				if(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE) {
+                    //The pin is part of an instance equivalent class, hence we need to reserve a pin
+
+                    VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
+
 					/* Check to make sure class is in same range as that assigned to block */
 					VTR_ASSERT(iclass >= class_low && iclass <= class_high);
-					clb_opins_used_locally[blk_id][iclass].emplace_back();
+
+                    //We push back OPEN to reserve space to store the exact pin which
+                    //will be reserved (determined later)
+					clb_opins_used_locally[blk_id][iclass].emplace_back(OPEN);
 				}
 			}
 		}
@@ -1648,13 +1666,22 @@ void print_route(const char* placement_file, const char* route_file) {
     route_ctx.routing_id = vtr::secure_digest_file(route_file);
 }
 
-/* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
+//To ensure the router can only swaps pin which are actually logically equivalent some block output pins must be 
+//reserved in certain cases.
+//
+// In the RR graph, output pin equivalence is modelled by a single SRC node connected to (multiple) OPINs, modelling 
+// that each of the OPINs is logcially equivalent (i.e. it doesn't matter through which the router routes a signal,
+// so long as it is from the appropriate SRC).
+//
+// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is to 
+// optimistic for 'instance' equivalence (which typcially models the pin equivalence possible by swapping sub-block 
+// instances like BLEs). In particular, for the 'instance' equivalence case, some of the 'equivalent' block outputs
+// may be used by internal signals which are routed entirely *within* the block (i.e. the signals which never leave 
+// the block). These signals effectively 'use-up' an output pin which should now be unavailable to the router.
+//
+// To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did 
+// this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins) {
-
-	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs.
-	 This was especially important for logical equivalence; however, now that we have a very general logic cluster,
-	 it does not make sense to allow LUT duplication implicitly. We'll need to look into how we want to handle this case
-	 */
 
 	int num_local_opin, inode, from_node, iconn, num_edges, to_node;
 	int iclass, ipin;
@@ -1671,6 +1698,10 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 			type = cluster_ctx.clb_nlist.block_type(blk_id);
 			for (iclass = 0; iclass < type->num_class; iclass++) {
 				num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
+
+                if (num_local_opin == 0) continue;
+                VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
+
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
 					inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
@@ -1684,27 +1715,42 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 		type = cluster_ctx.clb_nlist.block_type(blk_id);
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
-			/* Always 0 for pads and for RECEIVER (IPIN) classes */
 
-			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
-				from_node = route_ctx.rr_blk_source[blk_id][iclass];
-				num_edges = device_ctx.rr_nodes[from_node].num_edges();
-				for (iconn = 0; iconn < num_edges; iconn++) {
-					to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
-					cost = get_rr_cong_cost(to_node);
-					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
-                                }
+            if (num_local_opin == 0) continue;
 
-				for (ipin = 0; ipin < num_local_opin; ipin++) {
-					heap_head_ptr = get_heap_head();
-					inode = heap_head_ptr->index;
-					adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
-					route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-					free_heap_data(heap_head_ptr);
-				}
+            VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
 
-				empty_heap();
-			}
+            //From the SRC node we walk through it's out going edges to collect the
+            //OPIN nodes. We then push them onto a heap so the the OPINs with lower
+            //congestion cost are popped-off/reserved first. (Intuitively, we want 
+            //the reserved OPINs to move out of the way of congestion, by preferring
+            //to reserve OPINs with lower congestion costs).
+            from_node = route_ctx.rr_blk_source[blk_id][iclass];
+            num_edges = device_ctx.rr_nodes[from_node].num_edges();
+            for (iconn = 0; iconn < num_edges; iconn++) {
+                to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
+
+                VTR_ASSERT(device_ctx.rr_nodes[to_node].type() == OPIN);
+
+                //Add the OPIN to the heap according to it's congestion cost
+                cost = get_rr_cong_cost(to_node);
+                node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
+            }
+
+            for (ipin = 0; ipin < num_local_opin; ipin++) {
+                //Pop the nodes off the heap. We get them from the heap so we
+                //reserve those pins with lowest congestion cost first. 
+                heap_head_ptr = get_heap_head();
+                inode = heap_head_ptr->index;
+
+                VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
+
+                adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
+                route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
+                free_heap_data(heap_head_ptr);
+            }
+
+            empty_heap();
 		}
 	}
 }
