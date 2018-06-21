@@ -36,6 +36,7 @@ supported_upgrades = [
     "upgrade_switch_types",
     "rename_fc_attributes",
     "longline_no_sb_cb",
+    "upgrade_port_equivalence",
 ]
 
 def parse_args():
@@ -115,6 +116,11 @@ def main():
 
     if "longline_no_sb_cb" in args.features:
         result = remove_longline_sb_cb(arch)
+        if result:
+            modified = True
+
+    if "upgrade_port_equivalence" in args.features:
+        result = upgrade_port_equivalence(arch)
         if result:
             modified = True
 
@@ -713,6 +719,51 @@ def remove_longline_sb_cb(arch):
 
     return changed
 
+def upgrade_port_equivalence(arch):
+    """
+    Upgrades port equivalence from "true|false" to "none|full|instance"
+
+    Note that to be safely conservative we upgrade <output equivalent="true">
+    to <output equivalent="instance">. Users should check whether their architecture
+    should actually be using <output equivalent="full">.
+    """
+
+    input_equivalent_tags = arch.findall(".//input[@equivalent]")
+    output_equivalent_tags = arch.findall(".//output[@equivalent]")
+
+    changed = False
+
+    for input_equivalent_tag in input_equivalent_tags:
+        assert input_equivalent_tag.tag == "input"
+        assert 'equivalent' in input_equivalent_tag.attrib
+
+        #For inputs, 'true' is upgraded to full, and 'false' to 'none'
+        if input_equivalent_tag.attrib['equivalent'] == "true":
+            input_equivalent_tag.attrib['equivalent'] = "full"
+            changed = True
+        elif input_equivalent_tag.attrib['equivalent'] == "false":
+            input_equivalent_tag.attrib['equivalent'] = "none"
+            changed = True
+        else:
+            assert input_equivalent_tag.attrib['equivalent'] in ['none', 'full', 'instance'], "equivalence already upgraded"
+
+    for output_equivalent_tag in output_equivalent_tags:
+        assert output_equivalent_tag.tag == "output"
+        assert 'equivalent' in output_equivalent_tag.attrib
+
+        #For outputs, 'true' is upgraded to full, and 'false' to 'none'
+        if output_equivalent_tag.attrib['equivalent'] == "true":
+            parent_tag = output_equivalent_tag.find("..[@name]")
+            print >>sys.stderr, "Warning: Conservatively upgrading output port equivalence from 'true' to 'instance' on {}. The user should manually check whether this can be upgraded to 'full'".format(parent_tag.attrib['name'])
+            output_equivalent_tag.attrib['equivalent'] = "instance" #Conservative
+            changed = True
+        elif output_equivalent_tag.attrib['equivalent'] == "false":
+            output_equivalent_tag.attrib['equivalent'] = "none"
+            changed = True
+        else:
+            assert output_equivalent_tag.attrib['equivalent'] in ['none', 'full', 'instance'], "equivalence already upgraded"
+
+    return changed
 
 def get_port_names(string):
     ports = []
