@@ -538,7 +538,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	num_class = 0;
 	for (i = 0; i < capacity; ++i) {
 		for (j = 0; j < Type->pb_type->num_ports; ++j) {
-		if (Type->pb_type->ports[i].equivalent != PortEquivalence::NONE) {
+		if (Type->pb_type->ports[j].equivalent != PortEquivalence::NONE) {
 				Type->class_inf[num_class].num_pins = Type->pb_type->ports[j].num_pins;
 				Type->class_inf[num_class].pinlist = (int *) vtr::malloc( sizeof(int) * Type->pb_type->ports[j].num_pins);
                 Type->class_inf[num_class].equivalence = Type->pb_type->ports[i].equivalent;
