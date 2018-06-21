@@ -89,7 +89,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
-		e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
+		e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
@@ -1054,7 +1054,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 			pb_type->ports[j].index = j;
 			pb_type->ports[j].port_index_by_type = k;
 			ProcessPb_TypePort(Cur, &pb_type->ports[j],
-					pb_type->pb_type_power->estimation_method, loc_data);
+					pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
 
 			//Check port name duplicates
 			ret_pb_ports = pb_port_names.insert(
@@ -1309,7 +1309,19 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 }
 
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
-		e_power_estimation_method power_method, const pugiutil::loc_data& loc_data) {
+		e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data) {
+
+    std::vector<std::string> expected_attributes = {"name", "num_pins", "port_class"};
+    if (is_root_pb_type) {
+        expected_attributes.push_back("equivalent");
+
+        if (Parent.name() == "input"s || Parent.name() == "clock"s ) {
+            expected_attributes.push_back("is_non_clock_global");
+        }
+    }
+
+    expect_only_attributes(Parent, expected_attributes, loc_data);
+
 	const char *Prop;
 	Prop = get_attribute(Parent, "name", loc_data).value();
 	port->name = vtr::strdup(Prop);
