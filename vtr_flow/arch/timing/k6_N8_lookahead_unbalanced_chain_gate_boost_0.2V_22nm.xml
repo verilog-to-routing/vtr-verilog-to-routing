@@ -168,13 +168,13 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 
       <!-- Logic cluster definition -->
       <pb_type name="clb">
-        <input name="I1" num_pins="10" equivalent="true"/>
-        <input name="I2" num_pins="10" equivalent="true"/>
-        <input name="I3" num_pins="10" equivalent="true"/>
-        <input name="I4" num_pins="10" equivalent="true"/>
-        <input name="cin" num_pins="1" equivalent="false"/>
-        <output name="O" num_pins="8" equivalent="false"/>
-        <output name="cout" num_pins="1" equivalent="false"/>
+        <input name="I1" num_pins="10" equivalent="full"/>
+        <input name="I2" num_pins="10" equivalent="full"/>
+        <input name="I3" num_pins="10" equivalent="full"/>
+        <input name="I4" num_pins="10" equivalent="full"/>
+        <input name="cin" num_pins="1" equivalent="none"/>
+        <output name="O" num_pins="8" equivalent="none"/>
+        <output name="cout" num_pins="1" equivalent="none"/>
         <clock name="clk" num_pins="1"/>
 
         <!-- Basic logic element definition -->

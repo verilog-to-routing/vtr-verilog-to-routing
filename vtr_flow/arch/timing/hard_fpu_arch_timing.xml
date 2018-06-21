@@ -114,8 +114,8 @@
         </pb_type>
     <!-- Describe general-purpose complex block -->
     <pb_type name="clb">        
-        <input name="I" num_pins="10" equivalent="true"/>
-        <output name="O" num_pins="4" equivalent="true"/>
+        <input name="I" num_pins="10" equivalent="full"/>
+        <output name="O" num_pins="4" equivalent="instance"/>
         <clock name="clk" num_pins="1"/>
         <pb_type name="ble" num_pb="4">
             <input name="in" num_pins="4"/>

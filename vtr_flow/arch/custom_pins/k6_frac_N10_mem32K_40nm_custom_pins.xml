@@ -268,8 +268,8 @@
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
     <pb_type name="clb" area="53894">
-      <input name="I" num_pins="40" equivalent="true"/>
-      <output name="O" num_pins="20" equivalent="false"/>
+      <input name="I" num_pins="40" equivalent="full"/>
+      <output name="O" num_pins="20" equivalent="none"/>
       <clock name="clk" num_pins="1"/>
 
       <!-- Describe fracturable logic element.  

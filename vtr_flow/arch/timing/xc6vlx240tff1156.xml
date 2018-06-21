@@ -464,38 +464,38 @@
 		<!-- TODO: Support F7/F8MUX -->
 		<pb_type name="SLICEL" capacity="2">
 			<!-- 0 / 95: -->
-			<input name="A6-1" num_pins="6" equivalent="true"/>
-			<input name="A6_VCCONLY" num_pins="1" equivalent="false"/>
-			<input name="AX" num_pins="1" equivalent="false"/>
-			<input name="B6-1" num_pins="6" equivalent="true"/>
-			<input name="B6_VCCONLY" num_pins="1" equivalent="false"/>
-			<input name="BX" num_pins="1" equivalent="false"/>
-			<input name="C6-1" num_pins="6" equivalent="true"/>
-			<input name="C6_VCCONLY" num_pins="1" equivalent="false"/>
-			<input name="CX" num_pins="1" equivalent="false"/>
-			<input name="D6-1" num_pins="6" equivalent="true"/>
-			<input name="D6_VCCONLY" num_pins="1" equivalent="false"/>
-			<input name="DX" num_pins="1" equivalent="false"/>
+			<input name="A6-1" num_pins="6" equivalent="full"/>
+			<input name="A6_VCCONLY" num_pins="1" equivalent="none"/>
+			<input name="AX" num_pins="1" equivalent="none"/>
+			<input name="B6-1" num_pins="6" equivalent="full"/>
+			<input name="B6_VCCONLY" num_pins="1" equivalent="none"/>
+			<input name="BX" num_pins="1" equivalent="none"/>
+			<input name="C6-1" num_pins="6" equivalent="full"/>
+			<input name="C6_VCCONLY" num_pins="1" equivalent="none"/>
+			<input name="CX" num_pins="1" equivalent="none"/>
+			<input name="D6-1" num_pins="6" equivalent="full"/>
+			<input name="D6_VCCONLY" num_pins="1" equivalent="none"/>
+			<input name="DX" num_pins="1" equivalent="none"/>
 
 			<!-- 32 / 81: -->
-			<input name="CIN" num_pins="1" equivalent="false"/>
+			<input name="CIN" num_pins="1" equivalent="none"/>
 
 			<!-- 33 / 73: -->
-			<output name="A" num_pins="1" equivalent="false"/>
-			<output name="AQ" num_pins="1" equivalent="false"/>
-			<output name="AMUX" num_pins="1" equivalent="false"/>
-			<output name="B" num_pins="1" equivalent="false"/>
-			<output name="BQ" num_pins="1" equivalent="false"/>
-			<output name="BMUX" num_pins="1" equivalent="false"/>
-			<output name="C" num_pins="1" equivalent="false"/>
-			<output name="CQ" num_pins="1" equivalent="false"/>
-			<output name="CMUX" num_pins="1" equivalent="false"/>
-			<output name="D" num_pins="1" equivalent="false"/>
-			<output name="DQ" num_pins="1" equivalent="false"/>
-			<output name="DMUX" num_pins="1" equivalent="false"/>
+			<output name="A" num_pins="1" equivalent="none"/>
+			<output name="AQ" num_pins="1" equivalent="none"/>
+			<output name="AMUX" num_pins="1" equivalent="none"/>
+			<output name="B" num_pins="1" equivalent="none"/>
+			<output name="BQ" num_pins="1" equivalent="none"/>
+			<output name="BMUX" num_pins="1" equivalent="none"/>
+			<output name="C" num_pins="1" equivalent="none"/>
+			<output name="CQ" num_pins="1" equivalent="none"/>
+			<output name="CMUX" num_pins="1" equivalent="none"/>
+			<output name="D" num_pins="1" equivalent="none"/>
+			<output name="DQ" num_pins="1" equivalent="none"/>
+			<output name="DMUX" num_pins="1" equivalent="none"/>
 
 			<!-- 45 / 94: -->
-			<output name="COUT" num_pins="1" equivalent="false"/>
+			<output name="COUT" num_pins="1" equivalent="none"/>
 
 			<!-- 46 / 95: -->
 			<output name="GND_WIRE" num_pins="1"/>

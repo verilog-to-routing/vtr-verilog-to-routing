@@ -84,7 +84,7 @@
 		<complexblocklist>
       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
       <pb_type name="io" capacity="7">
-        <input name="outpad" num_pins="1" equivalent="false"/>
+        <input name="outpad" num_pins="1" equivalent="none"/>
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
 
@@ -123,7 +123,7 @@
         </pb_type>
       <pb_type name="clb">
         
-          <input name="I" num_pins="80" equivalent="true"/>
+          <input name="I" num_pins="80" equivalent="full"/>
           <output name="O" num_pins="16"/>
           <clock name="clk" num_pins="1"/>
           <pb_type name="ble" num_pb="8">

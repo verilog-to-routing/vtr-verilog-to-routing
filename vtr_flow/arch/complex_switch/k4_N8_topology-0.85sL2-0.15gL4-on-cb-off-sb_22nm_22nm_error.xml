@@ -211,15 +211,15 @@
     <!-- k4 N8 I32 with no input crossbar (but LUT inputs are equivalent
          and each LUT has it's own dedicated inputs) -->
     <pb_type name="clb" area="3900">
-      <input name="I0" num_pins="4" equivalent="true"/>
-      <input name="I1" num_pins="4" equivalent="true"/>
-      <input name="I2" num_pins="4" equivalent="true"/>
-      <input name="I3" num_pins="4" equivalent="true"/>
-      <input name="I4" num_pins="4" equivalent="true"/>
-      <input name="I5" num_pins="4" equivalent="true"/>
-      <input name="I6" num_pins="4" equivalent="true"/>
-      <input name="I7" num_pins="4" equivalent="true"/>
-      <output name="O" num_pins="8" equivalent="false"/>
+      <input name="I0" num_pins="4" equivalent="full"/>
+      <input name="I1" num_pins="4" equivalent="full"/>
+      <input name="I2" num_pins="4" equivalent="full"/>
+      <input name="I3" num_pins="4" equivalent="full"/>
+      <input name="I4" num_pins="4" equivalent="full"/>
+      <input name="I5" num_pins="4" equivalent="full"/>
+      <input name="I6" num_pins="4" equivalent="full"/>
+      <input name="I7" num_pins="4" equivalent="full"/>
+      <output name="O" num_pins="8" equivalent="none"/>
       <clock name="clk" num_pins="1"/>
 
       <!-- Describe basic logic element. -->

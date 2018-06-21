@@ -107,10 +107,10 @@
         </pb_type>
       <!-- Describe general-purpose complex block -->
       <pb_type name="clb">        
-          <input name="I" num_pins="10" equivalent="true"/>
-          <input name="cin" num_pins="1" equivalent="false"/>
-          <output name="O" num_pins="4" equivalent="false"/>
-          <output name="cout" num_pins="1" equivalent="false"/>
+          <input name="I" num_pins="10" equivalent="full"/>
+          <input name="cin" num_pins="1" equivalent="none"/>
+          <output name="O" num_pins="4" equivalent="none"/>
+          <output name="cout" num_pins="1" equivalent="none"/>
           <clock name="clk" num_pins="1"/>
           <mode name="logic">
             <pb_type name="ble" num_pb="4">

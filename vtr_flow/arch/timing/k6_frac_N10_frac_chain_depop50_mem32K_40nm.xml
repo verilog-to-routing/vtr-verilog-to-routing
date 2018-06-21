@@ -286,12 +286,12 @@
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
       <pb_type name="clb" area="53894">
-        <input name="I1" num_pins="13" equivalent="true"/>
-		<input name="I2" num_pins="13" equivalent="true"/>
-		<input name="I3" num_pins="13" equivalent="true"/>
-		<input name="I4" num_pins="13" equivalent="true"/>
+        <input name="I1" num_pins="13" equivalent="full"/>
+		<input name="I2" num_pins="13" equivalent="full"/>
+		<input name="I3" num_pins="13" equivalent="full"/>
+		<input name="I4" num_pins="13" equivalent="full"/>
         <input name="cin" num_pins="1"/>
-        <output name="O" num_pins="20" equivalent="false"/>
+        <output name="O" num_pins="20" equivalent="none"/>
         <output name="cout" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
 

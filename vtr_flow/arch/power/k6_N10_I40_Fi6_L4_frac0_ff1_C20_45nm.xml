@@ -142,8 +142,8 @@
       <power method="ignore"/>			
     </pb_type>
     <pb_type name="clb" area="53894">
-      <input name="I" num_pins="40" equivalent="false"/>
-      <output name="O" num_pins="10" equivalent="false"/>
+      <input name="I" num_pins="40" equivalent="none"/>
+      <output name="O" num_pins="10" equivalent="none"/>
       <clock name="clk" num_pins="1"/>
       <interconnect>
         <mux name="crossbar-0-0" input="clb.I[0] clb.I[1] clb.I[2] clb.I[3] clb.I[4] clb.I[5] clb.I[6] clb.I[7] clb.I[8] clb.I[9] clb.I[10] clb.I[11] clb.I[12] clb.I[13] clb.I[14] clb.I[15] clb.I[16] clb.I[17] clb.I[18] clb.I[19]" output="ble[0].in[0]">
