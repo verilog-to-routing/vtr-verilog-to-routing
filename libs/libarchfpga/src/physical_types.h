@@ -633,6 +633,12 @@ struct t_interconnect {
 	t_interconnect_power *interconnect_power;
 };
 
+enum class PortEquivalence {
+    NONE,    //The pins within the port are not equivalent and can not be swapped
+    FULL,    //The pins within the port are fully equivalent and can be freely swapped (e.g. logically equivalent or modelling a full-crossbar)
+    INSTANCE //The port is equivalent with instance swapping (more restrictive that FULL)
+};
+
 /** Describes I/O and clock ports
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
@@ -659,7 +665,7 @@ struct t_port {
 	bool is_clock;
 	bool is_non_clock_global;
 	int num_pins;
-	bool equivalent;
+	PortEquivalence equivalent;
 	t_pb_type *parent_pb_type;
 	char * port_class;
 

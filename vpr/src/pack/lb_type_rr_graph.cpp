@@ -308,7 +308,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 
 		/* alloc and load input pins that connect to sinks */
 		for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
-			bool port_equivalent = false;
+			PortEquivalence port_equivalent = PortEquivalence::NONE;
 			int sink_index = OPEN;
 			for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 				/* load intermediate indices */
@@ -326,10 +326,10 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
 				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-				if(port_equivalent != true || sink_index == OPEN) {
+				if(port_equivalent == PortEquivalence::NONE || sink_index == OPEN) {
 					/* Create new sink for input to primitive */
 					t_lb_type_rr_node new_sink;
-					if(port_equivalent == true) {
+					if(port_equivalent != PortEquivalence::NONE) {
 						new_sink.capacity = pb_pin->port->num_pins;
 					} else {
 						new_sink.capacity = 1;
@@ -394,7 +394,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 
 		/* alloc and load clock pins that connect to sinks */
 		for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
-			bool port_equivalent = false;
+			PortEquivalence port_equivalent = PortEquivalence::NONE;
 			int sink_index = OPEN;
 			for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 				/* load intermediate indices */
@@ -412,10 +412,10 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
 				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-				if(port_equivalent != true || sink_index == OPEN) {
+				if(port_equivalent == PortEquivalence::NONE || sink_index == OPEN) {
 					/* Create new sink for clock to primitive */
 					t_lb_type_rr_node new_sink;
-					if(port_equivalent == true) {
+					if(port_equivalent != PortEquivalence::NONE) {
 						new_sink.capacity = pb_pin->port->num_pins;
 					} else {
 						new_sink.capacity = 1;

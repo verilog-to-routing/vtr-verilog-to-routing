@@ -517,7 +517,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	/* Setup pin classes */
 	num_class = 0;
 	for (i = 0; i < Type->pb_type->num_ports; i++) {
-		if (Type->pb_type->ports[i].equivalent) {
+		if (Type->pb_type->ports[i].equivalent != PortEquivalence::NONE) {
 			num_class += capacity;
 		} else {
 			num_class += capacity * Type->pb_type->ports[i].num_pins;
@@ -540,7 +540,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	num_class = 0;
 	for (i = 0; i < capacity; ++i) {
 		for (j = 0; j < Type->pb_type->num_ports; ++j) {
-			if (Type->pb_type->ports[j].equivalent) {
+		if (Type->pb_type->ports[i].equivalent != PortEquivalence::NONE) {
 				Type->class_inf[num_class].num_pins =
 						Type->pb_type->ports[j].num_pins;
 				Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
@@ -548,7 +548,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 
 			for (k = 0; k < Type->pb_type->ports[j].num_pins; ++k) {
-				if (!Type->pb_type->ports[j].equivalent) {
+				if (Type->pb_type->ports[j].equivalent == PortEquivalence::NONE) {
 					Type->class_inf[num_class].num_pins = 1;
 					Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
 							sizeof(int) * 1);
@@ -568,11 +568,11 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                     Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 
-				if (!Type->pb_type->ports[j].equivalent) {
+				if (Type->pb_type->ports[j].equivalent == PortEquivalence::NONE) {
 					num_class++;
 				}
 			}
-			if (Type->pb_type->ports[j].equivalent) {
+			if (Type->pb_type->ports[j].equivalent != PortEquivalence::NONE) {
 				num_class++;
 			}
 		}
@@ -1329,7 +1329,24 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 	Prop = get_attribute(Parent, "port_class", loc_data, OPTIONAL).as_string(nullptr);
 	port->port_class = vtr::strdup(Prop);
 
-	port->equivalent = get_attribute(Parent, "equivalent", loc_data, OPTIONAL).as_bool(false);
+	Prop = get_attribute(Parent, "equivalent", loc_data, OPTIONAL).as_string(nullptr);
+    if (Prop) {
+        if (Prop == "none"s) {
+            port->equivalent = PortEquivalence::NONE;
+        } else if (Prop == "full"s) {
+            port->equivalent = PortEquivalence::FULL;
+        } else if (Prop == "instance"s) {
+            if (Parent.name() == "output"s) {
+                port->equivalent = PortEquivalence::INSTANCE;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                        "Invalid pin equivalence '%s' for %s port.", Prop, Parent.name());
+            }
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                    "Invalid pin equivalence '%s'.", Prop);
+        }
+    }
 	port->num_pins = get_attribute(Parent, "num_pins", loc_data).as_int(0);
 	port->is_non_clock_global = get_attribute(Parent,
 			"is_non_clock_global", loc_data, OPTIONAL).as_bool(false);

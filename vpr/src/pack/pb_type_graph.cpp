@@ -26,6 +26,7 @@ using namespace std;
 
 #include "token.h"
 #include "arch_types.h"
+#include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "pb_type_graph.h"
@@ -1635,7 +1636,7 @@ static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node){
 		for(j = 0; j < pb_graph_node->num_input_pins[i]; j++){
 			check_repeated_edges_at_pb_pin(&pb_graph_node->input_pins[i][j]);
 			// Checks the equivalency of pins of an input port
-			if(pb_graph_node->input_pins[i][j].port->equivalent){
+			if(pb_graph_node->input_pins[i][j].port->equivalent != PortEquivalence::NONE){
 				if(!check_input_pins_equivalence(&pb_graph_node->input_pins[i][j],
 					j, logic_equivalent_pins_map, &line_num)){
 						vtr::printf_warning(__FILE__, __LINE__,

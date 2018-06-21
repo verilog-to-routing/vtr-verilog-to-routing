@@ -820,7 +820,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                 const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, atom_pin);
                 VTR_ASSERT(pb_graph_pin);
 
-                if(!pb_graph_pin->port->equivalent) continue; //Only need to remap equivalent ports
+                if(pb_graph_pin->port->equivalent == PortEquivalence::NONE) continue; //Only need to remap equivalent ports
 
                 //Remap this terminal to an explicit pin instead of the common sink
                 int pin_index = pb_graph_pin->pin_count_in_cluster;
