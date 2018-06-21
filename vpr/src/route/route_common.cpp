@@ -1715,21 +1715,19 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 	/* Increments or decrements (depending on add_or_sub) the occupancy of    *
 	 * one rr_node, and adjusts the present cost of that node appropriately.  */
 
-	int occ, capacity;
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
-	capacity = device_ctx.rr_nodes[inode].capacity();
-	route_ctx.rr_node_route_inf[inode].set_occ(occ);
+	int new_occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
+	int capacity = device_ctx.rr_nodes[inode].capacity();
+	route_ctx.rr_node_route_inf[inode].set_occ(new_occ);
 
-	if (occ < capacity) {
+	if (new_occ < capacity) {
 		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
-		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (new_occ + 1 - capacity) * pres_fac;
 		if (add_or_sub == 1) {
-			route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
+			route_ctx.rr_node_route_inf[inode].acc_cost += (new_occ - capacity) * acc_fac;
 		}
 	}
 }
