@@ -598,7 +598,7 @@ The tags within the ``<device>`` tag are:
 .. arch:tag:: <default_fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}"/>
 
     This defines the default Fc specification, if it is not specified within a ``<fc>`` tag inside a top-level complex block.
-    The attributes have the same meaning as the :ref:`\<fc\> tag attributes <tag-fc>`.
+    The attributes have the same meaning as the :ref:`\<fc\> tag attributes <arch_fc>`.
 
 .. _arch_switches:
 
@@ -885,47 +885,78 @@ PB Type
 
 The following tags are common to all <pb_type> tags:
 
-.. arch:tag:: <input name="string" num_pins="int" equivalent="true|false" is_non_clock_global="{true|false}"/>
+.. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
+
+    Defines an input port.
+    Multple input ports are described using multiple ``<input>`` tags.
 
     :req_param name: Name of the input port.
     :req_param num_pins: Number of pins the input port has.
 
     :opt_param equivalent:
-        *Applies only to top-level pb_type.*
+
+        .. note:: Applies only to top-level pb_type.
+
         Describes if the pins of the port are logically equivalent.
         Input logical equivalence means that the pin order can be swapped without changing functionality.
         For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
+        LUTs are also considered logically equivalent since the logic function (LUT mask) can be rotated to account for pin swapping.
         
-        **default:** ``false``
+        * ``none``: No input pins are logically equivalent.
+
+            Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
+
+        * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
+
+            All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by each input port pin.)
+
+        **default:** ``none``
 
     :opt_param is_non_clock_global:
-        *Applies only to top-level pb_type.*
+
+        .. note:: Applies only to top-level pb_type.
+
         Describes if this input pin is a global signal that is not a clock.
         Very useful for signals such as FPGA-wide asynchronous resets.
         These signals have their own dedicated routing channels and so should not use the general interconnect fabric on the FPGA.
 
-    Defines an input port.
-    Multple input ports are described using multiple <input> tags.
 
-.. arch:tag:: <output name="string" num_pins="int" equivalent="{true|false}"/>
+.. arch:tag:: <output name="string" num_pins="int" equivalent="{none|full|instance}"/>
+
+    Defines an output port.
+    Multple output ports are described using multiple ``<output>`` tags
 
     :req_param name: Name of the output port.
     :req_param num_pins: Number of pins the output port has.
 
     :opt_param equivalent:
-        *Applies only to top-level pb_type.*
-        Describes if the pins of the port are logically equivalent.
-        *See above description for inputs.*
+
+        .. note:: Applies only to top-level pb_type.
+
+        Describes if the pins of the output port are logically equivalent:
+
+        * ``none``: No output pins are logically equivalent.
+
+            Output pins can not be swapped by the router. (Generates a unique SRC rr-node for each block output port pin.)
+
+        * ``full``: All output pins are considered logically equivalent.
+
+            All output pins can be swapped without limitation by the router. (Generates a single SRC rr-node shared by each output port pin.)
+
+        * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
+          
+            Like ``full``, this generates a single SRC rr-node shared by each output port pin.
+            However the router must take special care to ensure it does not make use of LUT/BLE outputs which are being used to route signals strictly within the current cluster (to do so would be illegal). 
+            This is handled by special code in the router when this type of equivalence is specified.
+
+        **Default:** ``none``
 
 
-    Defines an output port.
-    Multple output ports are described using multiple <output> tags
-
-.. arch:tag:: <clock name="string" num_pins="int" equivalent="{true|false}"/>
+.. arch:tag:: <clock name="string" num_pins="int" equivalent="{none|full}"/>
 
     Describes a clock port.
-    Multple clock ports are described using multiple <clock> tags.
-    *See above descriptions on inputs/outputs*
+    Multple clock ports are described using multiple ``<clock>`` tags.
+    *See above descriptions on inputs*
 
 .. arch:tag:: <mode name="string">
 
@@ -970,6 +1001,7 @@ The following tags are common to all <pb_type> tags:
 The following tags are unique to the top level <pb_type> of a complex logic block.
 They describe how a complex block interfaces with the inter-block world.
 
+.. _arch_fc:
 
 .. arch:tag:: <fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}">
 
