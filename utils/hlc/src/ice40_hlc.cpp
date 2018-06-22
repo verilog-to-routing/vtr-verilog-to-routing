@@ -158,34 +158,36 @@ static t_hlc_tile_type _tile_type_from_name(std::string s) {
     }
 }
 
-static t_hlc_sw_type _sw_type_from_id(int i) {
-    switch(i) {
-    case -1:
+static t_hlc_sw_type _sw_type_from_id(int iswitch) {
+    if (iswitch < 0) {
         return HLC_SW_END;
-    case 0: // short
-        return HLC_SW_SHORT;
-    case 1: // routing
-        return HLC_SW_ROUTING;
-    case 2: // buffer
-        return HLC_SW_BUFFER;
-    default:
-        return HLC_SW_NULL;
     }
+    auto& device_ctx = g_vpr_ctx.device();
+    auto sw = device_ctx.rr_switch_inf[iswitch];
+    const std::map<std::string, t_hlc_sw_type> sw_name_map = {
+        {"buffer",                      HLC_SW_BUFFER},
+        {"mux",                         HLC_SW_BUFFER},
+        {"routing",                     HLC_SW_ROUTING},
+        {"short",                       HLC_SW_SHORT},
+        {"__vpr_delayless_switch__",    HLC_SW_SHORT},
+    };
+    try {
+        return sw_name_map.at(sw.name);
+    } catch (const std::out_of_range&) {}
+
+    if (sw.configurable()) {
+        if (sw.buffered()) {
+            return HLC_SW_BUFFER;
+        } else {
+            return HLC_SW_ROUTING;
+        }
+    }
+
+    return HLC_SW_SHORT;
 }
 
-static std::string _sw_name_from_id(int i) {
-    switch(i) {
-    case -1:
-        return " -O  ";
-    case 0: // short
-        return " --- ";
-    case 1: // routing
-        return " <-> ";
-    case 2: // buffer
-        return " --> ";
-    default:
-        return " !!! ";
-    }
+static std::string _sw_name_from_id(int iswitch) {
+    return hlc_sw_str(_sw_type_from_id(iswitch));
 }
 
 /**
