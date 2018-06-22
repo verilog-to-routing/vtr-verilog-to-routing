@@ -59,8 +59,17 @@ constexpr std::array<t_hlc_sw_type, NUM_HLC_SW_TYPES> HLC_SW_TYPES = { {
 } };
 
 constexpr std::array<const char*, NUM_HLC_SW_TYPES> hlc_sw_typenames = { {
-    "!!!", "--", "->", "~>", ""
+    "!!", "--", "->", "~>", ""
 } };
+
+inline std::string hlc_sw_str(t_hlc_sw_type sw) {
+    int i = 0;
+    while(HLC_SW_TYPES[i] != sw && i < HLC_SW_END) i++;
+    if (i == HLC_SW_END) {
+        return "??";
+    }
+    return hlc_sw_typenames[i];
+}
 
 /* HLC Coordinates */
 struct t_hlc_coord {

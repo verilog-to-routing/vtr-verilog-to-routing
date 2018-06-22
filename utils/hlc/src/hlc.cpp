@@ -224,7 +224,7 @@ void t_hlc_file::print_edges(std::ostream& os, std::string indent, std::list<t_h
         os << indent;
         os << g.front().src;
         for (auto e : g) {
-            os << " " << hlc_sw_typenames[e.sw];
+            os << " " << hlc_sw_str(e.sw);
             os << " " << e.dst;
         }
         os << std::endl;
