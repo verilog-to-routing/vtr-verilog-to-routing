@@ -941,7 +941,7 @@ The following tags are common to all <pb_type> tags:
 
         * ``full``: All output pins are considered logically equivalent.
 
-            All output pins can be swapped without limitation by the router. (Generates a single SRC rr-node shared by each output port pin.)
+            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.) 
 
         * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
           
