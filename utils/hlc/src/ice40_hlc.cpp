@@ -694,6 +694,10 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 auto& snk_node = device_ctx.rr_nodes[snk_id];
                 auto snk_name = snk_node.metadata("hlc_name");
 
+                if (src_name == snk_name) {
+                    continue;
+                }
+
                 // Edge
                 auto edge_hlcpos = metadata_hlc_coord(src_node, snk_id, tptr->iswitch);
                 if (edge_hlcpos.x != -1 && edge_hlcpos.y != -1) {
