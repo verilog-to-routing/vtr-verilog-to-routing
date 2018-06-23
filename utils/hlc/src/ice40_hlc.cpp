@@ -654,8 +654,9 @@ void ICE40HLCWriterVisitor::finish_impl() {
             }
             trace << " -----------------" << std::endl;
             /** Output the actual trace of the route */
-            auto tptr = route_ctx.trace_head[net_id];
-            while (tptr->next != nullptr) {
+            for (auto tptr = route_ctx.trace_head[net_id]; tptr->next != nullptr; tptr = tptr->next) {
+                VTR_ASSERT(tptr != nullptr);
+                VTR_ASSERT(tptr->next != nullptr);
                 // Source
                 auto src_id = tptr->index;
                 auto& src_node = device_ctx.rr_nodes[src_id];
@@ -676,17 +677,19 @@ void ICE40HLCWriterVisitor::finish_impl() {
                     node_output(trace, snk_id, snk_node);
                     trace << std::endl;
                 }
-                tptr = tptr->next;
             }
         }
 
         // Set the edges needed for this route in the HLC file.
-        auto tptr = route_ctx.trace_head[net_id];
-        while (tptr != nullptr) {
+        for (auto tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
+            VTR_ASSERT(tptr != nullptr);
             // Source
             auto src_id = tptr->index;
             auto& src_node = device_ctx.rr_nodes[src_id];
             auto src_name = src_node.metadata("hlc_name");
+            if (src_name == nullptr) {
+                continue;
+            }
 
             if (tptr->iswitch != OPEN) {
                 VTR_ASSERT(tptr->next != nullptr);
@@ -695,8 +698,12 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 auto snk_id = tptr->next->index;
                 auto& snk_node = device_ctx.rr_nodes[snk_id];
                 auto snk_name = snk_node.metadata("hlc_name");
+                if (snk_name == nullptr) {
+                    continue;
+                }
 
-                if (src_name == snk_name) {
+                auto hlc_sw_type = _sw_type_from_id(tptr->iswitch);
+                if (hlc_sw_type == HLC_SW_SHORT) {
                     continue;
                 }
 
@@ -709,25 +716,24 @@ void ICE40HLCWriterVisitor::finish_impl() {
                     auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
                     tile->name = hlc_tile(type->pb_type);
 
-                    if (src_name != nullptr && snk_name != nullptr) {
-                        auto sw = _sw_name_from_id(tptr->iswitch);
-                        auto& c = tile->enable_edge(*src_name, *snk_name, _sw_type_from_id(tptr->iswitch));
-                        if (verbose_) {
-                            // Output a useful debugging about which rr_nodes this edge
-                            // comes from.
-                            c << " ";
-                            c << std::setw(5) << std::right << src_id;
-                            c << " => ";
-                            c << std::setw(5) << std::right << snk_id;
-                            c << "  ";
-                            c << std::setw(6) << std::right << src_node.type_string();
-                            c << " => ";
-                            c << std::left << snk_node.type_string();
-                        }
+                    VTR_ASSERT(src_name != nullptr);
+                    VTR_ASSERT(snk_name != nullptr);
+
+                    auto& c = tile->enable_edge(*src_name, *snk_name, hlc_sw_type);
+                    if (verbose_) {
+                        // Output a useful debugging about which rr_nodes this edge
+                        // comes from.
+                        c << " ";
+                        c << std::setw(5) << std::right << src_id;
+                        c << " => ";
+                        c << std::setw(5) << std::right << snk_id;
+                        c << "  ";
+                        c << std::setw(6) << std::right << src_node.type_string();
+                        c << " => ";
+                        c << std::left << snk_node.type_string();
                     }
                 }
             }
-            tptr = tptr->next;
         }
     }
 
