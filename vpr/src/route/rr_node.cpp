@@ -142,7 +142,7 @@ bool t_rr_node::edge_is_configurable(short iedge) const {
 std::string* t_rr_node::metadata(std::string key) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (device_ctx.rr_node_metadata.count(this) == 0) {
+    if (device_ctx.rr_node_metadata.size() == 0 || device_ctx.rr_node_metadata.count(this) == 0) {
         return nullptr;
     }
 
