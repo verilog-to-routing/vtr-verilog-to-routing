@@ -234,7 +234,7 @@ static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short sw
 }
 
 static void node_output(std::ostream& os, int node_id, t_rr_node& node) {
-    os << "(" << std::setw(5) << node_id << ") ";
+    os << "(" << std::setw(6) << node_id << ") ";
     os << std::setw(6) << node.type_string();
 }
 
@@ -653,6 +653,7 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 trace << " " << block_name << std::endl;
             }
             trace << " -----------------" << std::endl;
+            std::string no_hlc_name = "No HLC name";
             /** Output the actual trace of the route */
             for (auto tptr = route_ctx.trace_head[net_id]; tptr->next != nullptr; tptr = tptr->next) {
                 VTR_ASSERT(tptr != nullptr);
@@ -669,12 +670,25 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 } else {
                     // Edge
                     auto edge_hlcpos = metadata_hlc_coord(src_node, snk_id, tptr->iswitch);
-                    auto sw = _sw_name_from_id(tptr->iswitch);
 
                     trace << " (" << std::setw(2) << edge_hlcpos.x << "," << std::setw(2) << edge_hlcpos.y << ") - ";
                     node_output(trace, src_id, src_node);
-                    trace << " <" << std::setw(2) << std::to_string(tptr->iswitch) << ">" << sw;
+                    trace << " <" << std::setw(2) << std::to_string(tptr->iswitch) << "> ";
                     node_output(trace, snk_id, snk_node);
+
+                    /* Output the HLC names */
+                    auto sw = _sw_name_from_id(tptr->iswitch);
+                    auto src_name = src_node.metadata("hlc_name");
+                    if (src_name == nullptr) {
+                        src_name = &no_hlc_name;
+                    }
+                    auto snk_name = snk_node.metadata("hlc_name");
+                    if (snk_name == nullptr) {
+                        snk_name = &no_hlc_name;
+                    }
+                    trace << " " << std::setw(20) << std::right << *src_name;
+                    trace << " " << sw;
+                    trace << " " << *snk_name;
                     trace << std::endl;
                 }
             }
@@ -702,6 +716,9 @@ void ICE40HLCWriterVisitor::finish_impl() {
                     continue;
                 }
 
+                VTR_ASSERT(src_name != nullptr);
+                VTR_ASSERT(snk_name != nullptr);
+
                 auto hlc_sw_type = _sw_type_from_id(tptr->iswitch);
                 if (hlc_sw_type == HLC_SW_SHORT) {
                     continue;
@@ -715,9 +732,6 @@ void ICE40HLCWriterVisitor::finish_impl() {
                     auto grid_pos = _translate_coords(edge_hlcpos);
                     auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
                     tile->name = hlc_tile(type->pb_type);
-
-                    VTR_ASSERT(src_name != nullptr);
-                    VTR_ASSERT(snk_name != nullptr);
 
                     auto& c = tile->enable_edge(*src_name, *snk_name, hlc_sw_type);
                     if (verbose_) {
