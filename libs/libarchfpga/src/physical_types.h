@@ -311,6 +311,12 @@ struct t_power_usage {
 /* FPGA Physical Logic Blocks data types                                                         */
 /*************************************************************************************************/
 
+enum class PortEquivalence {
+    NONE,    //The pins within the port are not equivalent and can not be swapped
+    FULL,    //The pins within the port are fully equivalent and can be freely swapped (e.g. logically equivalent or modelling a full-crossbar)
+    INSTANCE //The port is equivalent with instance swapping (more restrictive that FULL)
+};
+
 /* A class of CLB pins that share common properties
  * port_name: name of this class of pins
  * type:  DRIVER or RECEIVER (what is this pinclass?)              *
@@ -319,6 +325,7 @@ struct t_power_usage {
  * pinlist[]:  List of clb pin numbers which belong to this class. */
 struct t_class {
 	enum e_pin_type type;
+    PortEquivalence equivalence;
 	int num_pins;
 	int *pinlist; /* [0..num_pins - 1] */
 };
@@ -486,6 +493,10 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int num_receivers = 0;
 
 	int index = -1; /* index of type descriptor in array (allows for index referencing) */
+
+    /* Returns the indices of pins that contain a clock for this physical logic block */
+    std::vector<int> get_clock_pins_indices();
+
 };
 typedef const t_type_descriptor* t_type_ptr;
 
@@ -655,13 +666,12 @@ struct t_port {
 	bool is_clock;
 	bool is_non_clock_global;
 	int num_pins;
-	bool equivalent;
+	PortEquivalence equivalent;
 	t_pb_type *parent_pb_type;
 	char * port_class;
 
 	int index;
 	int port_index_by_type;
-	char *chain_name;
 
 	t_port_power *port_power;
 };

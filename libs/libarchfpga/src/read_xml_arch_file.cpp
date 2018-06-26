@@ -89,7 +89,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
-		e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
+		e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
@@ -517,18 +517,16 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	/* Setup pin classes */
 	num_class = 0;
 	for (i = 0; i < Type->pb_type->num_ports; i++) {
-		if (Type->pb_type->ports[i].equivalent) {
+		if (Type->pb_type->ports[i].equivalent != PortEquivalence::NONE) {
 			num_class += capacity;
 		} else {
 			num_class += capacity * Type->pb_type->ports[i].num_pins;
 		}
 	}
-	Type->class_inf = (t_class*) vtr::calloc(num_class,
-			sizeof(t_class));
+	Type->class_inf = (t_class*) vtr::calloc(num_class, sizeof(t_class));
 	Type->num_class = num_class;
 	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
-	Type->is_global_pin = (bool*) vtr::malloc(
-        Type->num_pins * sizeof(bool)* capacity);
+	Type->is_global_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
 		Type->is_global_pin[i] = true;
@@ -540,15 +538,14 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	num_class = 0;
 	for (i = 0; i < capacity; ++i) {
 		for (j = 0; j < Type->pb_type->num_ports; ++j) {
-			if (Type->pb_type->ports[j].equivalent) {
-				Type->class_inf[num_class].num_pins =
-						Type->pb_type->ports[j].num_pins;
-				Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
-						sizeof(int) * Type->pb_type->ports[j].num_pins);
+		if (Type->pb_type->ports[j].equivalent != PortEquivalence::NONE) {
+				Type->class_inf[num_class].num_pins = Type->pb_type->ports[j].num_pins;
+				Type->class_inf[num_class].pinlist = (int *) vtr::malloc( sizeof(int) * Type->pb_type->ports[j].num_pins);
+                Type->class_inf[num_class].equivalence = Type->pb_type->ports[i].equivalent;
 			}
 
 			for (k = 0; k < Type->pb_type->ports[j].num_pins; ++k) {
-				if (!Type->pb_type->ports[j].equivalent) {
+				if (Type->pb_type->ports[j].equivalent == PortEquivalence::NONE) {
 					Type->class_inf[num_class].num_pins = 1;
 					Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
 							sizeof(int) * 1);
@@ -568,11 +565,11 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                     Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 
-				if (!Type->pb_type->ports[j].equivalent) {
+				if (Type->pb_type->ports[j].equivalent == PortEquivalence::NONE) {
 					num_class++;
 				}
 			}
-			if (Type->pb_type->ports[j].equivalent) {
+			if (Type->pb_type->ports[j].equivalent != PortEquivalence::NONE) {
 				num_class++;
 			}
 		}
@@ -1054,7 +1051,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 			pb_type->ports[j].index = j;
 			pb_type->ports[j].port_index_by_type = k;
 			ProcessPb_TypePort(Cur, &pb_type->ports[j],
-					pb_type->pb_type_power->estimation_method, loc_data);
+					pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
 
 			//Check port name duplicates
 			ret_pb_ports = pb_port_names.insert(
@@ -1309,7 +1306,19 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 }
 
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
-		e_power_estimation_method power_method, const pugiutil::loc_data& loc_data) {
+		e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data) {
+
+    std::vector<std::string> expected_attributes = {"name", "num_pins", "port_class"};
+    if (is_root_pb_type) {
+        expected_attributes.push_back("equivalent");
+
+        if (Parent.name() == "input"s || Parent.name() == "clock"s ) {
+            expected_attributes.push_back("is_non_clock_global");
+        }
+    }
+
+    expect_only_attributes(Parent, expected_attributes, loc_data);
+
 	const char *Prop;
 	Prop = get_attribute(Parent, "name", loc_data).value();
 	port->name = vtr::strdup(Prop);
@@ -1317,10 +1326,24 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 	Prop = get_attribute(Parent, "port_class", loc_data, OPTIONAL).as_string(nullptr);
 	port->port_class = vtr::strdup(Prop);
 
-	Prop = get_attribute(Parent, "chain", loc_data, OPTIONAL).as_string(nullptr);
-	port->chain_name = vtr::strdup(Prop);
-
-	port->equivalent = get_attribute(Parent, "equivalent", loc_data, OPTIONAL).as_bool(false);
+	Prop = get_attribute(Parent, "equivalent", loc_data, OPTIONAL).as_string(nullptr);
+    if (Prop) {
+        if (Prop == "none"s) {
+            port->equivalent = PortEquivalence::NONE;
+        } else if (Prop == "full"s) {
+            port->equivalent = PortEquivalence::FULL;
+        } else if (Prop == "instance"s) {
+            if (Parent.name() == "output"s) {
+                port->equivalent = PortEquivalence::INSTANCE;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                        "Invalid pin equivalence '%s' for %s port.", Prop, Parent.name());
+            }
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                    "Invalid pin equivalence '%s'.", Prop);
+        }
+    }
 	port->num_pins = get_attribute(Parent, "num_pins", loc_data).as_int(0);
 	port->is_non_clock_global = get_attribute(Parent,
 			"is_non_clock_global", loc_data, OPTIONAL).as_bool(false);
@@ -2144,13 +2167,15 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiuti
         }
     }
 
-    if (   (auto_layout_cnt == 0 && fixed_layout_cnt == 0)
-        || (auto_layout_cnt != 0 && fixed_layout_cnt != 0)) {
+    if (auto_layout_cnt == 0 && fixed_layout_cnt == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
-                "Expected either a single <auto_layout> or one-or-more <fixed_layout> tags");
+                "Expected either an <auto_layout> or <fixed_layout> tag");
+    }
+    if (auto_layout_cnt > 1 ) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                "Expected at most one <auto_layout> tag");
     }
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
-    VTR_ASSERT_MSG(auto_layout_cnt == 0 || fixed_layout_cnt == 0, "At most one of fixed or auto layout can be specified");
 
     for (auto layout_type_tag : layout_tag.children()) {
 
