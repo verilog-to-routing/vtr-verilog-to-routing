@@ -150,7 +150,6 @@ void check_rr_graph(const t_graph_type graph_type,
 
                 const auto& node = device_ctx.rr_nodes[inode];
 
-
                 bool is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                         || (device_ctx.rr_nodes[inode].ylow() == 1)
                         || (device_ctx.rr_nodes[inode].xhigh() == int(grid.width()) - 2)
@@ -158,7 +157,9 @@ void check_rr_graph(const t_graph_type graph_type,
                 bool is_wire = (device_ctx.rr_nodes[inode].type() == CHANX
                         || device_ctx.rr_nodes[inode].type() == CHANY);
 
-                if (!is_chain && !is_fringe && !is_wire) {
+                if (device_ctx.rr_nodes[inode].capacity() == 0) {
+                    // Capacity zero nodes are fine to have no fan-in / fan out.
+                } else if (!is_chain && !is_fringe && !is_wire) {
                     if (node.type() == IPIN || node.type() == OPIN) {
 
                         if (has_adjacent_channel(node, device_ctx.grid)) {
@@ -360,36 +361,62 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             break;
 
         case CHANX:
-            if (route_type == DETAILED) {
-                nodes_per_chan = device_ctx.chan_width.max;
-                tracks_per_node = 1;
+            if (capacity == 0) {
+                auto fan_in = device_ctx.rr_nodes[inode].fan_in();
+                if (fan_in > 0) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a capacity of zero but fan_in of %d.\n", inode, rr_type, fan_in);
+                }
+                auto fan_out = device_ctx.rr_nodes[inode].fan_in();
+                if (fan_out > 0) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a capacity of zero but fan_out of %d.\n", inode, rr_type, fan_out);
+                }
             } else {
-                nodes_per_chan = 1;
-                tracks_per_node = device_ctx.chan_width.x_list[ylow];
-            }
+                if (route_type == DETAILED) {
+                    nodes_per_chan = device_ctx.chan_width.max;
+                    tracks_per_node = 1;
+                } else {
+                    nodes_per_chan = 1;
+                    tracks_per_node = device_ctx.chan_width.x_list[ylow];
+                }
 
-            if (ptc_num >= nodes_per_chan) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
+                if (ptc_num >= nodes_per_chan) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                }
 
-            if (capacity != tracks_per_node) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                if (capacity != tracks_per_node) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a capacity of %d but required %d.\n", inode, rr_type, capacity, tracks_per_node);
+                }
             }
             break;
 
         case CHANY:
-            if (route_type == DETAILED) {
-                nodes_per_chan = device_ctx.chan_width.max;
-                tracks_per_node = 1;
+            if (capacity == 0) {
+                auto fan_in = device_ctx.rr_nodes[inode].fan_in();
+                if (fan_in > 0) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a capacity of zero but fan_in of %d.\n", inode, rr_type, fan_in);
+                }
+                auto fan_out = device_ctx.rr_nodes[inode].fan_in();
+                if (fan_out > 0) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a capacity of zero but fan_out of %d.\n", inode, rr_type, fan_out);
+                }
             } else {
-                nodes_per_chan = 1;
-                tracks_per_node = device_ctx.chan_width.y_list[xlow];
-            }
-            if (capacity != tracks_per_node) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                if (route_type == DETAILED) {
+                    nodes_per_chan = device_ctx.chan_width.max;
+                    tracks_per_node = 1;
+                } else {
+                    nodes_per_chan = 1;
+                    tracks_per_node = device_ctx.chan_width.y_list[xlow];
+                }
+                if (capacity != tracks_per_node) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "in check_rr_node: inode %d (type %d) has a capacity of %d but required %d.\n", inode, rr_type, capacity, tracks_per_node);
+                }
             }
             break;
 
@@ -416,9 +443,13 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 }
             }
 
+            if (capacity == 0) {
+                check_for_out_edges = false;
+            }
+
             if (check_for_out_edges) {
                 std::string info = describe_rr_node(inode);
-                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: %s has no out-going edges.\n", info.c_str());
+                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: %s with capacity %d has no out-going edges.\n", info.c_str(), capacity);
             }
         }
     }
