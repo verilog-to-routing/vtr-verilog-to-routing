@@ -1340,7 +1340,12 @@ void draw_rr() {
 static void draw_rr_chan(int inode, const t_color color) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rr_type type = device_ctx.rr_nodes[inode].type();
+    auto& node = device_ctx.rr_nodes[inode];
+    if (node.capacity() == 0) {
+        return;
+    }
+
+    t_rr_type type = node.type();
 
     VTR_ASSERT(type == CHANX || type == CHANY);
 
