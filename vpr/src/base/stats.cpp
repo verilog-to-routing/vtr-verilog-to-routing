@@ -261,7 +261,7 @@ static void get_channel_occupancy_stats() {
 /* Loads the two arrays passed in with the total occupancy at each of the  *
 * channel segments in the FPGA.                                           */
 static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ) {
-	int i, j, inode;
+	int i, j;
 	t_trace *tptr;
 	t_rr_type rr_type;
 
@@ -281,7 +281,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 
 		tptr = route_ctx.trace_head[net_id];
 		while (tptr != nullptr) {
-			inode = tptr->index;
+			auto inode = tptr->index;
 			rr_type = device_ctx.rr_nodes[inode].type();
 
 			if (rr_type == SINK) {
@@ -316,7 +316,6 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
     auto& device_ctx = g_vpr_ctx.device();
 
 	t_trace *tptr, *prevptr;
-	int inode;
 	t_rr_type curr_type, prev_type;
 	int bends, length, segments;
 
@@ -329,7 +328,7 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"in get_num_bends_and_length: net #%lu has no traceback.\n", size_t(inet));
 	}
-	inode = prevptr->index;
+	auto inode = prevptr->index;
 	prev_type = device_ctx.rr_nodes[inode].type();
 
 	tptr = prevptr->next;

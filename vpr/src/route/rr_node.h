@@ -75,7 +75,7 @@ class t_rr_node {
         short num_configurable_edges() const { return num_configurable_edges_; }
         short num_non_configurable_edges() const { return num_edges() - num_configurable_edges(); }
 
-        int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
+        RRNodeId edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
@@ -119,7 +119,7 @@ class t_rr_node {
         void partition_edges();
 
         void set_num_edges(short); //Note will remove any previous edges
-        void set_edge_sink_node(short iedge, int sink_node);
+        void set_edge_sink_node(short iedge, RRNodeId sink_node);
         void set_edge_switch(short iedge, short switch_index);
         void set_edge_is_configurable(short iedge, bool is_configurable);
         void set_fan_in(short);
@@ -144,7 +144,7 @@ class t_rr_node {
         //The edge information is stored in a structure to economize on the number of pointers held
         //by t_rr_node (to save memory), and is not exposed externally
         struct t_rr_edge {
-            int sink_node = -1; //The ID of the sink RR node associated with this edge
+            RRNodeId sink_node; //The ID of the sink RR node associated with this edge
             short switch_id = -1; //The ID of the switch type this edge represents
         };
 

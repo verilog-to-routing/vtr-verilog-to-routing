@@ -5,10 +5,10 @@
 
 
 struct t_heap_prev {
-    t_heap_prev(int to, int from, short edge)
+    t_heap_prev(RRNodeId to, RRNodeId from, short edge)
         : to_node(to), from_node(from), from_edge(edge) {}
-    int to_node = NO_PREVIOUS; //The target node
-    int from_node = NO_PREVIOUS; //The previous node used to connect to 'to_node'
+    RRNodeId to_node = RRNodeId::INVALID(); //The target node
+    RRNodeId from_node = RRNodeId::INVALID(); //The previous node used to connect to 'to_node'
     short from_edge = NO_PREVIOUS; //The edge used to connect from 'from_node' to 'to_node'
 };
 
@@ -37,7 +37,7 @@ struct t_heap {
 	float cost = 0.;
 	float backward_path_cost = 0.;
 	float R_upstream = 0.;
-	int index = OPEN;
+	RRNodeId index = RRNodeId::INVALID();
 
     std::vector<t_heap_prev> previous;
 };
@@ -57,21 +57,21 @@ t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 void reset_path_costs();
 
-float get_rr_cong_cost(int inode);
+float get_rr_cong_cost(RRNodeId inode);
 
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
 void add_to_heap(t_heap *hptr);
 t_heap *alloc_heap_data();
-void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
+void node_to_heap(RRNodeId inode, float cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
 
 bool is_empty_heap();
 
 void free_traceback(ClusterNetId net_id);
 
-void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
+void add_to_mod_list(RRNodeId inode, std::vector<int>& modified_rr_node_inf);
 void add_to_mod_list(float *fptr);
 
 namespace heap_ {
@@ -93,7 +93,7 @@ void empty_heap();
 
 void free_heap_data(t_heap *hptr);
 
-void invalidate_heap_entries(int sink_node, int ipin_node);
+void invalidate_heap_entries(RRNodeId sink_node, RRNodeId ipin_node);
 
 void init_route_structs(int bb_factor);
 

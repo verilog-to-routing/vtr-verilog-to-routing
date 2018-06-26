@@ -28,6 +28,7 @@
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
+#include "rr_node_fwd.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
 
@@ -1063,7 +1064,7 @@ constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename { {
  * next:    Pointer to the next traceback element in this route.           */
 struct t_trace {
 	t_trace *next;
-	int index;
+	RRNodeId index;
 	short iswitch;
 };
 
@@ -1087,7 +1088,7 @@ struct t_trace {
  *               Number of times this node must be reached to fully route.  *
  * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
-	int prev_node;
+	RRNodeId prev_node;
 	short prev_edge;
 
 	float pres_cost;
@@ -1195,6 +1196,6 @@ class RouteStatus {
         int chan_width_ = -1;
 };
 
-typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 #endif

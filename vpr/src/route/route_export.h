@@ -4,6 +4,8 @@
 #include <memory>
 #include "timing_info_fwd.h"
 #include "route_common.h"
+#include "rr_node_fwd.h"
+#include "vtr_vector.h"
 
 void try_graph(int width_fac, t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -24,9 +26,9 @@ bool try_route(int width_fac, t_router_opts router_opts,
 
 bool feasible_routing();
 
-std::vector<int> collect_congested_rr_nodes();
+std::vector<RRNodeId> collect_congested_rr_nodes();
 
-std::vector<std::set<ClusterNetId>> collect_rr_node_nets();
+vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets();
 
 t_clb_opins_used alloc_route_structs();
 

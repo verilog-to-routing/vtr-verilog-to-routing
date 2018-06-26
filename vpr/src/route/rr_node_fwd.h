@@ -1,7 +1,6 @@
 #ifndef RR_NODE_FWD_H
 #define RR_NODE_FWD_H
 #include "vtr_strong_id.h"
-#include "rr_node.h"
 
 /*
 * StrongId's for the t_rr_node class

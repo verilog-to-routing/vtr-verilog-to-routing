@@ -208,7 +208,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
     return type->is_global_pin[ipin];
 }
 
-void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext& device_ctx) {
+void check_rr_node(RRNodeId inode, enum e_route_type route_type, const DeviceContext& device_ctx) {
 
     /* This routine checks that the rr_node is inside the grid and has a valid
      * pin number, etc.

@@ -44,7 +44,7 @@ struct t_rt_node {
 	t_rt_node *parent_node;
 	short parent_switch;
 	bool re_expand;
-	int inode;
+	RRNodeId inode;
 	float C_downstream;
 	float R_upstream;
 	float Tdel;

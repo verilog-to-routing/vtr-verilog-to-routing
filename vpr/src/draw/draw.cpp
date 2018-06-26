@@ -22,6 +22,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_matrix.h"
+#include "vtr_vector.h"
 #include "vtr_ndoffsetmatrix.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
@@ -286,31 +287,31 @@ static void act_on_mouse_over(float x, float y);
 static void deselect_all();
 
 static void draw_routed_net(ClusterNetId net);
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
+void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw);
 static void draw_rr();
-static void draw_rr_edges(int from_node);
-static void draw_rr_pin(int inode, const t_color& color);
-static void draw_rr_chan(int inode, const t_color color);
-static t_bound_box draw_get_rr_chan_bbox(int inode);
-static void draw_pin_to_chan_edge(int pin_node, int chan_node);
+static void draw_rr_edges(RRNodeId from_node);
+static void draw_rr_pin(RRNodeId inode, const t_color& color);
+static void draw_rr_chan(RRNodeId inode, const t_color color);
+static t_bound_box draw_get_rr_chan_bbox(RRNodeId inode);
+static void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node);
 static void draw_x(float x, float y, float size);
-static void draw_pin_to_pin(int opin, int ipin);
+static void draw_pin_to_pin(RRNodeId opin, RRNodeId ipin);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
 						   bool buffered, bool switch_configurable);
-static void draw_chany_to_chany_edge(int from_node, int to_node,
+static void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node,
 									 int to_track, short switch_type);
-static void draw_chanx_to_chanx_edge(int from_node, int to_node,
+static void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node,
 									 int to_track, short switch_type);
-static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node,
+static void draw_chanx_to_chany_edge(RRNodeId chanx_node, int chanx_track, RRNodeId chany_node,
 									 int chany_track, enum e_edge_dir edge_dir,
 									 short switch_type);
-static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
+static int get_track_num(RRNodeId inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
 static bool draw_if_net_highlighted (ClusterNetId inet);
-static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
-static void highlight_nets(char *message, int hit_node);
-static int draw_check_rr_node_hit (float click_x, float click_y);
-static std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
-static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes);
+static void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes);
+static void highlight_nets(char *message, RRNodeId hit_node);
+static RRNodeId draw_check_rr_node_hit (float click_x, float click_y);
+static std::set<RRNodeId> draw_expand_non_configurable_rr_nodes(RRNodeId hit_node);
+static void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node, std::set<RRNodeId>& expanded_nodes);
 static bool highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_colors();
@@ -327,9 +328,9 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
 static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
-static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
-static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
-static int find_edge(int prev_inode, int inode);
+static std::vector<RRNodeId> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
+static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, RRNodeId sink_rr_node, std::vector<RRNodeId>& rr_nodes_on_path);
+static int find_edge(RRNodeId prev_inode, RRNodeId inode);
 
 t_color to_t_color(vtr::Color<float> color);
 static void draw_color_map_legend(const vtr::ColorMap& cmap);
@@ -763,8 +764,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
-	draw_state->draw_rr_node = (t_draw_rr_node *) vtr::malloc(
-									device_ctx.rr_nodes.size() * sizeof(t_draw_rr_node));
+	draw_state->draw_rr_node.resize(device_ctx.rr_nodes.size());
 
     draw_state->arch_info = arch;
 
@@ -788,10 +788,7 @@ void free_draw_structs() {
 		draw_coords->tile_y = nullptr;
 	}
 
-	if(draw_state != nullptr) {
-		free(draw_state->draw_rr_node);
-		draw_state->draw_rr_node = nullptr;
-	}
+    draw_state->draw_rr_node.clear();
 }
 
 void init_draw_coords(float width_val) {
@@ -809,11 +806,10 @@ void init_draw_coords(float width_val) {
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
 	if (device_ctx.rr_nodes.size() != 0) {
-		draw_state->draw_rr_node = (t_draw_rr_node *) vtr::realloc(draw_state->draw_rr_node,
-										(device_ctx.rr_nodes.size()) * sizeof(t_draw_rr_node));
-		for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
-			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
-			draw_state->draw_rr_node[i].node_highlighted = false;
+		draw_state->draw_rr_node.resize(device_ctx.rr_nodes.size());
+		for (auto inode : device_ctx.rr_nodes.keys()) {
+			draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+			draw_state->draw_rr_node[inode].node_highlighted = false;
 		}
 	}
 
@@ -982,8 +978,8 @@ static void draw_congestion() {
     //Record min/max congestion
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-    std::vector<int> congested_rr_nodes = collect_congested_rr_nodes();
-	for (int inode : congested_rr_nodes) {
+    auto congested_rr_nodes = collect_congested_rr_nodes();
+	for (auto inode : congested_rr_nodes) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
@@ -1005,7 +1001,7 @@ static void draw_congestion() {
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g. when zoomed-out far)
-    auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
+    auto cmp_ascending_acc_cost = [&](RRNodeId lhs_node, RRNodeId rhs_node) {
 		short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
         short lhs_capacity = device_ctx.rr_nodes[lhs_node].capacity();
 
@@ -1023,7 +1019,7 @@ static void draw_congestion() {
 
         auto rr_node_nets = collect_rr_node_nets();
 
-        for (int inode : congested_rr_nodes) {
+        for (auto inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 t_color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
                 draw_state->net_color[net] = color;
@@ -1033,7 +1029,7 @@ static void draw_congestion() {
         drawroute(HIGHLIGHTED);
 
         //Reset colors
-        for (int inode : congested_rr_nodes) {
+        for (auto inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 draw_state->net_color[net] = DEFAULT_RR_NODE_COLOR;
             }
@@ -1043,7 +1039,7 @@ static void draw_congestion() {
     }
 
     //Draw each congested node
-    for(int inode : congested_rr_nodes) {
+    for(auto inode : congested_rr_nodes) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
@@ -1091,8 +1087,8 @@ static void draw_routing_costs() {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
-	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    vtr::vector<RRNodeId, float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+	for (auto inode : device_ctx.rr_nodes.keys()) {
         float cost = 0.;
         if (   draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
@@ -1149,14 +1145,15 @@ static void draw_routing_costs() {
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
     //are not overdrawn by lower value ones (e.g. when zoomed-out far)
-    std::vector<int> nodes(device_ctx.rr_nodes.size());
-    std::iota(nodes.begin(), nodes.end(), 0);
-    auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
+    std::vector<RRNodeId> nodes(device_ctx.rr_nodes.size());
+    auto rr_nodes_keys = device_ctx.rr_nodes.keys();
+    std::copy(rr_nodes_keys.begin(), rr_nodes_keys.end(), nodes.begin());
+    auto cmp_ascending_cost = [&](RRNodeId lhs_node, RRNodeId rhs_node) {
         return rr_node_costs[lhs_node] < rr_node_costs[rhs_node];
     };
     std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
 
-    for (int inode : nodes) {
+    for (auto inode : nodes) {
         float cost = rr_node_costs[inode];
         if (cost == min_cost) continue; //Hide minimum cost resources
 
@@ -1253,7 +1250,7 @@ void draw_rr() {
 
 	setlinestyle(SOLID);
 
-	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+	for (auto inode : device_ctx.rr_nodes.keys()) {
 		if (!draw_state->draw_rr_node[inode].node_highlighted)
 		{
 			/* If not highlighted node, assign color based on type. */
@@ -1308,7 +1305,7 @@ void draw_rr() {
 	drawroute(HIGHLIGHTED);
 }
 
-static void draw_rr_chan(int inode, const t_color color) {
+static void draw_rr_chan(RRNodeId inode, const t_color color) {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_rr_type type = device_ctx.rr_nodes[inode].type();
@@ -1453,7 +1450,7 @@ static void draw_rr_chan(int inode, const t_color color) {
 	setcolor(color); //Ensure color is still set correctly if we drew any arrows/text
 }
 
-static void draw_rr_edges(int inode) {
+static void draw_rr_edges(RRNodeId inode) {
 
 	/* Draws all the edges that the user wants shown between inode and what it *
 	 * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
@@ -1461,7 +1458,7 @@ static void draw_rr_edges(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	t_rr_type from_type, to_type;
-	int to_node, from_ptc_num, to_ptc_num;
+	int from_ptc_num, to_ptc_num;
 	short switch_type;
 
 	from_type = device_ctx.rr_nodes[inode].type();
@@ -1474,7 +1471,7 @@ static void draw_rr_edges(int inode) {
 	from_ptc_num = device_ctx.rr_nodes[inode].ptc_num();
 
 	for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
-		to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+		auto to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 		to_type = device_ctx.rr_nodes[to_node].type();
 		to_ptc_num = device_ctx.rr_nodes[to_node].ptc_num();
         bool edge_configurable = device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
@@ -1661,8 +1658,8 @@ static void draw_x(float x, float y, float size) {
 }
 
 
-static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
-		int chany_node, int chany_track, enum e_edge_dir edge_dir,
+static void draw_chanx_to_chany_edge(RRNodeId chanx_node, int chanx_track,
+		RRNodeId chany_node, int chany_track, enum e_edge_dir edge_dir,
 		short switch_type) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -1734,7 +1731,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 }
 
 
-static void draw_chanx_to_chanx_edge(int from_node, int to_node,
+static void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node,
 		int to_track, short switch_type) {
 
 	/* Draws a connection between two x-channel segments.  Passing in the track *
@@ -1821,7 +1818,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 }
 
 
-static void draw_chany_to_chany_edge(int from_node, int to_node,
+static void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node,
 		int to_track, short switch_type) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -1912,7 +1909,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
  * wire has been clicked on by the user.
  * TODO: Fix this for global routing, currently for detailed only.
  */
-static t_bound_box draw_get_rr_chan_bbox (int inode) {
+static t_bound_box draw_get_rr_chan_bbox (RRNodeId inode) {
 	t_bound_box bound_box;
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1978,7 +1975,7 @@ static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, b
     }
 }
 
-static void draw_rr_pin(int inode, const t_color& color) {
+static void draw_rr_pin(RRNodeId inode, const t_color& color) {
 
 	/* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
 	 * than one side of a clb.  Also note that this routine can change the     *
@@ -2013,7 +2010,7 @@ static void draw_rr_pin(int inode, const t_color& color) {
 /* Returns the coordinates at which the center of this pin should be drawn. *
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
-void draw_get_rr_pin_coords(int inode, float *xcen, float *ycen) {
+void draw_get_rr_pin_coords(RRNodeId inode, float *xcen, float *ycen) {
     auto& device_ctx = g_vpr_ctx.device();
 	draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], xcen, ycen);
 }
@@ -2109,9 +2106,9 @@ static void draw_routed_net(ClusterNetId net_id) {
         return; /* partially complete routes).            */
 
     t_trace* tptr = route_ctx.trace_head[net_id]; /* SOURCE to start */
-    int inode = tptr->index;
+    auto inode = tptr->index;
 
-    std::vector<int> rr_nodes_to_draw;
+    std::vector<RRNodeId> rr_nodes_to_draw;
     rr_nodes_to_draw.push_back(inode);
     for (;;) {
         tptr = tptr->next;
@@ -2148,7 +2145,7 @@ static void draw_routed_net(ClusterNetId net_id) {
 }
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
+void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2178,10 +2175,10 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
     for(size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
 
-        int inode = rr_nodes_to_draw[i];
+        auto inode = rr_nodes_to_draw[i];
         auto rr_type = device_ctx.rr_nodes[inode].type();
 
-        int prev_node = rr_nodes_to_draw[i-1];
+        auto prev_node = rr_nodes_to_draw[i-1];
         auto prev_type = device_ctx.rr_nodes[prev_node].type();
 
         int iedge = find_edge(prev_node, inode);
@@ -2279,7 +2276,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
     }
 }
 
-static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
+static int get_track_num(RRNodeId inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
 
 	/* Returns the track number of this routing resource node.   */
 
@@ -2329,7 +2326,7 @@ static bool draw_if_net_highlighted (ClusterNetId inet) {
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-static void highlight_nets(char *message, int hit_node) {
+static void highlight_nets(char *message, RRNodeId hit_node) {
 	t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -2361,7 +2358,7 @@ static void highlight_nets(char *message, int hit_node) {
  * fan_in into the node in blue and fan_out from the node in red. If de-highlighted,
  * de-highlight its fan_in and fan_out.
  */
-static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
+static void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2369,7 +2366,7 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
         for (int iedge = 0, l = device_ctx.rr_nodes[node].num_edges(); iedge < l; iedge++) {
-            int fanout_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+            auto fanout_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
 
             if (draw_state->draw_rr_node[node].color == MAGENTA && draw_state->draw_rr_node[fanout_node].color != MAGENTA) {
                 // If node is highlighted, highlight its fanout
@@ -2383,9 +2380,9 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         }
 
         /* Highlight the nodes that can fanin to this node in blue. */
-        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        for (auto inode : device_ctx.rr_nodes.keys()) {
             for (int iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
-                int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+                auto fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == MAGENTA && draw_state->draw_rr_node[inode].color != MAGENTA) {
                         // If node is highlighted, highlight its fanin
@@ -2410,14 +2407,14 @@ static void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
  *
  *  It returns the hit RR node's ID (or OPEN if no hit)
  */
-static int draw_check_rr_node_hit (float click_x, float click_y) {
-	int hit_node = OPEN;
+static RRNodeId draw_check_rr_node_hit (float click_x, float click_y) {
+	RRNodeId hit_node;
 	t_bound_box bound_box;
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+	for (auto inode : device_ctx.rr_nodes.keys()) {
 		switch (device_ctx.rr_nodes[inode].type()) {
 			case IPIN:
 			case OPIN:
@@ -2469,23 +2466,23 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 				break;
 		}
 	}
-	return hit_node;
+	return RRNodeId::INVALID();
 }
 
-static std::set<int> draw_expand_non_configurable_rr_nodes(int from_node) {
-    std::set<int> expanded_nodes;
+static std::set<RRNodeId> draw_expand_non_configurable_rr_nodes(RRNodeId from_node) {
+    std::set<RRNodeId> expanded_nodes;
     draw_expand_non_configurable_rr_nodes_recurr(from_node, expanded_nodes);
     return expanded_nodes;
 }
 
-static void draw_expand_non_configurable_rr_nodes_recurr(int from_node, std::set<int>& expanded_nodes) {
+static void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node, std::set<RRNodeId>& expanded_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
 
     expanded_nodes.insert(from_node);
 
     for (int iedge = 0; iedge < device_ctx.rr_nodes[from_node].num_edges(); ++iedge) {
         bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iedge);
-        int to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
+        auto to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
 
         if (!edge_configurable && !expanded_nodes.count(to_node)) {
             draw_expand_non_configurable_rr_nodes_recurr(to_node, expanded_nodes);
@@ -2512,9 +2509,9 @@ static bool highlight_rr_nodes(float x, float y) {
 	}
 
 	// Check which rr_node (if any) was clicked on.
-	int hit_node = draw_check_rr_node_hit (x, y);
+	auto hit_node = draw_check_rr_node_hit (x, y);
 
-	if (hit_node != OPEN) {
+	if (hit_node != RRNodeId::INVALID()) {
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
         for (auto node : nodes) {
 
@@ -2663,9 +2660,9 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 	if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
 
-        int hit_node = draw_check_rr_node_hit(mouse_x, mouse_y);
+        auto hit_node = draw_check_rr_node_hit(mouse_x, mouse_y);
 
-        if(hit_node != OPEN) {
+        if(hit_node != RRNodeId::INVALID()) {
             //Update message
 
             std::string info = describe_rr_node(hit_node);
@@ -2760,9 +2757,9 @@ static void deselect_all() {
 	for (auto net_id : cluster_ctx.clb_nlist.nets())
 		draw_state->net_color[net_id] = BLACK;
 
-	for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
-		draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
-		draw_state->draw_rr_node[i].node_highlighted = false;
+	for (auto node_id : device_ctx.rr_nodes.keys()) {
+		draw_state->draw_rr_node[node_id].color = DEFAULT_RR_NODE_COLOR;
+		draw_state->draw_rr_node[node_id].node_highlighted = false;
 	}
 
 	get_selected_sub_block_info().clear();
@@ -2867,7 +2864,7 @@ static inline bool triangle_LOD_screen_area_test(float arrow_size) {
 	return LOD_screen_area_test_square(arrow_size*0.66, MIN_VISIBLE_AREA);
 }
 
-static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
+static void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node) {
 
 	/* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
 	 * CHANY).  The connection is made to the nearest end of the track instead   *
@@ -2951,7 +2948,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 }
 
 
-static void draw_pin_to_pin(int opin_node, int ipin_node) {
+static void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node) {
 
 	/* This routine draws an edge from the opin rr node to the ipin rr node */
     auto& device_ctx = g_vpr_ctx.device();
@@ -3231,7 +3228,7 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 
             //Mark all the nodes highlighted
             t_draw_state* draw_state = get_draw_state_vars();
-            for (int inode : routed_rr_nodes) {
+            for (auto inode : routed_rr_nodes) {
 				draw_state->draw_rr_node[inode].color = color;
             }
 
@@ -3246,7 +3243,7 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 }
 
 //Returns the set of rr nodes which connect driver to sink
-static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin) {
+static std::vector<RRNodeId> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
@@ -3256,9 +3253,9 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
 
     VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
+    auto sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
 
-    std::vector<int> rr_nodes_on_path;
+    std::vector<RRNodeId> rr_nodes_on_path;
 
     //Collect the rr nodes
     trace_routed_connection_rr_nodes_recurr(rt_root, sink_rr_node, rr_nodes_on_path);
@@ -3275,7 +3272,7 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
 //Helper function for trace_routed_connection_rr_nodes
 //Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
 //Returns true if rt_node is on the path
-bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path) {
+bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, RRNodeId sink_rr_node, std::vector<RRNodeId>& rr_nodes_on_path) {
     //DFS from the current rt_node to the sink_rr_node, when the sink is found trace back the used rr nodes
 
     if (rt_node->inode == sink_rr_node) {
@@ -3299,7 +3296,7 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_
 }
 
 //Find the edge between two rr nodes
-static int find_edge(int prev_inode, int inode) {
+static int find_edge(RRNodeId prev_inode, RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
     for (int iedge = 0; iedge < device_ctx.rr_nodes[prev_inode].num_edges(); ++iedge) {
         if (device_ctx.rr_nodes[prev_inode].edge_sink_node(iedge) == inode) {
@@ -3570,11 +3567,11 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     vtr::Matrix<float> usage({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
 
     //Collect all the in-use RR nodes
-    std::set<int> rr_nodes;
+    std::set<RRNodeId> rr_nodes;
     for (auto net : cluster_ctx.clb_nlist.nets()) {
         t_trace* tptr = route_ctx.trace_head[net];
         while (tptr != nullptr) {
-            int inode = tptr->index; 
+            auto inode = tptr->index; 
 
             if (device_ctx.rr_nodes[inode].type() == rr_type) {
                 rr_nodes.insert(inode);
@@ -3584,7 +3581,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     }
 
     //Record number of used resources in each x/y channel
-    for (int inode : rr_nodes) {
+    for (auto inode : rr_nodes) {
         auto& rr_node = device_ctx.rr_nodes[inode];
 
         if (rr_type == CHANX) {
@@ -3616,7 +3613,7 @@ vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+    for (auto inode : device_ctx.rr_nodes.keys()) {
         auto& rr_node = device_ctx.rr_nodes[inode];
 
         if (rr_node.type() == CHANX && rr_type == CHANX) {

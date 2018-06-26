@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "rr_graph_util.h"
 
-int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
+int seg_index_of_cblock(t_rr_type from_rr_type, RRNodeId to_node) {
 
 	/* Returns the segment number (distance along the channel) of the connection *
 	 * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
@@ -20,7 +20,7 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 		return (device_ctx.rr_nodes[to_node].ylow());
 }
 
-int seg_index_of_sblock(int from_node, int to_node) {
+int seg_index_of_sblock(RRNodeId from_node, RRNodeId to_node) {
 
 	/* Returns the segment number (distance along the channel) of the switch box *
 	 * box from from_node (CHANX or CHANY) to to_node (CHANX or CHANY).  The     *

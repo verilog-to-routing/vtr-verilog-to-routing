@@ -7,6 +7,8 @@
 #define INCLUDE_TRACK_BUFFERS false
 
 #include "device_grid.h"
+#include "rr_node_fwd.h"
+#include "vtr_vector.h"
 
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
@@ -46,9 +48,9 @@ void dump_rr_graph(const char *file_name);
 void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */
 
 //Returns a brief one-line summary of an RR node
-std::string describe_rr_node(int inode);
+std::string describe_rr_node(RRNodeId inode);
 
-void print_rr_node(FILE *fp, const std::vector<t_rr_node> &L_rr_node, int inode);
+void print_rr_node(FILE *fp, const vtr::vector<RRNodeId, t_rr_node> &L_rr_node, RRNodeId inode);
 
 void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes);
 

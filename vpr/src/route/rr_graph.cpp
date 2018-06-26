@@ -2200,7 +2200,7 @@ void dump_rr_graph(const char *file_name) {
 }
 
 /* Prints all the data about node inode to file fp.                    */
-void print_rr_node(FILE * fp, const std::vector<t_rr_node> &L_rr_node, int inode) {
+void print_rr_node(FILE * fp, const vtr::vector<RRNodeId, t_rr_node> &L_rr_node, RRNodeId inode) {
 
     std::string info = describe_rr_node(inode);
     fprintf(fp, "%s\n", info.c_str());
@@ -2238,7 +2238,7 @@ void print_rr_indexed_data(FILE * fp, int index) {
     fprintf(fp, "C_load: %g\n", device_ctx.rr_indexed_data[index].C_load);
 }
 
-std::string describe_rr_node(int inode) {
+std::string describe_rr_node(RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);

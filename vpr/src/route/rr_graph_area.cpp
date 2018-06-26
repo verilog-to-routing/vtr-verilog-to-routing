@@ -5,6 +5,7 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vtr_memory.h"
+#include "vtr_vector.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -33,8 +34,11 @@ static void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos,
 		const float trans_sram_bit);
 
-static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,
-		int max_inputs_to_cblock, float trans_sram_bit);
+static float get_cblock_trans(
+        vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
+        int wire_to_ipin_switch,
+		int max_inputs_to_cblock,
+        float trans_sram_bit);
 
 static float *alloc_and_load_unsharable_switch_trans(int num_switch,
 		float trans_sram_bit, float R_minW_nmos);
@@ -101,9 +105,9 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	 * optimistic (but I still think it's pretty reasonable).                    */
     auto& device_ctx = g_vpr_ctx.device();
 
-	int *num_inputs_to_cblock; /* [0..device_ctx.rr_nodes.size()-1], but all entries not    */
-
-	/* corresponding to IPINs will be 0.           */
+    /* all entries in num_inputs_to_cblock not corresponding to IPINs will be zero.
+       By default the vector should be value-initialized with zero for its integer elements.*/
+	vtr::vector<RRNodeId, int> num_inputs_to_cblock(device_ctx.rr_nodes.size()); 
 
 	bool * cblock_counted; /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
 	float *shared_buffer_trans; /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] */
@@ -144,7 +148,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
+	num_inputs_to_cblock.resize(device_ctx.rr_nodes.size()); // Should be value-initialized
+                                                             // to zero by default
 
 	maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
@@ -156,7 +161,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
 			R_minW_nmos, R_minW_pmos);
 
-	for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
+	for (auto from_node : device_ctx.rr_nodes.keys()) {
 
 		from_rr_type = device_ctx.rr_nodes[from_node].type();
 
@@ -168,7 +173,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
-				size_t to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
+				auto to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
 				to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
@@ -287,7 +292,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
 			max_inputs_to_cblock, trans_sram_bit);
 
-	free(num_inputs_to_cblock);
+	num_inputs_to_cblock.clear();
 
 	ntrans_sharing += input_cblock_trans;
 	ntrans_no_sharing += input_cblock_trans;
@@ -308,12 +313,13 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
     auto& device_ctx = g_vpr_ctx.device();
 
 	bool * cblock_counted; /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
-	int *num_inputs_to_cblock; /* [0..device_ctx.rr_nodes.size()-1], but all entries not    */
 
-	/* corresponding to IPINs will be 0.           */
+    /* All entries in num_inputs_to_cblock not corresponding to IPINs will be zero.
+       By default the vector is value-initialized meaning the integers will be initialized to zero.*/
+	vtr::vector<RRNodeId, int> num_inputs_to_cblock(device_ctx.rr_nodes.size());
 
 	t_rr_type from_rr_type, to_rr_type;
-	int i, j, iseg, to_node, iedge, num_edges, maxlen;
+	int i, j, iseg, iedge, num_edges, maxlen;
 	int max_inputs_to_cblock;
 	float input_cblock_trans;
 
@@ -322,8 +328,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	   a single mux. We should count this mux only once as we look at the outgoing
 	   switches of all rr nodes. Thus we keep track of which muxes we have already
 	   counted via the variable below. */
-	bool *chan_node_switch_done;
-	chan_node_switch_done = (bool *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(bool));
+	vtr::vector<RRNodeId, bool> chan_node_switch_done(device_ctx.rr_nodes.size());
 
 	/* The variable below is an accumulator variable that will add up all the   *
 	 * transistors in the routing.  Make double so that it doesn't stop         *
@@ -354,12 +359,11 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
 	maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
-	for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
+	for (auto from_node : device_ctx.rr_nodes.keys()) {
 
 		from_rr_type = device_ctx.rr_nodes[from_node].type();
 
@@ -372,7 +376,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 			/* Increment number of inputs per cblock if IPIN */
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
-				to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
+				auto to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
 				to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
@@ -475,8 +479,8 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 			max_inputs_to_cblock, trans_sram_bit);
 
 	free(cblock_counted);
-	free(num_inputs_to_cblock);
-	free(chan_node_switch_done);
+	num_inputs_to_cblock.clear();
+	chan_node_switch_done.clear();
 
 	ntrans += input_cblock_trans;
 
@@ -485,7 +489,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	vtr::printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
 }
 
-static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,
+static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock, int wire_to_ipin_switch,
 		int max_inputs_to_cblock, float trans_sram_bit) {
 
 	/* Computes the transistors in the input connection block multiplexers and   *
@@ -516,7 +520,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 
 	trans_count = 0.;
 
-	for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
+	for (auto i : device_ctx.rr_nodes.keys()) {
 		num_inputs = num_inputs_to_cblock[i];
 		trans_count += trans_per_cblock[num_inputs];
 	}

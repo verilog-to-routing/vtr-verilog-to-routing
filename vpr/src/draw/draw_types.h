@@ -24,6 +24,7 @@
 #include "graphics.h"
 #include "vpr_types.h"
 #include "vtr_color_map.h"
+#include "vtr_vector.h"
 using namespace std;
 
 enum e_draw_crit_path {
@@ -156,7 +157,7 @@ struct t_draw_state {
 	char default_message[vtr::bufsize];
 	vtr::vector_map<ClusterNetId, t_color> net_color;
 	vtr::vector_map<ClusterBlockId, t_color> block_color;
-	t_draw_rr_node *draw_rr_node = nullptr;
+	vtr::vector<RRNodeId, t_draw_rr_node> draw_rr_node;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;

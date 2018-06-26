@@ -237,9 +237,9 @@ void t_rr_node::set_side(e_side new_side) {
 	dir_side_.side = new_side;
 }
 
-void t_rr_node::set_edge_sink_node(short iedge, int sink_node) {
+void t_rr_node::set_edge_sink_node(short iedge, RRNodeId sink_node) {
     VTR_ASSERT(iedge < num_edges());
-    VTR_ASSERT(sink_node >= 0);
+    //TODO: Assert node id is valid
     edges_[iedge].sink_node = sink_node;
 }
 

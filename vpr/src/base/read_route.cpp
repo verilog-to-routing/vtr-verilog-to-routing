@@ -202,7 +202,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
 
     /*remember the position of the last line in order to go back*/
     streampos oldpos = fp.tellg();
-    int inode, x, y, x2, y2, ptc, switch_id, offset;
+    int x, y, x2, y2, ptc, switch_id, offset;
     int node_count = 0;
     string input;
     std::vector<std::string> tokens;
@@ -231,7 +231,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
             return;
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
-            inode = atoi(tokens[1].c_str());
+            RRNodeId inode (atoi(tokens[1].c_str()));
             auto& node = device_ctx.rr_nodes[inode];
 
             /*First node needs to be source. It is isolated to correctly set heap head.*/

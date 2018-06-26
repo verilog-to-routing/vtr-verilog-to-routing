@@ -374,7 +374,7 @@ bool feasible_routing() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+	for (auto inode : device_ctx.rr_nodes.keys()) {
 		if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
 			return (false);
 		}
@@ -384,12 +384,12 @@ bool feasible_routing() {
 }
 
 //Returns all RR nodes in the current routing which are congested
-std::vector<int> collect_congested_rr_nodes() {
+std::vector<RRNodeId> collect_congested_rr_nodes() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    std::vector<int> congested_rr_nodes;
-	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    std::vector<RRNodeId> congested_rr_nodes;
+	for (auto inode : device_ctx.rr_nodes.keys()) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
@@ -402,7 +402,7 @@ std::vector<int> collect_congested_rr_nodes() {
 
 /* Returns a vector from [0..device_ctx.rr_nodes.size()-1] containing the set
  * of nets using each RR node */
-std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
+vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -411,7 +411,7 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
         t_trace* trace_elem = route_ctx.trace_head[inet];
         while (trace_elem) {
-            int rr_node = trace_elem->index;
+            auto rr_node = trace_elem->index;
 
             rr_node_nets[rr_node].insert(inet);
 
@@ -799,7 +799,7 @@ void reset_path_costs() {
 }
 
 /* Returns the *congestion* cost of using this rr_node. */
-float get_rr_cong_cost(int inode) {
+float get_rr_cong_cost(RRNodeId inode) {
 	short cost_index;
 	float cost;
 
@@ -838,7 +838,7 @@ void mark_remaining_ends(const vector<int>& remaining_sinks) {
 		++route_ctx.rr_node_route_inf[sink_node].target_flag;
 }
 
-void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
+void node_to_heap(RRNodeId inode, float total_cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream) {
 
 	/* Puts an rr_node on the heap, if the new cost given is lower than the     *
@@ -1234,7 +1234,7 @@ vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     return route_bb;
 }
 
-void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
+void add_to_mod_list(RRNodeId inode, std::vector<int>& modified_rr_node_inf) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     if (std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
@@ -1473,7 +1473,7 @@ void free_heap_data(t_heap *hptr) {
 	num_heap_allocated--;
 }
 
-void invalidate_heap_entries(int sink_node, int ipin_node) {
+void invalidate_heap_entries(RRNodeId sink_node, RRNodeId ipin_node) {
 
 	/* Marks all the heap entries consisting of sink_node, where it was reached *
 	 * via ipin_node, as invalid (OPEN).  Used only by the breadth_first router *
@@ -1483,7 +1483,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 		if (heap[i]->index == sink_node) {
             for (t_heap_prev prev : heap[i]->previous) {
                 if (prev.from_node == ipin_node) {
-                    heap[i]->index = OPEN; /* Invalid. */
+                    heap[i]->index = RRNodeId::INVALID();
                     break;
                 }
             }
