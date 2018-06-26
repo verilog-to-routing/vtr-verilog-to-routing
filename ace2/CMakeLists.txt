@@ -18,9 +18,11 @@ target_link_libraries(ace
                         ${CMAKE_DL_LIBS})
 
 #ACE uses some ABC functions (st__insert) which cause warnings - we suppress them here
-set(ACE_SUPPRESS_FLAGS 
+set(ACE_SUPPRESS_FLAGS
         -Wno-int-to-pointer-cast
         )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_COMMON} -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS")
 
 include(CheckCXXCompilerFlag)
 foreach(flag ${ACE_SUPPRESS_FLAGS})
