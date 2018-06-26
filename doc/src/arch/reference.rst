@@ -127,6 +127,8 @@ The valid tags within the ``<layout>`` tag are:
 
     Defines a scalable device grid layout which can be automatically scaled to a desired size.
 
+    .. note:: At most one ``<auto_layout>`` can be specified.
+
 .. arch:tag:: <fixed_layout name="string" width="int" height="int">
 
     :req_param name:
@@ -140,8 +142,7 @@ The valid tags within the ``<layout>`` tag are:
 
     Defines a device grid layout with fixed dimensions.
 
-Only one ``<auto_layout>``, or one-or-more ``<fixed_layout>`` tags can be specified at a time.
-``<auto_layout>`` and ``<fixed_layout>`` can not be specified together.
+    .. note:: Multiple ``<fixed_layout>`` tags can be specified.
 
 Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid location tags.
 
@@ -150,7 +151,7 @@ Grid Location Priorities
 Each grid location specification has an associated numeric *priority*.
 Larger priority location specifications override those with lower priority.
 
-.. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed from the grid.
+.. note:: If a grid block is partially overlapped by another block with higher priority the entire lower priority block is removed from the grid.
 
 Empty Grid Locations
 ~~~~~~~~~~~~~~~~~~~~

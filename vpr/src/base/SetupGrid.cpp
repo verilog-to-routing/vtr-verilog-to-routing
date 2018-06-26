@@ -126,11 +126,18 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
     VTR_ASSERT(grid_layouts.size() > 0);
 
     DeviceGrid grid;
-    if (grid_layouts[0].grid_type == GridDefType::AUTO) {
-        //Automatic grid layout, find the smallest height/width
-        VTR_ASSERT_MSG(grid_layouts.size() == 1, "Only one grid definitions is valid if using an auto grid layout");
 
-        const auto& grid_def = grid_layouts[0];
+    auto is_auto_grid_def = [](const t_grid_def& grid_def) {
+        return grid_def.grid_type == GridDefType::AUTO;
+    };
+
+    auto auto_layout_itr = std::find_if(grid_layouts.begin(), grid_layouts.end(), is_auto_grid_def);
+    if (auto_layout_itr != grid_layouts.end()) {
+        //Automatic grid layout, find the smallest height/width
+
+        VTR_ASSERT_SAFE_MSG(std::find_if(auto_layout_itr + 1, grid_layouts.end(), is_auto_grid_def) == grid_layouts.end(), "Only one <auto_layout>");
+
+        const auto& grid_def = *auto_layout_itr;
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
 
         //Initial size is 3x3, the smallest possible while avoiding
@@ -166,7 +173,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         } while (true);
 
     } else {
-        VTR_ASSERT(grid_layouts[0].grid_type == GridDefType::FIXED);
+        VTR_ASSERT(auto_layout_itr == grid_layouts.end());
         //Fixed grid layouts, find the smallest of the fixed layouts
 
         //Sort the grid layouts from smallest to largest

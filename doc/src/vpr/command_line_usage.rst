@@ -138,6 +138,8 @@ VPR runs all three stages of pack, place, and route if none of :option:`--pack`,
     ``auto`` uses the smallest device satisfying the circuit's resource requirements.
     Other values are assumed to be the names of device layouts defined in the :ref:`arch_grid_layout` section of the architecture file.
 
+    .. note:: If the architecture contains both ``<auto_layout>`` and ``<fixed_layout>`` specifications, specifying an ``auto`` device will use the ``<auto_layout>``.
+
     **Default:** ``auto``
 
 .. option:: --slack_definition { R | I | S | G | C | N }

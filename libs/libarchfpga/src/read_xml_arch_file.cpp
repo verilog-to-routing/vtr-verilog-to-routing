@@ -2167,13 +2167,15 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiuti
         }
     }
 
-    if (   (auto_layout_cnt == 0 && fixed_layout_cnt == 0)
-        || (auto_layout_cnt != 0 && fixed_layout_cnt != 0)) {
+    if (auto_layout_cnt == 0 && fixed_layout_cnt == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
-                "Expected either a single <auto_layout> or one-or-more <fixed_layout> tags");
+                "Expected either an <auto_layout> or <fixed_layout> tag");
+    }
+    if (auto_layout_cnt > 1 ) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                "Expected at most one <auto_layout> tag");
     }
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
-    VTR_ASSERT_MSG(auto_layout_cnt == 0 || fixed_layout_cnt == 0, "At most one of fixed or auto layout can be specified");
 
     for (auto layout_type_tag : layout_tag.children()) {
 
