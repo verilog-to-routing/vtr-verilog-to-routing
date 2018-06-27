@@ -391,6 +391,14 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
     vtr::printf_info("\n");
 
+    if (!device_ctx.grid.limiting_resources().empty()) {
+        std::vector<std::string> limiting_block_names;
+        for (auto blk_type : device_ctx.grid.limiting_resources()) {
+            limiting_block_names.push_back(blk_type->name);
+        }
+        vtr::printf("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
+        vtr::printf_info("\n");
+    }
 
     /*
      * Channel setup

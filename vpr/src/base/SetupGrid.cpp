@@ -26,8 +26,9 @@ using namespace std;
 #include "expr_eval.h"
 
 static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts, float maximum_device_utilization);
+static std::vector<t_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts);
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts, float maximum_utilization);
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range=true);
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range=true, std::vector<t_type_ptr> limiting_resources=std::vector<t_type_ptr>());
 
 static void CheckGrid(const DeviceGrid& grid);
 
@@ -145,6 +146,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         //specifications
         size_t width = 3;
         size_t height = 3;
+        std::vector<t_type_ptr> limiting_resources;
         do {
             //Scale opposite dimension to match aspect ratio
             height = vtr::nint(width / grid_def.aspect_ratio);
@@ -156,16 +158,18 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
             //Build the device
             // Don't warn about out-of-range specifications since these can
             // occur (harmlessly) at small device dimensions
-            grid = build_device_grid(grid_def, width, height, false);
+            grid = build_device_grid(grid_def, width, height, false, limiting_resources);
 
             //Check if it satisfies the block counts
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
                 //Re-build the grid at the final size with out-of-range
                 //warnings turned on (so users are aware of out-of-range issues
                 //at the final device sizes)
-                grid = build_device_grid(grid_def, width, height, true);
+                grid = build_device_grid(grid_def, width, height, true, limiting_resources);
                 return grid;
             }
+
+            limiting_resources = grid_overused_resources(grid, minimum_instance_counts);
 
             //Increase the grid size
             width++;
@@ -188,15 +192,18 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         };
         std::stable_sort(grid_layouts.begin(), grid_layouts.end(), area_cmp);
 
+        std::vector<t_type_ptr> limiting_resources;
+
         //Try all the fixed devices in order from smallest to largest
         for (const auto& grid_def : grid_layouts) {
 
             //Build the grid
-            grid = build_device_grid(grid_def, grid_def.width, grid_def.height);
+            grid = build_device_grid(grid_def, grid_def.width, grid_def.height, true, limiting_resources);
 
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
                 return grid;
             }
+            limiting_resources = grid_overused_resources(grid, minimum_instance_counts);
         }
     }
 
@@ -217,7 +224,9 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
     return grid; //Unreachable
 }
 
-static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts, float maximum_utilization) {
+static std::vector<t_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts) {
+    std::vector<t_type_ptr> overused_resources;
+
     //Are the resources satisified?
     for (auto kv : instance_counts) {
         t_type_ptr type;
@@ -227,8 +236,19 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_ty
         size_t inst_cnt = grid.num_instances(type);
 
         if (inst_cnt < min_count) {
-            return false;
+            overused_resources.push_back(type);
         }
+    }
+
+    return overused_resources;
+}
+
+static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts, float maximum_utilization) {
+    //Are the resources satisified?
+    auto overused_resources = grid_overused_resources(grid, instance_counts);
+
+    if (!overused_resources.empty()) {
+        return false;
     }
 
     //Is the utilization below the maximum?
@@ -242,7 +262,7 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_ty
 }
 
 //Build the specified device grid
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range) {
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range, const std::vector<t_type_ptr> limiting_resources) {
     if (grid_def.grid_type == GridDefType::FIXED) {
 
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
@@ -445,7 +465,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    auto device_grid = DeviceGrid(grid_def.name, grid);
+    auto device_grid = DeviceGrid(grid_def.name, grid, limiting_resources);
 
 	CheckGrid(device_grid);
 

@@ -9,6 +9,7 @@ class DeviceGrid {
     public:
         DeviceGrid() = default;
         DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid);
+        DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_type_ptr> limiting_res);
 
         const std::string& name() const { return name_; }
 
@@ -23,6 +24,10 @@ class DeviceGrid {
 
         size_t num_instances(t_type_ptr type) const;
 
+        //Returns the block types which limits the device size (may be empty if
+        //resource limits were not considered when selecting the device).
+        std::vector<t_type_ptr> limiting_resources() const { return limiting_resources_; }
+
     private:
         void count_instances();
 
@@ -34,6 +39,8 @@ class DeviceGrid {
         vtr::Matrix<t_grid_tile> grid_;
 
         std::map<t_type_ptr,size_t> instance_counts_;
+
+        std::vector<t_type_ptr> limiting_resources_;
 };
 
 
