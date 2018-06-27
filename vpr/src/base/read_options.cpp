@@ -350,23 +350,23 @@ struct ParseTimingReportDetail {
     }
 };
 
-struct ParseClockModelingMethod {
-    ConvertedValue<e_clock_modeling_method> from_str(std::string str) {
-        ConvertedValue<e_clock_modeling_method> conv_value;
+struct ParseClockModeling {
+    ConvertedValue<e_clock_modeling> from_str(std::string str) {
+        ConvertedValue<e_clock_modeling> conv_value;
         if      (str == "ideal") conv_value.set_value(IDEAL_CLOCK);
         else if (str == "route") conv_value.set_value(ROUTED_CLOCK);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
                 << str
-                << "' to e_clock_modeling_method (expected one of: "
+                << "' to e_clock_modeling (expected one of: "
                 << argparse::join(default_choices(), ", ") << ")";
             conv_value.set_error(msg.str());
         }
         return conv_value;
     }
 
-    ConvertedValue<std::string> to_str(e_clock_modeling_method val) {
+    ConvertedValue<std::string> to_str(e_clock_modeling val) {
         ConvertedValue<std::string> conv_value;
         if (val == IDEAL_CLOCK) conv_value.set_value("ideal");
         else {
@@ -532,11 +532,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("global")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<e_clock_modeling_method,ParseClockModelingMethod>(
-        args.clock_modeling_method, "--clock_modeling_method")
+    gen_grp.add_argument<e_clock_modeling,ParseClockModeling>(
+        args.clock_modeling, "--clock_modeling")
             .help("Specifies how clock nets are handled\n"
                   " * ideal: Treat clock pins as ideal\n"
-                  "          (i.e. clock nets are not routed)\n"
+                  "          (i.e. no routing delays on clocks)\n"
                   " * route: Treat the clock pins as normal nets\n"
                   "          (i.e. routed using inter-block routing)\n")
             .default_value("ideal")

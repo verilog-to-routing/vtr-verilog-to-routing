@@ -12,8 +12,7 @@
 
 ClusteredNetlist read_netlist(const char *net_file,
 		const t_arch *arch,
-        bool verify_file_digests,
-        e_clock_modeling_method clock_modeling_method);
+        bool verify_file_digests);
 
 #endif
 

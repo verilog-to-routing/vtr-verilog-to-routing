@@ -200,7 +200,7 @@ void SetupVPR(t_options *Options,
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 
-    if (Options->clock_modeling_method == ROUTED_CLOCK) {
+    if (Options->clock_modeling == ROUTED_CLOCK) {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
 

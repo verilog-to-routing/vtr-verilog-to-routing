@@ -3,7 +3,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/verilog
+circuits_dir=benchmarks/
 
 # Path to directory of architectures to use
 archs_dir=arch/
@@ -12,8 +12,8 @@ archs_dir=arch/
 sdc_dir=sdc
 
 # Add circuits to list to sweep
-circuit_list_add=d_flip_flop.v
-circuit_list_add=mkPktMerge.v
+circuit_list_add=microbenchmarks/d_flip_flop.v
+circuit_list_add=verilog/mkPktMerge.v
 
 # Add architectures to list to sweep
 arch_list_add=timing/k6_N10_40nm.xml
@@ -22,14 +22,17 @@ arch_list_add=timing/k6_N10_mem32K_40nm.xml
 # Parse info and how to parse
 parse_file=vpr_clock_modeling.txt
 
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
 # Pass requirements
 # A pass requirement to check that the number of routed nets
-# are equal is can change if the circuit is synthesized
+# are equal can change if the circuit is synthesized
 # differently. At that point a new golden results file must
 # be created and checked to see that using the route option
 # increases the number of routed nets.
 pass_requirements_file=pass_requirements_clock_modeling.txt
 
 # Script parameters
-script_params_list_add= --clock_modeling_method ideal
-script_params_list_add= --clock_modeling_method route
+script_params_list_add= --clock_modeling ideal
+script_params_list_add= --clock_modeling route
