@@ -1,5 +1,1 @@
 %include "../common/vpr.route_min_chan_width.txt"
-
-#Area Metrics
-min_chan_width_routing_area_total;vpr.out;Total routing area: (.*), per logic tile: .*
-min_chan_width_routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
