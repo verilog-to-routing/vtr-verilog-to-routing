@@ -572,12 +572,9 @@ void ICE40HLCWriterVisitor::visit_open_impl(const t_pb* atom) {
 }
 
 void ICE40HLCWriterVisitor::visit_atom_impl(const t_pb* atom) {
-    if (current_cell_ == nullptr) {
-        return;
-    }
 
-	VTR_ASSERT(atom->name != nullptr);
-	std::cout << "--visit_atom_impl " << get_fasm_fullname(atom) << " " << atom->name << std::endl;
+    VTR_ASSERT(atom->name != nullptr);
+    std::cout << "--visit_atom_impl " << get_fasm_fullname(atom) << " " << atom->name << std::endl;
 
     // Is this a LUT?
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -585,6 +582,9 @@ void ICE40HLCWriterVisitor::visit_atom_impl(const t_pb* atom) {
     if (atom_blk_id == AtomBlockId::INVALID()) {
         return;
     }
+
+    std::stringstream trace;
+
     const t_model* model = atom_ctx.nlist.block_model(atom_blk_id);
     if (model->name == std::string(MODEL_NAMES)) {
         std::string o = lut_outputs(atom);
@@ -592,7 +592,6 @@ void ICE40HLCWriterVisitor::visit_atom_impl(const t_pb* atom) {
         current_cell_->enable(o);
     }
 
-    auto& trace = current_cell_->comments;
     trace << " " << atom_ctx.nlist.block_name(atom_blk_id) << std::endl;
 
     auto attrs = atom_ctx.nlist.block_attrs(atom_blk_id);
@@ -602,6 +601,7 @@ void ICE40HLCWriterVisitor::visit_atom_impl(const t_pb* atom) {
             trace << " " << attr.first << " = " << attr.second << std::endl;
         }
     }
+
     auto params = atom_ctx.nlist.block_params(atom_blk_id);
     if (params.size() > 0) {
         trace << " - Parameters -------" << std::endl;
@@ -609,10 +609,17 @@ void ICE40HLCWriterVisitor::visit_atom_impl(const t_pb* atom) {
             if (param.first == "LUT_INIT") {
                 std::string s(param.second);
                 //std::reverse(s.begin(), s.end());
+                VTR_ASSERT(current_cell_);
                 current_cell_->enable("out = " + std::to_string(s.size()) + "'b" + s);
             }
             trace << " " << param.first << " = " << param.second << std::endl;
         }
+    }
+
+    if (current_cell_ != nullptr) {
+        current_cell_->comments << trace.str();
+    } else {
+        current_tile_->comments << trace.str();
     }
 
 }
