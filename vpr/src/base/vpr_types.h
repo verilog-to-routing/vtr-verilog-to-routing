@@ -927,7 +927,7 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
-    enum e_clock_modeling_method clock_modeling_method; //How clock pins and nets should be handled
+    enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
 };
 
 struct t_analysis_opts {
