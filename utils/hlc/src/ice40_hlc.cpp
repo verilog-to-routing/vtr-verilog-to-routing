@@ -666,6 +666,7 @@ void ICE40HLCWriterVisitor::finish_impl() {
             }
             for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
                 ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+
                 int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
                 auto& block = place_ctx.block_locs[block_id];
                 std::string name = cluster_ctx.clb_nlist.port_bit_name(pin_id);
@@ -821,6 +822,75 @@ void ICE40HLCWriterVisitor::finish_impl() {
                     c << std::setw(6) << std::right << src_node.type_string();
                     c << " => ";
                     c << std::left << snk_node.type_string();
+                }
+            }
+        }
+    }
+
+    // XXX(elms):
+    for (auto clb_id : cluster_ctx.clb_nlist.blocks()) {
+        auto& block = place_ctx.block_locs[clb_id];
+        auto hlcpos = _translate_coords(block.x, block.y);
+
+        auto tile = output_.get_tile(hlcpos);
+
+        auto grid_pos = _translate_coords(hlcpos);
+        auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
+        int x_offset = device_ctx.grid[grid_pos.first][grid_pos.second].width_offset;
+        int y_offset = device_ctx.grid[grid_pos.first][grid_pos.second].height_offset;
+        tile->name = hlc_tile(type->pb_type, x_offset, y_offset);
+
+        auto atom_id = atom_ctx.lookup.clb_atom(clb_id);
+        if (atom_id != AtomBlockId::INVALID()) {
+            auto atom_pb = atom_ctx.lookup.atom_pb(atom_id);
+            std::cout << "atomic " <<  atom_pb->name << std::endl;
+            auto params = atom_ctx.nlist.block_params(atom_id);
+            std::map<std::string, std::string> data;
+            if (params.size() > 0) {
+                std::cout << " - Parameters -------" << std::endl;
+                for (auto param : params) {
+                    std::cout << " " << param.first << " = " << param.second << std::endl;
+                    if (param.first.find("INIT_") == 0) {
+                        data[param.first] = param.second;
+                    }
+                    /*
+                      SB_RAM40_4KRAMT Config Bit
+                      WRITE_MODE[0]RamConfig CBIT_0
+                      WRITE_MODE[1]RamConfig CBIT_1
+                      READ_MODE[0]RamConfig CBIT_2
+                      READ_MODE[1]RamConfig CBIT_3
+                    */
+                    if (param.first.find("WRITE_MODE") == 0 || param.first.find("READ_MODE") == 0) {
+                        auto top_hlcpos = _translate_coords(block.x, block.y + 1);
+                        auto top_tile = output_.get_tile(top_hlcpos);
+
+                        if (param.first.find("WRITE_MODE") == 0) {
+                            if (param.second[param.second.length()-1] == '1') {
+                                top_tile->enable("RamConfig CBIT_0");
+                            }
+                            if (param.second[param.second.length()-2] == '1') {
+                                top_tile->enable("RamConfig CBIT_1");
+                            }
+                        }
+                        if (param.first.find("READ_MODE") == 0) {
+                            if (param.second[param.second.length()-1] == '1') {
+                                top_tile->enable("RamConfig CBIT_2");
+                            }
+                            if (param.second[param.second.length()-2] == '1') {
+                                top_tile->enable("RamConfig CBIT_3");
+                            }
+                        }
+                    }
+
+                }
+
+                if (data.size() > 0) {
+                    tile->enable("power_up");
+                    std::string data_str;
+                    for (auto datum : data) {
+                        data_str += "256'b" + datum.second + "\n";
+                    }
+                    tile->enable("data {\n" + data_str +" \n}");
                 }
             }
         }

@@ -54,6 +54,12 @@ class AtomLookup {
         //Returns the clb index associated with blk_id
         ClusterBlockId atom_clb(const AtomBlockId blk_id) const;
 
+        /*
+         *
+         */
+        //
+        AtomBlockId clb_atom(const ClusterBlockId blk_id) const;
+
         //Sets the bidirectional mapping between an atom and clb
         // If either blk_id or clb_index are not valid any existing mapping
         // is removed

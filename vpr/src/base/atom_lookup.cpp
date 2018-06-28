@@ -72,6 +72,18 @@ ClusterBlockId AtomLookup::atom_clb(const AtomBlockId blk_id) const {
     return *iter;
 }
 
+AtomBlockId AtomLookup::clb_atom(const ClusterBlockId blk_id) const {
+    VTR_ASSERT(blk_id);
+
+    for (size_t ii = 0; ii< atom_to_clb_.size(); ii++) {
+      if(atom_to_clb_[AtomBlockId(ii)] == blk_id) {
+        return AtomBlockId(ii);
+      }
+    }
+
+    return AtomBlockId::INVALID();
+}
+
 void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const ClusterBlockId clb) {
     VTR_ASSERT(blk_id);
 
