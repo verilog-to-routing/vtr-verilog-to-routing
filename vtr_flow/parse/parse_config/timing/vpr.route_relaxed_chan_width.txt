@@ -10,8 +10,6 @@ hold_TNS;vpr.crit_path.out;Hold Total Negative Slack \(hTNS\): (.*) ns
 hold_WNS;vpr.crit_path.out;Hold Worst Negative Slack \(hWNS\): (.*) ns
 
 #Area Metrics
-min_chan_width_routing_area_total;vpr.out;Total routing area: (.*), per logic tile: .*
-min_chan_width_routing_area_per_tile;vpr.out;Total routing area: .*, per logic tile: (.*)
 crit_path_routing_area_total;vpr.crit_path.out;Total routing area: (.*), per logic tile: .*
 crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per logic tile: (.*)
 
