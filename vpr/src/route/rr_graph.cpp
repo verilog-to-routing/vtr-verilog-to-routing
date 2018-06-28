@@ -226,11 +226,13 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         bool *Fc_clipped);
 
 static void build_rr_graph(
-        const t_graph_type graph_type, const int L_num_types,
+        const t_graph_type graph_type,
+        const int L_num_types,
         const t_type_ptr types,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
-        const enum e_switch_block_type sb_type, const int Fs,
+        const enum e_switch_block_type sb_type,
+        const int Fs,
         const vector<t_switchblock_inf> switchblocks,
         const int num_seg_types, const int num_arch_switches,
         const t_segment_inf * segment_inf,
@@ -242,7 +244,9 @@ static void build_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
-        const t_direct_inf *directs, const int num_directs,
+        const enum e_clock_modeling clock_modeling,
+        const t_direct_inf *directs,
+        const int num_directs,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings);
@@ -251,7 +255,8 @@ static void build_rr_graph(
 
 void create_rr_graph(
         const t_graph_type graph_type,
-        const int num_block_types, const t_type_ptr block_types,
+        const int num_block_types,
+        const t_type_ptr block_types,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const int num_arch_switches,
@@ -260,7 +265,9 @@ void create_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
-        const t_direct_inf *directs, const int num_directs,
+        const enum e_clock_modeling clock_modeling,
+        const t_direct_inf *directs,
+        const int num_directs,
         int *num_rr_switches,
         int *Warnings) {
 
@@ -278,7 +285,8 @@ void create_rr_graph(
     } else {
         build_rr_graph(
                 graph_type,
-                num_block_types, block_types,
+                num_block_types,
+                block_types,
                 grid,
                 nodes_per_chan,
                 det_routing_arch->switch_block_type,
@@ -295,6 +303,7 @@ void create_rr_graph(
                 base_cost_type,
                 trim_empty_channels,
                 trim_obs_channels,
+                clock_modeling,
                 directs, num_directs,
                 &det_routing_arch->wire_to_rr_ipin_switch,
                 num_rr_switches,
@@ -328,6 +337,7 @@ static void build_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
+        const enum e_clock_modeling clock_modeling,
         const t_direct_inf *directs,
         const int num_directs,
         int *wire_to_rr_ipin_switch,

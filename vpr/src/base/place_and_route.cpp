@@ -369,6 +369,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.clock_modeling,
 			arch->Directs, arch->num_directs,
 			&device_ctx.num_rr_switches,
 			&warnings);
