@@ -104,7 +104,7 @@ short t_rr_node::length() const {
 	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
-bool t_rr_node::found_at(int x, int y) {
+bool t_rr_node::found_at(int x, int y) const {
     switch (type_) {
     case CHANX: {
         VTR_ASSERT(ylow_ == yhigh_);
@@ -119,6 +119,28 @@ bool t_rr_node::found_at(int x, int y) {
     default:
         return ((x == xlow_) && (y == ylow_));
     }
+}
+
+static std::pair<int, int> overlap(short low_a, short high_a, short low_b, short high_b) {
+    auto overlap = std::make_pair(std::max(low_a, low_b), std::min(high_a, high_b));
+    if (overlap.first <= overlap.second) {
+        return overlap;
+    } else {
+        return std::make_pair(-1, -1);
+    }
+}
+
+std::pair<t_offset, t_offset> t_rr_node::overlap(t_rr_node& other) const {
+    auto overlap_x = ::overlap(xlow(), xhigh(), other.xlow(), other.xhigh());
+    auto overlap_y = ::overlap(ylow(), yhigh(), other.ylow(), other.yhigh());
+
+    t_offset low;
+    t_offset high;
+    low.x = overlap_x.first;
+    low.y = overlap_y.first;
+    high.x = overlap_x.second;
+    high.y = overlap_y.second;
+    return std::make_pair(low, high);
 }
 
 short t_rr_node::get_iedge(int sink_node, short switch_id) {
@@ -139,33 +161,45 @@ bool t_rr_node::edge_is_configurable(short iedge) const {
     return device_ctx.rr_switch_inf[iswitch].configurable();
 }
 
-std::string* t_rr_node::metadata(std::string key) {
+t_metadata_as* t_rr_node::metadata(std::string key) {
+    return metadata(std::make_pair(t_offset(), key));
+}
+t_metadata_as* t_rr_node::metadata(t_offset o, std::string key) {
+    return metadata(std::make_pair(o, key));
+}
+t_metadata_as* t_rr_node::metadata(std::pair<t_offset, std::string> ok) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (device_ctx.rr_node_metadata.size() == 0 || device_ctx.rr_node_metadata.count(this) == 0) {
         return nullptr;
     }
-
     auto& data = device_ctx.rr_node_metadata.at(this);
-    if (data.count(key) == 0) {
-        return nullptr;
-    }
-    auto& value = data.at(key);
-    return &value;
+    return data.one(ok);
 }
 
 void t_rr_node::add_metadata(std::string key, std::string value) {
+    add_metadata(std::make_pair(t_offset(), key), value);
+}
+void t_rr_node::add_metadata(t_offset o, std::string key, std::string value) {
+    add_metadata(std::make_pair(o, key), value);
+}
+void t_rr_node::add_metadata(std::pair<t_offset, std::string> ok, std::string value) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (device_ctx.rr_node_metadata.count(this) == 0) {
-        device_ctx.rr_node_metadata.emplace(this, std::map<std::string,std::string>());
+        device_ctx.rr_node_metadata.emplace(this, t_metadata_dict());
     }
     auto& data = device_ctx.rr_node_metadata.at(this);
-
-    data.emplace(key, value);
+    data.add(ok, value);
 }
 
-std::string* t_rr_node::edge_metadata(short iedge, std::string key) {
+t_metadata_as* t_rr_node::edge_metadata(short iedge, std::string key) {
+    return edge_metadata(iedge, std::make_pair(t_offset(), key));
+}
+t_metadata_as* t_rr_node::edge_metadata(short iedge, t_offset o, std::string key) {
+    return edge_metadata(iedge, std::make_pair(o, key));
+}
+t_metadata_as* t_rr_node::edge_metadata(short iedge, std::pair<t_offset, std::string> ok) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (device_ctx.rr_edge_metadata.count(this) == 0) {
@@ -177,28 +211,26 @@ std::string* t_rr_node::edge_metadata(short iedge, std::string key) {
         return nullptr;
     }
     auto& data = edata[iedge];
-
-    if (data.count(key) == 0) {
-        return nullptr;
-    }
-    auto& value = data.at(key);
-    return &value;
+    return data.one(ok);
 }
-
 void t_rr_node::add_edge_metadata(short iedge, std::string key, std::string value) {
+    return add_edge_metadata(iedge, std::make_pair(t_offset(), key), value);
+}
+void t_rr_node::add_edge_metadata(short iedge, t_offset o, std::string key, std::string value) {
+    return add_edge_metadata(iedge, std::make_pair(o, key), value);
+}
+void t_rr_node::add_edge_metadata(short iedge, std::pair<t_offset, std::string> ok, std::string value) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (device_ctx.rr_edge_metadata.count(this) == 0) {
-        device_ctx.rr_edge_metadata.emplace(this, std::unordered_map<short,std::map<std::string,std::string>>());
+        device_ctx.rr_edge_metadata.emplace(this, std::unordered_map<short,t_metadata_dict>());
     }
     auto& edata = device_ctx.rr_edge_metadata.at(this);
-
     if (edata.count(iedge) == 0) {
-        edata.emplace(iedge, std::map<std::string,std::string>());
+        edata.emplace(iedge, t_metadata_dict());
     }
     auto& data = edata[iedge];
-
-    data.emplace(key, value);
+    data.add(ok, value);
 }
 
 float t_rr_node::R() const {

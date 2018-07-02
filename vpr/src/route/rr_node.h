@@ -66,7 +66,9 @@ class t_rr_node {
         t_rr_type type() const { return type_; }
         const char *type_string() const; /* Retrieve type as a string */
 
-        std::string* metadata(std::string key);
+        t_metadata_as* metadata(std::string key);
+        t_metadata_as* metadata(t_offset o, std::string key);
+        t_metadata_as* metadata(std::pair<t_offset, std::string> ko);
 
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
         edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
@@ -80,7 +82,11 @@ class t_rr_node {
 
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
-        std::string* edge_metadata(short iedge, std::string key);
+
+        t_metadata_as* edge_metadata(short iedge, std::string key);
+        t_metadata_as* edge_metadata(short iedge, t_offset o, std::string key);
+        t_metadata_as* edge_metadata(short iedge, std::pair<t_offset, std::string> ko);
+
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
 
@@ -92,7 +98,8 @@ class t_rr_node {
 
         short capacity() const;
 
-        bool found_at(int x, int y);
+        bool found_at(int x, int y) const;
+        std::pair<t_offset, t_offset> overlap(t_rr_node& other) const;
 
         short ptc_num() const;
         short pin_num() const; //Same as ptc_num() but checks that type() is consistent
@@ -129,7 +136,12 @@ class t_rr_node {
         void set_edge_is_configurable(short iedge, bool is_configurable);
 
         void add_metadata(std::string key, std::string value);
+        void add_metadata(t_offset o, std::string key, std::string value);
+        void add_metadata(std::pair<t_offset, std::string> ok, std::string value);
+
         void add_edge_metadata(short iedge, std::string key, std::string value);
+        void add_edge_metadata(short iedge, t_offset o, std::string key, std::string value);
+        void add_edge_metadata(short iedge, std::pair<t_offset, std::string> ok, std::string value);
 
         void set_fan_in(short);
 

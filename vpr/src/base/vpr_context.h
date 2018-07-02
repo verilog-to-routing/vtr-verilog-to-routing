@@ -149,7 +149,7 @@ struct DeviceContext : public Context {
      * key:     Pointer to the routing resource node
      * value:   map of <attribute_name, attribute_value>
      */
-    std::unordered_map<t_rr_node*, std::map<std::string,std::string>> rr_node_metadata;
+    std::unordered_map<t_rr_node*, t_metadata_dict> rr_node_metadata;
     /* Attributes for each rr_edge                                             *
      * key:     <ptr,iswitch>                                                  *
      * ptr:     Pointer to the routing resource node.                          *
@@ -158,7 +158,7 @@ struct DeviceContext : public Context {
      *          (i.e. this node is the last one (a SINK) in a branch of the    *
      *          net's routing).                                                *
      * value:   map of <attribute_name, attribute_value>                       */
-    std::unordered_map<t_rr_node*, std::unordered_map<short, std::map<std::string,std::string>>> rr_edge_metadata;
+    std::unordered_map<t_rr_node*, std::unordered_map<short, t_metadata_dict>> rr_edge_metadata;
 
     /*
      * switch_fanin_remap is only used for printing out switch fanin stats (the -switch_stats option)
