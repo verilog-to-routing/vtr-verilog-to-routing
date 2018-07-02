@@ -207,22 +207,37 @@ ICE40HLCWriterVisitor::ICE40HLCWriterVisitor(std::ostream& os)
         , current_cell_(nullptr) {
 }
 
-static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short switch_id) {
-    auto node_pos = _translate_coords(src_node.xlow(), src_node.ylow());
+static t_offset hlc_coord_offset(t_hlc_coord a, t_hlc_coord b) {
+    t_offset o;
+    o.x = a.x-b.x;
+    o.y = a.y-b.y;
+    return o;
+}
 
-    auto iedge = src_node.get_iedge(sink_id, switch_id);
-    VTR_ASSERT(iedge != -1);
-    auto hlc_coord_str = src_node.edge_metadata(iedge, "hlc_coord");
-    if (hlc_coord_str == nullptr) {
-        if (src_node.type() == CHANX || src_node.type() == CHANY) {
-            return t_hlc_coord(-1, -1);
-        }
-        VTR_ASSERT(src_node.type() != CHANX);
-        VTR_ASSERT(src_node.type() != CHANY);
-        return t_hlc_coord(node_pos.x, node_pos.y);
+static std::pair<int, int> overlap(short low_a, short high_a, short low_b, short high_b) {
+    auto overlap = std::make_pair(std::max(low_a, low_b), std::min(high_a, high_b));
+    if (overlap.first <= overlap.second) {
+        return overlap;
+    } else {
+        return std::make_pair(-1, -1);
     }
+}
 
-    std::stringstream ss(*hlc_coord_str);
+static std::pair<t_hlc_coord,t_hlc_coord> overlap(t_hlc_coord a, t_hlc_coord b) {
+    auto overlap_x = overlap(a.x, a.x, b.x, b.x);
+    auto overlap_y = overlap(a.y, a.y, b.y, b.y);
+
+    t_hlc_coord low;
+    t_hlc_coord high;
+    low.x = overlap_x.first;
+    low.y = overlap_y.first;
+    high.x = overlap_x.second;
+    high.y = overlap_y.second;
+    return std::make_pair(low, high);
+}
+
+static t_hlc_coord parse_hlc_coord(std::string s) {
+    std::stringstream ss(s);
     t_hlc_coord pos(-1, -1);
     ss >> pos.x;
     ss.ignore(1, ',');
@@ -231,6 +246,24 @@ static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short sw
         return t_hlc_coord(-2, -2);
     }
     return pos;
+}
+
+static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node) {
+    auto hlc_coordp = src_node.metadata("hlc_coord");
+    if (hlc_coordp == nullptr) {
+        return t_hlc_coord(-4, -4);
+    }
+    return parse_hlc_coord(hlc_coordp->as_string());
+}
+
+static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short switch_id) {
+    auto iedge = src_node.get_iedge(sink_id, switch_id);
+    VTR_ASSERT(iedge != -1);
+    auto hlc_coordp = src_node.edge_metadata(iedge, "hlc_coord");
+    if (hlc_coordp == nullptr) {
+        return t_hlc_coord(-3, -3);
+    }
+    return parse_hlc_coord(hlc_coordp->as_string());
 }
 
 static void node_output(std::ostream& os, int node_id, t_rr_node& node) {
@@ -668,27 +701,38 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 if (tptr->iswitch == OPEN) {
                     trace << std::endl;
                 } else {
-                    // Edge
-                    auto edge_hlcpos = metadata_hlc_coord(src_node, snk_id, tptr->iswitch);
+                    // HLC Positions
+                    auto hlcpos_edge = metadata_hlc_coord(src_node, snk_id, tptr->iswitch);
+                    auto hlcpos_src = metadata_hlc_coord(src_node);
+                    auto hlcpos_snk = metadata_hlc_coord(snk_node);
+                    auto hlcpos_src_offset = hlc_coord_offset(hlcpos_edge, hlcpos_src);
+                    auto hlcpos_snk_offset = hlc_coord_offset(hlcpos_edge, hlcpos_snk);
 
-                    trace << " (" << std::setw(2) << edge_hlcpos.x << "," << std::setw(2) << edge_hlcpos.y << ") - ";
+                    trace << "Edge: (" << std::setw(2) << hlcpos_edge.x << "," << std::setw(2) << hlcpos_edge.y << ") - ";
                     node_output(trace, src_id, src_node);
                     trace << " <" << std::setw(2) << std::to_string(tptr->iswitch) << "> ";
                     node_output(trace, snk_id, snk_node);
 
                     /* Output the HLC names */
                     auto sw = _sw_name_from_id(tptr->iswitch);
-                    auto src_name = src_node.metadata("hlc_name");
-                    if (src_name == nullptr) {
-                        src_name = &no_hlc_name;
+
+                    std::string src_name(no_hlc_name);
+                    auto src_pname = src_node.metadata(hlcpos_src_offset, "hlc_name");
+                    if (src_pname != nullptr) {
+                        src_name = src_pname->as_string();
                     }
-                    auto snk_name = snk_node.metadata("hlc_name");
-                    if (snk_name == nullptr) {
-                        snk_name = &no_hlc_name;
+
+                    std::string snk_name(no_hlc_name);
+                    auto snk_pname = snk_node.metadata(hlcpos_snk_offset, "hlc_name");
+                    if (snk_pname != nullptr) {
+                        snk_name = snk_pname->as_string();
                     }
-                    trace << " " << std::setw(20) << std::right << *src_name;
+
+                    trace << " " << std::setw(20) << std::right << src_name;
+                    trace << " (" << std::setw(3) << hlcpos_src_offset.x << "," << std::setw(3) << hlcpos_src_offset.y << ")";
                     trace << " " << sw;
-                    trace << " " << *snk_name;
+                    trace << " (" << std::setw(3) << hlcpos_snk_offset.x << "," << std::setw(3) << hlcpos_snk_offset.y << ")";
+                    trace << " " << snk_name;
                     trace << std::endl;
                 }
             }
@@ -700,52 +744,54 @@ void ICE40HLCWriterVisitor::finish_impl() {
             // Source
             auto src_id = tptr->index;
             auto& src_node = device_ctx.rr_nodes[src_id];
-            auto src_name = src_node.metadata("hlc_name");
-            if (src_name == nullptr) {
-                continue;
-            }
 
             if (tptr->iswitch != OPEN) {
                 VTR_ASSERT(tptr->next != nullptr);
-
-                // Sink
-                auto snk_id = tptr->next->index;
-                auto& snk_node = device_ctx.rr_nodes[snk_id];
-                auto snk_name = snk_node.metadata("hlc_name");
-                if (snk_name == nullptr) {
-                    continue;
-                }
-
-                VTR_ASSERT(src_name != nullptr);
-                VTR_ASSERT(snk_name != nullptr);
 
                 auto hlc_sw_type = _sw_type_from_id(tptr->iswitch);
                 if (hlc_sw_type == HLC_SW_SHORT) {
                     continue;
                 }
 
-                // Edge
-                auto edge_hlcpos = metadata_hlc_coord(src_node, snk_id, tptr->iswitch);
-                if (edge_hlcpos.x != -1 && edge_hlcpos.y != -1) {
-                    auto tile = output_.get_tile(edge_hlcpos);
+                // Sink
+                auto snk_id = tptr->next->index;
+                auto& snk_node = device_ctx.rr_nodes[snk_id];
 
-                    auto grid_pos = _translate_coords(edge_hlcpos);
-                    auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
-                    tile->name = hlc_tile(type->pb_type);
+                // HLC Positions
+                auto hlcpos_edge = metadata_hlc_coord(src_node, snk_id, tptr->iswitch);
+                auto hlcpos_src = metadata_hlc_coord(src_node);
+                auto hlcpos_snk = metadata_hlc_coord(snk_node);
+                auto hlcpos_src_offset = hlc_coord_offset(hlcpos_edge, hlcpos_src);
+                auto hlcpos_snk_offset = hlc_coord_offset(hlcpos_edge, hlcpos_snk);
 
-                    auto& c = tile->enable_edge(*src_name, *snk_name, hlc_sw_type);
-                    if (verbose_) {
-                        // Output a useful debugging about which rr_nodes this edge
-                        // comes from.
-                        c << " ";
-                        c << std::setw(5) << std::right << src_id;
-                        c << " => ";
-                        c << std::setw(5) << std::right << snk_id;
-                        c << "  ";
-                        c << std::setw(6) << std::right << src_node.type_string();
-                        c << " => ";
-                        c << std::left << snk_node.type_string();
-                    }
+                auto src_pname = src_node.metadata(hlcpos_src_offset, "hlc_name");
+                if (src_pname == nullptr) {
+                    continue;
+                }
+                auto snk_pname = snk_node.metadata(hlcpos_snk_offset, "hlc_name");
+                if (snk_pname == nullptr) {
+                    continue;
+                }
+
+                auto tile = output_.get_tile(hlcpos_edge);
+
+                // FIXME: Must be a better way to get the tile type
+                auto grid_pos = _translate_coords(hlcpos_edge);
+                auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
+                tile->name = hlc_tile(type->pb_type);
+
+                auto& c = tile->enable_edge(src_pname->as_string(), snk_pname->as_string(), hlc_sw_type);
+                if (verbose_) {
+                    // Output a useful debugging about which rr_nodes this edge
+                    // comes from.
+                    c << " ";
+                    c << std::setw(5) << std::right << src_id;
+                    c << " => ";
+                    c << std::setw(5) << std::right << snk_id;
+                    c << "  ";
+                    c << std::setw(6) << std::right << src_node.type_string();
+                    c << " => ";
+                    c << std::left << snk_node.type_string();
                 }
             }
         }
