@@ -372,14 +372,14 @@ static std::vector<int> _determine_lut_permutation(size_t num_inputs, const t_pb
 }
 
 static std::string hlc_tile(const t_pb_type* t, int xoff, int yoff) {
-    std::string default_key = "hlc_tile";
-    std::string offset_key = default_key + "_" + std::to_string(xoff) + "_" + std::to_string(yoff);
+    std::string hlc_tile_key = "hlc_tile";
     std::string hlc_tile_name = "UNKNOWN";
+    t_offset offset = {xoff, yoff, 0};
 
-    if(t->meta != nullptr && t->meta->has(offset_key)) {
-        hlc_tile_name = t->meta->get(offset_key)->front().as_string();
-    } else if (t->meta != nullptr && t->meta->has(default_key)) {
-        hlc_tile_name = t->meta->get(default_key)->front().as_string();
+    if (t->meta != nullptr && t->meta->has(offset, hlc_tile_key)) {
+      for (auto hlc_tile : *(t->meta->get(offset, hlc_tile_key))) {
+        hlc_tile_name = hlc_tile.as_string();
+      }
     }
 
     std::cerr << "hlc_tile:" << hlc_tile_name << " from: " << t->name << std::endl;
