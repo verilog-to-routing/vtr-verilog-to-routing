@@ -409,10 +409,10 @@ As an example consider the following simple PLL model:
     <model name="simple_pll">
       <input_ports>
         <port name="in_clock" is_clock="1"/>
-      <input_ports/>
+      </input_ports>
       <output_ports>
         <port name="out_clock" is_clock="1"/>
-      <output_ports/>
+      </output_ports>
     </model>
 
 The port named ``in_clock`` is specified as a clock sink, since it is an input port with ``is_clock="1"``  set.
