@@ -96,7 +96,7 @@ The assoicated clock port must have ``is_clock="1"`` specified to indicate it is
           <port name="clk" is_clock="1"/>
         </input_ports>
         <output_ports>
-          <port name="q" clock="clk/>
+          <port name="q" clock="clk"/>
         </output_ports>
       </model>
 
