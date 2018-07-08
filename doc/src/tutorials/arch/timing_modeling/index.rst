@@ -67,7 +67,7 @@ For example:
       <delay_constant max="10e-12" in_port="adder.cin" out_port="adder.cout"/>
     </pb_type>
 
-specifies that all the edges of 300ps delays, except to cin to cout edge which has a delay of 10ps.
+specifies that all the edges of 300ps delays, except to ``cin`` to ``cout`` edge which has a delay of 10ps.
 
 .. _dff_timing_modeling:
 
