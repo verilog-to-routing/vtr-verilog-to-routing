@@ -775,7 +775,7 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 
 	/* Checks that nets used as clock inputs to latches are never also used *
 	 * as VPACK_LUT inputs.  It's electrically questionable, and more importantly *
-	 * would break the clustering code.                                     */
+	 * would break the clustering code.
     auto& atom_ctx = g_vpr_ctx.atom();
 
     for(auto blk_id : atom_ctx.nlist.blocks()) {
@@ -793,6 +793,7 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
             }
 		}
 	}
+     */
 }
 
 /* Determine if atom block is in pb */
