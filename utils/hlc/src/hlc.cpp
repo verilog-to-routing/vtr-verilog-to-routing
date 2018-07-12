@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include <algorithm>    // std::find
 
 #include "hlc.h"
@@ -111,6 +112,7 @@ bool t_hlc_cell::operator<(const t_hlc_cell &o) const {
 }
 
 std::ostream& t_hlc_cell::enable(std::string key, std::string value) {
+    assert(this != nullptr);
     t_hlc_property new_property(key, value);
     auto found = std::find(properties.begin(), properties.end(), new_property);
     if (found == properties.end()) {
@@ -164,6 +166,7 @@ t_hlc_cell* t_hlc_tile::get_global_cell() {
 }
 
 std::ostream& t_hlc_tile::enable(std::string key, std::string value) {
+
     auto pkey = parse_net_name(key);
     auto cell = get_cell(pkey.first);
     return cell->enable(pkey.second, value);

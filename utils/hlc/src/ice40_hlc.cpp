@@ -531,6 +531,10 @@ void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_route *top_pb_route, const
                 truth_table[0].push_back(vtr::LogicValue::TRUE);
                 truth_table[0].push_back(vtr::LogicValue::TRUE);
 
+                if (!current_cell_) {
+                    std::cout << "ERROR: No current cell!" << std::endl;
+                    return;
+                }
                 current_cell_->enable(lut_outputs(truth_table, {route.pb_graph_pin->pin_number}, 4));
 
                 auto& trace = current_cell_->comments;
@@ -540,6 +544,7 @@ void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_route *top_pb_route, const
             if (mode->meta != nullptr) {
                 if (mode->meta->has("hlc_property")) {
                     for (auto v : *(mode->meta->get("hlc_property"))) {
+                        VTR_ASSERT(current_cell_ != NULL);
                         current_cell_->enable(v.as_string());
                     }
                 }
@@ -555,6 +560,10 @@ void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_route *top_pb_route, const
 
         if (pb_type->meta->has("hlc_property")) {
             for (auto v : *(pb_type->meta->get("hlc_property"))) {
+                if (!current_cell_) {
+                    std::cout << "ERROR: No current cell!" << std::endl;
+                    return;
+                }
                 current_cell_->enable(v.as_string());
             }
         }
@@ -588,7 +597,10 @@ void ICE40HLCWriterVisitor::visit_atom_impl(const t_pb* atom) {
     const t_model* model = atom_ctx.nlist.block_model(atom_blk_id);
     if (model->name == std::string(MODEL_NAMES)) {
         std::string o = lut_outputs(atom);
-        VTR_ASSERT(current_cell_);
+        if (!current_cell_) {
+            std::cout << "ERROR: No current cell!" << std::endl;
+            return;
+        }
         current_cell_->enable(o);
     }
 
