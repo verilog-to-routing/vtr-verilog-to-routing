@@ -41,6 +41,15 @@
  *       otherwise.                                                          */
 
 class t_rr_node {
+    private: //Types
+        //The edge information is stored in a structure to economize on the number of pointers held
+        //by t_rr_node (to save memory), and is not exposed externally
+        struct t_rr_edge {
+            int sink_node = -1; //The ID of the sink RR node associated with this edge
+            short switch_id = -1; //The ID of the switch type this edge represents
+
+        };
+
     public: //Types
 
         //An iterator that dereferences to an edge index
@@ -83,9 +92,9 @@ class t_rr_node {
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
 
-        t_metadata_as* edge_metadata(short iedge, std::string key);
-        t_metadata_as* edge_metadata(short iedge, t_offset o, std::string key);
-        t_metadata_as* edge_metadata(short iedge, std::pair<t_offset, std::string> ko);
+        t_metadata_as* edge_metadata(int sink_node, short switch_id, std::string key);
+        t_metadata_as* edge_metadata(int sink_node, short switch_id, t_offset o, std::string key);
+        t_metadata_as* edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ko);
 
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
@@ -139,9 +148,9 @@ class t_rr_node {
         void add_metadata(t_offset o, std::string key, std::string value);
         void add_metadata(std::pair<t_offset, std::string> ok, std::string value);
 
-        void add_edge_metadata(short iedge, std::string key, std::string value);
-        void add_edge_metadata(short iedge, t_offset o, std::string key, std::string value);
-        void add_edge_metadata(short iedge, std::pair<t_offset, std::string> ok, std::string value);
+        void add_edge_metadata(int sink_node, short switch_id, std::string key, std::string value);
+        void add_edge_metadata(int sink_node, short switch_id, t_offset o, std::string key, std::string value);
+        void add_edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ok, std::string value);
 
         void set_fan_in(short);
 
@@ -160,14 +169,6 @@ class t_rr_node {
 
         void set_direction(e_direction);
         void set_side(e_side);
-
-    private: //Types
-        //The edge information is stored in a structure to economize on the number of pointers held
-        //by t_rr_node (to save memory), and is not exposed externally
-        struct t_rr_edge {
-            int sink_node = -1; //The ID of the sink RR node associated with this edge
-            short switch_id = -1; //The ID of the switch type this edge represents
-        };
 
     private: //Data
         //Note: we use a plain array and a shorts for size to save space vs std::vector

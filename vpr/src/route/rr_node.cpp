@@ -193,43 +193,45 @@ void t_rr_node::add_metadata(std::pair<t_offset, std::string> ok, std::string va
     data.add(ok, value);
 }
 
-t_metadata_as* t_rr_node::edge_metadata(short iedge, std::string key) {
-    return edge_metadata(iedge, std::make_pair(t_offset(), key));
+t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::string key) {
+    return edge_metadata(sink_id, switch_id, std::make_pair(t_offset(), key));
 }
-t_metadata_as* t_rr_node::edge_metadata(short iedge, t_offset o, std::string key) {
-    return edge_metadata(iedge, std::make_pair(o, key));
+t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, t_offset o, std::string key) {
+    return edge_metadata(sink_id, switch_id, std::make_pair(o, key));
 }
-t_metadata_as* t_rr_node::edge_metadata(short iedge, std::pair<t_offset, std::string> ok) {
+t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    std::pair<int, short> rr_edge = std::make_pair(sink_id, switch_id);
 
     if (device_ctx.rr_edge_metadata.count(this) == 0) {
         return nullptr;
     }
     auto& edata = device_ctx.rr_edge_metadata.at(this);
 
-    if (edata.count(iedge) == 0) {
+    if (edata.count(rr_edge) == 0) {
         return nullptr;
     }
-    auto& data = edata[iedge];
+    auto& data = edata[rr_edge];
     return data.one(ok);
 }
-void t_rr_node::add_edge_metadata(short iedge, std::string key, std::string value) {
-    return add_edge_metadata(iedge, std::make_pair(t_offset(), key), value);
+void t_rr_node::add_edge_metadata(int sink_id, short switch_id, std::string key, std::string value) {
+    return add_edge_metadata(sink_id, switch_id, std::make_pair(t_offset(), key), value);
 }
-void t_rr_node::add_edge_metadata(short iedge, t_offset o, std::string key, std::string value) {
-    return add_edge_metadata(iedge, std::make_pair(o, key), value);
+void t_rr_node::add_edge_metadata(int sink_id, short switch_id, t_offset o, std::string key, std::string value) {
+    return add_edge_metadata(sink_id, switch_id, std::make_pair(o, key), value);
 }
-void t_rr_node::add_edge_metadata(short iedge, std::pair<t_offset, std::string> ok, std::string value) {
+void t_rr_node::add_edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok, std::string value) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    std::pair<int, short> rr_edge = std::make_pair(sink_id, switch_id);
 
     if (device_ctx.rr_edge_metadata.count(this) == 0) {
-        device_ctx.rr_edge_metadata.emplace(this, std::unordered_map<short,t_metadata_dict>());
+      device_ctx.rr_edge_metadata.emplace(this, std::map<std::pair<int, short>, t_metadata_dict>());
     }
     auto& edata = device_ctx.rr_edge_metadata.at(this);
-    if (edata.count(iedge) == 0) {
-        edata.emplace(iedge, t_metadata_dict());
+    if (edata.count(rr_edge) == 0) {
+        edata.emplace(rr_edge, t_metadata_dict());
     }
-    auto& data = edata[iedge];
+    auto& data = edata[rr_edge];
     data.add(ok, value);
 }
 

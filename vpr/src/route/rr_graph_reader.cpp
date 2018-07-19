@@ -458,8 +458,8 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
                 o.z = get_attribute(edges_meta, "z_offset", loc_data, OPTIONAL).as_int(0);
                 auto key = get_attribute(edges_meta, "name", loc_data).as_string();
 
-                device_ctx.rr_nodes[source_node].add_edge_metadata(
-                    num_edges_for_node[source_node], o, key, edges_meta.child_value());
+                device_ctx.rr_nodes[source_node].add_edge_metadata(sink_node, switch_id,
+                                                                   o, key, edges_meta.child_value());
 
                 edges_meta = edges_meta.next_sibling(edges_meta.name());
             }
