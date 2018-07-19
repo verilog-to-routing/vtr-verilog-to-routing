@@ -259,7 +259,7 @@ static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node) {
 static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short switch_id) {
     auto iedge = src_node.get_iedge(sink_id, switch_id);
     VTR_ASSERT(iedge != -1);
-    auto hlc_coordp = src_node.edge_metadata(iedge, "hlc_coord");
+    auto hlc_coordp = src_node.edge_metadata(sink_id, switch_id, "hlc_coord");
     if (hlc_coordp == nullptr) {
         return t_hlc_coord(-3, -3);
     }
@@ -818,8 +818,8 @@ void ICE40HLCWriterVisitor::finish_impl() {
                 // FIXME: Must be a better way to get the tile type
                 auto grid_pos = _translate_coords(hlcpos_edge);
                 auto type = device_ctx.grid[grid_pos.first][grid_pos.second].type;
-                int x_offset = device_ctx.grid[grid_pos.first][grid_pos.second].width_offset;;
-                int y_offset = device_ctx.grid[grid_pos.first][grid_pos.second].height_offset;;
+                int x_offset = device_ctx.grid[grid_pos.first][grid_pos.second].width_offset;
+                int y_offset = device_ctx.grid[grid_pos.first][grid_pos.second].height_offset;
                 tile->name = hlc_tile(type->pb_type, x_offset, y_offset);
 
                 auto& c = tile->enable_edge(src_pname->as_string(), snk_pname->as_string(), hlc_sw_type);
