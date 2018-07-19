@@ -495,7 +495,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
-    std::vector<int> get_clock_pins_indices();
+    std::vector<int> get_clock_pins_indices() const;
 
 };
 typedef const t_type_descriptor* t_type_ptr;
