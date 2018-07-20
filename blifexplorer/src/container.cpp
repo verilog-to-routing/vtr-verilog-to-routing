@@ -546,7 +546,7 @@ int Container::createConnectionsFromOdinIterate()
                                          the method get_children_of(node->getOdinRef(), &num_children)
                                          sometimes returns a node itself as its child.*/
                              fprintf(stderr, "CONTAINER:  Warning: Node has itself in childlist in Odin II:");
-                             fprintf(stderr,actName.toAscii().data());
+                             fprintf(stderr,actName.toLatin1().data());
                              fprintf(stderr,"\n");
                          }else{
                          //for hard blocks add the output pin of the created connection

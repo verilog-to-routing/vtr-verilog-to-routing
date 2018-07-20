@@ -24,33 +24,47 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef ODININTERFACE_H
 #define ODININTERFACE_H
 
-#include <QtGui>
+#include <QtWidgets>
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sstream>
+
+#include "vtr_error.h"
+#include "vtr_time.h"
+
+#include "argparse.hpp"
+
+#include "arch_util.h"
+
+#include "soft_logic_def_parser.h"
 #include "globals.h"
 #include "types.h"
-#include "util.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
 #include "netlist_create_from_ast.h"
-#include "outputs.h"
-#include "netlist_optimizations.h"
+#include "ast_util.h"
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "read_blif.h"
-#include "read_netlist.h"
-#include "activity_estimation.h"
-#include "high_level_data.h"
+#include "output_blif.h"
+#include "netlist_cleanup.h"
+
 #include "hard_blocks.h"
 #include "memories.h"
 #include "simulate_blif.h"
-#include "ace.h"
-#include "errors.h"
+
 #include "netlist_visualizer.h"
-#include "odin_ii_func.h"
+#include "adders.h"
+#include "subtractions.h"
+#include "vtr_util.h"
+#include "vtr_path.h"
+#include "vtr_memory.h"
 
 
 class OdinInterface
@@ -92,7 +106,7 @@ private:
     char* input_vector_file;
     int output_edge;
     int cycle;
-    stages* stgs;
+    stages_t* stgs;
     pin_names* hold_high;
     pin_names* hold_low;
     hashtable_t* hold_high_index;

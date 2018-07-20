@@ -27,7 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <QGraphicsPixmapItem>
 #include <QList>
 #include <QDebug>
-#include <QtGui>
+#include <QtWidgets>
 
 
 

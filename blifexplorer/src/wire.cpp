@@ -22,7 +22,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 #include <QDebug>
-#include <QtGui>
+#include <QtWidgets>
 
 #include "wire.h"
 #include <math.h>
@@ -31,7 +31,7 @@ const qreal Pi = 3.14;
 
 //constructor. A start and an endpoint is needed for each wire
 Wire::Wire(LogicUnit *startUnit, LogicUnit *endUnit,
-          QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent, scene)
+          QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
 {
     myStartUnit = startUnit;
     myEndUnit = endUnit;

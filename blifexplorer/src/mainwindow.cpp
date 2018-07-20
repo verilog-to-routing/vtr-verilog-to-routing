@@ -21,7 +21,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
-#include <QtGui>
+#include <QtWidgets>
 #include <QLabel>
 #include <QDebug>
 #include <QHash>
@@ -287,7 +287,7 @@ void MainWindow::textColorChanged()
     textAction = qobject_cast<QAction *>(sender());
     fontColorToolButton->setIcon(createColorToolButtonIcon(
                 ":/images/textpointer.png",
-                qVariantValue<QColor>(textAction->data())));
+                qvariant_cast<QColor>(textAction->data())));
     textButtonTriggered();
 }
 
@@ -300,7 +300,7 @@ void MainWindow::itemColorChanged()
     fillAction = qobject_cast<QAction *>(sender());
     fillColorToolButton->setIcon(createColorToolButtonIcon(
                  ":/images/floodfill.png",
-                 qVariantValue<QColor>(fillAction->data())));
+                 qvariant_cast<QColor>(fillAction->data())));
     fillButtonTriggered();
 }
 
@@ -312,7 +312,7 @@ void MainWindow::lineColorChanged()
     lineAction = qobject_cast<QAction *>(sender());
     lineColorToolButton->setIcon(createColorToolButtonIcon(
                  ":/images/linecolor.png",
-                 qVariantValue<QColor>(lineAction->data())));
+                 qvariant_cast<QColor>(lineAction->data())));
     lineButtonTriggered();
 }
 
@@ -321,7 +321,7 @@ void MainWindow::lineColorChanged()
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::textButtonTriggered()
 {
-    scene->setTextColor(qVariantValue<QColor>(textAction->data()));
+    scene->setTextColor(qvariant_cast<QColor>(textAction->data()));
 }
 
 
@@ -330,7 +330,7 @@ void MainWindow::textButtonTriggered()
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::fillButtonTriggered()
 {
-    scene->setItemColor(qVariantValue<QColor>(fillAction->data()));
+    scene->setItemColor(qvariant_cast<QColor>(fillAction->data()));
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -338,7 +338,7 @@ void MainWindow::fillButtonTriggered()
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::lineButtonTriggered()
 {
-    scene->setLineColor(qVariantValue<QColor>(lineAction->data()));
+    scene->setLineColor(qvariant_cast<QColor>(lineAction->data()));
 }
 
 

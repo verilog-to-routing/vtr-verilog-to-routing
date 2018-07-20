@@ -29,7 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 LogicUnit::LogicUnit(QString name, UnitType unitType, QMenu *contextMenu,
              QGraphicsItem *parent, QGraphicsScene *scene)
-    : QGraphicsPolygonItem(parent, scene)
+    : QGraphicsPolygonItem(parent)
 {
     myUnitType = unitType;
     myContextMenu = contextMenu;
