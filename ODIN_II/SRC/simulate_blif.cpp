@@ -28,13 +28,64 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 #include <chrono>
 #include <dlfcn.h>
+#include <mutex>
+
+#ifndef _WIN32
+	#include "pthread.h"
+#endif
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
 #define min(a,b) ((a) > (b)? (b) : (a))
 #endif
 
+
 char *sim_run_dir;
+
+void init_read(npin_t *pin)
+{
+	bool available =false;
+	while(!available)
+	{
+		pin->pin_lock.lock();
+		if(!pin->is_being_written)
+		{
+			available = true;
+			pin->nb_of_reader += 1;
+		}
+		pin->pin_lock.unlock();
+	}
+}
+
+void close_reader(npin_t *pin)
+{
+	pin->nb_of_reader -= 1;
+}
+
+void init_write(npin_t *pin)
+{
+	bool available =false;
+	while(!available)
+	{
+		pin->pin_lock.lock();
+		if(!pin->is_being_written && !pin->nb_of_reader)
+		{
+			available = true;
+			pin->is_being_written = true;
+		}
+		pin->pin_lock.unlock();
+	}
+}
+
+void close_writer(npin_t *pin)
+{
+	pin->is_being_written = false;
+}
+
+
+
+static int is_node_ready(nnode_t* node, int cycle);
+static void update_undriven_input_pins(nnode_t *node, int cycle);
 
 /*
  * Performs simulation.
@@ -280,84 +331,95 @@ void simulate_netlist(netlist_t *netlist)
  * taken for each stage, and that stage is computed in parallel for all subsequent
  * cycles if speedup is observed.
  */
+typedef struct
+{
+	stages_t *s;
+	size_t start;
+	size_t end;
+	size_t current_stage;
+	int cycle;
+	pthread_t worker;
+}worker_data;
+
+static void compute_and_store_part(void *data_in)
+{
+	worker_data *data = (worker_data *)data_in;
+	for (int j = data->start;j >= 0 && j < data->end && j < data->s->counts[data->current_stage]; j++)
+	{
+		if(data->s->stages[data->current_stage][j])
+			compute_and_store_value(data->s->stages[data->current_stage][j], data->cycle);
+	}
+}
+
+static void *compute_and_store_paralele_value(void *data_in)
+{
+	compute_and_store_part(data_in);
+	pthread_exit(NULL);
+}
+
 void simulate_cycle(int cycle, stages_t *s)
 {
-	#ifdef _OPENMP
 	// -1 for cycle 0, -1 for the last cycle in the wave.
 	const int test_cycles = SIM_WAVE_LENGTH - 2;
-
-	const int st_length = test_cycles/2;
-	const int st_start = 1;
-	const int st_end = st_start + (st_length-1);
-
-	const int pt_length = test_cycles - st_length;
-	const int pt_start = st_end + 1;
-	const int pt_end = pt_start + (pt_length-1);
 
 	if (test_cycles < 2)
 		error_message(SIMULATION_ERROR, -1, -1, "SIM_WAVE_LENGTH is too small.");
 
-	// Range of cycles over which to test the sequential run times of each stage.
-	char sequential_test = (cycle >= st_start && cycle <= st_end);
-	// Range of cycles over which to test the parallel run times of each stage.
-	char parallel_test   = (cycle >= pt_start && cycle <= pt_end);
-	#endif
+	int number_of_workers = s->worker_const + s->worker_temp;
 
-	int i;
-	for(i = 0; i < s->count; i++)
+	for(int i = 0; i < s->count; i++)
 	{
-		int j;
-		#ifdef _OPENMP
-		double time = 0.0;
-		if (sequential_test || parallel_test)
-			time = wall_time();
 
-		// Compute in parallel if we are profiling or if this stage is known to be faster in parallel.
-		char compute_in_parallel = parallel_test
-				|| (!sequential_test && !parallel_test && s->sequential_times[i] > s->parallel_times[i]);
+		double time = wall_time();
 
-		if (compute_in_parallel)
-		{	// Compute the stage in parallel.
-			#pragma omp parallel for schedule(static)
-			for (j = 0; j < s->counts[i]; j++)
-				compute_and_store_value(s->stages[i][j], cycle);
-		}
-		else
+		worker_data *data = (worker_data *)vtr::malloc((number_of_workers)*sizeof(worker_data));
+		int nb_of_node_parallel = s->counts[i]/(number_of_workers);
+
+		for (int id =0; id < number_of_workers; id++)
 		{
+			data[id].start = (id == 0)? 0: data[id-1].end;
+			data[id].end = (id == number_of_workers-1)?  s->counts[i]: data[id].start + nb_of_node_parallel;
+			data[id].current_stage = i;
+			data[id].s = s;
+			data[id].cycle = cycle;
+
+			if(id < number_of_workers-1) // if child threads
+			{
+				int rt = pthread_create(&data[id].worker, NULL, compute_and_store_paralele_value,&data[id]);
+			}
+			else
+			{
+				compute_and_store_part(&data[id]);
+				for (id =0; id < number_of_workers-1; id++)
+					pthread_join(data[id].worker, NULL);
+			}
+
+		}	
+		vtr::free(data);
+
+		// Record the ratio of parallelizable stages node.
+		if (cycle > test_cycles)
+			s->num_parallel_nodes += 1/(number_of_workers)/s->count;
+
+		time = wall_time()-time;
+
+		#ifdef _PTHREAD_H 
+			if(time < s->times)	
+			{	
+				s->worker_temp = (s->worker_temp >0)? s->worker_temp*2: 1;
+				s->times = time;
+			}
+			else
+			{
+				s->worker_const += (s->worker_temp >0)? s->worker_temp/2:-1;
+				s->worker_temp = 0;
+			}
+			
+			// adjust to boundaries we need at least 1 thread
+			s->worker_const = max(1, min(64, s->worker_const));
+			s->worker_temp = max(1-s->worker_const, min(64-s->worker_const, s->worker_temp));
 		#endif
 
-			// Compute the stage sequentially.
-			for (j = 0; j < s->counts[i]; j++)
-				compute_and_store_value(s->stages[i][j], cycle);
-
-		#ifdef _OPENMP
-		}
-
-		if (sequential_test)
-		{
-			// Take the minimum sequential time.
-			time = wall_time() - time;
-			if (s->sequential_times[i] == 0 || time < s->sequential_times[i])
-				s->sequential_times[i] = time;
-		}
-		else if (parallel_test)
-		{
-			// Take the minimum parallel time.
-			time = wall_time() - time;
-			if (s->parallel_times[i] == 0 || time < s->parallel_times[i])
-				s->parallel_times[i] = time;
-		}
-
-		if (cycle == pt_end + 1)
-		{
-			//printf("%.10f\t %.10f\t %.10f\t %d\t %d\t %f\n", s->sequential_times[i], s->parallel_times[i], s->sequential_times[i]/s->parallel_times[i], s->counts[i], compute_in_parallel, s->num_children[i]/(double)s->counts[i]);
-			//printf("%d %d %d %d %d %d\n", st_length, pt_length, st_start, st_end, pt_start, pt_end);
-
-			// Record the number of nodes in parallelizable stages.
-			if (compute_in_parallel)
-				s->num_parallel_nodes += s->counts[i];
-		}
-		#endif
 	}
 }
 
@@ -368,24 +430,38 @@ void simulate_cycle(int cycle, stages_t *s)
  */
 stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *l)
 {
-	queue_t *queue = create_queue();
+	std::queue<nnode_t *> queue = std::queue<nnode_t *>();
 	// Enqueue top input nodes
 	int i;
 	for (i = 0; i < netlist->num_top_input_nodes; i++)
-		enqueue_node_if_ready(queue,netlist->top_input_nodes[i],cycle);
+	{
+		if(is_node_ready(netlist->top_input_nodes[i], cycle))
+		{
+			netlist->top_input_nodes[i]->in_queue = TRUE;
+			queue.push(netlist->top_input_nodes[i]);
+		}
+	}
 
 	// Enqueue constant nodes.
 	nnode_t *constant_nodes[] = {netlist->gnd_node, netlist->vcc_node, netlist->pad_node};
 	int num_constant_nodes = 3;
 	for (i = 0; i < num_constant_nodes; i++)
-		enqueue_node_if_ready(queue,constant_nodes[i],cycle);
+	{
+		if(is_node_ready(constant_nodes[i], cycle))
+		{
+			constant_nodes[i]->in_queue = TRUE;
+			queue.push(constant_nodes[i]);
+		}
+	}
 
 	nnode_t **ordered_nodes = 0;
 	int   num_ordered_nodes = 0;
 
-	nnode_t *node;
-	while ((node = (nnode_t *)queue->remove(queue)))
+	;
+	while (! queue.empty())
 	{
+		nnode_t *node = queue.front();
+		queue.pop();
 		compute_and_store_value(node, cycle);
 
 		// Match node for items passed via -p and add to lines if there's a match.
@@ -402,7 +478,7 @@ stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, line
 			if (!node2->in_queue && is_node_ready(node2, cycle) && !is_node_complete(node2, cycle))
 			{
 				node2->in_queue = TRUE;
-				queue->add(queue,node2);
+				queue.push(node2);
 			}
 		}
 		vtr::free(children);
@@ -413,7 +489,6 @@ stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, line
 		ordered_nodes = (nnode_t **)vtr::realloc(ordered_nodes, sizeof(nnode_t *) * (num_ordered_nodes + 1));
 		ordered_nodes[num_ordered_nodes++] = node;
 	}
-	queue->destroy(queue);
 
 	// Reorganise the ordered nodes into stages for parallel computation.
 	stages_t *s = stage_ordered_nodes(ordered_nodes, num_ordered_nodes);
@@ -434,6 +509,9 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 	s->num_connections = 0;
 	s->num_nodes = num_ordered_nodes;
 	s->num_parallel_nodes = 0;
+	s->worker_const = 1;
+	s->worker_temp = 0;
+	s->times =__DBL_MAX__;
 
 	const int index_table_size = (num_ordered_nodes/100)+10;
 
@@ -500,10 +578,6 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 	}
 	stage_children->destroy(stage_children);
 	stage_nodes   ->destroy(stage_nodes);
-
-	s->sequential_times = (double *)vtr::calloc(s->count, sizeof(double));
-	s->parallel_times   = (double *)vtr::calloc(s->count, sizeof(double));
-
 	return s;
 }
 
@@ -513,7 +587,7 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
  */
 void compute_and_store_value(nnode_t *node, int cycle)
 {
-	update_undriven_input_pins(node,cycle);
+	update_undriven_input_pins(node, cycle);
 
 	operation_list type = is_clock_node(node)?CLOCK_NODE:node->type;
 
@@ -847,39 +921,27 @@ void compute_and_store_value(nnode_t *node, int cycle)
  * This function is called when each node is updated as a
  * safeguard.
  */
-void update_undriven_input_pins(nnode_t *node, int cycle)
+static void update_undriven_input_pins(nnode_t *node, int cycle)
 {
 	int i;
 	for (i = 0; i < node->num_undriven_pins; i++)
-	{
-		npin_t *pin = node->undriven_pins[i];
-		update_pin_value(pin, global_args.sim_initial_value, cycle);
-	}
+		update_pin_value(node->undriven_pins[i], global_args.sim_initial_value, cycle);
 
 	// By the third cycle everything in the netlist should have been updated.
 	if (cycle == 3)
 	{
 		for (i = 0; i < node->num_input_pins; i++)
 		{
-			npin_t *pin = node->input_pins[i];
-			if (get_pin_cycle(pin) < cycle-1)
-			#ifdef _OPENMP
-			// Can't have multiple threads trying to error out at the same time.
-			#pragma omp critical
-			#endif
+			if (get_pin_cycle( node->input_pins[i]) < cycle-1)
 			{
-				char *node_name              = node->name;
-				char *pin_name               = pin->name;
-
 				// Print the trace.
 				nnode_t *root = print_update_trace(node, cycle);
-
 				// Throw an error.
 				error_message(SIMULATION_ERROR,0,-1,"Odin has detected that an input pin attached to %s isn't being updated.\n"
 						"\tPin name: %s\n"
 						"\tRoot node: %s\n"
 						"\tSee the trace immediately above this message for details.\n",
-						node_name, pin_name, root?root->name:"N/A"
+						node->name, node->input_pins[i]->name, root?root->name:"N/A"
 				);
 			}
 		}
@@ -954,23 +1016,6 @@ int get_num_covered_nodes(stages_t *s)
 }
 
 /*
- * Enqueues the node in the given queue if is_node_ready returns TRUE.
- */
-int enqueue_node_if_ready(queue_t* queue, nnode_t* node, int cycle)
-{
-	if (is_node_ready(node, cycle))
-	{
-		node->in_queue = TRUE;
-		queue->add(queue, node);
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
-}
-
-/*
  * Determines if the given node has been simulated for the given cycle.
  */
 int is_node_complete(nnode_t* node, int cycle)
@@ -986,7 +1031,7 @@ int is_node_complete(nnode_t* node, int cycle)
 /*
  * Checks to see if the node is ready to be simulated for the given cycle.
  */
-int is_node_ready(nnode_t* node, int cycle)
+static int is_node_ready(nnode_t* node, int cycle)
 {
 	if (!cycle)
 	{
@@ -1312,75 +1357,6 @@ nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_p
 }
 
 /*
- * Updates the value of a pin and its cycle. Pins should be updated using
- * only this function.
- *
- * Initializes the pin if need be.
- */
-void update_pin_value(npin_t *pin, signed char value, int cycle)
-{
-	if (!pin->values)
-		initialize_pin(pin);
-
-	pin->values[get_values_offset(cycle)] = value;
-	set_pin_cycle(pin, cycle);
-}
-
-/*
- * Gets the value of a pin. Pins should be checked using this function only.
- */
-signed char get_pin_value(npin_t *pin, int cycle)
-{
-	if (!pin->values || cycle < 0){
-		/* If the pin's node has an initial value, then use it.
-		   Otherwise use the global initial value
-		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
-		if(pin->node && pin->node->has_initial_value) {
-			return pin->node->initial_value;
-		}
-		return global_args.sim_initial_value;
-	}
-	return pin->values[get_values_offset(cycle)];
-}
-
-/*
- * Calculates the index in the values array for the given cycle.
- */
-int get_values_offset(int cycle)
-{
-	return (((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH));
-}
-
-/*
- * Gets the cycle of the given pin
- */
-int get_pin_cycle(npin_t *pin)
-{
-	if (!pin->cycle)
-		return -1;
-	else
-		return *(pin->cycle);
-}
-
-/*
- * Sets the cycle of the given pin.
- *
- * Only called from update_pin_value.
- */
-void set_pin_cycle(npin_t *pin, int cycle)
-{
-	*(pin->cycle) = cycle;
-}
-
-/*
- * Returns FALSE if the cycle is odd.
- */
-int is_even_cycle(int cycle)
-{
-	return !((cycle + 2) % 2);
-}
-
-/*
  * Allocates memory for the pin's value and cycle.
  *
  * Checks to see if this pin's net has a different driver, and
@@ -1390,16 +1366,23 @@ int is_even_cycle(int cycle)
  * and values so that the values don't have to be propagated
  * through the net.
  */
-void initialize_pin(npin_t *pin)
+static void initialize_pin(npin_t *pin)
 {
+	
 	// Initialise the driver pin if this pin is not the driver.
 	if (pin->net && pin->net->driver_pin && pin->net->driver_pin != pin)
 		initialize_pin(pin->net->driver_pin);
 
 	// If initialising the driver initialised this pin, we're OK to return.
-	if (pin->cycle || pin->values)
+	init_read(pin);
+	bool is_init = (pin->cycle || pin->values);
+	close_reader(pin);
+
+	if (is_init)
 		return;
 
+
+	init_write(pin);
 	if (pin->net)
 	{
 		pin->values = pin->net->values;
@@ -1433,7 +1416,77 @@ void initialize_pin(npin_t *pin)
 			pin->values[i] = global_args.sim_initial_value;
 	}
 
-	set_pin_cycle(pin, -1);
+	*(pin->cycle) = -1;
+	close_writer(pin);
+}
+
+/*
+ * Updates the value of a pin and its cycle. Pins should be updated using
+ * only this function.
+ *
+ * Initializes the pin if need be.
+ */
+void update_pin_value(npin_t *pin, signed char value, int cycle)
+{
+	init_read(pin);
+	bool is_init = (pin->values != NULL);
+	close_reader(pin);
+
+	if (!is_init)
+		initialize_pin(pin);
+
+	init_write(pin);
+	pin->values[get_values_offset(cycle)] = value;
+	*(pin->cycle) = cycle;
+	close_writer(pin);
+}
+
+/*
+ * Gets the value of a pin. Pins should be checked using this function only.
+ */
+signed char get_pin_value(npin_t *pin, int cycle)
+{
+	signed char to_return;
+
+	if(pin->values && cycle >= 0)
+	{
+		init_read(pin);
+		to_return = pin->values[get_values_offset(cycle)];
+		close_reader(pin);
+	}
+	else if(pin->node && pin->node->has_initial_value)
+		to_return = pin->node->initial_value;
+	else
+		to_return = global_args.sim_initial_value;
+
+	return to_return;
+}
+
+/*
+ * Calculates the index in the values array for the given cycle.
+ */
+int get_values_offset(int cycle)
+{
+	return (((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH));
+}
+
+/*
+ * Gets the cycle of the given pin
+ */
+int get_pin_cycle(npin_t *pin)
+{
+	init_read(pin);
+	int return_value = ((pin->cycle))? *(pin->cycle): -1;
+	close_reader(pin);
+	return return_value;
+}
+
+/*
+ * Returns FALSE if the cycle is odd.
+ */
+int is_even_cycle(int cycle)
+{
+	return !((cycle + 2) % 2);
 }
 
 /*
@@ -3511,9 +3564,7 @@ void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 	printf("  Connections:     %d\n",    stages->num_connections);
 	printf("  Degree:          %3.2f\n", stages->num_connections/(float)stages->num_nodes);
 	printf("  Stages:          %d\n",    stages->count);
-	#ifdef _OPENMP
-	printf("  Parallel nodes:  %d (%4.1f%%)\n", stages->num_parallel_nodes, (stages->num_parallel_nodes/(double)stages->num_nodes) * 100);
-	#endif
+	printf("  Parallel ratio:  %4.2f%%\n", (stages->num_parallel_nodes* 100));
 	printf("\n");
 
 }
@@ -3554,15 +3605,16 @@ void print_ancestry(nnode_t *bottom_node, int n)
 {
 	if (!n) n = 10;
 
-	queue_t *queue = create_queue();
-	queue->add(queue, bottom_node);
-	nnode_t *node;
+	std::queue<nnode_t *> queue = std::queue<nnode_t *>();
+	queue.push(bottom_node);
 	printf(  "  ------------\n");
 	printf(  "  BACKTRACE\n");
 	printf(  "  ------------\n");
 
-	while (n-- && (node = (nnode_t *)queue->remove(queue)))
+	while (n-- && !queue.empty())
 	{
+		nnode_t *node = queue.front();
+		queue.pop();
 		char *name = get_pin_name(node->name);
 		printf("  %s (%ld):\n", name, node->unique_id);
 		vtr::free(name);
@@ -3572,7 +3624,7 @@ void print_ancestry(nnode_t *bottom_node, int n)
 			npin_t *pin = node->input_pins[i];
 			nnet_t *net = pin->net;
 			nnode_t *node2 = net->driver_pin->node;
-			queue->add(queue, node2);
+			queue.push(node2);
 			char *name2 = get_pin_name(node2->name);
 			printf("\t%s %s (%ld)\n", pin->mapping, name2, node2->unique_id);fflush(stdout);
 			vtr::free(name2);
@@ -3626,7 +3678,6 @@ void print_ancestry(nnode_t *bottom_node, int n)
 		printf(  "  ------------\n");
 
 	}
-	queue->destroy(queue);
 
 	printf(  "  END OF TRACE\n");
 	printf(  "  ------------\n");
@@ -3661,13 +3712,14 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 	// Used to detect cycles. Based table size of max depth. If unlimited, set to something big.
 	hashtable_t *index = create_hashtable(max_depth?(max_depth * 2):100000);
 
-	queue_t *queue = create_queue();
-	queue->add(queue, bottom_node);
-	nnode_t *node;
+	std::queue<nnode_t *> queue = std::queue<nnode_t *>();
+	queue.push(bottom_node);
 	int depth = 0;
 	// Traverse the netlist in reverse, starting with our current location.
-	while ((node = (nnode_t *)queue->remove(queue)))
+	while (!queue.empty())
 	{
+		nnode_t *node = queue.front();
+		queue.pop();
 		int found_undriven_pin = FALSE;
 		int is_duplicate = index->get(index, &node->unique_id, sizeof(long))?1:0;
 		if (!is_duplicate)
@@ -3693,7 +3745,7 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 					if (!found_undriven_pin)
 					{
 						found_undriven_pin = TRUE;
-						queue->add(queue, node2);
+						queue.push(node2);
 					}
 					is_undriven = TRUE;
 				}
@@ -3724,7 +3776,6 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 		}
 	}
 	index->destroy(index);
-	queue->destroy(queue);
 	return root_node;
 }
 

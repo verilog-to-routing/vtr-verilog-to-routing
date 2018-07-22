@@ -30,7 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define SIM_WAVE_LENGTH 16
 #define BUFFER_MAX_SIZE 1024
 
-#include "queue.h"
+#include <queue>
 #include "hashtable.h"
 #include "sim_block.h"
 #include "types.h"
@@ -83,14 +83,16 @@ typedef struct {
 	nnode_t ***stages; // Stages.
 	int       *counts; // Number of nodes in each stage.
 	int 	   count;  // Number of stages.
-	double *sequential_times; // Sequential execution time values for each stage for tuning.
-	double *parallel_times;   // Parallel execution time values for each stage for tuning.
 
 	// Statistics.
 	int    num_nodes;          // The total number of nodes.
 	int    num_connections;    // The sum of the number of children found under every node.
 	int    *num_children;      // Number of children per stage.
 	int    num_parallel_nodes; // The number of nodes while will be computed in parallel.
+
+	double times;
+	int worker_const;
+	int worker_temp;
 } stages_t;
 
 typedef struct {
@@ -112,9 +114,7 @@ void set_clock_ratio(int rat, nnode_t *node);
 nnode_t **get_children_of(nnode_t *node, int *count);
 int *get_children_pinnumber_of(nnode_t *node, int *num_children);
 nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
-int is_node_ready(nnode_t* node, int cycle);
 int is_node_complete(nnode_t* node, int cycle);
-int enqueue_node_if_ready(queue_t* queue, nnode_t* node, int cycle);
 
 void compute_and_store_value(nnode_t *node, int cycle);
 void compute_memory_node(nnode_t *node, int cycle);
@@ -131,8 +131,6 @@ signed char get_pin_value(npin_t *pin, int cycle);
 inline int get_values_offset(int cycle);
 
 inline int get_pin_cycle(npin_t *pin);
-inline void set_pin_cycle(npin_t *pin, int cycle);
-void initialize_pin(npin_t *pin);
 
 int is_even_cycle(int cycle);
 inline int is_clock_node(nnode_t *node);
@@ -209,7 +207,6 @@ double wall_time();
 
 char *get_circuit_filename();
 
-void update_undriven_input_pins(nnode_t *node, int cycle);
 void flag_undriven_input_pins(nnode_t *node);
 
 void print_ancestry(nnode_t *node, int generations);

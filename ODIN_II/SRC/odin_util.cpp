@@ -173,15 +173,9 @@ long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
 	if (!is_string_of_radix(orig_string, radix))
 		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
 
-	#ifdef LLONG_MAX
 	long long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
 		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
-	#else
-	long number = strtol(orig_string, NULL, radix);
-	if (number == LONG_MAX || number == LONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
-	#endif
 
 	return number;
 }

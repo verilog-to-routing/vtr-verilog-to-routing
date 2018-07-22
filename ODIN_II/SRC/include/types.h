@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_arch_file.h"
 #include "simulate_blif.h"
 #include "argparse_value.hpp"
+#include <mutex>
 
 #include <stdlib.h>
 
@@ -519,11 +520,18 @@ struct npin_t_t
 
 	////////////////////
 	// For simulation
+	std::mutex pin_lock;
+	bool is_being_written;
+	int nb_of_reader;
+
 	signed char *values; // The values for the current wave.
 	int *cycle;          // The last cycle the pin was computed for.
 	unsigned long coverage;
-	char is_default; // The pin is feeding a mux from logic representing an else or default.
-	char is_implied; // This signal is implied.
+	bool is_default; // The pin is feeding a mux from logic representing an else or default.
+	bool is_implied; // This signal is implied.
+
+
+
 	////////////////////
 
         // For Activity Estimation
