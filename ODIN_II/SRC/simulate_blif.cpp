@@ -412,15 +412,10 @@ void simulate_cycle(int cycle, stages_t *s)
 				s->worker_temp = (s->worker_temp >0)? s->worker_temp*2: 1;
 				s->times = time;
 			}
-			else if(s->worker_temp != 0)
+			else if(s->worker_const > 1)
 			{
 				s->worker_const += (s->worker_temp >0)? s->worker_temp/2: -1;
 				s->worker_temp = 0;
-			}
-			else
-			{
-				s->worker_const -= 2;
-				s->worker_temp = 1;
 			}
 
 		#endif
