@@ -88,11 +88,12 @@ typedef struct {
 	int    num_nodes;          // The total number of nodes.
 	int    num_connections;    // The sum of the number of children found under every node.
 	int    *num_children;      // Number of children per stage.
-	int    num_parallel_nodes; // The number of nodes while will be computed in parallel.
+	double    avg_worker_count; // The raio of node to be computed in parallel.
 
 	double times;
 	int worker_const;
 	int worker_temp;
+	bool warned;
 } stages_t;
 
 typedef struct {

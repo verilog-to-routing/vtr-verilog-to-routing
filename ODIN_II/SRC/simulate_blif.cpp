@@ -42,7 +42,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 char *sim_run_dir;
 
-void init_read(npin_t *pin)
+static void init_read(npin_t *pin)
 {
 	bool available =false;
 	while(!available)
@@ -57,12 +57,12 @@ void init_read(npin_t *pin)
 	}
 }
 
-void close_reader(npin_t *pin)
+static void close_reader(npin_t *pin)
 {
 	pin->nb_of_reader -= 1;
 }
 
-void init_write(npin_t *pin)
+static void init_write(npin_t *pin)
 {
 	bool available =false;
 	while(!available)
@@ -77,7 +77,7 @@ void init_write(npin_t *pin)
 	}
 }
 
-void close_writer(npin_t *pin)
+static void close_writer(npin_t *pin)
 {
 	pin->is_being_written = false;
 }
@@ -344,7 +344,7 @@ typedef struct
 static void compute_and_store_part(void *data_in)
 {
 	worker_data *data = (worker_data *)data_in;
-	for (int j = data->start;j >= 0 && j < data->end && j < data->s->counts[data->current_stage]; j++)
+	for (int j = data->start;j >= 0 && j <= data->end && j < data->s->counts[data->current_stage]; j++)
 	{
 		if(data->s->stages[data->current_stage][j])
 			compute_and_store_value(data->s->stages[data->current_stage][j], data->cycle);
@@ -365,20 +365,21 @@ void simulate_cycle(int cycle, stages_t *s)
 	if (test_cycles < 2)
 		error_message(SIMULATION_ERROR, -1, -1, "SIM_WAVE_LENGTH is too small.");
 
-	int number_of_workers = s->worker_const + s->worker_temp;
 
 	for(int i = 0; i < s->count; i++)
 	{
+		int number_of_workers = min(64, s->worker_const + s->worker_temp);
+		if(number_of_workers >1 && !s->warned)
+			warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with threads");
 
 		double time = wall_time();
 
 		worker_data *data = (worker_data *)vtr::malloc((number_of_workers)*sizeof(worker_data));
-		int nb_of_node_parallel = s->counts[i]/(number_of_workers);
 
 		for (int id =0; id < number_of_workers; id++)
 		{
-			data[id].start = (id == 0)? 0: data[id-1].end;
-			data[id].end = (id == number_of_workers-1)?  s->counts[i]: data[id].start + nb_of_node_parallel;
+			data[id].start = (id == 0)? 0: (data[id-1].end+1);
+			data[id].end = data[id].start + s->counts[i]/number_of_workers + ((id < s->counts[i]%number_of_workers)? 1: 0); 
 			data[id].current_stage = i;
 			data[id].s = s;
 			data[id].cycle = cycle;
@@ -386,6 +387,8 @@ void simulate_cycle(int cycle, stages_t *s)
 			if(id < number_of_workers-1) // if child threads
 			{
 				int rt = pthread_create(&data[id].worker, NULL, compute_and_store_paralele_value,&data[id]);
+				if (rt != 0)
+					error_message(SIMULATION_ERROR, -1, -1, "Unable to create threads for simulation!");
 			}
 			else
 			{
@@ -399,7 +402,7 @@ void simulate_cycle(int cycle, stages_t *s)
 
 		// Record the ratio of parallelizable stages node.
 		if (cycle > test_cycles)
-			s->num_parallel_nodes += 1/(number_of_workers)/s->count;
+			s->avg_worker_count += (double)number_of_workers/(double)s->count;
 
 		time = wall_time()-time;
 
@@ -409,16 +412,20 @@ void simulate_cycle(int cycle, stages_t *s)
 				s->worker_temp = (s->worker_temp >0)? s->worker_temp*2: 1;
 				s->times = time;
 			}
-			else
+			else if(s->worker_temp != 0)
 			{
-				s->worker_const += (s->worker_temp >0)? s->worker_temp/2:-1;
+				s->worker_const += (s->worker_temp >0)? s->worker_temp/2: -1;
 				s->worker_temp = 0;
 			}
-			
-			// adjust to boundaries we need at least 1 thread
-			s->worker_const = max(1, min(64, s->worker_const));
-			s->worker_temp = max(1-s->worker_const, min(64-s->worker_const, s->worker_temp));
+			else
+			{
+				s->worker_const -= 2;
+				s->worker_temp = 1;
+			}
+
 		#endif
+
+
 
 	}
 }
@@ -508,7 +515,7 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 	s->count  = 1;
 	s->num_connections = 0;
 	s->num_nodes = num_ordered_nodes;
-	s->num_parallel_nodes = 0;
+	s->avg_worker_count = 0;
 	s->worker_const = 1;
 	s->worker_temp = 0;
 	s->times =__DBL_MAX__;
@@ -3564,7 +3571,7 @@ void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 	printf("  Connections:     %d\n",    stages->num_connections);
 	printf("  Degree:          %3.2f\n", stages->num_connections/(float)stages->num_nodes);
 	printf("  Stages:          %d\n",    stages->count);
-	printf("  Parallel ratio:  %4.2f%%\n", (stages->num_parallel_nodes* 100));
+	printf("  Nodes/thread:    %d(%4.2f%%)\n", (int)(stages->num_nodes/stages->avg_worker_count), 100.0/stages->avg_worker_count);
 	printf("\n");
 
 }
