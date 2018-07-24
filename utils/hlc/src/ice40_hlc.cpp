@@ -248,7 +248,7 @@ static t_hlc_coord parse_hlc_coord(std::string s) {
     return pos;
 }
 
-static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node) {
+static t_hlc_coord metadata_hlc_coord(const t_rr_node& src_node) {
     auto hlc_coordp = src_node.metadata("hlc_coord");
     if (hlc_coordp == nullptr) {
         return t_hlc_coord(-4, -4);
@@ -256,7 +256,7 @@ static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node) {
     return parse_hlc_coord(hlc_coordp->as_string());
 }
 
-static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short switch_id) {
+static t_hlc_coord metadata_hlc_coord(const t_rr_node& src_node, int sink_id, short switch_id) {
     auto iedge = src_node.get_iedge(sink_id, switch_id);
     VTR_ASSERT(iedge != -1);
     auto hlc_coordp = src_node.edge_metadata(sink_id, switch_id, "hlc_coord");
@@ -266,7 +266,7 @@ static t_hlc_coord metadata_hlc_coord(t_rr_node& src_node, int sink_id, short sw
     return parse_hlc_coord(hlc_coordp->as_string());
 }
 
-static void node_output(std::ostream& os, int node_id, t_rr_node& node) {
+static void node_output(std::ostream& os, int node_id, const t_rr_node& node) {
     os << "(" << std::setw(6) << node_id << ") ";
     os << std::setw(6) << node.type_string();
 }
