@@ -85,7 +85,7 @@ static t_type_descriptor *cb_type_descriptors;
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 
-/*    Process XML hiearchy */
+/*    Process XML hierarchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
@@ -95,6 +95,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
+static t_metadata_dict* ProcessMetadata(pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -151,6 +152,21 @@ static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiutil::loc_data& loc_data);
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
+
+
+bool t_offset::operator<(const t_offset &o) const {
+    if (x != o.x) {
+        return x < o.x;
+    } else if (y != o.y) {
+        return y < o.y;
+    } else {
+        return z < o.z;
+    }
+}
+
+bool t_offset::operator==(const t_offset &o) const {
+    return (x == o.x) && (y == o.y) && (z == o.z);
+}
 
 /*
  *
@@ -928,7 +944,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
     bool is_root_pb_type = !(mode != nullptr && mode->parent_pb_type != nullptr);
     bool is_leaf_pb_type = bool(get_attribute(Parent, "blif_model", loc_data, OPTIONAL));
 
-    std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power"};
+    std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power", "metadata"};
     if (!is_leaf_pb_type) {
         //Non-leafs may have a model/pb_type children
         children_to_expect.push_back("model");
@@ -1205,6 +1221,8 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 
 	pb_port_names.clear();
 	mode_names.clear();
+
+	pb_type->meta = ProcessMetadata(Parent, loc_data);
 	ProcessPb_TypePower(Parent, pb_type, loc_data);
 
 }
@@ -1606,11 +1624,41 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 	/* Allocate power structure */
 	mode->mode_power = (t_mode_power*) vtr::calloc(1, sizeof(t_mode_power));
 
+	mode->meta = ProcessMetadata(Parent, loc_data);
+
 	/* Clear STL map used for duplicate checks */
 	pb_type_names.clear();
 
 	Cur = get_single_child(Parent, "interconnect", loc_data);
 	ProcessInterconnect(Cur, mode, loc_data);
+}
+
+static t_metadata_dict* ProcessMetadata(pugi::xml_node Parent,
+        const pugiutil::loc_data& loc_data) {
+    //  <metadata>
+    //    <meta name='x_offset'>12</meta>
+    //    <meta name='y_offset'>100</meta>
+    //    <meta name='grid_prefix'>CLBLL_L_</meta>
+    //  </metadata>
+    t_metadata_dict* data = nullptr;
+    auto metadata = get_single_child(Parent, "metadata", loc_data, OPTIONAL);
+    if (metadata) {
+        data = new t_metadata_dict();
+        auto meta_tag = get_first_child(metadata, "meta", loc_data);
+        while (meta_tag) {
+            std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
+            t_offset offset;
+
+            offset.x = get_attribute(meta_tag, "x_offset", loc_data, OPTIONAL).as_int(0);
+            offset.y = get_attribute(meta_tag, "y_offset", loc_data, OPTIONAL).as_int(0);
+            offset.z = get_attribute(meta_tag, "z_offset", loc_data, OPTIONAL).as_int(0);
+
+            auto value = meta_tag.child_value();
+            data->add(offset, key, value);
+            meta_tag = meta_tag.next_sibling(meta_tag.name());
+        }
+    }
+    return data;
 }
 
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data) {
@@ -2828,6 +2876,8 @@ static void ProcessSegments(pugi::xml_node Parent,
 		if (SubElem) {
 			ProcessCB_SB(SubElem, (*Segs)[i].sb, (length + 1), loc_data);
 		}
+
+		(*Segs)[i].meta = ProcessMetadata(Node, loc_data);
 
 		/* Get next Node */
 		Node = Node.next_sibling(Node.name());

@@ -127,7 +127,7 @@ static void process_circuit(AtomNetlist& netlist,
         // we take care of them here. Note that this modification
         // likely causes the netlist to no longer be logically equivalent
         // to the input
-        bool should_fix_clock_to_data_conversions = true; //TODO make cmd line option
+        bool should_fix_clock_to_data_conversions = false; //TODO make cmd line option
         if(should_fix_clock_to_data_conversions) {
             fix_clock_to_data_conversions(netlist, library_models);
         }

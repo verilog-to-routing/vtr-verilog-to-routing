@@ -30,7 +30,9 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <limits>
+#include <numeric>
 
 #include "vtr_ndmatrix.h"
 
@@ -59,6 +61,105 @@ struct t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
+
+/* FIXME: Use a smarter data structure. */
+struct t_offset {
+    int x = 0;
+    int y = 0;
+    int z = 0;
+
+    bool operator==(const t_offset &o) const;
+    bool operator!=(const t_offset &o) const { return !(*this == o); };
+    bool operator<(const t_offset &o) const;
+};
+
+namespace std {
+    template <>
+    struct hash<t_offset> {
+        std::size_t operator()(const t_offset& o) const noexcept {
+            std::size_t h1 = std::hash<int>{}(o.x);
+            std::size_t h2 = std::hash<int>{}(o.y);
+            std::size_t h3 = std::hash<int>{}(o.z);
+            return h1 ^ (h2 << 1) ^ (h3 << 2);
+        }
+    };
+
+    template <>
+    struct hash<std::pair<t_offset, std::string>> {
+        std::size_t operator()(const std::pair<t_offset, std::string>& ok) const noexcept {
+            std::size_t h1 = std::hash<t_offset>{}(ok.first);
+            std::size_t h2 = std::hash<string>{}(ok.second);
+            return h1 ^ (h2 << 1);
+        }
+    };
+}
+
+class t_metadata_as {
+    std::string value_;
+
+public:
+    t_metadata_as(std::string v) : value_(v) {}
+    t_metadata_as(const t_metadata_as &o) : value_(o.value_) {}
+    int as_int() const;
+    double as_double() const;
+    std::string as_string() const { return value_; }
+    std::pair<int, int> as_int_pair() const;
+    std::vector<int> as_int_vector() const;
+};
+
+struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, std::vector<t_metadata_as> > {
+
+    inline bool has(std::string key) {
+        return has(std::make_pair(t_offset(), key));
+    }
+    inline bool has(t_offset o, std::string key) {
+        return has(std::make_pair(o, key));
+    }
+    inline bool has(std::pair<t_offset, std::string> ok) {
+        return (this->count(ok) >= 1);
+    }
+
+    inline std::vector<t_metadata_as>* get(std::string key) {
+        return get(std::make_pair(t_offset(), key));
+    }
+    inline std::vector<t_metadata_as>* get(t_offset o, std::string key) {
+        return get(std::make_pair(o, key));
+    }
+    inline std::vector<t_metadata_as>* get(std::pair<t_offset, std::string> ok) {
+        if (this->count(ok) < 1) {
+            return nullptr;
+        }
+        return &((*this)[ok]);
+    }
+
+    inline t_metadata_as* one(std::string key) {
+        return one(std::make_pair(t_offset(), key));
+    }
+    inline t_metadata_as* one(t_offset o, std::string key) {
+        return one(std::make_pair(o, key));
+    }
+    inline t_metadata_as* one(std::pair<t_offset, std::string> ok) {
+        auto values = get(ok);
+        if (values == nullptr) {
+            return nullptr;
+        }
+        if (values->size() != 1) {
+            return nullptr;
+        }
+        return &((*values)[0]);
+    }
+
+    void add(std::string key, std::string value) {
+        add(std::make_pair(t_offset(), key), value);
+    }
+    void add(t_offset o, std::string key, std::string value) {
+        add(std::make_pair(o, key), value);
+    }
+    void add(std::pair<t_offset, std::string> ok, std::string value) {
+        this->emplace(ok, std::vector<t_metadata_as>());
+        (*this)[ok].push_back(t_metadata_as(value));
+    }
+};
 
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
@@ -96,8 +197,21 @@ enum e_pin_location_distr {
 
 /* pb_type class */
 enum e_pb_type_class {
-	UNKNOWN_CLASS = 0, LUT_CLASS = 1, LATCH_CLASS = 2, MEMORY_CLASS = 3
+    UNKNOWN_CLASS = 0,
+    LUT_CLASS = 1,
+    LATCH_CLASS = 2,
+    MEMORY_CLASS = 3,
+    NUM_CLASSES
 };
+
+// Set of all pb_type classes
+constexpr std::array<e_pb_type_class, NUM_CLASSES> TYPE_CLASSES = {
+    {UNKNOWN_CLASS, LUT_CLASS, LATCH_CLASS, MEMORY_CLASS} };
+
+// String versions of pb_type class values
+constexpr std::array<const char*, NUM_CLASSES> TYPE_CLASS_STRING = {
+    {"unknown", "lut", "flipflop", "memory"} };
+
 
 /* Annotations for pin-to-pin connections */
 enum e_pin_to_pin_annotation_type {
@@ -549,6 +663,8 @@ typedef const t_type_descriptor* t_type_ptr;
  *      int num_output_pins: A count of the total number of output pins
  *      timing: Timing matrix of block [0..num_inputs-1][0..num_outputs-1]
  *      parent_mode: mode of the parent block
+ *      t_mode_power: ???
+ *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_pb_type {
 	char* name = nullptr;
@@ -575,6 +691,8 @@ struct t_pb_type {
 
 	/* Power related members */
 	t_pb_type_power * pb_type_power = nullptr;
+
+	t_metadata_dict *meta = nullptr;
 };
 
 /** Describes an operational mode of a clustered logic block
@@ -589,6 +707,8 @@ struct t_pb_type {
  *      num_interconnect: Total number of interconnect tags specified by user
  *      parent_pb_type: Which parent contains this mode
  *      index: Index of mode in array with other modes
+ *      t_mode_power: ???
+ *      meta: Table storing extra arbitrary metadata attributes.
  */
 struct t_mode {
 	char* name;
@@ -601,6 +721,8 @@ struct t_mode {
 
 	/* Power related members */
 	t_mode_power * mode_power;
+
+	t_metadata_dict *meta = nullptr;
 };
 
 /** Describes an interconnect edge inside a cluster
@@ -807,24 +929,25 @@ struct t_pb_graph_node {
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
+    //Returns the number of input pins on this graph node
+    int total_input_pins() const {
+        return std::accumulate(num_input_pins, num_input_pins + num_input_ports, 0);
+    }
+
+    //Returns the number of output pins on this graph node
+    int total_output_pins() const {
+        return std::accumulate(num_output_pins, num_output_pins + num_output_ports, 0);
+    }
+
+    //Returns the number of clockpins on this graph node
+    int total_clock_pins() const {
+        return std::accumulate(num_clock_pins, num_clock_pins + num_clock_ports, 0);
+    }
+
     //Returns the number of pins on this graph node
     //  Note this is the total for all ports on this node exluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
-    int num_pins() {
-        int npins = 0;
-
-        for(int iport = 0; iport < num_input_ports; ++iport) {
-            npins += num_input_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_output_ports; ++iport) {
-            npins += num_output_pins[iport];
-        }
-
-        for(int iport = 0; iport < num_clock_ports; ++iport) {
-            npins += num_clock_pins[iport];
-        }
-
-        return npins;
+    int num_pins() const {
+	return total_input_pins() + total_output_pins() + total_clock_pins();
     }
 };
 
@@ -1004,7 +1127,8 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?                                          */
+ *                       the track?                                          *
+ * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
 	char *name;
 	int frequency;
@@ -1022,6 +1146,7 @@ struct t_segment_inf {
 	bool *sb;
 	int sb_len;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
+	t_metadata_dict *meta = nullptr;
 };
 
 enum class SwitchType {

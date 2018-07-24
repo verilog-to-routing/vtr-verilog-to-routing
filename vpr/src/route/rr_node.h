@@ -41,6 +41,15 @@
  *       otherwise.                                                          */
 
 class t_rr_node {
+    private: //Types
+        //The edge information is stored in a structure to economize on the number of pointers held
+        //by t_rr_node (to save memory), and is not exposed externally
+        struct t_rr_edge {
+            int sink_node = -1; //The ID of the sink RR node associated with this edge
+            short switch_id = -1; //The ID of the switch type this edge represents
+
+        };
+
     public: //Types
 
         //An iterator that dereferences to an edge index
@@ -66,6 +75,10 @@ class t_rr_node {
         t_rr_type type() const { return type_; }
         const char *type_string() const; /* Retrieve type as a string */
 
+        t_metadata_as* metadata(std::string key) const;
+        t_metadata_as* metadata(t_offset o, std::string key) const;
+        t_metadata_as* metadata(std::pair<t_offset, std::string> ko) const;
+
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
         edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
         edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
@@ -74,8 +87,15 @@ class t_rr_node {
         short num_configurable_edges() const { return num_configurable_edges_; }
         short num_non_configurable_edges() const { return num_edges() - num_configurable_edges(); }
 
+        short get_iedge(int sink_node, short switch_id) const;
+
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
+
+        t_metadata_as* edge_metadata(int sink_node, short switch_id, std::string key) const;
+        t_metadata_as* edge_metadata(int sink_node, short switch_id, t_offset o, std::string key) const;
+        t_metadata_as* edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ko) const;
+
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;
 
@@ -86,6 +106,9 @@ class t_rr_node {
         signed short length() const;
 
         short capacity() const;
+
+        bool found_at(int x, int y) const;
+        std::pair<t_offset, t_offset> overlap(t_rr_node& other) const;
 
         short ptc_num() const;
         short pin_num() const; //Same as ptc_num() but checks that type() is consistent
@@ -102,7 +125,6 @@ class t_rr_node {
 
         float R() const;
         float C() const;
-
 
     public: //Mutators
         void set_type(t_rr_type new_type);
@@ -121,6 +143,15 @@ class t_rr_node {
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
         void set_edge_is_configurable(short iedge, bool is_configurable);
+
+        void add_metadata(std::string key, std::string value);
+        void add_metadata(t_offset o, std::string key, std::string value);
+        void add_metadata(std::pair<t_offset, std::string> ok, std::string value);
+
+        void add_edge_metadata(int sink_node, short switch_id, std::string key, std::string value);
+        void add_edge_metadata(int sink_node, short switch_id, t_offset o, std::string key, std::string value);
+        void add_edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ok, std::string value);
+
         void set_fan_in(short);
 
         void set_coordinates(short x1, short y1, short x2, short y2);
@@ -138,14 +169,6 @@ class t_rr_node {
 
         void set_direction(e_direction);
         void set_side(e_side);
-
-    private: //Types
-        //The edge information is stored in a structure to economize on the number of pointers held
-        //by t_rr_node (to save memory), and is not exposed externally
-        struct t_rr_edge {
-            int sink_node = -1; //The ID of the sink RR node associated with this edge
-            short switch_id = -1; //The ID of the switch type this edge represents
-        };
 
     private: //Data
         //Note: we use a plain array and a shorts for size to save space vs std::vector
