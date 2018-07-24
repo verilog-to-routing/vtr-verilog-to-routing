@@ -98,3 +98,8 @@ Session.vim
 #
 .tags*
 tags
+
+#
+# VS Code
+#
+.vscode
