@@ -128,13 +128,7 @@ void compute_unary_sub_node(nnode_t *node, int cycle);
 
 void update_pin_value(npin_t *pin, signed char value, int cycle);
 signed char get_pin_value(npin_t *pin, int cycle);
-
-inline int get_values_offset(int cycle);
-
-inline int get_pin_cycle(npin_t *pin);
-
-int is_even_cycle(int cycle);
-inline int is_clock_node(nnode_t *node);
+int get_pin_cycle(npin_t *pin);
 
 signed char get_line_pin_value(line_t *line, int pin_num, int cycle);
 int line_has_unknown_pin(line_t *line, int cycle);

@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <chrono>
 #include <dlfcn.h>
 #include <mutex>
+#include <unistd.h>
 
 #ifndef _WIN32
 	#include "pthread.h"
@@ -86,6 +87,28 @@ static void close_writer(npin_t *pin)
 
 static int is_node_ready(nnode_t* node, int cycle);
 static void update_undriven_input_pins(nnode_t *node, int cycle);
+
+/*
+ * Calculates the index in the values array for the given cycle.
+ */
+#define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
+
+/*
+ * Returns FALSE if the cycle is odd.
+ */
+#define is_even_cycle(cycle)	(!((cycle + 2) % 2))
+
+/*
+ * Returns FALSE if the node is not a clock.
+ */
+#define is_clock_node(node)	( (node->type == CLOCK_NODE) || (std::string(node->name) == "top^clk") ) // Strictly for memories.
+
+/*
+ * Returns TRUE if the pin's value for this
+ * cycle is 1 and the value for the previous cycle
+ * was not 1. Otherwise returns FALSE.
+ */
+#define is_posedge(pin, cycle) (get_pin_value(pin,cycle) == 1 && get_pin_value(pin,cycle-1) != 1)
 
 /*
  * Performs simulation.
@@ -359,6 +382,7 @@ static void *compute_and_store_paralele_value(void *data_in)
 
 void simulate_cycle(int cycle, stages_t *s)
 {
+	int max_proc = sysconf(_SC_NPROCESSORS_ONLN);
 	// -1 for cycle 0, -1 for the last cycle in the wave.
 	const int test_cycles = SIM_WAVE_LENGTH - 2;
 
@@ -368,9 +392,12 @@ void simulate_cycle(int cycle, stages_t *s)
 
 	for(int i = 0; i < s->count; i++)
 	{
-		int number_of_workers = min(64, s->worker_const + s->worker_temp);
+		int number_of_workers = min(max_proc, s->worker_const + s->worker_temp);
 		if(number_of_workers >1 && !s->warned)
+		{
+			s->warned = true;
 			warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with threads");
+		}
 
 		double time = wall_time();
 
@@ -407,20 +434,29 @@ void simulate_cycle(int cycle, stages_t *s)
 		time = wall_time()-time;
 
 		#ifdef _PTHREAD_H 
-			if(time < s->times)	
-			{	
-				s->worker_temp = (s->worker_temp >0)? s->worker_temp*2: 1;
+			if(time < s->times)
+			{
+				
+				if(s->worker_temp < 1)
+					s->worker_temp = 1;
+				else
+					s->worker_temp *= 2;
+
 				s->times = time;
 			}
-			else if(s->worker_const > 1)
+			else
 			{
-				s->worker_const += (s->worker_temp >0)? s->worker_temp/2: -1;
+				if(s->worker_temp < 1 )
+					s->worker_const--;
+				else
+					s->worker_const += s->worker_temp/2;
+
 				s->worker_temp = 0;
 			}
-
+			
+			s->worker_const = max(1, min(max_proc, s->worker_const));
+			s->worker_temp = max(0, min(max_proc-s->worker_const, s->worker_temp));
 		#endif
-
-
 
 	}
 }
@@ -1086,14 +1122,6 @@ static int is_node_ready(nnode_t* node, int cycle)
 }
 
 /*
- * Returns the ration of a clock node.
- * */
-int get_clock_ratio(nnode_t *node)
-{
-	return node->ratio;
-}
-
-/*
  * Changes the ratio of a clock node
  */
 void set_clock_ratio(int rat, nnode_t *node)
@@ -1370,34 +1398,26 @@ nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_p
  */
 static void initialize_pin(npin_t *pin)
 {
-	
 	// Initialise the driver pin if this pin is not the driver.
 	if (pin->net && pin->net->driver_pin && pin->net->driver_pin != pin)
 		initialize_pin(pin->net->driver_pin);
 
 	// If initialising the driver initialised this pin, we're OK to return.
-	init_read(pin);
-	bool is_init = (pin->cycle || pin->values);
-	close_reader(pin);
-
-	if (is_init)
+	if (pin->cycle || pin->values)
 		return;
 
 
-	init_write(pin);
 	if (pin->net)
 	{
 		pin->values = pin->net->values;
 		pin->cycle  = &(pin->net->cycle);
 
-		int i;
-		for (i = 0; i < pin->net->num_fanout_pins; i++)
+		for (int i = 0; i < pin->net->num_fanout_pins; i++)
 		{
-			npin_t *fanout_pin = pin->net->fanout_pins[i];
-			if (fanout_pin)
+			if (pin->net->fanout_pins[i])
 			{
-				fanout_pin->values = pin->net->values;
-				fanout_pin->cycle  = &(pin->net->cycle);
+				pin->net->fanout_pins[i]->values = pin->values;
+				pin->net->fanout_pins[i]->cycle  = pin->cycle;
 			}
 		}
 	}
@@ -1406,20 +1426,13 @@ static void initialize_pin(npin_t *pin)
 		pin->values = (signed char *)vtr::malloc(SIM_WAVE_LENGTH * sizeof(signed char));
 		pin->cycle  = (int *)vtr::malloc(sizeof(int));
 	}
-
-	int i;
-	for (i = 0; i < SIM_WAVE_LENGTH; i++){
-		/* If the pin's node has an initial value, then use it.
-		   Otherwise use the global initial value
-		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
-		if(pin->node && pin->node->has_initial_value)
-			pin->values[i] = pin->node->initial_value;
-		else
-			pin->values[i] = global_args.sim_initial_value;
-	}
-
+	
+	memset(
+		pin->values, 
+		(pin->node && pin->node->has_initial_value)? pin->node->initial_value: global_args.sim_initial_value,
+		SIM_WAVE_LENGTH
+	);
 	*(pin->cycle) = -1;
-	close_writer(pin);
 }
 
 /*
@@ -1430,14 +1443,10 @@ static void initialize_pin(npin_t *pin)
  */
 void update_pin_value(npin_t *pin, signed char value, int cycle)
 {
-	init_read(pin);
-	bool is_init = (pin->values != NULL);
-	close_reader(pin);
-
-	if (!is_init)
-		initialize_pin(pin);
-
 	init_write(pin);
+	if (pin->values == NULL)
+		initialize_pin(pin);
+	
 	pin->values[get_values_offset(cycle)] = value;
 	*(pin->cycle) = cycle;
 	close_writer(pin);
@@ -1448,28 +1457,14 @@ void update_pin_value(npin_t *pin, signed char value, int cycle)
  */
 signed char get_pin_value(npin_t *pin, int cycle)
 {
-	signed char to_return;
-
-	if(pin->values && cycle >= 0)
+	signed char to_return = (pin->node && pin->node->has_initial_value)? pin->node->initial_value: global_args.sim_initial_value;
+	if( pin->values )
 	{
 		init_read(pin);
 		to_return = pin->values[get_values_offset(cycle)];
 		close_reader(pin);
 	}
-	else if(pin->node && pin->node->has_initial_value)
-		to_return = pin->node->initial_value;
-	else
-		to_return = global_args.sim_initial_value;
-
 	return to_return;
-}
-
-/*
- * Calculates the index in the values array for the given cycle.
- */
-int get_values_offset(int cycle)
-{
-	return (((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH));
 }
 
 /*
@@ -1477,42 +1472,14 @@ int get_values_offset(int cycle)
  */
 int get_pin_cycle(npin_t *pin)
 {
-	init_read(pin);
-	int return_value = ((pin->cycle))? *(pin->cycle): -1;
-	close_reader(pin);
-	return return_value;
-}
-
-/*
- * Returns FALSE if the cycle is odd.
- */
-int is_even_cycle(int cycle)
-{
-	return !((cycle + 2) % 2);
-}
-
-/*
- * Returns FALSE if the node is not a clock.
- */
-int is_clock_node(nnode_t *node)
-{
-	return (
-		   (node->type == CLOCK_NODE)
-		|| !strcmp(node->name,"top^clk") // Strictly for memories.
-	);
-}
-
-/*
- * Returns TRUE if the pin's value for this
- * cycle is 1 and the value for the previous cycle
- * was not 1. Otherwise returns FALSE.
- */
-int is_posedge(npin_t *pin, int cycle)
-{
-	if (get_pin_value(pin,cycle) == 1 && get_pin_value(pin,cycle-1) != 1)
-		return TRUE;
-	else
-		return FALSE;
+	int to_return = -1;
+	if( pin->cycle )
+	{
+		init_read(pin);
+		to_return = *(pin->cycle);
+		close_reader(pin);
+	}
+	return to_return;
 }
 
 /*

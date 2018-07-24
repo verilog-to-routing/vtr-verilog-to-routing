@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 
 #include "netlist_utils.h"
+#include "vtr_util.h"
 #include "vtr_memory.h"
 
 
