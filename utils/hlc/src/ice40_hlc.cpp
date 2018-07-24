@@ -544,7 +544,10 @@ void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_route *top_pb_route, const
             if (mode->meta != nullptr) {
                 if (mode->meta->has("hlc_property")) {
                     for (auto v : *(mode->meta->get("hlc_property"))) {
-                        VTR_ASSERT(current_cell_ != NULL);
+                        if (current_cell_ == NULL) {
+                            std::cout << "No cell with mode " << std::string(mode->name) << std::endl;
+                            continue;
+                        }
                         current_cell_->enable(v.as_string());
                     }
                 }
