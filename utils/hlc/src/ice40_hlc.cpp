@@ -560,11 +560,14 @@ void ICE40HLCWriterVisitor::visit_all_impl(const t_pb_route *top_pb_route, const
 
         if (pb_type->meta->has("hlc_property")) {
             for (auto v : *(pb_type->meta->get("hlc_property"))) {
-                if (!current_cell_) {
+                if (current_cell_) {
+                    current_cell_->enable(v.as_string());
+                } else if (current_tile_) {
+                    current_tile_->enable(v.as_string());
+                } else {
                     std::cout << "ERROR: No current cell!" << std::endl;
                     return;
                 }
-                current_cell_->enable(v.as_string());
             }
         }
     }
