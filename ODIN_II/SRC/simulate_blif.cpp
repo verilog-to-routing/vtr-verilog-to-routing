@@ -40,9 +40,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define min(a,b) ((a) > (b)? (b) : (a))
 #endif
 
-
-char *sim_run_dir;
-
 static void init_read(npin_t *pin)
 {
 	bool available =false;
@@ -110,76 +107,109 @@ static void update_undriven_input_pins(nnode_t *node, int cycle);
  */
 #define is_posedge(pin, cycle) (get_pin_value(pin,cycle) == 1 && get_pin_value(pin,cycle-1) != 1)
 
-/*
- * Performs simulation.
- */
-void simulate_netlist(netlist_t *netlist)
+
+typedef struct sim_data_t_t
 {
-	sim_run_dir = global_args.sim_directory;
-	printf("Beginning simulation. Output_files located @: %s\n", sim_run_dir); fflush(stdout);
+	// Create and verify the lines.
+	lines_t *input_lines;
+	lines_t *output_lines;
+	FILE *out;
+	FILE *in_out;
+	FILE *act_out;
+	FILE *modelsim_out;
+	FILE *in  = NULL;
+	int num_vectors;
+	char *input_vector_file;
+
+	int output_edge;
+	double total_time; // Includes I/O
+	double simulation_time; // Does not include I/O
+
+	stages_t *stages;
+
+	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
+	pin_names *hold_high;
+	pin_names *hold_low;
+	hashtable_t *hold_high_index;
+	hashtable_t *hold_low_index;
+
+	int num_waves;
+
+	netlist_t *netlist;
+
+}sim_data_t;
+
+/**
+ * Initialize simulation
+ */
+static sim_data_t *init_simulation(netlist_t *netlist)
+{
+	sim_data_t *sim_data = (sim_data_t *)vtr::malloc(sizeof(sim_data_t));
+
+	sim_data->netlist = netlist;
+	printf("Beginning simulation. Output_files located @: %s\n", ((char *)global_args.sim_directory)); fflush(stdout);
 
 	// Create and verify the lines.
-	lines_t *input_lines = create_lines(netlist, INPUT);
-	if (!verify_lines(input_lines))
+	sim_data->input_lines = create_lines(netlist, INPUT);
+	if (!verify_lines(sim_data->input_lines))
 		error_message(SIMULATION_ERROR, 0, -1, "Input lines could not be assigned.");
 
-	lines_t *output_lines = create_lines(netlist, OUTPUT);
-	if (!verify_lines(output_lines))
+	sim_data->output_lines = create_lines(netlist, OUTPUT);
+	if (!verify_lines(sim_data->output_lines))
 		error_message(SIMULATION_ERROR, 0, -1, "Output lines could not be assigned.");
 
 	// Open the output vector file.
 	char out_vec_file[128] = { 0 };
-	sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
-	FILE *out = fopen(out_vec_file, "w");
-	if (!out)
+	sprintf(out_vec_file,"%s%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
+	sim_data->out = fopen(out_vec_file, "w");
+	if (!sim_data->out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create output vector file.");
 
 	// Open the input vector file.
 	char in_vec_file[128] = { 0 };
-	sprintf(in_vec_file,"%s%s",sim_run_dir,INPUT_VECTOR_FILE_NAME);
-	FILE *in_out = fopen(in_vec_file, "w");
-	if (!in_out)
+	sprintf(in_vec_file,"%s%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
+	sim_data->in_out = fopen(in_vec_file, "w");
+	if (!sim_data->in_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create input vector file.");
 
 	// Open the activity output file.
 	char act_file[128] = { 0 };
-	sprintf(act_file,"%s%s",sim_run_dir,OUTPUT_ACTIVITY_FILE_NAME);
-	FILE *act_out = fopen(act_file, "w");
-	if (!act_out)
+	sprintf(act_file,"%s%s",((char *)global_args.sim_directory),OUTPUT_ACTIVITY_FILE_NAME);
+	sim_data->act_out = fopen(act_file, "w");
+	if (!sim_data->act_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create activity output file.");
 
 	// Open the modelsim vector file.
 	char test_file[128] = { 0 };
-	sprintf(test_file,"%s%s",sim_run_dir,MODEL_SIM_FILE_NAME);
-	FILE *modelsim_out = fopen(test_file, "w");
-	if (!modelsim_out)
+	sprintf(test_file,"%s%s",((char *)global_args.sim_directory),MODEL_SIM_FILE_NAME);
+	sim_data->modelsim_out = fopen(test_file, "w");
+	if (!sim_data->modelsim_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
 
-	FILE *in  = NULL;
-	int num_vectors;
+	sim_data->in  = NULL;
 	// Passed via the -t option.
-	char *input_vector_file  = global_args.sim_vector_input_file;
+	sim_data->input_vector_file  = global_args.sim_vector_input_file;
 
 	// Input vectors can either come from a file or be randomly generated.
-	if (input_vector_file)
+	if (sim_data->input_vector_file)
 	{
-		in = fopen(input_vector_file, "r");
-		if (!in)
-			error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", input_vector_file);
+		sim_data->in = fopen(sim_data->input_vector_file, "r");
+		if (!sim_data->in)
+			error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", sim_data->input_vector_file);
 
-		num_vectors = count_test_vectors(in);
+		sim_data->num_vectors = count_test_vectors(sim_data->in);
 
 		// Read the vector headers and check to make sure they match the lines.
-		if (!verify_test_vector_headers(in, input_lines))
-			error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", input_vector_file);
+		if (!verify_test_vector_headers(sim_data->in, sim_data->input_lines))
+			error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", sim_data->input_vector_file);
 
-		printf("Simulating %d existing vectors from \"%s\".\n", num_vectors, input_vector_file); fflush(stdout);
+		printf("Simulating %d existing vectors from \"%s\".\n", sim_data->num_vectors, sim_data->input_vector_file); fflush(stdout);
 	}
 	else
 	{
 		// Passed via the -g option.
-		num_vectors = global_args.sim_num_test_vectors;
-		printf("Simulating %d new vectors.\n", num_vectors); fflush(stdout);
+		sim_data->num_vectors = global_args.sim_num_test_vectors;
+		printf("Simulating %d new vectors.\n", sim_data->num_vectors); fflush(stdout);
 
 		srand(global_args.sim_random_seed);
 	}
@@ -188,168 +218,191 @@ void simulate_netlist(netlist_t *netlist)
 	alloc_and_init_ace_structs(netlist);
 
 	// Determine which edge(s) we are outputting.
-	int output_edge;
-	if      (global_args.sim_output_both_edges ) output_edge = -1; // Both edges
-	else if (global_args.sim_output_rising_edge) output_edge =  1; // Rising edge only
-	else                                         output_edge =  0; // Falling edge only
+	if      (global_args.sim_output_both_edges ) sim_data->output_edge = -1; // Both edges
+	else if (global_args.sim_output_rising_edge) sim_data->output_edge =  1; // Rising edge only
+	else                                         sim_data->output_edge =  0; // Falling edge only
 
-	if (!num_vectors)
+	sim_data->total_time      = 0; // Includes I/O
+	sim_data->simulation_time = 0; // Does not include I/O
+
+	sim_data->stages = 0;
+
+	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
+	sim_data->hold_high = parse_pin_name_list(global_args.sim_hold_high);
+	sim_data->hold_low  = parse_pin_name_list(global_args.sim_hold_low);
+	sim_data->hold_high_index = index_pin_name_list(sim_data->hold_high);
+	sim_data->hold_low_index  = index_pin_name_list(sim_data->hold_low);
+
+	sim_data->num_waves = ceil((double)(sim_data->num_vectors * 2.0) / (double)SIM_WAVE_LENGTH);
+
+	return sim_data;
+}
+
+static sim_data_t *terminate_simulation(sim_data_t *sim_data)
+{
+	free_pin_name_list(sim_data->hold_high);
+	free_pin_name_list(sim_data->hold_low);
+	sim_data->hold_high_index->destroy_free_items(sim_data->hold_high_index);
+	sim_data->hold_low_index ->destroy_free_items(sim_data->hold_low_index);
+
+	free_stages(sim_data->stages);
+	fclose(sim_data->act_out);
+
+	free_lines(sim_data->output_lines);
+	free_lines(sim_data->input_lines);
+
+	fclose(sim_data->modelsim_out);
+	fclose(sim_data->in_out);
+	if (sim_data->input_vector_file)
+		fclose(sim_data->in);
+	fclose(sim_data->out);
+	vtr::free(sim_data);
+	sim_data = NULL;
+	return sim_data;
+}
+
+/**
+ * single step sim
+ */
+static int single_step(sim_data_t *sim_data, int wave)
+{
+	if (!sim_data->num_vectors)
 	{
 		error_message(SIMULATION_ERROR, 0, -1, "No vectors to simulate.");
+		return -2;
 	}
-	else
+
+	test_vector *v = 0;
+	double wave_start_time = wall_time();
+
+	int cycle_offset = SIM_WAVE_LENGTH * wave;
+	int wave_length  = (wave < (sim_data->num_waves-1))?SIM_WAVE_LENGTH:((sim_data->num_vectors * 2) - cycle_offset);
+
+	// Assign vectors to lines, either by reading or generating them.
+	// Every second cycle gets a new vector.
+	int cycle;
+	for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
 	{
-		printf("\n");
-
-		int       progress_bar_position = -1;
-		const int progress_bar_length   = 50;
-
-		double total_time      = 0; // Includes I/O
-		double simulation_time = 0; // Does not include I/O
-
-		stages_t *stages = 0;
-
-		// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
-		pin_names *hold_high = parse_pin_name_list(global_args.sim_hold_high);
-		pin_names *hold_low  = parse_pin_name_list(global_args.sim_hold_low);
-		hashtable_t *hold_high_index = index_pin_name_list(hold_high);
-		hashtable_t *hold_low_index  = index_pin_name_list(hold_low);
-
-		/*
-		 * Simulation is done in "waves" of SIM_WAVE_LENGTH cycles at a time.
-		 * Every second cycle gets a input new vector.
-		 */
-		int  num_cycles = num_vectors * 2;
-		int  num_waves = ceil(num_cycles / (double)SIM_WAVE_LENGTH);
-		int  wave;
-		test_vector *v = 0;
-		for (wave = 0; wave < num_waves; wave++)
+		if (is_even_cycle(cycle))
 		{
-			double wave_start_time = wall_time();
-
-			int cycle_offset = SIM_WAVE_LENGTH * wave;
-			int wave_length  = (wave < (num_waves-1))?SIM_WAVE_LENGTH:(num_cycles - cycle_offset);
-
-			// Assign vectors to lines, either by reading or generating them.
-			// Every second cycle gets a new vector.
-			int cycle;
-			for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
+			if (sim_data->input_vector_file)
 			{
-				if (is_even_cycle(cycle))
-				{
-					if (input_vector_file)
-					{
-						char buffer[BUFFER_MAX_SIZE];
+				char buffer[BUFFER_MAX_SIZE];
 
-						if (!get_next_vector(in, buffer))
-							error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
+				if (!get_next_vector(sim_data->in, buffer))
+					error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
 
-						v = parse_test_vector(buffer);
-					}
-					else
-					{
-						v = generate_random_test_vector(input_lines, cycle, hold_high_index, hold_low_index);
-					}
-				}
-
-				add_test_vector_to_lines(v, input_lines, cycle);
-
-				if (!is_even_cycle(cycle))
-					free_test_vector(v);
+				v = parse_test_vector(buffer);
 			}
-
-			// Record the input vectors we are using.
-			write_wave_to_file(input_lines, in_out, cycle_offset, wave_length, 1);
-			// Write ModelSim script.
-			write_wave_to_modelsim_file(netlist, input_lines, modelsim_out, cycle_offset, wave_length);
-
-			double simulation_start_time = wall_time();
-
-			// Perform simulation
-			for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
-			{
-				//original_simulate_cycle(netlist, cycle);
-
-				if (cycle)
-				{
-					simulate_cycle(cycle, stages);
-				}
-				else
-				{
-					// The first cycle produces the stages, and adds additional
-					// lines as specified by the -p option.
-					pin_names *p = parse_pin_name_list(global_args.sim_additional_pins);
-					stages = simulate_first_cycle(netlist, cycle, p, output_lines);
-					free_pin_name_list(p);
-					// Make sure the output lines are still OK after adding custom lines.
-					if (!verify_lines(output_lines))
-						error_message(SIMULATION_ERROR, 0, -1,
-								"Problem detected with the output lines after the first cycle.");
-				}
-			}
-
-			simulation_time += wall_time() - simulation_start_time;
-
-			// Write the result of this wave to the output vector file.
-			write_wave_to_file(output_lines, out, cycle_offset, wave_length, output_edge);
-
-			total_time += wall_time() - wave_start_time;
-
-			// Print netlist-specific statistics.
-			if (!cycle_offset)
-				print_netlist_stats(stages, num_vectors);
-
-			// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
-			if ((num_waves == 1) || cycle_offset)
-				progress_bar_position = print_progress_bar(
-						cycle/(double)num_cycles, progress_bar_position, progress_bar_length, total_time);
-		}
-
-		free_pin_name_list(hold_high);
-		free_pin_name_list(hold_low);
-		hold_high_index->destroy_free_items(hold_high_index);
-		hold_low_index ->destroy_free_items(hold_low_index);
-
-		fflush(out);
-		fprintf(modelsim_out, "run %d\n", num_vectors*100);
-
-		printf("\n");
-		// If a second output vector file was given via the -T option, verify that it matches.
-		char *output_vector_file = global_args.sim_vector_output_file;
-		if (output_vector_file)
-		{
-			if (verify_output_vectors(output_vector_file, num_vectors))
-				printf("Vector file \"%s\" matches output\n", output_vector_file);
 			else
-				error_message(SIMULATION_ERROR, 0, -1, "Vector files differ.");
-			printf("\n");
+			{
+				v = generate_random_test_vector(sim_data->input_lines, cycle, sim_data->hold_high_index, sim_data->hold_low_index);
+			}
 		}
 
-		// Print statistics.
-		print_simulation_stats(stages, num_vectors, total_time, simulation_time);
+		add_test_vector_to_lines(v, sim_data->input_lines, cycle);
 
-		free_stages(stages);
+		if (!is_even_cycle(cycle))
+			free_test_vector(v);
 	}
 
+	// Record the input vectors we are using.
+	write_wave_to_file(sim_data->input_lines, sim_data->in_out, cycle_offset, wave_length, 1);
+	// Write ModelSim script.
+	write_wave_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, cycle_offset, wave_length);
+
+	double simulation_start_time = wall_time();
+
+	// Perform simulation
+	for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
+	{
+		//original_simulate_cycle(netlist, cycle);
+
+		if (cycle)
+		{
+			simulate_cycle(cycle, sim_data->stages);
+		}
+		else
+		{
+			// The first cycle produces the stages, and adds additional
+			// lines as specified by the -p option.
+			pin_names *p = parse_pin_name_list(global_args.sim_additional_pins);
+			sim_data->stages = simulate_first_cycle(sim_data->netlist, cycle, p, sim_data->output_lines);
+			free_pin_name_list(p);
+			// Make sure the output lines are still OK after adding custom lines.
+			if (!verify_lines(sim_data->output_lines))
+				error_message(SIMULATION_ERROR, 0, -1,
+						"Problem detected with the output lines after the first cycle.");
+		}
+	}
+
+	sim_data->simulation_time += wall_time() - simulation_start_time;
+
+	// Write the result of this wave to the output vector file.
+	write_wave_to_file(sim_data->output_lines, sim_data->out, cycle_offset, wave_length, sim_data->output_edge);
+
+	sim_data->total_time += wall_time() - wave_start_time;
+
+	// Print netlist-specific statistics.
+	if (!cycle_offset)
+		print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+		
+	return cycle;
+}
+
+/*
+ * Performs simulation.
+ */
+void simulate_netlist(netlist_t *netlist)
+{
+	sim_data_t *sim_data = init_simulation(netlist);
+	
+	printf("\n");
+
+	int       progress_bar_position = -1;
+	const int progress_bar_length   = 50;
+
+	/*
+		* Simulation is done in "waves" of SIM_WAVE_LENGTH cycles at a time.
+		* Every second cycle gets a input new vector.
+		*/
+	
+	for (int wave = 0; wave < sim_data->num_waves; wave++)
+	{
+
+		int cycle = single_step(sim_data, wave);
+		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
+		if ((sim_data->num_waves == 1) || wave !=0 )
+			progress_bar_position = print_progress_bar(
+					cycle/(double)(sim_data->num_vectors * 2), progress_bar_position, progress_bar_length, sim_data->total_time);
+	}
+
+	fflush(sim_data->out);
+	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
+
+	printf("\n");
+	// If a second output vector file was given via the -T option, verify that it matches.
+	char *output_vector_file = global_args.sim_vector_output_file;
+	if (output_vector_file)
+	{
+		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
+			printf("Vector file \"%s\" matches output\n", output_vector_file);
+		else
+			error_message(SIMULATION_ERROR, 0, -1, "Vector files differ.");
+		printf("\n");
+	}
+
+	// Print statistics.
+	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
 	// Perform ACE activity calculations
-	calculate_activity ( netlist, num_vectors, act_out );
-	fclose(act_out);
-
-	free_lines(output_lines);
-	free_lines(input_lines);
-
-	fclose(modelsim_out);
-	fclose(in_out);
-	if (input_vector_file)
-		fclose(in);
-	fclose(out);
+	calculate_activity ( netlist, sim_data->num_vectors, sim_data->act_out );
 }
 
 /*
  * This simulates a single cycle using the stages generated
  * during the first cycle. Simulates in parallel if OpenMP is enabled.
  *
- * OpenMP simulation computes a small number of cycles sequentially and
+ * simulation computes a small number of cycles sequentially and
  * a small number in parallel. The minimum parallel and sequential time is
  * taken for each stage, and that stage is computed in parallel for all subsequent
  * cycles if speedup is observed.
@@ -3057,7 +3110,7 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 
 		// Our current output vectors. (Just produced.)
 		char out_vec_file[128] = { 0 };
-		sprintf(out_vec_file,"%s%s",sim_run_dir,OUTPUT_VECTOR_FILE_NAME);
+		sprintf(out_vec_file,"%s%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 		FILE *current_out  = fopen(out_vec_file, "r");
 		if (!current_out)
 			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");
