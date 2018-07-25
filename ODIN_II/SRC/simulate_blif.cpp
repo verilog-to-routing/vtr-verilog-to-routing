@@ -1,7 +1,7 @@
 /*
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
+FILEs (the "Software"), to deal in the Software without
 restriction, including without limitation the rights to use,
 copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the
@@ -21,7 +21,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "simulate_blif.h"
-#include "math.h"
+#include <algorithm>
+#include <cmath>
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include <string>
@@ -35,114 +36,160 @@ OTHER DEALINGS IN THE SOFTWARE.
 	#include "pthread.h"
 #endif
 
-#ifndef max
-#define max(a,b) (((a) > (b))? (a) : (b))
-#define min(a,b) ((a) > (b)? (b) : (a))
-#endif
-
-static void init_read(npin_t *pin)
-{
-	bool available =false;
-	while(!available)
-	{
-		pin->pin_lock.lock();
-		if(!pin->is_being_written)
-		{
-			available = true;
-			pin->nb_of_reader += 1;
-		}
-		pin->pin_lock.unlock();
-	}
-}
-
-static void close_reader(npin_t *pin)
-{
-	pin->nb_of_reader -= 1;
-}
-
-static void init_write(npin_t *pin)
-{
-	bool available =false;
-	while(!available)
-	{
-		pin->pin_lock.lock();
-		if(!pin->is_being_written && !pin->nb_of_reader)
-		{
-			available = true;
-			pin->is_being_written = true;
-		}
-		pin->pin_lock.unlock();
-	}
-}
-
-static void close_writer(npin_t *pin)
-{
-	pin->is_being_written = false;
-}
-
-
-
-static int is_node_ready(nnode_t* node, int cycle);
-static void update_undriven_input_pins(nnode_t *node, int cycle);
-
-/*
- * Calculates the index in the values array for the given cycle.
- */
 #define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
-
-/*
- * Returns FALSE if the cycle is odd.
- */
 #define is_even_cycle(cycle)	(!((cycle + 2) % 2))
-
-/*
- * Returns FALSE if the node is not a clock.
- */
 #define is_clock_node(node)	( (node->type == CLOCK_NODE) || (std::string(node->name) == "top^clk") ) // Strictly for memories.
-
-/*
- * Returns TRUE if the pin's value for this
- * cycle is 1 and the value for the previous cycle
- * was not 1. Otherwise returns FALSE.
- */
 #define is_posedge(pin, cycle) (get_pin_value(pin,cycle) == 1 && get_pin_value(pin,cycle-1) != 1)
 
+static void simulate_cycle(int cycle, stages_t *s);
+static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *output_lines);
 
-typedef struct sim_data_t_t
+static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
+static void free_stages(stages_t *s);
+
+static int get_num_covered_nodes(stages_t *s);
+static int get_clock_ratio(nnode_t *node);
+static void set_clock_ratio(int rat, nnode_t *node);
+static nnode_t **get_children_of(nnode_t *node, int *count);
+static int *get_children_pinnumber_of(nnode_t *node, int *num_children);
+static nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
+static int is_node_complete(nnode_t* node, int cycle);
+
+static void compute_and_store_value(nnode_t *node, int cycle);
+static void compute_memory_node(nnode_t *node, int cycle);
+static void compute_hard_ip_node(nnode_t *node, int cycle);
+static void compute_multiply_node(nnode_t *node, int cycle);
+static void compute_generic_node(nnode_t *node, int cycle);
+static void compute_add_node(nnode_t *node, int cycle, int type);
+static void compute_unary_sub_node(nnode_t *node, int cycle);
+
+
+static void update_pin_value(npin_t *pin, signed char value, int cycle);
+signed char get_pin_value(npin_t *pin, int cycle);
+static int get_pin_cycle(npin_t *pin);
+
+signed char get_line_pin_value(line_t *line, int pin_num, int cycle);
+static int line_has_unknown_pin(line_t *line, int cycle);
+
+static void compute_flipflop_node(nnode_t *node, int cycle);
+static void compute_mux_2_node(nnode_t *node, int cycle);
+
+static int *multiply_arrays(int *a, int a_length, int *b, int b_length);
+
+static int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag);
+
+static int *unary_sub_arrays(int *a, int a_length, int *c, int c_length);
+
+static void compute_single_port_memory(nnode_t *node, int cycle);
+static void compute_dual_port_memory(nnode_t *node, int cycle);
+
+static long compute_memory_address(signal_list_t *addr, int cycle);
+
+static void instantiate_memory(nnode_t *node, int data_width, int addr_width);
+static char *get_mif_filename(nnode_t *node);
+static FILE *preprocess_mif_file(FILE *source);
+static void assign_memory_from_mif_file(FILE *file, char *filename, int width, long depth, signed char *memory);
+static int parse_mif_radix(char *radix);
+
+static int count_test_vectors(FILE *in);
+static int is_vector(char *buffer);
+static int get_next_vector(FILE *file, char *buffer);
+static test_vector *parse_test_vector(char *buffer);
+static test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hold_high_index, hashtable_t *hold_low_index);
+static int compare_test_vectors(test_vector *v1, test_vector *v2);
+
+static int verify_test_vector_headers(FILE *in, lines_t *l);
+static void free_test_vector(test_vector* v);
+
+static line_t *create_line(char *name);
+static int verify_lines(lines_t *l);
+static void free_lines(lines_t *l);
+
+static int find_portname_in_lines(char* port_name, lines_t *l);
+static lines_t *create_lines(netlist_t *netlist, int type);
+
+static void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle);
+static void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin);
+static void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type);
+
+static char *generate_vector_header(lines_t *l);
+static void write_vector_headers(FILE *file, lines_t *l);
+
+static void write_vector_to_file(lines_t *l, FILE *file, int cycle);
+static void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_length, int both_edges);
+
+static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cycle);
+static void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_out, int cycle_offset, int wave_length);
+
+static int verify_output_vectors(char* output_vector_file, int num_test_vectors);
+
+static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l);
+static pin_names *parse_pin_name_list(char *list);
+static void free_pin_name_list(pin_names *p);
+static hashtable_t *index_pin_name_list(pin_names *list);
+
+static char *vector_value_to_hex(signed char *value, int length);
+
+static void print_netlist_stats(stages_t *stages, int num_vectors);
+static void print_simulation_stats(stages_t *stages, int num_vectors, double total_time, double simulation_time);
+
+static void flag_undriven_input_pins(nnode_t *node);
+
+static void print_ancestry(nnode_t *node, int generations);
+static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
+
+/*
+ * Performs simulation.
+ */
+void simulate_netlist(netlist_t *netlist)
 {
-	// Create and verify the lines.
-	lines_t *input_lines;
-	lines_t *output_lines;
-	FILE *out;
-	FILE *in_out;
-	FILE *act_out;
-	FILE *modelsim_out;
-	FILE *in  = NULL;
-	int num_vectors;
-	char *input_vector_file;
+	sim_data_t *sim_data = init_simulation(netlist);
+	
+	printf("\n");
 
-	int output_edge;
-	double total_time; // Includes I/O
-	double simulation_time; // Does not include I/O
+	int       progress_bar_position = -1;
+	const int progress_bar_length   = 50;
 
-	stages_t *stages;
+	/*
+		* Simulation is done in "waves" of SIM_WAVE_LENGTH cycles at a time.
+		* Every second cycle gets a input new vector.
+		*/
+	
+	for (int wave = 0; wave < sim_data->num_waves; wave++)
+	{
 
-	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
-	pin_names *hold_high;
-	pin_names *hold_low;
-	hashtable_t *hold_high_index;
-	hashtable_t *hold_low_index;
+		int cycle = single_step(sim_data, wave);
+		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
+		if ((sim_data->num_waves == 1) || wave !=0 )
+			progress_bar_position = print_progress_bar(
+					cycle/(double)(sim_data->num_vectors * 2), progress_bar_position, progress_bar_length, sim_data->total_time);
+	}
 
-	int num_waves;
+	fflush(sim_data->out);
+	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
 
-	netlist_t *netlist;
+	printf("\n");
+	// If a second output vector file was given via the -T option, verify that it matches.
+	char *output_vector_file = global_args.sim_vector_output_file;
+	if (output_vector_file)
+	{
+		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
+			printf("Vector file \"%s\" matches output\n", output_vector_file);
+		else
+			error_message(SIMULATION_ERROR, 0, -1, "Vector files differ.");
+		printf("\n");
+	}
 
-}sim_data_t;
+	// Print statistics.
+	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
+	// Perform ACE activity calculations
+	calculate_activity ( netlist, sim_data->num_vectors, sim_data->act_out );
+}
 
 /**
  * Initialize simulation
  */
-static sim_data_t *init_simulation(netlist_t *netlist)
+sim_data_t *init_simulation(netlist_t *netlist)
 {
 	sim_data_t *sim_data = (sim_data_t *)vtr::malloc(sizeof(sim_data_t));
 
@@ -233,12 +280,12 @@ static sim_data_t *init_simulation(netlist_t *netlist)
 	sim_data->hold_high_index = index_pin_name_list(sim_data->hold_high);
 	sim_data->hold_low_index  = index_pin_name_list(sim_data->hold_low);
 
-	sim_data->num_waves = ceil((double)(sim_data->num_vectors * 2.0) / (double)SIM_WAVE_LENGTH);
+	sim_data->num_waves = std::ceil((double)(sim_data->num_vectors * 2.0) / (double)SIM_WAVE_LENGTH);
 
 	return sim_data;
 }
 
-static sim_data_t *terminate_simulation(sim_data_t *sim_data)
+sim_data_t *terminate_simulation(sim_data_t *sim_data)
 {
 	free_pin_name_list(sim_data->hold_high);
 	free_pin_name_list(sim_data->hold_low);
@@ -264,7 +311,7 @@ static sim_data_t *terminate_simulation(sim_data_t *sim_data)
 /**
  * single step sim
  */
-static int single_step(sim_data_t *sim_data, int wave)
+int single_step(sim_data_t *sim_data, int wave)
 {
 	if (!sim_data->num_vectors)
 	{
@@ -350,52 +397,46 @@ static int single_step(sim_data_t *sim_data, int wave)
 	return cycle;
 }
 
-/*
- * Performs simulation.
- */
-void simulate_netlist(netlist_t *netlist)
+
+/*read write barriers for multithreaded sim */
+static void init_read(npin_t *pin)
 {
-	sim_data_t *sim_data = init_simulation(netlist);
-	
-	printf("\n");
-
-	int       progress_bar_position = -1;
-	const int progress_bar_length   = 50;
-
-	/*
-		* Simulation is done in "waves" of SIM_WAVE_LENGTH cycles at a time.
-		* Every second cycle gets a input new vector.
-		*/
-	
-	for (int wave = 0; wave < sim_data->num_waves; wave++)
+	bool available =false;
+	while(!available)
 	{
-
-		int cycle = single_step(sim_data, wave);
-		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
-		if ((sim_data->num_waves == 1) || wave !=0 )
-			progress_bar_position = print_progress_bar(
-					cycle/(double)(sim_data->num_vectors * 2), progress_bar_position, progress_bar_length, sim_data->total_time);
+		pin->pin_lock.lock();
+		if(!pin->is_being_written)
+		{
+			available = true;
+			pin->nb_of_reader += 1;
+		}
+		pin->pin_lock.unlock();
 	}
+}
 
-	fflush(sim_data->out);
-	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
+static void close_reader(npin_t *pin)
+{
+	pin->nb_of_reader -= 1;
+}
 
-	printf("\n");
-	// If a second output vector file was given via the -T option, verify that it matches.
-	char *output_vector_file = global_args.sim_vector_output_file;
-	if (output_vector_file)
+static void init_write(npin_t *pin)
+{
+	bool available =false;
+	while(!available)
 	{
-		if (verify_output_vectors(output_vector_file, sim_data->num_vectors))
-			printf("Vector file \"%s\" matches output\n", output_vector_file);
-		else
-			error_message(SIMULATION_ERROR, 0, -1, "Vector files differ.");
-		printf("\n");
+		pin->pin_lock.lock();
+		if(!pin->is_being_written && !pin->nb_of_reader)
+		{
+			available = true;
+			pin->is_being_written = true;
+		}
+		pin->pin_lock.unlock();
 	}
+}
 
-	// Print statistics.
-	print_simulation_stats(sim_data->stages, sim_data->num_vectors, sim_data->total_time, sim_data->simulation_time);
-	// Perform ACE activity calculations
-	calculate_activity ( netlist, sim_data->num_vectors, sim_data->act_out );
+static void close_writer(npin_t *pin)
+{
+	pin->is_being_written = false;
 }
 
 /*
@@ -433,7 +474,7 @@ static void *compute_and_store_paralele_value(void *data_in)
 	pthread_exit(NULL);
 }
 
-void simulate_cycle(int cycle, stages_t *s)
+static void simulate_cycle(int cycle, stages_t *s)
 {
 	int max_proc = sysconf(_SC_NPROCESSORS_ONLN);
 	// -1 for cycle 0, -1 for the last cycle in the wave.
@@ -445,7 +486,7 @@ void simulate_cycle(int cycle, stages_t *s)
 
 	for(int i = 0; i < s->count; i++)
 	{
-		int number_of_workers = min(max_proc, s->worker_const + s->worker_temp);
+		int number_of_workers = std::min(max_proc, s->worker_const + s->worker_temp);
 		if(number_of_workers >1 && !s->warned)
 		{
 			s->warned = true;
@@ -507,19 +548,140 @@ void simulate_cycle(int cycle, stages_t *s)
 				s->worker_temp = 0;
 			}
 			
-			s->worker_const = max(1, min(max_proc, s->worker_const));
-			s->worker_temp = max(0, min(max_proc-s->worker_const, s->worker_temp));
+			s->worker_const = std::max(1, std::min(max_proc, s->worker_const));
+			s->worker_temp = std::max(0, std::min(max_proc-s->worker_const, s->worker_temp));
 		#endif
 
 	}
 }
+
+
+/*
+ * Updates all pins which have been flagged as undriven
+ * to -1 for the given cycle.
+ *
+ * Also checks that other pins have been updated
+ * by cycle 3 and throws an error if they haven't been.
+ *
+ * This function is called when each node is updated as a
+ * safeguard.
+ */
+static void update_undriven_input_pins(nnode_t *node, int cycle)
+{
+	int i;
+	for (i = 0; i < node->num_undriven_pins; i++)
+		update_pin_value(node->undriven_pins[i], global_args.sim_initial_value, cycle);
+
+	// By the third cycle everything in the netlist should have been updated.
+	if (cycle == 3)
+	{
+		for (i = 0; i < node->num_input_pins; i++)
+		{
+			if (get_pin_cycle( node->input_pins[i]) < cycle-1)
+			{
+				// Print the trace.
+				nnode_t *root = print_update_trace(node, cycle);
+				// Throw an error.
+				error_message(SIMULATION_ERROR,0,-1,"Odin has detected that an input pin attached to %s isn't being updated.\n"
+						"\tPin name: %s\n"
+						"\tRoot node: %s\n"
+						"\tSee the trace immediately above this message for details.\n",
+						node->name, node->input_pins[i]->name, root?root->name:"N/A"
+				);
+			}
+		}
+	}
+}
+
+/*
+ * Checks to see if the node is ready to be simulated for the given cycle.
+ */
+static int is_node_ready(nnode_t* node, int cycle)
+{
+	if (!cycle)
+	{
+		/*
+		* Flags any inputs pins which are undriven and have
+		* not already been flagged.
+		*/
+		int i;
+		for (i = 0; i < node->num_input_pins; i++)
+		{
+			npin_t *pin = node->input_pins[i];
+
+			if (!pin->net || !pin->net->driver_pin || !pin->net->driver_pin->node)
+			{
+				int already_flagged = FALSE;
+				int j;
+				for (j = 0; j < node->num_undriven_pins; j++)
+				{
+					if (node->undriven_pins[j] == pin)
+						already_flagged = TRUE;
+				}
+
+				if (!already_flagged)
+				{
+					node->undriven_pins = (npin_t **)vtr::realloc(node->undriven_pins, sizeof(npin_t *) * (node->num_undriven_pins + 1));
+					node->undriven_pins[node->num_undriven_pins++] = pin;
+
+					warning_message(SIMULATION_ERROR,0,-1,"A node (%s) has an undriven input pin.", node->name);
+				}
+			}
+		}
+		update_undriven_input_pins(node, cycle);
+	}
+
+	if (node->type == FF_NODE)
+	{
+		npin_t *D_pin     = node->input_pins[0];
+		npin_t *clock_pin = node->input_pins[1];
+		// Flip-flops depend on the D input from the previous cycle and the clock from this cycle.
+		if
+		(
+			   (get_pin_cycle(D_pin    ) < cycle-1)
+			|| (get_pin_cycle(clock_pin) < cycle  )
+		)
+			return FALSE;
+	}
+	else if (node->type == MEMORY)
+	{
+		int i;
+		for (i = 0; i < node->num_input_pins; i++)
+		{
+			npin_t *pin = node->input_pins[i];
+			// The data and write enable inputs rely on the values from the previous cycle.
+			if (
+					   !strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2")
+					|| !strcmp(pin->mapping, "we")   || !strcmp(pin->mapping, "we1")   || !strcmp(pin->mapping, "we2")
+			)
+			{
+				if (get_pin_cycle(pin) < cycle-1)
+					return FALSE;
+			}
+			else
+			{
+				if (get_pin_cycle(pin) < cycle)
+					return FALSE;
+			}
+		}
+	}
+	else
+	{
+		int i;
+		for (i = 0; i < node->num_input_pins; i++)
+			if (get_pin_cycle(node->input_pins[i]) < cycle)
+				return FALSE;
+	}
+	return TRUE;
+}
+
 
 /*
  * Simulates the first cycle by traversing the netlist and returns
  * the nodes organised into parallelizable stages. Also adds lines to
  * custom pins and nodes as requested via the -p option.
  */
-stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *l)
+static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *l)
 {
 	std::queue<nnode_t *> queue = std::queue<nnode_t *>();
 	// Enqueue top input nodes
@@ -591,7 +753,7 @@ stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, line
 /*
  * Puts the ordered nodes in stages, each of which can be computed in parallel.
  */
-stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
+static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 	stages_t *s = (stages_t *)vtr::malloc(sizeof(stages_t));
 	s->stages = (nnode_t ***)vtr::calloc(1,sizeof(nnode_t**));
 	s->counts = (int *)vtr::calloc(1,sizeof(int));
@@ -676,7 +838,7 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
  * Given a node, this function will simulate that node's new outputs,
  * and updates those pins.
  */
-void compute_and_store_value(nnode_t *node, int cycle)
+static void compute_and_store_value(nnode_t *node, int cycle)
 {
 	update_undriven_input_pins(node, cycle);
 
@@ -1002,79 +1164,12 @@ void compute_and_store_value(nnode_t *node, int cycle)
 	}
 }
 
-/*
- * Updates all pins which have been flagged as undriven
- * to -1 for the given cycle.
- *
- * Also checks that other pins have been updated
- * by cycle 3 and throws an error if they haven't been.
- *
- * This function is called when each node is updated as a
- * safeguard.
- */
-static void update_undriven_input_pins(nnode_t *node, int cycle)
-{
-	int i;
-	for (i = 0; i < node->num_undriven_pins; i++)
-		update_pin_value(node->undriven_pins[i], global_args.sim_initial_value, cycle);
 
-	// By the third cycle everything in the netlist should have been updated.
-	if (cycle == 3)
-	{
-		for (i = 0; i < node->num_input_pins; i++)
-		{
-			if (get_pin_cycle( node->input_pins[i]) < cycle-1)
-			{
-				// Print the trace.
-				nnode_t *root = print_update_trace(node, cycle);
-				// Throw an error.
-				error_message(SIMULATION_ERROR,0,-1,"Odin has detected that an input pin attached to %s isn't being updated.\n"
-						"\tPin name: %s\n"
-						"\tRoot node: %s\n"
-						"\tSee the trace immediately above this message for details.\n",
-						node->name, node->input_pins[i]->name, root?root->name:"N/A"
-				);
-			}
-		}
-	}
-}
-
-/*
- * Flags any inputs pins which are undriven and have
- * not already been flagged.
- */
-void flag_undriven_input_pins(nnode_t *node)
-{
-	int i;
-	for (i = 0; i < node->num_input_pins; i++)
-	{
-		npin_t *pin = node->input_pins[i];
-
-		if (!pin->net || !pin->net->driver_pin || !pin->net->driver_pin->node)
-		{
-			int already_flagged = FALSE;
-			int j;
-			for (j = 0; j < node->num_undriven_pins; j++)
-			{
-				if (node->undriven_pins[j] == pin)
-					already_flagged = TRUE;
-			}
-
-			if (!already_flagged)
-			{
-				node->undriven_pins = (npin_t **)vtr::realloc(node->undriven_pins, sizeof(npin_t *) * (node->num_undriven_pins + 1));
-				node->undriven_pins[node->num_undriven_pins++] = pin;
-
-				warning_message(SIMULATION_ERROR,0,-1,"A node (%s) has an undriven input pin.", node->name);
-			}
-		}
-	}
-}
 
 /*
  * Gets the number of nodes whose output pins have been sufficiently covered.
  */
-int get_num_covered_nodes(stages_t *s)
+static int get_num_covered_nodes(stages_t *s)
 {
 	int covered_nodes = 0;
 	int i;
@@ -1109,7 +1204,7 @@ int get_num_covered_nodes(stages_t *s)
 /*
  * Determines if the given node has been simulated for the given cycle.
  */
-int is_node_complete(nnode_t* node, int cycle)
+static int is_node_complete(nnode_t* node, int cycle)
 {
 	int i;
 	for (i = 0; i < node->num_output_pins; i++)
@@ -1120,64 +1215,9 @@ int is_node_complete(nnode_t* node, int cycle)
 }
 
 /*
- * Checks to see if the node is ready to be simulated for the given cycle.
- */
-static int is_node_ready(nnode_t* node, int cycle)
-{
-	if (!cycle)
-	{
-		flag_undriven_input_pins(node);
-		update_undriven_input_pins(node, cycle);
-	}
-
-	if (node->type == FF_NODE)
-	{
-		npin_t *D_pin     = node->input_pins[0];
-		npin_t *clock_pin = node->input_pins[1];
-		// Flip-flops depend on the D input from the previous cycle and the clock from this cycle.
-		if
-		(
-			   (get_pin_cycle(D_pin    ) < cycle-1)
-			|| (get_pin_cycle(clock_pin) < cycle  )
-		)
-			return FALSE;
-	}
-	else if (node->type == MEMORY)
-	{
-		int i;
-		for (i = 0; i < node->num_input_pins; i++)
-		{
-			npin_t *pin = node->input_pins[i];
-			// The data and write enable inputs rely on the values from the previous cycle.
-			if (
-					   !strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2")
-					|| !strcmp(pin->mapping, "we")   || !strcmp(pin->mapping, "we1")   || !strcmp(pin->mapping, "we2")
-			)
-			{
-				if (get_pin_cycle(pin) < cycle-1)
-					return FALSE;
-			}
-			else
-			{
-				if (get_pin_cycle(pin) < cycle)
-					return FALSE;
-			}
-		}
-	}
-	else
-	{
-		int i;
-		for (i = 0; i < node->num_input_pins; i++)
-			if (get_pin_cycle(node->input_pins[i]) < cycle)
-				return FALSE;
-	}
-	return TRUE;
-}
-
-/*
  * Changes the ratio of a clock node
  */
-void set_clock_ratio(int rat, nnode_t *node)
+static void set_clock_ratio(int rat, nnode_t *node)
 {
 	//change the value only for clocks
 	if(node->type != CLOCK_NODE)
@@ -1191,7 +1231,7 @@ void set_clock_ratio(int rat, nnode_t *node)
  * children via the num_children parameter. Throws warnings
  * or errors if invalid connection patterns are detected.
  */
-nnode_t **get_children_of(nnode_t *node, int *num_children)
+static nnode_t **get_children_of(nnode_t *node, int *num_children)
 {
 	nnode_t **children = 0;
 	int count = 0;
@@ -1274,7 +1314,7 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
  * children via the num_children parameter. Throws warnings
  * or errors if invalid connection patterns are detected.
  */
-int *get_children_pinnumber_of(nnode_t *node, int *num_children)
+static int *get_children_pinnumber_of(nnode_t *node, int *num_children)
 {
 	int *pin_numbers = 0;
 	int count = 0;
@@ -1357,7 +1397,7 @@ int *get_children_pinnumber_of(nnode_t *node, int *num_children)
  * children via the num_children parameter. Throws warnings
  * or errors if invalid connection patterns are detected.
  */
-nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin)
+static nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin)
 {
 	nnode_t **children = 0;
 	int count = 0;
@@ -1494,7 +1534,7 @@ static void initialize_pin(npin_t *pin)
  *
  * Initializes the pin if need be.
  */
-void update_pin_value(npin_t *pin, signed char value, int cycle)
+static void update_pin_value(npin_t *pin, signed char value, int cycle)
 {
 	init_write(pin);
 	if (pin->values == NULL)
@@ -1523,7 +1563,7 @@ signed char get_pin_value(npin_t *pin, int cycle)
 /*
  * Gets the cycle of the given pin
  */
-int get_pin_cycle(npin_t *pin)
+static int get_pin_cycle(npin_t *pin)
 {
 	int to_return = -1;
 	if( pin->cycle )
@@ -1538,7 +1578,7 @@ int get_pin_cycle(npin_t *pin)
 /*
  * Computes a node of type FF_NODE for the given cycle.
  */
-void compute_flipflop_node(nnode_t *node, int cycle)
+static void compute_flipflop_node(nnode_t *node, int cycle)
 {
 	oassert(node->num_output_pins == 1);
 	oassert(node->num_input_pins  == 2);
@@ -1558,7 +1598,7 @@ void compute_flipflop_node(nnode_t *node, int cycle)
 /*
  * Computes a node of type MUX_2 for the given cycle.
  */
-void compute_mux_2_node(nnode_t *node, int cycle)
+static void compute_mux_2_node(nnode_t *node, int cycle)
 {
 	oassert(node->num_output_pins == 1);
 	oassert(node->num_input_port_sizes >= 2);
@@ -1631,7 +1671,7 @@ void compute_mux_2_node(nnode_t *node, int cycle)
 
 
 // TODO: Needs to be verified.
-void compute_hard_ip_node(nnode_t *node, int cycle)
+static void compute_hard_ip_node(nnode_t *node, int cycle)
 {
 	oassert(node->input_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[0] > 0);
@@ -1693,7 +1733,7 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 /*
  * Computes the given multiply node for the given cycle.
  */
-void compute_multiply_node(nnode_t *node, int cycle)
+static void compute_multiply_node(nnode_t *node, int cycle)
 {
 	oassert(node->num_input_port_sizes == 2);
 	oassert(node->num_output_port_sizes == 1);
@@ -1739,7 +1779,7 @@ void compute_multiply_node(nnode_t *node, int cycle)
 }
 
 // TODO: Needs to be verified.
-void compute_generic_node(nnode_t *node, int cycle)
+static void compute_generic_node(nnode_t *node, int cycle)
 {
 	int line_count_bitmap = node->bit_map_line_count;
 	char **bit_map = node->bit_map;
@@ -1784,7 +1824,7 @@ void compute_generic_node(nnode_t *node, int cycle)
  *
  * This array will need to be freed later!
  */
-int *multiply_arrays(int *a, int a_length, int *b, int b_length)
+static int *multiply_arrays(int *a, int a_length, int *b, int b_length)
 {
 	int result_size = a_length + b_length;
 	int *result = (int *)vtr::calloc(sizeof(int), result_size);
@@ -1814,7 +1854,7 @@ int *multiply_arrays(int *a, int a_length, int *b, int b_length)
  * Computes the given add node for the given cycle.
  * add by Sen
  */
-void compute_add_node(nnode_t *node, int cycle, int type)
+static void compute_add_node(nnode_t *node, int cycle, int type)
 {
 	oassert(node->num_input_port_sizes == 3);
 	oassert(node->num_output_port_sizes == 2);
@@ -1876,9 +1916,9 @@ void compute_add_node(nnode_t *node, int cycle, int type)
  * add by Sen
  * This array will need to be freed later!
  */
-int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int /*c_length*/, int /*flag*/)
+static int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int /*c_length*/, int /*flag*/)
 {
-	int result_size = max(a_length , b_length) + 1;
+	int result_size = std::max(a_length , b_length) + 1;
 	int *result = (int *)vtr::calloc(sizeof(int), result_size);
 
 	int i;
@@ -1899,7 +1939,7 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int /*c_leng
 
 	temp_carry_in = result[1];
 	if(result_size > 2){
-		for(i = 1; i < min(a_length,b_length); i++)
+		for(i = 1; i < std::min(a_length,b_length); i++)
 		{
 			if(a[i] == -1 || b[i] == -1 || temp_carry_in == -1)
 			{
@@ -1954,7 +1994,7 @@ int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int /*c_leng
  * Computes the given add node for the given cycle.
  * add by Sen
  */
-void compute_unary_sub_node(nnode_t *node, int cycle)
+static void compute_unary_sub_node(nnode_t *node, int cycle)
 {
 	oassert(node->num_input_port_sizes == 2);
 	oassert(node->num_output_port_sizes == 2);
@@ -2012,7 +2052,7 @@ void compute_unary_sub_node(nnode_t *node, int cycle)
  * add by Sen
  * This array will need to be freed later!
  */
-int *unary_sub_arrays(int *a, int a_length, int *c, int /*c_length*/)
+static int *unary_sub_arrays(int *a, int a_length, int *c, int /*c_length*/)
 {
 	int result_size = a_length + 1;
 	int *result = (int *)vtr::calloc(sizeof(int), result_size);
@@ -2039,7 +2079,7 @@ int *unary_sub_arrays(int *a, int a_length, int *c, int /*c_length*/)
 /*
  * Computes the given memory node.
  */
-void compute_memory_node(nnode_t *node, int cycle)
+static void compute_memory_node(nnode_t *node, int cycle)
 {
 	if (is_sp_ram(node))
 		compute_single_port_memory(node, cycle);
@@ -2053,7 +2093,7 @@ void compute_memory_node(nnode_t *node, int cycle)
 /*
  * Computes single port memory.
  */
-void compute_single_port_memory(nnode_t *node, int cycle)
+static void compute_single_port_memory(nnode_t *node, int cycle)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
 
@@ -2107,7 +2147,7 @@ void compute_single_port_memory(nnode_t *node, int cycle)
 /*
  * Computes dual port memory.
  */
-void compute_dual_port_memory(nnode_t *node, int cycle)
+static void compute_dual_port_memory(nnode_t *node, int cycle)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	int posedge = is_posedge(signals->clk, cycle);
@@ -2177,7 +2217,7 @@ void compute_dual_port_memory(nnode_t *node, int cycle)
 /*
  * Calculates the memory address. Returns -1 if the address is unknown.
  */
-long compute_memory_address(signal_list_t *addr, int cycle)
+static long compute_memory_address(signal_list_t *addr, int cycle)
 {
 	long address = 0;
 	int i;
@@ -2197,7 +2237,7 @@ long compute_memory_address(signal_list_t *addr, int cycle)
  * Initialises memory using a memory information file (mif). If not
  * file is found, it is initialised to x's.
  */
-void instantiate_memory(nnode_t *node, int data_width, int addr_width)
+static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
 	node->memory_data = (signed char *)vtr::malloc(sizeof(signed char) * max_address * data_width);
@@ -2226,7 +2266,7 @@ void instantiate_memory(nnode_t *node, int data_width, int addr_width)
  * Removes white space (except new lines) and comments from
  * the given mif file and returns the resulting temporary file.
  */
-FILE *preprocess_mif_file(FILE *source)
+static FILE *preprocess_mif_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	destination = freopen(NULL, "r+", destination);
@@ -2264,7 +2304,7 @@ FILE *preprocess_mif_file(FILE *source)
 	return destination;
 }
 
-int parse_mif_radix(char *radix)
+static int parse_mif_radix(char *radix)
 {
 	if (radix)
 	{
@@ -2285,7 +2325,7 @@ int parse_mif_radix(char *radix)
 	}
 }
 
-void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long depth, signed char *memory)
+static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long depth, signed char *memory)
 {
 	FILE *file = preprocess_mif_file(mif);
 	rewind(file);
@@ -2442,7 +2482,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
  * Assigns the given node to its corresponding line in the given array of line.
  * Assumes the line has already been created.
  */
-void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
+static void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
 {
 	// Make sure the node has an output pin.
 	if (!node->num_output_pins)
@@ -2494,7 +2534,7 @@ void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
 /*
  * Inserts the given pin according to its pin number into the given line.
  */
-void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type)
+static void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type)
 {
 	// Allocate memory for the new pin.
 	line->pins        = (npin_t **)vtr::realloc(line->pins,        sizeof(npin_t*) * (line->number_of_pins + 1));
@@ -2529,7 +2569,7 @@ void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type)
  * (INPUT or OUTPUT) to a line_t each. It stores them in a
  * lines_t struct and returns a pointer to it.
  */
-lines_t *create_lines(netlist_t *netlist, int type)
+static lines_t *create_lines(netlist_t *netlist, int type)
 {
 	lines_t *l = (lines_t *)vtr::malloc(sizeof(lines_t));
 	l->lines = 0;
@@ -2563,7 +2603,7 @@ lines_t *create_lines(netlist_t *netlist, int type)
  * Creates a vector file header from the given lines,
  * and writes it to the given file.
  */
-void write_vector_headers(FILE *file, lines_t *l)
+static void write_vector_headers(FILE *file, lines_t *l)
 {
 	char* headers = generate_vector_header(l);
 	fprintf(file, "%s", headers);
@@ -2577,7 +2617,7 @@ void write_vector_headers(FILE *file, lines_t *l)
  * and FALSE is returned. If there are no differences, the file pointer is left
  * at the start of the second line, and TRUE is returned.
  */
-int verify_test_vector_headers(FILE *in, lines_t *l)
+static int verify_test_vector_headers(FILE *in, lines_t *l)
 {
 	int current_line = 0;
 	int buffer_length = 0;
@@ -2637,7 +2677,7 @@ int verify_test_vector_headers(FILE *in, lines_t *l)
 /*
  * Verifies that no lines have null pins.
  */
-int verify_lines (lines_t *l)
+static int verify_lines (lines_t *l)
 {
 	int i;
 	for (i = 0; i < l->count; i++)
@@ -2659,7 +2699,7 @@ int verify_lines (lines_t *l)
  * Searches for a line with the given name in the lines. Returns the index
  * or -1 if no such line was found.
  */
-int find_portname_in_lines(char* port_name, lines_t *l)
+static int find_portname_in_lines(char* port_name, lines_t *l)
 {
 	int j;
 	for (j = 0; j < l->count; j++)
@@ -2672,7 +2712,7 @@ int find_portname_in_lines(char* port_name, lines_t *l)
 /*
  * allocates memory for and initialises a line_t struct
  */
-line_t *create_line(char *name)
+static line_t *create_line(char *name)
 {
 	line_t *line = (line_t *)vtr::malloc(sizeof(line_t));
 
@@ -2690,7 +2730,7 @@ line_t *create_line(char *name)
 /*
  * Generates the appropriate vector headers based on the given lines.
  */
-char *generate_vector_header(lines_t *l)
+static char *generate_vector_header(lines_t *l)
 {
 	char *header = (char *)vtr::calloc(BUFFER_MAX_SIZE, sizeof(char));
 	if (l->count)
@@ -2719,7 +2759,7 @@ char *generate_vector_header(lines_t *l)
  * Stores the given test vector in the given lines, with some sanity checking to ensure that it
  * has a compatible geometry.
  */
-void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
+static void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
 {
 	if (l->count < v->count)
 		error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%d) than values (%d).", l->count, v->count);
@@ -2747,7 +2787,7 @@ void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
  * Compares two test vectors for numerical and geometric identity. Returns FALSE if
  * they are found to be different, and TRUE otherwise.
  */
-int compare_test_vectors(test_vector *v1, test_vector *v2)
+static int compare_test_vectors(test_vector *v1, test_vector *v2)
 {
 	int equivalent = TRUE;
 	if (v1->count != v2->count)
@@ -2792,7 +2832,7 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
  * Parses the given line from a test vector file into a
  * test_vector data structure.
  */
-test_vector *parse_test_vector(char *buffer)
+static test_vector *parse_test_vector(char *buffer)
 {
 	buffer = vtr::strdup(buffer);
 	test_vector *v = (test_vector *)vtr::malloc(sizeof(test_vector));
@@ -2861,7 +2901,7 @@ test_vector *parse_test_vector(char *buffer)
  *
  * If you want better randomness, call srand at some point.
  */
-test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hold_high_index, hashtable_t *hold_low_index)
+static test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hold_high_index, hashtable_t *hold_low_index)
 {
 	test_vector *v = (test_vector *)vtr::malloc(sizeof(test_vector));
 	v->values = 0;
@@ -2915,7 +2955,7 @@ test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hol
  * When edge is -1, both edges of the clock are written. When edge is 0,
  * the falling edge is written. When edge is 1, the rising edge is written.
  */
-void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_length, int edge)
+static void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_length, int edge)
 {
 	if (!cycle_offset)
 		write_vector_headers(file, l);
@@ -2932,7 +2972,7 @@ void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_lengt
  * Writes all values in the given lines to a line in the given file
  * for the given cycle.
  */
-void write_vector_to_file(lines_t *l, FILE *file, int cycle)
+static void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 {
 	std::stringstream buffer;
 	int i;
@@ -3003,7 +3043,7 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 /*
  * Writes a wave of vectors to the given modelsim out file.
  */
-void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_out, int cycle_offset, int wave_length)
+static void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_out, int cycle_offset, int wave_length)
 {
 	if (!cycle_offset)
 	{
@@ -3034,7 +3074,7 @@ void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_
 /*
  * Writes a vector to the given modelsim out file.
  */
-void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cycle)
+static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cycle)
 {
 	int i;
 	for (i = 0; i < l->count; i++)
@@ -3086,7 +3126,7 @@ void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cycle)
  * Returns false if the files differ and true if they are identical, with the exception of
  * number format.
  */
-int verify_output_vectors(char* output_vector_file, int num_vectors)
+static int verify_output_vectors(char* output_vector_file, int num_vectors)
 {
 	if (global_args.sim_output_both_edges)
 		num_vectors *= 2;
@@ -3199,7 +3239,7 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
  * Creates a hastable_t index of the given pin names list
  * of the form pin name hashes to pin name array index.
  */
-hashtable_t *index_pin_name_list(pin_names *list)
+static hashtable_t *index_pin_name_list(pin_names *list)
 {
 	hashtable_t *index = create_hashtable(list->count * 2+1);
 	int i;
@@ -3217,7 +3257,7 @@ hashtable_t *index_pin_name_list(pin_names *list)
  * pin_names struct. If the list is empty or null
  * an empty struct is returned.
  */
-pin_names *parse_pin_name_list(char *list)
+static pin_names *parse_pin_name_list(char *list)
 {
 	pin_names *p = (pin_names *)vtr::malloc(sizeof(pin_names));
 	p->pins  = 0;
@@ -3243,7 +3283,7 @@ pin_names *parse_pin_name_list(char *list)
  * If the given node matches one of the additional names (passed via -p),
  * it's added to the lines. (Matches on output pin names, net names, and node names).
  */
-void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l)
+static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l)
 {
 	if (p->count)
 	{
@@ -3324,7 +3364,7 @@ void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l)
  * Parses the given (memory) node name into a corresponding
  * mif file name.
  */
-char *get_mif_filename(nnode_t *node)
+static char *get_mif_filename(nnode_t *node)
 {
 	char buffer[BUFFER_MAX_SIZE];
 	buffer[0] = 0;
@@ -3341,38 +3381,10 @@ char *get_mif_filename(nnode_t *node)
 }
 
 /*
- * Trims characters in the given "chars" string
- * from the end of the given string.
- */
-void trim_string(char* string, const char *chars)
-{
-	if (string)
-	{
-		int length;
-		while((length = strlen(string)))
-		{	int trimmed = FALSE;
-			unsigned int i;
-			for (i = 0; i < strlen(chars); i++)
-			{
-				if (string[length-1] == chars[i])
-				{
-					trimmed = TRUE;
-					string[length-1] = '\0';
-					break;
-				}
-			}
-
-			if (!trimmed)
-				break;
-		}
-	}
-}
-
-/*
  * Returns TRUE if the given line has a pin for
  * the given cycle whose value is -1.
  */
-int line_has_unknown_pin(line_t *line, int cycle)
+static int line_has_unknown_pin(line_t *line, int cycle)
 {
 	int unknown = FALSE;
 	int j;
@@ -3400,7 +3412,7 @@ signed char get_line_pin_value(line_t *line, int pin_num, int cycle)
  * Returns a value from a test_vectors struct in hex. Works
  * for the values arrays in pins as well.
  */
-char *vector_value_to_hex(signed char *value, int length)
+static char *vector_value_to_hex(signed char *value, int length)
 {
 	char *tmp;
 	char *string = (char *)vtr::calloc((length + 1),sizeof(char));
@@ -3422,7 +3434,7 @@ char *vector_value_to_hex(signed char *value, int length)
 /*
  * Counts the number of vectors in the given file.
  */
-int count_test_vectors(FILE *in)
+static int count_test_vectors(FILE *in)
 {
 	rewind(in);
 
@@ -3443,7 +3455,7 @@ int count_test_vectors(FILE *in)
  * A given line is a vector if it contains one or more
  * non-whitespace characters and does not being with a #.
  */
-int is_vector(char *buffer)
+static int is_vector(char *buffer)
 {
 	char *line = vtr::strdup(buffer);
 	trim_string(line," \t\r\n");
@@ -3466,7 +3478,7 @@ int is_vector(char *buffer)
  * the buffer. Returns TRUE if a vector was found,
  * and FALSE if no vector was found.
  */
-int get_next_vector(FILE *file, char *buffer)
+static int get_next_vector(FILE *file, char *buffer)
 {
 	while (fgets(buffer, BUFFER_MAX_SIZE, file))
 		if (is_vector(buffer))
@@ -3478,7 +3490,7 @@ int get_next_vector(FILE *file, char *buffer)
 /*
  * Free each element in lines[] and the array itself
  */
-void free_lines(lines_t *l)
+static void free_lines(lines_t *l)
 {
 	int i;
 	for (i = 0; i < l->count; i++)
@@ -3495,7 +3507,7 @@ void free_lines(lines_t *l)
 /*
  * Free stages.
  */
-void free_stages(stages_t *s)
+static void free_stages(stages_t *s)
 {
 	while (s->count--)
 		vtr::free(s->stages[s->count]);
@@ -3507,7 +3519,7 @@ void free_stages(stages_t *s)
 /*
  * Free the given test_vector.
  */
-void free_test_vector(test_vector* v)
+static void free_test_vector(test_vector* v)
 {
 	while (v->count--)
 			vtr::free(v->values[v->count]);
@@ -3519,7 +3531,7 @@ void free_test_vector(test_vector* v)
 /*
  * Frees pin_names struct.
  */
-void free_pin_name_list(pin_names *p)
+static void free_pin_name_list(pin_names *p)
 {
 	while (p->count--)
 		vtr::free(p->pins[p->count]);
@@ -3529,56 +3541,9 @@ void free_pin_name_list(pin_names *p)
 }
 
 /*
- * Prints/updates an ASCII progress bar of length "length" to position length * completion
- * from previous position "position". Updates ETA based on the elapsed time "time".
- * Returns the new position. If the position is unchanged the bar is not redrawn.
- *
- * Call with position = -1 to draw for the first time. Returns the new
- * position, calculated based on completion.
- */
-int print_progress_bar(double completion, int position, int length, double time)
-{
-	if (position == -1 || ((int)(completion * length)) > position)
-	{
-		printf("%3.0f%%|", completion * (double)100);
-
-		position = completion * length;
-
-		int i;
-		for (i = 0; i < position; i++)
-			printf("=");
-
-		printf(">");
-
-		for (; i < length; i++)
-			printf("-");
-
-		if (completion < 1.0)
-		{
-			printf("| Remaining: ");
-			double remaining_time = time/(double)completion - time;
-			print_time(remaining_time);
-		}
-		else
-		{
-			printf("| Total time: ");
-			print_time(time);
-		}
-
-		printf("    \r");
-
-		if (position == length)
-			printf("\n");
-
-		fflush(stdout);
-	}
-	return position;
-}
-
-/*
  * Prints information about the netlist we are simulating.
  */
-void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
+static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 {
 	printf("%s:\n", get_circuit_filename());
 
@@ -3594,7 +3559,7 @@ void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 /*
  * Prints statistics. (Coverage and times.)
  */
-void print_simulation_stats(stages_t *stages, int /*num_vectors*/, double total_time, double simulation_time)
+static void print_simulation_stats(stages_t *stages, int /*num_vectors*/, double total_time, double simulation_time)
 {
 	int covered_nodes = get_num_covered_nodes(stages);
 	printf("Simulation time:   ");
@@ -3608,22 +3573,10 @@ void print_simulation_stats(stages_t *stages, int /*num_vectors*/, double total_
 }
 
 /*
- * Prints the time in appropriate units.
- */
-void print_time(double time)
-{
-	if      (time > 24*3600) printf("%.1fd",  time/(24*3600.0));
-	else if (time > 3600)    printf("%.1fh",  time/3600.0);
-	else if (time > 60)      printf("%.1fm",  time/60.0);
-	else if (time > 1)       printf("%.1fs",  time);
-	else                     printf("%.1fms", time*1000);
-}
-
-/*
  * Prints n ancestors of the given node, complete
  * with their parents, ids, etc.
  */
-void print_ancestry(nnode_t *bottom_node, int n)
+static void print_ancestry(nnode_t *bottom_node, int n)
 {
 	if (!n) n = 10;
 
@@ -3714,7 +3667,7 @@ void print_ancestry(nnode_t *bottom_node, int n)
  *
  * Returns the root node for inspection.
  */
-nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
+static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 {
 	// Limit the length of the trace. 0 for unlimited.
 	const int max_depth = 0;
@@ -3799,25 +3752,4 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 	}
 	index->destroy(index);
 	return root_node;
-}
-
-/*
- * Gets the current time in seconds.
- */
-double wall_time()
-{
-	typedef std::chrono::system_clock Time;
-	typedef std::chrono::duration<double> dsec;
-	auto time_point = Time::now();
-	dsec time_since_epoch = time_point.time_since_epoch();
-
-	return time_since_epoch.count();
-}
-
-/*
- * Gets the name of the file we are simulating as passed by the -b or -V option.
- */
-char *get_circuit_filename()
-{
-	return global_args.verilog_file?global_args.verilog_file:global_args.blif_file;
 }

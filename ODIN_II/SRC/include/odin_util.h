@@ -43,6 +43,16 @@ short get_bit(char in);
 char *search_replace(char *src, const char *sKey, const char *rKey, int flag);
 bool validate_string_regex(const char *str, const char *pattern);
 char *find_substring(char *src,const char *sKey,int flag);
+
+
+void print_time(double time);
+double wall_time();
+char *get_circuit_filename();
+
+int print_progress_bar(double completion, int position, int length, double time);
+
+void trim_string(char* string, const char *chars);
+
 #endif
 
 #ifndef ERRORS_H

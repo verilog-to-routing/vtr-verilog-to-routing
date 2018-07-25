@@ -193,6 +193,8 @@ struct global_args_t_t
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
 
+	argparse::ArgValue<bool> interactive_simulation;
+
 };
 
 #endif // TYPES_H

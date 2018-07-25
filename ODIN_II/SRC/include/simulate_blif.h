@@ -102,112 +102,43 @@ typedef struct {
 	int            count;
 } test_vector;
 
+typedef struct sim_data_t_t
+{
+	// Create and verify the lines.
+	lines_t *input_lines;
+	lines_t *output_lines;
+	FILE *out;
+	FILE *in_out;
+	FILE *act_out;
+	FILE *modelsim_out;
+	FILE *in  = NULL;
+	int num_vectors;
+	char *input_vector_file;
+
+	int output_edge;
+	double total_time; // Includes I/O
+	double simulation_time; // Does not include I/O
+
+	stages_t *stages;
+
+	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
+	pin_names *hold_high;
+	pin_names *hold_low;
+	hashtable_t *hold_high_index;
+	hashtable_t *hold_low_index;
+
+	int num_waves;
+
+	netlist_t *netlist;
+
+}sim_data_t;
+
 void simulate_netlist(netlist_t *netlist);
-void simulate_cycle(int cycle, stages_t *s);
-stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *output_lines);
 
-stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
-void free_stages(stages_t *s);
-
-int get_num_covered_nodes(stages_t *s);
-int get_clock_ratio(nnode_t *node);
-void set_clock_ratio(int rat, nnode_t *node);
-nnode_t **get_children_of(nnode_t *node, int *count);
-int *get_children_pinnumber_of(nnode_t *node, int *num_children);
-nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
-int is_node_complete(nnode_t* node, int cycle);
-
-void compute_and_store_value(nnode_t *node, int cycle);
-void compute_memory_node(nnode_t *node, int cycle);
-void compute_hard_ip_node(nnode_t *node, int cycle);
-void compute_multiply_node(nnode_t *node, int cycle);
-void compute_generic_node(nnode_t *node, int cycle);
-void compute_add_node(nnode_t *node, int cycle, int type);
-void compute_unary_sub_node(nnode_t *node, int cycle);
-
-
-void update_pin_value(npin_t *pin, signed char value, int cycle);
-signed char get_pin_value(npin_t *pin, int cycle);
-int get_pin_cycle(npin_t *pin);
-
-signed char get_line_pin_value(line_t *line, int pin_num, int cycle);
-int line_has_unknown_pin(line_t *line, int cycle);
-
-void compute_flipflop_node(nnode_t *node, int cycle);
-void compute_mux_2_node(nnode_t *node, int cycle);
-
-int *multiply_arrays(int *a, int a_length, int *b, int b_length);
-
-int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag);
-
-int *unary_sub_arrays(int *a, int a_length, int *c, int c_length);
-
-void compute_single_port_memory(nnode_t *node, int cycle);
-void compute_dual_port_memory(nnode_t *node, int cycle);
-
-long compute_memory_address(signal_list_t *addr, int cycle);
-
-void instantiate_memory(nnode_t *node, int data_width, int addr_width);
-char *get_mif_filename(nnode_t *node);
-FILE *preprocess_mif_file(FILE *source);
-void assign_memory_from_mif_file(FILE *file, char *filename, int width, long depth, signed char *memory);
-int parse_mif_radix(char *radix);
-
-int count_test_vectors(FILE *in);
-int is_vector(char *buffer);
-int get_next_vector(FILE *file, char *buffer);
-test_vector *parse_test_vector(char *buffer);
-test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hold_high_index, hashtable_t *hold_low_index);
-int compare_test_vectors(test_vector *v1, test_vector *v2);
-
-int verify_test_vector_headers(FILE *in, lines_t *l);
-void free_test_vector(test_vector* v);
-
-line_t *create_line(char *name);
-int verify_lines(lines_t *l);
-void free_lines(lines_t *l);
-
-int find_portname_in_lines(char* port_name, lines_t *l);
-lines_t *create_lines(netlist_t *netlist, int type);
-
-void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle);
-void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin);
-void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type);
-
-char *generate_vector_header(lines_t *l);
-void write_vector_headers(FILE *file, lines_t *l);
-
-void write_vector_to_file(lines_t *l, FILE *file, int cycle);
-void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_length, int both_edges);
-
-void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cycle);
-void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_out, int cycle_offset, int wave_length);
-
-int verify_output_vectors(char* output_vector_file, int num_test_vectors);
-
-void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l);
-pin_names *parse_pin_name_list(char *list);
-void free_pin_name_list(pin_names *p);
-hashtable_t *index_pin_name_list(pin_names *list);
-
-void trim_string(char* string, const char *chars);
-char *vector_value_to_hex(signed char *value, int length);
-
-int  print_progress_bar(double completion, int position, int length, double time);
-void print_netlist_stats(stages_t *stages, int num_vectors);
-void print_simulation_stats(stages_t *stages, int num_vectors, double total_time, double simulation_time);
-void print_time(double time);
-
-double wall_time();
-
-char *get_circuit_filename();
-
-void flag_undriven_input_pins(nnode_t *node);
-
-void print_ancestry(nnode_t *node, int generations);
-nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
-
-int is_posedge(npin_t *pin, int cycle);
+/*these are called by simulate_netlist*/
+sim_data_t *init_simulation(netlist_t *netlist);
+sim_data_t *terminate_simulation(sim_data_t *sim_data);
+int single_step(sim_data_t *sim_data, int wave);
 
 
 #endif

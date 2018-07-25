@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "vtr_error.h"
 #include "vtr_time.h"
+#include "odin_ii.h"
 
 #include "argparse.hpp"
 
@@ -68,14 +69,15 @@ global_args_t global_args;
 t_type_descriptor* type_descriptors;
 int block_tag;
 
-void set_default_config();
-void get_options(int argc, char **argv);
-void parse_adder_def_file();
-
 int main(int argc, char **argv)
 {
-    vtr::ScopedFinishTimer t("Odin II");
-	int num_types=0;
+        vtr::ScopedFinishTimer t("Odin II");
+	return odin_ii(argc,argv);
+}
+
+int odin_ii(int argc,char **argv)
+{
+        int num_types=0;
 
 	/* Some initialization */
 	one_string = vtr::strdup("ONE_VCC_CNS");
@@ -232,23 +234,27 @@ int main(int argc, char **argv)
         }
 	}
 
-	/* Simulate netlist */
-	if (global_args.sim_num_test_vectors || global_args.sim_vector_input_file){
-		printf("Netlist Simulation Begin\n");
-		simulate_netlist(verilog_netlist);
-		printf("--------------------------------------------------------------------\n");
-	}
 
-	report_mult_distribution();
-	report_add_distribution();
-	report_sub_distribution();
-	deregister_hard_blocks();
 
-    //Clean-up
-    free_arch(&Arch);
-    free_type_descriptors(type_descriptors, num_types);
+        if (!global_args.interactive_simulation)
+        {
+                /* Simulate netlist */
+                if (global_args.sim_num_test_vectors || global_args.sim_vector_input_file){
+                        printf("Netlist Simulation Begin\n");
+                        simulate_netlist(verilog_netlist);
+                        printf("--------------------------------------------------------------------\n");
+                }
 
-	return 0;
+                report_mult_distribution();
+                report_add_distribution();
+                report_sub_distribution();
+                deregister_hard_blocks();
+
+                //Clean-up
+                free_arch(&Arch);
+                free_type_descriptors(type_descriptors, num_types);
+        }
+        return 0;
 }
 
 struct ParseInitRegState {
@@ -378,6 +384,11 @@ void get_options(int argc, char** argv) {
 
     other_sim_grp.add_argument(global_args.sim_generate_three_valued_logic, "-3")
             .help("Generate three valued logic, instead of binary")
+            .default_value("false")
+            .action(argparse::Action::STORE_TRUE);
+
+    other_sim_grp.add_argument(global_args.interactive_simulation, "--interractive_simulation")
+            .help("prevent Odin from freeing element so that application leveraging the simulator can use the nodes")
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
 

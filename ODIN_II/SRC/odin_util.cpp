@@ -786,3 +786,111 @@ bool validate_string_regex(const char *str_in, const char *pattern_in)
 		return true;
 	return false;
 }
+
+/*
+ * Prints the time in appropriate units.
+ */
+void print_time(double time)
+{
+	if      (time > 24*3600) printf("%.1fd",  time/(24*3600.0));
+	else if (time > 3600)    printf("%.1fh",  time/3600.0);
+	else if (time > 60)      printf("%.1fm",  time/60.0);
+	else if (time > 1)       printf("%.1fs",  time);
+	else                     printf("%.1fms", time*1000);
+}
+
+/*
+ * Gets the current time in seconds.
+ */
+double wall_time()
+{
+	typedef std::chrono::system_clock Time;
+	typedef std::chrono::duration<double> dsec;
+	auto time_point = Time::now();
+	dsec time_since_epoch = time_point.time_since_epoch();
+
+	return time_since_epoch.count();
+}
+
+/*
+ * Gets the name of the file we are simulating as passed by the -b or -V option.
+ */
+char *get_circuit_filename()
+{
+	return global_args.verilog_file?global_args.verilog_file:global_args.blif_file;
+}
+
+/*
+ * Prints/updates an ASCII progress bar of length "length" to position length * completion
+ * from previous position "position". Updates ETA based on the elapsed time "time".
+ * Returns the new position. If the position is unchanged the bar is not redrawn.
+ *
+ * Call with position = -1 to draw for the first time. Returns the new
+ * position, calculated based on completion.
+ */
+int print_progress_bar(double completion, int position, int length, double time)
+{
+	if (position == -1 || ((int)(completion * length)) > position)
+	{
+		printf("%3.0f%%|", completion * (double)100);
+
+		position = completion * length;
+
+		int i;
+		for (i = 0; i < position; i++)
+			printf("=");
+
+		printf(">");
+
+		for (; i < length; i++)
+			printf("-");
+
+		if (completion < 1.0)
+		{
+			printf("| Remaining: ");
+			double remaining_time = time/(double)completion - time;
+			print_time(remaining_time);
+		}
+		else
+		{
+			printf("| Total time: ");
+			print_time(time);
+		}
+
+		printf("    \r");
+
+		if (position == length)
+			printf("\n");
+
+		fflush(stdout);
+	}
+	return position;
+}
+
+/*
+ * Trims characters in the given "chars" string
+ * from the end of the given string.
+ */
+void trim_string(char* string, const char *chars)
+{
+	if (string)
+	{
+		int length;
+		while((length = strlen(string)))
+		{	int trimmed = FALSE;
+			unsigned int i;
+			for (i = 0; i < strlen(chars); i++)
+			{
+				if (string[length-1] == chars[i])
+				{
+					trimmed = TRUE;
+					string[length-1] = '\0';
+					break;
+				}
+			}
+
+			if (!trimmed)
+				break;
+		}
+	}
+}
