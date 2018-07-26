@@ -69,14 +69,10 @@ global_args_t global_args;
 t_type_descriptor* type_descriptors;
 int block_tag;
 
-int main(int argc, char **argv)
-{
-        vtr::ScopedFinishTimer t("Odin II");
-	return odin_ii(argc,argv);
-}
-
 int odin_ii(int argc,char **argv)
 {
+        vtr::ScopedFinishTimer t("Odin II");
+
         int num_types=0;
 
 	/* Some initialization */

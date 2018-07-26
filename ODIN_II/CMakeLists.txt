@@ -18,10 +18,13 @@ add_flex_bison_dependency(VerilogLexer VerilogParser)
 #Get the include directories for the generated headers
 files_to_dirs(BISON_VerilogParser_OUTPUT_HEADER PARSER_INCLUDE_DIRS)
 
+include(CheckCXXSymbolExists)
+
 #Collect the source files
-file(GLOB_RECURSE EXEC_SOURCES SRC/*.cpp)
-file(GLOB_RECURSE EXEC_HEADERS SRC/*.h)
-files_to_dirs(EXEC_HEADERS EXEC_INCLUDE_DIRS)
+file(GLOB_RECURSE EXEC_SOURCES main.cpp)
+file(GLOB_RECURSE LIB_SOURCES SRC/*.cpp)
+file(GLOB_RECURSE LIB_HEADERS SRC/*.h)
+files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Treat .c as CXX
 set_source_files_properties(${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
@@ -33,15 +36,29 @@ if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
 endif()
 
 add_definitions(-DUSING_BISON -DYYERROR_VERBOSE)
-include_directories(${EXEC_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
+include_directories(${LIB_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
-#Create the executable
-add_executable(odin_II ${EXEC_SOURCES} ${EXEC_HEADERS} ${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE})
-target_link_libraries(odin_II
+#Create the library
+add_library(libodin_ii STATIC
+             ${LIB_HEADERS}
+             ${LIB_SOURCES}
+             ${FLEX_VerilogLexer_OUTPUTS} 
+             ${BISON_VerilogParser_OUTPUT_SOURCE})
+
+target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
+set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+
+
+target_link_libraries(libodin_ii
                         libvtrutil
                         libarchfpga
                         libabc
                         libargparse
                         ${CMAKE_DL_LIBS})
 
-install(TARGETS odin_II DESTINATION bin)
+#Create the executable
+add_executable(odin_II ${EXEC_SOURCES})
+target_link_libraries(odin_II
+                        libodin_ii)
+
+install(TARGETS odin_II libodin_ii DESTINATION bin)

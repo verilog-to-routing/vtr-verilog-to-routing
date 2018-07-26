@@ -219,6 +219,10 @@ add_subdirectory(abc)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
+if(${BLIFEXPLORER} STREQUAL "include")
+    add_subdirectory(blifexplorer)
+endif()
+
 #Add extra compilation flags to suppress warnings from some libraries/tools
 # Note that target_compile_options() *appends* to the current compilation options of
 # the specified target
@@ -310,3 +314,10 @@ set_target_properties(odin_II
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
+if(${BLIFEXPLORER} STREQUAL "include")
+set_target_properties(blifexplorer
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/blifexplorer"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/blifexplorer"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/blifexplorer")
+endif()
