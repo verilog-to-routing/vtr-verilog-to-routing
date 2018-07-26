@@ -48,11 +48,7 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 static void free_stages(stages_t *s);
 
 static int get_num_covered_nodes(stages_t *s);
-static int get_clock_ratio(nnode_t *node);
-static void set_clock_ratio(int rat, nnode_t *node);
-static nnode_t **get_children_of(nnode_t *node, int *count);
 static int *get_children_pinnumber_of(nnode_t *node, int *num_children);
-static nnode_t **get_children_of_nodepin(nnode_t *node, int *count, int output_pin);
 static int is_node_complete(nnode_t* node, int cycle);
 
 static void compute_and_store_value(nnode_t *node, int cycle);
@@ -65,7 +61,6 @@ static void compute_unary_sub_node(nnode_t *node, int cycle);
 
 
 static void update_pin_value(npin_t *pin, signed char value, int cycle);
-signed char get_pin_value(npin_t *pin, int cycle);
 static int get_pin_cycle(npin_t *pin);
 
 signed char get_line_pin_value(line_t *line, int pin_num, int cycle);
@@ -1217,7 +1212,7 @@ static int is_node_complete(nnode_t* node, int cycle)
 /*
  * Changes the ratio of a clock node
  */
-static void set_clock_ratio(int rat, nnode_t *node)
+void set_clock_ratio(int rat, nnode_t *node)
 {
 	//change the value only for clocks
 	if(node->type != CLOCK_NODE)
@@ -1227,11 +1222,23 @@ static void set_clock_ratio(int rat, nnode_t *node)
 }
 
 /*
+ * Changes the ratio of a clock node
+ */
+int get_clock_ratio(nnode_t *node)
+{
+	//change the value only for clocks
+	if(!node || node->type != CLOCK_NODE)
+	 return 0;
+
+	return node->ratio;
+}
+
+/*
  * Gets the children of the given node. Returns the number of
  * children via the num_children parameter. Throws warnings
  * or errors if invalid connection patterns are detected.
  */
-static nnode_t **get_children_of(nnode_t *node, int *num_children)
+nnode_t **get_children_of(nnode_t *node, int *num_children)
 {
 	nnode_t **children = 0;
 	int count = 0;
@@ -1397,7 +1404,7 @@ static int *get_children_pinnumber_of(nnode_t *node, int *num_children)
  * children via the num_children parameter. Throws warnings
  * or errors if invalid connection patterns are detected.
  */
-static nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin)
+nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin)
 {
 	nnode_t **children = 0;
 	int count = 0;

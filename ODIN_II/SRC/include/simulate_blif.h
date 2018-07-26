@@ -140,6 +140,15 @@ sim_data_t *init_simulation(netlist_t *netlist);
 sim_data_t *terminate_simulation(sim_data_t *sim_data);
 int single_step(sim_data_t *sim_data, int wave);
 
+nnode_t **get_children_of(nnode_t *node, int *count);
+nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_pin);
+
+signed char get_pin_value(npin_t *pin, int cycle);
+
+int get_clock_ratio(nnode_t *node);
+void set_clock_ratio(int rat, nnode_t *node);
+
+
 
 #endif
 

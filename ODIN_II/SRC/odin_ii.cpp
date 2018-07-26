@@ -398,7 +398,7 @@ void get_options(int argc, char** argv) {
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
 
-    other_sim_grp.add_argument(global_args.sim_output_both_edges, "-R")
+    other_sim_grp.add_argument(global_args.sim_output_rising_edge, "-R")
             .help("Output after rising edges of the clock only (Default only after the falling edge)")
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
@@ -419,12 +419,20 @@ void get_options(int argc, char** argv) {
     //Check required options
     if (   !global_args.config_file
         && !global_args.blif_file
-        && !global_args.verilog_file) {
+        && !global_args.verilog_file) 
+	{
         parser.print_usage();
-        error_message(-1,0,-1,"Must include either "
-                              "a config file, a blif netlist, or a verilog file\n");
-    } else if (global_args.config_file && global_args.verilog_file) {
+        error_message(-1,0,-1,"Must include either a config file, a blif netlist, or a verilog file\n");
+    } 
+	else if (global_args.config_file && global_args.verilog_file) 
+	{
         warning_message(-1,0,-1, "Using command line options for verilog input file when a config file was specified!\n");
+    }
+
+    if( global_args.sim_output_both_edges && global_args.sim_output_rising_edge )
+    {
+        parser.print_usage();
+        error_message(-1,0,-1,"Cannot specify both edge and rising edge, select one or the other or neither\n");
     }
 
     //Allow some config values to be overriden from command line

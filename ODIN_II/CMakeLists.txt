@@ -23,7 +23,7 @@ include(CheckCXXSymbolExists)
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES main.cpp)
 file(GLOB_RECURSE LIB_SOURCES SRC/*.cpp)
-file(GLOB_RECURSE LIB_HEADERS SRC/*.h)
+file(GLOB_RECURSE LIB_HEADERS SRC/include/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Treat .c as CXX
