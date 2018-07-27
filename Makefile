@@ -17,11 +17,11 @@
 #    debug
 BUILD_TYPE ?= release
 
-BLIFEXPLORER ?= skip
-
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DBLIFEXPLORER=$(BLIFEXPLORER) -G 'Unix Makefiles' ${CMAKE_PARAMS}
+#
+#  use make CMAKE_PARAMS="-DVTR_BLIFEXPLORER=true" if you want to compile with blifexplorer
+override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
 
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
