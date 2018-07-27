@@ -21,7 +21,7 @@ option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 
-option(BLIFEXPLORER "Enable code coverage tracking (gcov)" OFF)
+option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
@@ -220,7 +220,7 @@ add_subdirectory(vpr)
 add_subdirectory(abc)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
-if(BLIFEXPLORER)
+if(WITH_BLIFEXPLORER)
     add_subdirectory(blifexplorer)
 endif()
 
@@ -315,7 +315,7 @@ set_target_properties(libodin_ii odin_II
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
-if(BLIFEXPLORER)
+if(WITH_BLIFEXPLORER)
     set_target_properties(blifexplorer
         PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/blifexplorer"
