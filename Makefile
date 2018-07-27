@@ -19,8 +19,6 @@ BUILD_TYPE ?= release
 
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-#
-#  use make CMAKE_PARAMS="-DVTR_BLIFEXPLORER=true" if you want to compile with blifexplorer
 override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
 
 
