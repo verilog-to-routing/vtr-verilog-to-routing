@@ -722,8 +722,7 @@ int get_seg_end(const t_seg_details * seg_details, const int itrack, const int i
 }
 
 /* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
- * Also stores the nodes to which this pin connects in the linked list       *
- * pointed to by *edge_list_ptr.                                             */
+ * Also stores the nodes to which this pin connects in rr_edges_to_create    */
 int get_bidir_opin_connections(
 		const int i, const int j,
 		const int ipin,

@@ -1206,7 +1206,7 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
 
         t_rr_edge_info_set rr_edges_to_create;
         if (total_pin_Fc > 0) {
-                get_bidir_opin_connections(i + width_offset, j + height_offset, pin_index,
+                get_bidir_opin_connections(i, j, pin_index,
                         node_index, rr_edges_to_create, opin_to_track_map, L_rr_node_indices,
                         seg_details);
         }
