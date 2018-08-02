@@ -256,11 +256,15 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``on``
 
-.. option:: --allow_unrelated_clustering {on | off}
+.. option:: --allow_unrelated_clustering {on | off | auto}
 
-    Controls whether or not primitives with no attraction to the current cluster can be packed into it.
+    Controls whether primitives with no attraction to a cluster may be packed into it.
 
-    **Default**:  ``on``
+    Unrelated clustering can increase packing density (decreasing the number of blocks required to implement the circuit), but can significantly impact routability.
+
+    When set to ``auto`` VPR automatically decides whether to enable unrelated clustring based on the targetted device and achieved packing density.
+
+    **Default**:  ``auto``
 
 .. option:: --alpha_clustering <float>
 

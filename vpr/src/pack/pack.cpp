@@ -21,6 +21,7 @@ using namespace std;
 #include "pack.h"
 #include "read_blif.h"
 #include "cluster.h"
+#include "SetupGrid.h"
 
 #ifdef USE_HMETIS
 #include "hmetis_graph_writer.h"
@@ -33,6 +34,7 @@ static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis
 /* #define DUMP_BLIF_INPUT 1 */
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
+static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr,size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 bool try_pack(t_packer_opts *packer_opts,
         const t_arch * arch,
@@ -165,30 +167,87 @@ bool try_pack(t_packer_opts *packer_opts,
 	}
 #endif
 
-    do_clustering(arch, list_of_pack_molecules, num_models,
-            packer_opts->global_clocks, is_clock,
-            atom_molecules,
-            expected_lowest_cost_pb_gnode,
-            packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
-            packer_opts->timing_driven, packer_opts->cluster_seed_type,
-            packer_opts->alpha, packer_opts->beta,
-            packer_opts->inter_cluster_net_delay,
-            packer_opts->target_device_utilization,
-            packer_opts->allow_unrelated_clustering,
-            packer_opts->connection_driven,
-            packer_opts->packer_algorithm,
-            lb_type_rr_graphs,
-            packer_opts->device_layout,
-            packer_opts->debug_clustering,
-            packer_opts->enable_pin_feasibility_filter,
-            packer_opts->target_external_pin_util
+    bool allow_unrelated_clustering = false;
+    if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::ON) {
+        allow_unrelated_clustering = true;
+    } else if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::OFF) {
+        allow_unrelated_clustering = false;
+    }
+    int pack_iteration = 1;
+
+    while (true) {
+
+        //Cluster the netlist
+        auto num_type_instances = do_clustering(arch, list_of_pack_molecules, num_models,
+                                    packer_opts->global_clocks, is_clock,
+                                    atom_molecules,
+                                    expected_lowest_cost_pb_gnode,
+                                    packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
+                                    packer_opts->timing_driven, packer_opts->cluster_seed_type,
+                                    packer_opts->alpha, packer_opts->beta,
+                                    packer_opts->inter_cluster_net_delay,
+                                    packer_opts->target_device_utilization,
+                                    allow_unrelated_clustering,
+                                    packer_opts->connection_driven,
+                                    packer_opts->packer_algorithm,
+                                    lb_type_rr_graphs,
+                                    packer_opts->device_layout,
+                                    packer_opts->debug_clustering,
+                                    packer_opts->enable_pin_feasibility_filter,
+                                    packer_opts->target_external_pin_util
 #ifdef USE_HMETIS
-			, partitions
+                                    , partitions
 #endif
 #ifdef ENABLE_CLASSIC_VPR_STA
-            , timing_inf
+                                    , timing_inf
 #endif
-            );
+                                    );
+
+        //Try to size/find a device
+        bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+
+        if (fits_on_device) {
+            break; //Done
+        } else if (pack_iteration == 1 && packer_opts->allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+            //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
+            //
+            //Turn it on to increase packing density
+            VTR_ASSERT(allow_unrelated_clustering == false);
+            allow_unrelated_clustering = true;
+            vtr::printf("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s\n", (allow_unrelated_clustering ? "true" : "false"));
+        } else {
+            //Unable to pack densely enough: Give Up
+
+
+            //No suitable device found
+            std::string resource_reqs;
+            std::string resource_avail;
+            auto& grid = g_vpr_ctx.device().grid;
+            for (auto iter = num_type_instances.begin(); iter != num_type_instances.end(); ++iter) {
+                if (iter != num_type_instances.begin()) {
+                    resource_reqs += ", ";
+                    resource_avail += ", ";
+                }
+
+                resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
+                resource_avail += std::string(iter->first->name) + ": " + std::to_string(grid.num_instances(iter->first));
+            }
+
+            VPR_THROW(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
+        }
+
+        //Reset clustering for re-packing
+        g_vpr_ctx.mutable_clustering().clb_nlist = ClusteredNetlist();
+        for (auto blk : g_vpr_ctx.atom().nlist.blocks()) {
+            g_vpr_ctx.mutable_atom().lookup.set_atom_clb(blk, ClusterBlockId::INVALID());
+            g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
+        }
+        for (auto net : g_vpr_ctx.atom().nlist.nets()) {
+            g_vpr_ctx.mutable_atom().lookup.set_atom_clb_net(net, ClusterNetId::INVALID());
+        }
+
+        ++pack_iteration;
+    }
 
 	/*free list_of_pack_molecules*/
 	free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
@@ -295,3 +354,41 @@ static vtr::vector_map<AtomBlockId, int> read_hmetis_graph(string &hmetis_output
 	return partitions;
 }
 #endif
+
+static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr,size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    //Build the device
+    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
+
+    /*
+     *Report on the device
+     */
+    vtr::printf_info("FPGA sized to %zu x %zu (%s)\n", grid.width(), grid.height(), grid.name().c_str());
+
+    bool fits_on_device = true;
+
+    float device_utilization = calculate_device_utilization(grid, num_type_instances);
+    vtr::printf_info("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    std::map<t_type_ptr,float> type_util;
+    for (int i = 0; i < device_ctx.num_block_types; ++i) {
+        auto type = &device_ctx.block_types[i];
+        auto itr = num_type_instances.find(type);
+        if (itr == num_type_instances.end()) continue;
+
+        float num_instances = itr->second;
+        float util = 0.;
+        if (num_instances != 0) {
+            util = num_instances / device_ctx.grid.num_instances(type);
+        }
+        type_util[type] = util;
+
+        if (util > 1.) {
+            fits_on_device = false;
+        }
+        vtr::printf("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
+    }
+    vtr::printf_info("\n");
+
+    return fits_on_device;
+}

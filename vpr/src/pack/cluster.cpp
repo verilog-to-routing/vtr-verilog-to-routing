@@ -294,7 +294,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
 static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
 /*****************************************/
 /*globally accessible function*/
-void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
+std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks,
         const std::unordered_set<AtomNetId>& is_clock,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
@@ -765,6 +765,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
 	free (primitives_list);
+
+    return num_used_type_instances;
 }
 
 /* Determine if atom block is in pb */

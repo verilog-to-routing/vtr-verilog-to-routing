@@ -392,7 +392,16 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
 
 static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 
-	vtr::printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
+	vtr::printf_info("PackerOpts.allow_unrelated_clustering: ");
+    if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::ON) {
+        vtr::printf_info("true\n");
+    } else if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::OFF) {
+        vtr::printf_info("false\n");
+    } else if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+        vtr::printf_info("auto\n");
+    } else {
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer allow_unrelated_clustering\n");
+    }
 	vtr::printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
 	vtr::printf_info("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
 	vtr::printf_info("PackerOpts.cluster_seed_type: ");

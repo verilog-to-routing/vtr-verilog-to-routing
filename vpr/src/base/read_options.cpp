@@ -381,6 +381,39 @@ struct ParseClockModeling {
     }
 };
 
+struct ParseUnrelatedClustering {
+    ConvertedValue<e_unrelated_clustering> from_str(std::string str) {
+        ConvertedValue<e_unrelated_clustering> conv_value;
+        if      (str == "on") conv_value.set_value(e_unrelated_clustering::ON);
+        else if (str == "off") conv_value.set_value(e_unrelated_clustering::OFF);
+        else if (str == "auto") conv_value.set_value(e_unrelated_clustering::AUTO);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_unrelated_clustering (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_unrelated_clustering val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_unrelated_clustering::ON) conv_value.set_value("on");
+        else if (val == e_unrelated_clustering::OFF) conv_value.set_value("off");
+        else {
+            VTR_ASSERT(val == e_unrelated_clustering::AUTO);
+            conv_value.set_value("auto");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off", "auto"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -637,10 +670,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool,ParseOnOff>(args.allow_unrelated_clustering, "--allow_unrelated_clustering")
-            .help("Controls whether or not primitives with no attraction to the current cluster"
-                  " can be packed into it")
-            .default_value("on")
+    pack_grp.add_argument<e_unrelated_clustering,ParseUnrelatedClustering>(args.allow_unrelated_clustering, "--allow_unrelated_clustering")
+            .help("Controls whether primitives with no attraction to a cluster can be packed into it.\n"
+                  "Turning unrelated clustering on can increase packing density (fewer blocks are used), but at the cost of worse routability.\n"
+                  " * on  : Unrelated clustering enabled\n"
+                  " * off : Unrelated clustering disabled\n"
+                  " * auto: Dynamically enabled/disabled (based on density)\n")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.alpha_clustering, "--alpha_clustering")

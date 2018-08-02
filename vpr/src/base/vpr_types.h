@@ -98,6 +98,10 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+enum class e_unrelated_clustering {
+    OFF, ON, AUTO	
+};
+
 /* Selection algorithm for selecting next seed  */
 enum e_cluster_seed {
 	VPACK_TIMING, VPACK_MAX_INPUTS, VPACK_BLEND
@@ -733,7 +737,7 @@ struct t_packer_opts {
 	float inter_cluster_net_delay;
     float target_device_utilization;
 	bool auto_compute_inter_cluster_net_delay;
-	bool allow_unrelated_clustering;
+	e_unrelated_clustering allow_unrelated_clustering;
 	bool connection_driven;
 	bool debug_clustering;
     bool enable_pin_feasibility_filter;

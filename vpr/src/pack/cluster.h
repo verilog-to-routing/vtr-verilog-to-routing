@@ -11,7 +11,7 @@
 
 //#define USE_HMETIS 1
 
-void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
+std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks,
         const std::unordered_set<AtomNetId>& is_clock,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
