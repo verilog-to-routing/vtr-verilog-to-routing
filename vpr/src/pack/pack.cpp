@@ -35,6 +35,8 @@ static string hmetis("/cygdrive/c/Source/Repos/vtr-verilog-to-routing/vpr/hmetis
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr,size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
+static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
+static std::string target_external_pin_util_to_string(const t_ext_pin_util_targets& ext_pin_utils);
 
 bool try_pack(t_packer_opts *packer_opts,
         const t_arch * arch,
@@ -167,6 +169,11 @@ bool try_pack(t_packer_opts *packer_opts,
 	}
 #endif
 
+    t_ext_pin_util_targets target_external_pin_util = parse_target_external_pin_util(packer_opts->target_external_pin_util);
+
+    vtr::printf("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(target_external_pin_util).c_str());
+
+
     bool allow_unrelated_clustering = false;
     if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::ON) {
         allow_unrelated_clustering = true;
@@ -194,7 +201,7 @@ bool try_pack(t_packer_opts *packer_opts,
                                     packer_opts->device_layout,
                                     packer_opts->debug_clustering,
                                     packer_opts->enable_pin_feasibility_filter,
-                                    packer_opts->target_external_pin_util
+                                    target_external_pin_util
 #ifdef USE_HMETIS
                                     , partitions
 #endif
@@ -391,4 +398,136 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr,s
     vtr::printf_info("\n");
 
     return fits_on_device;
+}
+
+static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs) {
+
+    t_ext_pin_util_targets targets (1., 1.);
+
+    if (specs.size() == 1 && specs[0] == "auto") {
+        //No user-specified pin utilizations, infer them automatically.
+        //
+        //We set a pin utilization target based on the block type, with
+        //the logic block having a lower utilization target and other blocks
+        //(e.g. hard blocks) having no limit.
+
+        auto& device_ctx = g_vpr_ctx.device();
+        auto& grid = device_ctx.grid;
+        t_type_ptr logic_block_type = infer_logic_block_type(grid);
+
+        //Allowing 100% pin utilization of the logic block type can harm
+        //routability, since it may allow a few (typically outlier) clusters to
+        //use a very large number of pins -- causing routability issues. These
+        //clusters can cause failed routings where only a handful of routing
+        //resource nodes remain overused (and do not resolve) These can be
+        //avoided by putting a (soft) limit on the number of input pins which
+        //can be used, effectively clipping off the most egregeous outliers.
+        //
+        //Experiments show that limiting input utilization produces better quality 
+        //than limiting output utilization (limiting input utilization implicitly 
+        //also limits output utilization).
+        //
+        //For relatively high pin utilizations (e.g. > 70%) this has little-to-no
+        //impact on the number of clusters required. As a result we set a default 
+        //input pin utilization target which is high, but less than 100%.
+        constexpr float LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL = 0.8;
+        constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 1.0;
+
+        t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL , LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
+
+        targets.set_block_pin_util(logic_block_type->name, logic_block_ext_pin_util);
+
+    } else {
+        //Process user specified overrides
+
+        bool default_set = false;
+        std::set<std::string> seen_block_types;
+
+        for (auto spec : specs) {
+            t_ext_pin_util target_ext_pin_util(1., 1.);
+
+            auto block_values = vtr::split(spec, ":");
+            std::string block_type;
+            std::string values;
+            if (block_values.size() == 2) {
+                block_type = block_values[0];
+                values = block_values[1];
+            } else if (block_values.size() == 1) {
+                values = block_values[0];
+            } else {
+                std::stringstream msg;
+                msg << "In valid block pin utilization specification '" << spec << "' (expected at most one ':' between block name and values";
+                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+            }
+
+            auto elements = vtr::split(values, ",");
+            if (elements.size() == 1) {
+                target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+            } else if (elements.size() == 2) {
+                target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
+                target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
+            } else {
+                std::stringstream msg;
+                msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
+                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+            }
+
+            if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
+                std::stringstream msg;
+                msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
+                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+            }
+            if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
+                std::stringstream msg;
+                msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
+                VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+            }
+
+            if (block_type.empty()) {
+                //Default value
+                if (default_set) {
+                    std::stringstream msg;
+                    msg << "Only one default pin utilization should be specified";
+                    VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                }
+                targets.set_default_pin_util(target_ext_pin_util);
+                default_set = true;
+            } else {
+                if (seen_block_types.count(block_type)) {
+                    std::stringstream msg;
+                    msg << "Only one pin utilization should be specified for block type '" << block_type << "'";
+                    VPR_THROW(VPR_ERROR_PACK, msg.str().c_str());
+                }
+
+                targets.set_block_pin_util(block_type, target_ext_pin_util);
+                seen_block_types.insert(block_type);
+            }
+        }
+    }
+
+    return targets;
+}
+
+static std::string target_external_pin_util_to_string(const t_ext_pin_util_targets& ext_pin_utils) {
+    std::stringstream ss;
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+
+        if (is_empty_type(&device_ctx.block_types[itype])) continue;
+
+        auto blk_name = device_ctx.block_types[itype].name;
+
+        ss << blk_name << ":";
+
+        auto pin_util = ext_pin_utils.get_pin_util(blk_name);
+        ss << pin_util.input_pin_util << ',' << pin_util.output_pin_util;
+
+        if (itype != device_ctx.num_block_types - 1) {
+            ss << " ";
+        }
+    }
+
+    return ss.str();
 }

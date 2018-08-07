@@ -1,5 +1,6 @@
 #include <cstring>
 #include <unordered_set>
+#include <regex>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -50,6 +51,10 @@ static int ** f_port_pin_from_blk_pin = nullptr;
  * [0...device_ctx.num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
 static int *** f_blk_pin_from_port_pin = nullptr;
 
+//Regular expressions used to determine register and logic primitives
+//TODO: Make this set-able from command-line?
+const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::regex::icase);
+const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
 
@@ -85,6 +90,9 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 static std::vector<int> find_connected_internal_clb_sink_pins(ClusterBlockId clb, int pb_pin);
 static void find_connected_internal_clb_sink_pins_recurr(ClusterBlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
 static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup);
+
+static bool block_type_contains_blif_model(t_type_ptr type, const std::regex& blif_model_regex);
+static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
 
 /******************** Subroutine definitions *********************************/
 
@@ -711,6 +719,45 @@ t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* 
     return nullptr; //Not found
 }
 
+t_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
+    auto& device_ctx = g_vpr_ctx.device();
+    //Collect candidate blocks which contain LUTs
+    std::vector<t_type_ptr> logic_block_candidates;
+
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        t_type_ptr type = &device_ctx.block_types[itype];
+
+        if (block_type_contains_blif_model(type, LOGIC_MODEL_REGEX)) {
+            logic_block_candidates.push_back(type);
+        }
+    }
+
+    if (logic_block_candidates.empty()) {
+        //No LUTs, fallback to looking for which contain FFs
+        for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+            t_type_ptr type = &device_ctx.block_types[itype];
+
+            if (block_type_contains_blif_model(type, REGISTER_MODEL_REGEX)) {
+                logic_block_candidates.push_back(type);
+            }
+        }
+
+    }
+
+    //Sort the candidates by the most common block type
+    auto by_desc_grid_count = [&](t_type_ptr lhs, t_type_ptr rhs) {
+        return grid.num_instances(lhs) > grid.num_instances(rhs); 
+    };
+    std::sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+
+    if (!logic_block_candidates.empty()) {
+        return logic_block_candidates.front();
+    } else {
+        //Otherwise assume it is the most common block type
+        return find_most_common_block_type(grid);
+    }
+}
+
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -735,6 +782,10 @@ bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name
     return pb_type_contains_blif_model(type->pb_type, blif_model_name);
 }
 
+static bool block_type_contains_blif_model(t_type_ptr type, const std::regex& blif_model_regex) {
+    return pb_type_contains_blif_model(type->pb_type, blif_model_regex);
+}
+
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name) {
     if (!pb_type) {
@@ -757,6 +808,34 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
             for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
                 const t_pb_type* pb_type_child = &mode->pb_type_children[ichild];
                 if (pb_type_contains_blif_model(pb_type_child, blif_model_name)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex) {
+    if (!pb_type) {
+        return false;
+    }
+
+    if (pb_type->blif_model != nullptr) {
+        //Leaf pb_type
+        VTR_ASSERT(pb_type->num_modes == 0);
+        if (std::regex_match(pb_type->blif_model, blif_model_regex)) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        for (int imode = 0; imode < pb_type->num_modes; ++imode) {
+            const t_mode* mode = &pb_type->modes[imode];
+
+            for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
+                const t_pb_type* pb_type_child = &mode->pb_type_children[ichild];
+                if (pb_type_contains_blif_model(pb_type_child, blif_model_regex)) {
                     return true;
                 }
             }

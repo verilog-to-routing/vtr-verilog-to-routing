@@ -715,20 +715,23 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
             .help("Sets the external pin utilization target during clustering.\n"
-                  "Value Ranges:\n"
-                  "* 1.0: The packer to pack as densely as possible (i.e. try\n"
-                  "       to use 100% of cluster external pins)\n"
-                  "* 0.0: The packer to pack as loosely as possible (i.e. each\n"
-                  "       block will contain a single mollecule) Values in\n"
-                  "       between trade-off pin usage and packing density\n"
+                  "Value Ranges: [1.0, 0.0]\n"
+                  "* 1.0 : The packer to pack as densely as possible (i.e. try\n"
+                  "        to use 100% of cluster external pins)\n"
+                  "* 0.0 : The packer to pack as loosely as possible (i.e. each\n"
+                  "        block will contain a single mollecule).\n"
+                  "        Values in between trade-off pin usage and\n"
+                  "        packing density.\n"
                   "\n"
                   "Typically packing less densely improves routability, at\n"
-                  "the cost of using more clusters. Note that this is only\n"
-                  "a guideline, the packer will use up to 1.0 utilization if\n"
-                  "a molecule would not otherwise not in any cluster type.\n"
+                  "the cost of using more clusters. Note that these settings are\n"
+                  "only guidelines, the packer will use up to 1.0 utilization if\n"
+                  "a molecule would not otherwise pack into any cluster type.\n"
                   "\n"
                   "This option can take multiple specifications in several\n"
                   "formats:\n"
+                  "* auto (i.e. 'auto'): VPR will determine the target pin\n"
+                  "                      utilizations automatically\n"
                   "* Single Value (e.g. '0.7'): the input pin utilization for\n"
                   "                             all block types (output pin\n"
                   "                             utilization defaults to 1.0)\n"
@@ -742,7 +745,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   "would set the input pin utilization of clb blocks to 0.7,\n"
                   "and all other blocks to 0.9.\n")
             .nargs('+')
-            .default_value({"1.0"})
+            .default_value({"auto"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")

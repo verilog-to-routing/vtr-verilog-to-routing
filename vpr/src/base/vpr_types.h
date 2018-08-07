@@ -741,7 +741,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	bool debug_clustering;
     bool enable_pin_feasibility_filter;
-    t_ext_pin_util_targets target_external_pin_util;
+    std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
