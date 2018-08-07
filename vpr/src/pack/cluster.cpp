@@ -522,9 +522,9 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
 		}
 
-		if (cluster_seed_type == VPACK_BLEND) {
+		if (cluster_seed_type == e_cluster_seed::BLEND) {
 			istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, true);
-		} else if (cluster_seed_type == VPACK_TIMING) {
+		} else if (cluster_seed_type == e_cluster_seed::TIMING) {
 			istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, false);
 		} else {/*max input seed*/
 			istart = get_seed_logical_molecule_with_most_ext_inputs(max_molecule_inputs);
@@ -693,9 +693,9 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 					if (num_blocks_hill_added > 0 && !early_exit) {
 						blocks_since_last_analysis += num_blocks_hill_added;
 					}
-					if (cluster_seed_type == VPACK_BLEND) {
+					if (cluster_seed_type == e_cluster_seed::BLEND) {
 						istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, true);
-					} else if (cluster_seed_type == VPACK_TIMING) {
+					} else if (cluster_seed_type == e_cluster_seed::TIMING) {
 						istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, false);
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(

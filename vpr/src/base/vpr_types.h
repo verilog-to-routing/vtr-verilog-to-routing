@@ -103,8 +103,8 @@ enum class e_unrelated_clustering {
 };
 
 /* Selection algorithm for selecting next seed  */
-enum e_cluster_seed {
-	VPACK_TIMING, VPACK_MAX_INPUTS, VPACK_BLEND
+enum class e_cluster_seed {
+	TIMING, MAX_INPUTS, BLEND
 };
 
 enum e_block_pack_status {

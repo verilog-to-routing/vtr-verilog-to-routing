@@ -406,13 +406,13 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 	vtr::printf_info("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
 	vtr::printf_info("PackerOpts.cluster_seed_type: ");
 	switch (PackerOpts.cluster_seed_type) {
-	case VPACK_TIMING:
+	case e_cluster_seed::TIMING:
 		vtr::printf_info("TIMING\n");
 		break;
-	case VPACK_MAX_INPUTS:
+	case e_cluster_seed::MAX_INPUTS:
 		vtr::printf_info("MAX_INPUTS\n");
 		break;
-	case VPACK_BLEND:
+	case e_cluster_seed::BLEND:
 		vtr::printf_info("BLEND\n");
 		break;
 	default:

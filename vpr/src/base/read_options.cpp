@@ -267,9 +267,9 @@ struct ParsePlaceAlgorithm {
 struct ParseClusterSeed {
     ConvertedValue<e_cluster_seed> from_str(std::string str) {
         ConvertedValue<e_cluster_seed> conv_value;
-        if      (str == "timing")  conv_value.set_value(VPACK_TIMING);
-        else if (str == "max_inputs") conv_value.set_value(VPACK_MAX_INPUTS);
-        else if (str == "blend") conv_value.set_value(VPACK_BLEND);
+        if      (str == "timing")  conv_value.set_value(e_cluster_seed::TIMING);
+        else if (str == "max_inputs") conv_value.set_value(e_cluster_seed::MAX_INPUTS);
+        else if (str == "blend") conv_value.set_value(e_cluster_seed::BLEND);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -280,10 +280,10 @@ struct ParseClusterSeed {
 
     ConvertedValue<std::string> to_str(e_cluster_seed val) {
         ConvertedValue<std::string> conv_value;
-        if (val == VPACK_TIMING) conv_value.set_value("timing");
-        else if (val == VPACK_MAX_INPUTS) conv_value.set_value("max_inputs");
+        if (val == e_cluster_seed::TIMING) conv_value.set_value("timing");
+        else if (val == e_cluster_seed::MAX_INPUTS) conv_value.set_value("max_inputs");
         else {
-            VTR_ASSERT(val == VPACK_BLEND);
+            VTR_ASSERT(val == e_cluster_seed::BLEND);
             conv_value.set_value("blend");
         }
         return conv_value;
