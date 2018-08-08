@@ -1093,6 +1093,14 @@ static void set_conditional_defaults(t_options& args) {
         args.timing_driven_clustering.set(args.timing_analysis, Provenance::INFERRED);
     }
 
+    if (args.cluster_seed_type.provenance() != Provenance::SPECIFIED) {
+        if (args.timing_driven_clustering) {
+            args.cluster_seed_type.set(e_cluster_seed::BLEND, Provenance::INFERRED); 
+        } else {
+            args.cluster_seed_type.set(e_cluster_seed::MAX_INPUTS, Provenance::INFERRED); 
+        }
+    }
+
     /*
      * Placement
      */
