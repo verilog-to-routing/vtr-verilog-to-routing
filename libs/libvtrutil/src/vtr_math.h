@@ -15,6 +15,15 @@ namespace vtr {
 
     constexpr int nint(float val) { return static_cast<int>(val + 0.5); }
 
+    //Returns a 'safe' ratio which evaluates to zero if the denominator is zero
+    template<typename T>
+    T safe_ratio(T numerator, T denominator) {
+        if (denominator == T(0)) {
+            return 0;
+        }
+        return numerator / denominator;
+    }
+
     template<typename InputIterator>
     double geomean(InputIterator first, InputIterator last, double init=1.) {
         //Compute the geometric mean of the elments in range [first, last)

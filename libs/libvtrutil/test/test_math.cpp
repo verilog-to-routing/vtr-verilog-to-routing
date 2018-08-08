@@ -18,3 +18,9 @@ TEST_CASE("Nearest Integer", "[vtr_math]") {
     REQUIRE( vtr::nint(42.5) == 43);
     REQUIRE( vtr::nint(42.9) == 43);
 }
+
+TEST_CASE("Safe Ratio", "[vtr_math]") {
+    REQUIRE( vtr::safe_ratio(1., 1.) == Approx(1.));
+    REQUIRE( vtr::safe_ratio(1., 2.) == Approx(0.5));
+    REQUIRE( vtr::safe_ratio(50., 0.) == Approx(0.));
+}
