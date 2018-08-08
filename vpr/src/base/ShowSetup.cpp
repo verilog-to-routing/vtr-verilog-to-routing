@@ -415,6 +415,15 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 	case e_cluster_seed::BLEND:
 		vtr::printf_info("BLEND\n");
 		break;
+	case e_cluster_seed::MAX_PINS:
+		vtr::printf_info("MAX_PINS\n");
+		break;
+	case e_cluster_seed::MAX_INPUT_PINS:
+		vtr::printf_info("MAX_INPUT_PINS\n");
+		break;
+	case e_cluster_seed::BLEND2:
+		vtr::printf_info("BLEND2\n");
+		break;
 	default:
 		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer cluster_seed_type\n");
 	}

@@ -299,6 +299,12 @@ For people not working on CAD, you can probably leave all the options to their d
 
     ``blend`` uses a weighted sum of timing criticality, the number of tightly coupled blocks connected to the primitive, and the number of its external inputs.
 
+    ``max_pins`` selects primitives with the most number of pins (which may be used, or unused).
+
+    ``max_input_pins`` selects primitives with the most number of input pins (which may be used, or unused).
+
+    ``blend2`` An alternative blend formulation taking into account both used and unused pin counts, number of tightly coupled blocks and criticality.
+
     **Default**: ``blend`` if timing_driven_clustering is on; ``max_inputs`` otherwise.
 
 .. option:: --clustering_pin_feasibility_filter {on | off}

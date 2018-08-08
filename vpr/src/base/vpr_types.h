@@ -104,7 +104,7 @@ enum class e_unrelated_clustering {
 
 /* Selection algorithm for selecting next seed  */
 enum class e_cluster_seed {
-	TIMING, MAX_INPUTS, BLEND
+	TIMING, MAX_INPUTS, BLEND, MAX_PINS, MAX_INPUT_PINS, BLEND2
 };
 
 enum e_block_pack_status {

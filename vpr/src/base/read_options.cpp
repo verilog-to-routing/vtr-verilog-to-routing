@@ -270,6 +270,9 @@ struct ParseClusterSeed {
         if      (str == "timing")  conv_value.set_value(e_cluster_seed::TIMING);
         else if (str == "max_inputs") conv_value.set_value(e_cluster_seed::MAX_INPUTS);
         else if (str == "blend") conv_value.set_value(e_cluster_seed::BLEND);
+        else if (str == "max_pins") conv_value.set_value(e_cluster_seed::MAX_PINS);
+        else if (str == "max_input_pins") conv_value.set_value(e_cluster_seed::MAX_INPUT_PINS);
+        else if (str == "blend2") conv_value.set_value(e_cluster_seed::BLEND2);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -282,15 +285,18 @@ struct ParseClusterSeed {
         ConvertedValue<std::string> conv_value;
         if (val == e_cluster_seed::TIMING) conv_value.set_value("timing");
         else if (val == e_cluster_seed::MAX_INPUTS) conv_value.set_value("max_inputs");
+        else if (val == e_cluster_seed::BLEND) conv_value.set_value("blend");
+        else if (val == e_cluster_seed::MAX_PINS) conv_value.set_value("max_pins");
+        else if (val == e_cluster_seed::MAX_INPUT_PINS) conv_value.set_value("max_input_pins");
         else {
-            VTR_ASSERT(val == e_cluster_seed::BLEND);
-            conv_value.set_value("blend");
+            VTR_ASSERT(val == e_cluster_seed::BLEND2);
+            conv_value.set_value("blend2");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"timing", "max_inputs", "blend"};
+        return {"timing", "max_inputs", "blend", "max_pins", "max_input_pins", "blend2"};
     }
 };
 
@@ -700,7 +706,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     pack_grp.add_argument<e_cluster_seed,ParseClusterSeed>(args.cluster_seed_type, "--cluster_seed_type")
             .help("Controls how primitives are chosen as seeds."
                   " (Default: blend if timing driven, max_inputs otherwise)")
-            .choices({"blend", "timing", "max_inputs"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.enable_clustering_pin_feasibility_filter, "--clustering_pin_feasibility_filter")
