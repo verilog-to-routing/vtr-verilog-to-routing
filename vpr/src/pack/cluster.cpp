@@ -2267,11 +2267,12 @@ static t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    //Record number of blocks in molecule
-    molecule_stats.num_blocks = molecule->atom_block_ids.size();
-
     //Calculate the number of available pins on primitives within the molecule
     for (auto blk : molecule->atom_block_ids) {
+        if (!blk) continue;
+
+        ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
+
         
         const t_model* model = atom_ctx.nlist.block_model(blk);
 
@@ -2288,6 +2289,7 @@ static t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
     //Calculate the number of externally used pins
     std::set<AtomBlockId> molecule_atoms(molecule->atom_block_ids.begin(), molecule->atom_block_ids.end());
     for (auto blk : molecule->atom_block_ids) {
+        if (!blk) continue;
         
         for (auto pin : atom_ctx.nlist.block_pins(blk)) {
             
