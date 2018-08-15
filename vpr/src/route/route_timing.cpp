@@ -203,6 +203,8 @@ static void print_route_status(int itry, double elapsed_sec, const RouterStats& 
 static void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
 static int round_up(float x);
 
+static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
@@ -892,29 +894,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
     ++router_stats.heap_pops;
 
     if (cheapest == nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
-        const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
-        const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
-
-        std::string msg = "Cannot route from ";
-
-        if (source_rr_node->type() != CHANX || source_rr_node->type() != CHANY) {
-            t_type_ptr src_type = device_ctx.grid[source_rr_node->xlow()][source_rr_node->ylow()].type;
-            msg += block_type_pin_index_to_name(src_type, source_rr_node->ptc_num());
-        }
-        msg += vtr::string_fmt(" (rr_node: %d type: %s ptc: %d xlow: %d ylow: %d) to ",
-                source_node, source_rr_node->type_string(), source_rr_node->ptc_num(), source_rr_node->xlow(), source_rr_node->ylow());
-
-        if (sink_rr_node->type() != CHANX || sink_rr_node->type() != CHANY) {
-            t_type_ptr src_type = device_ctx.grid[sink_rr_node->xlow()][sink_rr_node->ylow()].type;
-            msg += block_type_pin_index_to_name(src_type, sink_rr_node->ptc_num());
-        }
-        msg += vtr::string_fmt(" (rr_node: %d type: %s ptc: %d xlow: %d ylow: %d) to ",
-                sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num(), sink_rr_node->xlow(), sink_rr_node->ylow());
-
-        msg += "-- no possible path\n";
-
-        vtr::printf_info("%s", msg.c_str());
+        vtr::printf_info("%s", describe_unrouteable_connection(source_node, sink_node).c_str());
 
         reset_path_costs();
         free_route_tree(rt_root);
@@ -969,29 +949,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         ++router_stats.heap_pops;
 
         if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
-            auto& device_ctx = g_vpr_ctx.device();
-            const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
-            const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
-
-            std::string msg = "Cannot route from ";
-
-            if (source_rr_node->type() != CHANX || source_rr_node->type() != CHANY) {
-                t_type_ptr src_type = device_ctx.grid[source_rr_node->xlow()][source_rr_node->ylow()].type;
-                msg += block_type_pin_index_to_name(src_type, source_rr_node->ptc_num());
-            }
-            msg += vtr::string_fmt(" (rr_node: %d type: %s ptc: %d xlow: %d ylow: %d) to ",
-                    source_node, source_rr_node->type_string(), source_rr_node->ptc_num(), source_rr_node->xlow(), source_rr_node->ylow());
-
-            if (sink_rr_node->type() != CHANX || sink_rr_node->type() != CHANY) {
-                t_type_ptr src_type = device_ctx.grid[sink_rr_node->xlow()][sink_rr_node->ylow()].type;
-                msg += block_type_pin_index_to_name(src_type, sink_rr_node->ptc_num());
-            }
-            msg += vtr::string_fmt(" (rr_node: %d type: %s ptc: %d xlow: %d ylow: %d) to ",
-                    sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num(), sink_rr_node->xlow(), sink_rr_node->ylow());
-
-            msg += "-- no possible path\n";
-
-            vtr::printf_info("%s", msg.c_str());
+            vtr::printf_info("%s", describe_unrouteable_connection(source_node, sink_node).c_str());
 
             reset_path_costs();
             free_route_tree(rt_root);
@@ -2171,3 +2129,31 @@ static void pretty_print_uint(const char* prefix, size_t value, int num_digits, 
     }
 }
 
+static std::string describe_unrouteable_connection(const int source_node, const int sink_node) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
+    const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
+
+    std::string msg = "Cannot route from ";
+
+    if (source_rr_node->type() != CHANX || source_rr_node->type() != CHANY) {
+        //Non-wire types are associated with a block
+        t_type_ptr src_type = device_ctx.grid[source_rr_node->xlow()][source_rr_node->ylow()].type;
+        msg += block_type_pin_index_to_name(src_type, source_rr_node->ptc_num());
+    }
+    msg += vtr::string_fmt(" (rr_node: %d type: %s ptc: %d xlow: %d ylow: %d) to ",
+            source_node, source_rr_node->type_string(), source_rr_node->ptc_num(), source_rr_node->xlow(), source_rr_node->ylow());
+
+    if (sink_rr_node->type() != CHANX || sink_rr_node->type() != CHANY) {
+        //Non-wire types are associated with a block
+        t_type_ptr sink_type = device_ctx.grid[sink_rr_node->xlow()][sink_rr_node->ylow()].type;
+        msg += block_type_pin_index_to_name(sink_type, sink_rr_node->ptc_num());
+    }
+    msg += vtr::string_fmt(" (rr_node: %d type: %s ptc: %d xlow: %d ylow: %d) to ",
+            sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num(), sink_rr_node->xlow(), sink_rr_node->ylow());
+
+    msg += "-- no possible path\n";
+
+    return msg;
+}
