@@ -739,7 +739,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
     auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Load the routing from a file
-    read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests);
+    bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests);
 
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
@@ -748,7 +748,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
         timing_info->update();
     }
 
-    return RouteStatus(true, fixed_channel_width);
+    return RouteStatus(is_legal, fixed_channel_width);
 }
 
 

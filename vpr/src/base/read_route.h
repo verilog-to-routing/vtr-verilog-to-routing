@@ -8,7 +8,7 @@
 
 
 
-void read_route(const char* route_file, const t_router_opts& RouterOpts, bool verify_file_digests);
+bool read_route(const char* route_file, const t_router_opts& RouterOpts, bool verify_file_digests);
 
 
 #endif /* READ_ROUTE_H */
