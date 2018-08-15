@@ -60,7 +60,7 @@ private:
     void allocate_slack_using_weights(vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     /*Sometimes want to allocate only positive or negative slack.
      By default, allocate both*/
-    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *> &temp_budgets,
+    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *> &temp_budgets,
 		vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type,
             bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
     void process_negative_slack_using_minimax(vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
@@ -113,4 +113,5 @@ private:
 };
 
 #endif /* ROUTE_BUDGETS_H */
+
 
