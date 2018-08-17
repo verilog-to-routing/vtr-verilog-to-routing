@@ -30,7 +30,12 @@ struct t_heap_prev {
  *                      to the target.                                      *
  * R_upstream: Used only by the timing-driven router.  Stores the upstream  *
  *             resistance to ground from this node, including the           *
- *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
+ *             resistance of the node itself (device_ctx.rr_nodes[index].R).*
+ * T_upstream: Used by timing_driven_evaluate_cost. It stores the upstream  *
+ *             delay from this node to the source. It is necessary because  *
+ *             the router needs this value to calculate the total delay of  *
+ *             the path, which is used to evaluate cost of expanding a      *
+ * 	       particular node during router exploration                    */
 struct t_heap {
     t_heap *next = nullptr;
 

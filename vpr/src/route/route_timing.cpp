@@ -163,7 +163,10 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
     const int from_node, const int to_node, const int iconn, const int target_node, const float T_upstream);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
-        float criticality_fac, float R_upstream, int get_delay);
+        float criticality_fac, float R_upstream);
+
+static float get_timing_driven_expected_delay(int inode, int target_node, 
+        float R_upstream);
 
 static int get_expected_segs_to_target(int inode, int target_node,
         int *num_segs_ortho_dir_ptr);
@@ -1119,7 +1122,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         tot_cost = backward_path_cost
                 + astar_fac
                 * get_timing_driven_expected_cost(inode, target_node,
-                target_criticality, R_upstream, 0);
+                target_criticality, R_upstream);
 
         float zero = 0.0;
         //after budgets are loaded, calculate delay cost as described by RCV paper
@@ -1381,7 +1384,7 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
     new_costs.T_incremental = Tdel;
     total_delay_on_connection += T_upstream;
     total_delay_on_connection += Tdel;
-    total_delay_on_connection += get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream, 1);
+    total_delay_on_connection += get_timing_driven_expected_delay(to_node, target_node, new_costs.R_upstream);
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
     new_costs.backward_cost += (1. - criticality_fac) * get_rr_cong_cost(to_node); //Congestion cost
@@ -1393,21 +1396,19 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
             new_costs.backward_cost += bend_cost; //Bend cost
         }
     }
-    float cost_from_budgets = 0;
     if (budgeting_inf.if_set()) {
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
         //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
         //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
 
-        //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
         new_costs.total_cost += (short_path_crit + criticality_fac) * max(0.f, target_delay - total_delay_on_connection);
         new_costs.total_cost += pow(max(0.f, total_delay_on_connection - max_delay), 2) / 100e-12;
         new_costs.total_cost += pow(max(0.f, min_delay - total_delay_on_connection), 2) / 100e-12;
         
     }
     //Update total cost
-    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream, 0);
+    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream);
     new_costs.total_cost += new_costs.backward_cost + astar_fac * expected_cost;
 
     
@@ -1415,7 +1416,7 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
     return new_costs;
 }
 
-static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream, int get_delay) {
+static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
 
     /* Determines the expected cost (due to both delay and resource cost) to reach *
      * the target node from inode.  It doesn't include the cost of inode --       *
@@ -1446,18 +1447,15 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
                           + ipin_data.base_cost
                           + sink_data.base_cost;
 
-        float Tdel =   num_segs_same_dir * same_data.T_linear
+        float Tdel = get_timing_driven_expected_delay(inode, target_node, R_upstream);
+       /* float Tdel =   num_segs_same_dir * same_data.T_linear
                      + num_segs_ortho_dir * ortho_data.T_linear
                      + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
                      + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
                      + R_upstream * (  num_segs_same_dir * same_data.C_load
                                      + num_segs_ortho_dir * ortho_data.C_load)
-                     + ipin_data.T_linear;
+                     + ipin_data.T_linear;*/
 
-        if (get_delay){
-		return Tdel;
-	}
-        
         float expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
         return (expected_cost);
 #endif
@@ -1467,6 +1465,34 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
         return (0.);
     }
 }
+
+static float get_timing_driven_expected_delay(int inode, int target_node, float R_upstream){
+
+    /* Determines the expected delay (due to both delay and resource cost) to reach *
+     * the target node from inode.*/
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    int num_segs_ortho_dir = 0;
+    int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
+
+    int cost_index = device_ctx.rr_nodes[inode].cost_index();
+    int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+
+    const auto& same_data = device_ctx.rr_indexed_data[cost_index];
+    const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
+    const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+
+        float Tdel =   num_segs_same_dir * same_data.T_linear
+                     + num_segs_ortho_dir * ortho_data.T_linear
+                     + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
+                     + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
+                     + R_upstream * (  num_segs_same_dir * same_data.C_load
+                                     + num_segs_ortho_dir * ortho_data.C_load)
+                     + ipin_data.T_linear;
+     return Tdel;
+} 
+
 
 /* Used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */

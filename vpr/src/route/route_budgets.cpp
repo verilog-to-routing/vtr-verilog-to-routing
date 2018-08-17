@@ -152,11 +152,8 @@ void route_budgets::calculate_delay_targets(ClusterNetId net_id, ClusterPinId pi
     auto& cluster_ctx = g_vpr_ctx.clustering();
     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
 
-    /*Target delay is calculated using equation in the RCV algorithm*/
-    //delay_target[net_id][ipin] = min(0.5 * (delay_min_budget[net_id][ipin] + delay_max_budget[net_id][ipin]), delay_min_budget[net_id][ipin] + 0.1e-9);
-
     //set min budget delay to be delay_target for now. Guardband can be added later
-    delay_target[net_id][ipin] = delay_min_budget[net_id][ipin];
+     delay_target[net_id][ipin] = delay_min_budget[net_id][ipin];
 }
 
 void route_budgets::allocate_slack_using_weights(vtr::vector_map<ClusterNetId, float *> &net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
@@ -180,15 +177,16 @@ void route_budgets::allocate_slack_using_weights(vtr::vector_map<ClusterNetId, f
     max_budget_change = 900e-12;
 
     //pass in original timing_info to use for total path delay calculations. This ensures the same total path delay is used throughout the RCV iterations.
-    orig_timing_info = perform_sta (delay_max_budget);
+    orig_timing_info = perform_sta (net_delay);
 
     /*This allocates long path slack and increases the budgets. Stopping conditions are set differently from RCV paper because they showed better results*/
-    while ((iteration > 3 && max_budget_change > 1e-12) || iteration <= 3) {
+    while (max_budget_change > 1e-12) {
+	//use initial routing delay to perform_sta for the first iteration, since delay_max_budget is initialized to 0
         timing_info = perform_sta(delay_max_budget);
         max_budget_change = minimax_PERT(orig_timing_info, timing_info, delay_max_budget, net_delay, netlist_pin_lookup, SETUP, true);
 
         iteration++;
-        if (iteration > 10)
+        if (iteration > 20)
             break;
     }
 
@@ -199,12 +197,12 @@ void route_budgets::allocate_slack_using_weights(vtr::vector_map<ClusterNetId, f
     max_budget_change = 900e-12;
 
     /*Allocate the short path slack to decrease the budgets accordingly*/
-    while ((iteration > 3 && max_budget_change > 1e-12) || iteration <= 3) {
+    while (max_budget_change > 1e-12) {
         timing_info = perform_sta(delay_min_budget);
         max_budget_change = minimax_PERT(orig_timing_info, timing_info, delay_min_budget, net_delay, netlist_pin_lookup, HOLD, true);
         iteration++;
 
-        if (iteration > 10)
+        if (iteration > 20)
             break;
     }
 
@@ -341,17 +339,26 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
                 continue;
             }
 
+	   /*Current:
+	     Slack is allocated to a connection (i) as slack(i) * [numerator(i) / denominator(i)].
+	     Denominator: largest total_path_delay through a connection (including both routing 
+	     delays we can change and cell/intra-block delays we can't. 
+	     Numerator: is the original net_delay (routing path found for that connection on the first routing iteration, which is generally the lowest-delay one.)
+	     TODO:Future approach that would likely result in faster slack allocation convergence:
+             Change the denominator to be total_mutable_path_delay(i) -- that is, the largest total routing delay path through this connection.*/
+
+	    float budget_increment = net_delay[net_id][ipin] * path_slack / total_path_delay;
             /*During hold analysis, increase the budgets when there is negative slack.
              During setup analysis, decrease the budgets when there is negative slack*/
             if ((slack_type == NEGATIVE && path_slack < 0) ||
                     (slack_type == POSITIVE && path_slack > 0) ||
                     slack_type == BOTH) {
                 if (analysis_type == HOLD) {
-                    temp_budgets[net_id][ipin] += -1 * net_delay[net_id][ipin] * path_slack / total_path_delay;
+                    temp_budgets[net_id][ipin] += -1 * budget_increment;
                 } else {
-                    temp_budgets[net_id][ipin] += net_delay[net_id][ipin] * path_slack / total_path_delay;
+                    temp_budgets[net_id][ipin] += budget_increment;
                 }
-                max_budget_change = max(max_budget_change, abs(net_delay[net_id][ipin] * path_slack / total_path_delay));
+                max_budget_change = max(max_budget_change, abs(budget_increment));
             }
 
             /*Budgets need to be between maximum and minimum budgets*/
