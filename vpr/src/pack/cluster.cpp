@@ -780,7 +780,6 @@ static void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats
 	/* Allocates the main data structures used for clustering and properly *
 	 * initializes them.                                                   */
 
-	int i, ext_inps;
 	t_molecule_link *next_ptr;
 	t_pack_molecule *cur_molecule;
 	t_pack_molecule **molecule_array;
@@ -791,14 +790,14 @@ static void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats
 			max_molecule_stats.num_used_ext_inputs + 1, sizeof(t_molecule_link));
 	unclustered_list_head_size = max_molecule_stats.num_used_ext_inputs;
 
-	for (i = 0; i <= max_molecule_stats.num_used_ext_inputs; i++) {
+	for (int i = 0; i <= max_molecule_stats.num_used_ext_inputs; i++) {
 		unclustered_list_head[i].next = nullptr;
 	}
 
 	molecule_array = (t_pack_molecule **) vtr::malloc(
 			num_molecules * sizeof(t_pack_molecule*));
 	cur_molecule = molecules_head;
-	for (i = 0; i < num_molecules; i++) {
+	for (int i = 0; i < num_molecules; i++) {
 		VTR_ASSERT(cur_molecule != nullptr);
 		molecule_array[i] = cur_molecule;
 		cur_molecule = cur_molecule->next;
@@ -811,11 +810,16 @@ static void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats
 			num_molecules * sizeof(t_molecule_link));
 	next_ptr = memory_pool;
 
-	for (i = 0; i < num_molecules; i++) {
-		ext_inps = molecule_array[i]->num_ext_inputs;
+	for (int i = 0; i < num_molecules; i++) {
+        //Figure out how many external inputs are used by this molecule
+        t_molecule_stats molecule_stats = calc_molecule_stats(molecule_array[i]);
+        int ext_inps = molecule_stats.num_used_ext_inputs;
+
+        //Insert the molecule into the unclustered lists by number of external inputs
 		next_ptr->moleculeptr = molecule_array[i];
 		next_ptr->next = unclustered_list_head[ext_inps].next;
 		unclustered_list_head[ext_inps].next = next_ptr;
+
 		next_ptr++;
 	}
 	free(molecule_array);

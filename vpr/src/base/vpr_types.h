@@ -350,7 +350,6 @@ struct t_pack_molecule {
 
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
 
-	int num_ext_inputs; /* number of input pins used by molecule that are not self-contained by pattern molecule matches */
 	t_pack_molecule *next;
 };
 
