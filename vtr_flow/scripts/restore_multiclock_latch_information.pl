@@ -12,8 +12,6 @@
 # Inputs: <ODIN_II_BLIF_IN_FILE> <ABC_BLIF_IN_FILE> <ABC_BLIF_OUT_FILE>
 #
 ################################################################################
-use Fcntl qw[ :seek ];
-
 #Open the ODIN II BLIF File
 open(my $odinInFile, "<".$ARGV[0]) || die "Error Opening ODIN II File $ARGV[0]: $!\n";
 
@@ -47,7 +45,7 @@ while(($line = <$abcInFile>))
 			$found = 0;
 
 			#Seek to the head of the ODIN II BLIF File
-			seek $odinInFile, 0, SEEK_SET or die "error on seek odin file input: $!";
+			seek odinInFile, 0, 0;
 
 			#While there are lines in the ODIN II BLIF File and We Haven't
 			# Found the Clock Info We're Looking For
