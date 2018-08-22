@@ -1202,7 +1202,14 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     //Extract the net drivers
     std::set<AtomPinId> clock_drivers;
     for (auto net : clock_nets) {
-        clock_drivers.insert(netlist.net_driver(net));
+        AtomPinId driver = netlist.net_driver(net);
+
+        if (netlist.pin_is_constant(driver)) {
+            //Constant generators (e.g. gnd) are not clocks
+            continue; 
+        }
+
+        clock_drivers.insert(driver);
     }
 
     return clock_drivers;
