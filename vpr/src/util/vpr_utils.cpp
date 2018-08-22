@@ -204,6 +204,8 @@ void sync_grid_to_blocks() {
 }
 
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index) {
+    VTR_ASSERT(pin_index < type->num_pins);
+
     std::string pin_name = type->name;
 
     if (type->capacity > 1) {
@@ -233,6 +235,58 @@ std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index) {
     }
 
     return "<UNKOWN>";
+}
+
+std::vector<std::string> block_type_class_index_to_pin_names(t_type_ptr type, int class_index) {
+    VTR_ASSERT(class_index < type->num_class);
+
+    //TODO: unsure if classes are modulo capacity or not... so this may be unnessesary
+    int classes_per_inst = type->num_class / type->capacity;
+    class_index %= classes_per_inst;
+
+    t_class& class_inf = type->class_inf[class_index];
+
+    std::vector<std::string> pin_names;
+    for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
+        pin_names.push_back(block_type_pin_index_to_name(type, class_inf.pinlist[ipin]));
+    }
+
+    return pin_names;
+}
+
+std::string rr_node_arch_name(int inode) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    const t_rr_node& rr_node = device_ctx.rr_nodes[inode];
+
+    std::string rr_node_arch_name;
+    if (rr_node.type() == OPIN || rr_node.type() == IPIN) {
+        //Pin names
+        t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        rr_node_arch_name += block_type_pin_index_to_name(type, rr_node.ptc_num());
+    } else if (rr_node.type() == SOURCE || rr_node.type() == SINK) {
+        //Set of pins associated with SOURCE/SINK
+        t_type_ptr type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
+        if (pin_names.size() > 1) {
+            rr_node_arch_name += rr_node.type_string();
+            rr_node_arch_name += " connected to ";
+            rr_node_arch_name += "{";
+            rr_node_arch_name += vtr::join(pin_names, ", ");
+            rr_node_arch_name += "}";
+        } else {
+            rr_node_arch_name += pin_names[0];
+        }
+    } else {
+        VTR_ASSERT(rr_node.type() == CHANX || rr_node.type() == CHANY);
+        //Wire segment name
+        auto cost_index = rr_node.cost_index();
+        int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+
+        rr_node_arch_name += device_ctx.arch.Segments[seg_index].name;
+    }
+    
+    return rr_node_arch_name;
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntypes)
