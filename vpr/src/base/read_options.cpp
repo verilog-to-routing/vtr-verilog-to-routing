@@ -705,7 +705,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     pack_grp.add_argument<e_cluster_seed,ParseClusterSeed>(args.cluster_seed_type, "--cluster_seed_type")
             .help("Controls how primitives are chosen as seeds."
-                  " (Default: blend if timing driven, max_inputs otherwise)")
+                  " (Default: blend2 if timing driven, max_inputs otherwise)")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.enable_clustering_pin_feasibility_filter, "--clustering_pin_feasibility_filter")
@@ -1100,7 +1100,7 @@ static void set_conditional_defaults(t_options& args) {
 
     if (args.cluster_seed_type.provenance() != Provenance::SPECIFIED) {
         if (args.timing_driven_clustering) {
-            args.cluster_seed_type.set(e_cluster_seed::BLEND, Provenance::INFERRED); 
+            args.cluster_seed_type.set(e_cluster_seed::BLEND2, Provenance::INFERRED); 
         } else {
             args.cluster_seed_type.set(e_cluster_seed::MAX_INPUTS, Provenance::INFERRED); 
         }
