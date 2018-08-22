@@ -1186,7 +1186,7 @@ void expand_ram_clocks(t_module* module) {
         }
     }
 
-    cout << "\t>> Expaned " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;
+    cout << "\t>> Elaborated " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;
 
 }
 
