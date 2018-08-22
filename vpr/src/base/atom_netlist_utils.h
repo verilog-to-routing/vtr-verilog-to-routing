@@ -85,6 +85,9 @@ std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);
 void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist);
 void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist);
 
+//Returns a user-friendly architectural identifier for the specified atom pin
+std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin);
+
 /*
  * Identify all clock nets
  */

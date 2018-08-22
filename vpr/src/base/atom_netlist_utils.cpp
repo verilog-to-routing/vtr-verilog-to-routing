@@ -365,6 +365,21 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     }
 }
 
+std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin) {
+    std::string arch_name;
+
+    AtomBlockId blk = netlist.pin_block(pin);
+    AtomPortId port = netlist.pin_port(pin);
+    arch_name += netlist.block_model(blk)->name;
+    arch_name += ".";
+    arch_name += netlist.port_model(port)->name;
+    arch_name += "[";
+    arch_name += std::to_string(netlist.pin_port_bit(pin));
+    arch_name += "]";
+
+    return arch_name;
+}
+
 void absorb_buffer_luts(AtomNetlist& netlist, bool verbose) {
     //First we look through the netlist to find LUTs with identity logic functions
     //we then remove those luts, replacing the net's they drove with the inputs to the
