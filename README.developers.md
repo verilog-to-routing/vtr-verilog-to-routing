@@ -224,14 +224,13 @@ This process is made more challenging by the fact that many of VTR's optimizatio
 This means that VTR's implementation results are dependent upon:
  * The initial conditions (e.g. input architecture & netlist, random number generator seed), and
  * The precise optimization algorithms used.
+ 
 The result is that a minor change to either of these can can make the measured QoR change.
 This effect can be viewed as an intrinsic 'noise' or 'variance' to any QoR measurement for a particular architecture/benchmark/algorithm combination.
 
 There are typically two key methods used to measure the 'true' QoR:
 
 1. Averaging metrics accross multiple architectures and benchmark circuits.
-
-    
 
 2. Averaging metrics multiple runs of the same architecture and benchmark, but using different random number generator seeds
 
@@ -271,7 +270,7 @@ Run-time/Memory Usage Metrics:
 
 
 In practise you will likely want to consider additional and more detailed metrics, particularly those directly related to the changes you are making.
-For example, if your change related to hold-time optimization you would want to include hold-time related metrics such as `hold_TNS` (hold total negative slack) and `hold_WNS (hold worst negative slack).
+For example, if your change related to hold-time optimization you would want to include hold-time related metrics such as `hold_TNS` (hold total negative slack) and `hold_WNS` (hold worst negative slack).
 If your change related to packing, you would want to report additional packing-related metrics, such as the number of clusters formed by each block type (e.g. numbers of CLBs, RAMs, DSPs, IOs).
 
 ### Benchmark Selection
@@ -390,10 +389,10 @@ A general method is as follows:
 
 ### QoR Comparison Gotchas
 There are a variety of 'gotchas' you need to avoid to ensure fair comparisons:
-* GEOMEAN's must be over the same set of benchmarks 
+* GEOMEAN's must be over the same set of benchmarks .
     A common issue is that a benchmark failed to complete for some reason, and it's metric values are missing
 
-* Run-times need to be collected on the same compute infrastructure at the same system load (ideally unloaded) 
+* Run-times need to be collected on the same compute infrastructure at the same system load (ideally unloaded).
 
 ### Example QoR Comparison
 Suppose we've make a change to VTR, and we now want to evaluate the change.
@@ -401,7 +400,7 @@ As described above we produce QoR measurements for both the VTR baseline, and ou
 
 We then have the following (hypothetical) QoR Metrics.
 
-Baseline QoR Metrics:
+**Baseline QoR Metrics:**
 
 | arch                                   | circuit            | num_pre_packed_blocks | num_post_packed_blocks | device_grid_tiles | min_chan_width | crit_path_routed_wirelength | critical_path_delay | vtr_flow_elapsed_time | pack_time | place_time | min_chan_width_route_time | crit_path_route_time | max_vpr_mem |
 |----------------------------------------|--------------------|-----------------------|------------------------|-------------------|----------------|-----------------------------|---------------------|-----------------------|-----------|------------|---------------------------|----------------------|-------------|
@@ -425,7 +424,7 @@ Baseline QoR Metrics:
 | k6_frac_N10_frac_chain_mem32K_40nm.xml | stereovision2.v    | 42078                 | 2534                   | 7396              | 134            | 650583                      | 15.3151             | 3664.98               | 66.72     | 119.26     | 3388.7                    | 62.6                 | 3114880     |
 | k6_frac_N10_frac_chain_mem32K_40nm.xml | stereovision3.v    | 324                   | 55                     | 49                | 30             | 768                         | 2.66429             | 2.25                  | 0.75      | 0.2        | 0.57                      | 0.05                 | 61148       |
 
-Modified QoR Metrics:
+**Modified QoR Metrics:**
 
 | arch                                   | circuit            | num_pre_packed_blocks | num_post_packed_blocks | device_grid_tiles | min_chan_width | crit_path_routed_wirelength | critical_path_delay | vtr_flow_elapsed_time | pack_time | place_time | min_chan_width_route_time | crit_path_route_time | max_vpr_mem |
 |----------------------------------------|--------------------|-----------------------|------------------------|-------------------|----------------|-----------------------------|---------------------|-----------------------|-----------|------------|---------------------------|----------------------|-------------|
@@ -451,7 +450,7 @@ Modified QoR Metrics:
 
 Based on these metrics we then calculate the following ratios and summary.
 
-Ratio (Modified / Baseline):
+**QoR Metric Ratio** (Modified QoR / Baseline QoR):
 
 | arch                                   | circuit            | num_pre_packed_blocks | num_post_packed_blocks | device_grid_tiles | min_chan_width | crit_path_routed_wirelength | critical_path_delay | vtr_flow_elapsed_time | pack_time | place_time | min_chan_width_route_time | crit_path_route_time | max_vpr_mem |
 |----------------------------------------|--------------------|-----------------------|------------------------|-------------------|----------------|-----------------------------|---------------------|-----------------------|-----------|------------|---------------------------|----------------------|-------------|
@@ -476,7 +475,7 @@ Ratio (Modified / Baseline):
 | k6_frac_N10_frac_chain_mem32K_40nm.xml | stereovision3.v    | 1.00                  | 0.98                   | 1.00              | 1.13           | 1.20                        | 0.95                | 0.69                  | 0.41      | 0.70       | 0.75                      | 1.00                 | 1.04        |
 |                                        | GEOMEAN            | 1.00                  | 0.95                   | 1.00              | 1.02           | 1.01                        | 0.98                | 0.92                  | 0.42      | 0.87       | 1.03                      | 0.96                 | 0.89        |
 
-Summary:
+**QoR Summary:**
 
 |                             | baseline | modified |
 |-----------------------------|----------|----------|
@@ -484,13 +483,16 @@ Summary:
 | num_post_packed_blocks      | 1.00     | 0.95     |
 | device_grid_tiles           | 1.00     | 1.00     |
 | min_chan_width              | 1.00     | 1.02     |
-| crit_path_routed_wirelength | 1.00     | 0.98     |
+| crit_path_routed_wirelength | 1.00     | 1.01     |
+| critical_path_delay         | 1.00     | 0.98     |
 | vtr_flow_elapsed_time       | 1.00     | 0.92     |
 | pack_time                   | 1.00     | 0.42     |
 | place_time                  | 1.00     | 0.87     |
 | min_chan_width_route_time   | 1.00     | 1.03     |
 | crit_path_route_time        | 1.00     | 0.96     |
 | max_vpr_mem                 | 1.00     | 0.89     |
+
+From the results we can see that our change, on average, achieved a small reduction in the number of logic blocks (0.95) in return for a 2% increase in minimum channel width and 1% increase in routed wirelength. From a run-time persepective the packer is substantially faster (0.42).
 
 ### Automated QoR Comparison Script
 To automate some of the QoR comparison VTR includes a script to compare pares_resutls.txt files and generate a spreadsheet including the ratio and summary tables.
