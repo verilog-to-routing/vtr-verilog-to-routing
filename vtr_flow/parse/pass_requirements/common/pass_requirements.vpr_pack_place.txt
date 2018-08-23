@@ -8,6 +8,8 @@ num_post_packed_nets;Range(0.80,1.20)
 #Device sizing
 device_width;Range(0.9,1.10)
 device_height;Range(0.9,1.10)
+device_grid_tiles;Range(0.9,1.10)
+device_name;Equal()
 
 #Run-time
 pack_time;RangeAbs(0.10,10.0,2)
