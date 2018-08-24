@@ -66,7 +66,7 @@ while(($line = <$abcInFile>))
 					{
 
 						#Print Out the Line with the Restored Latch Information Included
-					    print $abcOutFile join(" ", (@tokens[0], @tokens[1], @tokens[2], @tokensOdn[3], @tokensOdn[4], @tokens[3]) ), "\n";
+					    print $abcOutFile join(" ", (@tokens[0], @tokens[1], @tokens[2], @tokensOdn[3], @tokensOdn[4], @tokensOdn[5]) ), "\n";
 
 						#Say that we Found the Droids we're Looking For
 						$found = 1;
