@@ -1,9 +1,9 @@
 #VPR Netlist statistics
-num_primary_inputs;vpr.out;\s+\.input\s+:\s+(\d+)
-num_primary_outputs;vpr.out;\s+\.output\s+:\s+(\d+)
+num_primary_inputs;vpr.out;\s+\.input\s*:\s+(\d+)
+num_primary_outputs;vpr.out;\s+\.output\s*:\s+(\d+)
 num_pre_packed_nets;vpr.out;\s+Nets\s*:\s*(\d+)
 num_pre_packed_blocks;vpr.out;\s+Blocks\s*:\s*(\d+)
-num_netlist_clocks;vpr.out;\s+Netlist Clocks:\s+(\d+)
+num_netlist_clocks;vpr.out;\s+Netlist Clocks\s*:\s+(\d+)
 
 #VPR Packing Metrics
 num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
