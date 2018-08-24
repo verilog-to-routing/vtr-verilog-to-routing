@@ -1,8 +1,13 @@
 #Common metrics for VPR packing and placement
 
-#Packing Metrics
+
+#Pre-Packing Metrics
+num_primary_inputs;Range(0.95,1.05)
+num_primary_outputs;Range(0.95,1.05)
 num_pre_packed_nets;Range(0.95,1.05)
 num_pre_packed_blocks;Range(0.95,1.05)
+
+#Packing Metrics
 num_post_packed_nets;Range(0.80,1.20)
 num_post_packed_blocks;Range(0.80,1.20)
 
