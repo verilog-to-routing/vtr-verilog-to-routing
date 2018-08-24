@@ -155,8 +155,6 @@ static std::unordered_map<AtomBlockId,float> seed_blend_gain;
 /*local functions*/
 /*****************************************/
 
-static void check_clocks(const std::unordered_set<AtomNetId>& is_clock);
-
 #if 0
 static void check_for_duplicate_inputs ();
 #endif
@@ -408,7 +406,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = nullptr; /* if used, die hard */
 	}
 
-	check_clocks(is_clock);
 #if 0
 	check_for_duplicate_inputs ();
 #endif
@@ -768,31 +765,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
 	free (primitives_list);
-}
-
-/*****************************************/
-static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
-
-	/* Checks that nets used as clock inputs to latches are never also used *
-	 * as VPACK_LUT inputs.  It's electrically questionable, and more importantly *
-	 * would break the clustering code.                                     */
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    for(auto blk_id : atom_ctx.nlist.blocks()) {
-		if (atom_ctx.nlist.block_type(blk_id) != AtomBlockType::OUTPAD) {
-            for(auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
-                auto net_id = atom_ctx.nlist.pin_net(pin_id);
-                if (is_clock.count(net_id)) {
-                    vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                            "Error in check_clocks.\n"
-                            "Net %s is a clock, but also connects to a logic block input on atom block %s.\n"
-                            "This would break the current clustering implementation and is electrically "
-                            "questionable, so clustering has been aborted.\n",
-                            atom_ctx.nlist.net_name(net_id).c_str(), atom_ctx.nlist.block_name(blk_id).c_str());
-                }
-            }
-		}
-	}
 }
 
 /* Determine if atom block is in pb */
@@ -1887,11 +1859,6 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         }
 
         /* Finally Clocks */
-		/* Note:  The code below ONLY WORKS when nets that go to clock inputs *
-		 * NEVER go to the input of a VPACK_COMB.  It doesn't really make electrical *
-		 * sense for that to happen, and I check this in the check_clocks     *
-		 * function.  Don't disable that sanity check.                        */
-        //TODO: lift above restriction (does happen on some circuits)
         for(auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
             auto net_id = atom_ctx.nlist.pin_net(pin_id);
             if (global_clocks) {

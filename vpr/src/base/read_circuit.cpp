@@ -11,7 +11,6 @@
 #include "vtr_time.h"
 
 static void process_circuit(AtomNetlist& netlist,
-                            const t_model* library_models,
                             bool should_absorb_buffers,
                             bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
@@ -60,7 +59,6 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     }
 
     process_circuit(netlist,
-                    library_models,
                     should_absorb_buffers,
                     should_sweep_dangling_primary_ios,
                     should_sweep_dangling_nets,
@@ -79,7 +77,6 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 }
 
 static void process_circuit(AtomNetlist& netlist,
-                            const t_model *library_models,
                             bool should_absorb_buffers,
                             bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
@@ -121,16 +118,6 @@ static void process_circuit(AtomNetlist& netlist,
                         should_sweep_dangling_blocks,
                         should_sweep_constant_primary_outputs,
                         verbose_sweep);
-
-        //Fix-up cases where a clock is used as a data input
-        // Currently such connections break the clusterer, so
-        // we take care of them here. Note that this modification
-        // likely causes the netlist to no longer be logically equivalent
-        // to the input
-        bool should_fix_clock_to_data_conversions = true; //TODO make cmd line option
-        if(should_fix_clock_to_data_conversions) {
-            fix_clock_to_data_conversions(netlist, library_models);
-        }
     }
 
     {

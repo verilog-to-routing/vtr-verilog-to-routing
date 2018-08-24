@@ -366,7 +366,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     /*
      *Report on the device
      */
-    vtr::printf_info("FPGA sized to %zu x %zu (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), device_ctx.grid.name().c_str());
+    vtr::printf_info("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), device_ctx.grid.width() * device_ctx.grid.height(), device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");

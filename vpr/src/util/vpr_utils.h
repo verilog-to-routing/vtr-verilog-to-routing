@@ -33,7 +33,14 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 
 void sync_grid_to_blocks();
 
+//Returns the name of the pin_index'th pin on the specified block type
 std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index);
+
+//Returns the name of the class_index'th pin class on the specified block type
+std::vector<std::string> block_type_class_index_to_pin_names(t_type_ptr type, int class_index);
+
+//Returns a user-friendly architectural identifier for the specified RR node
+std::string rr_node_arch_name(int inode);
 
 /**************************************************************
 * Intra-Logic Block Utility Functions

@@ -964,8 +964,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 		for (auto pin_id : clb_nlist.net_sinks(net_id)) {
 			bool is_global_net = clb_nlist.net_is_global(net_id);
 			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_global_pin[clb_nlist.pin_physical_index(pin_id)] != is_global_net) {
-				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-					"Netlist attempts to connect net %s to both global and non-global pins.\n",
+                vtr::printf_warning(__FILE__, __LINE__,
+					"Netlist connects net %s to both global and non-global pins.\n",
 					clb_nlist.net_name(net_id).c_str());
 			}
 		}
