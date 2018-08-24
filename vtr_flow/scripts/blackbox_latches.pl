@@ -43,6 +43,11 @@ if ( $ARGC > 1 )
 {
 	open($OutFile, ">" .$ARGV[1]) || die "Error Opening BLIF output File $ARGV[1]: $!\n";
 }
+else
+{
+	my $clkfile = $ARGV[0].".clklist";
+	open($OutFile, ">" .$clkfile) || die "Error Opening clock list output File $ARGV[0].clklist: $!\n";
+}
 
 if ( $ARGC > 2 )
 {
@@ -66,7 +71,7 @@ my $skip = 0;
 my $lineNum = 0;
 
 #only print blackboxed version
-while( ($line = <$InFile>) )
+while( ($line = <$InFile>) && !eof ($InFile))
 {
 	$lineNum += 1;
 	
@@ -156,41 +161,42 @@ while( ($line = <$InFile>) )
 	}
 }
 
+#print the .module for bb latches at the end of the file
+foreach my $module (keys %bb_clocks_map) 
+{
+	print $OutFile ".module ".$module."\n.input\n i[0]\n.output\n o[0]\n.blackbox\n.end\n\n";
+}
+
 my $clocked = join(", ", keys %clocks_map);
+my $bb_clocked = join(", ", keys %bb_clocks_map);
+print "clocks: ".$clocked."\n";
+print "black_boxed_clocks: ".$bb_clocked."\n";
 
-if ($ARGC == 1)
+if ( $ARGC > 2 )
 {
-	print $clocked."\n";
-}
-else
-{
-	my $clocked = join(", ", keys %clocks_map);
-	my $bb_clocked = join(", ", keys %bb_clocks_map);
-	print "clocks: ".$clocked."\n";
-	print "black_boxed_clocks: ".$bb_clocked."\n";
-
-	if ( $ARGC > 2 )
+	foreach my $clks (keys %clocks_not_to_bb) 
 	{
-		print "malformed or non-existant input clock: ";
-		$comma_separate = 0;
-		for my $clks (split(/[\s]*,[\s]*/,$ARGV[2])) 
+		if ( $clocks_not_to_bb{$clks} != 1 )
 		{
-			
-			if ( $clocks_not_to_bb{$clks} == 1 )
-			{
-				if( $comma_separate )
-				{
-					print ", ";
-				}
-				print $clks;
-				$count += 1;
-			}
+			delete $clocks_not_to_bb{$clks}
 		}
-		print "\n";
 	}
-	close($OutFile);
+	if( ($size = keys %clocks_not_to_bb) > 0 )
+	{
+		my $wrong_input_clk = join(", ", keys %clocks_not_to_bb);
+		print "malformed or non-existant input clock: ".$wrong_input_clk."\n";
+
+	}
+
+}
+if ( $ARGC == 1)
+{
+	my $clocked = join("\n", keys %clocks_map);
+	my $bb_clocked = join("\n", keys %bb_clocks_map);
+	print $OutFile $clocked."\n".$bb_clocked."\n";
 }
 
+close($OutFile);
 close($InFile);
 
 exit(0);
