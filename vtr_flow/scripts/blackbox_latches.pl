@@ -12,13 +12,16 @@ print
 	This script is necessary because ABC Does not support more then one clock and drops all other clock information. 
 	This script black boxes latches unless specified and vice versa.
 
-	Usage:	./exec <input_blif> [ <output_blif> [ <clocks_not_to_black_box(comma separated list)> ] ]
+	Usage:	./exec <input_blif> [ <output_blif> [ --all/--vanilla/<clocks_not_to_black_box(comma separated list)> ] ]
 
 		./exec <input_blif>
 			-> comma separated list of clks in the files
 
-		./exec <input_blif> <output_blif>
+		./exec <input_blif> <output_blif> [--all]
 			-> write to file the result (all latches with clocks are black boxed) and report
+		
+		./exec <input_blif> <output_blif> --vanilla
+			-> write to file the result (all latches are restored to vanilla) and report
 
 		./exec <input_blif> <output_blif> <clocks_not_to_black_box>
 			-> write to file the result (all latches with clocks except those specified are black boxed) and report
@@ -32,6 +35,7 @@ my $OutFile;
 my $InFile;
 my $uniqID_separator = "_^_";
 my $vanilla = 0;
+my $all_bb = 0;
 
 if ( $ARGC > 3 || $ARGC < 1 )
 {
@@ -56,6 +60,10 @@ if ( $ARGC > 2 )
 	if ($ARGV[2] =~ /\-\-vanilla/)
 	{
 		$vanilla = 1;
+	}
+	elsif ($ARGV[2] =~ /\-\-all/)
+	{
+		$all_bb = 1;
 	}
 	else
 	{
@@ -122,7 +130,7 @@ while( ($line = <$InFile>))
 				}
 
 				#if we have an output file then we can black box some clocks
-				if($vanilla || exists($clocks_not_to_bb{$clk_domain_name}))
+				if(!$all_bb && ($vanilla || exists($clocks_not_to_bb{$clk_domain_name})))
 				{
 					if( !$vanilla )
 					{

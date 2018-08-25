@@ -118,7 +118,15 @@ my $expect_fail = 0;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $use_odin_xml_config = 1;
-my $odin_run_simulation = 1;
+my $odin_run_simulation = 0;
+
+
+# type 1 is skipping ABC
+# type 2 is black box all
+# type 3 is using only vaniila latches
+# type 4 is itterative black boxing of latches per clock domain
+
+my $abc_flow_type = 3;
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
@@ -429,75 +437,111 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
+	# type 1 is skipping ABC
+	if( $abc_flow_type == 1 )
+	{
+		system "cp $odin_output_file_name $abc_output_file_name";
+	}
+	else
+	{
+		my %clock_list;
 
-	#this is not made mandatory since some hardblocks are not recognized by odin
-	if($odin_run_simulation) {
-		system "mkdir simulation_init";
+		# type 2 is black box all
+		if( $abc_flow_type == 2) 
+		{
+			$clock_list{"--all"} = "";
+		}
+		# type 3 is using only vanilla latches
+		elsif( $abc_flow_type == 3 )
+		{
+			$clock_list{"--vanilla"} = "";
+		}
+		# type 3 is itterative black boxing of latches per clock domain
+		if( $abc_flow_type == 4 )
+		{
+			# populate the clock list
+			##########
+			# get all the clock domains and parse the initial values for each.
+			#the script above creates a file named after the input file with .clklist appended in the same directory
+			#we will iterate though the file and use each clock iteratively
 
-		$q = &system_with_timeout( "$odin2_path", "sim_produce_vector.out", $timeout, $temp_dir,
-			"-E",
-			"-b", $temp_dir . $odin_output_file_name,
-			"-a", $temp_dir . $architecture_file_name,
-			"-sim_dir", $temp_dir."simulation_init/",
-			"-g", "100");
-			
-		if ( ! -e $odin_output_file_path or $q ne "success") {
-			$odin_run_simulation = 0;
-			if ( !$keep_intermediate_files ) {
-				system "rm -f ${temp_dir}*.dot";
-				system "rm -f ${temp_dir}*.v";
-				system "rm -f $odin_config_file_path";
+			$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
+					$odin_output_file_name);
+
+			if ($q ne "success") {
+				$error_status = "failed: to find available clocks in blif file";
+				$error_code = 1;
+			}
+			my $clock_list_file;
+			open ($clock_list_file, "<", $odin_output_file_name.".clklist") or die "Unable to open \"".$odin_output_file_name.".clklist\": $! \n";
+
+			#read line and strip whitespace of line
+			while((my $line = <$clock_list_file>) =~ s/^\s+|\s+$//g ) 
+			{
+				if($line =~ /latch/)
+				{
+					#get the initial value out
+					my @tokenized_clk = split(/_^_/, $line);
+					my $clock_name_token_len = @tokenized_clk;
+					if($clock_name_token_len > 3)
+					{
+						$clock_list{$line} = "init ".@tokenized_clk[3].";";
+					}
+					else
+					{
+						# if none is defined, use dont care
+						$clock_list{$line} = "";
+					}
+				}
 			}
 		}
-	}
 
+		################
+		#	SIMULATION
+		#this is not made mandatory since some hardblocks are not recognized by odin
+		if($odin_run_simulation) {
+			system "mkdir simulation_init";
 
-#################################################################################
-########################## ITTERATIVE BLACK BOXING ##############################
-#################################################################################
-
-	# find out all the available clocks
-	$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
-			$odin_output_file_name);
-
-	if ($q ne "success") {
-		$error_status = "failed: to find available clocks in blif file";
-		$error_code = 1;
-	}
-
-	#the script above creates a file named after the input file with .clklist appended in the same directory
-	#we will iterate though the file and use each clock iteratively
-	my $clock_list;
-	open ($clock_list, "<", $odin_output_file_name.".clklist") or die "Unable to open \"".$odin_output_file_name.".clklist\": $! \n";
-
-	my $new_blif = $odin_output_file_name;
-	my @clock_list_array;
-	my $iter_number=0;
-	while($line = <$clock_list>) 
-	{
-		$iter_number += 1;
-		$line =~ s/^\s+|\s+$//g;
-		if ($line =~ /latch/)
-		{
-
-			my $init = 0;
-			if((my $clock_name_token_len = (my @tokenized_clk = split(/_^_/, $line))) > 3)
-			{
-				$init = @tokenized_clk[3];
+			$q = &system_with_timeout( "$odin2_path", "sim_produce_vector.out", $timeout, $temp_dir,
+				"-E",
+				"-b", $temp_dir . $odin_output_file_name,
+				"-a", $temp_dir . $architecture_file_name,
+				"-sim_dir", $temp_dir."simulation_init/",
+				"-g", "100");
+				
+			if ( ! -e $odin_output_file_path or $q ne "success") {
+				$odin_run_simulation = 0;
+				if ( !$keep_intermediate_files ) {
+					system "rm -f ${temp_dir}*.dot";
+					system "rm -f ${temp_dir}*.v";
+					system "rm -f $odin_config_file_path";
+				}
 			}
+		}
 
+		#####
+		# setup itterative optimization
+		my $new_blif = $odin_output_file_name;
+		my $iter_number=0;
+		foreach my $clock_domain (keys %clock_list)
+		{
+			$iter_number++;
 			my $previous_blif = $new_blif;
 			$new_blif = $iter_number."_".$odin_output_file_name;
 			my $new_abc = $iter_number."_".$abc_output_file_name;
+			my $init = "";
 
-			# black box all clocks except one
+			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $iter_number."_blackboxing_clocks.abc.out", $timeout, $temp_dir,
-					$previous_blif, $new_blif, $line);
+					$previous_blif, $new_blif, $clock_domain);
 
 			if ($q ne "success") {
-				$error_status = "failed: to black box the clock <".$line."> for file_in: ".$previous_blif." file_out: ".$new_blif;
+				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$previous_blif." file_out: ".$new_blif;
 				$error_code = 1;
 			}
+			$init = %clock_list{$clock_domain};
+
+
 
 
 #################################################################################
@@ -530,7 +574,7 @@ if (    $starting_stage <= $stage_idx_abc
 			echo 'Load Netlist';
 			echo '============';
 			read $new_blif;
-			init $init;
+			$init
 			time;
 
 			echo '';
@@ -613,44 +657,43 @@ if (    $starting_stage <= $stage_idx_abc
 				$error_code = 1;
 			}
 		}
-	}
 
 #################################################################################
 ########################## POST-ABC #############################################
 #################################################################################
+		#return all clocks to vanilla clocks
+		$q = &system_with_timeout($blackbox_latches_script, "FINAL_blackboxing_clocks.abc.out", $timeout, $temp_dir,
+				$new_blif, $abc_output_file_name, "--vanilla");
 
-	#return all clocks to vanilla clocks
-	$q = &system_with_timeout($blackbox_latches_script, "FINAL_blackboxing_clocks.abc.out", $timeout, $temp_dir,
-			$new_blif, $abc_output_file_name, "--vanilla");
-
-	if ($q ne "success") {
-		$error_status = "failed: to return to vanilla the following clocks.\n";
-		$error_code = 1;
-	}
-	
-	if($odin_run_simulation)  {
-		
-		system "mkdir simulation_test";
-
-		$q = &system_with_timeout( "$odin2_path", "odin_simulation.out", $timeout, $temp_dir,
-			"-E",
-			"--adder_type", $odin_adder_config_path,
-			"-b", $temp_dir . $abc_output_file_name,
-			"-a", $temp_dir . $architecture_file_name,
-			"-t", $temp_dir . "simulation_init/input_vectors",
-			"-T", $temp_dir . "simulation_init/output_vectors",
-			"-sim_dir", $temp_dir."simulation_test/");
-
-		if ( ! -e $odin_output_file_path or $q ne "success") {
-			$error_status = "failed: odin Simulation";
+		if ($q ne "success") {
+			$error_status = "failed: to return to vanilla.\n";
 			$error_code = 1;
 		}
-		else
-		{
-			if ( !$keep_intermediate_files ) {
-				system "rm -f ${temp_dir}*.dot";
-				system "rm -f ${temp_dir}*.v";
-				system "rm -f $odin_config_file_path";
+		
+		if($odin_run_simulation)  {
+			
+			system "mkdir simulation_test";
+
+			$q = &system_with_timeout( "$odin2_path", "odin_simulation.out", $timeout, $temp_dir,
+				"-E",
+				"--adder_type", $odin_adder_config_path,
+				"-b", $temp_dir . $abc_output_file_name,
+				"-a", $temp_dir . $architecture_file_name,
+				"-t", $temp_dir . "simulation_init/input_vectors",
+				"-T", $temp_dir . "simulation_init/output_vectors",
+				"-sim_dir", $temp_dir."simulation_test/");
+
+			if ( ! -e $odin_output_file_path or $q ne "success") {
+				$error_status = "failed: odin Simulation";
+				$error_code = 1;
+			}
+			else
+			{
+				if ( !$keep_intermediate_files ) {
+					system "rm -f ${temp_dir}*.dot";
+					system "rm -f ${temp_dir}*.v";
+					system "rm -f $odin_config_file_path";
+				}
 			}
 		}
 	}
