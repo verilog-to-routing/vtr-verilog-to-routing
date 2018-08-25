@@ -572,7 +572,7 @@ if ($q ne "success") {
 			$new_blif = $iter_number."_".$odin_output_file_name;
 			my $new_abc = $iter_number."_".$abc_output_file_name;
 
-			# find out all the available clocks
+			# black box all clocks except one
 			$q = &system_with_timeout($blackbox_latches_script, $iter_number."_blackboxing_clocks.abc.out", $timeout, $temp_dir,
 					$previous_blif, $new_blif, $line);
 
@@ -696,10 +696,10 @@ if ($q ne "success") {
 
 	# find out all the available clocks
 	$q = &system_with_timeout($blackbox_latches_script, "FINAL_blackboxing_clocks.abc.out", $timeout, $temp_dir,
-			$new_blif, $abc_output_file_name, join(", ", @clock_list_array));
+			$new_blif, $abc_output_file_name, join(",", @clock_list_array));
 
 	if ($q ne "success") {
-		$error_status = "failed: to return to vanilla the clock ".(join(", ", @clock_list_array));
+		$error_status = "failed: to return to vanilla the clock ".(join(",", @clock_list_array));
 		$error_code = 1;
 	}
 }

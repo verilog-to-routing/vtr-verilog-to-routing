@@ -30,7 +30,7 @@ my $ARGC = @ARGV;
 my %clocks_not_to_bb;
 my $OutFile;
 my $InFile;
-my $uniqID_separator = "|";
+my $uniqID_separator = "_^_";
 
 if ( $ARGC > 3 || $ARGC < 1 )
 {
@@ -76,11 +76,8 @@ while( ($line = <$InFile>))
 	$lineNum += 1;
 	
 	#If the Line is a bb latch module declaration skip it
-	$skip = ( (!$skip) && ($line =~ /^\.model[\s]+latch\|/) )? 1: $skip;
-	# until ...
-	#if the Line is a .end after a bb module declaration dont skip it
-	$skip = ( ($skip) && ($line =~ /^\.end/))? 0: $skip;
-	#else
+	$skip = ( (!$skip) && ($line =~ /^\.model[\s]+latch/) )? 1: $skip;
+
 	if (!$skip)
 	{
 		##############################
@@ -88,7 +85,7 @@ while( ($line = <$InFile>))
 		#   blackboxed latch
 		#		[0]		[1]							[2]				[3]
 		#       .subckt	latch|<type>|<clk>|<init>	i[0]=<driver> 	o[0]=<output>
-		if ($line =~ /^\.subckt[\s]+latch\|/)
+		if ($line =~ /^\.subckt[\s]+latch/)
 		{
 			my @tokens = split(/[\s]+/, $line);
 			my @reformat_clk = split(/\Q$uniqID_separator\E/, @tokens[1]);
@@ -105,9 +102,11 @@ while( ($line = <$InFile>))
 		#       .latch	<driver>	<output>	[<type>]	[<clk>]	[<init>]
 		if($line =~ /^\.latch/)
 		{
+			print "FOUND ## ".$line;
 			$size = my @tokens = split(/[\s]+/,$line);
 			if($size > 3)
 			{
+
 				my $clk_domain_name = "latch";
 				#use everything after the output to create a clk name, which translate to a clock domain
 				for (my $i=3; $i < $size; $i++)
@@ -146,6 +145,9 @@ while( ($line = <$InFile>))
 		}
 
 	}
+	
+	#if the Line is a .end after a bb module declaration dont skip thereafter
+	$skip = ( ($skip) && ($line =~ /^\.end/))? 0: $skip;
 }
 
 # if we have an output file print the .module for bb latches at the end of the file
@@ -153,7 +155,7 @@ if( $ARGC > 1 )
 {
 	foreach my $module (keys %bb_clock_domain) 
 	{
-		print $OutFile ".module ".$module."\n.input\n i[0]\n.output\n o[0]\n.blackbox\n.end\n\n";
+		print $OutFile ".model ".$module."\n.inputs i\n.outputs o\n.blackbox\n.end\n\n";
 	}
 }
 # else create a file wich contains all the clock domains in the file (1/line)
@@ -179,6 +181,7 @@ foreach my $clks (keys %clocks_not_to_bb)
 if( ($size = keys %clocks_not_to_bb) > 0 )
 {
 	print "\n####\nERROR: malformed or non-existant input clock:\n\t".(join(", ", keys %clocks_not_to_bb))."\n####\n";
+	exit(-1);
 }
 
 #report number of latches per clock domain and if the clock domain is black boxed or not
