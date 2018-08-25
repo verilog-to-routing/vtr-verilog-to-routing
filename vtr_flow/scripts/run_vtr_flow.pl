@@ -540,12 +540,6 @@ if (    $starting_stage <= $stage_idx_abc
 {
 
 	# find out all the available clocks
-	#the script creates a file named after the input file with .clklist appended in the same directory
-	#we will use each clock in the file iteratively as 
-	my $clock_list;
-	my $new_blif = $odin_output_file_name;
-	my @clock_list_array;
-
 	$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
 			$odin_output_file_name);
 
@@ -554,7 +548,13 @@ if (    $starting_stage <= $stage_idx_abc
 		$error_code = 1;
 	}
 
+	#the script above creates a file named after the input file with .clklist appended in the same directory
+	#we will iterate though the file and use each clock iteratively
+	my $clock_list;
 	open ($clock_list, "<", $odin_output_file_name.".clklist") or die "Unable to open \"".$odin_output_file_name.".clklist\": $! \n";
+
+	my $new_blif = $odin_output_file_name;
+	my @clock_list_array;
 	while($line = <$clock_list>) 
 	{
 		$line =~ s/^\s+|\s+$//g;
@@ -565,17 +565,18 @@ if (    $starting_stage <= $stage_idx_abc
 	}
 
 	my $nb_of_clock_domain = @clock_list_array;
-	for(my $iter_number=1; $iter_number <= $nb_of_clock_domain; $iter_number++)
+	for(my $iter_number=0; $iter_number < $nb_of_clock_domain; $iter_number++)
 	{
 		my $init = 0;
 		my $clock_name = "";
-
-		$clock_name = @clock_list_array[$iter_number-1];
-		if((my $clock_name_token_len = (my @tokenized_clk = split(/_^_/, $line))) == 4)
-		{
-			$init = @tokenized_clk[3];
-		}
-
+		# if( $iter_number >  0)
+		# {
+			$clock_name = @clock_list_array[$iter_number];
+			if((my $clock_name_token_len = (my @tokenized_clk = split(/_^_/, $line))) == 4)
+			{
+				$init = @tokenized_clk[3];
+			}
+		# }
 
 		my $previous_blif = $new_blif;
 		$new_blif = $iter_number."_".$odin_output_file_name;
@@ -698,18 +699,15 @@ if (    $starting_stage <= $stage_idx_abc
 			$error_status = "failed: abc";
 			$error_code = 1;
 		}
+	}
 
-		if($iter_number ==  $nb_of_clock_domain)
-		{
-			#return all clocks to vanilla clocks
-			$q = &system_with_timeout($blackbox_latches_script, "vanilla_latches.abc.out", $timeout, $temp_dir,
-					$new_blif, $abc_output_file_name, "--vanilla");
+	#return all clocks to vanilla clocks
+	$q = &system_with_timeout($blackbox_latches_script, "FINAL_blackboxing_clocks.abc.out", $timeout, $temp_dir,
+			$new_blif, $abc_output_file_name, "--vanilla");
 
-			if ($q ne "success") {
-				$error_status = "failed: to return to vanilla the following clocks.\n";
-				$error_code = 1;
-			}
-		}
+	if ($q ne "success") {
+		$error_status = "failed: to return to vanilla the following clocks.\n";
+		$error_code = 1;
 	}
 }
 
