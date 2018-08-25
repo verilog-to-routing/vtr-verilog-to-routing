@@ -118,6 +118,7 @@ my $expect_fail = 0;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $use_odin_xml_config = 1;
+my $odin_run_simulation = 1;
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
@@ -242,8 +243,9 @@ if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
 	( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)";
 }
 
+#odin is now necessary for simulation
 my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
-if (    $stage_idx_odin >= $starting_stage
+if (    $stage_idx_abc >= $starting_stage 
 	and $stage_idx_odin <= $ending_stage )
 {
 	$odin2_path = exe_for_platform("$vtr_flow_path/../ODIN_II/odin_II");
@@ -403,7 +405,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 		if ( $use_odin_xml_config ) {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 				"-c", $odin_config_file_name, 
-				"--adder_type", $odin_adder_config_path);
+				"--adder_type", $odin_adder_config_path,);
 		} else {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 				"--adder_type", $odin_adder_config_path,
@@ -412,14 +414,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 				"-o", $temp_dir . $odin_output_file_name);
 		}
 
-		if ( -e $odin_output_file_path and $q eq "success") {
-			if ( !$keep_intermediate_files ) {
-				system "rm -f ${temp_dir}*.dot";
-				system "rm -f ${temp_dir}*.v";
-				system "rm -f $odin_config_file_path";
-			}
-		}
-		else {
+		if ( ! -e $odin_output_file_path or $q ne "success") {
 			$error_status = "failed: odin";
 			$error_code = 1;
 		}
@@ -427,12 +422,39 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 }
 
 #################################################################################
-################################## ABC ##########################################
+################################ PRE-ABC ########################################
 #################################################################################
+
 if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
+
+	#this is not made mandatory since some hardblocks are not recognized by odin
+	if($odin_run_simulation) {
+		system "mkdir simulation_init";
+
+		$q = &system_with_timeout( "$odin2_path", "sim_produce_vector.out", $timeout, $temp_dir,
+			"-E",
+			"-b", $temp_dir . $odin_output_file_name,
+			"-a", $temp_dir . $architecture_file_name,
+			"-sim_dir", $temp_dir."simulation_init/",
+			"-g", "100");
+			
+		if ( ! -e $odin_output_file_path or $q ne "success") {
+			$odin_run_simulation = 0;
+			if ( !$keep_intermediate_files ) {
+				system "rm -f ${temp_dir}*.dot";
+				system "rm -f ${temp_dir}*.v";
+				system "rm -f $odin_config_file_path";
+			}
+		}
+	}
+
+
+#################################################################################
+########################## ITTERATIVE BLACK BOXING ##############################
+#################################################################################
 
 	# find out all the available clocks
 	$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
@@ -450,151 +472,152 @@ if (    $starting_stage <= $stage_idx_abc
 
 	my $new_blif = $odin_output_file_name;
 	my @clock_list_array;
+	my $iter_number=0;
 	while($line = <$clock_list>) 
 	{
+		$iter_number += 1;
 		$line =~ s/^\s+|\s+$//g;
 		if ($line =~ /latch/)
 		{
-			push(@clock_list_array, $line);
-		}
-	}
 
-	my $nb_of_clock_domain = @clock_list_array;
-	for(my $iter_number=0; $iter_number < $nb_of_clock_domain; $iter_number++)
-	{
-		my $init = 0;
-		my $clock_name = "";
-		# if( $iter_number >  0)
-		# {
-			$clock_name = @clock_list_array[$iter_number];
-			if((my $clock_name_token_len = (my @tokenized_clk = split(/_^_/, $line))) == 4)
+			my $init = 0;
+			if((my $clock_name_token_len = (my @tokenized_clk = split(/_^_/, $line))) > 3)
 			{
 				$init = @tokenized_clk[3];
 			}
-		# }
 
-		my $previous_blif = $new_blif;
-		$new_blif = $iter_number."_".$odin_output_file_name;
-		my $new_abc = $iter_number."_".$abc_output_file_name;
+			my $previous_blif = $new_blif;
+			$new_blif = $iter_number."_".$odin_output_file_name;
+			my $new_abc = $iter_number."_".$abc_output_file_name;
 
-		# black box all clocks except one
-		$q = &system_with_timeout($blackbox_latches_script, $iter_number."_blackboxing_clocks.abc.out", $timeout, $temp_dir,
-				$previous_blif, $new_blif, $clock_name);
-
-		if ($q ne "success") {
-			$error_status = "failed: to black box the clock <".$clock_name."> for file_in: ".$previous_blif." file_out: ".$new_blif;
-			$error_code = 1;
-		}
-
-		#For ABC’s documentation see: https://people.eecs.berkeley.edu/~alanmi/abc/abc.htm
-		#
-		#Some key points on the script used:
-		#
-		#  strash : The strash command (which build's ABC's internal AIG) is needed before clean-up
-		#           related commands (e.g. ifraig) otherwise they will fail with “Only works for
-		#           structurally hashed networks”.
-		#
-		#  if –K #: This command techmaps the logic to LUTS. It should appear as the (near) final step
-		#           before writing the optimized netlist. In recent versions, ABC does not remember
-		#           that LUT size you want to techmap to. As a result, specifying if -K # early in
-		#           the script causes ABC techmap to 2-LUTs, greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
-		#
-		# The current script is based off the one used by YOSYS and on discussions with Alan Mishchenko (ABC author).
-		# On 2018/04/28 Alan suggested the following:
-		#   (1) run synthesis commands such as "dc2" after "ifraig" and "scorr" (this way more equivalences are typically found - improves quality)
-		#   (2) run "ifraig" before "scorr" (this way comb equivalences are removed before seq equivalences are computed - improves runtime)
-		#   (3) run "dch -f" immediately before mapping "if" (this alone greatly improves both area and delay of mapping)
-		#   (4) no need to run "scleanup" if "scorr" is used ("scorr" internally performs "scleanup" - improves runtime)
-		#   (5) no need to run"dc2" if "dch -f" is used, alternatively run "dc2; dch -f" (this will take more runtime but may not improve quality)
-		#   (6) the only place to run "strash" is after technology mapping (if the script is run more than once - can improve quality)
-		my $abc_commands="
-		echo '';
-		echo 'Load Netlist';
-		echo '============';
-		read $new_blif;
-		init $init;
-		time;
-
-		echo '';
-		echo 'Circuit Info';
-		echo '==========';
-		print_stats;
-		print_latch;
-		time;
-
-		echo '';
-		echo 'LUT Costs';
-		echo '=========';
-		print_lut;
-		time;
-
-		echo '';
-		echo 'Logic Opt + Techmap';
-		echo '===================';
-		strash;
-		ifraig -v;
-		scorr -v;
-		dc2 -v;
-		dch -f;
-		if -K $lut_size -v;
-		mfs2 -v;
-		print_stats;
-		time;
-
-		echo '';
-		echo 'Output Netlist';
-		echo '==============';
-		write_hie $new_blif $abc_raw_output_file_name;
-		time;
-		";
-
-		if ($use_old_abc) {
-			#Legacy ABC script
-			$abc_commands="read $new_blif; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $new_blif $abc_raw_output_file_name; print_stats";
-		}
-
-		$abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
-
-		if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
-
-		#added so that valgrind will not run on abc because of existing memory errors
-		if ($valgrind) {
-				$valgrind = 0;
-			$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-			$abc_commands);
-				$valgrind = 1;
-		}
-		else {
-			$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-					$abc_commands);
-		}
-
-		if ( -e $abc_raw_output_file_path and $q eq "success") {
-
-			# Restore Multi-Clock Latch Information from ODIN II that was striped out by ABC
-			$q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.abc.out", $timeout, $temp_dir,
-					$new_blif, $abc_raw_output_file_name, $new_abc);
+			# black box all clocks except one
+			$q = &system_with_timeout($blackbox_latches_script, $iter_number."_blackboxing_clocks.abc.out", $timeout, $temp_dir,
+					$previous_blif, $new_blif, $line);
 
 			if ($q ne "success") {
-				$error_status = "failed: to restore multi-clock latch info";
+				$error_status = "failed: to black box the clock <".$line."> for file_in: ".$previous_blif." file_out: ".$new_blif;
 				$error_code = 1;
-
 			}
 
-			#system "rm -f abc.out";
-			if ( !$keep_intermediate_files ) {
-				if (! $do_power) {
-					system "rm -f $odin_output_file_path";
+
+#################################################################################
+#################################### ABC ########################################
+#################################################################################
+
+			#For ABC’s documentation see: https://people.eecs.berkeley.edu/~alanmi/abc/abc.htm
+			#
+			#Some key points on the script used:
+			#
+			#  strash : The strash command (which build's ABC's internal AIG) is needed before clean-up
+			#           related commands (e.g. ifraig) otherwise they will fail with “Only works for
+			#           structurally hashed networks”.
+			#
+			#  if –K #: This command techmaps the logic to LUTS. It should appear as the (near) final step
+			#           before writing the optimized netlist. In recent versions, ABC does not remember
+			#           that LUT size you want to techmap to. As a result, specifying if -K # early in
+			#           the script causes ABC techmap to 2-LUTs, greatly increasing the amount of logic required (CLB’s, blocks, nets, etc.).
+			#
+			# The current script is based off the one used by YOSYS and on discussions with Alan Mishchenko (ABC author).
+			# On 2018/04/28 Alan suggested the following:
+			#   (1) run synthesis commands such as "dc2" after "ifraig" and "scorr" (this way more equivalences are typically found - improves quality)
+			#   (2) run "ifraig" before "scorr" (this way comb equivalences are removed before seq equivalences are computed - improves runtime)
+			#   (3) run "dch -f" immediately before mapping "if" (this alone greatly improves both area and delay of mapping)
+			#   (4) no need to run "scleanup" if "scorr" is used ("scorr" internally performs "scleanup" - improves runtime)
+			#   (5) no need to run"dc2" if "dch -f" is used, alternatively run "dc2; dch -f" (this will take more runtime but may not improve quality)
+			#   (6) the only place to run "strash" is after technology mapping (if the script is run more than once - can improve quality)
+			my $abc_commands="
+			echo '';
+			echo 'Load Netlist';
+			echo '============';
+			read $new_blif;
+			init $init;
+			time;
+
+			echo '';
+			echo 'Circuit Info';
+			echo '==========';
+			print_stats;
+			print_latch;
+			time;
+
+			echo '';
+			echo 'LUT Costs';
+			echo '=========';
+			print_lut;
+			time;
+
+			echo '';
+			echo 'Logic Opt + Techmap';
+			echo '===================';
+			strash;
+			ifraig -v;
+			scorr -v;
+			dc2 -v;
+			dch -f;
+			if -K $lut_size -v;
+			mfs2 -v;
+			print_stats;
+			time;
+
+			echo '';
+			echo 'Output Netlist';
+			echo '==============';
+			write_hie $new_blif $abc_raw_output_file_name;
+			time;
+			";
+
+			if ($use_old_abc) {
+				#Legacy ABC script
+				$abc_commands="read $new_blif; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $new_blif $abc_raw_output_file_name; print_stats";
+			}
+
+			$abc_commands =~ s/\R/ /g; #Convert new-lines to spaces
+
+			if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
+
+			#added so that valgrind will not run on abc because of existing memory errors
+			if ($valgrind) {
+					$valgrind = 0;
+				$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+				$abc_commands);
+					$valgrind = 1;
+			}
+			else {
+				$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+						$abc_commands);
+			}
+
+			if ( -e $abc_raw_output_file_path and $q eq "success") {
+
+				# Restore Multi-Clock Latch Information from ODIN II that was striped out by ABC
+				$q = &system_with_timeout($restore_multiclock_info_script, "restore_multiclock_latch_information.abc.out", $timeout, $temp_dir,
+						$new_blif, $abc_raw_output_file_name, $new_abc);
+
+				if ($q ne "success") {
+					$error_status = "failed: to restore multi-clock latch info";
+					$error_code = 1;
+
 				}
-				system "rm -f ${temp_dir}*.rc";
+
+				#system "rm -f abc.out";
+				if ( !$keep_intermediate_files ) {
+					if (! $do_power) {
+						system "rm -f $odin_output_file_path";
+					}
+					system "rm -f ${temp_dir}*.rc";
+				}
+				$new_blif = $new_abc;
 			}
-			$new_blif = $new_abc;
-		}
-		else {
-			$error_status = "failed: abc";
-			$error_code = 1;
+			else {
+				$error_status = "failed: abc";
+				$error_code = 1;
+			}
 		}
 	}
+
+#################################################################################
+########################## POST-ABC #############################################
+#################################################################################
 
 	#return all clocks to vanilla clocks
 	$q = &system_with_timeout($blackbox_latches_script, "FINAL_blackboxing_clocks.abc.out", $timeout, $temp_dir,
@@ -603,6 +626,33 @@ if (    $starting_stage <= $stage_idx_abc
 	if ($q ne "success") {
 		$error_status = "failed: to return to vanilla the following clocks.\n";
 		$error_code = 1;
+	}
+	
+	if($odin_run_simulation)  {
+		
+		system "mkdir simulation_test";
+
+		$q = &system_with_timeout( "$odin2_path", "odin_simulation.out", $timeout, $temp_dir,
+			"-E",
+			"--adder_type", $odin_adder_config_path,
+			"-b", $temp_dir . $abc_output_file_name,
+			"-a", $temp_dir . $architecture_file_name,
+			"-t", $temp_dir . "simulation_init/input_vectors",
+			"-T", $temp_dir . "simulation_init/output_vectors",
+			"-sim_dir", $temp_dir."simulation_test/");
+
+		if ( ! -e $odin_output_file_path or $q ne "success") {
+			$error_status = "failed: odin Simulation";
+			$error_code = 1;
+		}
+		else
+		{
+			if ( !$keep_intermediate_files ) {
+				system "rm -f ${temp_dir}*.dot";
+				system "rm -f ${temp_dir}*.v";
+				system "rm -f $odin_config_file_path";
+			}
+		}
 	}
 }
 
