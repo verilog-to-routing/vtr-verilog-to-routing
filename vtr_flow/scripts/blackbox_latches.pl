@@ -20,7 +20,7 @@ print
 		./exec <input_blif> <output_blif>
 			-> write to file the result (all latches with clocks are black boxed) and report
 
-		./exec <input_blif> <output_blif> <clocks_not_to_black_box(comma separated list)>
+		./exec <input_blif> <output_blif> <clocks_not_to_black_box>
 			-> write to file the result (all latches with clocks except those specified are black boxed) and report
 
 ";
@@ -31,6 +31,7 @@ my %clocks_not_to_bb;
 my $OutFile;
 my $InFile;
 my $uniqID_separator = "_^_";
+my $vanilla = 0;
 
 if ( $ARGC > 3 || $ARGC < 1 )
 {
@@ -52,9 +53,16 @@ else
 
 if ( $ARGC > 2 )
 {
-	for my $clks (split(/[\s]*,[\s]*/,$ARGV[2])) 
+	if ($ARGV[2] =~ /\-\-vanilla/)
 	{
-		$clocks_not_to_bb{$clks} = 1;
+		$vanilla = 1;
+	}
+	else
+	{
+		foreach my $input_clocks (split(/,/, $ARGV[2]))
+		{
+			$clocks_not_to_bb{$input_clocks} = 1;
+		}
 	}
 }
 
@@ -66,11 +74,11 @@ if ( $ARGC > 2 )
 
 my %bb_clock_domain;
 my %vanilla_clk_domain;
+
 my %latches_location_map;
 
 my $skip = 0;
 my $lineNum = 0;
-
 while( ($line = <$InFile>))
 {
 	$lineNum += 1;
@@ -83,14 +91,14 @@ while( ($line = <$InFile>))
 		##############################
 		# if it finds a blackboxed latch restore the line read to a vanilla latch
 		#   blackboxed latch
-		#		[0]		[1]							[2]				[3]
-		#       .subckt	latch|<type>|<clk>|<init>	i[0]=<driver> 	o[0]=<output>
+		#		[0]		[1]							[2]				[3]			[4]
+		#       .subckt	latch|<type>|<clk>|<init>	i[0]=<driver> 	i[1]=clk	o[0]=<output>
 		if ($line =~ /^\.subckt[\s]+latch/)
 		{
 			my @tokens = split(/[\s]+/, $line);
 			my @reformat_clk = split(/\Q$uniqID_separator\E/, @tokens[1]);
 			my @reformat_driver = split(/\=/, @tokens[2]);
-			my @reformat_output = split(/\=/, @tokens[3]);
+			my @reformat_output = split(/\=/, @tokens[4]);
 
 			$line = ".latch ".@reformat_driver[1]." ".@reformat_output[1]." ".@reformat_clk[1]." ".@reformat_clk[2]." ".@reformat_clk[3]."\n";
 		}
@@ -102,9 +110,8 @@ while( ($line = <$InFile>))
 		#       .latch	<driver>	<output>	[<type>]	[<clk>]	[<init>]
 		if($line =~ /^\.latch/)
 		{
-			print "FOUND ## ".$line;
 			$size = my @tokens = split(/[\s]+/,$line);
-			if($size > 3)
+			if($size > 4)
 			{
 
 				my $clk_domain_name = "latch";
@@ -115,10 +122,13 @@ while( ($line = <$InFile>))
 				}
 
 				#if we have an output file then we can black box some clocks
-				if(exists($clocks_not_to_bb{$clk_domain_name}))
+				if($vanilla || exists($clocks_not_to_bb{$clk_domain_name}))
 				{
-					#show that we have found this clock
-					$clocks_not_to_bb{$clk_domain_name} += 1;
+					if( !$vanilla )
+					{
+						#show that we have found this clock
+						$clocks_not_to_bb{$clk_domain_name} += 1;
+					}
 
 					if(!exists($vanilla_clk_domain{$clk_domain_name}))
 					{
@@ -128,7 +138,7 @@ while( ($line = <$InFile>))
 				}
 				else
 				{
-					$line = ".subckt ".$clk_domain_name." i[0]=".@tokens[1]." o[0]=".@tokens[2]."\n";
+					$line = ".subckt ".$clk_domain_name." i[0]=".@tokens[1]." i[1]=".@tokens[4]." o[0]=".@tokens[2]."\n";
 					if(!exists($bb_clock_domain{$clk_domain_name}))
 					{
 						$bb_clock_domain{$clk_domain_name} = 0;	
@@ -155,7 +165,7 @@ if( $ARGC > 1 )
 {
 	foreach my $module (keys %bb_clock_domain) 
 	{
-		print $OutFile ".model ".$module."\n.inputs i\n.outputs o\n.blackbox\n.end\n\n";
+		print $OutFile ".model ".$module."\n.inputs i[0] i[1]\n.outputs o[0]\n11 1\n.blackbox\n.end\n\n";
 	}
 }
 # else create a file wich contains all the clock domains in the file (1/line)
@@ -169,20 +179,6 @@ else
 ####################################################
 
 print "Usage Statistic:\n\t<Clock UniqID>\t#<Number of Latches impacted>";
-
-#report wrongly typed/ unexistant input clock domain to keep vanilla
-foreach my $clks (keys %clocks_not_to_bb) 
-{
-	if ( $clocks_not_to_bb{$clks} != 1 )
-	{
-		delete $clocks_not_to_bb{$clks}
-	}
-}
-if( ($size = keys %clocks_not_to_bb) > 0 )
-{
-	print "\n####\nERROR: malformed or non-existant input clock:\n\t".(join(", ", keys %clocks_not_to_bb))."\n####\n";
-	exit(-1);
-}
 
 #report number of latches per clock domain and if the clock domain is black boxed or not
 print "\n____\nVanilla latches:";
@@ -203,6 +199,20 @@ if( ($size = %bb_clock_domain) == 0)
 foreach my $clks (keys %bb_clock_domain) 
 {
 	print "\n\t".$clks."\t#".$bb_clock_domain{$clks};
+}
+
+#report wrongly typed/ unexistant input clock domain to keep vanilla
+foreach my $clks (keys %clocks_not_to_bb) 
+{
+	if ( $clocks_not_to_bb{$clks} != 1 )
+	{
+		delete $clocks_not_to_bb{$clks}
+	}
+}
+if( ($size = keys %clocks_not_to_bb) > 0 )
+{
+	print "\n####\nERROR: malformed or non-existant input clock:\n\t<".(join(">\n\t<", keys %clocks_not_to_bb)).">\n####\n";
+	exit(-1);
 }
 
 print "\n\n";

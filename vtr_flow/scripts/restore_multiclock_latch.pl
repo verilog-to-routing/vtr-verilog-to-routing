@@ -25,7 +25,7 @@ open(my $abcOutFile, ">".$ARGV[2]) || die "Error Opening Output File $ARGV[2]: $
 while(($line = <$abcInFile>))
 {
 	#If the Line is a Latch
-	if ($line =~ /^.latch/ )
+	if ($line =~ /^\.latch/ )
 	{
 		#Tokenize the Line
 		my @tokens = split(/[\s]+/, $line);
@@ -52,7 +52,7 @@ while(($line = <$abcInFile>))
 			while(($lineOdn = <$odinInFile>) && !$found)
 			{
 				#If the Line is a Latch
-				if ($lineOdn =~ /^.latch/)
+				if ($lineOdn =~ /^\.latch/)
 				{
 					#Tokenize the Line
 					my @tokensOdn = split(/[\s]+/, $lineOdn);
