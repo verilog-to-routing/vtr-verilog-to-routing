@@ -644,7 +644,7 @@ if (    $starting_stage <= $stage_idx_abc
 				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$previous_blif." file_out: ".$new_blif;
 				$error_code = 1;
 			}
-			$init = %clock_list{$clock_domain};
+			$init = $clock_list{$clock_domain};
 
 
 
