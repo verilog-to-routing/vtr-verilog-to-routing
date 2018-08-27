@@ -118,15 +118,17 @@ my $expect_fail = 0;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $use_odin_xml_config = 1;
-my $odin_run_simulation = 0;
 
 
+##########
+# ABC flow modifiers
 # type 1 is skipping ABC
 # type 2 is using only vaniila latches
 # type 3 is black box all
 # type 4 is itterative black boxing of latches per clock domain
 my $abc_flow_type = 2;
 my $use_new_latches_restoration_script = 0;
+my $odin_run_simulation = 0;
 
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
@@ -456,29 +458,27 @@ if (    $starting_stage <= $stage_idx_abc
 	# skip ABC
 	if( $abc_flow_type == 1 )
 	{
-		print " Skipping ABC optimization in the flow\t";
 		$odin_run_simulation = 0;
 	}
 	# do not use black box latches for ABC
 	elsif( $abc_flow_type == 2) 
 	{
-		print " Using vanilla latches through ABC optimizer\t";
 		$clock_list{"--vanilla"} = " ";
 	}
 	# black box all latches for ABC
 	elsif( $abc_flow_type == 3 )
 	{
-		print " Black boxing all latches for ABC optimizer\t";
 		$clock_list{"--all"} = " ";
 	}
 	# itterative black boxing of latches for ABC
 	elsif( $abc_flow_type == 4 )
 	{
-		# populate the clock list
 		##########
-		# get all the clock domains and parse the initial values for each.
-		#the script above creates a file named after the input file with .clklist appended in the same directory
-		#we will iterate though the file and use each clock iteratively
+		#	Populate the clock list
+		#
+		#	get all the clock domains and parse the initial values for each.
+		#	the script above creates a file named after the input file with .clklist appended in the same directory
+		#	we will iterate though the file and use each clock iteratively
 
 		$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
 				$odin_output_file_name);
