@@ -126,6 +126,7 @@ my $odin_run_simulation = 0;
 # type 3 is black box all
 # type 4 is itterative black boxing of latches per clock domain
 my $abc_flow_type = 2;
+my $use_new_latches_restoration_script = 0;
 
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
@@ -292,7 +293,16 @@ if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
 	copy( $abc_rc_path, $temp_dir );
 }
 
-my $restore_multiclock_info_script = "$vtr_flow_path/scripts/restore_multiclock_latch.pl";
+my $restore_multiclock_info_script;
+if($use_new_latches_restoration_script)
+{
+	$restore_multiclock_info_script = "$vtr_flow_path/scripts/restore_multiclock_latch.pl";
+}
+else
+{
+	$restore_multiclock_info_script = "$vtr_flow_path/scripts/restore_multiclock_latch_information.pl";
+}
+
 my $blackbox_latches_script = "$vtr_flow_path/scripts/blackbox_latches.pl";
 
 my $ace_path;
