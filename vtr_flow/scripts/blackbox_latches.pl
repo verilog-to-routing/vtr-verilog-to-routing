@@ -36,6 +36,10 @@ my $InFile;
 my $uniqID_separator = "_^_";
 my $vanilla = 0;
 my $all_bb = 0;
+# this builds the truth table for the bb latch
+# is it necessary ?						
+#							driver clk  -> output
+my $bb_latch_truth_table ="11 1";
 
 if ( $ARGC > 3 || $ARGC < 1 )
 {
@@ -173,7 +177,7 @@ if( $ARGC > 1 )
 {
 	foreach my $module (keys %bb_clock_domain) 
 	{
-		print $OutFile ".model ".$module."\n.inputs i[0] i[1]\n.outputs o[0]\n11 1\n.blackbox\n.end\n\n";
+		print $OutFile ".model ${module}\n.inputs i[0] i[1]\n.outputs o[0]\n${bb_latch_truth_table}\n.blackbox\n.end\n\n";
 	}
 }
 # else create a file wich contains all the clock domains in the file (1/line)

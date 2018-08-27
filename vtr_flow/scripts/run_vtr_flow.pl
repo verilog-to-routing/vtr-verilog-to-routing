@@ -185,16 +185,36 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){
             $expect_fail = 1;
-    } elsif ( $token eq "-verbose"){
-            $verbosity = shift(@ARGV);
-    } elsif ( $token eq "-adder_type"){
-        $odin_adder_config_path = shift(@ARGV);
-        if ( ($odin_adder_config_path ne "default") && ($odin_adder_config_path ne "optimized") ) {
-                $odin_adder_config_path = $vtr_flow_path . $odin_adder_config_path;
-        }
-    } elsif ( $token eq "-disable_odin_xml" ){
-                    $use_odin_xml_config = 0;
-    } else { # forward the argument
+    }
+    elsif ( $token eq "-verbose"){
+            $expect_fail = shift(@ARGV);
+    }
+	elsif ( $token eq "-adder_type"){
+		$odin_adder_config_path = shift(@ARGV);
+		if ( ($odin_adder_config_path ne "default") && ($odin_adder_config_path ne "optimized") ) {
+				$odin_adder_config_path = $vtr_flow_path . $odin_adder_config_path;
+		}
+	}
+	elsif ( $token eq "-disable_odin_xml" ){
+					$use_odin_xml_config = 0;
+	}
+	elsif ( $token eq "-run_odin_sim" ){
+		$odin_run_simulation = 1;
+	}
+	elsif ( $token eq "-vanila_latch" ){
+		$abc_flow_type = 2;
+		$use_new_latches_restoration_script = 1;
+	}
+	elsif ( $token eq "-blanket_bb" ){
+		$abc_flow_type = 3;
+		$use_new_latches_restoration_script = 1;
+	}
+	elsif ( $token eq "-iterative_bb" ){
+		$abc_flow_type = 3;
+		$use_new_latches_restoration_script = 1;
+	}
+    # else forward the argument
+	else {
         push @forwarded_vpr_args, $token;
 	}
 
