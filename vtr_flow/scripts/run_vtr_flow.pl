@@ -210,7 +210,7 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-iterative_bb" ){
-		$abc_flow_type = 3;
+		$abc_flow_type = 4;
 		$use_new_latches_restoration_script = 1;
 	}
     # else forward the argument
@@ -474,6 +474,8 @@ if (    $starting_stage <= $stage_idx_abc
 	#	SETUP ABC optimizer, odin simulator and relevant data struct.
 
 	my %clock_list;
+	my $abc_temp_dir="${temp_dir}abc_temp";
+	system("mkdir ${abc_temp_dir}");
 
 	# skip ABC
 	if( $abc_flow_type == 1 )
@@ -532,10 +534,10 @@ if (    $starting_stage <= $stage_idx_abc
 				
 			}
 
-			print "\n########\n";
-			print "\ttest using simulation: ".$odin_run_simulation."\n";
-			print "\tDomain to itterate: ".(my $nb_of_domain = keys %clock_list);
-			print "\n\t\t".join("\n\t\t", keys %clock_list)."\n";
+			# print "\n########\n";
+			# print "\ttest using simulation: ".$odin_run_simulation."\n";
+			# print "\tDomain to itterate: ".(my $nb_of_domain = keys %clock_list);
+			# print "\n\t\t".join("\n\t\t", keys %clock_list)."\n";
 		}
 	}
 
@@ -570,12 +572,12 @@ if (    $starting_stage <= $stage_idx_abc
 
 	for (my $domain_itter= 1; my ($clock_domain,$init) = each %clock_list; $domain_itter += 1) 
 	{
-		my $pre_abc_blif = $domain_itter."_".$odin_output_file_name;
-		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
+		my $pre_abc_blif = $abc_temp_dir."/".$domain_itter."_".$odin_output_file_name;
+		my $post_abc_blif = $abc_temp_dir."/".$domain_itter."_".$abc_output_file_name;
 
 		if( $abc_flow_type < 3 )
 		{
-			$pre_abc_blif = $input_blif;
+			system( "cp ${input_blif} ${pre_abc_blif}");
 		}
 		else
 		{	
