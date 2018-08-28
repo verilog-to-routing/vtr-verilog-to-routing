@@ -127,17 +127,13 @@ void parse_to_ast()
 	init_parser();
 
 	/* open files for parsing */
-	if (global_args.verilog_file != NULL)
+	/* read all the files in the configuration file */
+	for (i = 0; i < configuration.num_list_of_file_names; i++)
 	{
-		/* make a consitant file list so we can access in compiler ... replicating what read config does for the filenames */
-		configuration.list_of_file_names = (char**)vtr::calloc(1,sizeof(char*));
-		configuration.num_list_of_file_names = 1;
-		configuration.list_of_file_names[0] = global_args.verilog_file;
-
-		yyin = fopen(global_args.verilog_file, "r");
+		yyin = fopen(configuration.list_of_file_names[i], "r");
 		if (yyin == NULL)
 		{
-			error_message(-1, -1, -1, "cannot open file: %s", global_args.verilog_file.value());
+			error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[i]);
 		}
 
 		/*Testing preprocessor - Paddy O'Brien*/
@@ -147,55 +143,22 @@ void parse_to_ast()
 
 		/* write out the pre-processed file */
 		if (configuration.output_preproc_source)
-			graphVizOutputPreproc(yyin, configuration.debug_output_path.c_str(), configuration.list_of_file_names[0]) ;
+			graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[i]) ;
 
 		/* set the file name */
-		current_parse_file = 0;
+		current_parse_file = i;
+
+		/* reset the line count */
+		yylineno = 0;
 
 		/* setup the local parser structures for a file */
 		init_parser_for_file();
-		/* parse */
+		/* parse next file */
 		yyparse();
 		/* cleanup parser */
 		clean_up_parser_for_file();
 
 		fclose(yyin);
-	}
-	else if (global_args.config_file != NULL)
-	{
-		/* read all the files in the configuration file */
-		for (i = 0; i < configuration.num_list_of_file_names; i++)
-		{
-			yyin = fopen(configuration.list_of_file_names[i], "r");
-			if (yyin == NULL)
-			{
-				error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[i]);
-			}
-
-			/*Testing preprocessor - Paddy O'Brien*/
-			init_veri_preproc();
-			yyin = veri_preproc(yyin);
-			cleanup_veri_preproc();
-
-			/* write out the pre-processed file */
-			if (configuration.output_preproc_source)
-				graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[i]) ;
-
-			/* set the file name */
-			current_parse_file = i;
-
-			/* reset the line count */
-			yylineno = 0;
-
-			/* setup the local parser structures for a file */
-			init_parser_for_file();
-			/* parse next file */
-			yyparse();
-			/* cleanup parser */
-			clean_up_parser_for_file();
-
-			fclose(yyin);
-		}
 	}
 
 	/* clean up all the structures in the parser */

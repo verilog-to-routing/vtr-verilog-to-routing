@@ -95,7 +95,8 @@ typedef struct adder_def_t_t adder_def_t;
 // causes an interrupt in GDB
 #define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " \n\t@ " << __LINE__ << "::" << __FILE__ << std::endl;
 #define oassert(condition) { if(!(condition)){ verbose_assert(condition); std::abort();} }
-// bitvector library (PETER_LIB) defines it, so we don't
+
+#define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
 /* This is the data structure that holds config file details */
 struct config_t_t
@@ -418,8 +419,8 @@ struct ast_node_t_t
 	ast_node_t **children;
 	size_t num_children;
 
-	int line_number;
-	int file_number;
+	int line_number = -1;
+	int file_number = -1;
 
 	short shared_node;
 	void *hb_port;
@@ -428,6 +429,7 @@ struct ast_node_t_t
 
 };
 #endif // AST_TYPES_H
+
 
 //-----------------------------------------------------------------------------------------------------
 #ifndef NETLIST_UTILS_H
@@ -451,6 +453,9 @@ struct nnode_t_t
 
 	ast_node_t *related_ast_node; // the abstract syntax node that made this node
 
+	int line_number = -1;
+	int file_number = -1;
+	
 	short traverse_visited; // a way to mark if we've visited yet
 
 	npin_t **input_pins; // the input pins
@@ -622,6 +627,7 @@ struct netlist_t_t
 	netlist_stats_t *stats;
 
 	t_type_ptr type;
+
 };
 
 struct netlist_stats_t_t

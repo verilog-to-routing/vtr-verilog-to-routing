@@ -879,7 +879,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 			break;
 		case LOGICAL_AND: // &&
 		{
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			char unknown = FALSE;
 			char zero    = FALSE;
 			int i;
@@ -897,7 +897,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case LOGICAL_OR:
 		{	// ||
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			char unknown = FALSE;
 			char one     = FALSE;
 			int i;
@@ -915,7 +915,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case LOGICAL_NAND:
 		{	// !&&
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			char unknown = FALSE;
 			char one     = FALSE;
 			int i;
@@ -934,7 +934,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		case LOGICAL_NOT: // !
 		case LOGICAL_NOR: // !|
 		{
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			char unknown = FALSE;
 			char zero    = FALSE;
 			int i;
@@ -952,8 +952,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case LT: // < 010 1
 		{
-			oassert(node->num_input_port_sizes == 3);
-			oassert(node->num_output_port_sizes == 1);
+			verify_i_o_availabilty(node, 3, 1);
 
 			signed char pin0 = get_pin_value(node->input_pins[0],cycle);
 			signed char pin1 = get_pin_value(node->input_pins[1],cycle);
@@ -970,8 +969,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case GT: // > 100 1
 		{
-			oassert(node->num_input_port_sizes == 3);
-			oassert(node->num_output_port_sizes == 1);
+			verify_i_o_availabilty(node, 3, 1);
 
 			signed char pin0 = get_pin_value(node->input_pins[0],cycle);
 			signed char pin1 = get_pin_value(node->input_pins[1],cycle);
@@ -988,8 +986,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case ADDER_FUNC: // 001 1\n010 1\n100 1\n111 1
 		{
-			oassert(node->num_input_port_sizes == 3);
-			oassert(node->num_output_port_sizes == 1);
+			verify_i_o_availabilty(node, 3, 1);
 
 			signed char pin0 = get_pin_value(node->input_pins[0],cycle);
 			signed char pin1 = get_pin_value(node->input_pins[1],cycle);
@@ -1011,8 +1008,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case CARRY_FUNC: // 011 1\n100 1\n110 1\n111 1
 		{
-			oassert(node->num_input_port_sizes == 3);
-			oassert(node->num_output_port_sizes == 1);
+			verify_i_o_availabilty(node, 3, 1);
 
 			signed char pin0 = get_pin_value(node->input_pins[0],cycle);
 			signed char pin1 = get_pin_value(node->input_pins[1],cycle);
@@ -1033,7 +1029,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		case NOT_EQUAL:	  // !=
 		case LOGICAL_XOR: // ^
 		{
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			char unknown = FALSE;
 			int ones     = 0;
 			int i;
@@ -1052,7 +1048,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		case LOGICAL_EQUAL:	// ==
 		case LOGICAL_XNOR:  // !^
 		{
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			char unknown = FALSE;
 			int ones = 0;
 			int i;
@@ -1070,8 +1066,7 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case BITWISE_NOT:
 		{
-			oassert(node->num_input_pins == 1);
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, 1, 1);
 
 			signed char pin = get_pin_value(node->input_pins[0], cycle);
 
@@ -1089,22 +1084,21 @@ static void compute_and_store_value(nnode_t *node, int cycle)
 			break;
 		}
 		case GND_NODE:
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			update_pin_value(node->output_pins[0], 0, cycle);
 			break;
 		case VCC_NODE:
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			update_pin_value(node->output_pins[0], 1, cycle);
 			break;
 		case PAD_NODE:
-			oassert(node->num_output_pins == 1);
+			verify_i_o_availabilty(node, -1, 1);
 			update_pin_value(node->output_pins[0], 0, cycle);
 			break;
 		case INPUT_NODE:
 			break;
 		case OUTPUT_NODE:
-			oassert(node->num_output_pins == 1);
-			oassert(node->num_input_pins  == 1);
+			verify_i_o_availabilty(node, 1, 1);
 			update_pin_value(node->output_pins[0], get_pin_value(node->input_pins[0],cycle), cycle);
 			break;
 		case HARD_IP:
@@ -1611,8 +1605,7 @@ static int get_pin_cycle(npin_t *pin)
  */
 static void compute_flipflop_node(nnode_t *node, int cycle)
 {
-	oassert(node->num_output_pins == 1);
-	oassert(node->num_input_pins  == 2);
+	verify_i_o_availabilty(node, 2, 1);
 
 	npin_t *D_pin      = node->input_pins[0];
 	npin_t *clock_pin  = node->input_pins[1];
@@ -1631,7 +1624,7 @@ static void compute_flipflop_node(nnode_t *node, int cycle)
  */
 static void compute_mux_2_node(nnode_t *node, int cycle)
 {
-	oassert(node->num_output_pins == 1);
+	verify_i_o_availabilty(node, -1, 1);
 	oassert(node->num_input_port_sizes >= 2);
 	oassert(node->input_port_sizes[0] == node->input_port_sizes[1]);
 

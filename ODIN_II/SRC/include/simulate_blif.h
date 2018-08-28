@@ -59,6 +59,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define SINGLE_PORT_MEMORY_NAME "single_port_ram"
 #define DUAL_PORT_MEMORY_NAME "dual_port_ram"
 
+
 typedef struct {
 	char **pins;
 	int   count;
