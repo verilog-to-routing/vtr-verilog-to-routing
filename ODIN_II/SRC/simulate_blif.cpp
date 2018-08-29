@@ -87,6 +87,8 @@ static void assign_memory_from_mif_file(FILE *file, char *filename, int width, l
 static int parse_mif_radix(char *radix);
 
 static int count_test_vectors(FILE *in);
+static int count_empty_test_vectors(FILE *in);
+
 static int is_vector(char *buffer);
 static int get_next_vector(FILE *file, char *buffer);
 static test_vector *parse_test_vector(char *buffer);
@@ -230,13 +232,13 @@ sim_data_t *init_simulation(netlist_t *netlist)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
 
 	sim_data->in = NULL;
+	sim_data->input_vector_file = NULL;
 	// Passed via the -t option. Input vectors can either come from a file 
 	// if we expect no lines on input, then don't read the input file and generate as many input test vector as there are output
 	// vectors so that simulation can run
 	char *input_vector_file = global_args.sim_vector_input_file;
 	if (input_vector_file && sim_data->input_lines->count != 0)
 	{
-
 		sim_data->input_vector_file  = input_vector_file;
 		sim_data->in = fopen(sim_data->input_vector_file, "r");
 		if (!sim_data->in)
@@ -253,22 +255,13 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	// or be randomly generated. Passed via the -g option. it also serve as a fallback when we have an empty input
 	else
 	{
-		// If a second output vector file was given via the -T option.
-		char *output_vector_file = global_args.sim_vector_output_file;
-		if(output_vector_file && sim_data->input_lines->count == 0)
+		if(input_vector_file)
 		{
-			FILE *existing_out = fopen(output_vector_file, "r");
-			if (!existing_out) 
-				error_message(SIMULATION_ERROR, 0, -1, "Could not open vector output file: %s", output_vector_file);
-			
-			sim_data->num_vectors = 0;
-			char line[BUFFER_MAX_SIZE];
-			while(fgets(line, BUFFER_MAX_SIZE, existing_out) != NULL)
-				sim_data->num_vectors++;
+			sim_data->in = fopen(input_vector_file, "r");
+			if (!sim_data->in)
+				error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", input_vector_file);
 
-			printf("WARNING Since the top module as no input lines,"); 
-
-			fclose(existing_out);
+			sim_data->num_vectors = count_empty_test_vectors(sim_data->in);
 		}
 		else
 		{
@@ -351,7 +344,7 @@ int single_step(sim_data_t *sim_data, int wave)
 	{
 		if (is_even_cycle(cycle))
 		{
-			if (sim_data->in)
+			if (sim_data->input_vector_file)
 			{
 				char buffer[BUFFER_MAX_SIZE];
 
@@ -3466,6 +3459,27 @@ static int count_test_vectors(FILE *in)
 	char buffer[BUFFER_MAX_SIZE];
 	while (get_next_vector(in, buffer))
 		count++;
+
+	if (count) // Don't count the headers.
+		count--;
+
+	rewind(in);
+
+	return count;
+}
+
+/*
+ * Counts the number of vectors in the given file.
+ */
+static int count_empty_test_vectors(FILE *in)
+{
+	rewind(in);
+
+	int count = 0;
+	int buffer;
+	while ( (buffer = getc(in)) != EOF )
+		if(((char)buffer) == '\n')
+			count++;
 
 	if (count) // Don't count the headers.
 		count--;

@@ -279,18 +279,18 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-disable_odin_xml" ){
 					$use_odin_xml_config = 0;
 	}
-	elsif ( $token eq "-run_odin_sim" ){
-		$odin_run_simulation = 1;
-	}
 	elsif ( $token eq "-vanila_latch" ){
+		$odin_run_simulation = 1;
 		$abc_flow_type = 2;
 		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-blanket_bb" ){
+		$odin_run_simulation = 1;
 		$abc_flow_type = 3;
 		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-iterative_bb" ){
+		$odin_run_simulation = 1;
 		$abc_flow_type = 4;
 		$use_new_latches_restoration_script = 1;
 	}
