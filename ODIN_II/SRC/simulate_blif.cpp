@@ -189,7 +189,8 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	sim_data_t *sim_data = (sim_data_t *)vtr::malloc(sizeof(sim_data_t));
 
 	sim_data->netlist = netlist;
-	printf("Beginning simulation. Output_files located @: %s\n", ((char *)global_args.sim_directory)); fflush(stdout);
+	printf("Beginning simulation. Output_files located @: %s\n", ((char *)global_args.sim_directory)); 
+	fflush(stdout);
 
 	// Create and verify the lines.
 	sim_data->input_lines = create_lines(netlist, INPUT);
@@ -228,13 +229,15 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	if (!sim_data->modelsim_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
 
-	sim_data->in  = NULL;
-	// Passed via the -t option.
-	sim_data->input_vector_file  = global_args.sim_vector_input_file;
-
-	// Input vectors can either come from a file or be randomly generated.
-	if (sim_data->input_vector_file)
+	sim_data->in = NULL;
+	// Passed via the -t option. Input vectors can either come from a file 
+	// if we expect no lines on input, then don't read the input file and generate as many input test vector as there are output
+	// vectors so that simulation can run
+	char *input_vector_file = global_args.sim_vector_input_file;
+	if (input_vector_file && sim_data->input_lines->count != 0)
 	{
+
+		sim_data->input_vector_file  = input_vector_file;
 		sim_data->in = fopen(sim_data->input_vector_file, "r");
 		if (!sim_data->in)
 			error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", sim_data->input_vector_file);
@@ -247,11 +250,32 @@ sim_data_t *init_simulation(netlist_t *netlist)
 
 		printf("Simulating %d existing vectors from \"%s\".\n", sim_data->num_vectors, sim_data->input_vector_file); fflush(stdout);
 	}
+	// or be randomly generated. Passed via the -g option. it also serve as a fallback when we have an empty input
 	else
 	{
-		// Passed via the -g option.
-		sim_data->num_vectors = global_args.sim_num_test_vectors;
-		printf("Simulating %d new vectors.\n", sim_data->num_vectors); fflush(stdout);
+		// If a second output vector file was given via the -T option.
+		char *output_vector_file = global_args.sim_vector_output_file;
+		if(output_vector_file && sim_data->input_lines->count == 0)
+		{
+			FILE *existing_out = fopen(output_vector_file, "r");
+			if (!existing_out) 
+				error_message(SIMULATION_ERROR, 0, -1, "Could not open vector output file: %s", output_vector_file);
+			
+			sim_data->num_vectors = 0;
+			char line[BUFFER_MAX_SIZE];
+			while(fgets(line, BUFFER_MAX_SIZE, existing_out) != NULL)
+				sim_data->num_vectors++;
+
+			printf("WARNING Since the top module as no input lines,"); 
+
+			fclose(existing_out);
+		}
+		else
+		{
+			sim_data->num_vectors = global_args.sim_num_test_vectors;
+		}
+		printf("Simulating %d new vectors.\n", sim_data->num_vectors); 
+		fflush(stdout);
 
 		srand(global_args.sim_random_seed);
 	}
@@ -327,7 +351,7 @@ int single_step(sim_data_t *sim_data, int wave)
 	{
 		if (is_even_cycle(cycle))
 		{
-			if (sim_data->input_vector_file)
+			if (sim_data->in)
 			{
 				char buffer[BUFFER_MAX_SIZE];
 
@@ -3487,6 +3511,11 @@ static int is_vector(char *buffer)
  */
 static int get_next_vector(FILE *file, char *buffer)
 {
+	oassert(file != NULL
+		&& "unable to retrieve file for next test vector");
+	oassert(buffer != NULL
+		&& "unable to use buffer for next test vector as it is not initialized");
+
 	while (fgets(buffer, BUFFER_MAX_SIZE, file))
 		if (is_vector(buffer))
 			return TRUE;
