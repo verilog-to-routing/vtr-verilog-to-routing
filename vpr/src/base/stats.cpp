@@ -17,6 +17,7 @@ using namespace std;
 #include "atom_netlist.h"
 #include "rr_graph_area.h"
 #include "segment_stats.h"
+#include "channel_stats.h"
 #include "stats.h"
 #include "net_delay.h"
 #include "path_delay.h"
@@ -62,6 +63,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	length_and_bends_stats();
+    print_channel_stats();
 	get_channel_occupancy_stats();
 
 	vtr::printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
