@@ -86,6 +86,7 @@ enum e_draw_routing_util {
     DRAW_ROUTING_UTIL,
     DRAW_ROUTING_UTIL_WITH_VALUE,
     DRAW_ROUTING_UTIL_WITH_FORMULA,
+    DRAW_ROUTING_UTIL_OVER_BLOCKS, //Draw over blocks at full opacity (useful for figure generation)
     DRAW_ROUTING_UTIL_MAX,
 };
 

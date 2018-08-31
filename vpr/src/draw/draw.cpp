@@ -3483,7 +3483,11 @@ static void draw_routing_util() {
     float tile_width = draw_coords->get_tile_width();
     float tile_height = draw_coords->get_tile_height();
 
-    constexpr float ALPHA = 0.95;
+    float ALPHA = 0.95;
+    if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+        ALPHA = 1.;
+    }
+
 
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
@@ -3547,6 +3551,15 @@ static void draw_routing_util() {
             t_bound_box bb(draw_coords->tile_x[x] + 1*tile_width, draw_coords->tile_y[y] + 1*tile_height,
                            draw_coords->tile_x[x+1], draw_coords->tile_y[y+1]);
             fillrect(bb);
+
+            //Draw over blocks
+            if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+                if (x < device_ctx.grid.width() - 2 && y < device_ctx.grid.height() - 2) {
+                    t_bound_box bb2(draw_coords->tile_x[x+1], draw_coords->tile_y[y+1],
+                                   draw_coords->tile_x[x+1] + 1*tile_width, draw_coords->tile_y[y+1] + 1*tile_width);
+                    fillrect(bb2);
+                }
+            }
 
             setcolor(BLACK);
             if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
