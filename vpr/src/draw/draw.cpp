@@ -3322,10 +3322,11 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap) {
     t_bound_box visible_screen = get_visible_screen();
 
 
-    float width = visible_screen.get_width();
+    float screen_width = visible_screen.get_width();
     float vert_offset = visible_screen.get_height() * LEGEND_VERT_OFFSET_FAC;
+    float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
 
-    t_bound_box legend (visible_screen.left(), visible_screen.bottom() + vert_offset, visible_screen.left() + width * LEGEND_WIDTH_FAC, visible_screen.top() - vert_offset);
+    t_bound_box legend (visible_screen.left(), visible_screen.bottom() + vert_offset, visible_screen.left() + legend_width, visible_screen.top() - vert_offset);
 
     float range = cmap.max() - cmap.min();
     float height_incr = legend.get_height() / float(NUM_COLOR_POINTS);
