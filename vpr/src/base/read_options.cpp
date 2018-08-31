@@ -420,6 +420,39 @@ struct ParseUnrelatedClustering {
     }
 };
 
+struct ParseConstGenInference{
+    ConvertedValue<e_const_gen_inference> from_str(std::string str) {
+        ConvertedValue<e_const_gen_inference> conv_value;
+        if      (str == "none") conv_value.set_value(e_const_gen_inference::NONE);
+        else if (str == "comb") conv_value.set_value(e_const_gen_inference::COMB);
+        else if (str == "comb_seq") conv_value.set_value(e_const_gen_inference::COMB_SEQ);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_const_gen_inference (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_const_gen_inference val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_const_gen_inference::NONE) conv_value.set_value("none");
+        else if (val == e_const_gen_inference::COMB) conv_value.set_value("comb");
+        else {
+            VTR_ASSERT(val == e_const_gen_inference::COMB_SEQ);
+            conv_value.set_value("comb_seq");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "comb", "comb_seq"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -640,6 +673,17 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     netlist_grp.add_argument<bool,ParseOnOff>(args.absorb_buffer_luts, "--absorb_buffer_luts")
             .help("Controls whether LUTS programmed as buffers are absorbed by downstream logic")
             .default_value("on")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    netlist_grp.add_argument<e_const_gen_inference,ParseConstGenInference>(args.const_gen_inference, "--const_gen_inference")
+            .help("Controls how constant generators are detected\n"
+                  " * none    : No constant generator inference is performed\n"
+                  " * comb    : Only combinational primitives are considered\n"
+                  "             for constant generator inference (always safe)\n"
+                  " * comb_seq: Both combinational and sequential primitives\n"
+                  "             are considered for constant generator inference\n"
+                  "             (usually safe)\n")
+            .default_value("comb_seq")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     netlist_grp.add_argument<bool,ParseOnOff>(args.sweep_dangling_primary_ios, "--sweep_dangling_primary_ios")

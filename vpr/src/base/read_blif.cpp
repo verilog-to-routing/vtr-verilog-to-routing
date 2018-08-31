@@ -46,12 +46,16 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifAllocCallback : public blifparse::Callback {
     public:
-        BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, const std::string netlist_id, const t_model* user_models, const t_model* library_models)
+        BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, 
+                          const std::string netlist_id, 
+                          const t_model* user_models, const t_model* library_models,
+                          const e_const_gen_inference const_gen_inference)
             : main_netlist_(main_netlist)
             , netlist_id_(netlist_id)
             , user_arch_models_(user_models)
             , library_arch_models_(library_models)
-            , blif_format_(blif_format) {
+            , blif_format_(blif_format) 
+            , const_gen_inference_(const_gen_inference) {
             VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                        || blif_format_ == e_circuit_format::EBLIF);
         }
@@ -602,8 +606,6 @@ struct BlifAllocCallback : public blifparse::Callback {
                 for(auto blk_id : curr_model().blocks()) {
                     if(marked_blocks.count(blk_id)) continue; //Don't mark multiple times
 
-                    if(curr_model().block_type(blk_id) != AtomBlockType::BLOCK) continue; //Don't mark I/Os as constants
-
                     if(identify_candidate_constant_generator(blk_id)) {
                         //This block is a constant generator
                         marked_blocks.insert(blk_id);
@@ -641,18 +643,41 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Returns true, if the block is a constant generator and should be marked
         bool identify_candidate_constant_generator(AtomBlockId blk_id) {
 
-            //A subckt is a constant generator if all its input nets are either:
+            //Constant generator inference disabled. Nothing is a constant generator.
+            if (const_gen_inference_ == e_const_gen_inference::NONE) return false;
+
+            //Never mark I/Os as constants
+            if (curr_model().block_type(blk_id) != AtomBlockType::BLOCK) return false;
+
+            VTR_ASSERT(const_gen_inference_ == e_const_gen_inference::COMB
+                       || const_gen_inference_ == e_const_gen_inference::COMB_SEQ);
+
+            if (!curr_model().block_is_combinational(blk_id) 
+                && const_gen_inference_ != e_const_gen_inference::COMB_SEQ) {
+                //This is a sequential block, and sequential constant generator 
+                //inference is disabled.
+                //Therefore not a constant generator
+                return false;
+            }
+
+            //A block is a constant generator if all its input nets are either:
             //  1) Constant nets (i.e. driven by constant pins), or
             //  2) Disconnected
-            for(auto pin_id : curr_model().block_input_pins(blk_id)) {
+            for (auto pin_id : curr_model().block_input_pins(blk_id)) {
                 auto net_id = curr_model().pin_net(pin_id);
 
-                if(net_id && !curr_model().net_is_constant(net_id)) {
-                    return false;
+                if (net_id && !curr_model().net_is_constant(net_id)) {
+                    //Non-constant input.
+                    //This block can not be a constant generator.
+                    return false; 
                 } else {
                     VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
                 }
             }
+
+            VTR_ASSERT_SAFE((const_gen_inference_ == e_const_gen_inference::COMB && curr_model().block_is_combinational(blk_id))
+                            || (const_gen_inference_ == e_const_gen_inference::COMB_SEQ));
+
             //This subckt is a constant generator
             return true;
         }
@@ -691,6 +716,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         AtomBlockId curr_block_;
 
         e_circuit_format blif_format_ = e_circuit_format::BLIF;
+        e_const_gen_inference const_gen_inference_ = e_const_gen_inference::COMB;
 
 };
 
@@ -710,13 +736,14 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 AtomNetlist read_blif(const e_circuit_format circuit_format,
                       const char *blif_file,
                       const t_model *user_models,
-                      const t_model *library_models) {
+                      const t_model *library_models,
+                      const e_const_gen_inference const_gen_inference) {
 
 
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models, const_gen_inference);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     return netlist;

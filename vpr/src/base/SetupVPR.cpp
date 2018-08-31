@@ -422,6 +422,7 @@ void SetupPackerOpts(const t_options& Options,
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
 
+    NetlistOpts.const_gen_inference = Options.const_gen_inference;
     NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
     NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;

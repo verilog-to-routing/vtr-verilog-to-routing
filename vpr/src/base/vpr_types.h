@@ -98,6 +98,12 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+enum class e_const_gen_inference {
+    NONE, //No constant generator inference
+    COMB, //Only combinational constant generator inference
+    COMB_SEQ //Both combinational and sequential constant generator inference
+};
+
 enum class e_unrelated_clustering {
     OFF, ON, AUTO	
 };
@@ -701,6 +707,7 @@ struct t_file_name_opts {
 
 /* Options for netlist loading */
 struct t_netlist_opts {
+    e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
     bool sweep_dangling_primary_ios = true;
     bool sweep_dangling_blocks = true;

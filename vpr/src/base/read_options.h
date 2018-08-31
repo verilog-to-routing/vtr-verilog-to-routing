@@ -53,6 +53,7 @@ struct t_options {
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
+    argparse::ArgValue<e_const_gen_inference> const_gen_inference;
     argparse::ArgValue<bool> sweep_dangling_primary_ios;
     argparse::ArgValue<bool> sweep_dangling_nets;
     argparse::ArgValue<bool> sweep_dangling_blocks;

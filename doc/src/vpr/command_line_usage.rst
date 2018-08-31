@@ -202,6 +202,20 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``on``
 
+.. option:: --const_gen_inference {none | comb | comb_seq}
+
+    Controls how constant generators are inferred/detected in the input circuit.
+    Constant generators and the signals they driver are not considered during timing analysis.
+
+    * ``none``: No constant generator inference will occur. Any signals which are actually constants will be treated as non-constants.
+    * ``comb``: VPR will infer constant generators from combinational blocks with no non-constant inputs (always safe).
+    * ``comb_seq``: VPR will infer constant generators from combinational *and* sequential blocks with only constant inputs (usually safe).
+      
+    .. note:: In rare circumstances ``comb_seq`` could incorrectly identify certain blocks as constant generators. 
+              This would only occur if a sequential netlist primitive has an internal state which evolves *completely independently* of any data input (e.g. a hardened LFSR block, embedded thermal sensor).
+
+    **Default**: ``comb_seq``
+
 .. option:: --sweep_dangling_primary_ios {on | off}
 
     Controls whether the circuits dangling primary inputs and outputs (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
