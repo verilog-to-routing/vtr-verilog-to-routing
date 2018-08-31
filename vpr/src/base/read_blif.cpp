@@ -604,16 +604,29 @@ struct BlifAllocCallback : public blifparse::Callback {
 
                     if(curr_model().block_type(blk_id) != AtomBlockType::BLOCK) continue; //Don't mark I/Os as constants
 
-                    if(identify_candidate_constant_generator_subckt(blk_id)) {
+                    if(identify_candidate_constant_generator(blk_id)) {
                         //This block is a constant generator
                         marked_blocks.insert(blk_id);
 
-                        vtr::printf("Inferred black-box constant generator '%s'\n",
-                                    curr_model().block_name(blk_id).c_str());
-
-                        //Mark all the output pins as constants
+                        //We may infer constant generators which have already been identified (e.g. vcc/gnd).
+                        //Check if the output pins are already all marked as constants
+                        bool all_pins_constant = true;
                         for(auto pin_id : curr_model().block_output_pins(blk_id)) {
-                            curr_model().set_pin_is_constant(pin_id, true);
+                            if (!curr_model().pin_is_constant(pin_id)) {
+                                all_pins_constant = false;
+                                break;
+                            }
+                        }
+
+                        if (!all_pins_constant) {
+                            vtr::printf("Inferred black-box constant generator '%s' (%s)\n",
+                                        curr_model().block_name(blk_id).c_str(),
+                                        curr_model().block_model(blk_id)->name);
+
+                            //Mark all the output pins as constants
+                            for(auto pin_id : curr_model().block_output_pins(blk_id)) {
+                                curr_model().set_pin_is_constant(pin_id, true);
+                            }
                         }
 
                         ++num_blocks_marked;
@@ -626,30 +639,22 @@ struct BlifAllocCallback : public blifparse::Callback {
         //generator.
         //
         //Returns true, if the block is a constant generator and should be marked
-        bool identify_candidate_constant_generator_subckt(AtomBlockId blk_id) {
-            const t_model* arch_model = curr_model().block_model(blk_id);
+        bool identify_candidate_constant_generator(AtomBlockId blk_id) {
 
-            //We look for combinational blocks which are not .names (i.e.
-            //combinational .subckts)
-            if(curr_model().block_is_combinational(blk_id)
-               && arch_model->name != std::string(MODEL_NAMES)) {
+            //A subckt is a constant generator if all its input nets are either:
+            //  1) Constant nets (i.e. driven by constant pins), or
+            //  2) Disconnected
+            for(auto pin_id : curr_model().block_input_pins(blk_id)) {
+                auto net_id = curr_model().pin_net(pin_id);
 
-                //A subckt is a constant generator if all its input nets are either:
-                //  1) Constant nets (i.e. driven by constant pins), or
-                //  2) Disconnected
-                for(auto pin_id : curr_model().block_input_pins(blk_id)) {
-                    auto net_id = curr_model().pin_net(pin_id);
-
-                    if(net_id && !curr_model().net_is_constant(net_id)) {
-                        return false;
-                    } else {
-                        VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
-                    }
+                if(net_id && !curr_model().net_is_constant(net_id)) {
+                    return false;
+                } else {
+                    VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
                 }
-                //This subckt is a constant generator
-                return true;
             }
-            return false;
+            //This subckt is a constant generator
+            return true;
         }
 
         //Returns a different unique subck name each time it is called
