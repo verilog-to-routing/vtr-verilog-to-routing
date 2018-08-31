@@ -24,6 +24,7 @@ using namespace std;
 #include "vpr_error.h"
 #include "vpr_api.h"
 #include "vpr_signal_handler.h"
+#include "vpr_tatum_error.h"
 
 #include "globals.h"
 
@@ -97,7 +98,7 @@ int main(int argc, const char **argv) {
         vpr_free_all(Arch, vpr_setup);
 
     } catch (const tatum::Error& tatum_error) {
-        vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());
+        vtr::printf_error(__FILE__, __LINE__, "%s\n", format_tatum_error(tatum_error).c_str());
 
         return ERROR_EXIT_CODE;
 
