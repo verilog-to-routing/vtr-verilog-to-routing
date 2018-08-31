@@ -286,6 +286,8 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 static void act_on_mouse_over(float x, float y);
 static void deselect_all();
 
+static void act_on_key_press(char key_pressed, int keysym);
+
 static void draw_routed_net(ClusterNetId net);
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
 static void draw_rr();
@@ -432,7 +434,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             g_vpr_ctx.set_forced_pause(false); //Reset pause flag
         }
         set_mouse_move_input(true); //Enable act_on_mouse_over callback
-		event_loop(highlight_blocks, act_on_mouse_over, nullptr, drawscreen);
+        set_keypress_input(true); //Enable act_on_mouse_over callback
+		event_loop(highlight_blocks, act_on_mouse_over, act_on_key_press, drawscreen);
 	} else {
 		flushinput();
 	}
@@ -2680,6 +2683,31 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
     }
 }
 
+static void act_on_key_press(char /*key_pressed*/, int keysym) {
+    //vtr::printf("Key press %c (%d)\n", key_pressed, keysym);
+#ifdef X11
+#include <X11/keysym.h>
+
+    switch(keysym) {
+        case XK_Shift_L: {
+            float zoom_factor = get_zoom_factor();
+            zoom_factor += (zoom_factor - 1.);
+            zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
+            vtr::printf("Increasing graphics zoom factor to %f\n", zoom_factor);
+            set_zoom_factor(zoom_factor);
+            break;
+        } case XK_Control_L: {
+            float zoom_factor = get_zoom_factor();
+            zoom_factor -= (zoom_factor - 1.) / 2;
+            zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
+            vtr::printf("Decreasing graphics zoom factor to %f\n", zoom_factor);
+            set_zoom_factor(zoom_factor);
+            break;
+        } default:
+            break; //Unrecognized
+    }
+#endif
+}
 
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
 	int k, iclass;
