@@ -575,39 +575,42 @@ bool TimingGraph::validate_values() const {
 
     for(NodeId node_id : nodes()) {
         if(!valid_node_id(node_id)) {
-            throw tatum::Error("Invalid node id");
+            throw tatum::Error("Invalid node id", node_id);
         }
 
         for(EdgeId edge_id : node_in_edges_[node_id]) {
             if(!valid_edge_id(edge_id)) {
-                throw tatum::Error("Invalid node-in-edge reference");
+                throw tatum::Error("Invalid node-in-edge reference", node_id, edge_id);
             }
 
             //Check that the references are consistent
             if(edge_sink_nodes_[edge_id] != node_id) {
-                throw tatum::Error("Mismatched edge-sink/node-in-edge reference");
+                throw tatum::Error("Mismatched edge-sink/node-in-edge reference", node_id, edge_id);
             }
         }
         for(EdgeId edge_id : node_out_edges_[node_id]) {
             if(!valid_edge_id(edge_id)) {
-                throw tatum::Error("Invalid node-out-edge reference");
+                throw tatum::Error("Invalid node-out-edge reference", node_id, edge_id);
             }
 
             //Check that the references are consistent
             if(edge_src_nodes_[edge_id] != node_id) {
-                throw tatum::Error("Mismatched edge-src/node-out-edge reference");
+                throw tatum::Error("Mismatched edge-src/node-out-edge reference", node_id, edge_id);
             }
         }
     }
     for(EdgeId edge_id : edges()) {
         if(!valid_edge_id(edge_id)) {
-            throw tatum::Error("Invalid edge id");
+            throw tatum::Error("Invalid edge id", edge_id);
         }
-        if(!valid_node_id(edge_src_nodes_[edge_id])) {
-            throw tatum::Error("Invalid edge source node");
+        NodeId src_node = edge_src_nodes_[edge_id];
+        if(!valid_node_id(src_node)) {
+            throw tatum::Error("Invalid edge source node", src_node, edge_id);
         }
-        if(!valid_node_id(edge_sink_nodes_[edge_id])) {
-            throw tatum::Error("Invalid edge sink node");
+
+        NodeId sink_node = edge_sink_nodes_[edge_id];
+        if(!valid_node_id(sink_node)) {
+            throw tatum::Error("Invalid edge sink node", sink_node, edge_id);
         }
     }
 
@@ -633,29 +636,29 @@ bool TimingGraph::validate_structure() const {
         //Check expected number of fan-in/fan-out edges
         if(src_type == NodeType::SOURCE) {
             if(in_edges.size() > 1) {
-                throw tatum::Error("SOURCE node has more than one active incoming edge (expected 0 if primary input, or 1 if clocked)");
+                throw tatum::Error("SOURCE node has more than one active incoming edge (expected 0 if primary input, or 1 if clocked)", src_node);
             }
         } else if (src_type == NodeType::SINK) {
             if(out_edges.size() > 0) {
-                throw tatum::Error("SINK node has out-going edges");
+                throw tatum::Error("SINK node has out-going edges", src_node);
             }
         } else if (src_type == NodeType::IPIN) {
             if(in_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
-                throw tatum::Error("IPIN has no in-coming edges");
+                throw tatum::Error("IPIN has no in-coming edges", src_node);
             }
             if(out_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
-                throw tatum::Error("IPIN has no out-going edges");
+                throw tatum::Error("IPIN has no out-going edges", src_node);
             }
         } else if (src_type == NodeType::OPIN) {
             //May have no incoming edges if a constant generator, so don't check that case
 
             if(out_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
-                throw tatum::Error("OPIN has no out-going edges");
+                throw tatum::Error("OPIN has no out-going edges", src_node);
             }
         } else {
             TATUM_ASSERT(src_type == NodeType::CPIN);
             if(in_edges.size() == 0) {
-                throw tatum::Error("CPIN has no in-coming edges");
+                throw tatum::Error("CPIN has no in-coming edges", src_node);
             }
             //We do not check for out-going cpin edges, since there is no reason that
             //a clock pin must be used
@@ -675,61 +678,61 @@ bool TimingGraph::validate_structure() const {
                    && sink_type != NodeType::OPIN
                    && sink_type != NodeType::CPIN
                    && sink_type != NodeType::SINK) {
-                    throw tatum::Error("SOURCE nodes should only drive IPIN, OPIN, CPIN or SINK nodes");
+                    throw tatum::Error("SOURCE nodes should only drive IPIN, OPIN, CPIN or SINK nodes", src_node, out_edge);
                 }
 
                 if(sink_type == NodeType::SINK) {
                     if(   out_edge_type != EdgeType::INTERCONNECT
                        && out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
-                        throw tatum::Error("SOURCE to SINK edges should always be either INTERCONNECT or PRIMTIIVE_COMBINATIONAL type edges");
+                        throw tatum::Error("SOURCE to SINK edges should always be either INTERCONNECT or PRIMTIIVE_COMBINATIONAL type edges", src_node, out_edge);
                     }
                     
                 } else if (sink_type == NodeType::OPIN) {
                     if(out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
-                        throw tatum::Error("SOURCE to OPIN edges should always be PRIMITIVE_COMBINATIONAL type edges");
+                        throw tatum::Error("SOURCE to OPIN edges should always be PRIMITIVE_COMBINATIONAL type edges", src_node, out_edge);
                     }
                 } else {
                     TATUM_ASSERT(sink_type == NodeType::IPIN || sink_type == NodeType::CPIN);
                     if(out_edge_type != EdgeType::INTERCONNECT) {
-                        throw tatum::Error("SOURCE to IPIN/CPIN edges should always be INTERCONNECT type edges");
+                        throw tatum::Error("SOURCE to IPIN/CPIN edges should always be INTERCONNECT type edges", src_node, out_edge);
                     }
                 }
 
             } else if (src_type == NodeType::SINK) {
-                throw tatum::Error("SINK nodes should not have out-going edges");
+                throw tatum::Error("SINK nodes should not have out-going edges", sink_node);
             } else if (src_type == NodeType::IPIN) {
                 if(sink_type != NodeType::OPIN && sink_type != NodeType::SINK) {
-                    throw tatum::Error("IPIN nodes should only drive OPIN or SINK nodes");
+                    throw tatum::Error("IPIN nodes should only drive OPIN or SINK nodes", src_node, out_edge);
                 }
 
                 if(out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
-                    throw tatum::Error("IPIN to OPIN/SINK edges should always be PRIMITIVE_COMBINATIONAL type edges");
+                    throw tatum::Error("IPIN to OPIN/SINK edges should always be PRIMITIVE_COMBINATIONAL type edges", src_node, out_edge);
                 }
 
             } else if (src_type == NodeType::OPIN) {
                 if(   sink_type != NodeType::IPIN
                    && sink_type != NodeType::CPIN
                    && sink_type != NodeType::SINK) {
-                    throw tatum::Error("OPIN nodes should only drive IPIN, CPIN or SINK nodes");
+                    throw tatum::Error("OPIN nodes should only drive IPIN, CPIN or SINK nodes", src_node, out_edge);
                 }
 
                 if(out_edge_type != EdgeType::INTERCONNECT) {
-                    throw tatum::Error("OPIN out edges should always be INTERCONNECT type edges");
+                    throw tatum::Error("OPIN out edges should always be INTERCONNECT type edges", src_node, out_edge);
                 }
 
             } else if (src_type == NodeType::CPIN) {
                 if(   sink_type != NodeType::SOURCE
                    && sink_type != NodeType::SINK) {
-                    throw tatum::Error("CPIN nodes should only drive SOURCE or SINK nodes");
+                    throw tatum::Error("CPIN nodes should only drive SOURCE or SINK nodes", src_node, out_edge);
                 }
 
                 if(sink_type == NodeType::SOURCE && out_edge_type != EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
-                    throw tatum::Error("CPIN to SOURCE edges should always be PRIMITIVE_CLOCK_LAUNCH type edges");
+                    throw tatum::Error("CPIN to SOURCE edges should always be PRIMITIVE_CLOCK_LAUNCH type edges", src_node, out_edge);
                 } else if (sink_type == NodeType::SINK && out_edge_type != EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
-                    throw tatum::Error("CPIN to SINK edges should always be PRIMITIVE_CLOCK_CAPTURE type edges");
+                    throw tatum::Error("CPIN to SINK edges should always be PRIMITIVE_CLOCK_CAPTURE type edges", src_node, out_edge);
                 }
             } else {
-                throw tatum::Error("Unrecognized node type");
+                throw tatum::Error("Unrecognized node type", src_node, out_edge);
             }
         }
     }
@@ -757,27 +760,27 @@ bool TimingGraph::validate_structure() const {
             for(EdgeId edge : edge_ids) {
                 ss << edge << " ";
             }
-            throw tatum::Error(ss.str());
+            throw tatum::Error(ss.str(), src_node);
         }
     }
 
     for(NodeId node : primary_inputs()) {
         if(!node_in_edges(node).empty()) {
-            throw tatum::Error("Primary input nodes should have no incoming edges");
+            throw tatum::Error("Primary input nodes should have no incoming edges", node);
         }
 
         if(node_type(node) != NodeType::SOURCE) {
-            throw tatum::Error("Primary inputs should be only SOURCE nodes");
+            throw tatum::Error("Primary inputs should be only SOURCE nodes", node);
         }
     }
 
     for(NodeId node : logical_outputs()) {
         if(!node_out_edges(node).empty()) {
-            throw tatum::Error("Logical output node should have no outgoing edges");
+            throw tatum::Error("Logical output node should have no outgoing edges", node);
         }
 
         if(node_type(node) != NodeType::SINK) {
-            throw tatum::Error("Logical outputs should be only SINK nodes");
+            throw tatum::Error("Logical outputs should be only SINK nodes", node);
         }
     }
 
@@ -912,10 +915,10 @@ EdgeType infer_edge_type(const TimingGraph& tg, EdgeId edge) {
         } else if(sink_node_type == NodeType::SINK) {
             return EdgeType::PRIMITIVE_CLOCK_CAPTURE;
         } else {
-            throw tatum::Error("Invalid edge sink node (CPIN source node must connect to SOURCE or SINK sink node)");
+            throw tatum::Error("Invalid edge sink node (CPIN source node must connect to SOURCE or SINK sink node)", sink_node, edge);
         }
     } else {
-        throw tatum::Error("Invalid edge sink/source nodes");
+        throw tatum::Error("Invalid edge sink/source nodes", edge);
     }
 }
 
