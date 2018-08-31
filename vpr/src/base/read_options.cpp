@@ -591,7 +591,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("File format for the input atom-level circuit/netlist.\n"
                   " * auto: infer from file extension\n"
                   " * blif: Strict structural BLIF format\n"
-                  " * eblif: Structure BLIF format with the extensions:\n"
+                  " * eblif: Structural BLIF format with the extensions:\n"
                   "           .conn  - Connection between two wires\n"
                   "           .cname - Custom name for atom primitive\n"
                   "           .param - Parameter on atom primitive\n"
