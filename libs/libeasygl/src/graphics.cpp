@@ -3308,14 +3308,6 @@ void set_keypress_input(bool enable) {
     gl_state.get_keypress_input = enable;
 }
 
-float get_zoom_factor() {
-    return gl_state.zoom_factor;
-}
-
-void set_zoom_factor(float new_zoom_factor) {
-    gl_state.zoom_factor = new_zoom_factor;
-}
-
 void enable_or_disable_button(int ibutton, bool enabled) {
 
     if (button_state.button[ibutton].type != BUTTON_SEPARATOR) {
@@ -5329,6 +5321,10 @@ void get_report_structure(t_report*) { }
 void set_mouse_move_input(bool) { }
 
 void set_keypress_input(bool) { }
+
+float get_zoom_factor() { return 1.; }
+
+void set_zoom_factor(float /*new_zoom_factor*/) { }
 
 void set_draw_mode(enum e_draw_mode /*draw_mode*/) { }
 
