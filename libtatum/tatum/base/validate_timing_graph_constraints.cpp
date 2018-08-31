@@ -19,7 +19,7 @@ bool validate_timing_graph_constraints(const TimingGraph& timing_graph, const Ti
                 msg = "Clock Domain " + std::to_string(size_t(domain)) + " (" + timing_constraints.clock_domain_name(domain) + ")"
                       " source node " + std::to_string(size_t(source_node)) + " is not a node of type SOURCE.";
 
-                throw tatum::Error(msg);
+                throw tatum::Error(msg, source_node);
             }
         }
     }
@@ -32,7 +32,7 @@ bool validate_timing_graph_constraints(const TimingGraph& timing_graph, const Ti
 
                 msg = "Timing Graph node " + std::to_string(size_t(node)) + " is an OPIN with no incoming edges, but is not marked as a constant generator";
 
-                throw tatum::Error(msg);
+                throw tatum::Error(msg, node);
             }
         }
     }

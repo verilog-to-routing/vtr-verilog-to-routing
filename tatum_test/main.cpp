@@ -80,6 +80,9 @@ struct Args {
     //Verify results match reference
     size_t verify = 0;
 
+    //Print reports
+    size_t report = 1;
+
     //Timing graph node whose transitive fanout is included in the 
     //dumped .dot file (useful for debugging). Values < 0 dump the
     //entire graph.
@@ -113,7 +116,7 @@ void usage(std::string prog) {
     cout << "                                      0 uses delay model from input.\n";
     cout << "                                      (default " << default_args.unit_delay << ")\n";
     cout << "    --write_echo WRITE_ECHO:          Write an echo file of restuls.\n";
-    cout << "                                      0 implies no, non-zero implies yes.\n";
+    cout << "                                      empty implies no, non-empty implies write to specified file.\n";
     cout << "                                      (default " << default_args.write_echo << ")\n";
     cout << "    --opt_graph_layout OPT_LAYOUT:    Optimize graph layout.\n";
     cout << "                                      0 implies no, non-zero implies yes.\n";
@@ -121,15 +124,19 @@ void usage(std::string prog) {
     cout << "    --print_sizes PRINT_SIZES:        Print various data structure sizes.\n";
     cout << "                                      0 implies no, non-zero implies yes.\n";
     cout << "                                      (default " << default_args.print_sizes << ")\n";
+    cout << "    --report REPORT:                  Generate various reports.\n";
+    cout << "                                      0 implies no, non-zero implies yes.\n";
+    cout << "                                      (default " << default_args.report << ")\n";
     cout << "    --verify VERIFY:                  Verify calculated results match reference.\n";
     cout << "                                      0 implies no, non-zero implies yes.\n";
     cout << "                                      (default " << default_args.verify << ")\n";
     cout << "    --debug_dot_node NODEID:          Specifies the timing graph node node whose transitive\n";
     cout << "                                      connections are dumped to the .dot file (useful for debugging).\n";
-    cout << "                                      Values < 0 dump the entire graph,\n";
+    cout << "                                      Values < -1 dump the entire graph,\n";
+    cout << "                                      Values == -1 do not dump dot file,\n";
     cout << "                                      Values >= 0 dump the transitive connections of\n";
     cout << "                                      the matching node.\n";
-    cout << "                                      (default " << default_args.verify << ")\n";
+    cout << "                                      (default " << default_args.debug_dot_node << ")\n";
 }
 
 void cmd_error(std::string prog, std::string msg) {
@@ -181,6 +188,8 @@ Args parse_args(int argc, char** argv) {
                     args.opt_graph_layout = arg_val;
                 } else if (argv[i] == std::string("--verify")) { 
                     args.verify = arg_val;
+                } else if (argv[i] == std::string("--report")) { 
+                    args.report = arg_val;
                 } else if (argv[i] == std::string("--debug_dot_node")) { 
                     args.debug_dot_node = arg_val;
                 } else {
@@ -216,8 +225,8 @@ int main(int argc, char** argv) {
 
     int exit_code = 0;
 
-    struct timespec prog_start, load_start, verify_start;
-    struct timespec prog_end, load_end, verify_end;
+    struct timespec prog_start, load_start, opt_start, verify_start;
+    struct timespec prog_end, load_end, opt_end, verify_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
@@ -316,7 +325,10 @@ int main(int argc, char** argv) {
 
     if (args.opt_graph_layout) {
         
+        clock_gettime(CLOCK_MONOTONIC, &opt_start);
         auto id_maps = timing_graph->optimize_layout();
+        clock_gettime(CLOCK_MONOTONIC, &opt_end);
+        cout << "Optimizing graph took: " << tatum::time_sec(opt_start, opt_end) << " sec" << endl;
 
         remap_delay_calculator(*timing_graph, *delay_calculator, id_maps.edge_id_map);
         timing_constraints->remap_nodes(id_maps.node_id_map);
@@ -391,13 +403,18 @@ int main(int argc, char** argv) {
         auto dot_writer = make_graphviz_dot_writer(*timing_graph, *delay_calculator);
 
         std::vector<NodeId> nodes;
-        if (args.debug_dot_node >= 0) {
+        if (args.debug_dot_node == -1) {
+            //Pass
+        } else if (args.debug_dot_node < -1) {
+            auto tg_nodes = timing_graph->nodes();
+            nodes = std::vector<NodeId>(tg_nodes.begin(), tg_nodes.end());
+        } else if (args.debug_dot_node >= 0) {
             nodes = find_transitively_connected_nodes(*timing_graph, {NodeId(args.debug_dot_node)});
-            dot_writer.set_nodes_to_dump(nodes);
         }
+        dot_writer.set_nodes_to_dump(nodes);
 
         std::shared_ptr<tatum::SetupTimingAnalyzer> echo_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
-        if(echo_setup_analyzer) {
+        if(args.report && echo_setup_analyzer) {
             //write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
             dot_writer.write_dot_file("tg_setup_annotated.dot", *echo_setup_analyzer);
             timing_reporter.report_timing_setup("report_timing.setup.rpt", *echo_setup_analyzer);
@@ -409,7 +426,7 @@ int main(int argc, char** argv) {
             detailed_timing_reporter.report_unconstrained_setup("report_unconstrained_timing_detailed.setup.rpt", *echo_setup_analyzer);
         }
         std::shared_ptr<tatum::HoldTimingAnalyzer> echo_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
-        if(echo_hold_analyzer) {
+        if(args.report && echo_hold_analyzer) {
             //write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, *delay_calculator, *echo_hold_analyzer, nodes);
             dot_writer.write_dot_file("tg_hold_annotated.dot", *echo_hold_analyzer);
             timing_reporter.report_timing_hold("report_timing.hold.rpt", *echo_hold_analyzer);
