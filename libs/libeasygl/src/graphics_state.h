@@ -237,6 +237,7 @@ struct t_gl_state {
     bool redraw_needed = false;
     bool disable_event_loop = false;
     bool redirect_to_postscript = false;
+    float zoom_factor = 1.6667;
 };
 
 #endif // GRAPHICS_STATE_H
