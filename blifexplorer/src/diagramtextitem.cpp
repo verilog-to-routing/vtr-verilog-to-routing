@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "diagramtextitem.h"
 #include "explorerscene.h"
 
-DiagramTextItem::DiagramTextItem(QGraphicsItem *parent, QGraphicsScene *scene)
+DiagramTextItem::DiagramTextItem(QGraphicsItem *parent, QGraphicsScene * /* scene */)
     : QGraphicsTextItem(parent)
 {
     setFlag(QGraphicsItem::ItemIsMovable);

@@ -1362,11 +1362,10 @@ void MainWindow::expandCollapse()
     QGraphicsItem *item = scene->selectedItems().first();
 
         if (item->type() == LogicUnit::Type) {
-            LogicUnit *unit =
-                qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
+            LogicUnit *unit = qgraphicsitem_cast<LogicUnit *>(scene->selectedItems().first());
 
             //if module start right away, otherwise extract module name
-            if(unit->unitType() == LogicUnit::Module){
+            if(unit && unit->unitType() == LogicUnit::Module){
                 myContainer->expandCollapse(unit->getName());
             } else if(unit->getName().contains("+")){
                 QString moduleName = myContainer->extractModuleFromName(

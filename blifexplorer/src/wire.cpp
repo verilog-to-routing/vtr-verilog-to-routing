@@ -31,7 +31,7 @@ const qreal Pi = 3.14;
 
 //constructor. A start and an endpoint is needed for each wire
 Wire::Wire(LogicUnit *startUnit, LogicUnit *endUnit,
-          QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
+          QGraphicsItem *parent, QGraphicsScene * /* scene */):QGraphicsLineItem(parent)
 {
     myStartUnit = startUnit;
     myEndUnit = endUnit;
@@ -388,8 +388,6 @@ bool Wire::startFromModule(){
 }
 
 bool Wire::endOnModule(){
-    bool c1 = !endUnit()->isVisible();
-    bool c2 = hasEndModule;
     if(!endUnit()->isVisible() && hasEndModule){
         if(myEndModule->isVisible()){
             return true;
