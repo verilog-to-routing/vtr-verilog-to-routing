@@ -202,6 +202,20 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``on``
 
+.. option:: --const_gen_inference {none | comb | comb_seq}
+
+    Controls how constant generators are inferred/detected in the input circuit.
+    Constant generators and the signals they driver are not considered during timing analysis.
+
+    * ``none``: No constant generator inference will occur. Any signals which are actually constants will be treated as non-constants.
+    * ``comb``: VPR will infer constant generators from combinational blocks with no non-constant inputs (always safe).
+    * ``comb_seq``: VPR will infer constant generators from combinational *and* sequential blocks with only constant inputs (usually safe).
+      
+    .. note:: In rare circumstances ``comb_seq`` could incorrectly identify certain blocks as constant generators. 
+              This would only occur if a sequential netlist primitive has an internal state which evolves *completely independently* of any data input (e.g. a hardened LFSR block, embedded thermal sensor).
+
+    **Default**: ``comb_seq``
+
 .. option:: --sweep_dangling_primary_ios {on | off}
 
     Controls whether the circuits dangling primary inputs and outputs (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
@@ -256,11 +270,15 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``on``
 
-.. option:: --allow_unrelated_clustering {on | off}
+.. option:: --allow_unrelated_clustering {on | off | auto}
 
-    Controls whether or not primitives with no attraction to the current cluster can be packed into it.
+    Controls whether primitives with no attraction to a cluster may be packed into it.
 
-    **Default**:  ``on``
+    Unrelated clustering can increase packing density (decreasing the number of blocks required to implement the circuit), but can significantly impact routability.
+
+    When set to ``auto`` VPR automatically decides whether to enable unrelated clustring based on the targetted device and achieved packing density.
+
+    **Default**:  ``auto``
 
 .. option:: --alpha_clustering <float>
 
@@ -295,6 +313,12 @@ For people not working on CAD, you can probably leave all the options to their d
 
     ``blend`` uses a weighted sum of timing criticality, the number of tightly coupled blocks connected to the primitive, and the number of its external inputs.
 
+    ``max_pins`` selects primitives with the most number of pins (which may be used, or unused).
+
+    ``max_input_pins`` selects primitives with the most number of input pins (which may be used, or unused).
+
+    ``blend2`` An alternative blend formulation taking into account both used and unused pin counts, number of tightly coupled blocks and criticality.
+
     **Default**: ``blend`` if timing_driven_clustering is on; ``max_inputs`` otherwise.
 
 .. option:: --clustering_pin_feasibility_filter {on | off}
@@ -306,7 +330,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``on``
 
-.. option:: --target_ext_pin_util { <float> | <float>,<float> | <string>:<float> | <string>:<float>,<float> }
+.. option:: --target_ext_pin_util { auto | <float> | <float>,<float> | <string>:<float> | <string>:<float>,<float> }
 
     Sets the external pin utilization target (fraction between 0.0 and 1.0) during clustering. 
     This determines how many pin the clustering engine will aim to use in a given cluster before closing it and opening a new cluster.
@@ -318,6 +342,8 @@ For people not working on CAD, you can probably leave all the options to their d
     Typically packing less densely improves routability, at the cost of using more clusters.
     
     This option can take several different types of values:
+
+    * ``auto`` VPR will automatically determine appropriate target utilizations.
     
     * ``<float>`` specifies the target input pin utilization for all block types.
 
@@ -336,7 +362,7 @@ For people not working on CAD, you can probably leave all the options to their d
         For example: 
 
           * ``clb:0.7`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization.
-          * ``clb:0.7,0.9`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization, nad 90% output pin utilization.
+          * ``clb:0.7,0.9`` specifies that only ``clb`` type blocks should aim for 70% input pin utilization, and 90% output pin utilization.
 
     .. note:: 
 
@@ -363,7 +389,7 @@ For people not working on CAD, you can probably leave all the options to their d
     
         This option requires :option:`--clustering_pin_feasibility_filter` to be enabled.
 
-    **Default:** ``1.0``
+    **Default:** ``auto``
 
 
 .. option:: --debug_clustering {on | off}

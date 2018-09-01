@@ -53,6 +53,7 @@ using namespace std;
 #endif
 
 #include "rr_graph.h"
+#include "route_util.h"
 
 /****************************** Define Macros *******************************/
 
@@ -285,6 +286,8 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 static void act_on_mouse_over(float x, float y);
 static void deselect_all();
 
+static void act_on_key_press(char key_pressed, int keysym);
+
 static void draw_routed_net(ClusterNetId net);
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
 static void draw_rr();
@@ -338,9 +341,6 @@ t_color get_block_type_color(t_type_ptr type);
 t_color lighten_color(t_color color, float amount);
 
 static void draw_block_pin_util();
-vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type);
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type);
-float routing_util(float used, float avail);
 
 /********************** Subroutine definitions ******************************/
 
@@ -434,7 +434,8 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
             g_vpr_ctx.set_forced_pause(false); //Reset pause flag
         }
         set_mouse_move_input(true); //Enable act_on_mouse_over callback
-		event_loop(highlight_blocks, act_on_mouse_over, nullptr, drawscreen);
+        set_keypress_input(true); //Enable act_on_mouse_over callback
+		event_loop(highlight_blocks, act_on_mouse_over, act_on_key_press, drawscreen);
 	} else {
 		flushinput();
 	}
@@ -2682,6 +2683,31 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
     }
 }
 
+static void act_on_key_press(char /*key_pressed*/, int keysym) {
+    //vtr::printf("Key press %c (%d)\n", key_pressed, keysym);
+#ifdef X11
+#include <X11/keysym.h>
+
+    switch(keysym) {
+        case XK_Shift_L: {
+            float zoom_factor = get_zoom_factor();
+            zoom_factor += (zoom_factor - 1.);
+            zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
+            vtr::printf("Increasing graphics zoom factor to %f\n", zoom_factor);
+            set_zoom_factor(zoom_factor);
+            break;
+        } case XK_Control_L: {
+            float zoom_factor = get_zoom_factor();
+            zoom_factor -= (zoom_factor - 1.) / 2;
+            zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
+            vtr::printf("Decreasing graphics zoom factor to %f\n", zoom_factor);
+            set_zoom_factor(zoom_factor);
+            break;
+        } default:
+            break; //Unrecognized
+    }
+#endif
+}
 
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
 	int k, iclass;
@@ -3324,10 +3350,11 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap) {
     t_bound_box visible_screen = get_visible_screen();
 
 
-    float width = visible_screen.get_width();
+    float screen_width = visible_screen.get_width();
     float vert_offset = visible_screen.get_height() * LEGEND_VERT_OFFSET_FAC;
+    float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
 
-    t_bound_box legend (visible_screen.left(), visible_screen.bottom() + vert_offset, visible_screen.left() + width * LEGEND_WIDTH_FAC, visible_screen.top() - vert_offset);
+    t_bound_box legend (visible_screen.left(), visible_screen.bottom() + vert_offset, visible_screen.left() + legend_width, visible_screen.top() - vert_offset);
 
     float range = cmap.max() - cmap.min();
     float height_incr = legend.get_height() / float(NUM_COLOR_POINTS);
@@ -3484,7 +3511,11 @@ static void draw_routing_util() {
     float tile_width = draw_coords->get_tile_width();
     float tile_height = draw_coords->get_tile_height();
 
-    constexpr float ALPHA = 0.95;
+    float ALPHA = 0.95;
+    if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+        ALPHA = 1.;
+    }
+
 
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
@@ -3549,6 +3580,15 @@ static void draw_routing_util() {
                            draw_coords->tile_x[x+1], draw_coords->tile_y[y+1]);
             fillrect(bb);
 
+            //Draw over blocks
+            if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+                if (x < device_ctx.grid.width() - 2 && y < device_ctx.grid.height() - 2) {
+                    t_bound_box bb2(draw_coords->tile_x[x+1], draw_coords->tile_y[y+1],
+                                   draw_coords->tile_x[x+1] + 1*tile_width, draw_coords->tile_y[y+1] + 1*tile_width);
+                    fillrect(bb2);
+                }
+            }
+
             setcolor(BLACK);
             if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
                 || draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
@@ -3558,92 +3598,4 @@ static void draw_routing_util() {
     }
 
     draw_state->color_map = std::move(cmap);
-}
-
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    vtr::Matrix<float> usage({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-
-    //Collect all the in-use RR nodes
-    std::set<int> rr_nodes;
-    for (auto net : cluster_ctx.clb_nlist.nets()) {
-        t_trace* tptr = route_ctx.trace_head[net];
-        while (tptr != nullptr) {
-            int inode = tptr->index; 
-
-            if (device_ctx.rr_nodes[inode].type() == rr_type) {
-                rr_nodes.insert(inode);
-            }
-            tptr = tptr->next;
-        }
-    }
-
-    //Record number of used resources in each x/y channel
-    for (int inode : rr_nodes) {
-        auto& rr_node = device_ctx.rr_nodes[inode];
-
-        if (rr_type == CHANX) {
-            VTR_ASSERT(rr_node.type() == CHANX);
-            VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
-
-            int y = rr_node.ylow();
-            for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
-                usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
-            }
-        } else {
-            VTR_ASSERT(rr_type == CHANY);
-            VTR_ASSERT(rr_node.type() == CHANY);
-            VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
-
-            int x = rr_node.xlow();
-            for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
-                usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
-            }
-        }
-    }
-    return usage;
-}
-
-vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
-    //Calculate the number of available resources in each x/y channel
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
-
-    auto& device_ctx = g_vpr_ctx.device();
-
-    vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        auto& rr_node = device_ctx.rr_nodes[inode];
-
-        if (rr_node.type() == CHANX && rr_type == CHANX) {
-            VTR_ASSERT(rr_node.type() == CHANX);
-            VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
-
-            int y = rr_node.ylow();
-            for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
-                avail[x][y] += rr_node.capacity();
-            }
-        } else if (rr_node.type() == CHANY && rr_type == CHANY) {
-            VTR_ASSERT(rr_node.type() == CHANY);
-            VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
-
-            int x = rr_node.xlow();
-            for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
-                avail[x][y] += rr_node.capacity();
-            }
-        }
-    }
-    return avail;
-}
-
-float routing_util(float used, float avail) {
-    if (used > 0.) {
-        VTR_ASSERT(avail > 0.);
-        return used / avail;
-    }
-    return 0.;
 }

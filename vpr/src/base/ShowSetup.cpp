@@ -392,19 +392,37 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
 
 static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 
-	vtr::printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
+	vtr::printf_info("PackerOpts.allow_unrelated_clustering: ");
+    if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::ON) {
+        vtr::printf_info("true\n");
+    } else if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::OFF) {
+        vtr::printf_info("false\n");
+    } else if (PackerOpts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+        vtr::printf_info("auto\n");
+    } else {
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer allow_unrelated_clustering\n");
+    }
 	vtr::printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
 	vtr::printf_info("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
 	vtr::printf_info("PackerOpts.cluster_seed_type: ");
 	switch (PackerOpts.cluster_seed_type) {
-	case VPACK_TIMING:
+	case e_cluster_seed::TIMING:
 		vtr::printf_info("TIMING\n");
 		break;
-	case VPACK_MAX_INPUTS:
+	case e_cluster_seed::MAX_INPUTS:
 		vtr::printf_info("MAX_INPUTS\n");
 		break;
-	case VPACK_BLEND:
+	case e_cluster_seed::BLEND:
 		vtr::printf_info("BLEND\n");
+		break;
+	case e_cluster_seed::MAX_PINS:
+		vtr::printf_info("MAX_PINS\n");
+		break;
+	case e_cluster_seed::MAX_INPUT_PINS:
+		vtr::printf_info("MAX_INPUT_PINS\n");
+		break;
+	case e_cluster_seed::BLEND2:
+		vtr::printf_info("BLEND2\n");
 		break;
 	default:
 		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer cluster_seed_type\n");
@@ -414,6 +432,7 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 	vtr::printf_info("PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
 	vtr::printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
+	vtr::printf_info("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
 	vtr::printf_info("\n");
 }
 

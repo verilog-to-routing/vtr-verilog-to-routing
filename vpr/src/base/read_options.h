@@ -53,6 +53,7 @@ struct t_options {
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
+    argparse::ArgValue<e_const_gen_inference> const_gen_inference;
     argparse::ArgValue<bool> sweep_dangling_primary_ios;
     argparse::ArgValue<bool> sweep_dangling_nets;
     argparse::ArgValue<bool> sweep_dangling_blocks;
@@ -61,7 +62,7 @@ struct t_options {
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
-    argparse::ArgValue<bool> allow_unrelated_clustering;
+    argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
     argparse::ArgValue<float> alpha_clustering;
     argparse::ArgValue<float> beta_clustering;
     argparse::ArgValue<bool> timing_driven_clustering;

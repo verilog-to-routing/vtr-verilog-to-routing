@@ -24,6 +24,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                                      const char* circuit_file,
                                      const t_model* user_models,
                                      const t_model* library_models,
+                                     e_const_gen_inference const_gen_inference,
                                      bool should_absorb_buffers,
                                      bool should_sweep_dangling_primary_ios,
                                      bool should_sweep_dangling_nets,
@@ -51,7 +52,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
                    || circuit_format == e_circuit_format::EBLIF);
 
-        netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
+        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, const_gen_inference);
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {

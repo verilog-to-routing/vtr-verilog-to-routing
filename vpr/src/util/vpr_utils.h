@@ -2,6 +2,7 @@
 #define VPR_UTILS_H
 
 #include <vector>
+#include <regex>
 #include "vpr_types.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
@@ -105,7 +106,11 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 //Returns the block type matching name, or nullptr (if not found)
 t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types);
 
+//Returns the block type which is most common in the device grid
 t_type_ptr find_most_common_block_type(const DeviceGrid& grid);
+
+//Returns the block type which is most likely the logic block
+t_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
 //Returns true if the specified block type contains the specified blif model name
 bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name);

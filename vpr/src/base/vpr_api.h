@@ -46,7 +46,7 @@ void vpr_init(const int argc, const char **argv,
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch);
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the packing stage
-void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform packing
+bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform packing
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous packing
 
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the placement stage

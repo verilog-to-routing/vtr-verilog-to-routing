@@ -262,6 +262,7 @@ void vpr_init(const int argc, const char **argv,
             vpr_setup->PackerOpts.blif_file_name.c_str(),
             vpr_setup->user_models,
             vpr_setup->library_models,
+            vpr_setup->NetlistOpts.const_gen_inference,
             vpr_setup->NetlistOpts.absorb_buffer_luts,
             vpr_setup->NetlistOpts.sweep_dangling_primary_ios,
             vpr_setup->NetlistOpts.sweep_dangling_nets,
@@ -412,12 +413,14 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     auto& packer_opts = vpr_setup.PackerOpts;
 
+    bool status = true;
+
     if (packer_opts.doPacking == STAGE_SKIP) {
         //pass
     } else {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
-            vpr_pack(vpr_setup, arch);
+            status = vpr_pack(vpr_setup, arch);
 
             //TODO: to be consistent with placement/routing vpr_pack should really
             //      load the netlist data structures itself, instead of re-loading
@@ -445,10 +448,10 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         }
     }
 
-    return true;
+    return status;
 }
 
-void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
+bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vtr::ScopedActionTimer timer("Packing");
 
     /* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of
@@ -501,7 +504,7 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                 + wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
     }
 
-    try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
+    return try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
             vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph
 #ifdef ENABLE_CLASSIC_VPR_STA
             , vpr_setup.Timing

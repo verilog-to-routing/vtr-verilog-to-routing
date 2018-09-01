@@ -98,9 +98,19 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+enum class e_const_gen_inference {
+    NONE, //No constant generator inference
+    COMB, //Only combinational constant generator inference
+    COMB_SEQ //Both combinational and sequential constant generator inference
+};
+
+enum class e_unrelated_clustering {
+    OFF, ON, AUTO	
+};
+
 /* Selection algorithm for selecting next seed  */
-enum e_cluster_seed {
-	VPACK_TIMING, VPACK_MAX_INPUTS, VPACK_BLEND
+enum class e_cluster_seed {
+	TIMING, MAX_INPUTS, BLEND, MAX_PINS, MAX_INPUT_PINS, BLEND2
 };
 
 enum e_block_pack_status {
@@ -346,7 +356,6 @@ struct t_pack_molecule {
 
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
 
-	int num_ext_inputs; /* number of input pins used by molecule that are not self-contained by pattern molecule matches */
 	t_pack_molecule *next;
 };
 
@@ -698,6 +707,7 @@ struct t_file_name_opts {
 
 /* Options for netlist loading */
 struct t_netlist_opts {
+    e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
     bool sweep_dangling_primary_ios = true;
     bool sweep_dangling_blocks = true;
@@ -733,11 +743,11 @@ struct t_packer_opts {
 	float inter_cluster_net_delay;
     float target_device_utilization;
 	bool auto_compute_inter_cluster_net_delay;
-	bool allow_unrelated_clustering;
+	e_unrelated_clustering allow_unrelated_clustering;
 	bool connection_driven;
 	bool debug_clustering;
     bool enable_pin_feasibility_filter;
-    t_ext_pin_util_targets target_external_pin_util;
+    std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
 	enum e_packer_algorithm packer_algorithm;
     std::string device_layout;

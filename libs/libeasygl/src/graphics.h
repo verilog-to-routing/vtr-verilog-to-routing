@@ -125,6 +125,10 @@ void set_mouse_move_input(bool turn_on);
 void set_keypress_input(bool turn_on);
 void enable_or_disable_button(int ibutton, bool enabled);
 
+/* Gets/Sets the current ZOOM_FACTOR
+ */
+float get_zoom_factor();
+void set_zoom_factor(float new_zoom_factor);
 
 /***************************** DRAWING ROUTINES *********************/
 

@@ -267,9 +267,12 @@ struct ParsePlaceAlgorithm {
 struct ParseClusterSeed {
     ConvertedValue<e_cluster_seed> from_str(std::string str) {
         ConvertedValue<e_cluster_seed> conv_value;
-        if      (str == "timing")  conv_value.set_value(VPACK_TIMING);
-        else if (str == "max_inputs") conv_value.set_value(VPACK_MAX_INPUTS);
-        else if (str == "blend") conv_value.set_value(VPACK_BLEND);
+        if      (str == "timing")  conv_value.set_value(e_cluster_seed::TIMING);
+        else if (str == "max_inputs") conv_value.set_value(e_cluster_seed::MAX_INPUTS);
+        else if (str == "blend") conv_value.set_value(e_cluster_seed::BLEND);
+        else if (str == "max_pins") conv_value.set_value(e_cluster_seed::MAX_PINS);
+        else if (str == "max_input_pins") conv_value.set_value(e_cluster_seed::MAX_INPUT_PINS);
+        else if (str == "blend2") conv_value.set_value(e_cluster_seed::BLEND2);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -280,17 +283,20 @@ struct ParseClusterSeed {
 
     ConvertedValue<std::string> to_str(e_cluster_seed val) {
         ConvertedValue<std::string> conv_value;
-        if (val == VPACK_TIMING) conv_value.set_value("timing");
-        else if (val == VPACK_MAX_INPUTS) conv_value.set_value("max_inputs");
+        if (val == e_cluster_seed::TIMING) conv_value.set_value("timing");
+        else if (val == e_cluster_seed::MAX_INPUTS) conv_value.set_value("max_inputs");
+        else if (val == e_cluster_seed::BLEND) conv_value.set_value("blend");
+        else if (val == e_cluster_seed::MAX_PINS) conv_value.set_value("max_pins");
+        else if (val == e_cluster_seed::MAX_INPUT_PINS) conv_value.set_value("max_input_pins");
         else {
-            VTR_ASSERT(val == VPACK_BLEND);
-            conv_value.set_value("blend");
+            VTR_ASSERT(val == e_cluster_seed::BLEND2);
+            conv_value.set_value("blend2");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"timing", "max_inputs", "blend"};
+        return {"timing", "max_inputs", "blend", "max_pins", "max_input_pins", "blend2"};
     }
 };
 
@@ -378,6 +384,72 @@ struct ParseClockModeling {
 
     std::vector<std::string> default_choices() {
         return {"ideal", "route"};
+    }
+};
+
+struct ParseUnrelatedClustering {
+    ConvertedValue<e_unrelated_clustering> from_str(std::string str) {
+        ConvertedValue<e_unrelated_clustering> conv_value;
+        if      (str == "on") conv_value.set_value(e_unrelated_clustering::ON);
+        else if (str == "off") conv_value.set_value(e_unrelated_clustering::OFF);
+        else if (str == "auto") conv_value.set_value(e_unrelated_clustering::AUTO);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_unrelated_clustering (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_unrelated_clustering val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_unrelated_clustering::ON) conv_value.set_value("on");
+        else if (val == e_unrelated_clustering::OFF) conv_value.set_value("off");
+        else {
+            VTR_ASSERT(val == e_unrelated_clustering::AUTO);
+            conv_value.set_value("auto");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off", "auto"};
+    }
+};
+
+struct ParseConstGenInference{
+    ConvertedValue<e_const_gen_inference> from_str(std::string str) {
+        ConvertedValue<e_const_gen_inference> conv_value;
+        if      (str == "none") conv_value.set_value(e_const_gen_inference::NONE);
+        else if (str == "comb") conv_value.set_value(e_const_gen_inference::COMB);
+        else if (str == "comb_seq") conv_value.set_value(e_const_gen_inference::COMB_SEQ);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_const_gen_inference (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_const_gen_inference val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_const_gen_inference::NONE) conv_value.set_value("none");
+        else if (val == e_const_gen_inference::COMB) conv_value.set_value("comb");
+        else {
+            VTR_ASSERT(val == e_const_gen_inference::COMB_SEQ);
+            conv_value.set_value("comb_seq");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "comb", "comb_seq"};
     }
 };
 
@@ -552,7 +624,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("File format for the input atom-level circuit/netlist.\n"
                   " * auto: infer from file extension\n"
                   " * blif: Strict structural BLIF format\n"
-                  " * eblif: Structure BLIF format with the extensions:\n"
+                  " * eblif: Structural BLIF format with the extensions:\n"
                   "           .conn  - Connection between two wires\n"
                   "           .cname - Custom name for atom primitive\n"
                   "           .param - Parameter on atom primitive\n"
@@ -603,6 +675,17 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    netlist_grp.add_argument<e_const_gen_inference,ParseConstGenInference>(args.const_gen_inference, "--const_gen_inference")
+            .help("Controls how constant generators are detected\n"
+                  " * none    : No constant generator inference is performed\n"
+                  " * comb    : Only combinational primitives are considered\n"
+                  "             for constant generator inference (always safe)\n"
+                  " * comb_seq: Both combinational and sequential primitives\n"
+                  "             are considered for constant generator inference\n"
+                  "             (usually safe)\n")
+            .default_value("comb_seq")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     netlist_grp.add_argument<bool,ParseOnOff>(args.sweep_dangling_primary_ios, "--sweep_dangling_primary_ios")
             .help("Controls whether dangling primary inputs and outputs are removed from the netlist")
             .default_value("on")
@@ -637,10 +720,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool,ParseOnOff>(args.allow_unrelated_clustering, "--allow_unrelated_clustering")
-            .help("Controls whether or not primitives with no attraction to the current cluster"
-                  " can be packed into it")
-            .default_value("on")
+    pack_grp.add_argument<e_unrelated_clustering,ParseUnrelatedClustering>(args.allow_unrelated_clustering, "--allow_unrelated_clustering")
+            .help("Controls whether primitives with no attraction to a cluster can be packed into it.\n"
+                  "Turning unrelated clustering on can increase packing density (fewer blocks are used), but at the cost of worse routability.\n"
+                  " * on  : Unrelated clustering enabled\n"
+                  " * off : Unrelated clustering disabled\n"
+                  " * auto: Dynamically enabled/disabled (based on density)\n")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument(args.alpha_clustering, "--alpha_clustering")
@@ -663,8 +749,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     pack_grp.add_argument<e_cluster_seed,ParseClusterSeed>(args.cluster_seed_type, "--cluster_seed_type")
             .help("Controls how primitives are chosen as seeds."
-                  " (Default: blend if timing driven, max_inputs otherwise)")
-            .choices({"blend", "timing", "max_inputs"})
+                  " (Default: blend2 if timing driven, max_inputs otherwise)")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.enable_clustering_pin_feasibility_filter, "--clustering_pin_feasibility_filter")
@@ -679,20 +764,23 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     pack_grp.add_argument(args.target_external_pin_util, "--target_ext_pin_util")
             .help("Sets the external pin utilization target during clustering.\n"
-                  "Value Ranges:\n"
-                  "* 1.0: The packer to pack as densely as possible (i.e. try\n"
-                  "       to use 100% of cluster external pins)\n"
-                  "* 0.0: The packer to pack as loosely as possible (i.e. each\n"
-                  "       block will contain a single mollecule) Values in\n"
-                  "       between trade-off pin usage and packing density\n"
+                  "Value Ranges: [1.0, 0.0]\n"
+                  "* 1.0 : The packer to pack as densely as possible (i.e. try\n"
+                  "        to use 100% of cluster external pins)\n"
+                  "* 0.0 : The packer to pack as loosely as possible (i.e. each\n"
+                  "        block will contain a single mollecule).\n"
+                  "        Values in between trade-off pin usage and\n"
+                  "        packing density.\n"
                   "\n"
                   "Typically packing less densely improves routability, at\n"
-                  "the cost of using more clusters. Note that this is only\n"
-                  "a guideline, the packer will use up to 1.0 utilization if\n"
-                  "a molecule would not otherwise not in any cluster type.\n"
+                  "the cost of using more clusters. Note that these settings are\n"
+                  "only guidelines, the packer will use up to 1.0 utilization if\n"
+                  "a molecule would not otherwise pack into any cluster type.\n"
                   "\n"
                   "This option can take multiple specifications in several\n"
                   "formats:\n"
+                  "* auto (i.e. 'auto'): VPR will determine the target pin\n"
+                  "                      utilizations automatically\n"
                   "* Single Value (e.g. '0.7'): the input pin utilization for\n"
                   "                             all block types (output pin\n"
                   "                             utilization defaults to 1.0)\n"
@@ -706,7 +794,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   "would set the input pin utilization of clb blocks to 0.7,\n"
                   "and all other blocks to 0.9.\n")
             .nargs('+')
-            .default_value({"1.0"})
+            .default_value({"auto"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")
@@ -1052,6 +1140,14 @@ static void set_conditional_defaults(t_options& args) {
                                 args.timing_driven_clustering.argument_name().c_str());
         }
         args.timing_driven_clustering.set(args.timing_analysis, Provenance::INFERRED);
+    }
+
+    if (args.cluster_seed_type.provenance() != Provenance::SPECIFIED) {
+        if (args.timing_driven_clustering) {
+            args.cluster_seed_type.set(e_cluster_seed::BLEND2, Provenance::INFERRED); 
+        } else {
+            args.cluster_seed_type.set(e_cluster_seed::MAX_INPUTS, Provenance::INFERRED); 
+        }
     }
 
     /*
