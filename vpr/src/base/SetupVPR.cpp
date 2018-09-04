@@ -8,6 +8,7 @@ using namespace std;
 #include "vtr_random.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -100,6 +101,7 @@ void SetupVPR(t_options *Options,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
+        vtr::ScopedActionTimer t("Loading Architecture Description");
 		XmlReadArch(Options->ArchFile.value().c_str(), TimingEnabled, Arch, &device_ctx.block_types,
 				&device_ctx.num_block_types);
 	}
@@ -195,9 +197,11 @@ void SetupVPR(t_options *Options,
 	PlacerOpts->seed =  Options->Seed;
 	vtr::srandom(PlacerOpts->seed);
 
-	vtr::printf_info("Building complex block graph.\n");
-	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
-	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
+    {
+        vtr::ScopedActionTimer t("Building complex block graph");
+        alloc_and_load_all_pb_graphs(PowerOpts->do_power);
+        *PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
+    }
 
     if (Options->clock_modeling == ROUTED_CLOCK) {
         ClockModeling::treat_clock_pins_as_non_globals();

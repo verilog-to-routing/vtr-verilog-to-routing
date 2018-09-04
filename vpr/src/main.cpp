@@ -18,6 +18,7 @@ using namespace std;
 #include "vtr_error.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
+#include "vtr_time.h"
 
 #include "tatum/error.hpp"
 
@@ -50,6 +51,8 @@ constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g.
  * 4.  Clean up
  */
 int main(int argc, const char **argv) {
+    vtr::ScopedFinishTimer t("The entire flow of VPR");
+
     t_options Options = t_options();
     t_arch Arch = t_arch();
     t_vpr_setup vpr_setup = t_vpr_setup();
