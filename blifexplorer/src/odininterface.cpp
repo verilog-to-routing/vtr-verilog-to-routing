@@ -30,40 +30,50 @@ OTHER DEALINGS IN THE SOFTWARE.
 OdinInterface::OdinInterface()
 {
     fprintf(stderr,"Creating Odin II object\n");
-    wave = -1;
-    myCycle = 0;
+    wave = 0;
+    edge_output = "";
+	verilog_netlist = NULL;
+	arg_list = NULL;
+    arg_len = 0;
 }
 
 /*---------------------------------------------------------------------------------------------
  * (function: startOdin)
  *-------------------------------------------------------------------------------------------*/
-#define put_at_end(vector, in) vector.insert( vector.end(), in)
-void OdinInterface::startOdin()
+int OdinInterface::startOdin()
 {
     /* pass arguments here to odin */
-    std::vector<std::string> arguments;
+    std::vector<std::string> arguments = 
+	{
+		"../ODIN_II/odin_ii", 												//	pass the odin location relative to blifexplorer
+		"--interractive_simulation",										//	prevent odin from freeing valuable information
+        "-r", "7",															//	set simulation seed
+        "-sim_dir", "./OUTPUT/",												//	set simulation directory
+        "-g", "10000",														//	set number of test vector
+		"-b", OdinInterface::myFilename.trimmed().toLocal8Bit().data()		//	pass the blif file
+    };
 
-    arguments.insert( arguments.end(), "--interractive_simulation" );
-    if(OdinInterface::edge_output != "")
-        arguments.insert( arguments.end(), OdinInterface::edge_output );
-    arguments.insert( arguments.end(),{"-b",  OdinInterface::myFilename.trimmed().toLocal8Bit().data()} );
-    
+	// pass the edge type
+    if ( OdinInterface::edge_output != "" )
+        arguments.insert(arguments.end(), OdinInterface::edge_output);
 
     /* converting into format digestible by odin */
-    char **args_list = (char**)malloc(arguments.size()*sizeof(char*));
-    for( int i=0; i<arguments.size(); i ++)
-        args_list[i] = vtr::strdup(arguments[i].c_str());
-    
-    int success = odin_ii(arguments.size(),args_list);
-    if(!success)
+    arg_list = (char**)malloc(arguments.size()*sizeof(char*));
+	arg_len = arguments.size();
+
+	std::cout << "Running ./Odin ";
+    for( int i=0; i<arg_len; i ++)
     {
-        printf("Odin has ran into errors, shutting down, view logs");
-        //exit(1);
+        arg_list[i] = vtr::strdup(arguments[i].c_str());
+        std::cout << arg_list[i] << " ";
     }
 
-    for( int i=0; i<arguments.size(); i ++)
-        vtr::free(args_list[i]);
-    vtr::free(args_list);
+    verilog_netlist = start_odin_ii(arg_len,arg_list);
+
+    if(!verilog_netlist)
+        return -1;
+    
+    return 0;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -147,6 +157,10 @@ int OdinInterface::simulateNextWave()
  *-------------------------------------------------------------------------------------------*/
 void OdinInterface::endSimulation(){
     sim_data = terminate_simulation(sim_data);
+	terminate_odin_ii();
+	for(int i=0; i<arg_len; i++)
+		vtr::free(arg_list[i]);
+	vtr::free(arg_list);
 }
 
 /*---------------------------------------------------------------------------------------------

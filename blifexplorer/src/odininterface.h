@@ -46,7 +46,7 @@ class OdinInterface
 {
 public:
     OdinInterface();
-    void startOdin();
+    int startOdin();
     QHash<QString, nnode_t *> getNodeTable();
     void setFilename(QString filename);
     void setUpSimulation();
@@ -55,17 +55,14 @@ public:
     int getOutputValue(nnode_t* node, int pin, int actstep);
     void setEdge(int i);
 private:
-    global_args_t global_args;
-    t_type_descriptor* type_descriptors;
-    int block_tag;
+    netlist_t *verilog_netlist;
     QHash<QString, nnode_t *> nodehash;
     QQueue<nnode_t *> nodequeue;
     QString myFilename;
-    int myCycle;
-    bool simulationStarted;
     sim_data_t *sim_data;
-
     std::string edge_output;
+    char **arg_list;
+    int arg_len;
     int wave;
 };
 

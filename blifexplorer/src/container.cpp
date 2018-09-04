@@ -359,11 +359,25 @@ void Container::spreadLayers()
  * (function: startOdin)
  *-------------------------------------------------------------------------------------------*/
 void Container::startOdin(){
+    int error_code = 0;
     if(!odinStarted){
         myOdin->setFilename(myFilename);
-        myOdin->startOdin();
-        odinStarted = true;
+        error_code = myOdin->startOdin();
+    }
+    else
+    {
+        std::cout << "odin is already started";
+    }
+
+    odinStarted = (error_code == 0)? true: false;
+    
+    if(odinStarted){
         odinTable = myOdin->getNodeTable();
+    }
+    else
+    {
+        std::cout << "odin failed to start with error:" << std::to_string(error_code);
+        exit(1);
     }
 }
 
@@ -964,8 +978,13 @@ void Container::showSimulationStep(int cycle)
  *-------------------------------------------------------------------------------------------*/
 void Container::setEdge(int i)
 {
-    if(odinStarted){
+    if(odinStarted)
+    {
         myOdin->setEdge(i);
+    }
+    else
+    {
+        std::cout << "unable to set edge since odin has not been started";
     }
 }
 
