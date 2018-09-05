@@ -56,9 +56,6 @@ int main(int argc, const char **argv) {
     t_options Options = t_options();
     t_arch Arch = t_arch();
     t_vpr_setup vpr_setup = t_vpr_setup();
-    clock_t entire_flow_begin, entire_flow_end;
-
-    entire_flow_begin = clock();
 
     try {
         vpr_install_signal_handler();
@@ -74,8 +71,6 @@ int main(int argc, const char **argv) {
         if (!flow_succeeded) {
             return UNIMPLEMENTABLE_EXIT_CODE;
         }
-
-        entire_flow_end = clock();
 
         auto& timing_ctx = g_vpr_ctx.timing();
         vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n",
@@ -94,8 +89,6 @@ int main(int argc, const char **argv) {
         vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n",
                 timing_ctx.stats.old_timing_analysis_wallclock_time() / timing_ctx.stats.timing_analysis_wallclock_time());
 #endif
-        vtr::printf_info("The entire flow of VPR took %g seconds.\n",
-                (float) (entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 
         /* free data structures */
         vpr_free_all(Arch, vpr_setup);
