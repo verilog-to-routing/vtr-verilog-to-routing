@@ -23,8 +23,8 @@ float ScopedTimer::delta_max_rss_mib() const {
 }
 
 
-ScopedFinishTimer::ScopedFinishTimer(std::string action)
-    : action_(action) {
+ScopedFinishTimer::ScopedFinishTimer(std::string action_str)
+    : action_(action_str) {
 }
 
 ScopedFinishTimer::~ScopedFinishTimer() {
