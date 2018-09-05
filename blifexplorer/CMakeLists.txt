@@ -23,7 +23,10 @@ file(GLOB_RECURSE EXEC_SOURCES src/*.cpp)
 
 file(GLOB_RECURSE EXEC_HEADERS src/*.h)
 files_to_dirs(EXEC_HEADERS EXEC_INCLUDE_DIRS)
-include_directories(${EXEC_INCLUDE_DIRS})
+
+#The generated header files appear in the CMAKE_CURRENT_BINARY_DIR, so ensure
+#it is in the include directories
+include_directories(${EXEC_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 
 #Create the executable
 add_executable(blifexplorer 
