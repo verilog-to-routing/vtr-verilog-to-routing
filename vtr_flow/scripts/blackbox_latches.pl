@@ -36,10 +36,11 @@ my $InFile;
 my $uniqID_separator = "_^_";
 my $vanilla = 0;
 my $all_bb = 0;
-my $skip_init = 0;
+my $respect_init = 0;
+my $respect_edge = 0;
+
 my $clkfile = "";
 my $has_output = 0;
-
 my $parse_input = 0;
 my $parse_output = 0;
 my $parse_clk_list =0;
@@ -89,9 +90,13 @@ foreach my $cur_arg (@ARGV)
 	{
 		$parse_clk_list = 1;
 	}
-	elsif ($cur_arg =~ /\-\-no_init/)
+	elsif ($cur_arg =~ /\-\-respect_init/)
 	{
-		$skip_init = 1;
+		$respect_init = 1;
+	}
+	elsif ($cur_arg =~ /\-\-respect_edge/)
+	{
+		$respect_edge = 1;
 	}
 	elsif ($cur_arg =~ /\-\-vanilla/)
 	{
@@ -123,8 +128,7 @@ if ($parse_input || $parse_output)
 
 my %bb_clock_domain;
 my %vanilla_clk_domain;
-
-my %latches_location_map;
+my %unusable_clk_domain;
 
 my $skip = 0;
 my $lineNum = 0;
@@ -168,7 +172,7 @@ while( ($line = <$InFile>))
 				for (my $i=3; $i < $size; $i++)
 				{
 					#abc sets these to 0
-					if(!$skip_init || $i != 5)
+					if( (!$respect_init || $i != 5) && ( !$respect_edge || $i != 3 ) )
 					{
 						$clk_domain_name .= $uniqID_separator.@tokens[$i];
 					}
@@ -176,7 +180,7 @@ while( ($line = <$InFile>))
 				}
 
 				#if we have an output file then we can black box some clocks
-				if(!$all_bb && ($vanilla || exists($clocks_not_to_bb{$clk_domain_name})))
+				if( (!$all_bb) && ($vanilla || exists($clocks_not_to_bb{$clk_domain_name})) )
 				{
 					if( !$vanilla )
 					{
@@ -199,6 +203,10 @@ while( ($line = <$InFile>))
 					}
 					$bb_clock_domain{$display_domain_name} += 1;
 				}
+			}
+			else
+			{
+				$unusable_clk_domain{$line} .= "${lineNum}, ";
 			}
 		}
 		
@@ -255,6 +263,16 @@ if( ($size = %bb_clock_domain) == 0)
 foreach my $clks (keys %bb_clock_domain) 
 {
 	print "\n\t".$clks."\t#".$bb_clock_domain{$clks};
+}
+
+print "\n____\nUnusable Latches:";
+if( ($size = %unusable_clk_domain) == 0)
+{
+	print "\n\t-None-";
+}
+foreach my $clks (keys %unusable_clk_domain) 
+{
+	print "\n\t".$clks."\tlines:: ".$unusable_clk_domain{$clks};
 }
 
 #report wrongly typed/ unexistant input clock domain to keep vanilla
