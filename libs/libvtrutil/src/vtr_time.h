@@ -35,6 +35,19 @@ namespace vtr {
             constexpr static float BYTE_TO_MIB = 1024*1024;
     };
 
+    class ScopedActionTimer : public ScopedTimer {
+        public:
+            ScopedActionTimer(const std::string action);
+
+            void quiet(bool value);
+            bool quiet() const;
+            std::string action() const;
+
+        private:
+            const std::string action_;
+            bool quiet_ = false;
+    };
+
     //Scoped elapsed time class which prints the time elapsed for
     //the specified action when it is destructed.
     //
@@ -47,18 +60,10 @@ namespace vtr {
     //
     //          //Will print: 'my_action took X.XX seconds' when out-of-scope
     //      }
-    class ScopedFinishTimer : public ScopedTimer {
+    class ScopedFinishTimer : public ScopedActionTimer {
         public:
             ScopedFinishTimer(const std::string action);
             ~ScopedFinishTimer();
-
-            void quiet(bool value);
-            bool quiet() const;
-            std::string action() const;
-
-        private:
-            const std::string action_;
-            bool quiet_ = false;
     };
 
     //Scoped elapsed time class which prints out the action when
@@ -67,15 +72,16 @@ namespace vtr {
     //For example:
     //
     //      {
-    //          vtr::ScopedActionTimer timer("my_action") //Will print: 'my_action'
+    //          vtr::ScopedStartFinishTimer timer("my_action") //Will print: 'my_action'
     //
     //          //Do other work
     //
     //          //Will print 'my_action took X.XX seconds' when out of scope
     //      }
-    class ScopedActionTimer : public ScopedFinishTimer {
+    class ScopedStartFinishTimer : public ScopedActionTimer {
         public:
-            ScopedActionTimer(const std::string action);
+            ScopedStartFinishTimer(const std::string action);
+            ~ScopedStartFinishTimer();
     };
 }
 

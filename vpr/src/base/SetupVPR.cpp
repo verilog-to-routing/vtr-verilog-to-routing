@@ -101,7 +101,7 @@ void SetupVPR(t_options *Options,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
-        vtr::ScopedActionTimer t("Loading Architecture Description");
+        vtr::ScopedStartFinishTimer t("Loading Architecture Description");
 		XmlReadArch(Options->ArchFile.value().c_str(), TimingEnabled, Arch, &device_ctx.block_types,
 				&device_ctx.num_block_types);
 	}
@@ -198,7 +198,7 @@ void SetupVPR(t_options *Options,
 	vtr::srandom(PlacerOpts->seed);
 
     {
-        vtr::ScopedActionTimer t("Building complex block graph");
+        vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(PowerOpts->do_power);
         *PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }

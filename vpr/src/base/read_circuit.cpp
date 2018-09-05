@@ -47,7 +47,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 
     AtomNetlist netlist;
     {
-        vtr::ScopedActionTimer t("Load circuit");
+        vtr::ScopedStartFinishTimer t("Load circuit");
 
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
                    || circuit_format == e_circuit_format::EBLIF);
@@ -87,7 +87,7 @@ static void process_circuit(AtomNetlist& netlist,
 
 
     {
-        vtr::ScopedActionTimer t("Clean circuit");
+        vtr::ScopedStartFinishTimer t("Clean circuit");
 
         //Clean-up lut buffers
         if(should_absorb_buffers) {
@@ -122,13 +122,13 @@ static void process_circuit(AtomNetlist& netlist,
     }
 
     {
-        vtr::ScopedActionTimer t("Compress circuit");
+        vtr::ScopedStartFinishTimer t("Compress circuit");
 
         //Compress the netlist to clean-out invalid entries
         netlist.remove_and_compress();
     }
     {
-        vtr::ScopedActionTimer t("Verify circuit");
+        vtr::ScopedStartFinishTimer t("Verify circuit");
 
         netlist.verify();
     }

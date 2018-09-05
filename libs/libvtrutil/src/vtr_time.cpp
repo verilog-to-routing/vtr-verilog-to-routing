@@ -22,34 +22,45 @@ float ScopedTimer::delta_max_rss_mib() const {
     return (get_max_rss() - initial_max_rss_) / BYTE_TO_MIB;
 }
 
+ScopedActionTimer::ScopedActionTimer(std::string action_str)
+    : action_(action_str) {
+}
+
+void ScopedActionTimer::quiet(bool value) {
+    quiet_ = value; 
+}
+
+bool ScopedActionTimer::quiet() const {
+    return quiet_;
+}
+
+std::string ScopedActionTimer::action() const {
+    return action_;
+}
 
 ScopedFinishTimer::ScopedFinishTimer(std::string action_str)
-    : action_(action_str) {
+    : ScopedActionTimer(action_str) {
 }
 
 ScopedFinishTimer::~ScopedFinishTimer() {
     if (!quiet()) {
-        vtr::printf_info("%s took %.2f seconds, peak_rss %.1f MiB (%+.1f MiB)\n",
+        vtr::printf_info("%s took %.2f seconds (max_rss %.1f MiB)\n",
                          action().c_str(), elapsed_sec(),
-                         max_rss_mib(), delta_max_rss_mib());
+                         max_rss_mib());
     }
 }
 
-void ScopedFinishTimer::quiet(bool value) {
-    quiet_ = value; 
-}
-
-bool ScopedFinishTimer::quiet() const {
-    return quiet_;
-}
-
-std::string ScopedFinishTimer::action() const {
-    return action_;
-}
-
-ScopedActionTimer::ScopedActionTimer(std::string action_str)
-    : ScopedFinishTimer(action_str) {
+ScopedStartFinishTimer::ScopedStartFinishTimer(std::string action_str)
+    : ScopedActionTimer(action_str) {
     vtr::printf_info("%s\n", action().c_str());
+}
+
+ScopedStartFinishTimer::~ScopedStartFinishTimer() {
+    if (!quiet()) {
+        vtr::printf_info("%s took %.2f seconds (max_rss %.1f MiB, delta_rss %+.1f MiB)\n",
+                         action().c_str(), elapsed_sec(),
+                         max_rss_mib(), delta_max_rss_mib());
+    }
 }
 
 } //namespace
