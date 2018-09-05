@@ -129,9 +129,9 @@ my $use_odin_xml_config = 1;
 my $abc_flow_type = 2;
 my $use_new_latches_restoration_script = 0;
 my $odin_run_simulation = 0;
-my $disable_simulation_failure = 0;
-my $enable_init_value_propagation = 0;
-
+my $disable_simulation_failure = 1;
+my $respect_init_value = 0;
+my $respect_edge_type =0;
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
@@ -209,8 +209,11 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	elsif ( $token eq "-use_new_latches_restoration_script" ){
 		$use_new_latches_restoration_script = 1;
 	}
-	elsif ( $token eq "-enable_init_value_propagation" ){
-		$enable_init_value_propagation = 1;
+	elsif ( $token eq "-respect_init_value" ){
+		$respect_init_value = 1;
+	}
+	elsif ( $token eq "-respect_edge_type" ){
+		$respect_edge_type = 1;
 	}
 	elsif ( $token eq "-skip_abc" ){
 		$abc_flow_type = 1;
@@ -486,11 +489,19 @@ if (    $starting_stage <= $stage_idx_abc
 
 	my %clock_list;
 	my $abc_temp_dir = "${temp_dir}abc_temp";
-	my $init_value_propagation_arg = "--no_init";
-	if ($enable_init_value_propagation)
+
+	my $respect_init_arg = "";
+	if ($respect_init_value)
 	{
-		$init_value_propagation_arg = "";
+		$respect_init_arg = "--respect_init";
 	}
+
+	my $respect_edge_arg = "";
+	if ($respect_edge_type)
+	{
+		$respect_edge_arg = "--respect_edge";
+	}
+	
 	system("mkdir ${abc_temp_dir}");
 
 	# skip ABC
@@ -519,7 +530,7 @@ if (    $starting_stage <= $stage_idx_abc
 		#	we will iterate though the file and use each clock iteratively
 
 		$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
-				"--input",$odin_output_file_name, $init_value_propagation_arg);
+				"--input",$odin_output_file_name, $respect_init_arg, $respect_edge_arg);
 
 		if ($q ne "success") {
 			$error_status = "failed: to find available clocks in blif file";
@@ -538,7 +549,7 @@ if (    $starting_stage <= $stage_idx_abc
 					#get the initial value out
 					my @tokenized_clk = split(/_^_/, $line);
 					my $clock_name_token_len = @tokenized_clk;
-					if($enable_init_value_propagation && $clock_name_token_len > 3)
+					if($respect_init_value && $clock_name_token_len > 3)
 					{
 						$clock_list{$line} = "init ".@tokenized_clk[3].";";
 					}
@@ -598,7 +609,7 @@ if (    $starting_stage <= $stage_idx_abc
 
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--input", $input_blif, "--output", $pre_abc_blif,  $init_value_propagation_arg, $clock_domain);
+					"--input", $input_blif, "--output", $pre_abc_blif,  $respect_init_arg, $respect_edge_arg, $clock_domain);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
@@ -723,7 +734,7 @@ if (    $starting_stage <= $stage_idx_abc
 	{
 		#return all clocks to vanilla clocks
 		$q = &system_with_timeout($blackbox_latches_script, "vanilla_restore_clocks.out", $timeout, $temp_dir,
-				"--input", $input_blif, "--output", $abc_output_file_name,  $init_value_propagation_arg, "--vanilla");
+				"--input", $input_blif, "--output", $abc_output_file_name,  $respect_init_arg, $respect_edge_arg, "--vanilla");
 
 		if ($q ne "success") {
 			$error_status = "failed: to return to vanilla.\n";
