@@ -6,9 +6,22 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Gui REQUIRED)
-find_package(Qt5Core REQUIRED)
+find_package(Qt5Widgets)
+find_package(Qt5Gui)
+find_package(Qt5Core)
+
+#Check dependencies
+if(NOT Qt5Widgets_FOUND)
+    message(FATAL_ERROR "Failed to find Qt5Widgets required for blifexplorer (on debian/ubuntu try 'sudo apt install qt5-default')")
+endif()
+
+if(NOT Qt5Gui_FOUND)
+    message(FATAL_ERROR "Failed to find Qt5Gui required for blifexplorer (on debian/ubuntu try 'sudo apt install qt5-default')")
+endif()
+
+if(NOT Qt5Core_FOUND)
+    message(FATAL_ERROR "Failed to find Qt5Core required for blifexplorer (on debian/ubuntu try 'sudo apt install qt5-default')")
+endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
