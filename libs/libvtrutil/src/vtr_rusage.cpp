@@ -19,7 +19,7 @@ size_t get_max_rss() {
         max_rss = usage.ru_maxrss * 1024;
     }
 #else
-    //Do nothing, other platform specific could could be added here
+    //Do nothing, other platform specific code could be added here
     //with appropriate defines
 #endif
 
