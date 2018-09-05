@@ -145,6 +145,8 @@ my $use_odin_xml_config = 1;
 my $abc_flow_type = 2;
 my $use_new_latches_restoration_script = 0;
 my $odin_run_simulation = 0;
+my $disable_simulation_failure = 0;
+my $enable_init_value_propagation = 0;
 
 
 while ( $token = shift(@ARGV) ) {
@@ -277,22 +279,31 @@ while ( $token = shift(@ARGV) ) {
 		}
 	}
 	elsif ( $token eq "-disable_odin_xml" ){
-					$use_odin_xml_config = 0;
+		$use_odin_xml_config = 0;
+	}
+	elsif ( $token eq "-use_odin_simulation" ){
+		$odin_run_simulation = 1;
+	}
+	elsif ( $token eq "-disable_simulation_failure" ){
+		$disable_simulation_failure = 1;
+	}
+	elsif ( $token eq "-use_new_latches_restoration_script" ){
+		$use_new_latches_restoration_script = 1;
+	}
+	elsif ( $token eq "-enable_init_value_propagation" ){
+		$enable_init_value_propagation = 1;
+	}
+	elsif ( $token eq "-skip_abc" ){
+		$abc_flow_type = 1;
 	}
 	elsif ( $token eq "-vanila_latch" ){
-		$odin_run_simulation = 1;
 		$abc_flow_type = 2;
-		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-blanket_bb" ){
-		$odin_run_simulation = 1;
 		$abc_flow_type = 3;
-		$use_new_latches_restoration_script = 1;
 	}
 	elsif ( $token eq "-iterative_bb" ){
-		$odin_run_simulation = 1;
 		$abc_flow_type = 4;
-		$use_new_latches_restoration_script = 1;
 	}
     # else forward the argument
 	else {
@@ -574,16 +585,21 @@ if (    $starting_stage <= $stage_idx_abc
 	#	SETUP ABC optimizer, odin simulator and relevant data struct.
 
 	my %clock_list;
-	my $abc_temp_dir="${temp_dir}abc_temp";
+	my $abc_temp_dir = "${temp_dir}abc_temp";
+	my $init_value_propagation_arg = "--no_init";
+	if ($enable_init_value_propagation)
+	{
+		$init_value_propagation_arg = "";
+	}
 	system("mkdir ${abc_temp_dir}");
 
 	# skip ABC
 	if( $abc_flow_type == 1 )
 	{
-		$odin_run_simulation = 0;
+		%clock_list=();
 	}
 	# do not use black box latches for ABC
-	elsif( $abc_flow_type == 2) 
+	if( $abc_flow_type == 2) 
 	{
 		$clock_list{"--vanilla"} = " ";
 	}
@@ -603,7 +619,7 @@ if (    $starting_stage <= $stage_idx_abc
 		#	we will iterate though the file and use each clock iteratively
 
 		$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
-				$odin_output_file_name);
+				"--input",$odin_output_file_name, $init_value_propagation_arg);
 
 		if ($q ne "success") {
 			$error_status = "failed: to find available clocks in blif file";
@@ -622,22 +638,16 @@ if (    $starting_stage <= $stage_idx_abc
 					#get the initial value out
 					my @tokenized_clk = split(/_^_/, $line);
 					my $clock_name_token_len = @tokenized_clk;
-					if($clock_name_token_len > 3)
+					if($enable_init_value_propagation && $clock_name_token_len > 3)
 					{
-						$clock_list{$line} = "\ninit ".@tokenized_clk[3].";";
+						$clock_list{$line} = "init ".@tokenized_clk[3].";";
 					}
 					else
 					{
 						$clock_list{$line} = " ";
 					}
-				}
-				
+				}	
 			}
-
-			# print "\n########\n";
-			# print "\ttest using simulation: ".$odin_run_simulation."\n";
-			# print "\tDomain to itterate: ".(my $nb_of_domain = keys %clock_list);
-			# print "\n\t\t".join("\n\t\t", keys %clock_list)."\n";
 		}
 	}
 
@@ -681,9 +691,14 @@ if (    $starting_stage <= $stage_idx_abc
 		}
 		else
 		{	
+			if ( !($clock_domain =~ /\-\-/) )
+			{
+				$clock_domain = "--clk_list ".$clock_domain;
+			}
+
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					$input_blif, $pre_abc_blif, $clock_domain);
+					"--input", $input_blif, "--output", $pre_abc_blif,  $init_value_propagation_arg, $clock_domain);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
@@ -719,7 +734,8 @@ if (    $starting_stage <= $stage_idx_abc
 		echo '';
 		echo 'Load Netlist';
 		echo '============';
-		read ${pre_abc_blif};${init}
+		read ${pre_abc_blif};
+		${init}
 		time;
 
 		echo '';
@@ -807,7 +823,7 @@ if (    $starting_stage <= $stage_idx_abc
 	{
 		#return all clocks to vanilla clocks
 		$q = &system_with_timeout($blackbox_latches_script, "vanilla_restore_clocks.out", $timeout, $temp_dir,
-				$input_blif, $abc_output_file_name, "--vanilla");
+				"--input", $input_blif, "--output", $abc_output_file_name,  $init_value_propagation_arg, "--vanilla");
 
 		if ($q ne "success") {
 			$error_status = "failed: to return to vanilla.\n";
@@ -821,7 +837,6 @@ if (    $starting_stage <= $stage_idx_abc
 
 		$q = &system_with_timeout( "$odin2_path", "odin_simulation.out", $timeout, $temp_dir,
 			"-E",
-			"--adder_type", $odin_adder_config_path,
 			"-b", $temp_dir . $abc_output_file_name,
 			"-a", $temp_dir . $architecture_file_name,
 			"-t", $temp_dir . "simulation_init/input_vectors",
@@ -829,8 +844,15 @@ if (    $starting_stage <= $stage_idx_abc
 			"-sim_dir", $temp_dir."simulation_test/");
 
 		if ( $q ne "success") {
-			$error_status = "failed: odin Simulation";
-			$error_code = 1;
+			if ( $disable_simulation_failure )
+			{
+				print " (failed: odin Simulation) ";
+			}
+			else
+			{
+				$error_status = "failed: odin Simulation";
+				$error_code = 1;
+			}
 		}
 	}
 

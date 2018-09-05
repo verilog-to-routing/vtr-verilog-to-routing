@@ -36,46 +36,83 @@ my $InFile;
 my $uniqID_separator = "_^_";
 my $vanilla = 0;
 my $all_bb = 0;
+my $skip_init = 0;
+my $clkfile = "";
+my $has_output = 0;
+
+my $parse_input = 0;
+my $parse_output = 0;
+my $parse_clk_list =0;
 # this builds the truth table for the bb latch
 # is it necessary ?						
-#							driver clk  -> output
-my $bb_latch_truth_table ="11 1";
+# driver|clk output
+#my $bb_latch_truth_table ="11 1\n";
+my $bb_latch_truth_table ="";
 
-if ( $ARGC > 3 || $ARGC < 1 )
+if ($ARGC < 1 )
 {
 	print_help();
 	exit(-1);
 }
 
-open($InFile, "<".$ARGV[0]) || die "Error Opening BLIF input File $ARGV[0]: $!\n";
-
-if ( $ARGC > 1 )
+foreach my $cur_arg (@ARGV)
 {
-	open($OutFile, ">" .$ARGV[1]) || die "Error Opening BLIF output File $ARGV[1]: $!\n";
-}
-else
-{
-	my $clkfile = $ARGV[0].".clklist";
-	open($OutFile, ">" .$clkfile) || die "Error Opening clock list output File $ARGV[0].clklist: $!\n";
-}
-
-if ( $ARGC > 2 )
-{
-	if ($ARGV[2] =~ /\-\-vanilla/)
+	if ($parse_input)
+	{
+		open($InFile, "<".$cur_arg) || die "Error Opening BLIF input File $cur_arg: $!\n";
+		$clkfile = $cur_arg.".clklist";
+		$parse_input = 0;
+	}
+	elsif ($parse_output)
+	{
+		$has_output = 1;
+		open($OutFile, ">" .$cur_arg) || die "Error Opening BLIF output File $cur_arg: $!\n";
+		$parse_output = 0;
+	}
+	elsif ($parse_clk_list)
+	{
+		foreach my $input_clocks (split(/,/, $cur_arg))
+		{
+			$clocks_not_to_bb{$input_clocks} = 1;
+		}
+		$parse_clk_list = 0;
+	}	
+	elsif ($cur_arg =~ /\-\-input/)
+	{
+		$parse_input = 1;
+	}
+	elsif ($cur_arg =~ /\-\-output/)
+	{
+		$parse_output = 1;
+	}
+	elsif ($cur_arg =~ /\-\-clk_list/)
+	{
+		$parse_clk_list = 1;
+	}
+	elsif ($cur_arg =~ /\-\-no_init/)
+	{
+		$skip_init = 1;
+	}
+	elsif ($cur_arg =~ /\-\-vanilla/)
 	{
 		$vanilla = 1;
 	}
-	elsif ($ARGV[2] =~ /\-\-all/)
+	elsif ($cur_arg =~ /\-\-all/)
 	{
 		$all_bb = 1;
 	}
 	else
 	{
-		foreach my $input_clocks (split(/,/, $ARGV[2]))
-		{
-			$clocks_not_to_bb{$input_clocks} = 1;
-		}
+		print "Error wrong argument kind $cur_arg\n";
+		print_help();
+		exit(-1);
 	}
+}
+if ($parse_input || $parse_output)
+{
+	print "Error wrong argument input\n";
+	print_help();
+	exit(-1);
 }
 
 #################################
@@ -123,14 +160,19 @@ while( ($line = <$InFile>))
 		if($line =~ /^\.latch/)
 		{
 			$size = my @tokens = split(/[\s]+/,$line);
-			if($size > 4)
+			if( $size == 6 )
 			{
-
 				my $clk_domain_name = "latch";
+				my $display_domain_name = "latch";
 				#use everything after the output to create a clk name, which translate to a clock domain
 				for (my $i=3; $i < $size; $i++)
 				{
-					$clk_domain_name .= $uniqID_separator.@tokens[$i];
+					#abc sets these to 0
+					if(!$skip_init || $i != 5)
+					{
+						$clk_domain_name .= $uniqID_separator.@tokens[$i];
+					}
+					$display_domain_name .= $uniqID_separator.@tokens[$i];
 				}
 
 				#if we have an output file then we can black box some clocks
@@ -142,30 +184,29 @@ while( ($line = <$InFile>))
 						$clocks_not_to_bb{$clk_domain_name} += 1;
 					}
 
-					if(!exists($vanilla_clk_domain{$clk_domain_name}))
+					if(!exists($vanilla_clk_domain{$display_domain_name}))
 					{
-						$vanilla_clk_domain{$clk_domain_name} = 0;	
+						$vanilla_clk_domain{$display_domain_name} = 0;	
 					}
-					$vanilla_clk_domain{$clk_domain_name} += 1;
+					$vanilla_clk_domain{$display_domain_name} += 1;
 				}
 				else
 				{
-					$line = ".subckt ".$clk_domain_name." i[0]=".@tokens[1]." i[1]=".@tokens[4]." o[0]=".@tokens[2]."\n";
-					if(!exists($bb_clock_domain{$clk_domain_name}))
+					$line = ".subckt ".$display_domain_name." i[0]=".@tokens[1]." i[1]=".@tokens[4]." o[0]=".@tokens[2]."\n";
+					if(!exists($bb_clock_domain{$display_domain_name}))
 					{
-						$bb_clock_domain{$clk_domain_name} = 0;	
+						$bb_clock_domain{$display_domain_name} = 0;	
 					}
-					$bb_clock_domain{$clk_domain_name} += 1;
+					$bb_clock_domain{$display_domain_name} += 1;
 				}
 			}
 		}
 		
 		# if we have an output file, print the line to it
-		if( $ARGC > 1 )
+		if($has_output)
 		{
 			print $OutFile $line
 		}
-
 	}
 	
 	#if the Line is a .end after a bb module declaration dont skip thereafter
@@ -173,17 +214,20 @@ while( ($line = <$InFile>))
 }
 
 # if we have an output file print the .module for bb latches at the end of the file
-if( $ARGC > 1 )
+if( $has_output )
 {
 	foreach my $module (keys %bb_clock_domain) 
 	{
-		print $OutFile ".model ${module}\n.inputs i[0] i[1]\n.outputs o[0]\n${bb_latch_truth_table}\n.blackbox\n.end\n\n";
+		print $OutFile ".model ${module}\n.inputs i[0] i[1]\n.outputs o[0]\n${bb_latch_truth_table}.blackbox\n.end\n\n";
 	}
+	close($OutFile);
 }
 # else create a file wich contains all the clock domains in the file (1/line)
 else
 {
+	open($OutFile, ">" .$clkfile) || die "Error Opening clock list output File $clkfile: $!\n";
 	print $OutFile (join("\n", keys %vanilla_clk_domain))."\n".(join("\n", keys %bb_clock_domain))."\n";
+	close($OutFile);
 }
 
 ####################################################
@@ -228,7 +272,6 @@ if( ($size = keys %clocks_not_to_bb) > 0 )
 }
 
 print "\n\n";
-close($OutFile);
 close($InFile);
 
 exit(0);
