@@ -167,7 +167,9 @@ def main():
     #Check that BlifExplorer builds with the default configuration
     for blif_explorer_config in args.blif_explorer_configs:
         config = deepcopy(default_compiler_config)
-        config["WITH_BLIF_EXPLORER"] = blif_explorer_config
+        config["WITH_BLIFEXPLORER"] = blif_explorer_config
+
+        test_configs.append(config)
 
     #Test all the regular compilers with the all build configs
     num_failed = 0
