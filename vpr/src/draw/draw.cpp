@@ -52,6 +52,12 @@ using namespace std;
 #include <sys/time.h>
 #endif
 
+//To process key presses we need the X11 keysym definitions,
+//which are unavailable when building with MINGW
+#if defined(X11) && !defined(__MINGW32__)
+# include <X11/keysym.h>
+#endif
+
 #include "rr_graph.h"
 #include "route_util.h"
 
@@ -2683,11 +2689,9 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
     }
 }
 
+#if defined(X11) && !defined(__MINGW32__)
 static void act_on_key_press(char /*key_pressed*/, int keysym) {
     //vtr::printf("Key press %c (%d)\n", key_pressed, keysym);
-#ifdef X11
-#include <X11/keysym.h>
-
     switch(keysym) {
         case XK_Shift_L: {
             float zoom_factor = get_zoom_factor();
@@ -2706,8 +2710,12 @@ static void act_on_key_press(char /*key_pressed*/, int keysym) {
         } default:
             break; //Unrecognized
     }
-#endif
 }
+#else
+static void act_on_key_press(char /*key_pressed*/, int /*keysym*/) {
+    //Nothing to do
+}
+#endif
 
 static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
 	int k, iclass;
