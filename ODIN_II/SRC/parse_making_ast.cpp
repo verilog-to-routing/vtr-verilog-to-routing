@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <sstream>
 #include "globals.h"
 #include "types.h"
 
@@ -1842,36 +1843,16 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 				break;
 			case VAR_DECLARE:
 				{
-					char temp[4096] = "";
-					if(node->types.variable.is_input)
-					{
-						sprintf(temp, "%s INPUT", temp);
-					}
-					if(node->types.variable.is_output)
-					{
-						sprintf(temp, "%s OUTPUT", temp);
-					}
-					if(node->types.variable.is_inout)
-					{
-						sprintf(temp, "%s INOUT", temp);
-					}
-					if(node->types.variable.is_port)
-					{
-						sprintf(temp, "%s PORT", temp);
-					}
-					if(node->types.variable.is_parameter)
-					{
-						sprintf(temp, "%s PARAMETER", temp);
-					}
-					if(node->types.variable.is_wire)
-					{
-						sprintf(temp, "%s WIRE", temp);
-					}
-					if(node->types.variable.is_reg)
-					{
-						sprintf(temp, "%s REG", temp);
-					}
-					fprintf(fp, "\t%d [label=\"VAR_DECLARE %s\"];\n", my_label, temp);
+					std::stringstream temp;
+					if(node->types.variable.is_input)		temp << " INPUT";
+					if(node->types.variable.is_output)		temp << " OUTPUT";
+					if(node->types.variable.is_inout)		temp << " INOUT";
+					if(node->types.variable.is_port)		temp << " PORT";
+					if(node->types.variable.is_parameter)	temp << " PARAMETER";
+					if(node->types.variable.is_wire)		temp << " WIRE";
+					if(node->types.variable.is_reg)			temp << " REG";
+
+					fprintf(fp, "\t%d [label=\"VAR_DECLARE %s\"];\n", my_label, temp.str().c_str());
 				}
 				break;
 			case VAR_DECLARE_LIST:
