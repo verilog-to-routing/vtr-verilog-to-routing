@@ -1,7 +1,5 @@
 #include "rr_graph_clock.h"
 
-#include <string.h>
-
 #include "globals.h"
 #include "rr_graph2.h"
 
@@ -15,11 +13,22 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
 
     // TODO: Eventually remove create_star_model. Currently used to simulate that a simple network
     //       functions
-    create_star_model_network();
+    //create_star_model_network();
+
+    
+    //create_clock_networks_wires();
+    //create_clock_networks_switches();
 
     float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
 }
+
+//void ClockRRGraph::create_clock_networks_wires(
+//        std::vector<t_clock_network_description>& clock_networks) {
+//    for (auto const& clock_network : clock_networks) {
+//       create_clock_network_wires(clock_network); 
+//    }
+//}
 
 void ClockRRGraph::create_star_model_network() {
 
