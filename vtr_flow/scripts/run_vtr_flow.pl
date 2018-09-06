@@ -97,7 +97,6 @@ my $ending_stage            = stage_index("vpr");
 my $specific_vpr_stage      = "";
 my $keep_intermediate_files = 1;
 my $keep_result_files       = 1;
-my $has_memory              = 1;
 my $lut_size                = undef;
 my $tech_file               = "";
 my $do_power                = 0;
@@ -167,9 +166,6 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-valgrind" ) {
         $valgrind = 1;
     }
-	elsif ( $token eq "-no_mem" ) {
-		$has_memory = 0;
-	}
 	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
 	}
