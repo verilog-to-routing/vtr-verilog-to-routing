@@ -205,7 +205,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 .. option:: --const_gen_inference {none | comb | comb_seq}
 
     Controls how constant generators are inferred/detected in the input circuit.
-    Constant generators and the signals they driver are not considered during timing analysis.
+    Constant generators and the signals they drive are not considered during timing analysis.
 
     * ``none``: No constant generator inference will occur. Any signals which are actually constants will be treated as non-constants.
     * ``comb``: VPR will infer constant generators from combinational blocks with no non-constant inputs (always safe).
