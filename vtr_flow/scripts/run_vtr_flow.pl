@@ -283,6 +283,13 @@ while ( $token = shift(@ARGV) ) {
 	}
 }
 
+{
+    my ($basename, $parentdir, $extension) = fileparse($architecture_file_path, '\.[^\.]*');
+    if ($extension ne ".xml") {
+        die "Error: Expected circuit file as first argument (was $circuit_file_path), and FPGA Architecture file as second argument (was $architecture_file_path)\n";
+    }
+}
+
 if ( $ending_stage < $starting_stage ) {
 	die "Error: Ending stage is before starting stage.";
 }
