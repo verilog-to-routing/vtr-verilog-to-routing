@@ -474,6 +474,9 @@ int single_step(sim_data_t *sim_data, int cycle)
 
 static bool aquire_read(npin_t *pin)
 {
+	if(!pin)
+		return;
+		
 	bool available =false;
 
 	std::lock_guard<std::mutex> lock(pin->pin_lock);
@@ -1240,7 +1243,7 @@ void set_clock_ratio(int rat, nnode_t *node)
 }
 
 /*
- * Changes the ratio of a clock node
+ * get the ratio of a clock node
  */
 int get_clock_ratio(nnode_t *node)
 {
@@ -1575,6 +1578,9 @@ static void update_pin_value(npin_t *pin, signed char value, int cycle)
  */
 signed char get_pin_value(npin_t *pin, int cycle)
 {
+	if(!pin)
+		return -1;
+
 	signed char to_return = (pin->node && pin->node->has_initial_value)? pin->node->initial_value: global_args.sim_initial_value;
 	if( pin->values )
 	{
@@ -1590,6 +1596,9 @@ signed char get_pin_value(npin_t *pin, int cycle)
  */
 static int get_pin_cycle(npin_t *pin)
 {
+	if(!pin)
+		return -1;
+
 	int to_return = -1;
 	if( pin->cycle )
 	{

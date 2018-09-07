@@ -1,7 +1,7 @@
 ##############################################
 # Configuration file for running experiments
 ##############################################
-script_params=-blanket_bb -use_odin_simulation -disable_simulation_failure
+script_params=-iterative_bb -white_box -use_odin_simulation -disable_simulation_failure -use_new_latches_restoration_script -respect_edge_type
 
 # Path to directory of circuits to use
 circuits_dir=benchmarks/verilog
