@@ -1,26 +1,28 @@
 module multiclock_separate_and_latch(
-    clocks,
+    clock1,
+    clock2,
 	a_in,
 	b_in,
 	out
 );
 
     // SIGNAL DECLARATIONS
-    input	[1:0]   clocks;
+    input   clock1;
+    input   clock2;
     input	[1:0]   a_in;
     input	[1:0]   b_in;
 
     output	[1:0]   out;
 
     and_latch and_latch_zero(
-        clocks[0],
+        clock1,
         a_in[0],
         b_in[0],
         out[0]
     );
 
     and_latch and_latch_one(
-        clocks[1],
+        clock2,
         a_in[1],
         b_in[1],
         out[1]

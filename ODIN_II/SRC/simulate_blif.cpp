@@ -413,6 +413,9 @@ int single_step(sim_data_t *sim_data, int wave)
 /*read write barriers for multithreaded sim */
 static void init_read(npin_t *pin)
 {
+	if(!pin)
+		return;
+		
 	bool available =false;
 	while(!available)
 	{
@@ -428,6 +431,9 @@ static void init_read(npin_t *pin)
 
 static void close_reader(npin_t *pin)
 {
+	if(!pin)
+		return;
+
 	pin->nb_of_reader -= 1;
 }
 
@@ -1233,7 +1239,7 @@ void set_clock_ratio(int rat, nnode_t *node)
 }
 
 /*
- * Changes the ratio of a clock node
+ * get the ratio of a clock node
  */
 int get_clock_ratio(nnode_t *node)
 {
@@ -1568,6 +1574,9 @@ static void update_pin_value(npin_t *pin, signed char value, int cycle)
  */
 signed char get_pin_value(npin_t *pin, int cycle)
 {
+	if(!pin)
+		return -1;
+
 	signed char to_return = (pin->node && pin->node->has_initial_value)? pin->node->initial_value: global_args.sim_initial_value;
 	if( pin->values )
 	{
@@ -1583,6 +1592,9 @@ signed char get_pin_value(npin_t *pin, int cycle)
  */
 static int get_pin_cycle(npin_t *pin)
 {
+	if(!pin)
+		return -1;
+
 	int to_return = -1;
 	if( pin->cycle )
 	{
@@ -1604,12 +1616,24 @@ static void compute_flipflop_node(nnode_t *node, int cycle)
 	npin_t *clock_pin  = node->input_pins[1];
 	npin_t *output_pin = node->output_pins[0];
 
-	// Rising edge: update the flip-flop from the input value of the previous cycle.
-	if (is_posedge(clock_pin, cycle))
-		update_pin_value(output_pin, get_pin_value(D_pin, cycle-1), cycle);
-	// Falling edge: maintain the flip-flop value.
+	if(node->input_pins[1])
+	{
+		// Rising edge: update the flip-flop from the input value of the previous cycle.
+		if (is_posedge(clock_pin, cycle))
+			update_pin_value(output_pin, get_pin_value(D_pin, cycle-1), cycle);
+		// Falling edge: maintain the flip-flop value.
+		else
+			update_pin_value(output_pin, get_pin_value(output_pin,cycle-1), cycle);
+	}
 	else
-		update_pin_value(output_pin, get_pin_value(output_pin,cycle-1), cycle);
+	{
+		// Rising edge: update the flip-flop from the input value of the previous cycle.
+		if (is_posedge(clock_pin, cycle))
+			update_pin_value(output_pin, get_pin_value(output_pin, cycle-1), cycle);
+		// Falling edge: maintain the flip-flop value.
+		else
+			update_pin_value(output_pin, get_pin_value(D_pin,cycle-1), cycle);
+	}
 }
 
 /*

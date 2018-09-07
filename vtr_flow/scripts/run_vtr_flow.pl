@@ -148,6 +148,9 @@ my $odin_run_simulation = 0;
 my $disable_simulation_failure = 1;
 my $respect_init_value = 0;
 my $respect_edge_type =0;
+my $use_white_boxes = 0;
+my $use_flop = 0;
+
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -285,7 +288,7 @@ while ( $token = shift(@ARGV) ) {
 		$odin_run_simulation = 1;
 	}
 	elsif ( $token eq "-disable_simulation_failure" ){
-		$disable_simulation_failure = 1;
+		$disable_simulation_failure = 0;
 	}
 	elsif ( $token eq "-use_new_latches_restoration_script" ){
 		$use_new_latches_restoration_script = 1;
@@ -295,6 +298,12 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-respect_edge_type" ){
 		$respect_edge_type = 1;
+	}
+	elsif ( $token eq "-white_box" ){
+		$use_white_boxes = 1;
+	}
+	elsif ( $token eq "-use_flop" ){
+		$use_flop = 1;
 	}
 	elsif ( $token eq "-skip_abc" ){
 		$abc_flow_type = 1;
@@ -587,23 +596,23 @@ if (    $starting_stage <= $stage_idx_abc
 	###########
 	#	SETUP ABC optimizer, odin simulator and relevant data struct.
 
-	my %clock_list;
-	my $abc_temp_dir = "${temp_dir}abc_temp";
-
-	my $respect_init_arg = "";
-	if ($respect_init_value)
-	{
-		$respect_init_arg = "--respect_init";
+	my $black_box_script_args = "";
+	if ($respect_init_value){
+		$black_box_script_args .= "--respect_init ";
 	}
-
-	my $respect_edge_arg = "";
-	if ($respect_edge_type)
-	{
-		$respect_edge_arg = "--respect_edge";
+	if ($respect_edge_type){
+		$black_box_script_args .= "--respect_edge ";
+	}
+	if ($use_flop){
+		$black_box_script_args .= "--use_flop ";
+	}
+	if ($use_white_boxes){
+		$black_box_script_args .= "--use_white_box ";
 	}
 	
+	my %clock_list;
+	my $abc_temp_dir = "${temp_dir}abc_temp";
 	system("mkdir ${abc_temp_dir}");
-
 	# skip ABC
 	if( $abc_flow_type == 1 )
 	{
@@ -630,7 +639,7 @@ if (    $starting_stage <= $stage_idx_abc
 		#	we will iterate though the file and use each clock iteratively
 
 		$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
-				"--input",$odin_output_file_name, $respect_init_arg, $respect_edge_arg);
+				"--input",$odin_output_file_name, $black_box_script_args);
 
 		if ($q ne "success") {
 			$error_status = "failed: to find available clocks in blif file";
@@ -702,14 +711,13 @@ if (    $starting_stage <= $stage_idx_abc
 		}
 		else
 		{	
-			if ( !($clock_domain =~ /\-\-/) )
-			{
+			if ( !($clock_domain =~ /\-\-/) ){
 				$clock_domain = "--clk_list ".$clock_domain;
 			}
 
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--input", $input_blif, "--output", $pre_abc_blif,  $respect_init_arg, $respect_edge_arg, $clock_domain);
+					"--input", $input_blif, "--output", $pre_abc_blif, $clock_domain, $black_box_script_args);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
@@ -834,7 +842,7 @@ if (    $starting_stage <= $stage_idx_abc
 	{
 		#return all clocks to vanilla clocks
 		$q = &system_with_timeout($blackbox_latches_script, "vanilla_restore_clocks.out", $timeout, $temp_dir,
-				"--input", $input_blif, "--output", $abc_output_file_name,  $respect_init_arg, $respect_edge_arg, "--vanilla");
+				"--input", $input_blif, "--output", $abc_output_file_name, "--vanilla");
 
 		if ($q ne "success") {
 			$error_status = "failed: to return to vanilla.\n";

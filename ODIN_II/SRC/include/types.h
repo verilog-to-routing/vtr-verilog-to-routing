@@ -494,6 +494,14 @@ struct nnode_t_t
 	int ratio; //clock ratio for clock nodes
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
+	/**
+	 * fe [falling edge]
+	 * re [rising edge]
+	 * ah [active high]
+	 * al [active low]
+	 * asg [asynchronous] (default)
+	 */
+	std::string edge_type = "asg";
 
 	//Generic gate output
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
