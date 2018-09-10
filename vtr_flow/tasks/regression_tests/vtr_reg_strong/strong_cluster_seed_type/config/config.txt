@@ -30,9 +30,9 @@ pass_requirements_file=pass_requirements.txt
 script_params_common=
 
 #Sweep option range
-script_params_list_add= -vpr_cluster_seed_type blend
-script_params_list_add= -vpr_cluster_seed_type timing
-script_params_list_add= -vpr_cluster_seed_type max_inputs 
-script_params_list_add= -vpr_cluster_seed_type max_pins
-script_params_list_add= -vpr_cluster_seed_type max_input_pins
-script_params_list_add= -vpr_cluster_seed_type blend2
+script_params_list_add= --cluster_seed_type blend
+script_params_list_add= --cluster_seed_type timing
+script_params_list_add= --cluster_seed_type max_inputs 
+script_params_list_add= --cluster_seed_type max_pins
+script_params_list_add= --cluster_seed_type max_input_pins
+script_params_list_add= --cluster_seed_type blend2
