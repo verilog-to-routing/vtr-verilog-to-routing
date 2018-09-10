@@ -18,14 +18,6 @@
 #   -ending_stage <stage>: End the VTR flow at the specified stage. Acceptable
 #								values: odin, abc, script, vpr. Default value is
 #								vpr.
-#   -specific_vpr_stage <stage>: Perform only this stage of VPR. Acceptable
-#                               values: pack, place, route. Default is empty,
-#                               which means to perform all. Note that specifying
-#                               the routing stage requires a channel width
-#                               to also be specified. To have any time saving
-#                               effect, previous result files must be kept as the
-#                               most recent necessary ones will be moved to the
-#                               current run directory. (use inside tasks only)
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #   -keep_result_files: Do not delete the result files (.net, .place, .route)
 #   -track_memory_usage: Print out memory usage for each stage (NOT fully portable)
@@ -35,6 +27,8 @@
 #               default is 14 days.
 #
 #   -temp_dir <dir>: Directory used for all temporary files
+#
+#   Any unrecognized arguments are forwarded to VPR.
 ###################################################################################
 
 use strict;
@@ -75,6 +69,7 @@ sub xml_find_LUT_Kvalue;
 sub xml_find_mem_size;
 sub find_and_move_newest;
 sub exe_for_platform;
+sub find_and_move_files_for_vpr_stages;
 
 my $temp_dir = "./temp";
 my $diff_exec = "diff";
@@ -94,7 +89,7 @@ my $token;
 my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
-my $specific_vpr_stage      = "";
+my @vpr_stages              = ();
 my $keep_intermediate_files = 1;
 my $keep_result_files       = 1;
 my $lut_size                = undef;
@@ -138,15 +133,6 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-ending_stage" ) {
 		$ending_stage = stage_index( shift(@ARGV) );
 	}
-    elsif ( $token eq "-specific_vpr_stage" ) {
-        $specific_vpr_stage = shift(@ARGV);
-        if ($specific_vpr_stage eq "pack" or $specific_vpr_stage eq "place" or $specific_vpr_stage eq "route") {
-            $specific_vpr_stage = "--" . $specific_vpr_stage;
-        }
-        else {
-            $specific_vpr_stage = "";
-        }
-    }
 	elsif ( $token eq "-delete_intermediate_files" ) {
 		$keep_intermediate_files = 0;
 	}
@@ -674,13 +660,26 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push(@forwarded_vpr_args, "$tech_file");
 	}
 
-    my $route_fixed_W = (grep(/--route_chan_width/, @forwarded_vpr_args));
+    #True if a fixed channel width routing is desired
+    my $route_fixed_W = (grep(/^--route_chan_width$/, @forwarded_vpr_args));
 
     #set a min chan width if it is not set to ensure equal results
     if (($check_route or $check_place) and !$route_fixed_W){
         push(@forwarded_vpr_args, ("--route_chan_width", "300"));
         $route_fixed_W = 1;
     }
+
+    #Where any VPR stages explicitly requested?
+    my $explicit_pack_vpr_stage = (grep(/^--pack$/, @forwarded_vpr_args));
+    my $explicit_place_vpr_stage = (grep(/^--place$/, @forwarded_vpr_args));
+    my $explicit_route_vpr_stage = (grep(/^--route$/, @forwarded_vpr_args));
+    my $explicit_analysis_vpr_stage = (grep(/^--analysis$/, @forwarded_vpr_args));
+
+    #If no VPR stages are explicitly specified, then all stages run by default
+    my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage 
+                                   or $explicit_place_vpr_stage
+                                   or $explicit_route_vpr_stage
+                                   or $explicit_analysis_vpr_stage);
 
     if (!$route_fixed_W) {
         #Determine the mimimum channel width
@@ -696,45 +695,47 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 log_file => $min_W_log_file
             });
 
-        # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints 
-        # dominate the cost function.
-        #
-        # Additional channel width needs to be added so that there is a reasonable trade-off between delay and area.
-        # Commercial FPGAs are also desiged to have more channels than minimum for this reason.
+        my $do_routing = ($explicit_route_vpr_stage or $implicit_all_vpr_stage);
 
-        my $min_W = parse_min_W("$temp_dir/$min_W_log_file");
-        my $relaxed_W = calculate_relaxed_W($min_W);
+        if ($do_routing) {
+            # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints 
+            # dominate the cost function.
+            #
+            # Additional channel width needs to be added so that there is a reasonable trade-off between delay and area.
+            # Commercial FPGAs are also desiged to have more channels than minimum for this reason.
 
-        if ($q eq "success") {
-            my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
-            push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
+            my $min_W = parse_min_W("$temp_dir/$min_W_log_file");
+            my $relaxed_W = calculate_relaxed_W($min_W);
 
-            my $relaxed_W_log_file = "vpr.crit_path.out";
-            $q = run_vpr({
-                    arch_name => $architecture_file_name,
-                    circuit_name => $benchmark_name,
-                    circuit_file => $prevpr_output_file_name,
-                    sdc_file => $sdc_file_path,
-                    pad_file => $pad_file_path,
-                    extra_vpr_args => \@relaxed_W_extra_vpr_args,
-                    log_file => $relaxed_W_log_file,
-                 });
-        }
-	} else { # specified channel width
-        # move the most recent necessary result files to temp directory for specific vpr stage
-        if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
-            my $found_prev = &find_and_move_newest("$benchmark_name", "net");
-            if ($found_prev and $specific_vpr_stage eq "--route") {
-                &find_and_move_newest("$benchmark_name", "place");
+            if ($q eq "success") {
+                my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
+                push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
+
+                my $relaxed_W_log_file = "vpr.crit_path.out";
+                $q = run_vpr({
+                        arch_name => $architecture_file_name,
+                        circuit_name => $benchmark_name,
+                        circuit_file => $prevpr_output_file_name,
+                        sdc_file => $sdc_file_path,
+                        pad_file => $pad_file_path,
+                        extra_vpr_args => \@relaxed_W_extra_vpr_args,
+                        log_file => $relaxed_W_log_file,
+                     });
             }
         }
+	} else { # specified channel width
+        find_and_move_files_for_vpr_stages($benchmark_name, {
+                pack => $explicit_pack_vpr_stage, 
+                place => $explicit_place_vpr_stage, 
+                route => $explicit_route_vpr_stage, 
+                analysis => $explicit_analysis_vpr_stage, 
+        });
 
         my $fixed_W_log_file = "vpr.out";
 
         my $rr_graph_out_file = "rr_graph.xml";
 
         my @fixed_W_extra_vpr_args = @forwarded_vpr_args;
-        push(@fixed_W_extra_vpr_args, ($specific_vpr_stage));
 
         if ($verify_rr_graph){
             push(@fixed_W_extra_vpr_args, ("--write_rr_graph", $rr_graph_out_file));
@@ -761,16 +762,14 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         my $do_second_vpr_run = ($verify_rr_graph or $check_route or $check_place);
 
         if ($do_second_vpr_run) {
-            # move the most recent necessary result files to temp directory for specific vpr stage
-            if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
-                my $found_prev = &find_and_move_newest("$benchmark_name", "net");
-                if ($found_prev and $specific_vpr_stage eq "--route") {
-                 &find_and_move_newest("$benchmark_name", "place");
-                }
-            }
+            find_and_move_files_for_vpr_stages($benchmark_name, {
+                    pack => $explicit_pack_vpr_stage, 
+                    place => $explicit_place_vpr_stage, 
+                    route => $explicit_route_vpr_stage, 
+                    analysis => $explicit_analysis_vpr_stage, 
+            });
 
             my @second_run_extra_vpr_args = @forwarded_vpr_args;
-            push(@second_run_extra_vpr_args, ($specific_vpr_stage));
 
             my $rr_graph_out_file2 = "rr_graph2.xml";
             if ($verify_rr_graph){
@@ -1284,15 +1283,11 @@ sub find_and_move_newest {
     my $file_type = shift();
 
     my $found_prev = system("$vtr_flow_path/scripts/mover.sh \"*$benchmark_name*/*.$file_type\" ../../../ $temp_dir");
-    # cannot find previous version, disregard specific vpr stage argument
     if ($found_prev ne 0) {
-        print "$file_type file not found, disregarding specific vpr stage\n";
-        $specific_vpr_stage = "";
-        return 0;
+        die "$file_type file not found for $benchmark_name\n";
     }
 
-    # negate bash exit truth for perl
-    return 1;
+    return 1; #Found
 }
 
 sub find_postsynthesis_netlist {
@@ -1389,3 +1384,31 @@ sub calculate_relaxed_W {
 
     return $relaxed_W;
 }
+
+sub find_and_move_files_for_vpr_stages() {
+    my ($benchmark_name, $stages) = @_;
+
+    my @extensions = ();
+
+    my $pack = (defined $stages->{pack} and $stages->{pack});
+    my $place = (defined $stages->{place} and $stages->{place});
+    my $route = (defined $stages->{route} and $stages->{route});
+    my $analysis = (defined $stages->{analysis} and $stages->{analysis});
+
+    if ($place or $route or $analysis) {
+        push(@extensions, "net");
+    }
+
+    if ($route or $analysis) {
+        push(@extensions, "place");
+    }
+
+    if ($analysis) {
+        push(@extensions, "route");
+    }
+
+    foreach my $extension (@extensions) {
+        find_and_move_newest($benchmark_name, $extension);
+    }
+}
+
