@@ -1373,7 +1373,8 @@ sub parse_min_W {
     }
 
     if ($min_W < 1) {
-        die "Failed to parse minimum channel width from $log_file";
+        my $abs_log_file = File::Spec->rel2abs($log_file);
+        die "Failed to parse minimum channel width from $abs_log_file";
     }
 
     return $min_W;
