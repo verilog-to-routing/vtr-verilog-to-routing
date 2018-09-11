@@ -384,9 +384,20 @@ sub generate_single_task_actions {
         $run_dir_no_prefix = sprintf("run%d", $experiment_number);
     } while (-e $run_dir or -e $run_dir_no_prefix);
 
+    #Create the run directory
 	mkdir( $run_dir, 0775 ) or die "Failed to make directory ($run_dir): $!";
 	chmod( 0775, $run_dir );
+
+    #Create a symlink that points to the latest run
+    my $symlink_name = "run_latest";
+    if (-l $symlink_name) {
+        unlink $symlink_name;  #Remove link if it exists
+    }
+    symlink($run_dir, $symlink_name) or die "Failed to make symlynk $symlink_name to $run_dir: $!";
+
+    #Move to the run directory
 	chdir($run_dir) or die "Failed to change to directory ($run_dir): $!";
+
 
 	##############################################################
     # Build up the list of commands to run
