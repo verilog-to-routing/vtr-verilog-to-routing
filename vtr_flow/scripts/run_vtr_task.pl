@@ -28,6 +28,7 @@
 ###################################################################################
 
 use strict;
+use warnings;
 
 # This loads the thread libraries, but within an eval so that if they are not available
 # the script will not fail.  If successful, $threaded = 1
@@ -252,6 +253,7 @@ sub generate_single_task_actions {
 			die "Invalid option (" . $key . ") in configuration file.";
 		}
 	}
+    close(CONFIG_FH);
 
 	# Using default script
 	if ( $script eq $script_default ) {
@@ -509,14 +511,16 @@ sub do_work {
 	my $tid = threads->tid;
 
 	while (1) {
-		my $work    = $work_queue->dequeue_nb();
-		my @work    = split( /\|\|\|\|/, $work );
-		my $dir     = @work[0];
-		my $command = @work[1];
+		my $work_str    = $work_queue->dequeue_nb();
 
-		if ( !$dir ) {
-			last;
-		}
+        if (!defined $work_str) {
+            #Work queue was empty, nothing left to do
+            last;
+        }
+
+		my @work    = split( /\|\|\|\|/, $work_str );
+		my $dir     = $work[0];
+		my $command = $work[1];
 
 		make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
 		my $return_status = system "cd $dir; $command > vtr_flow.out";
