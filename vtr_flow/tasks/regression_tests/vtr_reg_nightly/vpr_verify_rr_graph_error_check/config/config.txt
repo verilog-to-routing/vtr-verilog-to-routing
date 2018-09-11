@@ -28,4 +28,4 @@ qor_parse_file=qor_rr_graph.txt
 pass_requirements_file=pass_requirements_verify_rr_graph.txt
 
 # Script parameters
-script_params = -rr_graph_error_check --route_chan_width 100 
+script_params = --route_chan_width 100 
