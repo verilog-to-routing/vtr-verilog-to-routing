@@ -47,6 +47,7 @@ sub run_single_task;
 sub do_work;
 sub get_result_file_metrics;
 sub ret_expected_runtime;
+sub ret_expected_memory;
 sub ret_expected_min_W;
 sub ret_expected_vpr_status;
 
@@ -447,6 +448,7 @@ sub generate_single_task_actions {
 
                 #Estimate runtime
                 my $runtime_estimate = ret_expected_runtime($circuit, $arch, $full_params_dirname, $golden_results_file);
+                my $memory_estimate = ret_expected_memory($circuit, $arch, $full_params_dirname, $golden_results_file);
 
                 my @action = [$dir, $command, $runtime_estimate];
                 push(@actions, @action);
@@ -681,6 +683,37 @@ sub ret_expected_runtime {
         my $str = sprintf( "%.0f hours", $hour );
         return $str;
     }
+}
+
+#Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown
+sub ret_expected_memory {
+	my $circuit_name             = shift;
+	my $arch_name                = shift;
+    my $script_params            = shift;
+	my $golden_results_file_path = shift;
+
+
+    my %keys = (
+        "arch" => $arch_name,
+        "circuit" => $circuit_name,
+        "script_params" => $script_params,
+    );
+
+    my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
+
+    #Memory use is recorded in KiB
+	my $memory_kib                = -1;
+
+    #Estimate the peak memory as the maximum accross all tools
+    foreach my $metric ('max_odin_mem', 'max_abc_mem', 'max_ace_mem', 'max_vpr_mem') {
+        if (exists $metrics{$metric} && $metrics{$metric} > $memory_kib) {
+            $memory_kib = $metrics{$metric};
+        }
+    }
+
+    my $memory_bytes = $memory_kib * 1024;
+
+    return $memory_bytes;
 }
 
 sub ret_expected_min_W {
