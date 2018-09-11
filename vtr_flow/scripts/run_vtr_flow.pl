@@ -114,6 +114,7 @@ my $verify_rr_graph         = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc             = 0;
+my $use_old_abc_script      = 0;
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
@@ -185,6 +186,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-use_old_abc"){
             $use_old_abc = 1;
+    }
+    elsif ( $token eq "-use_old_abc_script"){
+            $use_old_abc_script = 1;
     }
     elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
@@ -513,7 +517,7 @@ write_hie $odin_output_file_name $abc_raw_output_file_name;
 time;
 ";
 
-    if ($use_old_abc) {
+    if ($use_old_abc or $use_old_abc_script) {
         #Legacy ABC script
         $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
     }
