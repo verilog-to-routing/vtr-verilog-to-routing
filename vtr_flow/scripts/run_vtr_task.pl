@@ -51,6 +51,9 @@ sub ret_expected_memory;
 sub ret_expected_min_W;
 sub ret_expected_vpr_status;
 
+sub format_human_readable_time;
+sub format_human_readable_memory;
+
 # Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
 my $vtr_flow_path = $1;
@@ -450,7 +453,7 @@ sub generate_single_task_actions {
                 my $runtime_estimate = ret_expected_runtime($circuit, $arch, $full_params_dirname, $golden_results_file);
                 my $memory_estimate = ret_expected_memory($circuit, $arch, $full_params_dirname, $golden_results_file);
 
-                my @action = [$dir, $command, $runtime_estimate];
+                my @action = [$dir, $command, $runtime_estimate, $memory_estimate];
                 push(@actions, @action);
             }
         }
@@ -477,12 +480,13 @@ sub run_actions {
         my $threads       = $processors;
 
         foreach my $action (@$actions) {
-            my ($run_dir, $command, $runtime_estimate) = @$action;
+            my ($run_dir, $command, $runtime_estimate, $memory_estimate) = @$action;
 
             if ($verbosity > 0) {
                 print "$command\n";
             }
-            $thread_work->enqueue("$run_dir||||$command");
+
+            $thread_work->enqueue("$run_dir||||$command||||$runtime_estimate||||$memory_estimate");
 
         }
 
@@ -520,9 +524,14 @@ sub do_work {
             last;
         }
 
-		my @work    = split( /\|\|\|\|/, $work_str );
-		my $dir     = $work[0];
-		my $command = $work[1];
+		my ($dir, $command, $runtime_estimate, $memory_estimate) = split( /\|\|\|\|/, $work_str );
+
+        if ($processors == 1) {
+            #Only print in serial case
+            my $time_str = format_human_readable_time($runtime_estimate);
+            my $memory_str = format_human_readable_memory($runtime_estimate);
+            print "Expected: runtime $time_str, memory $memory_str\n";
+        }
 
 		make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
 		my $return_status = system "cd $dir; $command > vtr_flow.out";
@@ -651,12 +660,13 @@ sub get_result_file_metrics {
     return %metrics;
 }
 
+#Returns the expected run-time (in seconds) of the specified run, or -1 if unkown
 sub ret_expected_runtime {
 	my $circuit_name             = shift;
 	my $arch_name                = shift;
     my $script_params            = shift;
 	my $golden_results_file_path = shift;
-	my $seconds                  = 0;
+	my $seconds                  = -1;
 
     my %keys = (
         "arch" => $arch_name,
@@ -666,23 +676,11 @@ sub ret_expected_runtime {
 
     my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
 
-    if (not exists $metrics{'vtr_flow_elapsed_time'}) {
-        return "Unkown";
+    if (exists $metrics{'vtr_flow_elapsed_time'}) {
+        $seconds = $metrics{'vtr_flow_elapsed_time'}
     }
 
-    $seconds = $metrics{'vtr_flow_elapsed_time'};
-    if ( $seconds < 60 ) {
-        my $str = sprintf( "%.0f seconds", $seconds );
-        return $str;
-    } elsif ( $seconds < 3600 ) {
-        my $min = $seconds / 60;
-        my $str = sprintf( "%.0f minutes", $min );
-        return $str;
-    } else {
-        my $hour = $seconds / 60 / 60;
-        my $str = sprintf( "%.0f hours", $hour );
-        return $str;
-    }
+    return $seconds;
 }
 
 #Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown
@@ -756,6 +754,37 @@ sub ret_expected_vpr_status {
     }
 
     return $metrics{'vpr_status'};
+}
+
+sub format_human_readable_time {
+    my ($seconds) = @_;
+
+
+    if ( $seconds < 60 ) {
+        my $str = sprintf( "%.0f seconds", $seconds );
+        return $str;
+    } elsif ( $seconds < 3600 ) {
+        my $min = $seconds / 60;
+        my $str = sprintf( "%.0f minutes", $min );
+        return $str;
+    } else {
+        my $hour = $seconds / 60 / 60;
+        my $str = sprintf( "%.0f hours", $hour );
+        return $str;
+    }
+}
+
+sub format_human_readable_memory {
+    my ($bytes) = @_;
+
+    my $str = "";
+    if ( $bytes < 1024 ** 3) {
+        $str = sprintf( "%.2f MiB", $bytes / (1024. ** 2));
+    } else {
+        $str = sprintf( "%.2f GiB", $bytes / (1024. ** 3));
+    }
+
+    return $str;
 }
 
 sub find_common_task_prefix {
