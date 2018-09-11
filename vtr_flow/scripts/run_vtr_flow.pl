@@ -298,7 +298,7 @@ if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
     my $abc_dir_path = "$vtr_flow_path/../abc";
 
     if ($use_old_abc) {
-        my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
+        $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
     }
 
 	$abc_path = "$abc_dir_path/abc";
