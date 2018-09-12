@@ -453,17 +453,18 @@ sub generate_single_task_actions {
                 my $runtime_estimate = ret_expected_runtime($circuit, $arch, $full_params_dirname, $golden_results_file);
                 my $memory_estimate = ret_expected_memory($circuit, $arch, $full_params_dirname, $golden_results_file);
 
-                my @action = [$dir, $command, $runtime_estimate, $memory_estimate];
+                my $run_script_file = create_run_script({
+                        dir => $dir,
+                        command => $command,
+                        runtime_estimate => $runtime_estimate,
+                        memory_estimate => $memory_estimate
+                    });
+
+                my @action = [$dir, $run_script_file, $runtime_estimate, $memory_estimate];
                 push(@actions, @action);
             }
         }
     }
-
-	##############################################################
-	# Run experiment
-	##############################################################
-    my $num_failures = 0;
-
 
     return \@actions;
 }
@@ -505,6 +506,11 @@ sub run_actions {
         }
 
         $_->join for @pool;
+    } elsif ( $system_type eq "scripts" ) {
+        foreach my $action (@$actions) {
+            my ($run_dir, $command, $runtime_estimate, $memory_estimate) = @$action;
+            print "$command\n";
+        }
 	} else {
         die("Unrecognized job system '$system_type'");
     }
@@ -526,21 +532,12 @@ sub do_work {
 
 		my ($dir, $command, $runtime_estimate, $memory_estimate) = split( /\|\|\|\|/, $work_str );
 
-        if ($processors == 1) {
-            #Only print in serial case
-            my $time_str = format_human_readable_time($runtime_estimate);
-            my $memory_str = format_human_readable_memory($runtime_estimate);
-            print "Expected: runtime $time_str, memory $memory_str\n";
-        }
-
-		make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
 		my $return_status = system "cd $dir; $command > vtr_flow.out";
         my $exit_code = $return_status >> 8; #Shift to get real exit code
 
 		open( OUT_FILE, "$dir/vtr_flow.out" ) or die "Cannot open $dir/vtr_flow.out: $!";
 		my $sys_output = do { local $/; <OUT_FILE> };
 
-		#$sys_output =~ s/\n//g;
 		$return_queue->enqueue($sys_output);
 
         $return_code_queue->enqueue($exit_code);
@@ -550,6 +547,52 @@ sub do_work {
     $return_code_queue->enqueue(undef);
 
 	#print "$tid exited loop\n"
+}
+
+sub create_run_script {
+    my ($args) = @_;
+
+    my $dir = $args->{dir};
+    my $runtime_est = $args->{runtime_estimate};
+    my $memory_est = $args->{memory_estimate};
+
+    my $humanreadable_runtime_est = format_human_readable_time($runtime_est);
+    my $humanreadable_memory_est = format_human_readable_memory($memory_est);
+
+    make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
+
+    my $run_script_file = "$dir/vtr_flow.sh";
+
+    open(my $fh, '>', $run_script_file);
+
+    print $fh "#!/bin/bash\n";
+    print $fh "\n";
+    print $fh "VTR_RUNTIME_ESTIMATE_SECONDS=$runtime_est\n";
+    print $fh "VTR_MEMORY_ESTIMATE_BYTES=$memory_est\n";
+    print $fh "\n";
+    print $fh "VTR_RUNTIME_ESTIMATE_HUMAN_READABLE=\"$humanreadable_runtime_est\"\n";
+    print $fh "VTR_MEMORY_ESTIMATE_HUMAN_READABLE=\"$humanreadable_memory_est\"\n";
+    print $fh "\n";
+    print $fh "#We redirect all command output to both stdout and the log file with 'tee'.\n";
+    print $fh "\n";
+    print $fh "#Begin I/O redirection\n";
+    print $fh "{\n";
+    print $fh "\n";
+    print $fh "    $args->{command}\n";
+    print $fh "\n";
+    print $fh "    exit_code=\$?\n";
+    print $fh "\n";
+    print $fh "} |& tee vtr_flow.out\n";
+    print $fh "#End I/O redirection\n";
+    print $fh "\n";
+    print $fh "exit \$exit_code\n";
+
+    close($fh);
+
+    #Make executable
+    chmod 0775, $run_script_file;
+
+    return $run_script_file;
 }
 
 # trim whitespace
