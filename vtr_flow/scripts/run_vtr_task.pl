@@ -227,7 +227,16 @@ sub generate_single_task_actions {
 
 		my @data  = split( /=/, $line );
 		my $key   = trim( $data[0] );
-		my $value = trim( $data[1] );
+		my $value = undef;
+        
+        if (scalar @data > 1) { #Key may have no value
+            $value = trim( $data[1] );
+        }
+
+        if (not defined $value) {
+            next; #Currently ignore values with no keys
+        }
+
 		if ( $key eq "circuits_dir" ) {
 			$circuits_dir = $value;
 		} elsif ( $key eq "archs_dir" ) {
@@ -595,17 +604,17 @@ sub create_run_script {
     return $run_script_file;
 }
 
-# trim whitespace
-sub trim($) {
-	my $string = shift;
-	$string =~ s/^\s+//;
-	$string =~ s/\s+$//;
+# trim leading and trailing whitespace
+sub trim {
+	my ($string) = @_;
+    $string =~ s/^\s+//;
+    $string =~ s/\s+$//;
 	return $string;
 }
 
 sub expand_user_path {
-	my $str = shift;
-	$str =~ s/^~\//$ENV{"HOME"}\//;
+	my ($str) = @_;
+    $str =~ s/^~\//$ENV{"HOME"}\//;
 	return $str;
 }
 
