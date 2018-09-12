@@ -22,6 +22,7 @@ build
 #VTR Tasks
 #
 vtr_flow/tasks/**/run[0-9]*
+vtr_flow/tasks/**/run_latest
 vtr_flow/tasks/**/qor_geomean.txt
 vtr_flow/tasks/**/task_summary/
 quick_test/*
