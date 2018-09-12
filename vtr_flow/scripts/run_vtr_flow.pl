@@ -718,23 +718,30 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             # Additional channel width needs to be added so that there is a reasonable trade-off between delay and area.
             # Commercial FPGAs are also desiged to have more channels than minimum for this reason.
 
-            my $min_W = parse_min_W("$temp_dir/$min_W_log_file");
-            my $relaxed_W = calculate_relaxed_W($min_W);
-
             if ($q eq "success") {
-                my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
-                push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
+                my $min_W = parse_min_W("$temp_dir/$min_W_log_file");
 
-                my $relaxed_W_log_file = "vpr.crit_path.out";
-                $q = run_vpr({
-                        arch_name => $architecture_file_name,
-                        circuit_name => $benchmark_name,
-                        circuit_file => $prevpr_output_file_name,
-                        sdc_file => $sdc_file_path,
-                        pad_file => $pad_file_path,
-                        extra_vpr_args => \@relaxed_W_extra_vpr_args,
-                        log_file => $relaxed_W_log_file,
-                     });
+
+                if ($min_W >= 0) {
+                    my $relaxed_W = calculate_relaxed_W($min_W);
+
+                    my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
+                    push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
+
+                    my $relaxed_W_log_file = "vpr.crit_path.out";
+                    $q = run_vpr({
+                            arch_name => $architecture_file_name,
+                            circuit_name => $benchmark_name,
+                            circuit_file => $prevpr_output_file_name,
+                            sdc_file => $sdc_file_path,
+                            pad_file => $pad_file_path,
+                            extra_vpr_args => \@relaxed_W_extra_vpr_args,
+                            log_file => $relaxed_W_log_file,
+                         });
+                } else {
+                    my $abs_log_file = File::Spec->rel2abs($temp_dir/$min_W_log_file);
+                    $q = "Failed find minimum channel width (see $abs_log_file)";
+                }
             }
         }
 	} else { # specified channel width
@@ -1379,11 +1386,6 @@ sub parse_min_W {
         if ( $content =~ /Best routing used a channel width factor of (\d+)/m ) {
             $min_W = $1;
         }
-    }
-
-    if ($min_W < 1) {
-        my $abs_log_file = File::Spec->rel2abs($log_file);
-        die "Failed to parse minimum channel width from $abs_log_file";
     }
 
     return $min_W;
