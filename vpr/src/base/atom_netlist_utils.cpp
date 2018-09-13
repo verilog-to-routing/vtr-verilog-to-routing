@@ -780,7 +780,7 @@ size_t sweep_inputs(AtomNetlist& netlist, bool verbose) {
             inputs_to_remove.insert(blk_id);
 
             if (verbose) {
-                vtr::printf_warning(__FILE__, __LINE__, "Primary input '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason);
+                vtr::printf_warning(__FILE__, __LINE__, "Primary input '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason.c_str());
             }
         }
     }
