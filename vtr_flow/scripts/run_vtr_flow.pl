@@ -102,8 +102,8 @@ my $min_hard_adder_size		= 1;
 my $ace_seed                = 1;
 
 my $track_memory_usage      = 1;
-my $memory_tracker          = "/usr/bin/time";
-my @memory_tracker_args     = ("-v");
+my $memory_tracker          = "/usr/bin/env";
+my @memory_tracker_args     = ("time", "-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
 my $valgrind 		    = 0;
@@ -990,11 +990,6 @@ exit $error_code;
 # Returns: "timeout", "exited", "success", "crashed"
 ################################################################################
 sub system_with_timeout {
-	# Check for existence of /usr/bin/time module
-	unless (-f $memory_tracker) {
-		die "system_with_timeout: /usr/bin/time does not exist"
-	}
-
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
     if ($valgrind) {
