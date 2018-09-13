@@ -14,9 +14,9 @@
 
 std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
-bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk);
-bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk);
-bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk);
+bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason=nullptr);
+bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason=nullptr);
+bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason=nullptr);
 void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose);
 
 std::string make_unconn(size_t& unconn_count, PinType type);
@@ -592,7 +592,7 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, bool verbose) {
 
 }
 
-bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id) {
+bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id, std::string* reason) {
     //Any block with no fanout is removable
     for(AtomPinId pin_id : netlist.block_output_pins(blk_id)) {
         if(!pin_id) continue;
@@ -602,19 +602,21 @@ bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id) {
             return false;
         }
     }
+
+    if (reason) *reason = "has no fanout";
     return true;
 }
 
-bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk_id) {
+bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk_id, std::string* reason) {
     AtomBlockType type = netlist.block_type(blk_id);
 
     //Only return true if an INPAD
     if(type != AtomBlockType::INPAD) return false;
 
-    return is_removable_block(netlist, blk_id);
+    return is_removable_block(netlist, blk_id, reason);
 }
 
-bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
+bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id, std::string* reason) {
     AtomBlockType type = netlist.block_type(blk_id);
 
     //Only return true if an OUTPAD
@@ -625,11 +627,12 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
         if(!pin_id) continue;
         AtomNetId net_id = netlist.pin_net(pin_id);
         if(net_id) {
-            //There is a valid output net
+            //There is a valid input net
             return false;
         }
     }
 
+    if (reason) *reason = "has no fanin";
     return true;
 }
 
@@ -748,16 +751,18 @@ size_t sweep_blocks(AtomNetlist& netlist, bool verbose) {
         if(type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) continue;
 
         //We remove any blocks with no fanout
-        if(is_removable_block(netlist, blk_id)) {
+        std::string reason;
+        if(is_removable_block(netlist, blk_id, &reason)) {
             blocks_to_remove.insert(blk_id);
+
+            if (verbose) {
+                vtr::printf_warning(__FILE__, __LINE__, "Block '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason.c_str());
+            }
         }
     }
 
     //Remove them
     for(auto blk_id : blocks_to_remove) {
-        if (verbose) {
-            vtr::printf_warning(__FILE__, __LINE__, "Sweeping block '%s'\n", netlist.block_name(blk_id).c_str());
-        }
         netlist.remove_block(blk_id);
     }
 
@@ -770,16 +775,18 @@ size_t sweep_inputs(AtomNetlist& netlist, bool verbose) {
     for(auto blk_id : netlist.blocks()) {
         if(!blk_id) continue;
 
-        if(is_removable_input(netlist, blk_id)) {
+        std::string reason;
+        if(is_removable_input(netlist, blk_id, &reason)) {
             inputs_to_remove.insert(blk_id);
+
+            if (verbose) {
+                vtr::printf_warning(__FILE__, __LINE__, "Primary input '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason);
+            }
         }
     }
 
     //Remove them
     for(auto blk_id : inputs_to_remove) {
-        if (verbose) {
-            vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary input '%s'\n", netlist.block_name(blk_id).c_str());
-        }
         netlist.remove_block(blk_id);
     }
 
@@ -792,11 +799,12 @@ size_t sweep_outputs(AtomNetlist& netlist, bool verbose) {
     for(auto blk_id : netlist.blocks()) {
         if(!blk_id) continue;
 
-        if(is_removable_output(netlist, blk_id)) {
-            if (verbose) {
-                vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary output '%s'\n", netlist.block_name(blk_id).c_str());
-            }
+        std::string reason;
+        if(is_removable_output(netlist, blk_id, &reason)) {
             outputs_to_remove.insert(blk_id);
+            if (verbose) {
+                vtr::printf_warning(__FILE__, __LINE__, "Primary output '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason.c_str());
+            }
         }
     }
 
