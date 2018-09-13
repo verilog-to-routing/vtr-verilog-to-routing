@@ -38,7 +38,6 @@ use Cwd;
 use File::Spec;
 use File::Basename;
 use File::Path qw(make_path);
-use List::MoreUtils qw(uniq);
 use POSIX qw(strftime);
 
 # Function Prototypes
@@ -53,6 +52,7 @@ sub ret_expected_vpr_status;
 
 sub format_human_readable_time;
 sub format_human_readable_memory;
+sub uniq;
 
 # Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
@@ -887,4 +887,9 @@ sub find_duplicates {
         push(@duplicates, $str);
     }
     return @duplicates;
+}
+
+sub uniq {
+    my %seen;
+    grep !$seen{$_}++, @_;
 }
