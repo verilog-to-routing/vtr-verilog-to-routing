@@ -26,6 +26,10 @@ def parse_args():
                         default=sys.stdin,
                         help="List of input commands (default: stdin)")
 
+    parser.add_argument("--constraint",
+                        default=None,
+                        help="Sets sbatch's --constraint option")
+
     parser.add_argument("--dry_run", "-n",
                         default=False,
                         action='store_true',
@@ -73,12 +77,19 @@ def main():
                       time_sec=job.time_sec,
                       memory_mb=job.memory_mb,
                       num_cores=job.num_cores,
-                      dry_run=args.dry_run)
+                      constraint=args.constraint,
+                      dry_run=args.dry_run,
+                      submit_dir=os.path.dirname(job.script))
 
         if not args.dry_run:
             time.sleep(args.sleep)
 
-def submit_sbatch(cmd, time_sec=None, memory_mb=None, dry_run=None, num_cores=1):
+def submit_sbatch(cmd, time_sec=None, memory_mb=None, dry_run=None, num_cores=1, constraint=None, submit_dir=None):
+
+    cwd = os.getcwd()
+
+    if submit_dir:
+        os.chdir(submit_dir)
 
     sbatch_cmd = ['sbatch']
 
@@ -86,6 +97,9 @@ def submit_sbatch(cmd, time_sec=None, memory_mb=None, dry_run=None, num_cores=1)
         sbatch_cmd += ['--cpus-per-task={}'.format(num_cores)]
 
     sbatch_cmd += ['--ntasks=1']
+
+    if constraint:
+        sbatch_cmd += ['--constraint={}'.format(constraint)]
 
     if time_sec:
         sbatch_cmd += ['--time={}'.format(int(math.ceil(time_sec)))]
@@ -103,7 +117,10 @@ def submit_sbatch(cmd, time_sec=None, memory_mb=None, dry_run=None, num_cores=1)
 
     if not dry_run:
         #Do-it
-        os.system(sbatch_cmd)
+        os.system(" ".join(sbatch_cmd))
+
+
+    os.chdir(cwd) #Revert to original directory
 
 def get_resource_estimates(filepath):
     time_sec = None
