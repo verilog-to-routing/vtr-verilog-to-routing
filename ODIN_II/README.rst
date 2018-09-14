@@ -229,11 +229,11 @@ Verilog HDL file Keyword Support:
 Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Operators
 --------------------  ------------------  ------------------------  ---------------------
 | always              | automatic         | **                      | &&&
-| and                 | buf               | &&                      | =+:
+| and                 | buf               | &&                      | +:
 | assign              | casex             | ||                      | -:
 | begin               | casez             | <=                      | >>>
-| case                | disable           | =>                      | (*
-| default             | edge              | >=                      | *)
+| case                | disable           | =>                      |
+| default             | edge              | >=                      |
 | `define             | endtask           | <<                      | 
 | defparam            | macromodule       | <<<                     | 
 | else                | scalared          | >>                      | 
@@ -265,9 +265,9 @@ Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Ope
 | wire                | rcmos             |                         | 
 | xnor                | release           |                         | 
 | xor                 | repeat            |                         | 
-| @()                 | rnmos             |                         | 
+| @(<input>)          | rnmos             |                         | 
 | @*                  | rpmos             |                         | 
-|                     | rtran             |                         | 
+| @(*)                | rtran             |                         | 
 |                     | rtranif0          |                         | 
 |                     | rtranif1          |                         | 
 |                     | small             |                         | 
