@@ -8,11 +8,12 @@ import re
 
 TIME_EST_REGEX = re.compile(r"VTR_RUNTIME_ESTIMATE_SECONDS=(?P<time_sec>.*)")
 MEM_EST_REGEX = re.compile(r"VTR_MEMORY_ESTIMATE_BYTES=(?P<mem_bytes>.*)")
+JOB_INFO_REGEX = re.compile(r"(.*/)?(?P<task>[^/]*)/run(?P<run>\d+)/(?P<arch>[^/]*)/(?P<benchmark>[^/]*)/common/vtr_flow.sh")
 
 class Job:
-    def __init__(self, script, time_sec=None, memory_mb=None, num_cores=1):
+    def __init__(self, script, time_minutes=None, memory_mb=None, num_cores=1):
         self.script = script
-        self.time_sec = time_sec
+        self.time_minutes = time_minutes
         self.memory_mb = memory_mb
         self.num_cores = num_cores
 
@@ -50,6 +51,13 @@ def parse_args():
     parser.add_argument("--min_time",
                         default=60,
                         help="Minimum time in seconds (Default %(default)s)")
+    parser.add_argument("--max_time",
+                        default=48*3600, #48 hours
+                        help="Maximum time in seconds (Default %(default)s)")
+
+    parser.add_argument("--job_name_fmt",
+                        default="{task}_{circuit}_{run}",
+                        help="Format string for job names (Default %(default)s)")
 
     return parser.parse_args()
 
@@ -61,30 +69,42 @@ def main():
     jobs = []
     for script in scripts:
 
-        time_sec, mem_mb = get_resource_estimates(script)
+        time_minutes, mem_mb = get_resource_estimates(script)
 
-        time_sec *= args.time_margin
-        time_sec = max(time_sec, args.min_time)
+        time_minutes = max(time_minutes, args.min_time)
+        time_minutes = min(time_minutes, args.max_time)
+        time_minutes *= args.time_margin
 
         mem_mb *= args.memory_margin
 
-        jobs.append(Job(script, time_sec=time_sec, memory_mb=mem_mb))
+        jobs.append(Job(script, time_minutes=time_minutes, memory_mb=mem_mb))
 
     #TODO: could batch jobs here
 
+
     for job in jobs:
+
+        job_name = None
+        match = JOB_INFO_REGEX.match(job.script)
+        if match:
+            job_name = args.job_name_fmt.format(task=match.groupdict()['task'],
+                                            arch=match.groupdict()['arch'],
+                                            circuit=match.groupdict()['benchmark'],
+                                            run=match.groupdict()['run'])
+
         submit_sbatch(job.script, 
-                      time_sec=job.time_sec,
+                      time_minutes=job.time_minutes,
                       memory_mb=job.memory_mb,
                       num_cores=job.num_cores,
                       constraint=args.constraint,
+                      job_name=job_name,
                       dry_run=args.dry_run,
                       submit_dir=os.path.dirname(job.script))
 
         if not args.dry_run:
             time.sleep(args.sleep)
 
-def submit_sbatch(cmd, time_sec=None, memory_mb=None, dry_run=None, num_cores=1, constraint=None, submit_dir=None):
+def submit_sbatch(cmd, time_minutes=None, memory_mb=None, dry_run=None, num_cores=1, constraint=None, submit_dir=None, job_name=None):
 
     cwd = os.getcwd()
 
@@ -101,11 +121,14 @@ def submit_sbatch(cmd, time_sec=None, memory_mb=None, dry_run=None, num_cores=1,
     if constraint:
         sbatch_cmd += ['--constraint={}'.format(constraint)]
 
-    if time_sec:
-        sbatch_cmd += ['--time={}'.format(int(math.ceil(time_sec)))]
+    if time_minutes:
+        sbatch_cmd += ['--time={}'.format(int(math.ceil(time_minutes)))]
 
     if memory_mb:
         sbatch_cmd += ['--mem={}M'.format(int(math.ceil(memory_mb)))]
+
+    if job_name:
+        sbatch_cmd += ['--job-name={}'.format(job_name)]
 
     if not isinstance(cmd, list):
         cmd = [cmd]
@@ -137,9 +160,10 @@ def get_resource_estimates(filepath):
             if match:
                 mem_bytes = float(match.groupdict()['mem_bytes'])
 
+    time_minutes = time_sec / 60
     mem_mb = mem_bytes / (1024**2)
 
-    return time_sec, mem_mb
+    return time_minutes, mem_mb
 
 
 
