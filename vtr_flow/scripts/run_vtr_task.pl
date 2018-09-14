@@ -565,6 +565,14 @@ sub create_run_script {
     my $runtime_est = $args->{runtime_estimate};
     my $memory_est = $args->{memory_estimate};
 
+    if ($runtime_est < 0) {
+        $runtime_est = 0;
+    }
+
+    if ($memory_est < 0) {
+        $memory_est = 0;
+    }
+
     my $humanreadable_runtime_est = format_human_readable_time($runtime_est);
     my $humanreadable_memory_est = format_human_readable_memory($memory_est);
 

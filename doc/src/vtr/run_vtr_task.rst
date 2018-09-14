@@ -129,4 +129,4 @@ Detailed Command-line Options
          VTR_MEMORY_ESTIMATE_BYTES=63422464
 
       .. note::
-         If the resource estimates are unkown they will be set to ``-1``
+         If the resource estimates are unkown they will be set to ``0``
