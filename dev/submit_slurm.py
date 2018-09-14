@@ -49,11 +49,11 @@ def parse_args():
                         help="How long to sleep between submitting jobs to prevent scheduler overload. (Default %(default)s)")
 
     parser.add_argument("--min_time",
-                        default=60,
-                        help="Minimum time in seconds (Default %(default)s)")
+                        default=1,
+                        help="Minimum time in minutes (Default %(default)s)")
     parser.add_argument("--max_time",
-                        default=48*3600, #48 hours
-                        help="Maximum time in seconds (Default %(default)s)")
+                        default=48*60, #48 hours
+                        help="Maximum time in minutes (Default %(default)s)")
 
     parser.add_argument("--job_name_fmt",
                         default="{task}_{circuit}_{run}",
@@ -113,21 +113,21 @@ def submit_sbatch(cmd, time_minutes=None, memory_mb=None, dry_run=None, num_core
 
     sbatch_cmd = ['sbatch']
 
-    if num_cores:
+    if num_cores is not None:
         sbatch_cmd += ['--cpus-per-task={}'.format(num_cores)]
 
     sbatch_cmd += ['--ntasks=1']
 
-    if constraint:
+    if constraint is not None:
         sbatch_cmd += ['--constraint={}'.format(constraint)]
 
-    if time_minutes:
+    if time_minutes is not None:
         sbatch_cmd += ['--time={}'.format(int(math.ceil(time_minutes)))]
 
-    if memory_mb:
+    if memory_mb is not None:
         sbatch_cmd += ['--mem={}M'.format(int(math.ceil(memory_mb)))]
 
-    if job_name:
+    if job_name is not None:
         sbatch_cmd += ['--job-name={}'.format(job_name)]
 
     if not isinstance(cmd, list):
