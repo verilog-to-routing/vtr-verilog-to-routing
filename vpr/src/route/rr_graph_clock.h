@@ -16,11 +16,6 @@ enum class ClockType {
     H_TREE
 };
 
-enum class ClockSwitchType {
-    DRIVE,
-    TAP
-};
-
 struct Coordinates {
     int x;
     int y;
@@ -43,11 +38,32 @@ struct WireRepeat {
     int y;
 };
 
-struct DriveLocation {
-    Coordinates offset;
+struct RibDrive {
+    int offset;
+    int switch_idx;
 };
 
-struct TapLocations {
+struct RibTaps {
+    int offset;
+    int increment;
+};
+
+struct SpineDrive {
+    int offset;
+    int switch_idx;
+};
+
+struct SpineTaps {
+    int offset;
+    int increment;
+};
+
+struct HtreeDrive {
+    Coordinates offset;
+    int switch_idx;
+};
+
+struct HtreeTaps {
     Coordinates offset;
     Coordinates increment;
 };
@@ -77,8 +93,8 @@ class ClockNetwork {
         /*
          * Getters
          */
-        int get_num_inst() {return num_inst;}
-        std::string get_clock_name() const {return this->clock_name;}
+        int get_num_inst() const {return num_inst;}
+        std::string get_name() const {return this->clock_name;}
         virtual ClockType get_network_type() const = 0;
 
         /*
@@ -93,7 +109,7 @@ class ClockNetwork {
         /* Creates the RR nodes for the clock network wires and adds them to the reverse lookup
            in ClockRRGraph. The reverse lookup maps the nodes to their switch point locations */
         void create_rr_nodes_for_clock_network_wires(ClockRRGraph& clock_graph);
-        virtual void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) = 0;
+        virtual void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph) = 0;
 };
 
 class ClockRib : public ClockNetwork {
@@ -104,16 +120,16 @@ class ClockRib : public ClockNetwork {
         WireRepeat repeat;
 
         // offset in the x
-        DriveLocation drive;
+        RibDrive drive;
 
         // offset and incr in the x
-        TapLocations tap;
+        RibTaps tap;
 
     public:
         /** Constructor**/
         ClockRib() {}; // default
-        ClockRib(Wire wire1, WireRepeat repeat1, DriveLocation drive1, TapLocations tap1):
-                 x_chan_wire(wire1), repeat(repeat1), drive(drive1), tap(tap1) {};
+        ClockRib(Wire wire1, WireRepeat repeat1, RibDrive drive1, RibTaps tap1):
+            x_chan_wire(wire1), repeat(repeat1), drive(drive1), tap(tap1) {};
         /*
          * Getters
          */
@@ -136,30 +152,32 @@ class ClockRib : public ClockNetwork {
             repeat.y = repeat_y;
         }
         void set_drive_location(int offset_x) {
-            drive.offset.x = offset_x;
-            drive.offset.y = -1;
+            drive.offset = offset_x;
         }
-        void set_tap_location(int offset_x, int increment_x) {
-            tap.offset.x = offset_x;
-            tap.offset.y = -1;
-            tap.increment.x = increment_x;
-            tap.increment.y = -1;
+        void set_drive_switch(int switch_idx) {
+            drive.switch_idx = switch_idx;
+        }
+        void set_tap_locations(int offset_x, int increment_x) {
+            tap.offset = offset_x;
+            tap.increment = increment_x;
         }
 
         /*
          * Member functions
          */
-        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
-        int create_rr_node_for_one_rib(
+        void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph);
+        int create_chanx_wire(
                 int x_start,
                 int x_end,
                 int y,
+                int ptc_num,
                 std::vector<t_rr_node>& rr_nodes);
-        void record_switch_point_locations_for_rr_node(
-                int x_start,
-                int x_end,
-                int y,
-                int rr_node_index,
+        void record_tap_locations(
+                unsigned x_start,
+                unsigned x_end,
+                unsigned y,
+                int left_rr_node_idx,
+                int right_rr_node_idx,
                 ClockRRGraph& clock_graph);
 };
 
@@ -171,10 +189,10 @@ class ClockSpine : public ClockNetwork {
         WireRepeat repeat;
 
         // offset in the y
-        DriveLocation drive;
+        SpineDrive drive;
 
         // offset and incr in the y
-        TapLocations tap;
+        SpineTaps tap;
 
     public:
         ClockType get_network_type() const {return ClockType::SPINE;}
@@ -196,25 +214,26 @@ class ClockSpine : public ClockNetwork {
             repeat.y = repeat_y;
         }
         void set_drive_location(int offset_y) {
-            drive.offset.x = -1;
-            drive.offset.y = offset_y;
+            drive.offset = offset_y;
         }
-        void set_tap_location(int offset_y, int increment_y) {
-            tap.offset.x = -1;
-            tap.offset.y = offset_y;
-            tap.increment.x = -1;
-            tap.increment.y = increment_y;
+        void set_drive_switch(int switch_idx) {
+            drive.switch_idx = switch_idx;
+        }
+        void set_tap_locations(int offset_y, int increment_y) {
+            tap.offset = offset_y;
+            tap.increment = increment_y;
         }
 
         /*
          * Member functions
          */
-        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
-        int create_rr_node_for_one_spine(
-                int y_start,
-                int y_end,
-                int x,
-                std::vector<t_rr_node>& rr_nodes);
+        void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph);
+        int create_chany_wire(
+            int y_start,
+            int y_end,
+            int x,
+            int ptc_num,
+            std::vector<t_rr_node>& rr_nodes);
         void record_switch_point_locations_for_rr_node(
                 int y_start,
                 int y_end,
@@ -232,30 +251,51 @@ class ClockHTree : private ClockNetwork {
         Wire y_chan_wire;
         WireRepeat repeat;
 
-        DriveLocation drive;
+        HtreeDrive drive;
 
-        TapLocations tap;
+        HtreeTaps tap;
 
     public:
         ClockType get_network_type() const {return ClockType::H_TREE;}
         // TODO: Unimplemented member function
-        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph);
 };
 
 class SwitchPoint {
-    private:
+    public:
         // [grid_width][grid_height][nodes]
         std::vector<std::vector<std::vector<int>>> rr_node_indices;
         std::vector<Coordinates> locations;
+    public:
+        /*
+         * Constructors
+         */
+        SwitchPoint() {};
+        SwitchPoint(int grid_width, int grid_height) :
+            rr_node_indices(
+                    grid_width,
+                    std::vector<std::vector<int>>(grid_height, std::vector<int>())) {};
+        void insert_node_idx(int x, int y, int node_idx) {
+            rr_node_indices[x][y].push_back(node_idx);
+            Coordinates location = {x, y};
+            locations.push_back(location);
+        }
 };
 
 class SwitchPoints {
-    private:
+    public:
         std::unordered_map<std::string, SwitchPoint> switch_name_to_switch_location;
     public:
         /** Getters **/
 
         /** Setters **/
+        void insert_switch(std::string switch_name, SwitchPoint switch_point) {
+            // TODO make sure every switch name is unique
+            switch_name_to_switch_location.emplace(switch_name, switch_point);
+        }
+        void insert_switch_node_idx(std::string switch_name, int x, int y, int node_index) {
+            switch_name_to_switch_location[switch_name].insert_node_idx(x, y, node_index);
+        }
 };
 
 class ClockRRGraph {
@@ -269,6 +309,14 @@ class ClockRRGraph {
            existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
         static void create_and_append_clock_rr_graph();
 
+    public:
+        void allocate_lookup(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks);
+        void add_switch_location(
+                std::string clock_name,
+                std::string switch_name,
+                int x,
+                int y,
+                int node_index);
     private:
         /* Dummy clock network that connects every I/O input to every clock pin. */
         static void create_star_model_network();
