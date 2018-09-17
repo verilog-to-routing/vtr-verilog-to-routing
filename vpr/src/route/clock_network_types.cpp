@@ -73,9 +73,17 @@ void ClockRib::set_drive_switch(int switch_idx) {
     drive.switch_idx = switch_idx;
 }
 
+void ClockRib::set_drive_name(std::string name) {
+    drive.name = name;
+}
+
 void ClockRib::set_tap_locations(int offset_x, int increment_x) {
     tap.offset = offset_x;
     tap.increment = increment_x;
+}
+
+void ClockRib::set_tap_name(std::string name) {
+    tap.name = name;
 }
 
 /*
@@ -98,7 +106,7 @@ void ClockRib::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& cloc
             int drive_x = x_start + drive.offset;
             // create drive point (length zero wire)
             auto drive_node_idx = create_chanx_wire(drive_x, drive_x, y, ptc_num, rr_nodes);
-            clock_graph.add_switch_location(get_name(), "drive", drive_x, y, drive_node_idx);
+            clock_graph.add_switch_location(get_name(), drive.name, drive_x, y, drive_node_idx);
             
             // create rib wire to the right and left of the drive point 
             auto left_node_idx = create_chanx_wire(x_start, drive_x, y, ptc_num, rr_nodes);
@@ -139,12 +147,11 @@ void ClockRib::record_tap_locations(
         int right_rr_node_idx,
         ClockRRGraph& clock_graph)
 {
-    std::string tap_name = "tap"; // only supporting one tap
     for(unsigned x = x_start+tap.offset; x <= x_end; x+=tap.increment) {
         if(x < x_start + drive.offset) {
-            clock_graph.add_switch_location(get_name(), tap_name, x, y, left_rr_node_idx);
+            clock_graph.add_switch_location(get_name(), tap.name, x, y, left_rr_node_idx);
         } else {
-            clock_graph.add_switch_location(get_name(), tap_name, x, y, right_rr_node_idx);
+            clock_graph.add_switch_location(get_name(), tap.name, x, y, right_rr_node_idx);
         }
     }
 }
@@ -188,9 +195,17 @@ void ClockSpine::set_drive_switch(int switch_idx) {
     drive.switch_idx = switch_idx;
 }
 
+void ClockSpine::set_drive_name(std::string name) {
+    drive.name = name;
+}
+
 void ClockSpine::set_tap_locations(int offset_y, int increment_y) {
     tap.offset = offset_y;
     tap.increment = increment_y;
+}
+
+void ClockSpine::set_tap_name(std::string name) {
+    tap.name = name;
 }
 
 /*
@@ -203,14 +218,27 @@ void ClockSpine::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& cl
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& grid = device_ctx.grid;
 
-    int ptc_num = inst_num;
+    int ptc_num = inst_num + 50;
 
-    for(unsigned y_start = y_chan_wire.start, y_end = y_chan_wire.end;
-        y_end < grid.height();
+    for(unsigned y_start = y_chan_wire.start + 1, y_end = y_chan_wire.end;
+        y_end < grid.height() - 1;
         y_start += repeat.y, y_end += repeat.y) {
-        for(unsigned x = y_chan_wire.position; x < grid.width(); x += repeat.x) {
-            auto rr_node_index = create_chany_wire(y_start, y_end, x, ptc_num, rr_nodes);
-            record_switch_point_locations_for_rr_node(y_start, y_end, x, rr_node_index, clock_graph);
+        for(unsigned x = y_chan_wire.position; x < grid.width() - 1; x += repeat.x) {
+
+            int drive_y = y_start + drive.offset;
+            //create drive point (length zero wire)
+            auto drive_node_idx = create_chany_wire(drive_y, drive_y, x, ptc_num, rr_nodes);
+            clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
+
+            // create spine wire to the right and left of the drive point
+            auto left_node_idx = create_chany_wire(y_start, drive_y, x, ptc_num, rr_nodes);
+            auto right_node_idx = create_chany_wire(drive_y, y_end, x, ptc_num, rr_nodes);
+
+            record_tap_locations(y_start, y_end, x, left_node_idx, right_node_idx, clock_graph);
+
+            // connect drive point to each half spine using a directed switch
+            rr_nodes[drive_node_idx].add_edge(left_node_idx, drive.switch_idx);
+            rr_nodes[drive_node_idx].add_edge(right_node_idx, drive.switch_idx);
         }
     }
 }
@@ -233,13 +261,21 @@ int ClockSpine::create_chany_wire(
     return node_index;
 }
 
-void ClockSpine::record_switch_point_locations_for_rr_node(
-        int y_start,
-        int y_end,
-        int x,
-        int rr_node_index,
-        ClockRRGraph& clock_graph) {
-
+void ClockSpine::record_tap_locations(
+        unsigned y_start,
+        unsigned y_end,
+        unsigned x,
+        int left_node_idx,
+        int right_node_idx,
+        ClockRRGraph& clock_graph)
+{
+    for (unsigned y = y_start+tap.offset; y <= y_end; y+=tap.increment) {
+        if(y < y_start + drive.offset) {
+            clock_graph.add_switch_location(get_name(), tap.name, x, y, left_node_idx);
+        } else {
+            clock_graph.add_switch_location(get_name(), tap.name, x, y, right_node_idx);
+        }
+    }
 }
 
 

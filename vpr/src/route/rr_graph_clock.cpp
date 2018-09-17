@@ -32,7 +32,9 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     rib->set_wire_repeat(9, 1);
     rib->set_drive_location(5);
     rib->set_drive_switch(2);
+    rib->set_drive_name("drive");
     rib->set_tap_locations(0,1);
+    rib->set_tap_name("tap");
 
     // Clock Spines
     clock_networks.emplace_back(new ClockSpine());
@@ -41,14 +43,16 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     spine->set_num_instance(10);
     spine->set_clock_name("spine1");
     spine->set_metal_layer(0,0);
-    spine->set_initial_wire_location(0,10,5);
-    spine->set_wire_repeat(10,10);
+    spine->set_initial_wire_location(0,9,5);
+    spine->set_wire_repeat(10,9);
     spine->set_drive_location(5);
     spine->set_drive_switch(2);
+    spine->set_drive_name("drive");
     spine->set_tap_locations(0,1);
+    spine->set_tap_name("tap");
 
     ClockRRGraph clock_graph = ClockRRGraph();
-    clock_graph.allocate_lookup(clock_networks);
+//    clock_graph.allocate_lookup(clock_networks);
     clock_graph.create_clock_networks_wires(clock_networks);
 
 //    std::vector<ClockConnection> clock_routing;
@@ -67,38 +71,37 @@ void ClockRRGraph::create_clock_networks_wires(
     }
 }
 
-void ClockRRGraph::allocate_lookup(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks) {
-
-    auto& grid = g_vpr_ctx.mutable_device().grid;
-
-    for(auto& clock_network : clock_networks) {
-       
-        SwitchPoints switch_points;
-        
-        /* TODO: loop over all switchs and insert into map. */
-        // Currently only supporting two switch points
-        // Single Drive
-        std::string drive_switch_name = "drive";
-        SwitchPoint drive_switch_locations(grid.width(), grid.height());
-        switch_points.insert_switch(drive_switch_name, drive_switch_locations);
-        // Single Tap
-        std::string tap_switch_name = "tap";
-        SwitchPoint tap_switch_locations(grid.width(), grid.height());
-        switch_points.insert_switch(tap_switch_name, tap_switch_locations);
-
-        clock_name_to_switch_points.emplace(clock_network->get_name(), switch_points);
-    }
-}
-
 void ClockRRGraph::add_switch_location(
         std::string clock_name,
         std::string switch_name,
         int x,
         int y,
         int node_index) {
+    // Note use of operator[] will automatically insert clock name if it doesn't exist
     clock_name_to_switch_points[clock_name].insert_switch_node_idx(switch_name, x, y, node_index);
 }
 
+void SwitchPoints::insert_switch_node_idx(std::string switch_name, int x, int y, int node_idx) {
+    // Note use of operator[] will automatically insert switch name if it doesn't exit
+    switch_name_to_switch_location[switch_name].insert_node_idx(x, y, node_idx);
+}
+
+void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
+
+    // allocate 2d vector of grid size
+    if (rr_node_indices.empty()) {
+        auto& grid = g_vpr_ctx.device().grid;
+        rr_node_indices.resize(grid.width());
+        for (size_t i = 0; i < grid.width(); i++) {
+            rr_node_indices[i].resize(grid.height());
+        }
+    }
+
+    // insert node_idx at location
+    rr_node_indices[x][y].push_back(node_idx);
+    Coordinates location = {x, y};
+    locations.push_back(location);
+}
 
 //void ClockRRGraph::create_star_model_network() {
 //

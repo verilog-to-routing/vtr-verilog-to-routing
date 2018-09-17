@@ -35,19 +35,7 @@ class SwitchPoint {
         std::vector<std::vector<std::vector<int>>> rr_node_indices;
         std::vector<Coordinates> locations;
     public:
-        /*
-         * Constructors
-         */
-        SwitchPoint() {};
-        SwitchPoint(int grid_width, int grid_height) :
-            rr_node_indices(
-                    grid_width,
-                    std::vector<std::vector<int>>(grid_height, std::vector<int>())) {};
-        void insert_node_idx(int x, int y, int node_idx) {
-            rr_node_indices[x][y].push_back(node_idx);
-            Coordinates location = {x, y};
-            locations.push_back(location);
-        }
+        void insert_node_idx(int x, int y, int node_idx);
 };
 
 class SwitchPoints {
@@ -57,13 +45,7 @@ class SwitchPoints {
         /** Getters **/
 
         /** Setters **/
-        void insert_switch(std::string switch_name, SwitchPoint switch_point) {
-            // TODO make sure every switch name is unique
-            switch_name_to_switch_location.emplace(switch_name, switch_point);
-        }
-        void insert_switch_node_idx(std::string switch_name, int x, int y, int node_index) {
-            switch_name_to_switch_location[switch_name].insert_node_idx(x, y, node_index);
-        }
+        void insert_switch_node_idx(std::string switch_name, int x, int y, int node_idx);
 };
 
 class ClockRRGraph {

@@ -34,31 +34,37 @@ struct WireRepeat {
 };
 
 struct RibDrive {
+    std::string name;
     int offset;
     int switch_idx;
 };
 
 struct RibTaps {
+    std::string name;
     int offset;
     int increment;
 };
 
 struct SpineDrive {
+    std::string name;
     int offset;
     int switch_idx;
 };
 
 struct SpineTaps {
+    std::string name;
     int offset;
     int increment;
 };
 
 struct HtreeDrive {
+    std::string name;
     Point offset;
     int switch_idx;
 };
 
 struct HtreeTaps {
+    std::string name;
     Point offset;
     Point increment;
 };
@@ -126,7 +132,9 @@ class ClockRib : public ClockNetwork {
         void set_wire_repeat(int repeat_x, int repeat_y);
         void set_drive_location(int offset_x);
         void set_drive_switch(int switch_idx);
+        void set_drive_name(std::string name);
         void set_tap_locations(int offset_x, int increment_x);
+        void set_tap_name(std::string name);
 
         /*
          * Member functions
@@ -174,7 +182,9 @@ class ClockSpine : public ClockNetwork {
         void set_wire_repeat(int repeat_x, int repeat_y);
         void set_drive_location(int offset_y);
         void set_drive_switch(int switch_idx);
+        void set_drive_name(std::string name);
         void set_tap_locations(int offset_y, int increment_y);
+        void set_tap_name(std::string name);
 
         /*
          * Member functions
@@ -186,11 +196,12 @@ class ClockSpine : public ClockNetwork {
             int x,
             int ptc_num,
             std::vector<t_rr_node>& rr_nodes);
-        void record_switch_point_locations_for_rr_node(
-                int y_start,
-                int y_end,
-                int x,
-                int rr_node_index,
+        void record_tap_locations(
+                unsigned y_start,
+                unsigned y_end,
+                unsigned x,
+                int left_node_idx,
+                int right_node_idx,
                 ClockRRGraph& clock_graph);
 
 };
