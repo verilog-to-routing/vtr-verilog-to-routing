@@ -604,14 +604,18 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("global")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<e_clock_modeling,ParseClockModeling>(
-        args.clock_modeling, "--clock_modeling")
+    gen_grp.add_argument<e_clock_modeling,ParseClockModeling>(args.clock_modeling, "--clock_modeling")
             .help("Specifies how clock nets are handled\n"
                   " * ideal: Treat clock pins as ideal\n"
                   "          (i.e. no routing delays on clocks)\n"
                   " * route: Treat the clock pins as normal nets\n"
                   "          (i.e. routed using inter-block routing)\n")
             .default_value("ideal")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    gen_grp.add_argument<bool,ParseOnOff>(args.exit_before_pack, "--exit_before_pack")
+            .help("Causes VPR to exit before packing starts (useful for statistics collection)")
+            .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& file_grp = parser.add_argument_group("file options");

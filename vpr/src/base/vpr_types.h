@@ -1184,6 +1184,7 @@ struct t_vpr_setup {
     std::string device_layout;
     e_constant_net_method constant_net_method; //How constant nets should be handled
     e_clock_modeling clock_modeling; //How clocks should be handled
+    bool exit_before_pack; //Exits early before starting packing (useful for collecting statistics without running/loading any stages)
 };
 
 class RouteStatus {
