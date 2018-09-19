@@ -1,5 +1,11 @@
 #include "clock_network_types.h"
 
+#include "globals.h"
+
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include "vtr_error.h"
+
 /*
  * ClockNetwork (getters)
  */
@@ -96,7 +102,7 @@ void ClockRib::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& cloc
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& grid = device_ctx.grid;
 
-    int ptc_num = inst_num + 50; // used for drawing
+    int ptc_num = inst_num + 55; // used for drawing
 
     for(unsigned x_start = x_chan_wire.start + 1, x_end = x_chan_wire.end;
         x_end < grid.width() - 1;
@@ -218,7 +224,7 @@ void ClockSpine::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& cl
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& grid = device_ctx.grid;
 
-    int ptc_num = inst_num + 50;
+    int ptc_num = inst_num + 55;
 
     for(unsigned y_start = y_chan_wire.start + 1, y_end = y_chan_wire.end;
         y_end < grid.height() - 1;

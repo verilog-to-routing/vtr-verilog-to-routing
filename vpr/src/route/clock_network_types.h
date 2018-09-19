@@ -1,14 +1,15 @@
 #ifndef CLOCK_NETWORK_TYPES_H
 #define CLOCK_NETWORK_TYPES_H
 
+#include <string>
+#include <vector>
+
+#include "clock_fwd.h"
+
+#include "globals.h"
 #include "rr_graph_clock.h"
 
 class ClockRRGraph;
-
-struct Point {
-    int x;
-    int y;
-};
 
 enum class ClockType {
     SPINE,
@@ -59,14 +60,14 @@ struct SpineTaps {
 
 struct HtreeDrive {
     std::string name;
-    Point offset;
+    Coordinates offset;
     int switch_idx;
 };
 
 struct HtreeTaps {
     std::string name;
-    Point offset;
-    Point increment;
+    Coordinates offset;
+    Coordinates increment;
 };
 
 class ClockNetwork {

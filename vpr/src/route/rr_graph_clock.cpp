@@ -13,24 +13,19 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     vtr::printf_info("Starting clock network routing resource graph generation...\n");
     clock_t begin = clock();
 
-    // TODO: Eventually remove create_star_model. Currently used to simulate that a simple network
-    //       functions
-    //create_star_model_network();
-
-
-    // Clocks
+    // Clock Newtworks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
 
     // Clock Ribs
     clock_networks.emplace_back(new ClockRib());
     ClockRib* rib = dynamic_cast<ClockRib*>(clock_networks.back().get());
-    
-    rib->set_num_instance(10);
+
+    rib->set_num_instance(1);
     rib->set_clock_name("rib1");
     rib->set_metal_layer(0, 0);
-    rib->set_initial_wire_location(0, 9, 0);
-    rib->set_wire_repeat(9, 1);
-    rib->set_drive_location(5);
+    rib->set_initial_wire_location(0, 19, 0);
+    rib->set_wire_repeat(17, 1);
+    rib->set_drive_location(10);
     rib->set_drive_switch(2);
     rib->set_drive_name("drive");
     rib->set_tap_locations(0,1);
@@ -40,35 +35,80 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     clock_networks.emplace_back(new ClockSpine());
     ClockSpine* spine = dynamic_cast<ClockSpine*>(clock_networks.back().get());
 
-    spine->set_num_instance(10);
+    spine->set_num_instance(1);
     spine->set_clock_name("spine1");
     spine->set_metal_layer(0,0);
-    spine->set_initial_wire_location(0,9,5);
-    spine->set_wire_repeat(10,9);
-    spine->set_drive_location(5);
+    spine->set_initial_wire_location(0, 19, 10);
+    spine->set_wire_repeat(19,19);
+    spine->set_drive_location(10);
     spine->set_drive_switch(2);
     spine->set_drive_name("drive");
     spine->set_tap_locations(0,1);
     spine->set_tap_name("tap");
 
+    //Clock Connections
+    std::vector<std::unique_ptr<ClockConnection>> clock_routing;
+
+    // Routing to spine drive point connection
+    clock_routing.emplace_back(new RoutingToClockConnection);
+    RoutingToClockConnection* routing_to_clock =
+        dynamic_cast<RoutingToClockConnection*>(clock_routing.back().get());
+
+    routing_to_clock->set_clock_name_to_connect_to("spine1");
+    routing_to_clock->set_clock_switch_name("drive");
+    routing_to_clock->set_switch_location(10, 10);
+    routing_to_clock->set_switch(0);
+    routing_to_clock->set_fc_val(1);
+
+    // Spine to Rib connection
+    clock_routing.emplace_back(new ClockToClockConneciton);
+    ClockToClockConneciton* spine_to_rib =
+        dynamic_cast<ClockToClockConneciton*>(clock_routing.back().get());
+
+    spine_to_rib->set_from_clock_name("spine1");
+    spine_to_rib->set_from_clock_switch_name("tap");
+    spine_to_rib->set_to_clock_name("rib1");
+    spine_to_rib->set_to_clock_switch_name("drive");
+    spine_to_rib->set_switch(0);
+    spine_to_rib->set_fc_val(1);
+
+    // clock to pins connection
+    clock_routing.emplace_back(new ClockToPinsConnection);
+    ClockToPinsConnection* clock_to_pins =
+        dynamic_cast<ClockToPinsConnection*>(clock_routing.back().get());
+
+    clock_to_pins->set_clock_name_to_connect_from("rib1");
+    clock_to_pins->set_clock_switch_name("tap");
+    clock_to_pins->set_switch(1);
+    clock_to_pins->set_fc_val(1);
+
+    // Routing to clock pins
+    clock_routing.emplace_back(new RoutingToPins);
+    RoutingToPins* routing_to_pins =
+        dynamic_cast<RoutingToPins*>(clock_routing.back().get());
+
+    routing_to_pins->set_fc_val(1);
+
+
     ClockRRGraph clock_graph = ClockRRGraph();
-//    clock_graph.allocate_lookup(clock_networks);
     clock_graph.create_clock_networks_wires(clock_networks);
-
-//    std::vector<ClockConnection> clock_routing;
-//    ClockConnection connection
-
-    // TODO: Add a shrink to fit for the rr_nodes
+    clock_graph.create_clock_networks_switches(clock_routing);
 
     float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
 }
 
 void ClockRRGraph::create_clock_networks_wires(
-        std::vector<std::unique_ptr<ClockNetwork>>& clock_networks) {
+        std::vector<std::unique_ptr<ClockNetwork>>& clock_networks)
+{
+    // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
         clock_network->create_rr_nodes_for_clock_network_wires(*this);
     }
+
+    // Reduce the capacity of rr_nodes for performance
+    auto& rr_nodes = g_vpr_ctx.mutable_device().rr_nodes;
+    rr_nodes.shrink_to_fit();
 }
 
 void ClockRRGraph::add_switch_location(
@@ -76,7 +116,8 @@ void ClockRRGraph::add_switch_location(
         std::string switch_name,
         int x,
         int y,
-        int node_index) {
+        int node_index)
+{
     // Note use of operator[] will automatically insert clock name if it doesn't exist
     clock_name_to_switch_points[clock_name].insert_switch_node_idx(switch_name, x, y, node_index);
 }
@@ -101,6 +142,14 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
     rr_node_indices[x][y].push_back(node_idx);
     Coordinates location = {x, y};
     locations.push_back(location);
+}
+
+void ClockRRGraph::create_clock_networks_switches(
+        std::vector<std::unique_ptr<ClockConnection>>& clock_connections)
+{
+    for(auto& clock_connection: clock_connections) {
+        clock_connection->create_switches(*this);
+    }
 }
 
 //void ClockRRGraph::create_star_model_network() {
