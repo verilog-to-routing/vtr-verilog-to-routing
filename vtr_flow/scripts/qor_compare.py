@@ -60,8 +60,8 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if len(args.result_names) == 0:
-        args.parse_result_names = args.parse_result_files
+    if not args.result_names or len(args.result_names) == 0:
+        args.result_names = args.parse_result_files
     elif len(args.result_names) != len(args.parse_result_files):
         raise RuntimeError("Number of result names ({}) does not match number of result files ({})".format(len(args.result_names), len(args.parse_result_files)))
     else:
