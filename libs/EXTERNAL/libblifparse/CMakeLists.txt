@@ -49,4 +49,11 @@ set_target_properties(libblifparse PROPERTIES PREFIX "") #Avoid extra 'lib' pref
 add_executable(blifparse_test src/main.cpp)
 target_link_libraries(blifparse_test libblifparse)
 
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+    #Add the tests if we are the root project
+    enable_testing()
+    add_test(NAME test_parse_blif
+             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test/test_parser.sh ${CMAKE_CURRENT_SOURCE_DIR}/test/*/*.blif ${CMAKE_CURRENT_SOURCE_DIR}/test/*/*.eblif)
+endif()
+
 install(TARGETS libblifparse blifparse_test DESTINATION bin)
