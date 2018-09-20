@@ -1212,6 +1212,6 @@ std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     std::string regex_str = vtr::replace_all(glob_pattern, ".", "\\.");
     regex_str = vtr::replace_all(regex_str, "*", ".*");
 
-    return std::regex(regex_str, std::regex::grep);
+    return std::regex(regex_str);
 }
 
