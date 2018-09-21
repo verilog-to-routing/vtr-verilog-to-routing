@@ -82,7 +82,7 @@ def main():
     #Load all the raw data into separate sheets
     raw_sheets = OrderedDict()
     for i in xrange(len(args.parse_result_files)):
-        sheet_name = safe_sheet_title("raw_{}".format(args.result_names[i]))
+        sheet_name = safe_sheet_title("{}".format(args.result_names[i]))
         ws = parse_result_to_sheet(wb, args.parse_result_files[i], sheet_name)
 
         raw_sheets[sheet_name] = ws
