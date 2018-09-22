@@ -77,9 +77,9 @@ function micro_test() {
 		-T regression_test/benchmark/micro/test_dir_output \
 		-sim_dir regression_test/runs/micro/test_dir/arch/ \
 		&> regression_test/runs/micro/test_dir/arch/log \
-	&& echo " --- PASSED == regression_test/runs/micro/test_dir" \
-	|| (echo " -X- FAILED == regression_test/runs/micro/test_dir" \
-		&& echo regression_test/runs/micro/test_dir >> regression_test/runs/failure.log )'
+	&& echo " --- PASSED == micro/test_dir" \
+	|| (echo " -X- FAILED == micro/test_dir" \
+		&& echo micro/test_dir >> regression_test/runs/failure.log )'
 
 }
 
@@ -104,14 +104,14 @@ function regression_test() {
 
 
     echo "./odin_II -E \
-    --adder_type default \
-		-a ../libs/libarchfpga/arch/sample_arch.xml \
-		-V $test_verilog \
-		-t $input_vectors \
-		-T $output_vectors \
-		-o regression_test/runs/full/$test_name/$test_name.blif \
-		-sim_dir regression_test/runs/full/$test_name/" \
-			> regression_test/runs/full/$test_name/log
+		--adder_type default \
+			-a ../libs/libarchfpga/arch/sample_arch.xml \
+			-V $test_verilog \
+			-t $input_vectors \
+			-T $output_vectors \
+			-o regression_test/runs/full/$test_name/$test_name.blif \
+			-sim_dir regression_test/runs/full/$test_name/" \
+				> regression_test/runs/full/$test_name/log
 
 		./odin_II -E \
     		--adder_type "default" \
@@ -122,9 +122,9 @@ function regression_test() {
 			-o regression_test/runs/full/$test_name/$test_name.blif \
 			-sim_dir regression_test/runs/full/$test_name/ \
 			&>> regression_test/runs/full/log \
-		&& echo " --- PASSED == regression_test/runs/full/$test_name" \
-		|| (echo " -X- FAILED == regression_test/runs/full/$test_name" \
-		&& echo regression_test/runs/full/$test_name >> regression_test/runs/failure.log )
+		&& echo " --- PASSED == full/$test_name" \
+		|| (echo " -X- FAILED == full/$test_name" \
+		&& echo full/$test_name >> regression_test/runs/failure.log )
 
 	done
 }
@@ -146,9 +146,9 @@ function arch_test() {
 			-o regression_test/runs/arch/test_dir/test_dir.blif \
 			-sim_dir regression_test/runs/arch/test_dir/ \
 			&> regression_test/runs/arch/test_dir/log \
-    	&& echo " --- PASSED == regression_test/runs/arch/test_dir" \
-    	|| (echo " -X- FAILED == regression_test/runs/arch/test_dir" \
-    		&& echo regression_test/runs/arch/test_dir >> regression_test/runs/failure.log)'
+    	&& echo " --- PASSED == arch/test_dir" \
+    	|| (echo " -X- FAILED == arch/test_dir" \
+    		&& echo arch/test_dir >> regression_test/runs/failure.log)'
 }
 
 #1				#2
@@ -164,13 +164,30 @@ function syntax_test() {
 
 	ls regression_test/runs/syntax | xargs -P$1 -I test_dir /bin/bash -c \
 		' ./odin_II -E -V regression_test/benchmark/syntax/test_dir.v \
-        --adder_type default \
-				-o regression_test/runs/syntax/test_dir/test_dir.blif \
-				-sim_dir regression_test/runs/syntax/test_dir/ \
-					&> regression_test/runs/syntax/test_dir/log \
-    	&& echo " --- PASSED == regression_test/runs/syntax/test_dir" \
-    	|| (echo " -X- FAILED == regression_test/runs/syntax/test_dir" \
-    		&& echo regression_test/runs/syntax/test_dir >> regression_test/runs/failure.log)'
+        	--adder_type default \
+			-o regression_test/runs/syntax/test_dir/test_dir.blif \
+			-sim_dir regression_test/runs/syntax/test_dir/ \
+				&> regression_test/runs/syntax/test_dir/log \
+    	&& echo " --- PASSED == syntax/test_dir" \
+    	|| (echo " -X- FAILED == syntax/test_dir" \
+    		&& echo syntax/test_dir >> regression_test/runs/failure.log)'
+}
+
+#1				#2
+#benchmark dir	N_trhead
+function other_test() {
+	for benchmark in regression_test/benchmark/other/*
+	do
+    	test_name=${benchmark##*/}
+		DIR="regression_test/runs/other/$test_name" && mkdir -p $DIR
+
+		eval $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ') \
+		&> regression_test/runs/other/$test_name/log \
+		&& echo " --- PASSED == other/$test_name" \
+		|| (echo " -X- FAILED == other/$test_name" \
+			&& echo other/$test_name >> regression_test/runs/failure.log)
+
+	done
 }
 
 
@@ -209,12 +226,17 @@ case $1 in
 		regression_test $NB_OF_PROC
 		;;
 
-  "full_suite")
-    arch_test $NB_OF_PROC
-    syntax_test $NB_OF_PROC
-    micro_test $NB_OF_PROC
-    regression_test $NB_OF_PROC
-    ;;
+	"other")
+		other_test $NB_OF_PROC
+		;;
+
+	"full_suite")
+		arch_test $NB_OF_PROC
+		syntax_test $NB_OF_PROC
+		other_test $NB_OF_PROC
+		micro_test $NB_OF_PROC
+		regression_test $NB_OF_PROC
+		;;
 
 	"vtr_basic")
 		cd ..
@@ -231,6 +253,7 @@ case $1 in
 	"pre_commit")
 		arch_test $NB_OF_PROC
 		syntax_test $NB_OF_PROC
+		other_test $NB_OF_PROC
 		micro_test $NB_OF_PROC
 		regression_test $NB_OF_PROC
 		cd ..
