@@ -100,8 +100,7 @@ typedef struct adder_def_t_t adder_def_t;
 /* This is the data structure that holds config file details */
 struct config_t_t
 {
-	char **list_of_file_names;
-	int num_list_of_file_names;
+	std::vector<std::string> list_of_file_names;
 
 	std::string output_type; // string name of the type of output file
 

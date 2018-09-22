@@ -186,7 +186,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
  * veri_include in the lookup table or an entry for that file already exists.
  * Otherwise it wil return a pointer to the new veri_include entry.
  */
-veri_include* add_veri_include(char *path, int line, veri_include *included_from)
+veri_include* add_veri_include(const char *path, int line, veri_include *included_from)
 {
 	int i;
 	veri_include *inc_iterator = veri_includes.included_files[0];
@@ -216,7 +216,7 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 		}
 	}
 
-	new_inc->path = (char *)vtr::strdup(path);
+	new_inc->path = vtr::strdup(path);
 	new_inc->included_from = included_from;
 	new_inc->line = line;
 
@@ -262,7 +262,7 @@ int veri_is_defined(char * symbol)
 
 /*
  * Return an open file handle
- * if the file is not in the pwd try the paths indicated by char* global_args.verilog_file and/or int current_parse_file
+ * if the file is not in the pwd try the paths indicated by char* list_of_file_names int current_parse_file
  *
  * Return NULL if unable to find and open the file
  */
@@ -279,13 +279,9 @@ FILE* open_source_file(char* filename)
 	}
 
 	char* path;
-	if (global_args.verilog_file != NULL) //ODIN_II was called with the -V option.
+	if(current_parse_file < configuration.list_of_file_names.size())
 	{
-		path = (char *) vtr::strdup(global_args.verilog_file);
-	}
-	else if(global_args.config_file != NULL) //ODIN_II was called with the -c option.
-	{
-		path = (char *) vtr::strdup(configuration.list_of_file_names[current_parse_file]);
+		path = vtr::strdup(configuration.list_of_file_names[current_parse_file].c_str());
 	}
 	else
 	{
@@ -325,8 +321,7 @@ FILE* veri_preproc(FILE *source)
 	FILE *preproc_producer = NULL;
 
 	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */
-	char* current_file = (global_args.verilog_file != NULL) ? global_args.verilog_file : configuration.list_of_file_names[current_parse_file];
-	veri_include *veri_initial = add_veri_include(current_file, 0, NULL);
+	veri_include *veri_initial = add_veri_include(configuration.list_of_file_names[current_parse_file].c_str(), 0, NULL);
 	if (veri_initial == NULL)
 	{
 		fprintf(stderr, "Unable to store include information returning original FILE pointer\n\n");

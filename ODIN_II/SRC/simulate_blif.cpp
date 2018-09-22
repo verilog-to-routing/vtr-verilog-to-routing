@@ -3581,7 +3581,11 @@ static void free_pin_name_list(pin_names *p)
  */
 static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 {
-	printf("%s:\n", get_circuit_filename());
+	if(configuration.list_of_file_names.size() == 0)
+		printf("%s:\n", (char*)global_args.blif_file);
+	else
+		for(std::size_t i=0; i < configuration.list_of_file_names.size(); i++)
+			printf("%s:\n", configuration.list_of_file_names[i].c_str());
 
 	printf("  Nodes:           %d\n",    stages->num_nodes);
 	printf("  Connections:     %d\n",    stages->num_connections);

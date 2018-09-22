@@ -677,7 +677,7 @@ void error_message(short error_type, int line_number, int file, const char *mess
 
 	fprintf(stderr,"ERROR:");
 	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
+		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
 	if (line_number > 0)
 		fprintf(stderr," (Line number: %d)", line_number);
 	if (message != NULL)
@@ -710,7 +710,7 @@ void warning_message(short /*error_type*/, int line_number, int file, const char
 
 	fprintf(stderr,"WARNING (%ld):", warning_count);
 	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
+		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
 	if (line_number > 0)
 		fprintf(stderr," (Line number: %d)", line_number);
 	if (message != NULL) {
@@ -812,12 +812,11 @@ double wall_time()
 	return time_since_epoch.count();
 }
 
-/*
- * Gets the name of the file we are simulating as passed by the -b or -V option.
- */
-char *get_circuit_filename()
+std::string strip_path_and_ext(std::string file)
 {
-	return global_args.verilog_file?global_args.verilog_file:global_args.blif_file;
+	std::string::size_type loc_path = file.find_last_of("/")+1;
+	std::string::size_type loc_ext = file.find_last_of(".");
+	return file.substr(loc_path, loc_ext-loc_path);
 }
 
 /*

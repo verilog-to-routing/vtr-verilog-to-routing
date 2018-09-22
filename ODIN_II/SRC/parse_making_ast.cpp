@@ -29,7 +29,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 #include "globals.h"
 #include "types.h"
-
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
@@ -78,32 +77,19 @@ short to_view_parse;
 /*
  * File-scope function declarations
  */
-void graphVizOutputPreproc(FILE *yyin, std::string path, char *file);
+void graphVizOutputPreproc(FILE *yyin, std::string path, std::string file);
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 
 /*
  * Function implementations
  */
-void graphVizOutputPreproc(FILE *yyin, std::string path, char *file)
+void graphVizOutputPreproc(FILE *yyin, std::string path, std::string file)
 {
-	char line[MaxLine];
-	FILE *fp;
-	char *tmp;
-
-	// strip the ".v" from file
-	tmp = strrchr(file, '.');
-	oassert(tmp);
-	oassert(*(tmp+1) == 'v');
-	*tmp = '\0';
-
-	// strip the path from file
-	tmp = strrchr(file, '/');
-	if (tmp) file = tmp;
-
-	sprintf(line, "%s/%s_preproc.v", path.c_str(), file);
-	fp = fopen(line, "w");
+	FILE *fp = fopen(std::string(path + "/" + strip_path_and_ext(file).c_str() + "_preproc.v").c_str(), "w");
 	oassert(fp);
+
+	char line[MaxLine];
 	while (fgets(line, MaxLine, yyin))
 		fprintf(fp, "%s", line);
 	fclose(fp);
@@ -125,19 +111,14 @@ void parse_to_ast()
 
 	/* initialize the parser */
 	init_parser();
-
-	/* open files for parsing */
-	if (global_args.verilog_file != NULL)
+	
+	/* read all the files in the configuration file */
+	for (i = 0; i < configuration.list_of_file_names.size(); i++)
 	{
-		/* make a consitant file list so we can access in compiler ... replicating what read config does for the filenames */
-		configuration.list_of_file_names = (char**)vtr::calloc(1,sizeof(char*));
-		configuration.num_list_of_file_names = 1;
-		configuration.list_of_file_names[0] = global_args.verilog_file;
-
-		yyin = fopen(global_args.verilog_file, "r");
+		yyin = fopen(configuration.list_of_file_names[i].c_str(), "r");
 		if (yyin == NULL)
 		{
-			error_message(-1, -1, -1, "cannot open file: %s", global_args.verilog_file.value());
+			error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[i].c_str());
 		}
 
 		/*Testing preprocessor - Paddy O'Brien*/
@@ -147,55 +128,22 @@ void parse_to_ast()
 
 		/* write out the pre-processed file */
 		if (configuration.output_preproc_source)
-			graphVizOutputPreproc(yyin, configuration.debug_output_path.c_str(), configuration.list_of_file_names[0]) ;
+			graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[i]);
 
 		/* set the file name */
-		current_parse_file = 0;
+		current_parse_file = i;
+
+		/* reset the line count */
+		yylineno = 0;
 
 		/* setup the local parser structures for a file */
 		init_parser_for_file();
-		/* parse */
+		/* parse next file */
 		yyparse();
 		/* cleanup parser */
 		clean_up_parser_for_file();
 
 		fclose(yyin);
-	}
-	else if (global_args.config_file != NULL)
-	{
-		/* read all the files in the configuration file */
-		for (i = 0; i < configuration.num_list_of_file_names; i++)
-		{
-			yyin = fopen(configuration.list_of_file_names[i], "r");
-			if (yyin == NULL)
-			{
-				error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[i]);
-			}
-
-			/*Testing preprocessor - Paddy O'Brien*/
-			init_veri_preproc();
-			yyin = veri_preproc(yyin);
-			cleanup_veri_preproc();
-
-			/* write out the pre-processed file */
-			if (configuration.output_preproc_source)
-				graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[i]) ;
-
-			/* set the file name */
-			current_parse_file = i;
-
-			/* reset the line count */
-			yylineno = 0;
-
-			/* setup the local parser structures for a file */
-			init_parser_for_file();
-			/* parse next file */
-			yyparse();
-			/* cleanup parser */
-			clean_up_parser_for_file();
-
-			fclose(yyin);
-		}
 	}
 
 	/* clean up all the structures in the parser */

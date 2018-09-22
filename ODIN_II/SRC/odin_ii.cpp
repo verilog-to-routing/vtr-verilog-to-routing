@@ -25,6 +25,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <sstream>
 
+// for mkdir
+#ifdef WIN32
+	#include <direct.h>
+#else
+	#include <sys/stat.h>
+#endif
+
 #include "vtr_error.h"
 #include "vtr_time.h"
 #include "odin_ii.h"
@@ -77,6 +84,13 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	one_string = vtr::strdup("ONE_VCC_CNS");
 	zero_string = vtr::strdup("ZERO_GND_ZERO");
 	pad_string = vtr::strdup("ZERO_PAD_ZERO");
+
+	// CREATE OUTPUT DIRECTORY
+	#ifdef WIN32
+		mkdir(DEFAULT_OUTPUT);
+	#else
+		mkdir(DEFAULT_OUTPUT, 0755);
+	#endif
 
 	int error_code = 0;
 
@@ -480,6 +494,12 @@ void get_options(int argc, char** argv) {
 	}
 
 	//Allow some config values to be overriden from command line
+
+	if (global_args.verilog_file != NULL)
+	{
+		configuration.list_of_file_names.push_back((char*)global_args.verilog_file);
+	}
+
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
 		configuration.arch_file = global_args.arch_file;
 	}
@@ -507,13 +527,11 @@ void get_options(int argc, char** argv) {
 void set_default_config()
 {
 	/* Set up the global configuration. */
-	configuration.list_of_file_names = NULL;
-	configuration.num_list_of_file_names = 0;
 	configuration.output_type = std::string("blif");
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
-	configuration.output_preproc_source = 0;
+	configuration.output_preproc_source = 1;
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
 	configuration.arch_file = NULL;
 

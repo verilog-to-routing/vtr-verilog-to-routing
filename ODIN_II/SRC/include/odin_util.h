@@ -47,7 +47,7 @@ char *find_substring(char *src,const char *sKey,int flag);
 
 void print_time(double time);
 double wall_time();
-char *get_circuit_filename();
+std::string strip_path_and_ext(std::string file);
 
 int print_progress_bar(double completion, int position, int length, double time);
 
