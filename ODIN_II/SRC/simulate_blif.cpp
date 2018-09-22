@@ -42,7 +42,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define is_posedge(pin, cycle) (get_pin_value(pin,cycle) == 1 && get_pin_value(pin,cycle-1) != 1)
 
 static void simulate_cycle(int cycle, stages_t *s);
-static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *output_lines);
+static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *output_lines);
 
 static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
 static void free_stages(stages_t *s);
@@ -118,10 +118,8 @@ static void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* mo
 
 static int verify_output_vectors(char* output_vector_file, int num_test_vectors);
 
-static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l);
-static pin_names *parse_pin_name_list(char *list);
-static void free_pin_name_list(pin_names *p);
-static hashtable_t *index_pin_name_list(pin_names *list);
+static void add_additional_items_to_lines(nnode_t *node, lines_t *l);
+static hashtable_t *index_pin_name_list(std::vector<std::string> list);
 
 static char *vector_value_to_hex(signed char *value, int length);
 
@@ -284,20 +282,14 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	alloc_and_init_ace_structs(netlist);
 
 	// Determine which edge(s) we are outputting.
-	if      (global_args.sim_output_both_edges ) sim_data->output_edge = -1; // Both edges
-	else if (global_args.sim_output_rising_edge) sim_data->output_edge =  1; // Rising edge only
-	else                                         sim_data->output_edge =  0; // Falling edge only
-
-	sim_data->total_time      = 0; // Includes I/O
-	sim_data->simulation_time = 0; // Does not include I/O
+	sim_data->total_time      = 0;  // Includes I/O
+	sim_data->simulation_time = 0;  // Does not include I/O
 
 	sim_data->stages = 0;
 
 	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
-	sim_data->hold_high = parse_pin_name_list(global_args.sim_hold_high);
-	sim_data->hold_low  = parse_pin_name_list(global_args.sim_hold_low);
-	sim_data->hold_high_index = index_pin_name_list(sim_data->hold_high);
-	sim_data->hold_low_index  = index_pin_name_list(sim_data->hold_low);
+	sim_data->hold_high_index = index_pin_name_list(global_args.sim_hold_high.value());
+	sim_data->hold_low_index  = index_pin_name_list(global_args.sim_hold_low.value());
 
 	sim_data->num_waves = std::ceil((double)(sim_data->num_vectors * 2.0) / (double)SIM_WAVE_LENGTH);
 
@@ -306,8 +298,6 @@ sim_data_t *init_simulation(netlist_t *netlist)
 
 sim_data_t *terminate_simulation(sim_data_t *sim_data)
 {
-	free_pin_name_list(sim_data->hold_high);
-	free_pin_name_list(sim_data->hold_low);
 	sim_data->hold_high_index->destroy_free_items(sim_data->hold_high_index);
 	sim_data->hold_low_index ->destroy_free_items(sim_data->hold_low_index);
 
@@ -392,9 +382,7 @@ int single_step(sim_data_t *sim_data, int wave)
 		{
 			// The first cycle produces the stages, and adds additional
 			// lines as specified by the -p option.
-			pin_names *p = parse_pin_name_list(global_args.sim_additional_pins);
-			sim_data->stages = simulate_first_cycle(sim_data->netlist, cycle, p, sim_data->output_lines);
-			free_pin_name_list(p);
+			sim_data->stages = simulate_first_cycle(sim_data->netlist, cycle, sim_data->output_lines);
 			// Make sure the output lines are still OK after adding custom lines.
 			if (!verify_lines(sim_data->output_lines))
 				error_message(SIMULATION_ERROR, 0, -1,
@@ -405,7 +393,7 @@ int single_step(sim_data_t *sim_data, int wave)
 	sim_data->simulation_time += wall_time() - simulation_start_time;
 
 	// Write the result of this wave to the output vector file.
-	write_wave_to_file(sim_data->output_lines, sim_data->out, cycle_offset, wave_length, sim_data->output_edge);
+	write_wave_to_file(sim_data->output_lines, sim_data->out, cycle_offset, wave_length, -1);
 
 	sim_data->total_time += wall_time() - wave_start_time;
 
@@ -700,7 +688,7 @@ static int is_node_ready(nnode_t* node, int cycle)
  * the nodes organised into parallelizable stages. Also adds lines to
  * custom pins and nodes as requested via the -p option.
  */
-static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *l)
+static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *l)
 {
 	std::queue<nnode_t *> queue = std::queue<nnode_t *>();
 	// Enqueue top input nodes
@@ -737,7 +725,7 @@ static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *
 		compute_and_store_value(node, cycle);
 
 		// Match node for items passed via -p and add to lines if there's a match.
-		add_additional_items_to_lines(node, p, l);
+		add_additional_items_to_lines(node, l);
 
 		// Enqueue child nodes which are ready, not already queued, and not already complete.
 		int num_children = 0;
@@ -3159,8 +3147,8 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
  */
 static int verify_output_vectors(char* output_vector_file, int num_vectors)
 {
-	if (global_args.sim_output_both_edges)
-		num_vectors *= 2;
+	//both edges output has twice the number of output vector
+	num_vectors *= 2;
 
 	int error = FALSE;
 
@@ -3270,53 +3258,27 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
  * Creates a hastable_t index of the given pin names list
  * of the form pin name hashes to pin name array index.
  */
-static hashtable_t *index_pin_name_list(pin_names *list)
+static hashtable_t *index_pin_name_list(std::vector<std::string> list)
 {
-	hashtable_t *index = create_hashtable(list->count * 2+1);
+	hashtable_t *index = create_hashtable(list.size() * 2+1);
 	int i;
-	for (i = 0; i < list->count; i++)
+	for (i = 0; i < list.size(); i++)
 	{
 		int *id = (int *)vtr::malloc(sizeof(int));
 		*id = i;
-		index->add(index, list->pins[i], sizeof(char)*strlen(list->pins[i]), id);
+		index->add(index, vtr::strdup(list[i].c_str()), sizeof(char)*list[i].length(), id);
 	}
 	return index;
-}
-
-/*
- * Parses the given comma separated list into a
- * pin_names struct. If the list is empty or null
- * an empty struct is returned.
- */
-static pin_names *parse_pin_name_list(char *list)
-{
-	pin_names *p = (pin_names *)vtr::malloc(sizeof(pin_names));
-	p->pins  = 0;
-	p->count = 0;
-
-	// Parse the list of additional pins passed via the -p option.
-	if (list)
-	{
-		char *pin_list = vtr::strdup(list);
-		char *token    = strtok(pin_list, ",");
-		while (token)
-		{
-			p->pins = (char **)vtr::realloc(p->pins, sizeof(char *) * (p->count + 1));
-			p->pins[p->count++] = vtr::strdup(token);
-			token = strtok(NULL, ",");
-		}
-		vtr::free(pin_list);
-	}
-	return p;
 }
 
 /*
  * If the given node matches one of the additional names (passed via -p),
  * it's added to the lines. (Matches on output pin names, net names, and node names).
  */
-static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l)
+static void add_additional_items_to_lines(nnode_t *node, lines_t *l)
 {
-	if (p->count)
+	std::vector<std::string> p = global_args.sim_additional_pins.value();
+	if (!p.empty())
 	{
 		int add = FALSE;
 		int j, k = 0;
@@ -3328,9 +3290,9 @@ static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *
 
 			if (pin->name)
 			{
-				for (k = 0; k < p->count; k++)
+				for (k = 0; k < p.size(); k++)
 				{
-					if (strstr(pin->name, p->pins[k]))
+					if (strstr(pin->name, p[k].c_str()))
 					{
 						add = TRUE;
 						break;
@@ -3341,9 +3303,9 @@ static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *
 
 			if (pin->net && pin->net->name)
 			{
-				for (k = 0; k < p->count; k++)
+				for (k = 0; k < p.size(); k++)
 				{
-					if (strstr(pin->net->name, p->pins[k]))
+					if (strstr(pin->net->name, p[k].c_str()))
 					{
 						add = TRUE;
 						break;
@@ -3356,9 +3318,9 @@ static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *
 		// Search the node name for each user defined item.
 		if (!add && node->name && strlen(node->name) && strchr(node->name, '^'))
 		{
-			for (k = 0; k < p->count; k++)
+			for (k = 0; k < p.size(); k++)
 			{
-				if (strstr(node->name, p->pins[k]))
+				if (strstr(node->name, p[k].c_str()))
 				{
 					add = TRUE;
 					break;
@@ -3368,7 +3330,7 @@ static void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *
 
 		if (add)
 		{
-			int single_pin = strchr(p->pins[k], '~')?1:0;
+			int single_pin = strchr(p[k].c_str(), '~')?1:0;
 
 			if (strchr(node->name, '^'))
 			{
@@ -3562,18 +3524,6 @@ static void free_test_vector(test_vector* v)
 	vtr::free(v->values);
 	vtr::free(v->counts);
 	vtr::free(v);
-}
-
-/*
- * Frees pin_names struct.
- */
-static void free_pin_name_list(pin_names *p)
-{
-	while (p->count--)
-		vtr::free(p->pins[p->count]);
-
-	vtr::free(p->pins);
-	vtr::free(p);
 }
 
 /*

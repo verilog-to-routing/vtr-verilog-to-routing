@@ -326,8 +326,9 @@ void get_options(int argc, char** argv) {
 			.metavar("XML_CONFIGURATION_FILE")
 			;
 
-	input_grp.add_argument(global_args.verilog_file, "-V")
-			.help("comma separated list without whitespace of Verilog HDL file")
+	input_grp.add_argument(global_args.verilog_files, "-V")
+			.help("list of Verilog HDL file")
+			.nargs('+')
 			.metavar("VERILOG_FILE")
 			;
 
@@ -400,12 +401,14 @@ void get_options(int argc, char** argv) {
 			;
 
 	rand_sim_grp.add_argument(global_args.sim_hold_low, "-L")
-			.help("Comma-separated list of primary inputs to hold high at cycle 0, and low for all subsequent cycles")
+			.help("list of primary inputs to hold high at cycle 0, and low for all subsequent cycles")
+			.nargs('+')
 			.metavar("PRIMARY_INPUTS")
 			;
 
 	rand_sim_grp.add_argument(global_args.sim_hold_high, "-H")
-			.help("Comma-separated list of primary inputs to hold low at cycle 0, and high for all subsequent cycles")
+			.help("list of primary inputs to hold low at cycle 0, and high for all subsequent cycles")
+			.nargs('+')
 			.metavar("PRIMARY_INPUTS")
 			;
 
@@ -449,56 +452,50 @@ void get_options(int argc, char** argv) {
 			;
 
 	other_sim_grp.add_argument(global_args.sim_output_both_edges, "-E")
-			.help("Output after both edges of the clock (Default only after the falling edge)")
-			.default_value("false")
+			.help("Output after both edges of the clock (This is by default)")
+			.default_value("true")
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_sim_grp.add_argument(global_args.sim_output_rising_edge, "-R")
-			.help("Output after rising edges of the clock only (Default only after the falling edge)")
-			.default_value("false")
+	other_sim_grp.add_argument(global_args.sim_output_both_edges, "-R")
+			.help("DEPRECATED Output after rising edges of the clock only (Default after both edges)")
+			.default_value("true")
 			.action(argparse::Action::STORE_TRUE)
 			;
 
 	other_sim_grp.add_argument(global_args.sim_additional_pins, "-p")
-			.help("Comma-separated list of additional pins/nodes to monitor during simulation.\n"
-					"Eg: \"-p input~0,input~1\" monitors pin 0 and 1 of input, \n"
+			.help("list of additional pins/nodes to monitor during simulation.\n"
+					"Eg: \"-p input~0 input~1\" monitors pin 0 and 1 of input, \n"
 					"  or \"-p input\" monitors all pins of input as a single port. \n"
 					"  or \"-p input~\" monitors all pins of input as separate ports. (split) \n"
 					"- Note: Non-existent pins are ignored. \n"
 					"- Matching is done via strstr so general strings will match \n"
 					"  all similar pins and nodes.\n"
 					"    (Eg: FF_NODE will create a single port with all flipflops) \n")
+			.nargs('+')
 			.metavar("PINS_TO_MONITOR")
 			;
 
 	parser.parse_args(argc, argv);
 
 	//Check required options
-	if (   !global_args.config_file
+	if (!global_args.config_file
 	&& !global_args.blif_file
-	&& !global_args.verilog_file) 
+	&& global_args.verilog_files.value().empty()) 
 	{
 		parser.print_usage();
 		error_message(-1,0,-1,"Must include either a config file, a blif netlist, or a verilog file\n");
 	} 
-	else if (global_args.config_file && global_args.verilog_file) 
+	else if (global_args.config_file && !global_args.verilog_files.value().empty()) 
 	{
 		warning_message(-1,0,-1, "Using command line options for verilog input file when a config file was specified!\n");
 	}
-
-	if( global_args.sim_output_both_edges && global_args.sim_output_rising_edge )
-	{
-		parser.print_usage();
-		error_message(-1,0,-1,"Cannot specify both edge and rising edge, select one or the other or neither\n");
-	}
-
 	//Allow some config values to be overriden from command line
 
-	if (global_args.verilog_file != NULL)
+	if (!global_args.verilog_files.value().empty())
 	{
 		//parse comma separated list of verilog files
-		configuration.list_of_file_names = parse_seperated_list(global_args.verilog_file, ",");
+		configuration.list_of_file_names = global_args.verilog_files.value();
 	}
 
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {

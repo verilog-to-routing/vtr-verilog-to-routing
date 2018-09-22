@@ -148,7 +148,7 @@ typedef enum {
 struct global_args_t_t
 {
     argparse::ArgValue<char*> config_file;
-	argparse::ArgValue<char*> verilog_file;
+	argparse::ArgValue<std::vector<std::string>> verilog_files;
 	argparse::ArgValue<char*> blif_file;
 	argparse::ArgValue<char*> output_file;
 	argparse::ArgValue<char*> arch_file; // Name of the FPGA architecture file
@@ -176,16 +176,14 @@ struct global_args_t_t
 	argparse::ArgValue<char*> sim_directory;
 	// Tells the simulator whether or not to generate random vectors which include the unknown logic value.
 	argparse::ArgValue<bool> sim_generate_three_valued_logic;
-	// Output both falling and rising edges in the output_vectors file.
+	// Output both falling and rising edges in the output_vectors file. (DEFAULT)
 	argparse::ArgValue<bool> sim_output_both_edges;
-	// Output only on rising edge.
-	argparse::ArgValue<bool> sim_output_rising_edge;
 	// Additional pins, nets, and nodes to output.
-	argparse::ArgValue<char*> sim_additional_pins;
+	argparse::ArgValue<std::vector<std::string>> sim_additional_pins;
 	// Comma-separated list of primary input pins to hold high for all cycles but the first.
-	argparse::ArgValue<char*> sim_hold_high;
+	argparse::ArgValue<std::vector<std::string>> sim_hold_high;
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
-	argparse::ArgValue<char*> sim_hold_low;
+	argparse::ArgValue<std::vector<std::string>> sim_hold_low;
 
 	//
 	argparse::ArgValue<int> sim_initial_value;
