@@ -18,14 +18,6 @@
 #   -ending_stage <stage>: End the VTR flow at the specified stage. Acceptable
 #								values: odin, abc, script, vpr. Default value is
 #								vpr.
-#   -specific_vpr_stage <stage>: Perform only this stage of VPR. Acceptable
-#                               values: pack, place, route. Default is empty,
-#                               which means to perform all. Note that specifying
-#                               the routing stage requires a channel width
-#                               to also be specified. To have any time saving
-#                               effect, previous result files must be kept as the
-#                               most recent necessary ones will be moved to the
-#                               current run directory. (use inside tasks only)
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #   -keep_result_files: Do not delete the result files (.net, .place, .route)
 #   -track_memory_usage: Print out memory usage for each stage (NOT fully portable)
@@ -35,9 +27,12 @@
 #               default is 14 days.
 #
 #   -temp_dir <dir>: Directory used for all temporary files
+#
+#   Any unrecognized arguments are forwarded to VPR.
 ###################################################################################
 
 use strict;
+use warnings;
 use Cwd;
 use File::Spec;
 use POSIX;
@@ -74,6 +69,7 @@ sub xml_find_LUT_Kvalue;
 sub xml_find_mem_size;
 sub find_and_move_newest;
 sub exe_for_platform;
+sub find_and_move_files_for_vpr_stages;
 
 my $temp_dir = "./temp";
 my $diff_exec = "diff";
@@ -93,29 +89,21 @@ my $token;
 my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
-my $specific_vpr_stage      = "";
+my @vpr_stages              = ();
 my $keep_intermediate_files = 1;
 my $keep_result_files       = 1;
-my $has_memory              = 1;
-my $timing_driven           = "on";
-my $min_chan_width          = -1;
-my $max_router_iterations   = 50;
-my $lut_size                = -1;
-my $vpr_cluster_seed_type   = "";
-my $routing_failure_predictor = "safe";
+my $lut_size                = undef;
 my $tech_file               = "";
 my $do_power                = 0;
 my $check_equivalent		= "off";
-my $gen_post_synthesis_netlist 	= "off";
-my $seed					= 1;
 my $min_hard_mult_size		= 3;
 my $min_hard_adder_size		= 1;
-my $congestion_analysis		= "";
-my $switch_usage_analysis   = "";
+
+my $ace_seed                = 1;
 
 my $track_memory_usage      = 1;
-my $memory_tracker          = "/usr/bin/time";
-my @memory_tracker_args     = ("-v");
+my $memory_tracker          = "/usr/bin/env";
+my @memory_tracker_args     = ("time", "-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
 my $valgrind 		    = 0;
@@ -123,12 +111,11 @@ my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "-
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
-my $rr_graph_error_check    = 0;
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc             = 0;
-my $enable_gui		    = 0;
-my $routing_budgets_algorithm = "disable";
+my $use_old_abc_script      = 0;
+my $abc_use_dc2             = 1;
 my $run_name = "";
 my $expect_fail = 0;
 my $verbosity = 0;
@@ -148,15 +135,6 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-ending_stage" ) {
 		$ending_stage = stage_index( shift(@ARGV) );
 	}
-    elsif ( $token eq "-specific_vpr_stage" ) {
-        $specific_vpr_stage = shift(@ARGV);
-        if ($specific_vpr_stage eq "pack" or $specific_vpr_stage eq "place" or $specific_vpr_stage eq "route") {
-            $specific_vpr_stage = "--" . $specific_vpr_stage;
-        }
-        else {
-            $specific_vpr_stage = "";
-        }
-    }
 	elsif ( $token eq "-delete_intermediate_files" ) {
 		$keep_intermediate_files = 0;
 	}
@@ -165,9 +143,6 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-track_memory_usage" ) {
         $track_memory_usage = 1;
-    }
-    elsif ( $token eq "-enable_gui" ) {
-	$enable_gui = 1;
     }
     elsif ( $token eq "-limit_memory_usage" ) {
         $limit_memory_usage = shift(@ARGV);
@@ -179,32 +154,8 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-valgrind" ) {
         $valgrind = 1;
     }
-	elsif ( $token eq "-no_mem" ) {
-		$has_memory = 0;
-	}
-	elsif ( $token eq "-no_timing" ) {
-		$timing_driven = "off";
-	}
-	elsif ( $token eq "-congestion_analysis") {
-		$congestion_analysis = $token;
-	}
-    elsif ( $token eq "-switch_stats") {
-        $switch_usage_analysis = $token;
-    }
-	elsif ( $token eq "-vpr_route_chan_width" ) {
-		$min_chan_width = shift(@ARGV);
-	}
-    elsif ( $token eq "-vpr_max_router_iterations" ) {
-        $max_router_iterations = shift(@ARGV);
-    }
 	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
-	}
-	elsif ( $token eq "-routing_failure_predictor" ) {
-		$routing_failure_predictor = shift(@ARGV);
-	}
-	elsif ( $token eq "-vpr_cluster_seed_type" ) {
-		$vpr_cluster_seed_type = shift(@ARGV);
 	}
 	elsif ( $token eq "-temp_dir" ) {
 		$temp_dir = shift(@ARGV);
@@ -219,12 +170,6 @@ while ( $token = shift(@ARGV) ) {
 		$check_equivalent = "on";
 		$keep_intermediate_files = 1;
 	}
-	elsif ( $token eq "-gen_post_synthesis_netlist" ) {
-		$gen_post_synthesis_netlist = "on";
-	}
-	elsif ( $token eq "-seed" ) {
-		$seed = shift(@ARGV);
-	}
 	elsif ( $token eq "-min_hard_mult_size" ) {
 		$min_hard_mult_size = shift(@ARGV);
 	}
@@ -234,20 +179,20 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-verify_rr_graph" ){
             $verify_rr_graph = 1;
     }
-    elsif ( $token eq "-rr_graph_error_check" ) {
-            $rr_graph_error_check = 1;
-    }
     elsif ( $token eq "-check_route" ){
             $check_route = 1;
     }
     elsif ( $token eq "-check_place" ){
             $check_place = 1;
     }
-    elsif ( $token eq "-routing_budgets_algorithm"){
-            $routing_budgets_algorithm = shift(@ARGV);
-    }
     elsif ( $token eq "-use_old_abc"){
             $use_old_abc = 1;
+    }
+    elsif ( $token eq "-use_old_abc_script"){
+            $use_old_abc_script = 1;
+    }
+    elsif ( $token eq "-abc_use_dc2"){
+            $abc_use_dc2 = shift(@ARGV);
     }
     elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
@@ -258,17 +203,15 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-verbose"){
             $expect_fail = shift(@ARGV);
     }
-		elsif ( $token eq "-adder_type"){
-			$odin_adder_config_path = shift(@ARGV);
-			if ( ($odin_adder_config_path ne "default") && ($odin_adder_config_path ne "optimized") ) {
-					$odin_adder_config_path = $vtr_flow_path . $odin_adder_config_path;
-			}
-		}
-		elsif ( $token eq "-disable_odin_xml" ){
-						$use_odin_xml_config = 0;
-		}
-    # else forward the argument
-	else {
+    elsif ( $token eq "-adder_type"){
+        $odin_adder_config_path = shift(@ARGV);
+        if ( ($odin_adder_config_path ne "default") && ($odin_adder_config_path ne "optimized") ) {
+                $odin_adder_config_path = $vtr_flow_path . $odin_adder_config_path;
+        }
+    }
+    elsif ( $token eq "-disable_odin_xml" ){
+                    $use_odin_xml_config = 0;
+    } else { # forward the argument
         push @forwarded_vpr_args, $token;
 	}
 
@@ -298,15 +241,6 @@ if ($do_power) {
 	$tech_file = Cwd::abs_path($tech_file);
 }
 
-if ( $vpr_cluster_seed_type eq "" ) {
-	if ( $timing_driven eq "off" ) {
-		$vpr_cluster_seed_type = "max_inputs";
-	}
-	else {
-		$vpr_cluster_seed_type = "blend";
-	}
-}
-
 if ( !-d $temp_dir ) {
 	system "mkdir $temp_dir";
 }
@@ -317,7 +251,7 @@ if ( !( $temp_dir =~ /.*\/$/ ) ) {
 
 my $results_path = "${temp_dir}output.txt";
 
-my $error;
+my $error = "";
 my $error_code = 0;
 my $error_status = "OK";
 
@@ -330,18 +264,6 @@ my $inputs_per_cluster = -1;
   or die "Circuit file not found ($circuit_file_path)";
 ( -f $architecture_file_path )
   or die "Architecture file not found ($architecture_file_path)";
-
-if ( !-e $sdc_file_path ) {
-	# open( OUTPUT_FILE, ">$sdc_file_path" );
-	# close ( OUTPUT_FILE );
-	my $sdc_file_path;
-}
-
-if ( !-e $pad_file_path ) {
-	# open( OUTPUT_FILE, ">$sdc_file_path" );
-	# close ( OUTPUT_FILE );
-	my $pad_file_path;
-}
 
 my $vpr_path;
 if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
@@ -376,7 +298,7 @@ if ( $stage_idx_abc >= $starting_stage or $stage_idx_vpr <= $ending_stage ) {
     my $abc_dir_path = "$vtr_flow_path/../abc";
 
     if ($use_old_abc) {
-        my $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
+        $abc_dir_path = "$vtr_flow_path/../abc_with_bb_support";
     }
 
 	$abc_path = "$abc_dir_path/abc";
@@ -400,11 +322,11 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 my $ace_clk_extraction_path = "$vtr_flow_path/../ace2/scripts/extract_clk_from_blif.py";
 
 #Extract the circuit/architecture name and filename
-my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
+my ($benchmark_name, $tmp_path1, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
 my $circuit_file_name = $benchmark_name . $circuit_suffix;
 
-my ($architecture_name, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
-my ($architecture_name_error, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
+my ($architecture_name, $tmp_path2, $arch_suffix1) = fileparse($architecture_file_path, '\.[^\.]*');
+my ($architecture_name_error, $tmp_path3, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
 
 my $architecture_file_name = $architecture_name . $arch_suffix;
 my $error_architecture_file_name = join "", $architecture_name, "_error", $arch_suffix;
@@ -425,8 +347,10 @@ my $in_mode;
 my $tpp      = XML::TreePP->new();
 my $xml_tree = $tpp->parsefile($architecture_file_path);
 
-# Get lut size
-my $lut_size = xml_find_LUT_Kvalue($xml_tree);
+# Get lut size if undefined
+if (!defined $lut_size) {
+    $lut_size = xml_find_LUT_Kvalue($xml_tree);
+}
 if ( $lut_size < 1 ) {
 	$error_status = "failed: cannot determine arch LUT k-value";
 	$error_code = 1;
@@ -583,7 +507,13 @@ echo '===================';
 strash;
 ifraig -v;
 scorr -v;
-dc2 -v;
+";
+
+    if ($abc_use_dc2) {
+        $abc_commands .= "dc2 -v;"
+    }
+
+    $abc_commands .= "
 dch -f;
 if -K $lut_size -v;
 mfs2 -v;
@@ -597,7 +527,7 @@ write_hie $odin_output_file_name $abc_raw_output_file_name;
 time;
 ";
 
-    if ($use_old_abc) {
+    if ($use_old_abc or $use_old_abc_script) {
         #Legacy ABC script
         $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_raw_output_file_name; print_stats";
     }
@@ -676,7 +606,7 @@ if (    $starting_stage <= $stage_idx_ace
 			"-c", $abc_clk_name,
             "-n", $ace_raw_output_blif_name,
 			"-o", $ace_output_act_name,
-			"-s", $seed
+			"-s", $ace_seed
 		);
 
 		if ( -e $ace_raw_output_blif_path and $q eq "success") {
@@ -739,274 +669,160 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	my @vpr_power_args;
 
 	if ($do_power) {
-		push( @vpr_power_args, "--power" );
-		push( @vpr_power_args, "--tech_properties" );
-		push( @vpr_power_args, "$tech_file" );
+		push(@forwarded_vpr_args, "--power");
+		push(@forwarded_vpr_args, "--tech_properties");
+		push(@forwarded_vpr_args, "$tech_file");
 	}
 
-        #set a min chan width if it is not set to ensure equal results
-        if ( ($check_route or $check_place) and $min_chan_width < 0){
-            $min_chan_width = 300;
+    #True if a fixed channel width routing is desired
+    my $route_fixed_W = (grep(/^--route_chan_width$/, @forwarded_vpr_args));
+
+    #set a min chan width if it is not set to ensure equal results
+    if (($check_route or $check_place) and !$route_fixed_W){
+        push(@forwarded_vpr_args, ("--route_chan_width", "300"));
+        $route_fixed_W = 1;
+    }
+
+    #Where any VPR stages explicitly requested?
+    my $explicit_pack_vpr_stage = (grep(/^--pack$/, @forwarded_vpr_args));
+    my $explicit_place_vpr_stage = (grep(/^--place$/, @forwarded_vpr_args));
+    my $explicit_route_vpr_stage = (grep(/^--route$/, @forwarded_vpr_args));
+    my $explicit_analysis_vpr_stage = (grep(/^--analysis$/, @forwarded_vpr_args));
+
+    #If no VPR stages are explicitly specified, then all stages run by default
+    my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage 
+                                   or $explicit_place_vpr_stage
+                                   or $explicit_route_vpr_stage
+                                   or $explicit_analysis_vpr_stage);
+
+    if (!$route_fixed_W) {
+        #Determine the mimimum channel width
+
+        my $min_W_log_file = "vpr.out";
+        $q = run_vpr({
+                arch_name => $architecture_file_name,
+                circuit_name => $benchmark_name,
+                circuit_file => $prevpr_output_file_name,
+                sdc_file => $sdc_file_path,
+                pad_file => $pad_file_path,
+                extra_vpr_args => \@forwarded_vpr_args,
+                log_file => $min_W_log_file
+            });
+
+        my $do_routing = ($explicit_route_vpr_stage or $implicit_all_vpr_stage);
+
+        if ($do_routing) {
+            # Critical path delay and wirelength is nonsensical at minimum channel width because congestion constraints 
+            # dominate the cost function.
+            #
+            # Additional channel width needs to be added so that there is a reasonable trade-off between delay and area.
+            # Commercial FPGAs are also desiged to have more channels than minimum for this reason.
+
+            if ($q eq "success") {
+                my $min_W = parse_min_W("$temp_dir/$min_W_log_file");
+
+
+                if ($min_W >= 0) {
+                    my $relaxed_W = calculate_relaxed_W($min_W);
+
+                    my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
+                    push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
+
+                    my $relaxed_W_log_file = "vpr.crit_path.out";
+                    $q = run_vpr({
+                            arch_name => $architecture_file_name,
+                            circuit_name => $benchmark_name,
+                            circuit_file => $prevpr_output_file_name,
+                            sdc_file => $sdc_file_path,
+                            pad_file => $pad_file_path,
+                            extra_vpr_args => \@relaxed_W_extra_vpr_args,
+                            log_file => $relaxed_W_log_file,
+                         });
+                } else {
+                    my $abs_log_file = File::Spec->rel2abs($temp_dir/$min_W_log_file);
+                    $q = "Failed find minimum channel width (see $abs_log_file)";
+                }
+            }
         }
-
-	if ( $min_chan_width < 0 ) {
-
-		my @vpr_args;
-		push( @vpr_args, $architecture_file_name );
-		push( @vpr_args, "$benchmark_name" );
-		push( @vpr_args, "--circuit_file"	);
-		push( @vpr_args, "$prevpr_output_file_name");
-		push( @vpr_args, "--timing_analysis" );
-		push( @vpr_args, "$timing_driven");
-		push( @vpr_args, "--timing_driven_clustering" );
-		push( @vpr_args, "$timing_driven");
-		push( @vpr_args, "--cluster_seed_type" );
-		push( @vpr_args, "$vpr_cluster_seed_type");
-		push( @vpr_args, "--routing_failure_predictor" );
-		push( @vpr_args, "$routing_failure_predictor");
-		if (-e $sdc_file_path){
-			push( @vpr_args, "--sdc_file" );
-			push( @vpr_args, "$sdc_file_path");
-		}
-		if (-e $pad_file_path){
-			push( @vpr_args, "--fix_pins" );
-			push( @vpr_args, "$pad_file_path");
-		}
-                push( @vpr_args, "--routing_budgets_algorithm" );
-                push( @vpr_args, "$routing_budgets_algorithm");
-		push( @vpr_args, "--seed");
-		push( @vpr_args, "$seed");
-		push( @vpr_args, "$congestion_analysis");
-		push( @vpr_args, "$switch_usage_analysis");
-		push( @vpr_args, @forwarded_vpr_args);
-		#run VPR with GUI
-		if ($enable_gui) {
-			push( @vpr_args, "--disp");
-			push( @vpr_args, "on");
-
-	 	}
-
-
-		$q = &system_with_timeout(
-            $vpr_path, "vpr.out",
-            $timeout, $temp_dir, @vpr_args
-		);
-
-		if ( $timing_driven eq "on" ) {
-			# Critical path delay is nonsensical at minimum channel width because congestion constraints completely dominate the cost function.
-			# Additional channel width needs to be added so that there is a reasonable trade-off between delay and area
-			# Commercial FPGAs are also desiged to have more channels than minimum for this reason
-
-			# Parse out min_chan_width
-			if ( open( VPROUT, "<${temp_dir}vpr.out" ) ) {
-				undef $/;
-				my $content = <VPROUT>;
-				close(VPROUT);
-				$/ = "\n";    # Restore for normal behaviour later in script
-
-				if ( $content =~
-					/Best routing used a channel width factor of (\d+)/m )
-				{
-					$min_chan_width = $1;
-				}
-			}
-
-			$min_chan_width = ( $min_chan_width * 1.3 );
-			$min_chan_width = floor($min_chan_width);
-			if ( $min_chan_width % 2 ) {
-				$min_chan_width = $min_chan_width + 1;
-			}
-
-			if ( -e $vpr_route_output_file_path ) {
-				system "rm -f $vpr_route_output_file_path";
-
-				my @vpr_args;
-				push( @vpr_args, $architecture_file_name );
-				push( @vpr_args, "$benchmark_name" );
-				push( @vpr_args, "--route" );
-                push( @vpr_args, "--analysis" );
-				push( @vpr_args, "--circuit_file"	);
-				push( @vpr_args, "$prevpr_output_file_name");
-				push( @vpr_args, "--route_chan_width" );
-				push( @vpr_args, "$min_chan_width" );
-				push( @vpr_args, "--max_router_iterations" );
-				push( @vpr_args, "$max_router_iterations");
-				push( @vpr_args, "--cluster_seed_type"   );
-				push( @vpr_args, "$vpr_cluster_seed_type");
-				push( @vpr_args, @vpr_power_args);
-				push( @vpr_args, "--gen_post_synthesis_netlist" );
-				push( @vpr_args, "$gen_post_synthesis_netlist");
-				if (-e $sdc_file_path){
-					push( @vpr_args, "--sdc_file");
-					push( @vpr_args, "$sdc_file_path");
-				}
-                                push( @vpr_args, "--routing_budgets_algorithm" );
-                                push( @vpr_args, "$routing_budgets_algorithm");
-				push( @vpr_args, @forwarded_vpr_args);
-				push( @vpr_args, "$congestion_analysis");
-				push( @vpr_args, "$switch_usage_analysis");
-				#run VPR with GUI
-				if ($enable_gui) {
-					push( @vpr_args, "--disp");
-					push( @vpr_args, "on");
-	 			}
-
-				$q = &system_with_timeout(
-					$vpr_path, "vpr.crit_path.out",
-					$timeout, $temp_dir, @vpr_args
-				);
-			}
-		}
 	} else { # specified channel width
-        # move the most recent necessary result files to temp directory for specific vpr stage
-        if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
-            my $found_prev = &find_and_move_newest("$benchmark_name", "net");
-            if ($found_prev and $specific_vpr_stage eq "--route") {
-                &find_and_move_newest("$benchmark_name", "place");
-            }
-        }
+        find_and_move_files_for_vpr_stages($benchmark_name, {
+                pack => $explicit_pack_vpr_stage, 
+                place => $explicit_place_vpr_stage, 
+                route => $explicit_route_vpr_stage, 
+                analysis => $explicit_analysis_vpr_stage, 
+        });
+
+        my $fixed_W_log_file = "vpr.out";
+
         my $rr_graph_out_file = "rr_graph.xml";
-        my $rr_graph_out_file2 = "rr_graph.2.xml";
-		my @vpr_args;
-		push( @vpr_args, $architecture_file_name );
-		push( @vpr_args, "$benchmark_name" );
-		push( @vpr_args, "--circuit_file"	);
-		push( @vpr_args, "$prevpr_output_file_name");
-		push( @vpr_args, "--timing_analysis" );
-		push( @vpr_args, "$timing_driven");
-		push( @vpr_args, "--timing_driven_clustering" );
-		push( @vpr_args, "$timing_driven");
-		push( @vpr_args, "--route_chan_width" );
-		push( @vpr_args, "$min_chan_width" );
-		push( @vpr_args, "--max_router_iterations" );
-		push( @vpr_args, "$max_router_iterations");
-		push( @vpr_args, "--cluster_seed_type" );
-		push( @vpr_args, "$vpr_cluster_seed_type");
-		push( @vpr_args, @vpr_power_args);
-		push( @vpr_args, "--gen_post_synthesis_netlist" );
-		push( @vpr_args, "$gen_post_synthesis_netlist");
-		if (-e $sdc_file_path){
-			push( @vpr_args, "--sdc_file" );
-			push( @vpr_args, "$sdc_file_path");
-		}
-		if (-e $pad_file_path){
-			push( @vpr_args, "--fix_pins" );
-			push( @vpr_args, "$pad_file_path");
-		}
-		push( @vpr_args, "--seed");
-		push( @vpr_args, "$seed");
-                push( @vpr_args, "--routing_budgets_algorithm" );
-                push( @vpr_args, "$routing_budgets_algorithm");
-		if ($verify_rr_graph || $rr_graph_error_check){
-			push( @vpr_args, "--write_rr_graph" );
-			push( @vpr_args, $rr_graph_out_file);
-		}
-		push( @vpr_args, "$switch_usage_analysis");
-		push( @vpr_args, @forwarded_vpr_args);
-		push( @vpr_args, $specific_vpr_stage);
-		#run VPR with GUI
-		if ($enable_gui) {
-			push( @vpr_args, "--disp");
-			push( @vpr_args, "on");
-	 	}
 
-        $q = &system_with_timeout(
-			   $vpr_path, "vpr.out",
-			   $timeout, $temp_dir,
-			   @vpr_args);
+        my @fixed_W_extra_vpr_args = @forwarded_vpr_args;
 
-        #run vpr again with additional parameters. This is for running a certain stage only or checking the rr graph
-        if ($verify_rr_graph or $check_route or $check_place or $rr_graph_error_check){
-            # move the most recent necessary result files to temp directory for specific vpr stage
-            if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
-                my $found_prev = &find_and_move_newest("$benchmark_name", "net");
-                if ($found_prev and $specific_vpr_stage eq "--route") {
-                 &find_and_move_newest("$benchmark_name", "place");
-                }
-            }
+        if ($verify_rr_graph){
+            push(@fixed_W_extra_vpr_args, ("--write_rr_graph", $rr_graph_out_file));
+        }
 
-            #load the architecture file with errors if we're checking for it
-			if ($rr_graph_error_check){
-				my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
-				copy( $architecture_file_path, $architecture_file_path_new_error);
-				$architecture_file_path = $architecture_file_path_new_error;
-			}
+        $q = run_vpr({
+                arch_name => $architecture_file_name,
+                circuit_name => $benchmark_name,
+                circuit_file => $prevpr_output_file_name,
+                sdc_file => $sdc_file_path,
+                pad_file => $pad_file_path,
+                extra_vpr_args => \@fixed_W_extra_vpr_args,
+                log_file => $fixed_W_log_file,
+            });
 
-            my @vpr_args;
-            if ($rr_graph_error_check){
-				push( @vpr_args, $error_architecture_file_name );
-			}else{
-				push( @vpr_args, $architecture_file_name );
-			}
 
-            push( @vpr_args, "$benchmark_name" );
+        if ($verify_rr_graph && (! -e $rr_graph_out_file || -z $rr_graph_out_file)) {
+            $error_status = "failed: vpr (no RR graph file produced)";
+            $error_code = 1;
+        }
 
-			#only perform routing for error check. Special care was taken prevent netlist check warnings
-            if ($rr_graph_error_check){
-				push( @vpr_args, "--verify_file_digests" );
-                push( @vpr_args, "off" );
-			}
-            push( @vpr_args, "--circuit_file"	);
-            push( @vpr_args, "$prevpr_output_file_name");
-            push( @vpr_args, "--timing_analysis" );
-            push( @vpr_args, "$timing_driven");
-            push( @vpr_args, "--timing_driven_clustering" );
-            push( @vpr_args, "$timing_driven");
-            push( @vpr_args, "--route_chan_width" );
-            push( @vpr_args, "$min_chan_width" );
-            push( @vpr_args, "--max_router_iterations" );
-            push( @vpr_args, "$max_router_iterations");
-            push( @vpr_args, "--cluster_seed_type" );
-            push( @vpr_args, "$vpr_cluster_seed_type");
-            push( @vpr_args, @vpr_power_args);
-            push( @vpr_args, "--gen_post_synthesis_netlist" );
-            push( @vpr_args, "$gen_post_synthesis_netlist");
-            if (-e $sdc_file_path){
-                push( @vpr_args, "--sdc_file" );
-                push( @vpr_args, "$sdc_file_path");
-            }
-            if (-e $pad_file_path){
-                push( @vpr_args, "-fix_pins" );
-                push( @vpr_args, "$pad_file_path");
-            }
+        #Run vpr again with additional parameters. 
+        #This is used to ensure that files generated by VPR can be re-loaded by it
+        my $do_second_vpr_run = ($verify_rr_graph or $check_route or $check_place);
+
+        if ($do_second_vpr_run) {
+            find_and_move_files_for_vpr_stages($benchmark_name, {
+                    pack => $explicit_pack_vpr_stage, 
+                    place => $explicit_place_vpr_stage, 
+                    route => $explicit_route_vpr_stage, 
+                    analysis => $explicit_analysis_vpr_stage, 
+            });
+
+            my @second_run_extra_vpr_args = @forwarded_vpr_args;
+
+            my $rr_graph_out_file2 = "rr_graph2.xml";
             if ($verify_rr_graph){
-                if (! -e $rr_graph_out_file || -z $rr_graph_out_file) {
-                    $error_status = "failed: vpr (no RR graph file produced)";
-                    $error_code = 1;
-                }
-                push( @vpr_args, "--read_rr_graph" );
-                push( @vpr_args, $rr_graph_out_file);
-                push( @vpr_args, "--write_rr_graph" );
-                push( @vpr_args, $rr_graph_out_file2);
+                push( @second_run_extra_vpr_args, ("--read_rr_graph", $rr_graph_out_file));
+                push( @second_run_extra_vpr_args, ("--write_rr_graph", $rr_graph_out_file2));
             }
-            push( @vpr_args, "--routing_budgets_algorithm" );
-            push( @vpr_args, "$routing_budgets_algorithm");
+
             if ($check_route){
-				push( @vpr_args, "--analysis");
-            } elsif ($check_place or $rr_graph_error_check){
-				push( @vpr_args, "--route");
+                push( @second_run_extra_vpr_args, "--analysis");
             }
 
-            push( @vpr_args, "$switch_usage_analysis");
-            push( @vpr_args, @forwarded_vpr_args);
-            push( @vpr_args, $specific_vpr_stage);
-	    #run VPR with GUI
-	    if ($enable_gui) {
-			push( @vpr_args, "--disp");
-			push( @vpr_args, "on");
-	    }
+            if ($check_place) {
+                push( @second_run_extra_vpr_args, "--route");
+            }
 
-			#run vpr again with a different name and additional parameters
+            my $second_run_log_file = "vpr_second_run.out";
 
-            $q = &system_with_timeout(
-                    $vpr_path, "vpr_second_run.out",
-                    $timeout,  $temp_dir,
-                    @vpr_args
-            );
+            $q = run_vpr({
+                    arch_name => $architecture_file_name,
+                    circuit_name => $benchmark_name,
+                    circuit_file => $prevpr_output_file_name,
+                    sdc_file => $sdc_file_path,
+                    pad_file => $pad_file_path,
+                    extra_vpr_args => \@second_run_extra_vpr_args,
+                    log_file => $second_run_log_file,
+                });
 
             if ($verify_rr_graph) {
                 #Sanity check that the RR graph produced after reading the
-                #previously dumped RR graph is identical
+                #previously dumped RR graph is identical.
+                #
+                #This ensures no precision loss/value changes occur
 
                 my @diff_args;
                 push(@diff_args, $rr_graph_out_file);
@@ -1174,11 +990,6 @@ exit $error_code;
 # Returns: "timeout", "exited", "success", "crashed"
 ################################################################################
 sub system_with_timeout {
-	# Check for existence of /usr/bin/time module
-	unless (-f $memory_tracker) {
-		die "system_with_timeout: /usr/bin/time does not exist"
-	}
-
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
     if ($valgrind) {
@@ -1245,7 +1056,7 @@ sub system_with_timeout {
 		$SIG{ALRM} = sub { kill 6, $pid; $timed_out = "true"; };
 
 		# Register handlers to take down child if we are killed (SIGHUP)
-		$SIG{INTR} = sub { print "SIGINTR\n"; kill 1, $pid; exit; };
+		$SIG{INT}  = sub { print "SIGINT\n"; kill 1, $pid; exit; };
 		$SIG{HUP}  = sub { print "SIGHUP\n";  kill 1, $pid; exit; };
 
 		# Set SIGALRM timeout
@@ -1488,15 +1299,11 @@ sub find_and_move_newest {
     my $file_type = shift();
 
     my $found_prev = system("$vtr_flow_path/scripts/mover.sh \"*$benchmark_name*/*.$file_type\" ../../../ $temp_dir");
-    # cannot find previous version, disregard specific vpr stage argument
     if ($found_prev ne 0) {
-        print "$file_type file not found, disregarding specific vpr stage\n";
-        $specific_vpr_stage = "";
-        return 0;
+        die "$file_type file not found for $benchmark_name\n";
     }
 
-    # negate bash exit truth for perl
-    return 1;
+    return 1; #Found
 }
 
 sub find_postsynthesis_netlist {
@@ -1525,3 +1332,94 @@ sub get_clocks {
 
     return @clocks;
 }
+
+sub run_vpr {
+    my ($args) = @_;
+
+    my @vpr_args;
+    push(@vpr_args, $args->{arch_name});
+    push(@vpr_args, $args->{circuit_name});
+    push(@vpr_args, "--circuit_file"	);
+    push(@vpr_args, $args->{circuit_file});
+
+    if (defined $args->{sdc_file} && -e $args->{sdc_file}){
+        push(@vpr_args, "--sdc_file" );
+        push(@vpr_args, $args->{sdc_file});
+    }
+
+    if (defined $args->{pad_file} && -e $args->{pad_file}){
+        push(@vpr_args, "--fix_pins" );
+        push(@vpr_args, $args->{pad_file});
+    }
+
+    #Additional VPR arguments
+    my @extra_vpr_args = @{$args->{extra_vpr_args}};
+    if (defined $args->{extra_vpr_args} && scalar(@extra_vpr_args) > 0) {
+        push(@vpr_args, @extra_vpr_args);
+    }
+
+    #Run the command
+    $q = &system_with_timeout(
+        $vpr_path, $args->{log_file},
+        $timeout, $temp_dir, @vpr_args
+    );
+
+    return $q;
+}
+
+sub parse_min_W {
+    my ($log_file) = @_;
+
+    my $min_W = -1;
+    # Parse out min_chan_width
+    if ( open( VPROUT, $log_file) ) {
+        undef $/;
+        my $content = <VPROUT>;
+        close(VPROUT);
+        $/ = "\n";    # Restore for normal behaviour later in script
+
+        if ( $content =~ /Best routing used a channel width factor of (\d+)/m ) {
+            $min_W = $1;
+        }
+    }
+
+    return $min_W;
+}
+
+sub calculate_relaxed_W {
+    my ($min_W) = @_;
+
+    my $relaxed_W = $min_W * 1.3;
+    $relaxed_W = floor($relaxed_W);
+    $relaxed_W += $relaxed_W % 2;
+
+    return $relaxed_W;
+}
+
+sub find_and_move_files_for_vpr_stages() {
+    my ($benchmark_name, $stages) = @_;
+
+    my @extensions = ();
+
+    my $pack = (defined $stages->{pack} and $stages->{pack});
+    my $place = (defined $stages->{place} and $stages->{place});
+    my $route = (defined $stages->{route} and $stages->{route});
+    my $analysis = (defined $stages->{analysis} and $stages->{analysis});
+
+    if ($place or $route or $analysis) {
+        push(@extensions, "net");
+    }
+
+    if ($route or $analysis) {
+        push(@extensions, "place");
+    }
+
+    if ($analysis) {
+        push(@extensions, "route");
+    }
+
+    foreach my $extension (@extensions) {
+        find_and_move_newest($benchmark_name, $extension);
+    }
+}
+

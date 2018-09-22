@@ -29,4 +29,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_analysis_only.txt
 
 # Script parameters
-script_params = -check_route -vpr_route_chan_width 100
+script_params = -check_route --route_chan_width 100

@@ -28,6 +28,7 @@
 ###################################################################################
 
 use strict;
+use warnings;
 
 # This loads the thread libraries, but within an eval so that if they are not available
 # the script will not fail.  If successful, $threaded = 1
@@ -37,7 +38,6 @@ use Cwd;
 use File::Spec;
 use File::Basename;
 use File::Path qw(make_path);
-use List::MoreUtils qw(uniq);
 use POSIX qw(strftime);
 
 # Function Prototypes
@@ -46,8 +46,13 @@ sub run_single_task;
 sub do_work;
 sub get_result_file_metrics;
 sub ret_expected_runtime;
+sub ret_expected_memory;
 sub ret_expected_min_W;
 sub ret_expected_vpr_status;
+
+sub format_human_readable_time;
+sub format_human_readable_memory;
+sub uniq;
 
 # Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
@@ -222,7 +227,16 @@ sub generate_single_task_actions {
 
 		my @data  = split( /=/, $line );
 		my $key   = trim( $data[0] );
-		my $value = trim( $data[1] );
+		my $value = undef;
+        
+        if (scalar @data > 1) { #Key may have no value
+            $value = trim( $data[1] );
+        }
+
+        if (not defined $value) {
+            next; #Currently ignore values with no keys
+        }
+
 		if ( $key eq "circuits_dir" ) {
 			$circuits_dir = $value;
 		} elsif ( $key eq "archs_dir" ) {
@@ -252,6 +266,7 @@ sub generate_single_task_actions {
 			die "Invalid option (" . $key . ") in configuration file.";
 		}
 	}
+    close(CONFIG_FH);
 
 	# Using default script
 	if ( $script eq $script_default ) {
@@ -384,9 +399,20 @@ sub generate_single_task_actions {
         $run_dir_no_prefix = sprintf("run%d", $experiment_number);
     } while (-e $run_dir or -e $run_dir_no_prefix);
 
+    #Create the run directory
 	mkdir( $run_dir, 0775 ) or die "Failed to make directory ($run_dir): $!";
 	chmod( 0775, $run_dir );
+
+    #Create a symlink that points to the latest run
+    my $symlink_name = "run_latest";
+    if (-l $symlink_name) {
+        unlink $symlink_name;  #Remove link if it exists
+    }
+    symlink($run_dir, $symlink_name) or die "Failed to make symlynk $symlink_name to $run_dir: $!";
+
+    #Move to the run directory
 	chdir($run_dir) or die "Failed to change to directory ($run_dir): $!";
+
 
 	##############################################################
     # Build up the list of commands to run
@@ -434,18 +460,20 @@ sub generate_single_task_actions {
 
                 #Estimate runtime
                 my $runtime_estimate = ret_expected_runtime($circuit, $arch, $full_params_dirname, $golden_results_file);
+                my $memory_estimate = ret_expected_memory($circuit, $arch, $full_params_dirname, $golden_results_file);
 
-                my @action = [$dir, $command, $runtime_estimate];
+                my $run_script_file = create_run_script({
+                        dir => $dir,
+                        command => $command,
+                        runtime_estimate => $runtime_estimate,
+                        memory_estimate => $memory_estimate
+                    });
+
+                my @action = [$dir, $run_script_file, $runtime_estimate, $memory_estimate];
                 push(@actions, @action);
             }
         }
     }
-
-	##############################################################
-	# Run experiment
-	##############################################################
-    my $num_failures = 0;
-
 
     return \@actions;
 }
@@ -462,12 +490,13 @@ sub run_actions {
         my $threads       = $processors;
 
         foreach my $action (@$actions) {
-            my ($run_dir, $command, $runtime_estimate) = @$action;
+            my ($run_dir, $command, $runtime_estimate, $memory_estimate) = @$action;
 
             if ($verbosity > 0) {
                 print "$command\n";
             }
-            $thread_work->enqueue("$run_dir||||$command");
+
+            $thread_work->enqueue("$run_dir||||$command||||$runtime_estimate||||$memory_estimate");
 
         }
 
@@ -486,6 +515,11 @@ sub run_actions {
         }
 
         $_->join for @pool;
+    } elsif ( $system_type eq "scripts" ) {
+        foreach my $action (@$actions) {
+            my ($run_dir, $command, $runtime_estimate, $memory_estimate) = @$action;
+            print "$command\n";
+        }
 	} else {
         die("Unrecognized job system '$system_type'");
     }
@@ -498,23 +532,21 @@ sub do_work {
 	my $tid = threads->tid;
 
 	while (1) {
-		my $work    = $work_queue->dequeue_nb();
-		my @work    = split( /\|\|\|\|/, $work );
-		my $dir     = @work[0];
-		my $command = @work[1];
+		my $work_str    = $work_queue->dequeue_nb();
 
-		if ( !$dir ) {
-			last;
-		}
+        if (!defined $work_str) {
+            #Work queue was empty, nothing left to do
+            last;
+        }
 
-		make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
+		my ($dir, $command, $runtime_estimate, $memory_estimate) = split( /\|\|\|\|/, $work_str );
+
 		my $return_status = system "cd $dir; $command > vtr_flow.out";
         my $exit_code = $return_status >> 8; #Shift to get real exit code
 
 		open( OUT_FILE, "$dir/vtr_flow.out" ) or die "Cannot open $dir/vtr_flow.out: $!";
 		my $sys_output = do { local $/; <OUT_FILE> };
 
-		#$sys_output =~ s/\n//g;
 		$return_queue->enqueue($sys_output);
 
         $return_code_queue->enqueue($exit_code);
@@ -526,17 +558,71 @@ sub do_work {
 	#print "$tid exited loop\n"
 }
 
-# trim whitespace
-sub trim($) {
-	my $string = shift;
-	$string =~ s/^\s+//;
-	$string =~ s/\s+$//;
+sub create_run_script {
+    my ($args) = @_;
+
+    my $dir = $args->{dir};
+    my $runtime_est = $args->{runtime_estimate};
+    my $memory_est = $args->{memory_estimate};
+
+    if ($runtime_est < 0) {
+        $runtime_est = 0;
+    }
+
+    if ($memory_est < 0) {
+        $memory_est = 0;
+    }
+
+    my $humanreadable_runtime_est = format_human_readable_time($runtime_est);
+    my $humanreadable_memory_est = format_human_readable_memory($memory_est);
+
+    make_path( "$dir", { mode => 0775 } ) or die "Failed to create directory ($dir): $!";
+
+    my $run_script_file = "$dir/vtr_flow.sh";
+
+    open(my $fh, '>', $run_script_file);
+
+    print $fh "#!/bin/bash\n";
+    print $fh "\n";
+    print $fh "VTR_RUNTIME_ESTIMATE_SECONDS=$runtime_est\n";
+    print $fh "VTR_MEMORY_ESTIMATE_BYTES=$memory_est\n";
+    print $fh "\n";
+    print $fh "VTR_RUNTIME_ESTIMATE_HUMAN_READABLE=\"$humanreadable_runtime_est\"\n";
+    print $fh "VTR_MEMORY_ESTIMATE_HUMAN_READABLE=\"$humanreadable_memory_est\"\n";
+    print $fh "\n";
+    print $fh "#We redirect all command output to both stdout and the log file with 'tee'.\n";
+    print $fh "\n";
+    print $fh "#Begin I/O redirection\n";
+    print $fh "{\n";
+    print $fh "\n";
+    print $fh "    $args->{command}\n";
+    print $fh "\n";
+    print $fh "    exit_code=\$?\n";
+    print $fh "\n";
+    print $fh "} |& tee vtr_flow.out\n";
+    print $fh "#End I/O redirection\n";
+    print $fh "\n";
+    print $fh "exit \$exit_code\n";
+
+    close($fh);
+
+    #Make executable
+    chmod 0775, $run_script_file;
+
+    return $run_script_file;
+}
+
+# trim leading and trailing whitespace
+sub trim {
+	my ($string) = @_;
+    $string =~ s/^\s+//;
+    $string =~ s/\s+$//;
 	return $string;
 }
 
 sub expand_user_path {
-	my $str = shift;
-	$str =~ s/^~\//$ENV{"HOME"}\//;
+	my ($str) = @_;
+    $str =~ s/^~\//$ENV{"HOME"}\//;
 	return $str;
 }
 
@@ -634,12 +720,13 @@ sub get_result_file_metrics {
     return %metrics;
 }
 
+#Returns the expected run-time (in seconds) of the specified run, or -1 if unkown
 sub ret_expected_runtime {
 	my $circuit_name             = shift;
 	my $arch_name                = shift;
     my $script_params            = shift;
 	my $golden_results_file_path = shift;
-	my $seconds                  = 0;
+	my $seconds                  = -1;
 
     my %keys = (
         "arch" => $arch_name,
@@ -649,23 +736,42 @@ sub ret_expected_runtime {
 
     my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
 
-    if (not exists $metrics{'vtr_flow_elapsed_time'}) {
-        return "Unkown";
+    if (exists $metrics{'vtr_flow_elapsed_time'}) {
+        $seconds = $metrics{'vtr_flow_elapsed_time'}
     }
 
-    $seconds = $metrics{'vtr_flow_elapsed_time'};
-    if ( $seconds < 60 ) {
-        my $str = sprintf( "%.0f seconds", $seconds );
-        return $str;
-    } elsif ( $seconds < 3600 ) {
-        my $min = $seconds / 60;
-        my $str = sprintf( "%.0f minutes", $min );
-        return $str;
-    } else {
-        my $hour = $seconds / 60 / 60;
-        my $str = sprintf( "%.0f hours", $hour );
-        return $str;
+    return $seconds;
+}
+
+#Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown
+sub ret_expected_memory {
+	my $circuit_name             = shift;
+	my $arch_name                = shift;
+    my $script_params            = shift;
+	my $golden_results_file_path = shift;
+
+
+    my %keys = (
+        "arch" => $arch_name,
+        "circuit" => $circuit_name,
+        "script_params" => $script_params,
+    );
+
+    my %metrics = get_result_file_metrics($golden_results_file_path, \%keys);
+
+    #Memory use is recorded in KiB
+	my $memory_kib                = -1;
+
+    #Estimate the peak memory as the maximum accross all tools
+    foreach my $metric ('max_odin_mem', 'max_abc_mem', 'max_ace_mem', 'max_vpr_mem') {
+        if (exists $metrics{$metric} && $metrics{$metric} > $memory_kib) {
+            $memory_kib = $metrics{$metric};
+        }
     }
+
+    my $memory_bytes = $memory_kib * 1024;
+
+    return $memory_bytes;
 }
 
 sub ret_expected_min_W {
@@ -708,6 +814,37 @@ sub ret_expected_vpr_status {
     }
 
     return $metrics{'vpr_status'};
+}
+
+sub format_human_readable_time {
+    my ($seconds) = @_;
+
+
+    if ( $seconds < 60 ) {
+        my $str = sprintf( "%.0f seconds", $seconds );
+        return $str;
+    } elsif ( $seconds < 3600 ) {
+        my $min = $seconds / 60;
+        my $str = sprintf( "%.0f minutes", $min );
+        return $str;
+    } else {
+        my $hour = $seconds / 60 / 60;
+        my $str = sprintf( "%.0f hours", $hour );
+        return $str;
+    }
+}
+
+sub format_human_readable_memory {
+    my ($bytes) = @_;
+
+    my $str = "";
+    if ( $bytes < 1024 ** 3) {
+        $str = sprintf( "%.2f MiB", $bytes / (1024. ** 2));
+    } else {
+        $str = sprintf( "%.2f GiB", $bytes / (1024. ** 3));
+    }
+
+    return $str;
 }
 
 sub find_common_task_prefix {
@@ -758,4 +895,9 @@ sub find_duplicates {
         push(@duplicates, $str);
     }
     return @duplicates;
+}
+
+sub uniq {
+    my %seen;
+    grep !$seen{$_}++, @_;
 }

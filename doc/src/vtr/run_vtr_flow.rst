@@ -31,7 +31,6 @@ where:
     Several intermediate files will be generated and deleted upon completion.
     **Users should ensure that no important files are kept in this directory as they may be deleted.**
 
-
 Output
 ~~~~~~
 The standard out of the script will produce a single line with the format::
@@ -42,6 +41,24 @@ If execution completed successfully the status will be 'OK'. Otherwise, the stat
 
 The script will also produce an output files (\*.out) for each stage, containing the standout output of the executable(s).
 
+Advanced Usage
+~~~~~~~~~~~~~~
+
+Additional *optional* command arguments can also be passed to ``run_vtr_flow.pl``::
+
+    run_vtr_flow.pl <circuit_file> <architecture_file> [<options>] [<vpr_options>]
+
+where:
+
+  * ``<options>`` are additional arguments passed to ``run_vtr_flow.pl`` (described below),
+  * ``<vpr_options>`` are any arguments not recognized by ``run_vtr_flow.pl``. These will be forwarded to VPR.
+
+For example::
+
+   run_vtr_flow.pl my_circuit.v my_arch.xml -track_memory_usage --pack --place
+
+will run the VTR flow to map the circuit ``my_circuit.v`` onto the archtiecture ``my_arch.xml``; the arguments ``--pack`` and ``--place`` will be passed to VPR (since they are unrecognized arguments to ``run_vtr_flow.pl``).
+They will cause VPR to perform only :ref:`packing and placement <general_options>`.
 
 Detailed Command-line Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,22 +91,6 @@ Detailed Command-line Options
       * ``vpr``
 
     **Default:** ``vpr``
-
-.. option:: -specific_vpr_stage <vpr_stage>
-
-    Perform only this stage of :ref:`vpr`.
-
-    To have any time saving effect, previous result files must be kept, as the most recent necessary ones will be moved to the current run directory (use inside tasks only).
-
-    Accepted values:
-
-      * ``pack``
-      * ``place``
-      * ``route``
-
-    **Default:** empty (run all vpr stages)
-
-    .. note:: Specifying the routing stage requires a channel width to also be specified.
 
 .. option:: -power
 
