@@ -77,16 +77,21 @@ short to_view_parse;
 /*
  * File-scope function declarations
  */
-void graphVizOutputPreproc(FILE *yyin, std::string path, std::string file);
+void graphVizOutputPreproc(FILE *yyin);
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 
 /*
  * Function implementations
  */
-void graphVizOutputPreproc(FILE *yyin, std::string path, std::string file)
+void graphVizOutputPreproc(FILE *yyin)
 {
-	FILE *fp = fopen(std::string(path + "/" + strip_path_and_ext(file).c_str() + "_preproc.v").c_str(), "w");
+	std::string file_out = 	configuration.debug_output_path 
+							+ "/" 
+							+ strip_path_and_ext(configuration.list_of_file_names[current_parse_file]).c_str() 
+							+ "_preproc.v";
+
+	FILE *fp = fopen(file_out.c_str(), "w");
 	oassert(fp);
 
 	char line[MaxLine];
@@ -102,7 +107,6 @@ void graphVizOutputPreproc(FILE *yyin, std::string path, std::string file)
  *-------------------------------------------------------------------------------------------*/
 void parse_to_ast()
 {
-	int i;
 	extern FILE *yyin;
 	extern int yylineno;
 
@@ -113,25 +117,29 @@ void parse_to_ast()
 	init_parser();
 	
 	/* read all the files in the configuration file */
-	for (i = 0; i < configuration.list_of_file_names.size(); i++)
+	current_parse_file =0;
+	while (current_parse_file < configuration.list_of_file_names.size())
 	{
-		yyin = fopen(configuration.list_of_file_names[i].c_str(), "r");
+		yyin = fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
 		if (yyin == NULL)
 		{
-			error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[i].c_str());
+			error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 		}
 
 		/*Testing preprocessor - Paddy O'Brien*/
+
+		/**
+		 *  TODO shouldnt we push defines throughout multiple files ? just like includes?
+		 * Verify documentation for this
+		*/
+
 		init_veri_preproc();
 		yyin = veri_preproc(yyin);
 		cleanup_veri_preproc();
 
 		/* write out the pre-processed file */
 		if (configuration.output_preproc_source)
-			graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[i]);
-
-		/* set the file name */
-		current_parse_file = i;
+			graphVizOutputPreproc(yyin);
 
 		/* reset the line count */
 		yylineno = 0;
@@ -140,11 +148,12 @@ void parse_to_ast()
 		init_parser_for_file();
 		/* parse next file */
 		yyparse();
-		/* cleanup parser */
-		clean_up_parser_for_file();
 
 		fclose(yyin);
+		current_parse_file++;
 	}
+	/* cleanup the defines hash */
+	sc_free_string_cache(defines_for_file_sc);
 
 	/* clean up all the structures in the parser */
 	cleanup_parser();
@@ -262,8 +271,7 @@ void init_parser_for_file()
  *-------------------------------------------------------------------------------------------*/
 void clean_up_parser_for_file()
 {
-	/* cleanup the defines hash */
-	sc_free_string_cache(defines_for_file_sc);
+
 }
 
 /*---------------------------------------------------------------------------------------------

@@ -820,6 +820,29 @@ std::string strip_path_and_ext(std::string file)
 }
 
 /*
+ * Parses the given comma separated list
+ */
+std::vector<std::string> parse_seperated_list(char *list, const char *separator)
+{
+	std::vector<std::string> list_out;
+
+	// Parse the list.
+	if (!list)
+		return list_out;
+
+
+	char *pin_list = vtr::strdup(list);
+	char *token    = strtok(pin_list, separator);
+	while (token)
+	{
+		list_out.push_back(token);
+		token = strtok(NULL, ",");
+	}
+	vtr::free(pin_list);
+	return list_out;
+}
+
+/*
  * Prints/updates an ASCII progress bar of length "length" to position length * completion
  * from previous position "position". Updates ETA based on the elapsed time "time".
  * Returns the new position. If the position is unchanged the bar is not redrawn.

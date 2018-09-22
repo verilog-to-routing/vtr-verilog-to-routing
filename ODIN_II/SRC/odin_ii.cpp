@@ -327,7 +327,7 @@ void get_options(int argc, char** argv) {
 			;
 
 	input_grp.add_argument(global_args.verilog_file, "-V")
-			.help("Verilog HDL file")
+			.help("comma separated list without whitespace of Verilog HDL file")
 			.metavar("VERILOG_FILE")
 			;
 
@@ -497,7 +497,8 @@ void get_options(int argc, char** argv) {
 
 	if (global_args.verilog_file != NULL)
 	{
-		configuration.list_of_file_names.push_back((char*)global_args.verilog_file);
+		//parse comma separated list of verilog files
+		configuration.list_of_file_names = parse_seperated_list(global_args.verilog_file, ",");
 	}
 
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
