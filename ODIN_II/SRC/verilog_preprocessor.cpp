@@ -14,7 +14,7 @@ struct veri_Includes veri_includes;
 struct veri_Defines veri_defines;
 
 /* Function declarations */
-FILE* open_source_file(char* filename);
+FILE* open_source_file(char* filename, std::string parent_path);
 FILE *remove_comments(FILE *source);
 FILE *format_verilog_file(FILE *source);
 FILE *format_verilog_variable(FILE * src, FILE *dest);
@@ -266,46 +266,29 @@ int veri_is_defined(char * symbol)
  *
  * Return NULL if unable to find and open the file
  */
-FILE* open_source_file(char* filename)
+FILE* open_source_file(char* filename, std::string path)
 {
-	extern global_args_t global_args;
-	extern config_t configuration;
-	extern size_t current_parse_file;
+	auto loc = path.find_last_of('/');
+	if (loc != std::string::npos) /* No other path to try to find the file */
+		path = path.substr(0,loc+1);
+	
+	path += filename;
 
-	FILE* src_file = fopen(filename, "r"); //Look for the file in the PWD
+	// look in the directory where the file with the include directory resides in
+	FILE* src_file = fopen(path.c_str(), "r");
+	if (src_file != NULL)
+		return src_file;
+
+	// else Look for the file in the PWD as a last resort TODO: this should go away... not standard behavior
+	src_file = fopen(filename, "r");
 	if (src_file != NULL)
 	{
+		fprintf(stderr, "Warning: Unable to find %s, opening in current working directory instead\n",
+				path.c_str());
 		return src_file;
 	}
 
-	char* path;
-	if(current_parse_file < configuration.list_of_file_names.size())
-	{
-		path = vtr::strdup(configuration.list_of_file_names[current_parse_file].c_str());
-	}
-	else
-	{
-		path = NULL;
-		fprintf(stderr, "Invalid state in open_source_file.");
-	}
 
-	char* last_slash = strrchr(path, '/');
-	if (last_slash == NULL) /* No other path to try to find the file */
-	{
-		vtr::free(path);
-		return NULL;
-	}
-	*(last_slash + 1) = '\0';
-	strcat(path, filename);
-
-	src_file = fopen(path, "r");
-	if (src_file != NULL)
-	{
-		fprintf(stderr, "Warning: Unable to find %s in the present working directory, opening %s instead\n",
-				filename, path);
-		vtr::free(path);
-		return src_file;
-	}
 
 	return NULL;
 }
@@ -470,13 +453,8 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			 */
 			if (top(skip) < 1 && strcmp(token, "`include") == 0)
 			{
-				printf("%s\n", token);
-
 				token = trim((char *)strtok(NULL, "\""));
-
-				printf("%s\n", token);
-
-				FILE *included_file = open_source_file(token);
+				FILE *included_file = open_source_file(token,current_include->path);
 
 				/* If we failed to open the included file handle the error */
 				if (!included_file)
@@ -488,6 +466,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				}
 				else if (NULL != (new_include = add_veri_include(token, line_number, current_include)))
 				{
+					printf("Including file %s\n", new_include->path);
 					veri_preproc_bootstraped(included_file, preproc_producer, new_include);
 				}
 				fclose(included_file);

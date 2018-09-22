@@ -39,12 +39,7 @@ function micro_test() {
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
-		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR
-
-		cp $benchmark $DIR/circuit.v
-		cp $input_vectors $DIR/circuit_input
-		cp $output_vectors $DIR/circuit_output
-		cp ../libs/libarchfpga/arch/sample_arch.xml $DIR/arch.xml
+		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR/arch && mkdir -p $DIR/no_arch
 	done
 
 
@@ -52,36 +47,36 @@ function micro_test() {
 	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
 	'./odin_II -E \
     --adder_type default \
-		-V regression_test/runs/micro/test_dir/circuit.v \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-o regression_test/runs/micro/test_dir/tempa.blif \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
+		-V regression_test/benchmark/micro/test_dir.v \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-o regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
+		-sim_dir regression_test/runs/micro/test_dir/no_arch/ \
+		&> regression_test/runs/micro/test_dir/no_arch/log \
 	&& ./odin_II -E \
     --adder_type default \
-		-b regression_test/runs/micro/test_dir/tempa.blif \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
+		-b regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-sim_dir regression_test/runs/micro/test_dir/no_arch/ \
+		&> regression_test/runs/micro/test_dir/no_arch/log \
 	&& ./odin_II -E \
     --adder_type default \
-		-a regression_test/runs/micro/test_dir/arch.xml \
-		-V regression_test/runs/micro/test_dir/circuit.v \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-o regression_test/runs/micro/test_dir/tempb.blif \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
+		-a ../libs/libarchfpga/arch/sample_arch.xml \
+		-V regression_test/benchmark/micro/test_dir.v \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-o regression_test/runs/micro/test_dir/arch/test_dir.blif \
+		-sim_dir regression_test/runs/micro/test_dir/arch/ \
+		&> regression_test/runs/micro/test_dir/arch/log \
 	&& ./odin_II -E \
     --adder_type default \
-		-a regression_test/runs/micro/test_dir/arch.xml \
-		-b regression_test/runs/micro/test_dir/tempb.blif \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
+		-a ../libs/libarchfpga/arch/sample_arch.xml \
+		-b regression_test/runs/micro/test_dir/arch/test_dir.blif \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-sim_dir regression_test/runs/micro/test_dir/arch/ \
+		&> regression_test/runs/micro/test_dir/arch/log \
 	&& echo " --- PASSED == regression_test/runs/micro/test_dir" \
 	|| (echo " -X- FAILED == regression_test/runs/micro/test_dir" \
 		&& echo regression_test/runs/micro/test_dir >> regression_test/runs/failure.log )'
@@ -104,22 +99,32 @@ function regression_test() {
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
+		output_blif="".blif
+		DIR="regression_test/runs/full/$test_name" && mkdir -p $DIR
+
 
     echo "./odin_II -E \
     --adder_type default \
 		-a ../libs/libarchfpga/arch/sample_arch.xml \
 		-V $test_verilog \
 		-t $input_vectors \
-		-T $output_vectors" > regression_test/runs/full/$test_name.log
+		-T $output_vectors \
+		-o regression_test/runs/full/$test_name/$test_name.blif \
+		-sim_dir regression_test/runs/full/$test_name/" \
+			> regression_test/runs/full/$test_name/log
 
-		(./odin_II -E \
-    --adder_type "default" \
-		-a "../libs/libarchfpga/arch/sample_arch.xml" \
-		-V "$test_verilog" \
-		-t "$input_vectors" \
-		-T "$output_vectors" \
-			&>> regression_test/runs/full/$test_name.log && [ -e OUTPUT/output_vectors ] && echo " --- PASSED == $test_verilog") \
-    	|| (echo " -X- FAILED == $test_verilog" && echo $test_verilog >> regression_test/runs/failure.log)
+		./odin_II -E \
+    		--adder_type "default" \
+			-a "../libs/libarchfpga/arch/sample_arch.xml" \
+			-V "$test_verilog" \
+			-t "$input_vectors" \
+			-T "$output_vectors" \
+			-o regression_test/runs/full/$test_name/$test_name.blif \
+			-sim_dir regression_test/runs/full/$test_name/ \
+			&>> regression_test/runs/full/log \
+		&& echo " --- PASSED == regression_test/runs/full/$test_name" \
+		|| (echo " -X- FAILED == regression_test/runs/full/$test_name" \
+		&& echo regression_test/runs/full/$test_name >> regression_test/runs/failure.log )
 
 	done
 }
@@ -133,15 +138,14 @@ function arch_test() {
     	test_name=${basename##*/}
 		DIR="regression_test/runs/arch/$test_name" && mkdir -p $DIR
 
-		cp $benchmark $DIR/circuit.v
 	done
 
 	ls regression_test/runs/arch | xargs -P$1 -I test_dir /bin/bash -c \
-		' ./odin_II -E -V regression_test/runs/arch/test_dir/circuit.v \
-        --adder_type default \
-				-o regression_test/runs/arch/test_dir/temp.blif \
-				-sim_dir regression_test/runs/arch/test_dir/ \
-					&> regression_test/runs/arch/test_dir/log \
+		' ./odin_II -E -V regression_test/benchmark/arch/test_dir.v \
+        	--adder_type default \
+			-o regression_test/runs/arch/test_dir/test_dir.blif \
+			-sim_dir regression_test/runs/arch/test_dir/ \
+			&> regression_test/runs/arch/test_dir/log \
     	&& echo " --- PASSED == regression_test/runs/arch/test_dir" \
     	|| (echo " -X- FAILED == regression_test/runs/arch/test_dir" \
     		&& echo regression_test/runs/arch/test_dir >> regression_test/runs/failure.log)'
@@ -156,13 +160,12 @@ function syntax_test() {
     	test_name=${basename##*/}
 		DIR="regression_test/runs/syntax/$test_name" && mkdir -p $DIR
 
-		cp $benchmark $DIR/circuit.v
 	done
 
 	ls regression_test/runs/syntax | xargs -P$1 -I test_dir /bin/bash -c \
-		' ./odin_II -E -V regression_test/runs/syntax/test_dir/circuit.v \
+		' ./odin_II -E -V regression_test/benchmark/syntax/test_dir.v \
         --adder_type default \
-				-o regression_test/runs/syntax/test_dir/temp.blif \
+				-o regression_test/runs/syntax/test_dir/test_dir.blif \
 				-sim_dir regression_test/runs/syntax/test_dir/ \
 					&> regression_test/runs/syntax/test_dir/log \
     	&& echo " --- PASSED == regression_test/runs/syntax/test_dir" \

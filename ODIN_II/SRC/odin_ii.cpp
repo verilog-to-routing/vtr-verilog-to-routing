@@ -68,7 +68,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_path.h"
 #include "vtr_memory.h"
 
-#define DEFAULT_OUTPUT "OUTPUT/"
+#define DEFAULT_OUTPUT "temp/"
 
 size_t current_parse_file;
 t_arch Arch;
@@ -341,7 +341,7 @@ void get_options(int argc, char** argv) {
 
 	output_grp.add_argument(global_args.output_file, "-o")
 			.help("Output file path")
-			.default_value("OUTPUT/default_out.blif")
+			.default_value("temp/default_out.blif")
 			.metavar("OUTPUT_FILE_PATH")
 			;
 
