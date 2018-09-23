@@ -259,10 +259,6 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
-
-	clock_t end = clock();
-
-	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 bool try_route(int width_fac, t_router_opts router_opts,

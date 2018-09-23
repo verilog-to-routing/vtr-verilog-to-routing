@@ -20,7 +20,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     clock_networks.emplace_back(new ClockRib());
     ClockRib* rib = dynamic_cast<ClockRib*>(clock_networks.back().get());
 
-    rib->set_num_instance(1);
+    rib->set_num_instance(3);
     rib->set_clock_name("rib1");
     rib->set_metal_layer(0, 0);
     rib->set_initial_wire_location(0, 19, 0);
@@ -35,7 +35,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     clock_networks.emplace_back(new ClockSpine());
     ClockSpine* spine = dynamic_cast<ClockSpine*>(clock_networks.back().get());
 
-    spine->set_num_instance(1);
+    spine->set_num_instance(3);
     spine->set_clock_name("spine1");
     spine->set_metal_layer(0,0);
     spine->set_initial_wire_location(0, 19, 10);
@@ -58,7 +58,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     routing_to_clock->set_clock_switch_name("drive");
     routing_to_clock->set_switch_location(10, 10);
     routing_to_clock->set_switch(0);
-    routing_to_clock->set_fc_val(1);
+    routing_to_clock->set_fc_val(0.1);
 
     // Spine to Rib connection
     clock_routing.emplace_back(new ClockToClockConneciton);
@@ -70,7 +70,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     spine_to_rib->set_to_clock_name("rib1");
     spine_to_rib->set_to_clock_switch_name("drive");
     spine_to_rib->set_switch(0);
-    spine_to_rib->set_fc_val(1);
+    spine_to_rib->set_fc_val(0.3);
 
     // clock to pins connection
     clock_routing.emplace_back(new ClockToPinsConnection);
@@ -111,6 +111,21 @@ void ClockRRGraph::create_clock_networks_wires(
     rr_nodes.shrink_to_fit();
 }
 
+void ClockRRGraph::create_clock_networks_switches(
+        std::vector<std::unique_ptr<ClockConnection>>& clock_connections)
+{
+    for(auto& clock_connection: clock_connections) {
+        clock_connection->create_switches(*this);
+    }
+
+    //"Partition the rr graph edges for efficient access to configurable/non-configurable
+    //edge subsets. Must be done after RR switches have been allocated"
+    //TODO: This hidden function should be added in a place where it is more obvious to be called
+    //      since without calling it the code to get configurable edges breaks
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    partition_rr_graph_edges(device_ctx);
+}
+
 void ClockRRGraph::add_switch_location(
         std::string clock_name,
         std::string switch_name,
@@ -140,18 +155,78 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
 
     // insert node_idx at location
     rr_node_indices[x][y].push_back(node_idx);
-    Coordinates location = {x, y};
-    locations.push_back(location);
+    locations.insert({x,y});
 }
 
-void ClockRRGraph::create_clock_networks_switches(
-        std::vector<std::unique_ptr<ClockConnection>>& clock_connections)
+std::vector<int> ClockRRGraph::get_rr_node_indices_at_switch_location(
+    std::string clock_name,
+    std::string switch_name,
+    int x,
+    int y) const
 {
-    for(auto& clock_connection: clock_connections) {
-        clock_connection->create_switches(*this);
-    }
+    auto itter = clock_name_to_switch_points.find(clock_name);
+
+    // assert that clock name exists in map
+    VTR_ASSERT(itter != clock_name_to_switch_points.end());
+
+    auto& switch_points = itter->second;
+    return switch_points.get_rr_node_indices_at_location(switch_name, x, y);
 }
 
+std::vector<int> SwitchPoints::get_rr_node_indices_at_location(
+    std::string switch_name,
+    int x,
+    int y) const
+{
+    auto itter = switch_name_to_switch_location.find(switch_name);
+
+    // assert that switch name exists in map
+    VTR_ASSERT(itter != switch_name_to_switch_location.end());
+
+    auto& switch_point = itter->second;
+    std::vector<int> rr_node_indices = switch_point.get_rr_node_indices_at_location(x, y);
+    return rr_node_indices;
+}
+
+std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) const {
+
+    // assert that switch is connected to nodes at the location
+    VTR_ASSERT(!rr_node_indices[x][y].empty());
+
+    return rr_node_indices[x][y];
+}
+
+std::set<std::pair<int, int>> ClockRRGraph::get_switch_locations(
+    std::string clock_name,
+    std::string switch_name) const
+{
+    auto itter = clock_name_to_switch_points.find(clock_name);
+
+    // assert that clock name exists in map
+    VTR_ASSERT(itter != clock_name_to_switch_points.end());
+
+    auto& switch_points = itter->second;
+    return switch_points.get_switch_locations(switch_name);
+}
+
+std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string switch_name) const {
+
+    auto itter = switch_name_to_switch_location.find(switch_name);
+
+    // assert that switch name exists in map
+    VTR_ASSERT(itter != switch_name_to_switch_location.end());
+
+    auto& switch_point = itter->second;
+    return switch_point.get_switch_locations();
+}
+
+std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
+
+    // assert that switch is connected to nodes at the location
+    VTR_ASSERT(!locations.empty());
+
+    return locations;
+}
 //void ClockRRGraph::create_star_model_network() {
 //
 //    vtr::printf_info("Creating a clock network in the form of a star model\n");

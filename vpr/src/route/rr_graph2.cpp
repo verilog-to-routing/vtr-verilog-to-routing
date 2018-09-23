@@ -1286,6 +1286,23 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
     return indices;
 }
 
+std::vector<int> get_rr_node_chan_wires_at_location(
+    const t_rr_node_indices& L_rr_node_indices,
+    t_rr_type rr_type,
+    int x,
+    int y)
+{
+    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+    /* Currently need to swap x and y for CHANX because of chan, seg convention */
+    if (CHANX == rr_type) {
+        std::swap(x, y);
+    }
+
+    return L_rr_node_indices[rr_type][x][y][SIDES[0]];
+}
+
+
 std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                                      int x, int y, t_rr_type rr_type, int ptc) {
     /*

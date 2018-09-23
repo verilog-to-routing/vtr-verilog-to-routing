@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <set>
+#include <utility>
 
 #include "globals.h"
 
@@ -20,8 +22,14 @@ class SwitchPoint {
     public:
         // [grid_width][grid_height][nodes]
         std::vector<std::vector<std::vector<int>>> rr_node_indices;
-        std::vector<Coordinates> locations;
+        std::set<std::pair<int, int>> locations; // x,y
     public:
+        /** Getters **/
+        std::vector<int> get_rr_node_indices_at_location(int x, int y) const;
+
+        std::set<std::pair<int, int>> get_switch_locations() const;
+
+        /** Setters **/
         void insert_node_idx(int x, int y, int node_idx);
 };
 
@@ -30,6 +38,12 @@ class SwitchPoints {
         std::unordered_map<std::string, SwitchPoint> switch_name_to_switch_location;
     public:
         /** Getters **/
+        std::vector<int> get_rr_node_indices_at_location(
+            std::string switch_name,
+            int x,
+            int y) const;
+
+        std::set<std::pair<int, int>> get_switch_locations(std::string switch_name) const;
 
         /** Setters **/
         void insert_switch_node_idx(std::string switch_name, int x, int y, int node_idx);
@@ -42,11 +56,22 @@ class ClockRRGraph {
         std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
 
         void add_switch_location(
-                std::string clock_name,
-                std::string switch_name,
-                int x,
-                int y,
-                int node_index);
+            std::string clock_name,
+            std::string switch_name,
+            int x,
+            int y,
+            int node_index);
+
+        std::vector<int> get_rr_node_indices_at_switch_location(
+            std::string clock_name,
+            std::string switch_name,
+            int x,
+            int y) const;
+
+        std::set<std::pair<int, int>> get_switch_locations(
+            std::string clock_name,
+            std::string switch_name) const;
+
     public:
         /* Creates the routing resourse (rr) graph of the clock network and appends it to the
            existing rr graph created in build_rr_graph for inter-block and intra-block routing. */

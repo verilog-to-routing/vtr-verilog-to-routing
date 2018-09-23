@@ -656,9 +656,6 @@ static void build_rr_graph(
         free(clb_to_clb_directs);
     }
 
-    float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
-    vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
-
     if (clock_modeling == DEDICATED_NETWORK) {
         ClockRRGraph::create_and_append_clock_rr_graph();
     }

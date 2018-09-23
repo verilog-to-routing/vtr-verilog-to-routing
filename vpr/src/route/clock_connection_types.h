@@ -42,7 +42,7 @@ class RoutingToClockConnection : public ClockConnection {
         std::string switch_name;
         Coordinates switch_location;
         int switch_idx;
-        int fc;
+        float fc;
 
     public:
         /*
@@ -57,13 +57,19 @@ class RoutingToClockConnection : public ClockConnection {
         void set_clock_switch_name(std::string clock_switch_name);
         void set_switch_location(int x, int y);
         void set_switch(int switch_index);
-        void set_fc_val(int fc_val);
+        void set_fc_val(float fc_val);
 
         /*
          * Member functions
          */
         /* Connects the inter-block routing to the clock source at the specified coordinates */
         void create_switches(const ClockRRGraph& clock_graph);
+
+    private:
+
+        std::vector<int> get_chan_wire_indices_at_switch_location(t_rr_type rr_type);
+
+        std::vector<int> get_clock_indices_at_switch_location(const ClockRRGraph& clock_graph);
 };
 
 
@@ -74,7 +80,7 @@ class ClockToClockConneciton : public ClockConnection {
         std::string to_clock;
         std::string to_switch;
         int switch_idx;
-        int fc;
+        float fc;
     
     public:
         /*
@@ -90,7 +96,7 @@ class ClockToClockConneciton : public ClockConnection {
         void set_to_clock_name(std::string clock_name);
         void set_to_clock_switch_name(std::string switch_name);
         void set_switch(int switch_index);
-        void set_fc_val(int fc_val);
+        void set_fc_val(float fc_val);
 
         /*
          * Member functions
@@ -106,7 +112,7 @@ class ClockToPinsConnection : public ClockConnection {
         std::string switch_name;
 //        pin_type; //To
         int switch_idx;
-        int fc;
+        float fc;
 
     public:
         /*
@@ -120,19 +126,20 @@ class ClockToPinsConnection : public ClockConnection {
         void set_clock_name_to_connect_from(std::string clock_name);
         void set_clock_switch_name(std::string connection_switch_name);
         void set_switch(int switch_index);
-        void set_fc_val(int fc_val);
+        void set_fc_val(float fc_val);
 
         /*
          * Member functions
          */
         /* Connects the clock tap to block pins */
         void create_switches(const ClockRRGraph& clock_graph);
+
 };
 
 class RoutingToPins : public ClockConnection {
     private:
 //        pin_type;       
-        int fc;
+        float fc;
 
     public:
         /*
@@ -143,7 +150,7 @@ class RoutingToPins : public ClockConnection {
         /*
          * Setters
          */
-        void set_fc_val(int fc_val);
+        void set_fc_val(float fc_val);
 
         /*
          * Member functions
