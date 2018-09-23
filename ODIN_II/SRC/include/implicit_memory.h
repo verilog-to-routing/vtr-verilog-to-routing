@@ -23,8 +23,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _IMPLICIT_MEMORY_H_
 #define _IMPLICIT_MEMORY_H_
 
-extern hashtable_t *implicit_memories;
-extern hashtable_t *implicit_memory_inputs;
+#include <unordered_map>
+
+// extern std::unordered_map<std::string,implicit_memory *> implicit_memories;
+// extern std::unordered_map<std::string,implicit_memory *> implicit_memory_inputs;
 
 /*
  * Contains a pointer to the implicit memory node as well as other
@@ -52,7 +54,6 @@ implicit_memory *lookup_implicit_memory_input(char *name);
 
 void register_implicit_memory_input(char *name, implicit_memory *memory);
 
-void init_implicit_memory_index();
 void free_implicit_memory_index_and_finalize_memories();
 
 #endif

@@ -26,12 +26,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <unordered_map>
+
 
 #define SIM_WAVE_LENGTH 16
 #define BUFFER_MAX_SIZE 1024
 
 #include <queue>
-#include "hashtable.h"
 #include "sim_block.h"
 #include "types.h"
 #include "globals.h"
@@ -116,8 +117,8 @@ typedef struct sim_data_t_t
 	stages_t *stages;
 
 	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
-	hashtable_t *hold_high_index;
-	hashtable_t *hold_low_index;
+	std::unordered_map<std::string,int> hold_high_index;
+	std::unordered_map<std::string,int> hold_low_index;
 
 	int num_waves;
 
