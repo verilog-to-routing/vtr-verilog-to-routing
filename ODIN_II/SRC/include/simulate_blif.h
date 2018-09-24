@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <unordered_map>
 
 
+
 #define SIM_WAVE_LENGTH 16
 #define BUFFER_MAX_SIZE 1024
 
@@ -117,8 +118,7 @@ typedef struct sim_data_t_t
 	stages_t *stages;
 
 	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
-	std::unordered_map<std::string,int> hold_high_index;
-	std::unordered_map<std::string,int> hold_low_index;
+	std::unordered_map<std::string,short> held_at;
 
 	int num_waves;
 

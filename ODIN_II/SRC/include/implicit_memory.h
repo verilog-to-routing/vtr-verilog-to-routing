@@ -25,9 +25,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unordered_map>
 
-// extern std::unordered_map<std::string,implicit_memory *> implicit_memories;
-// extern std::unordered_map<std::string,implicit_memory *> implicit_memory_inputs;
-
 /*
  * Contains a pointer to the implicit memory node as well as other
  * information which is used in creating the implicit memory.
@@ -55,5 +52,7 @@ implicit_memory *lookup_implicit_memory_input(char *name);
 void register_implicit_memory_input(char *name, implicit_memory *memory);
 
 void free_implicit_memory_index_and_finalize_memories();
+
+void init_implicit_memory_index();
 
 #endif

@@ -286,18 +286,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	sim_data->total_time      = 0;  // Includes I/O
 	sim_data->simulation_time = 0;  // Does not include I/O
 
-	sim_data->stages = 0;
-
-	// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
-	std::vector<std::string> high = global_args.sim_hold_high.value();
-	std::vector<std::string> low = global_args.sim_hold_low.value();
-
-	for (int i = 0; i < high.size(); i++)
-		sim_data->hold_high_index.insert({high[i], i});
-
-	for (int i = 0; i < low.size(); i++)
-		sim_data->hold_low_index.insert({low[i], i});
-
+	sim_data->stages = 0;	
 	sim_data->num_waves = std::ceil((double)(sim_data->num_vectors * 2.0) / (double)SIM_WAVE_LENGTH);
 
 	return sim_data;
@@ -778,8 +767,8 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 	s->times =__DBL_MAX__;
 
 	// Hash tables index the nodes in the current stage, as well as their children.
-	std::unordered_set<nnode_t *> stage_children;
-	std::unordered_set<nnode_t *> stage_nodes;
+	std::unordered_set<nnode_t *> stage_children = std::unordered_set<nnode_t *>();
+	std::unordered_set<nnode_t *> stage_nodes = std::unordered_set<nnode_t *>();
 
 	int i;
 	for (i = 0; i < num_ordered_nodes; i++)
@@ -812,8 +801,8 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 			s->counts[stage] = 0;
 			s->num_children[stage] = 0;
 
-			stage_children 	= std::unordered_set<nnode_t *>();
-			stage_nodes		= std::unordered_set<nnode_t *>();
+			stage_children.clear();
+			stage_nodes.clear();
 		}
 
 		// Add the node to the current stage.
@@ -834,8 +823,8 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 
 		vtr::free(children);
 	}
-	stage_children 	= std::unordered_set<nnode_t *>();
-	stage_nodes		= std::unordered_set<nnode_t *>();
+	stage_children.clear();
+	stage_nodes.clear();
 	return s;
 }
 
@@ -2335,7 +2324,7 @@ static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, lo
 	FILE *file = preprocess_mif_file(mif);
 	rewind(file);
 
-	std::unordered_map<std::string, std::string> symbols;
+	std::unordered_map<std::string, std::string> symbols = std::unordered_map<std::string, std::string>();
 
 	char buffer_in[BUFFER_MAX_SIZE];
 	bool in_content = false;
@@ -2926,29 +2915,28 @@ static test_vector *generate_random_test_vector(int cycle, sim_data_t *sim_data)
 		int j;
 		for (j = 0; j < sim_data->input_lines->lines[i]->number_of_pins; j++)
 		{
-			char *name = sim_data->input_lines->lines[i]->name;
-
-			std::unordered_map<std::string,int>::const_iterator hold_high = sim_data->hold_high_index.find(std::string(name)); 
-			std::unordered_map<std::string,int>::const_iterator hold_low = sim_data->hold_low_index.find(std::string(name)); 
-
-			signed char value;
-			if      (hold_high != sim_data->hold_high_index.end())
+			std::string name = sim_data->input_lines->lines[i]->name;
+			
+			signed char value = (rand() % 2);	//default random value;
+			if(name.size())
 			{
-				if (!cycle) value = 0;
-				else        value = 1;
+				std::vector<std::string> held_high = global_args.sim_hold_high;
+				std::vector<std::string> held_low = global_args.sim_hold_low;
+				if (std::find(held_high.begin(), held_high.end(), name) != held_high.end())
+				{
+					if (!cycle) value =	0;	// start with reverse value
+					else        value =	1;	// then hold to requested value				
+				}
+				else if (std::find(held_low.begin(), held_low.end(), name) != held_low.end())
+				{
+					if (!cycle) value = 1;	// start with reverse value
+					else        value = 0;	// then hold to requested value
+				}
 			}
-			else if	(hold_high != sim_data->hold_low_index.end())
+			// Passed via the -3 option
+			else if (global_args.sim_generate_three_valued_logic)
 			{
-				if (!cycle) value = 1;
-				else        value = 0;
-			}
-			else
-			{
-				// Passed via the -3 option.
-				if (global_args.sim_generate_three_valued_logic)
-					value = (rand() % 3) - 1;
-				else
-					value = (rand() % 2);
+				value = (rand() % 3) - 1;
 			}
 
 			v->values[v->count] = (signed char *)vtr::realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));

@@ -41,6 +41,15 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory);
 implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identifier);
 
 /*
+ * Initialises hashtables to lookup memories based on inputs and names.
+ */
+void init_implicit_memory_index()
+{
+	implicit_memories = std::unordered_map<std::string,implicit_memory *>();
+	implicit_memory_inputs = std::unordered_map<std::string,implicit_memory *>();
+}
+
+/*
  * Looks up an implicit memory by identifier name in the implicit memory lookup table.
  */
 implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identifier)
@@ -178,7 +187,7 @@ void register_implicit_memory_input(char *name, implicit_memory *memory)
 void free_implicit_memory_index_and_finalize_memories()
 {
 
-	implicit_memory_inputs = std::unordered_map<std::string, implicit_memory *>();
+	implicit_memory_inputs.clear();
 
 	if (!implicit_memories.empty())
 	{
@@ -188,7 +197,7 @@ void free_implicit_memory_index_and_finalize_memories()
 			vtr::free(mem_it.second);
 		}
 	}
-	implicit_memories = std::unordered_map<std::string, implicit_memory *>();
+	implicit_memories.clear();
 }
 
 /*

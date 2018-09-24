@@ -39,7 +39,7 @@ function micro_test() {
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
-		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR/arch && mkdir -p $DIR/no_arch
+		DIR="regression_test/runs/micro/$test_name" && rm -Rf $DIR && mkdir -p $DIR/arch && mkdir -p $DIR/no_arch
 	done
 
 
@@ -124,7 +124,7 @@ function regression_test() {
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
 		output_blif="".blif
-		DIR="regression_test/runs/full/$test_name" && mkdir -p $DIR
+		DIR="regression_test/runs/full/$test_name" && rm -Rf $DIR && mkdir -p $DIR
 
 
     echo "./odin_II  \
@@ -162,7 +162,7 @@ function basic_test() {
 	do
     	basename=${benchmark%.v}
     	test_name=${basename##*/}
-		DIR="regression_test/runs/$test_type/$test_name" && mkdir -p $DIR
+		DIR="regression_test/runs/$test_type/$test_name" && rm -Rf $DIR && mkdir -p $DIR
 		echo "./odin_II  \
 			--adder_type default \
 			-V regression_test/benchmark/$test_type/$test_name.v \
@@ -197,10 +197,12 @@ function other_test() {
 	for benchmark in regression_test/benchmark/other/*
 	do
     	test_name=${benchmark##*/}
-		DIR="regression_test/runs/other/$test_name" && mkdir -p $DIR
+		DIR="regression_test/runs/other/$test_name" && rm -Rf $DIR && mkdir -p $DIR
 
-		eval $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ') \
-		&> regression_test/runs/other/$test_name/log \
+		echo "./odin_II $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ')" \
+		> regression_test/runs/other/$test_name/log
+		./odin_II $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ') \
+		&>> regression_test/runs/other/$test_name/log \
 		&& echo " --- PASSED == other/$test_name" \
 		|| (echo " -X- FAILED == other/$test_name" \
 			&& echo other/$test_name >> regression_test/runs/failure.log)
@@ -219,10 +221,6 @@ then
 	NB_OF_PROC=$2
 	echo "Trying to run benchmark on $NB_OF_PROC processes"
 fi
-
-
-rm -Rf regression_test/runs && mkdir -p regression_test/runs
-touch regression_test/runs/failure.log
 
 START=$(date +%s%3N)
 

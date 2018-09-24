@@ -394,8 +394,6 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	char line[MaxLine];
 	char *token;
 	veri_include *new_include = NULL;
-	int pretty_tab =0;
-	int *current_tabulation = &pretty_tab;
 
 
 	while (NULL != fgets(line, MaxLine, source))

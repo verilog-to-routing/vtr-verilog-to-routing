@@ -388,6 +388,7 @@ void create_netlist()
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string);
+	init_implicit_memory_index();
 	convert_ast_to_netlist_recursing_via_modules(top_module, top_string, 0);
 	free_implicit_memory_index_and_finalize_memories();
 	create_top_output_nodes(top_module, top_string);
