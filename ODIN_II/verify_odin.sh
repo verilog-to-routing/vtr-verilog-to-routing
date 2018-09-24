@@ -221,7 +221,7 @@ then
 fi
 
 
-rm -Rf regression_test/runs/*
+rm -Rf regression_test/runs && mkdir -p regression_test/runs
 touch regression_test/runs/failure.log
 
 START=$(date +%s%3N)

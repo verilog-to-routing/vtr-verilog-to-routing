@@ -618,16 +618,32 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 /**
  * the trim function remove consequent whitespace and remove trailing whitespace
  */
+inline static bool are_both_whitespace(char a, char b) 
+{ 
+	return isspace(a) && isspace(b);
+}
+
 char* trim(int *current_tabulation, char *string)
 {
 	if (!string)
 		return string;
 
-	//remove leading and trailling whitespace and replace large space with single space inside text
-    std::string trimmed = std::regex_replace(std::regex_replace(string, std::regex("\\s{2,}"), std::string(" ")), 
-																		std::regex("^\\s+|\\s+$"), std::string(""));
+	std::string temp = string;
+	//replace large space{1 or more} with single space inside text
+	std::string::iterator new_end = std::unique(temp.begin(), temp.end(), are_both_whitespace);
+	temp.erase(new_end, temp.end());   
 
-	return strcpy(string,trimmed.c_str());
+	//remove head whitespace
+	if( temp.length() > 0 && isspace(temp[0]) )					temp.erase(0,1);
+	//remove trailing whitespace
+	if( temp.length() > 0 && isspace(temp[temp.length()-1]) )	temp.erase(temp.length()-1,1);
+	//copy string over
+	if( temp.length() > 0)										memcpy(string,temp.c_str(), temp.length());
+	
+	//make sure we have a nul terminated string
+	string[temp.length()] = '\0';
+
+	return string;
 }
 
 /* ------------------------------------------------------------------------- */
