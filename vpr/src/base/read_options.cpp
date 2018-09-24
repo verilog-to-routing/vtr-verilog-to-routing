@@ -969,11 +969,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
             .help("The net fanout threshold above which nets will be re-routed incrementally.")
-            /* Based on testing, choosing a low threshold can lead to instability
-               where sometimes route time and critical path are degraded. 64 seems
-               to be a reasonable choice for most circuits. For nets with a greater
-               distribution of high fanout nets, choose a larger threshold */
-            .default_value("64")
+            .default_value("16")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 
