@@ -1200,7 +1200,7 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     strcpy(unique_name,"function_instance_");
-    sprintf(aux_name,"%d",size_function_instantiations_by_module);
+    odin_sprintf(aux_name,"%d",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
 
     ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
@@ -1754,7 +1754,7 @@ void graphVizOutputAst(std::string path, ast_node_t *top)
 	static int file_num = 0;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s_ast.dot", path.c_str(), top->children[0]->types.identifier);
+	odin_sprintf(path_and_file, "%s/%s_ast.dot", path.c_str(), top->children[0]->types.identifier);
 	fp = fopen(path_and_file, "w");
 	file_num++;
 

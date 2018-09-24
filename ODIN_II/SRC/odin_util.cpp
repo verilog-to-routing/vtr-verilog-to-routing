@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <errno.h>
 #include "types.h"
 #include "globals.h"
+#include <cstdarg>
 
 #include "odin_util.h"
 #include "vtr_util.h"
@@ -736,11 +737,11 @@ char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
 	{
 		case 1:
 			tmp = vtr::replace_first(tmp,sKey,rKey);
-			sprintf(line,"%s",tmp.c_str());
+			odin_sprintf(line,"%s",tmp.c_str());
 			break;
 		case 2:
 			tmp = vtr::replace_all(tmp,sKey,rKey);
-			sprintf(line,"%s",tmp.c_str());
+			odin_sprintf(line,"%s",tmp.c_str());
 			break;
 		default:
 			return line;
@@ -770,7 +771,7 @@ char *find_substring(char *src,const char *sKey,int flag)
 		default:
 			return line;
 	}
-	sprintf(line,"%s",tmp.c_str());
+	odin_sprintf(line,"%s",tmp.c_str());
 
 	return line;
 }
@@ -916,3 +917,54 @@ void trim_string(char* string, const char *chars)
 		}
 	}
 }
+
+/**
+ * verifies only one condition evaluates to true
+ */
+bool only_one_is_true(std::vector<bool> tested)
+{
+	bool previous_value = false;
+	for(bool next_value: tested)
+	{
+		if(!previous_value && next_value)
+			previous_value = true;
+		else if(previous_value && next_value)
+			return false;
+	}
+	return previous_value;
+}
+
+/**
+ * This overrides default sprintf since odin uses sprintf to concatenate strings
+ * sprintf has undefined behavior for such and this prevents string overriding if 
+ * it is also given as an input
+ */
+int odin_sprintf (char *s, const char *format, ...)
+{
+    va_list args, args_copy ;
+    va_start( args, format ) ;
+    va_copy( args_copy, args ) ;
+
+    const auto sz = std::vsnprintf( nullptr, 0, format, args ) + 1 ;
+
+    try
+    {
+        std::string temp( sz, ' ' ) ;
+        std::vsnprintf( &temp.front(), sz, format, args_copy ) ;
+        va_end(args_copy) ;
+        va_end(args) ;
+
+        s = strncpy(s, temp.c_str(),temp.length());
+
+		return temp.length();
+
+    }
+    catch( const std::bad_alloc& )
+    {
+        va_end(args_copy) ;
+        va_end(args) ;
+        return -BUFFER_MAX_SIZE;
+    }
+
+}
+ 

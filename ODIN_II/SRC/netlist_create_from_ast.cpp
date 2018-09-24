@@ -5627,7 +5627,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_row = node->children[1]->types.number.value;
 		array_column = node->children[2]->types.number.value;
 		array_index = array_row * array_size + array_column;
-		sprintf(number, "%ld", array_index);
+		odin_sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
 
 	}
@@ -5638,7 +5638,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
-		sprintf(number, "%ld", array_index);
+		odin_sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
 
 	}
@@ -5649,7 +5649,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
-		sprintf(number, "%ld", array_index);
+		odin_sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
 	}
 	else
@@ -5663,7 +5663,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node)
 		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
 		array_index = array_row * array_size + array_column;
 
-		sprintf(number, "%ld", array_index);
+		odin_sprintf(number, "%ld", array_index);
 		change_to_number_node(node->children[1],convert_dec_string_of_size_to_long_long(number,sizeof(number)));
 	}
 	return;

@@ -375,7 +375,7 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.black_box_latches, "-black_box_latches")
+	other_grp.add_argument(global_args.black_box_latches, "--black_box_latches")
 			.help("Output all Latches as Black Boxes")
 			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
@@ -479,19 +479,16 @@ void get_options(int argc, char** argv) {
 	parser.parse_args(argc, argv);
 
 	//Check required options
-	if (!global_args.config_file
-	&& !global_args.blif_file
-	&& global_args.verilog_files.value().empty()) 
-	{
+	if(!only_one_is_true({	
+		global_args.config_file,					//have a config file
+		global_args.blif_file,						//have a blif file
+		!global_args.verilog_files.value().empty()	//have a verilog input list
+	})){
 		parser.print_usage();
-		error_message(-1,0,-1,"Must include either a config file, a blif netlist, or a verilog file\n");
-	} 
-	else if (global_args.config_file && !global_args.verilog_files.value().empty()) 
-	{
-		warning_message(-1,0,-1, "Using command line options for verilog input file when a config file was specified!\n");
+		error_message(-1,0,-1,"Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
-	//Allow some config values to be overriden from command line
 
+	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
 	{
 		//parse comma separated list of verilog files

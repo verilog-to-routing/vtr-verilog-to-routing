@@ -68,7 +68,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	if (global_args.high_level_block != NULL)
 	{
 		out_file = (char*)vtr::malloc(sizeof(char)*(1+strlen(file_name)+strlen(global_args.high_level_block)+6));
-		sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block.value());
+		odin_sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block.value());
 		out = fopen(out_file, "w");
 	}
 	else

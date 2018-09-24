@@ -138,7 +138,7 @@ int count_blif_lines(FILE *file);
 void read_blif(char * blif_file)
 {
 	char local_blif[255];
-	sprintf(local_blif, "%s", blif_file);
+	odin_sprintf(local_blif, "%s", blif_file);
 
 	verilog_netlist = allocate_netlist();
 	/*Opening the blif file */
@@ -549,7 +549,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 
 	// Name the node subcircuit_name~hard_block_number so that the name is unique.
 	static long hard_block_number = 0;
-	sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
+	odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
 	new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL,-1);
 
 	// Determine the type of hard block.
@@ -1516,7 +1516,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
 	for (j = 0; j < ports->count; j++)
 	{
 		char buffer1[READ_BLIF_BUFFER];
-		sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
+		odin_sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
 		strcat(buffer, buffer1);
 	}
 	return vtr::strdup(buffer);

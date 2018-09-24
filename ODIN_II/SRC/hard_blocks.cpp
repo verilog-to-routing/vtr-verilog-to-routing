@@ -176,13 +176,13 @@ void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 		}
 
 		if (node->input_port_sizes[port] == 1)
-			j = sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pin->node->name);
+			j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pin->node->name);
 		else
 		{
 			if (node->input_pins[i]->net->driver_pin->name != NULL)
-				j = sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
+				j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
 			else
-				j = sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
+				j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
 		}
 
 		if (count + j > 79)
@@ -205,9 +205,9 @@ void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if (node->output_port_sizes[port] != 1)
-			j = sprintf(buffer, " %s[%d]=%s", node->output_pins[i]->mapping, index, node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", node->output_pins[i]->mapping, index, node->output_pins[i]->name);
 		else
-			j = sprintf(buffer, " %s=%s", node->output_pins[i]->mapping, node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s=%s", node->output_pins[i]->mapping, node->output_pins[i]->name);
 
 		if (count + j > 79)
 		{
@@ -257,9 +257,9 @@ void output_hard_blocks(FILE *out)
 				for (i = 0; i < hb_ports->size; i++)
 				{
 					if (hb_ports->size == 1)
-						count = count + sprintf(buffer, " %s", hb_ports->name);
+						count = count + odin_sprintf(buffer, " %s", hb_ports->name);
 					else
-						count = count + sprintf(buffer, " %s[%d]", hb_ports->name, i);
+						count = count + odin_sprintf(buffer, " %s[%d]", hb_ports->name, i);
 
 					if (count >= 78)
 						count = fprintf(out, " \\\n%s", buffer) - 3;
@@ -276,9 +276,9 @@ void output_hard_blocks(FILE *out)
 				for (i = 0; i < hb_ports->size; i++)
 				{
 					if (hb_ports->size == 1)
-						count = count + sprintf(buffer, " %s", hb_ports->name);
+						count = count + odin_sprintf(buffer, " %s", hb_ports->name);
 					else
-						count = count + sprintf(buffer, " %s[%d]", hb_ports->name, i);
+						count = count + odin_sprintf(buffer, " %s[%d]", hb_ports->name, i);
 
 					if (count >= 78)
 						count = fprintf(out, " \\\n%s", buffer) - 3;

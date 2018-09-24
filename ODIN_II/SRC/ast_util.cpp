@@ -530,7 +530,7 @@ void change_to_number_node(ast_node_t *node, long long value)
 	//free_assignement_of_node_keep_tree(node);
 	size_t len = snprintf(NULL,0,"%lld", value);
 	char *number = (char *)vtr::calloc(len+1,sizeof(char));
-	sprintf(number, "%lld", value);
+	odin_sprintf(number, "%lld", value);
 
 	node->types.number.base = DEC;
 	node->types.number.size = len;
@@ -641,12 +641,12 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 			if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '1')
 			{
 				return_string = (char*)vtr::malloc(sizeof(char)*11+1); // ONE_VCC_CNS
-				sprintf(return_string, "ONE_VCC_CNS");
+				odin_sprintf(return_string, "ONE_VCC_CNS");
 			}
 			else if (var_node->types.number.binary_string[var_node->types.number.binary_size-bit-1] == '0')
 			{
 				return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
-				sprintf(return_string, "ZERO_GND_ZERO");
+				odin_sprintf(return_string, "ZERO_GND_ZERO");
 			}
 			else
 			{
@@ -657,7 +657,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		else
 		{
 			return_string = (char*)vtr::malloc(sizeof(char)*13+1); // ZERO_GND_ZERO
-			sprintf(return_string, "ZERO_GND_ZERO");
+			odin_sprintf(return_string, "ZERO_GND_ZERO");
 		}
 	}
 	else if (var_node->type == CONCATENATE)
@@ -676,7 +676,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 			}
 
 			return_string = (char*)vtr::malloc(sizeof(char)*strlen(var_node->types.concat.bit_strings[bit])+1);
-			sprintf(return_string, "%s", var_node->types.concat.bit_strings[bit]);
+			odin_sprintf(return_string, "%s", var_node->types.concat.bit_strings[bit]);
 		}
 	}
 	else
@@ -848,7 +848,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			for (i = 0; i < width; i++) // 0th bit is MSB so need to access reverse
 			{
 				return_string[i] = (char*)vtr::malloc(sizeof(char)*strlen(var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings-i-1])+1);
-				sprintf(return_string[i], "%s", var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings-i-1]);
+				odin_sprintf(return_string[i], "%s", var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings-i-1]);
 			}
 		}
 	}
@@ -971,7 +971,7 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 		{
 			oassert(module_param_list->children[i]->children[5]->type == NUMBERS);
 
-			sprintf(module_param_name, "%s_%lld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
+			odin_sprintf(module_param_name, "%s_%lld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
 		}
 	}
 

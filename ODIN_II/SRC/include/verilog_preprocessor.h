@@ -80,7 +80,7 @@ void push(veri_flag_stack *stack, int flag);
 
 
 /* General Utility methods ------------------------------------------------- */
-char* trim(char *string);
+char* trim(int *current_tabulation, char *string);
 
 /* ------------------------------------------------------------------------- */
 
