@@ -242,8 +242,6 @@ void try_graph(int width_fac, t_router_opts router_opts,
 	/* Free any old routing graph, if one exists. */
 	free_rr_graph();
 
-	clock_t begin = clock();
-
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	create_rr_graph(graph_type,
@@ -259,10 +257,6 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
-
-	clock_t end = clock();
-
-	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 bool try_route(int width_fac, t_router_opts router_opts,
@@ -301,8 +295,6 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	/* Free any old routing graph, if one exists. */
 	free_rr_graph();
 
-	clock_t begin = clock();
-
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 
@@ -319,10 +311,6 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
-
-	clock_t end = clock();
-
-	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);

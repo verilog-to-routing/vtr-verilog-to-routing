@@ -16,6 +16,18 @@
 #include <string.h>
 #include <algorithm>
 #include <ctime>
+#include <sstream>
+#include <utility>
+
+#include "vtr_version.h"
+#include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_memory.h"
+#include "vtr_matrix.h"
+#include "vtr_math.h"
+#include "vtr_log.h"
+#include "vtr_time.h"
+
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "read_xml_arch_file.h"
@@ -24,15 +36,6 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-#include "vtr_version.h"
-#include <sstream>
-#include <utility>
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "vtr_memory.h"
-#include "vtr_matrix.h"
-#include "vtr_math.h"
-#include "vtr_log.h"
 #include "rr_graph_writer.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"
@@ -75,6 +78,7 @@ void load_rr_file(const t_graph_type graph_type,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         const char* read_rr_graph_name) {
+    vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     const char *Prop;
     pugi::xml_node next_component;
@@ -84,8 +88,8 @@ void load_rr_file(const t_graph_type graph_type,
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml") == false) {
         vtr::printf_warning(__FILE__, __LINE__,
-                "Architecture file '%s' may be in incorrect format. "
-                "Expecting .xml format for RR graph files.\n",
+                "RR graph file '%s' may be in incorrect format. "
+                "Expecting .xml format\n",
                 read_rr_graph_name);
     }
     try {
@@ -181,18 +185,15 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_seg_id(next_component, loc_data);
 
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
-		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
-	}
+        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
+            dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
+        }
 
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
 
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(num_seg_types);
 #endif
-
-        float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
-        vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
 
     } catch (XmlError& e) {
 
