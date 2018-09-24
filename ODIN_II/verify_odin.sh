@@ -39,52 +39,71 @@ function micro_test() {
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
-		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR
-
-		cp $benchmark $DIR/circuit.v
-		cp $input_vectors $DIR/circuit_input
-		cp $output_vectors $DIR/circuit_output
-		cp ../libs/libarchfpga/arch/sample_arch.xml $DIR/arch.xml
+		DIR="regression_test/runs/micro/$test_name" && mkdir -p $DIR/arch && mkdir -p $DIR/no_arch
 	done
 
 
 	#verilog
 	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
-	'./odin_II -E \
+	'echo "./odin_II  \
     --adder_type default \
-		-V regression_test/runs/micro/test_dir/circuit.v \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-o regression_test/runs/micro/test_dir/tempa.blif \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
-	&& ./odin_II -E \
+		-V regression_test/benchmark/micro/test_dir.v \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-o regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
+		-sim_dir regression_test/runs/micro/test_dir/no_arch/" > regression_test/runs/micro/test_dir/no_arch/log \
+	&& ./odin_II  \
     --adder_type default \
-		-b regression_test/runs/micro/test_dir/tempa.blif \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
-	&& ./odin_II -E \
+		-V regression_test/benchmark/micro/test_dir.v \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-o regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
+		-sim_dir regression_test/runs/micro/test_dir/no_arch/ \
+		&>> regression_test/runs/micro/test_dir/no_arch/log \
+	&& echo "./odin_II  \
     --adder_type default \
-		-a regression_test/runs/micro/test_dir/arch.xml \
-		-V regression_test/runs/micro/test_dir/circuit.v \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-o regression_test/runs/micro/test_dir/tempb.blif \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
-	&& ./odin_II -E \
+		-b regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-sim_dir regression_test/runs/micro/test_dir/no_arch/" >> regression_test/runs/micro/test_dir/no_arch/log \
+	&& ./odin_II  \
     --adder_type default \
-		-a regression_test/runs/micro/test_dir/arch.xml \
-		-b regression_test/runs/micro/test_dir/tempb.blif \
-		-t regression_test/runs/micro/test_dir/circuit_input \
-		-T regression_test/runs/micro/test_dir/circuit_output \
-		-sim_dir regression_test/runs/micro/test_dir/ \
-		&> regression_test/runs/micro/test_dir/log \
-	&& echo " --- PASSED == regression_test/runs/micro/test_dir" \
-	|| (echo " -X- FAILED == regression_test/runs/micro/test_dir" \
-		&& echo regression_test/runs/micro/test_dir >> regression_test/runs/failure.log )'
+		-b regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-sim_dir regression_test/runs/micro/test_dir/no_arch/ \
+		&>> regression_test/runs/micro/test_dir/no_arch/log \
+	&& echo "./odin_II  \
+    --adder_type default \
+		-V regression_test/benchmark/micro/test_dir.v \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-o regression_test/runs/micro/test_dir/arch/test_dir.blif \
+		-sim_dir regression_test/runs/micro/test_dir/arch/" > regression_test/runs/micro/test_dir/arch/log \
+	&& ./odin_II  \
+    --adder_type default \
+		-V regression_test/benchmark/micro/test_dir.v \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-o regression_test/runs/micro/test_dir/arch/test_dir.blif \
+		-sim_dir regression_test/runs/micro/test_dir/arch/ \
+		&>> regression_test/runs/micro/test_dir/arch/log \
+	&& echo "./odin_II  \
+    --adder_type default \
+		-b regression_test/runs/micro/test_dir/arch/test_dir.blif \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-sim_dir regression_test/runs/micro/test_dir/arch/" >> regression_test/runs/micro/test_dir/arch/log \
+	&& ./odin_II  \
+    --adder_type default \
+		-b regression_test/runs/micro/test_dir/arch/test_dir.blif \
+		-t regression_test/benchmark/micro/test_dir_input \
+		-T regression_test/benchmark/micro/test_dir_output \
+		-sim_dir regression_test/runs/micro/test_dir/arch/ \
+		&>> regression_test/runs/micro/test_dir/arch/log \
+	&& echo " --- PASSED == micro/test_dir" \
+	|| (echo " -X- FAILED == micro/test_dir" \
+		&& echo micro/test_dir >> regression_test/runs/failure.log )'
 
 }
 
@@ -104,70 +123,89 @@ function regression_test() {
 		test_name=${basename##*/}
 		input_vectors="$basename"_input
 		output_vectors="$basename"_output
+		output_blif="".blif
+		DIR="regression_test/runs/full/$test_name" && mkdir -p $DIR
 
-    echo "./odin_II -E \
-    --adder_type default \
-		-a ../libs/libarchfpga/arch/sample_arch.xml \
-		-V $test_verilog \
-		-t $input_vectors \
-		-T $output_vectors" > regression_test/runs/full/$test_name.log
 
-		(./odin_II -E \
-    --adder_type "default" \
-		-a "../libs/libarchfpga/arch/sample_arch.xml" \
-		-V "$test_verilog" \
-		-t "$input_vectors" \
-		-T "$output_vectors" \
-			&>> regression_test/runs/full/$test_name.log && [ -e OUTPUT/output_vectors ] && echo " --- PASSED == $test_verilog") \
-    	|| (echo " -X- FAILED == $test_verilog" && echo $test_verilog >> regression_test/runs/failure.log)
+    echo "./odin_II  \
+		--adder_type default \
+			-a ../libs/libarchfpga/arch/sample_arch.xml \
+			-V $test_verilog \
+			-t $input_vectors \
+			-T $output_vectors \
+			-o regression_test/runs/full/$test_name/$test_name.blif \
+			-sim_dir regression_test/runs/full/$test_name/" \
+				> regression_test/runs/full/$test_name/log
+
+		./odin_II  \
+    		--adder_type "default" \
+			-a "../libs/libarchfpga/arch/sample_arch.xml" \
+			-V "$test_verilog" \
+			-t "$input_vectors" \
+			-T "$output_vectors" \
+			-o regression_test/runs/full/$test_name/$test_name.blif \
+			-sim_dir regression_test/runs/full/$test_name/ \
+			&>> regression_test/runs/full/log \
+		&& echo " --- PASSED == full/$test_name" \
+		|| (echo " -X- FAILED == full/$test_name" \
+		&& echo full/$test_name >> regression_test/runs/failure.log )
 
 	done
 }
 
-#1				#2
-#benchmark dir	N_trhead
-function arch_test() {
-	for benchmark in regression_test/benchmark/arch/*.v
+#1			#2			
+#N_trhead	benchmark_named_dir
+function basic_test() {
+	test_type=$2
+
+	for benchmark in regression_test/benchmark/$test_type/*.v
 	do
     	basename=${benchmark%.v}
     	test_name=${basename##*/}
-		DIR="regression_test/runs/arch/$test_name" && mkdir -p $DIR
-
-		cp $benchmark $DIR/circuit.v
+		DIR="regression_test/runs/$test_type/$test_name" && mkdir -p $DIR
+		echo "./odin_II  \
+			--adder_type default \
+			-V regression_test/benchmark/$test_type/$test_name.v \
+			-o $DIR/odin.blif" > $DIR/log
 	done
+	ls regression_test/runs/$test_type | awk '{print "'$test_type'/"$1}' | xargs -P$1 -I test_dir /bin/bash -c \
+		' ./odin_II  -V regression_test/benchmark/test_dir.v \
+        	--adder_type default \
+			-o regression_test/runs/test_dir/odin.blif \
+			-sim_dir regression_test/runs/test_dir/ \
+			&>> regression_test/runs/test_dir/log \
+    	&& echo " --- PASSED == test_dir" \
+    	|| (echo " -X- FAILED == test_dir" \
+    		&& echo test_dir >> regression_test/runs/failure.log)'
+}
 
-	ls regression_test/runs/arch | xargs -P$1 -I test_dir /bin/bash -c \
-		' ./odin_II -E -V regression_test/runs/arch/test_dir/circuit.v \
-        --adder_type default \
-				-o regression_test/runs/arch/test_dir/temp.blif \
-				-sim_dir regression_test/runs/arch/test_dir/ \
-					&> regression_test/runs/arch/test_dir/log \
-    	&& echo " --- PASSED == regression_test/runs/arch/test_dir" \
-    	|| (echo " -X- FAILED == regression_test/runs/arch/test_dir" \
-    		&& echo regression_test/runs/arch/test_dir >> regression_test/runs/failure.log)'
+#1		
+#N_trhead
+function arch_test() {
+	basic_test $1 arch
 }
 
 #1				#2
 #benchmark dir	N_trhead
 function syntax_test() {
-	for benchmark in regression_test/benchmark/syntax/*.v
+	basic_test $1 syntax
+}
+
+#1				#2
+#benchmark dir	N_trhead
+function other_test() {
+	for benchmark in regression_test/benchmark/other/*
 	do
-    	basename=${benchmark%.v}
-    	test_name=${basename##*/}
-		DIR="regression_test/runs/syntax/$test_name" && mkdir -p $DIR
+    	test_name=${benchmark##*/}
+		DIR="regression_test/runs/other/$test_name" && mkdir -p $DIR
 
-		cp $benchmark $DIR/circuit.v
+		eval $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ') \
+		&> regression_test/runs/other/$test_name/log \
+		&& echo " --- PASSED == other/$test_name" \
+		|| (echo " -X- FAILED == other/$test_name" \
+			&& echo other/$test_name >> regression_test/runs/failure.log)
+
 	done
-
-	ls regression_test/runs/syntax | xargs -P$1 -I test_dir /bin/bash -c \
-		' ./odin_II -E -V regression_test/runs/syntax/test_dir/circuit.v \
-        --adder_type default \
-				-o regression_test/runs/syntax/test_dir/temp.blif \
-				-sim_dir regression_test/runs/syntax/test_dir/ \
-					&> regression_test/runs/syntax/test_dir/log \
-    	&& echo " --- PASSED == regression_test/runs/syntax/test_dir" \
-    	|| (echo " -X- FAILED == regression_test/runs/syntax/test_dir" \
-    		&& echo regression_test/runs/syntax/test_dir >> regression_test/runs/failure.log)'
 }
 
 
@@ -206,12 +244,17 @@ case $1 in
 		regression_test $NB_OF_PROC
 		;;
 
-  "full_suite")
-    arch_test $NB_OF_PROC
-    syntax_test $NB_OF_PROC
-    micro_test $NB_OF_PROC
-    regression_test $NB_OF_PROC
-    ;;
+	"other")
+		other_test $NB_OF_PROC
+		;;
+
+	"full_suite")
+		arch_test $NB_OF_PROC
+		syntax_test $NB_OF_PROC
+		other_test $NB_OF_PROC
+		micro_test $NB_OF_PROC
+		regression_test $NB_OF_PROC
+		;;
 
 	"vtr_basic")
 		cd ..
@@ -228,6 +271,7 @@ case $1 in
 	"pre_commit")
 		arch_test $NB_OF_PROC
 		syntax_test $NB_OF_PROC
+		other_test $NB_OF_PROC
 		micro_test $NB_OF_PROC
 		regression_test $NB_OF_PROC
 		cd ..

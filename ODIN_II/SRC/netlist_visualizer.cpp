@@ -50,7 +50,7 @@ void graphVizOutputNetlist(std::string path, const char* name, short marker_valu
 	FILE *fp;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
+	odin_sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
 	fp = fopen(path_and_file, "w");
 
         /* open graph */
@@ -156,7 +156,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 					/* renaming for output nodes */
                     char* temp_string_old = temp_string;
 					temp_string = (char*)vtr::malloc(sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string_old);
+					odin_sprintf(temp_string, "%s_O", temp_string_old);
                     free(temp_string_old);
 				}
 				if (next_node->type == OUTPUT_NODE)
@@ -164,7 +164,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 					/* renaming for output nodes */
                     char* temp_string2_old = temp_string2;
 					temp_string2 = (char*)vtr::malloc(sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2_old);
+					odin_sprintf(temp_string2, "%s_O", temp_string2_old);
                     free(temp_string2_old);
 				}
 
@@ -192,7 +192,7 @@ void graphVizOutputCombinationalNet(std::string path, const char* name, short ma
 	FILE *fp;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
+	odin_sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
 	fp = fopen(path_and_file, "w");
 
         /* open graph */
@@ -280,13 +280,13 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 				{
 					/* renaming for output nodes */
 					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
-					sprintf(temp_string, "%s_O", temp_string);
+					odin_sprintf(temp_string, "%s_O", temp_string);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
 					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
-					sprintf(temp_string2, "%s_O", temp_string2);
+					odin_sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
 				fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2, current_node->output_pins[j]->net->fanout_pins[k]->name);

@@ -203,9 +203,9 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 
 	/* wide input first :) identical branches! */
 	// if (node->input_port_sizes[0] > node->input_port_sizes[1])
-	// 	sanity = sprintf(new_name, "%s", node->name);
+	// 	sanity = odin_sprintf(new_name, "%s", node->name);
 	// else
-		sanity = sprintf(new_name, "%s", node->name);
+		sanity = odin_sprintf(new_name, "%s", node->name);
 
 	if (len <= sanity) /* buffer not large enough */
 		oassert(FALSE);
@@ -217,7 +217,7 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 		{
 			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)vtr::malloc(len);
-			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+			odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
@@ -277,15 +277,15 @@ void add_the_blackbox_for_adds(FILE *out)
 		{
 			if (i < adds->size_a)
 			{
-				count = count + sprintf(buffer, " %s[%d]", pa, i);
+				count = count + odin_sprintf(buffer, " %s[%d]", pa, i);
 			}
 			else if(i < hard_add_inputs - adds->size_cin && i >= adds->size_a)
 			{
-				count = count + sprintf(buffer, " %s[%d]", pb, i - adds->size_a);
+				count = count + odin_sprintf(buffer, " %s[%d]", pb, i - adds->size_a);
 			}
 			else
 			{
-				count = count + sprintf(buffer, " %s[%d]", pcin, i - adds->size_a - adds->size_b);
+				count = count + odin_sprintf(buffer, " %s[%d]", pcin, i - adds->size_a - adds->size_b);
 			}
 			if (count > 78)
 				count = fprintf(out, " \\\n %s", buffer) - 3;
@@ -301,11 +301,11 @@ void add_the_blackbox_for_adds(FILE *out)
 		{
 			if (i < adds->size_cout)
 			{
-				count = count + sprintf(buffer, " %s[%d]", pcout, i);
+				count = count + odin_sprintf(buffer, " %s[%d]", pcout, i);
 			}
 			else
 			{
-				count = count + sprintf(buffer, " %s[%d]", psumout, i - adds->size_cout);
+				count = count + odin_sprintf(buffer, " %s[%d]", psumout, i - adds->size_cout);
 			}
 
 			if (count > 78)
@@ -360,23 +360,23 @@ void define_add_function(nnode_t *node, short /*type*/, FILE *out)
 			if (i < node->input_port_sizes[0])
 			{
 				if (!driver_pin->name)
-					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->node->name);
 				else
-					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->next->name, i, driver_pin->name);
 			}
 			else if(i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0])
 			{
 				if (!driver_pin->name)
-					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->node->name);
 				else
-					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->next->name, i - node->input_port_sizes[0], driver_pin->name);
 			}
 			else
 			{
 				if (!driver_pin->name)
-					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->node->name);
 				else
-					j = sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
+					j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]), driver_pin->name);
 			}
 
 		if (count + j > 79)
@@ -391,9 +391,9 @@ void define_add_function(nnode_t *node, short /*type*/, FILE *out)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if(i < node->output_port_sizes[0])
-			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->next->name, i , node->output_pins[i]->name);
 		else
-			j = sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
+			j = odin_sprintf(buffer, " %s[%d]=%s", hard_adders->outputs->name, i - node->output_port_sizes[0], node->output_pins[i]->name);
 		if (count + j > 79)
 		{
 			fprintf(out, "\\\n");
@@ -728,7 +728,7 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	{
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)vtr::malloc(strlen(nodeo->name) + 20);
-		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
+		odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
 		{
 			//fixed_hard_adder = 1 then adder need to be exact size;

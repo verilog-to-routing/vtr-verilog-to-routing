@@ -133,9 +133,9 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 
 	/* wide input first :) identical branching! ? */
 	//if (node->input_port_sizes[0] > node->input_port_sizes[1])
-		sanity = sprintf(new_name, "%s", node->name);
+		sanity = odin_sprintf(new_name, "%s", node->name);
 	// else
-	// 	sanity = sprintf(new_name, "%s", node->name);
+	// 	sanity = odin_sprintf(new_name, "%s", node->name);
 
 	if (len <= sanity) /* buffer not large enough */
 		oassert(FALSE);
@@ -147,7 +147,7 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 		{
 			len = strlen(node->name) + 20; /* 6 chars for pin idx */
 			new_name = (char*)vtr::malloc(len);
-			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+			odin_sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
 	}
@@ -395,7 +395,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	{
 		node[i] = allocate_nnode();
 		node[i]->name = (char *)vtr::malloc(strlen(nodeo->name) + 20);
-		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
+		odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
 		{
 			if(configuration.fixed_hard_adder == 1)

@@ -21,17 +21,18 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "types.h"
-#include "hashtable.h"
 #include "implicit_memory.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+#include <unordered_map>
+
 // Hashes the implicit memory name to the implicit_memory structure.
-hashtable_t *implicit_memories;
+std::unordered_map<std::string,implicit_memory *> implicit_memories;
 // Hashes the implicit memory input name to the implicit_memory structure.
-hashtable_t *implicit_memory_inputs;
+std::unordered_map<std::string,implicit_memory *>  implicit_memory_inputs;
 
 void finalize_implicit_memory(implicit_memory *memory);
 void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name);
@@ -45,7 +46,13 @@ implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identi
 implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identifier)
 {
 	char *memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
-	return (implicit_memory *)implicit_memories->get(implicit_memories, memory_string, strlen(memory_string));
+
+	std::unordered_map<std::string,implicit_memory *>::const_iterator mem_out = implicit_memories.find(std::string(memory_string));
+
+	if ( mem_out == implicit_memories.end() )
+		return NULL;
+	else
+		return mem_out->second;
 }
 
 /*
@@ -111,7 +118,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 	memory->output_added = FALSE;
 	memory->name = full_name;
 
-	implicit_memories->add(implicit_memories, full_name, strlen(full_name), memory);
+	implicit_memories.insert({std::string(full_name), memory});
 
 	return memory;
 }
@@ -141,7 +148,14 @@ void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *
  */
 implicit_memory *lookup_implicit_memory_input(char *name)
 {
-	return (implicit_memory *)implicit_memory_inputs->get(implicit_memory_inputs, name, strlen(name));
+
+	std::unordered_map<std::string,implicit_memory *>::const_iterator mem_out = implicit_memory_inputs.find(std::string(name));
+
+	if ( mem_out == implicit_memory_inputs.end() )
+		return NULL;
+	else
+		return mem_out->second;
+
 }
 
 /*
@@ -151,18 +165,9 @@ implicit_memory *lookup_implicit_memory_input(char *name)
 void register_implicit_memory_input(char *name, implicit_memory *memory)
 {
 	if (!lookup_implicit_memory_input(name))
-		implicit_memory_inputs->add(implicit_memory_inputs, name, strlen(name), memory);
+		implicit_memory_inputs.insert({std::string(name), memory});
 	else
 		error_message(NETLIST_ERROR, -1, -1, "Attempted to re-register implicit memory output %s.", name);
-}
-
-/*
- * Initialises hashtables to lookup memories based on inputs and names.
- */
-void init_implicit_memory_index()
-{
-	implicit_memories = create_hashtable(1000);
-	implicit_memory_inputs = create_hashtable(1000);
 }
 
 /*
@@ -172,24 +177,18 @@ void init_implicit_memory_index()
  */
 void free_implicit_memory_index_and_finalize_memories()
 {
-	if (implicit_memory_inputs)
+
+	implicit_memory_inputs = std::unordered_map<std::string, implicit_memory *>();
+
+	if (!implicit_memories.empty())
 	{
-		implicit_memory_inputs->destroy(implicit_memory_inputs);
-		implicit_memory_inputs = NULL;
+		for (auto mem_it : implicit_memories) 
+		{
+			finalize_implicit_memory(mem_it.second);
+			vtr::free(mem_it.second);
+		}
 	}
-
-	if (implicit_memories)
-	{
-		implicit_memory **memories = (implicit_memory **)implicit_memories->get_all(implicit_memories);
-
-		int i;
-		for (i = 0; i < implicit_memories->count; i++)
-			finalize_implicit_memory(memories[i]);
-
-		vtr::free(memories);
-		implicit_memories->destroy_free_items(implicit_memories);
-		implicit_memories = NULL;
-	}
+	implicit_memories = std::unordered_map<std::string, implicit_memory *>();
 }
 
 /*

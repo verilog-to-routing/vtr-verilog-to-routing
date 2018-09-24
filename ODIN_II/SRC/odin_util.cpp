@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <errno.h>
 #include "types.h"
 #include "globals.h"
+#include <cstdarg>
 
 #include "odin_util.h"
 #include "vtr_util.h"
@@ -677,7 +678,7 @@ void error_message(short error_type, int line_number, int file, const char *mess
 
 	fprintf(stderr,"ERROR:");
 	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
+		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
 	if (line_number > 0)
 		fprintf(stderr," (Line number: %d)", line_number);
 	if (message != NULL)
@@ -710,7 +711,7 @@ void warning_message(short /*error_type*/, int line_number, int file, const char
 
 	fprintf(stderr,"WARNING (%ld):", warning_count);
 	if (file != -1)
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
+		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
 	if (line_number > 0)
 		fprintf(stderr," (Line number: %d)", line_number);
 	if (message != NULL) {
@@ -736,11 +737,11 @@ char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
 	{
 		case 1:
 			tmp = vtr::replace_first(tmp,sKey,rKey);
-			sprintf(line,"%s",tmp.c_str());
+			odin_sprintf(line,"%s",tmp.c_str());
 			break;
 		case 2:
 			tmp = vtr::replace_all(tmp,sKey,rKey);
-			sprintf(line,"%s",tmp.c_str());
+			odin_sprintf(line,"%s",tmp.c_str());
 			break;
 		default:
 			return line;
@@ -770,7 +771,7 @@ char *find_substring(char *src,const char *sKey,int flag)
 		default:
 			return line;
 	}
-	sprintf(line,"%s",tmp.c_str());
+	odin_sprintf(line,"%s",tmp.c_str());
 
 	return line;
 }
@@ -812,12 +813,34 @@ double wall_time()
 	return time_since_epoch.count();
 }
 
-/*
- * Gets the name of the file we are simulating as passed by the -b or -V option.
- */
-char *get_circuit_filename()
+std::string strip_path_and_ext(std::string file)
 {
-	return global_args.verilog_file?global_args.verilog_file:global_args.blif_file;
+	std::string::size_type loc_path = file.find_last_of("/")+1;
+	std::string::size_type loc_ext = file.find_last_of(".");
+	return file.substr(loc_path, loc_ext-loc_path);
+}
+
+/*
+ * Parses the given comma separated list
+ */
+std::vector<std::string> parse_seperated_list(char *list, const char *separator)
+{
+	std::vector<std::string> list_out;
+
+	// Parse the list.
+	if (!list)
+		return list_out;
+
+
+	char *pin_list = vtr::strdup(list);
+	char *token    = strtok(pin_list, separator);
+	while (token)
+	{
+		list_out.push_back(token);
+		token = strtok(NULL, ",");
+	}
+	vtr::free(pin_list);
+	return list_out;
 }
 
 /*
@@ -894,3 +917,54 @@ void trim_string(char* string, const char *chars)
 		}
 	}
 }
+
+/**
+ * verifies only one condition evaluates to true
+ */
+bool only_one_is_true(std::vector<bool> tested)
+{
+	bool previous_value = false;
+	for(bool next_value: tested)
+	{
+		if(!previous_value && next_value)
+			previous_value = true;
+		else if(previous_value && next_value)
+			return false;
+	}
+	return previous_value;
+}
+
+/**
+ * This overrides default sprintf since odin uses sprintf to concatenate strings
+ * sprintf has undefined behavior for such and this prevents string overriding if 
+ * it is also given as an input
+ */
+int odin_sprintf (char *s, const char *format, ...)
+{
+    va_list args, args_copy ;
+    va_start( args, format ) ;
+    va_copy( args_copy, args ) ;
+
+    const auto sz = std::vsnprintf( nullptr, 0, format, args ) + 1 ;
+
+    try
+    {
+        std::string temp( sz, ' ' ) ;
+        std::vsnprintf( &temp.front(), sz, format, args_copy ) ;
+        va_end(args_copy) ;
+        va_end(args) ;
+
+        s = strncpy(s, temp.c_str(),temp.length());
+
+		return temp.length();
+
+    }
+    catch( const std::bad_alloc& )
+    {
+        va_end(args_copy) ;
+        va_end(args) ;
+        return -BUFFER_MAX_SIZE;
+    }
+
+}
+ 

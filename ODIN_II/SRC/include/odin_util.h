@@ -47,11 +47,15 @@ char *find_substring(char *src,const char *sKey,int flag);
 
 void print_time(double time);
 double wall_time();
-char *get_circuit_filename();
+std::string strip_path_and_ext(std::string file);
+std::vector<std::string> parse_seperated_list(char *list, const char *separator);
 
 int print_progress_bar(double completion, int position, int length, double time);
 
 void trim_string(char* string, const char *chars);
+bool only_one_is_true(std::vector<bool> tested);
+int odin_sprintf (char *s, const char *format, ...);
+
 
 #endif
 

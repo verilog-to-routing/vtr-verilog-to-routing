@@ -105,12 +105,7 @@ void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiutil:
 	child = get_first_child(a_node, "verilog_file", loc_data, OPTIONAL);
 	while (child != NULL)
 	{
-		if (global_args.verilog_file == NULL)
-		{
-			config->list_of_file_names = (char**)vtr::realloc(config->list_of_file_names, sizeof(char*)*(config->num_list_of_file_names+1));
-			config->list_of_file_names[config->num_list_of_file_names] = vtr::strdup(child.child_value());
-			config->num_list_of_file_names ++;
-		}
+		config->list_of_file_names.push_back(child.child_value());
 		child = child.next_sibling(child.name());
 	}
 	return;

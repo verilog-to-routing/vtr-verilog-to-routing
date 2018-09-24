@@ -25,6 +25,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <sstream>
 
+// for mkdir
+#ifdef WIN32
+	#include <direct.h>
+#else
+	#include <sys/stat.h>
+#endif
+
 #include "vtr_error.h"
 #include "vtr_time.h"
 #include "odin_ii.h"
@@ -61,7 +68,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_path.h"
 #include "vtr_memory.h"
 
-#define DEFAULT_OUTPUT "OUTPUT/"
+#define DEFAULT_OUTPUT "temp/"
 
 size_t current_parse_file;
 t_arch Arch;
@@ -77,6 +84,13 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	one_string = vtr::strdup("ONE_VCC_CNS");
 	zero_string = vtr::strdup("ZERO_GND_ZERO");
 	pad_string = vtr::strdup("ZERO_PAD_ZERO");
+
+	// CREATE OUTPUT DIRECTORY
+	#ifdef WIN32
+		mkdir(DEFAULT_OUTPUT);
+	#else
+		mkdir(DEFAULT_OUTPUT, 0755);
+	#endif
 
 	int error_code = 0;
 
@@ -312,8 +326,9 @@ void get_options(int argc, char** argv) {
 			.metavar("XML_CONFIGURATION_FILE")
 			;
 
-	input_grp.add_argument(global_args.verilog_file, "-V")
-			.help("Verilog HDL file")
+	input_grp.add_argument(global_args.verilog_files, "-V")
+			.help("list of Verilog HDL file")
+			.nargs('+')
 			.metavar("VERILOG_FILE")
 			;
 
@@ -326,7 +341,7 @@ void get_options(int argc, char** argv) {
 
 	output_grp.add_argument(global_args.output_file, "-o")
 			.help("Output file path")
-			.default_value("OUTPUT/default_out.blif")
+			.default_value("temp/default_out.blif")
 			.metavar("OUTPUT_FILE_PATH")
 			;
 
@@ -360,7 +375,7 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.black_box_latches, "-black_box_latches")
+	other_grp.add_argument(global_args.black_box_latches, "--black_box_latches")
 			.help("Output all Latches as Black Boxes")
 			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
@@ -386,12 +401,14 @@ void get_options(int argc, char** argv) {
 			;
 
 	rand_sim_grp.add_argument(global_args.sim_hold_low, "-L")
-			.help("Comma-separated list of primary inputs to hold high at cycle 0, and low for all subsequent cycles")
+			.help("list of primary inputs to hold high at cycle 0, and low for all subsequent cycles")
+			.nargs('+')
 			.metavar("PRIMARY_INPUTS")
 			;
 
 	rand_sim_grp.add_argument(global_args.sim_hold_high, "-H")
-			.help("Comma-separated list of primary inputs to hold low at cycle 0, and high for all subsequent cycles")
+			.help("list of primary inputs to hold low at cycle 0, and high for all subsequent cycles")
+			.nargs('+')
 			.metavar("PRIMARY_INPUTS")
 			;
 
@@ -435,51 +452,49 @@ void get_options(int argc, char** argv) {
 			;
 
 	other_sim_grp.add_argument(global_args.sim_output_both_edges, "-E")
-			.help("Output after both edges of the clock (Default only after the falling edge)")
-			.default_value("false")
+			.help("Output after both edges of the clock (This is by default)")
+			.default_value("true")
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_sim_grp.add_argument(global_args.sim_output_rising_edge, "-R")
-			.help("Output after rising edges of the clock only (Default only after the falling edge)")
-			.default_value("false")
+	other_sim_grp.add_argument(global_args.sim_output_both_edges, "-R")
+			.help("DEPRECATED Output after rising edges of the clock only (Default after both edges)")
+			.default_value("true")
 			.action(argparse::Action::STORE_TRUE)
 			;
 
 	other_sim_grp.add_argument(global_args.sim_additional_pins, "-p")
-			.help("Comma-separated list of additional pins/nodes to monitor during simulation.\n"
-					"Eg: \"-p input~0,input~1\" monitors pin 0 and 1 of input, \n"
+			.help("list of additional pins/nodes to monitor during simulation.\n"
+					"Eg: \"-p input~0 input~1\" monitors pin 0 and 1 of input, \n"
 					"  or \"-p input\" monitors all pins of input as a single port. \n"
 					"  or \"-p input~\" monitors all pins of input as separate ports. (split) \n"
 					"- Note: Non-existent pins are ignored. \n"
 					"- Matching is done via strstr so general strings will match \n"
 					"  all similar pins and nodes.\n"
 					"    (Eg: FF_NODE will create a single port with all flipflops) \n")
+			.nargs('+')
 			.metavar("PINS_TO_MONITOR")
 			;
 
 	parser.parse_args(argc, argv);
 
 	//Check required options
-	if (   !global_args.config_file
-	&& !global_args.blif_file
-	&& !global_args.verilog_file) 
-	{
+	if(!only_one_is_true({	
+		global_args.config_file,					//have a config file
+		global_args.blif_file,						//have a blif file
+		!global_args.verilog_files.value().empty()	//have a verilog input list
+	})){
 		parser.print_usage();
-		error_message(-1,0,-1,"Must include either a config file, a blif netlist, or a verilog file\n");
-	} 
-	else if (global_args.config_file && global_args.verilog_file) 
-	{
-		warning_message(-1,0,-1, "Using command line options for verilog input file when a config file was specified!\n");
-	}
-
-	if( global_args.sim_output_both_edges && global_args.sim_output_rising_edge )
-	{
-		parser.print_usage();
-		error_message(-1,0,-1,"Cannot specify both edge and rising edge, select one or the other or neither\n");
+		error_message(-1,0,-1,"Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
 
 	//Allow some config values to be overriden from command line
+	if (!global_args.verilog_files.value().empty())
+	{
+		//parse comma separated list of verilog files
+		configuration.list_of_file_names = global_args.verilog_files.value();
+	}
+
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
 		configuration.arch_file = global_args.arch_file;
 	}
@@ -507,13 +522,11 @@ void get_options(int argc, char** argv) {
 void set_default_config()
 {
 	/* Set up the global configuration. */
-	configuration.list_of_file_names = NULL;
-	configuration.num_list_of_file_names = 0;
 	configuration.output_type = std::string("blif");
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
-	configuration.output_preproc_source = 0;
+	configuration.output_preproc_source = 1;
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
 	configuration.arch_file = NULL;
 
