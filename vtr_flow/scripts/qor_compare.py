@@ -60,8 +60,8 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if len(args.result_names) == 0:
-        args.parse_result_names = args.parse_result_files
+    if not args.result_names or len(args.result_names) == 0:
+        args.result_names = args.parse_result_files
     elif len(args.result_names) != len(args.parse_result_files):
         raise RuntimeError("Number of result names ({}) does not match number of result files ({})".format(len(args.result_names), len(args.parse_result_files)))
     else:
@@ -82,7 +82,7 @@ def main():
     #Load all the raw data into separate sheets
     raw_sheets = OrderedDict()
     for i in xrange(len(args.parse_result_files)):
-        sheet_name = safe_sheet_title("raw_{}".format(args.result_names[i]))
+        sheet_name = safe_sheet_title("{}".format(args.result_names[i]))
         ws = parse_result_to_sheet(wb, args.parse_result_files[i], sheet_name)
 
         raw_sheets[sheet_name] = ws

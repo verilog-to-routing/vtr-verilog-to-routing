@@ -62,6 +62,7 @@ ID_MID ({ALPHA}|{DIGIT10}|{SYMBOL})
 ID_INDEX (\[{DIGIT10}+\])
 ID ({ID_FIRST}{ID_MID}*{ID_INDEX}?)
 STR ({ID}|\*{ID}?)
+ESCAPED_STR (\{{WS}*[^ \t]*{WS}*\})
 
 /*
  * Symbol Definitions
@@ -113,7 +114,7 @@ STR ({ID}|\*{ID}?)
 {STR}                           { 
                                   return sdcparse::Parser::make_STRING(sdcparse_get_text(yyscanner)); 
                                 }
-\{{WS}*{STR}{WS}*\}             { 
+{ESCAPED_STR}                   {
                                   /*
                                    * Any continguous sequence of non-white space characters, 
                                    * with optional leading and/or trailing whitespace that falls
@@ -160,7 +161,7 @@ STR ({ID}|\*{ID}?)
                                      return 0 (which indicated end of file). This ensures
                                      there will always be an EOL provided to the parser. 
                                      However it may also generate a stray EOL if the last
-                                     line IS blank - so the parse must handle those correclty. */
+                                     line IS blank - so the parse must handle those correctly. */
                                   static bool once; return (once = !once) ? sdcparse::Parser::make_EOL() : sdcparse::Parser::make_EOF();
                                 }
 .                               { 

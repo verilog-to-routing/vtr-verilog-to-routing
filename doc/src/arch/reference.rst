@@ -555,8 +555,11 @@ The tags within the ``<device>`` tag are:
 
     :required: Yes
 
+    Specifies the default area used by each 1x1 grid logic tile (in :term:`MWTAs<MWTA>`), *excluding routing*.
+
     Used for an area estimate of the amount of area taken by all the functional blocks.
-    This specifies the area of a 1x1 tile excluding routing.
+
+    .. note:: This value can be overriden for specific ``<pb_type>``s with the ``area`` attribute.
 
 
 .. arch:tag:: <switch_block type="{wilton | subset | universal | custom}" fs="int"/>
@@ -666,7 +669,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
     :opt_param buf_size:
 
-        Specifies the buffer size in minimum-width transistor area units.
+        Specifies the buffer size in minimum-width transistor area (:term`MWTA`) units.
 
         If set to ``auto``, sized automatically from the R value.
         This allows you to use timing models without R’s and C’s and still be able to measure area.
@@ -828,7 +831,7 @@ PB Type
 
         **Default:** ``1``
 
-    :opt_param area: The logic area of the block type
+    :opt_param area: The logic area (in :term:`MWTA`) of the block type
 
         **Default:** from the ``<area>`` tag
 

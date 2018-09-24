@@ -453,6 +453,39 @@ struct ParseConstGenInference{
     }
 };
 
+struct ParseIncrRerouteDelayRipup {
+    ConvertedValue<e_incr_reroute_delay_ripup> from_str(std::string str) {
+        ConvertedValue<e_incr_reroute_delay_ripup> conv_value;
+        if      (str == "on") conv_value.set_value(e_incr_reroute_delay_ripup::ON);
+        else if (str == "off") conv_value.set_value(e_incr_reroute_delay_ripup::OFF);
+        else if (str == "auto") conv_value.set_value(e_incr_reroute_delay_ripup::AUTO);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_incr_reroute_delay_ripup (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_incr_reroute_delay_ripup val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_incr_reroute_delay_ripup::ON) conv_value.set_value("on");
+        else if (val == e_incr_reroute_delay_ripup::OFF) conv_value.set_value("off");
+        else {
+            VTR_ASSERT(val == e_incr_reroute_delay_ripup::AUTO);
+            conv_value.set_value("auto");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"on", "off", "auto"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -604,14 +637,18 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("global")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<e_clock_modeling,ParseClockModeling>(
-        args.clock_modeling, "--clock_modeling")
+    gen_grp.add_argument<e_clock_modeling,ParseClockModeling>(args.clock_modeling, "--clock_modeling")
             .help("Specifies how clock nets are handled\n"
                   " * ideal: Treat clock pins as ideal\n"
                   "          (i.e. no routing delays on clocks)\n"
                   " * route: Treat the clock pins as normal nets\n"
                   "          (i.e. routed using inter-block routing)\n")
             .default_value("ideal")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    gen_grp.add_argument<bool,ParseOnOff>(args.exit_before_pack, "--exit_before_pack")
+            .help("Causes VPR to exit before packing starts (useful for statistics collection)")
+            .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& file_grp = parser.add_argument_group("file options");
@@ -965,11 +1002,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
             .help("The net fanout threshold above which nets will be re-routed incrementally.")
-            /* Based on testing, choosing a low threshold can lead to instability
-               where sometimes route time and critical path are degraded. 64 seems
-               to be a reasonable choice for most circuits. For nets with a greater
-               distribution of high fanout nets, choose a larger threshold */
-            .default_value("64")
+            .default_value("16")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 
@@ -992,6 +1025,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " 0.0 implies all nets treated equally regardless of slack."
                   " At large values (>> 1) only nets on the critical path will consider delay.")
             .default_value("1.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_incr_reroute_delay_ripup,ParseIncrRerouteDelayRipup>(args.incr_reroute_delay_ripup, "--incremental_reroute_delay_ripup")
+            .help("Controls whether incremental net routing will rip-up (and re-route) a critical connection for delay, even if the routing is legal.")
+            .default_value("auto")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_routing_failure_predictor,ParseRoutePredictor>(args.routing_failure_predictor, "--routing_failure_predictor")

@@ -461,10 +461,16 @@ bool try_timing_driven_route(t_router_opts router_opts,
             } else {
                 bool stable_routing_configuration = true;
 
-                //If things are not too congested, then we should rip-up legal connections which are
-                //have poor delay characteristics
-                if (router_congestion_mode == RouterCongestionMode::NORMAL) {
-                    
+                //Should we reip-up legally routed connections which have poor delay characteristics?
+
+                //Yes, if explicitly enabled
+                bool should_ripup_for_delay = (router_opts.incr_reroute_delay_ripup == e_incr_reroute_delay_ripup::ON);
+
+                //Or, if things are not too congested
+                should_ripup_for_delay |= (router_opts.incr_reroute_delay_ripup == e_incr_reroute_delay_ripup::AUTO 
+                                           && router_congestion_mode == RouterCongestionMode::NORMAL);
+
+                if (should_ripup_for_delay) {
                     if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay())) {
                         // only need to forcibly reroute if critical path grew significantly
                         stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality,
@@ -472,8 +478,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
                             netlist_pin_lookup,
                             net_delay);
                     }
-                } else {
-                    VTR_ASSERT(router_congestion_mode == RouterCongestionMode::CONGESTED);
+                }
+
+                if (router_congestion_mode == RouterCongestionMode::CONGESTED) {
 
                     //The design appears to be congested:
                     //  1) Don't re-route legal connections due to delay. This allows
@@ -484,6 +491,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
                     //Blow away the router bounding boxes
                     // TODO: BBs only really need to be updated the first time we enter CONGESTED mode
+                    // TODO: Consider iteratively widening the BB's instead of blowing them completely way
                     route_ctx.route_bb = load_route_bb(std::numeric_limits<int>::max());
                 }
 

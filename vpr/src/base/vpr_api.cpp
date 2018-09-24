@@ -210,6 +210,7 @@ void vpr_init(const int argc, const char **argv,
     vpr_setup->device_layout = options->device_layout;
     vpr_setup->constant_net_method = options->constant_net_method;
     vpr_setup->clock_modeling = options->clock_modeling;
+    vpr_setup->exit_before_pack = options->exit_before_pack;
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -300,6 +301,12 @@ void vpr_init(const int argc, const char **argv,
 
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
+
+    if (vpr_setup.exit_before_pack) {
+        vtr::printf_warning(__FILE__, __LINE__, "Exiting before packing as requested.\n");
+        return true;
+    }
+
     { //Pack
         bool pack_success = vpr_pack_flow(vpr_setup, arch);
 
@@ -328,13 +335,13 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    {
-        //Analysis
+    { //Analysis
         vpr_analysis(vpr_setup, arch);
     }
 
     vpr_close_graphics(vpr_setup);
-    return true;
+
+    return true; //Successfully implemented
 }
 
 /*

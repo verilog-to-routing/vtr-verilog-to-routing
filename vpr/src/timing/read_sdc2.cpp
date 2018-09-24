@@ -824,9 +824,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 return domains;
             }
 
-            if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
+            if(clock_group.type != sdcparse::StringGroupType::CLOCK
+               && clock_group.type != sdcparse::StringGroupType::STRING) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                         "Expected clock collection via get_clocks");
+                         "Expected clock names or collection via get_clocks");
             }
 
             for (const auto& clock_glob_pattern : clock_group.strings) {
@@ -1212,6 +1213,6 @@ std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     std::string regex_str = vtr::replace_all(glob_pattern, ".", "\\.");
     regex_str = vtr::replace_all(regex_str, "*", ".*");
 
-    return std::regex(regex_str, std::regex::grep);
+    return std::regex(regex_str);
 }
 
