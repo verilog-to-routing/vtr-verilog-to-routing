@@ -136,7 +136,6 @@ void load_rr_file(const t_graph_type graph_type,
         verify_segments(next_component, loc_data, segment_inf);
 
         vtr::printf_info("Starting build routing resource graph...\n");
-        clock_t begin = clock();
 
         next_component = get_first_child(rr_graph, "channels", loc_data);
         process_channels(next_component, loc_data);
