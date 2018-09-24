@@ -406,7 +406,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		char *p_proc_line = proc_line ;
 		char *last_pch, *pch, *pch_end ;
 		// advance past all whitespace
-		last_pch = trim(current_tabulation, line) ;
+		last_pch = trim(line) ;
 		// start searching for backtick
 		pch = strchr( last_pch, '`' ) ;
 		while ( pch ) {
@@ -450,14 +450,14 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		/* Preprocessor directives have a backtick on the first column. */
 		if (line[0] == '`')
 		{
-			token = trim(NULL, (char *)strtok(line, " \t"));
+			token = trim((char *)strtok(line, " \t"));
 			//printf("preproc first token: %s\n", token);
 			/* If we encounter an `included directive we want to recurse using included_file and
 			 * new_include in place of source and current_include
 			 */
 			if (top(skip) < 1 && strcmp(token, "`include") == 0)
 			{
-				token = trim(NULL, (char *)strtok(NULL, "\""));
+				token = trim((char *)strtok(NULL, "\""));
 				FILE *included_file = open_source_file(token,current_include->path);
 
 				/* If we failed to open the included file handle the error */
@@ -488,16 +488,16 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				fprintf(preproc_producer, "`define %s\n", line + 1 + strlen(line));
 				//printf("\tIn define: %s", token + 1 + strlen(token));
 
-				token = trim(NULL, strtok(NULL, " \t"));
+				token = trim(strtok(NULL, " \t"));
 				//printf("token is: %s\n", token);
 
 				// symbol value can potentially be to the end of the line!
-				value = trim(NULL, strtok(NULL, "\r\n"));
+				value = trim(strtok(NULL, "\r\n"));
 				//printf("value is: %s\n", value);
 
 				if ( value ) {
 					// trim it again just in case
-					value = trim(NULL, value);
+					value = trim(value);
 				}
 				add_veri_define(token, value, line_number, current_include);
 			}
@@ -510,7 +510,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
 				fprintf(preproc_producer, "`undef %s", line + 1 + strlen(line));
 
-				token = trim(NULL, strtok(NULL, " \t"));
+				token = trim(strtok(NULL, " \t"));
 
 				is_defined = veri_is_defined(token);
 
@@ -527,7 +527,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				if ( top(skip) < 1 ) {
 					int is_defined = 0;
 
-					token = trim(NULL, strtok(NULL, " \t"));
+					token = trim(strtok(NULL, " \t"));
 					is_defined = veri_is_defined(token);
 					if(is_defined < 0) //If we are unable to locate the symbol in the table
 					{
@@ -549,7 +549,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				if ( top(skip) < 1 ) {
 					int is_defined = 0;
 
-					token = trim(NULL, strtok(NULL, " \t"));
+					token = trim(strtok(NULL, " \t"));
 					is_defined = veri_is_defined(token);
 					if(is_defined >= 0) //If we are able to locate the symbol in the table
 					{
@@ -623,7 +623,7 @@ inline static bool are_both_whitespace(char a, char b)
 	return isspace(a) && isspace(b);
 }
 
-char* trim(int *current_tabulation, char *string)
+char* trim(char *string)
 {
 	if (!string)
 		return string;
