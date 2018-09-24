@@ -881,6 +881,12 @@ enum class e_timing_report_detail {
     //DETAILED_ROUTING, //Show inter-block routing resources used
 };
 
+enum class e_incr_reroute_delay_ripup {
+    ON,
+    OFF,
+    AUTO
+};
+
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
@@ -891,6 +897,7 @@ struct t_router_opts {
 	float bend_cost;
 	int max_router_iterations;
 	int min_incremental_reroute_fanout;
+    e_incr_reroute_delay_ripup incr_reroute_delay_ripup;
 	int bb_factor;
 	enum e_route_type route_type;
 	int fixed_channel_width;
