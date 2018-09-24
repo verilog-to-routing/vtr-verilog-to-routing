@@ -48,7 +48,6 @@ void constrain_all_ios(const AtomNetlist& netlist,
 
 std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist);
 std::string orig_blif_name(std::string name);
-void print_netlist_clock_info(const AtomNetlist& netlist);
 
 std::regex glob_pattern_to_regex(const std::string& glob_pattern);
 
@@ -965,7 +964,24 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
         }
     }
     vtr::printf("Timing constraints created %zu clocks\n", timing_constraints->clock_domains().size());
-    print_netlist_clock_info(netlist);
+    for (tatum::DomainId domain : timing_constraints->clock_domains()) {
+
+        if (timing_constraints->is_virtual_clock(domain)) {
+            vtr::printf("  Constrained Clock '%s' (Virtual Clock)\n", 
+                timing_constraints->clock_domain_name(domain).c_str());
+        } else {
+
+            tatum::NodeId src_tnode = timing_constraints->clock_domain_source_node(domain);
+            VTR_ASSERT(src_tnode);
+
+            AtomPinId src_pin = lookup.tnode_atom_pin(src_tnode);
+            VTR_ASSERT(src_pin);
+
+            vtr::printf("  Constrained Clock '%s' Source: '%s'\n", 
+                timing_constraints->clock_domain_name(domain).c_str(),
+                netlist.pin_name(src_pin).c_str());
+        }
+    }
 
     vtr::printf("\n");
 
@@ -1174,27 +1190,6 @@ std::string orig_blif_name(std::string name) {
     }
 
     return name;
-}
-
-//Print informatino about clocks
-void print_netlist_clock_info(const AtomNetlist& netlist) {
-
-    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
-    vtr::printf("Netlist contains %zu clocks\n", netlist_clock_drivers.size());
-
-    //Print out pin/block fanout info for each block
-    for (auto clock_driver : netlist_clock_drivers) {
-        AtomNetId net_id = netlist.pin_net(clock_driver);
-        auto sinks = netlist.net_sinks(net_id);
-        size_t fanout = sinks.size();
-        std::set<AtomBlockId> clk_blks;
-        for (auto pin_id : sinks) {
-            auto blk_id = netlist.pin_block(pin_id);
-            clk_blks.insert(blk_id);
-        }
-        vtr::printf("  Netlist Clock '%s' Fanout: %zu pins (%.1f%), %zu blocks (%.1f%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
-    }
-
 }
 
 //Converts a glob pattern to a std::regex

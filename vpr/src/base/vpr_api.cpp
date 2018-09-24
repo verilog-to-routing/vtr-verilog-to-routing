@@ -69,6 +69,7 @@ using namespace std;
 #include "RoutingDelayCalculator.h"
 #include "check_route.h"
 #include "constant_nets.h"
+#include "atom_netlist_utils.h"
 
 #include "pack_report.h"
 
@@ -287,6 +288,9 @@ void vpr_init(const int argc, const char **argv,
             timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph();
             vtr::printf("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             vtr::printf("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
+        }
+        {
+            print_netlist_clock_info(atom_ctx.nlist);
         }
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");

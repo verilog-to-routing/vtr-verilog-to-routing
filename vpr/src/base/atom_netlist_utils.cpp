@@ -1122,6 +1122,26 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     return clock_drivers;
 }
 
+//Print information about clocks
+void print_netlist_clock_info(const AtomNetlist& netlist) {
+
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
+    vtr::printf("Netlist contains %zu clocks\n", netlist_clock_drivers.size());
+
+    //Print out pin/block fanout info for each block
+    for (auto clock_driver : netlist_clock_drivers) {
+        AtomNetId net_id = netlist.pin_net(clock_driver);
+        auto sinks = netlist.net_sinks(net_id);
+        size_t fanout = sinks.size();
+        std::set<AtomBlockId> clk_blks;
+        for (auto pin_id : sinks) {
+            auto blk_id = netlist.pin_block(pin_id);
+            clk_blks.insert(blk_id);
+        }
+        vtr::printf("  Netlist Clock '%s' Fanout: %zu pins (%.1f%), %zu blocks (%.1f%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
+    }
+}
+
 bool is_buffer(const AtomNetlist& netlist, const AtomBlockId blk) {
     //For now only support LUT buffers
     //TODO: In the future could add support for non-LUT buffers
