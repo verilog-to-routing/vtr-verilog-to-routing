@@ -33,10 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <dlfcn.h>
 #include <mutex>
 #include <unistd.h>
-
-#ifndef _WIN32
-	#include "pthread.h"
-#endif
+#include <thread>
 
 #define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
 #define is_even_cycle(cycle)	(!((cycle + 2) % 2))
@@ -132,13 +129,16 @@ static void flag_undriven_input_pins(nnode_t *node);
 static void print_ancestry(nnode_t *node, int generations);
 static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
 
+double used_time;
+int number_of_workers;
+bool found_best_time;
+
 /*
  * Performs simulation.
  */
 void simulate_netlist(netlist_t *netlist)
 {
-	sim_data_t *sim_data = init_simulation(netlist);
-	
+	sim_data_t *sim_data = init_simulation(netlist);	
 	printf("\n");
 
 	int       progress_bar_position = -1;
@@ -185,6 +185,11 @@ void simulate_netlist(netlist_t *netlist)
  */
 sim_data_t *init_simulation(netlist_t *netlist)
 {
+	//for multithreading
+	used_time = std::numeric_limits<double>::max();
+	number_of_workers = 1;
+	found_best_time = false;
+
 	sim_data_t *sim_data = (sim_data_t *)vtr::malloc(sizeof(sim_data_t));
 
 	sim_data->netlist = netlist;
@@ -210,7 +215,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	// Open the input vector file.
 	char in_vec_file[128] = { 0 };
 	odin_sprintf(in_vec_file,"%s%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
-	sim_data->in_out = fopen(in_vec_file, "w");
+	sim_data->in_out = fopen(in_vec_file, "w+");
 	if (!sim_data->in_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create input vector file.");
 
@@ -289,6 +294,63 @@ sim_data_t *init_simulation(netlist_t *netlist)
 	sim_data->stages = 0;	
 	sim_data->num_waves = std::ceil((double)(sim_data->num_vectors * 2.0) / (double)SIM_WAVE_LENGTH);
 
+	if (!sim_data->num_vectors)
+	{
+		terminate_simulation(sim_data);
+		error_message(SIMULATION_ERROR, 0, -1, "No vectors to simulate.");
+	}
+
+	// Create temporary input lines and verify.
+	// also init the inout file and the model sim
+	lines_t * input_lines = create_lines(sim_data->netlist, INPUT);
+	if (!verify_lines(input_lines))
+		error_message(SIMULATION_ERROR, 0, -1, "Input lines could not be assigned.");
+
+	for (int wave = 0; wave < sim_data->num_waves; wave++)
+	{
+		test_vector *v = 0;
+
+		int cycle_offset = SIM_WAVE_LENGTH * wave;
+		int wave_length  = (wave < (sim_data->num_waves-1))?SIM_WAVE_LENGTH:((sim_data->num_vectors * 2) - cycle_offset);
+
+		// Assign vectors to lines, either by reading or generating them.
+		// Every second cycle gets a new vector.
+		int cycle;
+		for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
+		{
+			if (is_even_cycle(cycle))
+			{
+				if (sim_data->in)
+				{
+					char buffer[BUFFER_MAX_SIZE];
+
+					if (!get_next_vector(sim_data->in, buffer))
+						error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
+
+					v = parse_test_vector(buffer);
+				}
+				else
+				{
+					v = generate_random_test_vector(cycle, sim_data);
+				}
+			}
+
+			add_test_vector_to_lines(v, input_lines, cycle);
+
+			if (!is_even_cycle(cycle))
+				free_test_vector(v);
+		}
+			// Record the input vectors we are using.
+		write_wave_to_file(input_lines, sim_data->in_out, cycle_offset, wave_length, 1);
+		// Write ModelSim script.
+		write_wave_to_modelsim_file(sim_data->netlist, input_lines, sim_data->modelsim_out, cycle_offset, wave_length);
+	}
+	// Read the vector headers and check to make sure they match the lines.
+	if (!verify_test_vector_headers(sim_data->in_out, sim_data->input_lines))
+		error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", sim_data->input_vector_file);
+
+	free_lines(input_lines);
+
 	return sim_data;
 }
 
@@ -315,57 +377,34 @@ sim_data_t *terminate_simulation(sim_data_t *sim_data)
  */
 int single_step(sim_data_t *sim_data, int wave)
 {
-	if (!sim_data->num_vectors)
-	{
-		error_message(SIMULATION_ERROR, 0, -1, "No vectors to simulate.");
-		return -2;
-	}
 
-	test_vector *v = 0;
 	double wave_start_time = wall_time();
-
+	test_vector *v = NULL;
+	// Assign vectors to lines, either by reading or generating them.
+	// Every second cycle gets a new vector.
 	int cycle_offset = SIM_WAVE_LENGTH * wave;
 	int wave_length  = (wave < (sim_data->num_waves-1))?SIM_WAVE_LENGTH:((sim_data->num_vectors * 2) - cycle_offset);
 
-	// Assign vectors to lines, either by reading or generating them.
-	// Every second cycle gets a new vector.
+	double simulation_start_time = wall_time();
+
+	// Perform simulation
 	int cycle;
 	for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
 	{
 		if (is_even_cycle(cycle))
 		{
-			if (sim_data->in)
-			{
-				char buffer[BUFFER_MAX_SIZE];
+			char buffer[BUFFER_MAX_SIZE];
 
-				if (!get_next_vector(sim_data->in, buffer))
-					error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
+			if (!get_next_vector(sim_data->in_out, buffer))
+				error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
 
-				v = parse_test_vector(buffer);
-			}
-			else
-			{
-				v = generate_random_test_vector(cycle, sim_data);
-			}
+			v = parse_test_vector(buffer);
 		}
 
 		add_test_vector_to_lines(v, sim_data->input_lines, cycle);
 
 		if (!is_even_cycle(cycle))
 			free_test_vector(v);
-	}
-
-	// Record the input vectors we are using.
-	write_wave_to_file(sim_data->input_lines, sim_data->in_out, cycle_offset, wave_length, 1);
-	// Write ModelSim script.
-	write_wave_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, cycle_offset, wave_length);
-
-	double simulation_start_time = wall_time();
-
-	// Perform simulation
-	for (cycle = cycle_offset; cycle < cycle_offset + wave_length; cycle++)
-	{
-		//original_simulate_cycle(netlist, cycle);
 
 		if (cycle)
 		{
@@ -441,118 +480,82 @@ static void close_writer(npin_t *pin)
 
 /*
  * This simulates a single cycle using the stages generated
- * during the first cycle. Simulates in parallel if OpenMP is enabled.
+ * during the first cycle.
  *
  * simulation computes a small number of cycles sequentially and
  * a small number in parallel. The minimum parallel and sequential time is
  * taken for each stage, and that stage is computed in parallel for all subsequent
  * cycles if speedup is observed.
  */
-typedef struct
-{
-	stages_t *s;
-	size_t start;
-	size_t end;
-	size_t current_stage;
-	int cycle;
-	pthread_t worker;
-}worker_data;
 
-static void compute_and_store_part(void *data_in)
+static void compute_and_store_part(int start, int end, int current_stage, stages_t *s, int cycle)
 {
-	worker_data *data = (worker_data *)data_in;
-	for (int j = data->start;j >= 0 && j <= data->end && j < data->s->counts[data->current_stage]; j++)
+	for (int j = start;j >= 0 && j <= end && j < s->counts[current_stage]; j++)
 	{
-		if(data->s->stages[data->current_stage][j])
-			compute_and_store_value(data->s->stages[data->current_stage][j], data->cycle);
+		if(s->stages[current_stage][j])
+			compute_and_store_value(s->stages[current_stage][j], cycle);
 	}
-}
-
-static void *compute_and_store_paralele_value(void *data_in)
-{
-	compute_and_store_part(data_in);
-	pthread_exit(NULL);
 }
 
 static void simulate_cycle(int cycle, stages_t *s)
 {
-	int max_proc = sysconf(_SC_NPROCESSORS_ONLN);
-	// -1 for cycle 0, -1 for the last cycle in the wave.
+		// -1 for cycle 0, -1 for the last cycle in the wave.
 	const int test_cycles = SIM_WAVE_LENGTH - 2;
+
 
 	if (test_cycles < 2)
 		error_message(SIMULATION_ERROR, -1, -1, "SIM_WAVE_LENGTH is too small.");
 
+	if(global_args.parralelized_simulation.value() >1 && !s->warned)
+	{
+		s->warned = true;
+		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
+	}
 
+	double total_run_time = 0;
 	for(int i = 0; i < s->count; i++)
 	{
-		int number_of_workers = std::min(max_proc, s->worker_const + s->worker_temp);
-		if(number_of_workers >1 && !s->warned)
-		{
-			s->warned = true;
-			warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with threads");
-		}
-
 		double time = wall_time();
 
-		worker_data *data = (worker_data *)vtr::malloc((number_of_workers)*sizeof(worker_data));
-
+		std::vector<std::thread> workers;
+		int previous_end = 0;
 		for (int id =0; id < number_of_workers; id++)
 		{
-			data[id].start = (id == 0)? 0: (data[id-1].end+1);
-			data[id].end = data[id].start + s->counts[i]/number_of_workers + ((id < s->counts[i]%number_of_workers)? 1: 0); 
-			data[id].current_stage = i;
-			data[id].s = s;
-			data[id].cycle = cycle;
+			int start = previous_end;
+			int end = start + s->counts[i]/number_of_workers + ((id < s->counts[i]%number_of_workers)? 1: 0); 
+			previous_end = end;
 
 			if(id < number_of_workers-1) // if child threads
-			{
-				int rt = pthread_create(&data[id].worker, NULL, compute_and_store_paralele_value,&data[id]);
-				if (rt != 0)
-					error_message(SIMULATION_ERROR, -1, -1, "Unable to create threads for simulation!");
-			}
+				workers.push_back(std::thread(compute_and_store_part,start,end,i,s,cycle));
 			else
-			{
-				compute_and_store_part(&data[id]);
-				for (id =0; id < number_of_workers-1; id++)
-					pthread_join(data[id].worker, NULL);
-			}
+				compute_and_store_part(start,end,i,s,cycle);
 
 		}	
-		vtr::free(data);
+
+		for (auto &worker: workers)	
+			worker.join();
 
 		// Record the ratio of parallelizable stages node.
 		if (cycle > test_cycles)
 			s->avg_worker_count += (double)number_of_workers/(double)s->count;
 
-		time = wall_time()-time;
-
-		#ifdef _PTHREAD_H 
-			if(time < s->times)
-			{
-				
-				if(s->worker_temp < 1)
-					s->worker_temp = 1;
-				else
-					s->worker_temp *= 2;
-
-				s->times = time;
-			}
-			else
-			{
-				if(s->worker_temp < 1 )
-					s->worker_const--;
-				else
-					s->worker_const += s->worker_temp/2;
-
-				s->worker_temp = 0;
-			}
-			
-			s->worker_const = std::max(1, std::min(max_proc, s->worker_const));
-			s->worker_temp = std::max(0, std::min(max_proc-s->worker_const, s->worker_temp));
-		#endif
-
+		total_run_time += wall_time()-time;
 	}
+
+	if(! found_best_time && global_args.parralelized_simulation.value() > 1)
+	{
+		if(total_run_time <= used_time)
+		{
+			number_of_workers = std::min(number_of_workers+1, global_args.parralelized_simulation.value());
+			used_time = total_run_time;
+		}
+		else
+		{
+			found_best_time = true;
+			number_of_workers = std::max(1, number_of_workers-1);
+		}
+	}
+
 }
 
 
@@ -2899,6 +2902,9 @@ static test_vector *parse_test_vector(char *buffer)
  */
 static test_vector *generate_random_test_vector(int cycle, sim_data_t *sim_data)
 {
+	/**
+	 * generate test vectors
+	 */
 	test_vector *v = (test_vector *)vtr::malloc(sizeof(test_vector));
 	v->values = 0;
 	v->counts = 0;

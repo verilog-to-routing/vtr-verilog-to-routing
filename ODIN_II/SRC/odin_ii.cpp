@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <sstream>
+#include <thread>
 
 // for mkdir
 #ifdef WIN32
@@ -427,6 +428,12 @@ void get_options(int argc, char** argv) {
 
 	auto& other_sim_grp = parser.add_argument_group("other simulation options");
 
+	other_sim_grp.add_argument(global_args.parralelized_simulation, "-j")
+			.help("Number of threads allowed for simulator to use")
+			.default_value("1")
+			.metavar("PARALEL NODE COUNT")
+			;
+
 	other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
 			.help("Directory output for simulation")
 			.default_value(DEFAULT_OUTPUT)
@@ -487,6 +494,11 @@ void get_options(int argc, char** argv) {
 		parser.print_usage();
 		error_message(-1,0,-1,"Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
+
+	//adjust thread count
+	int thread_requested = global_args.parralelized_simulation;
+	int max_thread = std::thread::hardware_concurrency();
+	global_args.parralelized_simulation.set(std::min(max_thread, std::max(1, thread_requested)),argparse::Provenance::SPECIFIED);
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())

@@ -185,6 +185,7 @@ struct global_args_t_t
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
 	argparse::ArgValue<std::vector<std::string>> sim_hold_low;
 
+	argparse::ArgValue<int> parralelized_simulation;
 	//
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
