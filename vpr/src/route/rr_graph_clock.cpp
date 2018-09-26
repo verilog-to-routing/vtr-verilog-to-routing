@@ -22,7 +22,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
 
     rib->set_num_instance(3);
     rib->set_clock_name("rib1");
-    rib->set_metal_layer(0, 0);
+    rib->set_metal_layer(405, 0.00000116);
     rib->set_initial_wire_location(0, 19, 0);
     rib->set_wire_repeat(17, 1);
     rib->set_drive_location(10);
@@ -37,7 +37,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
 
     spine->set_num_instance(3);
     spine->set_clock_name("spine1");
-    spine->set_metal_layer(0,0);
+    spine->set_metal_layer(405,0.00000116);
     spine->set_initial_wire_location(0, 19, 10);
     spine->set_wire_repeat(19,19);
     spine->set_drive_location(10);
@@ -227,6 +227,8 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 
     return locations;
 }
+
+
 //void ClockRRGraph::create_star_model_network() {
 //
 //    vtr::printf_info("Creating a clock network in the form of a star model\n");

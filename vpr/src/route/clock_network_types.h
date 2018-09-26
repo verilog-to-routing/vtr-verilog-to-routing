@@ -128,7 +128,7 @@ class ClockRib : public ClockNetwork {
         /*
          * Setters
          */
-        void set_metal_layer(int r_metal, int c_metal);
+        void set_metal_layer(float r_metal, float c_metal);
         void set_initial_wire_location(int start_x, int end_x, int y);
         void set_wire_repeat(int repeat_x, int repeat_y);
         void set_drive_location(int offset_x);
@@ -178,7 +178,7 @@ class ClockSpine : public ClockNetwork {
         /*
          * Setters
          */
-        void set_metal_layer(int r_metal, int c_metal);
+        void set_metal_layer(float r_metal, float c_metal);
         void set_initial_wire_location(int start_y, int end_y, int x);
         void set_wire_repeat(int repeat_x, int repeat_y);
         void set_drive_location(int offset_y);

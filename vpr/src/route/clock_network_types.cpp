@@ -55,7 +55,7 @@ ClockType ClockRib::get_network_type() const {
  * ClockRib (setters)
  */
 
-void ClockRib::set_metal_layer(int r_metal, int c_metal) {
+void ClockRib::set_metal_layer(float r_metal, float c_metal) {
     x_chan_wire.layer.r_metal = r_metal;
     x_chan_wire.layer.c_metal = c_metal;
 }
@@ -149,6 +149,10 @@ int ClockRib::create_chanx_wire(
     rr_nodes[node_index].set_type(CHANX);
     rr_nodes[node_index].set_capacity(1);
     rr_nodes[node_index].set_ptc_num(ptc_num);
+    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START);
+    auto rc_index = find_create_rr_rc_data(x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal);
+    rr_nodes[node_index].set_rc_index(rc_index);
+//    rr_nodes[node_index].set_direction(); // TODO: set direction, can look into how alloc_alloc_and_load_seg_details() does it in rr_graph2.cpp
 
     return node_index;
 }
@@ -185,7 +189,7 @@ ClockType ClockSpine::get_network_type() const {
  * ClockSpine (setters)
  */
 
-void ClockSpine::set_metal_layer(int r_metal, int c_metal) {
+void ClockSpine::set_metal_layer(float r_metal, float c_metal) {
     y_chan_wire.layer.r_metal = r_metal;
     y_chan_wire.layer.c_metal = c_metal;
 }
@@ -279,6 +283,10 @@ int ClockSpine::create_chany_wire(
     rr_nodes[node_index].set_type(CHANY);
     rr_nodes[node_index].set_capacity(1);
     rr_nodes[node_index].set_ptc_num(ptc_num);
+    auto rc_index = find_create_rr_rc_data(y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal);
+    rr_nodes[node_index].set_rc_index(rc_index);
+    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START); //TODO: Why not chany
+//    rr_nodes[node_index].set_direction(); // TODO: set direction, can look into how alloc_alloc_and_load_seg_details() does it in rr_graph2.cpp
 
     return node_index;
 }
