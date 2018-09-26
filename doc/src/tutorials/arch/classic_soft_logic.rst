@@ -29,8 +29,8 @@ Logical equivalence is labelled at ports where it applies:
 .. code-block:: xml
 
     <pb_type name="clb">
-      <input name="I" num_pins="22" equivalent="true"/>
-      <output name="O" num_pins="10" equivalent="true"/>
+      <input name="I" num_pins="22" equivalent="full"/>
+      <output name="O" num_pins="10" equivalent="instance"/>
       <clock name="clk" equivalent="false"/>
 
 A CLB contains 10 BLEs.
@@ -132,8 +132,8 @@ Classic Soft Logic Block Complete Example
     -->
 
     <pb_type name="clb">
-      <input name="I" num_pins="22" equivalent="true"/>
-      <output name="O" num_pins="10" equivalent="true"/>
+      <input name="I" num_pins="22" equivalent="full"/>
+      <output name="O" num_pins="10" equivalent="instance"/>
       <clock name="clk" equivalent="false"/>
 
       <pb_type name="ble" num_pb="10">
