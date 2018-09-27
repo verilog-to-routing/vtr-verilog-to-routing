@@ -5,18 +5,38 @@ SHELL=/bin/bash
 
 fail_count=0
 
+last_run=$(find regression_test/run* -maxdepth 0 -type d 2>/dev/null | tail -1 )
+new_run=regression_test/run001
+if [ "_${last_run}" != "_" ]
+then
+    last_run_id=${last_run##regression_test/run}
+    n=$(echo $last_run_id | awk '{print $0 + 1}')
+    new_run=regression_test/run$(printf "%03d" $n)
+fi
+echo "running benchmark @${new_run}"
+mkdir -p ${new_run}
+
+### starts here
+NB_OF_PROC=1
+if [[ "$2" -gt "0" ]]
+then
+	NB_OF_PROC=$2
+	echo "Trying to run benchmark on $NB_OF_PROC processes"
+fi
+
+
 function exit_program() {
 
     if [ -e regression_test/runs/failure.log ]
     then
-	    line_count=$(wc -l < regression_test/runs/failure.log)
+	    line_count=$(wc -l < ${new_run}/failure.log)
 		fail_count=$[ fail_count+line_count ]
 	fi
 
 	if [ $fail_count -gt "0" ]
 	then
 		echo "Failed $fail_count"
-		echo "View Failure log in ODIN_II/regression_test/runs/failure.log, "
+		echo "View Failure log in ${new_run}/failure.log, "
 	else
 		echo "no run failure!"
 	fi
@@ -32,195 +52,147 @@ function ctrl_c() {
 	exit_program
 }
 
-function micro_test() {
-	for benchmark in regression_test/benchmark/micro/*.v
-	do
-		basename=${benchmark%.v}
-		test_name=${basename##*/}
-		input_vectors="$basename"_input
-		output_vectors="$basename"_output
-		DIR="regression_test/runs/micro/$test_name" && rm -Rf $DIR && mkdir -p $DIR/arch && mkdir -p $DIR/no_arch
-	done
+function sim() {
+	threads=$1
+	bench_type=$2
+	with_sim=$3
+	with_blif=$4
+	with_arch=$5
+	passing_args=$6
+	
+	benchmark_dir=regression_test/benchmark/${bench_type}
+
+	if [ "_${passing_args}" == "_1" ]; then
+		for dir in ${benchmark_dir}/*
+		do
+
+			test_name=${dir##*/}
+			DIR="${new_run}/${bench_type}/$test_name"
+
+			#build commands
+			mkdir -p $DIR
+
+			echo "./odin_II $(cat ${dir}/odin.args | tr '\n' ' ') -o ${DIR}/odin.blif -sim_dir ${DIR}/ &>> ${DIR}/log \
+				&& echo --- PASSED == ${bench_type}/$test_name \
+				|| (echo -X- FAILED == ${bench_type}/$test_name \
+					&& echo ${bench_type}/$test_name >> ${new_run}/failure.log)" > ${DIR}/log
+
+		done
+	else
+		for benchmark in ${benchmark_dir}/*.v
+		do
+			basename=${benchmark%.v}
+			test_name=${basename##*/}
+			DIR="${new_run}/${bench_type}/$test_name"
+
+			#build commands
+			mkdir -p $DIR
+
+			verilog_command=""
+			blif_command=""
+
+			verilog_command="./odin_II --adder_type default -V ${benchmark_dir}/${test_name}.v -o ${DIR}/odin.blif"
+
+			[ "_$with_blif" == "_1" ] &&
+				blif_command=" && ./odin_II --adder_type default -b ${DIR}/odin.blif"
+
+			[ "_$with_arch" == "_1" ] &&
+				verilog_command="${verilog_command} -a ../libs/libarchfpga/arch/sample_arch.xml"
+			
+			[ "_$with_blif" == "_1" ] && 
+			[ "_$with_arch" == "_1" ] &&
+				blif_command="${blif_command} -a ../libs/libarchfpga/arch/sample_arch.xml"
+
+			[ "_$with_sim" == "_1" ] &&
+				verilog_command="${verilog_command} -t ${benchmark_dir}/${test_name}_input -T ${benchmark_dir}/${test_name}_output"
+
+			[ "_$with_blif" == "_1" ] && 
+			[ "_$with_sim" == "_1" ] &&
+				blif_command="${blif_command} -t ${benchmark_dir}/${test_name}_input -T ${benchmark_dir}/${test_name}_output"
 
 
-	#verilog
-	ls regression_test/runs/micro | xargs -n1 -P$1 -I test_dir /bin/bash -c \
-	'echo "./odin_II  \
-    --adder_type default \
-		-V regression_test/benchmark/micro/test_dir.v \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-o regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
-		-sim_dir regression_test/runs/micro/test_dir/no_arch/" > regression_test/runs/micro/test_dir/no_arch/log \
-	&& ./odin_II  \
-    --adder_type default \
-		-V regression_test/benchmark/micro/test_dir.v \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-o regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
-		-sim_dir regression_test/runs/micro/test_dir/no_arch/ \
-		&>> regression_test/runs/micro/test_dir/no_arch/log \
-	&& echo "./odin_II  \
-    --adder_type default \
-		-b regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-sim_dir regression_test/runs/micro/test_dir/no_arch/" >> regression_test/runs/micro/test_dir/no_arch/log \
-	&& ./odin_II  \
-    --adder_type default \
-		-b regression_test/runs/micro/test_dir/no_arch/test_dir.blif \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-sim_dir regression_test/runs/micro/test_dir/no_arch/ \
-		&>> regression_test/runs/micro/test_dir/no_arch/log \
-	&& echo "./odin_II  \
-    --adder_type default \
-		-V regression_test/benchmark/micro/test_dir.v \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-o regression_test/runs/micro/test_dir/arch/test_dir.blif \
-		-sim_dir regression_test/runs/micro/test_dir/arch/" > regression_test/runs/micro/test_dir/arch/log \
-	&& ./odin_II  \
-    --adder_type default \
-		-V regression_test/benchmark/micro/test_dir.v \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-o regression_test/runs/micro/test_dir/arch/test_dir.blif \
-		-sim_dir regression_test/runs/micro/test_dir/arch/ \
-		&>> regression_test/runs/micro/test_dir/arch/log \
-	&& echo "./odin_II  \
-    --adder_type default \
-		-b regression_test/runs/micro/test_dir/arch/test_dir.blif \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-sim_dir regression_test/runs/micro/test_dir/arch/" >> regression_test/runs/micro/test_dir/arch/log \
-	&& ./odin_II  \
-    --adder_type default \
-		-b regression_test/runs/micro/test_dir/arch/test_dir.blif \
-		-t regression_test/benchmark/micro/test_dir_input \
-		-T regression_test/benchmark/micro/test_dir_output \
-		-sim_dir regression_test/runs/micro/test_dir/arch/ \
-		&>> regression_test/runs/micro/test_dir/arch/log \
-	&& echo " --- PASSED == micro/test_dir" \
-	|| (echo " -X- FAILED == micro/test_dir" \
-		&& echo micro/test_dir >> regression_test/runs/failure.log )'
+			verilog_command="${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log"
+			
+			[ "_$with_blif" == "_1" ] &&
+				blif_command="${blif_command} -sim_dir ${DIR}/ &>> ${DIR}/log"
 
-}
+			echo "${verilog_command} ${blif_command} \
+				&& echo --- PASSED == ${bench_type}/$test_name \
+				|| (echo -X- FAILED == ${bench_type}/$test_name \
+					&& echo ${bench_type}/$test_name >> ${new_run}/failure.log)" > ${DIR}/log
+		done
+	fi
 
-#1
-#bench
-function regression_test() {
-
-	mkdir -p regression_test/runs/full
-	mkdir -p OUTPUT
-
-	for test_verilog in regression_test/benchmark/full/*.v
-	do
-
-		rm -Rf OUTPUT/*
-
-		basename=${test_verilog%.v}
-		test_name=${basename##*/}
-		input_vectors="$basename"_input
-		output_vectors="$basename"_output
-		output_blif="".blif
-		DIR="regression_test/runs/full/$test_name" && rm -Rf $DIR && mkdir -p $DIR
-
-
-    echo "./odin_II  \
-		--adder_type default \
-			-a ../libs/libarchfpga/arch/sample_arch.xml \
-			-V $test_verilog \
-			-t $input_vectors \
-			-T $output_vectors \
-			-o regression_test/runs/full/$test_name/$test_name.blif \
-			-sim_dir regression_test/runs/full/$test_name/" \
-				> regression_test/runs/full/$test_name/log
-
-		./odin_II  \
-    		--adder_type "default" \
-			-a "../libs/libarchfpga/arch/sample_arch.xml" \
-			-V "$test_verilog" \
-			-t "$input_vectors" \
-			-T "$output_vectors" \
-			-o regression_test/runs/full/$test_name/$test_name.blif \
-			-sim_dir regression_test/runs/full/$test_name/ \
-			&>> regression_test/runs/full/log \
-		&& echo " --- PASSED == full/$test_name" \
-		|| (echo " -X- FAILED == full/$test_name" \
-		&& echo full/$test_name >> regression_test/runs/failure.log )
-
-	done
-}
-
-#1			#2			
-#N_trhead	benchmark_named_dir
-function basic_test() {
-	test_type=$2
-
-	for benchmark in regression_test/benchmark/$test_type/*.v
-	do
-    	basename=${benchmark%.v}
-    	test_name=${basename##*/}
-		DIR="regression_test/runs/$test_type/$test_name" && rm -Rf $DIR && mkdir -p $DIR
-		echo "./odin_II  \
-			--adder_type default \
-			-V regression_test/benchmark/$test_type/$test_name.v \
-			-o $DIR/odin.blif" > $DIR/log
-	done
-	ls regression_test/runs/$test_type | awk '{print "'$test_type'/"$1}' | xargs -P$1 -I test_dir /bin/bash -c \
-		' ./odin_II  -V regression_test/benchmark/test_dir.v \
-        	--adder_type default \
-			-o regression_test/runs/test_dir/odin.blif \
-			-sim_dir regression_test/runs/test_dir/ \
-			&>> regression_test/runs/test_dir/log \
-    	&& echo " --- PASSED == test_dir" \
-    	|| (echo " -X- FAILED == test_dir" \
-    		&& echo test_dir >> regression_test/runs/failure.log)'
-}
-
-#1		
-#N_trhead
-function arch_test() {
-	basic_test $1 arch
-}
-
-#1				#2
-#benchmark dir	N_trhead
-function syntax_test() {
-	basic_test $1 syntax
+	if [ $1 -gt "1" ]
+	then
+		find ${new_run}/${bench_type}/ -maxdepth 1 -mindepth 1 | xargs -n1 -P$1 -I test_dir /bin/bash -c \
+			'eval $(cat "test_dir/log" | tr "\n" " ")'
+	else
+		for tests in ${new_run}/${bench_type}/*; do 
+			eval $(cat "${tests}/log" | tr "\n" " ")
+		done
+	fi
 }
 
 #1				#2
 #benchmark dir	N_trhead
 function other_test() {
-	for benchmark in regression_test/benchmark/other/*
-	do
-    	test_name=${benchmark##*/}
-		DIR="regression_test/runs/other/$test_name" && rm -Rf $DIR && mkdir -p $DIR
+	threads=$1
+	bench_type=other
+	with_sim=0
+	with_blif=0
+	with_arch=0
 
-		echo "./odin_II $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ')" \
-		> regression_test/runs/other/$test_name/log
-		./odin_II $(cat regression_test/benchmark/other/$test_name/odin.args | tr '\n' ' ') \
-		&>> regression_test/runs/other/$test_name/log \
-		&& echo " --- PASSED == other/$test_name" \
-		|| (echo " -X- FAILED == other/$test_name" \
-			&& echo other/$test_name >> regression_test/runs/failure.log)
-
-	done
+	sim $threads $bench_type $with_sim $with_blif $with_arch 1
 }
 
 
-### starts here
+function micro_test() {
+	threads=$1
+	bench_type=micro
+	with_sim=1
+	with_blif=1
+	with_arch=0
 
-#in MB
-NB_OF_PROC=1
+	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+}
 
-if [[ "$2" -gt "0" ]]
-then
-	NB_OF_PROC=$2
-	echo "Trying to run benchmark on $NB_OF_PROC processes"
-fi
+#1
+#bench
+function regression_test() {
+	threads=1
+	bench_type=full
+	with_sim=1
+	with_blif=0
+	with_arch=1
+
+	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+}
+
+
+#1		
+#N_trhead
+function arch_test() {
+	threads=$1
+	bench_type=arch
+	with_sim=0
+	with_blif=0
+	with_arch=1
+
+	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+}
+
+#1				#2
+#benchmark dir	N_trhead
+function syntax_test() {
+	threads=$1
+	bench_type=syntax
+	with_sim=0
+	with_blif=0
+	with_arch=0
+
+	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+}
 
 START=$(date +%s%3N)
 
@@ -284,6 +256,13 @@ case $1 in
 esac
 
 END=$(date +%s%3N)
-echo "ran test in: $(( ((END-START)/1000)/60 )):$(( ((END-START)/1000)%60 )).$(( (END-START)%1000 )) [m:s.ms]"
+TIME_TO_RUN=$(( ${END} - ${START} ))
+
+Mili=$(( ${TIME_TO_RUN} %1000 ))
+Sec=$(( ( ${TIME_TO_RUN} /1000 ) %60 ))
+Min=$(( ( ( ${TIME_TO_RUN} /1000 ) /60 ) %60 ))
+Hour=$(( ( ( ${TIME_TO_RUN} /1000 ) /60 ) /60 ))
+
+echo "ran test in: $Hour:$Min:$Sec.$Mili"
 exit_program
 ### end here

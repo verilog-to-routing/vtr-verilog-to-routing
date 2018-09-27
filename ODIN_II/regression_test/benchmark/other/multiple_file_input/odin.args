@@ -1,3 +1,2 @@
--V regression_test/benchmark/other/multiple_file_input/top_and.v regression_test/benchmark/other/multiple_file_input/and_primitive.v
--o regression_test/runs/other/multiple_file_input/temp.blif
--sim_dir regression_test/runs/other/multiple_file_input/
+-V  regression_test/benchmark/other/multiple_file_input/top_and.v 
+    regression_test/benchmark/other/multiple_file_input/and_primitive.v

@@ -345,7 +345,7 @@ FILE *remove_comments(FILE *source)
 	while (fgets(line, MaxLine, source))
 	{
 		unsigned int i;
-		for (i = 0; i < strlen(line); i++)
+		for (i = 0; i < strnlen(line, MaxLine); i++)
 		{
 			if (!in_multiline_comment)
 			{
@@ -412,36 +412,27 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			strncpy( p_proc_line, last_pch, pch - last_pch ) ;
 			p_proc_line += pch - last_pch ;
 			*p_proc_line = '\0' ;
+
 			// find the end of the symbol
-			pch_end = pch+1 ;
-			while ( ( *pch_end >= '0' && *pch_end <= '9' ) ||
-				( *pch_end >= 'A' && *pch_end <= 'Z' ) ||
-				( *pch_end >= 'a' && *pch_end <= 'z' ) ||
-				*pch_end == '_' )
-				pch_end++ ;
+			for(pch_end = pch+1 ; pch_end && ( isalnum(*pch_end) || *pch_end == '_' ); pch_end++){}
+
 			// copy symbol into array
 			strncpy( symbol, pch+1, pch_end - (pch+1) ) ;
 			*(symbol + (pch_end - (pch+1))) = '\0' ;
+
 			char* value = ret_veri_definedval( symbol ) ;
-			if ( value ) {
-				strcpy( p_proc_line, value ) ;
-				p_proc_line += strlen( value ) ;
-			}
-			else {
-				// symbol not found, just pass it through
+			if ( !value ) {		// symbol not found, just pass it through
+				value = symbol;
 				*p_proc_line++ = '`' ;
-				strcpy( p_proc_line, symbol ) ;
-				p_proc_line += strlen( symbol ) ;
 			}
+			vtr::strncpy( p_proc_line, value, MaxLine) ;
+			p_proc_line += strlen( value ) ;
+
 			last_pch = pch_end ;
 			pch = strchr( last_pch+1, '`' ) ;
 		}
-		pch = strchr( last_pch, '\0' ) ;
-		strncpy( p_proc_line, last_pch, pch - last_pch ) ;
-		p_proc_line += pch - last_pch ;
-		*p_proc_line = '\0' ;
-
-		strcpy( line, proc_line ) ;
+		vtr::strncpy( p_proc_line, last_pch, MaxLine) ;
+		vtr::strncpy( line, proc_line, MaxLine) ;
 
 		//fprintf(stderr, "%s:%d\t%s\n", current_include->path,line_number, line);
 
@@ -483,8 +474,8 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 				char *value = NULL;
 
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-				fprintf(preproc_producer, "`define %s\n", line + 1 + strlen(line));
-				//printf("\tIn define: %s", token + 1 + strlen(token));
+				fprintf(preproc_producer, "`define %s\n", line + 1 + strnlen(line, MaxLine));
+				//printf("\tIn define: %s", token + 1 + strnlen(token, MaxLine));
 
 				token = trim(strtok(NULL, " \t"));
 				//printf("token is: %s\n", token);
@@ -506,7 +497,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			{
 				int is_defined = 0;
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
-				fprintf(preproc_producer, "`undef %s", line + 1 + strlen(line));
+				fprintf(preproc_producer, "`undef %s", line + 1 + strnlen(line, MaxLine));
 
 				token = trim(strtok(NULL, " \t"));
 
@@ -590,12 +581,12 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			/* Leave unhandled preprocessor directives in place. */
 			else if (top(skip) < 1)
 			{
-				fprintf(preproc_producer, "%s %s\n", line, line + 1 + strlen(line));
+				fprintf(preproc_producer, "%s %s\n", line, line + 1 + strnlen(line, MaxLine));
 			}
 		}
 		else if(top(skip) < 1)
 		{
-			if(!line || strlen(line) <= 0)
+			if(strnlen(line, MaxLine) <= 0)
 			{
 				/* There is nothing to print */
 			}
@@ -729,7 +720,7 @@ FILE *format_verilog_file(FILE *source)
 		line = search_replace(line,searchString[i],"",2);
 	}
 	i = 0;
-	while (i < strlen(line))
+	while (i < strnlen(line, MaxLine))
 	{
 		if(line[i] == '[')
 		{
