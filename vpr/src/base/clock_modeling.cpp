@@ -8,14 +8,37 @@ void ClockModeling::treat_clock_pins_as_non_globals() {
 
     for (int type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
 
-        auto type = device_ctx.block_types[type_idx];
-        if(type.pb_type) {
-            for(auto clock_pin_idx : type.get_clock_pins_indices()) {
+        auto* type = &(device_ctx.block_types[type_idx]);
+        if(type->pb_type) {
+            for(auto clock_pin_idx : type->get_clock_pins_indices()) {
 
                // clock pins should be originally considered as global when reading the architecture
-               VTR_ASSERT(type.is_global_pin[clock_pin_idx]);
+               VTR_ASSERT(type->is_global_pin[clock_pin_idx]);
+               VTR_ASSERT(!type->is_routed_pin[clock_pin_idx]);
 
-               type.is_global_pin[clock_pin_idx] = false;
+               type->is_global_pin[clock_pin_idx] = false;
+               type->is_routed_pin[clock_pin_idx] = true;
+            }
+        }
+    }
+}
+
+void ClockModeling::assign_clock_pins_as_routable() {
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (int type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
+
+        auto* type = &(device_ctx.block_types[type_idx]);
+        if(type->pb_type) {
+            for(auto clock_pin_idx : type->get_clock_pins_indices()) {
+
+               // clock pins are gloabl pins
+               // however should have been orignally assigned as unroutable
+               VTR_ASSERT(type->is_global_pin[clock_pin_idx]);
+               VTR_ASSERT(!type->is_routed_pin[clock_pin_idx]);
+
+               //type->is_routed_pin[clock_pin_idx] = true;
             }
         }
     }

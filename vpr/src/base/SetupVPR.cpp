@@ -207,6 +207,10 @@ void SetupVPR(t_options *Options,
         ClockModeling::treat_clock_pins_as_non_globals();
     }
 
+    if (Options->clock_modeling == DEDICATED_NETWORK) {
+        ClockModeling::assign_clock_pins_as_routable();
+    }
+
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
 		echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH),*PackerRRGraphs);
 	}

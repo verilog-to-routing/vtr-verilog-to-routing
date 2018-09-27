@@ -527,9 +527,11 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	Type->num_class = num_class;
 	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
 	Type->is_global_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
+    Type->is_routed_pin.resize(Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
 		Type->is_global_pin[i] = true;
+        Type->is_routed_pin[i] = true;
 	}
 
 	pin_count = 0;
@@ -563,6 +565,8 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 				Type->pin_class[pin_count] = num_class;
 				Type->is_global_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
                     Type->pb_type->ports[j].is_non_clock_global;
+                Type->is_routed_pin[pin_count] = !Type->pb_type->ports[j].is_clock &&
+                    !Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 
 				if (Type->pb_type->ports[j].equivalent == PortEquivalence::NONE) {

@@ -434,7 +434,8 @@ constexpr int DEFAULT_SWITCH = -2;
  * pin_avg_width_offset: Average width offset to specified pin (exact if only a single physical pin instance)
  * pin_avg_height_offset: Average height offset to specified pin (exact if only a single physical pin instance)
  * pin_class: The class a pin belongs to
- * is_global_pin: Whether or not a pin is global (hence not routed)
+ * is_global_pin: Whether or not a pin is global
+ * is_routed_pin: Wether or not nets connected to this pin are routed
  *
  * fc_specs: The Fc specifications for all pins
  *
@@ -476,6 +477,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     std::vector<int> pin_height_offset; //[0..num_pins-1]
 	int *pin_class = nullptr; /* [0..num_pins-1] */
 	bool *is_global_pin = nullptr; /* [0..num_pins-1] */
+    std::vector<bool> is_routed_pin; // [0..num_pins -1]
 
     std::vector<t_fc_specification> fc_specs;
 
