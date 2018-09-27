@@ -301,14 +301,16 @@ void print_place(const char* net_file,
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-		if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
-			fprintf(fp, "\t");
+    if (!place_ctx.block_locs.empty()) { //Only if placement exists
+        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+            if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
+                fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y, place_ctx.block_locs[blk_id].z);
-		fprintf(fp, "\t#%zu\n", size_t(blk_id));
-	}
+            fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y, place_ctx.block_locs[blk_id].z);
+            fprintf(fp, "\t#%zu\n", size_t(blk_id));
+        }
+    }
 	fclose(fp);
 
     //Calculate the ID of the placement

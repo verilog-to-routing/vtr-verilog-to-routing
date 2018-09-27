@@ -96,4 +96,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
 // so logically unique should be viewed as true only to the extent of VPR's
 // understanding
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist);
+
+//Prints out information about netlist clocks
+void print_netlist_clock_info(const AtomNetlist& netlist);
 #endif
