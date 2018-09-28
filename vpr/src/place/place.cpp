@@ -90,9 +90,14 @@ struct t_placer_costs {
     float delay_cost;
 };
 
+struct t_placer_prev_inverse_costs {
+    float bb_cost;
+    float timing_cost;
+};
+
 #define MAX_INV_TIMING_COST 1.e9
 /* Stops inverse timing cost from going to infinity with very lax timing constraints,
-which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing.
+which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normalizing.
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
@@ -232,19 +237,20 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
-static e_swap_result try_swap(float t, t_placer_costs* costs,
+static e_swap_result try_swap(float t,
+        t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		float rlim,
-        enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost);
+        enum e_place_algorithm place_algorithm, float timing_tradeoff);
 
 static ClusterBlockId pick_from_block();
 
 static void check_place(const t_placer_costs& costs, enum e_place_algorithm place_algorithm);
 
 static float starting_t(t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost);
+		enum e_place_algorithm place_algorithm, float timing_tradeoff);
 
 static void update_t(float *t, float rlim, float success_rat,
 		t_annealing_sched annealing_sched);
@@ -302,10 +308,10 @@ static void free_try_swap_arrays();
 
 static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
     t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
 	int num_connections, float crit_exponent,
 	float * place_delay_value,
-	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost,
+	int * outer_crit_iter_count, 
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
@@ -314,10 +320,11 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
     SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
-	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
+	int move_lim,
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats,
     t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
     int* moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
@@ -346,11 +353,11 @@ void try_place(t_placer_opts placer_opts,
 	int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
 		outer_crit_iter_count, inner_recompute_limit;
 	float t, success_rat, rlim, place_delay_value,
-          inverse_prev_bb_cost, inverse_prev_timing_cost,
 		  oldt, crit_exponent,
 		  first_rlim, final_rlim, inverse_delta_rlim;
 
     t_placer_costs costs;
+    t_placer_prev_inverse_costs prev_inverse_costs;
 
     tatum::TimingPathInfo critical_path;
     float sTNS = NAN;
@@ -468,8 +475,8 @@ void try_place(t_placer_opts placer_opts,
 		}
 		outer_crit_iter_count = 1;
 
-		inverse_prev_timing_cost = 1 / costs.timing_cost;
-		inverse_prev_bb_cost = 1 / costs.bb_cost;
+		prev_inverse_costs.timing_cost = 1 / costs.timing_cost;
+		prev_inverse_costs.bb_cost = 1 / costs.bb_cost;
 		costs.cost = 1; /*our new cost function uses normalized values of           */
 		/*bb_cost and timing_cost, the value of cost will be reset  */
 		/*to 1 at each temperature when *_TIMING_DRIVEN_PLACE is true */
@@ -482,8 +489,8 @@ void try_place(t_placer_opts placer_opts,
 		num_connections = 0;
 		crit_exponent = 0;
 
-		inverse_prev_timing_cost = 0; /*inverses not used */
-		inverse_prev_bb_cost = 0;
+		prev_inverse_costs.timing_cost = 0; /*inverses not used */
+		prev_inverse_costs.bb_cost = 0;
 	}
 
     //Sanity check that initial placement is legal
@@ -567,10 +574,9 @@ void try_place(t_placer_opts placer_opts,
 	final_rlim = 1;
 	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-	t = starting_t(&costs,
+	t = starting_t(&costs, &prev_inverse_costs,
 			annealing_sched, move_lim, rlim,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-			inverse_prev_bb_cost, inverse_prev_timing_cost);
+			placer_opts.place_algorithm, placer_opts.timing_tradeoff);
 
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
@@ -585,10 +591,10 @@ void try_place(t_placer_opts placer_opts,
 			costs.cost = 1;
 		}
 
-		outer_loop_recompute_criticalities(placer_opts, &costs,
+		outer_loop_recompute_criticalities(placer_opts, &costs, &prev_inverse_costs,
             num_connections,
 			crit_exponent, &place_delay_value,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+			&outer_crit_iter_count,
             netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -596,9 +602,10 @@ void try_place(t_placer_opts placer_opts,
 #endif
             *timing_info);
 
-		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
+		placement_inner_loop(t, rlim, placer_opts,
 			move_lim, crit_exponent, inner_recompute_limit, &stats,
 			&costs,
+            &prev_inverse_costs,
             &moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -674,9 +681,10 @@ void try_place(t_placer_opts placer_opts,
 
 
 	outer_loop_recompute_criticalities(placer_opts, &costs,
+            &prev_inverse_costs,
             num_connections,
 			crit_exponent, &place_delay_value,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+			&outer_crit_iter_count,
             netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -688,9 +696,10 @@ void try_place(t_placer_opts placer_opts,
 
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
-	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
+	placement_inner_loop(t, rlim, placer_opts,
 			move_lim, crit_exponent, inner_recompute_limit, &stats,
 			&costs,
+            &prev_inverse_costs,
             &moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -846,10 +855,10 @@ void try_place(t_placer_opts placer_opts,
 /* Function to recompute the criticalities before the inner loop of the annealing */
 static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
     t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
 	int num_connections, float crit_exponent, 
 	float * place_delay_value,
-	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost,
+	int * outer_crit_iter_count,
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
@@ -889,17 +898,18 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 
 	/*at each temperature change we update these values to be used     */
 	/*for normalizing the tradeoff between timing and wirelength (bb)  */
-    *inverse_prev_bb_cost = 1 / costs->bb_cost;
+    prev_inverse_costs->bb_cost = 1 / costs->bb_cost;
     /*Prevent inverse timing cost from going to infinity */
-    *inverse_prev_timing_cost = min(1 / costs->timing_cost, (float)MAX_INV_TIMING_COST);
+    prev_inverse_costs->timing_cost = min(1 / costs->timing_cost, (float)MAX_INV_TIMING_COST);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
-	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
+    int move_lim,
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats,
     t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
     int* moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack* slacks,
@@ -921,9 +931,8 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 
 	/* Inner loop begins */
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-		e_swap_result swap_result = try_swap(t, costs, rlim,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-			inverse_prev_bb_cost, inverse_prev_timing_cost);
+		e_swap_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
+			placer_opts.place_algorithm, placer_opts.timing_tradeoff);
 
 		if (swap_result == ACCEPTED) {
 			/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1126,9 +1135,9 @@ static int exit_crit(float t, float cost,
 }
 
 static float starting_t(t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost) {
+		enum e_place_algorithm place_algorithm, float timing_tradeoff) {
 
 	/* Finds the starting temperature (hot condition).              */
 
@@ -1149,9 +1158,8 @@ static float starting_t(t_placer_costs* costs,
 	/* Try one move per block.  Set t high so essentially all accepted. */
 
 	for (i = 0; i < move_lim; i++) {
-		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, rlim,
-				place_algorithm, timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost);
+		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
+				place_algorithm, timing_tradeoff);
 
 		if (swap_result == ACCEPTED) {
 			num_accepted++;
@@ -1344,10 +1352,12 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
 }
 
-static e_swap_result try_swap(float t, t_placer_costs* costs,
+static e_swap_result try_swap(float t,
+        t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		float rlim,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost) {
+		enum e_place_algorithm place_algorithm,
+        float timing_tradeoff) {
 
 	/* Picks some block and moves it to another spot.  If this spot is   *
 	 * occupied, switch the blocks.  Assess the change in cost function. *
@@ -1423,8 +1433,8 @@ static e_swap_result try_swap(float t, t_placer_costs* costs,
 			 *additionally, we normalize all values, therefore delta_c is in       *
 			 *relation to 1*/
 
-			delta_c = (1 - timing_tradeoff) * bb_delta_c * inverse_prev_bb_cost
-					+ timing_tradeoff * timing_delta_c * inverse_prev_timing_cost;
+			delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
+					+ timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
 		} else {
 			delta_c = bb_delta_c;
 		}
