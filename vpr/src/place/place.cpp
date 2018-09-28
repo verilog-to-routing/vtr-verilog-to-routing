@@ -313,14 +313,17 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
 	float crit_exponent, int inner_recompute_limit,
-	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
-	float * delay_cost,
+	t_placer_statistics *stats,
+    float * cost, float * bb_cost, float * timing_cost, float * delay_cost,
+    int* moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
     SetupTimingInfo& timing_info);
+
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, float& cost, float& bb_cost, float& timing_cost, const float& delay_cost);
 
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
@@ -339,9 +342,8 @@ void try_place(t_placer_opts placer_opts,
 
 	int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
 		outer_crit_iter_count, inner_recompute_limit;
-	unsigned int ipin;
-	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
-		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
+	float t, success_rat, rlim, cost, timing_cost, bb_cost, 
+		delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
 		oldt, crit_exponent,
 		first_rlim, final_rlim, inverse_delta_rlim;
     tatum::TimingPathInfo critical_path;
@@ -590,48 +592,13 @@ void try_place(t_placer_opts placer_opts,
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
 			move_lim, crit_exponent, inner_recompute_limit, &stats,
 			&cost, &bb_cost, &timing_cost, &delay_cost,
+            &moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
 #endif
             netlist_pin_lookup,
             *timing_info);
-
-		/* Lines below prevent too much round-off error from accumulating *
-		 * in the cost over many iterations.  This round-off can lead to  *
-		 * error checks failing because the cost is different from what   *
-		 * you get when you recompute from scratch.                       */
-
-		moves_since_cost_recompute += move_lim;
-		if (moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-			new_bb_cost = recompute_bb_cost();
-			if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
-				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-						"in try_place: new_bb_cost = %g, old bb_cost = %g\n",
-						new_bb_cost, bb_cost);
-			}
-			bb_cost = new_bb_cost;
-
-			if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-				comp_td_costs(&new_timing_cost, &new_delay_cost);
-				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
-					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-							"in try_place: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
-							new_timing_cost, timing_cost, ERROR_TOL);
-				}
-				if (fabs(new_delay_cost - delay_cost) > delay_cost * ERROR_TOL) {
-					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-							"in try_place: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
-							new_delay_cost, delay_cost, ERROR_TOL);
-				}
-				timing_cost = new_timing_cost;
-			}
-
-			if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
-				cost = new_bb_cost;
-			}
-			moves_since_cost_recompute = 0;
-		}
 
 		tot_iter += move_lim;
 		success_rat = ((float) stats.success_sum) / move_lim;
@@ -716,6 +683,7 @@ void try_place(t_placer_opts placer_opts,
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
 			move_lim, crit_exponent, inner_recompute_limit, &stats,
 			&cost, &bb_cost, &timing_cost, &delay_cost,
+            &moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
@@ -777,7 +745,7 @@ void try_place(t_placer_opts placer_opts,
 		/*need this done since the timing data has not been kept up to date*
 		 *in bounding_box mode */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
+			for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
 				set_timing_place_crit(net_id, ipin, 0); /*dummy crit values */
 		}
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
@@ -921,8 +889,9 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
 	float crit_exponent, int inner_recompute_limit,
-	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
-	float * delay_cost,
+	t_placer_statistics *stats,
+    float * cost, float * bb_cost, float * timing_cost, float * delay_cost,
+    int* moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack* slacks,
 	t_timing_inf timing_inf,
@@ -1000,8 +969,51 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 				"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
+
+
+		/* Lines below prevent too much round-off error from accumulating
+		 * in the cost over many iterations (due to incremental updates).
+         * This round-off can lead to  error checks failing because the cost 
+         * is different from what you get when you recompute from scratch.                       
+         */
+        ++(*moves_since_cost_recompute);
+        if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
+            recompute_costs_from_scratch(placer_opts, *cost, *bb_cost, *timing_cost, *delay_cost); 
+            *moves_since_cost_recompute = 0;
+        }
 	}
 	/* Inner loop ends */
+}
+
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, float& cost, float& bb_cost, float& timing_cost, const float& delay_cost) {
+    float new_bb_cost = recompute_bb_cost();
+    if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
+        vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
+                new_bb_cost, bb_cost);
+    }
+    bb_cost = new_bb_cost;
+
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        float new_timing_cost = 0.;
+        float new_delay_cost = 0.;
+        comp_td_costs(&new_timing_cost, &new_delay_cost);
+        if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                    "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
+                    new_timing_cost, timing_cost, ERROR_TOL);
+        }
+        if (fabs(new_delay_cost - delay_cost) > delay_cost * ERROR_TOL) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                    "in recompute_costs_from_scratch: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
+                    new_delay_cost, delay_cost, ERROR_TOL);
+        }
+        timing_cost = new_timing_cost;
+    } else {
+        VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
+
+        cost = new_bb_cost;
+    }
 }
 
 /*only count non-global connections */
