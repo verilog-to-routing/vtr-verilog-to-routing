@@ -36,7 +36,7 @@ void ClockNetwork::set_num_instance(int num_inst) {
 
 void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraph& clock_graph) {
     for(int inst_num = 0; inst_num < get_num_inst(); inst_num++){
-        create_rr_nodes_for_one_instance(inst_num, clock_graph);
+        create_rr_nodes_for_one_instance(clock_graph);
     }
 }
 
@@ -61,12 +61,25 @@ void ClockRib::set_metal_layer(float r_metal, float c_metal) {
 }
 
 void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
+
+    if(end_x < start_x) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire cannot have negtive length. "
+                                   "Wire end: %d < wire start: %d\n", end_x, start_x);
+    }
+
     x_chan_wire.start = start_x;
-    x_chan_wire.end = end_x;
+    x_chan_wire.length = end_x - start_x;
     x_chan_wire.position = y;
 }
 
 void ClockRib::set_wire_repeat(int repeat_x, int repeat_y) {
+
+    if(repeat_x <= 0 || repeat_y <= 0) {
+        // Avoid an infinte loop when creating ribs
+        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
+                  repeat_x, repeat_y);
+    }
+
     repeat.x = repeat_x;
     repeat.y = repeat_y;
 }
@@ -96,38 +109,46 @@ void ClockRib::set_tap_name(std::string name) {
  * ClockRib (member functions)
  */
 
-void ClockRib::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph) {
+void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
  
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& grid = device_ctx.grid;
 
-    int ptc_num = inst_num + 55; // used for drawing
+    int ptc_num = clock_graph.get_and_increment_chanx_ptc_num(); // used for drawing
 
-    for(unsigned x_start = x_chan_wire.start, x_end = x_chan_wire.end;
-        x_end < grid.width() - 1;
-        x_start += repeat.x, x_end += repeat.x) {
+    // Avoid an infinite loop
+    VTR_ASSERT(repeat.y > 0);
+    VTR_ASSERT(repeat.x > 0);
 
-        int drive_x = x_start + drive.offset;
+    for(unsigned y = x_chan_wire.position; y < grid.height() - 1; y += repeat.y) {
+        for(unsigned x_start = x_chan_wire.start; x_start < grid.width() - 1; x_start += repeat.x) {
 
-        // Adjust for boundry conditions but get the dirve position first so as to not shift
-        // switch locations
-        if(x_start == 0) {
-            x_start = 1;
-        }
+            unsigned drive_x = x_start + drive.offset;
+            unsigned x_end = x_start + x_chan_wire.length;
 
-        for(unsigned y = x_chan_wire.position; y < grid.height() - 1; y += repeat.y) { 
+            // Adjust for boundry conditions
+            if(x_start == 0) {
+                x_start = 1; // CHANX wires left boundry
+            }
+            if(x_end > grid.width() - 2) {
+                x_end = grid.width() - 2; // CHANX wires right boundry
+            }
+
+            // Dont create rib if drive point is not reachable
+            if(drive_x > grid.width() - 2) {
+                continue;
+            }
 
             // create drive point (length zero wire)
             auto drive_node_idx = create_chanx_wire(drive_x, drive_x, y, ptc_num, rr_nodes);
             clock_graph.add_switch_location(get_name(), drive.name, drive_x, y, drive_node_idx);
-            
+
             // create rib wire to the right and left of the drive point 
             auto left_node_idx = create_chanx_wire(x_start, drive_x, y, ptc_num, rr_nodes);
             auto right_node_idx = create_chanx_wire(drive_x, x_end, y, ptc_num, rr_nodes);
-
             record_tap_locations(x_start, x_end, y, left_node_idx, right_node_idx, clock_graph);
-            
+
             // connect drive point to each half rib using a directed switch
             rr_nodes[drive_node_idx].add_edge(left_node_idx, drive.switch_idx);
             rr_nodes[drive_node_idx].add_edge(right_node_idx, drive.switch_idx);
@@ -195,12 +216,25 @@ void ClockSpine::set_metal_layer(float r_metal, float c_metal) {
 }
 
 void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
+
+    if(end_y < start_y) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire cannot have negtive length. "
+                                   "Wire end: %d < wire start: %d\n", end_y, start_y);
+    }
+
     y_chan_wire.start = start_y;
-    y_chan_wire.end = end_y;
+    y_chan_wire.length = end_y - start_y;
     y_chan_wire.position = x;
 }
 
 void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y) {
+
+    if(repeat_x <= 0 || repeat_y <= 0) {
+        // Avoid an infinte loop when creating spines
+        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
+                  repeat_x, repeat_y);
+    }
+
     repeat.x = repeat_x;
     repeat.y = repeat_y;
 }
@@ -230,27 +264,36 @@ void ClockSpine::set_tap_name(std::string name) {
  * ClockSpine (member functions)
  */
 
-void ClockSpine::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph) {
+void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& grid = device_ctx.grid;
 
-    int ptc_num = inst_num + 55;
+    int ptc_num = clock_graph.get_and_increment_chany_ptc_num(); // used for drawing
 
-    for(unsigned y_start = y_chan_wire.start, y_end = y_chan_wire.end;
-        y_end < grid.height() - 1;
-        y_start += repeat.y, y_end += repeat.y) {
+    // Avoid an infinite loop
+    VTR_ASSERT(repeat.y > 0);
+    VTR_ASSERT(repeat.x > 0);
 
-        int drive_y = y_start + drive.offset;
+    for(unsigned x = y_chan_wire.position; x < grid.width() - 1; x += repeat.x) {
+        for(unsigned y_start = y_chan_wire.start; y_start < grid.height() - 1; y_start += repeat.y) {
 
-        // Adjust for boundry conditions but get the dirve position first so as to not shift
-        // switch locations
-        if(y_start == 0) {
-            y_start = 1;
-        }
+            unsigned drive_y = y_start + drive.offset;
+            unsigned y_end = y_start + y_chan_wire.length;
 
-        for(unsigned x = y_chan_wire.position; x < grid.width() - 1; x += repeat.x) {
+            // Adjust for boundry conditions
+            if(y_start == 0) {
+                y_start = 1; // CHANY wires bottom boundry
+            }
+            if (y_end > grid.height() - 2) {
+                y_end = grid.height() - 2; // CHANY wires top boundry
+            }
+
+            // Dont create spines if drive point is not reachable
+            if(drive_y > grid.width() - 2) {
+                continue;
+            }
 
             //create drive point (length zero wire)
             auto drive_node_idx = create_chany_wire(drive_y, drive_y, x, ptc_num, rr_nodes);
@@ -316,10 +359,9 @@ void ClockSpine::record_tap_locations(
  */
 
 //TODO: Implement clock Htree generation code
-void ClockHTree::create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph) {
+void ClockHTree::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
 
     //Remove unused parameter warning
-    (void)inst_num;
     (void)clock_graph; 
 
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");

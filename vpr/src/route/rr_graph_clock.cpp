@@ -13,6 +13,10 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     vtr::printf_info("Starting clock network routing resource graph generation...\n");
     clock_t begin = clock();
 
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& grid = device_ctx.grid;
+    int channel_width = device_ctx.chan_width.max;
+
     // Clock Newtworks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
 
@@ -23,9 +27,9 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     rib->set_num_instance(3);
     rib->set_clock_name("rib1");
     rib->set_metal_layer(405, 0.00000116);
-    rib->set_initial_wire_location(0, 19, 0);
-    rib->set_wire_repeat(17, 1);
-    rib->set_drive_location(10);
+    rib->set_initial_wire_location(0, grid.width(), 0);
+    rib->set_wire_repeat(grid.width(), 1);
+    rib->set_drive_location(grid.width()/2);
     rib->set_drive_switch(2);
     rib->set_drive_name("drive");
     rib->set_tap_locations(0,1);
@@ -38,9 +42,9 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     spine->set_num_instance(3);
     spine->set_clock_name("spine1");
     spine->set_metal_layer(405,0.00000116);
-    spine->set_initial_wire_location(0, 19, 10);
-    spine->set_wire_repeat(19,19);
-    spine->set_drive_location(10);
+    spine->set_initial_wire_location(0, grid.height(), grid.width()/2);
+    spine->set_wire_repeat(grid.width(), grid.height());
+    spine->set_drive_location(grid.width()/2);
     spine->set_drive_switch(2);
     spine->set_drive_name("drive");
     spine->set_tap_locations(0,1);
@@ -56,7 +60,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
 
     routing_to_clock->set_clock_name_to_connect_to("spine1");
     routing_to_clock->set_clock_switch_name("drive");
-    routing_to_clock->set_switch_location(10, 10);
+    routing_to_clock->set_switch_location(grid.width()/2, grid.height()/2);
     routing_to_clock->set_switch(0);
     routing_to_clock->set_fc_val(0.1);
 
@@ -90,7 +94,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     routing_to_pins->set_fc_val(1);
 
 
-    ClockRRGraph clock_graph = ClockRRGraph();
+    ClockRRGraph clock_graph = ClockRRGraph(channel_width);
     clock_graph.create_clock_networks_wires(clock_networks);
     clock_graph.create_clock_networks_switches(clock_routing);
 
@@ -143,7 +147,6 @@ void SwitchPoints::insert_switch_node_idx(std::string switch_name, int x, int y,
 }
 
 void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
-
     // allocate 2d vector of grid size
     if (rr_node_indices.empty()) {
         auto& grid = g_vpr_ctx.device().grid;
@@ -226,6 +229,24 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
     VTR_ASSERT(!locations.empty());
 
     return locations;
+}
+
+
+void ClockRRGraph::set_ptc_nums(int channel_width) {
+    chanx_next_ptc = channel_width + 1;
+    chany_next_ptc = channel_width + 1;
+}
+
+int ClockRRGraph::get_and_increment_chanx_ptc_num() {
+    return chanx_next_ptc++;
+}
+
+int ClockRRGraph::get_and_increment_chany_ptc_num() {
+    return chany_next_ptc++;
+}
+
+ClockRRGraph::ClockRRGraph(int channel_width) {
+    set_ptc_nums(channel_width);
 }
 
 

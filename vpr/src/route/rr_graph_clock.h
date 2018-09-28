@@ -50,6 +50,29 @@ class SwitchPoints {
 };
 
 class ClockRRGraph {
+
+    public: //constructor
+        /* Constructor calls set_ptc_nums() member function which is used to keep track of the ptc
+           number that should be used next. */
+        ClockRRGraph(int channel_width);
+
+    /* Drawing Related Variables and functions */
+    private:
+        /* The next ptc number to be used for x-channel and/or y-channel wire drawing */
+        int chanx_next_ptc;
+        int chany_next_ptc;
+    private:
+        /* Sets the initial chanx and the chany ptc numbers based on the channel width
+           of the inter-block routing. Function should only be called durring construction
+           of this class */
+        void set_ptc_nums(int channel_width);
+    public:
+        /* Return the current ptc num where the wire should be drawn and updates the ptc count by
+           one. */
+        int get_and_increment_chanx_ptc_num();
+        int get_and_increment_chany_ptc_num();
+
+
     public:
         /* Reverse lookup for to find the clock source and tap locations for each clock_network
            The map key is the the clock network name and value are all the switch points*/

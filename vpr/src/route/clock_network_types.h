@@ -25,7 +25,7 @@ struct MetalLayer {
 struct Wire {
     MetalLayer layer;
     int start;
-    int end;
+    int length;
     int position;
 };
 
@@ -99,7 +99,7 @@ class ClockNetwork {
         /* Creates the RR nodes for the clock network wires and adds them to the reverse lookup
            in ClockRRGraph. The reverse lookup maps the nodes to their switch point locations */
         void create_rr_nodes_for_clock_network_wires(ClockRRGraph& clock_graph);
-        virtual void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph) = 0;
+        virtual void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) = 0;
 };
 
 class ClockRib : public ClockNetwork {
@@ -140,7 +140,7 @@ class ClockRib : public ClockNetwork {
         /*
          * Member functions
          */
-        void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
         int create_chanx_wire(
                 int x_start,
                 int x_end,
@@ -190,7 +190,7 @@ class ClockSpine : public ClockNetwork {
         /*
          * Member functions
          */
-        void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
         int create_chany_wire(
             int y_start,
             int y_end,
@@ -222,7 +222,7 @@ class ClockHTree : private ClockNetwork {
     public:
         ClockType get_network_type() const {return ClockType::H_TREE;}
         // TODO: Unimplemented member function
-        void create_rr_nodes_for_one_instance(int inst_num, ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
 };
 
 #endif
