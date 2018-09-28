@@ -917,6 +917,7 @@ struct t_router_opts {
 	e_stage_action doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 	enum e_routing_budgets_algorithm routing_budgets_algorithm;
+    bool save_routing_per_iteration;
 };
 
 struct t_analysis_opts {

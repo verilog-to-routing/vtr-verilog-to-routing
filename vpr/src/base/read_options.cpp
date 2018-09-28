@@ -1052,6 +1052,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .choices({"minimax", "scale_delay", "disable"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool,ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")
+            .help("Controls whether VPR saves the current routing to a file after each routing iteration."
+                  " May be helpful for debugging.")
+            .default_value("off")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool,ParseOnOff>(args.full_stats, "--full_stats")

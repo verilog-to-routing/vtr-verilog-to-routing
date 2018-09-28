@@ -355,6 +355,8 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     }
 	RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
+
+    RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
 }
 
 static void SetupAnnealSched(const t_options& Options,

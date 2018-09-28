@@ -114,6 +114,7 @@ struct t_options {
     argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
+    argparse::ArgValue<bool> save_routing_per_iteration;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
