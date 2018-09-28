@@ -335,6 +335,8 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, t_placer_costs* costs);
 
+static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
+
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
 		t_annealing_sched annealing_sched,
@@ -615,19 +617,8 @@ void try_place(t_placer_opts placer_opts,
             *timing_info);
 
 		tot_iter += move_lim;
-		success_rat = ((float) stats.success_sum) / move_lim;
-		if (stats.success_sum == 0) {
-			stats.av_cost = costs.cost;
-			stats.av_bb_cost = costs.bb_cost;
-			stats.av_timing_cost = costs.timing_cost;
-			stats.av_delay_cost = costs.delay_cost;
-		} else {
-			stats.av_cost /= stats.success_sum;
-			stats.av_bb_cost /= stats.success_sum;
-			stats.av_timing_cost /= stats.success_sum;
-			stats.av_delay_cost /= stats.success_sum;
-		}
-		std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+
+        calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
@@ -709,20 +700,7 @@ void try_place(t_placer_opts placer_opts,
             *timing_info);
 
 	tot_iter += move_lim;
-	success_rat = ((float) stats.success_sum) / move_lim;
-	if (stats.success_sum == 0) {
-		stats.av_cost = costs.cost;
-		stats.av_bb_cost = costs.bb_cost;
-		stats.av_delay_cost = costs.delay_cost;
-		stats.av_timing_cost = costs.timing_cost;
-	} else {
-		stats.av_cost /= stats.success_sum;
-		stats.av_bb_cost /= stats.success_sum;
-		stats.av_delay_cost /= stats.success_sum;
-		stats.av_timing_cost /= stats.success_sum;
-	}
-
-	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+    calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         critical_path = timing_info->least_slack_critical_path();
@@ -3305,4 +3283,19 @@ static void free_try_swap_arrays() {
 	}
 }
 
+static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim) {
+	success_rat = ((float) stats.success_sum) / move_lim;
+	if (stats.success_sum == 0) {
+		stats.av_cost = costs.cost;
+		stats.av_bb_cost = costs.bb_cost;
+		stats.av_delay_cost = costs.delay_cost;
+		stats.av_timing_cost = costs.timing_cost;
+	} else {
+		stats.av_cost /= stats.success_sum;
+		stats.av_bb_cost /= stats.success_sum;
+		stats.av_delay_cost /= stats.success_sum;
+		stats.av_timing_cost /= stats.success_sum;
+	}
 
+	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+}
