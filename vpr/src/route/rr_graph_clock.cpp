@@ -15,7 +15,6 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
-    int channel_width = device_ctx.chan_width.max;
 
     // Clock Newtworks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
@@ -94,7 +93,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     routing_to_pins->set_fc_val(1);
 
 
-    ClockRRGraph clock_graph = ClockRRGraph(channel_width);
+    ClockRRGraph clock_graph = ClockRRGraph();
     clock_graph.create_clock_networks_wires(clock_networks);
     clock_graph.create_clock_networks_switches(clock_routing);
 
@@ -232,21 +231,30 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 }
 
 
-void ClockRRGraph::set_ptc_nums(int channel_width) {
-    chanx_next_ptc = channel_width + 1;
-    chany_next_ptc = channel_width + 1;
-}
-
 int ClockRRGraph::get_and_increment_chanx_ptc_num() {
-    return chanx_next_ptc++;
+
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto* channel_width = &device_ctx.chan_width;
+
+    int ptc_num = channel_width->x_max++;
+    if (channel_width->x_max > channel_width->max) {
+        channel_width->max = channel_width->x_max;
+    }
+
+    return ptc_num;
 }
 
 int ClockRRGraph::get_and_increment_chany_ptc_num() {
-    return chany_next_ptc++;
-}
 
-ClockRRGraph::ClockRRGraph(int channel_width) {
-    set_ptc_nums(channel_width);
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto* channel_width = &device_ctx.chan_width;
+
+    int ptc_num = channel_width->y_max++;
+    if (channel_width->y_max > channel_width->max) {
+        channel_width->max = channel_width->y_max;
+    }
+
+    return ptc_num;
 }
 
 
