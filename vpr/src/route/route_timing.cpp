@@ -36,8 +36,6 @@
 
 #define CONGESTED_SLOPE_VAL -0.04
 
-constexpr float CONGESTED_ITERATION_THRESHOLD_FACTOR = 0.8;
-
 enum class RouterCongestionMode {
     NORMAL,
     CONGESTED
@@ -251,8 +249,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
     }
 
-    float high_effort_congestion_mode_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
-    high_effort_congestion_mode_iteration_threshold = CONGESTED_ITERATION_THRESHOLD_FACTOR * router_opts.max_router_iterations;
+    float high_effort_congestion_mode_iteration_threshold = router_opts.congested_routing_iteration_threshold_frac * router_opts.max_router_iterations;
 
     /* Set delay of global signals to zero. Non-global net delays are set by
        update_net_delays_from_route_tree() inside timing_driven_route_net(),

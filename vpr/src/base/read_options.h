@@ -115,6 +115,7 @@ struct t_options {
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
     argparse::ArgValue<bool> save_routing_per_iteration;
+    argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
