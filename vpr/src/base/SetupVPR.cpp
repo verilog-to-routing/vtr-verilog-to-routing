@@ -203,7 +203,7 @@ void SetupVPR(t_options *Options,
         *PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
-    if (Options->clock_modeling == ROUTED_CLOCK) {
+    if (Options->clock_modeling == ROUTED_CLOCK || DEDICATED_NETWORK) {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
 

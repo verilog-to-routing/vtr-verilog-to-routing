@@ -136,28 +136,5 @@ class ClockToPinsConnection : public ClockConnection {
 
 };
 
-class RoutingToPins : public ClockConnection {
-    private:
-//        pin_type;       
-        float fc;
-
-    public:
-        /*
-         * Getters
-         */
-        ClockConnectionType get_connection_type() const;
-
-        /*
-         * Setters
-         */
-        void set_fc_val(float fc_val);
-
-        /*
-         * Member functions
-         */
-
-        void create_switches(const ClockRRGraph& clock_graph);
-};
-
 #endif
 

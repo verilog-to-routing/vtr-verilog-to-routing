@@ -85,13 +85,6 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     clock_to_pins->set_switch(1);
     clock_to_pins->set_fc_val(1);
 
-    // Routing to clock pins
-    clock_routing.emplace_back(new RoutingToPins);
-    RoutingToPins* routing_to_pins =
-        dynamic_cast<RoutingToPins*>(clock_routing.back().get());
-
-    routing_to_pins->set_fc_val(1);
-
 
     ClockRRGraph clock_graph = ClockRRGraph();
     clock_graph.create_clock_networks_wires(clock_networks);

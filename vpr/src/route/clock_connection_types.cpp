@@ -416,30 +416,3 @@ void ClockToPinsConnection::create_switches(const ClockRRGraph& clock_graph) {
 
 }
 
-
-
-
-/*
- * RoutingToPins (getters)
- */
-
-ClockConnectionType  RoutingToPins::get_connection_type() const {
-    return ClockConnectionType::ROUTING_TO_PINS;
-}
-
-/*
- * RoutingToPins (setters)
- */
-
-void RoutingToPins::set_fc_val(float fc_val) {
-    fc = fc_val;
-}
-
-/*
- * RoutingToPins (member functions)
- */
-
-void RoutingToPins::create_switches(const ClockRRGraph& clock_graph) {
-    (void)clock_graph; // parameter not needed in this case
-}
-
