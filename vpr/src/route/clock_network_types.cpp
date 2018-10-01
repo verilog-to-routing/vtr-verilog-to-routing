@@ -141,12 +141,30 @@ void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             }
 
             // create drive point (length zero wire)
-            auto drive_node_idx = create_chanx_wire(drive_x, drive_x, y, ptc_num, rr_nodes);
+            auto drive_node_idx = create_chanx_wire(
+                                        drive_x,
+                                        drive_x,
+                                        y,
+                                        ptc_num,
+                                        BI_DIRECTION,
+                                        rr_nodes);
             clock_graph.add_switch_location(get_name(), drive.name, drive_x, y, drive_node_idx);
 
             // create rib wire to the right and left of the drive point 
-            auto left_node_idx = create_chanx_wire(x_start, drive_x, y, ptc_num, rr_nodes);
-            auto right_node_idx = create_chanx_wire(drive_x, x_end, y, ptc_num, rr_nodes);
+            auto left_node_idx = create_chanx_wire(
+                                    x_start,
+                                    drive_x,
+                                    y,
+                                    ptc_num,
+                                    DEC_DIRECTION,
+                                    rr_nodes);
+            auto right_node_idx = create_chanx_wire(
+                                    drive_x,
+                                    x_end,
+                                    y,
+                                    ptc_num,
+                                    INC_DIRECTION,
+                                    rr_nodes);
             record_tap_locations(x_start, x_end, y, left_node_idx, right_node_idx, clock_graph);
 
             // connect drive point to each half rib using a directed switch
@@ -161,6 +179,7 @@ int ClockRib::create_chanx_wire(
     int x_end,
     int y,
     int ptc_num,
+    e_direction direction,
     std::vector<t_rr_node>& rr_nodes)
 {
     rr_nodes.emplace_back();
@@ -173,7 +192,7 @@ int ClockRib::create_chanx_wire(
     rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START);
     auto rc_index = find_create_rr_rc_data(x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal);
     rr_nodes[node_index].set_rc_index(rc_index);
-//    rr_nodes[node_index].set_direction(); // TODO: set direction, can look into how alloc_alloc_and_load_seg_details() does it in rr_graph2.cpp
+    rr_nodes[node_index].set_direction(direction);
 
     return node_index;
 }
@@ -296,12 +315,30 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             }
 
             //create drive point (length zero wire)
-            auto drive_node_idx = create_chany_wire(drive_y, drive_y, x, ptc_num, rr_nodes);
+            auto drive_node_idx = create_chany_wire(
+                                    drive_y,
+                                    drive_y,
+                                    x,
+                                    ptc_num,
+                                    BI_DIRECTION,
+                                    rr_nodes);
             clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
 
             // create spine wire to the right and left of the drive point
-            auto left_node_idx = create_chany_wire(y_start, drive_y, x, ptc_num, rr_nodes);
-            auto right_node_idx = create_chany_wire(drive_y, y_end, x, ptc_num, rr_nodes);
+            auto left_node_idx = create_chany_wire(
+                                    y_start,
+                                    drive_y,
+                                    x,
+                                    ptc_num,
+                                    DEC_DIRECTION,
+                                    rr_nodes);
+            auto right_node_idx = create_chany_wire(
+                                    drive_y,
+                                    y_end,
+                                    x,
+                                    ptc_num,
+                                    INC_DIRECTION,
+                                    rr_nodes);
 
             record_tap_locations(y_start, y_end, x, left_node_idx, right_node_idx, clock_graph);
 
@@ -317,6 +354,7 @@ int ClockSpine::create_chany_wire(
     int y_end,
     int x,
     int ptc_num,
+    e_direction direction,
     std::vector<t_rr_node>& rr_nodes)
 {
     rr_nodes.emplace_back();
@@ -328,8 +366,8 @@ int ClockSpine::create_chany_wire(
     rr_nodes[node_index].set_track_num(ptc_num);
     auto rc_index = find_create_rr_rc_data(y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal);
     rr_nodes[node_index].set_rc_index(rc_index);
-    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START); //TODO: Why not chany
-//    rr_nodes[node_index].set_direction(); // TODO: set direction, can look into how alloc_alloc_and_load_seg_details() does it in rr_graph2.cpp
+    rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START);
+    rr_nodes[node_index].set_direction(direction);
 
     return node_index;
 }

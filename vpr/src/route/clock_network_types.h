@@ -146,6 +146,7 @@ class ClockRib : public ClockNetwork {
                 int x_end,
                 int y,
                 int ptc_num,
+                e_direction direction,
                 std::vector<t_rr_node>& rr_nodes);
         void record_tap_locations(
                 unsigned x_start,
@@ -196,6 +197,7 @@ class ClockSpine : public ClockNetwork {
             int y_end,
             int x,
             int ptc_num,
+            e_direction direction,
             std::vector<t_rr_node>& rr_nodes);
         void record_tap_locations(
                 unsigned y_start,
