@@ -173,8 +173,6 @@ void ClockToClockConneciton::create_switches(const ClockRRGraph& clock_graph) {
         size_t num_connections = ceil(from_indices.size()*fc);
 
         for(auto to_index : to_indices) {
-
-            // Connect to x-channel wires
             for(size_t i = 0; i < num_connections; i++) {
                 if(from_itter == from_indices.end()){
                     from_itter = from_indices.begin();
@@ -228,19 +226,50 @@ void ClockToPinsConnection::create_switches(const ClockRRGraph& clock_graph) {
     auto& rr_node_indices = device_ctx.rr_node_indices;
     auto& grid = device_ctx.grid;
 
-    for (size_t x = 1; x < grid.width() - 1; x++) {
-        for(size_t y = 1; y < grid.height() - 1; y++) {
+    for (size_t x = 0; x < grid.width(); x++) {
+        for(size_t y = 0; y < grid.height(); y++) {
+
+            //Avoid boundry
+            if((y == 0 && x == 0) || (x == grid.width()-1 && y == grid.height()-1)) {
+                continue;
+            }
 
             auto type = grid[x][y].type;
             auto width_offset = grid[x][y].width_offset;
             auto height_offset = grid[x][y].height_offset;
 
             for(e_side side : SIDES) {
+
+                //Don't connect pins which are not adjacent to channels around the perimeter
+                if ((x == 0 && side != RIGHT) ||
+                    (x == grid.width()-1 && side != LEFT) ||
+                    (y == 0 && side != TOP) ||
+                    (y == grid.height()-1 && side != BOTTOM))
+                {
+                    continue;
+                }
+
                 for(auto clock_pin_idx : type->get_clock_pins_indices()) {
 
-                    /* Can't do anything if pin isn't at this location */
+                    //Can't do anything if pin isn't at this location
                     if (0 == type->pinloc[width_offset][height_offset][side][clock_pin_idx]) {
                         continue;
+                    }
+
+                    //Adjust boundry connections (TODO: revisist if chany connections)
+                    int clock_x_offset = 0;
+                    int clock_y_offset = 0;
+                    if(x == 0) {
+                        clock_x_offset = 1;  // chanx clock always starts at 1 offset
+                        clock_y_offset = -1; // pick the chanx below the block
+                    } else if (x == grid.width()-1) {
+                        clock_x_offset = -1; // chanx clock always ends at 1 offset
+                        clock_y_offset = -1; // pick the chanx below the block
+                    } else if (y == 0) { // pick chanx above the block, no offset needed
+                    } else if (y == grid.height()-1) {
+                        clock_y_offset = -1; // pick the chanx below the block
+                    } else {
+                        clock_y_offset = -1;
                     }
 
                     auto clock_pin_node_idx = get_rr_node_index(
@@ -251,16 +280,13 @@ void ClockToPinsConnection::create_switches(const ClockRRGraph& clock_graph) {
                         clock_pin_idx,
                         side);
                     
-                    //TODO: revisit for chany wires
-                    int clock_y = y - 1; // Done inorder to select chanx wires bellow the block
-
                     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
                         clock_to_connect_from,
                         switch_name,
-                        x,
-                        clock_y);
+                        x + clock_x_offset,
+                        y + clock_y_offset);
 
-
+                    //Create edges depending on Fc
                     for(size_t i = 0; i < clock_indices.size()*fc; i++) {
                         rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, switch_idx);
                     }
@@ -268,151 +294,5 @@ void ClockToPinsConnection::create_switches(const ClockRRGraph& clock_graph) {
             }
         }
     }
-    
-    size_t y;
-    size_t x;
-    // TODO: revisit if I/O has pins without logical equivilance (can check class)
-    //bottom row connections to chanx (only connect the top of the block to the channel)
-    y = 0;
-    for (x = 1; x < grid.width() - 1; x++) {
-        auto type = grid[x][y].type;
-        auto width_offset = grid[x][y].width_offset;
-        auto height_offset = grid[x][y].height_offset;
-        
-        for(auto clock_pin_idx : type->get_clock_pins_indices()) {
-
-            /* Can't do anything if pin isn't at this location */
-            if (0 == type->pinloc[width_offset][height_offset][TOP][clock_pin_idx]) {
-                continue;
-            }
-
-            auto clock_pin_node_idx = get_rr_node_index(
-                rr_node_indices,
-                x,
-                y,
-                IPIN,
-                clock_pin_idx,
-                TOP);
-
-            auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
-                clock_to_connect_from,
-                switch_name,
-                x,
-                y);
-
-            for(size_t i = 0; i < clock_indices.size()*fc; i++) {
-                rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, switch_idx);
-            }
-        }
-    }
-
-    //left row connections to chanx (only connect the right of the block to the channel)
-    x = 0;
-    for (y = 1; y < grid.height() - 1; y++) {
-        auto type = grid[x][y].type;
-        auto width_offset = grid[x][y].width_offset;
-        auto height_offset = grid[x][y].height_offset;
-        
-        for(auto clock_pin_idx : type->get_clock_pins_indices()) {
-
-            /* Can't do anything if pin isn't at this location */
-            if (0 == type->pinloc[width_offset][height_offset][TOP][clock_pin_idx]) {
-                continue;
-            }
-
-            auto clock_pin_node_idx = get_rr_node_index(
-                rr_node_indices,
-                x,
-                y,
-                IPIN,
-                clock_pin_idx,
-                RIGHT);
-            
-            int clock_x = x + 1; // pick the chanx clock that always starts at 1 offset
-            int clock_y = y - 1; // pick the chanx below the block
-            auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
-                clock_to_connect_from,
-                switch_name,
-                clock_x,
-                clock_y);
-
-            for(size_t i = 0; i < clock_indices.size()*fc; i++) {
-                rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, switch_idx);
-            }
-        }
-    }
-
-    //right row connections to chanx (only connect the left of the block to the channel)
-    x = grid.width() - 1;
-    for (y = 1; y < grid.height() - 1; y++) {
-        auto type = grid[x][y].type;
-        auto width_offset = grid[x][y].width_offset;
-        auto height_offset = grid[x][y].height_offset;
-        
-        for(auto clock_pin_idx : type->get_clock_pins_indices()) {
-
-            /* Can't do anything if pin isn't at this location */
-            if (0 == type->pinloc[width_offset][height_offset][TOP][clock_pin_idx]) {
-                continue;
-            }
-
-            auto clock_pin_node_idx = get_rr_node_index(
-                rr_node_indices,
-                x,
-                y,
-                IPIN,
-                clock_pin_idx,
-                LEFT);
-            
-            int clock_x = x - 1; // pick the chanx clock that always starts at 1 offset
-            int clock_y = y - 1; // pick the chanx below the block
-            auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
-                clock_to_connect_from,
-                switch_name,
-                clock_x,
-                clock_y);
-
-            for(size_t i = 0; i < clock_indices.size()*fc; i++) {
-                rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, switch_idx);
-            }
-        }
-    }
-
-    //top row connections to chanx (only connect the botom of the block to the channel)
-    y = grid.height() - 1;
-    for (x = 1; x < grid.width() - 1; x++) {
-        auto type = grid[x][y].type;
-        auto width_offset = grid[x][y].width_offset;
-        auto height_offset = grid[x][y].height_offset;
-        
-        for(auto clock_pin_idx : type->get_clock_pins_indices()) {
-
-            /* Can't do anything if pin isn't at this location */
-            if (0 == type->pinloc[width_offset][height_offset][TOP][clock_pin_idx]) {
-                continue;
-            }
-
-            auto clock_pin_node_idx = get_rr_node_index(
-                rr_node_indices,
-                x,
-                y,
-                IPIN,
-                clock_pin_idx,
-                BOTTOM);
-            
-            int clock_x = x;
-            int clock_y = y - 1; // pick the chanx below the block
-            auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
-                clock_to_connect_from,
-                switch_name,
-                clock_x,
-                clock_y);
-
-            for(size_t i = 0; i < clock_indices.size()*fc; i++) {
-                rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, switch_idx);
-            }
-        }
-    }
-
 }
 
