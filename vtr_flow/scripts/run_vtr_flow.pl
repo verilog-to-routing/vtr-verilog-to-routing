@@ -726,6 +726,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                     my $relaxed_W = calculate_relaxed_W($min_W);
 
                     my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
+                    push(@relaxed_W_extra_vpr_args, ("--route"));
                     push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
 
                     my $relaxed_W_log_file = "vpr.crit_path.out";
