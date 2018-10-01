@@ -1249,9 +1249,6 @@ void free_rr_graph() {
 
     device_ctx.rr_node_indices.clear();
 
-    free(device_ctx.rr_indexed_data);
-    device_ctx.rr_indexed_data = nullptr;
-
     delete[] device_ctx.rr_switch_inf;
     device_ctx.rr_switch_inf = nullptr;
     device_ctx.num_rr_switches = 0;
@@ -2229,7 +2226,7 @@ void print_rr_node(FILE * fp, const std::vector<t_rr_node> &L_rr_node, int inode
 
     fprintf(fp, "Capacity: %d\n", L_rr_node[inode].capacity());
     fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
-    fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
+    fprintf(fp, "Cost_index: %zd\n", L_rr_node[inode].cost_index());
 }
 
 /* Prints all the device_ctx.rr_indexed_data of index to file fp.   */

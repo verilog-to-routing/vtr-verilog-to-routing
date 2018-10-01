@@ -1617,15 +1617,15 @@ void update_rr_base_costs(int fanout) {
 
     /* Changes the base costs of different types of rr_nodes according to the  *
      * criticality, fanout, etc. of the current net being routed (net_id).       */
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     float factor;
-    int index;
+    size_t index;
 
     /* Other reasonable values for factor include fanout and 1 */
     factor = sqrt(fanout);
 
-    for (index = CHANX_COST_INDEX_START; index < device_ctx.num_rr_indexed_data; index++) {
+    for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
         if (device_ctx.rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
             device_ctx.rr_indexed_data[index].base_cost =
                     device_ctx.rr_indexed_data[index].saved_base_cost * factor;

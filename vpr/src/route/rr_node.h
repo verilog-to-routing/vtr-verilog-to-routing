@@ -93,7 +93,7 @@ class t_rr_node {
         short track_num() const; //Same as ptc_num() but checks that type() is consistent
         short class_num() const; //Same as ptc_num() but checks that type() is consistent
 
-        short cost_index() const;
+        size_t cost_index() const;
         short rc_index() const;
         e_direction direction() const;
         const char *direction_string() const;
@@ -134,7 +134,7 @@ class t_rr_node {
         void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
 
 
-        void set_cost_index(short);
+        void set_cost_index(size_t);
         void set_rc_index(short);
 
         void set_direction(e_direction);
