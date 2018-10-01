@@ -387,6 +387,12 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 nodes_per_chan = 1;
                 tracks_per_node = device_ctx.chan_width.y_list[xlow];
             }
+
+            if (ptc_num >= nodes_per_chan) {
+                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                        "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+            }
+
             if (capacity != tracks_per_node) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
