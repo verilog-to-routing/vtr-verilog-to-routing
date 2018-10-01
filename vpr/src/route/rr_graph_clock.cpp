@@ -227,11 +227,16 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 int ClockRRGraph::get_and_increment_chanx_ptc_num() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& grid = device_ctx.grid;
     auto* channel_width = &device_ctx.chan_width;
 
     int ptc_num = channel_width->x_max++;
     if (channel_width->x_max > channel_width->max) {
         channel_width->max = channel_width->x_max;
+    }
+
+    for (size_t i = 0; i < grid.height(); ++i) {
+        device_ctx.chan_width.x_list[i]++;
     }
 
     return ptc_num;
@@ -240,11 +245,16 @@ int ClockRRGraph::get_and_increment_chanx_ptc_num() {
 int ClockRRGraph::get_and_increment_chany_ptc_num() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& grid = device_ctx.grid;
     auto* channel_width = &device_ctx.chan_width;
 
     int ptc_num = channel_width->y_max++;
     if (channel_width->y_max > channel_width->max) {
         channel_width->max = channel_width->y_max;
+    }
+
+    for (size_t i = 0; i < grid.width(); ++i) {
+        device_ctx.chan_width.y_list[i]++;
     }
 
     return ptc_num;
