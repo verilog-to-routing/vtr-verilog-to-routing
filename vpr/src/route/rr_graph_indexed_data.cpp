@@ -46,8 +46,6 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
         const int nodes_per_chan, int wire_to_ipin_switch,
         enum e_base_cost_type base_cost_type) {
 
-    int iseg, length, i, index;
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
     int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
     device_ctx.rr_indexed_data.resize(num_rr_indexed_data);
@@ -57,7 +55,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
      * * all other fields are invalid.  For SOURCES, SINKs and OPINs, all fields   *
      * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
-    for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
+    for (int i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
         device_ctx.rr_indexed_data[i].ortho_cost_index = OPEN;
         device_ctx.rr_indexed_data[i].seg_index = OPEN;
         device_ctx.rr_indexed_data[i].inv_length = OPEN;
@@ -68,11 +66,35 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
     device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear =
             device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
 
-    /* X-directed segments. */
-    for (iseg = 0; iseg < num_segment; iseg++) {
-        index = CHANX_COST_INDEX_START + iseg;
+    alloc_and_load_rr_indexed_data_for_segments(
+        segment_inf,
+        CHANX_COST_INDEX_START,
+        num_segment,
+        num_segment,
+        L_rr_node_indices,
+        nodes_per_chan,
+        base_cost_type);
+}
 
-        device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_segment;
+void alloc_and_load_rr_indexed_data_for_segments(
+        const t_segment_inf * segment_inf,
+        const int start_index,
+        const int num_x_segments,
+        const int num_y_segments,
+        const t_rr_node_indices& L_rr_node_indices,
+        const int nodes_per_chan,
+        enum e_base_cost_type base_cost_type)
+{
+
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    int iseg, length, index;
+
+    /* X-directed segments. */
+    for (iseg = 0; iseg < num_x_segments; iseg++) {
+        index = start_index + iseg;
+
+        device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_x_segments;
 
         if (segment_inf[iseg].longline)
             length = device_ctx.grid.width();
@@ -82,14 +104,14 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
     }
-    load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
+    load_rr_indexed_data_T_values(start_index, num_x_segments, CHANX,
             nodes_per_chan, L_rr_node_indices);
 
     /* Y-directed segments. */
-    for (iseg = 0; iseg < num_segment; iseg++) {
-        index = CHANX_COST_INDEX_START + num_segment + iseg;
+    for (iseg = 0; iseg < num_y_segments; iseg++) {
+        index = start_index + num_y_segments + iseg;
 
-        device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_segment;
+        device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_y_segments;
 
         if (segment_inf[iseg].longline)
             length = device_ctx.grid.height();
@@ -99,12 +121,11 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
     }
-    load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
-            num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
+    load_rr_indexed_data_T_values((start_index + num_x_segments),
+            num_y_segments, CHANY, nodes_per_chan, L_rr_node_indices);
 
     load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
             base_cost_type);
-
 }
 
 void load_rr_index_segments(const int num_segment) {
