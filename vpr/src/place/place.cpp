@@ -1948,18 +1948,14 @@ static bool driven_by_moved_block(const ClusterNetId net) {
 }
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
-	/* Computes the cost (from scratch) due to the delays and criticalities  *
-	 * on all point to point connections, we define the timing cost of       *
+	/* Computes the cost (from scratch) from the delays and criticalities    *
+	 * of all point to point connections, we define the timing cost of       *
 	 * each connection as criticality*delay.                                 */
-
-	unsigned ipin;
-	float loc_timing_cost, loc_connection_delay_sum, temp_delay_cost,
-			temp_timing_cost;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	loc_timing_cost = 0.;
-	loc_connection_delay_sum = 0.;
+	float new_timing_cost = 0.;
+	float new_connection_delay_sum = 0.;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
 
@@ -1967,24 +1963,24 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
             continue;
         }
 
-        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            temp_delay_cost = comp_td_point_to_point_delay(net_id, ipin);
-            temp_timing_cost = temp_delay_cost * get_timing_place_crit(net_id, ipin);
+        for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            float conn_delay = comp_td_point_to_point_delay(net_id, ipin);
+            float conn_timing_cost = conn_delay * get_timing_place_crit(net_id, ipin);
 
-            loc_connection_delay_sum += temp_delay_cost;
-            point_to_point_delay_cost[net_id][ipin] = temp_delay_cost;
+            new_connection_delay_sum += conn_delay;
+            point_to_point_delay_cost[net_id][ipin] = conn_delay;
             temp_point_to_point_delay_cost[net_id][ipin] = -1; /* Undefined */
 
-            point_to_point_timing_cost[net_id][ipin] = temp_timing_cost;
+            point_to_point_timing_cost[net_id][ipin] = conn_timing_cost;
             temp_point_to_point_timing_cost[net_id][ipin] = -1; /* Undefined */
-            loc_timing_cost += temp_timing_cost;
+            new_timing_cost += conn_timing_cost;
         }
 	}
 
 	/* Make sure timing cost does not go above MIN_TIMING_COST. */
-	*timing_cost = loc_timing_cost;
+	*timing_cost = new_timing_cost;
 
-	*connection_delay_sum = loc_connection_delay_sum;
+	*connection_delay_sum = new_connection_delay_sum;
 }
 
 
