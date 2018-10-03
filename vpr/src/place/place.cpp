@@ -1808,31 +1808,21 @@ static void find_to_location(t_type_ptr type, float rlim,
 static e_swap_result assess_swap(float delta_c, float t) {
 
 	/* Returns: 1 -> move accepted, 0 -> rejected. */
-
-	e_swap_result accept;
-	float prob_fac, fnum;
-
 	if (delta_c <= 0) {
-
-        /* Reduce variation in final solution due to round off */
-        fnum = vtr::frand();
-
-        accept = ACCEPTED;
-        return (accept);
+        return ACCEPTED;
 	}
 
-	if (t == 0.)
-		return (REJECTED);
+	if (t == 0.) {
+		return REJECTED;
+    }
 
-	fnum = vtr::frand();
-	prob_fac = exp(-delta_c / t);
+	float fnum = vtr::frand();
+	float prob_fac = exp(-delta_c / t);
 	if (prob_fac > fnum) {
-		accept = ACCEPTED;
+        return ACCEPTED;
 	}
-	else {
-		accept = REJECTED;
-	}
-	return (accept);
+
+	return REJECTED;
 }
 
 static float recompute_bb_cost() {
