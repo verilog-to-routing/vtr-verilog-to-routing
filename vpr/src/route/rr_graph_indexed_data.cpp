@@ -70,6 +70,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         segment_inf,
         CHANX_COST_INDEX_START,
         0,
+        0,
         num_segment,
         num_segment,
         L_rr_node_indices,
@@ -80,7 +81,8 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
 void alloc_and_load_rr_indexed_data_for_segments(
         const vector<t_segment_inf>& segment_inf,
         const int start_index,
-        const int start_seg_index,
+        const int start_x_seg_index,
+        const int start_y_seg_index,
         const int num_x_segments,
         const int num_y_segments,
         const t_rr_node_indices& L_rr_node_indices,
@@ -90,15 +92,16 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    int iseg, length, index;
+    int iseg, length;
 
     // Ensure that we do not go out of bounds
     VTR_ASSERT((start_index + num_x_segments + num_y_segments) <=
                (int) device_ctx.rr_indexed_data.size());
 
+    int index = start_index;
+
     /* X-directed segments. */
-    for (iseg = start_seg_index; iseg < num_x_segments; iseg++) {
-        index = start_index + iseg;
+    for (iseg = start_x_seg_index; iseg < num_x_segments; iseg++) {
 
         device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_x_segments;
 
@@ -109,13 +112,14 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
+
+        index++;
     }
     load_rr_indexed_data_T_values(start_index, num_x_segments, CHANX,
             nodes_per_chan, L_rr_node_indices);
 
     /* Y-directed segments. */
-    for (iseg = start_seg_index; iseg < num_y_segments; iseg++) {
-        index = start_index + num_y_segments + iseg;
+    for (iseg = start_y_seg_index; iseg < num_y_segments; iseg++) {
 
         device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_y_segments;
 
@@ -126,6 +130,8 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
+
+        index++;
     }
     load_rr_indexed_data_T_values((start_index + num_x_segments),
             num_y_segments, CHANY, nodes_per_chan, L_rr_node_indices);

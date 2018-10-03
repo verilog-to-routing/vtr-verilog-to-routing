@@ -9,7 +9,8 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
 void alloc_and_load_rr_indexed_data_for_segments(
         const std::vector<t_segment_inf>& segment_inf,
         const int start_index,
-        const int start_seg_index,
+        const int start_x_seg_index,
+        const int start_y_seg_index,
         const int num_x_segments,
         const int num_y_segments,
         const t_rr_node_indices& L_rr_node_indices,
