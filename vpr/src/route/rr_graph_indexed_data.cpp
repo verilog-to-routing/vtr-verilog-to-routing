@@ -69,6 +69,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
     alloc_and_load_rr_indexed_data_for_segments(
         segment_inf,
         CHANX_COST_INDEX_START,
+        0,
         num_segment,
         num_segment,
         L_rr_node_indices,
@@ -79,6 +80,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 void alloc_and_load_rr_indexed_data_for_segments(
         const t_segment_inf * segment_inf,
         const int start_index,
+        const int start_seg_index,
         const int num_x_segments,
         const int num_y_segments,
         const t_rr_node_indices& L_rr_node_indices,
@@ -90,8 +92,12 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
     int iseg, length, index;
 
+    // Ensure that we do not go out of bounds
+    VTR_ASSERT((start_index + num_x_segments + num_y_segments) <=
+               (int) device_ctx.rr_indexed_data.size());
+
     /* X-directed segments. */
-    for (iseg = 0; iseg < num_x_segments; iseg++) {
+    for (iseg = start_seg_index; iseg < num_x_segments; iseg++) {
         index = start_index + iseg;
 
         device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_x_segments;
@@ -108,7 +114,7 @@ void alloc_and_load_rr_indexed_data_for_segments(
             nodes_per_chan, L_rr_node_indices);
 
     /* Y-directed segments. */
-    for (iseg = 0; iseg < num_y_segments; iseg++) {
+    for (iseg = start_seg_index; iseg < num_y_segments; iseg++) {
         index = start_index + num_y_segments + iseg;
 
         device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_y_segments;
