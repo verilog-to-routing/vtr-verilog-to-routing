@@ -96,7 +96,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -122,7 +122,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const t_arch_switch_inf *Switches, const int NumSwitches,
 		 const pugiutil::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
-		std::vector<t_segment_inf>& Segs, int *NumSegs,
+		std::vector<t_segment_inf>& Segs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
@@ -227,7 +227,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process segments. This depends on switches */
         Next = get_single_child(architecture, "segmentlist", loc_data);
-        ProcessSegments(Next, arch->Segments, &(arch->num_segments),
+        ProcessSegments(Next, arch->Segments,
                 arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required, loc_data);
 
 
@@ -1633,7 +1633,7 @@ static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, cons
 
 /* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
     std::vector<t_fc_override> fc_overrides;
     t_default_fc_spec def_fc_spec;
     if (Node) {
@@ -1657,7 +1657,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vecto
      * overriden) pin/seg Fc specifications */
     const t_pb_type* pb_type = Type->pb_type;
     int pins_per_capacity_instance = Type->num_pins / Type->capacity;
-    for (int iseg = 0; iseg < num_segments; ++iseg) {
+    for (size_t iseg = 0; iseg < segments.size(); ++iseg) {
 
         for(int icapacity = 0; icapacity < Type->capacity; ++icapacity) {
 
@@ -2625,7 +2625,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
         /* Load Fc */
         Cur = get_single_child(CurType, "fc", loc_data, OPTIONAL);
-        Process_Fc(Cur, Type, arch.Segments, arch.num_segments, arch_def_fc, loc_data);
+        Process_Fc(Cur, Type, arch.Segments, arch_def_fc, loc_data);
 
         //Load switchblock type and location overrides
         Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);
@@ -2645,7 +2645,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
 
 static void ProcessSegments(pugi::xml_node Parent,
-		std::vector<t_segment_inf>& Segs, int *NumSegs,
+		std::vector<t_segment_inf>& Segs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data) {
 	int i, j, length;
@@ -2656,16 +2656,16 @@ static void ProcessSegments(pugi::xml_node Parent,
 
 	/* Count the number of segs and check they are in fact
 	 * of segment elements. */
-	*NumSegs = count_children(Parent, "segment", loc_data);
+	int NumSegs = count_children(Parent, "segment", loc_data);
 
 	/* Alloc segment list */
-	if (*NumSegs > 0) {
-		Segs.resize(*NumSegs);
+	if (NumSegs > 0) {
+		Segs.resize(NumSegs);
 	}
 
 	/* Load the segments. */
 	Node = get_first_child(Parent, "segment", loc_data);
-	for (i = 0; i < *NumSegs; ++i) {
+	for (i = 0; i < NumSegs; ++i) {
 
 		/* Get segment name */
 		tmp = get_attribute(Node, "name", loc_data, OPTIONAL).as_string(nullptr);

@@ -42,12 +42,12 @@ static void load_rr_indexed_data_T_values(int index_start,
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
 void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
-        const int num_segment, const t_rr_node_indices& L_rr_node_indices,
+        const t_rr_node_indices& L_rr_node_indices,
         const int nodes_per_chan, int wire_to_ipin_switch,
         enum e_base_cost_type base_cost_type) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
+    int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * segment_inf.size());
     device_ctx.rr_indexed_data.resize(num_rr_indexed_data);
 
     /* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
@@ -71,8 +71,8 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         CHANX_COST_INDEX_START,
         0,
         0,
-        num_segment,
-        num_segment,
+        segment_inf.size(),
+        segment_inf.size(),
         L_rr_node_indices,
         nodes_per_chan,
         base_cost_type);

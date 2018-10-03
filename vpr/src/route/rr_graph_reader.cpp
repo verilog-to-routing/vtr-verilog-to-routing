@@ -72,7 +72,6 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
 void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
-        const int num_seg_types,
         const std::vector<t_segment_inf>& segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
@@ -177,9 +176,9 @@ void load_rr_file(const t_graph_type graph_type,
 
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
-        set_cost_indices(next_component, loc_data, is_global_graph, num_seg_types);
+        set_cost_indices(next_component, loc_data, is_global_graph, segment_inf.size());
 
-        alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
+        alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
 
         process_seg_id(next_component, loc_data);
@@ -191,7 +190,7 @@ void load_rr_file(const t_graph_type graph_type,
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
 
 #ifdef USE_MAP_LOOKAHEAD
-        compute_router_lookahead(num_seg_types);
+        compute_router_lookahead(segment_inf.size());
 #endif
 
     } catch (XmlError& e) {

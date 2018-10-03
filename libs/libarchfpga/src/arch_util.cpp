@@ -29,7 +29,7 @@ void free_arch(t_arch* arch) {
     }
     delete[] arch->Switches;
     arch->Switches = nullptr;
-    for (int i = 0; i < arch->num_segments; ++i) {
+    for (size_t i = 0; i < (arch->Segments).size(); ++i) {
         vtr::free(arch->Segments[i].cb);
         arch->Segments[i].cb = nullptr;
         vtr::free(arch->Segments[i].sb);
@@ -1231,7 +1231,7 @@ void primitives_annotation_clock_match(
 
 const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
 
-    for (int i = 0; i < arch->num_segments; ++i) {
+    for (size_t i = 0; i < (arch->Segments).size(); ++i) {
         const t_segment_inf* seg = &arch->Segments[i];
         if (seg->name == name) {
             return seg;

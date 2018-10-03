@@ -1082,7 +1082,6 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
             device_ctx.num_rr_switches, vpr_setup.Segments,
-            vpr_setup.RoutingArch.num_segment,
             vpr_setup.RoutingArch.R_minW_nmos,
             vpr_setup.RoutingArch.R_minW_pmos,
             Arch.grid_logic_tile_area,

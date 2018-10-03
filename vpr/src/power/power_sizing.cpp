@@ -367,7 +367,6 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 static double power_count_transistors_switchbox(const t_arch * arch) {
 	double transistor_cnt = 0.;
 	double transistors_per_buf_mux = 0.;
-	int seg_idx;
 
     auto& power_ctx = g_vpr_ctx.power();
 
@@ -381,7 +380,7 @@ static double power_count_transistors_switchbox(const t_arch * arch) {
 			power_get_mux_arch(power_ctx.commonly_used->max_routing_mux_size,
 					power_ctx.arch->mux_transistor_size));
 
-	for (seg_idx = 0; seg_idx < arch->num_segments; seg_idx++) {
+	for (size_t seg_idx = 0; seg_idx < (arch->Segments).size(); seg_idx++) {
 		/* In each switchbox, the different types of segments occur with relative freqencies.
 		 * Thus the total number of wires of each segment type is (#tracks * freq * 2).
 		 * The (x2) factor accounts for vertical and horizontal tracks.

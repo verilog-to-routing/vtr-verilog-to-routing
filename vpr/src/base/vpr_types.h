@@ -979,7 +979,6 @@ struct t_det_routing_arch {
 	int Fs;
 	enum e_switch_block_type switch_block_type;
 	std::vector<t_switchblock_inf> switchblocks;
-	int num_segment;
 
 	short global_route_switch;
 	short delayless_switch;

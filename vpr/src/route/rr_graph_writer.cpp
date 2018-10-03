@@ -30,12 +30,12 @@ void write_rr_switches(fstream &fp);
 void write_rr_grid(fstream &fp);
 void write_rr_edges(fstream &fp);
 void write_rr_block_types(fstream &fp);
-void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf, const int num_seg_types);
+void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf);
 
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& segment_inf, const int num_seg_types) {
+void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& segment_inf) {
     fstream fp;
     fp.open(file_name, fstream::out | fstream::trunc);
 
@@ -52,7 +52,7 @@ void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& seg
     /* Write out each individual component*/
     write_rr_channel(fp);
     write_rr_switches(fp);
-    write_rr_segments(fp, segment_inf, num_seg_types);
+    write_rr_segments(fp, segment_inf);
     write_rr_block_types(fp);
     write_rr_grid(fp);
     write_rr_node(fp);
@@ -130,10 +130,10 @@ void write_rr_node(fstream &fp) {
 
 /* Segment information in the t_segment_inf data structure is written out.
  * Information includes segment id, name, and optional timing parameters*/
-void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf, const int num_seg_types) {
+void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf) {
     fp << "\t<segments>" << endl;
 
-    for (int iseg = 0; iseg < num_seg_types; iseg++) {
+    for (size_t iseg = 0; iseg < segment_inf.size(); iseg++) {
         fp << "\t\t<segment id=\"" << iseg <<
                 "\" name=\"" << segment_inf[iseg].name << "\">" << endl;
         fp << "\t\t\t<timing R_per_meter=\"" << setprecision(FLOAT_PRECISION) <<segment_inf[iseg].Rmetal <<

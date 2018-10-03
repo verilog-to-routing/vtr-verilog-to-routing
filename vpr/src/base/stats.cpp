@@ -42,7 +42,7 @@ static void get_channel_occupancy_stats();
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(bool full_stats, enum e_route_type route_type,
-		int num_rr_switch, std::vector<t_segment_inf>& segment_inf, int num_segment,
+		int num_rr_switch, std::vector<t_segment_inf>& segment_inf,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
@@ -101,7 +101,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	if (route_type == DETAILED) {
 		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
 				segment_inf, R_minW_nmos, R_minW_pmos);
-		get_segment_usage_stats(num_segment, segment_inf);
+		get_segment_usage_stats(segment_inf);
 
 	}
 

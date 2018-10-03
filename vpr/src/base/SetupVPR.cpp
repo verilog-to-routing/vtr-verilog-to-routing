@@ -139,7 +139,6 @@ void SetupVPR(t_options *Options,
     }
 
 	Segments = Arch->Segments;
-	RoutingArch->num_segment = Arch->num_segments;
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);

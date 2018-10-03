@@ -76,7 +76,7 @@ void CheckSetup(
 		}
 	}
 
-	for (i = 0; i < RoutingArch.num_segment; ++i) {
+	for (i = 0; i < (int)Segments.size(); ++i) {
 		Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
 		if (false == device_ctx.arch_switch_inf[Tmp].buffered()) {

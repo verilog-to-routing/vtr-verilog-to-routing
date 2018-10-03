@@ -74,8 +74,7 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length);
 static bool verify_delta_delays();
 static int get_best_class(enum e_pin_type pintype, t_type_ptr type);
 
-static int get_longest_segment_length(
-        t_det_routing_arch det_routing_arch, std::vector<t_segment_inf>& segment_inf);
+static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 static void reset_placement();
 
 static void print_delta_delays_echo(const char* filename);
@@ -110,7 +109,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
     alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
             directs, num_directs);
 
-    longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
+    longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
     alloc_delta_arrays();
@@ -168,13 +167,12 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
     return (best_class);
 }
 
-static int get_longest_segment_length(
-        t_det_routing_arch det_routing_arch, std::vector<t_segment_inf>& segment_inf) {
+static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
 
-    int i, length;
+    int length;
 
     length = 0;
-    for (i = 0; i < det_routing_arch.num_segment; i++) {
+    for (size_t i = 0; i < segment_inf.size(); i++) {
         if (segment_inf[i].length > length)
             length = segment_inf[i].length;
     }

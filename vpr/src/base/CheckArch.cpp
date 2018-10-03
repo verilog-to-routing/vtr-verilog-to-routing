@@ -72,10 +72,9 @@ static void CheckSwitches(const t_arch& Arch) {
 }
 
 static void CheckSegments(const t_arch& Arch) {
-	int i;
 
 	auto& CurSeg = Arch.Segments;
-	for (i = 0; i < Arch.num_segments; i++) {
+	for (size_t i = 0; i < (Arch.Segments).size(); i++) {
 		if (CurSeg[i].directionality == UNI_DIRECTIONAL
 				&& CurSeg[i].longline == true) {
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,

@@ -249,7 +249,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	//Segment List
 	fprintf(Echo, "*************************************************\n");
 	fprintf(Echo, "Segment List:\n");
-	for (i = 0; i < arch->num_segments; i++) {
+	for (i = 0; i < (int)(arch->Segments).size(); i++) {
 		struct t_segment_inf seg = arch->Segments[i];
 		fprintf(Echo,
 				"\tSegment[%d]: frequency %d length %d R_metal %e C_metal %e\n",

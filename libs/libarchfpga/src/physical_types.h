@@ -1275,7 +1275,6 @@ struct t_arch {
 	int Fs;
 	float grid_logic_tile_area;
 	std::vector<t_segment_inf> Segments;
-    int num_segments;
     t_arch_switch_inf *Switches;
 	int num_switches;
 	t_direct_inf *Directs;
