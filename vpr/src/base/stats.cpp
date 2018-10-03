@@ -46,9 +46,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
-		bool timing_analysis_enabled,
-		vtr::vector_map<ClusterNetId, float *> &net_delay
+		bool timing_analysis_enabled
 #ifdef ENABLE_CLASSIC_VPR_STA
+		, vtr::vector_map<ClusterNetId, float *> &net_delay
         , t_slack * slacks, const t_timing_inf &timing_inf
 #endif
         ) {
@@ -60,7 +60,6 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
 
 	length_and_bends_stats();
     print_channel_stats();
@@ -107,16 +106,21 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	}
 
     if (timing_analysis_enabled) {
+#ifdef ENABLE_CLASSIC_VPR_STA
+        auto& atom_ctx = g_vpr_ctx.atom();
+        //TODO: These calls to the modern timing analyzer are here to remain comparible to the classic analyzer
+        //      They should ultimately be removed, since we don't produce any of the classic timing echo files,
+        //      and timing reports are now generated from the analysis stage
         load_net_delay_from_routing(net_delay);
 
+        //Tatum-based analyzer
         auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
         std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
         timing_info->update();
 
-#ifdef ENABLE_CLASSIC_VPR_STA
+        //Classic Analyzer
         load_timing_graph_net_delays(net_delay);
-
         do_timing_analysis(slacks, timing_inf, false, true);
 
         if (getEchoEnabled()) {

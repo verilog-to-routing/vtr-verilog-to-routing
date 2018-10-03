@@ -1068,9 +1068,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
             Arch.grid_logic_tile_area,
             vpr_setup.RoutingArch.directionality,
             vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
-            vpr_setup.TimingEnabled, net_delay
+            vpr_setup.TimingEnabled
 #ifdef ENABLE_CLASSIC_VPR_STA
-            , slacks, vpr_setup.Timing
+            , net_delay, slacks, vpr_setup.Timing
 #endif
             );
 
