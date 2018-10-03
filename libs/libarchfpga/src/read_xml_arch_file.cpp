@@ -96,7 +96,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -122,7 +122,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const t_arch_switch_inf *Switches, const int NumSwitches,
 		 const pugiutil::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
-		t_segment_inf **Segs, int *NumSegs,
+		std::vector<t_segment_inf>& Segs, int *NumSegs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
@@ -227,7 +227,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process segments. This depends on switches */
         Next = get_single_child(architecture, "segmentlist", loc_data);
-        ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
+        ProcessSegments(Next, arch->Segments, &(arch->num_segments),
                 arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required, loc_data);
 
 
@@ -1633,7 +1633,7 @@ static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, cons
 
 /* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
-static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
+static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, int num_segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data) {
     std::vector<t_fc_override> fc_overrides;
     t_default_fc_spec def_fc_spec;
     if (Node) {
@@ -2645,7 +2645,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
 
 static void ProcessSegments(pugi::xml_node Parent,
-		t_segment_inf **Segs, int *NumSegs,
+		std::vector<t_segment_inf>& Segs, int *NumSegs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data) {
 	int i, j, length;
@@ -2659,11 +2659,8 @@ static void ProcessSegments(pugi::xml_node Parent,
 	*NumSegs = count_children(Parent, "segment", loc_data);
 
 	/* Alloc segment list */
-	*Segs = nullptr;
 	if (*NumSegs > 0) {
-		*Segs = (t_segment_inf *) vtr::malloc(
-				*NumSegs * sizeof(t_segment_inf));
-		memset(*Segs, 0, (*NumSegs * sizeof(t_segment_inf)));
+		Segs.resize(*NumSegs);
 	}
 
 	/* Load the segments. */
@@ -2673,7 +2670,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		/* Get segment name */
 		tmp = get_attribute(Node, "name", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
-			(*Segs)[i].name = vtr::strdup(tmp);
+			Segs[i].name = vtr::strdup(tmp);
 		} else {
 			/* if swich block is "custom", then you have to provide a name for segment */
 			if (switchblocklist_required) {
@@ -2686,7 +2683,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 			ss << "unnamed_segment_" << i;
 			string dummy = ss.str();
 			tmp = dummy.c_str();
-			(*Segs)[i].name = vtr::strdup(tmp);
+			Segs[i].name = vtr::strdup(tmp);
 		}
 
 		/* Get segment length */
@@ -2694,24 +2691,24 @@ static void ProcessSegments(pugi::xml_node Parent,
 		tmp = get_attribute(Node, "length", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
 			if (strcmp(tmp, "longline") == 0) {
-				(*Segs)[i].longline = true;
+				Segs[i].longline = true;
 			} else {
 				length = vtr::atoi(tmp);
 			}
 		}
-		(*Segs)[i].length = length;
+		Segs[i].length = length;
 
 		/* Get the frequency */
-		(*Segs)[i].frequency = 1; /* DEFAULT */
+		Segs[i].frequency = 1; /* DEFAULT */
 		tmp = get_attribute(Node, "freq", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
-			(*Segs)[i].frequency = (int) (atof(tmp) * MAX_CHANNEL_WIDTH);
+			Segs[i].frequency = (int) (atof(tmp) * MAX_CHANNEL_WIDTH);
 		}
 
 		/* Get timing info */
 		ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
-		(*Segs)[i].Rmetal = get_attribute(Node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
-		(*Segs)[i].Cmetal = get_attribute(Node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
+		Segs[i].Rmetal = get_attribute(Node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
+		Segs[i].Cmetal = get_attribute(Node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
 
 		/* Get Power info */
 		/*
@@ -2721,7 +2718,7 @@ static void ProcessSegments(pugi::xml_node Parent,
         //Set of expected subtags (exact subtags are dependant on parameters)
         std::vector<std::string> expected_subtags;
 
-        if (!(*Segs)[i].longline) {
+        if (!Segs[i].longline) {
             //Long line doesn't accpet <sb> or <cb> since it assumes full population
             expected_subtags.push_back("sb");
             expected_subtags.push_back("cb");
@@ -2730,7 +2727,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		/* Get the type */
 		tmp = get_attribute(Node, "type", loc_data).value();
 		if (0 == strcmp(tmp, "bidir")) {
-			(*Segs)[i].directionality = BI_DIRECTIONAL;
+			Segs[i].directionality = BI_DIRECTIONAL;
 
             //Bidir requires the following tags
             expected_subtags.push_back("wire_switch");
@@ -2738,7 +2735,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		}
 
 		else if (0 == strcmp(tmp, "unidir")) {
-			(*Segs)[i].directionality = UNI_DIRECTIONAL;
+			Segs[i].directionality = UNI_DIRECTIONAL;
 
             //Unidir requires the following tags
             expected_subtags.push_back("mux");
@@ -2753,7 +2750,7 @@ static void ProcessSegments(pugi::xml_node Parent,
         expect_only_children(Node, expected_subtags, loc_data);
 
 		/* Get the wire and opin switches, or mux switch if unidir */
-		if (UNI_DIRECTIONAL == (*Segs)[i].directionality) {
+		if (UNI_DIRECTIONAL == Segs[i].directionality) {
 			SubElem = get_single_child(Node, "mux", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2771,12 +2768,12 @@ static void ProcessSegments(pugi::xml_node Parent,
 			/* Unidir muxes must have the same switch
 			 * for wire and opin fanin since there is
 			 * really only the mux in unidir. */
-			(*Segs)[i].arch_wire_switch = j;
-			(*Segs)[i].arch_opin_switch = j;
+			Segs[i].arch_wire_switch = j;
+			Segs[i].arch_opin_switch = j;
 		}
 
 		else {
-			VTR_ASSERT(BI_DIRECTIONAL == (*Segs)[i].directionality);
+			VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
 			SubElem = get_single_child(Node, "wire_switch", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2790,7 +2787,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid wire_switch name.\n", tmp);
 			}
-			(*Segs)[i].arch_wire_switch = j;
+			Segs[i].arch_wire_switch = j;
 			SubElem = get_single_child(Node, "opin_switch", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2804,29 +2801,29 @@ static void ProcessSegments(pugi::xml_node Parent,
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid opin_switch name.\n", tmp);
 			}
-			(*Segs)[i].arch_opin_switch = j;
+			Segs[i].arch_opin_switch = j;
 		}
 
 		/* Setup the CB list if they give one, otherwise use full */
-		(*Segs)[i].cb_len = length;
-		(*Segs)[i].cb = (bool *) vtr::malloc(length * sizeof(bool));
+		Segs[i].cb_len = length;
+		Segs[i].cb = (bool *) vtr::malloc(length * sizeof(bool));
 		for (j = 0; j < length; ++j) {
-			(*Segs)[i].cb[j] = true;
+			Segs[i].cb[j] = true;
 		}
 		SubElem = get_single_child(Node, "cb", loc_data, OPTIONAL);
 		if (SubElem) {
-			ProcessCB_SB(SubElem, (*Segs)[i].cb, length, loc_data);
+			ProcessCB_SB(SubElem, Segs[i].cb, length, loc_data);
 		}
 
 		/* Setup the SB list if they give one, otherwise use full */
-		(*Segs)[i].sb_len = (length + 1);
-		(*Segs)[i].sb = (bool *) vtr::malloc((length + 1) * sizeof(bool));
+		Segs[i].sb_len = (length + 1);
+		Segs[i].sb = (bool *) vtr::malloc((length + 1) * sizeof(bool));
 		for (j = 0; j < (length + 1); ++j) {
-			(*Segs)[i].sb[j] = true;
+			Segs[i].sb[j] = true;
 		}
 		SubElem = get_single_child(Node, "sb", loc_data, OPTIONAL);
 		if (SubElem) {
-			ProcessCB_SB(SubElem, (*Segs)[i].sb, (length + 1), loc_data);
+			ProcessCB_SB(SubElem, Segs[i].sb, (length + 1), loc_data);
 		}
 
 		/* Get next Node */

@@ -37,7 +37,6 @@ void free_arch(t_arch* arch) {
         vtr::free(arch->Segments[i].name);
         arch->Segments[i].name = nullptr;
     }
-    vtr::free(arch->Segments);
     t_model *model = arch->models;
     while (model) {
         t_model_ports *input_port = model->inputs;
@@ -1230,10 +1229,10 @@ void primitives_annotation_clock_match(
 }
 
 
-t_segment_inf* find_segment(const t_arch* arch, std::string name) {
+const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
 
     for (int i = 0; i < arch->num_segments; ++i) {
-        t_segment_inf* seg = &arch->Segments[i];
+        const t_segment_inf* seg = &arch->Segments[i];
         if (seg->name == name) {
             return seg;
         }

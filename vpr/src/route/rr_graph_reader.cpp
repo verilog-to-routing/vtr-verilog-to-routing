@@ -52,7 +52,7 @@ using namespace pugiutil;
 
 /*********************** Subroutines local to this module *******************/
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf *segment_inf);
+void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const std::vector<t_segment_inf>& segment_inf);
 void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
@@ -73,7 +73,7 @@ void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const int num_seg_types,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
@@ -590,7 +590,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
 /* Segments was initialized already. This function checks
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
-void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf * segment_inf) {
+void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const std::vector<t_segment_inf>& segment_inf) {
     pugi::xml_node Segment, subnode;
 
     Segment = get_first_child(parent, "segment", loc_data);

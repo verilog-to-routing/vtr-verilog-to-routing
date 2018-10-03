@@ -68,7 +68,7 @@ static t_rr_node_power * rr_node_power;
 /************************* Function Declarations ********************/
 /* Routing */
 static void power_usage_routing(t_power_usage * power_usage,
-		const t_det_routing_arch * routing_arch, t_segment_inf * segment_inf);
+		const t_det_routing_arch * routing_arch, const std::vector<t_segment_inf>& segment_inf);
 
 /* Tiles */
 static void power_usage_blocks(t_power_usage * power_usage);
@@ -786,7 +786,7 @@ static void dealloc_mux_graph_rec(t_mux_node * node) {
  * Calculates the power of the entire routing fabric (not local routing
  */
 static void power_usage_routing(t_power_usage * power_usage,
-		const t_det_routing_arch * routing_arch, t_segment_inf * segment_inf) {
+		const t_det_routing_arch * routing_arch, const std::vector<t_segment_inf>& segment_inf) {
 	int edge_idx;
     auto& power_ctx = g_vpr_ctx.power();
     auto& cluster_ctx = g_vpr_ctx.clustering();

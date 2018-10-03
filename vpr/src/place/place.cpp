@@ -341,7 +341,7 @@ static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, do
 void try_place(t_placer_opts placer_opts,
 		t_annealing_sched annealing_sched,
 		t_chan_width_dist chan_width_dist, t_router_opts router_opts,
-		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_timing_inf timing_inf,
 #endif

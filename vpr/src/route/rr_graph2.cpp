@@ -124,7 +124,7 @@ static bool should_apply_switch_override(int switch_override);
  * and end up with a result that uses fewer tracks than given. */
 int *get_seg_track_counts(
         const int num_sets, const int num_seg_types,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const bool use_full_seg_groups) {
 
     int *result;
@@ -192,7 +192,7 @@ int *get_seg_track_counts(
 
 t_seg_details *alloc_and_load_seg_details(
         int *max_chan_width, const int max_len,
-        const int num_seg_types, const t_segment_inf * segment_inf,
+        const int num_seg_types, const std::vector<t_segment_inf>& segment_inf,
         const bool use_full_seg_groups, const bool is_global_graph,
         const enum e_directionality directionality,
         int * num_seg_details) {

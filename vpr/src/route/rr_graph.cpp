@@ -152,7 +152,7 @@ static void load_perturbed_connection_block_pattern(
         const enum e_directionality directionality);
 
 static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width,
-        const int num_seg_types, const t_segment_inf *segment_inf);
+        const int num_seg_types, const std::vector<t_segment_inf>& segment_inf);
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
 static void check_all_tracks_reach_pins(
@@ -200,7 +200,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 static int alloc_rr_switch_inf(map<int, int> *switch_fanin);
 
 static void rr_graph_externals(
-        const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
+        const std::vector<t_segment_inf>& segment_inf, int num_seg_types, int max_chan_width,
         int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type);
 
 void alloc_and_load_edges_and_switches(std::vector<t_rr_node>& L_rr_node,
@@ -220,7 +220,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
         const int num_seg_types,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
@@ -236,7 +236,7 @@ static void build_rr_graph(
         const int Fs,
         const vector<t_switchblock_inf> switchblocks,
         const int num_seg_types, const int num_arch_switches,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const int global_route_switch,
         const int wire_to_arch_ipin_switch,
         const int delayless_switch,
@@ -262,7 +262,7 @@ void create_rr_graph(
         t_chan_width *nodes_per_chan,
         const int num_arch_switches,
         t_det_routing_arch* det_routing_arch,
-        const t_segment_inf * segment_inf,
+        std::vector<t_segment_inf>& segment_inf,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -329,7 +329,7 @@ static void build_rr_graph(
         const vector<t_switchblock_inf> switchblocks,
         const int num_seg_types,
         const int num_arch_switches,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const int global_route_switch,
         const int wire_to_arch_ipin_switch,
         const int delayless_switch,
@@ -846,7 +846,7 @@ static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
 }
 
 static void rr_graph_externals(
-        const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
+        const std::vector<t_segment_inf>& segment_inf, int num_seg_types, int max_chan_width,
         int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -943,7 +943,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 /* Calculates the number of track connections from each block pin to each segment type */
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
         const int num_seg_types,
-        const t_segment_inf * segment_inf,
+        const std::vector<t_segment_inf>& segment_inf,
         const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
@@ -2611,7 +2611,7 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
  *  spaced such that the connection pattern always skips some types of wire (w.r.t.	*
  *  starting points)									*/
 static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, const vtr::Matrix<int>& Fc_out,
-        const int max_chan_width, const int num_seg_types, const t_segment_inf *segment_inf) {
+        const int max_chan_width, const int num_seg_types, const std::vector<t_segment_inf>& segment_inf) {
 
     int i, Fc_max, iclass, num_wire_types;
     int num, max_primes, factor, num_factors;

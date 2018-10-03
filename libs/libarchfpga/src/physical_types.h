@@ -1274,9 +1274,9 @@ struct t_arch {
 	float R_minW_pmos;
 	int Fs;
 	float grid_logic_tile_area;
-	t_segment_inf * Segments;
-	int num_segments;
-	t_arch_switch_inf *Switches;
+	std::vector<t_segment_inf> Segments;
+    int num_segments;
+    t_arch_switch_inf *Switches;
 	int num_switches;
 	t_direct_inf *Directs;
 	int num_directs;

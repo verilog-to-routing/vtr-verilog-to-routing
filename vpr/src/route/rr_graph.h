@@ -33,7 +33,7 @@ void create_rr_graph(
         t_chan_width *nodes_per_chan,
         const int num_arch_switches,
         t_det_routing_arch* det_routing_arch,
-        const t_segment_inf * segment_inf,
+        std::vector<t_segment_inf>& segment_inf,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,

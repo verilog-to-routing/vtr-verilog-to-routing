@@ -41,7 +41,7 @@ static void load_rr_indexed_data_T_values(int index_start,
  * etc. more expensive than others.  I give each segment type in an          *
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
-void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
+void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
         const int num_segment, const t_rr_node_indices& L_rr_node_indices,
         const int nodes_per_chan, int wire_to_ipin_switch,
         enum e_base_cost_type base_cost_type) {
@@ -78,7 +78,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 }
 
 void alloc_and_load_rr_indexed_data_for_segments(
-        const t_segment_inf * segment_inf,
+        const vector<t_segment_inf>& segment_inf,
         const int start_index,
         const int start_seg_index,
         const int num_x_segments,

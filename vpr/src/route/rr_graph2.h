@@ -68,7 +68,7 @@ t_seg_details *alloc_and_load_seg_details(
 		int *max_chan_width,
 		const int max_len,
 		const int num_seg_types,
-		const t_segment_inf *segment_inf,
+		const std::vector<t_segment_inf>& segment_inf,
 		const bool use_full_seg_groups,
 		const bool is_global_graph,
 		const enum e_directionality directionality,
@@ -214,7 +214,7 @@ void load_sblock_pattern_lookup(
 
 int *get_seg_track_counts(
 		const int num_sets, const int num_seg_types,
-		const t_segment_inf * segment_inf, const bool use_full_seg_groups);
+		const std::vector<t_segment_inf>& segment_inf, const bool use_full_seg_groups);
 
 void dump_seg_details(
 		const t_seg_details *seg_details,

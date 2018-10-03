@@ -14,7 +14,7 @@ using namespace std;
 
 /******************* Subroutine definitions ********************************/
 
-void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
+void get_segment_usage_stats(int num_segment, std::vector<t_segment_inf>& segment_inf) {
 
 	/* Computes statistics on the fractional utilization of segments by type    *
 	 * (index) and by length.  This routine needs a valid rr_graph, and a       *

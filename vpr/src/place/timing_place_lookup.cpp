@@ -48,7 +48,7 @@ static void setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist);
 
 static void alloc_routing_structs(t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         const t_direct_inf *directs,
         const int num_directs);
 
@@ -75,7 +75,7 @@ static bool verify_delta_delays();
 static int get_best_class(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(
-        t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
+        t_det_routing_arch det_routing_arch, std::vector<t_segment_inf>& segment_inf);
 static void reset_placement();
 
 static void print_delta_delays_echo(const char* filename);
@@ -94,7 +94,7 @@ static t_rt_node* setup_routing_resources_no_net(int source_node);
 /******* Globally Accessible Functions **********/
 
 void compute_delay_lookup_tables(t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
 
@@ -169,7 +169,7 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
 }
 
 static int get_longest_segment_length(
-        t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf) {
+        t_det_routing_arch det_routing_arch, std::vector<t_segment_inf>& segment_inf) {
 
     int i, length;
 
@@ -209,7 +209,7 @@ static void setup_chan_width(t_router_opts router_opts,
 }
 
 static void alloc_routing_structs(t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_det_routing_arch *det_routing_arch, std::vector<t_segment_inf>& segment_inf,
         const t_direct_inf *directs,
         const int num_directs) {
 

@@ -63,7 +63,7 @@ void SetupVPR(t_options *Options,
               t_analysis_opts* AnalysisOpts,
               t_det_routing_arch *RoutingArch,
               vector <t_lb_type_rr_node> **PackerRRGraphs,
-              t_segment_inf ** Segments, t_timing_inf * Timing,
+              std::vector <t_segment_inf>& Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
 	int i;
@@ -138,7 +138,7 @@ void SetupVPR(t_options *Options,
                 "Architecture contains no top-level block type containing '.output' models");
     }
 
-	*Segments = Arch->Segments;
+	Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
@@ -312,7 +312,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 	RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
 	RoutingArch->Fs = Arch.Fs;
 	RoutingArch->directionality = BI_DIRECTIONAL;
-	if (Arch.Segments){
+	if (Arch.Segments.size()){
 		RoutingArch->directionality = Arch.Segments[0].directionality;
 	}
 

@@ -5,7 +5,7 @@
 #include "vpr_types.h"
 
 void routing_stats(bool full_stats, enum e_route_type route_type,
-		int num_rr_switch, t_segment_inf * segment_inf, int num_segment,
+		int num_rr_switch, std::vector<t_segment_inf>& segment_inf, int num_segment,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,

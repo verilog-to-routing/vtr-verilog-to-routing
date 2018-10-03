@@ -30,12 +30,12 @@ void write_rr_switches(fstream &fp);
 void write_rr_grid(fstream &fp);
 void write_rr_edges(fstream &fp);
 void write_rr_block_types(fstream &fp);
-void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types);
+void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, const int num_seg_types) {
+void write_rr_graph(const char *file_name, const std::vector<t_segment_inf>& segment_inf, const int num_seg_types) {
     fstream fp;
     fp.open(file_name, fstream::out | fstream::trunc);
 
@@ -130,7 +130,7 @@ void write_rr_node(fstream &fp) {
 
 /* Segment information in the t_segment_inf data structure is written out.
  * Information includes segment id, name, and optional timing parameters*/
-void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types) {
+void write_rr_segments(fstream &fp, const std::vector<t_segment_inf>& segment_inf, const int num_seg_types) {
     fp << "\t<segments>" << endl;
 
     for (int iseg = 0; iseg < num_seg_types; iseg++) {
