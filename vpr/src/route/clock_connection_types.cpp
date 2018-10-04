@@ -143,6 +143,7 @@ void ClockToClockConneciton::set_fc_val(float fc_val) {
 void ClockToClockConneciton::create_switches(const ClockRRGraph& clock_graph) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& grid = device_ctx.grid;
     auto& rr_nodes = device_ctx.rr_nodes;
 
     auto to_locations = clock_graph.get_switch_locations(to_clock, to_switch);
@@ -158,7 +159,12 @@ void ClockToClockConneciton::create_switches(const ClockRRGraph& clock_graph) {
             x,
             y);
 
-        // boundry condition: y = 0 and y = 1 connections share the same drive point
+        // boundry conditions:
+        // y at gird height and height -1 connections share the same drive point
+        if(y == int(grid.height()-2)) {
+            y = y-1;
+        }
+        // y at 0 and y at 1 share the same drive point
         if(y == 0) {
             y = 1;
         }

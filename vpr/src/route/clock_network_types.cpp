@@ -153,13 +153,13 @@ void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             // create rib wire to the right and left of the drive point 
             auto left_node_idx = create_chanx_wire(
                                     x_start,
-                                    drive_x,
+                                    drive_x-1,
                                     y,
                                     ptc_num,
                                     DEC_DIRECTION,
                                     rr_nodes);
             auto right_node_idx = create_chanx_wire(
-                                    drive_x,
+                                    drive_x+1,
                                     x_end,
                                     y,
                                     ptc_num,
@@ -206,7 +206,7 @@ void ClockRib::record_tap_locations(
         ClockRRGraph& clock_graph)
 {
     for(unsigned x = x_start+tap.offset; x <= x_end; x+=tap.increment) {
-        if(x < x_start + drive.offset) {
+        if(x < (x_start + drive.offset - 1)) {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, left_rr_node_idx);
         } else {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, right_rr_node_idx);
@@ -327,13 +327,13 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             // create spine wire to the right and left of the drive point
             auto left_node_idx = create_chany_wire(
                                     y_start,
-                                    drive_y,
+                                    drive_y-1,
                                     x,
                                     ptc_num,
                                     DEC_DIRECTION,
                                     rr_nodes);
             auto right_node_idx = create_chany_wire(
-                                    drive_y,
+                                    drive_y+1,
                                     y_end,
                                     x,
                                     ptc_num,
@@ -381,7 +381,7 @@ void ClockSpine::record_tap_locations(
         ClockRRGraph& clock_graph)
 {
     for (unsigned y = y_start+tap.offset; y <= y_end; y+=tap.increment) {
-        if(y < y_start + drive.offset) {
+        if(y < (y_start + drive.offset - 1)) {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, left_node_idx);
         } else {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, right_node_idx);
