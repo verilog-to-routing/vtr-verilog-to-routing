@@ -55,6 +55,10 @@ size_t t_rr_node::cost_index() const {
 	return cost_index_;
 }
 
+size_t t_rr_node::seg_index() const {
+	return seg_index_;
+}
+
 short t_rr_node::rc_index() const {
 	return rc_index_;
 }
@@ -176,6 +180,11 @@ void t_rr_node::set_class_num(short new_class_num) {
 void t_rr_node::set_cost_index(size_t new_cost_index) {
 	cost_index_ = new_cost_index;
 }
+
+void t_rr_node::set_seg_index(size_t new_seg_index) {
+    seg_index_ = new_seg_index;
+}
+
 void t_rr_node::set_rc_index(short new_rc_index) {
 	rc_index_ = new_rc_index;
 }
