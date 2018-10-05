@@ -176,7 +176,7 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
     } elsif ( $token eq "-expect_fail"){
             $expect_fail = 1;
     } elsif ( $token eq "-verbose"){
-            $expect_fail = shift(@ARGV);
+            $verbosity = shift(@ARGV);
     } elsif ( $token eq "-adder_type"){
         $odin_adder_config_path = shift(@ARGV);
         if ( ($odin_adder_config_path ne "default") && ($odin_adder_config_path ne "optimized") ) {
