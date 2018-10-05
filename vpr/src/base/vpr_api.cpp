@@ -661,8 +661,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Update status
             vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
-
-            route_status = RouteStatus(true, route_status.chan_width());
         }
 
         //Echo files
