@@ -44,6 +44,7 @@ class RoutingToClockConnection : public ClockConnection {
         int switch_idx;
         float fc;
 
+        int seed = 101;
     public:
         /*
          * Getters

@@ -653,6 +653,7 @@ static void build_rr_graph(
 
     if (clock_modeling == DEDICATED_NETWORK) {
         ClockRRGraph::create_and_append_clock_rr_graph();
+        init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
     }
 }
 

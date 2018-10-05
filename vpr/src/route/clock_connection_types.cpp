@@ -48,7 +48,12 @@ void RoutingToClockConnection::set_fc_val(float fc_val) {
  */
 
 void RoutingToClockConnection::create_switches(const ClockRRGraph& clock_graph) {
-    
+
+    // Initialize random seed
+    // Must be done durring every call inorder for restored rr_graphs after a binary
+    // search to be consistant
+    std::srand(seed);
+
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
 
