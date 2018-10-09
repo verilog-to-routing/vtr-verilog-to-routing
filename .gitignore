@@ -104,3 +104,11 @@ tags
 # VS Code
 #
 .vscode
+
+#
+# tmp dir
+#
+vpr_test/*
+.idea/*
+cmake-build-debug/*
+*.DS_Store
