@@ -200,6 +200,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 	pugi::xml_node block_node = parent_node.append_child("block");
 	block_node.append_attribute("name") = "open";
 	block_node.append_attribute("instance") = vtr::string_fmt("%s[%d]", pb_graph_node->pb_type->name, pb_index).c_str();
+	std::vector<std::string> block_modes;
 
 	if (is_used) {
 		/* Determine mode if applicable */
@@ -220,6 +221,11 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 						}
 						VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
 						mode_of_edge = prev_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
+						if(mode != nullptr && &pb_type->modes[mode_of_edge] != mode) {
+							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+									  "Differing modes for block.  Got %s previously and %s for edge %d.",
+									  mode->name, pb_type->modes[mode_of_edge].name, port_index);
+						}
 						VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
 						mode = &pb_type->modes[mode_of_edge];
 					}
