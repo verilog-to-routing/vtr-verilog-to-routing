@@ -582,6 +582,10 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         }
         VTR_ASSERT(max_req > 0.);
 
+        if (!std::isfinite(slack)) {
+            continue;
+        }
+
         float crit = 1. - (slack / max_req);
 
         //Soft check for reasonable criticality values
