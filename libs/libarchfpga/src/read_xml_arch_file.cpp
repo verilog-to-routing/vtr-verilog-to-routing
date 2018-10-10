@@ -3378,7 +3378,7 @@ static void ProcessClockNetworks(
         if(!is_supported_clock_type) {
             archfpga_throw(loc_data.filename_c_str(),loc_data.line(curr_type),
                     "Found no supported clock network type for '%s' clock network.\n"
-                    "Currently their is only support for rib and spine networks.\n",
+                    "Currently there is only support for rib and spine networks.\n",
                     name.c_str());
         }
 
@@ -3401,6 +3401,7 @@ static void ProcessClockSwitches(
     //      multiple taps
     VTR_ASSERT(num_switches != 2);
 
+    //TODO: ensure switch name is unique for every switch of this clock network
     for (int i = 0; i < num_clock_switches; i++) {
         std::string switch_type (get_attribute(curr_switch, "type", loc_data).value());
         if(switch_type == "drive") {
@@ -3456,7 +3457,7 @@ static void ProcessClockSwitches(
         } else {
             archfpga_throw(loc_data.filename_c_str(),loc_data.line(curr_switch),
                     "Found unsupported switch type for '%s' clock network.\n"
-                    "Currently their is only support for drive and tap switch types.\n",
+                    "Currently there is only support for drive and tap switch types.\n",
                     clock_network.name.c_str());
         }
 
