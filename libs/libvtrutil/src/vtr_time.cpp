@@ -5,20 +5,20 @@
 
 namespace vtr {
 
-ScopedTimer::ScopedTimer()
+Timer::Timer()
     : start_(clock::now())
     , initial_max_rss_(get_max_rss()) {
 }
 
-float ScopedTimer::elapsed_sec() const {
+float Timer::elapsed_sec() const {
     return std::chrono::duration<float>(clock::now() - start_).count();
 }
 
-float ScopedTimer::max_rss_mib() const {
+float Timer::max_rss_mib() const {
     return get_max_rss() / BYTE_TO_MIB;
 }
 
-float ScopedTimer::delta_max_rss_mib() const {
+float Timer::delta_max_rss_mib() const {
     return (get_max_rss() - initial_max_rss_) / BYTE_TO_MIB;
 }
 

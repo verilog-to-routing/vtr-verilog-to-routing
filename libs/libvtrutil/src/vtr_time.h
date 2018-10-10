@@ -6,18 +6,18 @@
 namespace vtr {
 
     //Class for tracking time elapsed since construction
-    class ScopedTimer {
+    class Timer {
         public:
-            ScopedTimer();
-            virtual ~ScopedTimer() = default;
+            Timer();
+            virtual ~Timer() = default;
 
             //No copy
-            ScopedTimer(ScopedTimer&) = delete;
-            ScopedTimer& operator=(ScopedTimer&) = delete;
+            Timer(Timer&) = delete;
+            Timer& operator=(Timer&) = delete;
 
             //No move
-            ScopedTimer(ScopedTimer&&) = delete;
-            ScopedTimer& operator=(ScopedTimer&&) = delete;
+            Timer(Timer&&) = delete;
+            Timer& operator=(Timer&&) = delete;
 
             //Return elapsed time in seconds
             float elapsed_sec() const;
@@ -35,7 +35,7 @@ namespace vtr {
             constexpr static float BYTE_TO_MIB = 1024*1024;
     };
 
-    class ScopedActionTimer : public ScopedTimer {
+    class ScopedActionTimer : public Timer {
         public:
             ScopedActionTimer(const std::string action);
 
