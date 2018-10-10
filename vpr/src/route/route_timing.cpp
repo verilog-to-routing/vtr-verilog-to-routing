@@ -38,7 +38,7 @@
 
 enum class RouterCongestionMode {
     NORMAL,
-    CONGESTED
+    CONFLICTED
 };
 
 class WirelengthInfo {
@@ -223,6 +223,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
     //balancing other metrics (timing, wirelength, run-time etc.)
     RouterCongestionMode router_congestion_mode = RouterCongestionMode::NORMAL;
 
+    RouterStats router_stats;
+
     //Initialize and properly size the lookups for profiling
     profiling::profiling_initialization(get_max_pins_per_net());
 
@@ -271,6 +273,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
      * Routing parameters
      */
     float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
+    int bb_fac = router_opts.bb_factor;
+
+    //When routing conflicts are detected the bounding boxes are scaled
+    //by BB_SCALE_FACTOR every BB_SCALE_ITER_COUNT iterations
+    constexpr float BB_SCALE_FACTOR = 2;
+    constexpr int BB_SCALE_ITER_COUNT = 5; 
 
     /*
      * Routing status and metrics
@@ -280,6 +288,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     OveruseInfo overuse_info;
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
+    int itry_conflicted_mode = 0;
 
     /*
      * On the first routing iteration ignore congestion to get reasonable net
@@ -426,9 +435,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
         if (itry >= high_effort_congestion_mode_iteration_threshold) {
             //We are approaching the maximum number of routing iterations,
-            //and still do not have a legal routing. Switch to a more congestion
-            //focused mode.
-            router_congestion_mode = RouterCongestionMode::CONGESTED;
+            //and still do not have a legal routing. Switch to a mode which
+            //focuses more on attempting to resolve routing conflicts.
+            router_congestion_mode = RouterCongestionMode::CONFLICTED;
         }
 
         //Update pres_fac and resource costs
@@ -482,19 +491,42 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     }
                 }
 
-                if (router_congestion_mode == RouterCongestionMode::CONGESTED) {
+                if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
 
-                    //The design appears to be congested:
+                    //The design appears to have routing conflicts:
                     //  1) Don't re-route legal connections due to delay. This allows
-                    //     the router to focus on the actual congestion
-                    //  2) Increase the net bounding boxes to the whole device. This
-                    //     potentially allows the router to route around otherwise congested
-                    //     regions (at the cost of high run-time).
+                    //     the router to focus on the actual conflicts
+                    //  2) Increase the net bounding boxes. This potentially allows 
+                    //     the router to route around otherwise congested regions 
+                    //     (at the cost of high run-time).
 
-                    //Blow away the router bounding boxes
-                    // TODO: BBs only really need to be updated the first time we enter CONGESTED mode
-                    // TODO: Consider iteratively widening the BB's instead of blowing them completely way
-                    route_ctx.route_bb = load_route_bb(std::numeric_limits<int>::max());
+                    //Increase the size of the net bounding boxes to give the router more 
+                    //freedom to find alternate paths.
+                    //
+                    //In the case of routing conflicts there are multiple connections competing 
+                    //for the same resources which can not resolve the congestion themselves.
+                    //In regular routing mode we try to keep the bounding boxes small to reduce 
+                    //run-time, but this can artifically cause conflicts since it limits how far 
+                    //signals can detour (i.e. they can't route outside the bounding box), which 
+                    //can cause conflicts to oscillate back and forth without resolving.
+                    //By scaling the bounding boxes here, we slowly increase the router's search 
+                    //space in hopes of it allowing signals to move further out of the way to 
+                    //aleviate the conflicts.
+                    if (itry_conflicted_mode % BB_SCALE_ITER_COUNT == 0) {
+                        //We scale the bounding boxes by BB_SCALE_FACTOR,
+                        //every BB_SCALE_ITER_COUNT iterations. This ensures
+                        //that we give the router some time (BB_SCALE_ITER_COUNT) to try
+                        //resolve/negotiate congestion at the new BB factor.
+                        //
+                        //Note that we increase the BB factor slowly to try and minimize 
+                        //the bounding box size (since larger bounding boxes slow the router down).
+                        bb_fac *= BB_SCALE_FACTOR;
+
+                        vtr::printf("New BB Factor: %d\n", bb_fac);
+                        route_ctx.route_bb = load_route_bb(bb_fac);
+                    }
+
+                    ++itry_conflicted_mode;
                 }
 
                 // not stable if any connection needs to be forcibly rerouted
