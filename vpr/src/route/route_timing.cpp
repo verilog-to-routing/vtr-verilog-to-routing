@@ -447,6 +447,46 @@ bool try_timing_driven_route(t_router_opts router_opts,
             pathfinder_update_cost(pres_fac, router_opts.acc_fac);
         }
 
+        if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
+
+            //The design appears to have routing conflicts which are difficult to resolve:
+            //  1) Don't re-route legal connections due to delay. This allows
+            //     the router to focus on the actual conflicts
+            //  2) Increase the net bounding boxes. This potentially allows 
+            //     the router to route around otherwise congested regions 
+            //     (at the cost of high run-time).
+
+            //Increase the size of the net bounding boxes to give the router more 
+            //freedom to find alternate paths.
+            //
+            //In the case of routing conflicts there are multiple connections competing 
+            //for the same resources which can not resolve the congestion themselves.
+            //In normal routing mode we try to keep the bounding boxes small to minimize 
+            //run-time, but this can limits how far signals can detour (i.e. they can't 
+            //route outside the bounding box), which can cause conflicts to oscillate back
+            //and forth without resolving.
+            //
+            //By scaling the bounding boxes here, we slowly increase the router's search 
+            //space in hopes of it allowing signals to move further out of the way to 
+            //aleviate the conflicts.
+            if (itry_conflicted_mode % BB_SCALE_ITER_COUNT == 0) {
+                //We scale the bounding boxes by BB_SCALE_FACTOR,
+                //every BB_SCALE_ITER_COUNT iterations. This ensures
+                //that we give the router some time (BB_SCALE_ITER_COUNT) to try
+                //resolve/negotiate congestion at the new BB factor.
+                //
+                //Note that we increase the BB factor slowly to try and minimize 
+                //the bounding box size (since larger bounding boxes slow the router down).
+                bb_fac *= BB_SCALE_FACTOR;
+
+                vtr::printf("New BB Factor: %d\n", bb_fac);
+                route_ctx.route_bb = load_route_bb(bb_fac);
+            }
+
+            ++itry_conflicted_mode;
+        }
+
+
         if (timing_info) {
             if (itry == 1) {
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
@@ -482,45 +522,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
                             netlist_pin_lookup,
                             net_delay);
                     }
-                }
-
-                if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
-
-                    //The design appears to have routing conflicts which are difficult to resolve:
-                    //  1) Don't re-route legal connections due to delay. This allows
-                    //     the router to focus on the actual conflicts
-                    //  2) Increase the net bounding boxes. This potentially allows 
-                    //     the router to route around otherwise congested regions 
-                    //     (at the cost of high run-time).
-
-                    //Increase the size of the net bounding boxes to give the router more 
-                    //freedom to find alternate paths.
-                    //
-                    //In the case of routing conflicts there are multiple connections competing 
-                    //for the same resources which can not resolve the congestion themselves.
-                    //In normal routing mode we try to keep the bounding boxes small to minimize 
-                    //run-time, but this can limits how far signals can detour (i.e. they can't 
-                    //route outside the bounding box), which can cause conflicts to oscillate back
-                    //and forth without resolving.
-                    //
-                    //By scaling the bounding boxes here, we slowly increase the router's search 
-                    //space in hopes of it allowing signals to move further out of the way to 
-                    //aleviate the conflicts.
-                    if (itry_conflicted_mode % BB_SCALE_ITER_COUNT == 0) {
-                        //We scale the bounding boxes by BB_SCALE_FACTOR,
-                        //every BB_SCALE_ITER_COUNT iterations. This ensures
-                        //that we give the router some time (BB_SCALE_ITER_COUNT) to try
-                        //resolve/negotiate congestion at the new BB factor.
-                        //
-                        //Note that we increase the BB factor slowly to try and minimize 
-                        //the bounding box size (since larger bounding boxes slow the router down).
-                        bb_fac *= BB_SCALE_FACTOR;
-
-                        vtr::printf("New BB Factor: %d\n", bb_fac);
-                        route_ctx.route_bb = load_route_bb(bb_fac);
-                    }
-
-                    ++itry_conflicted_mode;
                 }
 
                 // not stable if any connection needs to be forcibly rerouted
