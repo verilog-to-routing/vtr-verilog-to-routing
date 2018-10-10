@@ -1153,19 +1153,32 @@ static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(con
 
 vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
 
-	/* This routine loads the bounding box arrays used to limit the space  *
-	 * searched by the maze router when routing each net.  The search is   *
-	 * limited to channels contained with the net bounding box expanded    *
-	 * by bb_factor channels on each side.  For example, if bb_factor is   *
-	 * 0, the maze router must route each net within its bounding box.     *
-	 * If bb_factor = max(device_ctx.grid.width()-1, device_cts.grid.height() - 1),
-     * the maze router will search every channel in     *
-	 * the FPGA if necessary.  The bounding boxes returned by this routine *
-	 * are different from the ones used by the placer in that they are     *
-	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1) rather than (1,1) and   *
-	 * (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            */
     vtr::vector_map<ClusterNetId, t_bb> route_bb;
 
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    auto nets = cluster_ctx.clb_nlist.nets();
+    route_bb.resize(nets.size());
+	for (auto net_id : nets) {
+        route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+	}
+    return route_bb;
+}
+
+t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
+	/*
+     * This routine loads the bounding box used to limit the space
+	 * searched by the maze router when routing a specific net. The search is
+	 * limited to channels contained with the net bounding box expanded
+	 * by bb_factor channels on each side.  For example, if bb_factor is
+	 * 0, the maze router must route each net within its bounding box.
+	 * If bb_factor = max(device_ctx.grid.width()-1, device_cts.grid.height() - 1),
+     * the maze router will search every channel in
+	 * the FPGA if necessary.  The bounding box returned by this routine
+	 * are different from the ones used by the placer in that they are
+	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1)
+     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            
+     */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -1177,49 +1190,48 @@ vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     int max_dim = std::max<int>(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     bb_factor = std::min(bb_factor, max_dim);
 
-    auto nets = cluster_ctx.clb_nlist.nets();
-    route_bb.resize(nets.size());
-	for (auto net_id : nets) {
-        int driver_rr = route_ctx.net_rr_terminals[net_id][0];
-        const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
-        VTR_ASSERT(source_node.type() == SOURCE);
+    int driver_rr = route_ctx.net_rr_terminals[net_id][0];
+    const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
+    VTR_ASSERT(source_node.type() == SOURCE);
 
-        VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
-        VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
+    VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
+    VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
 
-		int xmin = source_node.xlow();
-		int ymin = source_node.ylow();
-		int xmax = source_node.xhigh();
-		int ymax = source_node.yhigh();
+    int xmin = source_node.xlow();
+    int ymin = source_node.ylow();
+    int xmax = source_node.xhigh();
+    int ymax = source_node.yhigh();
 
-        auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
-		for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
-            int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
-            const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
-            VTR_ASSERT(sink_node.type() == SINK);
+    auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+    for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
+        int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+        const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
+        VTR_ASSERT(sink_node.type() == SINK);
 
-            VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
-            VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
+        VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
+        VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
 
-            xmin = std::min<int>(xmin, sink_node.xlow());
-            xmax = std::max<int>(xmax, sink_node.xhigh());
-            ymin = std::min<int>(ymin, sink_node.ylow());
-            ymax = std::max<int>(ymax, sink_node.yhigh());
-		}
+        xmin = std::min<int>(xmin, sink_node.xlow());
+        xmax = std::max<int>(xmax, sink_node.xhigh());
+        ymin = std::min<int>(ymin, sink_node.ylow());
+        ymax = std::max<int>(ymax, sink_node.yhigh());
+    }
 
-		/* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
-		xmin -= 1;
-		ymin -= 1;
+    /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
+    xmin -= 1;
+    ymin -= 1;
 
-		/* Expand the net bounding box by bb_factor, then clip to the physical *
-		 * chip area.                                                          */
+    /* Expand the net bounding box by bb_factor, then clip to the physical *
+     * chip area.                                                          */
 
-		route_bb[net_id].xmin = max<int>(xmin - bb_factor, 0);
-		route_bb[net_id].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-		route_bb[net_id].ymin = max<int>(ymin - bb_factor, 0);
-		route_bb[net_id].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
-	}
-    return route_bb;
+    t_bb bb;
+
+    bb.xmin = max<int>(xmin - bb_factor, 0);
+    bb.xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+    bb.ymin = max<int>(ymin - bb_factor, 0);
+    bb.ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+
+    return bb;
 }
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {

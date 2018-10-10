@@ -46,6 +46,8 @@ struct t_heap {
 
 vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 
+t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
+
 void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac);
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
