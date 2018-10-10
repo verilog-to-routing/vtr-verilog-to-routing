@@ -1061,7 +1061,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_timing_grp.add_argument<float>(args.congested_routing_iteration_threshold_frac, "--congested_routing_iteration_threshold")
             .help("Controls when the router enters a high effort mode to resolve lingering routing congestion."
                   " Value is the fraction of max_router_iterations beyond which the routing is deemed congested.")
-            .default_value("0.8")
+            .default_value("1.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
