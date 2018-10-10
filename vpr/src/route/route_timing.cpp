@@ -7,6 +7,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_time.h"
 
 #include "vpr_utils.h"
 #include "vpr_types.h"
@@ -219,6 +220,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
      * must have already been allocated, and net_delay must have been allocated. *
      * Returns true if the routing succeeds, false otherwise.                    */
 
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
     //Initially, the router runs normally trying to reduce congestion while
     //balancing other metrics (timing, wirelength, run-time etc.)
     RouterCongestionMode router_congestion_mode = RouterCongestionMode::NORMAL;
@@ -228,14 +232,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
     //Initialize and properly size the lookups for profiling
     profiling::profiling_initialization(get_max_pins_per_net());
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    //sort so net with most sinks is first.
-    auto sorted_nets = vtr::vector_map<ClusterNetId,ClusterNetId>();
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        sorted_nets.push_back(net_id);
-    }
+    //sort so net with most sinks is routed first.
+    auto sorted_nets = std::vector<ClusterNetId>(cluster_ctx.clb_nlist.nets().begin(), cluster_ctx.clb_nlist.nets().end());
     std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
 
     /*
@@ -300,7 +298,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     print_route_status_header();
     timing_driven_route_structs route_structs;
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
-        clock_t begin = clock();
+        vtr::Timer iteration_timer;
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -322,14 +320,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
             route_timing_info = make_constant_timing_info(0.);
         }
 
-        RouterStats router_stats;
-
         /*
          * Route each net
          */
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        for (auto net_id : sorted_nets) {
             bool is_routable = try_timing_driven_route_net(
-                    sorted_nets[net_id],
+                    net_id,
                     itry,
                     pres_fac,
                     router_opts,
@@ -349,8 +345,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
         // Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
         bool rip_up_local_opins = (itry == 1 ? false : true);
         reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins);
-
-        float time = static_cast<float> (clock() - begin) / CLOCKS_PER_SEC;
 
         /*
          * Calculate metrics for the current routing
@@ -389,7 +383,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, time, router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, iteration_timer.elapsed_sec(), router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         //Update graphics
         if (itry == 1) {
