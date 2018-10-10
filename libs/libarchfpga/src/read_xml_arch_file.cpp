@@ -121,6 +121,22 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const t_arch_switch_inf *Switches, const int NumSwitches,
 		 const pugiutil::loc_data& loc_data);
+static void ProcessClockMetalLayers(
+        pugi::xml_node parent,
+        std::unordered_map<std::string, t_metal_layer>& metal_layers,
+        pugiutil::loc_data& loc_data);
+static void ProcessClockNetworks(
+        pugi::xml_node parent,
+        std::vector<t_clock_network_arch>& clock_networks,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data);
+static void ProcessClockSwitches(
+        pugi::xml_node parent,
+        t_clock_network_arch& clock_network,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
 		std::vector<t_segment_inf>& Segs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
@@ -245,6 +261,18 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         if (Next) {
             ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
                     arch->Switches, arch->num_switches,
+                    loc_data);
+        }
+
+        /* Process Clock Networks */
+        Next = get_single_child(architecture, "clocknetworks", loc_data, OPTIONAL);
+        if (Next) {
+            ProcessClockMetalLayers(Next, arch->clock_metal_layers, loc_data);
+            ProcessClockNetworks(
+                    Next,
+                    arch->clock_networks_arch,
+                    arch->Switches,
+                    arch->num_switches,
                     loc_data);
         }
 
@@ -3249,6 +3277,191 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		/* Get next direct element */
 		Node = Node.next_sibling(Node.name());
 	}
+}
+
+static void ProcessClockMetalLayers(
+        pugi::xml_node parent,
+        std::unordered_map<std::string, t_metal_layer>& metal_layers,
+        pugiutil::loc_data& loc_data)
+{
+    pugi::xml_node metal_layers_parent = get_single_child(parent, "metal_layers", loc_data);
+    int num_metal_layers = count_children(metal_layers_parent, "metal_layer", loc_data);
+
+    pugi::xml_node curr_layer = get_first_child(metal_layers_parent, "metal_layer", loc_data);
+    for(int i = 0; i < num_metal_layers; i++) {
+
+        // Get metal layer values: name, r_metal, and c_metal
+        std::string name (get_attribute(curr_layer, "name", loc_data).value());
+        t_metal_layer metal_layer;
+        metal_layer.r_metal = get_attribute(curr_layer, "Rmetal", loc_data).as_float(0.);
+        metal_layer.c_metal = get_attribute(curr_layer, "Cmetal", loc_data).as_float(0.);
+
+        // Insert metal layer into map
+        auto itter = metal_layers.find(name);
+        if(itter != metal_layers.end()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_layer),
+                    "Two metal layers with the same name '%s' were found.\n",
+                    name.c_str());
+        }
+        metal_layers.insert({name, metal_layer});
+
+        curr_layer = curr_layer.next_sibling(curr_layer.name());
+    }
+}
+
+static void ProcessClockNetworks(
+        pugi::xml_node parent,
+        std::vector<t_clock_network_arch>& clock_networks,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data)
+{
+    int num_clock_networks = count_children(parent, "clock_network", loc_data);
+    pugi::xml_node curr_network = get_first_child(parent, "clock_network", loc_data);
+    for(int i = 0; i < num_clock_networks; i++) {
+        t_clock_network_arch clock_network;
+
+        std::string name (get_attribute(curr_network, "name", loc_data).value());
+        clock_network.name = name;
+        clock_network.num_inst = get_attribute(curr_network, "num_inst", loc_data).as_int(0);
+
+        bool is_supported_clock_type = false;
+        pugi::xml_node curr_type;
+
+        // Parse spine
+        curr_type = get_single_child(curr_network, "spine", loc_data, OPTIONAL);
+        if(curr_type) {
+            is_supported_clock_type = true;
+            clock_network.type = e_clock_type::SPINE;
+
+            std::string metal_layer (get_attribute(curr_type, "metal_layer", loc_data).value());
+            std::string starty (get_attribute(curr_type, "starty", loc_data).value());
+            std::string endy (get_attribute(curr_type, "endy", loc_data).value());
+            std::string x (get_attribute(curr_type, "x", loc_data).value());
+            std::string repeatx (get_attribute(curr_type, "repeatx", loc_data).value());
+            std::string repeaty (get_attribute(curr_type, "repeaty", loc_data).value());
+
+            clock_network.metal_layer = metal_layer;
+            clock_network.wire.start = starty;
+            clock_network.wire.end = endy;
+            clock_network.wire.position = x;
+            clock_network.repeat.x = repeatx;
+            clock_network.repeat.y = repeaty;
+
+            ProcessClockSwitches(curr_type, clock_network, switches, num_switches, loc_data);
+        }
+
+        // Parse rib
+        curr_type = get_single_child(curr_network, "rib", loc_data, OPTIONAL);
+        if(curr_type) {
+            is_supported_clock_type = true;
+            clock_network.type = e_clock_type::RIB;
+
+            std::string metal_layer (get_attribute(curr_type, "metal_layer", loc_data).value());
+            std::string startx (get_attribute(curr_type, "startx", loc_data).value());
+            std::string endx (get_attribute(curr_type, "endx", loc_data).value());
+            std::string y (get_attribute(curr_type, "y", loc_data).value());
+            std::string repeatx (get_attribute(curr_type, "repeatx", loc_data).value());
+            std::string repeaty (get_attribute(curr_type, "repeaty", loc_data).value());
+
+            clock_network.metal_layer = metal_layer;
+            clock_network.wire.start = startx;
+            clock_network.wire.end = endx;
+            clock_network.wire.position = y;
+            clock_network.repeat.x = repeatx;
+            clock_network.repeat.y = repeaty;
+
+            ProcessClockSwitches(curr_type, clock_network, switches, num_switches, loc_data);
+        }
+
+        // Currently their is only support for ribs and spines
+        if(!is_supported_clock_type) {
+            archfpga_throw(loc_data.filename_c_str(),loc_data.line(curr_type),
+                    "Found no supported clock network type for '%s' clock network.\n"
+                    "Currently their is only support for rib and spine networks.\n",
+                    name.c_str());
+        }
+
+        clock_networks.push_back(clock_network);
+        curr_network = curr_network.next_sibling(curr_network.name());
+    }
+}
+
+static void ProcessClockSwitches(
+        pugi::xml_node parent,
+        t_clock_network_arch& clock_network,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data)
+{
+    int num_clock_switches = count_children(parent, "switch_point", loc_data);
+    pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
+
+    //TODO: currently only supporting one drive and one tap. Should change to support
+    //      multiple taps
+    VTR_ASSERT(num_switches != 2);
+
+    for (int i = 0; i < num_clock_switches; i++) {
+        std::string switch_type (get_attribute(curr_switch, "type", loc_data).value());
+        if(switch_type == "drive") {
+            t_clock_drive drive;
+
+            std::string name (get_attribute(curr_switch, "name", loc_data).value());
+            const char* offset;
+            if (clock_network.type == e_clock_type::SPINE) {
+                offset = get_attribute(curr_switch, "yoffset", loc_data).value();
+            } else {
+                VTR_ASSERT(clock_network.type == e_clock_type::RIB);
+                offset = get_attribute(curr_switch, "xoffset", loc_data).value();
+            }
+
+			// get switch index
+            const char* buffer = get_attribute(curr_switch, "buffer", loc_data).value();
+            int switch_idx;
+            for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
+                if (0 == strcmp(buffer, switches[switch_idx].name)) {
+					break; // switch_idx has been found
+				}
+			}
+			if (switch_idx >= num_switches) {
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+						"'%s' is not a valid mux name.\n", buffer);
+			}
+
+            drive.name = name;
+            drive.offset = offset;
+            drive.arch_switch_idx = switch_idx;
+            clock_network.drive = drive;
+
+        } else if (switch_type == "tap") {
+            t_clock_taps tap;
+
+            std::string name (get_attribute(curr_switch, "name", loc_data).value());
+            const char* offset;
+            const char* increment;
+            if (clock_network.type == e_clock_type::SPINE) {
+                offset = get_attribute(curr_switch, "yoffset", loc_data).value();
+                increment = get_attribute(curr_switch, "yincr", loc_data).value();
+            } else {
+                VTR_ASSERT(clock_network.type == e_clock_type::RIB);
+                offset = get_attribute(curr_switch, "xoffset", loc_data).value();
+                increment = get_attribute(curr_switch, "xincr", loc_data).value();
+            }
+
+            tap.name = name;
+            tap.offset = offset;
+            tap.increment = increment;
+            clock_network.tap = tap;
+
+        } else {
+            archfpga_throw(loc_data.filename_c_str(),loc_data.line(curr_switch),
+                    "Found unsupported switch type for '%s' clock network.\n"
+                    "Currently their is only support for drive and tap switch types.\n",
+                    clock_network.name.c_str());
+        }
+
+        curr_switch = curr_switch.next_sibling(curr_switch.name());
+    }
 }
 
 static void ProcessPower( pugi::xml_node parent,

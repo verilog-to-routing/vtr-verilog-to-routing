@@ -28,6 +28,7 @@
 
 #include <functional>
 #include <vector>
+#include <unordered_map>
 #include <string>
 #include <map>
 #include <limits>
@@ -35,6 +36,7 @@
 #include "vtr_ndmatrix.h"
 
 #include "logic_types.h"
+#include "clock_types.h"
 
 //Forward declarations
 struct t_clock_arch;
@@ -1290,6 +1292,8 @@ struct t_arch {
     std::string ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    std::vector<t_clock_network_arch> clock_networks_arch;
+    std::unordered_map<std::string, t_metal_layer> clock_metal_layers;
 };
 
 #endif
