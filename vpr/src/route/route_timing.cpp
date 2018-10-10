@@ -448,9 +448,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         if (timing_info) {
-            /*
-             * Determine if any connection need to be forcibly re-routed due to timing
-             */
             if (itry == 1) {
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
@@ -466,7 +463,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
             } else {
                 bool stable_routing_configuration = true;
 
-                //Should we reip-up legally routed connections which have poor delay characteristics?
+                /*
+                 * Determine if any connection need to be forcibly re-routed due to timing
+                 */
 
                 //Yes, if explicitly enabled
                 bool should_ripup_for_delay = (router_opts.incr_reroute_delay_ripup == e_incr_reroute_delay_ripup::ON);
@@ -487,7 +486,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
                 if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
 
-                    //The design appears to have routing conflicts:
+                    //The design appears to have routing conflicts which are difficult to resolve:
                     //  1) Don't re-route legal connections due to delay. This allows
                     //     the router to focus on the actual conflicts
                     //  2) Increase the net bounding boxes. This potentially allows 
@@ -499,10 +498,11 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     //
                     //In the case of routing conflicts there are multiple connections competing 
                     //for the same resources which can not resolve the congestion themselves.
-                    //In regular routing mode we try to keep the bounding boxes small to reduce 
-                    //run-time, but this can artifically cause conflicts since it limits how far 
-                    //signals can detour (i.e. they can't route outside the bounding box), which 
-                    //can cause conflicts to oscillate back and forth without resolving.
+                    //In normal routing mode we try to keep the bounding boxes small to minimize 
+                    //run-time, but this can limits how far signals can detour (i.e. they can't 
+                    //route outside the bounding box), which can cause conflicts to oscillate back
+                    //and forth without resolving.
+                    //
                     //By scaling the bounding boxes here, we slowly increase the router's search 
                     //space in hopes of it allowing signals to move further out of the way to 
                     //aleviate the conflicts.
