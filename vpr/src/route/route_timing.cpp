@@ -196,7 +196,7 @@ static WirelengthInfo calculate_wirelength_info();
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
-static void print_route_status(int itry, double elapsed_sec, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, int bb_fac, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
@@ -383,7 +383,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, iteration_timer.elapsed_sec(), router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, iteration_timer.elapsed_sec(), bb_fac, router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         //Update graphics
         if (itry == 1) {
@@ -2058,13 +2058,13 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf("---- ------ ------- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    vtr::printf("Iter   Time    Heap    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    vtr::printf("      (sec)    push     pop    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    vtr::printf("---- ------ ------- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    vtr::printf("---- ------ --- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    vtr::printf("Iter   Time  BB    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    vtr::printf("      (sec) Fac    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    vtr::printf("---- ------ --- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, int bb_fac, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
@@ -2075,11 +2075,13 @@ static void print_route_status(int itry, double elapsed_sec, const RouterStats& 
     //Elapsed Time
     vtr::printf(" %6.1f", elapsed_sec);
 
+    //Bounding box factor
+    vtr::printf(" %3d", bb_fac);
+
     //Heap push/pop
     constexpr int HEAP_OP_DIGITS = 7;
     constexpr int HEAP_OP_SCI_PRECISION = 2;
     pretty_print_uint(" ", router_stats.heap_pushes, HEAP_OP_DIGITS, HEAP_OP_SCI_PRECISION);
-    pretty_print_uint(" ", router_stats.heap_pops, HEAP_OP_DIGITS, HEAP_OP_SCI_PRECISION);
     VTR_ASSERT(router_stats.heap_pops <= router_stats.heap_pushes);
 
     //Rerouted nets
