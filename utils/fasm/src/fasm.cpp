@@ -247,11 +247,24 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
           auto& route = pb_route[io_pin->pin_count_in_cluster];
 
           AtomNetlist::TruthTable truth_table(1);
+          std::vector<int> permute(num_inputs);
           truth_table[0].push_back(vtr::LogicValue::TRUE);
-          for(size_t i = 0; i < num_inputs-1; ++i) {
+          for(int i = 0; i < num_inputs-1; ++i) {
             truth_table[0].push_back(vtr::LogicValue::FALSE);
           }
           truth_table[0].push_back(vtr::LogicValue::TRUE);
+
+          permute[0] = route.pb_graph_pin->pin_number;
+          int permute_index = 1;
+          for(int i = 0; i < num_inputs-1; ++i) {
+            if(i == route.pb_graph_pin->pin_number) {
+              continue;
+            }
+
+            permute[permute_index++] = i;
+          }
+
+          const auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permute);
           LogicVec lut_mask = truth_table_to_lut_mask(truth_table, num_inputs);
           emit_lut(lut_mode_, lut_mask, pb_graph_node);
         }
