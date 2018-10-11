@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "netlist_walker.h"
+#include "netlist_writer.h"
 
 class FasmWriterVisitor : public NetlistVisitor {
     enum LutMode {
@@ -33,13 +34,15 @@ class FasmWriterVisitor : public NetlistVisitor {
       void finish_impl() override;
 
   private:
-      void output_fasm_features(std::string features);
+      void output_fasm_features(std::string features) const;
       void check_interconnect(const t_pb_route *pb_route, int inode);
+      void check_for_lut(const t_pb* atom);
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
       void walk_routing();
+      void emit_lut(LutMode lut_mode, LogicVec &lut_mask, const t_pb_graph_node * pb_graph_node) const;
       std::string build_clb_prefix(const t_pb_graph_node* pb_graph_node) const;
       void setup_split_lut(std::string fasm_lut);
-      int find_lut_idx(t_pb_graph_node* pb_graph_node);
+      int find_lut_idx(const t_pb_graph_node* pb_graph_node) const;
 
       std::ostream& os_;
 
@@ -55,7 +58,6 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::string lut_prefix_;
       std::vector<std::string> lut_parts_;
       const t_pb_route *pb_route_;
-      const t_pb_graph_node* lut_node_;
 };
 
 #endif  // FASM_H

@@ -172,6 +172,28 @@ void FasmWriterVisitor::setup_split_lut(std::string fasm_lut) {
   }
 }
 
+static const t_pb_graph_pin* is_node_used(const t_pb_route *top_pb_route, const t_pb_graph_node* pb_graph_node) {
+    // Is the node used at all?
+    const t_pb_graph_pin* pin = nullptr;
+    for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
+        for(int pin_index = 0; pin_index < pb_graph_node->num_output_pins[port_index]; ++pin_index) {
+            pin = &pb_graph_node->output_pins[port_index][pin_index];
+            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+                return pin;
+            }
+        }
+    }
+    for(int port_index = 0; port_index < pb_graph_node->num_input_ports; ++port_index) {
+        for(int pin_index = 0; pin_index < pb_graph_node->num_input_pins[port_index]; ++pin_index) {
+            pin = &pb_graph_node->input_pins[port_index][pin_index];
+            if (top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
+                return pin;
+            }
+        }
+    }
+    return nullptr;
+}
+
 void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* pb,
         const t_pb_graph_node* pb_graph_node) {
   clb_prefix_ = build_clb_prefix(pb_graph_node);
@@ -215,6 +237,24 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
                             fasm_type.c_str());
         }
       }
+
+    }
+
+    if(mode != nullptr && std::string(mode->name) == "wire") {
+        const int num_inputs = pb_graph_node->total_input_pins();
+        auto io_pin = is_node_used(pb_route, pb_graph_node);
+        if(io_pin != nullptr) {
+          auto& route = pb_route[io_pin->pin_count_in_cluster];
+
+          AtomNetlist::TruthTable truth_table(1);
+          truth_table[0].push_back(vtr::LogicValue::TRUE);
+          for(size_t i = 0; i < num_inputs-1; ++i) {
+            truth_table[0].push_back(vtr::LogicValue::FALSE);
+          }
+          truth_table[0].push_back(vtr::LogicValue::TRUE);
+          LogicVec lut_mask = truth_table_to_lut_mask(truth_table, num_inputs);
+          emit_lut(lut_mode_, lut_mask, pb_graph_node);
+        }
     }
 
     int port_index = 0;
@@ -243,6 +283,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
 }
 
 void FasmWriterVisitor::visit_open_impl(const t_pb* atom) {
+  check_for_lut(atom);
 }
 
 static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_route *pb_route, int atom_input_idx) {
@@ -299,8 +340,8 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
     return lut_mask;
 }
 
-int FasmWriterVisitor::find_lut_idx(t_pb_graph_node* pb_graph_node) {
-  t_pb_graph_node* orig_pb_graph_node = pb_graph_node;
+int FasmWriterVisitor::find_lut_idx(const t_pb_graph_node* pb_graph_node) const {
+  const t_pb_graph_node* orig_pb_graph_node = pb_graph_node;
   while(pb_graph_node != nullptr) {
     VTR_ASSERT(pb_graph_node->pb_type != nullptr);
 
@@ -318,7 +359,31 @@ int FasmWriterVisitor::find_lut_idx(t_pb_graph_node* pb_graph_node) {
             "Failed to find LUT index.");
 }
 
-void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
+void FasmWriterVisitor::emit_lut(LutMode lut_mode, LogicVec &lut_mask, const t_pb_graph_node * pb_graph_node) const {
+    std::string lut_address_select;
+
+    if(lut_mode == LUT) {
+      lut_address_select = vtr::string_fmt("[%d:0]", lut_mask.size()-1);
+    } else if(lut_mode == SPLIT_LUT) {
+      // Get width of underlying LUT.
+      // TODO: Test if this actually works!
+      int width_of_lut = pb_graph_node->pb_type->num_input_pins;
+      int idx = find_lut_idx(pb_graph_node);
+      int start = (1 << width_of_lut)*idx;
+      int end = start + lut_mask.size() -1;
+      lut_address_select = vtr::string_fmt("[%d:%d]", end, start);
+    } else {
+      vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Unknown LUT mode %d\n",
+                lut_mode);
+    }
+
+    std::stringstream ss("");
+    ss << lut_prefix_ << lut_address_select << "=" << lut_mask;
+
+    output_fasm_features(ss.str());
+}
+
+void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     auto atom_blk_id = atom_ctx.lookup.pb_atom(atom);
@@ -334,28 +399,12 @@ void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
       }
 
       LogicVec lut_mask = lut_outputs(atom, pb_route_);
-      std::string lut_address_select;
-
-      if(lut_mode_ == LUT) {
-        lut_address_select = vtr::string_fmt("[%d:0]", lut_mask.size()-1);
-      } else if(lut_mode_ == SPLIT_LUT) {
-        // Get width of underlying LUT.
-        // TODO: Test if this actually works!
-        int width_of_lut = atom->pb_graph_node->pb_type->num_input_pins;
-        int idx = find_lut_idx(atom->pb_graph_node);
-        int start = (1 << width_of_lut)*idx;
-        int end = start + lut_mask.size() -1;
-        lut_address_select = vtr::string_fmt("[%d:%d]", end, start);
-      } else {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Unknown LUT mode %d\n",
-                  lut_mode_);
-      }
-
-      std::stringstream ss("");
-      ss << lut_prefix_ << lut_address_select << "=" << lut_mask ;
-
-      output_fasm_features(ss.str());
+      emit_lut(lut_mode_, lut_mask, atom->pb_graph_node);
     }
+}
+
+void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
+  check_for_lut(atom);
 }
 
 void FasmWriterVisitor::walk_routing() {
@@ -473,7 +522,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
         pb_name, pb_index, port_name, pin_index, fasm_mux.c_str());
 }
 
-void FasmWriterVisitor::output_fasm_features(std::string features) {
+void FasmWriterVisitor::output_fasm_features(std::string features) const {
   std::stringstream os(features);
 
   while(os) {
