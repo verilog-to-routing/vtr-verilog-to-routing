@@ -8,8 +8,6 @@
 #include <set>
 #include <utility>
 
-#include "globals.h"
-
 #include "clock_fwd.h"
 
 #include "clock_network_types.h"

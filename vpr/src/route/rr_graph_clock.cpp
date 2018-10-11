@@ -14,40 +14,8 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     clock_t begin = clock();
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& clock_networks = device_ctx.clock_networks;
     auto& grid = device_ctx.grid;
-
-    // Clock Newtworks
-    std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
-
-    // Clock Ribs
-    clock_networks.emplace_back(new ClockRib());
-    ClockRib* rib = dynamic_cast<ClockRib*>(clock_networks.back().get());
-
-    rib->set_num_instance(3);
-    rib->set_clock_name("rib1");
-    rib->set_metal_layer(405, 0.00000116);
-    rib->set_initial_wire_location(0, grid.width(), 0);
-    rib->set_wire_repeat(grid.width(), 1);
-    rib->set_drive_location(grid.width()/2);
-    rib->set_drive_switch(2);
-    rib->set_drive_name("drive");
-    rib->set_tap_locations(0,1);
-    rib->set_tap_name("tap");
-
-    // Clock Spines
-    clock_networks.emplace_back(new ClockSpine());
-    ClockSpine* spine = dynamic_cast<ClockSpine*>(clock_networks.back().get());
-
-    spine->set_num_instance(3);
-    spine->set_clock_name("spine1");
-    spine->set_metal_layer(405,0.00000116);
-    spine->set_initial_wire_location(0, grid.height(), grid.width()/2);
-    spine->set_wire_repeat(grid.width(), grid.height());
-    spine->set_drive_location(grid.width()/2);
-    spine->set_drive_switch(2);
-    spine->set_drive_name("drive");
-    spine->set_tap_locations(0,1);
-    spine->set_tap_name("tap");
 
     //Clock Connections
     std::vector<std::unique_ptr<ClockConnection>> clock_routing;

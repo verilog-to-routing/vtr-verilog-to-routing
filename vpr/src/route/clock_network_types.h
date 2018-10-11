@@ -6,7 +6,8 @@
 
 #include "clock_fwd.h"
 
-#include "globals.h"
+#include "vpr_types.h"
+
 #include "rr_graph_clock.h"
 
 class ClockRRGraph;
@@ -129,6 +130,7 @@ class ClockRib : public ClockNetwork {
          * Setters
          */
         void set_metal_layer(float r_metal, float c_metal);
+        void set_metal_layer(MetalLayer metal_layer);
         void set_initial_wire_location(int start_x, int end_x, int y);
         void set_wire_repeat(int repeat_x, int repeat_y);
         void set_drive_location(int offset_x);
@@ -180,6 +182,7 @@ class ClockSpine : public ClockNetwork {
          * Setters
          */
         void set_metal_layer(float r_metal, float c_metal);
+        void set_metal_layer(MetalLayer metal_layer);
         void set_initial_wire_location(int start_y, int end_y, int x);
         void set_wire_repeat(int repeat_x, int repeat_y);
         void set_drive_location(int offset_y);

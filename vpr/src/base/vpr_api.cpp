@@ -39,6 +39,7 @@ using namespace std;
 #include "pack.h"
 #include "place.h"
 #include "SetupGrid.h"
+#include "setup_clocks.h"
 #include "stats.h"
 #include "path_delay.h"
 #include "read_options.h"
@@ -321,6 +322,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     vpr_create_device_grid(vpr_setup, arch);
 
+    vpr_setup_clock_networks(vpr_setup, arch);
+
     vpr_init_graphics(vpr_setup, arch);
 
     { //Place
@@ -417,6 +420,12 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
     device_ctx.chan_width.x_list = (int *) vtr::malloc(device_ctx.grid.height() * sizeof (int));
     device_ctx.chan_width.y_list = (int *) vtr::malloc(device_ctx.grid.width() * sizeof (int));
+}
+
+void vpr_setup_clock_networks(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    if(vpr_setup.clock_modeling == DEDICATED_NETWORK) {
+        setup_clock_networks(Arch);
+    }
 }
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {

@@ -60,6 +60,10 @@ void ClockRib::set_metal_layer(float r_metal, float c_metal) {
     x_chan_wire.layer.c_metal = c_metal;
 }
 
+void ClockRib::set_metal_layer(MetalLayer metal_layer) {
+    x_chan_wire.layer = metal_layer;
+}
+
 void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
 
     if(end_x < start_x) {
@@ -232,6 +236,10 @@ ClockType ClockSpine::get_network_type() const {
 void ClockSpine::set_metal_layer(float r_metal, float c_metal) {
     y_chan_wire.layer.r_metal = r_metal;
     y_chan_wire.layer.c_metal = c_metal;
+}
+
+void ClockSpine::set_metal_layer(MetalLayer metal_layer) {
+    y_chan_wire.layer = metal_layer;
 }
 
 void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
