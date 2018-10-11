@@ -363,6 +363,7 @@ struct t_grid_loc_def {
 
     t_grid_loc_spec x;      //Horizontal location specification
     t_grid_loc_spec y;      //Veritcal location specification
+    t_metadata_dict *meta;
 };
 
 enum GridDefType {
@@ -760,6 +761,7 @@ struct t_interconnect {
 	t_mode *parent_mode;
 
 	t_interconnect_power *interconnect_power;
+	t_metadata_dict *meta = nullptr;
 };
 
 /** Describes I/O and clock ports
