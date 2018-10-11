@@ -51,6 +51,14 @@ struct t_clock_network_arch {
     t_clock_taps tap;
 };
 
+struct t_clock_connection_arch {
+    std::string from;
+    std::string to;
+    int arch_switch_idx;
+    std::string locationx;
+    std::string locationy;
+    float fc;
+};
 
 #endif
 

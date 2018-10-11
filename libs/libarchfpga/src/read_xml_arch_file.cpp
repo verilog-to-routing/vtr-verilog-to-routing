@@ -137,6 +137,12 @@ static void ProcessClockSwitches(
         const t_arch_switch_inf *switches,
         const int num_switches,
         pugiutil::loc_data& loc_data);
+static void ProcessClockConnections(
+        pugi::xml_node parent,
+        std::vector<t_clock_connection_arch>& clock_connections,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
 		std::vector<t_segment_inf>& Segs,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
@@ -271,6 +277,12 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
             ProcessClockNetworks(
                     Next,
                     arch->clock_networks_arch,
+                    arch->Switches,
+                    arch->num_switches,
+                    loc_data);
+            ProcessClockConnections(
+                    Next,
+                    arch->clock_connections_arch,
                     arch->Switches,
                     arch->num_switches,
                     loc_data);
@@ -3426,7 +3438,7 @@ static void ProcessClockSwitches(
 			}
 			if (switch_idx >= num_switches) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
-						"'%s' is not a valid mux name.\n", buffer);
+						"'%s' is not a valid switch name.\n", buffer);
 			}
 
             drive.name = name;
@@ -3462,6 +3474,54 @@ static void ProcessClockSwitches(
         }
 
         curr_switch = curr_switch.next_sibling(curr_switch.name());
+    }
+}
+
+static void ProcessClockConnections(
+        pugi::xml_node parent,
+        std::vector<t_clock_connection_arch>& clock_connections,
+        const t_arch_switch_inf *switches,
+        const int num_switches,
+        pugiutil::loc_data& loc_data)
+{
+    pugi::xml_node clock_routing_parent = get_single_child(parent, "clock_routing", loc_data);
+    int num_routing_connections = count_children(clock_routing_parent, "tap", loc_data);
+
+    pugi::xml_node curr_connection =
+        get_first_child(clock_routing_parent, "tap", loc_data);
+    for(int i = 0; i < num_routing_connections; i++) {
+        t_clock_connection_arch clock_connection;
+
+        const char* from = get_attribute(curr_connection, "from", loc_data).value();
+        const char* to = get_attribute(curr_connection, "to", loc_data).value();
+        const char* switch_name = get_attribute(curr_connection, "switch", loc_data).value();
+        const char* locationx =
+            get_attribute(curr_connection, "locationx", loc_data, OPTIONAL).value();
+        const char* locationy =
+            get_attribute(curr_connection, "locationy", loc_data, OPTIONAL).value();
+        float fc = get_attribute(curr_connection, "fc_val", loc_data).as_float(0.);
+
+        int switch_idx;
+        for (switch_idx = 0; switch_idx < num_switches; switch_idx++) {
+            if (0 == strcmp(switch_name, switches[switch_idx].name)) {
+                break; // switch_idx has been found
+            }
+        }
+        if (switch_idx >= num_switches) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_connection),
+                    "'%s' is not a valid switch name.\n", switch_name);
+        }
+
+        clock_connection.from = from;
+        clock_connection.to = to;
+        clock_connection.arch_switch_idx = switch_idx;
+        clock_connection.locationx = locationx;
+        clock_connection.locationy = locationy;
+        clock_connection.fc = fc;
+
+        clock_connections.push_back(clock_connection);
+
+        curr_connection = curr_connection.next_sibling(curr_connection.name());
     }
 }
 

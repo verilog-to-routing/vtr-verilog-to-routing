@@ -17,6 +17,7 @@
 #include "power_components.h"
 #include "device_grid.h"
 #include "clock_network_types.h"
+#include "clock_connection_types.h"
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -146,6 +147,7 @@ struct DeviceContext : public Context {
 
     // Clock Newtworks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
+    std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
     /*
      * switch_fanin_remap is only used for printing out switch fanin stats (the -switch_stats option)

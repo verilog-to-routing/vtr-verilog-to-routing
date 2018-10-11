@@ -15,44 +15,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_networks = device_ctx.clock_networks;
-    auto& grid = device_ctx.grid;
-
-    //Clock Connections
-    std::vector<std::unique_ptr<ClockConnection>> clock_routing;
-
-    // Routing to spine drive point connection
-    clock_routing.emplace_back(new RoutingToClockConnection);
-    RoutingToClockConnection* routing_to_clock =
-        dynamic_cast<RoutingToClockConnection*>(clock_routing.back().get());
-
-    routing_to_clock->set_clock_name_to_connect_to("spine1");
-    routing_to_clock->set_clock_switch_name("drive");
-    routing_to_clock->set_switch_location(grid.width()/2, grid.height()/2);
-    routing_to_clock->set_switch(0);
-    routing_to_clock->set_fc_val(0.1);
-
-    // Spine to Rib connection
-    clock_routing.emplace_back(new ClockToClockConneciton);
-    ClockToClockConneciton* spine_to_rib =
-        dynamic_cast<ClockToClockConneciton*>(clock_routing.back().get());
-
-    spine_to_rib->set_from_clock_name("spine1");
-    spine_to_rib->set_from_clock_switch_name("tap");
-    spine_to_rib->set_to_clock_name("rib1");
-    spine_to_rib->set_to_clock_switch_name("drive");
-    spine_to_rib->set_switch(0);
-    spine_to_rib->set_fc_val(0.3);
-
-    // clock to pins connection
-    clock_routing.emplace_back(new ClockToPinsConnection);
-    ClockToPinsConnection* clock_to_pins =
-        dynamic_cast<ClockToPinsConnection*>(clock_routing.back().get());
-
-    clock_to_pins->set_clock_name_to_connect_from("rib1");
-    clock_to_pins->set_clock_switch_name("tap");
-    clock_to_pins->set_switch(1);
-    clock_to_pins->set_fc_val(1);
-
+    auto& clock_routing = device_ctx.clock_connections;
 
     ClockRRGraph clock_graph = ClockRRGraph();
     clock_graph.create_clock_networks_wires(clock_networks);

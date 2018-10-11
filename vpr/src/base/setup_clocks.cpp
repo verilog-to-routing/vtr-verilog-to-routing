@@ -6,12 +6,24 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
+#include <string>
+#include <iostream>
+#include <sstream>
+
 static MetalLayer get_metal_layer_from_name(
         std::string metal_layer_name,
         std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
         std::string clock_network_name);
+static void setup_clock_network_wires(const t_arch& Arch);
+static void setup_clock_connections(const t_arch& Arch);
+static std::vector<std::string> split_clock_and_switch_names(std::string names);
 
 void setup_clock_networks(const t_arch& Arch) {
+    setup_clock_network_wires(Arch);
+    setup_clock_connections(Arch);
+}
+
+void setup_clock_network_wires(const t_arch& Arch) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_networks_device = device_ctx.clock_networks;
@@ -92,6 +104,70 @@ void setup_clock_networks(const t_arch& Arch) {
     clock_networks_device.shrink_to_fit();
 }
 
+void setup_clock_connections(const t_arch& Arch) {
+
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& clock_connections_device = device_ctx.clock_connections;
+    auto& grid = device_ctx.grid;
+
+    auto& clock_connections_arch = Arch.clock_connections_arch;
+
+    // TODO: copied over from SetupGrid. Ensure consistency by only assiging in one place
+    t_formula_data vars;
+    vars.set_var_value("W", grid.width());
+    vars.set_var_value("H", grid.height());
+
+    for(auto clock_connection_arch : clock_connections_arch) {
+        if(clock_connection_arch.from == "routing") {
+            clock_connections_device.emplace_back(new RoutingToClockConnection);
+            RoutingToClockConnection* routing_to_clock =
+                dynamic_cast<RoutingToClockConnection*>(clock_connections_device.back().get());
+
+            //TODO: Add error check to check that clock name and tap name exist and that only
+            //      two names are returned by the below function
+            auto names = split_clock_and_switch_names(clock_connection_arch.to);
+            routing_to_clock->set_clock_name_to_connect_to(names[0]);
+            routing_to_clock->set_clock_switch_name(names[1]);
+
+            routing_to_clock->set_switch_location(
+                parse_formula(clock_connection_arch.locationx, vars),
+                parse_formula(clock_connection_arch.locationy, vars));
+            routing_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
+            routing_to_clock->set_fc_val(clock_connection_arch.fc);
+
+        } else if (clock_connection_arch.to == "clock") {
+            clock_connections_device.emplace_back(new ClockToPinsConnection);
+            ClockToPinsConnection* clock_to_pins =
+                dynamic_cast<ClockToPinsConnection*>(clock_connections_device.back().get());
+
+            //TODO: Add error check to check that clock name and tap name exist and that only
+            //      two names are returned by the below function
+            auto names = split_clock_and_switch_names(clock_connection_arch.from);
+            clock_to_pins->set_clock_name_to_connect_from(names[0]);
+            clock_to_pins->set_clock_switch_name(names[1]);
+
+            clock_to_pins->set_switch(clock_connection_arch.arch_switch_idx);
+            clock_to_pins->set_fc_val(clock_connection_arch.fc);
+        } else {
+            clock_connections_device.emplace_back(new ClockToClockConneciton);
+            ClockToClockConneciton* clock_to_clock =
+                dynamic_cast<ClockToClockConneciton*>(clock_connections_device.back().get());
+
+            //TODO: Add error check to check that clock name and tap name exist and that only
+            //      two names are returned by the below function
+            auto to_names = split_clock_and_switch_names(clock_connection_arch.to);
+            auto from_names = split_clock_and_switch_names(clock_connection_arch.from);
+            clock_to_clock->set_to_clock_name(to_names[0]);
+            clock_to_clock->set_to_clock_switch_name(to_names[1]);
+            clock_to_clock->set_from_clock_name(from_names[0]);
+            clock_to_clock->set_from_clock_switch_name(from_names[1]);
+
+            clock_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
+            clock_to_clock->set_fc_val(clock_connection_arch.fc);
+        }
+    }
+}
+
 MetalLayer get_metal_layer_from_name(
         std::string metal_layer_name,
         std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
@@ -116,4 +192,14 @@ MetalLayer get_metal_layer_from_name(
     return metal_layer;
 }
 
-
+std::vector<std::string> split_clock_and_switch_names(std::string names) {
+    std::istringstream in_names(names);
+    std::vector<std::string> out_names;
+    std::string temp;
+    while (std::getline(in_names, temp, '.')) {
+        if (!temp.empty()) {
+            out_names.push_back(temp);
+        }
+    }
+    return out_names;
+}

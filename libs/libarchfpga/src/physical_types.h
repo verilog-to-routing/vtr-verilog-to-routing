@@ -1292,8 +1292,12 @@ struct t_arch {
     std::string ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+
+    // Clock related data types
     std::vector<t_clock_network_arch> clock_networks_arch;
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers;
+    std::vector<t_clock_connection_arch> clock_connections_arch;
+
 };
 
 #endif
