@@ -295,7 +295,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
     }
 
     const auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permutation);
-    LogicVec lut_mask = truth_table_to_lut_mask(permuted_truth_table, ports.size());
+    LogicVec lut_mask = truth_table_to_lut_mask(permuted_truth_table, num_inputs);
     return lut_mask;
 }
 
