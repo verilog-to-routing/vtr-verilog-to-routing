@@ -331,21 +331,18 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
+    RouteStatus route_status;
     { //Route
-        auto route_status = vpr_route_flow(vpr_setup, arch);
-
-        if (!route_status.success()) {
-            return false; //Unimplementable
-        }
+        route_status = vpr_route_flow(vpr_setup, arch);
     }
 
     { //Analysis
-        vpr_analysis(vpr_setup, arch);
+        vpr_analysis_flow(vpr_setup, arch, route_status.success());
     }
 
     vpr_close_graphics(vpr_setup);
 
-    return true; //Successfully implemented
+    return route_status.success();
 }
 
 /*
@@ -1030,10 +1027,30 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
 
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
-    if (vpr_setup.AnalysisOpts.doAnalysis == STAGE_SKIP) return;
-    VTR_ASSERT(vpr_setup.AnalysisOpts.doAnalysis == STAGE_DO);
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, bool implementation_legal) {
+    auto& analysis_opts = vpr_setup.AnalysisOpts;
 
+    if (analysis_opts.doAnalysis == STAGE_SKIP) return true; //Skipped
+
+    if (analysis_opts.doAnalysis == STAGE_AUTO && !implementation_legal) return false; //Not run
+
+    VTR_ASSERT_MSG(analysis_opts.doAnalysis == STAGE_DO
+                   || (analysis_opts.doAnalysis == STAGE_AUTO && implementation_legal),
+                   "Analysis should run only if forced, or implementation legal");
+
+    if (!implementation_legal) {
+        vtr::printf("\n");
+        vtr::printf("*****************************************************************************************\n");
+        vtr::printf_warning(__FILE__, __LINE__, "The following analysis results are for an illegal circuit implementation\n");
+        vtr::printf("*****************************************************************************************\n");
+    }
+
+    vpr_analysis(vpr_setup, Arch);
+
+    return true;
+}
+
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();

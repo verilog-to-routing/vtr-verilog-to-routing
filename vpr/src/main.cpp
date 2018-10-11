@@ -61,6 +61,7 @@ int main(int argc, const char **argv) {
 
         bool flow_succeeded = vpr_flow(vpr_setup, Arch);
         if (!flow_succeeded) {
+            vtr::printf("Failed to implement circuit\n");
             return UNIMPLEMENTABLE_EXIT_CODE;
         }
 
@@ -84,6 +85,8 @@ int main(int argc, const char **argv) {
 
         /* free data structures */
         vpr_free_all(Arch, vpr_setup);
+
+        vtr::printf("Implemented circuit successfully\n");
 
     } catch (const tatum::Error& tatum_error) {
         vtr::printf_error(__FILE__, __LINE__, "%s\n", format_tatum_error(tatum_error).c_str());

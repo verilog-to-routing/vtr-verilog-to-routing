@@ -553,7 +553,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off");
 
     stage_grp.epilog("If none of the stage options are specified, all stages are run.\n"
-                     "Analysis is always run after routing.");
+                     "Analysis is always run after routing, unless the implementation\n"
+                     "is illegal.\n"
+                     "\n"
+                     "If the implementation is illegal analysis can be forced by explicitly\n"
+                     "specifying the --analysis option.");
 
 
     auto& gfx_grp = parser.add_argument_group("graphics options");

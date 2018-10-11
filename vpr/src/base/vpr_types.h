@@ -721,7 +721,8 @@ struct t_netlist_opts {
 enum e_stage_action {
     STAGE_SKIP = 0,
     STAGE_LOAD,
-    STAGE_DO
+    STAGE_DO,
+    STAGE_AUTO
 };
 
 /* Options for packing

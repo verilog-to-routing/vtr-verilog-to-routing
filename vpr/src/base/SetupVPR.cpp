@@ -159,7 +159,7 @@ void SetupVPR(t_options *Options,
         PackerOpts->doPacking = STAGE_DO;
         PlacerOpts->doPlacement = STAGE_DO;
         RouterOpts->doRouting = STAGE_DO;
-        AnalysisOpts->doAnalysis = STAGE_DO;
+        AnalysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
     } else {
         //We run all stages up to the specified stage
         //Note that by checking in reverse order (i.e. analysis to packing)
@@ -177,7 +177,7 @@ void SetupVPR(t_options *Options,
             PackerOpts->doPacking = STAGE_LOAD;
             PlacerOpts->doPlacement = STAGE_LOAD;
             RouterOpts->doRouting = STAGE_DO;
-            AnalysisOpts->doAnalysis = STAGE_DO; //Always run analysis after routing
+            AnalysisOpts->doAnalysis = ((Options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
         }
 
         if(Options->do_placement) {

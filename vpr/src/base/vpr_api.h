@@ -38,13 +38,19 @@
 
 #include "vpr_error.h"
 
-/* Main VPR Operations */
+/* 
+ * Main VPR Operations 
+ */
 void vpr_init(const int argc, const char **argv,
               t_options *options,
               t_vpr_setup *vpr_setup,
               t_arch *arch);
-bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch);
 
+bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch); //Run the VPR CAD flow
+
+/*
+ * Stage operations
+ */
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the packing stage
 bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform packing
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous packing
@@ -58,12 +64,16 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup, const t_arch& arch, int fi
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Perform routing to find the minimum channel width
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fixed_channel_width, std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector_map<ClusterNetId, float *>& net_delay); //Loads a previous routing
 
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, bool implementation_legal); //Perform or skips the analysis stage
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch); //Perform post-implementation analysis
+
+void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch); //Create the device grid
+
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width); //Create routing graph at specified channel width
+
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
-void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch);
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
