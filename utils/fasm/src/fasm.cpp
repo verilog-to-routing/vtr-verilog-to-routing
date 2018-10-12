@@ -72,7 +72,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     }
 
     if(current_blk_has_prefix_) {
-      blk_prefix_ = grid_prefix + "." + pb_type_prefix + ".";
+      blk_prefix_ = grid_prefix + ".";
     }
 }
 
