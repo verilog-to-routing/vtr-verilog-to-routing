@@ -67,9 +67,7 @@ sub expand_user_path;
 sub file_find_and_replace;
 sub xml_find_LUT_Kvalue;
 sub xml_find_mem_size;
-sub find_and_move_newest;
 sub exe_for_platform;
-sub find_and_move_files_for_vpr_stages;
 
 my $temp_dir = "./temp";
 my $diff_exec = "diff";
@@ -719,13 +717,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }
         }
 	} else { # specified channel width
-        find_and_move_files_for_vpr_stages($benchmark_name, {
-                pack => $explicit_pack_vpr_stage, 
-                place => $explicit_place_vpr_stage, 
-                route => $explicit_route_vpr_stage, 
-                analysis => $explicit_analysis_vpr_stage, 
-        });
-
         my $fixed_W_log_file = "vpr.out";
 
         my $rr_graph_out_file = "rr_graph.xml";
@@ -757,13 +748,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         my $do_second_vpr_run = ($verify_rr_graph or $check_route or $check_place);
 
         if ($do_second_vpr_run) {
-            find_and_move_files_for_vpr_stages($benchmark_name, {
-                    pack => $explicit_pack_vpr_stage, 
-                    place => $explicit_place_vpr_stage, 
-                    route => $explicit_route_vpr_stage, 
-                    analysis => $explicit_analysis_vpr_stage, 
-            });
-
             my @second_run_extra_vpr_args = @forwarded_vpr_args;
 
             my $rr_graph_out_file2 = "rr_graph2.xml";
@@ -1268,18 +1252,6 @@ sub xml_find_mem_size {
 	return xml_find_mem_size_recursive($memory_pb);
 }
 
-sub find_and_move_newest {
-    my $benchmark_name = shift();
-    my $file_type = shift();
-
-    my $found_prev = system("$vtr_flow_path/scripts/mover.sh \"*$benchmark_name*/*.$file_type\" ../../../ $temp_dir");
-    if ($found_prev ne 0) {
-        die "$file_type file not found for $benchmark_name\n";
-    }
-
-    return 1; #Found
-}
-
 sub find_postsynthesis_netlist {
     my $file_name = $_;
     if ($file_name =~ /_post_synthesis\.blif/) {
@@ -1368,32 +1340,5 @@ sub calculate_relaxed_W {
     $relaxed_W += $relaxed_W % 2;
 
     return $relaxed_W;
-}
-
-sub find_and_move_files_for_vpr_stages() {
-    my ($benchmark_name, $stages) = @_;
-
-    my @extensions = ();
-
-    my $pack = (defined $stages->{pack} and $stages->{pack});
-    my $place = (defined $stages->{place} and $stages->{place});
-    my $route = (defined $stages->{route} and $stages->{route});
-    my $analysis = (defined $stages->{analysis} and $stages->{analysis});
-
-    if ($place or $route or $analysis) {
-        push(@extensions, "net");
-    }
-
-    if ($route or $analysis) {
-        push(@extensions, "place");
-    }
-
-    if ($analysis) {
-        push(@extensions, "route");
-    }
-
-    foreach my $extension (@extensions) {
-        find_and_move_newest($benchmark_name, $extension);
-    }
 }
 
