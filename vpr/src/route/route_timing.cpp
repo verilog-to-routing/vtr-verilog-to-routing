@@ -493,7 +493,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 //the bounding box size (since larger bounding boxes slow the router down).
                 bb_fac *= BB_SCALE_FACTOR;
 
-                vtr::printf("New BB Factor: %d\n", bb_fac);
                 route_ctx.route_bb = load_route_bb(bb_fac);
             }
 
