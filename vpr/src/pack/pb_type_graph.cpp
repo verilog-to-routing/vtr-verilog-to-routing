@@ -610,7 +610,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 	t_token * tokens;
 	int num_tokens, curr_set;
 	int i;
-	bool in_squig_bracket, success;
+	bool in_squig_bracket, success = false;
 
 	t_pb_graph_pin ***pb_graph_pins;
 
