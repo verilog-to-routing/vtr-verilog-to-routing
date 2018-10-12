@@ -227,8 +227,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
     //balancing other metrics (timing, wirelength, run-time etc.)
     RouterCongestionMode router_congestion_mode = RouterCongestionMode::NORMAL;
 
-    RouterStats router_stats;
-
     //Initialize and properly size the lookups for profiling
     profiling::profiling_initialization(get_max_pins_per_net());
 
@@ -299,6 +297,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
     timing_driven_route_structs route_structs;
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         vtr::Timer iteration_timer;
+
+        RouterStats router_stats;
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
