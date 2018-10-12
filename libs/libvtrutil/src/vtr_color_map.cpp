@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstddef>
 #include "vtr_color_map.h"
 #include "vtr_assert.h"
 

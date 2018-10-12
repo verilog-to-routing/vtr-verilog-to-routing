@@ -1,7 +1,5 @@
 #ifndef VTR_ASSERT_H
 #define VTR_ASSERT_H
-#include <cstdio> //fprintf, stderr
-#include <cstdlib> //abort
 /*
  * The header defines useful assertion macros for VTR projects.
  *
@@ -10,7 +8,7 @@
  *      VTR_ASSERT       - medium overhead assertions that are usually be enabled
  *      VTR_ASSERT_SAFE  - high overhead assertions typically enabled only for debugging
  *      VTR_ASSERT_DEBUG - very high overhead assertions typically enabled only for extreme debugging
- * Each of the above assertions also have a *_MSG variants (e.g. VTR_ASSERT_MSG(expr, msg)
+ * Each of the above assertions also have a *_MSG variants (e.g. VTR_ASSERT_MSG(expr, msg))
  * which takes an additional argument specifying additional message text to be shown.
  * By convention the message should state the condition *being checked* (and not the failure condition),
  * since that the condition failed is obvious from the assertion failure itself.
@@ -22,7 +20,7 @@
  *      VTR_ASSERT_LEVEL == 2: VTR_ASSERT_OPT, VTR_ASSERT enabled
  *      VTR_ASSERT_LEVEL == 1: VTR_ASSERT_OPT enabled
  *      VTR_ASSERT_LEVEL == 0: No assertion checking enabled
- * Note that an assertion levels beyond 3 are currently treated the same as level 3
+ * Note that an assertion levels beyond 4 are currently treated the same as level 4
  */
 
 //Set a default assertion level if none is specified
@@ -86,7 +84,7 @@
 // macro can be always be followed by a ';'
 #define VTR_ASSERT_IMPL(expr, msg) do { \
         if(!(expr)) { \
-            vtr::Assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); \
+            vtr::assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); \
         } \
     } while(false)
 
@@ -120,23 +118,8 @@
 # endif
 #endif
 
-namespace vtr {
-    class Assert {
-
-        public:
-            static void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg) {
-                fprintf(stderr, "%s:%d", file, line);
-                if(function) {
-                    fprintf(stderr, " %s:", function);
-                }
-                fprintf(stderr, " Assertion '%s' failed", expr);
-                if(msg) {
-                    fprintf(stderr, " (%s)", msg);
-                }
-                fprintf(stderr, ".\n");
-                std::abort();
-            }
-    };
-} //namespace
+namespace vtr { namespace assert {
+    void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
+}} //namespace
 
 #endif //VTR_ASSERT_H
