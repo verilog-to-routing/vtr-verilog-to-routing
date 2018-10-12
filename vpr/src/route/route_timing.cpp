@@ -437,7 +437,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
          * Prepare for the next iteration
          */
 
-        num_net_bounding_boxes_updated = dynamic_update_bounding_boxes();
+        if (router_opts.route_bb_update == e_route_bb_update::DYNAMIC) {
+            num_net_bounding_boxes_updated = dynamic_update_bounding_boxes();
+        }
 
         if (itry >= high_effort_congestion_mode_iteration_threshold) {
             //We are approaching the maximum number of routing iterations,

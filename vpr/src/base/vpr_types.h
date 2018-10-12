@@ -98,6 +98,12 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+
+enum class e_route_bb_update {
+    STATIC, //Router net bounding boxes are not updated
+    DYNAMIC //Rotuer net bounding boxes are updated
+};
+
 enum class e_const_gen_inference {
     NONE, //No constant generator inference
     COMB, //Only combinational constant generator inference
@@ -920,6 +926,7 @@ struct t_router_opts {
 	enum e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
+    e_route_bb_update route_bb_update;
 };
 
 struct t_analysis_opts {

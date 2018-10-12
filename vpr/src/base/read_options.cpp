@@ -486,6 +486,37 @@ struct ParseIncrRerouteDelayRipup {
     }
 };
 
+struct ParseRouteBBUpdate {
+    ConvertedValue<e_route_bb_update> from_str(std::string str) {
+        ConvertedValue<e_route_bb_update> conv_value;
+        if      (str == "static") conv_value.set_value(e_route_bb_update::STATIC);
+        else if (str == "dynamic") conv_value.set_value(e_route_bb_update::DYNAMIC);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_route_bb_update (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_route_bb_update val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_route_bb_update::STATIC) conv_value.set_value("static");
+        else {
+            VTR_ASSERT(val == e_route_bb_update::DYNAMIC);
+            conv_value.set_value("dynamic");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"static", "dynamic"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -1066,6 +1097,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Controls when the router enters a high effort mode to resolve lingering routing congestion."
                   " Value is the fraction of max_router_iterations beyond which the routing is deemed congested.")
             .default_value("1.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_route_bb_update,ParseRouteBBUpdate>(args.route_bb_update, "--route_bb_update")
+            .help("Controls how the router's net bounding boxes are updated:\n"
+                  " * static : bounding boxes are never updated\n"
+                  " * dynamic: bounding boxes are updated dynamically as routing progresses\n")
+            .default_value("dynamic")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
