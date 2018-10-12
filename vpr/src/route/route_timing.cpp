@@ -196,7 +196,7 @@ static WirelengthInfo calculate_wirelength_info();
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
-static void print_route_status(int itry, double elapsed_sec, int bb_fac, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
@@ -204,6 +204,9 @@ static void pretty_print_uint(const char* prefix, size_t value, int num_digits, 
 static int round_up(float x);
 
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
+
+static size_t dynamic_update_bounding_boxes();
+static t_bb calc_current_bb(const t_trace* head);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
@@ -295,8 +298,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
      */
     print_route_status_header();
     timing_driven_route_structs route_structs;
+    float prev_iter_cumm_time = 0;
+    vtr::Timer iteration_timer;
+    int num_net_bounding_boxes_updated = 0;
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
-        vtr::Timer iteration_timer;
 
         RouterStats router_stats;
 
@@ -382,8 +387,13 @@ bool try_timing_driven_route(t_router_opts router_opts,
             VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_delay));
         }
 
+        float iter_cumm_time = iteration_timer.elapsed_sec();
+        float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
+
         //Output progress
-        print_route_status(itry, iteration_timer.elapsed_sec(), bb_fac, router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, iter_elapsed_time, num_net_bounding_boxes_updated, router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+
+        prev_iter_cumm_time = iter_cumm_time;
 
         //Update graphics
         if (itry == 1) {
@@ -426,6 +436,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
         /*
          * Prepare for the next iteration
          */
+
+        num_net_bounding_boxes_updated = dynamic_update_bounding_boxes();
 
         if (itry >= high_effort_congestion_mode_iteration_threshold) {
             //We are approaching the maximum number of routing iterations,
@@ -2058,13 +2070,13 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf("---- ------ --- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    vtr::printf("Iter   Time  BB    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    vtr::printf("      (sec) Fac    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    vtr::printf("---- ------ --- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    vtr::printf("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    vtr::printf("Iter   Time  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    vtr::printf("      (sec) Updt   push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    vtr::printf("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec, int bb_fac, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
@@ -2075,8 +2087,8 @@ static void print_route_status(int itry, double elapsed_sec, int bb_fac, const R
     //Elapsed Time
     vtr::printf(" %6.1f", elapsed_sec);
 
-    //Bounding box factor
-    vtr::printf(" %3d", bb_fac);
+    //Number of bounding boxes updated
+    vtr::printf(" %4d", num_bb_updated);
 
     //Heap push/pop
     constexpr int HEAP_OP_DIGITS = 7;
@@ -2176,4 +2188,138 @@ static std::string describe_unrouteable_connection(const int source_node, const 
                                       rr_node_arch_name(sink_node).c_str(), describe_rr_node(sink_node).c_str());
 
     return msg;
+}
+
+//In heavily congested designs a static bounding box (BB) can 
+//become problematic for routability (it effectively enforces a 
+//hard blockage restricting where a net can route).
+//
+//For instance, the router will try to route non-critical connections 
+//away from congested regions, but may end up hitting the edge of the
+//bounding box. Limiting how far out-of-the-way it can be routed, and
+//preventing congestion from resolving.
+//
+//To alleviate this, we dynamically expand net bounding boxes if the net's
+//*current* routing uses RR nodes 'close' to the edge of it's bounding box.
+//
+//The result is that connections trying to move out of the way and hitting
+//their BB will have their bounding boxes will expand slowly in that direction.
+//This helps spread out regions of heavy congestion (over several routing
+//iterations).
+//
+//By growing the BBs slowly and only as needed we minimize the size of the BBs.
+//This helps keep the router's graph search fast.
+//
+//Typically, only a small minority of nets (typically > 10%) have their BBs updated
+//each routing iteration.
+static size_t dynamic_update_bounding_boxes() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+    auto& grid = device_ctx.grid;
+
+    //Controls how close a net's routing needs to be to it's bounding box
+    //before the bounding box is expanded.
+    //
+    //A value of zero indicates that the routing needs to be at the bounding box
+    //edge
+    constexpr int DYNAMIC_BB_DELTA_THRESHOLD = 0;
+
+    //Walk through each net, calculating the bounding box of its current routing, 
+    //and then increase the router's bounding box if the two are close together
+
+    int grid_xmax = grid.width() - 1;
+    int grid_ymax = grid.height() - 1;
+
+    size_t num_bb_updated = 0;
+
+    for (ClusterNetId net : clb_nlist.nets()) {
+        t_trace* routing_head = route_ctx.trace_head[net];
+
+        if (routing_head == nullptr) continue; //Skip if no routing
+
+        //We do not adjust the boundig boxes of high fanout nets, since they
+        //use different bounding boxes based on the target location.
+        //
+        //This ensures that the delta values calculated below are always non-negative
+        if (clb_nlist.net_sinks(net).size() > HIGH_FANOUT_NET_LIM) continue;
+
+        t_bb curr_bb = calc_current_bb(routing_head);
+
+        t_bb& router_bb = route_ctx.route_bb[net];
+
+        //Calculate the distances between the net's used RR nodes and
+        //the router's bounding box
+        int delta_xmin = curr_bb.xmin - router_bb.xmin;
+        int delta_xmax = router_bb.xmax - curr_bb.xmax;
+        int delta_ymin = curr_bb.ymin - router_bb.ymin;
+        int delta_ymax = router_bb.ymax - curr_bb.ymax;
+
+        VTR_ASSERT(delta_xmin >= 0);
+        VTR_ASSERT(delta_ymin >= 0);
+        VTR_ASSERT(delta_xmax >= 0);
+        VTR_ASSERT(delta_ymax >= 0);
+
+        //Expand each dimension by one if within DYNAMIC_BB_DELTA_THRESHOLD threshold
+        bool updated_bb = false;
+        if (delta_xmin <= DYNAMIC_BB_DELTA_THRESHOLD && router_bb.xmin > 0) {
+            --router_bb.xmin;
+            updated_bb = true;
+        }
+
+        if (delta_ymin <= DYNAMIC_BB_DELTA_THRESHOLD && router_bb.ymin > 0) {
+            --router_bb.ymin = std::max(0, router_bb.ymin - 1);
+            updated_bb = true;
+        }
+
+        if (delta_xmax <= DYNAMIC_BB_DELTA_THRESHOLD && router_bb.xmax < grid_xmax) {
+            ++router_bb.xmax;
+            updated_bb = true;
+        }
+
+        if (delta_ymax <= DYNAMIC_BB_DELTA_THRESHOLD && router_bb.ymax < grid_ymax) {
+            ++router_bb.ymax;
+            updated_bb = true;
+        }
+
+        if (updated_bb) {
+            ++num_bb_updated;
+            //vtr::printf("Expanded net %6zu router BB to (%d,%d)x(%d,%d) based on net RR node BB (%d,%d)x(%d,%d)\n", size_t(net),
+                        //router_bb.xmin, router_bb.ymin, router_bb.xmax, router_bb.ymax,
+                        //curr_bb.xmin, curr_bb.ymin, curr_bb.xmax, curr_bb.ymax);
+        }
+    }
+    return num_bb_updated;
+}
+
+//Returns the bounding box of a net's used routing resources
+static t_bb calc_current_bb(const t_trace* head) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
+
+    t_bb bb;
+    bb.xmin = grid.width() - 1;
+    bb.ymin = grid.height() - 1;
+    bb.xmax = 0;
+    bb.ymax = 0;
+
+    
+    for (const t_trace* elem = head; elem != nullptr; elem = elem->next) {
+        const t_rr_node& node = device_ctx.rr_nodes[elem->index];
+        //The router interprets RR nodes which cross the boundary as being
+        //'within' of the BB. Only thos which are *strictly* out side the
+        //box are exluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
+        //and xlow/ylow for xmax/ymax calculations
+        bb.xmin = std::min<int>(bb.xmin, node.xhigh());
+        bb.ymin = std::min<int>(bb.ymin, node.yhigh());
+        bb.xmax = std::max<int>(bb.xmax, node.xlow());
+        bb.ymax = std::max<int>(bb.ymax, node.ylow());
+    }
+
+    VTR_ASSERT(bb.xmin <= bb.xmax);
+    VTR_ASSERT(bb.ymin <= bb.ymax);
+
+    return bb;
 }
