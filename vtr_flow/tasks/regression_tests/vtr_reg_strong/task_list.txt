@@ -35,3 +35,4 @@ regression_tests/vtr_reg_strong/strong_bidir
 regression_tests/vtr_reg_strong/strong_detailed_timing
 regression_tests/vtr_reg_strong/strong_target_pin_util
 regression_tests/vtr_reg_strong/strong_clock_modeling
+regression_tests/vtr_reg_strong/strong_unroute_analysis
