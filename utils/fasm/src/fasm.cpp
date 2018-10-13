@@ -363,11 +363,15 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "LUT port unexpected size is %d", ports.size());
       }
 
-      VTR_ASSERT(truth_table.size() == 1);
-      VTR_ASSERT(truth_table[0].size() == 1);
-
       Lut lut(num_inputs);
-      lut.SetConstant(truth_table[0][0]);
+      if(truth_table.size() == 1) {
+        VTR_ASSERT(truth_table[0].size() == 1);
+        lut.SetConstant(truth_table[0][0]);
+      } else if(truth_table.size() == 0) {
+        lut.SetConstant(vtr::LogicValue::FALSE);
+      } else {
+        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "LUT truth table unexpected size is %d", truth_table.size());
+      }
 
       return lut.table();
     }
