@@ -66,8 +66,8 @@ void ClockRib::set_metal_layer(MetalLayer metal_layer) {
 
 void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
 
-    if(end_x < start_x) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire cannot have negtive length. "
+    if(end_x <= start_x) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire cannot have negtive or zero length. "
                                    "Wire end: %d < wire start: %d\n", end_x, start_x);
     }
 
@@ -132,15 +132,30 @@ void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             unsigned x_end = x_start + x_chan_wire.length;
 
             // Adjust for boundry conditions
-            if(x_start == 0) {
-                x_start = 1; // CHANX wires left boundry
+            int x_offset = 0;
+            if((x_start == 0) || // CHANX wires left boundry
+               (x_start + repeat.x == x_end)) // Avoid overlap
+            {
+                x_offset = 1;
             }
             if(x_end > grid.width() - 2) {
                 x_end = grid.width() - 2; // CHANX wires right boundry
             }
 
             // Dont create rib if drive point is not reachable
-            if(drive_x > grid.width() - 2) {
+            if(drive_x > grid.width()-2 || drive_x >= x_end || drive_x <= (x_start+x_offset)) {
+                vtr::printf_warning(__FILE__, __LINE__, "A rib part of clock network '%s' was not"
+                    " created becuase the drive point is not reachable. "
+                    "This can lead to an unroutable architecture.\n", clock_name_.c_str());
+                continue;
+            }
+
+            // Dont create rib if wire segment is too small
+            if((x_start + x_offset) >= x_end) {
+                vtr::printf_warning(__FILE__, __LINE__, "Rib start '%d' and end '%d' values are "
+                        "not sucessive for clock network '%s' due to not meeting boundry conditions."
+                        " This can lead to an unroutable architecture.\n",
+                        (x_start + x_offset), x_end, clock_name_.c_str());
                 continue;
             }
 
@@ -156,7 +171,7 @@ void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
 
             // create rib wire to the right and left of the drive point 
             auto left_node_idx = create_chanx_wire(
-                                    x_start,
+                                    x_start + x_offset,
                                     drive_x-1,
                                     y,
                                     ptc_num,
@@ -169,7 +184,13 @@ void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
                                     ptc_num,
                                     INC_DIRECTION,
                                     rr_nodes);
-            record_tap_locations(x_start, x_end, y, left_node_idx, right_node_idx, clock_graph);
+            record_tap_locations(
+                x_start + x_offset,
+                x_end,
+                y,
+                left_node_idx,
+                right_node_idx,
+                clock_graph);
 
             // connect drive point to each half rib using a directed switch
             rr_nodes[drive_node_idx].add_edge(left_node_idx, drive.switch_idx);
@@ -244,8 +265,8 @@ void ClockSpine::set_metal_layer(MetalLayer metal_layer) {
 
 void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
 
-    if(end_y < start_y) {
-        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire cannot have negtive length. "
+    if(end_y <= start_y) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Clock Network wire cannot have negtive or zero length. "
                                    "Wire end: %d < wire start: %d\n", end_y, start_y);
     }
 
@@ -310,15 +331,30 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             unsigned y_end = y_start + y_chan_wire.length;
 
             // Adjust for boundry conditions
-            if(y_start == 0) {
-                y_start = 1; // CHANY wires bottom boundry
+            unsigned y_offset = 0;
+            if((y_start == 0) || // CHANY wires bottom boundry
+               (y_start + repeat.y == y_end)) // Avoid overlap
+            {
+                y_offset = 1;
             }
             if (y_end > grid.height() - 2) {
                 y_end = grid.height() - 2; // CHANY wires top boundry
             }
 
-            // Dont create spines if drive point is not reachable
-            if(drive_y > grid.width() - 2) {
+            // Dont create spine if drive point is not reachable
+            if(drive_y > grid.width()-2 || drive_y >= y_end || drive_y <= (y_start+y_offset)) {
+                vtr::printf_warning(__FILE__, __LINE__, "A spine part of clock network '%s' was not"
+                    " created becuase the drive point is not reachable. "
+                    "This can lead to an unroutable architecture.\n", clock_name_);
+                continue;
+            }
+
+            // Dont create spine if wire segment is too small
+            if((y_start + y_offset) >= y_end) {
+                vtr::printf_warning(__FILE__, __LINE__, "Spine start '%d' and end '%d' values are "
+                        "not sucessive for clock network '%s' due to not meeting boundry conditions."
+                        " This can lead to an unroutable architecture.\n",
+                        (y_start + y_offset), y_end, clock_name_);
                 continue;
             }
 
@@ -334,7 +370,7 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
 
             // create spine wire to the right and left of the drive point
             auto left_node_idx = create_chany_wire(
-                                    y_start,
+                                    y_start + y_offset,
                                     drive_y-1,
                                     x,
                                     ptc_num,
@@ -348,11 +384,18 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
                                     INC_DIRECTION,
                                     rr_nodes);
 
-            record_tap_locations(y_start, y_end, x, left_node_idx, right_node_idx, clock_graph);
+            record_tap_locations(
+                y_start + y_offset,
+                y_end,
+                x,
+                left_node_idx,
+                right_node_idx,
+                clock_graph);
 
             // connect drive point to each half spine using a directed switch
             rr_nodes[drive_node_idx].add_edge(left_node_idx, drive.switch_idx);
             rr_nodes[drive_node_idx].add_edge(right_node_idx, drive.switch_idx);
+
         }
     }
 }
