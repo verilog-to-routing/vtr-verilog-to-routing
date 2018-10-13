@@ -205,6 +205,8 @@ static int round_up(float x);
 
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
 
+static bool is_high_fanout(int fanout);
+
 static size_t dynamic_update_bounding_boxes();
 static t_bb calc_current_bb(const t_trace* head);
 
@@ -1221,7 +1223,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
     int target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
     int target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
 
-    bool high_fanout = num_sinks >= HIGH_FANOUT_NET_LIM;
+    bool high_fanout = is_high_fanout(num_sinks);
 
     int num_edges = device_ctx.rr_nodes[inode].num_edges();
     for (int iconn = 0; iconn < num_edges; iconn++) {
@@ -1645,7 +1647,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
     target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
     target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
 
-    if (num_sinks < HIGH_FANOUT_NET_LIM) {
+    if (!is_high_fanout(num_sinks)) {
         /* This algorithm only applies to high fanout nets */
         return 1;
     }
@@ -2191,6 +2193,11 @@ static std::string describe_unrouteable_connection(const int source_node, const 
     return msg;
 }
 
+//Returns true if the specified net fanout is classified as high fanout
+static bool is_high_fanout(int fanout) {
+    return (fanout >= HIGH_FANOUT_NET_LIM);
+}
+
 //In heavily congested designs a static bounding box (BB) can 
 //become problematic for routability (it effectively enforces a 
 //hard blockage restricting where a net can route).
@@ -2245,7 +2252,7 @@ static size_t dynamic_update_bounding_boxes() {
         //use different bounding boxes based on the target location.
         //
         //This ensures that the delta values calculated below are always non-negative
-        if (clb_nlist.net_sinks(net).size() > HIGH_FANOUT_NET_LIM) continue;
+        if (is_high_fanout(clb_nlist.net_sinks(net).size())) continue;
 
         t_bb curr_bb = calc_current_bb(routing_head);
 
