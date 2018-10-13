@@ -21,6 +21,66 @@
 
 #include "fasm.h"
 
+class Lut {
+ public:
+  Lut(size_t num_inputs) : num_inputs_(num_inputs), table_(2 << num_inputs, vtr::LogicValue::DONT_CARE) {}
+
+  // SetOutput sets the lut to output value when the inputs match.
+  //
+  // By default the output from the LUT is always false.
+  void SetOutput(const std::vector<vtr::LogicValue> &inputs, vtr::LogicValue value) {
+    VTR_ASSERT(inputs.size() == num_inputs_);
+    std::vector<size_t> dont_care_inputs;
+    dont_care_inputs.reserve(num_inputs_);
+
+    for(size_t address = 0; address < table_.size(); ++address) {
+      bool match = true;
+      for(size_t input = 0; input < inputs.size(); ++input) {
+        if(inputs[input] == vtr::LogicValue::TRUE && (address & (1 << input)) == 0) {
+          match = false;
+          break;
+        } else if(inputs[input] == vtr::LogicValue::FALSE && (address & (1 << input)) != 0) {
+          match = false;
+          break;
+        }
+      }
+
+      if(match) {
+        VTR_ASSERT(table_[address] == vtr::LogicValue::DONT_CARE || table_[address] == value);
+        table_[address] = value;
+      }
+    }
+  }
+
+  void CreateWire(size_t input_pin) {
+    std::vector<vtr::LogicValue> inputs(num_inputs_, vtr::LogicValue::DONT_CARE);
+    inputs[input_pin] = vtr::LogicValue::FALSE;
+    SetOutput(inputs, vtr::LogicValue::FALSE);
+    inputs[input_pin] = vtr::LogicValue::TRUE;
+    SetOutput(inputs, vtr::LogicValue::TRUE);
+  }
+
+  void SetConstant(vtr::LogicValue value) {
+    std::vector<vtr::LogicValue> inputs(num_inputs_, vtr::LogicValue::DONT_CARE);
+    SetOutput(inputs, value);
+  }
+
+  const LogicVec & table() {
+    // Make sure the entire table is defined.
+    for(size_t address = 0; address < table_.size(); ++address) {
+      if(table_[address] == vtr::LogicValue::DONT_CARE) {
+        table_[address] = vtr::LogicValue::FALSE;
+      }
+    }
+
+    return table_;
+  }
+
+
+ private:
+  LogicVec table_;
+  size_t num_inputs_;
+};
 
 FasmWriterVisitor::FasmWriterVisitor(std::ostream& f) : os_(f) {}
 
@@ -246,26 +306,9 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
         if(io_pin != nullptr) {
           auto& route = pb_route[io_pin->pin_count_in_cluster];
 
-          AtomNetlist::TruthTable truth_table(1);
-          std::vector<int> permute(num_inputs);
-          truth_table[0].push_back(vtr::LogicValue::TRUE);
-          for(int i = 0; i < num_inputs-1; ++i) {
-            truth_table[0].push_back(vtr::LogicValue::FALSE);
-          }
-          truth_table[0].push_back(vtr::LogicValue::TRUE);
-
-          permute[0] = route.pb_graph_pin->pin_number;
-          int permute_index = 1;
-          for(int i = 0; i < num_inputs-1; ++i) {
-            if(i == route.pb_graph_pin->pin_number) {
-              continue;
-            }
-
-            permute[permute_index++] = i;
-          }
-
-          const auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permute);
-          LogicVec lut_mask = truth_table_to_lut_mask(truth_table, num_inputs);
+          Lut lut(num_inputs);
+          lut.CreateWire(route.pb_graph_pin->pin_number);
+          LogicVec lut_mask = lut.table();
           emit_lut(lut_mode_, lut_mask, pb_graph_node);
         }
     }
@@ -312,19 +355,27 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
     const auto& truth_table = atom_ctx.nlist.block_truth_table(block_id);
     auto ports = atom_ctx.nlist.block_input_ports(atom_ctx.lookup.pb_atom(atom_pb));
 
+    const int num_inputs = atom_pb->pb_graph_node->total_input_pins();
+    const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
+
     if(ports.size() != 1) {
       if(ports.size() != 0) {
         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "LUT port unexpected size is %d", ports.size());
       }
 
-      return truth_table_to_lut_mask(truth_table, 0);
+      VTR_ASSERT(truth_table.size() == 1);
+      VTR_ASSERT(truth_table[0].size() == 1);
+
+      Lut lut(num_inputs);
+      lut.SetConstant(truth_table[0][0]);
+
+      return lut.table();
     }
 
-    const int num_inputs = atom_pb->pb_graph_node->total_input_pins();
-    const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
     VTR_ASSERT(gnode->num_input_ports == 1);
     VTR_ASSERT(gnode->num_input_pins[0] == num_inputs);
-    std::vector<int> permutation(num_inputs, OPEN);
+    std::vector<vtr::LogicValue> inputs(num_inputs, vtr::LogicValue::DONT_CARE);
+    std::vector<int> permutation(num_inputs, -1);
 
     AtomPortId port_id = *ports.begin();
 
@@ -348,9 +399,23 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
         }
     }
 
-    const auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permutation);
-    LogicVec lut_mask = truth_table_to_lut_mask(permuted_truth_table, num_inputs);
-    return lut_mask;
+    // truth_table a vector of truth table rows.  The last value in each row is
+    // the output value, and the other values are the input values.  Open pins
+    // are don't cares, and should be -1 in the permutation table.
+    Lut lut(num_inputs);
+    for(const auto& row : truth_table) {
+        std::fill(std::begin(inputs), std::end(inputs), vtr::LogicValue::DONT_CARE);
+        for(size_t i = 0; i < row.size() - 1; i++) {
+            int permuted_idx = permutation[i];
+            if(permuted_idx != -1) {
+              inputs[permuted_idx] = row[i];
+            }
+        }
+
+        lut.SetOutput(inputs, row[row.size() - 1]);
+    }
+
+    return lut.table();
 }
 
 int FasmWriterVisitor::find_lut_idx(const t_pb_graph_node* pb_graph_node) const {
