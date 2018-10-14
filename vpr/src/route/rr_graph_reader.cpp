@@ -75,7 +75,6 @@ void load_rr_file(const t_graph_type graph_type,
         const std::vector<t_segment_inf>& segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
-        int *num_rr_switches,
         const char* read_rr_graph_name) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
@@ -158,13 +157,12 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_single_child(rr_graph, "switches", loc_data);
 
         int numSwitches = count_children(next_component, "switch", loc_data);
-        *num_rr_switches = numSwitches;
-        device_ctx.rr_switch_inf = new t_rr_switch_inf[numSwitches];
+        device_ctx.rr_switch_inf.resize(numSwitches);
 
         process_switches(next_component, loc_data);
 
         next_component = get_single_child(rr_graph, "rr_edges", loc_data);
-        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
+        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, numSwitches);
 
         //Partition the rr graph edges for efficient access to configurable/non-configurable
         //edge subsets. Must be done after RR switches have been allocated
@@ -187,7 +185,7 @@ void load_rr_file(const t_graph_type graph_type,
             dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
         }
 
-        check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
+        check_rr_graph(graph_type, grid, device_ctx.block_types);
 
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(segment_inf.size());
@@ -202,7 +200,7 @@ void load_rr_file(const t_graph_type graph_type,
 
 /* Reads in the switch information and adds it to device_ctx.rr_switch_inf as specified*/
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node Switch, SwitchSubnode;
 
     Switch = get_first_child(parent, "switch", loc_data);

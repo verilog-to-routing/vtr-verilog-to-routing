@@ -22,7 +22,7 @@ static void check_rr_edge(int from_node, int from_edge, int to_node);
 
 void check_rr_graph(const t_graph_type graph_type,
         const DeviceGrid& grid,
-        const int num_rr_switches, const t_type_ptr types) {
+        const t_type_ptr types) {
 
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
@@ -33,6 +33,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
     auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
     auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
+    const int num_rr_switches = device_ctx.rr_switch_inf.size();
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 

@@ -40,7 +40,6 @@ void create_rr_graph(
         const enum e_clock_modeling clock_modeling,
         const t_direct_inf *directs,
         const int num_directs,
-        int *num_rr_switches,
         int *Warnings);
 
 void free_rr_graph();

@@ -53,7 +53,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, int num_switches) {
+void check_route(enum e_route_type route_type) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -72,7 +72,9 @@ void check_route(enum e_route_type route_type, int num_switches) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	vtr::printf_info("\n");
+    const int num_switches = device_ctx.rr_switch_inf.size();
+
+    vtr::printf_info("\n");
 	vtr::printf_info("Checking to ensure routing is legal...\n");
 
 	/* Recompute the occupancy from scratch and check for overuse of routing *

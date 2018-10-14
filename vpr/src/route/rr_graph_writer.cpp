@@ -149,7 +149,7 @@ void write_rr_switches(fstream &fp) {
     auto& device_ctx = g_vpr_ctx.device();
     fp << "\t<switches>" << endl;
 
-    for (int iSwitch = 0; iSwitch < device_ctx.num_rr_switches; iSwitch++) {
+    for (size_t iSwitch = 0; iSwitch < device_ctx.rr_switch_inf.size(); iSwitch++) {
         t_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iSwitch];
 
         fp << "\t\t<switch id=\"" << iSwitch;

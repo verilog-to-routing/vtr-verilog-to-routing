@@ -189,14 +189,14 @@ static void build_rr_chan(
         const int wire_to_ipin_switch,
         const enum e_directionality directionality);
 
-static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
+static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
                                         const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch);
 
 static void remap_rr_node_switch_indices(map<int, int> *switch_fanin);
 
 static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, map<int, int> *switch_fanin);
 
-static int alloc_rr_switch_inf(map<int, int> *switch_fanin);
+static void alloc_rr_switch_inf(map<int, int> *switch_fanin);
 
 static void rr_graph_externals(
         const std::vector<t_segment_inf>& segment_inf, int max_chan_width,
@@ -247,7 +247,6 @@ static void build_rr_graph(
         const t_direct_inf *directs,
         const int num_directs,
         int *wire_to_rr_ipin_switch,
-        int *num_rr_switches,
         int *Warnings);
 
 /******************* Subroutine definitions *******************************/
@@ -267,7 +266,6 @@ void create_rr_graph(
         const enum e_clock_modeling clock_modeling,
         const t_direct_inf *directs,
         const int num_directs,
-        int *num_rr_switches,
         int *Warnings) {
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
@@ -278,7 +276,6 @@ void create_rr_graph(
                 segment_inf,
                 base_cost_type,
                 &det_routing_arch->wire_to_rr_ipin_switch,
-                num_rr_switches,
                 det_routing_arch->read_rr_graph_filename.c_str());
     } else {
         build_rr_graph(
@@ -303,7 +300,6 @@ void create_rr_graph(
                 clock_modeling,
                 directs, num_directs,
                 &det_routing_arch->wire_to_rr_ipin_switch,
-                num_rr_switches,
                 Warnings);
     }
 
@@ -337,7 +333,6 @@ static void build_rr_graph(
         const t_direct_inf *directs,
         const int num_directs,
         int *wire_to_rr_ipin_switch,
-        int *num_rr_switches,
         int *Warnings) {
 
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
@@ -604,7 +599,7 @@ static void build_rr_graph(
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
        based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-    (*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     //Partition the rr graph edges for efficient access to configurable/non-configurable
     //edge subsets. Must be done after RR switches have been allocated
@@ -619,7 +614,7 @@ static void build_rr_graph(
     }
 
 
-    check_rr_graph(graph_type, grid, *num_rr_switches, types);
+    check_rr_graph(graph_type, grid, types);
 
 #ifdef USE_MAP_LOOKAHEAD
     compute_router_lookahead(num_seg_types);
@@ -674,7 +669,7 @@ static void build_rr_graph(
    and count how many different fan-ins exist for each arch switch.
    Then we create these rr switches and update the switch indices
    of rr_nodes to index into the rr_switch_inf array. */
-static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
+static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
                                         const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
        each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
@@ -686,7 +681,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
 
     /* Determine what the different fan-ins are for each arch switch, and also
        how many entries the rr_switch_inf array should have */
-    int num_rr_switches = alloc_rr_switch_inf(switch_fanin);
+    alloc_rr_switch_inf(switch_fanin);
 
     /* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf
        array each version of its fanin has been mapped to */
@@ -717,13 +712,11 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
     }
 
     delete[] switch_fanin;
-
-    return num_rr_switches;
 }
 
 /* Allocates space for the global device_ctx.rr_switch_inf variable and returns the
    number of rr switches that were allocated */
-static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
+static void alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int num_rr_switches = 0;
@@ -759,9 +752,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     delete[] inward_switch_inf;
 
     /* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
-    device_ctx.rr_switch_inf = new t_rr_switch_inf[num_rr_switches];
-
-    return num_rr_switches;
+    device_ctx.rr_switch_inf.resize(num_rr_switches);
 }
 
 /* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what
@@ -1242,10 +1233,6 @@ void free_rr_graph() {
     device_ctx.rr_nodes.clear();
 
     device_ctx.rr_node_indices.clear();
-
-    delete[] device_ctx.rr_switch_inf;
-    device_ctx.rr_switch_inf = nullptr;
-    device_ctx.num_rr_switches = 0;
 
     delete[] device_ctx.switch_fanin_remap;
     device_ctx.switch_fanin_remap = nullptr;

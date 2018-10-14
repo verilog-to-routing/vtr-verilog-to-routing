@@ -371,7 +371,6 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 			router_opts.trim_obs_channels,
             router_opts.clock_modeling,
 			arch->Directs, arch->num_directs,
-			&device_ctx.num_rr_switches,
 			&warnings);
 
     init_draw_coords(final);

@@ -657,8 +657,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            auto& device_ctx = g_vpr_ctx.device();
-            check_route(router_opts.route_type, device_ctx.num_rr_switches);
+            check_route(router_opts.route_type);
             get_serial_num();
 
             //Update status
@@ -806,7 +805,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 			router_opts.trim_obs_channels,
             router_opts.clock_modeling,
 			arch.Directs, arch.num_directs,
-			&device_ctx.num_rr_switches,
 			&warnings);
 
     //Initialize drawing, now that we have an RR graph
@@ -1064,7 +1062,6 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, bool implemen
 
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& route_ctx = g_vpr_ctx.routing();
-    auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	//Check the first index to see if a pointer exists
@@ -1090,7 +1087,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
-            device_ctx.num_rr_switches, vpr_setup.Segments,
+            vpr_setup.Segments,
             vpr_setup.RoutingArch.R_minW_nmos,
             vpr_setup.RoutingArch.R_minW_pmos,
             Arch.grid_logic_tile_area,
