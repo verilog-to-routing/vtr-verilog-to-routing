@@ -303,6 +303,7 @@ void create_rr_graph(
 
     if (clock_modeling == DEDICATED_NETWORK) {
         ClockRRGraph::create_and_append_clock_rr_graph(
+            segment_inf,
             det_routing_arch->R_minW_nmos,
             det_routing_arch->R_minW_pmos);
     }
@@ -1538,7 +1539,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
         /* Edge arrays have now been built up.  Do everything else.  */
         L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
-        L_rr_node[node].set_seg_index(cost_index_offset + seg_details[track].index);
+        L_rr_node[node].set_seg_index(seg_details[track].index);
         L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {

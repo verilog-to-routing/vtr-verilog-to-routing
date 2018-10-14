@@ -82,6 +82,7 @@ class ClockRRGraph {
         /* Creates the routing resourse (rr) graph of the clock network and appends it to the
            existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
         static void create_and_append_clock_rr_graph(
+                std::vector<t_segment_inf>& segment_inf,
                 const float R_minW_nmos,
                 const float R_minW_pmos);
 

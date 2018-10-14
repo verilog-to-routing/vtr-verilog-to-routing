@@ -5,12 +5,14 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_area.h"
+#include "rr_graph_util.h"
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vpr_error.h"
 
 void ClockRRGraph::create_and_append_clock_rr_graph(
+        std::vector<t_segment_inf>& segment_inf,
         const float R_minW_nmos,
         const float R_minW_pmos)
 {
@@ -27,6 +29,8 @@ void ClockRRGraph::create_and_append_clock_rr_graph(
     clock_graph.create_clock_networks_wires(clock_networks);
     clock_graph.create_clock_networks_switches(clock_routing);
 
+    // Reset fanin to account for newly added clock rr_nodes
+    init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
 
     clock_graph.add_rr_switches_and_map_to_nodes(clock_nodes_start_idx, R_minW_nmos, R_minW_pmos);
 
@@ -34,8 +38,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph(
     //  edge subsets. Must be done after RR switches have been allocated"
     partition_rr_graph_edges(device_ctx);
 
-    // Reset fanin to account for newly added clock rr_nodes
-    init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
+    //set_rr_node_cost_idx_based_on_seg_idx(segment_inf.size());
 
     float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
