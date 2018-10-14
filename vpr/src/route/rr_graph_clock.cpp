@@ -4,13 +4,16 @@
 #include "globals.h"
 #include "rr_graph.h"
 #include "rr_graph2.h"
+#include "rr_graph_area.h"
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vpr_error.h"
 
-void ClockRRGraph::create_and_append_clock_rr_graph() {
-
+void ClockRRGraph::create_and_append_clock_rr_graph(
+        const float R_minW_nmos,
+        const float R_minW_pmos)
+{
     vtr::printf_info("Starting clock network routing resource graph generation...\n");
     clock_t begin = clock();
 
@@ -18,9 +21,18 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     auto& clock_networks = device_ctx.clock_networks;
     auto& clock_routing = device_ctx.clock_connections;
 
+    size_t clock_nodes_start_idx = device_ctx.rr_nodes.size();
+
     ClockRRGraph clock_graph = ClockRRGraph();
     clock_graph.create_clock_networks_wires(clock_networks);
     clock_graph.create_clock_networks_switches(clock_routing);
+
+
+    clock_graph.add_rr_switches_and_map_to_nodes(clock_nodes_start_idx, R_minW_nmos, R_minW_pmos);
+
+    // "Partition the rr graph edges for efficient access to configurable/non-configurable
+    //  edge subsets. Must be done after RR switches have been allocated"
+    partition_rr_graph_edges(device_ctx);
 
     // Reset fanin to account for newly added clock rr_nodes
     init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
@@ -48,11 +60,86 @@ void ClockRRGraph::create_clock_networks_switches(
     for(auto& clock_connection: clock_connections) {
         clock_connection->create_switches(*this);
     }
+}
 
-    // "Partition the rr graph edges for efficient access to configurable/non-configurable
-    //  edge subsets. Must be done after RR switches have been allocated"
+void ClockRRGraph::add_rr_switches_and_map_to_nodes(
+        size_t node_start_idx,
+        const float R_minW_nmos,
+        const float R_minW_pmos)
+{
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    partition_rr_graph_edges(device_ctx);
+    auto& rr_nodes = device_ctx.rr_nodes;
+
+    // Check to see that clock nodes were sucessfully appended to rr_nodes
+    VTR_ASSERT(rr_nodes.size() > node_start_idx);
+
+    std::unordered_map<int, int> arch_switch_to_rr_switch;
+
+    for(size_t node_idx = node_start_idx; node_idx < rr_nodes.size(); node_idx++) {
+        auto& from_node = rr_nodes[node_idx];
+        for(int edge_idx = 0; edge_idx < from_node.num_edges(); edge_idx++) {
+            int arch_switch_idx = from_node.edge_switch(edge_idx);
+
+            int rr_switch_idx;
+            auto itter = arch_switch_to_rr_switch.find(arch_switch_idx);
+            if(itter == arch_switch_to_rr_switch.end()) {
+                rr_switch_idx = add_rr_switch_from_arch_switch_inf(
+                    arch_switch_idx,
+                    R_minW_nmos,
+                    R_minW_pmos);
+                arch_switch_to_rr_switch[arch_switch_idx] = rr_switch_idx;
+            } else {
+                rr_switch_idx = itter->second;
+            }
+
+            from_node.set_edge_switch(edge_idx, rr_switch_idx);
+        }
+    }
+
+    device_ctx.rr_switch_inf.shrink_to_fit();
+}
+
+int ClockRRGraph::add_rr_switch_from_arch_switch_inf(
+        int arch_switch_idx,
+        const float R_minW_nmos,
+        const float R_minW_pmos)
+{
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_switch_inf = device_ctx.rr_switch_inf;
+    auto& arch_switch_inf = device_ctx.arch_switch_inf;
+
+    rr_switch_inf.emplace_back();
+    int rr_switch_idx = rr_switch_inf.size() - 1;
+
+    // TODO: Add support for non fixed Tdel based on fanin information
+    VTR_ASSERT(arch_switch_inf[arch_switch_idx].fixed_Tdel());
+    int fanin = UNDEFINED;
+
+    rr_switch_inf[rr_switch_idx].set_type(arch_switch_inf[arch_switch_idx].type());
+    rr_switch_inf[rr_switch_idx].R = arch_switch_inf[arch_switch_idx].R;
+    rr_switch_inf[rr_switch_idx].Cin = arch_switch_inf[arch_switch_idx].Cin;
+    rr_switch_inf[rr_switch_idx].Cout = arch_switch_inf[arch_switch_idx].Cout;
+    rr_switch_inf[rr_switch_idx].Tdel = arch_switch_inf[arch_switch_idx].Tdel(fanin);
+    rr_switch_inf[rr_switch_idx].mux_trans_size = arch_switch_inf[arch_switch_idx].mux_trans_size;
+
+    if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
+        //Size based on resistance
+        device_ctx.rr_switch_inf[rr_switch_idx].buf_size =
+            trans_per_buf(device_ctx.arch_switch_inf[arch_switch_idx].R, R_minW_nmos, R_minW_pmos);
+    } else {
+        VTR_ASSERT(device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type==BufferSize::ABSOLUTE);
+        //Use the specified size
+        device_ctx.rr_switch_inf[rr_switch_idx].buf_size =
+            device_ctx.arch_switch_inf[arch_switch_idx].buf_size;
+    }
+
+    rr_switch_inf[rr_switch_idx].name = arch_switch_inf[arch_switch_idx].name;
+    rr_switch_inf[rr_switch_idx].power_buffer_type =
+        arch_switch_inf[arch_switch_idx].power_buffer_type;
+    rr_switch_inf[rr_switch_idx].power_buffer_size =
+        arch_switch_inf[arch_switch_idx].power_buffer_size;
+
+    return rr_switch_idx;
 }
 
 void ClockRRGraph::add_switch_location(

@@ -81,7 +81,9 @@ class ClockRRGraph {
     public:
         /* Creates the routing resourse (rr) graph of the clock network and appends it to the
            existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
-        static void create_and_append_clock_rr_graph();
+        static void create_and_append_clock_rr_graph(
+                const float R_minW_nmos,
+                const float R_minW_pmos);
 
     private:
         /* Dummy clock network that connects every I/O input to every clock pin. */
@@ -93,6 +95,24 @@ class ClockRRGraph {
         /* loop over all clock routing connections and create the switches and connections */
         void create_clock_networks_switches(
             std::vector<std::unique_ptr<ClockConnection>>& clock_connections);
+
+        /* Adds the architecture switches that the clock rr_nodes use to the rr switches and
+           maps the newly added rr_switches to the nodes */
+        // TODO: Change to account for swtich fanin. Note: this function is simular to
+        //       remap_rr_node_switch_indices but does not take into account node fanin.
+        void add_rr_switches_and_map_to_nodes(
+                size_t nodes_start_idx,
+                const float R_minW_nmos,
+                const float R_minW_pmos);
+
+        /* Returns the index of the newly added rr_switch. The rr_switch information is coppied
+           in from the arch_switch information */
+        // TODO: Does not account for fanin information when copping Tdel. Note: this function
+        //       is simular to load_rr_switch_inf but does not take into account node fanin.
+        int add_rr_switch_from_arch_switch_inf(
+                int arch_switch_idx,
+                const float R_minW_nmos,
+                const float R_minW_pmos);
 };
 
 #endif
