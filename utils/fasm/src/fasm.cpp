@@ -21,70 +21,11 @@
 
 #include "fasm.h"
 
-class Lut {
- public:
-  Lut(size_t num_inputs) : num_inputs_(num_inputs), table_(2 << num_inputs, vtr::LogicValue::DONT_CARE) {}
-
-  // SetOutput sets the lut to output value when the inputs match.
-  //
-  // By default the output from the LUT is always false.
-  void SetOutput(const std::vector<vtr::LogicValue> &inputs, vtr::LogicValue value) {
-    VTR_ASSERT(inputs.size() == num_inputs_);
-    std::vector<size_t> dont_care_inputs;
-    dont_care_inputs.reserve(num_inputs_);
-
-    for(size_t address = 0; address < table_.size(); ++address) {
-      bool match = true;
-      for(size_t input = 0; input < inputs.size(); ++input) {
-        if(inputs[input] == vtr::LogicValue::TRUE && (address & (1 << input)) == 0) {
-          match = false;
-          break;
-        } else if(inputs[input] == vtr::LogicValue::FALSE && (address & (1 << input)) != 0) {
-          match = false;
-          break;
-        }
-      }
-
-      if(match) {
-        VTR_ASSERT(table_[address] == vtr::LogicValue::DONT_CARE || table_[address] == value);
-        table_[address] = value;
-      }
-    }
-  }
-
-  void CreateWire(size_t input_pin) {
-    std::vector<vtr::LogicValue> inputs(num_inputs_, vtr::LogicValue::DONT_CARE);
-    inputs[input_pin] = vtr::LogicValue::FALSE;
-    SetOutput(inputs, vtr::LogicValue::FALSE);
-    inputs[input_pin] = vtr::LogicValue::TRUE;
-    SetOutput(inputs, vtr::LogicValue::TRUE);
-  }
-
-  void SetConstant(vtr::LogicValue value) {
-    std::vector<vtr::LogicValue> inputs(num_inputs_, vtr::LogicValue::DONT_CARE);
-    SetOutput(inputs, value);
-  }
-
-  const LogicVec & table() {
-    // Make sure the entire table is defined.
-    for(size_t address = 0; address < table_.size(); ++address) {
-      if(table_[address] == vtr::LogicValue::DONT_CARE) {
-        table_[address] = vtr::LogicValue::FALSE;
-      }
-    }
-
-    return table_;
-  }
-
-
- private:
-  LogicVec table_;
-  size_t num_inputs_;
-};
 
 FasmWriterVisitor::FasmWriterVisitor(std::ostream& f) : os_(f) {}
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
+    (void)top_level_name;
     auto& device_ctx = g_vpr_ctx.device();
     pb_graph_pin_lookup_from_index_by_type_.resize(device_ctx.num_block_types);
     for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
@@ -93,11 +34,6 @@ void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
 }
 
 void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
-    lut_mode_ = NO_LUT;
-    lut_prefix_ = "";
-    lut_parts_.resize(0);
-    pb_route_ = nullptr;
-
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -112,8 +48,6 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     int x = place_ctx.block_locs[blk_id].x;
     int y = place_ctx.block_locs[blk_id].y;
     auto &grid_loc = device_ctx.grid[x][y];
-    int x_offset = grid_loc.width_offset;
-    int y_offset = grid_loc.height_offset;
     blk_type_ = grid_loc.type;
 
     current_blk_has_prefix_ = true;
@@ -149,7 +83,6 @@ void FasmWriterVisitor::check_interconnect(const t_pb_route *pb_route, int inode
     return;
   }
 
-  t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type_.at(blk_type_->index)[inode];
   t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.at(blk_type_->index)[prev_node];
 
   int prev_edge;
@@ -207,31 +140,6 @@ std::string FasmWriterVisitor::build_clb_prefix(const t_pb_graph_node* pb_graph_
 
 }
 
-void FasmWriterVisitor::setup_split_lut(std::string fasm_lut) {
-  auto fasm_lut_no_space = vtr::replace_all(vtr::replace_all(fasm_lut, " ", ""), "\n", "");
-
-  auto lut_parts = vtr::split(fasm_lut_no_space, "=");
-  if(lut_parts.size() != 2) {
-    vpr_throw(VPR_ERROR_OTHER,
-              __FILE__, __LINE__,
-              "Split lut definition fasm_lut = %s does not parse.",
-              fasm_lut.c_str());
-  }
-
-  lut_prefix_ = lut_parts[0];
-
-  lut_parts_ = vtr::split(
-      vtr::replace_all(
-          vtr::replace_all(lut_parts[1], "(", ""),
-                       ")", ""), ",");
-  if(__builtin_popcount(lut_parts_.size()) != 1) {
-    vpr_throw(VPR_ERROR_OTHER,
-              __FILE__, __LINE__,
-              "Number of lut splits must be power of two, found %d parts",
-              lut_parts_.size());
-  }
-}
-
 static const t_pb_graph_pin* is_node_used(const t_pb_route *top_pb_route, const t_pb_graph_node* pb_graph_node) {
     // Is the node used at all?
     const t_pb_graph_pin* pin = nullptr;
@@ -262,54 +170,15 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
     t_pb_type *pb_type = pb_graph_node->pb_type;
     auto *mode = &pb_type->modes[pb->mode];
 
-    if(mode) {
-      if(mode->meta != nullptr && mode->meta->has("fasm_features")) {
-        output_fasm_features(mode->meta->get("fasm_features")->front().as_string());
-      }
-
-      if(mode->meta != nullptr && mode->meta->has("fasm_type")) {
-        std::string fasm_type = mode->meta->get("fasm_type")->front().as_string();
-        if(fasm_type == "LUT") {
-          // Output LUT
-          if(!mode->meta->has("fasm_lut")) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "pb_type->name %d has fasm_type = %s but is missing fasm_lut metadata.",
-                      pb_type->name, fasm_type);
-          }
-
-          lut_mode_ = LUT;
-          pb_route_ = pb_route;
-          lut_prefix_ = mode->meta->get("fasm_lut")->front().as_string();
-
-        } else if(fasm_type == "SPLIT_LUT") {
-          // Output LUT
-          if(!mode->meta->has("fasm_lut")) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "pb_type->name %d has fasm_type = %s but is missing fasm_lut metadata.",
-                      pb_type->name, fasm_type);
-          }
-
-          lut_mode_ = SPLIT_LUT;
-          pb_route_ = pb_route;
-          setup_split_lut(mode->meta->get("fasm_lut")->front().as_string());
-        } else {
-          vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Unknown fasm_type = %s\n",
-                            fasm_type.c_str());
-        }
-      }
-
-    }
-
     if(mode != nullptr && std::string(mode->name) == "wire") {
-        const int num_inputs = pb_graph_node->total_input_pins();
         auto io_pin = is_node_used(pb_route, pb_graph_node);
         if(io_pin != nullptr) {
           auto& route = pb_route[io_pin->pin_count_in_cluster];
+          const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
+          const auto &lut_definition = find_lut(route.pb_graph_pin->parent_node);
+          VTR_ASSERT(lut_definition.num_inputs == num_inputs);
 
-          Lut lut(num_inputs);
-          lut.CreateWire(route.pb_graph_pin->pin_number);
-          LogicVec lut_mask = lut.table();
-          emit_lut(lut_mode_, lut_mask, pb_graph_node);
+          output_fasm_features(lut_definition.CreateWire(route.pb_graph_pin->pin_number));
         }
     }
 
@@ -348,14 +217,12 @@ static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_route
     return pb_route[cluster_pin_idx].atom_net_id;
 }
 
-static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
+static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_route *pb_route) {
     auto& atom_ctx = g_vpr_ctx.atom();
     AtomBlockId block_id = atom_ctx.lookup.pb_atom(atom_pb);
-    const t_model* model = atom_ctx.nlist.block_model(block_id);
     const auto& truth_table = atom_ctx.nlist.block_truth_table(block_id);
     auto ports = atom_ctx.nlist.block_input_ports(atom_ctx.lookup.pb_atom(atom_pb));
 
-    const int num_inputs = atom_pb->pb_graph_node->total_input_pins();
     const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
 
     if(ports.size() != 1) {
@@ -377,7 +244,8 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
     }
 
     VTR_ASSERT(gnode->num_input_ports == 1);
-    VTR_ASSERT(gnode->num_input_pins[0] == num_inputs);
+    //VTR_ASSERT(gnode->num_input_pins[0] >= num_inputs);
+    std::cerr << num_inputs << std::endl;
     std::vector<vtr::LogicValue> inputs(num_inputs, vtr::LogicValue::DONT_CARE);
     std::vector<int> permutation(num_inputs, -1);
 
@@ -422,15 +290,98 @@ static LogicVec lut_outputs(const t_pb* atom_pb, const t_pb_route *pb_route) {
     return lut.table();
 }
 
-int FasmWriterVisitor::find_lut_idx(const t_pb_graph_node* pb_graph_node) const {
+static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) {
+  if(pb_graph_node == nullptr) {
+    return nullptr;
+  }
+
+  if(pb_graph_node->pb_type == nullptr) {
+    return nullptr;
+  }
+
+  t_metadata_dict *meta = nullptr;
+  if(pb_graph_node->pb_type->meta != nullptr &&
+     pb_graph_node->pb_type->meta->has("fasm_type")) {
+    meta = pb_graph_node->pb_type->meta;
+  }
+
+  if(pb_graph_node->pb_type->parent_mode != nullptr &&
+     pb_graph_node->pb_type->parent_mode->meta != nullptr &&
+     pb_graph_node->pb_type->parent_mode->meta->has("fasm_type")) {
+    meta = pb_graph_node->pb_type->parent_mode->meta;
+  }
+
+  if(meta != nullptr && meta->one("fasm_type")->as_string() == target_type) {
+    return meta;
+  }
+
+  return nullptr;
+}
+
+const LutOutputDefinition& FasmWriterVisitor::find_lut(const t_pb_graph_node* pb_graph_node) {
   const t_pb_graph_node* orig_pb_graph_node = pb_graph_node;
+  (void)orig_pb_graph_node;
+
   while(pb_graph_node != nullptr) {
     VTR_ASSERT(pb_graph_node->pb_type != nullptr);
 
-    auto string_at_node = vtr::string_fmt("%s[%d]", pb_graph_node->pb_type->name, pb_graph_node->placement_index);
-    for(size_t idx = 0; idx < lut_parts_.size(); ++idx) {
-      if(string_at_node == lut_parts_[idx]) {
-        return idx;
+    auto iter = lut_definitions_.find(pb_graph_node->pb_type);
+    if(iter == lut_definitions_.end()) {
+      const t_metadata_dict *meta = get_fasm_type(pb_graph_node, "LUT");
+      if(meta != nullptr) {
+        VTR_ASSERT(meta->has("fasm_lut"));
+        std::vector<std::pair<std::string, LutOutputDefinition>> luts;
+        luts.push_back(std::make_pair(
+            vtr::string_fmt("%s[0]", pb_graph_node->pb_type->name),
+            LutOutputDefinition(meta->one("fasm_lut")->as_string())));
+
+        auto insert_result = lut_definitions_.insert(
+            std::make_pair(pb_graph_node->pb_type, luts));
+        VTR_ASSERT(insert_result.second);
+        iter = insert_result.first;
+      }
+
+      meta = get_fasm_type(pb_graph_node, "SPLIT_LUT");
+      if(meta != nullptr) {
+        VTR_ASSERT(meta->has("fasm_lut"));
+        std::string fasm_lut = meta->one("fasm_lut")->as_string();
+        auto lut_parts = vtr::split(vtr::replace_all(fasm_lut, " ", ""), "\n");
+        if(__builtin_popcount(lut_parts.size()) != 1) {
+          vpr_throw(VPR_ERROR_OTHER,
+                    __FILE__, __LINE__,
+                    "Number of lut splits must be power of two, found %d parts",
+                    lut_parts.size());
+        }
+
+        std::vector<std::pair<std::string, LutOutputDefinition>> luts;
+        luts.reserve(lut_parts.size());
+        for(const auto &part : lut_parts) {
+          auto parts = vtr::split(part, "=");
+          if(parts.size() != 2) {
+            vpr_throw(VPR_ERROR_OTHER,
+                      __FILE__, __LINE__,
+                      "Split lut definition fasm_lut = %s does not parse.",
+                      fasm_lut.c_str());
+          }
+
+          luts.push_back(std::make_pair(
+              parts[1], LutOutputDefinition(parts[0])));
+        }
+
+        auto insert_result = lut_definitions_.insert(
+            std::make_pair(pb_graph_node->pb_type,
+                           luts));
+        VTR_ASSERT(insert_result.second);
+        iter = insert_result.first;
+      }
+    }
+
+    if(iter != lut_definitions_.end()) {
+      auto string_at_node = vtr::string_fmt("%s[%d]", pb_graph_node->pb_type->name, pb_graph_node->placement_index);
+      for(const auto &lut : iter->second) {
+        if(lut.first == string_at_node) {
+          return lut.second;
+        }
       }
     }
 
@@ -438,31 +389,25 @@ int FasmWriterVisitor::find_lut_idx(const t_pb_graph_node* pb_graph_node) const 
   }
 
   vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-            "Failed to find LUT index.");
+            "Failed to find LUT output definition.");
 }
 
-void FasmWriterVisitor::emit_lut(LutMode lut_mode, LogicVec &lut_mask, const t_pb_graph_node * pb_graph_node) const {
-    std::string lut_address_select;
+static const t_pb_route *find_pb_route(const t_pb* pb) {
+  const t_pb* orig_pb = pb;
+  (void)orig_pb;
 
-    if(lut_mode == LUT) {
-      lut_address_select = vtr::string_fmt("[%d:0]", lut_mask.size()-1);
-    } else if(lut_mode == SPLIT_LUT) {
-      // Get width of underlying LUT.
-      // TODO: Test if this actually works!
-      int width_of_lut = pb_graph_node->pb_type->num_input_pins;
-      int idx = find_lut_idx(pb_graph_node);
-      int start = (1 << width_of_lut)*idx;
-      int end = start + lut_mask.size() -1;
-      lut_address_select = vtr::string_fmt("[%d:%d]", end, start);
-    } else {
-      vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Unknown LUT mode %d\n",
-                lut_mode);
+  while(pb != nullptr) {
+    if(pb->pb_route != nullptr) {
+      return pb->pb_route;
     }
 
-    std::stringstream ss("");
-    ss << lut_prefix_ << lut_address_select << "=" << lut_mask;
+    pb = pb->parent_pb;
+  }
 
-    output_fasm_features(ss.str());
+  vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+            "Failed to find pb_route for atom.");
+
+  return nullptr;
 }
 
 void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
@@ -475,13 +420,13 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
 
     const t_model* model = atom_ctx.nlist.block_model(atom_blk_id);
     if (model->name == std::string(MODEL_NAMES)) {
-      if(lut_mode_ != LUT && lut_mode_ != SPLIT_LUT) {
-          vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "LUT mode is %d\n",
-                            lut_mode_);
-      }
+      VTR_ASSERT(atom->pb_graph_node != nullptr);
+      const auto &lut_definition = find_lut(atom->pb_graph_node);
+      VTR_ASSERT(lut_definition.num_inputs == *atom->pb_graph_node->num_input_pins);
 
-      LogicVec lut_mask = lut_outputs(atom, pb_route_);
-      emit_lut(lut_mode_, lut_mask, atom->pb_graph_node);
+      const t_pb_route *pb_route = find_pb_route(atom);
+      LogicVec lut_mask = lut_outputs(atom, lut_definition.num_inputs, pb_route);
+      output_fasm_features(lut_definition.CreateInit(lut_mask));
     }
 }
 
@@ -491,9 +436,6 @@ void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
 
 void FasmWriterVisitor::walk_routing() {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& route_ctx = g_vpr_ctx.routing();
 
     for(const auto trace : route_ctx.trace_head) {
@@ -525,7 +467,7 @@ void FasmWriterVisitor::finish_impl() {
     walk_routing();
 }
 
-void parse_name_with_optional_index(const std::string in, std::string *name, int *index) {
+static void parse_name_with_optional_index(const std::string in, std::string *name, int *index) {
   auto in_parts = vtr::split(in, "[]");
 
   if(in_parts.size() == 1) {

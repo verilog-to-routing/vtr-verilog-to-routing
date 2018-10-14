@@ -3,7 +3,11 @@ cmake_minimum_required(VERSION 2.8.12)
 project("genfasm")
 
 #Create library
-add_library(fasm src/fasm.cpp src/fasm.h)
+add_library(fasm
+  src/fasm.cpp
+  src/fasm.h
+  src/lut.h
+  )
 target_include_directories(fasm PUBLIC src)
 target_link_libraries(fasm
   libvpr

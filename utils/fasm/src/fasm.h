@@ -13,13 +13,9 @@
 
 #include "netlist_walker.h"
 #include "netlist_writer.h"
+#include "lut.h"
 
 class FasmWriterVisitor : public NetlistVisitor {
-    enum LutMode {
-      NO_LUT = 0,
-      LUT = 1,
-      SPLIT_LUT = 2,
-    };
 
   public:
       FasmWriterVisitor(std::ostream& f);
@@ -39,10 +35,8 @@ class FasmWriterVisitor : public NetlistVisitor {
       void check_for_lut(const t_pb* atom);
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
       void walk_routing();
-      void emit_lut(LutMode lut_mode, LogicVec &lut_mask, const t_pb_graph_node * pb_graph_node) const;
       std::string build_clb_prefix(const t_pb_graph_node* pb_graph_node) const;
-      void setup_split_lut(std::string fasm_lut);
-      int find_lut_idx(const t_pb_graph_node* pb_graph_node) const;
+      const LutOutputDefinition& find_lut(const t_pb_graph_node* pb_graph_node);
 
       std::ostream& os_;
 
@@ -53,11 +47,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::string clb_prefix_;
       ClusterBlockId current_blk_id_;
       std::vector<t_pb_graph_pin**> pb_graph_pin_lookup_from_index_by_type_;
-
-      LutMode lut_mode_;
-      std::string lut_prefix_;
-      std::vector<std::string> lut_parts_;
-      const t_pb_route *pb_route_;
+      std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
 };
 
 #endif  // FASM_H

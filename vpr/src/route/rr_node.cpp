@@ -161,13 +161,13 @@ bool t_rr_node::edge_is_configurable(short iedge) const {
     return device_ctx.rr_switch_inf[iswitch].configurable();
 }
 
-t_metadata_as* t_rr_node::metadata(std::string key) const {
+const t_metadata_as* t_rr_node::metadata(std::string key) const {
     return metadata(std::make_pair(t_offset(), key));
 }
-t_metadata_as* t_rr_node::metadata(t_offset o, std::string key) const {
+const t_metadata_as* t_rr_node::metadata(t_offset o, std::string key) const {
     return metadata(std::make_pair(o, key));
 }
-t_metadata_as* t_rr_node::metadata(std::pair<t_offset, std::string> ok) const {
+const t_metadata_as* t_rr_node::metadata(std::pair<t_offset, std::string> ok) const {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (device_ctx.rr_node_metadata.size() == 0 || device_ctx.rr_node_metadata.count(this) == 0) {
@@ -193,13 +193,13 @@ void t_rr_node::add_metadata(std::pair<t_offset, std::string> ok, std::string va
     data.add(ok, value);
 }
 
-t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::string key) const {
+const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::string key) const {
     return edge_metadata(sink_id, switch_id, std::make_pair(t_offset(), key));
 }
-t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, t_offset o, std::string key) const {
+const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, t_offset o, std::string key) const {
     return edge_metadata(sink_id, switch_id, std::make_pair(o, key));
 }
-t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok) const {
+const t_metadata_as* t_rr_node::edge_metadata(int sink_id, short switch_id, std::pair<t_offset, std::string> ok) const {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     std::pair<int, short> rr_edge = std::make_pair(sink_id, switch_id);
 
