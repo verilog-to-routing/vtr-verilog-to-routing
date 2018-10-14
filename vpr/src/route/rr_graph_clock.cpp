@@ -2,6 +2,7 @@
 #include "clock_network_types.h"
 
 #include "globals.h"
+#include "rr_graph.h"
 #include "rr_graph2.h"
 
 #include "vtr_assert.h"
@@ -20,6 +21,9 @@ void ClockRRGraph::create_and_append_clock_rr_graph() {
     ClockRRGraph clock_graph = ClockRRGraph();
     clock_graph.create_clock_networks_wires(clock_networks);
     clock_graph.create_clock_networks_switches(clock_routing);
+
+    // Reset fanin to account for newly added clock rr_nodes
+    init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
 
     float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
@@ -45,10 +49,8 @@ void ClockRRGraph::create_clock_networks_switches(
         clock_connection->create_switches(*this);
     }
 
-    //"Partition the rr graph edges for efficient access to configurable/non-configurable
-    //edge subsets. Must be done after RR switches have been allocated"
-    //TODO: This hidden function should be added in a place where it is more obvious to be called
-    //      since without calling it the code to get configurable edges breaks
+    // "Partition the rr graph edges for efficient access to configurable/non-configurable
+    //  edge subsets. Must be done after RR switches have been allocated"
     auto& device_ctx = g_vpr_ctx.mutable_device();
     partition_rr_graph_edges(device_ctx);
 }

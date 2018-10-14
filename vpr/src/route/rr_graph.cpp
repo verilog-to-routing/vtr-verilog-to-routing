@@ -243,7 +243,6 @@ static void build_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
-        const enum e_clock_modeling clock_modeling,
         const t_direct_inf *directs,
         const int num_directs,
         int *wire_to_rr_ipin_switch,
@@ -297,10 +296,13 @@ void create_rr_graph(
                 base_cost_type,
                 trim_empty_channels,
                 trim_obs_channels,
-                clock_modeling,
                 directs, num_directs,
                 &det_routing_arch->wire_to_rr_ipin_switch,
                 Warnings);
+    }
+
+    if (clock_modeling == DEDICATED_NETWORK) {
+        ClockRRGraph::create_and_append_clock_rr_graph();
     }
 
     //Write out rr graph file if needed
@@ -329,7 +331,6 @@ static void build_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
-        const enum e_clock_modeling clock_modeling,
         const t_direct_inf *directs,
         const int num_directs,
         int *wire_to_rr_ipin_switch,
@@ -646,10 +647,6 @@ static void build_rr_graph(
         free(clb_to_clb_directs);
     }
 
-    if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraph::create_and_append_clock_rr_graph();
-        init_fan_in(device_ctx.rr_nodes, device_ctx.rr_nodes.size());
-    }
 }
 
 /* Allocates and loads the global rr_switch_inf array based on the global
@@ -751,7 +748,7 @@ static void alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     }
     delete[] inward_switch_inf;
 
-    /* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
+    /* allocate space for the rr_switch_inf array */
     device_ctx.rr_switch_inf.resize(num_rr_switches);
 }
 
