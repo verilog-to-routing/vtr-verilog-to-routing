@@ -493,9 +493,14 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 		is_cluster_legal = false;
 		savedseedindex = seedindex;
 		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
+			/* start a new cluster */
+
 			ClusterBlockId clb_index(num_clb);
 
-			/* start a new cluster and reset all stats */
+            if (debug_clustering) {
+                vtr::printf_info("Complex block %d:\n", num_clb);
+            }
+
 			start_new_cluster(cluster_placement_stats, primitives_list,
 					atom_molecules, clb_index, istart,
 					num_used_type_instances,
@@ -507,12 +512,13 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
                     primitive_candidate_block_types,
                     debug_clustering,
                     enable_pin_feasibility_filter);
-			vtr::printf_info("Complex block %d: %s, type: %s ",
-					num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            if (debug_clustering) {
-                vtr::printf("\n");
-            } else {
+
+            if (!debug_clustering) {
+                vtr::printf_info("Complex block %d: %s, type: %s ",
+                        num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
                 vtr::printf("."); //Progress dot for seed-block
+            } else {
+                vtr::printf("\n");
             }
 			fflush(stdout);
 
@@ -563,17 +569,29 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 					if (next_molecule != nullptr) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
                             if (debug_clustering) {
-                                vtr::printf_direct("\tNO_ROUTE: %s type %s/n",
+                                vtr::printf("\tNO_ROUTE: %s type %s",
                                         blk_name.c_str(),
                                         blk_model->name);
+                                if (next_molecule->pack_pattern) {
+                                    vtr::printf("molecule %s molecule_size %zu",
+                                        next_molecule->pack_pattern->name,
+                                        next_molecule->atom_block_ids.size());
+                                }
+                                vtr::printf("\n");
                                 fflush(stdout);
                             }
 						} else {
                             if (debug_clustering) {
-                                vtr::printf_direct("\tFAILED_CHECK: %s type %s check %d\n",
+                                vtr::printf("\tFAILED_CHECK: %s type %s check %d",
                                         blk_name.c_str(),
                                         blk_model->name,
                                         block_pack_status);
+                                if (next_molecule->pack_pattern) {
+                                    vtr::printf("molecule %s molecule_size %zu",
+                                        next_molecule->pack_pattern->name,
+                                        next_molecule->atom_block_ids.size());
+                                }
+                                vtr::printf("\n");
                                 fflush(stdout);
                             }
 						}
@@ -591,9 +609,15 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 				} else {
 					/* Continue packing by filling smallest cluster */
                     if (debug_clustering) {
-                        vtr::printf_direct("\tPASSED: %s type %s\n",
+                        vtr::printf("\tPASSED: %s type %s",
                                 blk_name.c_str(),
                                 blk_model->name);
+                        if (next_molecule && next_molecule->pack_pattern) {
+                            vtr::printf(" molecule %s molecule_size %zu",
+                                    next_molecule->pack_pattern->name,
+                                    next_molecule->atom_block_ids.size());
+                        }
+                        vtr::printf("\n");
                     } else {
                         vtr::printf(".");
                     }
@@ -1845,6 +1869,16 @@ static void start_new_cluster(
         }
     );
 
+    vtr::printf("\tSeed: %s type %s",
+                    root_atom_name.c_str(),
+                    root_model->name);
+    if (molecule->pack_pattern) {
+        vtr::printf("molecule_type %s molecule_size %zu",
+            molecule->pack_pattern->name,
+            molecule->atom_block_ids.size());
+    }
+    vtr::printf("\n");
+
     //Try packing into each candidate type
 	bool success = false;
     for (size_t i = 0; i < candidate_types.size(); i++) {
@@ -1858,6 +1892,7 @@ static void start_new_cluster(
         *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
 
         //Try packing into each mode
+        e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
         for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
             pb->mode = j;
 
@@ -1869,7 +1904,7 @@ static void start_new_cluster(
             //molecule which would otherwise exceed the external pin utilization targets it
             //can use the full set of cluster pins when selected as the seed block -- ensuring
             //it is still implementable.
-            auto pack_result = try_pack_molecule(&cluster_placement_stats[type->index],
+            pack_result = try_pack_molecule(&cluster_placement_stats[type->index],
                                             atom_molecules,
                                             molecule, primitives_list, pb,
                                             num_models, max_cluster_size, clb_index,
@@ -1882,6 +1917,11 @@ static void start_new_cluster(
         }
 
         if (success) {
+            if (debug_clustering) {
+                vtr::printf("\tPASSED_SEED: Block Type %s\n",
+                    type->name);
+            }
+
             //Once clustering succeeds, add it to the clb netlist
             if (pb->name != nullptr) {
                 free(pb->name);
@@ -1890,6 +1930,11 @@ static void start_new_cluster(
             clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
             break;
         } else {
+            if (debug_clustering) {
+                vtr::printf("\tFAILED_SEED: Block Type %s\n",
+                    type->name);
+            }
+
             //Free failed clustering and try again
             free_router_data(*router_data);
             free_pb(pb);
