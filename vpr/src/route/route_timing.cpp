@@ -298,6 +298,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
      *
      * Subsequent iterations use the net delays from the previous iteration.
      */
+    RouterStats router_stats;
     print_route_status_header();
     timing_driven_route_structs route_structs;
     float prev_iter_cumm_time = 0;
@@ -305,7 +306,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     int num_net_bounding_boxes_updated = 0;
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
 
-        RouterStats router_stats;
+        RouterStats router_iteration_stats;
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -337,7 +338,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     pres_fac,
                     router_opts,
                     connections_inf,
-                    router_stats,
+                    router_iteration_stats,
                     route_structs.pin_criticality,
                     route_structs.rt_node_of_sink,
                     net_delay,
@@ -393,7 +394,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
         //Output progress
-        print_route_status(itry, iter_elapsed_time, num_net_bounding_boxes_updated, router_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, iter_elapsed_time, num_net_bounding_boxes_updated, router_iteration_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         prev_iter_cumm_time = iter_cumm_time;
 
@@ -408,6 +409,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
             std::string filename = vtr::string_fmt("iteration_%03d.route", itry);
             print_route(nullptr, filename.c_str());
         }
+
+        //Update router stats (total)
+        router_stats.connections_routed += router_iteration_stats.connections_routed;
+        router_stats.nets_routed += router_iteration_stats.nets_routed;
+        router_stats.heap_pushes += router_iteration_stats.heap_pushes;
+        router_stats.heap_pops += router_iteration_stats.heap_pops;
 
         /*
          * Are we finished?
@@ -581,6 +588,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
         print_invalid_routing_info();
 #endif
     }
+
+    vtr::printf("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu\n",
+            router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
 
     return routing_is_successful;
 }
