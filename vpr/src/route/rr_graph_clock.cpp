@@ -6,6 +6,7 @@
 #include "rr_graph2.h"
 #include "rr_graph_area.h"
 #include "rr_graph_util.h"
+#include "rr_graph_indexed_data.h"
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -14,12 +15,15 @@
 void ClockRRGraph::create_and_append_clock_rr_graph(
         std::vector<t_segment_inf>& segment_inf,
         const float R_minW_nmos,
-        const float R_minW_pmos)
+        const float R_minW_pmos,
+        int wire_to_rr_ipin_switch,
+        const enum e_base_cost_type base_cost_type)
 {
     vtr::printf_info("Starting clock network routing resource graph generation...\n");
     clock_t begin = clock();
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto* chan_width = &device_ctx.chan_width;
     auto& clock_networks = device_ctx.clock_networks;
     auto& clock_routing = device_ctx.clock_connections;
 
@@ -38,7 +42,9 @@ void ClockRRGraph::create_and_append_clock_rr_graph(
     //  edge subsets. Must be done after RR switches have been allocated"
     partition_rr_graph_edges(device_ctx);
 
-    //set_rr_node_cost_idx_based_on_seg_idx(segment_inf.size());
+    alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
+            chan_width->max, wire_to_rr_ipin_switch, base_cost_type);
+    set_rr_node_cost_idx_based_on_seg_idx(segment_inf.size());
 
     float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);

@@ -14,16 +14,16 @@ static MetalLayer get_metal_layer_from_name(
         std::string metal_layer_name,
         std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
         std::string clock_network_name);
-static void setup_clock_network_wires(const t_arch& Arch);
+static void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf);
 static void setup_clock_connections(const t_arch& Arch);
 static std::vector<std::string> split_clock_and_switch_names(std::string names);
 
-void setup_clock_networks(const t_arch& Arch) {
-    setup_clock_network_wires(Arch);
+void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
+    setup_clock_network_wires(Arch, segment_inf);
     setup_clock_connections(Arch);
 }
 
-void setup_clock_network_wires(const t_arch& Arch) {
+void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_networks_device = device_ctx.clock_networks;
@@ -64,6 +64,7 @@ void setup_clock_network_wires(const t_arch& Arch) {
                         parse_formula(clock_network_arch.tap.increment, vars));
                 spine->set_tap_name(clock_network_arch.tap.name);
 
+                spine->create_segments(segment_inf);
                 break;
             } case e_clock_type::RIB: {
                 clock_networks_device.emplace_back(new ClockRib());
@@ -90,6 +91,7 @@ void setup_clock_network_wires(const t_arch& Arch) {
                         parse_formula(clock_network_arch.tap.increment, vars));
                 rib->set_tap_name(clock_network_arch.tap.name);
 
+                rib->create_segments(segment_inf);
                 break;
             } case e_clock_type::H_TREE: {
                 vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "HTrees not yet supported.\n");

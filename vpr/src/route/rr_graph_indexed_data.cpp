@@ -103,7 +103,7 @@ void alloc_and_load_rr_indexed_data_for_segments(
     /* X-directed segments. */
     for (iseg = start_x_seg_index; iseg < num_x_segments; iseg++) {
         if ((index + num_x_segments) >= (int) device_ctx.rr_indexed_data.size()) {
-            device_ctx.rr_indexed_data[index].ortho_cost_index = device_ctx.rr_indexed_data.size()-1;
+            device_ctx.rr_indexed_data[index].ortho_cost_index = index;
         } else {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_x_segments;
         }
@@ -123,8 +123,11 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
     /* Y-directed segments. */
     for (iseg = start_y_seg_index; iseg < num_y_segments; iseg++) {
-
-        device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_y_segments;
+        if((index - num_y_segments) < CHANX_COST_INDEX_START) {
+            device_ctx.rr_indexed_data[index].ortho_cost_index = index;
+        } else {
+            device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_y_segments;
+        }
 
         if (segment_inf[iseg].longline)
             length = device_ctx.grid.height();

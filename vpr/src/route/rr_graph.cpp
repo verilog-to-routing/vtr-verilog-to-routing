@@ -299,13 +299,15 @@ void create_rr_graph(
                 directs, num_directs,
                 &det_routing_arch->wire_to_rr_ipin_switch,
                 Warnings);
-    }
 
-    if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraph::create_and_append_clock_rr_graph(
-            segment_inf,
-            det_routing_arch->R_minW_nmos,
-            det_routing_arch->R_minW_pmos);
+        if (clock_modeling == DEDICATED_NETWORK) {
+            ClockRRGraph::create_and_append_clock_rr_graph(
+                segment_inf,
+                det_routing_arch->R_minW_nmos,
+                det_routing_arch->R_minW_pmos,
+                det_routing_arch->wire_to_rr_ipin_switch,
+                base_cost_type);
+        }
     }
 
     //Write out rr graph file if needed

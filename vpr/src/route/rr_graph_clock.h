@@ -84,7 +84,9 @@ class ClockRRGraph {
         static void create_and_append_clock_rr_graph(
                 std::vector<t_segment_inf>& segment_inf,
                 const float R_minW_nmos,
-                const float R_minW_pmos);
+                const float R_minW_pmos,
+                int wire_to_rr_ipin_switch,
+                const enum e_base_cost_type base_cost_type);
 
     private:
         /* Dummy clock network that connects every I/O input to every clock pin. */

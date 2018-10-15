@@ -422,9 +422,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     device_ctx.chan_width.y_list = (int *) vtr::malloc(device_ctx.grid.width() * sizeof (int));
 }
 
-void vpr_setup_clock_networks(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if(vpr_setup.clock_modeling == DEDICATED_NETWORK) {
-        setup_clock_networks(Arch);
+        setup_clock_networks(Arch, vpr_setup.Segments);
     }
 }
 

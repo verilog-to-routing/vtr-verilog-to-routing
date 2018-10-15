@@ -6,6 +6,37 @@
 #include "vtr_log.h"
 #include "vtr_error.h"
 
+void static populate_segment_values(
+        int seg_index,
+        std::string name,
+        int length,
+        MetalLayer layer,
+        std::vector<t_segment_inf>& segment_inf);
+
+void populate_segment_values(
+        int seg_index,
+        std::string name,
+        int length,
+        MetalLayer layer,
+        std::vector<t_segment_inf>& segment_inf)
+{
+    segment_inf[seg_index].name = vtr::strdup(name.c_str());
+    segment_inf[seg_index].length = length;
+    segment_inf[seg_index].frequency = 1;
+    segment_inf[seg_index].Rmetal = layer.r_metal;
+    segment_inf[seg_index].Cmetal = layer.c_metal;
+    segment_inf[seg_index].directionality = UNI_DIRECTIONAL;
+    segment_inf[seg_index].arch_wire_switch = -1;
+    segment_inf[seg_index].arch_opin_switch = -1;
+    segment_inf[seg_index].frac_cb = -1;
+    segment_inf[seg_index].frac_sb = -1;
+    segment_inf[seg_index].longline = false;
+    segment_inf[seg_index].cb_len = -1;
+    segment_inf[seg_index].sb_len = -1;
+    segment_inf[seg_index].cb = nullptr;
+    segment_inf[seg_index].sb = nullptr;
+}
+
 /*
  * ClockNetwork (getters)
  */
@@ -35,6 +66,7 @@ void ClockNetwork::set_num_instance(int num_inst) {
  */
 
 void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraph& clock_graph) {
+
     for(int inst_num = 0; inst_num < get_num_inst(); inst_num++){
         create_rr_nodes_for_one_instance(clock_graph);
     }
@@ -112,6 +144,43 @@ void ClockRib::set_tap_name(std::string name) {
 /*
  * ClockRib (member functions)
  */
+
+void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
+
+    int index;
+    std::string name;
+    int length;
+
+    // Drive point segment
+    segment_inf.emplace_back();
+    drive_seg_idx = segment_inf.size() - 1;
+
+    index = drive_seg_idx;
+    name = clock_name_ + "_drive";
+    length = 1; // Since drive segment has one length, the left and right segments have length - 1
+
+    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf);
+
+    // Segment to the right of the drive point
+    segment_inf.emplace_back();
+    right_seg_idx = segment_inf.size() - 1;
+
+    index = right_seg_idx;
+    name = clock_name_ + "_right";
+    length = (x_chan_wire.length - drive.offset) - 1;
+
+    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf);
+
+    // Segment to the left of the drive point
+    segment_inf.emplace_back();
+    left_seg_idx = segment_inf.size() - 1;
+
+    index = left_seg_idx;
+    name = clock_name_ + "_left";
+    length = drive.offset - 1;
+
+    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf);
+}
 
 void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
  
@@ -215,10 +284,24 @@ int ClockRib::create_chanx_wire(
     rr_nodes[node_index].set_capacity(1);
     rr_nodes[node_index].set_track_num(ptc_num);
     rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START);
-    //rr_nodes[node_index].set_seg_index(0);
     auto rc_index = find_create_rr_rc_data(x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal);
     rr_nodes[node_index].set_rc_index(rc_index);
     rr_nodes[node_index].set_direction(direction);
+
+    switch(direction) {
+        case BI_DIRECTION:
+            rr_nodes[node_index].set_seg_index(drive_seg_idx);
+            break;
+        case DEC_DIRECTION:
+            rr_nodes[node_index].set_seg_index(left_seg_idx);
+            break;
+        case INC_DIRECTION:
+            rr_nodes[node_index].set_seg_index(right_seg_idx);
+            break;
+        default:
+            VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
+            break;
+    }
 
     return node_index;
 }
@@ -312,6 +395,43 @@ void ClockSpine::set_tap_name(std::string name) {
 /*
  * ClockSpine (member functions)
  */
+
+void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
+
+    int index;
+    std::string name;
+    int length;
+
+    // Drive point segment
+    segment_inf.emplace_back();
+    drive_seg_idx = segment_inf.size() - 1;
+
+    index = drive_seg_idx;
+    name = clock_name_ + "_drive";
+    length = 1; // Since drive segment has one length, the left and right segments have length - 1
+
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf);
+
+    // Segment to the right of the drive point
+    segment_inf.emplace_back();
+    right_seg_idx = segment_inf.size() - 1;
+
+    index = right_seg_idx;
+    name = clock_name_ + "_right";
+    length = (y_chan_wire.length - drive.offset) - 1;
+
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf);
+
+    // Segment to the left of the drive point
+    segment_inf.emplace_back();
+    left_seg_idx = segment_inf.size() - 1;
+
+    index = left_seg_idx;
+    name = clock_name_ + "_left";
+    length = drive.offset - 1;
+
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf);
+}
 
 void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
 
@@ -419,8 +539,22 @@ int ClockSpine::create_chany_wire(
     auto rc_index = find_create_rr_rc_data(y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal);
     rr_nodes[node_index].set_rc_index(rc_index);
     rr_nodes[node_index].set_cost_index(CHANX_COST_INDEX_START);
-    //rr_nodes[node_index].set_seg_index(0);
     rr_nodes[node_index].set_direction(direction);
+
+    switch(direction) {
+        case BI_DIRECTION:
+            rr_nodes[node_index].set_seg_index(drive_seg_idx);
+            break;
+        case DEC_DIRECTION:
+            rr_nodes[node_index].set_seg_index(left_seg_idx);
+            break;
+        case INC_DIRECTION:
+            rr_nodes[node_index].set_seg_index(right_seg_idx);
+            break;
+        default:
+            VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
+            break;
+    }
 
     return node_index;
 }
@@ -450,6 +584,13 @@ void ClockSpine::record_tap_locations(
  */
 
 //TODO: Implement clock Htree generation code
+void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
+
+    //Remove unused parameter warning
+    (void)segment_inf;
+
+    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
+}
 void ClockHTree::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
 
     //Remove unused parameter warning
