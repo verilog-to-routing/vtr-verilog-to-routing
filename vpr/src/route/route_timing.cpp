@@ -2275,10 +2275,10 @@ static size_t dynamic_update_bounding_boxes() {
         int delta_ymin = curr_bb.ymin - router_bb.ymin;
         int delta_ymax = router_bb.ymax - curr_bb.ymax;
 
-        VTR_ASSERT(delta_xmin >= 0);
-        VTR_ASSERT(delta_ymin >= 0);
-        VTR_ASSERT(delta_xmax >= 0);
-        VTR_ASSERT(delta_ymax >= 0);
+        //Note that if the net uses non-configurable switches it's routing
+        //may end-up outside the bounding boxes, so the delta values may be
+        //negative. The code below will expand the bounding box in those
+        //cases.
 
         //Expand each dimension by one if within DYNAMIC_BB_DELTA_THRESHOLD threshold
         bool updated_bb = false;
