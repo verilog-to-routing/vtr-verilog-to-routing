@@ -235,8 +235,8 @@ Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Ope
 | and                 | buf               | &&                      | +:
 | assign              | casex             | ||                      | -:
 | begin               | casez             | <=                      | >>>
-| case                | disable           | =>                      | (*
-| default             | edge              | >=                      | \*)
+| case                | disable           | =>                      |
+| default             | edge              | >=                      |
 | \`define            | endtask           | <<                      |
 | defparam            | macromodule       | <<<                     |
 | else                | scalared          | >>                      |
