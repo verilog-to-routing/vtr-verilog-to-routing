@@ -2278,7 +2278,7 @@ static size_t dynamic_update_bounding_boxes() {
         }
 
         if (delta_ymin <= DYNAMIC_BB_DELTA_THRESHOLD && router_bb.ymin > 0) {
-            --router_bb.ymin = std::max(0, router_bb.ymin - 1);
+            --router_bb.ymin;
             updated_bb = true;
         }
 
