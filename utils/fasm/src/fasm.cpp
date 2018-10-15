@@ -162,6 +162,18 @@ static const t_pb_graph_pin* is_node_used(const t_pb_route *top_pb_route, const 
     return nullptr;
 }
 
+void FasmWriterVisitor::check_features(t_metadata_dict *meta) const {
+  if(meta == nullptr) {
+    return;
+  }
+
+  if(!meta->has("fasm_features")) {
+    return;
+  }
+
+  output_fasm_features(meta->one("fasm_features")->as_string());
+}
+
 void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* pb,
         const t_pb_graph_node* pb_graph_node) {
   clb_prefix_ = build_clb_prefix(pb_graph_node);
@@ -169,6 +181,11 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
   if(pb_graph_node && pb) {
     t_pb_type *pb_type = pb_graph_node->pb_type;
     auto *mode = &pb_type->modes[pb->mode];
+
+    check_features(pb_type->meta);
+    if(mode != nullptr) {
+      check_features(mode->meta);
+    }
 
     if(mode != nullptr && std::string(mode->name) == "wire") {
         auto io_pin = is_node_used(pb_route, pb_graph_node);
