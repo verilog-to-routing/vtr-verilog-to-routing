@@ -46,8 +46,11 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         const int nodes_per_chan, int wire_to_ipin_switch,
         enum e_base_cost_type base_cost_type) {
 
+    int iseg, length, i, index;
+
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * segment_inf.size());
+    int num_segment = segment_inf.size();
+    int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
     device_ctx.rr_indexed_data.resize(num_rr_indexed_data);
 
     /* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
@@ -55,7 +58,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
      * * all other fields are invalid.  For SOURCES, SINKs and OPINs, all fields   *
      * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
-    for (int i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
+    for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
         device_ctx.rr_indexed_data[i].ortho_cost_index = OPEN;
         device_ctx.rr_indexed_data[i].seg_index = OPEN;
         device_ctx.rr_indexed_data[i].inv_length = OPEN;
@@ -66,46 +69,14 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear =
             device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
 
-    alloc_and_load_rr_indexed_data_for_segments(
-        segment_inf,
-        CHANX_COST_INDEX_START,
-        0,
-        0,
-        segment_inf.size(),
-        segment_inf.size(),
-        L_rr_node_indices,
-        nodes_per_chan,
-        base_cost_type);
-}
-
-void alloc_and_load_rr_indexed_data_for_segments(
-        const vector<t_segment_inf>& segment_inf,
-        const int start_index,
-        const int start_x_seg_index,
-        const int start_y_seg_index,
-        const int num_x_segments,
-        const int num_y_segments,
-        const t_rr_node_indices& L_rr_node_indices,
-        const int nodes_per_chan,
-        enum e_base_cost_type base_cost_type)
-{
-
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    int iseg, length;
-
-    // Ensure that we do not go out of bounds
-    VTR_ASSERT((start_index + num_x_segments + num_y_segments) <=
-               (int) device_ctx.rr_indexed_data.size());
-
-    int index = start_index;
-
     /* X-directed segments. */
-    for (iseg = start_x_seg_index; iseg < num_x_segments; iseg++) {
-        if ((index + num_x_segments) >= (int) device_ctx.rr_indexed_data.size()) {
+    for (iseg = 0; iseg < num_segment; iseg++) {
+        index = CHANX_COST_INDEX_START + iseg;
+
+        if ((index + num_segment) >= (int) device_ctx.rr_indexed_data.size()) {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index;
         } else {
-            device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_x_segments;
+            device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_segment;
         }
 
         if (segment_inf[iseg].longline)
@@ -115,18 +86,18 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
-
-        index++;
     }
-    load_rr_indexed_data_T_values(start_index, num_x_segments, CHANX,
+    load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
             nodes_per_chan, L_rr_node_indices);
 
     /* Y-directed segments. */
-    for (iseg = start_y_seg_index; iseg < num_y_segments; iseg++) {
-        if((index - num_y_segments) < CHANX_COST_INDEX_START) {
+    for (iseg = 0; iseg < num_segment; iseg++) {
+        index = CHANX_COST_INDEX_START + num_segment + iseg;
+
+        if((index - num_segment) < CHANX_COST_INDEX_START) {
             device_ctx.rr_indexed_data[index].ortho_cost_index = index;
         } else {
-            device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_y_segments;
+            device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_segment;
         }
 
         if (segment_inf[iseg].longline)
@@ -136,11 +107,9 @@ void alloc_and_load_rr_indexed_data_for_segments(
 
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
-
-        index++;
     }
-    load_rr_indexed_data_T_values((start_index + num_x_segments),
-            num_y_segments, CHANY, nodes_per_chan, L_rr_node_indices);
+    load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
+            num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
     load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
             base_cost_type);
