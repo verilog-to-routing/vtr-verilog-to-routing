@@ -249,6 +249,11 @@ void ClockToPinsConnection::create_switches(const ClockRRGraph& clock_graph) {
             auto width_offset = grid[x][y].width_offset;
             auto height_offset = grid[x][y].height_offset;
 
+            // Ignore gird locations that do not have blocks
+            if(!type->pb_type) {
+                continue;
+            }
+
             for(e_side side : SIDES) {
 
                 //Don't connect pins which are not adjacent to channels around the perimeter
