@@ -204,7 +204,8 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const ClusterBlockId clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
-		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data);
+		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data,
+        bool debug_clustering);
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
@@ -272,7 +273,8 @@ static t_pack_molecule* get_molecule_for_cluster(
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
-		ClusterBlockId cluster_index);
+		ClusterBlockId cluster_index,
+        bool debug_clustering);
 
 static void check_clustering();
 
@@ -545,7 +547,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 					&num_unrelated_clustering_attempts,
 					cur_cluster_placement_stats_ptr,
 					clb_inter_blk_nets,
-					clb_index);
+					clb_index, debug_clustering);
 			prev_molecule = istart;
 			while (next_molecule != nullptr && prev_molecule != next_molecule) {
 				block_pack_status = try_pack_molecule(
@@ -604,7 +606,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 							&num_unrelated_clustering_attempts,
 							cur_cluster_placement_stats_ptr,
 							clb_inter_blk_nets,
-							clb_index);
+							clb_index, debug_clustering);
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
@@ -641,7 +643,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr,
 						clb_inter_blk_nets,
-						clb_index);
+						clb_index, debug_clustering);
 			}
 
             if (!debug_clustering) {
@@ -1181,6 +1183,19 @@ static enum e_block_pack_status try_pack_molecule(
 	molecule_size = get_array_size_of_molecule(molecule);
 	failed_location = 0;
 
+    if (debug_clustering) {
+        AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
+        vtr::printf("\t\tTry Pack: '%s' (%s) ",
+                        atom_ctx.nlist.block_name(root_atom).c_str(),
+                        atom_ctx.nlist.block_model(root_atom)->name);
+        if (molecule->pack_pattern) {
+            vtr::printf("molecule_type %s molecule_size %zu",
+                molecule->pack_pattern->name,
+                molecule->atom_block_ids.size());
+        }
+        vtr::printf("\n");
+    }
+
 	while (block_pack_status != BLK_PASSED) {
 		if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
 				primitives_list)) {
@@ -1201,7 +1216,8 @@ static enum e_block_pack_status try_pack_molecule(
 							primitives_list[i],
 							molecule->atom_block_ids[i], pb, &parent,
 							max_models, max_cluster_size, clb_index,
-							cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
+							cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data,
+                            debug_clustering);
 				}
 			}
 			if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
@@ -1209,6 +1225,9 @@ static enum e_block_pack_status try_pack_molecule(
 				reset_lookahead_pins_used(pb);
 				try_update_lookahead_pins_used(pb);
 				if (!check_lookahead_pins_used(pb, max_external_pin_util)) {
+                    if (debug_clustering) {
+                        vtr::printf("\t\tFAILED Pin Feasibility Filter\n");
+                    }
                     block_pack_status = BLK_FAILED_FEASIBLE;
 				}
 			}
@@ -1218,6 +1237,9 @@ static enum e_block_pack_status try_pack_molecule(
 				*/
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data, debug_clustering) == false) {
 					/* Cannot pack */
+                    if (debug_clustering) {
+                        vtr::printf("\t\tFAILED Detailed Routing Legality\n");
+                    }
 					block_pack_status = BLK_FAILED_ROUTE;
 				} else {
 					/* Pack successful, commit
@@ -1264,8 +1286,15 @@ static enum e_block_pack_status try_pack_molecule(
                                 atom_molecules);
 					}
 				}
-			}
+			} else {
+                if (debug_clustering) {
+                    vtr::printf("\t\tPASSED pack molecule\n");
+                }
+            }
 		} else {
+            if (debug_clustering) {
+                vtr::printf("\t\tFAILED No candidate primitives available\n");
+            }
 			block_pack_status = BLK_FAILED_FEASIBLE;
 			break; /* no more candidate primitives available, this molecule will not pack, return fail */
 		}
@@ -1282,7 +1311,8 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const ClusterBlockId clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
-		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data) {
+		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data,
+        bool debug_clustering) {
 	int i, j;
 	bool is_primitive;
 	enum e_block_pack_status block_pack_status;
@@ -1302,7 +1332,8 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		block_pack_status = try_place_atom_block_rec(
 				pb_graph_node->parent_pb_graph_node, blk_id, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
-				cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
+				cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data,
+                debug_clustering);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1386,6 +1417,13 @@ static enum e_block_pack_status try_place_atom_block_rec(
                 }
             }
 		}
+
+        if (debug_clustering && block_pack_status == BLK_PASSED) {
+            vtr::printf("\t\t\tPlaced atom '%s' (%s) at %s\n",
+                        atom_ctx.nlist.block_name(blk_id).c_str(),
+                        atom_ctx.nlist.block_model(blk_id)->name,
+                        pb->hierarchical_type_name().c_str());
+        }
 	}
 
     if (block_pack_status != BLK_PASSED) {
@@ -1869,15 +1907,18 @@ static void start_new_cluster(
         }
     );
 
-    vtr::printf("\tSeed: %s type %s",
-                    root_atom_name.c_str(),
-                    root_model->name);
-    if (molecule->pack_pattern) {
-        vtr::printf("molecule_type %s molecule_size %zu",
-            molecule->pack_pattern->name,
-            molecule->atom_block_ids.size());
+
+    if (debug_clustering) {
+        vtr::printf("\tSeed: '%s' (%s) ",
+                        root_atom_name.c_str(),
+                        root_model->name);
+        if (molecule->pack_pattern) {
+            vtr::printf("molecule_type %s molecule_size %zu",
+                molecule->pack_pattern->name,
+                molecule->atom_block_ids.size());
+        }
+        vtr::printf("\n");
     }
-    vtr::printf("\n");
 
     //Try packing into each candidate type
 	bool success = false;
@@ -2153,7 +2194,8 @@ static t_pack_molecule *get_molecule_for_cluster(
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
-		ClusterBlockId cluster_index) {
+		ClusterBlockId cluster_index,
+        bool debug_clustering) {
 
 	/* Finds the block with the the greatest gain that satisifies the      *
 	 * input, clock and capacity constraints of a cluster that are       *
@@ -2174,8 +2216,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	if (allow_unrelated_clustering) {
 		if (best_molecule == nullptr) {
 			if (*num_unrelated_clustering_attempts == 0) {
-				best_molecule =
-						get_free_molecule_with_most_ext_inputs_for_cluster(
+				best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster(
 								cur_pb,
 								cluster_placement_stats_ptr);
 				(*num_unrelated_clustering_attempts)++;
@@ -2183,7 +2224,14 @@ static t_pack_molecule *get_molecule_for_cluster(
 		} else {
 			*num_unrelated_clustering_attempts = 0;
 		}
-	}
+	} else {
+		if (best_molecule == nullptr) {
+            if (debug_clustering) {
+                vtr::printf("\tNo related molecule found and unrelated clustering disabled\n");
+            }
+        }
+    }
+
 
 	return best_molecule;
 }

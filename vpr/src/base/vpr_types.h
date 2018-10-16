@@ -34,6 +34,7 @@
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector_map.h"
+#include "vtr_util.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -293,6 +294,34 @@ struct t_pb {
     //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
     bool is_primitive() const {
         return child_pbs == nullptr;
+    }
+
+    std::string hierarchical_type_name() const {
+        std::vector<std::string> names;
+
+        int child_mode = OPEN;
+        for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
+            std::string type_name;
+
+            //Type
+            if (curr->pb_graph_node) {
+                type_name = curr->pb_graph_node->pb_type->name;
+                type_name += "[" + std::to_string(curr->pb_graph_node->placement_index) + "]";
+
+                //Mode
+                if (child_mode != OPEN) {
+                    std::string mode_name = curr->pb_graph_node->pb_type->modes[child_mode].name;
+                    type_name += "[" + mode_name + "]";
+                }
+            }
+
+            child_mode = curr->mode; //Save the mode of curr since it will be child on next iteration
+
+            names.push_back(type_name);
+        }
+
+        //We walked up from the leaf to root, so we join in reverse order
+        return vtr::join(names.rbegin(), names.rend(), "/");
     }
 
     //Returns the bit index into the AtomPort for the specified primitive
