@@ -267,7 +267,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 		}
 
 		fprintf(Echo, "\t\t\t\tcb ");
-		for (j = 0; j < seg.cb_len; j++) {
+		for (j = 0; j < (int)seg.cb.size(); j++) {
 			if (seg.cb[j]) {
 				fprintf(Echo, "1 ");
 			} else {
@@ -277,7 +277,7 @@ void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 		fprintf(Echo, "\n");
 
 		fprintf(Echo, "\t\t\t\tsb ");
-		for (j = 0; j < seg.sb_len; j++) {
+		for (j = 0; j < (int)seg.sb.size(); j++) {
 			if (seg.sb[j]) {
 				fprintf(Echo, "1 ");
 			} else {

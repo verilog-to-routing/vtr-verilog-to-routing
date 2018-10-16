@@ -30,10 +30,6 @@ void free_arch(t_arch* arch) {
     delete[] arch->Switches;
     arch->Switches = nullptr;
     for (size_t i = 0; i < (arch->Segments).size(); ++i) {
-        vtr::free(arch->Segments[i].cb);
-        arch->Segments[i].cb = nullptr;
-        vtr::free(arch->Segments[i].sb);
-        arch->Segments[i].sb = nullptr;
         vtr::free(arch->Segments[i].name);
         arch->Segments[i].name = nullptr;
     }

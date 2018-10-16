@@ -1019,10 +1019,8 @@ struct t_segment_inf {
 	float Rmetal;
 	float Cmetal;
 	enum e_directionality directionality;
-	bool *cb;
-	int cb_len;
-	bool *sb;
-	int sb_len;
+	std::vector<bool> cb;
+	std::vector<bool> sb;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 

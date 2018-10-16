@@ -148,8 +148,8 @@ static void ProcessSegments(pugi::xml_node Parent,
 		const t_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data);
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessCB_SB(pugi::xml_node Node, bool * list,
-		const int len, const pugiutil::loc_data& loc_data);
+static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list,
+		const pugiutil::loc_data& loc_data);
 static void ProcessPower( pugi::xml_node parent,
 		t_power_arch * power_arch,
         const pugiutil::loc_data& loc_data);
@@ -2845,25 +2845,23 @@ static void ProcessSegments(pugi::xml_node Parent,
 		}
 
 		/* Setup the CB list if they give one, otherwise use full */
-		Segs[i].cb_len = length;
-		Segs[i].cb = (bool *) vtr::malloc(length * sizeof(bool));
+		Segs[i].cb.resize(length);
 		for (j = 0; j < length; ++j) {
 			Segs[i].cb[j] = true;
 		}
 		SubElem = get_single_child(Node, "cb", loc_data, OPTIONAL);
 		if (SubElem) {
-			ProcessCB_SB(SubElem, Segs[i].cb, length, loc_data);
+			ProcessCB_SB(SubElem, Segs[i].cb, loc_data);
 		}
 
 		/* Setup the SB list if they give one, otherwise use full */
-		Segs[i].sb_len = (length + 1);
-		Segs[i].sb = (bool *) vtr::malloc((length + 1) * sizeof(bool));
+		Segs[i].sb.resize(length + 1);
 		for (j = 0; j < (length + 1); ++j) {
 			Segs[i].sb[j] = true;
 		}
 		SubElem = get_single_child(Node, "sb", loc_data, OPTIONAL);
 		if (SubElem) {
-			ProcessCB_SB(SubElem, Segs[i].sb, (length + 1), loc_data);
+			ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
 		}
 
 		/* Get next Node */
@@ -2947,11 +2945,11 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 }
 
 
-static void ProcessCB_SB(pugi::xml_node Node, bool * list,
-		const int len, const pugiutil::loc_data& loc_data) {
+static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list,
+		const pugiutil::loc_data& loc_data) {
 	const char *tmp = nullptr;
 	int i;
-
+    int len = list.size();
 	/* Check the type. We only support 'pattern' for now.
 	 * Should add frac back eventually. */
 	tmp = get_attribute(Node, "type", loc_data).value();

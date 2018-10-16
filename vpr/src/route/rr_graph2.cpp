@@ -306,7 +306,7 @@ t_seg_details *alloc_and_load_seg_details(
                     seg_details[cur_track].cb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].cb_len;
+                    index = j % segment_inf[i].cb.size();
                     seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
                 }
             }
@@ -315,7 +315,7 @@ t_seg_details *alloc_and_load_seg_details(
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].sb_len;
+                    index = j % segment_inf[i].sb.size();
                     seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
                 }
             }

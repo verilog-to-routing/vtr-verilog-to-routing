@@ -31,10 +31,6 @@ void populate_segment_values(
     segment_inf[seg_index].frac_cb = -1;
     segment_inf[seg_index].frac_sb = -1;
     segment_inf[seg_index].longline = false;
-    segment_inf[seg_index].cb_len = -1;
-    segment_inf[seg_index].sb_len = -1;
-    segment_inf[seg_index].cb = nullptr;
-    segment_inf[seg_index].sb = nullptr;
 }
 
 /*
