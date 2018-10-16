@@ -20,7 +20,7 @@ void populate_segment_values(
         MetalLayer layer,
         std::vector<t_segment_inf>& segment_inf)
 {
-    segment_inf[seg_index].name = vtr::strdup(name.c_str());
+    segment_inf[seg_index].name = name;
     segment_inf[seg_index].length = length;
     segment_inf[seg_index].frequency = 1;
     segment_inf[seg_index].Rmetal = layer.r_metal;

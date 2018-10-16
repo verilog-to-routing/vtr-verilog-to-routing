@@ -237,8 +237,7 @@ t_seg_details *alloc_and_load_seg_details(
     VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
     *max_chan_width = tmp;
 
-    seg_details = (t_seg_details *) vtr::malloc(
-            *max_chan_width * sizeof (t_seg_details));
+    seg_details = new t_seg_details[*max_chan_width];
 
     /* Setup the seg_details data */
     cur_track = 0;
@@ -266,7 +265,7 @@ t_seg_details *alloc_and_load_seg_details(
         for (itrack = 0; itrack < ntracks; itrack++) {
 
             /* set the name of the segment type this track belongs to */
-            seg_details[cur_track].type_name_ptr = segment_inf[i].name;
+            seg_details[cur_track].type_name = segment_inf[i].name;
 
             /* Remember the start track of the current wire group */
             if ((itrack / fac) % length == 0 && (itrack % fac) == 0) {
@@ -391,8 +390,7 @@ t_chan_details init_chan_details(
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
 
-            t_seg_details* p_seg_details = nullptr;
-            p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof (t_seg_details));
+            t_seg_details* p_seg_details = new t_seg_details[nodes_per_chan->max]();
             for (int i = 0; i < num_seg_details; ++i) {
 
                 p_seg_details[i].length = seg_details[i].length;
@@ -435,7 +433,7 @@ t_chan_details init_chan_details(
                 p_seg_details[i].direction = seg_details[i].direction;
 
                 p_seg_details[i].index = seg_details[i].index;
-                p_seg_details[i].type_name_ptr = seg_details[i].type_name_ptr;
+                p_seg_details[i].type_name = seg_details[i].type_name;
 
                 if (seg_details_type == SEG_DETAILS_X) {
                     if (i >= nodes_per_chan->x_list[y]) {
@@ -617,7 +615,7 @@ void free_seg_details(
         vtr::free(seg_details[i].cb);
         vtr::free(seg_details[i].sb);
     }
-    vtr::free(seg_details);
+    delete[] seg_details;
 }
 
 void free_chan_details(

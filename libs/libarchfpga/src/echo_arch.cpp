@@ -87,7 +87,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
                 VTR_ASSERT(false);
             }
             fprintf(Echo, " fc_value: %f", fc_spec.fc_value);
-            fprintf(Echo, " segment: %s", arch->Segments[fc_spec.seg_index].name);
+            fprintf(Echo, " segment: %s", arch->Segments[fc_spec.seg_index].name.c_str());
             fprintf(Echo, " pins:");
             for (int pin : fc_spec.pins) {
                 fprintf(Echo, " %d", pin);

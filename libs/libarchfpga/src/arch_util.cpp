@@ -29,10 +29,6 @@ void free_arch(t_arch* arch) {
     }
     delete[] arch->Switches;
     arch->Switches = nullptr;
-    for (size_t i = 0; i < (arch->Segments).size(); ++i) {
-        vtr::free(arch->Segments[i].name);
-        arch->Segments[i].name = nullptr;
-    }
     t_model *model = arch->models;
     while (model) {
         t_model_ports *input_port = model->inputs;

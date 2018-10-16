@@ -901,7 +901,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
         const int global_route_switch,
         int * num_seg_details) {
 
-    t_seg_details *seg_details = (t_seg_details *) vtr::malloc(sizeof (t_seg_details));
+    t_seg_details *seg_details = new t_seg_details[1];
 
     seg_details->index = 0;
     seg_details->length = 1;

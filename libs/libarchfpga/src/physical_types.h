@@ -1008,7 +1008,7 @@ enum e_Fc_type {
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
  *                       the track?                                          */
 struct t_segment_inf {
-	char *name;
+	std::string name;
 	int frequency;
 	int length;
 	short arch_wire_switch;

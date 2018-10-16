@@ -2710,7 +2710,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		/* Get segment name */
 		tmp = get_attribute(Node, "name", loc_data, OPTIONAL).as_string(nullptr);
 		if (tmp) {
-			Segs[i].name = vtr::strdup(tmp);
+			Segs[i].name = std::string(tmp);
 		} else {
 			/* if swich block is "custom", then you have to provide a name for segment */
 			if (switchblocklist_required) {
@@ -2723,7 +2723,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 			ss << "unnamed_segment_" << i;
 			string dummy = ss.str();
 			tmp = dummy.c_str();
-			Segs[i].name = vtr::strdup(tmp);
+			Segs[i].name = std::string(tmp);
 		}
 
 		/* Get segment length */

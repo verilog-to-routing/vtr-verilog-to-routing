@@ -1043,7 +1043,7 @@ struct t_seg_details {
 	int seg_end;
 	int index;
 	float Cmetal_per_m; /* Used for power */
-	const char *type_name_ptr;
+	std::string type_name;
 };
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
