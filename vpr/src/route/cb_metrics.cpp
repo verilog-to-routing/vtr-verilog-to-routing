@@ -1468,7 +1468,7 @@ void make_poor_cb_pattern(const e_pin_type pin_type, const t_type_ptr block_type
 
 					/* if this pin is not of the correct type, skip it */
 					e_pin_type this_pin_type = block_type->class_inf[ block_type->pin_class[pin] ].type;
-					if (this_pin_type != pin_type || block_type->is_global_pin[pin]){
+					if (this_pin_type != pin_type || block_type->is_ignored_pin[pin]){
 						continue;
 					}
 

@@ -155,7 +155,7 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
     currpin = 0;
     for (i = 0; i < type->num_class; i++) {
 
-        if (type->class_inf[i].type == pintype && !type->is_global_pin[currpin] &&
+        if (type->class_inf[i].type == pintype && !type->is_ignored_pin[currpin] &&
                 type->class_inf[i].num_pins > best_class_num_pins) {
             //Save the best class
             best_class_num_pins = type->class_inf[i].num_pins;

@@ -13,9 +13,9 @@ void ClockModeling::treat_clock_pins_as_non_globals() {
             for(auto clock_pin_idx : type->get_clock_pins_indices()) {
 
                // clock pins should be originally considered as global when reading the architecture
-               VTR_ASSERT(type->is_global_pin[clock_pin_idx]);
+               VTR_ASSERT(type->is_ignored_pin[clock_pin_idx]);
 
-               type->is_global_pin[clock_pin_idx] = false;
+               type->is_ignored_pin[clock_pin_idx] = false;
             }
         }
     }

@@ -566,10 +566,10 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	Type->class_inf = (t_class*) vtr::calloc(num_class, sizeof(t_class));
 	Type->num_class = num_class;
 	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
-	Type->is_global_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
+	Type->is_ignored_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
-		Type->is_global_pin[i] = true;
+		Type->is_ignored_pin[i] = true;
 	}
 
 	pin_count = 0;
@@ -601,7 +601,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 					Type->class_inf[num_class].type = DRIVER;
 				}
 				Type->pin_class[pin_count] = num_class;
-				Type->is_global_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
+				Type->is_ignored_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
                     Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 

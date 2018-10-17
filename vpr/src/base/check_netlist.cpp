@@ -92,7 +92,7 @@ static void check_connections_to_global_clb_pins(ClusterNetId net_id) {
 		ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 		int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 
-		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
+		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_ignored_pin[pin_index] != is_global_net
 			&& !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 
             vtr::printf_warning(__FILE__, __LINE__,

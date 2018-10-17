@@ -436,7 +436,10 @@ constexpr int DEFAULT_SWITCH = -2;
  * pin_avg_width_offset: Average width offset to specified pin (exact if only a single physical pin instance)
  * pin_avg_height_offset: Average height offset to specified pin (exact if only a single physical pin instance)
  * pin_class: The class a pin belongs to
- * is_global_pin: Whether or not a pin is global (hence not routed)
+ * is_ignored_pin: Whether or not a pin is ignored durring rr_graph generation and routing.
+ *                 This is usually the case for clock pins and other global pins unless the
+ *                 clock_modeling option is set to route the clock through regular inter-block
+ *                 wiring or through a dedicated clock network.
  *
  * fc_specs: The Fc specifications for all pins
  *
@@ -477,7 +480,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     std::vector<int> pin_width_offset; //[0..num_pins-1]
     std::vector<int> pin_height_offset; //[0..num_pins-1]
 	int *pin_class = nullptr; /* [0..num_pins-1] */
-	bool *is_global_pin = nullptr; /* [0..num_pins-1] */
+	bool *is_ignored_pin = nullptr; /* [0..num_pins-1] */
 
     std::vector<t_fc_specification> fc_specs;
 

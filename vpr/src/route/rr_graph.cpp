@@ -1732,7 +1732,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
             continue;
 
         /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
-        if (Type->is_global_pin[pin])
+        if (Type->is_ignored_pin[pin])
             continue;
 
         for (int width = 0; width < Type->width; ++width) {
@@ -2301,7 +2301,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         if (type->class_inf[class_index].type != DRIVER) {
             continue;
         }
-        if (type->is_global_pin[pin_index]) {
+        if (type->is_ignored_pin[pin_index]) {
             continue;
         }
 

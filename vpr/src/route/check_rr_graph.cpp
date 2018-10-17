@@ -206,7 +206,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 
     ipin = device_ctx.rr_nodes[inode].ptc_num();
 
-    return type->is_global_pin[ipin];
+    return type->is_ignored_pin[ipin];
 }
 
 void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext& device_ctx) {
