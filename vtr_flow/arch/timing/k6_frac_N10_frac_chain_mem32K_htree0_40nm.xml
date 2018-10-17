@@ -212,7 +212,7 @@
       <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
 		<!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
         <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
-        <switch type="mux" name="drive_buff" R="0" Cout="0" Cin="0" Tdel="0" buf_size="0"/>
+        <switch type="mux" name="drive_buff" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
         </switchlist>
 		<segmentlist>
       <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
@@ -1513,8 +1513,8 @@
   <clocknetworks>
 
         <metal_layers>
-            <metal_layer name="global_spine" Rmetal="410" Cmetal="10.0e-15"/>
-            <metal_layer name="global_rib" Rmetal="415" Cmetal="15.0e-15"/>
+            <metal_layer name="global_spine" Rmetal="50.42" Cmetal="20.7e-15"/>
+            <metal_layer name="global_rib" Rmetal="50.42" Cmetal="20.7e-15"/>
         </metal_layers>
         
         <clock_network name="spine1" num_inst="1">
