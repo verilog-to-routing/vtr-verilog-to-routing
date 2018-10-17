@@ -47,6 +47,7 @@ install:
  - ./.travis/install.sh
 
 script:
+  - while sleep 9m; do echo "=====[ $SECONDS seconds still running ]====="; done &
   - ./.travis/script.sh
 
 after_failure:
