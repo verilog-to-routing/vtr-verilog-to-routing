@@ -89,9 +89,6 @@ class ClockRRGraph {
                 const enum e_base_cost_type base_cost_type);
 
     private:
-        /* Dummy clock network that connects every I/O input to every clock pin. */
-        static void create_star_model_network();
-
         /* loop over all of the clock networks and create their wires */
         void create_clock_networks_wires(std::vector<std::unique_ptr<ClockNetwork>>& clock_networks);
 
