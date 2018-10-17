@@ -663,8 +663,10 @@ static bool calculate_delay(int source_node, int sink_node,
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
+
+    bool is_global_net = false; //TODO: how can we get the net id to determine if net is global
     t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0, modified_rr_node_inf, router_stats);
+            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0, modified_rr_node_inf, router_stats, is_global_net);
 
     if (cheapest == nullptr) {
         return false;

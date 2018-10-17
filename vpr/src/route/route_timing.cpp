@@ -149,7 +149,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
         float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
-        float target_delay, float short_path_crit, RouterStats& router_stats);
+        float target_delay, float short_path_crit, RouterStats& router_stats, bool is_global_net);
 
 static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
         const route_budgets& budgeting_inf, const float max_delay, const float min_delay, const float target_delay, const float short_path_crit,
@@ -899,7 +899,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, (int)cluster_ctx.clb_nlist.net_sinks(net_id).size(), budgeting_inf,
-            max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf, router_stats);
+            max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf, router_stats, cluster_ctx.clb_nlist.is_global_net(net_id));
 
     if (cheapest == nullptr) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -940,7 +940,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets &budgeting_inf,
         float max_delay, float min_delay, float target_delay, float short_path_crit, std::vector<int>& modified_rr_node_inf,
-        RouterStats& router_stats) {
+        RouterStats& router_stats, bool is_global_net) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
@@ -1005,7 +1005,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
                     target_criticality, num_sinks, sink_node, astar_fac,
                     highfanout_rlim, budgeting_inf, max_delay, min_delay,
-                    target_delay, short_path_crit, router_stats);
+                    target_delay, short_path_crit, router_stats, is_global_net);
         }
 
         free_heap_data(cheapest);
@@ -1219,7 +1219,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
         float astar_fac, int highfanout_rlim, route_budgets& budgeting_inf, float max_delay, float min_delay,
-        float target_delay, float short_path_crit, RouterStats& router_stats) {
+        float target_delay, float short_path_crit, RouterStats& router_stats, bool is_global_net) {
 
     /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
      * the expanded bounding box specified in bounding_box are not added to the     *
@@ -1234,7 +1234,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
     int target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
     int target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
 
-    bool high_fanout = is_high_fanout(num_sinks);
+    bool high_fanout = is_high_fanout(num_sinks) && !is_global_net;
 
     int num_edges = device_ctx.rr_nodes[inode].num_edges();
     for (int iconn = 0; iconn < num_edges; iconn++) {
