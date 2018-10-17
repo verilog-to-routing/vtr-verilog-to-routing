@@ -162,8 +162,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         /*
          * Nets
          */
-        //Returns whether the net is global or fixed
-        bool net_is_global(const ClusterNetId id) const;
+        //Returns whether the net is ignored i.e. not routed
+        bool net_is_ignored(const ClusterNetId id) const;
 
     public: //Public Mutators
         //Create or return an existing block in the netlist
@@ -198,7 +198,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
         ClusterNetId    create_net(const std::string name);
 
         //Sets the flag in net_global_ = state
-        void set_net_is_global(ClusterNetId net_id, bool state);
+        void set_net_is_ignored(ClusterNetId net_id, bool state);
 
     private: //Private Members
         /*
@@ -250,7 +250,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
                                                                 //in t_type_descriptor) of logical pins
 
         //Nets
-        vtr::vector_map<ClusterNetId, bool> net_is_global_;     //Boolean mapping indicating if the net is global
+        vtr::vector_map<ClusterNetId, bool> net_is_ignored_;     //Boolean mapping indicating if the net is global
 };
 
 #endif

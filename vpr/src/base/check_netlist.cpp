@@ -82,7 +82,7 @@ void check_netlist() {
 static void check_connections_to_global_clb_pins(ClusterNetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	bool is_global_net = cluster_ctx.clb_nlist.net_is_global(net_id);
+	bool is_global_net = cluster_ctx.clb_nlist.net_is_ignored(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
 	 * although a CLB output generates a warning.  I could make a global CLB      *

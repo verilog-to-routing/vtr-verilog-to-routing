@@ -56,7 +56,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id))
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
 			continue;
 
         for (auto clb_pin : cluster_ctx.clb_nlist.net_sinks(net_id)) {

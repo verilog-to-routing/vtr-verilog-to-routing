@@ -102,7 +102,7 @@ void check_route(enum e_route_type route_type) {
 
 	/* Now check that all nets are indeed connected. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
 			continue;
 
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
@@ -571,7 +571,7 @@ void recompute_occupancy_from_scratch() {
 	/* Now go through each net and count the tracks and pins used everywhere */
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Skip ignored nets. */
 			continue;
 
 		tptr = route_ctx.trace_head[net_id];

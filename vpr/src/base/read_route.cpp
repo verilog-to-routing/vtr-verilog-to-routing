@@ -160,7 +160,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
             && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
-        if (!cluster_ctx.clb_nlist.net_is_global(inet)) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                     "Net %lu should be a global net", size_t(inet));
         }
@@ -177,7 +177,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         process_global_blocks(fp, inet, filename, lineno);
     } else {
         /* Not a global net */
-        if (cluster_ctx.clb_nlist.net_is_global(inet)) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(inet)) {
             vtr::printf_warning(__FILE__, __LINE__, "Net %lu (%s) is marked as global in the netlist, but is non-global in the .route file\n", size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 

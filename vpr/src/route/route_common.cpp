@@ -1562,7 +1562,7 @@ void print_route(const char* placement_file, const char* route_file) {
     if (!route_ctx.trace_head.empty()) { //Only if routing exists
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+            if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
                 if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
                     fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
