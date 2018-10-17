@@ -567,9 +567,11 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	Type->num_class = num_class;
 	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
 	Type->is_ignored_pin = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
+	Type->is_pin_global = (bool*) vtr::malloc( Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
 		Type->is_ignored_pin[i] = true;
+		Type->is_pin_global[i] = true;
 	}
 
 	pin_count = 0;
@@ -601,7 +603,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 					Type->class_inf[num_class].type = DRIVER;
 				}
 				Type->pin_class[pin_count] = num_class;
+                // clock pins and other specified global ports are initially specified
+                // as ignored pins (i.e. connections are not created in the rr_graph and
+                // nets connected to the port are ignored as well).
 				Type->is_ignored_pin[pin_count] = Type->pb_type->ports[j].is_clock ||
+                    Type->pb_type->ports[j].is_non_clock_global;
+				// clock pins and other specified global ports are flaged as global
+                Type->is_pin_global[pin_count] = Type->pb_type->ports[j].is_clock ||
                     Type->pb_type->ports[j].is_non_clock_global;
 				pin_count++;
 

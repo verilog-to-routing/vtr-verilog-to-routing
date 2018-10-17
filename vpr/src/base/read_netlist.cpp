@@ -945,6 +945,11 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 					VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
 					VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
 
+                    // nets connecting to global pins are marked as global nets
+                    if (clb_nlist.block_type(blk_id)->is_pin_global[j]) {
+                        clb_nlist.set_is_global_net(clb_net_id, true);
+                    }
+
 					if (clb_nlist.block_type(blk_id)->is_ignored_pin[j]) {
 						clb_nlist.set_net_is_ignored(clb_net_id, true);
                     }

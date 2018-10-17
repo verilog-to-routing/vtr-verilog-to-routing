@@ -141,6 +141,7 @@ void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_des
         }
         vtr::free(type_descriptors[i].class_inf);
         vtr::free(type_descriptors[i].is_ignored_pin);
+        vtr::free(type_descriptors[i].is_pin_global);
         vtr::free(type_descriptors[i].pin_class);
 
         free_pb_type(type_descriptors[i].pb_type);

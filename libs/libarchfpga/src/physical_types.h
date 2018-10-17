@@ -440,6 +440,8 @@ constexpr int DEFAULT_SWITCH = -2;
  *                 This is usually the case for clock pins and other global pins unless the
  *                 clock_modeling option is set to route the clock through regular inter-block
  *                 wiring or through a dedicated clock network.
+ * is_pin_global: Whether or not this pin is marked as global. Clock pins and other specified
+ *                global pins in the architecture file are marked as global.
  *
  * fc_specs: The Fc specifications for all pins
  *
@@ -481,6 +483,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     std::vector<int> pin_height_offset; //[0..num_pins-1]
 	int *pin_class = nullptr; /* [0..num_pins-1] */
 	bool *is_ignored_pin = nullptr; /* [0..num_pins-1] */
+    bool *is_pin_global = nullptr; /* [0..num_pins -1] */
 
     std::vector<t_fc_specification> fc_specs;
 
