@@ -44,9 +44,3 @@ start_section "vtr.test.3" "${GREEN}Testing..${NC} ${CYAN}vtr_reg_valgrind_small
 end_section "vtr.test.3"
 
 $SPACER
-
-start_section "vtr.test.4" "${GREEN}Testing..${NC} ${CYAN}odin_reg_micro${NC}"
-./run_reg_test.pl odin_reg_micro
-end_section "vtr.test.4"
-
-$SPACER
