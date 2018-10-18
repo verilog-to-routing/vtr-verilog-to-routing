@@ -462,7 +462,7 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
             if(drive_y > grid.width()-2 || drive_y >= y_end || drive_y <= (y_start+y_offset)) {
                 vtr::printf_warning(__FILE__, __LINE__, "A spine part of clock network '%s' was not"
                     " created becuase the drive point is not reachable. "
-                    "This can lead to an unroutable architecture.\n", clock_name_);
+                    "This can lead to an unroutable architecture.\n", clock_name_.c_str());
                 continue;
             }
 
@@ -471,7 +471,7 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
                 vtr::printf_warning(__FILE__, __LINE__, "Spine start '%d' and end '%d' values are "
                         "not sucessive for clock network '%s' due to not meeting boundry conditions."
                         " This can lead to an unroutable architecture.\n",
-                        (y_start + y_offset), y_end, clock_name_);
+                        (y_start + y_offset), y_end, clock_name_.c_str());
                 continue;
             }
 
