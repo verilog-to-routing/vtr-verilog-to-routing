@@ -59,7 +59,7 @@ struct t_options {
     argparse::ArgValue<bool> sweep_dangling_nets;
     argparse::ArgValue<bool> sweep_dangling_blocks;
     argparse::ArgValue<bool> sweep_constant_primary_outputs;
-    argparse::ArgValue<bool> verbose_sweep;
+    argparse::ArgValue<int> netlist_verbosity;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;

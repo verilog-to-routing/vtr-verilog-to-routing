@@ -778,9 +778,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    netlist_grp.add_argument<bool,ParseOnOff>(args.verbose_sweep, "--verbose_sweep")
-            .help("Controls whether sweeping describes the netlist modifications performed")
-            .default_value("off")
+    netlist_grp.add_argument(args.netlist_verbosity, "--netlist_verbosity")
+            .help("Controls how much detail netlist processing produces about detected netlist"
+                  " characteristics (e.g. constant generator detection) and applied netlist"
+                  " modifications (e.g. swept netlist components)."
+                  " Larger values produce more detail.")
+            .default_value("1")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 

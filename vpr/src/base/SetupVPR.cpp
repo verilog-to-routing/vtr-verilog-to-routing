@@ -436,7 +436,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
     NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
     NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
-    NetlistOpts.verbose_sweep = Options.verbose_sweep;
+    NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,

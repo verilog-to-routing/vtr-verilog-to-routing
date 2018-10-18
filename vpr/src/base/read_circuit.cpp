@@ -16,7 +16,7 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
-                            bool verbose);
+                            int verbosity);
 
 static void show_circuit_stats(const AtomNetlist& netlist);
 
@@ -30,7 +30,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                                      bool should_sweep_dangling_nets,
                                      bool should_sweep_dangling_blocks,
                                      bool should_sweep_constant_primary_outputs,
-                                     bool verbose_sweep) {
+                                     int verbosity) {
 
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
@@ -52,7 +52,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
                    || circuit_format == e_circuit_format::EBLIF);
 
-        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, const_gen_inference);
+        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, const_gen_inference, verbosity);
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
@@ -65,7 +65,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
                     should_sweep_dangling_nets,
                     should_sweep_dangling_blocks,
                     should_sweep_constant_primary_outputs,
-                    verbose_sweep);
+                    verbosity);
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
@@ -83,7 +83,7 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
-                            bool verbose_sweep) {
+                            int verbosity) {
 
 
     {
@@ -91,24 +91,20 @@ static void process_circuit(AtomNetlist& netlist,
 
         //Clean-up lut buffers
         if(should_absorb_buffers) {
-            absorb_buffer_luts(netlist, verbose_sweep);
+            absorb_buffer_luts(netlist, verbosity);
         }
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if(unconn_net_id) {
-            if (verbose_sweep) {
-                VTR_LOG_WARN( "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
-            }
+            VTR_LOGV_WARN(verbosity > 1, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_net(unconn_net_id);
         }
 
         //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if(unconn_blk_id) {
-            if (verbose_sweep) {
-                VTR_LOG_WARN( "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
-            }
+            VTR_LOGV_WARN(verbosity > 1, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_block(unconn_blk_id);
         }
 
@@ -118,7 +114,7 @@ static void process_circuit(AtomNetlist& netlist,
                         should_sweep_dangling_nets,
                         should_sweep_dangling_blocks,
                         should_sweep_constant_primary_outputs,
-                        verbose_sweep);
+                        verbosity);
     }
 
     {

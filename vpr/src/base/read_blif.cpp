@@ -49,13 +49,15 @@ struct BlifAllocCallback : public blifparse::Callback {
         BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, 
                           const std::string netlist_id, 
                           const t_model* user_models, const t_model* library_models,
-                          const e_const_gen_inference const_gen_inference)
+                          const e_const_gen_inference const_gen_inference,
+                          int verbosity)
             : main_netlist_(main_netlist)
             , netlist_id_(netlist_id)
             , user_arch_models_(user_models)
             , library_arch_models_(library_models)
             , blif_format_(blif_format) 
-            , const_gen_inference_(const_gen_inference) {
+            , const_gen_inference_(const_gen_inference)
+            , verbosity_(verbosity) {
             VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                        || blif_format_ == e_circuit_format::EBLIF);
         }
@@ -66,6 +68,8 @@ struct BlifAllocCallback : public blifparse::Callback {
         void start_parse() override {}
 
         void finish_parse() override {
+            VTR_LOGV(verbosity_ > 0, "Inferred %zu constant generator blocks\n", num_constant_generators_inferred_);
+
             //When parsing is finished we *move* the main netlist
             //into the user object. This ensures we never have two copies
             //(consuming twice the memory).
@@ -591,7 +595,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         //Marks all constant subckt generator output pins as constants
         void mark_constant_generator_subckts() {
-            size_t num_blocks_marked;
+            size_t num_blocks_marked = 0;
 
             //It is possible that by marking one constant generator
             //it may 'reveal' another constant generator downstream.
@@ -620,8 +624,8 @@ struct BlifAllocCallback : public blifparse::Callback {
                             }
                         }
 
-                        if (!all_pins_constant) {
-                            VTR_LOG("Inferred black-box constant generator '%s' (%s)\n",
+                        if (!all_pins_constant) { //New constant generator
+                            VTR_LOGV(verbosity_ > 1, "Inferred black-box constant generator '%s' (%s)\n",
                                         curr_model().block_name(blk_id).c_str(),
                                         curr_model().block_model(blk_id)->name);
 
@@ -629,6 +633,8 @@ struct BlifAllocCallback : public blifparse::Callback {
                             for(auto pin_id : curr_model().block_output_pins(blk_id)) {
                                 curr_model().set_pin_is_constant(pin_id, true);
                             }
+
+                            ++num_constant_generators_inferred_;
                         }
 
                         ++num_blocks_marked;
@@ -712,11 +718,13 @@ struct BlifAllocCallback : public blifparse::Callback {
         const t_model* library_arch_models_ = nullptr;
 
         size_t unique_subckt_name_counter_ = 0;
+        size_t num_constant_generators_inferred_ = 0;
 
         AtomBlockId curr_block_;
 
         e_circuit_format blif_format_ = e_circuit_format::BLIF;
         e_const_gen_inference const_gen_inference_ = e_const_gen_inference::COMB;
+        int verbosity_ = 1;
 
 };
 
@@ -737,13 +745,14 @@ AtomNetlist read_blif(const e_circuit_format circuit_format,
                       const char *blif_file,
                       const t_model *user_models,
                       const t_model *library_models,
-                      const e_const_gen_inference const_gen_inference) {
+                      const e_const_gen_inference const_gen_inference,
+                      const int verbosity) {
 
 
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(blif_file);
 
-    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models, const_gen_inference);
+    BlifAllocCallback alloc_callback(circuit_format, netlist, netlist_id, user_models, library_models, const_gen_inference, verbosity);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     return netlist;

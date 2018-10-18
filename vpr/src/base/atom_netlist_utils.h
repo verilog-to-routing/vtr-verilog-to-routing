@@ -13,7 +13,7 @@
 /*
  * Modifies the netlist by absorbing buffer LUTs
  */
-void absorb_buffer_luts(AtomNetlist& netlist, bool verbose);
+void absorb_buffer_luts(AtomNetlist& netlist, int verbosity);
 
 /*
  * Modify the netlist by sweeping away unused nets/blocks/inputs
@@ -26,21 +26,21 @@ size_t sweep_iterative(AtomNetlist& netlist,
                        bool should_sweep_dangling_blocks,
                        bool should_sweep_dangling_nets,
                        bool should_sweep_constant_primary_outputs,
-                       bool verbose);
+                       int verbosity);
 
 //Sweeps blocks that have no fanout
-size_t sweep_blocks(AtomNetlist& netlist, bool verbose);
+size_t sweep_blocks(AtomNetlist& netlist, int verbosity);
 
 //Sweeps nets with no drivers and/or no sinks
-size_t sweep_nets(AtomNetlist& netlist, bool verbose);
+size_t sweep_nets(AtomNetlist& netlist, int verbosity);
 
 //Sweeps primary-inputs with no fanout
-size_t sweep_inputs(AtomNetlist& netlist, bool verbose);
+size_t sweep_inputs(AtomNetlist& netlist, int verbosity);
 
 //Sweeps primary-outputs with no fanin
-size_t sweep_outputs(AtomNetlist& netlist, bool verbose);
+size_t sweep_outputs(AtomNetlist& netlist, int verbosity);
 
-size_t sweep_constant_primary_outputs(AtomNetlist& netlist, bool verbose);
+size_t sweep_constant_primary_outputs(AtomNetlist& netlist, int verbosity);
 
 /*
  * Truth-table operations

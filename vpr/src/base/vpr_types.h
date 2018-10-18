@@ -749,7 +749,7 @@ struct t_netlist_opts {
     bool sweep_dangling_nets = true;
     bool sweep_constant_primary_outputs = false;
 
-    bool verbose_sweep = false; //Verbose output during netlist cleaning
+    int netlist_verbosity = 1; //Verbose output during netlist cleaning
 };
 
 //Should a stage in the CAD flow be skipped, loaded from a file, or performed

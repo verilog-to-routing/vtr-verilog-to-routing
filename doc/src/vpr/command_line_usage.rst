@@ -247,13 +247,12 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``off``
 
-.. option:: --verbose_sweep {on | off}
+.. option:: --netlist_verbosity <int>
 
-    Controls whether sweeping describes the netlist modifications performed (i.e. what was swept).
+    Controls the verbosity of netlist processing (constant generator detection, swept netlist components).
+    High values produce more detailed output.
 
-    .. seealso:: :option:`--sweep_dangling_primary_ios`
-
-    **Default**: ``off``
+    **Default**: ``1``
 
 .. _packing_options:
 
