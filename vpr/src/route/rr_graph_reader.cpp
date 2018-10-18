@@ -596,7 +596,7 @@ void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         const char* name = get_attribute(Segment, "name", loc_data).as_string();
         if (strcmp(segment_inf[segNum].name.c_str(), name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name, name);
+                    "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name.c_str(), name);
         }
 
         subnode = get_single_child(parent, "timing", loc_data, OPTIONAL);
