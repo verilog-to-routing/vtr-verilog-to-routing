@@ -409,7 +409,7 @@ sub generate_single_task_actions {
 	chmod( 0775, $run_dir );
 
     #Create a symlink that points to the latest run
-    my $symlink_name = "run_latest";
+    my $symlink_name = "latest";
     if (-l $symlink_name) {
         unlink $symlink_name;  #Remove link if it exists
     }
