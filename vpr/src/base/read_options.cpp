@@ -869,9 +869,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value({"auto"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")
-            .help("Controls verbose clustering output (useful for debugging architecture packing problems)")
-            .default_value("off")
+    pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
+            .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
+            .default_value("2")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");

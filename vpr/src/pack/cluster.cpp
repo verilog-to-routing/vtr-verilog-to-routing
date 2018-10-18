@@ -196,7 +196,7 @@ static enum e_block_pack_status try_pack_molecule(
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
-        bool debug_clustering,
+        int verbosity,
         bool enable_pin_feasibility_filter,
         t_ext_pin_util max_external_pin_util);
 static enum e_block_pack_status try_place_atom_block_rec(
@@ -205,7 +205,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		const int max_cluster_size, const ClusterBlockId clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data,
-        bool debug_clustering);
+        int verbosity);
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
@@ -255,7 +255,7 @@ static void start_new_cluster(
 	const int detailed_routing_stage,
 	ClusteredNetlist *clb_nlist,
     const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
-    bool debug_clustering,
+    int verbosity,
     bool enable_pin_feasibility_filter);
 
 static t_pack_molecule* get_highest_gain_molecule(
@@ -274,7 +274,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		ClusterBlockId cluster_index,
-        bool debug_clustering);
+        int verbosity);
 
 static void check_clustering();
 
@@ -306,6 +306,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
 											  vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets);
 
 static std::map<const t_model*,std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
+
 /*****************************************/
 /*globally accessible function*/
 std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
@@ -321,7 +322,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name,
-        bool debug_clustering,
+        int verbosity,
         bool enable_pin_feasibility_filter,
         const t_ext_pin_util_targets& ext_pin_util_targets
 #ifdef USE_HMETIS
@@ -499,7 +500,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 
 			ClusterBlockId clb_index(num_clb);
 
-            if (debug_clustering) {
+            if (verbosity > 2) {
                 VTR_LOG("Complex block %d:\n", num_clb);
             }
 
@@ -512,15 +513,13 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 					lb_type_rr_graphs, &router_data,
 					detailed_routing_stage, &cluster_ctx.clb_nlist,
                     primitive_candidate_block_types,
-                    debug_clustering,
+                    verbosity,
                     enable_pin_feasibility_filter);
 
-            if (!debug_clustering) {
+            if (verbosity > 1 && verbosity < 3) {
                 VTR_LOG("Complex block %d: %s, type: %s ",
                         num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
-                VTR_LOG("."); //Progress dot for seed-block
-            } else {
-                VTR_LOG("\n");
+                VTR_LOGV(verbosity > 1, "."); //Progress dot for seed-block
             }
 			fflush(stdout);
 
@@ -547,7 +546,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 					&num_unrelated_clustering_attempts,
 					cur_cluster_placement_stats_ptr,
 					clb_inter_blk_nets,
-					clb_index, debug_clustering);
+					clb_index, verbosity);
 			prev_molecule = istart;
 			while (next_molecule != nullptr && prev_molecule != next_molecule) {
 				block_pack_status = try_pack_molecule(
@@ -556,7 +555,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
                         next_molecule,
 						primitives_list, cluster_ctx.clb_nlist.block_pb(clb_index), num_models,
 						max_cluster_size, clb_index, detailed_routing_stage, router_data,
-                        debug_clustering,
+                        verbosity,
                         enable_pin_feasibility_filter,
                         target_ext_pin_util);
 				prev_molecule = next_molecule;
@@ -570,7 +569,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 				if (block_pack_status != BLK_PASSED) {
 					if (next_molecule != nullptr) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
-                            if (debug_clustering) {
+                            if (verbosity > 2) {
                                 VTR_LOG("\tNO_ROUTE: %s type %s",
                                         blk_name.c_str(),
                                         blk_model->name);
@@ -583,7 +582,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
                                 fflush(stdout);
                             }
 						} else {
-                            if (debug_clustering) {
+                            if (verbosity > 2) {
                                 VTR_LOG("\tFAILED_CHECK: %s type %s check %d",
                                         blk_name.c_str(),
                                         blk_model->name,
@@ -606,11 +605,11 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 							&num_unrelated_clustering_attempts,
 							cur_cluster_placement_stats_ptr,
 							clb_inter_blk_nets,
-							clb_index, debug_clustering);
+							clb_index, verbosity);
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
-                    if (debug_clustering) {
+                    if (verbosity > 2) {
                         VTR_LOG("\tPASSED: %s type %s",
                                 blk_name.c_str(),
                                 blk_model->name);
@@ -620,9 +619,8 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
                                     next_molecule->atom_block_ids.size());
                         }
                         VTR_LOG("\n");
-                    } else {
-                        VTR_LOG(".");
                     }
+                    VTR_LOGV(verbosity > 1 && verbosity < 3, ".");
 					fflush(stdout);
 				}
 				update_cluster_stats(next_molecule, clb_index,
@@ -643,21 +641,17 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr,
 						clb_inter_blk_nets,
-						clb_index, debug_clustering);
+						clb_index, verbosity);
 			}
 
-            if (!debug_clustering) {
-                VTR_LOG("\n");
-            }
+            VTR_LOGV(verbosity > 1 && verbosity < 3, "\n");
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
-				is_cluster_legal = try_intra_lb_route(router_data, debug_clustering);
+				is_cluster_legal = try_intra_lb_route(router_data, verbosity);
 				if (is_cluster_legal == true) {
-                    if (debug_clustering) {
-                        VTR_LOG("Passed route at end.\n");
-                    }
+                    VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
 				} else {
-					VTR_LOG("Failed route at end, repack cluster trying detailed routing at each stage.\n");
+					VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
 			} else {
 				is_cluster_legal = true;
@@ -1164,7 +1158,7 @@ static enum e_block_pack_status try_pack_molecule(
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const ClusterBlockId clb_index, const int detailed_routing_stage, t_lb_router_data *router_data,
-        bool debug_clustering,
+        int verbosity,
         bool enable_pin_feasibility_filter,
         t_ext_pin_util max_external_pin_util) {
 	int molecule_size, failed_location;
@@ -1183,9 +1177,9 @@ static enum e_block_pack_status try_pack_molecule(
 	molecule_size = get_array_size_of_molecule(molecule);
 	failed_location = 0;
 
-    if (debug_clustering) {
+    if (verbosity > 3) {
         AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
-        VTR_LOG("\t\tTry Pack: '%s' (%s) ",
+        VTR_LOG("\t\tTry pack molecule: '%s' (%s) ",
                         atom_ctx.nlist.block_name(root_atom).c_str(),
                         atom_ctx.nlist.block_model(root_atom)->name);
         if (molecule->pack_pattern) {
@@ -1217,7 +1211,7 @@ static enum e_block_pack_status try_pack_molecule(
 							molecule->atom_block_ids[i], pb, &parent,
 							max_models, max_cluster_size, clb_index,
 							cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data,
-                            debug_clustering);
+                            verbosity);
 				}
 			}
 			if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
@@ -1225,8 +1219,8 @@ static enum e_block_pack_status try_pack_molecule(
 				reset_lookahead_pins_used(pb);
 				try_update_lookahead_pins_used(pb);
 				if (!check_lookahead_pins_used(pb, max_external_pin_util)) {
-                    if (debug_clustering) {
-                        VTR_LOG("\t\tFAILED Pin Feasibility Filter\n");
+                    if (verbosity > 4) {
+                        VTR_LOG("\t\t\tFAILED Pin Feasibility Filter\n");
                     }
                     block_pack_status = BLK_FAILED_FEASIBLE;
 				}
@@ -1235,10 +1229,10 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data, debug_clustering) == false) {
+				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data, verbosity) == false) {
 					/* Cannot pack */
-                    if (debug_clustering) {
-                        VTR_LOG("\t\tFAILED Detailed Routing Legality\n");
+                    if (verbosity > 4) {
+                        VTR_LOG("\t\t\tFAILED Detailed Routing Legality\n");
                     }
 					block_pack_status = BLK_FAILED_ROUTE;
 				} else {
@@ -1287,12 +1281,12 @@ static enum e_block_pack_status try_pack_molecule(
 					}
 				}
 			} else {
-                if (debug_clustering) {
+                if (verbosity > 3) {
                     VTR_LOG("\t\tPASSED pack molecule\n");
                 }
             }
 		} else {
-            if (debug_clustering) {
+            if (verbosity > 3) {
                 VTR_LOG("\t\tFAILED No candidate primitives available\n");
             }
 			block_pack_status = BLK_FAILED_FEASIBLE;
@@ -1312,7 +1306,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		const int max_cluster_size, const ClusterBlockId clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data,
-        bool debug_clustering) {
+        int verbosity) {
 	int i, j;
 	bool is_primitive;
 	enum e_block_pack_status block_pack_status;
@@ -1333,7 +1327,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 				pb_graph_node->parent_pb_graph_node, blk_id, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
 				cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data,
-                debug_clustering);
+                verbosity);
 		parent_pb = my_parent;
 	} else {
 		parent_pb = cb;
@@ -1418,7 +1412,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
             }
 		}
 
-        if (debug_clustering && block_pack_status == BLK_PASSED) {
+        if (verbosity > 4 && block_pack_status == BLK_PASSED) {
             VTR_LOG("\t\t\tPlaced atom '%s' (%s) at %s\n",
                         atom_ctx.nlist.block_name(blk_id).c_str(),
                         atom_ctx.nlist.block_model(blk_id)->name,
@@ -1875,7 +1869,7 @@ static void start_new_cluster(
 		const int detailed_routing_stage,
 		ClusteredNetlist *clb_nlist,
         const std::map<const t_model*,std::vector<t_type_ptr>>& primitive_candidate_block_types,
-        bool debug_clustering,
+        int verbosity,
         bool enable_pin_feasibility_filter) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
@@ -1908,7 +1902,7 @@ static void start_new_cluster(
     );
 
 
-    if (debug_clustering) {
+    if (verbosity > 2) {
         VTR_LOG("\tSeed: '%s' (%s) ",
                         root_atom_name.c_str(),
                         root_model->name);
@@ -1950,7 +1944,7 @@ static void start_new_cluster(
                                             molecule, primitives_list, pb,
                                             num_models, max_cluster_size, clb_index,
                                             detailed_routing_stage, *router_data,
-                                            debug_clustering,
+                                            verbosity,
                                             enable_pin_feasibility_filter,
                                             FULL_EXTERNAL_PIN_UTIL);
 
@@ -1958,7 +1952,7 @@ static void start_new_cluster(
         }
 
         if (success) {
-            if (debug_clustering) {
+            if (verbosity > 2) {
                 VTR_LOG("\tPASSED_SEED: Block Type %s\n",
                     type->name);
             }
@@ -1971,7 +1965,7 @@ static void start_new_cluster(
             clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, type);
             break;
         } else {
-            if (debug_clustering) {
+            if (verbosity > 2) {
                 VTR_LOG("\tFAILED_SEED: Block Type %s\n",
                     type->name);
             }
@@ -2008,7 +2002,7 @@ static void start_new_cluster(
 	/* Expand FPGA size if needed */
 	if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(clb_nlist->block_type(clb_index))) {
 		device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
-		VTR_LOG("Not enough resources expand FPGA size to (%d x %d)\n",
+		VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
 			device_ctx.grid.width(), device_ctx.grid.height());
 	}
 }
@@ -2195,7 +2189,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		ClusterBlockId cluster_index,
-        bool debug_clustering) {
+        int verbosity) {
 
 	/* Finds the block with the the greatest gain that satisifies the      *
 	 * input, clock and capacity constraints of a cluster that are       *
@@ -2220,13 +2214,18 @@ static t_pack_molecule *get_molecule_for_cluster(
 								cur_pb,
 								cluster_placement_stats_ptr);
 				(*num_unrelated_clustering_attempts)++;
+            if (best_molecule != nullptr) {
+                if (verbosity > 2) {
+                    VTR_LOG("\tFound unrelated molecule to cluster\n");
+                }
+            }
 			}
 		} else {
 			*num_unrelated_clustering_attempts = 0;
 		}
 	} else {
 		if (best_molecule == nullptr) {
-            if (debug_clustering) {
+            if (verbosity > 2) {
                 VTR_LOG("\tNo related molecule found and unrelated clustering disabled\n");
             }
         }

@@ -70,7 +70,7 @@ struct t_options {
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
-    argparse::ArgValue<bool> debug_clustering;
+    argparse::ArgValue<int> pack_verbosity;
 
     /* Placement options */
     argparse::ArgValue<int> Seed;

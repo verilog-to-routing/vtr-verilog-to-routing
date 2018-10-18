@@ -199,7 +199,7 @@ bool try_pack(t_packer_opts *packer_opts,
                                     packer_opts->packer_algorithm,
                                     lb_type_rr_graphs,
                                     packer_opts->device_layout,
-                                    packer_opts->debug_clustering,
+                                    packer_opts->pack_verbosity,
                                     packer_opts->enable_pin_feasibility_filter,
                                     target_external_pin_util
 #ifdef USE_HMETIS

@@ -781,7 +781,7 @@ struct t_packer_opts {
 	bool auto_compute_inter_cluster_net_delay;
 	e_unrelated_clustering allow_unrelated_clustering;
 	bool connection_driven;
-	bool debug_clustering;
+	int pack_verbosity;
     bool enable_pin_feasibility_filter;
     std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;

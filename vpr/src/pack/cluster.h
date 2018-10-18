@@ -25,7 +25,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 		enum e_packer_algorithm packer_algorithm,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         std::string device_layout_name,
-        bool debug_clustering,
+        int verbosity,
         bool enable_pin_feasibility_filter,
         const t_ext_pin_util_targets& ext_pin_util_targets
 #ifdef USE_HMETIS

@@ -413,7 +413,7 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	PackerOpts->alpha = Options.alpha_clustering;
 	PackerOpts->beta = Options.beta_clustering;
-	PackerOpts->debug_clustering = Options.debug_clustering;
+	PackerOpts->pack_verbosity = Options.pack_verbosity;
 	PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
 	PackerOpts->target_external_pin_util = Options.target_external_pin_util;
     PackerOpts->target_device_utilization = Options.target_device_utilization;

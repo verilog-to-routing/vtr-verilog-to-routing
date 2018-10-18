@@ -392,12 +392,12 @@ For people not working on CAD, you can probably leave all the options to their d
     **Default:** ``auto``
 
 
-.. option:: --debug_clustering {on | off}
+.. option:: --pack_verbosity <int>
 
-    Controls verbose clustering output. 
-    Useful for debugging architecture packing problems.
+    Controls the verbosity of clustering output. 
+    Larger values produce more detailed output, which may be useful for debugging architecture packing problems.
 
-    **Default:** ``off``
+    **Default:** ``2``
 
 .. _placer_options:
 
