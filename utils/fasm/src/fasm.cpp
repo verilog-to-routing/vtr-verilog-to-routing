@@ -21,6 +21,7 @@
 
 #include "fasm.h"
 
+namespace fasm {
 
 FasmWriterVisitor::FasmWriterVisitor(std::ostream& f) : os_(f) {}
 
@@ -123,7 +124,8 @@ std::string FasmWriterVisitor::build_clb_prefix(const t_pb_graph_node* pb_graph_
 
   auto fasm_prefix_unsplit = pb_type->meta->get("fasm_prefix")->front().as_string();
   auto fasm_prefix = vtr::split(fasm_prefix_unsplit, " ");
-  if(fasm_prefix.size() != pb_type->num_pb) {
+  VTR_ASSERT(pb_type->num_pb >= 0);
+  if(fasm_prefix.size() != static_cast<size_t>(pb_type->num_pb)) {
     vpr_throw(VPR_ERROR_OTHER,
               __FILE__, __LINE__, "fasm_prefix = %s, num_pb = %d",
               fasm_prefix_unsplit.c_str(), pb_type->num_pb);
@@ -192,10 +194,10 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
         if(io_pin != nullptr) {
           auto& route = pb_route[io_pin->pin_count_in_cluster];
           const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
-          const auto &lut_definition = find_lut(route.pb_graph_pin->parent_node);
-          VTR_ASSERT(lut_definition.num_inputs == num_inputs);
+          const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
+          VTR_ASSERT(lut_definition->num_inputs == num_inputs);
 
-          output_fasm_features(lut_definition.CreateWire(route.pb_graph_pin->pin_number));
+          output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
         }
     }
 
@@ -335,7 +337,7 @@ static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node
   return nullptr;
 }
 
-const LutOutputDefinition& FasmWriterVisitor::find_lut(const t_pb_graph_node* pb_graph_node) {
+const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb_graph_node) {
   const t_pb_graph_node* orig_pb_graph_node = pb_graph_node;
   (void)orig_pb_graph_node;
 
@@ -397,7 +399,7 @@ const LutOutputDefinition& FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
       auto string_at_node = vtr::string_fmt("%s[%d]", pb_graph_node->pb_type->name, pb_graph_node->placement_index);
       for(const auto &lut : iter->second) {
         if(lut.first == string_at_node) {
-          return lut.second;
+          return &lut.second;
         }
       }
     }
@@ -407,6 +409,7 @@ const LutOutputDefinition& FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
 
   vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
             "Failed to find LUT output definition.");
+  return nullptr;
 }
 
 static const t_pb_route *find_pb_route(const t_pb* pb) {
@@ -438,12 +441,12 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     const t_model* model = atom_ctx.nlist.block_model(atom_blk_id);
     if (model->name == std::string(MODEL_NAMES)) {
       VTR_ASSERT(atom->pb_graph_node != nullptr);
-      const auto &lut_definition = find_lut(atom->pb_graph_node);
-      VTR_ASSERT(lut_definition.num_inputs == *atom->pb_graph_node->num_input_pins);
+      const auto *lut_definition = find_lut(atom->pb_graph_node);
+      VTR_ASSERT(lut_definition->num_inputs == *atom->pb_graph_node->num_input_pins);
 
       const t_pb_route *pb_route = find_pb_route(atom);
-      LogicVec lut_mask = lut_outputs(atom, lut_definition.num_inputs, pb_route);
-      output_fasm_features(lut_definition.CreateInit(lut_mask));
+      LogicVec lut_mask = lut_outputs(atom, lut_definition->num_inputs, pb_route);
+      output_fasm_features(lut_definition->CreateInit(lut_mask));
     }
 }
 
@@ -577,3 +580,5 @@ void FasmWriterVisitor::output_fasm_features(std::string features) const {
     }
   }
 }
+
+} // namespace fasm

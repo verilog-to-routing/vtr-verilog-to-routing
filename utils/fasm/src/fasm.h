@@ -15,6 +15,8 @@
 #include "netlist_writer.h"
 #include "lut.h"
 
+namespace fasm {
+
 class FasmWriterVisitor : public NetlistVisitor {
 
   public:
@@ -37,7 +39,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
       void walk_routing();
       std::string build_clb_prefix(const t_pb_graph_node* pb_graph_node) const;
-      const LutOutputDefinition& find_lut(const t_pb_graph_node* pb_graph_node);
+      const LutOutputDefinition* find_lut(const t_pb_graph_node* pb_graph_node);
 
       std::ostream& os_;
 
@@ -50,5 +52,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::vector<t_pb_graph_pin**> pb_graph_pin_lookup_from_index_by_type_;
       std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
 };
+
+} // namespace fasm
 
 #endif  // FASM_H

@@ -48,7 +48,7 @@ static bool write_fasm() {
   std::string fasm_filename = atom_ctx.nlist.netlist_name() + ".fasm";
   vtr::printf("Writing Implementation FASM: %s\n", fasm_filename.c_str());
   std::ofstream fasm_os(fasm_filename);
-  FasmWriterVisitor visitor2(fasm_os);
+  fasm::FasmWriterVisitor visitor2(fasm_os);
   NetlistWalker nl_walker2(visitor2);
   nl_walker2.walk();
 

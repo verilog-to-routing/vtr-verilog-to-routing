@@ -6,6 +6,7 @@ project("genfasm")
 add_library(fasm
   src/fasm.cpp
   src/fasm.h
+  src/lut.cpp
   src/lut.h
   )
 target_include_directories(fasm PUBLIC src)
