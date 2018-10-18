@@ -358,6 +358,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
     RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;
     RouterOpts->route_bb_update = Options.route_bb_update;
+    RouterOpts->router_debug_net = Options.router_debug_net;
 }
 
 static void SetupAnnealSched(const t_options& Options,

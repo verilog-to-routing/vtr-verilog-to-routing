@@ -117,6 +117,7 @@ struct t_options {
     argparse::ArgValue<bool> save_routing_per_iteration;
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
     argparse::ArgValue<e_route_bb_update> route_bb_update;
+    argparse::ArgValue<int> router_debug_net;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

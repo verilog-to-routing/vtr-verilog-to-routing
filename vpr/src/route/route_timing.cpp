@@ -124,11 +124,9 @@ struct t_timing_driven_node_costs {
  * File-scope variables
  */
 
-#ifdef ROUTER_DEBUG
 //Run-time flag to control when router debug information is printed
-bool router_debug = true;
-
-#endif
+//Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
+bool f_router_debug = true;
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -209,6 +207,8 @@ static bool is_high_fanout(int fanout);
 
 static size_t dynamic_update_bounding_boxes();
 static t_bb calc_current_bb(const t_trace* head);
+
+static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
@@ -332,6 +332,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
          * Route each net
          */
         for (auto net_id : sorted_nets) {
+
+            enable_router_debug(router_opts, net_id);
+
             bool is_routable = try_timing_driven_route_net(
                     net_id,
                     itry,
@@ -584,8 +587,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
         VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
     } else {
         VTR_LOG("Routing failed.\n");
-#ifdef ROUTER_DEBUG
-        print_invalid_routing_info();
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+        if (f_router_debug) print_invalid_routing_info();
 #endif
     }
 
@@ -766,9 +769,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
     unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
 
-#ifdef ROUTER_DEBUG
-    VTR_LOG("Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
     // after this point the route tree is correct
@@ -858,9 +859,8 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
-#ifdef ROUTER_DEBUG
-    VTR_LOG("Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
+
     free_route_tree(rt_root);
     return (true);
 }
@@ -882,9 +882,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
-#ifdef ROUTER_DEBUG
-    VTR_LOG("Net %zu Target %d\n", size_t(net_id), itarget);
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d\n", size_t(net_id), itarget);
 
     if (itarget > 0 && itry > 5) {
         /* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
@@ -966,9 +964,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
 
     int inode = cheapest->index;
-#ifdef ROUTER_DEBUG
-    if (router_debug) VTR_LOG("  Popping node %d\n", inode);
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
     while (inode != sink_node) {
         float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
         float old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
@@ -986,13 +982,10 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
         if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
-#ifdef ROUTER_DEBUG
-            if (router_debug) VTR_LOG("    Better cost to %d\n", inode);
-#endif
+            VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
             for (t_heap_prev prev : cheapest->previous) {
-#ifdef ROUTER_DEBUG
-                if (router_debug) VTR_LOG("      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
-#endif
+                VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
+
                 add_to_mod_list(prev.to_node, modified_rr_node_inf);
 
                 route_ctx.rr_node_route_inf[prev.to_node].prev_node = prev.from_node;
@@ -1020,13 +1013,9 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         }
 
         inode = cheapest->index;
-#ifdef ROUTER_DEBUG
-        if (router_debug) VTR_LOG("  Popping node %d\n", inode);
-#endif
+        VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
     }
-#ifdef ROUTER_DEBUG
-    if (router_debug) VTR_LOG("  Found target %d\n", inode);
-#endif
+    VTR_LOGV_DEBUG(f_router_debug, "  Found target %d\n", inode);
 
     return cheapest;
 }
@@ -1193,9 +1182,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
             tot_cost += pow(max(zero, min_delay - tot_cost), 2) / 100e-12;
         }
 
-#ifdef ROUTER_DEBUG
-        if (router_debug) VTR_LOG("Adding node %d to heap from init route tree\n", inode);
-#endif
+        VTR_LOGV_DEBUG(f_router_debug, "Adding node %d to heap from init route tree\n", inode);
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream);
@@ -1328,8 +1315,8 @@ static void timing_driven_expand_node(const float criticality_fac, const float b
         t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
 
 
-#ifdef ROUTER_DEBUG
-    if (router_debug) {
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    if (f_router_debug) {
         auto& device_ctx = g_vpr_ctx.device();
         bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
         if (reached_via_non_configurable_edge) {
@@ -2340,4 +2327,12 @@ static t_bb calc_current_bb(const t_trace* head) {
     VTR_ASSERT(bb.ymin <= bb.ymax);
 
     return bb;
+}
+
+static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net) {
+    f_router_debug = (router_opts.router_debug_net == -1 || net == ClusterNetId(router_opts.router_debug_net));
+
+#ifndef VTR_ENABLE_DEBUG_LOGGING
+    if (f_router_debug) VPR_THROW(VPR_ERROR_ROUTE, "Can not enable router debug logging since VPR was compiled without debug logging enabled");
+#endif
 }

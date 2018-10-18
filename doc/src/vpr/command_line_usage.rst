@@ -729,6 +729,21 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``disable``
 
+.. option:: --router_debug_net <int>
+
+    .. note:: This option is likely only of interest to developers debugging the routing algorithm
+
+    Controls which net the router produces detailed debug information for.
+    
+    * For values >= 0, the value is the net ID for which detailed router debug information should be produced.
+    * For value == -1, detailed router debug information is produced for all nets.
+    * For values < -1, no router debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+
 .. _analysis_options:
 
 Analysis Options

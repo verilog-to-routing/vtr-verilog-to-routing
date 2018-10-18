@@ -956,6 +956,7 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
+    int router_debug_net;
 };
 
 struct t_analysis_opts {
