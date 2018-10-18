@@ -1512,7 +1512,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 
 			Prop = get_attribute(Cur, "name", loc_data).value();
 			mode->interconnect[i].name = vtr::strdup(Prop);
-                        mode->interconnect[i].meta = ProcessMetadata(Cur, loc_data);
+			mode->interconnect[i].meta = ProcessMetadata(Cur, loc_data);
 
 			ret_interc_names = interc_names.insert(
 					pair<string, int>(mode->interconnect[i].name, 0));
