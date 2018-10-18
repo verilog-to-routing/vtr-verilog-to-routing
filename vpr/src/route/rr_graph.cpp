@@ -460,7 +460,7 @@ static void build_rr_graph(
                         j,
                         block_type_pin_index_to_name(&device_ctx.block_types[i], j).c_str(),
                         k,
-                        segment_inf[k].name,
+                        segment_inf[k].name.c_str(),
                         Fc_out[i][j][k],
                         Fc_in[i][j][k]);
 #endif /* VERBOSE */
@@ -981,14 +981,14 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
                         VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
                                                     fac, fc_spec.fc_value,
                                                     block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
-                                                    segment_inf[iseg].name);
+                                                    segment_inf[iseg].name.c_str());
                     }
 
                     if (fc_spec.fc_value < fac) {
                         VPR_THROW(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
                                                     fac, fc_spec.fc_value,
                                                     block_type_pin_index_to_name(&types[itype], fc_spec.pins[0]).c_str(),
-                                                    segment_inf[iseg].name);
+                                                    segment_inf[iseg].name.c_str());
                     }
 
                     total_connections = vtr::nint(fc_spec.fc_value) * fc_spec.pins.size();
@@ -2254,7 +2254,7 @@ std::string describe_rr_node(int inode) {
                     rr_node.track_num(),
                     rr_node.length(),
                     device_ctx.arch.Segments[seg_index].longline,
-                    device_ctx.arch.Segments[seg_index].name,
+                    device_ctx.arch.Segments[seg_index].name.c_str(),
                     rr_node.direction_string());
     } else if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
 
