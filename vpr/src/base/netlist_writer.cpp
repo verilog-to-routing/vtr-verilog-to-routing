@@ -1930,9 +1930,9 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
 
-    vtr::printf("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
-    vtr::printf("Writing Implementation Netlist: %s\n", blif_filename.c_str());
-    vtr::printf("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
+    VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
+    VTR_LOG("Writing Implementation Netlist: %s\n", blif_filename.c_str());
+    VTR_LOG("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
 
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);

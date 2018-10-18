@@ -163,16 +163,16 @@ void check_rr_graph(const t_graph_type graph_type,
 
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[node.xlow()][node.ylow()].type;
-                            vtr::printf_error(__FILE__, __LINE__,
+                            VTR_LOG_ERROR(
                                     "in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s has no fanin.\n",
                                     inode, node.type_string(), node.xlow(), node.ylow(), block_type->name, node.side_string());
                         }
                     } else {
-                        vtr::printf_error(__FILE__, __LINE__, "in check_rr_graph: node %d (%s) has no fanin.\n",
+                        VTR_LOG_ERROR( "in check_rr_graph: node %d (%s) has no fanin.\n",
                                 inode, device_ctx.rr_nodes[inode].type_string());
                     }
                 } else if (!is_chain && !is_fringe_warning_sent) {
-                    vtr::printf_warning(__FILE__, __LINE__,
+                    VTR_LOG_WARN(
                             "in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
                             "\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
                             inode, device_ctx.rr_nodes[inode].type_string(), device_ctx.rr_nodes[inode].xlow(), device_ctx.rr_nodes[inode].ylow());
@@ -181,7 +181,7 @@ void check_rr_graph(const t_graph_type graph_type,
             }
         } else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
             if (total_edges_to_node[inode] != 0) {
-                vtr::printf_error(__FILE__, __LINE__,
+                VTR_LOG_ERROR(
                         "in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n",
                         inode, total_edges_to_node[inode]);
             }
@@ -424,7 +424,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
             if (check_for_out_edges) {
                 std::string info = describe_rr_node(inode);
-                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: %s has no out-going edges.\n", info.c_str());
+                VTR_LOG_WARN( "in check_rr_node: %s has no out-going edges.\n", info.c_str());
             }
         }
     }

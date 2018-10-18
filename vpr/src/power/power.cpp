@@ -846,7 +846,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 						next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
 						next_node_power->num_inputs++;
 						if (next_node_power->num_inputs > next_node->fan_in()) {
-                            vtr::printf_info("%d %d\n", next_node_power->num_inputs,
+                            VTR_LOG("%d %d\n", next_node_power->num_inputs,
 									next_node->fan_in());
 							fflush(nullptr);
 							VTR_ASSERT(0);

@@ -111,12 +111,12 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
         if (min_chan_width_hint > 0) {
             //If the user provided a hint use it as the initial guess
-            vtr::printf("Initializing minimum channel width search using specified hint\n");
+            VTR_LOG("Initializing minimum channel width search using specified hint\n");
             current = min_chan_width_hint;
             using_minw_hint = true;
         } else {
             //Otherwise base it off the architecture
-            vtr::printf("Initializing minimum channel width search based on maximum CLB pins\n");
+            VTR_LOG("Initializing minimum channel width search based on maximum CLB pins\n");
             int max_pins = max_pins_per_grid_tile();
             current = max_pins + max_pins % 2;
         }
@@ -147,8 +147,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
     while (final == -1) {
 
-        vtr::printf_info("\n");
-        vtr::printf_info("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
+        VTR_LOG("\n");
+        VTR_LOG("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
         fflush(stdout);
 
         /* Check if the channel width is huge to avoid overflow.  Assume the *
@@ -169,7 +169,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
         }
 
         if ((current * 3) < det_routing_arch->Fs) {
-            vtr::printf_info("Width factor is now below specified Fs. Stop search.\n");
+            VTR_LOG("Width factor is now below specified Fs. Stop search.\n");
             final = high;
             break;
         }
@@ -207,7 +207,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
             /* If Fc_output is too high, set to full connectivity but warn the user */
             if (Fc_clipped) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "Fc_output was too high and was clipped to full (maximum) connectivity.\n");
             }
 
@@ -248,7 +248,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
         } else { /* last route not successful */
             if (success && Fc_clipped) {
-                vtr::printf_info("Routing rejected, Fc_output was too high.\n");
+                VTR_LOG("Routing rejected, Fc_output was too high.\n");
                 success = false;
             }
             low = current;
@@ -295,8 +295,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
     if (verify_binary_search) {
 
-        vtr::printf_info("\n");
-        vtr::printf_info("Verifying that binary search found min channel width...\n");
+        VTR_LOG("\n");
+        VTR_LOG("Verifying that binary search found min channel width...\n");
 
         prev_success = true; /* Actually final - 1 failed, but this makes router */
         /* try final-2 and final-3 even if both fail: safer */
@@ -378,10 +378,10 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
-        vtr::printf_warning(__FILE__, __LINE__,
+        VTR_LOG_WARN(
                 "Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
     }
-    vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
+    VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
     print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
 
@@ -449,17 +449,17 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     }
 
 #ifdef VERBOSE
-    vtr::printf_info("\n");
-    vtr::printf_info("device_ctx.chan_width.x_list:\n");
+    VTR_LOG("\n");
+    VTR_LOG("device_ctx.chan_width.x_list:\n");
     for (size_t i = 0; i < grid.height(); ++i) {
-        vtr::printf_info("%d  ", device_ctx.chan_width.x_list[i]);
+        VTR_LOG("%d  ", device_ctx.chan_width.x_list[i]);
     }
-    vtr::printf_info("\n");
-    vtr::printf_info("device_ctx.chan_width.y_list:\n");
+    VTR_LOG("\n");
+    VTR_LOG("device_ctx.chan_width.y_list:\n");
     for (size_t i = 0; i < grid.width(); ++i) {
-        vtr::printf_info("%d  ", device_ctx.chan_width.y_list[i]);
+        VTR_LOG("%d  ", device_ctx.chan_width.y_list[i]);
     }
-    vtr::printf_info("\n");
+    VTR_LOG("\n");
 #endif
 }
 

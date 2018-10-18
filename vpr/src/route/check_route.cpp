@@ -72,8 +72,8 @@ void check_route(enum e_route_type route_type, int num_switches) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Checking to ensure routing is legal...\n");
+	VTR_LOG("\n");
+	VTR_LOG("Checking to ensure routing is legal...\n");
 
 	/* Recompute the occupancy from scratch and check for overuse of routing *
 	 * resources.  This was already checked in order to determine that this  *
@@ -184,8 +184,8 @@ void check_route(enum e_route_type route_type, int num_switches) {
 
 	free(pin_done);
 	free(connected_to_route);
-	vtr::printf_info("Completed routing consistency check successfully.\n");
-	vtr::printf_info("\n");
+	VTR_LOG("Completed routing consistency check successfully.\n");
+	VTR_LOG("\n");
 }
 
 

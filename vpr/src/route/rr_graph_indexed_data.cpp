@@ -291,7 +291,7 @@ static void load_rr_indexed_data_T_values(int index_start,
         }
 
         if (num_switches == 0) {
-            vtr::printf_warning(__FILE__, __LINE__, "Track %d had no switches\n", itrack);
+            VTR_LOG_WARN( "Track %d had no switches\n", itrack);
             continue;
         }
         VTR_ASSERT(num_switches > 0);

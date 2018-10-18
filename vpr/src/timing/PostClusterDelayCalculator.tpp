@@ -28,14 +28,14 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (max) ===\n", size_t(edge_id));
+    VTR_LOG("=== Edge %zu (max) ===\n", size_t(edge_id));
 #endif
     return calc_edge_delay(tg, edge_id, DelayType::MAX); 
 }
 
 inline tatum::Time PostClusterDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (min) ===\n", size_t(edge_id));
+    VTR_LOG("=== Edge %zu (min) ===\n", size_t(edge_id));
 #endif
     return calc_edge_delay(tg, edge_id, DelayType::MIN); 
 }
@@ -43,14 +43,14 @@ inline tatum::Time PostClusterDelayCalculator::min_edge_delay(const tatum::Timin
 
 inline tatum::Time PostClusterDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (setup) ===\n", size_t(edge_id));
+    VTR_LOG("=== Edge %zu (setup) ===\n", size_t(edge_id));
 #endif
     return atom_setup_time(tg, edge_id);
 }
 
 inline tatum::Time PostClusterDelayCalculator::hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));
+    VTR_LOG("=== Edge %zu (hold) ===\n", size_t(edge_id));
 #endif
     return atom_hold_time(tg, edge_id); 
 }
@@ -90,7 +90,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const ta
         set_cached_delay(edge_id, delay_type, delay);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("  Edge %zu Atom Comb Delay: %g\n", size_t(edge_id), delay.value());
+    VTR_LOG("  Edge %zu Atom Comb Delay: %g\n", size_t(edge_id), delay.value());
 #endif
 
     return delay;
@@ -116,7 +116,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
         set_cached_setup_time(edge_id,tsu);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("  Edge %zu Atom Tsu: %g\n", size_t(edge_id), tsu.value());
+    VTR_LOG("  Edge %zu Atom Tsu: %g\n", size_t(edge_id), tsu.value());
 #endif
     return tsu;
 }
@@ -141,7 +141,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_hold_time(const tatum::Timin
         set_cached_hold_time(edge_id, thld);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("  Edge %zu Atom Thld: %g\n", size_t(edge_id), thld.value());
+    VTR_LOG("  Edge %zu Atom Thld: %g\n", size_t(edge_id), thld.value());
 #endif
     return thld;
 }
@@ -166,7 +166,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum
         set_cached_delay(edge_id, delay_type, tco);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("  Edge %zu Atom Tco: %g\n", size_t(edge_id), tco.value());
+    VTR_LOG("  Edge %zu Atom Tco: %g\n", size_t(edge_id), tco.value());
 #endif
     return tco;
 }
@@ -272,7 +272,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 				set_cached_pins(edge_id, delay_type, src_pin, sink_pin);
 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-                vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [UNcached]\n", 
+                VTR_LOG("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [UNcached]\n", 
                             size_t(edge_id),
                             edge_delay.value(),
                             driver_clb_delay.value(),
@@ -290,7 +290,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 set_cached_delay(edge_id, delay_type, edge_delay);
 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-                vtr::printf("  Edge %zu CLB Internal delay: %g [UNcached]\n", size_t(edge_id), edge_delay.value());
+                VTR_LOG("  Edge %zu CLB Internal delay: %g [UNcached]\n", size_t(edge_id), edge_delay.value());
 #endif
             }
         } else {
@@ -316,7 +316,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-            vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [Cached]\n", 
+            VTR_LOG("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink) [Cached]\n", 
                         size_t(edge_id),
                         edge_delay.value(),
                         driver_clb_delay.value(),
@@ -326,7 +326,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
         }
     } else {
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-        vtr::printf("  Edge %zu CLB Internal delay: %g [Cached]\n", size_t(edge_id), edge_delay.value());
+        VTR_LOG("  Edge %zu CLB Internal delay: %g [Cached]\n", size_t(edge_id), edge_delay.value());
 #endif
     }
 

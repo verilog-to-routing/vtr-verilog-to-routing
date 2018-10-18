@@ -174,7 +174,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 //  0
                 //
                 output_is_const = true;
-                vtr::printf("Found constant-zero generator '%s'\n", nets[nets.size()-1].c_str());
+                VTR_LOG("Found constant-zero generator '%s'\n", nets[nets.size()-1].c_str());
             } else if(truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::TRUE) {
                 //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
                 //  e.g.
@@ -184,7 +184,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 //  1
                 //
                 output_is_const = true;
-                vtr::printf("Found constant-one generator '%s'\n", nets[nets.size()-1].c_str());
+                VTR_LOG("Found constant-one generator '%s'\n", nets[nets.size()-1].c_str());
             }
 
             //Create output
@@ -195,7 +195,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
             if(type == blifparse::LatchType::UNSPECIFIED) {
-                vtr::printf_warning(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
+                VTR_LOGF_WARN(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
             } else if(type != blifparse::LatchType::RISING_EDGE) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
             }
@@ -269,7 +269,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 subckt_name = unique_subckt_name();
 
                 //Since this is unusual, warn the user
-                vtr::printf_warning(filename_.c_str(), lineno_,
+                VTR_LOGF_WARN(filename_.c_str(), lineno_,
                         "Subckt of type '%s' at %s:%d has no output pins, and has been named '%s'\n",
                         blk_model->name, filename_.c_str(), lineno_, subckt_name.c_str());
             }
@@ -621,7 +621,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                         }
 
                         if (!all_pins_constant) {
-                            vtr::printf("Inferred black-box constant generator '%s' (%s)\n",
+                            VTR_LOG("Inferred black-box constant generator '%s' (%s)\n",
                                         curr_model().block_name(blk_id).c_str(),
                                         curr_model().block_model(blk_id)->name);
 

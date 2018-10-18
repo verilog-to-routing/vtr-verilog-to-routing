@@ -307,15 +307,15 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
                         int sink_rr_node = lb_nets[inet].terminals[itarget];
 
                         if (debug_clustering) {
-                            vtr::printf("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
+                            VTR_LOG("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
                                         describe_lb_type_rr_node(driver_rr_node, router_data).c_str(),
                                         describe_lb_type_rr_node(sink_rr_node, router_data).c_str(),
                                         atom_nlist.net_name(net_id).c_str(),
                                         atom_nlist.pin_name(driver_pin).c_str());
                             if (sink_pin) {
-                                vtr::printf(" to net pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
+                                VTR_LOG(" to net pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
                             }
-                            vtr::printf("\n");
+                            VTR_LOG("\n");
                         }
 					} else {
 						exp_node = pq.top();
@@ -358,7 +358,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 		} else {
 			--inet;
             auto& atom_ctx = g_vpr_ctx.atom();
-			vtr::printf("Net '%s' is impossible to route within proposed %s cluster\n", atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
+			VTR_LOG("Net '%s' is impossible to route within proposed %s cluster\n", atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
 			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
@@ -377,7 +377,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 				//Report the congested nodes and associated nets
 				auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
 				if (!congested_rr_nodes.empty()) {
-					vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
+					VTR_LOG("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
 				}
 			}
 		}
@@ -825,7 +825,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                 //Remap this terminal to an explicit pin instead of the common sink
                 int pin_index = pb_graph_pin->pin_count_in_cluster;
 
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                             "Found duplicate nets connected to logically equivalent pins. "
                             "Remapping intra lb net %d (atom net %zu '%s') from common sink "
                             "pb_route %d to fixed pin pb_route %d\n",

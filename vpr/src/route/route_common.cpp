@@ -218,7 +218,7 @@ void get_serial_num() {
 			tptr = tptr->next;
 		}
 	}
-	vtr::printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
+	VTR_LOG("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
 void try_graph(int width_fac, t_router_opts router_opts,
@@ -323,14 +323,14 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
     if (cluster_ctx.clb_nlist.nets().empty()) {
-        vtr::printf_warning(__FILE__, __LINE__, "No nets to route\n");
+        VTR_LOG_WARN( "No nets to route\n");
     }
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
+		VTR_LOG("Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts);
 	} else { /* TIMING_DRIVEN route */
-		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
+		VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
@@ -1355,13 +1355,13 @@ namespace heap_ {
 	}
 	// extract every element and print it
 	void pop_heap() {
-		while (!is_empty_heap()) vtr::printf_info("%e ", get_heap_head()->cost);
-		vtr::printf_info("\n");
+		while (!is_empty_heap()) VTR_LOG("%e ", get_heap_head()->cost);
+		VTR_LOG("\n");
 	}
 	// print every element; not necessarily in order for minheap
 	void print_heap() {
-		for (int i = 1; i < heap_tail >> 1; ++i) vtr::printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
-		vtr::printf_info("\n");
+		for (int i = 1; i < heap_tail >> 1; ++i) VTR_LOG("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
+		VTR_LOG("\n");
 	}
 	// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
 	void verify_extract_top() {
@@ -1412,8 +1412,8 @@ get_heap_head() {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			vtr::printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
-			vtr::printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
+			VTR_LOG_WARN( "Empty heap occurred in get_heap_head.\n");
+			VTR_LOG_WARN( "Some blocks are impossible to connect in this architecture.\n");
 			return (nullptr);
 		}
 
@@ -1797,17 +1797,17 @@ void print_traceback(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	vtr::printf_info("traceback %zu: ", size_t(net_id));
+	VTR_LOG("traceback %zu: ", size_t(net_id));
 	t_trace* head = route_ctx.trace_head[net_id];
 	while (head) {
 		int inode {head->index};
 		if (device_ctx.rr_nodes[inode].type() == SINK)
-			vtr::printf_info("%d(sink)(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
+			VTR_LOG("%d(sink)(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
 		else
-			vtr::printf_info("%d(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
+			VTR_LOG("%d(%d)->",inode, route_ctx.rr_node_route_inf[inode].occ());
 		head = head->next;
 	}
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 void print_traceback(const t_trace* trace) {
@@ -1816,24 +1816,24 @@ void print_traceback(const t_trace* trace) {
     const t_trace* prev = nullptr;
 	while (trace) {
 		int inode = trace->index;
-        vtr::printf("%d (%s)", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
+        VTR_LOG("%d (%s)", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
 
         if (trace->iswitch == OPEN) {
-            vtr::printf(" !"); //End of branch
+            VTR_LOG(" !"); //End of branch
         }
 
         if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable()) {
-            vtr::printf("*"); //Reached non-configurably
+            VTR_LOG("*"); //Reached non-configurably
         }
 
         if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
-            vtr::printf(" x"); //Overused
+            VTR_LOG(" x"); //Overused
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
         prev = trace;
 		trace = trace->next;
 	}
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 bool validate_traceback(t_trace* trace) {
@@ -1923,12 +1923,12 @@ void print_invalid_routing_info() {
         int cap = device_ctx.rr_nodes[inode].capacity();
 		if (occ > cap) {
 
-            vtr::printf("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
                 auto net_id = itr->second;
-                vtr::printf("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
+                VTR_LOG("    Used by net %s (%zu)\n", cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
             }
 
 		}
@@ -1942,15 +1942,15 @@ void print_rr_node_route_inf() {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
             int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            vtr::printf ("rr_node: %d prev_node: %d prev_edge: %d",
+            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %d",
                     inode, prev_node, prev_edge);
 
 
             if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
-                vtr::printf("*");
+                VTR_LOG("*");
             }
 
-            vtr::printf(" pcost: %g back_pcost: %g\n",
+            VTR_LOG(" pcost: %g back_pcost: %g\n",
                     route_ctx.rr_node_route_inf[inode].path_cost, route_ctx.rr_node_route_inf[inode].backward_path_cost);
         }
     }
@@ -1960,16 +1960,16 @@ void print_rr_node_route_inf_dot() {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    vtr::printf("digraph G {\n");
-    vtr::printf("\tnode[shape=record]\n");
+    VTR_LOG("digraph G {\n");
+    VTR_LOG("\tnode[shape=record]\n");
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
 
-            vtr::printf("\tnode%zu[label=\"{%zu (%s)", inode, inode, device_ctx.rr_nodes[inode].type_string());
+            VTR_LOG("\tnode%zu[label=\"{%zu (%s)", inode, inode, device_ctx.rr_nodes[inode].type_string());
             if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
-                vtr::printf(" x");
+                VTR_LOG(" x");
             }
-            vtr::printf("}\"]\n");
+            VTR_LOG("}\"]\n");
         }
     }
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
@@ -1979,17 +1979,17 @@ void print_rr_node_route_inf_dot() {
             int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
 
             if (prev_node != OPEN && prev_edge != OPEN) {
-                vtr::printf("\tnode%d -> node%zu [", prev_node, inode);
+                VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
                 if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
-                    vtr::printf("label=\"*\"");
+                    VTR_LOG("label=\"*\"");
                 }
 
-                vtr::printf("];\n");
+                VTR_LOG("];\n");
             }
         }
     }
 
-    vtr::printf("}\n");
+    VTR_LOG("}\n");
 }
 
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes) {

@@ -437,7 +437,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
             //Only abort if we have a significant number of overused resources
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
-                vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+                VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
                 break; //Abort
             }
         }
@@ -577,19 +577,19 @@ bool try_timing_driven_route(t_router_opts router_opts,
     if (routing_is_successful) {
         if (timing_info) {
             timing_driven_check_net_delays(net_delay);
-            vtr::printf_info("Completed net delay value cross check successfully.\n");
-            vtr::printf_info("Critical path: %g ns\n", 1e9 * critical_path.delay());
+            VTR_LOG("Completed net delay value cross check successfully.\n");
+            VTR_LOG("Critical path: %g ns\n", 1e9 * critical_path.delay());
         }
 
-        vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
+        VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
     } else {
-        vtr::printf_info("Routing failed.\n");
+        VTR_LOG("Routing failed.\n");
 #ifdef ROUTER_DEBUG
         print_invalid_routing_info();
 #endif
     }
 
-    vtr::printf("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu\n",
+    VTR_LOG("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu\n",
             router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
 
     return routing_is_successful;
@@ -638,7 +638,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         if (is_routed) {
 			route_ctx.net_status[net_id].is_routed = true;
         } else {
-            vtr::printf_info("Routing failed.\n");
+            VTR_LOG("Routing failed.\n");
         }
     }
     return (is_routed);
@@ -767,7 +767,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
 
 #ifdef ROUTER_DEBUG
-    vtr::printf("Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
+    VTR_LOG("Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 #endif
 
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
@@ -859,7 +859,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
 #ifdef ROUTER_DEBUG
-    vtr::printf("Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
+    VTR_LOG("Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 #endif
     free_route_tree(rt_root);
     return (true);
@@ -883,7 +883,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
 #ifdef ROUTER_DEBUG
-    vtr::printf("Net %zu Target %d\n", size_t(net_id), itarget);
+    VTR_LOG("Net %zu Target %d\n", size_t(net_id), itarget);
 #endif
 
     if (itarget > 0 && itry > 5) {
@@ -903,7 +903,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     if (cheapest == nullptr) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
 		ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + target_pin));
-        vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
+        VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s'\n",
                     cluster_ctx.clb_nlist.block_name(src_block).c_str(),
 					cluster_ctx.clb_nlist.block_name(sink_block).c_str(),
                     cluster_ctx.clb_nlist.net_name(net_id).c_str());
@@ -957,7 +957,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
     ++router_stats.heap_pops;
 
     if (cheapest == nullptr) {
-        vtr::printf_info("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
         reset_path_costs();
         free_route_tree(rt_root);
@@ -967,7 +967,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
     int inode = cheapest->index;
 #ifdef ROUTER_DEBUG
-    if (router_debug) vtr::printf("  Popping node %d\n", inode);
+    if (router_debug) VTR_LOG("  Popping node %d\n", inode);
 #endif
     while (inode != sink_node) {
         float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
@@ -987,11 +987,11 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
 
 #ifdef ROUTER_DEBUG
-            if (router_debug) vtr::printf("    Better cost to %d\n", inode);
+            if (router_debug) VTR_LOG("    Better cost to %d\n", inode);
 #endif
             for (t_heap_prev prev : cheapest->previous) {
 #ifdef ROUTER_DEBUG
-                if (router_debug) vtr::printf("      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
+                if (router_debug) VTR_LOG("      Setting path costs for assicated node %d (from %d edge %d)\n", prev.to_node, prev.from_node, prev.from_edge);
 #endif
                 add_to_mod_list(prev.to_node, modified_rr_node_inf);
 
@@ -1012,7 +1012,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         ++router_stats.heap_pops;
 
         if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
-            vtr::printf_info("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+            VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
             reset_path_costs();
             free_route_tree(rt_root);
@@ -1021,11 +1021,11 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
         inode = cheapest->index;
 #ifdef ROUTER_DEBUG
-        if (router_debug) vtr::printf("  Popping node %d\n", inode);
+        if (router_debug) VTR_LOG("  Popping node %d\n", inode);
 #endif
     }
 #ifdef ROUTER_DEBUG
-    if (router_debug) vtr::printf("  Found target %d\n", inode);
+    if (router_debug) VTR_LOG("  Found target %d\n", inode);
 #endif
 
     return cheapest;
@@ -1194,7 +1194,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         }
 
 #ifdef ROUTER_DEBUG
-        if (router_debug) vtr::printf("Adding node %d to heap from init route tree\n", inode);
+        if (router_debug) VTR_LOG("Adding node %d to heap from init route tree\n", inode);
 #endif
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
@@ -1333,11 +1333,11 @@ static void timing_driven_expand_node(const float criticality_fac, const float b
         auto& device_ctx = g_vpr_ctx.device();
         bool reached_via_non_configurable_edge = !device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
         if (reached_via_non_configurable_edge) {
-            vtr::printf("        Force Expanding to node %d", to_node);
+            VTR_LOG("        Force Expanding to node %d", to_node);
         } else {
-            vtr::printf("      Expanding to node %d", to_node);
+            VTR_LOG("      Expanding to node %d", to_node);
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
     }
 #endif
 
@@ -1820,7 +1820,7 @@ static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
        Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
 
     if (wirelength_info.used_wirelength_ratio() > FIRST_ITER_WIRELENTH_LIMIT) {
-        vtr::printf_info("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
+        VTR_LOG("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
                 wirelength_info.used_wirelength_ratio(),
                 FIRST_ITER_WIRELENTH_LIMIT);
         return true;
@@ -1934,7 +1934,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
         for (auto mapping : net_node_to_pin) {
             auto sanity = net_node_to_pin.find(mapping.first);
             if (sanity == net_node_to_pin.end()) {
-                vtr::printf_info("%d cannot find itself (net %lu)\n", mapping.first, size_t(net_id));
+                VTR_LOG("%d cannot find itself (net %lu)\n", mapping.first, size_t(net_id));
                 return false;
             }
             VTR_ASSERT(route_ctx.net_rr_terminals[net_id][mapping.second] == mapping.first);
@@ -2083,10 +2083,10 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    vtr::printf("Iter   Time  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    vtr::printf("      (sec) Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    vtr::printf("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("Iter   Time  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    VTR_LOG("      (sec) Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    VTR_LOG("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
 static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
@@ -2095,13 +2095,13 @@ static void print_route_status(int itry, double elapsed_sec, int num_bb_updated,
         float est_success_iteration) {
 
     //Iteration
-    vtr::printf("%4d", itry);
+    VTR_LOG("%4d", itry);
 
     //Elapsed Time
-    vtr::printf(" %6.1f", elapsed_sec);
+    VTR_LOG(" %6.1f", elapsed_sec);
 
     //Number of bounding boxes updated
-    vtr::printf(" %4d", num_bb_updated);
+    VTR_LOG(" %4d", num_bb_updated);
 
     //Heap push/pop
     constexpr int HEAP_OP_DIGITS = 7;
@@ -2123,62 +2123,62 @@ static void print_route_status(int itry, double elapsed_sec, int num_bb_updated,
     constexpr int OVERUSE_DIGITS = 7;
     constexpr int OVERUSE_SCI_PRECISION = 2;
     pretty_print_uint(" ", overuse_info.overused_nodes(), OVERUSE_DIGITS, OVERUSE_SCI_PRECISION);
-    vtr::printf(" (%6.3f%)", overuse_info.overused_node_ratio()*100);
+    VTR_LOG(" (%6.3f%)", overuse_info.overused_node_ratio()*100);
 
     //Wirelength
     constexpr int WL_DIGITS = 7;
     constexpr int WL_SCI_PRECISION = 2;
     pretty_print_uint(" ", wirelength_info.used_wirelength(), WL_DIGITS, WL_SCI_PRECISION);
-    vtr::printf(" (%4.1f%)", wirelength_info.used_wirelength_ratio()*100);
+    VTR_LOG(" (%4.1f%)", wirelength_info.used_wirelength_ratio()*100);
 
     //CPD
     if (timing_info) {
         float cpd = timing_info->least_slack_critical_path().delay();
-        vtr::printf(" %#8.3f", 1e9 * cpd);
+        VTR_LOG(" %#8.3f", 1e9 * cpd);
     } else {
-        vtr::printf(" %8s", "N/A");
+        VTR_LOG(" %8s", "N/A");
     }
 
     //sTNS
     if (timing_info) {
         float sTNS = timing_info->setup_total_negative_slack();
-        vtr::printf(" % #10.4g", 1e9 * sTNS);
+        VTR_LOG(" % #10.4g", 1e9 * sTNS);
     } else {
-        vtr::printf(" %10s", "N/A");
+        VTR_LOG(" %10s", "N/A");
     }
 
     //sWNS
     if (timing_info) {
         float sWNS = timing_info->setup_worst_negative_slack();
-        vtr::printf(" % #10.3f", 1e9 * sWNS);
+        VTR_LOG(" % #10.3f", 1e9 * sWNS);
     } else {
-        vtr::printf(" %10s", "N/A");
+        VTR_LOG(" %10s", "N/A");
     }
 
     //hTNS
     if (timing_info) {
         float hTNS = timing_info->hold_total_negative_slack();
-        vtr::printf(" % #10.4g", 1e9 * hTNS);
+        VTR_LOG(" % #10.4g", 1e9 * hTNS);
     } else {
-        vtr::printf(" %10s", "N/A");
+        VTR_LOG(" %10s", "N/A");
     }
 
     //hWNS
     if (timing_info) {
         float hWNS = timing_info->hold_worst_negative_slack();
-        vtr::printf(" % #10.3f", 1e9 * hWNS);
+        VTR_LOG(" % #10.3f", 1e9 * hWNS);
     } else {
-        vtr::printf(" %10s", "N/A");
+        VTR_LOG(" %10s", "N/A");
     }
 
     //Estimated success iteration
     if (std::isnan(est_success_iteration)) {
-        vtr::printf(" %8s", "N/A");
+        VTR_LOG(" %8s", "N/A");
     } else {
-        vtr::printf(" %8.0f", est_success_iteration);
+        VTR_LOG(" %8.0f", est_success_iteration);
     }
 
-    vtr::printf("\n");
+    VTR_LOG("\n");
 
     fflush(stdout);
 }
@@ -2187,10 +2187,10 @@ static void pretty_print_uint(const char* prefix, size_t value, int num_digits, 
     //Print as integer if it will fit in the width, other wise scientific
     if (value <= std::pow(10, num_digits) - 1) {
         //Direct
-        vtr::printf("%s%*zu", prefix, num_digits, value);
+        VTR_LOG("%s%*zu", prefix, num_digits, value);
     } else {
         //Scientific
-        vtr::printf("%s%#*.*g", prefix, num_digits, scientific_precision, float(value));
+        VTR_LOG("%s%#*.*g", prefix, num_digits, scientific_precision, float(value));
     }
 }
 
@@ -2304,7 +2304,7 @@ static size_t dynamic_update_bounding_boxes() {
 
         if (updated_bb) {
             ++num_bb_updated;
-            //vtr::printf("Expanded net %6zu router BB to (%d,%d)x(%d,%d) based on net RR node BB (%d,%d)x(%d,%d)\n", size_t(net),
+            //VTR_LOG("Expanded net %6zu router BB to (%d,%d)x(%d,%d) based on net RR node BB (%d,%d)x(%d,%d)\n", size_t(net),
                         //router_bb.xmin, router_bb.ymin, router_bb.xmax, router_bb.ymax,
                         //curr_bb.xmin, curr_bb.ymin, curr_bb.xmax, curr_bb.ymax);
         }

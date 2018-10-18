@@ -69,7 +69,7 @@ void read_place(const char* net_file,
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
                 } else {
-                    vtr::printf_warning(place_file, lineno, "%s\n", msg.c_str());
+                    VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
                 }
             }
 
@@ -151,8 +151,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
+	VTR_LOG("\n");
+	VTR_LOG("Reading locations of IO pads from '%s'.\n", pad_loc_file);
 	fp = fopen(pad_loc_file, "r");
 	if (!fp) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__,
 				"'%s' - Cannot find IO pads location file.\n",
@@ -225,7 +225,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 		h_ptr = get_hash_entry(hash_table, bname);
 		if (h_ptr == nullptr) {
-			vtr::printf_warning(__FILE__, __LINE__,
+			VTR_LOG_WARN(
 					"[Line %d] Block %s invalid, no such IO pad.\n", vtr::get_file_line_number_of_last_opened_file(), bname);
 			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue;
@@ -275,8 +275,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 	fclose(fp);
 	free_hash_table(hash_table);
-	vtr::printf_info("Successfully read %s.\n", pad_loc_file);
-	vtr::printf_info("\n");
+	VTR_LOG("Successfully read %s.\n", pad_loc_file);
+	VTR_LOG("\n");
 }
 
 /* Prints out the placement of the circuit. The architecture and    *

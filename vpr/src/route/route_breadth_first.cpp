@@ -57,7 +57,7 @@ bool try_breadth_first_route(t_router_opts router_opts) {
 
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 
-        vtr::printf("Routing Iteration %d\n", itry);
+        VTR_LOG("Routing Iteration %d\n", itry);
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -84,7 +84,7 @@ bool try_breadth_first_route(t_router_opts router_opts) {
 
 		success = feasible_routing();
 		if (success) {
-			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
+			VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
 			return (true);
 		}
 
@@ -98,7 +98,7 @@ bool try_breadth_first_route(t_router_opts router_opts) {
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
 
-	vtr::printf_info("Routing failed.\n");
+	VTR_LOG("Routing failed.\n");
 
 #ifdef ROUTER_DEBUG
     print_invalid_routing_info();
@@ -129,7 +129,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac,
 		if (is_routed) {
 			route_ctx.net_status[net_id].is_routed = false;
 		} else {
-			vtr::printf_info("Routing failed.\n");
+			VTR_LOG("Routing failed.\n");
 		}
 
 		pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
@@ -161,7 +161,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 #ifdef ROUTER_DEBUG
-    vtr::printf("Routing Net %zu (%zu sinks)\n", size_t(net_id), cluster_ctx.clb_nlist.net_sinks(net_id).size());
+    VTR_LOG("Routing Net %zu (%zu sinks)\n", size_t(net_id), cluster_ctx.clb_nlist.net_sinks(net_id).size());
 #endif
 
 	free_traceback(net_id);
@@ -182,7 +182,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 		current = get_heap_head();
 
 		if (current == nullptr) { /* Infeasible routing.  No possible path for net. */
-			vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
+			VTR_LOG("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
 					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                     cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(),
                     cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
@@ -193,7 +193,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 		inode = current->index;
 
 #ifdef ROUTER_DEBUG
-        vtr::printf("  Popped node %d\n", inode);
+        VTR_LOG("  Popped node %d\n", inode);
 #endif
 
 		while (route_ctx.rr_node_route_inf[inode].target_flag == 0) {
@@ -201,12 +201,12 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			new_pcost = current->cost;
 			if (pcost > new_pcost) { /* New path is lowest cost. */
 #ifdef ROUTER_DEBUG
-                vtr::printf("    New best cost %g\n", new_pcost);
+                VTR_LOG("    New best cost %g\n", new_pcost);
 #endif
 
                 for (t_heap_prev prev : current->previous) {
 #ifdef ROUTER_DEBUG
-                    vtr::printf("    Setting routing paths for associated node %d\n", prev.to_node);
+                    VTR_LOG("    Setting routing paths for associated node %d\n", prev.to_node);
 #endif
                     add_to_mod_list(prev.to_node, modified_rr_node_inf);
 
@@ -217,7 +217,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
                 }
 
 #ifdef ROUTER_DEBUG
-                vtr::printf("    Expanding node %d neighbours\n", inode);
+                VTR_LOG("    Expanding node %d neighbours\n", inode);
 #endif
                 breadth_first_expand_neighbours(inode, new_pcost, net_id, bend_cost);
 			}
@@ -226,7 +226,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			current = get_heap_head();
 
 			if (current == nullptr) { /* Impossible routing. No path for net. */
-                vtr::printf_info("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
+                VTR_LOG("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
                         size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                         cluster_ctx.clb_nlist.pin_name(src_pin_id).c_str(), cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 				reset_path_costs(modified_rr_node_inf);
@@ -236,12 +236,12 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 			inode = current->index;
 
 #ifdef ROUTER_DEBUG
-            vtr::printf("  Popped node %d\n", inode);
+            VTR_LOG("  Popped node %d\n", inode);
 #endif
 
 		}
 #ifdef ROUTER_DEBUG
-        vtr::printf("  Found target node %d\n", inode);
+        VTR_LOG("  Found target node %d\n", inode);
 #endif
 
 		route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
@@ -251,7 +251,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 	}
 
 #ifdef ROUTER_DEBUG
-    vtr::printf("Routed Net %zu\n", size_t(net_id));
+    VTR_LOG("Routed Net %zu\n", size_t(net_id));
 #endif
 
 	empty_heap();
@@ -294,7 +294,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 	if (remaining_connections_to_sink == 0) { /* Usual case. */
 		while (tptr != nullptr) {
 #ifdef ROUTER_DEBUG
-            vtr::printf("  Adding previous routing node %d to heap\n", tptr->index);
+            VTR_LOG("  Adding previous routing node %d to heap\n", tptr->index);
 #endif
 			node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 			tptr = tptr->next;
@@ -320,7 +320,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		while (next_ptr != nullptr) {
 			inode = tptr->index;
 #ifdef ROUTER_DEBUG
-            vtr::printf("  Adding previous routing node %d to heap*\n", tptr->index);
+            VTR_LOG("  Adding previous routing node %d to heap*\n", tptr->index);
 #endif
 			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
@@ -409,7 +409,7 @@ static void breadth_first_expand_non_configurable_recurr(const float path_cost, 
         visited.insert(to_node);
 
 #ifdef ROUTER_DEBUG
-        vtr::printf("      Expanding node %d\n", to_node);
+        VTR_LOG("      Expanding node %d\n", to_node);
 #endif
 
         //Path cost to 'to_node'
@@ -466,7 +466,7 @@ static void breadth_first_add_source_to_heap(ClusterNetId net_id) {
 	cost = get_rr_cong_cost(inode);
 
 #ifdef ROUTER_DEBUG
-    vtr::printf("  Adding Source node %d to heap\n", inode);
+    VTR_LOG("  Adding Source node %d to heap\n", inode);
 #endif
 
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);

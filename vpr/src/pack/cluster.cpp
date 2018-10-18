@@ -500,7 +500,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 			ClusterBlockId clb_index(num_clb);
 
             if (debug_clustering) {
-                vtr::printf_info("Complex block %d:\n", num_clb);
+                VTR_LOG("Complex block %d:\n", num_clb);
             }
 
 			start_new_cluster(cluster_placement_stats, primitives_list,
@@ -516,11 +516,11 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
                     enable_pin_feasibility_filter);
 
             if (!debug_clustering) {
-                vtr::printf_info("Complex block %d: %s, type: %s ",
+                VTR_LOG("Complex block %d: %s, type: %s ",
                         num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
-                vtr::printf("."); //Progress dot for seed-block
+                VTR_LOG("."); //Progress dot for seed-block
             } else {
-                vtr::printf("\n");
+                VTR_LOG("\n");
             }
 			fflush(stdout);
 
@@ -571,29 +571,29 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 					if (next_molecule != nullptr) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
                             if (debug_clustering) {
-                                vtr::printf("\tNO_ROUTE: %s type %s",
+                                VTR_LOG("\tNO_ROUTE: %s type %s",
                                         blk_name.c_str(),
                                         blk_model->name);
                                 if (next_molecule->pack_pattern) {
-                                    vtr::printf("molecule %s molecule_size %zu",
+                                    VTR_LOG("molecule %s molecule_size %zu",
                                         next_molecule->pack_pattern->name,
                                         next_molecule->atom_block_ids.size());
                                 }
-                                vtr::printf("\n");
+                                VTR_LOG("\n");
                                 fflush(stdout);
                             }
 						} else {
                             if (debug_clustering) {
-                                vtr::printf("\tFAILED_CHECK: %s type %s check %d",
+                                VTR_LOG("\tFAILED_CHECK: %s type %s check %d",
                                         blk_name.c_str(),
                                         blk_model->name,
                                         block_pack_status);
                                 if (next_molecule->pack_pattern) {
-                                    vtr::printf("molecule %s molecule_size %zu",
+                                    VTR_LOG("molecule %s molecule_size %zu",
                                         next_molecule->pack_pattern->name,
                                         next_molecule->atom_block_ids.size());
                                 }
-                                vtr::printf("\n");
+                                VTR_LOG("\n");
                                 fflush(stdout);
                             }
 						}
@@ -611,17 +611,17 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 				} else {
 					/* Continue packing by filling smallest cluster */
                     if (debug_clustering) {
-                        vtr::printf("\tPASSED: %s type %s",
+                        VTR_LOG("\tPASSED: %s type %s",
                                 blk_name.c_str(),
                                 blk_model->name);
                         if (next_molecule && next_molecule->pack_pattern) {
-                            vtr::printf(" molecule %s molecule_size %zu",
+                            VTR_LOG(" molecule %s molecule_size %zu",
                                     next_molecule->pack_pattern->name,
                                     next_molecule->atom_block_ids.size());
                         }
-                        vtr::printf("\n");
+                        VTR_LOG("\n");
                     } else {
-                        vtr::printf(".");
+                        VTR_LOG(".");
                     }
 					fflush(stdout);
 				}
@@ -647,17 +647,17 @@ std::map<t_type_ptr,size_t> do_clustering(const t_arch *arch, t_pack_molecule *m
 			}
 
             if (!debug_clustering) {
-                vtr::printf("\n");
+                VTR_LOG("\n");
             }
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_intra_lb_route(router_data, debug_clustering);
 				if (is_cluster_legal == true) {
                     if (debug_clustering) {
-                        vtr::printf_info("Passed route at end.\n");
+                        VTR_LOG("Passed route at end.\n");
                     }
 				} else {
-					vtr::printf_info("Failed route at end, repack cluster trying detailed routing at each stage.\n");
+					VTR_LOG("Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
 			} else {
 				is_cluster_legal = true;
@@ -1185,15 +1185,15 @@ static enum e_block_pack_status try_pack_molecule(
 
     if (debug_clustering) {
         AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
-        vtr::printf("\t\tTry Pack: '%s' (%s) ",
+        VTR_LOG("\t\tTry Pack: '%s' (%s) ",
                         atom_ctx.nlist.block_name(root_atom).c_str(),
                         atom_ctx.nlist.block_model(root_atom)->name);
         if (molecule->pack_pattern) {
-            vtr::printf("molecule_type %s molecule_size %zu",
+            VTR_LOG("molecule_type %s molecule_size %zu",
                 molecule->pack_pattern->name,
                 molecule->atom_block_ids.size());
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
     }
 
 	while (block_pack_status != BLK_PASSED) {
@@ -1226,7 +1226,7 @@ static enum e_block_pack_status try_pack_molecule(
 				try_update_lookahead_pins_used(pb);
 				if (!check_lookahead_pins_used(pb, max_external_pin_util)) {
                     if (debug_clustering) {
-                        vtr::printf("\t\tFAILED Pin Feasibility Filter\n");
+                        VTR_LOG("\t\tFAILED Pin Feasibility Filter\n");
                     }
                     block_pack_status = BLK_FAILED_FEASIBLE;
 				}
@@ -1238,7 +1238,7 @@ static enum e_block_pack_status try_pack_molecule(
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data, debug_clustering) == false) {
 					/* Cannot pack */
                     if (debug_clustering) {
-                        vtr::printf("\t\tFAILED Detailed Routing Legality\n");
+                        VTR_LOG("\t\tFAILED Detailed Routing Legality\n");
                     }
 					block_pack_status = BLK_FAILED_ROUTE;
 				} else {
@@ -1288,12 +1288,12 @@ static enum e_block_pack_status try_pack_molecule(
 				}
 			} else {
                 if (debug_clustering) {
-                    vtr::printf("\t\tPASSED pack molecule\n");
+                    VTR_LOG("\t\tPASSED pack molecule\n");
                 }
             }
 		} else {
             if (debug_clustering) {
-                vtr::printf("\t\tFAILED No candidate primitives available\n");
+                VTR_LOG("\t\tFAILED No candidate primitives available\n");
             }
 			block_pack_status = BLK_FAILED_FEASIBLE;
 			break; /* no more candidate primitives available, this molecule will not pack, return fail */
@@ -1419,7 +1419,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		}
 
         if (debug_clustering && block_pack_status == BLK_PASSED) {
-            vtr::printf("\t\t\tPlaced atom '%s' (%s) at %s\n",
+            VTR_LOG("\t\t\tPlaced atom '%s' (%s) at %s\n",
                         atom_ctx.nlist.block_name(blk_id).c_str(),
                         atom_ctx.nlist.block_model(blk_id)->name,
                         pb->hierarchical_type_name().c_str());
@@ -1909,15 +1909,15 @@ static void start_new_cluster(
 
 
     if (debug_clustering) {
-        vtr::printf("\tSeed: '%s' (%s) ",
+        VTR_LOG("\tSeed: '%s' (%s) ",
                         root_atom_name.c_str(),
                         root_model->name);
         if (molecule->pack_pattern) {
-            vtr::printf("molecule_type %s molecule_size %zu",
+            VTR_LOG("molecule_type %s molecule_size %zu",
                 molecule->pack_pattern->name,
                 molecule->atom_block_ids.size());
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
     }
 
     //Try packing into each candidate type
@@ -1959,7 +1959,7 @@ static void start_new_cluster(
 
         if (success) {
             if (debug_clustering) {
-                vtr::printf("\tPASSED_SEED: Block Type %s\n",
+                VTR_LOG("\tPASSED_SEED: Block Type %s\n",
                     type->name);
             }
 
@@ -1972,7 +1972,7 @@ static void start_new_cluster(
             break;
         } else {
             if (debug_clustering) {
-                vtr::printf("\tFAILED_SEED: Block Type %s\n",
+                VTR_LOG("\tFAILED_SEED: Block Type %s\n",
                     type->name);
             }
 
@@ -2008,7 +2008,7 @@ static void start_new_cluster(
 	/* Expand FPGA size if needed */
 	if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(clb_nlist->block_type(clb_index))) {
 		device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
-		vtr::printf_info("Not enough resources expand FPGA size to (%d x %d)\n",
+		VTR_LOG("Not enough resources expand FPGA size to (%d x %d)\n",
 			device_ctx.grid.width(), device_ctx.grid.height());
 	}
 }
@@ -2227,7 +2227,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	} else {
 		if (best_molecule == nullptr) {
             if (debug_clustering) {
-                vtr::printf("\tNo related molecule found and unrelated clustering disabled\n");
+                VTR_LOG("\tNo related molecule found and unrelated clustering disabled\n");
             }
         }
     }
@@ -2244,7 +2244,7 @@ static void check_clustering() {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if(cluster_ctx.clb_nlist.blocks().size() == 0) {
-        vtr::printf_warning(__FILE__, __LINE__, "Packing produced no clustered blocks");
+        VTR_LOG_WARN( "Packing produced no clustered blocks");
     }
 
 	/*

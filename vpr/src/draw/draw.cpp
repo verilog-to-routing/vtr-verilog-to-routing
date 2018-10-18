@@ -436,7 +436,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 
 	if (int(priority) >= draw_state->gr_automode || forced_pause) {
         if (forced_pause) {
-            vtr::printf("Starting interactive graphics (due to user interrupt)\n");
+            VTR_LOG("Starting interactive graphics (due to user interrupt)\n");
             g_vpr_ctx.set_forced_pause(false); //Reset pause flag
         }
         set_mouse_move_input(true); //Enable act_on_mouse_over callback
@@ -483,7 +483,7 @@ static void drawscreen() {
 #ifdef WIN32
 	drawscreen_end = clock();
 
-    vtr::printf_info("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
+    VTR_LOG("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
 
 #else /* X11 */
 	struct timeval end;
@@ -495,7 +495,7 @@ static void drawscreen() {
 	unsigned long time_diff_microsec;
 	time_diff_microsec = end_time - begin_time;
 
-	vtr::printf_info("Drawscreen took %ld microseconds\n", time_diff_microsec);
+	VTR_LOG("Drawscreen took %ld microseconds\n", time_diff_microsec);
 #endif /* WIN32 */
 #endif /* TIME_DRAWSCREEN */
 }
@@ -2691,20 +2691,20 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 #if defined(X11) && !defined(__MINGW32__)
 static void act_on_key_press(char /*key_pressed*/, int keysym) {
-    //vtr::printf("Key press %c (%d)\n", key_pressed, keysym);
+    //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     switch(keysym) {
         case XK_Shift_L: {
             float zoom_factor = get_zoom_factor();
             zoom_factor += (zoom_factor - 1.);
             zoom_factor = std::min(8.f, zoom_factor); //Clip maximum zoom factor
-            vtr::printf("Increasing graphics zoom factor to %f\n", zoom_factor);
+            VTR_LOG("Increasing graphics zoom factor to %f\n", zoom_factor);
             set_zoom_factor(zoom_factor);
             break;
         } case XK_Control_L: {
             float zoom_factor = get_zoom_factor();
             zoom_factor -= (zoom_factor - 1.) / 2;
             zoom_factor = std::max(1.0001f, zoom_factor); //Clip minimum zoom factor
-            vtr::printf("Decreasing graphics zoom factor to %f\n", zoom_factor);
+            VTR_LOG("Decreasing graphics zoom factor to %f\n", zoom_factor);
             set_zoom_factor(zoom_factor);
             break;
         } default:

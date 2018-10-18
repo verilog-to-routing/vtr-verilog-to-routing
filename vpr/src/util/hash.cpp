@@ -194,11 +194,11 @@ void get_hash_stats(t_hash **hash_table, char *hash_table_name){
 
 	avg_num = (float) total_elements / ((float)HASHSIZE - (float)num_NULL);
 
-	vtr::printf_info("\n");
-	vtr::printf_info("The hash table '%s' is of size %d.\n",
+	VTR_LOG("\n");
+	VTR_LOG("The hash table '%s' is of size %d.\n",
 			hash_table_name, HASHSIZE);
-	vtr::printf_info("It has: %d keys that are never used; total of %d elements; "
+	VTR_LOG("It has: %d keys that are never used; total of %d elements; "
 			"an average linked-list length of %.1f; and a maximum linked-list length of %d.\n",
 			num_NULL, total_elements, avg_num, max_num);
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }

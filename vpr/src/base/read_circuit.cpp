@@ -98,7 +98,7 @@ static void process_circuit(AtomNetlist& netlist,
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if(unconn_net_id) {
             if (verbose_sweep) {
-                vtr::printf_warning(__FILE__, __LINE__, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
+                VTR_LOG_WARN( "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
             }
             netlist.remove_net(unconn_net_id);
         }
@@ -107,7 +107,7 @@ static void process_circuit(AtomNetlist& netlist,
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if(unconn_blk_id) {
             if (verbose_sweep) {
-                vtr::printf_warning(__FILE__, __LINE__, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
+                VTR_LOG_WARN( "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
             }
             netlist.remove_block(unconn_blk_id);
         }
@@ -191,19 +191,19 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     }
 
     //Print the statistics
-    vtr::printf_info("Circuit Statistics:\n");
-    vtr::printf_info("  Blocks: %zu\n", netlist.blocks().size());
+    VTR_LOG("Circuit Statistics:\n");
+    VTR_LOG("  Blocks: %zu\n", netlist.blocks().size());
     for(auto kv : block_type_counts) {
-        vtr::printf_info("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
+        VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Nets  : %zu\n", netlist.nets().size());
+    VTR_LOG("  Nets  : %zu\n", netlist.nets().size());
     for(auto kv : net_stats) {
-        vtr::printf_info("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
+        VTR_LOG("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
-    vtr::printf_info("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
+    VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
 
     if (netlist.blocks().empty()) {
-        vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");
+        VTR_LOG_WARN( "Netlist contains no blocks\n");
     }
 }
 

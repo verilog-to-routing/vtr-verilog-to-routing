@@ -256,7 +256,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 void compute_router_lookahead(int num_segments){
 	if (f_cost_map.size()){
 		/* if lookahead map has already been computed, do not compute it again */
-		vtr::printf_info("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
+		VTR_LOG("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
 		return;
 	}
 
@@ -316,7 +316,7 @@ void compute_router_lookahead(int num_segments){
 
 	clock_t end_time = clock();
 
-	vtr::printf_info("Computing router lookahead map took %f seconds.\n", ((float)end_time - start_time)/CLOCKS_PER_SEC);
+	VTR_LOG("Computing router lookahead map took %f seconds.\n", ((float)end_time - start_time)/CLOCKS_PER_SEC);
 }
 
 

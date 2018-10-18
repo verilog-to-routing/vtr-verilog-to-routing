@@ -81,7 +81,7 @@ ClusteredNetlist read_netlist(const char *net_file,
 	int num_primitives = 0;
 
 	/* Parse the file */
-	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
+	VTR_LOG("Begin loading packed FPGA netlist file.\n");
 
     //Save an identifier for the netlist based on it's contents
     auto clb_nlist = ClusteredNetlist(net_file, vtr::secure_digest_file(net_file));
@@ -114,7 +114,7 @@ ClusteredNetlist read_netlist(const char *net_file,
                       "Root element must have a 'name' attribute.\n");
         }
 
-        vtr::printf_info("Netlist generated from file '%s'.\n", top_name.value());
+        VTR_LOG("Netlist generated from file '%s'.\n", top_name.value());
 
         //Verify top level attributes
         auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
@@ -140,7 +140,7 @@ ClusteredNetlist read_netlist(const char *net_file,
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
                 } else {
-                    vtr::printf_warning(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
+                    VTR_LOGF_WARN(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
                 }
             }
         }
@@ -160,7 +160,7 @@ ClusteredNetlist read_netlist(const char *net_file,
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
                 } else {
-                    vtr::printf_warning(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
+                    VTR_LOGF_WARN(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
                 }
             }
         }
@@ -184,7 +184,7 @@ ClusteredNetlist read_netlist(const char *net_file,
         //Count the number of blocks for allocation
         bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
         if(bcount == 0)
-            vtr::printf_warning(__FILE__, __LINE__, "Packed netlist contains no clustered blocks\n");
+            VTR_LOG_WARN( "Packed netlist contains no clustered blocks\n");
 
         /* Process netlist */
         unsigned i = 0;
@@ -234,7 +234,7 @@ ClusteredNetlist read_netlist(const char *net_file,
 
 	clock_t end = clock();
 
-	vtr::printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	VTR_LOG("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
     return clb_nlist;
 }
@@ -964,7 +964,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 		for (auto pin_id : clb_nlist.net_sinks(net_id)) {
 			bool is_global_net = clb_nlist.net_is_global(net_id);
 			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_global_pin[clb_nlist.pin_physical_index(pin_id)] != is_global_net) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
 					"Netlist connects net %s to both global and non-global pins.\n",
 					clb_nlist.net_name(net_id).c_str());
 			}
@@ -1016,7 +1016,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 			}
 		}
 		if (const_gen == true) {
-			vtr::printf_info("%s is a constant generator.\n", pb->name);
+			VTR_LOG("%s is a constant generator.\n", pb->name);
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
                     int cluster_pin_idx = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;

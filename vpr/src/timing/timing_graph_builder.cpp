@@ -189,7 +189,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                 //An implicit clock source, possibly clock derived from data
 
                 AtomNetId clock_net = netlist_.pin_net(output_pin);
-                vtr::printf_warning(__FILE__, __LINE__, "Inferred implicit clock source %s for netlist clock %s (possibly data used as clock)\n",
+                VTR_LOG_WARN( "Inferred implicit clock source %s for netlist clock %s (possibly data used as clock)\n",
                                     netlist_.pin_name(output_pin).c_str(), netlist_.net_name(clock_net).c_str());
 
                 //This type of situation often requires cutting paths between the implicit clock source and
@@ -306,7 +306,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                         //Is the sink a clock generator?
                         if (sink_tnode && clock_generator_tnodes.count(sink_tnode)) {
                             //Do not create the edge
-                            vtr::printf_warning(__FILE__, __LINE__,
+                            VTR_LOG_WARN(
                                 "Timing edge from %s to %s will not be created since %s has been identified as a clock generator\n",
                                 netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                         } else {
@@ -341,7 +341,7 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
 
     if (!driver_pin) {
         //Undriven nets have no timing dependencies, and hence no edges
-        vtr::printf_warning(__FILE__, __LINE__, "Net %s has no driver and will be ignored for timing purposes\n", netlist_.net_name(net).c_str());
+        VTR_LOG_WARN( "Net %s has no driver and will be ignored for timing purposes\n", netlist_.net_name(net).c_str());
         return;
     }
 
@@ -362,7 +362,7 @@ void TimingGraphBuilder::fix_comb_loops() {
     //For non-simple loops (i.e. SCCs with multiple loops) we may need to break
     //multiple edges, so repeatedly break edges until there are no SCCs left
     while(!sccs.empty()) {
-        vtr::printf_warning(__FILE__, __LINE__, "Detected %zu strongly connected component(s) forming combinational loop(s) in timing graph\n", sccs.size());
+        VTR_LOG_WARN( "Detected %zu strongly connected component(s) forming combinational loop(s) in timing graph\n", sccs.size());
         for(const auto& scc : sccs) {
             EdgeId edge_to_break = find_scc_edge_to_break(scc);
             VTR_ASSERT(edge_to_break);
@@ -387,7 +387,7 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
             AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
 
             if(scc_set.count(sink_node)) {
-                vtr::printf_warning(__FILE__, __LINE__, "Arbitrarily disabling timing graph edge %zu (%s -> %s) to break combinational loop\n",
+                VTR_LOG_WARN( "Arbitrarily disabling timing graph edge %zu (%s -> %s) to break combinational loop\n",
                                                          edge, netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                 return edge;
             }

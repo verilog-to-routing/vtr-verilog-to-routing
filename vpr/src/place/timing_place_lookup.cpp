@@ -98,7 +98,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
 
-    vtr::printf_info("\nStarting placement delay look-up...\n");
+    VTR_LOG("\nStarting placement delay look-up...\n");
     clock_t begin = clock();
 
     int longest_length;
@@ -123,7 +123,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
     clock_t end = clock();
 
     float time = (float) (end - begin) / CLOCKS_PER_SEC;
-    vtr::printf_info("Placement delay look-up took %g seconds\n", time);
+    VTR_LOG("Placement delay look-up took %g seconds\n", time);
 }
 
 void free_place_lookup_structs() {
@@ -275,7 +275,7 @@ static float route_connection_delay(int source_x, int source_y,
             &net_delay_value);
 
     if (!successfully_routed) {
-        vtr::printf_warning(__FILE__, __LINE__,
+        VTR_LOG_WARN(
                 "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
                 source_x, source_y, sink_x, sink_y, net_delay_value);
     }
@@ -324,7 +324,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                     //Only set empty target if we don't already have a valid delta delay
                     matrix[delta_x][delta_y] = EMPTY_DELTA;
 #ifdef VERBOSE
-                    vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                    VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                                     "EMPTY",
                                     delta_x, delta_y,
                                     source_x, source_y,
@@ -337,7 +337,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                 float delay = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
 #ifdef VERBOSE
-                vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                         delay,
                         delta_x, delta_y,
                         source_x, source_y,
@@ -413,7 +413,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     VTR_ASSERT(src_type != nullptr);
 
 #ifdef VERBOSE
-    vtr::printf("Computing from lower left edge (%d,%d):\n", x, y);
+    VTR_LOG("Computing from lower left edge (%d,%d):\n", x, y);
 #endif
     generic_compute_matrix(f_delta_delay,
             x, y,
@@ -438,7 +438,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     }
     VTR_ASSERT(src_type != nullptr);
 #ifdef VERBOSE
-    vtr::printf("Computing from left bottom edge (%d,%d):\n",x, y);
+    VTR_LOG("Computing from left bottom edge (%d,%d):\n",x, y);
 #endif
     generic_compute_matrix(f_delta_delay,
             x, y,
@@ -450,7 +450,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within region B
 #ifdef VERBOSE
-    vtr::printf("Computing from mid:\n");
+    VTR_LOG("Computing from mid:\n");
 #endif
     generic_compute_matrix(f_delta_delay,
             low_x, low_y,
@@ -559,7 +559,7 @@ static void fix_uninitialized_coordinates() {
 }
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
-    vtr::printf_info("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
+    VTR_LOG("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
     compute_delta_delays(router_opts, longest_length);
 
     if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {

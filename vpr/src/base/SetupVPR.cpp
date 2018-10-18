@@ -294,7 +294,7 @@ static void SetupSwitches(const t_arch& Arch,
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
-        vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
+        VTR_LOG_WARN( "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
                 device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name.c_str());
     }
 

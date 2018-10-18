@@ -96,14 +96,14 @@ void net_fanout_end(unsigned net_fanout) {
 }
 
 void time_on_fanout_analysis() {
-	vtr::printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n",
+	VTR_LOG("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n",
 		entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
-	vtr::printf_info("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
+	VTR_LOG("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
 	// using the global time_on_fanout and itry_on_fanout
-	vtr::printf_info("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
+	VTR_LOG("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
 	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
 		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
-			vtr::printf_info("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n",
+			VTR_LOG("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n",
 				bin*fanout_per_bin,
 				time_on_fanout[bin],
 				itry_on_fanout[bin],
@@ -121,10 +121,10 @@ void time_on_fanout_analysis() {
 }
 
 void time_on_criticality_analysis() {
-	vtr::printf_info("criticality low           time (s)        attemps\n");
+	VTR_LOG("criticality low           time (s)        attemps\n");
 	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
 		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
-			vtr::printf_info("%4f           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
+			VTR_LOG("%4f           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
 		}
 	}
 	return;
@@ -161,7 +161,7 @@ void congestion_analysis() {
 	Congested_node_types congested;
 	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
 		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
-		vtr::printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage);
+		VTR_LOG(" %6s: %10.6f %\n", node_typename[type], congestion_percentage);
 		// nodes of that type need specific printing
 		if (congestion_per_type[type] > 0 &&
 			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
@@ -169,11 +169,11 @@ void congestion_analysis() {
 
 	// specific print out each congested node
 	if (!congested.empty()) {
-		vtr::printf_info("Specific congested nodes\nxlow ylow   type\n");
+		VTR_LOG("Specific congested nodes\nxlow ylow   type\n");
 		for (int inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
 			const t_rr_node& node = device_ctx.rr_nodes[inode];
 			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
-				vtr::printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
+				VTR_LOG("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
 			}
 		}
 	}

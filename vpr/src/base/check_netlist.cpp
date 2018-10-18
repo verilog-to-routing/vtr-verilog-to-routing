@@ -45,13 +45,13 @@ void check_netlist() {
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(),size_t(net_id));
 		if (h_net_ptr->count != 1) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			error++;
 		}
 		check_connections_to_global_clb_pins(net_id);
 		if (error >= ERROR_THRESHOLD) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"Too many errors in netlist, exiting.\n");
 		}
 	}
@@ -95,7 +95,7 @@ static void check_connections_to_global_clb_pins(ClusterNetId net_id) {
 		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
 			&& !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
 
-            vtr::printf_warning(__FILE__, __LINE__,
+            VTR_LOG_WARN(
                     "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                     cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                     block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(blk_id), pin_index).c_str(),
@@ -118,7 +118,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 
             if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk)) {
                 //Input only and not a Primary-Output block
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 input pin '%s'"
                     " -- the whole block is hanging logic that should be swept.\n",
                     iblk, clb_nlist.block_name(iblk).c_str(),
@@ -126,7 +126,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
             }
             if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
                 //Output only and not a Primary-Input block
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 output pin '%s'."
                     " It may be a constant generator.\n",
                     iblk, clb_nlist.block_name(iblk).c_str(),
@@ -141,7 +141,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 	 * just a redundant double check.                                    */
 
 	if (num_conn > type->num_pins) {
-		vtr::printf_error(__FILE__, __LINE__,
+		VTR_LOG_ERROR(
 				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
 		error++;
 	}
@@ -166,19 +166,19 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
 				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->pb_type->num_modes == 0)
 				) {
 				if (pb_route[i].driver_pb_pin_id != OPEN) {
-					vtr::printf_error(__FILE__, __LINE__,
+					VTR_LOG_ERROR(
 						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
 					error++;
 				}
 			} else {
 				if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
-					vtr::printf_error(__FILE__, __LINE__,
+					VTR_LOG_ERROR(
 						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
 					error++;
 				} else {
 					int prev_pin = pb_route[i].driver_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
-						vtr::printf_error(__FILE__, __LINE__,
+						VTR_LOG_ERROR(
 							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i, prev_pin);
 						error++;
 					}
@@ -204,7 +204,7 @@ static int check_for_duplicated_names() {
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), clb_count);
 		if (clb_h_ptr->count > 1) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 			error++;
 		} else {

@@ -1763,7 +1763,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 
 		match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
 		if (match_count != 2){
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n",
@@ -1786,7 +1786,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 								pb_type_name, port_name,
 								end_pin_index, start_pin_index);
 		if (match_count != 4){
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n",
@@ -1794,14 +1794,14 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 			exit(1);
 		}
 		if (*end_pin_index < 0 || *start_pin_index < 0) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid pin - %s, the pin_index in "
 					"[end_pin_index:start_pin_index] should not be a negative value.\n",
 					line, src_string);
 			exit(1);
 		}
 		if ( *end_pin_index < *start_pin_index) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"[LINE %d] Invalid from_pin - %s, the end_pin_index in "
 					"[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
 					line, src_string);
@@ -1881,7 +1881,7 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 
 					// Check whether the end_pin_index is valid
 					if (end_pin_index > num_port_pins) {
-						vtr::printf_error(__FILE__, __LINE__,
+						VTR_LOG_ERROR(
 								"[LINE %d] Invalid pin - %s, the end_pin_index in "
 								"[end_pin_index:start_pin_index] should "
 								"be less than the num_port_pins %d.\n",
@@ -2014,7 +2014,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
     }
     *switch_index = -1;
     *fanin = -1;
-    vtr::printf_info("\n\nerror converting switch index ! \n\n");
+    VTR_LOG("\n\nerror converting switch index ! \n\n");
     return -1;
 }
 
@@ -2043,7 +2043,7 @@ void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
     if (device_ctx.switch_fanin_remap == nullptr) {
-        vtr::printf_warning(__FILE__, __LINE__, "Cannot print switch usage stats: device_ctx.switch_fanin_remap is NULL\n");
+        VTR_LOG_WARN( "Cannot print switch usage stats: device_ctx.switch_fanin_remap is NULL\n");
         return;
     }
     map<int, int> *switch_fanin_count;
@@ -2088,20 +2088,20 @@ void print_switch_usage() {
             switch_fanin_delay[switch_index][fanin] = Tdel;
         }
     }
-    vtr::printf_info("\n=============== switch usage stats ===============\n");
+    VTR_LOG("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch ++ ) {
         char *s_name = device_ctx.arch_switch_inf[iswitch].name;
         float s_area = device_ctx.arch_switch_inf[iswitch].mux_trans_size;
-        vtr::printf_info(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
+        VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
 
         map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
-            vtr::printf_info("\t\tnumber of fanin: %d", itr->first);
-            vtr::printf_info("\t\tnumber of wires driven by this switch: %d", itr->second);
-            vtr::printf_info("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
+            VTR_LOG("\t\tnumber of fanin: %d", itr->first);
+            VTR_LOG("\t\tnumber of wires driven by this switch: %d", itr->second);
+            VTR_LOG("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
         }
     }
-    vtr::printf_info("\n==================================================\n\n");
+    VTR_LOG("\n==================================================\n\n");
     delete[] switch_fanin_count;
     delete[] switch_fanin_delay;
     delete[] inward_switch_inf;
@@ -2137,15 +2137,15 @@ void print_usage_by_wire_length() {
     for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
         total_wires += itr->second;
     }
-    vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
+    VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
     for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++)
-        vtr::printf_info("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
+        VTR_LOG("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
     for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
         float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
         float ratio_to_all_type_total = ((float)itr->second) / total_wires;
-        vtr::printf_info("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
+        VTR_LOG("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
     }
-    vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
     used_wire_count.clear();
     total_wire_count.clear();
 }

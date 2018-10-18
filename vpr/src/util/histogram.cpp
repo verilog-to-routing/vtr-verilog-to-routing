@@ -60,7 +60,7 @@ void print_histogram(std::vector<HistogramBucket> histogram) {
     auto lines = format_histogram(histogram, char_width);
 
     for (auto line : lines) {
-        vtr::printf("%s\n", line.c_str());
+        VTR_LOG("%s\n", line.c_str());
     }
 }
 
