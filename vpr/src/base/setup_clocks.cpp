@@ -181,8 +181,8 @@ MetalLayer get_metal_layer_from_name(
         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
             "Metal layer '%s' for clock network '%s' not found. Check to make sure that it is"
             "included in the clock architecture description",
-            metal_layer_name,
-            clock_network_name);
+            metal_layer_name.c_str(),
+            clock_network_name.c_str());
     }
 
     // Metal layer was found. Copy over from arch description to proper data type 
