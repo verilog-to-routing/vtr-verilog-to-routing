@@ -144,8 +144,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
-        int num_sinks, int target_node,
-        float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
+        int target_node,
+        float astar_fac, route_budgets &budgeting_inf, float max_delay, float min_delay,
         float target_delay, float short_path_crit, RouterStats& router_stats);
 
 static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
@@ -880,8 +880,6 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     int source_node = route_ctx.net_rr_terminals[net_id][0];
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
 
-    t_bb bounding_box = route_ctx.route_bb[net_id];
-
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d\n", size_t(net_id), itarget);
 
     if (itarget > 0 && itry > 5) {
@@ -892,10 +890,23 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
+    t_bb bounding_box = route_ctx.route_bb[net_id];
+
+    int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
+    if (is_high_fanout(num_sinks)) {
+        int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
+
+        const t_rr_node& sink_rr_node = device_ctx.rr_nodes[sink_node];
+        bounding_box.xmin = sink_rr_node.xlow() - highfanout_rlim;
+        bounding_box.ymin = sink_rr_node.ylow() - highfanout_rlim;
+        bounding_box.xmax = sink_rr_node.xhigh() + highfanout_rlim;
+        bounding_box.ymax = sink_rr_node.yhigh() + highfanout_rlim;
+    }
+
     std::vector<int> modified_rr_node_inf;
 
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, (int)cluster_ctx.clb_nlist.net_sinks(net_id).size(), budgeting_inf,
+            astar_fac, bend_cost, rt_root, bounding_box, budgeting_inf,
             max_delay, min_delay, target_delay, short_path_crit, modified_rr_node_inf, router_stats);
 
     if (cheapest == nullptr) {
@@ -935,12 +946,10 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 }
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets &budgeting_inf,
+        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, route_budgets &budgeting_inf,
         float max_delay, float min_delay, float target_delay, float short_path_crit, std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -995,8 +1004,8 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
             }
 
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
-                    target_criticality, num_sinks, sink_node, astar_fac,
-                    highfanout_rlim, budgeting_inf, max_delay, min_delay,
+                    target_criticality, sink_node, astar_fac,
+                    budgeting_inf, max_delay, min_delay,
                     target_delay, short_path_crit, router_stats);
         }
 
@@ -1203,8 +1212,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
-        int num_sinks, int target_node,
-        float astar_fac, int highfanout_rlim, route_budgets& budgeting_inf, float max_delay, float min_delay,
+        int target_node,
+        float astar_fac, route_budgets& budgeting_inf, float max_delay, float min_delay,
         float target_delay, float short_path_crit, RouterStats& router_stats) {
 
     /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
@@ -1220,8 +1229,6 @@ static void timing_driven_expand_neighbours(t_heap *current,
     int target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
     int target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
 
-    bool high_fanout = is_high_fanout(num_sinks);
-
     int num_edges = device_ctx.rr_nodes[inode].num_edges();
     for (int iconn = 0; iconn < num_edges; iconn++) {
         int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
@@ -1231,17 +1238,10 @@ static void timing_driven_expand_neighbours(t_heap *current,
         int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
         int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
 
-        if (high_fanout) {
-            if (   to_xhigh < target_xhigh - highfanout_rlim
-                || to_xlow > target_xlow + highfanout_rlim
-                || to_yhigh < target_yhigh - highfanout_rlim
-                || to_ylow > target_ylow + highfanout_rlim) {
-                continue; /* Node is outside high fanout bin. */
-            }
-        } else if (to_xhigh < bounding_box.xmin //Strictly left of BB left-edge
-                   || to_xlow > bounding_box.xmax //Strictly right of BB right-edge
-                   || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
-                   || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
+        if (   to_xhigh < bounding_box.xmin //Strictly left of BB left-edge
+            || to_xlow > bounding_box.xmax //Strictly right of BB right-edge
+            || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
+            || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
             continue; /* Node is outside (expanded) bounding box. */
         }
 

@@ -665,7 +665,7 @@ static bool calculate_delay(int source_node, int sink_node,
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
     t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0, modified_rr_node_inf, router_stats);
+            astar_fac, bend_cost, rt_root, bounding_box, budgeting_inf, 0, 0, 0, 0, modified_rr_node_inf, router_stats);
 
     if (cheapest == nullptr) {
         return false;
