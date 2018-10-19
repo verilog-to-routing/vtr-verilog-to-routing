@@ -46,9 +46,19 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
         t_rt_node ** rt_node_of_sink);
 
+
+//Delay budget information for a specific connection
+struct t_conn_delay_budget {
+    float short_path_criticality; //Hold criticality
+
+    float min_delay; //Minimum legal connection delay
+    float target_delay; //Target/goal connection delay
+    float max_delay; //Maximum legal connection delay
+};
+
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box,
-        route_budgets &budgeting_inf, float max_delay, float min_delay, float target_delay, float short_path_crit,
+        const t_conn_delay_budget* delay_budget,
         std::vector<int>& modified_rr_node_inf, RouterStats& router_stats);
 
 struct timing_driven_route_structs {
