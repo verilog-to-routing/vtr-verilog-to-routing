@@ -1109,6 +1109,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("dynamic")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<int>(args.router_high_fanout_threshold, "--router_high_fanout_threshold")
+            .help("Specifies the net fanout beyond which a net is considered high fanout."
+                  " Values less than zero disable special behaviour for high fanout nets")
+            .default_value("64")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
             .help("Controls when router debugging is enabled.\n"
                   " * For values >= 0, the value is taken as the net ID for\n"

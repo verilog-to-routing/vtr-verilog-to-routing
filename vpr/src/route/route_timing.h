@@ -35,7 +35,10 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 		float criticality_exp, float astar_fac, float bend_cost,
 		CBRR& connections_inf,
         RouterStats& connections_routed,
-		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink,
+		float *pin_criticality,
+        int min_incremental_reroute_fanout,
+        int high_fanout_threshold,
+        t_rt_node ** rt_node_of_sink,
 		float *net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf);

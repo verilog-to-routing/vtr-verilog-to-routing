@@ -134,7 +134,9 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
+        float pres_fac, float astar_fac, float bend_cost,
+        int high_fanout_threshold,
+        t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
         const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats);
 
@@ -205,9 +207,9 @@ static int round_up(float x);
 
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
 
-static bool is_high_fanout(int fanout);
+static bool is_high_fanout(int fanout, int fanout_threshold);
 
-static size_t dynamic_update_bounding_boxes();
+static size_t dynamic_update_bounding_boxes(int high_fanout_threshold);
 static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net);
@@ -452,7 +454,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
          */
 
         if (router_opts.route_bb_update == e_route_bb_update::DYNAMIC) {
-            num_net_bounding_boxes_updated = dynamic_update_bounding_boxes();
+            num_net_bounding_boxes_updated = dynamic_update_bounding_boxes(router_opts.high_fanout_threshold);
         }
 
         if (itry >= high_effort_congestion_mode_iteration_threshold) {
@@ -631,7 +633,9 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 router_opts.astar_fac, router_opts.bend_cost,
                 connections_inf,
                 router_stats,
-                pin_criticality, router_opts.min_incremental_reroute_fanout,
+                pin_criticality, 
+                router_opts.min_incremental_reroute_fanout,
+                router_opts.high_fanout_threshold,
                 rt_node_of_sink,
                 net_delay[net_id],
                 netlist_pin_lookup,
@@ -756,7 +760,9 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         float criticality_exp, float astar_fac, float bend_cost,
         CBRR& connections_inf,
         RouterStats& router_stats,
-        float *pin_criticality, int min_incremental_reroute_fanout,
+        float *pin_criticality,
+        int min_incremental_reroute_fanout,
+        int high_fanout_threshold,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
@@ -826,7 +832,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(itry, net_id, itarget, target_pin, target_criticality,
-                pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink,
+                pres_fac, astar_fac, bend_cost, high_fanout_threshold, rt_root, rt_node_of_sink,
                 ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr), //Only pass budgets if set
                 router_stats))
             return false;
@@ -863,7 +869,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 }
 
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
+        float pres_fac, float astar_fac, float bend_cost, int high_fanout_threshold, t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
         const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats) {
 
@@ -891,7 +897,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
     int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
-    if (is_high_fanout(num_sinks)) {
+    if (is_high_fanout(num_sinks, high_fanout_threshold)) {
         int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
 
         const t_rr_node& sink_rr_node = device_ctx.rr_nodes[sink_node];
@@ -1643,10 +1649,6 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
     target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
     target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
 
-    if (!is_high_fanout(num_sinks)) {
-        /* This algorithm only applies to high fanout nets */
-        return 1;
-    }
     if (rt_node == nullptr || rt_node->u.child_list == nullptr) {
         /* If unknown traceback, set radius of bin to be size of chip */
         rlim = max_grid_dim;
@@ -2190,8 +2192,9 @@ static std::string describe_unrouteable_connection(const int source_node, const 
 }
 
 //Returns true if the specified net fanout is classified as high fanout
-static bool is_high_fanout(int fanout) {
-    return (fanout >= HIGH_FANOUT_NET_LIM);
+static bool is_high_fanout(int fanout, int fanout_threshold) {
+    if (fanout_threshold < 0 || fanout < fanout_threshold) return false;
+    return true;
 }
 
 //In heavily congested designs a static bounding box (BB) can 
@@ -2216,7 +2219,7 @@ static bool is_high_fanout(int fanout) {
 //
 //Typically, only a small minority of nets (typically > 10%) have their BBs updated
 //each routing iteration.
-static size_t dynamic_update_bounding_boxes() {
+static size_t dynamic_update_bounding_boxes(int high_fanout_threshold) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -2248,7 +2251,7 @@ static size_t dynamic_update_bounding_boxes() {
         //use different bounding boxes based on the target location.
         //
         //This ensures that the delta values calculated below are always non-negative
-        if (is_high_fanout(clb_nlist.net_sinks(net).size())) continue;
+        if (is_high_fanout(clb_nlist.net_sinks(net).size(), high_fanout_threshold)) continue;
 
         t_bb curr_bb = calc_current_bb(routing_head);
 
