@@ -395,6 +395,17 @@ void get_options(int argc, char** argv) {
 			.metavar("NUM_VECTORS")
 			;
 
+	rand_sim_grp.add_argument(global_args.sim_min_coverage, "--coverage")
+			.help("using the g argument we will simulate in blocks until a certain coverage is attained")
+			.metavar("MIN_COVERAGE")
+			;
+
+	rand_sim_grp.add_argument(global_args.sim_achieve_best, "--best_coverage")
+			.help("using the g argument we will simulate in blocks until best coverage is attained")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
+			
 	rand_sim_grp.add_argument(global_args.sim_random_seed, "-r")
 			.help("Random seed")
 			.default_value("0")

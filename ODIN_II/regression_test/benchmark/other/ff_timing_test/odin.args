@@ -1,0 +1,3 @@
+-V regression_test/benchmark/other/ff_timing_test/ff.v
+-g 25
+-L rst
