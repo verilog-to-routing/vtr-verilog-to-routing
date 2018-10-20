@@ -3210,9 +3210,6 @@ static void write_vector_to_modelsim_file(lines_t *l, FILE *modelsim_out, int cy
  */
 static int verify_output_vectors(char* output_vector_file, int num_vectors)
 {
-	//both edges output has twice the number of output vector
-	num_vectors *= 2;
-
 	int error = FALSE;
 
 	// The filename cannot be the same as our default output file.
