@@ -1,3 +1,8 @@
+/**
+* 	TODO: implicit memories with multiclock input (one for read and one for write)
+* 	is broken, We use manualy driven register here to test multiple clock for this reason
+*	using 2D array will break multiclock test bed
+*/
 
 `define WORD_SIZE 4
 `define MEMORY_DEPTH_POWER 3
