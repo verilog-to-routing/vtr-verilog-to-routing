@@ -475,7 +475,7 @@ int single_step(sim_data_t *sim_data, int cycle)
 static bool aquire_read(npin_t *pin)
 {
 	if(!pin)
-		return;
+		return false;
 		
 	bool available =false;
 
@@ -494,6 +494,9 @@ static bool aquire_read(npin_t *pin)
 
 static bool aquire_write(npin_t *pin)
 {
+	if(!pin)
+		return false;
+
 	bool available =false;
 
 	std::lock_guard<std::mutex> lock(pin->pin_lock);
@@ -509,21 +512,29 @@ static bool aquire_write(npin_t *pin)
 /*read write barriers for multithreaded sim */
 static void init_read(npin_t *pin)
 {
+	if(!pin)
+		return;
 	while(!aquire_read(pin));
 }
 
 static void close_reader(npin_t *pin)
 {
+	if(!pin)
+		return;
 	pin->nb_of_reader--;
 }
 
 static void init_write(npin_t *pin)
 {
+	if(!pin)
+		return;
 	while(!aquire_write(pin));
 }
 
 static void close_writer(npin_t *pin)
 {
+	if(!pin)
+		return;
 	pin->nb_of_writer--;
 }
 
