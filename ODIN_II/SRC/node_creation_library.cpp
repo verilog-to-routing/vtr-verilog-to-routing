@@ -427,6 +427,42 @@ const char *node_name_based_on_op(nnode_t *node)
 	return return_string;
 }
 
+const char *edge_type_blif_str(nnode_t *node)
+{
+
+	if(node->type != FF_NODE)
+		return NULL;
+
+	switch(node->edge_type)
+	{
+		case FALLING_EDGE_SENSITIVITY:	return "fe";
+		case RISING_EDGE_SENSITIVITY:	return "re";
+		case ACTIVE_HIGH_SENSITIVITY:	return "ah";
+		case ACTIVE_LOW_SENSITIVITY:	return "al";
+		case ASYNCHRONOUS_SENSITIVITY:	return "as";
+		default:	
+			oassert(false &&
+				"invalid sensitivity kind for flip flop");
+			return NULL;
+	}
+}
+
+edge_type_e edge_type_blif_enum(std::string edge_kind_str)
+{
+
+	if		(edge_kind_str == "fe")	return FALLING_EDGE_SENSITIVITY;
+	else if	(edge_kind_str == "re")	return RISING_EDGE_SENSITIVITY;
+	else if	(edge_kind_str == "ah")	return ACTIVE_HIGH_SENSITIVITY;
+	else if	(edge_kind_str == "al")	return ACTIVE_LOW_SENSITIVITY;
+	else if	(edge_kind_str == "as")	return ASYNCHRONOUS_SENSITIVITY;
+	else
+	{
+		oassert(false &&
+			"invalid sensitivity kind for flip flop");
+		return UNDEFINED_SENSITIVITY;
+	}
+}
+
 /*----------------------------------------------------------------------------
  * (function: hard_node_name)
  * 	This creates the unique node name for a hard block
