@@ -2652,6 +2652,10 @@ static lines_t *create_lines(netlist_t *netlist, int type)
 				l->lines[l->count++] = line;
 			}
 			assign_node_to_line(node, l, type, 0);
+			/**
+			 * TODO: implicit memories with multiclock input (one for read and one for write)
+			 * is broken, need fixing
+			 */
 			if(node->type == CLOCK_NODE)
 				set_clock_ratio(++num_of_clock,node);
 		}
@@ -3034,7 +3038,7 @@ static test_vector *generate_random_test_vector(int cycle, sim_data_t *sim_data)
 			 */
 			else if(contains_a_substr_of_name(global_args.sim_hold_high.value(),line->name))
 			{
-				if (cycle < pow(2,num_of_clock-1)*3) 	value =	0;	// start with reverse value
+				if (cycle < (num_of_clock*3)) 	value =	0;	// start with reverse value
 				else        	value =	1;	// then hold to requested value				
 			}
 			/********************************************************
@@ -3042,7 +3046,7 @@ static test_vector *generate_random_test_vector(int cycle, sim_data_t *sim_data)
 			 */
 			else if(contains_a_substr_of_name(global_args.sim_hold_low.value(),line->name))
 			{
-				if (cycle < pow(2,num_of_clock-1)*3) 	value = 1;	// start with reverse value
+				if (cycle < (num_of_clock*3)) 	value = 1;	// start with reverse value
 				else       		value = 0;		// then hold to requested value
 			}
 			/********************************************************

@@ -4001,15 +4001,11 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 			
 			switch(edge_type)
 			{
-				case FALLING_EDGE_SENSITIVITY:
-				{
-					signal_list_t *temp_list = create_pins(delay_control->children[i]->children[0], NULL, instance_name_prefix);
-					oassert(temp_list->count == 1);
-
-					add_pin_to_signal_list(return_sig_list, temp_list->pins[0]);
-					free_signal_list(temp_list);
-					break;
-				}
+				/**
+				 * TODO: finish support for falling edge, this is left here for future work
+				 */
+				case FALLING_EDGE_SENSITIVITY: //falltrhough
+					edge_type = RISING_EDGE_SENSITIVITY; //fallthrough
 				case RISING_EDGE_SENSITIVITY:
 				{
 					signal_list_t *temp_list = create_pins(delay_control->children[i]->children[0], NULL, instance_name_prefix);
@@ -4019,7 +4015,6 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 					free_signal_list(temp_list);
 					break;
 				}
-				//TODO support active high active low !!
 				default: /* nothing to do */ break;
 			}
 		}
