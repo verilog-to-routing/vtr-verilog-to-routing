@@ -3,20 +3,24 @@
 trap ctrl_c INT
 SHELL=/bin/bash
 
+#include more generic names here for better vector generation
+HOLD_LOW_RESET="-L reset rst"
+HOLD_HIGH_WE="-H we"
+
+HOLD_PARAM="${HOLD_LOW_RESET} ${HOLD_HIGH_WE}"
+
+#if you want to pass in a new adder definition file
+ADDER_DEFINITION="--adder_type default"
+
+#if you want to change the default number of vectors to generate
+GENERATE_VECTOR_COUNT="-g 1000"
+
+DEFAULT_ARCH="-a ../libs/libarchfpga/arch/sample_arch.xml"
+
+EXEC="./odin_II"
+
 fail_count=0
-
-last_run=$(find regression_test/run* -maxdepth 0 -type d 2>/dev/null | tail -1 )
 new_run=regression_test/run001
-if [ "_${last_run}" != "_" ]
-then
-    last_run_id=${last_run##regression_test/run}
-    n=$(echo $last_run_id | awk '{print $0 + 1}')
-    new_run=regression_test/run$(printf "%03d" $n)
-fi
-echo "running benchmark @${new_run}"
-mkdir -p ${new_run}
-
-### starts here
 NB_OF_PROC=1
 if [[ "$2" -gt "0" ]]
 then
@@ -24,6 +28,20 @@ then
 	echo "Trying to run benchmark on $NB_OF_PROC processes"
 fi
 
+REGENERATE_OUTPUT=0
+REGENERATE_BENCH=0
+
+function init_temp() {
+	last_run=$(find regression_test/run* -maxdepth 0 -type d 2>/dev/null | tail -1 )
+	if [ "_${last_run}" != "_" ]
+	then
+		last_run_id=${last_run##regression_test/run}
+		n=$(echo $last_run_id | awk '{print $0 + 1}')
+		new_run=regression_test/run$(printf "%03d" $n)
+	fi
+	echo "running benchmark @${new_run}"
+	mkdir -p ${new_run}
+}
 
 function exit_program() {
 
@@ -55,10 +73,11 @@ function ctrl_c() {
 function sim() {
 	threads=$1
 	bench_type=$2
-	with_sim=$3
-	with_blif=$4
-	with_arch=$5
-	passing_args=$6
+	with_input_vector=$3
+	with_output_vector=$4
+	with_blif=$5
+	with_arch=$6
+	passing_args=$7
 	
 	benchmark_dir=regression_test/benchmark/${bench_type}
 
@@ -72,7 +91,7 @@ function sim() {
 			#build commands
 			mkdir -p $DIR
 
-			echo "./odin_II $(cat ${dir}/odin.args | tr '\n' ' ') -o ${DIR}/odin.blif -sim_dir ${DIR}/ &>> ${DIR}/log \
+			echo "${EXEC} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${DIR}/odin.blif -sim_dir ${DIR}/ &>> ${DIR}/log \
 				&& echo --- PASSED == ${bench_type}/$test_name \
 				|| (echo -X- FAILED == ${bench_type}/$test_name \
 					&& echo ${bench_type}/$test_name >> ${new_run}/failure.log)" > ${DIR}/log
@@ -91,25 +110,35 @@ function sim() {
 			verilog_command=""
 			blif_command=""
 
-			verilog_command="./odin_II --adder_type default -V ${benchmark_dir}/${test_name}.v -o ${DIR}/odin.blif"
+			verilog_command="${EXEC} ${ADDER_DEFINITION} -V ${benchmark_dir}/${test_name}.v -o ${DIR}/odin.blif"
 
 			[ "_$with_blif" == "_1" ] &&
-				blif_command=" && ./odin_II --adder_type default -b ${DIR}/odin.blif"
+				blif_command=" && ${EXEC} ${ADDER_DEFINITION} -b ${DIR}/odin.blif"
 
 			[ "_$with_arch" == "_1" ] &&
-				verilog_command="${verilog_command} -a ../libs/libarchfpga/arch/sample_arch.xml"
+				verilog_command="${verilog_command} ${DEFAULT_ARCH}"
 			
-			[ "_$with_blif" == "_1" ] && 
-			[ "_$with_arch" == "_1" ] &&
-				blif_command="${blif_command} -a ../libs/libarchfpga/arch/sample_arch.xml"
+			[ "_$with_blif" == "_1" ] && [ "_$with_arch" == "_1" ] &&
+				blif_command="${blif_command} ${DEFAULT_ARCH}"
 
-			[ "_$with_sim" == "_1" ] &&
-				verilog_command="${verilog_command} -t ${benchmark_dir}/${test_name}_input -T ${benchmark_dir}/${test_name}_output"
+			if [ "_$with_input_vector" == "_1" ] && [ "_$REGENERATE_BENCH" != "_1" ]; then
+				verilog_command="${verilog_command} -t ${benchmark_dir}/${test_name}_input"
 
-			[ "_$with_blif" == "_1" ] && 
-			[ "_$with_sim" == "_1" ] &&
-				blif_command="${blif_command} -t ${benchmark_dir}/${test_name}_input -T ${benchmark_dir}/${test_name}_output"
+				[ "_$with_blif" == "_1" ] &&
+					blif_command="${blif_command} -t ${benchmark_dir}/${test_name}_input"
+				
+				if [ "_$with_output_vector" == "_1" ] && [ "_$REGENERATE_OUTPUT" != "_1" ]; then
+					verilog_command="${verilog_command} -T ${benchmark_dir}/${test_name}_output"
 
+					[ "_$with_blif" == "_1" ] &&
+						blif_command="${blif_command} -T ${benchmark_dir}/${test_name}_output"
+				fi
+			else
+				verilog_command="${verilog_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
+
+				[ "_$with_blif" == "_1" ] &&
+					blif_command="${blif_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
+			fi
 
 			verilog_command="${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log"
 			
@@ -132,29 +161,48 @@ function sim() {
 			eval $(cat "${tests}/log" | tr "\n" " ")
 		done
 	fi
+
+	if [ "_$REGENERATE_BENCH" == "_1" ] || [ "_$REGENERATE_OUTPUT" == "_1" ]
+	then
+		#rename input and output vectors and move to vector directory
+		mkdir -p ${new_run}/VECTORS/
+		for tests in ${new_run}/${bench_type}/*; do 
+			test_name=${tests##*/}
+			if [ -e ${tests}/input_vectors ]; then
+				cp ${tests}/input_vectors ${new_run}/VECTORS/${test_name}_input
+				cp ${tests}/output_vectors ${new_run}/VECTORS/${test_name}_output
+				echo -e "$(cat ${tests}/log | grep Coverage: | cut -d '(' -f2 | cut -d ')' -f1) <= ${test_name} " >> ${new_run}/VECTORS/report.coverage
+			fi
+		done
+	fi
 }
+
 
 #1				#2
 #benchmark dir	N_trhead
 function other_test() {
 	threads=$1
 	bench_type=other
-	with_sim=0
+	with_input_vector=0
+	with_output_vector=0
 	with_blif=0
 	with_arch=0
+	with_input_args=1
 
-	sim $threads $bench_type $with_sim $with_blif $with_arch 1
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
 
 function micro_test() {
 	threads=$1
 	bench_type=micro
-	with_sim=1
+	with_input_vector=1
+	with_output_vector=1
 	with_blif=1
 	with_arch=0
+	with_input_args=0
 
-	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
 #1
@@ -162,11 +210,13 @@ function micro_test() {
 function regression_test() {
 	threads=1
 	bench_type=full
-	with_sim=1
+	with_input_vector=1
+	with_output_vector=1
 	with_blif=0
 	with_arch=1
+	with_input_args=0
 
-	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
 
@@ -175,11 +225,13 @@ function regression_test() {
 function arch_test() {
 	threads=$1
 	bench_type=arch
-	with_sim=0
+	with_input_vector=0
+	with_output_vector=0
 	with_blif=0
 	with_arch=1
+	with_input_args=0
 
-	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
 #1				#2
@@ -187,38 +239,94 @@ function arch_test() {
 function syntax_test() {
 	threads=$1
 	bench_type=syntax
-	with_sim=0
+	with_input_vector=0
+	with_output_vector=0
+	with_blif=0
+	with_arch=0
+	with_input_args=0
+
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+}
+
+#1				#2
+#benchmark dir	N_trhead
+function functional_test() {
+	threads=$1
+	bench_type=functional
+	with_input_vector=1
+	with_output_vector=0
 	with_blif=0
 	with_arch=0
 
-	sim $threads $bench_type $with_sim $with_blif $with_arch 0
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+}
+
+function operators_test() {
+	threads=$1
+	bench_type=operators
+	with_input_vector=1
+	with_output_vector=1
+	with_blif=1
+	with_arch=0
+	with_input_args=0
+
+	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
 START=$(date +%s%3N)
 
+case $3 in 
+	"generate_output")
+		echo regenerating output vectors
+		REGENERATE_OUTPUT=1
+		;;
+
+	"generate_bench")
+		echo regenerating input and output vectors
+		REGENERATE_BENCH=1
+		;;
+esac
+
+
 case $1 in
 
+	"operators")
+		init_temp
+		operators_test $NB_OF_PROC
+		;;
+
+	"functional")
+		init_temp
+		functional_test $NB_OF_PROC
+		;;
+
 	"arch")
+		init_temp
 		arch_test $NB_OF_PROC
 		;;
 
 	"syntax")
+		init_temp
 		syntax_test $NB_OF_PROC
 		;;
 
 	"micro")
+		init_temp
 		micro_test $NB_OF_PROC
 		;;
 
 	"regression")
+		init_temp
 		regression_test $NB_OF_PROC
 		;;
 
 	"other")
+		init_temp
 		other_test $NB_OF_PROC
 		;;
 
 	"full_suite")
+		init_temp
 		arch_test $NB_OF_PROC
 		syntax_test $NB_OF_PROC
 		other_test $NB_OF_PROC
@@ -239,6 +347,7 @@ case $1 in
 		;;
 
 	"pre_commit")
+		init_temp
 		arch_test $NB_OF_PROC
 		syntax_test $NB_OF_PROC
 		other_test $NB_OF_PROC
@@ -250,8 +359,13 @@ case $1 in
 		cd ODIN_II
 		;;
 
+	"clean")
+		for runs in regression_test/run*; do rm -Rf ${runs}; done
+		echo cleaned temporary folders
+		exit 0
+		;;
 	*)
-		echo 'nothing to run, ./verify_odin [ arch, syntax, micro, regression, vtr_basic, vtr_strong or pre_commit ] [ nb_of_process ]'
+		echo 'nothing to run, ./verify_odin [ clean, arch, syntax, other, micro, regression, vtr_basic, vtr_strong or pre_commit ] [ nb_of_process ]'
 		;;
 esac
 

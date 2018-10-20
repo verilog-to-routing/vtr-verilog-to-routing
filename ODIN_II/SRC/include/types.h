@@ -27,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "simulate_blif.h"
 #include "argparse_value.hpp"
 #include <mutex>
+#include <atomic>
 
 #include <stdlib.h>
 
@@ -184,9 +185,12 @@ struct global_args_t_t
 	argparse::ArgValue<std::vector<std::string>> sim_hold_high;
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
 	argparse::ArgValue<std::vector<std::string>> sim_hold_low;
+	// target coverage
+	argparse::ArgValue<double> sim_min_coverage;
+	// simulate until best coverage is achieved
+	argparse::ArgValue<bool> sim_achieve_best;
 
 	argparse::ArgValue<int> parralelized_simulation;
-	//
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
@@ -216,6 +220,16 @@ typedef enum
 	SIGNED,
 	UNSIGNED
 } signedness;
+
+typedef enum
+{
+	FALLING_EDGE_SENSITIVITY,
+	RISING_EDGE_SENSITIVITY,
+	ACTIVE_HIGH_SENSITIVITY,
+	ACTIVE_LOW_SENSITIVITY,
+	ASYNCHRONOUS_SENSITIVITY,
+	UNDEFINED_SENSITIVITY
+} edge_type_e;
 
 typedef enum
 {
@@ -487,6 +501,9 @@ struct nnode_t_t
 	int ratio; //clock ratio for clock nodes
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
+	bool internal_clk_warn= false;
+	edge_type_e edge_type; //
+	bool covered = false;
 
 	//Generic gate output
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
@@ -521,8 +538,8 @@ struct npin_t_t
 	////////////////////
 	// For simulation
 	std::mutex pin_lock;
-	bool is_being_written;
-	int nb_of_reader;
+	std::atomic<int> nb_of_reader;
+	std::atomic<int> nb_of_writer;
 
 	signed char *values; // The values for the current wave.
 	int *cycle;          // The last cycle the pin was computed for.
