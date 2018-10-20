@@ -549,10 +549,10 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			my $clock_list_file;
 			open ($clock_list_file, "<", $odin_output_file_name.".clklist") or die "Unable to open \"".$odin_output_file_name.".clklist\": $! \n";
-
 			#read line and strip whitespace of line
-			while((my $line = <$clock_list_file>) =~ s/^\s+|\s+$//g ) 
+			while(my $line = <$clock_list_file>) 
 			{
+				$line =~ s/^\s+|\s+$//g;
 				if($line =~ /latch/)
 				{
 					#get the initial value out
@@ -560,7 +560,7 @@ if (    $starting_stage <= $stage_idx_abc
 					my $clock_name_token_len = @tokenized_clk;
 					if($respect_init_value && $clock_name_token_len > 3)
 					{
-						$clock_list{$line} = "init ".@tokenized_clk[3].";";
+						$clock_list{$line} = "init ".$tokenized_clk[3].";";
 					}
 					else
 					{

@@ -517,7 +517,7 @@ void get_options(int argc, char** argv) {
 		//parse comma separated list of verilog files
 		configuration.list_of_file_names = global_args.verilog_files.value();
 	}
-	else if(!global_args.blif_file)
+	else if(global_args.blif_file)
 	{
 		configuration.list_of_file_names = { std::string(global_args.blif_file) };
 	}
