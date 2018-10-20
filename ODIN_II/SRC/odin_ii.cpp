@@ -130,20 +130,6 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		}
 	}
 
-        /* open files for parsing */
-        if (global_args.config_file == NULL)
-        {
-                /* make a consitant file list so we can access in compiler ... replicating what read config does for the filenames */
-                configuration.list_of_file_names = (char**)vtr::calloc(1,sizeof(char*));
-                configuration.num_list_of_file_names = 1;
-
-                if(global_args.verilog_file != NULL)
-                        configuration.list_of_file_names[0] = global_args.verilog_file;
-                else if(global_args.blif_file != NULL)
-                        configuration.list_of_file_names[0] = global_args.blif_file; 
-
-        }
-
 	/* do High level Synthesis */
 	if (!error_code 
 	&& !global_args.blif_file)
@@ -530,6 +516,10 @@ void get_options(int argc, char** argv) {
 	{
 		//parse comma separated list of verilog files
 		configuration.list_of_file_names = global_args.verilog_files.value();
+	}
+	else if(!global_args.blif_file)
+	{
+		configuration.list_of_file_names = { std::string(global_args.blif_file) };
 	}
 
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {

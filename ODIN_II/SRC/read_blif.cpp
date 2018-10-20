@@ -139,12 +139,9 @@ int count_blif_lines(FILE *file);
  */
 void read_blif()
 {
-	char local_blif[255];
-	odin_sprintf(local_blif, "%s", blif_file);
-
 	verilog_netlist = allocate_netlist();
 	/*Opening the blif file */
-	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file], "r");
+	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file].c_str(), "r");
 	if (file == NULL)
 	{
 		error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file]);
