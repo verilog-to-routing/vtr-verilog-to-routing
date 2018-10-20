@@ -45,6 +45,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define READ_BLIF_BUFFER 1048576 // 1MB
 
 size_t file_line_number;
+int line_count;
 
 const char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
 const char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";
@@ -92,6 +93,7 @@ typedef struct {
 //netlist_t * verilog_netlist;
 short static skip_reading_bit_map=FALSE;
 
+
 void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash);
 void rb_look_for_clocks();// not sure if this is needed
 void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash);
@@ -135,15 +137,15 @@ int count_blif_lines(FILE *file);
  * a netlist which is referred to by the global variable
  * "verilog_netlist".
  */
-void read_blif(char * blif_file)
+void read_blif()
 {
-	char local_blif[255];
-	odin_sprintf(local_blif, "%s", blif_file);
-
 	verilog_netlist = allocate_netlist();
 	/*Opening the blif file */
-	FILE *file = vtr::fopen (local_blif, "r");
-
+	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file].c_str(), "r");
+	if (file == NULL)
+	{
+		error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file]);
+	}
 	int num_lines = count_blif_lines(file);
 
 	hashtable_t *output_nets_hash = create_hashtable((num_lines) + 1);
@@ -156,7 +158,7 @@ void read_blif(char * blif_file)
 	printf("Reading blif netlist..."); fflush(stdout);
 
 	file_line_number  = 0;
-	int line_count = 0;
+	line_count = 0;
 	int position   = -1;
 	double time    = wall_time();
 	// A cache of hard block models indexed by name. As each one is read, it's stored here to be used again.
@@ -351,7 +353,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		}
 		else
 		{
-			error_message(NETLIST_ERROR,file_line_number,-1, "This .latch Format not supported \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>");
+			error_message(NETLIST_ERROR,current_parse_file,file_line_number, "This .latch Format not supported \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>");
 		}
 	}
 
@@ -404,6 +406,8 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	/*add this node to verilog_netlist as an ff (flip-flop) node */
 	verilog_netlist->ff_nodes = (nnode_t **)vtr::realloc(verilog_netlist->ff_nodes, sizeof(nnode_t*)*(verilog_netlist->num_ff_nodes+1));
 	verilog_netlist->ff_nodes[verilog_netlist->num_ff_nodes++] = new_node;
+	new_node->file_number = current_parse_file;
+	new_node->line_number = line_count;
 
 	/*add name information and a net(driver) for the output */
 	nnet_t *new_net = allocate_nnet();
@@ -633,6 +637,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	/*add this node to verilog_netlist as an internal node */
   	verilog_netlist->internal_nodes = (nnode_t **)vtr::realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*) * (verilog_netlist->num_internal_nodes + 1));
   	verilog_netlist->internal_nodes[verilog_netlist->num_internal_nodes++] = new_node;
+	new_node->file_number = current_parse_file;
+	new_node->line_number = line_count;
 
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items(mapping_index);
@@ -752,6 +758,8 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		/*add this node to verilog_netlist as an internal node */
 		verilog_netlist->internal_nodes = (nnode_t**)vtr::realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*)*(verilog_netlist->num_internal_nodes+1));
 		verilog_netlist->internal_nodes[verilog_netlist->num_internal_nodes++] = new_node;
+		new_node->file_number = current_parse_file;
+		new_node->line_number = line_count;
 
 		/*add name information and a net(driver) for the output */
 
@@ -1055,6 +1063,8 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 
 		verilog_netlist->top_input_nodes = (nnode_t**)vtr::realloc(verilog_netlist->top_input_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_input_nodes+1));
 		verilog_netlist->top_input_nodes[verilog_netlist->num_top_input_nodes++] = new_node;
+		new_node->file_number = current_parse_file;
+		new_node->line_number = line_count;
 
 		//long sc_spot = sc_add_string(output_nets_sc, temp_string);
 		//if (output_nets_sc->data[sc_spot])
@@ -1103,6 +1113,8 @@ void rb_create_top_output_nodes(FILE *file)
 		add_node_to_netlist() function can also be used */
 		verilog_netlist->top_output_nodes = (nnode_t**)vtr::realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
 		verilog_netlist->top_output_nodes[verilog_netlist->num_top_output_nodes++] = new_node;
+		new_node->file_number = current_parse_file;
+		new_node->line_number = line_count;
 	}
 }
 

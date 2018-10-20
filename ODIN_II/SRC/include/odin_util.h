@@ -4,6 +4,8 @@
 
 #define MAX_BUF 256
 
+const char *node_name_based_on_op(nnode_t *node);
+
 char *make_signal_name(char *signal_name, int bit);
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit);
 
@@ -64,5 +66,7 @@ int odin_sprintf (char *s, const char *format, ...);
 
 void error_message(short error_type, int line_number, int file, const char *message, ...);
 void warning_message(short error_type, int line_number, int file, const char *message, ...);
+void passed_verify_i_o_availabilty(struct nnode_t_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src);
+
 
 #endif

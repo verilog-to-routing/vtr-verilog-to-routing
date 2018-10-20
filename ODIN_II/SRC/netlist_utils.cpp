@@ -86,6 +86,7 @@ nnode_t* allocate_nnode() {
 	new_node->num_undriven_pins = 0;
 
 	new_node->ratio = 1;
+	new_node->edge_type = RISING_EDGE_SENSITIVITY;
 
 	new_node->has_initial_value = FALSE;
 	new_node->initial_value = 0;
@@ -212,6 +213,10 @@ npin_t* allocate_npin() {
 	new_pin->is_implied = FALSE;
 
 	new_pin->ace_info = NULL;
+
+	new_pin->nb_of_reader = 0;
+	new_pin->nb_of_writer = 0;
+
 
 	return new_pin;
 }
