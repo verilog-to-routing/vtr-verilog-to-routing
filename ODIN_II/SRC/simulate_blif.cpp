@@ -83,7 +83,6 @@ inline static bool ff_trigger(edge_type_e type, npin_t* clk, int cycle)
 
 #define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
 #define is_clock_node(node)	( (node->type == CLOCK_NODE) || (std::string(node->name) == "top^clk") ) // Strictly for memories.
-#define is_posedge(pin, cycle) (get_pin_value(pin,cycle) == 1 && get_pin_value(pin,cycle-1) != 1)
 
 
 static void simulate_cycle(int cycle, stages_t *s);
@@ -286,7 +285,11 @@ sim_data_t *init_simulation(netlist_t *netlist)
 {
 	//for multithreading
 	used_time = std::numeric_limits<double>::max();
-	number_of_workers = 1;
+	number_of_workers = std::min(CONCURENT_SIMULATION_LIMIT, std::max(1, global_args.parralelized_simulation.value()));
+	if(global_args.parralelized_simulation.value() >1 )
+		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
+		
+
 	found_best_time = false;
 
 	num_of_clock = 0;
@@ -463,7 +466,8 @@ int single_step(sim_data_t *sim_data, int cycle)
 			error_message(SIMULATION_ERROR, 0, -1,
 					"Problem detected with the output lines after the first cycle.");
 	}
-	simulate_cycle(cycle, sim_data->stages);
+	else
+		simulate_cycle(cycle, sim_data->stages);
 
 	write_cycle_to_file(sim_data->output_lines, sim_data->out, cycle);
 
@@ -475,25 +479,41 @@ int single_step(sim_data_t *sim_data, int cycle)
 }
 
 
+static bool aquire_read(npin_t *pin)
+{
+	bool available =false;
+
+	std::lock_guard<std::mutex> lock(pin->pin_lock);
+	if(pin->nb_of_writer<=0)
+	{
+		available = true;
+		if(pin->nb_of_reader<=0)
+			pin->nb_of_reader = 1;
+		else
+			pin->nb_of_reader++;
+		pin->nb_of_writer = 0;
+	}
+	return available;
+}
+
+static bool aquire_write(npin_t *pin)
+{
+	bool available =false;
+
+	std::lock_guard<std::mutex> lock(pin->pin_lock);
+	if(pin->nb_of_writer<=0 && pin->nb_of_reader<=0)
+	{
+		available = true;
+		pin->nb_of_reader = 0;
+		pin->nb_of_writer = 1;
+	}
+	return available;
+}
+
 /*read write barriers for multithreaded sim */
 static void init_read(npin_t *pin)
 {
-	bool available =false;
-	while(!available)
-	{
-		pin->pin_lock.lock();
-		if(pin->nb_of_writer<=0)
-		{
-			available = true;
-			if(pin->nb_of_reader<=0)
-				pin->nb_of_reader = 1;
-			else
-				pin->nb_of_reader++
-				;
-			pin->nb_of_writer = 0;
-		}
-		pin->pin_lock.unlock();
-	}
+	while(!aquire_read(pin));
 }
 
 static void close_reader(npin_t *pin)
@@ -503,18 +523,7 @@ static void close_reader(npin_t *pin)
 
 static void init_write(npin_t *pin)
 {
-	bool available =false;
-	while(!available)
-	{
-		pin->pin_lock.lock();
-		if(pin->nb_of_writer<=0 && pin->nb_of_reader<=0)
-		{
-			available = true;
-			pin->nb_of_reader = 0;
-			pin->nb_of_writer = 1;
-		}
-		pin->pin_lock.unlock();
-	}
+	while(!aquire_write(pin));
 }
 
 static void close_writer(npin_t *pin)
@@ -534,36 +543,15 @@ static void close_writer(npin_t *pin)
 
 static void compute_and_store_part(int start, int end, int current_stage, stages_t *s, int cycle)
 {
-	int count =0;
-	bool done = true;
-	do{
-		for (int j = start;j >= 0 && j <= end && j < s->counts[current_stage]; j++)
-		{
-			if(s->stages[current_stage][j])
-				if(!compute_and_store_value(s->stages[current_stage][j], cycle))
-					done = false;
-		}
-	}while(!done && ++count < MAX_REPEAT_SIM);
-	
-	if(!done)
-		error_message(SIMULATION_ERROR, -1, -1, "Unable to update cycle for nodes in simulation, exiting");
+
+	for (int j = start;j >= 0 && j <= end && j < s->counts[current_stage]; j++)
+		if(s->stages[current_stage][j])
+			compute_and_store_value(s->stages[current_stage][j], cycle);
+
 }
 
 static void simulate_cycle(int cycle, stages_t *s)
 {
-		// -1 for cycle 0, -1 for the last cycle in the wave.
-	const int test_cycles = SIM_WAVE_LENGTH - 2;
-
-
-	if (test_cycles < 2)
-		error_message(SIMULATION_ERROR, -1, -1, "SIM_WAVE_LENGTH is too small.");
-
-	if(global_args.parralelized_simulation.value() >1 && !s->warned)
-	{
-		s->warned = true;
-		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
-	}
-
 	double total_run_time = 0;
 	for(int i = 0; i < s->count; i++)
 	{
@@ -588,26 +576,10 @@ static void simulate_cycle(int cycle, stages_t *s)
 			worker.join();
 
 		// Record the ratio of parallelizable stages node.
-		if (cycle > test_cycles)
-			s->avg_worker_count += (double)number_of_workers/(double)s->count;
+		s->avg_worker_count += (double)number_of_workers/(double)s->count;
 
 		total_run_time += wall_time()-time;
 	}
-
-	if(! found_best_time && global_args.parralelized_simulation.value() > 1)
-	{
-		if(total_run_time <= used_time)
-		{
-			number_of_workers = std::min(number_of_workers+1, global_args.parralelized_simulation.value());
-			used_time = total_run_time;
-		}
-		else
-		{
-			found_best_time = true;
-			number_of_workers = std::max(1, number_of_workers-1);
-		}
-	}
-
 }
 
 
@@ -889,11 +861,6 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
  */
 static bool compute_and_store_value(nnode_t *node, int cycle)
 {
-	update_undriven_input_pins(node, cycle);
-
-	if(!is_node_ready(node,cycle))
-		return false;
-
 	operation_list type = is_clock_node(node)?CLOCK_NODE:node->type;
 
 	switch(type)
@@ -2643,22 +2610,20 @@ static lines_t *create_lines(netlist_t *netlist, int type)
 		nnode_t *node = nodes[i];
 		char *port_name = get_port_name(node->name);
 
-		if (type == OUTPUT || !(is_clock_node(node) && global_args.sim_vector_input_file))
+		if (find_portname_in_lines(port_name, l) == -1)
 		{
-			if (find_portname_in_lines(port_name, l) == -1)
-			{
-				line_t *line = create_line(port_name);
-				l->lines = (line_t **)vtr::realloc(l->lines, sizeof(line_t *)*(l->count + 1));
-				l->lines[l->count++] = line;
-			}
-			assign_node_to_line(node, l, type, 0);
-			/**
-			 * TODO: implicit memories with multiclock input (one for read and one for write)
-			 * is broken, need fixing
-			 */
-			if(node->type == CLOCK_NODE)
-				set_clock_ratio(++num_of_clock,node);
+			line_t *line = create_line(port_name);
+			l->lines = (line_t **)vtr::realloc(l->lines, sizeof(line_t *)*(l->count + 1));
+			l->lines[l->count++] = line;
 		}
+		assign_node_to_line(node, l, type, 0);
+		/**
+		 * TODO: implicit memories with multiclock input (one for read and one for write)
+		 * is broken, need fixing
+		 */
+		if(node->type == CLOCK_NODE)
+			set_clock_ratio(++num_of_clock,node);
+
 		vtr::free(port_name);
 	}
 	return l;

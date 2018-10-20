@@ -213,6 +213,10 @@ npin_t* allocate_npin() {
 
 	new_pin->ace_info = NULL;
 
+	new_pin->nb_of_reader = 0;
+	new_pin->nb_of_writer = 0;
+
+
 	return new_pin;
 }
 /*-------------------------------------------------------------------------
