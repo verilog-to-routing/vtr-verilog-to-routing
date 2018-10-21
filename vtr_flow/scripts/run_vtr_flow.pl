@@ -130,10 +130,6 @@ my $abc_flow_type = 2;
 my $use_new_latches_restoration_script = 0;
 my $odin_run_simulation = 0;
 my $disable_simulation_failure = 1;
-my $respect_init_value = 0;
-my $respect_edge_type =0;
-my $use_white_boxes = 0;
-my $use_flop = 0;
 
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
@@ -211,18 +207,6 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	}
 	elsif ( $token eq "-use_new_latches_restoration_script" ){
 		$use_new_latches_restoration_script = 1;
-	}
-	elsif ( $token eq "-respect_init_value" ){
-		$respect_init_value = 1;
-	}
-	elsif ( $token eq "-respect_edge_type" ){
-		$respect_edge_type = 1;
-	}
-	elsif ( $token eq "-white_box" ){
-		$use_white_boxes = 1;
-	}
-	elsif ( $token eq "-use_flop" ){
-		$use_flop = 1;
 	}
 	elsif ( $token eq "-skip_abc" ){
 		$abc_flow_type = 1;
@@ -495,21 +479,6 @@ if (    $starting_stage <= $stage_idx_abc
 
 	###########
 	#	SETUP ABC optimizer, odin simulator and relevant data struct.
-
-	my $black_box_script_args = "";
-	if ($respect_init_value){
-		$black_box_script_args .= "--respect_init ";
-	}
-	if ($respect_edge_type){
-		$black_box_script_args .= "--respect_edge ";
-	}
-	if ($use_flop){
-		$black_box_script_args .= "--use_flop ";
-	}
-	if ($use_white_boxes){
-		$black_box_script_args .= "--use_white_box ";
-	}
-	
 	my %clock_list;
 	my $abc_temp_dir = "${temp_dir}abc_temp";
 	system("mkdir ${abc_temp_dir}");
@@ -531,15 +500,15 @@ if (    $starting_stage <= $stage_idx_abc
 	# itterative black boxing of latches for ABC
 	elsif( $abc_flow_type == 4 )
 	{
+		%clock_list=();
 		##########
 		#	Populate the clock list
 		#
-		#	get all the clock domains and parse the initial values for each.
-		#	the script above creates a file named after the input file with .clklist appended in the same directory
+		#	get all the clock domains and parse the initial values for each
 		#	we will iterate though the file and use each clock iteratively
-
+		my $clk_list_filename = "report_clk.out";
 		$q = &system_with_timeout($blackbox_latches_script, "report_clocks.abc.out", $timeout, $temp_dir,
-				"--input",$odin_output_file_name, $black_box_script_args);
+				"--input", $odin_output_file_name, "--output_list", $clk_list_filename);
 
 		if ($q ne "success") {
 			$error_status = "failed: to find available clocks in blif file";
@@ -548,24 +517,16 @@ if (    $starting_stage <= $stage_idx_abc
 		else
 		{
 			my $clock_list_file;
-			open ($clock_list_file, "<", $odin_output_file_name.".clklist") or die "Unable to open \"".$odin_output_file_name.".clklist\": $! \n";
+			open ($clock_list_file, "<", $clk_list_filename) or die "Unable to open \"".$clk_list_filename."\": $! \n";
 			#read line and strip whitespace of line
-			while(my $line = <$clock_list_file>) 
+			my $line = "";
+			while(($line = <$clock_list_file>)) 
 			{
 				$line =~ s/^\s+|\s+$//g;
-				if($line =~ /latch/)
+				if($line =~ /^latch/)
 				{
-					#get the initial value out
-					my @tokenized_clk = split(/_^_/, $line);
-					my $clock_name_token_len = @tokenized_clk;
-					if($respect_init_value && $clock_name_token_len > 3)
-					{
-						$clock_list{$line} = "init ".$tokenized_clk[3].";";
-					}
-					else
-					{
-						$clock_list{$line} = " ";
-					}
+					#get the initial value out (last char)
+					$clock_list{$line} = "init ".substr($line, -1).";";
 				}	
 			}
 		}
@@ -575,7 +536,7 @@ if (    $starting_stage <= $stage_idx_abc
 	################
 	#	SIMULATION
 	#	this is not made mandatory since some hardblocks are not recognized by odin
-
+	#	we let odin figure out the best number of vector to simulate for best coverage
 	if($odin_run_simulation) {
 		system "mkdir simulation_init";
 
@@ -584,7 +545,8 @@ if (    $starting_stage <= $stage_idx_abc
 			"-b", $temp_dir . $odin_output_file_name,
 			"-a", $temp_dir . $architecture_file_name,
 			"-sim_dir", $temp_dir."simulation_init/",
-			"-g", "100");
+			"-g", "1000",
+			"--best_coverage");
 			
 		if ( $q ne "success") {
 			$odin_run_simulation = 0;
@@ -609,15 +571,22 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			system( "cp ${input_blif} ${pre_abc_blif}");
 		}
-		else
-		{	
-			if ( !($clock_domain =~ /\-\-/) ){
-				$clock_domain = "--clk_list ".$clock_domain;
-			}
-
+		elsif( $abc_flow_type == 3 )
+		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--input", $input_blif, "--output", $pre_abc_blif, $clock_domain, $black_box_script_args);
+					"--input", $input_blif, "--output", $pre_abc_blif, "--all");
+
+			if ($q ne "success") {
+				$error_status = "failed: to black box all for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
+				$error_code = 1;
+			}
+		}
+		else
+		{	
+			# black box latches
+			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
+					"--clk_list", $clock_domain, "--input", $input_blif, "--output", $pre_abc_blif);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
@@ -702,12 +671,12 @@ if (    $starting_stage <= $stage_idx_abc
 		#added so that valgrind will not run on abc because of existing memory errors
 		if ($valgrind) {
 				$valgrind = 0;
-			$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+			$q = &system_with_timeout( $abc_path, "abc".$domain_itter.".out", $timeout, $temp_dir, "-c",
 			$abc_commands);
 				$valgrind = 1;
 		}
 		else {
-			$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+			$q = &system_with_timeout( $abc_path, "abc".$domain_itter.".out", $timeout, $temp_dir, "-c",
 					$abc_commands);
 		}
 
@@ -715,7 +684,7 @@ if (    $starting_stage <= $stage_idx_abc
 		if ( -e $abc_raw_output_file_path and $q eq "success") {
 
 			# Restore Multi-Clock Latch Information from ODIN II that was striped out by ABC
-			$q = &system_with_timeout($restore_multiclock_info_script, "restore_latch.out", $timeout, $temp_dir,
+			$q = &system_with_timeout($restore_multiclock_info_script, "restore_latch".$domain_itter.".out", $timeout, $temp_dir,
 					$pre_abc_blif, $abc_raw_output_file_name, $post_abc_blif);
 
 			if ($q ne "success") {
