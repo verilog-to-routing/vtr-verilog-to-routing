@@ -452,13 +452,15 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 		if ( $use_odin_xml_config ) {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 				"-c", $odin_config_file_name, 
-				"--adder_type", $odin_adder_config_path,);
+				"--adder_type", $odin_adder_config_path,
+				"-U0");
 		} else {
 			$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 				"--adder_type", $odin_adder_config_path,
 				"-a", $temp_dir . $architecture_file_name,
 				"-V", $temp_dir . $circuit_file_name,
-				"-o", $temp_dir . $odin_output_file_name);
+				"-o", $temp_dir . $odin_output_file_name,
+				"-U0");
 		}
 
 		if ( ! -e $odin_output_file_path or $q ne "success") {
@@ -546,7 +548,8 @@ if (    $starting_stage <= $stage_idx_abc
 			"-a", $temp_dir . $architecture_file_name,
 			"-sim_dir", $temp_dir."simulation_init/",
 			"-g", "1000",
-			"--best_coverage");
+			"--best_coverage",
+			"-U0");	#ABC sets DC bits as 0
 			
 		if ( $q ne "success") {
 			$odin_run_simulation = 0;
@@ -729,7 +732,8 @@ if (    $starting_stage <= $stage_idx_abc
 			"-a", $temp_dir . $architecture_file_name,
 			"-t", $temp_dir . "simulation_init/input_vectors",
 			"-T", $temp_dir . "simulation_init/output_vectors",
-			"-sim_dir", $temp_dir."simulation_test/");
+			"-sim_dir", $temp_dir."simulation_test/",
+			"-U0");
 
 		if ( $q ne "success") {
 			if ( $disable_simulation_failure )
