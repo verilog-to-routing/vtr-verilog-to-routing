@@ -152,6 +152,13 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats);
 
+static void add_route_tree_node_to_heap(t_rt_node* rt_node,
+        int target_node,
+        float target_criticality,
+        float astar_fac,
+        const t_conn_delay_budget* delay_budget,
+        RouterStats& router_stats);
+
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int target_node,
@@ -1190,6 +1197,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 
         // still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
         load_route_tree_Tdel(rt_root, 0);
+
         // mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
         load_route_tree_rr_route_inf(rt_root);
     }
@@ -1206,19 +1214,48 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
 
-    int inode;
     t_rt_node *child_node;
     t_linked_rt_edge *linked_rt_edge;
-    float tot_cost, backward_path_cost, R_upstream;
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-        inode = rt_node->inode;
-        backward_path_cost = target_criticality * rt_node->Tdel;
+        add_route_tree_node_to_heap(rt_node,
+                target_node,
+                target_criticality,
+                astar_fac,
+                delay_budget,
+                router_stats);
+    }
 
-        R_upstream = rt_node->R_upstream;
-        tot_cost = backward_path_cost
+    linked_rt_edge = rt_node->u.child_list;
+
+    while (linked_rt_edge != nullptr) {
+        child_node = linked_rt_edge->child;
+        add_route_tree_to_heap(child_node, target_node, target_criticality,
+                astar_fac, 
+                delay_budget,
+                router_stats);
+        linked_rt_edge = linked_rt_edge->next;
+    }
+}
+
+//Unconditionally adds rt_node to the heap
+//
+//Note that if you want to respect rt_node->re_expand that is the caller's
+//responsibility.
+static void add_route_tree_node_to_heap(t_rt_node* rt_node,
+        int target_node,
+        float target_criticality,
+        float astar_fac,
+        const t_conn_delay_budget* delay_budget,
+        RouterStats& router_stats) {
+
+        int inode = rt_node->inode;
+        float backward_path_cost = target_criticality * rt_node->Tdel;
+
+        float R_upstream = rt_node->R_upstream;
+        float tot_cost = backward_path_cost
                 + astar_fac
                 * get_timing_driven_expected_cost(inode, target_node,
                 target_criticality, R_upstream);
@@ -1240,18 +1277,6 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
                 backward_path_cost, R_upstream);
 
         ++router_stats.heap_pushes;
-    }
-
-    linked_rt_edge = rt_node->u.child_list;
-
-    while (linked_rt_edge != nullptr) {
-        child_node = linked_rt_edge->child;
-        add_route_tree_to_heap(child_node, target_node, target_criticality,
-                astar_fac, 
-                delay_budget,
-                router_stats);
-        linked_rt_edge = linked_rt_edge->next;
-    }
 }
 
 static void timing_driven_expand_neighbours(t_heap *current,
