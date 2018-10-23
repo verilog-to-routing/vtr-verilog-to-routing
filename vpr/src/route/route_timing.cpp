@@ -133,55 +133,48 @@ bool f_router_debug = true;
 static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
-static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost,
+static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
+        const t_conn_cost_params cost_params,
+        float pres_fac,
         int high_fanout_threshold,
         t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
-        const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats);
 
 static t_heap* timing_driven_route_connection_from_heap(int sink_node,
-        float target_criticality, float astar_fac, float bend_cost, 
+        const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        const t_conn_delay_budget* delay_budget,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
     
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
-        float target_criticality, float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+        const t_conn_cost_params cost_params,
         RouterStats& router_stats);
 
 static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         int target_node,
-        float target_criticality,
-        float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+        const t_conn_cost_params cost_params,
         RouterStats& router_stats);
 
 static void timing_driven_expand_neighbours(t_heap *current,
-        t_bb bounding_box, float bend_cost, float criticality_fac,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
         int target_node,
-        float astar_fac,
-        const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats);
 
-static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+static void timing_driven_add_to_heap(
+        const t_conn_cost_params cost_params,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, RouterStats& router_stats);
 
-static void timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+static void timing_driven_expand_node(const t_conn_cost_params cost_params,
         t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node);
 
-static void timing_driven_expand_node_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+static void timing_driven_expand_node_non_configurable_recurr(
+        const t_conn_cost_params cost_params,
         t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
         std::set<int>& visited);
 
 t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
-        const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+        const t_conn_cost_params cost_params,
         const int from_node, const int to_node, const int iconn, const int target_node);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
@@ -829,11 +822,16 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     update_rr_base_costs(num_sinks);
 
     t_conn_delay_budget conn_delay_budget;
+    t_conn_cost_params cost_params;
+    cost_params.astar_fac = astar_fac;
+    cost_params.bend_cost = bend_cost;
+    cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
 
     // explore in order of decreasing criticality (no longer need sink_order array)
     for (unsigned itarget = 0; itarget < remaining_targets.size(); ++itarget) {
         int target_pin = remaining_targets[itarget];
-        float target_criticality = pin_criticality[target_pin];
+
+        cost_params.criticality = pin_criticality[target_pin];
 
         if (budgeting_inf.if_set()) {
             conn_delay_budget.max_delay = budgeting_inf.get_max_delay_budget(net_id, target_pin);
@@ -843,9 +841,9 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         }
 
         // build a branch in the route tree to the target
-        if (!timing_driven_route_sink(itry, net_id, itarget, target_pin, target_criticality,
-                pres_fac, astar_fac, bend_cost, high_fanout_threshold, rt_root, rt_node_of_sink,
-                ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr), //Only pass budgets if set
+        if (!timing_driven_route_sink(itry, net_id, itarget, target_pin,
+                cost_params,
+                pres_fac, high_fanout_threshold, rt_root, rt_node_of_sink,
                 router_stats))
             return false;
 
@@ -876,9 +874,9 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     return (true);
 }
 
-static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, int high_fanout_threshold, t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
-        const t_conn_delay_budget* delay_budget,
+static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
+        const t_conn_cost_params cost_params,
+        float pres_fac, int high_fanout_threshold, t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
         RouterStats& router_stats) {
 
     /* Build a path from the existing route tree rooted at rt_root to the target_node
@@ -909,11 +907,8 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     std::vector<int> modified_rr_node_inf;
 
     t_heap * cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node,
-                            target_criticality,
-                            astar_fac,
-                            bend_cost,
+                            cost_params,
                             bounding_box,
-                            delay_budget,
                             modified_rr_node_inf,
                             router_stats);
 
@@ -927,7 +922,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         return false;
     }
 
-    profiling::sink_criticality_end(target_criticality);
+    profiling::sink_criticality_end(cost_params.criticality);
 
     /* NB:  In the code below I keep two records of the partial routing:  the   *
      * traceback and the route_tree.  The route_tree enables fast recomputation *
@@ -962,17 +957,15 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 //as valid start locations for the current connection.
 //
 //Returns either the last element of the path, or nullptr if no path is found
-t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_bb bounding_box,
-        const t_conn_delay_budget* delay_budget,
+t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    add_route_tree_to_heap(rt_root, sink_node, target_criticality, astar_fac, 
-            delay_budget,
-            router_stats);
+    add_route_tree_to_heap(rt_root, sink_node, cost_params, router_stats);
     heap_::build_heap(); // via sifting down everything
 
     VTR_ASSERT_SAFE(heap_::is_valid());
@@ -987,9 +980,8 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int s
     }
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node, 
-                            target_criticality, astar_fac, bend_cost,
+                            cost_params,
                             bounding_box,
-                            delay_budget,
                             modified_rr_node_inf,
                             router_stats);
 
@@ -1010,9 +1002,8 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int s
 //
 //Returns either the last element of the path, or nullptr if no path is found
 static t_heap* timing_driven_route_connection_from_heap(int sink_node,
-        float target_criticality, float astar_fac, float bend_cost, 
+        const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        const t_conn_delay_budget* delay_budget,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1057,9 +1048,9 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
                 route_ctx.rr_node_route_inf[prev.to_node].backward_path_cost = new_back_cost;
             }
 
-            timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
-                    target_criticality, sink_node, astar_fac,
-                    delay_budget, router_stats);
+            timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
+                    sink_node,
+                    router_stats);
         }
 
         free_heap_data(cheapest);
@@ -1206,8 +1197,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 }
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
-        float target_criticality, float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+        const t_conn_cost_params cost_params,
         RouterStats& router_stats) {
 
     /* Puts the entire partial routing below and including rt_node onto the heap *
@@ -1222,9 +1212,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
     if (rt_node->re_expand) {
         add_route_tree_node_to_heap(rt_node,
                 target_node,
-                target_criticality,
-                astar_fac,
-                delay_budget,
+                cost_params,
                 router_stats);
     }
 
@@ -1232,9 +1220,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        add_route_tree_to_heap(child_node, target_node, target_criticality,
-                astar_fac, 
-                delay_budget,
+        add_route_tree_to_heap(child_node, target_node,
+                cost_params,
                 router_stats);
         linked_rt_edge = linked_rt_edge->next;
     }
@@ -1246,27 +1233,26 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 //responsibility.
 static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         int target_node,
-        float target_criticality,
-        float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+        const t_conn_cost_params cost_params,
         RouterStats& router_stats) {
 
         int inode = rt_node->inode;
-        float backward_path_cost = target_criticality * rt_node->Tdel;
+        float backward_path_cost = cost_params.criticality * rt_node->Tdel;
 
         float R_upstream = rt_node->R_upstream;
         float tot_cost = backward_path_cost
-                + astar_fac
+                + cost_params.astar_fac
                 * get_timing_driven_expected_cost(inode, target_node,
-                target_criticality, R_upstream);
+                cost_params.criticality, R_upstream);
 
         //after budgets are loaded, calculate delay cost as described by RCV paper
         /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
          * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
          * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
+        const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
         if (delay_budget) {
             float zero = 0.0;
-            tot_cost += (delay_budget->short_path_criticality + target_criticality) * max(zero, delay_budget->target_delay - tot_cost);
+            tot_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(zero, delay_budget->target_delay - tot_cost);
             tot_cost += pow(max(zero, tot_cost - delay_budget->max_delay), 2) / 100e-12;
             tot_cost += pow(max(zero, delay_budget->min_delay - tot_cost), 2) / 100e-12;
         }
@@ -1280,10 +1266,9 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
 }
 
 static void timing_driven_expand_neighbours(t_heap *current,
-        t_bb bounding_box, float bend_cost, float criticality_fac,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
         int target_node,
-        float astar_fac,
-        const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats) {
 
     /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
@@ -1332,15 +1317,15 @@ static void timing_driven_expand_neighbours(t_heap *current,
             }
         }
 
-        timing_driven_add_to_heap(criticality_fac, bend_cost, astar_fac,
-                delay_budget,
+        timing_driven_add_to_heap(
+                cost_params,
                 current, inode, to_node, iconn, target_node, router_stats);
     } /* End for all neighbours */
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
-static void timing_driven_add_to_heap(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+static void timing_driven_add_to_heap(
+        const t_conn_cost_params cost_params,
         const t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node, RouterStats& router_stats) {
 
     t_heap* next = alloc_heap_data();
@@ -1354,8 +1339,7 @@ static void timing_driven_add_to_heap(const float criticality_fac, const float b
     auto& device_ctx = g_vpr_ctx.device();
     if (device_ctx.rr_nodes[to_node].num_non_configurable_edges() == 0) {
         //The common case where there are no non-configurable edges
-        timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
-                delay_budget,
+        timing_driven_expand_node(cost_params,
                 next, from_node, to_node, iconn, target_node);
     } else {
         //The 'to_node' which we just expanded to has non-configurable
@@ -1369,8 +1353,8 @@ static void timing_driven_add_to_heap(const float criticality_fac, const float b
         //TODO: use a more efficient method of tracking visited nodes (e.g. if
         //      non-configurable edges become more common)
         std::set<int> visited;
-        timing_driven_expand_node_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
-                delay_budget,
+        timing_driven_expand_node_non_configurable_recurr(
+                cost_params,
                 next, from_node, to_node, iconn, target_node,
                 visited);
     }
@@ -1380,8 +1364,7 @@ static void timing_driven_add_to_heap(const float criticality_fac, const float b
 }
 
 //Updates current (path step and costs) to account for the step taken to reach to_node
-static void timing_driven_expand_node(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+static void timing_driven_expand_node(const t_conn_cost_params cost_params,
         t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node) {
 
 
@@ -1404,8 +1387,7 @@ static void timing_driven_expand_node(const float criticality_fac, const float b
     old_costs.R_upstream = current->R_upstream;
 
     auto new_costs = evaluate_timing_driven_node_costs(old_costs,
-                        criticality_fac, bend_cost, astar_fac,
-                        delay_budget,
+                        cost_params,
                         from_node, to_node, iconn, target_node);
 
     //Record how we reached this node
@@ -1423,8 +1405,8 @@ static void timing_driven_expand_node(const float criticality_fac, const float b
 
 //Updates current (path stage and costs) to account for the step taken to reach to_node,
 //and any of it's non-configurably connected nodes
-static void timing_driven_expand_node_non_configurable_recurr(const float criticality_fac, const float bend_cost, const float astar_fac,
-        const t_conn_delay_budget* delay_budget,
+static void timing_driven_expand_node_non_configurable_recurr(
+        const t_conn_cost_params cost_params,
         t_heap* current, const int from_node, const int to_node, const int iconn, const int target_node,
         std::set<int>& visited) {
 
@@ -1438,8 +1420,8 @@ static void timing_driven_expand_node_non_configurable_recurr(const float critic
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    timing_driven_expand_node(criticality_fac, bend_cost, astar_fac,
-            delay_budget,
+    timing_driven_expand_node(
+            cost_params,
             current, from_node, to_node, iconn, target_node);
 
     //Consider any non-configurable edges which must be expanded for correctness
@@ -1448,16 +1430,15 @@ static void timing_driven_expand_node_non_configurable_recurr(const float critic
 
         int to_to_node = device_ctx.rr_nodes[to_node].edge_sink_node(iconn_next);
 
-        timing_driven_expand_node_non_configurable_recurr(criticality_fac, bend_cost, astar_fac,
-                delay_budget,
+        timing_driven_expand_node_non_configurable_recurr(
+                cost_params,
                 current, to_node, to_to_node, iconn_next, target_node, visited);
     }
 }
 
 //Calculates the cost of reaching to_node
 t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driven_node_costs old_costs,
-    const float criticality_fac, const float bend_cost, const float astar_fac,
-    const t_conn_delay_budget* delay_budget,
+    const t_conn_cost_params cost_params,
     const int from_node, const int to_node, const int iconn, const int target_node) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
@@ -1496,16 +1477,17 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
 
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
-    new_costs.backward_cost += (1. - criticality_fac) * get_rr_cong_cost(to_node); //Congestion cost
-    new_costs.backward_cost += criticality_fac * Tdel; //Delay cost
-    if (bend_cost != 0.) {
+    new_costs.backward_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
+    new_costs.backward_cost += cost_params.criticality * Tdel; //Delay cost
+    if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
         if ((from_type == CHANX && to_type == CHANY) || (from_type == CHANY && to_type == CHANX)) {
-            new_costs.backward_cost += bend_cost; //Bend cost
+            new_costs.backward_cost += cost_params.bend_cost; //Bend cost
         }
     }
 
+    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
     if (delay_budget) {
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
@@ -1513,14 +1495,14 @@ t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timing_driv
         //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
 
         //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
-        new_costs.total_cost += (delay_budget->short_path_criticality + criticality_fac) * max(0.f, delay_budget->target_delay - new_costs.total_cost);
+        new_costs.total_cost += (delay_budget->short_path_criticality + cost_params.criticality) * max(0.f, delay_budget->target_delay - new_costs.total_cost);
         new_costs.total_cost += pow(max(0.f, new_costs.total_cost - delay_budget->max_delay), 2) / 100e-12;
         new_costs.total_cost += pow(max(0.f, delay_budget->min_delay - new_costs.total_cost), 2) / 100e-12;
     }
 
     //Update total cost
-    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, criticality_fac, new_costs.R_upstream);
-    new_costs.total_cost = new_costs.backward_cost + astar_fac * expected_cost;
+    float expected_cost = get_timing_driven_expected_cost(to_node, target_node, cost_params.criticality, new_costs.R_upstream);
+    new_costs.total_cost = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
 
     return new_costs;
 }

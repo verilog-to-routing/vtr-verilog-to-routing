@@ -59,10 +59,22 @@ struct t_conn_delay_budget {
     float max_delay; //Maximum legal connection delay
 };
 
+struct t_conn_cost_params {
+    float criticality = 1.;
+    float astar_fac = 1.2;
+    float bend_cost = 1.;
+    const t_conn_delay_budget* delay_budget = nullptr;
+
+    //TODO: Eventually once delay budgets are working, t_conn_delay_budget
+    //should be factoured out, and the delay budget parameters integrated
+    //into this struct instead. For now left as a pointer to control whether
+    //budgets are enabled.
+};
+
+
 t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node,
-        float target_criticality,
-        float astar_fac, float bend_cost, t_bb bounding_box,
-        const t_conn_delay_budget* delay_budget,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
 

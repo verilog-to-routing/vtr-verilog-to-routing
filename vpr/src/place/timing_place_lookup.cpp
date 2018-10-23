@@ -655,7 +655,10 @@ static bool calculate_delay(int source_node, int sink_node,
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
 
-    float target_criticality = 1;
+    t_conn_cost_params cost_params;
+    cost_params.criticality = 1.;
+    cost_params.astar_fac = astar_fac;
+    cost_params.bend_cost = bend_cost;
 
     route_budgets budgeting_inf;
 
@@ -664,8 +667,7 @@ static bool calculate_delay(int source_node, int sink_node,
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, target_criticality,
-            astar_fac, bend_cost, bounding_box, nullptr, modified_rr_node_inf, router_stats);
+    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, modified_rr_node_inf, router_stats);
 
     if (cheapest == nullptr) {
         return false;
