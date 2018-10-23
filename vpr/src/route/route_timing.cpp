@@ -178,9 +178,6 @@ static int get_expected_segs_to_target(int inode, int target_node,
 
 static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
 
-static int mark_node_expansion_by_bin(int source_node, int target_node,
-        t_rt_node * rt_node, t_bb bounding_box, int num_sinks);
-
 void reduce_budgets_if_congested(route_budgets &budgeting_inf,
         CBRR& connections_inf, float slope, int itry);
 
@@ -895,16 +892,8 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
-
-    int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
-    if (is_high_fanout(num_sinks, high_fanout_threshold)) {
-        int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
-
-        const t_rr_node& sink_rr_node = device_ctx.rr_nodes[sink_node];
-        bounding_box.xmin = sink_rr_node.xlow() - highfanout_rlim;
-        bounding_box.ymin = sink_rr_node.ylow() - highfanout_rlim;
-        bounding_box.xmax = sink_rr_node.xhigh() + highfanout_rlim;
-        bounding_box.ymax = sink_rr_node.yhigh() + highfanout_rlim;
+    if (is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), router_opts.high_fanout_threshold)) {
+        //TODO implement special high fanout routing code
     }
 
     std::vector<int> modified_rr_node_inf;
@@ -1626,101 +1615,6 @@ void update_rr_base_costs(int fanout) {
                     device_ctx.rr_indexed_data[index].saved_base_cost;
         }
     }
-}
-
-/* Nets that have high fanout can take a very long time to route. Routing for sinks that are part of high-fanout nets should be
-   done within a rectangular 'bin' centered around a target (as opposed to the entire net bounding box) the size of which is returned by this function. */
-static int mark_node_expansion_by_bin(int source_node, int target_node,
-        t_rt_node * rt_node, t_bb bounding_box, int num_sinks) {
-
-    auto& device_ctx = g_vpr_ctx.device();
-
-    int target_xlow, target_ylow, target_xhigh, target_yhigh;
-    int rlim = 1;
-    int max_grid_dim = max(device_ctx.grid.width(), device_ctx.grid.height());
-    int inode;
-    float area;
-    bool success;
-    t_linked_rt_edge *linked_rt_edge;
-    t_rt_node * child_node;
-
-    target_xlow = device_ctx.rr_nodes[target_node].xlow();
-    target_ylow = device_ctx.rr_nodes[target_node].ylow();
-    target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
-    target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
-
-    if (rt_node == nullptr || rt_node->u.child_list == nullptr) {
-        /* If unknown traceback, set radius of bin to be size of chip */
-        rlim = max_grid_dim;
-        return rlim;
-    }
-
-    area = (bounding_box.xmax - bounding_box.xmin)
-            * (bounding_box.ymax - bounding_box.ymin);
-    if (area <= 0) {
-        area = 1;
-    }
-
-    VTR_ASSERT(num_sinks > 0);
-
-    rlim = (int) (ceil(sqrt((float) area / (float) num_sinks)));
-
-    success = false;
-    /* determine quickly a feasible bin radius to route sink for high fanout nets
-     this is necessary to prevent super long runtimes for high fanout nets; in best case, a reduction in complexity from O(N^2logN) to O(NlogN) (Swartz fast router)
-     */
-    linked_rt_edge = rt_node->u.child_list;
-    while (success == false && linked_rt_edge != nullptr) {
-        while (linked_rt_edge != nullptr && success == false) {
-            child_node = linked_rt_edge->child;
-            inode = child_node->inode;
-            if (!(device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == SINK)) {
-                if (device_ctx.rr_nodes[inode].xlow() <= target_xhigh + rlim
-                        && device_ctx.rr_nodes[inode].xhigh() >= target_xhigh - rlim
-                        && device_ctx.rr_nodes[inode].ylow() <= target_yhigh + rlim
-                        && device_ctx.rr_nodes[inode].yhigh() >= target_yhigh - rlim) {
-                    success = true;
-                }
-            }
-            linked_rt_edge = linked_rt_edge->next;
-        }
-
-        if (success == false) {
-            if (rlim > max_grid_dim) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "VPR internal error, the source node %d has paths that are not found in traceback.\n", source_node);
-            }
-            /* if sink not in bin, increase bin size until fit */
-            rlim *= 2;
-        } else {
-            /* Sometimes might just catch a wire in the end segment, need to give it some channel space to explore */
-            rlim += 4;
-        }
-        linked_rt_edge = rt_node->u.child_list;
-    }
-
-    /* adjust rlim to account for width/height of block containing the target sink */
-    int target_span = max(target_xhigh - target_xlow, target_yhigh - target_ylow);
-    rlim += target_span;
-
-    /* redetermine expansion based on rlim */
-    linked_rt_edge = rt_node->u.child_list;
-    while (linked_rt_edge != nullptr) {
-        child_node = linked_rt_edge->child;
-        inode = child_node->inode;
-        if (!(device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == SINK)) {
-            if (device_ctx.rr_nodes[inode].xlow() <= target_xhigh + rlim
-                    && device_ctx.rr_nodes[inode].xhigh() >= target_xhigh - rlim
-                    && device_ctx.rr_nodes[inode].ylow() <= target_yhigh + rlim
-                    && device_ctx.rr_nodes[inode].yhigh() >= target_yhigh - rlim) {
-                child_node->re_expand = true;
-            } else {
-                child_node->re_expand = false;
-            }
-        }
-        linked_rt_edge = linked_rt_edge->next;
-    }
-    return rlim;
 }
 
 static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
