@@ -106,8 +106,6 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
-static t_linked_f_pointer *alloc_linked_f_pointer();
-
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
@@ -1497,29 +1495,6 @@ void free_trace_data(t_trace *tptr) {
 	tptr->next = trace_free_head;
 	trace_free_head = tptr;
 	num_trace_allocated--;
-}
-
-static t_linked_f_pointer *
-alloc_linked_f_pointer() {
-
-	/* This routine returns a linked list element with a float pointer as *
-	 * the node data.                                                     */
-
-	/*int i;*/
-	t_linked_f_pointer *temp_ptr;
-
-	if (linked_f_pointer_free_head == nullptr) {
-		/* No elements on the free list */
-	linked_f_pointer_free_head = (t_linked_f_pointer *) vtr::chunk_malloc(sizeof(t_linked_f_pointer),&linked_f_pointer_ch);
-	linked_f_pointer_free_head->next = nullptr;
-	}
-
-	temp_ptr = linked_f_pointer_free_head;
-	linked_f_pointer_free_head = linked_f_pointer_free_head->next;
-
-	num_linked_f_pointer_allocated++;
-
-	return (temp_ptr);
 }
 
 /* Prints out the routing to file route_file.  */
