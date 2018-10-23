@@ -140,7 +140,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats);
 
-t_heap* timing_driven_route_connection_from_heap(int sink_node,
+static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         float target_criticality, float astar_fac, float bend_cost, 
         t_bb bounding_box,
         const t_conn_delay_budget* delay_budget,
@@ -784,6 +784,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
+
     // after this point the route tree is correct
     // remaining_targets from this point on are the **pin indices** that have yet to be routed
     auto& remaining_targets = connections_inf.get_remaining_targets();
@@ -881,7 +882,6 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     profiling::sink_criticality_start();
 
-    int source_node = route_ctx.net_rr_terminals[net_id][0];
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
 
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d\n", size_t(net_id), itarget);
@@ -901,8 +901,14 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     std::vector<int> modified_rr_node_inf;
 
-    t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, delay_budget, modified_rr_node_inf, router_stats);
+    t_heap * cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node,
+                            target_criticality,
+                            astar_fac,
+                            bend_cost,
+                            bounding_box,
+                            delay_budget,
+                            modified_rr_node_inf,
+                            router_stats);
 
     if (cheapest == nullptr) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -943,9 +949,14 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     return true;
 }
 
-
-t_heap* timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box,
+//Finds a path from the route tree rooted at rt_root to sink_node
+//
+//This is used when you want to allow previous routing of the same net to serve
+//as valid start locations for the current connection.
+//
+//Returns either the last element of the path, or nullptr if no path is found
+t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node, float target_criticality,
+        float astar_fac, float bend_cost, t_bb bounding_box,
         const t_conn_delay_budget* delay_budget,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
@@ -958,6 +969,8 @@ t_heap* timing_driven_route_connection(int source_node, int sink_node, float tar
     heap_::build_heap(); // via sifting down everything
 
     VTR_ASSERT_SAFE(heap_::is_valid());
+
+    int source_node = rt_root->inode;
 
     if (is_empty_heap()) {
         VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
@@ -984,14 +997,12 @@ t_heap* timing_driven_route_connection(int source_node, int sink_node, float tar
 }
 
 
-//Finds a path through the RR graph to sink_node, starting from the elements 
-//currently in the heap (core maze router).
+//Finds a path to sink_node, starting from the elements currently in the heap.
 //
-//If no path is found returns nullptr, otherwise returns the last element of
-//the found path.
+//This is the core maze routing routine.
 //
-//This is the core maze routing algorithm.
-t_heap* timing_driven_route_connection_from_heap(int sink_node,
+//Returns either the last element of the path, or nullptr if no path is found
+static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         float target_criticality, float astar_fac, float bend_cost, 
         t_bb bounding_box,
         const t_conn_delay_budget* delay_budget,
@@ -1004,6 +1015,7 @@ t_heap* timing_driven_route_connection_from_heap(int sink_node,
     ++router_stats.heap_pops;
 
     if (cheapest == nullptr) { //No source
+        VTR_LOGV_DEBUG(f_router_debug, "  Initial heap empty (no source)\n");
         return nullptr;
     }
 
@@ -1048,6 +1060,7 @@ t_heap* timing_driven_route_connection_from_heap(int sink_node,
         ++router_stats.heap_pops;
 
         if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
+            VTR_LOGV_DEBUG(f_router_debug, "  Empty heap (no path found)");
             return nullptr;
         }
 

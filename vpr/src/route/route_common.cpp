@@ -67,11 +67,6 @@ static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
-static t_linked_f_pointer *rr_modified_head = nullptr;
-static t_linked_f_pointer *linked_f_pointer_free_head = nullptr;
-
-static vtr::t_chunk linked_f_pointer_ch;
-
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
  *  |    IO     | chan_   |   CLB     | chan_   |   CLB     |               *
@@ -979,8 +974,6 @@ void free_route_structs() {
 
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
-	free_chunk_memory(&linked_f_pointer_ch);
-	linked_f_pointer_free_head = nullptr;
 }
 
 /* Frees the data structures needed to save a routing.                     */

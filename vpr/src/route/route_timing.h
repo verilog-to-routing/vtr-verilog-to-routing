@@ -59,10 +59,12 @@ struct t_conn_delay_budget {
     float max_delay; //Maximum legal connection delay
 };
 
-t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box,
+t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node,
+        float target_criticality,
+        float astar_fac, float bend_cost, t_bb bounding_box,
         const t_conn_delay_budget* delay_budget,
-        std::vector<int>& modified_rr_node_inf, RouterStats& router_stats);
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats);
 
 struct timing_driven_route_structs {
     // data while timing driven route is active
