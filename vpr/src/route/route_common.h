@@ -57,7 +57,6 @@ void pathfinder_update_cost(float pres_fac, float acc_fac);
 t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
-void reset_path_costs();
 
 float get_rr_cong_cost(int inode);
 

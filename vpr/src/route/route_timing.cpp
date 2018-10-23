@@ -841,10 +841,6 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
                 router_stats))
             return false;
 
-        // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
-        // do this by resetting all the path_costs that have been touched while routing to the current sink
-        reset_path_costs();
-
         ++router_stats.connections_routed;
     } // finished all sinks
 
@@ -938,6 +934,9 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
     empty_heap();
+
+    // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
+    // do this by resetting all the path_costs that have been touched while routing to the current sink
     reset_path_costs(modified_rr_node_inf);
 
     // routed to a sink successfully
@@ -963,7 +962,6 @@ t_heap* timing_driven_route_connection(int source_node, int sink_node, float tar
     if (is_empty_heap()) {
         VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
-        reset_path_costs();
         free_route_tree(rt_root);
         return nullptr;
     }
@@ -978,7 +976,6 @@ t_heap* timing_driven_route_connection(int source_node, int sink_node, float tar
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
-        reset_path_costs();
         free_route_tree(rt_root);
         return nullptr;
     }

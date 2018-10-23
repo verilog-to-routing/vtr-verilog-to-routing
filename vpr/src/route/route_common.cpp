@@ -533,11 +533,6 @@ void init_route_structs(int bb_factor) {
 	/* Check that things that should have been emptied after the last routing *
 	 * really were.                                                           */
 
-	if (rr_modified_head != nullptr) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-			"in init_route_structs. List of modified rr nodes is not empty.\n");
-	}
-
 	if (heap_tail != 1) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in init_route_structs. Heap is not empty.\n");
@@ -754,34 +749,6 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;;
     }
 
-}
-
-void reset_path_costs() {
-	t_linked_f_pointer *mod_ptr;
-	int num_mod_ptrs;
-
-	/* The traversal method below is slightly painful to make it faster. */
-	if (rr_modified_head != nullptr) {
-		mod_ptr = rr_modified_head;
-
-		num_mod_ptrs = 1;
-
-		while (mod_ptr->next != nullptr) {
-			*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
-			mod_ptr = mod_ptr->next;
-			num_mod_ptrs++;
-		}
-		*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT; /* Do last one. */
-
-		/* Reset the modified list and put all the elements back in the free   *
-		 * list.                                                               */
-
-		mod_ptr->next = linked_f_pointer_free_head;
-		linked_f_pointer_free_head = rr_modified_head;
-		rr_modified_head = nullptr;
-
-		num_linked_f_pointer_allocated -= num_mod_ptrs;
-	}
 }
 
 /* Returns the *congestion* cost of using this rr_node. */
