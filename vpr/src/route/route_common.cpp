@@ -1242,22 +1242,6 @@ void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
     }
 }
 
-void add_to_mod_list(float *fptr) {
-
-	/* This routine adds the floating point pointer (fptr) into a  *
-	 * linked list that indicates all the pathcosts that have been *
-	 * modified thus far.                                          */
-
-	t_linked_f_pointer *mod_ptr;
-
-	mod_ptr = alloc_linked_f_pointer();
-
-	/* Add this element to the start of the modified list. */
-
-	mod_ptr->next = rr_modified_head;
-	mod_ptr->fptr = fptr;
-	rr_modified_head = mod_ptr;
-}
 namespace heap_ {
 	size_t parent(size_t i);
 	size_t left(size_t i);

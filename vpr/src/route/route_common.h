@@ -74,7 +74,6 @@ bool is_empty_heap();
 void free_traceback(ClusterNetId net_id);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
-void add_to_mod_list(float *fptr);
 
 namespace heap_ {
 	void build_heap();
