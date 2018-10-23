@@ -140,6 +140,13 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         const t_conn_delay_budget* delay_budget,
         RouterStats& router_stats);
 
+t_heap* timing_driven_route_connection_from_heap(int sink_node,
+        float target_criticality, float astar_fac, float bend_cost, 
+        t_bb bounding_box,
+        const t_conn_delay_budget* delay_budget,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats);
+    
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         float target_criticality, float astar_fac,
         const t_conn_delay_budget* delay_budget,
@@ -937,12 +944,12 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     return true;
 }
 
-t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
+
+t_heap* timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
         float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box,
         const t_conn_delay_budget* delay_budget,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -953,9 +960,20 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
     VTR_ASSERT_SAFE(heap_::is_valid());
 
-    // cheapest s_heap (gives index to device_ctx.rr_nodes) in current route tree to be expanded on
-    t_heap * cheapest{get_heap_head()};
-    ++router_stats.heap_pops;
+    if (is_empty_heap()) {
+        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+
+        reset_path_costs();
+        free_route_tree(rt_root);
+        return nullptr;
+    }
+
+    t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node, 
+                            target_criticality, astar_fac, bend_cost,
+                            bounding_box,
+                            delay_budget,
+                            modified_rr_node_inf,
+                            router_stats);
 
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
@@ -965,6 +983,32 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         return nullptr;
     }
 
+    return cheapest;
+}
+
+
+//Finds a path through the RR graph to sink_node, starting from the elements 
+//currently in the heap (core maze router).
+//
+//If no path is found returns nullptr, otherwise returns the last element of
+//the found path.
+//
+//This is the core maze routing algorithm.
+t_heap* timing_driven_route_connection_from_heap(int sink_node,
+        float target_criticality, float astar_fac, float bend_cost, 
+        t_bb bounding_box,
+        const t_conn_delay_budget* delay_budget,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    // cheapest t_heap in current route tree to be expanded on
+    t_heap * cheapest{get_heap_head()};
+    ++router_stats.heap_pops;
+
+    if (cheapest == nullptr) { //No source
+        return nullptr;
+    }
 
     int inode = cheapest->index;
     VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
@@ -1007,10 +1051,6 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         ++router_stats.heap_pops;
 
         if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
-            VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
-
-            reset_path_costs();
-            free_route_tree(rt_root);
             return nullptr;
         }
 
