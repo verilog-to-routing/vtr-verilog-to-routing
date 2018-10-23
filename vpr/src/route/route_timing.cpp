@@ -892,7 +892,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
     t_bb bounding_box = route_ctx.route_bb[net_id];
-    if (is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), router_opts.high_fanout_threshold)) {
+    if (is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold)) {
         //TODO implement special high fanout routing code
     }
 
