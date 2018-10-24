@@ -25,7 +25,7 @@ add_executable(genfasm src/main.cpp)
 target_link_libraries(genfasm fasm)
 
 #Specify link-time dependancies
-install(TARGETS fasm DESTINATION bin)
+install(TARGETS genfasm DESTINATION bin)
 
 #
 # Unit Tests
