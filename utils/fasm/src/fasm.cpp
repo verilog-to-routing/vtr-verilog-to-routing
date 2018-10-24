@@ -338,9 +338,6 @@ static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node
 }
 
 const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb_graph_node) {
-  const t_pb_graph_node* orig_pb_graph_node = pb_graph_node;
-  (void)orig_pb_graph_node;
-
   while(pb_graph_node != nullptr) {
     VTR_ASSERT(pb_graph_node->pb_type != nullptr);
 
@@ -413,9 +410,6 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
 }
 
 static const t_pb_route *find_pb_route(const t_pb* pb) {
-  const t_pb* orig_pb = pb;
-  (void)orig_pb;
-
   while(pb != nullptr) {
     if(pb->pb_route != nullptr) {
       return pb->pb_route;
