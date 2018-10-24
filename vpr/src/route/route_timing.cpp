@@ -161,6 +161,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
         const t_conn_cost_params cost_params,
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,
+        t_bb& bounding_box,
         RouterStats& router_stats);
 
 static void add_route_tree_node_to_heap(t_rt_node* rt_node,
@@ -972,7 +973,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
-    VTR_ASSERT(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup)); //FIXME turn into debug assert
+    VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup)); //FIXME turn into debug assert
 
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
@@ -1041,7 +1042,7 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, router_stats);
+    add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, bounding_box, router_stats);
     heap_::build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
@@ -1308,6 +1309,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
         const t_conn_cost_params cost_params,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
+        t_bb& bounding_box,
         RouterStats& router_stats) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
@@ -1322,16 +1324,22 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
     auto& device_ctx = g_vpr_ctx.device();
 
     //Determine which bin the target node is located in
-    int target_x = device_ctx.rr_nodes[target_node].xlow();
-    int target_y = device_ctx.rr_nodes[target_node].ylow();
+    auto& target_rr_node = device_ctx.rr_nodes[target_node];
 
-    int target_bin_x = grid_to_bin_x(target_x, spatial_rt_lookup);
-    int target_bin_y = grid_to_bin_y(target_y, spatial_rt_lookup);
+    int target_bin_x = grid_to_bin_x(target_rr_node.xlow(), spatial_rt_lookup);
+    int target_bin_y = grid_to_bin_y(target_rr_node.ylow(), spatial_rt_lookup);
 
     int nodes_added = 0;
 
+    t_bb bb;
+    bb.xmin = target_rr_node.xlow();
+    bb.xmax = target_rr_node.xhigh();
+    bb.ymin = target_rr_node.ylow();
+    bb.ymax = target_rr_node.yhigh();
+
     //Add existing routing starting from the target bin.
     //If the target's bin has no existing routing add from the surrounding bins
+    bool done = false;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
@@ -1347,15 +1355,38 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
 
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, router_stats);
+
+
+                //Update Bounding Box
+                auto& rr_node = device_ctx.rr_nodes[rt_node->inode];
+                bb.xmin = std::min<int>(bb.xmin, rr_node.xlow());
+                bb.ymin = std::min<int>(bb.ymin, rr_node.ylow());
+                bb.xmax = std::max<int>(bb.xmax, rr_node.xhigh());
+                bb.ymax = std::max<int>(bb.ymax, rr_node.yhigh());
+
                 ++nodes_added;
             }
 
-            if (dx == 0 && dy == 0 && nodes_added > 0) return nodes_added; //First bin contained routing
+            if (dx == 0 && dy == 0 && nodes_added > 0) {
+                //First bin contained routing
+                done = true;
+                break;
+            }
         }
+        if (done) break;
     }
 
     if (nodes_added == 0) { //If the target bin and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params, router_stats);
+    } else {
+        //We found nearby routing, replace original bounding box to be localized around that routing
+        constexpr int HIGH_FANOUT_BB_FAC = 3;
+        bb.xmin -= HIGH_FANOUT_BB_FAC;
+        bb.ymin -= HIGH_FANOUT_BB_FAC;
+        bb.xmax += HIGH_FANOUT_BB_FAC;
+        bb.ymax += HIGH_FANOUT_BB_FAC;
+
+        bounding_box = bb;
     }
 
     return nodes_added;
