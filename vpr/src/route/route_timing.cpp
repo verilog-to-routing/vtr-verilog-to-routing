@@ -130,24 +130,37 @@ bool f_router_debug = true;
 
 /******************** Subroutines local to route_timing.c ********************/
 
-static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
-        CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
-
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
         const t_conn_cost_params cost_params,
         float pres_fac,
         int high_fanout_threshold,
         t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
+        SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats);
 
+static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root, int sink_node,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
+        const SpatialRouteTreeLookup& spatial_rt_lookup,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats);
+    
 static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
     
+static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
+        CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
+
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         const t_conn_cost_params cost_params,
+        RouterStats& router_stats);
+
+static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
+        const t_conn_cost_params cost_params,
+        const SpatialRouteTreeLookup& spatial_route_tree_lookup,
         RouterStats& router_stats);
 
 static void add_route_tree_node_to_heap(t_rt_node* rt_node,
@@ -785,6 +798,13 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
 
+    bool high_fanout = is_high_fanout(num_sinks, high_fanout_threshold);
+
+    SpatialRouteTreeLookup spatial_route_tree_lookup;
+    if (high_fanout) {
+        spatial_route_tree_lookup = build_route_tree_spatial_lookup(net_id, rt_root);
+    }
+
     // after this point the route tree is correct
     // remaining_targets from this point on are the **pin indices** that have yet to be routed
     auto& remaining_targets = connections_inf.get_remaining_targets();
@@ -843,7 +863,10 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(itry, net_id, itarget, target_pin,
                 cost_params,
-                pres_fac, high_fanout_threshold, rt_root, rt_node_of_sink,
+                pres_fac, 
+                high_fanout_threshold,
+                rt_root, rt_node_of_sink,
+                spatial_route_tree_lookup,
                 router_stats))
             return false;
 
@@ -876,7 +899,9 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
         const t_conn_cost_params cost_params,
-        float pres_fac, int high_fanout_threshold, t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
+        float pres_fac, int high_fanout_threshold,
+        t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
+        SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats) {
 
     /* Build a path from the existing route tree rooted at rt_root to the target_node
@@ -899,18 +924,27 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
 
-    t_bb bounding_box = route_ctx.route_bb[net_id];
-    if (is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold)) {
-        //TODO implement special high fanout routing code
-    }
 
     std::vector<int> modified_rr_node_inf;
+    t_heap* cheapest = nullptr;
+    t_bb bounding_box = route_ctx.route_bb[net_id];
 
-    t_heap * cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node,
-                            cost_params,
-                            bounding_box,
-                            modified_rr_node_inf,
-                            router_stats);
+    bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
+    if (high_fanout) {
+        //TODO implement special high fanout routing code
+        cheapest = timing_driven_route_connection_from_route_tree_high_fanout(rt_root, sink_node,
+                                cost_params,
+                                bounding_box,
+                                spatial_rt_lookup,
+                                modified_rr_node_inf,
+                                router_stats);
+    } else {
+        cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node,
+                                cost_params,
+                                bounding_box,
+                                modified_rr_node_inf,
+                                router_stats);
+    }
 
     if (cheapest == nullptr) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -935,9 +969,10 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
 
-    rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+    rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup)); //FIXME turn into debug assert
 
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
@@ -968,7 +1003,46 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int s
     add_route_tree_to_heap(rt_root, sink_node, cost_params, router_stats);
     heap_::build_heap(); // via sifting down everything
 
-    VTR_ASSERT_SAFE(heap_::is_valid());
+    int source_node = rt_root->inode;
+
+    if (is_empty_heap()) {
+        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+
+        free_route_tree(rt_root);
+        return nullptr;
+    }
+
+    t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node, 
+                            cost_params,
+                            bounding_box,
+                            modified_rr_node_inf,
+                            router_stats);
+
+    if (cheapest == nullptr) {
+        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+
+        free_route_tree(rt_root);
+        return nullptr;
+    }
+
+    return cheapest;
+}
+
+//Finds a path from the route tree rooted at rt_root to sink_node for a high fanout net.
+//
+//Unlike timing_driven_route_connection_from_route_tree(), only part of the route tree
+//which is spatially close to the sink is added to the heap.
+static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root, int sink_node,
+        const t_conn_cost_params cost_params,
+        t_bb bounding_box,
+        const SpatialRouteTreeLookup& spatial_rt_lookup,
+        std::vector<int>& modified_rr_node_inf,
+        RouterStats& router_stats) {
+
+    // re-explore route tree from root to add any new nodes (buildheap afterwards)
+    // route tree needs to be repushed onto the heap since each node's cost is target specific
+    add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, router_stats);
+    heap_::build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
 
@@ -995,7 +1069,6 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int s
     return cheapest;
 }
 
-
 //Finds a path to sink_node, starting from the elements currently in the heap.
 //
 //This is the core maze routing routine.
@@ -1007,6 +1080,8 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    VTR_ASSERT_SAFE(heap_::is_valid());
 
     // cheapest t_heap in current route tree to be expanded on
     t_heap * cheapest{get_heap_head()};
@@ -1070,7 +1145,8 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
     return cheapest;
 }
 
-static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
+static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac,
+        int min_incremental_reroute_fanout,
         CBRR& connections_inf, t_rt_node** rt_node_of_sink) {
 
     /* Build and return a partial route tree from the legal connections from last iteration.
@@ -1192,6 +1268,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         // mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
         load_route_tree_rr_route_inf(rt_root);
     }
+
     // completed constructing the partial route tree and updated all other data structures to match
     return rt_root;
 }
@@ -1225,6 +1302,63 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
                 router_stats);
         linked_rt_edge = linked_rt_edge->next;
     }
+}
+
+
+static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
+        const t_conn_cost_params cost_params,
+        const SpatialRouteTreeLookup& spatial_rt_lookup,
+        RouterStats& router_stats) {
+    //For high fanout nets we only add those route tree nodes which are spatially close
+    //to the sink.
+    //
+    //Based on:
+    //  J. Swartz, V. Betz, J. Rose, "A Fast Routability-Driven Router for FPGAs", FPGA, 1998
+    //
+    //We rely on a grid-based spatial look-up which is maintained for high fanout nets by 
+    //update_route_tree(), which allows us to add spatially close route tree nodes without traversing
+    //the entire route tree (which is likely large for a high fanout net).
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    //Determine which bin the target node is located in
+    int target_x = device_ctx.rr_nodes[target_node].xlow();
+    int target_y = device_ctx.rr_nodes[target_node].ylow();
+
+    int target_bin_x = grid_to_bin_x(target_x, spatial_rt_lookup);
+    int target_bin_y = grid_to_bin_y(target_y, spatial_rt_lookup);
+
+    int nodes_added = 0;
+
+    //Add existing routing starting from the target bin.
+    //If the target's bin has no existing routing add from the surrounding bins
+    for (int dx : {0, -1, +1}) {
+        size_t bin_x = target_bin_x + dx;
+
+        if (bin_x > spatial_rt_lookup.dim_size(0) - 1) continue; //Out of range
+
+        for (int dy : {0, -1, +1}) {
+
+            size_t bin_y = target_bin_y + dy;
+            
+            if (bin_y > spatial_rt_lookup.dim_size(1) - 1) continue; //Out of range
+
+            for (t_rt_node* rt_node : spatial_rt_lookup[bin_x][bin_y]) {
+                if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
+
+                add_route_tree_node_to_heap(rt_node, target_node, cost_params, router_stats);
+                ++nodes_added;
+            }
+
+            if (dx == 0 && dy == 0 && nodes_added > 0) return nodes_added; //First bin contained routing
+        }
+    }
+
+    if (nodes_added == 0) { //If the target bin and it's surrounding bins were empty, just add the full route tree
+        add_route_tree_to_heap(rt_root, target_node, cost_params, router_stats);
+    }
+
+    return nodes_added;
 }
 
 //Unconditionally adds rt_node to the heap

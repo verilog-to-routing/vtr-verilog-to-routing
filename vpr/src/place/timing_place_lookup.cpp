@@ -675,7 +675,7 @@ static bool calculate_delay(int source_node, int sink_node,
     VTR_ASSERT(cheapest->index == sink_node);
 
     std::set<int> used_rr_nodes;
-    t_rt_node* rt_node_of_sink = update_route_tree(cheapest);
+    t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
     free_heap_data(cheapest);
     empty_heap();
 
