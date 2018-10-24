@@ -29,10 +29,11 @@ class LogicVec {
             : values_(values) {}
 
         //Array indexing operator
+        const vtr::LogicValue& operator[](size_t i) const { return values_[i]; }
         vtr::LogicValue& operator[](size_t i) { return values_[i]; }
 
         // Size accessor
-        size_t size() { return values_.size(); }
+        size_t size() const { return values_.size(); }
 
         //Output operator which writes the logic vector in verilog format
         friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {

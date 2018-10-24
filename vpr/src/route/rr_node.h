@@ -75,9 +75,9 @@ class t_rr_node {
         t_rr_type type() const { return type_; }
         const char *type_string() const; /* Retrieve type as a string */
 
-        t_metadata_as* metadata(std::string key) const;
-        t_metadata_as* metadata(t_offset o, std::string key) const;
-        t_metadata_as* metadata(std::pair<t_offset, std::string> ko) const;
+        const t_metadata_as* metadata(std::string key) const;
+        const t_metadata_as* metadata(t_offset o, std::string key) const;
+        const t_metadata_as* metadata(std::pair<t_offset, std::string> ko) const;
 
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
         edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
@@ -92,9 +92,9 @@ class t_rr_node {
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
 
-        t_metadata_as* edge_metadata(int sink_node, short switch_id, std::string key) const;
-        t_metadata_as* edge_metadata(int sink_node, short switch_id, t_offset o, std::string key) const;
-        t_metadata_as* edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ko) const;
+        const t_metadata_as* edge_metadata(int sink_node, short switch_id, std::string key) const;
+        const t_metadata_as* edge_metadata(int sink_node, short switch_id, t_offset o, std::string key) const;
+        const t_metadata_as* edge_metadata(int sink_node, short switch_id, std::pair<t_offset, std::string> ko) const;
 
         bool edge_is_configurable(short iedge) const;
         short fan_in() const;

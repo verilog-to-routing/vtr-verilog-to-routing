@@ -109,36 +109,37 @@ public:
 
 struct t_metadata_dict : std::unordered_map<std::pair<t_offset, std::string>, std::vector<t_metadata_as> > {
 
-    inline bool has(std::string key) {
+    inline bool has(std::string key) const {
         return has(std::make_pair(t_offset(), key));
     }
-    inline bool has(t_offset o, std::string key) {
+    inline bool has(t_offset o, std::string key) const {
         return has(std::make_pair(o, key));
     }
-    inline bool has(std::pair<t_offset, std::string> ok) {
+    inline bool has(std::pair<t_offset, std::string> ok) const {
         return (this->count(ok) >= 1);
     }
 
-    inline std::vector<t_metadata_as>* get(std::string key) {
+    inline const std::vector<t_metadata_as>* get(std::string key) const {
         return get(std::make_pair(t_offset(), key));
     }
-    inline std::vector<t_metadata_as>* get(t_offset o, std::string key) {
+    inline const std::vector<t_metadata_as>* get(t_offset o, std::string key) const {
         return get(std::make_pair(o, key));
     }
-    inline std::vector<t_metadata_as>* get(std::pair<t_offset, std::string> ok) {
-        if (this->count(ok) < 1) {
-            return nullptr;
+    inline const std::vector<t_metadata_as>* get(std::pair<t_offset, std::string> ok) const {
+        auto iter = this->find(ok);
+        if(iter != this->end()) {
+          return &iter->second;
         }
-        return &((*this)[ok]);
+        return nullptr;
     }
 
-    inline t_metadata_as* one(std::string key) {
+    inline const t_metadata_as* one(std::string key) const {
         return one(std::make_pair(t_offset(), key));
     }
-    inline t_metadata_as* one(t_offset o, std::string key) {
+    inline const t_metadata_as* one(t_offset o, std::string key) const {
         return one(std::make_pair(o, key));
     }
-    inline t_metadata_as* one(std::pair<t_offset, std::string> ok) {
+    inline const t_metadata_as* one(std::pair<t_offset, std::string> ok) const {
         auto values = get(ok);
         if (values == nullptr) {
             return nullptr;
@@ -363,6 +364,7 @@ struct t_grid_loc_def {
 
     t_grid_loc_spec x;      //Horizontal location specification
     t_grid_loc_spec y;      //Veritcal location specification
+    t_metadata_dict *meta;
 };
 
 enum GridDefType {
@@ -760,6 +762,7 @@ struct t_interconnect {
 	t_mode *parent_mode;
 
 	t_interconnect_power *interconnect_power;
+	t_metadata_dict *meta = nullptr;
 };
 
 /** Describes I/O and clock ports

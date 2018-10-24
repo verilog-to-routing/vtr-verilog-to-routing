@@ -643,9 +643,9 @@ bool TimingGraph::validate_structure() const {
             if(in_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
                 throw tatum::Error("IPIN has no in-coming edges");
             }
-            if(out_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
-                throw tatum::Error("IPIN has no out-going edges");
-            }
+            //if(out_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
+            //    throw tatum::Error("IPIN has no out-going edges");
+            //}
         } else if (src_type == NodeType::OPIN) {
             //May have no incoming edges if a constant generator, so don't check that case
 
