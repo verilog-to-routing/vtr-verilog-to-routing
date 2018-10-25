@@ -1354,8 +1354,8 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
             for (t_rt_node* rt_node : spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
 
+                //Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, router_stats);
-
 
                 //Update Bounding Box
                 auto& rr_node = device_ctx.rr_nodes[rt_node->inode];
@@ -1368,7 +1368,7 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
             }
 
             if (dx == 0 && dy == 0 && nodes_added > 0) {
-                //First bin contained routing
+                //Target bin contained routing
                 done = true;
                 break;
             }
