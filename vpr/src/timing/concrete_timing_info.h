@@ -112,7 +112,7 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             auto& timing_ctx = g_vpr_ctx.mutable_timing();
             timing_ctx.stats.sta_wallclock_time += sta_wallclock_time;
             timing_ctx.stats.slack_wallclock_time += slack_wallclock_time;
-            timing_ctx.stats.num_full_updates += 1;
+            timing_ctx.stats.num_full_setup_updates += 1;
         }
 
         void update_setup_slacks() {
@@ -188,8 +188,29 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         }
 
         void update_hold() override {
-            hold_analyzer_->update_hold_timing();
-            update_hold_slacks();
+            double sta_wallclock_time = 0.;
+            {
+                auto start_time = Clock::now();
+
+                hold_analyzer_->update_hold_timing();
+
+                sta_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            }
+
+            double slack_wallclock_time = 0.;
+            {
+                auto start_time = Clock::now();
+
+                update_hold_slacks();
+
+                slack_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            }
+
+            //Update global timing analysis stats
+            auto& timing_ctx = g_vpr_ctx.mutable_timing();
+            timing_ctx.stats.sta_wallclock_time += sta_wallclock_time;
+            timing_ctx.stats.slack_wallclock_time += slack_wallclock_time;
+            timing_ctx.stats.num_full_hold_updates += 1;
         }
 
         void update_hold_slacks() {
@@ -208,6 +229,9 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         HoldSlackCrit slack_crit_;
 
         bool warn_unconstrained_ = true;
+
+        typedef std::chrono::duration<double> dsec;
+        typedef std::chrono::high_resolution_clock Clock;
 };
 
 template<class DelayCalc>
@@ -264,13 +288,34 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         //  it performs a single combined STA to update both setup and hold (instead of calling it
         //  twice).
         void update() override {
-            setup_hold_analyzer_->update_timing();
-            setup_timing_.update_setup_slacks();
-            hold_timing_.update_hold_slacks();
+            double sta_wallclock_time = 0.;
+            {
+                auto start_time = Clock::now();
+
+                setup_hold_analyzer_->update_timing();
+
+                sta_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            }
+
+            double slack_wallclock_time = 0.;
+            {
+                auto start_time = Clock::now();
+
+                setup_timing_.update_setup_slacks();
+                hold_timing_.update_hold_slacks();
+
+                slack_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            }
 
             if(warn_unconstrained_) {
                 warn_unconstrained(analyzer());
             }
+
+            //Update global timing analysis stats
+            auto& timing_ctx = g_vpr_ctx.mutable_timing();
+            timing_ctx.stats.sta_wallclock_time += sta_wallclock_time;
+            timing_ctx.stats.slack_wallclock_time += slack_wallclock_time;
+            timing_ctx.stats.num_full_setup_hold_updates += 1;
         }
 
         //Update hold only
@@ -286,6 +331,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         std::shared_ptr<tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer_;
 
         bool warn_unconstrained_ = true;
+
+        typedef std::chrono::duration<double> dsec;
+        typedef std::chrono::high_resolution_clock Clock;
 };
 
 //No-op version of timing info, useful for algorithms that query timing info when run with timing disabled
@@ -342,5 +390,8 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
         void update_setup() override { }
     private:
         float criticality_;
+
+        typedef std::chrono::duration<double> dsec;
+        typedef std::chrono::high_resolution_clock Clock;
 };
 #endif
