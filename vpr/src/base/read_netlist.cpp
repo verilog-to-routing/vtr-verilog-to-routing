@@ -1142,6 +1142,9 @@ static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBl
 
     const t_pb* pb = atom_ctx.lookup.atom_pb(atom_blk);
 
+    //This finds the index within the atom port to which the current gpin
+    //is mapped. Note that this accounts for any applied pin rotations 
+    //(e.g. on LUT inputs)
     BitIndex atom_pin_bit_index = pb->atom_pin_bit_index(gpin);
 
     AtomPinId atom_pin = atom_ctx.nlist.port_pin(atom_port, atom_pin_bit_index);

@@ -77,6 +77,13 @@ inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/,
 }
 
 inline const t_pb_graph_pin* AtomDelayCalc::find_pb_graph_pin(const AtomPinId atom_pin) const {
+    //Note that the netlist lookup already considers any pin rotations applied during clustering,
+    //which were considered when the look-up was created (i.e. in read_netlist).
+    //
+    //Therefore, despite the fact that we look-up the delays on the atom netlist (which does not
+    //reflect the current pin rotation state), we do get actual post-rotation physical pin here.
+    //
+    //This means we will get the 'correct' delay (considering any applied rotations).
     const t_pb_graph_pin* gpin = netlist_lookup_.atom_pin_pb_graph_pin(atom_pin);
     VTR_ASSERT(gpin != nullptr);
 
