@@ -931,8 +931,13 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
-    if (high_fanout) {
-        //TODO implement special high fanout routing code
+    constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
+    bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
+
+    //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
+    //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
+    //the heap to ensure it has more flexibility to find the best path.
+    if (high_fanout && !sink_critical) {
         cheapest = timing_driven_route_connection_from_route_tree_high_fanout(rt_root, sink_node,
                                 cost_params,
                                 bounding_box,
@@ -973,7 +978,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
-    VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup)); //FIXME turn into debug assert
+    VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
 
     free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
