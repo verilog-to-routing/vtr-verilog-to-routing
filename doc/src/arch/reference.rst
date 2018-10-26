@@ -949,9 +949,9 @@ The following tags are common to all <pb_type> tags:
 
         * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
           
-            Like ``full``, this generates a single SRC rr-node shared by each output port pin.
-            However the router must take special care to ensure it does not make use of LUT/BLE outputs which are being used to route signals strictly within the current cluster (to do so would be illegal). 
-            This is handled by special code in the router when this type of equivalence is specified.
+            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs. 
+            
+            .. warn:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
 
         **Default:** ``none``
 
