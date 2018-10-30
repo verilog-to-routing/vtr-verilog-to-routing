@@ -97,6 +97,10 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+enum class e_router_lookahead {
+    CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
+    MAP      //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+};
 
 enum class e_route_bb_update {
     STATIC, //Router net bounding boxes are not updated
@@ -956,6 +960,7 @@ struct t_router_opts {
     e_route_bb_update route_bb_update;
     int high_fanout_threshold;
     int router_debug_net;
+    e_router_lookahead lookahead_type;
 };
 
 struct t_analysis_opts {

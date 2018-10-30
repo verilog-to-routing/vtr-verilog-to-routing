@@ -517,6 +517,37 @@ struct ParseRouteBBUpdate {
     }
 };
 
+struct ParseRouterLookahead {
+    ConvertedValue<e_router_lookahead> from_str(std::string str) {
+        ConvertedValue<e_router_lookahead> conv_value;
+        if      (str == "classic") conv_value.set_value(e_router_lookahead::CLASSIC);
+        else if (str == "map") conv_value.set_value(e_router_lookahead::MAP);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_router_lookahead (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_router_lookahead val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_router_lookahead::CLASSIC) conv_value.set_value("classic");
+        else {
+            VTR_ASSERT(val == e_router_lookahead::MAP);
+            conv_value.set_value("map");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"classic", "map"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -1124,6 +1155,13 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " * For values < -1, all router debug output is disabled.\n" 
                   "Note that VPR must have been compiled with debug logging enabled to use this option.\n")
             .default_value("-2")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_router_lookahead,ParseRouterLookahead>(args.router_lookahead_type, "--router_lookahead")
+            .help("Controls what lookahead the router uses to calculate cost of completing a connection.\n"
+                  " * classic: The classic VPR lookahead\n" 
+                  " * map: A more advanced lookahead which accounts for diverse wire type\n")
+            .default_value("classic")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");

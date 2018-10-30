@@ -87,7 +87,7 @@ static void fix_empty_coordinates();
 static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y);
 
 static bool calculate_delay(int source_node, int sink_node,
-        float astar_fac, float bend_cost, float *net_delay);
+        const t_router_opts& router_opts, float *net_delay);
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
@@ -237,6 +237,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
             router_opts.base_cost_type,
             router_opts.trim_empty_channels,
             router_opts.trim_obs_channels,
+            router_opts.lookahead_type,
             directs, num_directs,
             &device_ctx.num_rr_switches,
             &warnings);
@@ -271,7 +272,7 @@ static float route_connection_delay(int source_x, int source_y,
     int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
 
     bool successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
-            router_opts.astar_fac, router_opts.bend_cost,
+            router_opts,
             &net_delay_value);
 
     if (!successfully_routed) {
@@ -634,7 +635,7 @@ static t_rt_node* setup_routing_resources_no_net(int source_node) {
 }
 
 static bool calculate_delay(int source_node, int sink_node,
-        float astar_fac, float bend_cost, float *net_delay) {
+        const t_router_opts& router_opts, float *net_delay) {
 
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -657,8 +658,8 @@ static bool calculate_delay(int source_node, int sink_node,
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
-    cost_params.astar_fac = astar_fac;
-    cost_params.bend_cost = bend_cost;
+    cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.bend_cost = router_opts.bend_cost;
 
     route_budgets budgeting_inf;
 
@@ -667,7 +668,8 @@ static bool calculate_delay(int source_node, int sink_node,
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, modified_rr_node_inf, router_stats);
+    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
+    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
 
     if (cheapest == nullptr) {
         return false;

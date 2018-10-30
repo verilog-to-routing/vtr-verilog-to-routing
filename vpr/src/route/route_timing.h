@@ -9,6 +9,7 @@
 #include "route_budgets.h"
 #include "route_common.h"
 #include "router_stats.h"
+#include "router_lookahead.h"
 
 int get_max_pins_per_net();
 
@@ -28,6 +29,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         RouterStats& connections_routed,
 		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
+        const RouterLookahead& router_lookahead,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
@@ -40,6 +42,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         int high_fanout_threshold,
         t_rt_node ** rt_node_of_sink,
 		float *net_delay,
+        const RouterLookahead& router_lookahead,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf);
 
@@ -75,6 +78,7 @@ struct t_conn_cost_params {
 t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
+        const RouterLookahead& router_lookahead,
         std::vector<int>& modified_rr_node_inf,
         RouterStats& router_stats);
 

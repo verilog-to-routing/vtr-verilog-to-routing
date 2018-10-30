@@ -360,6 +360,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     RouterOpts->route_bb_update = Options.route_bb_update;
     RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
     RouterOpts->router_debug_net = Options.router_debug_net;
+    RouterOpts->lookahead_type = Options.router_lookahead_type;
 }
 
 static void SetupAnnealSched(const t_options& Options,

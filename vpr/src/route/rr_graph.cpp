@@ -260,6 +260,7 @@ void create_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
+        const e_router_lookahead router_lookahead_type,
         const t_direct_inf *directs, const int num_directs,
         int *num_rr_switches,
         int *Warnings) {
@@ -299,6 +300,10 @@ void create_rr_graph(
                 &det_routing_arch->wire_to_rr_ipin_switch,
                 num_rr_switches,
                 Warnings);
+    }
+
+    if (router_lookahead_type == e_router_lookahead::MAP) {
+        compute_router_lookahead(det_routing_arch->num_segment);
     }
 
     //Write out rr graph file if needed
@@ -614,10 +619,6 @@ static void build_rr_graph(
 
 
     check_rr_graph(graph_type, grid, *num_rr_switches, types);
-
-#ifdef USE_MAP_LOOKAHEAD
-    compute_router_lookahead(num_seg_types);
-#endif
 
     /* Free all temp structs */
     if (seg_details) {
