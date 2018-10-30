@@ -329,13 +329,6 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead routing from CHANX or CHANY node\n");
 	}
 
-	int chan_coord = start_x;
-	int seg_coord = start_y;
-	if (rr_type == CHANY){
-		chan_coord = start_y;
-		seg_coord = start_x;
-	}
-
 	/* determine which direction the wire should go in based on the start & target coordinates */
 	e_direction direction = INC_DIRECTION;
 	if ((rr_type == CHANX && target_x < start_x) ||
@@ -345,7 +338,9 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 	auto& device_ctx = g_vpr_ctx.device();
 
-	vector<int> channel_node_list = device_ctx.rr_node_indices[rr_type][chan_coord][0][seg_coord];
+    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+
+    const vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_x][start_y][0];
 
 	/* find first node in channel that has specified segment index and goes in the desired direction */
 	for (unsigned itrack = 0; itrack < channel_node_list.size(); itrack++){
