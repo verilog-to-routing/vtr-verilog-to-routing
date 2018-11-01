@@ -602,12 +602,18 @@ sub create_run_script {
     print $fh "\n";
     print $fh "    $args->{command}\n";
     print $fh "\n";
-    print $fh "    exit_code=\$?\n";
+    print $fh "    #The IO redirection occurs in a sub-shell,\n";
+    print $fh "    #so we need to exit it with the correct code\n";
+    print $fh "    exit \$?\n";
     print $fh "\n";
     print $fh "} |& tee vtr_flow.out\n";
     print $fh "#End I/O redirection\n";
     print $fh "\n";
-    print $fh "exit \$exit_code\n";
+    print $fh "#We used a pipe to redirect IO.\n";
+    print $fh "#To get the correct exit status we need to exit with the\n";
+    print $fh "#status of the first element in the pipeline (i.e. the real\n";
+    print $fh "#command run above)\n";
+    print $fh "exit \${PIPESTATUS[0]}\n";
 
     close($fh);
 
