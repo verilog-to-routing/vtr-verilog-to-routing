@@ -1159,8 +1159,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
     bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile.c_str(),
             vpr_setup.FileNameOpts.CmosTechFile.c_str(), &Arch, &vpr_setup.RoutingArch);
     if (power_error) {
-        VTR_LOG_ERROR(
-                "Power initialization failed.\n");
+        VTR_LOG_ERROR("Power initialization failed.\n");
     }
 
     if (!power_error) {
@@ -1174,12 +1173,11 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
 
         /* Check for errors/warnings */
         if (power_ret_code == POWER_RET_CODE_ERRORS) {
-            VTR_LOG_ERROR(
-                    "Power estimation failed. See power output for error details.\n");
+            VTR_LOG_ERROR("Power estimation failed. See power output for error details.\n");
         } else if (power_ret_code == POWER_RET_CODE_WARNINGS) {
-            VTR_LOG_WARN(
-                    "Power estimation completed with warnings. See power output for more details.\n");
-        } else if (power_ret_code == POWER_RET_CODE_SUCCESS) {
+            VTR_LOG_WARN("Power estimation completed with warnings. See power output for more details.\n");
+        } else {
+            VTR_ASSERT(power_ret_code == POWER_RET_CODE_SUCCESS);
         }
         VTR_LOG("Power estimation took %g seconds\n", power_runtime_s);
     }
@@ -1189,10 +1187,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
         VTR_LOG("Uninitializing power module\n");
         power_error = power_uninit();
         if (power_error) {
-            VTR_LOG_ERROR(
-                    "Power uninitialization failed.\n");
-        } else {
-
+            VTR_LOG_ERROR("Power uninitialization failed.\n");
         }
     }
 
