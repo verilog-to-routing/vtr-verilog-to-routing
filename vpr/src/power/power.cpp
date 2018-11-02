@@ -112,8 +112,11 @@ void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 	t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk);
 void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin);
+void power_uninit_pb_pin(t_pb_graph_pin * pin);
 void power_init_pb_pins_rec(t_pb_graph_node * pb_node);
+void power_uninit_pb_pins_rec(t_pb_graph_node * pb_node);
 void power_pb_pins_init();
+void power_pb_pins_uninit();
 void power_routing_init(const t_det_routing_arch * routing_arch);
 
 /************************* FUNCTION DEFINITIONS *********************/
@@ -1050,8 +1053,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin) {
 	t_pb_graph_node * node = pin->parent_node;
 	bool found;
 
-	pin->pin_power = (t_pb_graph_pin_power*) malloc(
-			sizeof(t_pb_graph_pin_power));
+	pin->pin_power = (t_pb_graph_pin_power*) vtr::malloc(sizeof(t_pb_graph_pin_power));
 	pin->pin_power->C_wire = 0.;
 	pin->pin_power->buffer_size = 0.;
 	pin->pin_power->scaled_by_pin = nullptr;
@@ -1102,6 +1104,11 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin) {
 	}
 }
 
+void power_uninit_pb_pin(t_pb_graph_pin * pin) {
+    vtr::free(pin->pin_power);
+    pin->pin_power = nullptr;
+}
+
 void power_init_pb_pins_rec(t_pb_graph_node * pb_node) {
 	int mode;
 	int type;
@@ -1110,43 +1117,66 @@ void power_init_pb_pins_rec(t_pb_graph_node * pb_node) {
 	int pin_idx;
 
 	for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
-		for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
-				pin_idx++) {
-			power_alloc_and_init_pb_pin(
-					&pb_node->input_pins[port_idx][pin_idx]);
+		for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
+			power_alloc_and_init_pb_pin(&pb_node->input_pins[port_idx][pin_idx]);
 		}
 	}
 
 	for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
-		for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
-				pin_idx++) {
-			power_alloc_and_init_pb_pin(
-					&pb_node->output_pins[port_idx][pin_idx]);
+		for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
+			power_alloc_and_init_pb_pin(&pb_node->output_pins[port_idx][pin_idx]);
 		}
 	}
 
 	for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
-		for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
-				pin_idx++) {
-			power_alloc_and_init_pb_pin(
-					&pb_node->clock_pins[port_idx][pin_idx]);
+		for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
+			power_alloc_and_init_pb_pin(&pb_node->clock_pins[port_idx][pin_idx]);
 		}
 	}
 
 	for (mode = 0; mode < pb_node->pb_type->num_modes; mode++) {
-		for (type = 0;
-				type < pb_node->pb_type->modes[mode].num_pb_type_children;
-				type++) {
-			for (pb = 0;
-					pb
-							< pb_node->pb_type->modes[mode].pb_type_children[type].num_pb;
-					pb++) {
-				power_init_pb_pins_rec(
-						&pb_node->child_pb_graph_nodes[mode][type][pb]);
+		for (type = 0; type < pb_node->pb_type->modes[mode].num_pb_type_children; type++) {
+			for (pb = 0; pb < pb_node->pb_type->modes[mode].pb_type_children[type].num_pb; pb++) {
+				power_init_pb_pins_rec(&pb_node->child_pb_graph_nodes[mode][type][pb]);
 			}
 		}
 	}
 }
+
+void power_uninit_pb_pins_rec(t_pb_graph_node * pb_node) {
+	int mode;
+	int type;
+	int pb;
+	int port_idx;
+	int pin_idx;
+
+	for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
+		for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
+			power_uninit_pb_pin(&pb_node->input_pins[port_idx][pin_idx]);
+		}
+	}
+
+	for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
+		for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
+			power_uninit_pb_pin(&pb_node->output_pins[port_idx][pin_idx]);
+		}
+	}
+
+	for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
+		for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
+			power_uninit_pb_pin(&pb_node->clock_pins[port_idx][pin_idx]);
+		}
+	}
+
+	for (mode = 0; mode < pb_node->pb_type->num_modes; mode++) {
+		for (type = 0; type < pb_node->pb_type->modes[mode].num_pb_type_children; type++) {
+			for (pb = 0; pb < pb_node->pb_type->modes[mode].pb_type_children[type].num_pb; pb++) {
+				power_uninit_pb_pins_rec(&pb_node->child_pb_graph_nodes[mode][type][pb]);
+			}
+		}
+	}
+}
+
 
 void power_pb_pins_init() {
 	int type_idx;
@@ -1155,6 +1185,17 @@ void power_pb_pins_init() {
 	for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
 		if (device_ctx.block_types[type_idx].pb_graph_head) {
 			power_init_pb_pins_rec(device_ctx.block_types[type_idx].pb_graph_head);
+		}
+	}
+}
+
+void power_pb_pins_uninit() {
+	int type_idx;
+    auto& device_ctx = g_vpr_ctx.device();
+
+	for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
+		if (device_ctx.block_types[type_idx].pb_graph_head) {
+			power_uninit_pb_pins_rec(device_ctx.block_types[type_idx].pb_graph_head);
 		}
 	}
 }
@@ -1326,7 +1367,7 @@ bool power_init(const char * power_out_filepath,
 	/* Initialize routing information */
 	power_routing_init(routing_arch);
 
-// Allocates power structures for each pb pin
+    // Allocates power structures for each pb pin
 	power_pb_pins_init();
 
 	/* Size all components */
@@ -1397,6 +1438,9 @@ bool power_uninit() {
 	}
 	free(power_ctx.output->logs);
 	free(power_ctx.output);
+
+
+	power_pb_pins_uninit();
 
 	return error;
 }
