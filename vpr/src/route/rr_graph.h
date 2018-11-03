@@ -36,6 +36,7 @@ void create_rr_graph(
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
+        const e_router_lookahead router_lookahead_type,
         const t_direct_inf *directs, const int num_directs,
         int *num_rr_switches,
         int *Warnings);

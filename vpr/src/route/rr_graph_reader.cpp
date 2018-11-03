@@ -190,10 +190,6 @@ void load_rr_file(const t_graph_type graph_type,
 
         check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types);
 
-#ifdef USE_MAP_LOOKAHEAD
-        compute_router_lookahead(num_seg_types);
-#endif
-
     } catch (XmlError& e) {
 
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());

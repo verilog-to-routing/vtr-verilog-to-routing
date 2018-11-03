@@ -212,7 +212,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
 * is the heap pointer of the SINK that was reached.  This routine returns
 * a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap * hptr) {
+t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_lookup) {
 	t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
 	t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
 	float Tdel_start;
@@ -245,6 +245,10 @@ t_rt_node* update_route_tree(t_heap * hptr) {
 	}
 
 	load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
+
+    if (spatial_rt_lookup) {
+        update_route_tree_spatial_lookup_recur(start_of_new_subtree_rt_node, *spatial_rt_lookup);
+    }
 
 	return (sink_rt_node);
 }

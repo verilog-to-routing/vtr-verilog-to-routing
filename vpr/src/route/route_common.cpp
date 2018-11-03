@@ -67,11 +67,6 @@ static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
-static t_linked_f_pointer *rr_modified_head = nullptr;
-static t_linked_f_pointer *linked_f_pointer_free_head = nullptr;
-
-static vtr::t_chunk linked_f_pointer_ch;
-
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
  *  |    IO     | chan_   |   CLB     | chan_   |   CLB     |               *
@@ -105,8 +100,6 @@ static vtr::t_chunk linked_f_pointer_ch;
 static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>& previous, std::unordered_set<int>& main_branch_visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
-
-static t_linked_f_pointer *alloc_linked_f_pointer();
 
 static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
@@ -254,6 +247,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+			router_opts.lookahead_type,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
@@ -308,6 +302,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+			router_opts.lookahead_type,
 			directs, num_directs,
 			&device_ctx.num_rr_switches,
 			&warning_count);
@@ -535,11 +530,6 @@ void init_route_structs(int bb_factor) {
 	/* Check that things that should have been emptied after the last routing *
 	 * really were.                                                           */
 
-	if (rr_modified_head != nullptr) {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-			"in init_route_structs. List of modified rr nodes is not empty.\n");
-	}
-
 	if (heap_tail != 1) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"in init_route_structs. Heap is not empty.\n");
@@ -756,34 +746,6 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;;
     }
 
-}
-
-void reset_path_costs() {
-	t_linked_f_pointer *mod_ptr;
-	int num_mod_ptrs;
-
-	/* The traversal method below is slightly painful to make it faster. */
-	if (rr_modified_head != nullptr) {
-		mod_ptr = rr_modified_head;
-
-		num_mod_ptrs = 1;
-
-		while (mod_ptr->next != nullptr) {
-			*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
-			mod_ptr = mod_ptr->next;
-			num_mod_ptrs++;
-		}
-		*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT; /* Do last one. */
-
-		/* Reset the modified list and put all the elements back in the free   *
-		 * list.                                                               */
-
-		mod_ptr->next = linked_f_pointer_free_head;
-		linked_f_pointer_free_head = rr_modified_head;
-		rr_modified_head = nullptr;
-
-		num_linked_f_pointer_allocated -= num_mod_ptrs;
-	}
 }
 
 /* Returns the *congestion* cost of using this rr_node. */
@@ -1014,8 +976,6 @@ void free_route_structs() {
 
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
-	free_chunk_memory(&linked_f_pointer_ch);
-	linked_f_pointer_free_head = nullptr;
 }
 
 /* Frees the data structures needed to save a routing.                     */
@@ -1242,22 +1202,6 @@ void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
     }
 }
 
-void add_to_mod_list(float *fptr) {
-
-	/* This routine adds the floating point pointer (fptr) into a  *
-	 * linked list that indicates all the pathcosts that have been *
-	 * modified thus far.                                          */
-
-	t_linked_f_pointer *mod_ptr;
-
-	mod_ptr = alloc_linked_f_pointer();
-
-	/* Add this element to the start of the modified list. */
-
-	mod_ptr->next = rr_modified_head;
-	mod_ptr->fptr = fptr;
-	rr_modified_head = mod_ptr;
-}
 namespace heap_ {
 	size_t parent(size_t i);
 	size_t left(size_t i);
@@ -1513,29 +1457,6 @@ void free_trace_data(t_trace *tptr) {
 	tptr->next = trace_free_head;
 	trace_free_head = tptr;
 	num_trace_allocated--;
-}
-
-static t_linked_f_pointer *
-alloc_linked_f_pointer() {
-
-	/* This routine returns a linked list element with a float pointer as *
-	 * the node data.                                                     */
-
-	/*int i;*/
-	t_linked_f_pointer *temp_ptr;
-
-	if (linked_f_pointer_free_head == nullptr) {
-		/* No elements on the free list */
-	linked_f_pointer_free_head = (t_linked_f_pointer *) vtr::chunk_malloc(sizeof(t_linked_f_pointer),&linked_f_pointer_ch);
-	linked_f_pointer_free_head->next = nullptr;
-	}
-
-	temp_ptr = linked_f_pointer_free_head;
-	linked_f_pointer_free_head = linked_f_pointer_free_head->next;
-
-	num_linked_f_pointer_allocated++;
-
-	return (temp_ptr);
 }
 
 /* Prints out the routing to file route_file.  */

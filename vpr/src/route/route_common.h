@@ -57,7 +57,6 @@ void pathfinder_update_cost(float pres_fac, float acc_fac);
 t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
-void reset_path_costs();
 
 float get_rr_cong_cost(int inode);
 
@@ -74,7 +73,6 @@ bool is_empty_heap();
 void free_traceback(ClusterNetId net_id);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
-void add_to_mod_list(float *fptr);
 
 namespace heap_ {
 	void build_heap();

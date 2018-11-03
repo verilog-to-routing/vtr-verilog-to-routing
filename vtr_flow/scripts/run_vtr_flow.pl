@@ -356,7 +356,7 @@ my $error_architecture_file_name = join "", $architecture_name, "_error", $arch_
 if ($run_name eq "") {
     $run_name = "$architecture_name/$benchmark_name";
 }
-printf("%-80s", $run_name);
+printf("%-120s", $run_name);
 
 # Get Memory Size
 my $mem_size = -1;

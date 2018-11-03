@@ -72,8 +72,6 @@ enum class ScreenUpdatePriority {
 #define EPSILON 1.e-15
 #define NEGATIVE_EPSILON -1.e-15
 
-#define HIGH_FANOUT_NET_LIM 64 /* All nets with this number of sinks or more are considered high fanout nets */
-
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
@@ -99,6 +97,10 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+enum class e_router_lookahead {
+    CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
+    MAP      //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+};
 
 enum class e_route_bb_update {
     STATIC, //Router net bounding boxes are not updated
@@ -956,7 +958,9 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
+    int high_fanout_threshold;
     int router_debug_net;
+    e_router_lookahead lookahead_type;
 };
 
 struct t_analysis_opts {

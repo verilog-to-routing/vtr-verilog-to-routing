@@ -33,7 +33,7 @@ void profiling_initialization(unsigned /*max_net_fanout*/) {}
 #else
 using namespace std;
 
-constexpr unsigned int fanout_per_bin = 4;
+constexpr unsigned int fanout_per_bin = 1;
 constexpr float criticality_per_bin = 0.05;
 
 // data structures indexed by fanout bin (ex. fanout of x is in bin x/fanout_per_bin)
@@ -142,6 +142,7 @@ struct Congested_node_types {
 };
 
 void congestion_analysis() {
+#if 0
 	// each type indexes into array which holds the congestion for that type
 	std::vector<int> congestion_per_type((size_t)NUM_RR_TYPES, 0);
 	// print out specific node information if congestion for type is low enough
@@ -178,6 +179,7 @@ void congestion_analysis() {
 		}
 	}
 	return;
+#endif
 }
 
 

@@ -794,6 +794,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
+            router_opts.lookahead_type,
 			arch.Directs, arch.num_directs,
 			&device_ctx.num_rr_switches,
 			&warnings);
