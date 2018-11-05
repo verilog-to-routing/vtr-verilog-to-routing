@@ -40,6 +40,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 		float *pin_criticality,
         int min_incremental_reroute_fanout,
         int high_fanout_threshold,
+        int lock_opin_iteration_threshold,
         t_rt_node ** rt_node_of_sink,
 		float *net_delay,
         const RouterLookahead& router_lookahead,

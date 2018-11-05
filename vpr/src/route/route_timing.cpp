@@ -134,6 +134,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         const t_conn_cost_params cost_params,
         float pres_fac,
         int high_fanout_threshold,
+        int lock_opin_iteration_threshold,
         t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
         const RouterLookahead& router_lookahead,
         SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -662,6 +663,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 pin_criticality, 
                 router_opts.min_incremental_reroute_fanout,
                 router_opts.high_fanout_threshold,
+                router_opts.lock_opin_iteration_threshold,
                 rt_node_of_sink,
                 net_delay[net_id],
                 router_lookahead,
@@ -790,6 +792,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         float *pin_criticality,
         int min_incremental_reroute_fanout,
         int high_fanout_threshold,
+        int lock_opin_iteration_threshold,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const RouterLookahead& router_lookahead,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
@@ -876,6 +879,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
                 cost_params,
                 pres_fac, 
                 high_fanout_threshold,
+                lock_opin_iteration_threshold,
                 rt_root, rt_node_of_sink,
                 router_lookahead,
                 spatial_route_tree_lookup,
@@ -911,7 +915,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
 
 static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
         const t_conn_cost_params cost_params,
-        float pres_fac, int high_fanout_threshold,
+        float pres_fac, int high_fanout_threshold, int lock_opin_iteration_threshold,
         t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
         const RouterLookahead& router_lookahead,
         SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -929,7 +933,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d\n", size_t(net_id), itarget);
 
-    if (itarget > 0 && itry > 5) {
+    if (itarget > 0 && lock_opin_iteration_threshold >= 0 && itry > lock_opin_iteration_threshold) {
         /* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
         VTR_ASSERT(device_ctx.rr_nodes[rt_root->inode].type() == SOURCE);
         rt_root->re_expand = false;

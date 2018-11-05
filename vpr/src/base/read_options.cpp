@@ -1164,6 +1164,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("classic")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.router_lock_opin_iteration_threshold, "--router_lock_opin_iteration_threshold")
+            .help("The iteration number beyond which OPINs in routing will be locked down."
+                  " A negative value means OPINs will never be locked down")
+            .default_value("5")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool,ParseOnOff>(args.full_stats, "--full_stats")
