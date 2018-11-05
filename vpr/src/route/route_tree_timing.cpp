@@ -690,7 +690,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 /***************  Conversion between traceback and route tree *******************/
 t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
     auto& route_ctx = g_vpr_ctx.routing();
-    return traceback_to_route_tree(route_ctx.trace_head[inet]);
+    return traceback_to_route_tree(route_ctx.trace[inet].head);
 }
 
 t_rt_node* traceback_to_route_tree(t_trace* head) {
@@ -869,8 +869,8 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 	VTR_ASSERT(num_routed_sinks == num_trace_sinks);
 
 
-	route_ctx.trace_tail[inet] = tail;
-	route_ctx.trace_head[inet] = head;
+	route_ctx.trace[inet].tail = tail;
+	route_ctx.trace[inet].head = head;
 	route_ctx.trace_nodes[inet] = nodes;
 
 	return head;

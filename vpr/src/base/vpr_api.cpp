@@ -1059,7 +1059,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 	//Check the first index to see if a pointer exists
 	//TODO: Implement a better error check
-    if (route_ctx.trace_head.size() == 0) {
+    if (route_ctx.trace.empty()) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 

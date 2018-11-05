@@ -939,7 +939,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
         rt_root->re_expand = false;
     }
 
-    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
 
     std::vector<int> modified_rr_node_inf;
@@ -991,11 +991,11 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     int inode = cheapest->index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
-    VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
+    VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
     rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
-    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
 
     free_heap_data(cheapest);
@@ -1199,7 +1199,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
         free_traceback(net_id);
 
         rt_root = init_route_tree_to_source(net_id);
@@ -1222,7 +1222,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         rt_root = traceback_to_route_tree(net_id);
 
         //Santiy check that route tree and traceback are equivalent before pruning
-        VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+        VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
         // check for edge correctness
         VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
@@ -1234,7 +1234,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
         //       recorded congestion
-        pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
         free_traceback(net_id);
 
         if (rt_root) { //Partially pruned
@@ -1245,13 +1245,13 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
 
             //Sanity check the traceback for self-consistency
-            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
+            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
             //Santiy check that route tree and traceback are equivalent after pruning
-            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
+            pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, pres_fac);
 
         } else { //Fully destroyed
             profiling::route_tree_pruned();
@@ -1262,8 +1262,8 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
             //NOTE: We leave the traceback uninitiailized, so update_traceback()
             //      will correctly add the SOURCE node when the branch to
             //      the first SINK is found.
-            VTR_ASSERT(route_ctx.trace_head[net_id] == nullptr);
-            VTR_ASSERT(route_ctx.trace_tail[net_id] == nullptr);
+            VTR_ASSERT(route_ctx.trace[net_id].head == nullptr);
+            VTR_ASSERT(route_ctx.trace[net_id].tail == nullptr);
             VTR_ASSERT(route_ctx.trace_nodes[net_id].empty());
         }
 
@@ -1784,7 +1784,7 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_trace * tptr = route_ctx.trace_head[net_id];
+    t_trace * tptr = route_ctx.trace[net_id].head;
 
     if (tptr == nullptr) {
         /* No routing yet. */
@@ -2259,7 +2259,7 @@ static size_t dynamic_update_bounding_boxes(int high_fanout_threshold) {
     size_t num_bb_updated = 0;
 
     for (ClusterNetId net : clb_nlist.nets()) {
-        t_trace* routing_head = route_ctx.trace_head[net];
+        t_trace* routing_head = route_ctx.trace[net].head;
 
         if (routing_head == nullptr) continue; //Skip if no routing
 

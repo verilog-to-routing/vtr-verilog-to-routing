@@ -54,7 +54,7 @@ static string format_name(string name);
 /*************Global Functions****************************/
 bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests) {
 
-    /* Reads in the routing file to fill in the trace_head and t_clb_opins_used data structure.
+    /* Reads in the routing file to fill in the trace.head and t_clb_opins_used data structure.
      * Perform a series of verification tests to ensure the netlist, placement, and routing
      * files match */
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -196,14 +196,14 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
 }
 
 static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename, int& lineno) {
-    /* Not a global net. Goes through every node and add it into trace_head*/
+    /* Not a global net. Goes through every node and add it into trace.head*/
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace *tptr = route_ctx.trace_head[inet];
+    t_trace *tptr = route_ctx.trace[inet].head;
 
     /*remember the position of the last line in order to go back*/
     streampos oldpos = fp.tellg();
@@ -316,13 +316,13 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
                 switch_id = atoi(tokens[7 + offset].c_str());
             }
 
-            /* Allocate and load correct values to trace_head*/
+            /* Allocate and load correct values to trace.head*/
             if (node_count == 0) {
-                route_ctx.trace_head[inet] = alloc_trace_data();
-                route_ctx.trace_head[inet]->index = inode;
-                route_ctx.trace_head[inet]->iswitch = switch_id;
-                route_ctx.trace_head[inet]->next = nullptr;
-                tptr = route_ctx.trace_head[inet];
+                route_ctx.trace[inet].head = alloc_trace_data();
+                route_ctx.trace[inet].head->index = inode;
+                route_ctx.trace[inet].head->iswitch = switch_id;
+                route_ctx.trace[inet].head->next = nullptr;
+                tptr = route_ctx.trace[inet].head;
                 node_count++;
             } else {
                 tptr->next = alloc_trace_data();
