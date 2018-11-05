@@ -73,6 +73,24 @@ namespace vtr {
         }
     }
 
+    constexpr double DEFAULT_REL_TOL = 1e-9;
+    constexpr double DEFAULT_ABS_TOL = 0;
+
+    template<class T>
+    bool isclose(T a, T b, T rel_tol, T abs_tol) {
+
+        if (std::isinf(a) && std::isinf(b)) return (std::signbit(a) == std::signbit(b));
+        if (std::isnan(a) && std::isnan(b)) return false;
+
+        T abs_largest = std::max(std::abs(a), std::abs(b));
+        return std::abs(a - b) <= std::max(rel_tol * abs_largest, abs_tol);
+    }
+
+    template<class T>
+    bool isclose(T a, T b) {
+        return isclose<T>(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL);
+    }
+
 }
 
 #endif
