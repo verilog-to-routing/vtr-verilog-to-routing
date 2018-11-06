@@ -1458,18 +1458,118 @@ void free_trace_data(t_trace *tptr) {
 	num_trace_allocated--;
 }
 
+void print_route(FILE* fp, const vtr::vector<ClusterNetId,t_traceback>& tracebacks) {
+
+    if (tracebacks.empty()) return; //Only if routing exists
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
+            fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
+                fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
+            } else {
+                t_trace* tptr = route_ctx.trace[net_id].head;
+
+                while (tptr != nullptr) {
+                    int inode = tptr->index;
+                    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+                    int ilow = device_ctx.rr_nodes[inode].xlow();
+                    int jlow = device_ctx.rr_nodes[inode].ylow();
+
+                    fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
+                            device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
+
+                    if ((ilow != device_ctx.rr_nodes[inode].xhigh())
+                            || (jlow != device_ctx.rr_nodes[inode].yhigh()))
+                        fprintf(fp, "to (%d,%d) ", device_ctx.rr_nodes[inode].xhigh(),
+                                device_ctx.rr_nodes[inode].yhigh());
+
+                    switch (rr_type) {
+
+                    case IPIN:
+                    case OPIN:
+                        if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
+                            fprintf(fp, " Pad: ");
+                        } else { /* IO Pad. */
+                            fprintf(fp, " Pin: ");
+                        }
+                        break;
+
+                    case CHANX:
+                    case CHANY:
+                        fprintf(fp, " Track: ");
+                        break;
+
+                    case SOURCE:
+                    case SINK:
+                        if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
+                            fprintf(fp, " Pad: ");
+                        } else { /* IO Pad. */
+                            fprintf(fp, " Class: ");
+                        }
+                        break;
+
+                    default:
+                        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                                  "in print_route: Unexpected traceback element type: %d (%s).\n",
+                                  rr_type, device_ctx.rr_nodes[inode].type_string());
+                        break;
+                    }
+
+                    fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
+
+                    if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
+                        int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+                        int xoffset = device_ctx.grid[ilow][jlow].width_offset;
+                        int yoffset = device_ctx.grid[ilow][jlow].height_offset;
+                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
+                        VTR_ASSERT(iblock);
+                        t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+                        t_pb_type *pb_type = pb_pin->parent_node->pb_type;
+                        fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
+                    }
+
+                    /* Uncomment line below if you're debugging and want to see the switch types *
+                     * used in the routing.                                                      */
+                    fprintf (fp, "Switch: %d", tptr->iswitch);
+
+                    fprintf(fp, "\n");
+
+                    tptr = tptr->next;
+                }
+            }
+        } else { /* Global net.  Never routed. */
+            fprintf(fp, "\n\nNet %zu (%s): global net connecting:\n\n", size_t(net_id),
+                    cluster_ctx.clb_nlist.net_name(net_id).c_str());
+
+            for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+                ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+                int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+                int iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
+
+                fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
+                    cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
+                    place_ctx.block_locs[block_id].x,
+                    place_ctx.block_locs[block_id].y,
+                    iclass);
+            }
+        }
+    }
+}
+
 /* Prints out the routing to file route_file.  */
 void print_route(const char* placement_file, const char* route_file) {
-	int inode, ilow, jlow, iclass;
-	t_rr_type rr_type;
-	t_trace *tptr;
 	FILE *fp;
 
 	fp = fopen(route_file, "w");
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, place_ctx.placement_id.c_str());
@@ -1477,104 +1577,7 @@ void print_route(const char* placement_file, const char* route_file) {
 	fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "\nRouting:");
 
-    if (!route_ctx.trace.empty()) { //Only if routing exists
-
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            if (!cluster_ctx.clb_nlist.net_is_global(net_id)) {
-                fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str());
-                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
-                    fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
-                } else {
-                    tptr = route_ctx.trace[net_id].head;
-
-                    while (tptr != nullptr) {
-                        inode = tptr->index;
-                        rr_type = device_ctx.rr_nodes[inode].type();
-                        ilow = device_ctx.rr_nodes[inode].xlow();
-                        jlow = device_ctx.rr_nodes[inode].ylow();
-
-                        fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
-                                device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
-
-                        if ((ilow != device_ctx.rr_nodes[inode].xhigh())
-                                || (jlow != device_ctx.rr_nodes[inode].yhigh()))
-                            fprintf(fp, "to (%d,%d) ", device_ctx.rr_nodes[inode].xhigh(),
-                                    device_ctx.rr_nodes[inode].yhigh());
-
-                        switch (rr_type) {
-
-                        case IPIN:
-                        case OPIN:
-                            if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
-                                fprintf(fp, " Pad: ");
-                            } else { /* IO Pad. */
-                                fprintf(fp, " Pin: ");
-                            }
-                            break;
-
-                        case CHANX:
-                        case CHANY:
-                            fprintf(fp, " Track: ");
-                            break;
-
-                        case SOURCE:
-                        case SINK:
-                            if (is_io_type(device_ctx.grid[ilow][jlow].type)) {
-                                fprintf(fp, " Pad: ");
-                            } else { /* IO Pad. */
-                                fprintf(fp, " Class: ");
-                            }
-                            break;
-
-                        default:
-                            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                                      "in print_route: Unexpected traceback element type: %d (%s).\n",
-                                      rr_type, device_ctx.rr_nodes[inode].type_string());
-                            break;
-                        }
-
-                        fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
-
-                        if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
-                            int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-                            int xoffset = device_ctx.grid[ilow][jlow].width_offset;
-                            int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-                            ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
-                            VTR_ASSERT(iblock);
-                            t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
-                            t_pb_type *pb_type = pb_pin->parent_node->pb_type;
-                            fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
-                        }
-
-                        /* Uncomment line below if you're debugging and want to see the switch types *
-                         * used in the routing.                                                      */
-                        fprintf (fp, "Switch: %d", tptr->iswitch);
-
-                        fprintf(fp, "\n");
-
-                        tptr = tptr->next;
-                    }
-                }
-            }
-
-            else { /* Global net.  Never routed. */
-                fprintf(fp, "\n\nNet %zu (%s): global net connecting:\n\n", size_t(net_id),
-                        cluster_ctx.clb_nlist.net_name(net_id).c_str());
-
-                for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-                    ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-                    int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-                    iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
-
-                    fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
-                        cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
-                        place_ctx.block_locs[block_id].x,
-                        place_ctx.block_locs[block_id].y,
-                        iclass);
-                }
-            }
-        }
-    }
+    print_route(fp, route_ctx.trace);
 
 	fclose(fp);
 
