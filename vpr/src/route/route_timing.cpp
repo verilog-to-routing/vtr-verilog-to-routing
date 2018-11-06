@@ -37,8 +37,6 @@
 
 #define CONGESTED_SLOPE_VAL -0.04
 
-constexpr int LEGAL_CONVERGENCE_COUNT_THRESHOLD = 3;
-
 enum class RouterCongestionMode {
     NORMAL,
     CONFLICTED
@@ -507,7 +505,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         //Have we converged the maximum number of times?
-        if (legal_convergence_count >= LEGAL_CONVERGENCE_COUNT_THRESHOLD) {
+        if (legal_convergence_count >= router_opts.max_convergence_count) {
             VTR_ASSERT(routing_is_successful);
             break; //Done routing
         }
