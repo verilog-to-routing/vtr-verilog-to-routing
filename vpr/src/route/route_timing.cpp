@@ -37,6 +37,8 @@
 
 #define CONGESTED_SLOPE_VAL -0.04
 
+constexpr int LEGAL_CONVERGENCE_COUNT_THRESHOLD = 3;
+
 enum class RouterCongestionMode {
     NORMAL,
     CONFLICTED
@@ -118,6 +120,16 @@ struct t_timing_driven_node_costs {
     float backward_cost = 0.;
     float total_cost = 0.;
     float R_upstream = 0.;
+};
+
+struct RoutingMetrics {
+    size_t used_wirelength = 0;
+
+    float sWNS = std::numeric_limits<float>::quiet_NaN();
+    float sTNS = std::numeric_limits<float>::quiet_NaN();
+    float hWNS = std::numeric_limits<float>::quiet_NaN();
+    float hTNS = std::numeric_limits<float>::quiet_NaN();
+    tatum::TimingPathInfo critical_path;
 };
 
 /*
@@ -237,6 +249,11 @@ static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net);
 
+static bool better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
+                                   const RoutingMetrics& best_routing_metrics, 
+                                   const WirelengthInfo& wirelength_info,
+                                   std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
@@ -319,6 +336,14 @@ bool try_timing_driven_route(t_router_opts router_opts,
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
     int itry_conflicted_mode = 0;
+
+    /*
+     * Best result so far
+     */
+    vtr::vector<ClusterNetId,t_traceback> best_routing;
+    t_clb_opins_used best_clb_opins_used_locally;
+    RoutingMetrics best_routing_metrics;
+    int legal_convergence_count = 0;
 
     /*
      * On the first routing iteration ignore congestion to get reasonable net
@@ -452,9 +477,39 @@ bool try_timing_driven_route(t_router_opts router_opts,
         /*
          * Are we finished?
          */
-        routing_is_successful = routing_is_feasible; //TODO: keep going after legal routing to further optimize timing
-        if (routing_is_successful) {
-            break; //Finished
+        if (routing_is_feasible) {
+
+            auto& router_ctx = g_vpr_ctx.routing();
+
+            if (better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
+                //Save routing
+                best_routing = router_ctx.trace;
+                best_clb_opins_used_locally = router_ctx.clb_opins_used_locally;
+
+                routing_is_successful = true;
+
+                //Update best metrics
+                if (timing_info) {
+                    timing_driven_check_net_delays(net_delay);
+
+                    best_routing_metrics.sTNS = timing_info->setup_total_negative_slack();
+                    best_routing_metrics.sWNS = timing_info->setup_worst_negative_slack();
+                    best_routing_metrics.hTNS = timing_info->hold_total_negative_slack();
+                    best_routing_metrics.hWNS = timing_info->hold_worst_negative_slack();
+                    best_routing_metrics.critical_path = critical_path;
+                }
+                best_routing_metrics.used_wirelength = wirelength_info.used_wirelength();
+            }
+
+            ++legal_convergence_count;
+
+            VTR_ASSERT(routing_is_successful);
+        }
+
+        //Have we converged the maximum number of times?
+        if (legal_convergence_count >= LEGAL_CONVERGENCE_COUNT_THRESHOLD) {
+            VTR_ASSERT(routing_is_successful);
+            break; //Done routing
         }
 
         /*
@@ -608,10 +663,14 @@ bool try_timing_driven_route(t_router_opts router_opts,
     }
 
     if (routing_is_successful) {
+        VTR_LOG("Restoring best routing\n");
+
+        auto& router_ctx = g_vpr_ctx.mutable_routing();
+        router_ctx.trace = best_routing;
+        router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
+
         if (timing_info) {
-            timing_driven_check_net_delays(net_delay);
-            VTR_LOG("Completed net delay value cross check successfully.\n");
-            VTR_LOG("Critical path: %g ns\n", 1e9 * critical_path.delay());
+            VTR_LOG("Critical path: %g ns\n", 1e9 * best_routing_metrics.critical_path.delay());
         }
 
         VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
@@ -2353,4 +2412,32 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
 #ifndef VTR_ENABLE_DEBUG_LOGGING
     if (f_router_debug) VPR_THROW(VPR_ERROR_ROUTE, "Can not enable router debug logging since VPR was compiled without debug logging enabled");
 #endif
+}
+
+static bool better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
+                                   const RoutingMetrics& best_routing_metrics, 
+                                   const WirelengthInfo& wirelength_info,
+                                   std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    if (best_routing.empty()) {
+        return true; //First legal routing
+    }
+
+    //Rank first based on sWNS, followed by other metrics
+    if (timing_info) {
+        if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
+            return true;
+        }
+        if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
+            return true;
+        }
+        if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            return true;
+        }
+        if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
+            return true;
+        }
+    }
+
+    //Finally, wirelength tie breaker
+    return wirelength_info.used_wirelength() < best_routing_metrics.used_wirelength;
 }

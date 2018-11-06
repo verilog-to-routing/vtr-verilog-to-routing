@@ -8,6 +8,7 @@
 #include "vpr_types.h"
 #include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_vector.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_node.h"
@@ -232,7 +233,7 @@ struct PlacementContext : public Context {
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector_map<ClusterNetId, t_traceback> trace;
+    vtr::vector<ClusterNetId, t_traceback> trace;
     vtr::vector_map<ClusterNetId, std::unordered_set<int>> trace_nodes;
 
 	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
