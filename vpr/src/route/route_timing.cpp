@@ -232,7 +232,7 @@ static WirelengthInfo calculate_wirelength_info();
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
-static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
@@ -450,7 +450,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
         //Output progress
-        print_route_status(itry, iter_elapsed_time, num_net_bounding_boxes_updated, router_iteration_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, router_iteration_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         prev_iter_cumm_time = iter_cumm_time;
 
@@ -2144,13 +2144,13 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    VTR_LOG("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    VTR_LOG("Iter   Time  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    VTR_LOG("      (sec) Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    VTR_LOG("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("---- ------ ----- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("Iter   Time  pres  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    VTR_LOG("      (sec)   fac Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    VTR_LOG("---- ------ ----- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
@@ -2160,6 +2160,9 @@ static void print_route_status(int itry, double elapsed_sec, int num_bb_updated,
 
     //Elapsed Time
     VTR_LOG(" %6.1f", elapsed_sec);
+
+    //pres_fac
+    VTR_LOG(" %5.1f", pres_fac);
 
     //Number of bounding boxes updated
     VTR_LOG(" %4d", num_bb_updated);
