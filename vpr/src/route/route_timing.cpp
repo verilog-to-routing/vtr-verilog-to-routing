@@ -247,7 +247,7 @@ static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net);
 
-static bool better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
+static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
                                    const RoutingMetrics& best_routing_metrics, 
                                    const WirelengthInfo& wirelength_info,
                                    std::shared_ptr<const SetupHoldTimingInfo> timing_info);
@@ -479,7 +479,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
             auto& router_ctx = g_vpr_ctx.routing();
 
-            if (better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
+            if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
                 //Save routing
                 best_routing = router_ctx.trace;
                 best_clb_opins_used_locally = router_ctx.clb_opins_used_locally;
@@ -2412,7 +2412,7 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
 #endif
 }
 
-static bool better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
+static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
                                    const RoutingMetrics& best_routing_metrics, 
                                    const WirelengthInfo& wirelength_info,
                                    std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
@@ -2420,19 +2420,30 @@ static bool better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& 
         return true; //First legal routing
     }
 
-    //Rank first based on sWNS, followed by other metrics
+    //Rank first based on sWNS, followed by other timing metrics
     if (timing_info) {
         if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
             return true;
+        } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
+            return false;
         }
+
         if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
             return true;
+        } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
+            return false;
         }
+
         if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
             return true;
+        } else if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            return false;
         }
+
         if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
             return true;
+        } else if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
+            return false;
         }
     }
 
