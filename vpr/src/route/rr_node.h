@@ -120,7 +120,6 @@ class t_rr_node {
         void set_num_edges(short); //Note will remove any previous edges
         void set_edge_sink_node(short iedge, int sink_node);
         void set_edge_switch(short iedge, short switch_index);
-        void set_edge_is_configurable(short iedge, bool is_configurable);
         void set_fan_in(short);
 
         void set_coordinates(short x1, short y1, short x2, short y2);
