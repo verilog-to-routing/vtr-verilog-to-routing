@@ -499,6 +499,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 best_routing_metrics.used_wirelength = wirelength_info.used_wirelength();
             }
 
+            pres_fac /= 3;
+            pres_fac = std::max(pres_fac, router_opts.initial_pres_fac); //Don't allow pres_fac to go below initial value
+
             ++legal_convergence_count;
 
             VTR_ASSERT(routing_is_successful);
@@ -506,7 +509,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
         //Have we converged the maximum number of times?
         if (legal_convergence_count >= router_opts.max_convergence_count) {
-            VTR_ASSERT(routing_is_successful);
             break; //Done routing
         }
 
