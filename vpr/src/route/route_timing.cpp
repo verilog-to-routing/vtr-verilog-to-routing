@@ -507,8 +507,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
             VTR_ASSERT(routing_is_successful);
         }
 
-        //Have we converged the maximum number of times?
-        if (legal_convergence_count >= router_opts.max_convergence_count) {
+        //Have we converged the maximum number of times, or did not make any changes?
+        if (legal_convergence_count >= router_opts.max_convergence_count
+            || router_iteration_stats.connections_routed == 0) {
             break; //Done routing
         }
 
