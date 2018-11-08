@@ -499,8 +499,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 best_routing_metrics.used_wirelength = wirelength_info.used_wirelength();
             }
 
-            pres_fac /= 3;
-            pres_fac = std::max(pres_fac, router_opts.initial_pres_fac); //Don't allow pres_fac to go below initial value
+            //Decrease pres_fac so that criticl connections will take more direct routes
+            pres_fac = router_opts.initial_pres_fac;
+
+            //Reduce timing tolerances to re-route more delay-suboptimal signals
+            connections_inf.set_connection_criticality_tolerance(0.8);
+            connections_inf.set_connection_delay_tolerance(1.01);
 
             ++legal_convergence_count;
 
