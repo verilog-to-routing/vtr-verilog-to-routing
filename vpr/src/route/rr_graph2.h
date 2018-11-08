@@ -25,9 +25,14 @@ struct t_rr_edge_info {
         return std::tie(lhs.from_node, lhs.to_node, lhs.switch_type) <
                std::tie(rhs.from_node, rhs.to_node, rhs.switch_type);
     }
+
+    friend bool operator==(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
+        return std::tie(lhs.from_node, lhs.to_node, lhs.switch_type) ==
+               std::tie(rhs.from_node, rhs.to_node, rhs.switch_type);
+    }
 };
 
-typedef std::set<t_rr_edge_info> t_rr_edge_info_set;
+typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
