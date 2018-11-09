@@ -191,16 +191,46 @@ void t_rr_node::set_fan_in(short new_fan_in) {
 }
 
 short t_rr_node::add_edge(int sink_node, int iswitch) {
-    auto new_edges = std::make_unique<t_rr_edge[]>(num_edges_ + 1);
-    std::copy_n(edges_.get(), num_edges_, new_edges.get());
+    if (edges_capacity_ == num_edges_) {
 
-    new_edges[num_edges_].sink_node = sink_node;
-    new_edges[num_edges_].switch_id = iswitch;
+        constexpr size_t MAX_EDGE_COUNT = std::numeric_limits<decltype(edges_capacity_)>::max();
+        if (edges_capacity_ == MAX_EDGE_COUNT) {
+            VPR_THROW(VPR_ERROR_ROUTE, "Maximum RR Node out-edge count (%zu) exceeded", MAX_EDGE_COUNT);
+        }
 
-    edges_ = std::move(new_edges);
+        //Grow
+        size_t new_edges_capacity = std::max<size_t>(1, 2 * edges_capacity_);
+        new_edges_capacity = std::min(new_edges_capacity, MAX_EDGE_COUNT); //Clip to maximum count
+        auto new_edges = std::make_unique<t_rr_edge[]>(new_edges_capacity);
+
+        //Copy
+        std::copy_n(edges_.get(), num_edges_, new_edges.get());
+
+        //Replace
+        edges_ = std::move(new_edges);
+        edges_capacity_ = new_edges_capacity;
+    }
+
+    VTR_ASSERT(num_edges_ < edges_capacity_);
+
+    edges_[num_edges_].sink_node = sink_node;
+    edges_[num_edges_].switch_id = iswitch;
+
     ++num_edges_;
 
     return num_edges_;
+}
+
+void t_rr_node::shrink_to_fit() {
+    //Shrink
+    auto new_edges = std::make_unique<t_rr_edge[]>(num_edges_);
+
+    //Copy
+    std::copy_n(edges_.get(), num_edges_, new_edges.get());
+
+    //Replace
+    edges_ = std::move(new_edges);
+    edges_capacity_ = num_edges_;
 }
 
 void t_rr_node::partition_edges() {
