@@ -34,6 +34,8 @@ struct t_rr_edge_info {
 
 typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
 
+typedef vtr::NdMatrix<short,6> t_sblock_pattern;
+
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
@@ -184,7 +186,7 @@ int get_track_to_tracks(
 		const int max_chan_width,
         const DeviceGrid& grid,
 		const int Fs_per_side,
-		short ******sblock_pattern,
+        t_sblock_pattern& sblock_pattern,
         const int from_rr_node,
         t_rr_edge_info_set& rr_edges_to_create,
 		const t_seg_details *from_seg_details,
@@ -195,11 +197,10 @@ int get_track_to_tracks(
 		const vtr::NdMatrix<std::vector<int>,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map);
 
-short ******alloc_sblock_pattern_lookup(
+t_sblock_pattern alloc_sblock_pattern_lookup(
         const DeviceGrid& grid,
 		const int max_chan_width);
-void free_sblock_pattern_lookup(
-		short ******sblock_pattern);
+
 void load_sblock_pattern_lookup(
         const int i, const int j,
         const DeviceGrid& grid,
@@ -208,7 +209,7 @@ void load_sblock_pattern_lookup(
 		const t_chan_details& chan_details_y,
 		const int Fs,
 		const enum e_switch_block_type switch_block_type,
-		short ******sblock_pattern);
+		t_sblock_pattern& sblock_pattern);
 
 int *get_seg_track_counts(
 		const int num_sets, const int num_seg_types,
@@ -229,7 +230,7 @@ void dump_chan_details(
         const DeviceGrid& grid,
 		const char *fname);
 void dump_sblock_pattern(
-		short ******sblock_pattern,
+        const t_sblock_pattern& sblock_pattern,
 		int max_chan_width,
 		const DeviceGrid& grid,
 		const char *fname);

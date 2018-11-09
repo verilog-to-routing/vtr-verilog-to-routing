@@ -16,7 +16,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "rr_types.h"
 
-#define UN_SET -1
+constexpr short UN_SET = -1;
 
 /************************** Subroutines local to this module ****************/
 
@@ -52,7 +52,7 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width,
         const DeviceGrid& grid, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern,
+        t_sblock_pattern& sblock_pattern,
         const int switch_override,
         const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details,
@@ -1023,7 +1023,7 @@ void dump_chan_details(
 /* Dumps out a 2D array of switch block pattern structures to file fname. *
  * Used for debugging purposes only.                                      */
 void dump_sblock_pattern(
-        short ******sblock_pattern,
+        const t_sblock_pattern& sblock_pattern,
         int max_chan_width,
         const DeviceGrid& grid,
         const char *fname) {
@@ -1540,7 +1540,8 @@ int get_track_to_tracks(
         const int from_chan, const int from_seg, const int from_track,
         const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
         const int chan_len, const int max_chan_width, const DeviceGrid& grid,
-        const int Fs_per_side, short ******sblock_pattern,
+        const int Fs_per_side,
+        t_sblock_pattern& sblock_pattern,
         const int from_rr_node,
         t_rr_edge_info_set& rr_edges_to_create,
         const t_seg_details * from_seg_details,
@@ -1895,7 +1896,7 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width, const DeviceGrid& grid,
         const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern,
+        t_sblock_pattern& sblock_pattern,
         const int switch_override,
         const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details,
@@ -2130,7 +2131,7 @@ static int vpr_to_phy_track(
     return phy_track;
 }
 
-short ******alloc_sblock_pattern_lookup(
+t_sblock_pattern alloc_sblock_pattern_lookup(
         const DeviceGrid& grid, const int max_chan_width) {
 
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
@@ -2146,78 +2147,20 @@ short ******alloc_sblock_pattern_lookup(
 
     VTR_ASSERT(grid.width() > 0);
     VTR_ASSERT(grid.height() > 0);
+    VTR_ASSERT(max_chan_width >= 0);
 
-    size_t items = 1;
-    items *= (grid.width() - 1);
-    short ******i_list = (short ******) vtr::malloc(sizeof (short *****) * items);
-    items *= (grid.height() - 1);
-    short *****j_list = (short *****) vtr::malloc(sizeof (short ****) * items);
-    items *= (4);
-    short ****from_side_list = (short ****) vtr::malloc(sizeof (short ***) * items);
-    items *= (4);
-    short ***to_side_list = (short ***) vtr::malloc(sizeof (short **) * items);
-    items *= (max_chan_width);
-    short **from_track_list = (short **) vtr::malloc(sizeof (short *) * items);
-    items *= (4);
-    short *from_track_types = (short *) vtr::malloc(sizeof (short) * items);
-
-    /* Build the pointer lists to form the multidimensional array */
-    short ******sblock_pattern = i_list;
-    i_list += (grid.width() - 1); /* Skip forward */
-    for (size_t i = 0; i < (grid.width() - 1); ++i) {
-
-        sblock_pattern[i] = j_list;
-        j_list += (grid.height() - 1); /* Skip forward */
-        for (size_t j = 0; j < (grid.height() - 1); ++j) {
-
-            sblock_pattern[i][j] = from_side_list;
-            from_side_list += (4); /* Skip forward */
-            for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-
-                sblock_pattern[i][j][from_side] = to_side_list;
-                to_side_list += (4); /* Skip forward */
-                for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-
-                    sblock_pattern[i][j][from_side][to_side] = from_track_list;
-                    from_track_list += (max_chan_width); /* Skip forward max_chan_width items */
-                    for (int from_track = 0; from_track < max_chan_width; from_track++) {
-
-                        sblock_pattern[i][j][from_side][to_side][from_track] = from_track_types;
-                        from_track_types += (4); /* Skip forward */
-
-                        /* Set initial value to be unset */
-                        sblock_pattern[i][j][from_side][to_side][from_track][0] = UN_SET; // to_mux
-                        sblock_pattern[i][j][from_side][to_side][from_track][1] = UN_SET; // to_track
-
-                        sblock_pattern[i][j][from_side][to_side][from_track][2] = UN_SET; // alt_mux
-                        sblock_pattern[i][j][from_side][to_side][from_track][3] = UN_SET; // alt_track
-                    }
-                }
-            }
-        }
-    }
+    t_sblock_pattern sblock_pattern({{
+                                       grid.width() - 1,
+                                       grid.height() - 1,
+                                       4, //From side
+                                       4, //To side
+                                       size_t(max_chan_width),
+                                       4 //to_mux, to_trac, alt_mux, alt_track
+                                    }},
+                                    UN_SET);
 
     /* This is the outer pointer to the full matrix */
     return sblock_pattern;
-}
-
-void free_sblock_pattern_lookup(
-        short ******sblock_pattern) {
-
-    /* This free function corresponds to the chunked matrix
-     * allocation above and there should only be one free
-     * call for each dimension. */
-
-    /* Free dimensions from the inner one, outwards so
-     * we can still access them. The comments beside
-     * each one indicate the corresponding name used when
-     * allocating them. */
-    vtr::free(*****sblock_pattern); /* from_track_types */
-    vtr::free(****sblock_pattern); /* from_track_list */
-    vtr::free(***sblock_pattern); /* to_side_list */
-    vtr::free(**sblock_pattern); /* from_side_list */
-    vtr::free(*sblock_pattern); /* j_list */
-    vtr::free(sblock_pattern); /* i_list */
 }
 
 void load_sblock_pattern_lookup(
@@ -2226,7 +2169,7 @@ void load_sblock_pattern_lookup(
         const t_chan_width *nodes_per_chan,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const int /*Fs*/, const enum e_switch_block_type switch_block_type,
-        short ******sblock_pattern) {
+        t_sblock_pattern& sblock_pattern) {
 
     /* This routine loads a lookup table for sblock topology. The lookup table is huge
      * because the sblock varies from location to location. The i, j means the owning

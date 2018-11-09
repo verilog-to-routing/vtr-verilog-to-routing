@@ -69,7 +69,6 @@ struct t_pin_loc {
     e_side side;
 };
 
-
 /******************* Variables local to this module. ***********************/
 
 
@@ -128,7 +127,8 @@ static void alloc_and_load_rr_graph(
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
         const DeviceGrid& grid, const int Fs,
-        short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
+        t_sblock_pattern& sblock_pattern,
+        const std::vector<vtr::Matrix<int>>&Fc_out,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
@@ -183,7 +183,8 @@ static void build_rr_chan(
         const int max_chan_width,
         const DeviceGrid& grid,
         const int tracks_per_chan,
-        short ******sblock_pattern, const int Fs_per_side,
+        t_sblock_pattern& sblock_pattern,
+        const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
         t_rr_edge_info_set& created_rr_edges,
@@ -500,7 +501,7 @@ static void build_rr_graph(
     /* START SB LOOKUP */
     /* Alloc and load the switch block lookup */
     vtr::NdMatrix<std::vector<int>, 3> switch_block_conn;
-    short ******unidir_sb_pattern = nullptr;
+    t_sblock_pattern unidir_sb_pattern;
     t_sb_connection_map *sb_conn_map = nullptr; //for custom switch blocks
 
     if (is_global_graph) {
@@ -632,10 +633,6 @@ static void build_rr_graph(
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
         sb_conn_map = nullptr;
-    }
-    if (unidir_sb_pattern) {
-        free_sblock_pattern_lookup(unidir_sb_pattern);
-        unidir_sb_pattern = nullptr;
     }
     if (sets_per_seg_type) {
         free(sets_per_seg_type);
@@ -1073,7 +1070,8 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
         const DeviceGrid& grid, const int Fs,
-        short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
+        t_sblock_pattern& sblock_pattern,
+        const std::vector<vtr::Matrix<int>>&Fc_out,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
@@ -1417,7 +1415,8 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const int max_chan_width,
         const DeviceGrid& grid,
         const int tracks_per_chan,
-        short ******sblock_pattern, const int Fs_per_side,
+        t_sblock_pattern& sblock_pattern,
+        const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
         t_rr_edge_info_set& rr_edges_to_create,
@@ -1451,7 +1450,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
        description */
     bool custom_switch_block = false;
     if (sb_conn_map != nullptr) {
-        VTR_ASSERT(sblock_pattern == nullptr && switch_block_conn.empty());
+        VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
         custom_switch_block = true;
     }
 
