@@ -56,6 +56,7 @@ class MainWindow : public QMainWindow
 
 public:
    MainWindow();
+   int setFilename(QString file);
 
 private slots:
    // void backgroundButtonGroupClicked(QAbstractButton *button);

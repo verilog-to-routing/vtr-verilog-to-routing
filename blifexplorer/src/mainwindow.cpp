@@ -77,6 +77,23 @@ MainWindow::MainWindow()
     fileopen = false;
 }
 
+int MainWindow::setFilename(QString file)
+{
+    selectAll();
+    deleteItem();
+
+    this->myContainer->setFilename(file);
+    int result = this->myContainer->readInFileOdinOnly();
+
+    if (result != 0)
+        return result;
+
+    this->myContainer->arrangeContainer();
+    view->centerOn(0,0);
+    fileopen = true;
+    return 0;
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: simulationButtonGroupClicked)
  *-------------------------------------------------------------------------------------------*/

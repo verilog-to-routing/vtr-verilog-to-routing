@@ -38,6 +38,15 @@ int main(int argv, char *args[])
     //mainWindow.setGeometry(100, 100, 1024, 800);
     mainWindow.setGeometry(100, 100, QApplication::desktop()->width()*0.9,
                            QApplication::desktop()->height()*0.9);
+
+    /* The first parameter can be a blif file */
+    if (argv > 1) {
+        if (mainWindow.setFilename(QString(args[1])) != 0){
+            qInfo("Invalid argument - This first argument is expected to be a blif file path");
+            return -1;
+        }
+    }
+
     mainWindow.show();
 
     return app.exec();
