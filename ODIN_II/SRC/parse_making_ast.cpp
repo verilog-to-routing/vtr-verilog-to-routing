@@ -830,6 +830,50 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	return new_node;
 }
 
+int get_range_Plus_Colon(ast_node_t* first_node)
+{
+  long temp_value;
+
+  /* look at the first item to see if it has a range */
+  if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
+  {
+               if(first_node->children[1]->types.number.value >first_node->children[2]->types.number.value)
+               {
+
+                 error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "Odin doesn't support arrays declared [m+:n] where n is less than m.");
+
+                 // swap them around
+                 temp_value = first_node->children[2]->types.number.value;
+                 first_node->children[2]->types.number.value = first_node->children[1]->types.number.value;
+                 first_node->children[1]->types.number.value = temp_value;
+               }
+
+    return abs(first_node->children[1]->types.number.value +first_node->children[2]->types.number.value) ;
+             }
+                      // should return X????
+           
+  return -1; // indicates no range
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newRangePlusRef)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newRangePlusRef(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+  /* allocate or check if there's a node for this */
+  ast_node_t *symbol_node = newSymbolNode(id, line_number);
+
+  /* create a node for this array reference */
+  ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
+
+  /* allocate child nodes to this node */
+  allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
+
+  get_range_Plus_Colon(new_node);
+
+  return new_node;       
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: newBinaryOperation)
  *-------------------------------------------------------------------------------------------*/
