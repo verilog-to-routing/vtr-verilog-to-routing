@@ -1135,13 +1135,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    /* We make a copy of the current fanin values for the nodes to
-     * know the number of OPINs driving each mux presently */
-    int *opin_mux_size = (int *) vtr::malloc(sizeof (int) * num_nodes);
-    for (int i = 0; i < num_nodes; ++i) {
-        opin_mux_size[i] = L_rr_node[i].fan_in();
-    }
-
     /* Build channels */
     auto& device_ctx = g_vpr_ctx.device();
     VTR_ASSERT(Fs % 3 == 0);
@@ -1177,8 +1170,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
     alloc_and_load_edges(L_rr_node, rr_edges_to_create);
 
     init_fan_in(L_rr_node, num_nodes);
-
-    free(opin_mux_size);
 }
 
 static void build_bidir_rr_opins(const int i, const int j, const e_side side,
