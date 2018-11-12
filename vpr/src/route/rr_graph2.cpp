@@ -385,13 +385,14 @@ t_chan_details init_chan_details(
         const t_seg_details* seg_details,
         const enum e_seg_details_type seg_details_type) {
 
-    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({grid.width(), grid.height()});
+    VTR_ASSERT(num_seg_details <= nodes_per_chan->max);
+
+    t_chan_details chan_details({grid.width(), grid.height(), size_t(nodes_per_chan->max)});
 
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
 
-            t_seg_details* p_seg_details = nullptr;
-            p_seg_details = new t_seg_details[nodes_per_chan->max];
+            t_seg_details* p_seg_details = chan_details[x][y].data();
             for (int i = 0; i < num_seg_details; ++i) {
 
                 p_seg_details[i].length = seg_details[i].length;
@@ -452,7 +453,6 @@ t_chan_details init_chan_details(
                     }
                 }
             }
-            chan_details[x][y] = p_seg_details;
         }
     }
     return chan_details;
@@ -612,35 +612,9 @@ void adjust_seg_details(
     }
 }
 
-void free_seg_details(
-        t_seg_details * seg_details,
-        const int max_chan_width) {
-
-    /* Frees all the memory allocated to an array of seg_details structures. */
-    delete[] seg_details;
-}
-
 void free_chan_details(
         t_chan_details& chan_details_x,
-        t_chan_details& chan_details_y,
-        const int max_chan_width,
-        const DeviceGrid& grid) {
-
-    /* Frees all the memory allocated to an array of chan_details structures. */
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-
-            t_seg_details* p_seg_details = chan_details_x[x][y];
-            free_seg_details(p_seg_details, max_chan_width);
-        }
-    }
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-
-            t_seg_details* p_seg_details = chan_details_y[x][y];
-            free_seg_details(p_seg_details, max_chan_width);
-        }
-    }
+        t_chan_details& chan_details_y) {
 
     chan_details_x.clear();
     chan_details_y.clear();
@@ -1001,7 +975,7 @@ void dump_chan_details(
                 fprintf(fp, "chan_details_x: [%zu][%zu]\n", x, y);
                 fprintf(fp, "========================\n");
 
-                const t_seg_details* seg_details = chan_details_x[x][y];
+                const t_seg_details* seg_details = chan_details_x[x][y].data();
                 dump_seg_details(seg_details, max_chan_width, fp);
             }
         }
@@ -1012,7 +986,7 @@ void dump_chan_details(
                 fprintf(fp, "chan_details_y: [%zu][%zu]\n", x, y);
                 fprintf(fp, "========================\n");
 
-                const t_seg_details* seg_details = chan_details_y[x][y];
+                const t_seg_details* seg_details = chan_details_y[x][y].data();
                 dump_seg_details(seg_details, max_chan_width, fp);
             }
         }
@@ -1124,7 +1098,7 @@ static void load_chan_rr_indices(
             /* Assign an inode to the starts of tracks */
             int x = (type == CHANX ? seg : chan);
             int y = (type == CHANX ? chan : seg);
-            t_seg_details * seg_details = chan_details[x][y];
+            const t_seg_details * seg_details = chan_details[x][y].data();
 
             for (unsigned track = 0; track < indices[type][chan][seg][0].size(); ++track) {
 
@@ -1450,7 +1424,7 @@ int get_track_to_pins(
         t_rr_edge_info_set& rr_edges_to_create,
         const t_rr_node_indices& L_rr_node_indices,
         const t_track_to_pin_lookup& track_to_pin_lookup,
-        t_seg_details * seg_details,
+        const t_seg_details * seg_details,
         enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
         enum e_directionality directionality) {
 
@@ -1638,9 +1612,9 @@ int get_track_to_tracks(
         /* to_chan_details may correspond to an x-directed or y-directed channel, depending for which
            channel type this function is used; so coordinates are reversed as necessary */
         if (to_type == CHANX) {
-            to_seg_details = to_chan_details[to_seg][to_chan];
+            to_seg_details = to_chan_details[to_seg][to_chan].data();
         } else {
-            to_seg_details = to_chan_details[to_chan][to_seg];
+            to_seg_details = to_chan_details[to_chan][to_seg].data();
         }
 
         if (to_seg_details[0].length == 0)
@@ -2270,7 +2244,7 @@ void load_sblock_pattern_lookup(
         int sb_seg = (vert ? j : i);
         int seg = (pos_dir ? (sb_seg + 1) : sb_seg);
 
-        t_seg_details * seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]);
+        const t_seg_details * seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
         if (seg_details[0].length <= 0)
             continue;
 

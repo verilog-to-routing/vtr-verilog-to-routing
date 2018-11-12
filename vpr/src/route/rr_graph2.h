@@ -108,14 +108,9 @@ void adjust_seg_details(
 		t_chan_details& chan_details,
 		const enum e_seg_details_type seg_details_type);
 
-void free_seg_details(
-		t_seg_details *seg_details,
-		const int max_chan_width);
 void free_chan_details(
 		t_chan_details& chan_details_x,
-		t_chan_details& chan_details_y,
-		const int max_chan_width,
-        const DeviceGrid& grid);
+		t_chan_details& chan_details_y);
 
 int get_seg_start(
 		const t_seg_details *seg_details,
@@ -171,7 +166,8 @@ int get_track_to_pins(
         int from_rr_node,
         t_rr_edge_info_set& rr_edges_to_create,
         const t_rr_node_indices& L_rr_node_indices,
-		const t_track_to_pin_lookup& track_to_pin_lookup, t_seg_details *seg_details,
+		const t_track_to_pin_lookup& track_to_pin_lookup, 
+        const t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 

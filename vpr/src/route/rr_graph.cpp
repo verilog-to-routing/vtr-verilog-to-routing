@@ -624,11 +624,11 @@ static void build_rr_graph(
 
     /* Free all temp structs */
     if (seg_details) {
-        free_seg_details(seg_details, max_chan_width);
+        delete[] seg_details;
         seg_details = nullptr;
     }
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
-        free_chan_details(chan_details_x, chan_details_y, max_chan_width, grid);
+        free_chan_details(chan_details_x, chan_details_y);
     }
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
@@ -1444,7 +1444,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         opposite_chan_type = CHANX;
     }
 
-    t_seg_details * seg_details = from_chan_details[x_coord][y_coord];
+    const t_seg_details * seg_details = from_chan_details[x_coord][y_coord].data();
 
     /* figure out if we're generating switch block edges based on a custom switch block
        description */
@@ -1470,11 +1470,11 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             continue; /* Only process segments which start at this location */
         VTR_ASSERT(seg_coord == start);
 
-        t_seg_details * from_seg_details = nullptr;
+        const t_seg_details * from_seg_details = nullptr;
         if (chan_type == CHANY) {
-            from_seg_details = chan_details_y[x_coord][start];
+            from_seg_details = chan_details_y[x_coord][start].data();
         } else {
-            from_seg_details = chan_details_x[start][y_coord];
+            from_seg_details = chan_details_x[start][y_coord].data();
         }
 
         int node = get_rr_node_index(L_rr_node_indices, x_coord, y_coord, chan_type, track);
@@ -1488,12 +1488,12 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
         /* get edges going from the current track into channel segments which are perpendicular to it */
         if (chan_coord > 0) {
-            t_seg_details *to_seg_details;
+            const t_seg_details *to_seg_details;
             if (chan_type == CHANX) {
-                to_seg_details = chan_details_y[start][y_coord];
+                to_seg_details = chan_details_y[start][y_coord].data();
             } else {
                 VTR_ASSERT(chan_type == CHANY);
-                to_seg_details = chan_details_x[x_coord][start];
+                to_seg_details = chan_details_x[x_coord][start].data();
             }
             if (to_seg_details->length > 0) {
                 num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord,
@@ -1506,12 +1506,12 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             }
         }
         if (chan_coord < chan_dimension) {
-            t_seg_details *to_seg_details;
+            const t_seg_details *to_seg_details;
             if (chan_type == CHANX) {
-                to_seg_details = chan_details_y[start][y_coord + 1];
+                to_seg_details = chan_details_y[start][y_coord + 1].data();
             } else {
                 VTR_ASSERT(chan_type == CHANY);
-                to_seg_details = chan_details_x[x_coord + 1][start];
+                to_seg_details = chan_details_x[x_coord + 1][start].data();
             }
             if (to_seg_details->length > 0) {
                 num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord + 1,
@@ -1537,12 +1537,12 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                 }
             }
             if (target_seg > 0 && target_seg < seg_dimension + 1) {
-                t_seg_details *to_seg_details;
+                const t_seg_details *to_seg_details;
                 if (chan_type == CHANX) {
-                    to_seg_details = chan_details_x[target_seg][y_coord];
+                    to_seg_details = chan_details_x[target_seg][y_coord].data();
                 } else {
                     VTR_ASSERT(chan_type == CHANY);
-                    to_seg_details = chan_details_y[x_coord][target_seg];
+                    to_seg_details = chan_details_y[x_coord][target_seg].data();
                 }
                 if (to_seg_details->length > 0) {
                     num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
@@ -2380,8 +2380,8 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
                 continue;
             }
 
-            t_seg_details * seg_details = (chan_type == CHANX ?
-                    chan_details_x[seg][chan] : chan_details_y[chan][seg]);
+            const t_seg_details * seg_details = (chan_type == CHANX ?
+                    chan_details_x[seg][chan] : chan_details_y[chan][seg]).data();
             if (seg_details[0].length == 0)
                 continue;
 

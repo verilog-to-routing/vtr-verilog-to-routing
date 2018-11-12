@@ -180,7 +180,7 @@ typedef map< string, Wire_Info > t_wire_type_sizes;
 
 /************ Function Declarations ************/
 /* Counts the number of wires in each wire type in the specified channel */
-static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan,
+static void count_wire_type_sizes(const t_seg_details *channel, int nodes_per_chan,
 			t_wire_type_sizes *wire_type_sizes);
 
 #ifdef FAST_SB_COMPUTATION
@@ -290,7 +290,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations(
 	/* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
 	   channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
 	t_wire_type_sizes wire_type_sizes;
-	count_wire_type_sizes(chan_details_x[0][0], channel_width, &wire_type_sizes);
+	count_wire_type_sizes(chan_details_x[0][0].data(), channel_width, &wire_type_sizes);
 
 #ifdef FAST_SB_COMPUTATION
 	/******** fast switch block computation method; computes a row of switchblocks then stamps it out everywhere ********/
@@ -612,7 +612,7 @@ static bool is_core(const DeviceGrid& grid, int x, int y){
 
 
 /* Counts the number of wires in each wire type in the specified channel */
-static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan,
+static void count_wire_type_sizes(const t_seg_details *channel, int nodes_per_chan,
 			t_wire_type_sizes *wire_type_sizes){
 	string wire_type;
 	const char * new_type;
@@ -786,10 +786,10 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
 	vector<int> potential_src_wires;
 	vector<int> potential_dest_wires;
 
-	get_switchpoint_wires(grid, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side,
+	get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
 			wireconn_ptr->from_switchpoint_set, wire_type_sizes, false, &potential_src_wires);
 
-	get_switchpoint_wires(grid, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side,
+	get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
 			wireconn_ptr->to_switchpoint_set, wire_type_sizes, true, &potential_dest_wires);
 
     if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
