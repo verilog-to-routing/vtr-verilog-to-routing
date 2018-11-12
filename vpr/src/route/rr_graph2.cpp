@@ -298,8 +298,8 @@ t_seg_details *alloc_and_load_seg_details(
 
             /* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
              * since this is a property of a detailed route. */
-            seg_details[cur_track].cb = (bool *) vtr::malloc(length * sizeof (bool));
-            seg_details[cur_track].sb = (bool *) vtr::malloc((length + 1) * sizeof (bool));
+            seg_details[cur_track].cb = std::shared_ptr<bool[]>(new bool[length], std::default_delete<bool[]>());
+            seg_details[cur_track].sb = std::shared_ptr<bool[]>(new bool[length+1], std::default_delete<bool[]>());
             for (j = 0; j < length; ++j) {
                 if (is_global_graph || seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;
@@ -414,6 +414,10 @@ t_chan_details init_chan_details(
                     p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
 
+#if 1
+                p_seg_details[i].cb = seg_details[i].cb;
+                p_seg_details[i].sb = seg_details[i].sb;
+#else
                 int length = seg_details[i].length;
                 p_seg_details[i].cb = (bool*)vtr::malloc(length * sizeof (bool));
                 p_seg_details[i].sb = (bool*)vtr::malloc((length + 1) * sizeof (bool));
@@ -423,6 +427,7 @@ t_chan_details init_chan_details(
                 for (int j = 0; j < (length + 1); ++j) {
                     p_seg_details[i].sb[j] = seg_details[i].sb[j];
                 }
+#endif
 
                 p_seg_details[i].Rmetal = seg_details[i].Rmetal;
                 p_seg_details[i].Cmetal = seg_details[i].Cmetal;
@@ -612,10 +617,6 @@ void free_seg_details(
         const int max_chan_width) {
 
     /* Frees all the memory allocated to an array of seg_details structures. */
-    for (int i = 0; i < max_chan_width; ++i) {
-        vtr::free(seg_details[i].cb);
-        vtr::free(seg_details[i].sb);
-    }
     delete[] seg_details;
 }
 

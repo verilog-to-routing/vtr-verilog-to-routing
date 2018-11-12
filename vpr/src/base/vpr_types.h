@@ -1065,8 +1065,8 @@ struct t_seg_details {
 	int length = 0;
 	int start = 0;
 	bool longline = 0;
-	bool *sb = nullptr;
-	bool *cb = nullptr;
+    std::shared_ptr<bool[]> sb;
+	std::shared_ptr<bool[]> cb;
 	short arch_wire_switch = 0;
 	short arch_opin_switch = 0;
 	float Rmetal = 0;
