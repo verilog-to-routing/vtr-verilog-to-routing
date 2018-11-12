@@ -14,12 +14,12 @@ enum e_seg_details_type {
 };
 
 struct t_rr_edge_info {
-    t_rr_edge_info(int from, int to, int type)
+    t_rr_edge_info(int from, int to, short type)
         : from_node(from), to_node(to), switch_type(type) {}
 
     int from_node = OPEN;
     int to_node = OPEN;
-    int switch_type = OPEN;
+    short switch_type = OPEN;
 
     friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
         return std::tie(lhs.from_node, lhs.to_node, lhs.switch_type) <
