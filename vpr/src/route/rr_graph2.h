@@ -113,11 +113,11 @@ void free_chan_details(
 		t_chan_details& chan_details_y);
 
 int get_seg_start(
-		const t_seg_details *seg_details,
+		const t_chan_seg_details *seg_details,
 		const int itrack,
 		const int chan_num,
 		const int seg_num);
-int get_seg_end(const t_seg_details *seg_details,
+int get_seg_end(const t_chan_seg_details *seg_details,
 		const int itrack,
 		const int istart,
 		const int chan_num,
@@ -127,14 +127,14 @@ bool is_cblock(
 		const int chan,
 		const int seg,
 		const int track,
-		const t_seg_details *seg_details);
+		const t_chan_seg_details *seg_details);
 
 bool is_sblock(
 		const int chan,
 		int wire_seg,
 		const int sb_seg,
 		const int track,
-		const t_seg_details *seg_details,
+		const t_chan_seg_details *seg_details,
 		const enum e_directionality directionality);
 
 int get_bidir_opin_connections(
@@ -144,7 +144,8 @@ int get_bidir_opin_connections(
         t_rr_edge_info_set& rr_edges_to_create,
 		const t_pin_to_track_lookup& opin_to_track_map,
 		const t_rr_node_indices& L_rr_node_indices,
-		const t_seg_details *seg_details);
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y);
 
 int get_unidir_opin_connections(
 		const int chan,
@@ -152,7 +153,7 @@ int get_unidir_opin_connections(
 		int Fc,
 		const int seg_type_index,
 		const t_rr_type chan_type,
-		const t_seg_details *seg_details,
+		const t_chan_seg_details *seg_details,
         const int from_rr_node,
         t_rr_edge_info_set& rr_edges_to_create,
         vtr::NdMatrix<int,3>& Fc_ofs,
@@ -167,7 +168,7 @@ int get_track_to_pins(
         t_rr_edge_info_set& rr_edges_to_create,
         const t_rr_node_indices& L_rr_node_indices,
 		const t_track_to_pin_lookup& track_to_pin_lookup, 
-        const t_seg_details *seg_details,
+        const t_chan_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 
@@ -185,8 +186,8 @@ int get_track_to_tracks(
         t_sblock_pattern& sblock_pattern,
         const int from_rr_node,
         t_rr_edge_info_set& rr_edges_to_create,
-		const t_seg_details *from_seg_details,
-		const t_seg_details *to_seg_details,
+		const t_chan_seg_details *from_seg_details,
+		const t_chan_seg_details *to_seg_details,
 		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
 		const t_rr_node_indices& L_rr_node_indices,
@@ -212,11 +213,11 @@ int *get_seg_track_counts(
 		const t_segment_inf * segment_inf, const bool use_full_seg_groups);
 
 void dump_seg_details(
-		const t_seg_details *seg_details,
+		const t_chan_seg_details *seg_details,
 		int max_chan_width,
 		const char *fname);
 void dump_seg_details(
-		const t_seg_details *seg_details,
+		const t_chan_seg_details *seg_details,
 		int max_chan_width,
 		FILE *fp);
 void dump_chan_details(

@@ -96,7 +96,8 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         t_rr_edge_info_set& created_rr_edges,
-        const t_seg_details * seg_details,
+        const t_chan_details& chan_details_x,
+        const t_chan_details& chan_details_y,
         const DeviceGrid& grid,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types);
@@ -121,7 +122,6 @@ static int get_opin_direct_connecions(
 static void alloc_and_load_rr_graph(
         const int num_nodes,
         std::vector<t_rr_node>& L_rr_node, const int num_seg_types,
-        const t_seg_details * seg_details,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
@@ -136,7 +136,8 @@ static void alloc_and_load_rr_graph(
         const int delayless_switch,
         const enum e_directionality directionality,
         bool * Fc_clipped,
-        const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
+        const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
+        bool is_global_graph);
 
 static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
@@ -388,10 +389,11 @@ static void build_rr_graph(
             *Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
         }
 
-        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SEG_DETAILS)) {
-            dump_seg_details(seg_details, max_chan_width,
-                    getEchoFileName(E_ECHO_SEG_DETAILS));
-        }
+        //TODO: Fix
+        //if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SEG_DETAILS)) {
+            //dump_seg_details(seg_details, max_chan_width,
+                    //getEchoFileName(E_ECHO_SEG_DETAILS));
+        //}
     }
     /* END SEG_DETAILS */
 
@@ -579,7 +581,7 @@ static void build_rr_graph(
 
     bool Fc_clipped = false;
     alloc_and_load_rr_graph(device_ctx.rr_nodes.size(), device_ctx.rr_nodes, num_seg_types,
-            seg_details, chan_details_x, chan_details_y,
+            chan_details_x, chan_details_y,
             track_to_pin_lookup, opin_to_track_map,
             switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
             Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices, max_chan_width,
@@ -587,7 +589,8 @@ static void build_rr_graph(
             delayless_switch,
             directionality,
             &Fc_clipped,
-            directs, num_directs, clb_to_clb_directs);
+            directs, num_directs, clb_to_clb_directs,
+            is_global_graph);
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
@@ -1064,7 +1067,6 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
  * appropriate values.  Everything up to this was just a prelude!      */
 static void alloc_and_load_rr_graph(const int num_nodes,
         std::vector<t_rr_node>& L_rr_node, const int num_seg_types,
-        const t_seg_details * seg_details,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
@@ -1080,7 +1082,8 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         const enum e_directionality directionality,
         bool * Fc_clipped,
         const t_direct_inf *directs, const int num_directs,
-        const t_clb_to_clb_directs *clb_to_clb_directs) {
+        const t_clb_to_clb_directs *clb_to_clb_directs,
+        bool is_global_graph) {
 
     //We take special care when creating RR graph edges (there are typically many more 
     //edges than nodes in an RR graph).
@@ -1114,7 +1117,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
             for (e_side side : SIDES) {
                 if (BI_DIRECTIONAL == directionality) {
                     build_bidir_rr_opins(i, j, side, L_rr_node_indices,
-                            opin_to_track_map, Fc_out, rr_edges_to_create, seg_details,
+                            opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x, chan_details_y,
                             grid,
                             directs, num_directs, clb_to_clb_directs, num_seg_types);
                 } else {
@@ -1145,18 +1148,20 @@ static void alloc_and_load_rr_graph(const int num_nodes,
     for (size_t i = 0; i < grid.width() - 1; ++i) {
         for (size_t j = 0; j < grid.height() - 1; ++j) {
             if (i > 0) {
+                int tracks_per_chan = ((is_global_graph) ? 1 : device_ctx.chan_width.x_list[j]);
                 build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                         CHANX_COST_INDEX_START,
-                        max_chan_width, grid, device_ctx.chan_width.x_list[j],
+                        max_chan_width, grid, tracks_per_chan,
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, rr_edges_to_create, L_rr_node,
                         wire_to_ipin_switch,
                         directionality);
             }
             if (j > 0) {
+                int tracks_per_chan = ((is_global_graph) ? 1 : device_ctx.chan_width.y_list[i]);
                 build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                         CHANX_COST_INDEX_START + num_seg_types,
-                        max_chan_width, grid, device_ctx.chan_width.y_list[i],
+                        max_chan_width, grid, tracks_per_chan,
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, rr_edges_to_create, L_rr_node,
                         wire_to_ipin_switch,
@@ -1180,7 +1185,8 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         t_rr_edge_info_set& rr_edges_to_create,
-        const t_seg_details * seg_details,
+        const t_chan_details& chan_details_x,
+        const t_chan_details& chan_details_y,
         const DeviceGrid& grid,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
@@ -1222,7 +1228,8 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         if (total_pin_Fc > 0) {
                 get_bidir_opin_connections(i, j, pin_index,
                         node_index, rr_edges_to_create, opin_to_track_map, L_rr_node_indices,
-                        seg_details);
+                        chan_details_x,
+                        chan_details_y);
         }
 
         /* Add in direct connections */
@@ -1444,7 +1451,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         opposite_chan_type = CHANX;
     }
 
-    const t_seg_details * seg_details = from_chan_details[x_coord][y_coord].data();
+    const t_chan_seg_details * seg_details = from_chan_details[x_coord][y_coord].data();
 
     /* figure out if we're generating switch block edges based on a custom switch block
        description */
@@ -1457,7 +1464,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
     /* Loads up all the routing resource nodes in the current channel segment */
     for (int track = 0; track < tracks_per_chan; ++track) {
 
-        if (seg_details[track].length == 0)
+        if (seg_details[track].length() == 0)
             continue;
 
         //Start and end coordinates of this segment along the length of the channel
@@ -1470,7 +1477,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             continue; /* Only process segments which start at this location */
         VTR_ASSERT(seg_coord == start);
 
-        const t_seg_details * from_seg_details = nullptr;
+        const t_chan_seg_details * from_seg_details = nullptr;
         if (chan_type == CHANY) {
             from_seg_details = chan_details_y[x_coord][start].data();
         } else {
@@ -1488,14 +1495,14 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
         /* get edges going from the current track into channel segments which are perpendicular to it */
         if (chan_coord > 0) {
-            const t_seg_details *to_seg_details;
+            const t_chan_seg_details *to_seg_details;
             if (chan_type == CHANX) {
                 to_seg_details = chan_details_y[start][y_coord].data();
             } else {
                 VTR_ASSERT(chan_type == CHANY);
                 to_seg_details = chan_details_x[x_coord][start].data();
             }
-            if (to_seg_details->length > 0) {
+            if (to_seg_details->length() > 0) {
                 num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord,
                         opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, node, rr_edges_to_create,
@@ -1506,14 +1513,14 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             }
         }
         if (chan_coord < chan_dimension) {
-            const t_seg_details *to_seg_details;
+            const t_chan_seg_details *to_seg_details;
             if (chan_type == CHANX) {
                 to_seg_details = chan_details_y[start][y_coord + 1].data();
             } else {
                 VTR_ASSERT(chan_type == CHANY);
                 to_seg_details = chan_details_x[x_coord + 1][start].data();
             }
-            if (to_seg_details->length > 0) {
+            if (to_seg_details->length() > 0) {
                 num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord + 1,
                         opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, node, rr_edges_to_create,
@@ -1537,14 +1544,14 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                 }
             }
             if (target_seg > 0 && target_seg < seg_dimension + 1) {
-                const t_seg_details *to_seg_details;
+                const t_chan_seg_details *to_seg_details;
                 if (chan_type == CHANX) {
                     to_seg_details = chan_details_x[target_seg][y_coord].data();
                 } else {
                     VTR_ASSERT(chan_type == CHANY);
                     to_seg_details = chan_details_y[x_coord][target_seg].data();
                 }
-                if (to_seg_details->length > 0) {
+                if (to_seg_details->length() > 0) {
                     num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
                             chan_type, seg_dimension, max_chan_width, grid,
                             Fs_per_side, sblock_pattern, node, rr_edges_to_create,
@@ -1557,7 +1564,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         }
 
         /* Edge arrays have now been built up.  Do everything else.  */
-        L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
+        L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index());
         L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
@@ -1568,13 +1575,13 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         }
 
         int length = end - start + 1;
-        float R = length * seg_details[track].Rmetal;
-        float C = length * seg_details[track].Cmetal;
+        float R = length * seg_details[track].Rmetal();
+        float C = length * seg_details[track].Cmetal();
         L_rr_node[node].set_rc_index(find_create_rr_rc_data(R, C));
 
         L_rr_node[node].set_ptc_num(track);
         L_rr_node[node].set_type(chan_type);
-        L_rr_node[node].set_direction(seg_details[track].direction);
+        L_rr_node[node].set_direction(seg_details[track].direction());
     }
 }
 
@@ -2380,9 +2387,9 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side,
                 continue;
             }
 
-            const t_seg_details * seg_details = (chan_type == CHANX ?
+            const t_chan_seg_details * seg_details = (chan_type == CHANX ?
                     chan_details_x[seg][chan] : chan_details_y[chan][seg]).data();
-            if (seg_details[0].length == 0)
+            if (seg_details[0].length() == 0)
                 continue;
 
             /* Get the list of opin to mux connections for that chan seg. */

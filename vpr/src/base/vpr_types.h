@@ -1035,7 +1035,7 @@ enum e_direction : unsigned char {
     NUM_DIRECTIONS
 };
 
-constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
+constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *
@@ -1082,8 +1082,61 @@ struct t_seg_details {
 	const char *type_name_ptr = nullptr;
 };
 
+class t_chan_seg_details {
+    public:
+        t_chan_seg_details() = default;
+        t_chan_seg_details(const t_seg_details* init_seg_details)
+            : length_(init_seg_details->length)
+            , seg_detail_(init_seg_details) {}
+
+    public:
+        int length() const { return length_; }
+        int seg_start() const { return seg_start_; }
+        int seg_end() const { return seg_end_; }
+
+        int start() const { return seg_detail_->start; }
+        bool longline() const { return seg_detail_->longline; }
+
+        int group_start() const { return seg_detail_->group_start; }
+        int group_size() const { return seg_detail_->group_size; }
+
+        bool cb(int pos) const { return seg_detail_->cb[pos]; }
+        bool sb(int pos) const { return seg_detail_->sb[pos]; }
+
+        float Rmetal() const { return seg_detail_->Rmetal; }
+        float Cmetal() const { return seg_detail_->Cmetal; }
+        float Cmetal_per_m() const { return seg_detail_->Cmetal_per_m; }
+
+        short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
+        short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+
+        e_direction direction() const { return seg_detail_->direction; }
+
+        int index() const { return seg_detail_->index; }
+
+        const char* type_name_ptr() const { return seg_detail_->type_name_ptr; }
+
+    public: //Modifiers
+        void set_length(int new_len) { length_ = new_len; }
+        void set_seg_start(int start) { seg_start_ = start; }
+        void set_seg_end(int end) { seg_end_ = end; }
+
+    private:
+        //The only unique information about a channel segment is it's start/end
+        //and length.  All other information is shared accross segment types,
+        //so we use a flyweight to the t_seg_details which defines that info.
+        //
+        //To preserve the illusion of uniqueness we wrap all t_seg_details members
+        //so it appears transparent -- client code of this class doesn't need to
+        //know about t_seg_details.
+        int length_ = -1;
+        int seg_start_ = -1;
+        int seg_end_ = -1;
+        const t_seg_details* seg_detail_ = nullptr;
+};
+
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
-typedef vtr::NdMatrix<t_seg_details,3> t_chan_details;
+typedef vtr::NdMatrix<t_chan_seg_details,3> t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */
