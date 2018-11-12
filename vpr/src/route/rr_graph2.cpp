@@ -237,8 +237,7 @@ t_seg_details *alloc_and_load_seg_details(
     VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
     *max_chan_width = tmp;
 
-    seg_details = (t_seg_details *) vtr::malloc(
-            *max_chan_width * sizeof (t_seg_details));
+    seg_details = new t_seg_details[*max_chan_width];
 
     /* Setup the seg_details data */
     cur_track = 0;
@@ -392,7 +391,7 @@ t_chan_details init_chan_details(
         for (size_t y = 0; y < grid.height(); ++y) {
 
             t_seg_details* p_seg_details = nullptr;
-            p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof (t_seg_details));
+            p_seg_details = new t_seg_details[nodes_per_chan->max];
             for (int i = 0; i < num_seg_details; ++i) {
 
                 p_seg_details[i].length = seg_details[i].length;
@@ -617,7 +616,7 @@ void free_seg_details(
         vtr::free(seg_details[i].cb);
         vtr::free(seg_details[i].sb);
     }
-    vtr::free(seg_details);
+    delete[] seg_details;
 }
 
 void free_chan_details(

@@ -1062,24 +1062,24 @@ constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DI
  * type_name_ptr: pointer to name of the segment type this track belongs    *
  *                to. points to the appropriate name in s_segment_inf       */
 struct t_seg_details {
-	int length;
-	int start;
-	bool longline;
-	bool *sb;
-	bool *cb;
-	short arch_wire_switch;
-	short arch_opin_switch;
-	float Rmetal;
-	float Cmetal;
-	bool twisted;
-	enum e_direction direction;
-	int group_start;
-	int group_size;
-	int seg_start;
-	int seg_end;
-	int index;
-	float Cmetal_per_m; /* Used for power */
-	const char *type_name_ptr;
+	int length = 0;
+	int start = 0;
+	bool longline = 0;
+	bool *sb = nullptr;
+	bool *cb = nullptr;
+	short arch_wire_switch = 0;
+	short arch_opin_switch = 0;
+	float Rmetal = 0;
+	float Cmetal = 0;
+	bool twisted = 0;
+	enum e_direction direction = NO_DIRECTION;
+	int group_start = 0;
+	int group_size = 0;
+	int seg_start = 0;
+	int seg_end = 0;
+	int index = 0;
+	float Cmetal_per_m = 0; /* Used for power */
+	const char *type_name_ptr = nullptr;
 };
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
