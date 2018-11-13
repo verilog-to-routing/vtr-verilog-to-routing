@@ -369,7 +369,7 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int clb_pin, const In
         //CLB output pin has no internal driver
         return AtomPinId::INVALID();
     }
-    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
+    const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
     AtomNetId atom_net = pb_routes[pb_pin_id].atom_net_id;
 
     //Trace back until the driver is reached
@@ -394,8 +394,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int clb_p
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
-    VTR_ASSERT(pb_routes);
+    const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
     VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type(clb)->num_pins, "Must be a valid top-level pin");
 
@@ -509,7 +508,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     VTR_ASSERT(clb != ClusterBlockId::INVALID());
     VTR_ASSERT(sink_pb_pin_id >= 0);
 
-    const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
+    const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
     VTR_ASSERT_MSG(pb_routes[sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
 
@@ -1377,11 +1376,6 @@ void free_pb(t_pb *pb) {
 	int i, j, mode;
 
 	pb_type = pb->pb_graph_node->pb_type;
-
-    if (pb->pb_route) {
-        delete[] pb->pb_route;
-        pb->pb_route = nullptr;
-    }
 
     if (pb->name) {
         free(pb->name);

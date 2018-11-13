@@ -35,6 +35,7 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_vector_map.h"
 #include "vtr_util.h"
+#include "vtr_flat_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -167,6 +168,8 @@ struct t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
 
+typedef vtr::flat_map2<int,t_pb_route> t_pb_routes;
+
 /* A t_pb represents an instance of a clustered block, which may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device
  *       grid location (e.g. a Logic block, RAM block, DSP block), or
@@ -192,7 +195,7 @@ struct t_pb {
 	/* Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
 	*  t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
 	*  Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
-	t_pb_route *pb_route = nullptr;
+    t_pb_routes pb_route;
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 

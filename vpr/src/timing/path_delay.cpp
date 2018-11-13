@@ -776,7 +776,6 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	ClusterNetId net_id;
 	int normalized_pin, normalization;
 	t_pb_graph_pin *ipb_graph_pin;
-	t_pb_route *intra_lb_route, *d_intra_lb_route;
 	int num_dangling_pins;
 	t_pb_graph_pin*** intra_lb_pb_pin_lookup;
 	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
@@ -855,11 +854,11 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		case TN_PRIMITIVE_OPIN:
 		case TN_FF_OPIN:
 		case TN_CLOCK_OPIN:
-		case TN_CB_IPIN:
+		case TN_CB_IPIN: {
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
 			i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
+			const auto& intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
@@ -910,6 +909,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			VTR_ASSERT(count >= 0);
 
 			break;
+         }
 		case TN_PRIMITIVE_IPIN:
 			/* Pin info comes from pb_graph block delays
 			 */
@@ -917,7 +917,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			if (timing_inf.timing_analysis_enabled)
 			{
 				i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-				intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
+				const auto& intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 				ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 				timing_ctx.tnodes[i].num_edges = ipb_graph_pin->num_pin_timing;
 				timing_ctx.tnodes[i].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -942,10 +942,10 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				}
 			}
 			break;
-		case TN_CB_OPIN:
+		case TN_CB_OPIN: {
 			/* load up net info */
 			i_pin_id = timing_ctx.tnodes[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
+			const auto& intra_lb_route = cluster_ctx.clb_nlist.block_pb(iblock)->pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			VTR_ASSERT(intra_lb_route[i_pin_id].atom_net_id);
@@ -961,7 +961,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				normalization = cluster_ctx.clb_nlist.block_type(dblock)->num_pins
 						/ cluster_ctx.clb_nlist.block_type(dblock)->capacity;
 				normalized_pin = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, j) % normalization;
-				d_intra_lb_route = cluster_ctx.clb_nlist.block_pb(dblock)->pb_route;
+				const auto& d_intra_lb_route = cluster_ctx.clb_nlist.block_pb(dblock)->pb_route;
 				dpin = OPEN;
 				dport = OPEN;
 				count = 0;
@@ -1012,6 +1012,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				VTR_ASSERT(net_id != ClusterNetId::INVALID());
 			}
 			break;
+         }
 		case TN_OUTPAD_IPIN:
 		case TN_INPAD_SOURCE:
 		case TN_OUTPAD_SINK:
