@@ -249,6 +249,7 @@ void t_rr_node::partition_edges() {
 void t_rr_node::set_num_edges(short new_num_edges) {
     VTR_ASSERT(new_num_edges >= 0);
     num_edges_ = new_num_edges;
+    edges_capacity_ = new_num_edges;
 
     edges_ = std::make_unique<t_rr_edge[]>(num_edges_);
 }
