@@ -298,8 +298,8 @@ t_seg_details *alloc_and_load_seg_details(
 
             /* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
              * since this is a property of a detailed route. */
-            seg_details[cur_track].cb = std::shared_ptr<bool[]>(new bool[length], std::default_delete<bool[]>());
-            seg_details[cur_track].sb = std::shared_ptr<bool[]>(new bool[length+1], std::default_delete<bool[]>());
+            seg_details[cur_track].cb = std::make_unique<bool[]>(length);
+            seg_details[cur_track].sb = std::make_unique<bool[]>(length+1);
             for (j = 0; j < length; ++j) {
                 if (is_global_graph || seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;

@@ -911,9 +911,9 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
     seg_details->Cmetal = 0.0;
     seg_details->Rmetal = 0.0;
     seg_details->start = 1;
-    seg_details->cb = std::shared_ptr<bool[]>(new bool[1], std::default_delete<bool[]>());
+    seg_details->cb = std::make_unique<bool[]>(1);
     seg_details->cb[0] = true;
-    seg_details->sb = std::shared_ptr<bool[]>(new bool[2], std::default_delete<bool[]>());
+    seg_details->sb = std::make_unique<bool[]>(2);
     seg_details->sb[0] = true;
     seg_details->sb[1] = true;
     seg_details->group_size = 1;

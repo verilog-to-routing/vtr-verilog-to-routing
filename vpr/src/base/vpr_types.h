@@ -1063,8 +1063,8 @@ struct t_seg_details {
 	int length = 0;
 	int start = 0;
 	bool longline = 0;
-    std::shared_ptr<bool[]> sb;
-	std::shared_ptr<bool[]> cb;
+    std::unique_ptr<bool[]> sb;
+	std::unique_ptr<bool[]> cb;
 	short arch_wire_switch = 0;
 	short arch_opin_switch = 0;
 	float Rmetal = 0;
@@ -1116,8 +1116,8 @@ class t_chan_seg_details {
 
     public: //Modifiers
         void set_length(int new_len) { length_ = new_len; }
-        void set_seg_start(int start) { seg_start_ = start; }
-        void set_seg_end(int end) { seg_end_ = end; }
+        void set_seg_start(int new_start) { seg_start_ = new_start; }
+        void set_seg_end(int new_end) { seg_end_ = new_end; }
 
     private:
         //The only unique information about a channel segment is it's start/end
