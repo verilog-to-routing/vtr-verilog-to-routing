@@ -704,7 +704,6 @@ int get_bidir_opin_connections(
         seg = ((to_type == CHANX) ? tr_i : tr_j);
 
         bool vert = ((side == TOP) || (side == BOTTOM));
-        const t_chan_seg_details * seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
 
         /* Don't connect where no tracks on fringes */
         if ((tr_i < 0) || (tr_i > int(device_ctx.grid.width() - 2))) { //-2 for no perimeter channels
@@ -724,6 +723,8 @@ int get_bidir_opin_connections(
         }
 
         is_connected_track = false;
+
+        const t_chan_seg_details * seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
 
         /* Iterate of the opin to track connections */
         for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][side]) {
