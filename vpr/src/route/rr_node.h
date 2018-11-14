@@ -68,12 +68,12 @@ class t_rr_node {
         const char *type_string() const; /* Retrieve type as a string */
 
         edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
-        edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_configurable_edges())); }
-        edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_configurable_edges()), edge_idx_iterator(num_edges())); }
+        edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
+        edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
 
         short num_edges() const { return num_edges_; }
-        short num_configurable_edges() const { return num_configurable_edges_; }
-        short num_non_configurable_edges() const { return num_edges() - num_configurable_edges(); }
+        short num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
+        short num_non_configurable_edges() const { return num_non_configurable_edges_; }
 
         int edge_sink_node(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].sink_node; }
         short edge_switch(short iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edges_[iedge].switch_id; }
@@ -104,6 +104,7 @@ class t_rr_node {
         float R() const;
         float C() const;
 
+        bool validate() const;
 
     public: //Mutators
         void set_type(t_rr_type new_type);
@@ -156,7 +157,7 @@ class t_rr_node {
         std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
         uint16_t num_edges_ = 0;
         uint16_t edges_capacity_ = 0;
-        uint8_t num_configurable_edges_ = 0;
+        uint8_t num_non_configurable_edges_ = 0;
 
         int8_t cost_index_ = -1;
         int16_t rc_index_ = -1;

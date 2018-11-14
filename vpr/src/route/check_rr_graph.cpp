@@ -36,6 +36,8 @@ void check_rr_graph(const t_graph_type graph_type,
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 
+        device_ctx.rr_nodes[inode].validate();
+
         /* Ignore any uninitialized rr_graph nodes */
         if ((device_ctx.rr_nodes[inode].type() == SOURCE)
                 && (device_ctx.rr_nodes[inode].xlow() == 0) && (device_ctx.rr_nodes[inode].ylow() == 0)

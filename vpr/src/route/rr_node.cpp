@@ -122,6 +122,34 @@ float t_rr_node::C() const {
     return device_ctx.rr_rc_data[rc_index()].C;
 }
 
+bool t_rr_node::validate() const {
+    //Check internal assumptions about RR node are valid
+
+    if (num_edges_ > edges_capacity_) {
+        VPR_THROW(VPR_ERROR_ROUTE, "RR Node number of edges exceeded edge capacity");
+    }
+
+    short iedge = 0;
+    for (auto edge : edges()) {
+        if (edge < num_configurable_edges()) {
+            if (!edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "RR Node non-configurable edge found in configurable edge list");
+            }
+        } else {
+            if (edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "RR Node configurable edge found in non-configurable edge list");
+            }
+        }
+        ++iedge;
+    }
+
+    if (iedge != num_edges()) {
+        VPR_THROW(VPR_ERROR_ROUTE, "RR Node Edge iteration does not match edge size");
+    }
+
+    return true;
+}
+
 void t_rr_node::set_type(t_rr_type new_type) {
     type_ = new_type;
 }
@@ -243,7 +271,14 @@ void t_rr_node::partition_edges() {
     //Partition the edges so the first set of edges are all configurable, and the later are not
     auto first_non_config_edge = std::partition(edges_.get(), edges_.get() + num_edges_, is_configurable);
 
-    num_configurable_edges_ = std::distance(edges_.get(), first_non_config_edge);
+    size_t num_configurable_edges = std::distance(edges_.get(), first_non_config_edge);
+    size_t num_non_configurable_edges = num_edges() - num_configurable_edges; //Note we calculate using the size_t to get full range
+
+    //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+    if (num_non_configurable_edges > std::numeric_limits<decltype(num_non_configurable_edges_)>::max()) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Exceeded RR node maximum number of non-configurable edges");
+    }
+    num_non_configurable_edges_ = num_non_configurable_edges; //Narrowing
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {

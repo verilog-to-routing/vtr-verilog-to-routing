@@ -2564,5 +2564,7 @@ static bool should_apply_switch_override(int switch_override) {
 void partition_rr_graph_edges(DeviceContext& device_ctx) {
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         device_ctx.rr_nodes[inode].partition_edges();
+
+        VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].validate());
     }
 }

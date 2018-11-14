@@ -622,7 +622,6 @@ static void build_rr_graph(
         dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
     }
 
-
     check_rr_graph(graph_type, grid, *num_rr_switches, types);
 
     /* Free all temp structs */
