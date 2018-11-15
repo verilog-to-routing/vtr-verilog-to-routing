@@ -120,7 +120,6 @@ struct t_options {
     argparse::ArgValue<int> router_high_fanout_threshold;
     argparse::ArgValue<int> router_debug_net;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
-    argparse::ArgValue<int> router_lock_opin_iteration_threshold;
     argparse::ArgValue<int> router_max_convergence_count;
 
     /* Analysis options */

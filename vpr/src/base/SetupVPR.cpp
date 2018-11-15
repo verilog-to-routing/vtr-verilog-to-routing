@@ -361,7 +361,6 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
     RouterOpts->router_debug_net = Options.router_debug_net;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
-    RouterOpts->lock_opin_iteration_threshold = Options.router_lock_opin_iteration_threshold;
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
 }
 
