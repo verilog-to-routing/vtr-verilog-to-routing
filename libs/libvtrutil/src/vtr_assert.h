@@ -119,7 +119,15 @@
 #endif
 
 namespace vtr { namespace assert {
-    void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
+    //Assertion handling routine
+    //
+    //Note that we mark the routine with the standard C++11 
+    //attribute 'noreturn' which tells the compiler this 
+    //function will never return. This should ensure the 
+    //compiler won't warn about detected conditions such as 
+    //dead-code or potential null pointer dereferences
+    //which are gaurded against by assertions.
+    [[noreturn]] void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
 }} //namespace
 
 #endif //VTR_ASSERT_H
