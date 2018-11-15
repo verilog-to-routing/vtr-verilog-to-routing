@@ -271,7 +271,7 @@ void t_rr_node::partition_edges() {
     //Partition the edges so the first set of edges are all configurable, and the later are not
     auto first_non_config_edge = std::partition(edges_.get(), edges_.get() + num_edges_, is_configurable);
 
-    size_t num_confe_edges = std::distance(edges_.get(), first_non_config_edge);
+    size_t num_conf_edges = std::distance(edges_.get(), first_non_config_edge);
     size_t num_non_configurable_edges = num_edges() - num_conf_edges; //Note we calculate using the size_t to get full range
 
     //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
