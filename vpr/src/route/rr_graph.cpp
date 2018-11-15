@@ -69,6 +69,8 @@ struct t_pin_loc {
     e_side side;
 };
 
+typedef std::vector<std::map<int,int>> t_arch_switch_fanin;
+
 /******************* Variables local to this module. ***********************/
 
 
@@ -201,11 +203,11 @@ void alloc_and_load_edges(std::vector<t_rr_node>& L_rr_node,
 static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
                                         const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch);
 
-static void remap_rr_node_switch_indices(map<int, int> *switch_fanin);
+static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin);
 
-static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, map<int, int> *switch_fanin);
+static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const t_arch_switch_fanin& switch_fanin);
 
-static int alloc_rr_switch_inf(map<int, int> *switch_fanin);
+static int alloc_rr_switch_inf(t_arch_switch_fanin& switch_fanin);
 
 static void rr_graph_externals(
         const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
@@ -669,32 +671,33 @@ static void build_rr_graph(
 static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos,
                                         const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
-       each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
-       with this expanded list of switches.
-       To do this we will use an array of maps where each map corresponds to a different arch switch.
-       So for each arch switch we will use this map to keep track of the different fan-ins that it uses (map key)
-       and which index in the device_ctx.rr_switch_inf array this arch switch / fanin combination will be placed in */
-    map<int, int> *switch_fanin = new map<int, int>[num_arch_switches];
+     * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
+     * with this expanded list of switches.
+     *
+     * To do this we will use arch_switch_fanins, which is indexed as:
+     *      arch_switch_fanins[i_arch_switch][fanin] -> new_switch_id
+     */
+    t_arch_switch_fanin arch_switch_fanins(num_arch_switches);
 
     /* Determine what the different fan-ins are for each arch switch, and also
        how many entries the rr_switch_inf array should have */
-    int num_rr_switches = alloc_rr_switch_inf(switch_fanin);
+    int num_rr_switches = alloc_rr_switch_inf(arch_switch_fanins);
 
     /* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf
        array each version of its fanin has been mapped to */
-    load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, switch_fanin);
+    load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, arch_switch_fanins);
 
     /* next, walk through rr nodes again and remap their switch indices to rr_switch_inf */
-    remap_rr_node_switch_indices(switch_fanin);
+    remap_rr_node_switch_indices(arch_switch_fanins);
 
     /* now we need to set the wire_to_rr_ipin_switch variable which points the detailed routing architecture
        to the representative ipin cblock switch. currently we're not allowing the specification of an ipin cblock switch
        with multiple fan-ins, so right now there's just one. May change in the future, in which case we'd need to
        return a representative switch */
-    if (switch_fanin[wire_to_arch_ipin_switch].count(UNDEFINED)) {
+    if (arch_switch_fanins[wire_to_arch_ipin_switch].count(UNDEFINED)) {
         /* only have one ipin cblock switch. OK. */
-        (*wire_to_rr_ipin_switch) = switch_fanin[wire_to_arch_ipin_switch][UNDEFINED];
-    } else if (switch_fanin[wire_to_arch_ipin_switch].size() != 0) {
+        (*wire_to_rr_ipin_switch) = arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
+    } else if (arch_switch_fanins[wire_to_arch_ipin_switch].size() != 0) {
         vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
                 "Not currently allowing an ipin cblock switch to have multiple fan-ins");
     } else {
@@ -708,73 +711,78 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const float
                 "No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
     }
 
-    delete[] switch_fanin;
-
     return num_rr_switches;
 }
 
 /* Allocates space for the global device_ctx.rr_switch_inf variable and returns the
    number of rr switches that were allocated */
-static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
+static int alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int num_rr_switches = 0;
-    // map key: switch index specified in arch; map value: fanin for that index
-    map<int, int> *inward_switch_inf = new map<int, int>[device_ctx.rr_nodes.size()];
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        const t_rr_node& from_node = device_ctx.rr_nodes[inode];
-        int num_edges = from_node.num_edges();
-        for (int iedge = 0; iedge < num_edges; iedge++) {
-            int switch_index = from_node.edge_switch(iedge);
-            int to_node_index = from_node.edge_sink_node(iedge);
-            if (inward_switch_inf[to_node_index].count(switch_index) == 0)
-                inward_switch_inf[to_node_index][switch_index] = 0;
-            inward_switch_inf[to_node_index][switch_index]++;
-        }
-    }
+    {
+        //Collect the fan-in per switch type for each node in the graph
+        //
+        //Note that since we don't store backward edge info in the RR graph we need to walk
+        //the whole graph to get the per-switch-type fanin info
+        std::vector<vtr::flat_map<int,int>> inward_switch_inf(device_ctx.rr_nodes.size()); //[to_node][arch_switch] -> fanin
+        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+            for (auto iedge : device_ctx.rr_nodes[inode].edges()) {
+                int iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
-    // get unique index / fanin combination based on inward_switch_inf
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        map<int, int>::iterator itr;
-        for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
-            int switch_index = itr->first;
-            int fanin = itr->second;
-            if (device_ctx.arch_switch_inf[switch_index].fixed_Tdel()) {
-                fanin = UNDEFINED;
+                if (inward_switch_inf[to_node].count(iswitch) == 0) {
+                    inward_switch_inf[to_node][iswitch] = 0;
+                }
+                inward_switch_inf[to_node][iswitch]++;
             }
-            if (switch_fanin[switch_index].count(fanin) == 0) {
-                switch_fanin[switch_index][fanin] = 0;
-                num_rr_switches++;
+        }
+
+        //Record the unique switch type/fanin combinations
+        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+            for (auto& switch_fanin : inward_switch_inf[inode]) {
+                int iswitch, fanin;
+                std::tie(iswitch, fanin) = switch_fanin;
+
+                if (device_ctx.arch_switch_inf[iswitch].fixed_Tdel()) {
+                    //If delay is independent of fanin drop the unique fanin info
+                    fanin = UNDEFINED;
+                }
+
+                if (arch_switch_fanins[iswitch].count(fanin) == 0) { //New fanin for this switch
+                    arch_switch_fanins[iswitch][fanin] = num_rr_switches++; //Assign it a unique index
+                }
             }
         }
     }
-    delete[] inward_switch_inf;
 
     /* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
-    device_ctx.rr_switch_inf = new t_rr_switch_inf[num_rr_switches];
+    device_ctx.rr_switch_inf = new t_rr_switch_inf[num_rr_switches]; //TODO: convert to vector..
 
     return num_rr_switches;
 }
 
 /* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
-static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, map<int, int> *switch_fanin) {
+static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    int i_rr_switch = 0;
-    if (device_ctx.switch_fanin_remap != nullptr) {
+    if (!device_ctx.switch_fanin_remap.empty()) {
         // at this stage, we rebuild the rr_graph (probably in binary search)
         // so old device_ctx.switch_fanin_remap is obsolete
-        delete [] device_ctx.switch_fanin_remap;
+        device_ctx.switch_fanin_remap.clear();
     }
-    device_ctx.switch_fanin_remap = new map<int, int>[num_arch_switches];
+
+    device_ctx.switch_fanin_remap.resize(num_arch_switches);
     for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++) {
         map<int, int>::iterator it;
-        for (it = switch_fanin[i_arch_switch].begin(); it != switch_fanin[i_arch_switch].end(); it++) {
+        for (auto fanin_rrswitch : arch_switch_fanins[i_arch_switch]) {
             /* the fanin value is in it->first, and we'll need to set what index this i_arch_switch/fanin
                combination maps to (within rr_switch_inf) in it->second) */
-            int fanin = it->first;
-            it->second = i_rr_switch;
+            int fanin;
+            int i_rr_switch;
+            std::tie(fanin, i_rr_switch) = fanin_rrswitch;
+
             // setup device_ctx.switch_fanin_remap, for future swich usage analysis
             device_ctx.switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;
 
@@ -800,9 +808,6 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
             device_ctx.rr_switch_inf[i_rr_switch].name = device_ctx.arch_switch_inf[i_arch_switch].name;
             device_ctx.rr_switch_inf[i_rr_switch].power_buffer_type = device_ctx.arch_switch_inf[i_arch_switch].power_buffer_type;
             device_ctx.rr_switch_inf[i_rr_switch].power_buffer_size = device_ctx.arch_switch_inf[i_arch_switch].power_buffer_size;
-
-            /* have created a switch in the rr_switch_inf array */
-            i_rr_switch++;
         }
     }
 }
@@ -810,7 +815,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.
    now we want to remap these indices to point into the global device_ctx.rr_switch_inf array
    which contains switch info at different fan-in values */
-static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
+static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
@@ -826,7 +831,10 @@ static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
                 fanin = UNDEFINED;
             }
 
-            int rr_switch_index = switch_fanin[switch_index][fanin];
+            auto itr = switch_fanin[switch_index].find(fanin);
+            VTR_ASSERT(itr != switch_fanin[switch_index].end());
+
+            int rr_switch_index = itr->second;
 
             from_node.set_edge_switch(iedge, rr_switch_index);
         }
@@ -1275,8 +1283,7 @@ void free_rr_graph() {
     device_ctx.rr_switch_inf = nullptr;
     device_ctx.num_rr_switches = 0;
 
-    delete[] device_ctx.switch_fanin_remap;
-    device_ctx.switch_fanin_remap = nullptr;
+    device_ctx.switch_fanin_remap.clear();
 }
 
 static void build_rr_sinks_sources(const int i, const int j,

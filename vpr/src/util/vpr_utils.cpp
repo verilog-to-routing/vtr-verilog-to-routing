@@ -1997,8 +1997,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch ++ ) {
-        map<int, int>::iterator itr;
-        for (itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
+        for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
             if (itr->second == *switch_index) {
                 *switch_index = iswitch;
                 *fanin = itr->first;
@@ -2036,8 +2035,8 @@ static int convert_switch_index(int *switch_index, int *fanin) {
 void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (device_ctx.switch_fanin_remap == nullptr) {
-        VTR_LOG_WARN( "Cannot print switch usage stats: device_ctx.switch_fanin_remap is NULL\n");
+    if (device_ctx.switch_fanin_remap.empty()) {
+        VTR_LOG_WARN( "Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
     }
     map<int, int> *switch_fanin_count;
