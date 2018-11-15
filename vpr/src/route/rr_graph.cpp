@@ -193,6 +193,8 @@ static void build_rr_chan(
         const int wire_to_ipin_switch,
         const enum e_directionality directionality);
 
+void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
+
 void alloc_and_load_edges(std::vector<t_rr_node>& L_rr_node,
         const t_rr_edge_info_set& rr_edges_to_create);
 
@@ -1107,8 +1109,15 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         for (size_t j = 0; j < grid.height(); ++j) {
             build_rr_sinks_sources(i, j, L_rr_node, rr_edges_to_create, L_rr_node_indices,
                     delayless_switch, grid);
+
+            //Create the actual SOURCE->OPIN, IPIN->SINK edges
+            uniquify_edges(rr_edges_to_create);
+            alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+            rr_edges_to_create.clear();
         }
     }
+
+
 
     /* Build opins */
     for (size_t i = 0; i < grid.width(); ++i) {
@@ -1130,6 +1139,12 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         *Fc_clipped = true;
                     }
                 }
+
+                //Create the actual OPIN->CHANX/CHANY edges
+                uniquify_edges(rr_edges_to_create);
+                alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+                rr_edges_to_create.clear();
+
             }
         }
     }
@@ -1148,6 +1163,11 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         L_rr_node_indices, rr_edges_to_create, L_rr_node,
                         wire_to_ipin_switch,
                         directionality);
+
+                //Create the actual CHAN->CHAN edges
+                uniquify_edges(rr_edges_to_create);
+                alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+                rr_edges_to_create.clear();
             }
             if (j > 0) {
                 int tracks_per_chan = ((is_global_graph) ? 1 : device_ctx.chan_width.y_list[i]);
@@ -1158,15 +1178,17 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                         L_rr_node_indices, rr_edges_to_create, L_rr_node,
                         wire_to_ipin_switch,
                         directionality);
+
+                //Create the actual CHAN->CHAN edges
+                uniquify_edges(rr_edges_to_create);
+                alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+                rr_edges_to_create.clear();
             }
+
+
         }
+
     }
-
-    //Uniquify all RR graph edges to be created
-    std::sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
-    rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
-
-    alloc_and_load_edges(L_rr_node, rr_edges_to_create);
 
     init_fan_in(L_rr_node, num_nodes);
 }
@@ -1383,6 +1405,8 @@ static void build_rr_sinks_sources(const int i, const int j,
             }
         }
     }
+
+    //Create the actual edges
 }
 
 void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes) {
@@ -1575,6 +1599,11 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
     }
 }
 
+void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
+    std::sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
+    rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
+}
+
 void alloc_and_load_edges(std::vector<t_rr_node>& L_rr_node,
         const t_rr_edge_info_set& rr_edges_to_create) {
 
@@ -1589,7 +1618,14 @@ void alloc_and_load_edges(std::vector<t_rr_node>& L_rr_node,
         }
     };
 
-    for (int inode = 0; inode < (int) L_rr_node.size(); ++inode) {
+    std::set<int> from_nodes;
+    for (auto& edge : rr_edges_to_create) {
+        from_nodes.insert(edge.from_node);
+    }
+
+    VTR_ASSERT_SAFE(std::is_sorted(rr_edges_to_create.begin(), rr_edges_to_create.end()));
+
+    for (int inode : from_nodes) {
 
         auto edge_range = std::equal_range(rr_edges_to_create.begin(), rr_edges_to_create.end(), inode, compare_from_node());
 
