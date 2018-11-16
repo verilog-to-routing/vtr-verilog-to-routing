@@ -132,12 +132,14 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
+#include "vtr_log.h"
 
 #include "vpr_error.h"
 
 #include "build_switchblocks.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
+#include "expr_eval.h"
 
 using namespace std;
 
@@ -227,6 +229,8 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
 		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type,
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb,
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns);
+
+static int evaluate_num_conns_formula(std::string num_conns_formula, int from_wire_count, int to_wire_count);
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
 static void get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
@@ -706,7 +710,7 @@ static void get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_detai
 			}
 		}
 	}
-	sort(wires->begin(), wires->end());
+    sort(wires->begin(), wires->end());
 }
 
 
@@ -782,6 +786,8 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb,
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns){
 
+    constexpr bool verbose = false;
+
 	/* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
 	vector<int> potential_src_wires;
 	vector<int> potential_dest_wires;
@@ -791,6 +797,49 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
 
 	get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
 			wireconn_ptr->to_switchpoint_set, wire_type_sizes, true, &potential_dest_wires);
+
+    VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, SIDE_STRING[sb_conn.from_side], SIDE_STRING[sb_conn.to_side]);
+
+    for (auto from_set : wireconn_ptr->from_switchpoint_set) {
+        VTR_LOGV(verbose, "  FROM_SET: %s @", from_set.segment_name.c_str());
+        for (int switchpoint : from_set.switchpoints) {
+            VTR_LOGV(verbose, "%d ", switchpoint);
+        }
+    }
+    VTR_LOGV(verbose, "\n");
+
+    for (auto to_set : wireconn_ptr->to_switchpoint_set) {
+        VTR_LOGV(verbose, "  TO_SET: %s @", to_set.segment_name.c_str());
+        for (int switchpoint : to_set.switchpoints) {
+            VTR_LOGV(verbose, "%d ", switchpoint);
+        }
+    }
+    VTR_LOGV(verbose, "\n");
+
+    vector<std::string> src_wire_str;
+    for (int i : potential_src_wires) {
+        int seg_coord = from_x;
+        if (from_chan_type == CHANY){
+            seg_coord = from_y;
+        }
+        int switchpoint = get_switchpoint_of_wire(grid, from_chan_type, from_chan_details[from_x][from_y][i], seg_coord, sb_conn.from_side);
+
+        src_wire_str.push_back(std::to_string(i) + "@" + std::to_string(switchpoint));
+    }
+    vector<std::string> dst_wire_str;
+    for (int i : potential_dest_wires) {
+        int seg_coord = to_x;
+        if (to_chan_type == CHANY){
+            seg_coord = to_y;
+        }
+        int switchpoint = get_switchpoint_of_wire(grid, to_chan_type, to_chan_details[to_x][to_y][i], seg_coord, sb_conn.to_side);
+
+        dst_wire_str.push_back(std::to_string(i) + "@" + std::to_string(switchpoint));
+    }
+    auto src_str = vtr::join(src_wire_str, ", ");
+    auto dst_str = vtr::join(dst_wire_str, ", ");
+    VTR_LOGV(verbose, "  SRC_WIRES: %s\n", src_str.c_str());
+    VTR_LOGV(verbose, "  DST_WIRES: %s\n", dst_str.c_str());
 
     if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
         //Can't make any connections between empty sets
@@ -808,22 +857,9 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
     //      * interleave (to ensure good diversity)
 
     //Determine how many connections to make
-    size_t num_conns = 0;
-    if (wireconn_ptr->num_conns_type == WireConnType::FROM) {
-        num_conns = potential_src_wires.size();
+    size_t num_conns = evaluate_num_conns_formula(wireconn_ptr->num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
 
-    } else if (wireconn_ptr->num_conns_type == WireConnType::TO) {
-        num_conns = potential_dest_wires.size();
-
-    } else if (wireconn_ptr->num_conns_type == WireConnType::MIN) {
-        num_conns = std::min(potential_src_wires.size(), potential_dest_wires.size());
-
-    } else if (wireconn_ptr->num_conns_type == WireConnType::MAX) {
-        num_conns = std::max(potential_src_wires.size(), potential_dest_wires.size());
-
-    } else {
-        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Unrecognized wireconn type");
-    }
+    VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
 
     for (size_t iconn = 0; iconn < num_conns; ++iconn) {
@@ -874,6 +910,7 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
             sb_edge.from_wire = from_wire;
             sb_edge.to_wire = to_wire;
             sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
+            VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
             /* and now, finally, add this switchblock connection to the switchblock connections map */
             (*sb_conns)[sb_conn].push_back(sb_edge);
@@ -893,6 +930,16 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
     }
 }
 
+static int evaluate_num_conns_formula(std::string num_conns_formula, int from_wire_count, int to_wire_count) {
+    t_formula_data vars;
+
+    vars.set_var_value("from", from_wire_count);
+    vars.set_var_value("to", to_wire_count);
+    vars.set_var_value("min", std::min(from_wire_count, to_wire_count));
+    vars.set_var_value("max", std::min(from_wire_count, to_wire_count));
+
+    return parse_formula(num_conns_formula, vars);
+}
 
 /* Here we find the correct channel (x or y), and the coordinates to index into it based on the
    specified tile coordinates and the switchblock side. Also returns the type of channel

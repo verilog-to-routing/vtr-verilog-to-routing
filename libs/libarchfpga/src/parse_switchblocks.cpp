@@ -123,7 +123,7 @@ void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_da
     //Parse an inline wireconn definition, using attributes
 
     /* get the connection style */
-    const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
+    const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
     parse_num_conns(char_prop, wc);
 
     /* get from type */
@@ -228,18 +228,8 @@ static void parse_comma_separated_wire_points(const char *ch, std::vector<t_wire
 }
 
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
-
-    if (num_conns == "from") {
-        wireconn.num_conns_type = WireConnType::FROM;
-    } else if (num_conns == "to") {
-        wireconn.num_conns_type = WireConnType::TO;
-    } else if (num_conns == "min") {
-        wireconn.num_conns_type = WireConnType::MIN;
-    } else if (num_conns == "max") {
-        wireconn.num_conns_type = WireConnType::MAX;
-    } else {
-		archfpga_throw( __FILE__, __LINE__, "Invalid num_conns specification '%s'", num_conns.c_str());
-    }
+    //num_conns is now interpretted as a formula and processed in build_switchblocks
+    wireconn.num_conns_formula = num_conns;
 }
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be
