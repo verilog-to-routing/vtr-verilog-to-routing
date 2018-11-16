@@ -6,6 +6,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -689,7 +690,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 /***************  Conversion between traceback and route tree *******************/
 t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
     auto& route_ctx = g_vpr_ctx.routing();
-    return traceback_to_route_tree(route_ctx.trace_head[inet]);
+    return traceback_to_route_tree(route_ctx.trace[inet].head);
 }
 
 t_rt_node* traceback_to_route_tree(t_trace* head) {
@@ -868,8 +869,8 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 	VTR_ASSERT(num_routed_sinks == num_trace_sinks);
 
 
-	route_ctx.trace_tail[inet] = tail;
-	route_ctx.trace_head[inet] = head;
+	route_ctx.trace[inet].tail = tail;
+	route_ctx.trace[inet].head = head;
 	route_ctx.trace_nodes[inet] = nodes;
 
 	return head;
@@ -1222,23 +1223,28 @@ bool is_valid_route_tree(const t_rt_node* root) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
+    constexpr float CAP_REL_TOL = 1e-6;
+    constexpr float CAP_ABS_TOL = vtr::DEFAULT_ABS_TOL;
+    constexpr float RES_REL_TOL = 1e-6;
+    constexpr float RES_ABS_TOL = vtr::DEFAULT_ABS_TOL;
+
 	int inode = root->inode;
 	short iswitch = root->parent_switch;
 	if (root->parent_node) {
 		if (device_ctx.rr_switch_inf[iswitch].buffered()) {
-			if (root->R_upstream != device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R) {
-				VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
-					device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R);
+            float R_upstream_check = device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R;
+			if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
+				VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
 				return false;
 			}
+		} else {
+            float R_upstream_check = device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R;
+            if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
+                VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
+                return false;
+            }
 		}
-		else if (root->R_upstream != device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R) {
-			VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream,
-				device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R);
-			return false;
-		}
-	}
-	else if (root->R_upstream != device_ctx.rr_nodes[inode].R()) {
+	} else if (root->R_upstream != device_ctx.rr_nodes[inode].R()) {
 		VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, device_ctx.rr_nodes[inode].R());
 		return false;
 	}
@@ -1268,8 +1274,9 @@ bool is_valid_route_tree(const t_rt_node* root) {
 			return false;
 		}
 
-		if (!device_ctx.rr_switch_inf[edge->iswitch].buffered())
+		if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
 			C_downstream_children += edge->child->C_downstream;
+        }
 
 		if (!is_valid_route_tree(edge->child)) {
 			VTR_LOG("subtree %d invalid, propagating up\n", edge->child->inode);
@@ -1278,8 +1285,9 @@ bool is_valid_route_tree(const t_rt_node* root) {
 		edge = edge->next;
 	}
 
-	if (root->C_downstream != C_downstream_children + device_ctx.rr_nodes[inode].C()) {
-		VTR_LOG("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + device_ctx.rr_nodes[inode].C());
+    float C_downstream_check = C_downstream_children + device_ctx.rr_nodes[inode].C();
+	if (!vtr::isclose(root->C_downstream, C_downstream_check, CAP_REL_TOL, CAP_ABS_TOL)) {
+		VTR_LOG("%d mismatch C downstream %e supposed %e\n", inode, root->C_downstream, C_downstream_check);
 		return false;
 	}
 

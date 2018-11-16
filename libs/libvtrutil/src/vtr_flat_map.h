@@ -5,11 +5,16 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "vtr_assert.h"
+
 namespace vtr {
 
 //Forward declaration
 template<class K, class V, class Compare=std::less<K>>
 class flat_map;
+
+template<class K, class V, class Compare=std::less<K>>
+class flat_map2;
 
 //Helper function to create a flat map from a vector of pairs
 //without haveing to explicity specify the key and value types
@@ -101,6 +106,16 @@ class flat_map {
         bool empty() const { return vec_.empty(); }
         size_type size() const { return vec_.size(); }
         size_type max_size() const { return vec_.max_size(); }
+
+        const mapped_type& operator[](const key_type& key) const  {
+            auto iter = find(key);
+            if(iter == end()) {
+                //Not found
+                throw std::out_of_range("Invalid key");
+            }
+
+            return iter->second;
+        }
 
         mapped_type& operator[](const key_type& key) {
             auto iter = find(key);
@@ -287,6 +302,24 @@ class flat_map {
 
     private:
         std::vector<value_type> vec_;
+};
+
+//Like flat_map, but operator[] never inserts and directly returns the mapped value
+template<class K, class T, class Compare>
+class flat_map2 : public flat_map<K,T,Compare> {
+    public:
+
+        const T& operator[](const K& key) const {
+            auto itr = this->find(key);
+            if (itr == this->end()) {
+                throw std::logic_error("Key not found"); 
+            }
+            return itr->second;
+        }
+
+        T& operator[](const K& key) {
+            return const_cast<T&>(const_cast<const flat_map2*>(this)->operator[](key));
+        }
 };
 
 template<class K, class T, class Compare>

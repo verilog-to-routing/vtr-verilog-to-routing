@@ -155,12 +155,16 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	int error = 0;
-	t_pb_route * pb_route = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route;
+	const auto& pb_route = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route;
 	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb(iblk)->pb_graph_node->total_pb_pins;
 
 	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type(iblk));
 
 	for (int i = 0; i < num_pins_in_block; i++) {
+        if (!pb_route.count(i)) continue;
+
+        VTR_ASSERT(pb_route.count(i));
+
 		if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
 			if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->parent_node->parent_pb_graph_node == nullptr) ||
 				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->pb_type->num_modes == 0)

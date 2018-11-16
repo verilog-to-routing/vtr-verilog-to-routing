@@ -1164,6 +1164,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("classic")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
+            .help("Controls how many times the router is allowed to converge to a legal routing before halting."
+                  " If multiple legal solutions are found the best quality implementation is used.")
+            .default_value("1")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool,ParseOnOff>(args.full_stats, "--full_stats")

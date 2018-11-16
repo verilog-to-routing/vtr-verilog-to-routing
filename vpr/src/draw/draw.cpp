@@ -2112,10 +2112,10 @@ static void draw_routed_net(ClusterNetId net_id) {
     if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Don't draw global nets. */
         return;
 
-    if (route_ctx.trace_head[net_id] == nullptr) /* No routing.  Skip.  (Allows me to draw */
+    if (route_ctx.trace[net_id].head == nullptr) /* No routing.  Skip.  (Allows me to draw */
         return; /* partially complete routes).            */
 
-    t_trace* tptr = route_ctx.trace_head[net_id]; /* SOURCE to start */
+    t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
     int inode = tptr->index;
 
     std::vector<int> rr_nodes_to_draw;
@@ -2344,7 +2344,7 @@ static void highlight_nets(char *message, int hit_node) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		for (tptr = route_ctx.trace_head[net_id]; tptr != nullptr; tptr = tptr->next) {
+		for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {

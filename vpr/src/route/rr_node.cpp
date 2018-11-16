@@ -122,6 +122,34 @@ float t_rr_node::C() const {
     return device_ctx.rr_rc_data[rc_index()].C;
 }
 
+bool t_rr_node::validate() const {
+    //Check internal assumptions about RR node are valid
+
+    if (num_edges_ > edges_capacity_) {
+        VPR_THROW(VPR_ERROR_ROUTE, "RR Node number of edges exceeded edge capacity");
+    }
+
+    short iedge = 0;
+    for (auto edge : edges()) {
+        if (edge < num_configurable_edges()) {
+            if (!edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "RR Node non-configurable edge found in configurable edge list");
+            }
+        } else {
+            if (edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "RR Node configurable edge found in non-configurable edge list");
+            }
+        }
+        ++iedge;
+    }
+
+    if (iedge != num_edges()) {
+        VPR_THROW(VPR_ERROR_ROUTE, "RR Node Edge iteration does not match edge size");
+    }
+
+    return true;
+}
+
 void t_rr_node::set_type(t_rr_type new_type) {
     type_ = new_type;
 }
@@ -191,16 +219,46 @@ void t_rr_node::set_fan_in(short new_fan_in) {
 }
 
 short t_rr_node::add_edge(int sink_node, int iswitch) {
-    auto new_edges = std::make_unique<t_rr_edge[]>(num_edges_ + 1);
-    std::copy_n(edges_.get(), num_edges_, new_edges.get());
+    if (edges_capacity_ == num_edges_) {
 
-    new_edges[num_edges_].sink_node = sink_node;
-    new_edges[num_edges_].switch_id = iswitch;
+        constexpr size_t MAX_EDGE_COUNT = std::numeric_limits<decltype(edges_capacity_)>::max();
+        if (edges_capacity_ == MAX_EDGE_COUNT) {
+            VPR_THROW(VPR_ERROR_ROUTE, "Maximum RR Node out-edge count (%zu) exceeded", MAX_EDGE_COUNT);
+        }
 
-    edges_ = std::move(new_edges);
+        //Grow
+        size_t new_edges_capacity = std::max<size_t>(1, 2 * edges_capacity_);
+        new_edges_capacity = std::min(new_edges_capacity, MAX_EDGE_COUNT); //Clip to maximum count
+        auto new_edges = std::make_unique<t_rr_edge[]>(new_edges_capacity);
+
+        //Copy
+        std::copy_n(edges_.get(), num_edges_, new_edges.get());
+
+        //Replace
+        edges_ = std::move(new_edges);
+        edges_capacity_ = new_edges_capacity;
+    }
+
+    VTR_ASSERT(num_edges_ < edges_capacity_);
+
+    edges_[num_edges_].sink_node = sink_node;
+    edges_[num_edges_].switch_id = iswitch;
+
     ++num_edges_;
 
     return num_edges_;
+}
+
+void t_rr_node::shrink_to_fit() {
+    //Shrink
+    auto new_edges = std::make_unique<t_rr_edge[]>(num_edges_);
+
+    //Copy
+    std::copy_n(edges_.get(), num_edges_, new_edges.get());
+
+    //Replace
+    edges_ = std::move(new_edges);
+    edges_capacity_ = num_edges_;
 }
 
 void t_rr_node::partition_edges() {
@@ -213,12 +271,20 @@ void t_rr_node::partition_edges() {
     //Partition the edges so the first set of edges are all configurable, and the later are not
     auto first_non_config_edge = std::partition(edges_.get(), edges_.get() + num_edges_, is_configurable);
 
-    num_configurable_edges_ = std::distance(edges_.get(), first_non_config_edge);
+    size_t num_conf_edges = std::distance(edges_.get(), first_non_config_edge);
+    size_t num_non_configurable_edges = num_edges() - num_conf_edges; //Note we calculate using the size_t to get full range
+
+    //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
+    if (num_non_configurable_edges > std::numeric_limits<decltype(num_non_configurable_edges_)>::max()) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Exceeded RR node maximum number of non-configurable edges");
+    }
+    num_non_configurable_edges_ = num_non_configurable_edges; //Narrowing
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {
     VTR_ASSERT(new_num_edges >= 0);
     num_edges_ = new_num_edges;
+    edges_capacity_ = new_num_edges;
 
     edges_ = std::make_unique<t_rr_edge[]>(num_edges_);
 }

@@ -71,6 +71,7 @@ void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 bool is_empty_heap();
 
 void free_traceback(ClusterNetId net_id);
+void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 

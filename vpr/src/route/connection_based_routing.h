@@ -48,6 +48,8 @@ public:
 
 	bool sanity_check_lookup() const;
 
+    void set_connection_criticality_tolerance(float val) { connection_criticality_tolerance = val; }
+    void set_connection_delay_tolerance(float val) { connection_delay_optimality_tolerance = val; }
 
 	// Targeted reroute resources --------------
 private:
@@ -75,9 +77,9 @@ private:
 
 	// modifiers and tolerances that evolves over iterations and decides when forcible reroute should occur (> 1)
 	float critical_path_growth_tolerance;
-	// what percentage of max criticality is a connection's criticality considered too much (< 1)
+	// what fraction of max criticality is a connection's criticality considered too much (< 1)
 	float connection_criticality_tolerance;
-	// what percentage of a connection's lower bound delay is considered close enough to optimal (> 1)
+	// what fraction of a connection's lower bound delay is considered close enough to optimal (> 1)
 	float connection_delay_optimality_tolerance;
 
 public:

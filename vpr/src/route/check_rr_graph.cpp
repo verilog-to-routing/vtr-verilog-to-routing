@@ -36,6 +36,8 @@ void check_rr_graph(const t_graph_type graph_type,
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 
+        device_ctx.rr_nodes[inode].validate();
+
         /* Ignore any uninitialized rr_graph nodes */
         if ((device_ctx.rr_nodes[inode].type() == SOURCE)
                 && (device_ctx.rr_nodes[inode].xlow() == 0) && (device_ctx.rr_nodes[inode].ylow() == 0)
@@ -121,6 +123,21 @@ void check_rr_graph(const t_graph_type graph_type,
 
         /* Slow test could leave commented out most of the time. */
         check_unbuffered_edges(inode);
+
+        //Check that all config/non-config edges are appropriately organized
+        for (auto edge : device_ctx.rr_nodes[inode].configurable_edges()) {
+            if (!device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
+                        inode, edge);
+            }
+        }
+
+        for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
+            if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
+                        inode, edge);
+            }
+        }
 
     } /* End for all rr_nodes */
 

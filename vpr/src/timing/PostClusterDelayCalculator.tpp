@@ -5,6 +5,8 @@
 #include "vpr_utils.h"
 #include "globals.h"
 
+#include "vtr_assert.h"
+
 //Print detailed debug info about edge delay calculation
 /*#define POST_CLUSTER_DELAY_CALC_DEBUG*/
 

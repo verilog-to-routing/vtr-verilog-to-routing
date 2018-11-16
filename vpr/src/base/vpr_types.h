@@ -35,6 +35,7 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_vector_map.h"
 #include "vtr_util.h"
+#include "vtr_flat_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -167,6 +168,8 @@ struct t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
 
+typedef vtr::flat_map2<int,t_pb_route> t_pb_routes;
+
 /* A t_pb represents an instance of a clustered block, which may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device
  *       grid location (e.g. a Logic block, RAM block, DSP block), or
@@ -192,7 +195,7 @@ struct t_pb {
 	/* Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
 	*  t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
 	*  Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
-	t_pb_route *pb_route = nullptr;
+    t_pb_routes pb_route;
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
@@ -359,14 +362,9 @@ private:
 /* Representation of intra-logic block routing */
 struct t_pb_route {
     AtomNetId atom_net_id; /* which net in the atom netlist uses this pin */
-	int driver_pb_pin_id; /* The pb_pin id of the pb_pin that drives this pin */
+	int driver_pb_pin_id = OPEN; /* The pb_pin id of the pb_pin that drives this pin */
     std::vector<int> sink_pb_pin_ids; /* The pb_pin id's of the pb_pins driven by this node */
     const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated with this node */
-
-	t_pb_route() {
-		atom_net_id = AtomNetId::INVALID();
-		driver_pb_pin_id = OPEN;
-	}
 };
 
 enum e_pack_pattern_molecule_type {
@@ -961,6 +959,7 @@ struct t_router_opts {
     int high_fanout_threshold;
     int router_debug_net;
     e_router_lookahead lookahead_type;
+    int max_convergence_count;
 };
 
 struct t_analysis_opts {
@@ -1033,7 +1032,7 @@ enum e_direction : unsigned char {
     NUM_DIRECTIONS
 };
 
-constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
+constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *
@@ -1060,28 +1059,81 @@ constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DI
  * type_name_ptr: pointer to name of the segment type this track belongs    *
  *                to. points to the appropriate name in s_segment_inf       */
 struct t_seg_details {
-	int length;
-	int start;
-	bool longline;
-	bool *sb;
-	bool *cb;
-	short arch_wire_switch;
-	short arch_opin_switch;
-	float Rmetal;
-	float Cmetal;
-	bool twisted;
-	enum e_direction direction;
-	int group_start;
-	int group_size;
-	int seg_start;
-	int seg_end;
-	int index;
-	float Cmetal_per_m; /* Used for power */
-	const char *type_name_ptr;
+	int length = 0;
+	int start = 0;
+	bool longline = 0;
+    std::unique_ptr<bool[]> sb;
+	std::unique_ptr<bool[]> cb;
+	short arch_wire_switch = 0;
+	short arch_opin_switch = 0;
+	float Rmetal = 0;
+	float Cmetal = 0;
+	bool twisted = 0;
+	enum e_direction direction = NO_DIRECTION;
+	int group_start = 0;
+	int group_size = 0;
+	int seg_start = 0;
+	int seg_end = 0;
+	int index = 0;
+	float Cmetal_per_m = 0; /* Used for power */
+	const char *type_name_ptr = nullptr;
+};
+
+class t_chan_seg_details {
+    public:
+        t_chan_seg_details() = default;
+        t_chan_seg_details(const t_seg_details* init_seg_details)
+            : length_(init_seg_details->length)
+            , seg_detail_(init_seg_details) {}
+
+    public:
+        int length() const { return length_; }
+        int seg_start() const { return seg_start_; }
+        int seg_end() const { return seg_end_; }
+
+        int start() const { return seg_detail_->start; }
+        bool longline() const { return seg_detail_->longline; }
+
+        int group_start() const { return seg_detail_->group_start; }
+        int group_size() const { return seg_detail_->group_size; }
+
+        bool cb(int pos) const { return seg_detail_->cb[pos]; }
+        bool sb(int pos) const { return seg_detail_->sb[pos]; }
+
+        float Rmetal() const { return seg_detail_->Rmetal; }
+        float Cmetal() const { return seg_detail_->Cmetal; }
+        float Cmetal_per_m() const { return seg_detail_->Cmetal_per_m; }
+
+        short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
+        short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+
+        e_direction direction() const { return seg_detail_->direction; }
+
+        int index() const { return seg_detail_->index; }
+
+        const char* type_name_ptr() const { return seg_detail_->type_name_ptr; }
+
+    public: //Modifiers
+        void set_length(int new_len) { length_ = new_len; }
+        void set_seg_start(int new_start) { seg_start_ = new_start; }
+        void set_seg_end(int new_end) { seg_end_ = new_end; }
+
+    private:
+        //The only unique information about a channel segment is it's start/end
+        //and length.  All other information is shared accross segment types,
+        //so we use a flyweight to the t_seg_details which defines that info.
+        //
+        //To preserve the illusion of uniqueness we wrap all t_seg_details members
+        //so it appears transparent -- client code of this class doesn't need to
+        //know about t_seg_details.
+        int length_ = -1;
+        int seg_start_ = -1;
+        int seg_end_ = -1;
+        const t_seg_details* seg_detail_ = nullptr;
 };
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
-typedef vtr::Matrix<t_seg_details*> t_chan_details;
+typedef vtr::NdMatrix<t_chan_seg_details,3> t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */

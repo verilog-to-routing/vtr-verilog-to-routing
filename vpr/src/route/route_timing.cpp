@@ -120,6 +120,16 @@ struct t_timing_driven_node_costs {
     float R_upstream = 0.;
 };
 
+struct RoutingMetrics {
+    size_t used_wirelength = 0;
+
+    float sWNS = std::numeric_limits<float>::quiet_NaN();
+    float sTNS = std::numeric_limits<float>::quiet_NaN();
+    float hWNS = std::numeric_limits<float>::quiet_NaN();
+    float hTNS = std::numeric_limits<float>::quiet_NaN();
+    tatum::TimingPathInfo critical_path;
+};
+
 /*
  * File-scope variables
  */
@@ -130,7 +140,7 @@ bool f_router_debug = true;
 
 /******************** Subroutines local to route_timing.c ********************/
 
-static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
+static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int target_pin,
         const t_conn_cost_params cost_params,
         float pres_fac,
         int high_fanout_threshold,
@@ -221,7 +231,7 @@ static WirelengthInfo calculate_wirelength_info();
 static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
-static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
@@ -235,6 +245,11 @@ static size_t dynamic_update_bounding_boxes(int high_fanout_threshold);
 static t_bb calc_current_bb(const t_trace* head);
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net);
+
+static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
+                                   const RoutingMetrics& best_routing_metrics, 
+                                   const WirelengthInfo& wirelength_info,
+                                   std::shared_ptr<const SetupHoldTimingInfo> timing_info);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
@@ -318,6 +333,14 @@ bool try_timing_driven_route(t_router_opts router_opts,
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
     int itry_conflicted_mode = 0;
+
+    /*
+     * Best result so far
+     */
+    vtr::vector<ClusterNetId,t_traceback> best_routing;
+    t_clb_opins_used best_clb_opins_used_locally;
+    RoutingMetrics best_routing_metrics;
+    int legal_convergence_count = 0;
 
     /*
      * On the first routing iteration ignore congestion to get reasonable net
@@ -426,7 +449,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
         //Output progress
-        print_route_status(itry, iter_elapsed_time, num_net_bounding_boxes_updated, router_iteration_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, router_iteration_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
 
         prev_iter_cumm_time = iter_cumm_time;
 
@@ -451,9 +474,46 @@ bool try_timing_driven_route(t_router_opts router_opts,
         /*
          * Are we finished?
          */
-        routing_is_successful = routing_is_feasible; //TODO: keep going after legal routing to further optimize timing
-        if (routing_is_successful) {
-            break; //Finished
+        if (routing_is_feasible) {
+
+            auto& router_ctx = g_vpr_ctx.routing();
+
+            if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
+                //Save routing
+                best_routing = router_ctx.trace;
+                best_clb_opins_used_locally = router_ctx.clb_opins_used_locally;
+
+                routing_is_successful = true;
+
+                //Update best metrics
+                if (timing_info) {
+                    timing_driven_check_net_delays(net_delay);
+
+                    best_routing_metrics.sTNS = timing_info->setup_total_negative_slack();
+                    best_routing_metrics.sWNS = timing_info->setup_worst_negative_slack();
+                    best_routing_metrics.hTNS = timing_info->hold_total_negative_slack();
+                    best_routing_metrics.hWNS = timing_info->hold_worst_negative_slack();
+                    best_routing_metrics.critical_path = critical_path;
+                }
+                best_routing_metrics.used_wirelength = wirelength_info.used_wirelength();
+            }
+
+            //Decrease pres_fac so that criticl connections will take more direct routes
+            pres_fac = router_opts.initial_pres_fac;
+
+            //Reduce timing tolerances to re-route more delay-suboptimal signals
+            connections_inf.set_connection_criticality_tolerance(0.8);
+            connections_inf.set_connection_delay_tolerance(1.01);
+
+            ++legal_convergence_count;
+
+            VTR_ASSERT(routing_is_successful);
+        }
+
+        //Have we converged the maximum number of times, or did not make any changes?
+        if (legal_convergence_count >= router_opts.max_convergence_count
+            || router_iteration_stats.connections_routed == 0) {
+            break; //Done routing
         }
 
         /*
@@ -607,10 +667,14 @@ bool try_timing_driven_route(t_router_opts router_opts,
     }
 
     if (routing_is_successful) {
+        VTR_LOG("Restoring best routing\n");
+
+        auto& router_ctx = g_vpr_ctx.mutable_routing();
+        router_ctx.trace = best_routing;
+        router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
+
         if (timing_info) {
-            timing_driven_check_net_delays(net_delay);
-            VTR_LOG("Completed net delay value cross check successfully.\n");
-            VTR_LOG("Critical path: %g ns\n", 1e9 * critical_path.delay());
+            VTR_LOG("Critical path: %g ns\n", 1e9 * best_routing_metrics.critical_path.delay());
         }
 
         VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
@@ -872,7 +936,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         }
 
         // build a branch in the route tree to the target
-        if (!timing_driven_route_sink(itry, net_id, itarget, target_pin,
+        if (!timing_driven_route_sink(net_id, itarget, target_pin,
                 cost_params,
                 pres_fac, 
                 high_fanout_threshold,
@@ -909,7 +973,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
     return (true);
 }
 
-static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned itarget, int target_pin,
+static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int target_pin,
         const t_conn_cost_params cost_params,
         float pres_fac, int high_fanout_threshold,
         t_rt_node* rt_root, t_rt_node** rt_node_of_sink,
@@ -920,7 +984,6 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     profiling::sink_criticality_start();
@@ -929,13 +992,7 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
 
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d\n", size_t(net_id), itarget);
 
-    if (itarget > 0 && itry > 5) {
-        /* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-        VTR_ASSERT(device_ctx.rr_nodes[rt_root->inode].type() == SOURCE);
-        rt_root->re_expand = false;
-    }
-
-    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
 
     std::vector<int> modified_rr_node_inf;
@@ -987,11 +1044,11 @@ static bool timing_driven_route_sink(int itry, ClusterNetId net_id, unsigned ita
     int inode = cheapest->index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
     t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
-    VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
+    VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
     rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
-    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+    VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
 
     free_heap_data(cheapest);
@@ -1195,7 +1252,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
         free_traceback(net_id);
 
         rt_root = init_route_tree_to_source(net_id);
@@ -1218,7 +1275,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         rt_root = traceback_to_route_tree(net_id);
 
         //Santiy check that route tree and traceback are equivalent before pruning
-        VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+        VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
         // check for edge correctness
         VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
@@ -1230,7 +1287,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
         //       recorded congestion
-        pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
         free_traceback(net_id);
 
         if (rt_root) { //Partially pruned
@@ -1241,13 +1298,13 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
 
             //Sanity check the traceback for self-consistency
-            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace_head[net_id]));
+            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
             //Santiy check that route tree and traceback are equivalent after pruning
-            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace_head[net_id], rt_root));
+            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
+            pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, pres_fac);
 
         } else { //Fully destroyed
             profiling::route_tree_pruned();
@@ -1258,8 +1315,8 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
             //NOTE: We leave the traceback uninitiailized, so update_traceback()
             //      will correctly add the SOURCE node when the branch to
             //      the first SINK is found.
-            VTR_ASSERT(route_ctx.trace_head[net_id] == nullptr);
-            VTR_ASSERT(route_ctx.trace_tail[net_id] == nullptr);
+            VTR_ASSERT(route_ctx.trace[net_id].head == nullptr);
+            VTR_ASSERT(route_ctx.trace[net_id].tail == nullptr);
             VTR_ASSERT(route_ctx.trace_nodes[net_id].empty());
         }
 
@@ -1780,7 +1837,7 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_trace * tptr = route_ctx.trace_head[net_id];
+    t_trace * tptr = route_ctx.trace[net_id].head;
 
     if (tptr == nullptr) {
         /* No routing yet. */
@@ -2083,13 +2140,13 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    VTR_LOG("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    VTR_LOG("Iter   Time  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    VTR_LOG("      (sec) Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    VTR_LOG("---- ------ ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("---- ------ ----- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("Iter   Time  pres  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    VTR_LOG("      (sec)   fac Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    VTR_LOG("---- ------ ----- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec, int num_bb_updated, const RouterStats& router_stats,
+static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
@@ -2099,6 +2156,9 @@ static void print_route_status(int itry, double elapsed_sec, int num_bb_updated,
 
     //Elapsed Time
     VTR_LOG(" %6.1f", elapsed_sec);
+
+    //pres_fac
+    VTR_LOG(" %5.1f", pres_fac);
 
     //Number of bounding boxes updated
     VTR_LOG(" %4d", num_bb_updated);
@@ -2255,7 +2315,7 @@ static size_t dynamic_update_bounding_boxes(int high_fanout_threshold) {
     size_t num_bb_updated = 0;
 
     for (ClusterNetId net : clb_nlist.nets()) {
-        t_trace* routing_head = route_ctx.trace_head[net];
+        t_trace* routing_head = route_ctx.trace[net].head;
 
         if (routing_head == nullptr) continue; //Skip if no routing
 
@@ -2349,4 +2409,43 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
 #ifndef VTR_ENABLE_DEBUG_LOGGING
     if (f_router_debug) VPR_THROW(VPR_ERROR_ROUTE, "Can not enable router debug logging since VPR was compiled without debug logging enabled");
 #endif
+}
+
+static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
+                                   const RoutingMetrics& best_routing_metrics, 
+                                   const WirelengthInfo& wirelength_info,
+                                   std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    if (best_routing.empty()) {
+        return true; //First legal routing
+    }
+
+    //Rank first based on sWNS, followed by other timing metrics
+    if (timing_info) {
+        if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
+            return true;
+        } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
+            return false;
+        }
+
+        if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
+            return true;
+        } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
+            return false;
+        }
+
+        if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            return true;
+        } else if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            return false;
+        }
+
+        if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
+            return true;
+        } else if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
+            return false;
+        }
+    }
+
+    //Finally, wirelength tie breaker
+    return wirelength_info.used_wirelength() < best_routing_metrics.used_wirelength;
 }
