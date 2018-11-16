@@ -1100,7 +1100,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
     //In particular, all the following build_*() functions do not create the edges, but
     //instead record the edges they wish to create in rr_edges_to_create.
     //
-    //At the end we uniquify the edges to be created (avoiding any duplicates), and create
+    //We uniquify the edges to be created (avoiding any duplicates), and create
     //the edges in alloc_and_load_edges().
     //
     //By doing things in this manner we ensure we know exactly how many edges leave each RR
@@ -1176,6 +1176,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                 uniquify_edges(rr_edges_to_create);
                 alloc_and_load_edges(L_rr_node, rr_edges_to_create);
                 rr_edges_to_create.clear();
+
             }
             if (j > 0) {
                 int tracks_per_chan = ((is_global_graph) ? 1 : device_ctx.chan_width.y_list[i]);
@@ -1192,8 +1193,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                 alloc_and_load_edges(L_rr_node, rr_edges_to_create);
                 rr_edges_to_create.clear();
             }
-
-
         }
 
     }
@@ -1638,15 +1637,29 @@ void alloc_and_load_edges(std::vector<t_rr_node>& L_rr_node,
 
         size_t edge_count = std::distance(edge_range.first, edge_range.second);
 
-        L_rr_node[inode].set_num_edges(edge_count);
+        if (L_rr_node[inode].num_edges() == 0) {
+            //Create initial edges
+            //
+            //Note that we do this in bulk instead of via add_edge() to reduce
+            //memory fragmentation
 
-        int iedge = 0;
-        for (auto itr = edge_range.first; itr != edge_range.second; ++itr) {
-            VTR_ASSERT(itr->from_node == inode);
+            L_rr_node[inode].set_num_edges(edge_count);
 
-            L_rr_node[inode].set_edge_sink_node(iedge, itr->to_node);
-            L_rr_node[inode].set_edge_switch(iedge, itr->switch_type);
-            ++iedge;
+            int iedge = 0;
+            for (auto itr = edge_range.first; itr != edge_range.second; ++itr) {
+                VTR_ASSERT(itr->from_node == inode);
+
+                L_rr_node[inode].set_edge_sink_node(iedge, itr->to_node);
+                L_rr_node[inode].set_edge_switch(iedge, itr->switch_type);
+                ++iedge;
+            }
+        } else {
+            //Add new edge incrementally
+            //
+            //This should occur relatively rarely (e.g. a backward bidir edge) so memory fragmentation shouldn't be a big problem
+            for (auto itr = edge_range.first; itr != edge_range.second; ++itr) {
+                L_rr_node[inode].add_edge(itr->to_node, itr->switch_type);
+            }
         }
     }
 }
