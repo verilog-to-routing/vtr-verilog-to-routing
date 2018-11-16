@@ -174,6 +174,10 @@ public:
 	}
 };
 
+struct t_wire_switchpoint {
+    int wire;           //Wire index within the channel
+    int switchpoint;    //Switchpoint of the wire
+};
 
 /************ Typedefs ************/
 /* Used to get info about a given wire type based on the name */
@@ -233,9 +237,9 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
 static int evaluate_num_conns_formula(std::string num_conns_formula, int from_wire_count, int to_wire_count);
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
-static void get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
+static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
 		t_rr_type chan_type, int x, int y, e_side side, const vector<t_wire_switchpoints>& wire_switchpoints_vec,
-		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires);
+		t_wire_type_sizes *wire_type_sizes, bool is_dest);
 
 static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enum e_side side,
 			const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
@@ -650,18 +654,17 @@ static void count_wire_type_sizes(const t_chan_seg_details *channel, int nodes_p
 
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
-static void get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
+static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_details* chan_details,
 		t_rr_type chan_type, int x, int y, e_side side, const vector<t_wire_switchpoints>& wire_switchpoints_vec,
-		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires){
-
-	wires->clear();
+		t_wire_type_sizes *wire_type_sizes, bool is_dest){
+    std::vector<t_wire_switchpoint> collected_wire_switchpoints;
 
 	int seg_coord = x;
 	if (chan_type == CHANY){
 		seg_coord = y;
 	}
 
-	for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec){
+	for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
 
 		const auto& wire_type = wire_switchpoints.segment_name;
         const auto& points = wire_switchpoints.switchpoints;
@@ -677,40 +680,47 @@ static void get_switchpoint_wires(const DeviceGrid& grid, const t_chan_seg_detai
 		int last_type_wire = first_type_wire + num_type_wires - 1;
 
 
-		/* walk through each wire segment of specified type and check whether it matches one
-		   of the specified switchpoints */
-		for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++){
-			e_direction seg_direction = chan_details[iwire].direction();
+		/* Walk through each wire segment of specified type and check whether it matches one
+		 * of the specified switchpoints.
+         *
+         * Note that we walk through the points in order, this ensures that returned switchpoints
+         * match the order specified in the architecture, which we assume is a priority order specified
+         * by the archtitect.
+         */
+        for (int valid_switchpoint : points) {
+            for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++){
+                e_direction seg_direction = chan_details[iwire].direction();
 
-			/* unidirectional wires going in the decreasing direction can have an outgoing edge
-			   only from the top or right switch block sides, and an incoming edge only if they are
-			   at the left or bottom sides (analogous for wires going in INC direction) */
-			if (side == TOP || side == RIGHT){
-				if (seg_direction == DEC_DIRECTION && is_dest){
-					continue;
-				}
-				if (seg_direction == INC_DIRECTION && !is_dest){
-					continue;
-				}
-			} else {
-				VTR_ASSERT(side == LEFT || side == BOTTOM);
-				if (seg_direction == DEC_DIRECTION && !is_dest){
-					continue;
-				}
-				if (seg_direction == INC_DIRECTION && is_dest){
-					continue;
-				}
-			}
+                /* unidirectional wires going in the decreasing direction can have an outgoing edge
+                   only from the top or right switch block sides, and an incoming edge only if they are
+                   at the left or bottom sides (analogous for wires going in INC direction) */
+                if (side == TOP || side == RIGHT){
+                    if (seg_direction == DEC_DIRECTION && is_dest){
+                        continue;
+                    }
+                    if (seg_direction == INC_DIRECTION && !is_dest){
+                        continue;
+                    }
+                } else {
+                    VTR_ASSERT(side == LEFT || side == BOTTOM);
+                    if (seg_direction == DEC_DIRECTION && !is_dest){
+                        continue;
+                    }
+                    if (seg_direction == INC_DIRECTION && is_dest){
+                        continue;
+                    }
+                }
 
-			int wire_switchpoint = get_switchpoint_of_wire(grid, chan_type, chan_details[iwire], seg_coord, side);
+                int wire_switchpoint = get_switchpoint_of_wire(grid, chan_type, chan_details[iwire], seg_coord, side);
 
-			/* check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so */
-			if ( find( points.begin(), points.end(), wire_switchpoint ) != points.end() ){
-				wires->push_back( iwire );
-			}
-		}
+                /* check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so */
+                if (wire_switchpoint != valid_switchpoint) continue;
+
+                collected_wire_switchpoints.push_back( {iwire, wire_switchpoint} );
+            }
+        }
 	}
-    sort(wires->begin(), wires->end());
+    return collected_wire_switchpoints;
 }
 
 
@@ -789,17 +799,17 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
     constexpr bool verbose = false;
 
 	/* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
-	vector<int> potential_src_wires;
-	vector<int> potential_dest_wires;
 
-	get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
-			wireconn_ptr->from_switchpoint_set, wire_type_sizes, false, &potential_src_wires);
+	std::vector<t_wire_switchpoint> potential_src_wires = get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, sb_conn.from_side,
+                                                                                       wireconn_ptr->from_switchpoint_set, wire_type_sizes, false);
 
-	get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
-			wireconn_ptr->to_switchpoint_set, wire_type_sizes, true, &potential_dest_wires);
+	std::vector<t_wire_switchpoint> potential_dest_wires = get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, sb_conn.to_side,
+                                                                                 wireconn_ptr->to_switchpoint_set, wire_type_sizes, true);
 
     VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, SIDE_STRING[sb_conn.from_side], SIDE_STRING[sb_conn.to_side]);
 
+    //Define to print out specific wire-switchpoints used in to/from sets, if verbose is set true
+#if 0
     for (auto from_set : wireconn_ptr->from_switchpoint_set) {
         VTR_LOGV(verbose, "  FROM_SET: %s @", from_set.segment_name.c_str());
         for (int switchpoint : from_set.switchpoints) {
@@ -817,29 +827,18 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
     VTR_LOGV(verbose, "\n");
 
     vector<std::string> src_wire_str;
-    for (int i : potential_src_wires) {
-        int seg_coord = from_x;
-        if (from_chan_type == CHANY){
-            seg_coord = from_y;
-        }
-        int switchpoint = get_switchpoint_of_wire(grid, from_chan_type, from_chan_details[from_x][from_y][i], seg_coord, sb_conn.from_side);
-
-        src_wire_str.push_back(std::to_string(i) + "@" + std::to_string(switchpoint));
+    for (t_wire_switchpoint wire_switchpoint : potential_src_wires) {
+        src_wire_str.push_back(std::to_string(wire_switchpoint.wire) + "@" + std::to_string(wire_switchpoint.switchpoint));
     }
     vector<std::string> dst_wire_str;
-    for (int i : potential_dest_wires) {
-        int seg_coord = to_x;
-        if (to_chan_type == CHANY){
-            seg_coord = to_y;
-        }
-        int switchpoint = get_switchpoint_of_wire(grid, to_chan_type, to_chan_details[to_x][to_y][i], seg_coord, sb_conn.to_side);
-
-        dst_wire_str.push_back(std::to_string(i) + "@" + std::to_string(switchpoint));
+    for (t_wire_switchpoint wire_switchpoint : potential_dest_wires) {
+        dst_wire_str.push_back(std::to_string(wire_switchpoint.wire) + "@" + std::to_string(wire_switchpoint.switchpoint));
     }
     auto src_str = vtr::join(src_wire_str, ", ");
     auto dst_str = vtr::join(dst_wire_str, ", ");
     VTR_LOGV(verbose, "  SRC_WIRES: %s\n", src_str.c_str());
     VTR_LOGV(verbose, "  DST_WIRES: %s\n", dst_str.c_str());
+#endif
 
     if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
         //Can't make any connections between empty sets
@@ -867,7 +866,7 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
         //Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
         int src_wire_ind = iconn % potential_src_wires.size(); //Index in src set
-        int from_wire = potential_src_wires[src_wire_ind]; //Index in channel
+        int from_wire = potential_src_wires[src_wire_ind].wire; //Index in channel
 
         e_direction from_wire_direction = from_chan_details[from_x][from_y][from_wire].direction();
         if (from_wire_direction == INC_DIRECTION) {
@@ -902,7 +901,7 @@ static void compute_wireconn_connections(const DeviceGrid& grid, e_directionalit
                 vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str());
             }
 
-            int to_wire = potential_dest_wires[dest_wire_ind]; //Index in channel
+            int to_wire = potential_dest_wires[dest_wire_ind].wire; //Index in channel
 
             /* create the struct containing information about the target wire segment which will be added to the
                sb connections map */
