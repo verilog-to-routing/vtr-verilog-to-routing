@@ -6,51 +6,156 @@
 # 2018
 ################################################################################
 
-sub print_help(){
+sub print_help{
 print 
 "
 	This script is necessary because ABC Does not support more then one clock and drops all other clock information. 
 	This script black boxes latches unless specified and vice versa.
 
-	Usage:	./exec <input_blif> [ <output_blif> [ <clocks_not_to_black_box(comma separated list)> ] ]
-
-		./exec <input_blif>
-			-> comma separated list of clks in the files
-
-		./exec <input_blif> <output_blif>
-			-> write to file the result (all latches with clocks are black boxed) and report
-
-		./exec <input_blif> <output_blif> <clocks_not_to_black_box(comma separated list)>
-			-> write to file the result (all latches with clocks except those specified are black boxed) and report
-
+	Usage:	./exec 
+				--input				Bliff input file
+				--output_list			Clock list output file
+				--output			Bliff output file
+				--clk_list			List of clocks not to black box
+				--vanilla			Convert the bliff file to non boxed latches
+				--all				Convert the bliff file to all boxed latches
 ";
 }
 
-my $ARGC = @ARGV;
+sub print_stats{
+	my %domain = %{$_[0]};
+	print "\n____\n".$_[1]." Latches:";
+	if( ($size = %domain) == 0)
+	{
+		print "\n\t-None-";
+	}
+	foreach my $clks (keys %domain) 
+	{
+		print "\n\t".$clks."\t#".$domain{$clks};
+	}
+}
+
 my %clocks_not_to_bb;
+my %bb_clock_domain;
+my %vanilla_clk_domain;
+
 my $OutFile;
 my $InFile;
+my $ClkFile;
 
-if ( $ARGC > 3 || $ARGC < 1 )
+my $uniqID_separator = "_^_";
+
+my $vanilla = 0;
+my $all_bb = 0;
+
+my $has_output = 0;
+my $has_input = 0;
+my $has_output_clk = 0;
+my $has_clk_list = 0;
+
+my $parse_input = 0;
+my $parse_output = 0;
+my $parse_clk_list = 0;
+my $parse_output_clk_file = 0;
+
+foreach my $cur_arg (@ARGV)
 {
+	if ($parse_input)
+	{
+		$parse_input = 0;
+
+		open($InFile, "<".$cur_arg) || die "Error Opening BLIF input File $cur_arg: $!\n";
+		print "using input blif: ".$cur_arg."\n";
+
+		$has_input = 1;
+	}
+	elsif ($parse_output) 
+	{
+		$parse_output = 0;
+
+		open($OutFile, ">" .$cur_arg) || die "Error Opening BLIF output File $cur_arg: $!\n";
+		print "using output blif: ".$cur_arg."\n";
+
+		$has_output = 1;
+	}
+	elsif ($parse_output_clk_file) 
+	{
+		$parse_output_clk_file = 0;
+
+		open($ClkFile, ">" .$cur_arg) || die "Error Opening Clock list output File $cur_arg: $!\n";
+		print "using output clock file: ".$cur_arg."\n";
+		
+		$has_output_clk = 1;
+	}
+	elsif ($parse_clk_list) {
+		$parse_clk_list = 0;
+
+		foreach my $input_clocks (split(/,/, $cur_arg)) {
+			$clocks_not_to_bb{$input_clocks} = 1;
+		}
+
+		print "using folowing clk domain: ";
+		foreach my $clks (keys %clocks_not_to_bb) {
+			print $clks." ";
+		}
+		print "\n";
+
+		$has_clk_list = 1;
+	} else {
+		if ($cur_arg =~ /\-\-input/) {
+			$parse_input = 1;
+		}elsif ($cur_arg =~ /\-\-output_list/) {
+			$parse_output_clk_file = 1;	
+		}elsif ($cur_arg =~ /\-\-output/) {
+			$parse_output = 1;			
+		}elsif ($cur_arg =~ /\-\-clk_list/) {
+			$parse_clk_list = 1;
+		}elsif ($cur_arg =~ /\-\-vanilla/) {
+			$vanilla = 1;
+		}elsif ($cur_arg =~ /\-\-all/) {
+			$all_bb = 1;
+		}else {
+			print "Error wrong argument kind $cur_arg\n";
+			print_help();
+			exit(-1);
+		}
+	}
+}
+
+#default is vanilla all latches
+if(!$vanilla && !$all_bb && !$has_clk_list)
+{
+	$vanilla = 1;
+}
+
+if(!$has_output && ($all_bb || $has_clk_list))
+{
+	print "Cannot specify a rewrite directive without an output file\n";
 	print_help();
 	exit(-1);
 }
 
-open($InFile, "<".$ARGV[0]) || die "Error Opening BLIF input File $ARGV[0]: $!\n";
-
-if ( $ARGC > 1 )
+if( ($vanilla && $all_bb) || ($all_bb && $has_clk_list) || ($vanilla && $has_clk_list))
 {
-	open($OutFile, ">" .$ARGV[1]) || die "Error Opening BLIF output File $ARGV[1]: $!\n";
+	print "Cannot specify more than one output rewrite directive\n";
+	print_help();
+	exit(-1);
 }
 
-if ( $ARGC > 2 )
+if($parse_input || $parse_clk_list || $parse_output || $parse_output_clk_file)
 {
-	for my $clks (split(/[\s]*,[\s]*/,$ARGV[2])) 
-	{
-		$clocks_not_to_bb{$clks} = 1;
-	}
+	print "Missing filename for I/O files argument\n";
+	print_help();
+	exit(-1);
 }
+
+if(! $has_input )
+{
+	print "Missing input blif file\n";
+	print_help();
+	exit(-1);
+}
+
 
 #################################
 # a clock name is defined in the map as <latch|$edge_type|$clk|$initial_value>
@@ -58,139 +163,123 @@ if ( $ARGC > 2 )
 # this also converts all black boxed latches to regular latches in one pass
 #################################
 
-my %bb_clocks_map;
-my %clocks_map;
-my %latches_location_map;
-
 my $skip = 0;
 my $lineNum = 0;
-
-#only print blackboxed version
-while( ($line = <$InFile>) )
+while( (my $line = <$InFile>) )
 {
 	$lineNum += 1;
 	
-	#If the Line is a bb module declaration skip it
-	$skip = ( (!$skip) && (index(lc($line), ".model latch") != -1) )? 1: $skip;
-
-	#if the Line is a .end after a bb module declaration dont skip it
-	$skip = ( ($skip) && (index(lc($line), ".end") != -1) )? 0: $skip;
-
+	#If the Line is a bb latch module declaration skip it
+	$skip = ( (!$skip) && ($line =~ /^\.model[\s]+latch/) )? 1: $skip;
 
 	if (!$skip)
 	{
-		if ($line =~ /^\.subckt[\s]+latch\|/)
+		my @latch_clk_tokens;
+
+		# BLACK BOX
+		if ($line =~ /^\.subckt[\s]+latch/)
 		{
+			#   blackboxed latch (creted by this script, so it will always respect this format)
+			#		[0]		[1]							[2]				[3]			[4]
+			#       .subckt	latch|<type>|<clk>|<init>	I=<driver> 	C=clk	O=<output>
 			my @tokens = split(/[\s]+/, $line);
-
-			#   blackboxed latch
-			#		[0]		[1]							[2]				[3]
-			#       .subckt	latch|<type>|<clk>|<init>	i[0]=<driver> 	o[0]=<output>
-			
-			$size = @tokens;
-
-			my @reformat_clk = split(/\|/, @tokens[1]);
+			my @reformat_clk = split(/\Q$uniqID_separator\E/, @tokens[1]);
 			my @reformat_driver = split(/\=/, @tokens[2]);
-			my @reformat_output = split(/\=/, @tokens[3]);
-
-			if(  $ARGC > 1 && (exists($clocks_not_to_bb{@tokens[1]})) )
-			{
-				$clocks_not_to_bb{@tokens[1]} += 1;
-			}
-
-			if(  $ARGC > 1 && (exists($clocks_not_to_bb{@tokens[1]})) )
-			{
-				print $OutFile ".latch ".@reformat_driver[1]." ".@reformat_output[1]." ".@reformat_clk[1]." ".@reformat_clk[2]." ".@reformat_clk[3]."\n";
-				if( ! exists( $clocks_map{@tokens[1]} ) )
-				{
-					$clocks_map{@tokens[1]} = 1;
-				}
-			}
-			elsif( ! exists( $bb_clocks_map{@tokens[1]} ) )
-			{
-				$bb_clocks_map{@tokens[1]} = 1;
-			}
+			my @reformat_output = split(/\=/, @tokens[4]);
+			
+			@latch_clk_tokens = (".latch", @reformat_driver[1] ,@reformat_output[1], @reformat_clk[1], @reformat_clk[2], @reformat_clk[3]);
 		}
-		elsif ($line =~ /^\.latch/)
+		#LATCHES
+		elsif($line =~ /^\.latch/)
 		{
-			#   original latch with clock, 6 tokens only!
-			#		[0]		[1]			[2]			[3]		[4]		[5]
-			#       .latch	<driver>	<output>	<type>	<clk>	<init>
-			my @tokens = split(/[\s]+/, $line);
-			$size = @tokens;
-			my $latch_clk_name = "latch";
+			#   vanilla latches tokens
+			#		[0]		[1]			[2]			[3]			[4]		[5]
+			#       .latch	<driver>	<output>	[<type>]	[<clk>]	[<init>]
+			@latch_clk_tokens = split(/[\s]+/,$line);
+		}
 
+
+		#check if we have a match if so process it and that the match has a domain
+		if((my $size = @latch_clk_tokens) == 6)
+		{
+			#build the domain map ####################
+			my $clk_domain_name = "latch";
+			my $display_domain_name = "latch";
 			#use everything after the output to create a clk name, which translate to a clock domain
 			for (my $i=3; $i < $size; $i++)
 			{
-				$latch_clk_name .= "|".@tokens[$i];
+				#keep full ref name for display purposes
+				$display_domain_name.=$uniqID_separator.@latch_clk_tokens[$i];
 			}
 
-			if( $size > 3 )
+			if(!$all_bb && ($vanilla || exists($clocks_not_to_bb{$display_domain_name})))
 			{
-
-				if(  $ARGC > 1 && (exists($clocks_not_to_bb{$latch_clk_name})) )
-				{
-					$clocks_not_to_bb{$latch_clk_name} += 1;
+				#register the clock domain in the used clk map from the input list 
+				if(!$vanilla) {
+					$clocks_not_to_bb{$display_domain_name} += 1;
 				}
 
-				if( $ARGC > 1 && (!exists($clocks_not_to_bb{$latch_clk_name})) )
-				{
-					print $OutFile ".subckt ".$latch_clk_name." i[0]=".@tokens[1]." o[0]=".@tokens[2]."\n";
-					if( ! exists( $bb_clocks_map{$latch_clk_name} ) )
-					{
-						$bb_clocks_map{$latch_clk_name} = 1;
-					}
-				}
-				elsif( ! exists( $clocks_map{$latch_clk_name} ) )
-				{
-					$clocks_map{$latch_clk_name} = 1;
-				}
-			}
+				$vanilla_clk_domain{$display_domain_name} += 1;
+				$line = join(" ",@latch_clk_tokens)."\n";
+			} 
+			else
+			{
+				$bb_clock_domain{$display_domain_name} += 1;
+				$line = ".subckt ".$display_domain_name." I=".@latch_clk_tokens[1]." C=".@latch_clk_tokens[4]." O=".@latch_clk_tokens[2]."\n";
+			} 
 		}
-		elsif( $ARGC > 1 )
-		{
+
+		# if we have an output file, print the line to it
+		if($has_output) {
 			print $OutFile $line;
 		}
-
 	}
+	
+	#if the Line is a .end after a bb module declaration dont skip thereafter
+	$skip = ( ($skip) && ($line =~ /^\.end/))? 0: $skip;
 }
 
-my $clocked = join(", ", keys %clocks_map);
-
-if ($ARGC == 1)
+# if we have an output file print the .module for bb latches at the end of the file
+if( $has_output )
 {
-	print $clocked."\n";
-}
-else
-{
-	my $clocked = join(", ", keys %clocks_map);
-	my $bb_clocked = join(", ", keys %bb_clocks_map);
-	print "clocks: ".$clocked."\n";
-	print "black_boxed_clocks: ".$bb_clocked."\n";
-
-	if ( $ARGC > 2 )
+	foreach my $module (keys %bb_clock_domain) 
 	{
-		print "malformed or non-existant input clock: ";
-		$comma_separate = 0;
-		for my $clks (split(/[\s]*,[\s]*/,$ARGV[2])) 
-		{
-			
-			if ( $clocks_not_to_bb{$clks} == 1 )
-			{
-				if( $comma_separate )
-				{
-					print ", ";
-				}
-				print $clks;
-				$count += 1;
-			}
-		}
-		print "\n";
+		print $OutFile 	".model ${module}\n".
+						".inputs I C\n".
+						".outputs O\n".
+						".blackbox\n".
+						".end\n\n";
 	}
 	close($OutFile);
 }
 
+# write out all the clock domains in the file (1/line)
+if( $has_output_clk )
+{
+	print $ClkFile join("\n", keys %vanilla_clk_domain).join("\n", keys %bb_clock_domain)."\n";
+	close($ClkFile);
+}
+
+####################################################
+#begin reporting
+####################################################
+
+print "Usage Statistic:\n\t<Clock UniqID>\t#<Number of Latches impacted>";
+print_stats(\%vanilla_clk_domain, "Vanilla");
+print_stats(\%bb_clock_domain, "Black Boxed");
+
+#report wrongly typed/ unexistant input clock domain to keep vanilla
+foreach my $clks (keys %clocks_not_to_bb) {
+	if ( $clocks_not_to_bb{$clks} != 1 ){
+		delete $clocks_not_to_bb{$clks}
+	}
+}
+if( ($size = keys %clocks_not_to_bb) ) {
+	print "\n####\nERROR: malformed or non-existant input clock:\n\t<".(join(">\n\t<", keys %clocks_not_to_bb)).">\n####\n";
+	exit(-1);
+}
+
+print "\n\n";
 close($InFile);
 
 exit(0);

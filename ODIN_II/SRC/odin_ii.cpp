@@ -245,7 +245,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	{
 		try 
 		{
-			read_blif(global_args.blif_file);
+			read_blif();
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
@@ -395,6 +395,17 @@ void get_options(int argc, char** argv) {
 			.metavar("NUM_VECTORS")
 			;
 
+	rand_sim_grp.add_argument(global_args.sim_min_coverage, "--coverage")
+			.help("using the g argument we will simulate in blocks until a certain coverage is attained")
+			.metavar("MIN_COVERAGE")
+			;
+
+	rand_sim_grp.add_argument(global_args.sim_achieve_best, "--best_coverage")
+			.help("using the g argument we will simulate in blocks until best coverage is attained")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
+			
 	rand_sim_grp.add_argument(global_args.sim_random_seed, "-r")
 			.help("Random seed")
 			.default_value("0")
@@ -505,6 +516,10 @@ void get_options(int argc, char** argv) {
 	{
 		//parse comma separated list of verilog files
 		configuration.list_of_file_names = global_args.verilog_files.value();
+	}
+	else if(global_args.blif_file)
+	{
+		configuration.list_of_file_names = { std::string(global_args.blif_file) };
 	}
 
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
