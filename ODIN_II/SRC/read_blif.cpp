@@ -144,7 +144,7 @@ void read_blif()
 	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file].c_str(), "r");
 	if (file == NULL)
 	{
-		error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_srt());
+		error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
 	}
 	int num_lines = count_blif_lines(file);
 
