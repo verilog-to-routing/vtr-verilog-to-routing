@@ -44,6 +44,9 @@ using namespace pugiutil;
 //Load an XML wireconn specification into a t_wireconn_inf
 t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
+//Process the desired order of a wireconn
+static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
+
 //Process a wireconn defined in the inline style (using attributes)
 void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc);
 
@@ -141,12 +144,24 @@ void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_da
     /* get the destination wire point */
     char_prop = get_attribute(node, "to_switchpoint", loc_data).value();
     parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
+
+    char_prop = get_attribute(node, "from_order", loc_data, ReqOpt::OPTIONAL).value();
+    parse_switchpoint_order(char_prop, wc.from_switchpoint_order);
+
+    char_prop = get_attribute(node, "to_order", loc_data, ReqOpt::OPTIONAL).value();
+    parse_switchpoint_order(char_prop, wc.to_switchpoint_order);
 }
 
 void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc) {
     /* get the connection style */
-    const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
+    const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
     parse_num_conns(char_prop, wc);
+
+    char_prop = get_attribute(node, "from_order", loc_data, ReqOpt::OPTIONAL).value();
+    parse_switchpoint_order(char_prop, wc.from_switchpoint_order);
+
+    char_prop = get_attribute(node, "to_order", loc_data, ReqOpt::OPTIONAL).value();
+    parse_switchpoint_order(char_prop, wc.to_switchpoint_order);
 
     size_t num_from_children = count_children(node, "from", loc_data);
     size_t num_to_children = count_children(node, "to", loc_data);
@@ -191,6 +206,16 @@ t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiu
     }
 
     return wire_switchpoints;
+}
+
+static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order) {
+    if (order == std::string("") || order == std::string("fixed")) {
+        switchpoint_order = SwitchPointOrder::FIXED;
+    } else if (order == std::string("shuffled")) {
+        switchpoint_order = SwitchPointOrder::SHUFFLED;
+    } else {
+        archfpga_throw(__FILE__, __LINE__, "Unrecognized switchpoint order '%s'", order);
+    }
 }
 
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec.

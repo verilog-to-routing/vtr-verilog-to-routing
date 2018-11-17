@@ -1172,11 +1172,9 @@ struct t_direct_inf {
 };
 
 
-enum class WireConnType {
-    FROM,
-    TO,
-    MIN,
-    MAX
+enum class SwitchPointOrder {
+    FIXED,      //Switchpoints are ordered as specified in architecture
+    SHUFFLED    //Switchpoints are shuffled (more diversity)
 };
 
 //A collection of switchpoints associated with a segment
@@ -1189,6 +1187,9 @@ struct t_wire_switchpoints {
 struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> from_switchpoint_set; //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
     std::vector<t_wire_switchpoints> to_switchpoint_set;   //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
+    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
+    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED; //The desired to_switchpoint_set ordering
+
     std::string num_conns_formula;      /* Specifies how many connections should be made for this wireconn.
                                          *
                                          * '<int>': A specific number of connections
@@ -1203,12 +1204,6 @@ struct t_wireconn_inf {
                                          *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
                                          *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
                                          *          larger than 'to')
-                                         * 'min':   The number of generated connections is equal to the minimum size of the 'from' or 'to' sets.
-                                         *          This ensures that no wire in the 'from' or 'to' set is connected more than once.
-                                         *          Note: this will leave some elements from the larger set disconnected.
-                                         * 'max':   The number of generated connections is equal to the maximum size of the 'from' or 'to' sets.
-                                         *          This ensures that no elements in the 'from' or 'to' set is left disconnected.
-                                         *          Note: this will result in multiple connections to some elements from the smaller set.
                                          */
 };
 
