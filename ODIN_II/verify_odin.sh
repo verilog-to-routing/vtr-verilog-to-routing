@@ -45,10 +45,10 @@ function init_temp() {
 
 function exit_program() {
 
-    if [ -e regression_test/runs/failure.log ]
+    if [ -e ${new_run}/failure.log ]
     then
 	    line_count=$(wc -l < ${new_run}/failure.log)
-		fail_count=$[ fail_count+line_count ]
+		fail_count=$(( ${fail_count} + ${line_count} ))
 	fi
 
 	if [ $fail_count -gt "0" ]
