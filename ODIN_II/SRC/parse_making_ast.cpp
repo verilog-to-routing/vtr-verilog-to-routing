@@ -830,30 +830,6 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	return new_node;
 }
 
-int get_range_Plus_Colon(ast_node_t* first_node)
-{
-  long temp_value;
-
-  /* look at the first item to see if it has a range */
-  if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
-  {
-               if(first_node->children[1]->types.number.value >first_node->children[2]->types.number.value)
-               {
-
-                 error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "Odin doesn't support arrays declared [m+:n] where n is less than m.");
-
-                 // swap them around
-                 temp_value = first_node->children[2]->types.number.value;
-                 first_node->children[2]->types.number.value = first_node->children[1]->types.number.value;
-                 first_node->children[1]->types.number.value = temp_value;
-               }
-
-    return abs(first_node->children[1]->types.number.value +first_node->children[2]->types.number.value) ;
-             }
-                      // should return X????
-           
-  return -1; // indicates no range
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: newRangePlusRef)
@@ -868,7 +844,8 @@ ast_node_t *newRangePlusRef(char *id, ast_node_t *expression1, ast_node_t *expre
 
   /* allocate child nodes to this node */
   allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
-
+  
+  warning_message(NETLIST_ERROR, -1, -1, "get_range_Plus_Colon with ");
   get_range_Plus_Colon(new_node);
 
   return new_node;       
@@ -2069,6 +2046,8 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 				break;
 			case RANGE_REF:
 				fprintf(fp, "\t%d [label=\"RANGE_REF\"];\n", my_label);
+			case RANGE_PART_REF:
+				fprintf(fp, "\t%d [label=\"RANGE_PART_REF\"];\n", my_label);
 				break;
 			case CONCATENATE:
 				fprintf(fp, "\t%d [label=\"CONCATENATE\"];\n", my_label);
