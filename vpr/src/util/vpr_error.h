@@ -22,6 +22,7 @@ enum e_vpr_error {
 	VPR_ERROR_CLB_NETLIST,
 	VPR_ERROR_ANALYSIS,
 	VPR_ERROR_INTERRUPTED,
+	VPR_ERROR_DRAW,
 	VPR_ERROR_OTHER
 };
 typedef enum e_vpr_error t_vpr_error_type;
