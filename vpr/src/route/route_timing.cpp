@@ -1026,10 +1026,11 @@ static bool timing_driven_route_sink(ClusterNetId net_id, unsigned itarget, int 
     if (cheapest == nullptr) {
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
 		ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + target_pin));
-        VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s'\n",
+        VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                     cluster_ctx.clb_nlist.block_name(src_block).c_str(),
 					cluster_ctx.clb_nlist.block_name(sink_block).c_str(),
-                    cluster_ctx.clb_nlist.net_name(net_id).c_str());
+                    cluster_ctx.clb_nlist.net_name(net_id).c_str(),
+                    size_t(net_id));
         return false;
     }
 
