@@ -930,8 +930,10 @@ static void drawplace() {
 
 				/* Draw text for block type so that user knows what block */
 				if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                    std::string block_type_loc = device_ctx.grid[i][j].type->name;
+                    block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
                     drawtext(abs_clb_bbox.get_center() - t_point(0, abs_clb_bbox.get_height()/4),
-                            device_ctx.grid[i][j].type->name, abs_clb_bbox);
+                            block_type_loc.c_str(), abs_clb_bbox);
 				}
 			}
 		}
