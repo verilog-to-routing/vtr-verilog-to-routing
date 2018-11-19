@@ -31,6 +31,7 @@ using namespace std;
 #include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "pack_types.h"
+#include "pb_type_graph.h"
 #include "lb_type_rr_graph.h"
 #include "cluster_router.h"
 
@@ -154,7 +155,8 @@ static bool route_has_conflict(t_lb_trace *rt, t_lb_router_data *router_data) {
 
 	int cur_mode = -1;
 	for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-		int new_mode = get_lb_type_rr_graph_edge_mode(lb_type_graph, rt->current_node, rt->next_nodes[i].current_node);
+		int new_mode = get_lb_type_rr_graph_edge_mode(lb_type_graph,
+            rt->current_node, rt->next_nodes[i].current_node);
 		if (cur_mode != -1 && cur_mode != new_mode) {
 			return true;
 		}
@@ -167,6 +169,86 @@ static bool route_has_conflict(t_lb_trace *rt, t_lb_router_data *router_data) {
 	return false;
 }
 
+// Check one edge for mode conflict.
+static bool check_edge_for_route_conflicts(
+		std::unordered_map<const t_pb_graph_node *, const t_mode *> *mode_map,
+		const t_pb_graph_pin *driver_pin, const t_pb_graph_pin *pin) {
+	if(driver_pin == nullptr) {
+		return false;
+	}
+
+	// Only check pins that are OUT_PORTs.
+	if(pin == nullptr || pin->port == nullptr || pin->port->type != OUT_PORT) {
+		return false;
+	}
+	VTR_ASSERT(!pin->port->is_clock);
+
+	auto *pb_graph_node = pin->parent_node;
+	VTR_ASSERT(pb_graph_node->pb_type == pin->port->parent_pb_type);
+
+	const t_pb_graph_edge *edge = get_edge_between_pins(driver_pin, pin);
+	VTR_ASSERT(edge != nullptr);
+
+	auto mode_of_edge = edge->interconnect->parent_mode_index;
+	auto *mode = &pb_graph_node->pb_type->modes[mode_of_edge];
+
+	auto result = mode_map->insert(std::make_pair(
+				pb_graph_node, mode));
+	if(!result.second) {
+		if(result.first->second != mode) {
+			std::cout << vtr::string_fmt(
+				"Differing modes for block.  Got %s previously and %s for interconnect %s.",
+				mode->name, result.first->second->name,
+				edge->interconnect->name) << std::endl;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Walk one net and either add the pb_type modes to mode_map, or if they already
+// exist, ensure that the edges in the net are not in conflict.
+static bool check_net_for_route_conflicts(
+		std::unordered_map<const t_pb_graph_node *, const t_mode *> *mode_map,
+		const t_lb_trace *driver, const t_lb_router_data *router_data) {
+	VTR_ASSERT(driver != nullptr);
+
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+	auto &driver_node = lb_type_graph[driver->current_node];
+	auto *driver_pin = driver_node.pb_graph_pin;
+
+	// Check each driver_pin -> pin edge.
+	if(driver_pin != nullptr) {
+		for (const auto &next_node : driver->next_nodes) {
+			auto &node = lb_type_graph[next_node.current_node];
+			if(check_edge_for_route_conflicts(mode_map, driver_pin, node.pb_graph_pin)) {
+				return true;
+			}
+		}
+	}
+
+	// Walk the rest of the net.
+	for (const auto &next_node : driver->next_nodes) {
+		if (check_net_for_route_conflicts(mode_map, &next_node, router_data)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Walk nets and check if each pb_type has the same mode.
+static bool check_for_route_conflicts(const vector <t_intra_lb_net> &lb_nets, const t_lb_router_data *router_data) {
+	std::unordered_map<const t_pb_graph_node *, const t_mode *> mode_map;
+	for(const auto &net : lb_nets) {
+		if(check_net_for_route_conflicts(&mode_map, net.rt_tree, router_data)) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 /*****************************************************************************************
 * Routing Functions
@@ -389,6 +471,16 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 
 			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT);
 		}
+
+		if(is_impossible == false) {
+			// We've checked that each net has no mode conflicts within the
+			// net via route_has_conflict, however this is in insufficient.
+			//
+			// All nets from each pb_type must not have a mode conflict between
+			// the nets.
+			is_impossible = check_for_route_conflicts(lb_nets, router_data);
+		}
+
 		if(is_impossible == false) {
 			is_routed = is_route_success(router_data);
 		} else {
