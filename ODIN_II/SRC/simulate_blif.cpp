@@ -2257,7 +2257,8 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
 }
 
 /*
- * Calculates the memory address. Returns -1 if the address is unknown.
+ * Calculates the memory address. Returns -1 if the address is unknown. 
+ * (we modulo the adress by the ram_depth to get the address to prevent out of bounds)
  */
 static long compute_memory_address(signal_list_t *addr, int cycle)
 {
@@ -2272,7 +2273,8 @@ static long compute_memory_address(signal_list_t *addr, int cycle)
 		address += get_pin_value(addr->pins[i],cycle) << (i);
 	}
 
-	return address;
+
+	return address % addr->count;
 }
 
 /*
@@ -2283,11 +2285,7 @@ static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
 	node->memory_data = (signed char *)vtr::malloc(sizeof(signed char) * max_address * data_width);
-
-	// Initialise the memory to -1.
-	int i;
-	for (i = 0; i < max_address * data_width; i++)
-		node->memory_data[i] = -1;
+	memset(node->memory_data, -1, data_width * max_address);
 
 	char *filename = get_mif_filename(node);
 
