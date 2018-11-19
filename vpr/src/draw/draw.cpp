@@ -276,6 +276,7 @@ static void toggle_routing_bounding_box(void (*drawscreen_ptr)());
 static void toggle_routing_util(void (*drawscreen_ptr)());
 static void toggle_crit_path(void (*drawscreen_ptr)());
 static void toggle_block_pin_util(void (*drawscreen_ptr)());
+static void toggle_router_rr_costs(void (*drawscreen_ptr)());
 
 static void drawscreen();
 static void redraw_screen();
@@ -300,6 +301,7 @@ static void draw_rr();
 static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, const t_color& color);
 static void draw_rr_chan(int inode, const t_color color);
+static void draw_rr_src_sink(int inode, t_color color);
 static t_bound_box draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
@@ -347,6 +349,11 @@ t_color get_block_type_color(t_type_ptr type);
 t_color lighten_color(t_color color, float amount);
 
 static void draw_block_pin_util();
+
+static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost);
+static void draw_router_rr_costs();
+
+static void draw_rr_costs(const std::vector<float>& rr_costs, bool lowest_cost_first=true);
 
 /********************** Subroutine definitions ******************************/
 
@@ -396,6 +403,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
 			create_button("Route BB", "Routing Util", toggle_routing_util);
+			create_button("Routing Util", "Router Cost", toggle_router_rr_costs);
 		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
             //Placement, opening after routing
 
@@ -405,6 +413,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			destroy_button("Cong. Cost");
 			destroy_button("Route BB");
 			destroy_button("Route Util");
+			destroy_button("Router Cost");
 		} else if (pic_on_screen_val == ROUTING
 				&& draw_state->pic_on_screen == NO_PICTURE) {
             //Routing opening first
@@ -416,6 +425,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 			create_button("Congestion", "Cong. Cost", toggle_routing_congestion_cost);
 			create_button("Cong. Cost", "Route BB", toggle_routing_bounding_box);
 			create_button("Route BB", "Routing Util", toggle_routing_util);
+			create_button("Routing Util", "Router Cost", toggle_router_rr_costs);
             if(setup_timing_info) {
                 create_button("Cong. Cost", "Crit. Path", toggle_crit_path);
             }
@@ -544,6 +554,8 @@ static void redraw_screen() {
         draw_congestion();
 
         draw_routing_costs();
+
+        draw_router_rr_costs();
 
         draw_routing_util();
 
@@ -747,6 +759,18 @@ static void toggle_crit_path(void (*drawscreen_ptr)()) {
 	drawscreen_ptr();
 }
 
+static void toggle_router_rr_costs(void (*drawscreen_ptr)()) {
+	t_draw_state* draw_state = get_draw_state_vars();
+
+	e_draw_router_rr_cost new_state = (enum e_draw_router_rr_cost) (((int)draw_state->show_router_rr_cost + 1)
+														  % ((int)DRAW_ROUTER_RR_COST_MAX));
+	draw_state->show_router_rr_cost = new_state;
+
+	if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+		update_message(draw_state->default_message);
+    }
+    drawscreen_ptr();
+}
 
 void alloc_draw_structs(const t_arch* arch) {
 	/* Call accessor functions to retrieve global variables. */
@@ -1134,6 +1158,14 @@ static void draw_routing_costs() {
         max_cost = std::max(max_cost, cost);
     }
 
+    //Hide min value, draw_rr_costs() ignores NaN's
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        if (rr_node_costs[inode] == min_cost) {
+            rr_node_costs[inode] = NAN;
+        }
+    }
+
+
     char msg[vtr::bufsize];
     if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS) {
         sprintf(msg, "Total Congestion Cost Range [%g, %g]", min_cost, max_cost);
@@ -1154,39 +1186,7 @@ static void draw_routing_costs() {
     }
     update_message(msg);
 
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
-
-    //Draw the nodes in ascending order of value, this ensures high valued nodes
-    //are not overdrawn by lower value ones (e.g. when zoomed-out far)
-    std::vector<int> nodes(device_ctx.rr_nodes.size());
-    std::iota(nodes.begin(), nodes.end(), 0);
-    auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
-        return rr_node_costs[lhs_node] < rr_node_costs[rhs_node];
-    };
-    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
-
-    for (int inode : nodes) {
-        float cost = rr_node_costs[inode];
-        if (cost == min_cost) continue; //Hide minimum cost resources
-
-        t_color color = to_t_color(cmap->color(cost));
-
-        switch (device_ctx.rr_nodes[inode].type()) {
-            case CHANX: //fallthrough
-            case CHANY:
-                draw_rr_chan(inode, color);
-                break;
-
-            case IPIN: //fallthrough
-            case OPIN:
-                draw_rr_pin(inode, color);
-                break;
-            default:
-                break;
-        }
-	}
-
-    draw_state->color_map = std::move(cmap);
+    draw_rr_costs(rr_node_costs, true);
 }
 
 static void draw_routing_bb() {
@@ -2081,6 +2081,22 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float *xcen, float *ycen) {
 
 	*xcen = xc;
 	*ycen = yc;
+}
+
+static void draw_rr_src_sink(int inode, t_color color) {
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    int xlow = device_ctx.rr_nodes[inode].xlow();
+    int ylow = device_ctx.rr_nodes[inode].ylow();
+    int xhigh = device_ctx.rr_nodes[inode].xhigh();
+    int yhigh = device_ctx.rr_nodes[inode].yhigh();
+
+    setcolor(color);
+
+    fillrect(draw_coords->get_tile_width() * xlow, draw_coords->get_tile_height() * ylow,
+            draw_coords->get_tile_width() * xhigh, draw_coords->get_tile_height() * yhigh);
 }
 
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
@@ -3606,6 +3622,125 @@ static void draw_routing_util() {
             }
         }
     }
+
+    draw_state->color_map = std::move(cmap);
+}
+
+static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost) {
+    if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+        return node_inf.path_cost;
+    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+        return node_inf.backward_path_cost;
+    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED) {
+        return node_inf.path_cost - node_inf.backward_path_cost;
+    }
+
+    VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
+}
+
+static void draw_router_rr_costs() {
+	t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+        return;
+    }
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& routing_ctx = g_vpr_ctx.routing();
+
+    std::vector<float> rr_costs(device_ctx.rr_nodes.size());
+
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        float cost = get_router_rr_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_rr_cost);
+        rr_costs[inode] = cost;
+    }
+
+    bool all_nan = true;
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        if (std::isinf(rr_costs[inode])) {
+            rr_costs[inode] = NAN;
+        } else {
+            all_nan = false;
+        }
+    }
+
+    if (!all_nan) {
+        draw_rr_costs(rr_costs, false);
+    }
+
+
+    if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+        update_message("Routing Expected Total Cost (known + estimate)");
+    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+        update_message("Routing Known Cost (from source to node)");
+    } else {
+        update_message("Routing Expected Cost (from node to target)");
+        VTR_ASSERT(draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED);
+    }
+}
+
+static void draw_rr_costs(const std::vector<float>& rr_costs, bool lowest_cost_first) {
+	t_draw_state* draw_state = get_draw_state_vars();
+
+	/* Draws routing costs */
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+	setlinewidth(2);
+
+    VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
+
+    float min_cost = std::numeric_limits<float>::infinity();
+    float max_cost = -min_cost;
+	for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        if (std::isnan(rr_costs[inode])) continue;
+
+        min_cost = std::min(min_cost, rr_costs[inode]);
+        max_cost = std::max(max_cost, rr_costs[inode]);
+    }
+
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
+
+    //Draw the nodes in ascending order of value, this ensures high valued nodes
+    //are not overdrawn by lower value ones (e.g. when zoomed-out far)
+    std::vector<int> nodes(device_ctx.rr_nodes.size());
+    std::iota(nodes.begin(), nodes.end(), 0);
+    auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
+        if (lowest_cost_first) {
+            return rr_costs[lhs_node] > rr_costs[rhs_node];
+        }
+        return rr_costs[lhs_node] < rr_costs[rhs_node];
+    };
+    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
+
+    for (int inode : nodes) {
+        float cost = rr_costs[inode];
+        if (std::isnan(cost)) continue;
+
+        t_color color = to_t_color(cmap->color(cost));
+
+        switch (device_ctx.rr_nodes[inode].type()) {
+            case CHANX: //fallthrough
+            case CHANY:
+                draw_rr_chan(inode, color);
+                draw_rr_edges(inode);
+                break;
+
+            case IPIN: //fallthrough
+                draw_rr_pin(inode, color);
+                break;
+            case OPIN:
+                draw_rr_pin(inode, color);
+                draw_rr_edges(inode);
+                break;
+            case SOURCE:
+            case SINK:
+                color.alpha *= 0.8;
+                draw_rr_src_sink(inode, color);
+                break;
+            default:
+                break;
+        }
+	}
 
     draw_state->color_map = std::move(cmap);
 }
