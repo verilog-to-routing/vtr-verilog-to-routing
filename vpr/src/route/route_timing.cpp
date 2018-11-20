@@ -172,14 +172,14 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         const RouterLookahead& router_lookahead,
         RouterStats& router_stats);
 
-static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
+static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
         const t_conn_cost_params cost_params,
         const RouterLookahead& router_lookahead,
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,
-        t_bb& bounding_box,
+        t_bb net_bounding_box,
         RouterStats& router_stats);
 
-static t_bb expand_highfanout_bounding_box(t_bb bb);
+static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb);
 
 static void add_route_tree_node_to_heap(t_rt_node* rt_node,
         int target_node,
@@ -1124,7 +1124,7 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root, int s
 //which is spatially close to the sink is added to the heap.
 static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root, int sink_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        t_bb net_bounding_box,
         const RouterLookahead& router_lookahead,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         std::vector<int>& modified_rr_node_inf,
@@ -1132,7 +1132,7 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, spatial_rt_lookup, bounding_box, router_stats);
+    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, spatial_rt_lookup, net_bounding_box, router_stats);
     heap_::build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
@@ -1145,16 +1145,22 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
     }
 
     VTR_LOGV_DEBUG(f_router_debug, "  Routing to %d as high fanout net (BB: %d,%d x %d,%d)\n", sink_node,
-            bounding_box.xmin, bounding_box.ymin,
-            bounding_box.xmax, bounding_box.ymax);
+            high_fanout_bb.xmin, high_fanout_bb.ymin,
+            high_fanout_bb.xmax, high_fanout_bb.ymax);
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node, 
                             cost_params,
-                            bounding_box,
+                            high_fanout_bb,
                             router_lookahead,
                             modified_rr_node_inf,
                             router_stats);
 
+    if (cheapest == nullptr) {
+        //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
+        //try again with the full route tree to be sure this is not an artifact of high-fanout routing
+        VTR_LOG_WARN("No routing path found for high-fanout net connection; retrying with full route tree\n");
+        cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, net_bounding_box, router_lookahead, modified_rr_node_inf, router_stats);
+    }
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
 
@@ -1231,14 +1237,14 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         ++router_stats.heap_pops;
 
         if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
-            VTR_LOGV_DEBUG(f_router_debug, "  Empty heap (no path found)");
+            VTR_LOGV_DEBUG(f_router_debug, "  Empty heap (no path found)\n");
             return nullptr;
         }
 
         inode = cheapest->index;
         VTR_LOGV_DEBUG(f_router_debug, "  Popping node %d\n", inode);
     }
-    VTR_LOGV_DEBUG(f_router_debug, "  Found target %d\n", inode);
+    VTR_LOGV_DEBUG(f_router_debug, "  Found target %8d (%s)\n", inode, describe_rr_node(inode).c_str());
 
     return cheapest;
 }
@@ -1406,11 +1412,11 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 }
 
 
-static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
+static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node,
         const t_conn_cost_params cost_params,
         const RouterLookahead& router_lookahead,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
-        t_bb& bounding_box,
+        t_bb net_bounding_box,
         RouterStats& router_stats) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
@@ -1432,11 +1438,11 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
 
     int nodes_added = 0;
 
-    t_bb bb;
-    bb.xmin = target_rr_node.xlow();
-    bb.xmax = target_rr_node.xhigh();
-    bb.ymin = target_rr_node.ylow();
-    bb.ymax = target_rr_node.yhigh();
+    t_bb highfanout_bb;
+    highfanout_bb.xmin = target_rr_node.xlow();
+    highfanout_bb.xmax = target_rr_node.xhigh();
+    highfanout_bb.ymin = target_rr_node.ylow();
+    highfanout_bb.ymax = target_rr_node.yhigh();
 
     //Add existing routing starting from the target bin.
     //If the target's bin has no existing routing add from the surrounding bins
@@ -1460,10 +1466,10 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
 
                 //Update Bounding Box
                 auto& rr_node = device_ctx.rr_nodes[rt_node->inode];
-                bb.xmin = std::min<int>(bb.xmin, rr_node.xlow());
-                bb.ymin = std::min<int>(bb.ymin, rr_node.ylow());
-                bb.xmax = std::max<int>(bb.xmax, rr_node.xhigh());
-                bb.ymax = std::max<int>(bb.ymax, rr_node.yhigh());
+                highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_node.xlow());
+                highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_node.ylow());
+                highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_node.xhigh());
+                highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_node.yhigh());
 
                 ++nodes_added;
             }
@@ -1477,17 +1483,20 @@ static int add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_nod
         if (done) break;
     }
 
+    t_bb bounding_box = net_bounding_box;
     if (nodes_added == 0) { //If the target bin and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params, router_lookahead, router_stats);
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
-        bounding_box = expand_highfanout_bounding_box(bb);
+        bounding_box = adjust_highfanout_bounding_box(highfanout_bb);
     }
 
-    return nodes_added;
+    return bounding_box;
 }
 
-static t_bb expand_highfanout_bounding_box(t_bb bb) {
+static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
+    t_bb bb = highfanout_bb;
+
     constexpr int HIGH_FANOUT_BB_FAC = 3;
     bb.xmin -= HIGH_FANOUT_BB_FAC;
     bb.ymin -= HIGH_FANOUT_BB_FAC;
