@@ -184,6 +184,9 @@ struct t_wire_switchpoint {
 /* Used to get info about a given wire type based on the name */
 typedef map< string, Wire_Info > t_wire_type_sizes;
 
+constexpr int SEED = 1;
+std::default_random_engine f_switchpoint_shuffle_rng(SEED);
+
 
 /************ Function Declarations ************/
 /* Counts the number of wires in each wire type in the specified channel */
@@ -730,10 +733,7 @@ static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& g
     if (switchpoint_order == SwitchPointOrder::SHUFFLED) {
         //We new re-order the switchpoints to try to make adjacent switchpoints have different values
 
-        constexpr int SEED = 1;
-        std::default_random_engine rng(SEED);
-
-        std::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), rng);
+        std::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), f_switchpoint_shuffle_rng);
     } else {
         VTR_ASSERT(switchpoint_order == SwitchPointOrder::FIXED);
         //Already ordered so same switchpoints are adjacent by above collection loop
