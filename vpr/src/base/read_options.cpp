@@ -1152,7 +1152,16 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   "   which to enable router debug output.\n" 
                   " * For value == -1, router debug output is enabled for\n"
                   "   all nets.\n" 
-                  " * For values < -1, all router debug output is disabled.\n" 
+                  " * For values < -1, all net-sbased router debug output is disabled.\n" 
+                  "Note that VPR must have been compiled with debug logging enabled to use this option.\n")
+            .default_value("-2")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_debug_sink_rr, "--router_debug_sink_rr")
+            .help("Controls when router debugging is enabled for the specified sink RR.\n"
+                  " * For values >= 0, the value is taken as the sink RR Node ID for\n"
+                  "   which to enable router debug output.\n" 
+                  " * For values < -1, sink-based router debug output is disabled.\n" 
                   "Note that VPR must have been compiled with debug logging enabled to use this option.\n")
             .default_value("-2")
             .show_in(argparse::ShowIn::HELP_ONLY);

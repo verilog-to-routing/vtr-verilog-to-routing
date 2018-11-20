@@ -119,6 +119,7 @@ struct t_options {
     argparse::ArgValue<e_route_bb_update> route_bb_update;
     argparse::ArgValue<int> router_high_fanout_threshold;
     argparse::ArgValue<int> router_debug_net;
+    argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
     argparse::ArgValue<int> router_max_convergence_count;
 
