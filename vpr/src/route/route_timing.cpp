@@ -1527,7 +1527,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
             tot_cost += pow(max(zero, delay_budget->min_delay - tot_cost), 2) / 100e-12;
         }
 
-        VTR_LOGV_DEBUG(f_router_debug, "  Adding node %d to heap from init route tree (%s)\n", inode, describe_rr_node(inode).c_str());
+        VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream);
