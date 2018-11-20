@@ -238,7 +238,9 @@ char *make_signal_name(char *signal_name, int bit)
 	oassert(signal_name);
 	std::stringstream return_string;
 	return_string << signal_name;
-	if (bit != -1) return_string << "-" << std::dec << bit;
+	if (bit != -1) 
+		return_string << "-" << std::dec << bit;
+		
 	return vtr::strdup(return_string.str().c_str());
 }
 
@@ -252,11 +254,20 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 {
 
 	std::stringstream return_string;
-	if(previous)								 return_string << previous;
-	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
-	if(signal_name && (previous || module_name)) return_string << "^";
-	if(signal_name)								 return_string << signal_name;
-	if(bit != -1){
+	if(previous)								 
+		return_string << previous;
+
+	if(module_name) 							 
+		return_string	<< "." << module_name << "+" << module_instance_name;
+
+	if(signal_name && (previous || module_name)) 
+		return_string << "^";
+
+	if(signal_name)								 
+		return_string << signal_name;
+
+	if(bit != -1)
+	{
 		oassert(signal_name);
 		return_string	<< "~" << std::dec << bit ;
 	}
