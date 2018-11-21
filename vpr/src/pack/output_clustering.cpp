@@ -23,6 +23,7 @@ using namespace std;
 #include "atom_netlist.h"
 #include "pack_types.h"
 #include "cluster_router.h"
+#include "pb_type_graph.h"
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
@@ -209,22 +210,20 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 			if (pb_type->ports[i].type == OUT_PORT) {
 				VTR_ASSERT(!pb_type->ports[i].is_clock);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-					node_index = pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
+					const t_pb_graph_pin * pin  = &pb_graph_node->output_pins[port_index][j];
+					node_index = pin->pin_count_in_cluster;
 					if (pb_type->num_modes > 0 && pb_route[node_index].atom_net_id) {
 						prev_node = pb_route[node_index].driver_pb_pin_id;
-						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
-						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-							VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
-							if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == node_index) {
-								break;
-							}
-						}
-						VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
-						mode_of_edge = prev_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
+						const t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
+						const t_pb_graph_edge *edge = get_edge_between_pins(prev_pin, pin);
+
+						mode_of_edge = edge->interconnect->parent_mode_index;
 						if(mode != nullptr && &pb_type->modes[mode_of_edge] != mode) {
 							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-									  "Differing modes for block.  Got %s previously and %s for edge %d.",
-									  mode->name, pb_type->modes[mode_of_edge].name, port_index);
+								"Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
+								mode->name, pb_type->modes[mode_of_edge].name,
+								port_index,
+								prev_pin->output_edges[prev_edge]->interconnect->name);
 						}
 						VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
 						mode = &pb_type->modes[mode_of_edge];
@@ -313,8 +312,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 					is_used = false;
 					for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
 						if (child_pb_type->ports[k].type == OUT_PORT) {
-							for (m = 0; m < child_pb_type->ports[k].num_pins;
-									m++) {
+							for (m = 0; m < child_pb_type->ports[k].num_pins; m++) {
 								node_index =
 										pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
 								if (pb_route[node_index].atom_net_id) {
