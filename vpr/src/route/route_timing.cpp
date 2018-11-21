@@ -1445,7 +1445,7 @@ static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_no
     highfanout_bb.ymax = target_rr_node.yhigh();
 
     //Add existing routing starting from the target bin.
-    //If the target's bin has no existing routing add from the surrounding bins
+    //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
@@ -1474,8 +1474,14 @@ static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_no
                 ++nodes_added;
             }
 
-            if (dx == 0 && dy == 0 && nodes_added > 0) {
-                //Target bin contained routing
+            constexpr int SINGLE_BIN_MIN_NODES = 2;
+            if (dx == 0 && dy == 0 && nodes_added > SINGLE_BIN_MIN_NODES) {
+                //Target bin contained at least minimum amount of routing
+                //
+                //We require at least SINGLE_BIN_MIN_NODES to be added.
+                //This helps ensure we don't end up with, for example, a single
+                //routing wire running in the wrong direction which may not be 
+                //able to reach the target within the bounding box.
                 done = true;
                 break;
             }
