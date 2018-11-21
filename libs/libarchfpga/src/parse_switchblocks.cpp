@@ -209,7 +209,9 @@ t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiu
 }
 
 static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order) {
-    if (order == std::string("") || order == std::string("fixed")) {
+    if (order == std::string("")) {
+        switchpoint_order = SwitchPointOrder::SHUFFLED; //Default
+    } else if (order == std::string("fixed")) {
         switchpoint_order = SwitchPointOrder::FIXED;
     } else if (order == std::string("shuffled")) {
         switchpoint_order = SwitchPointOrder::SHUFFLED;
