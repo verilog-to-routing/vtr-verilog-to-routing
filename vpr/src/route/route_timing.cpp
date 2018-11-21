@@ -136,7 +136,7 @@ struct RoutingMetrics {
 
 //Run-time flag to control when router debug information is printed
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
-bool f_router_debug = true;
+bool f_router_debug = false;
 
 /******************** Subroutines local to route_timing.c ********************/
 
