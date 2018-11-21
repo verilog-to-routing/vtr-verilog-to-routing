@@ -1355,8 +1355,7 @@ get_heap_head() {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			VTR_LOG_WARN( "Empty heap occurred in get_heap_head.\n");
-			VTR_LOG_WARN( "Some blocks are impossible to connect in this architecture.\n");
+			VTR_LOG_WARN("Empty heap occurred in get_heap_head.\n");
 			return (nullptr);
 		}
 
