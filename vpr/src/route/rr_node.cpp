@@ -272,13 +272,13 @@ void t_rr_node::partition_edges() {
     auto first_non_config_edge = std::partition(edges_.get(), edges_.get() + num_edges_, is_configurable);
 
     size_t num_conf_edges = std::distance(edges_.get(), first_non_config_edge);
-    size_t num_non_configurable_edges = num_edges() - num_conf_edges; //Note we calculate using the size_t to get full range
+    size_t num_non_conf_edges = num_edges() - num_conf_edges; //Note we calculate using the size_t to get full range
 
     //Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-    if (num_non_configurable_edges > std::numeric_limits<decltype(num_non_configurable_edges_)>::max()) {
+    if (num_non_conf_edges > std::numeric_limits<decltype(num_non_configurable_edges_)>::max()) {
         VPR_THROW(VPR_ERROR_ROUTE, "Exceeded RR node maximum number of non-configurable edges");
     }
-    num_non_configurable_edges_ = num_non_configurable_edges; //Narrowing
+    num_non_configurable_edges_ = num_non_conf_edges; //Narrowing
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {
