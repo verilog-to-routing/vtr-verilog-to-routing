@@ -2438,32 +2438,44 @@ static t_bb calc_current_bb(const t_trace* head) {
 }
 
 static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr) {
-    bool enable_debug = false;
-    if (router_opts.router_debug_net < 0) { //No valid net specified
-        if (sink_rr >= 0) { //Valid sink RR specified
-            if (sink_rr == router_opts.router_debug_sink_rr) { //Match sink_rr
-                enable_debug = true;
-            }
+    bool all_net_debug = (router_opts.router_debug_net == -1);
+
+    bool specific_net_debug = (router_opts.router_debug_net >= 0);
+    bool specific_sink_debug = (router_opts.router_debug_sink_rr >= 0);
+
+    bool match_net = (ClusterNetId(router_opts.router_debug_net) == net);
+    bool match_sink = (router_opts.router_debug_sink_rr == sink_rr);
+
+    if (all_net_debug) {
+        VTR_ASSERT(!specific_net_debug);
+
+        if (specific_sink_debug) {
+            //Specific sink specified, debug if sink matches
+            f_router_debug = match_sink;
+        } else {
+            //Debug all nets (no specific sink specified)
+            f_router_debug = true;
         }
-    } else { //Valid net specified
-        if (ClusterNetId(router_opts.router_debug_net) == net) { //Net matches
-            if (sink_rr >= 0) { //Valid sink RR
-                if (sink_rr == router_opts.router_debug_sink_rr) { //Match sink_rr
-                    enable_debug = true;
-                }
-            } else {
-                VTR_ASSERT(router_opts.router_debug_sink_rr < 0); //No valid sink_rr specified
-                enable_debug = true;
-            }
-        }
+    } else if (specific_net_debug && specific_sink_debug) {
+        //Debug if both net and sink match
+        f_router_debug = match_net && match_sink;
+    } else if (specific_sink_debug) {
+        VTR_ASSERT(!all_net_debug);
+        VTR_ASSERT(!specific_net_debug);
+
+        //Debug if match sink
+        f_router_debug = match_sink;
+    } else {
+        VTR_ASSERT(!all_net_debug);
+        VTR_ASSERT(!specific_net_debug);
+        VTR_ASSERT(!specific_sink_debug);
+        //Disable debug output
+        f_router_debug = false;
     }
 
-
 #ifndef VTR_ENABLE_DEBUG_LOGGING
-    VTR_LOGV_WARN(enable_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined");
+    VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined");
 #endif
-
-    f_router_debug = enable_debug;
 }
 
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback>& best_routing,
