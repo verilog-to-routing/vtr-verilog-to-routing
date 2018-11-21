@@ -37,6 +37,7 @@ supported_upgrades = [
     "rename_fc_attributes",
     "longline_no_sb_cb",
     "upgrade_port_equivalence",
+    "upgrade_complex_sb_num_conns",
 ]
 
 def parse_args():
@@ -121,6 +122,11 @@ def main():
 
     if "upgrade_port_equivalence" in args.features:
         result = upgrade_port_equivalence(arch)
+        if result:
+            modified = True
+
+    if "upgrade_complex_sb_num_conns" in args.features:
+        result = upgrade_complex_sb_num_conns(arch)
         if result:
             modified = True
 
@@ -778,6 +784,34 @@ def get_port_names(string):
 
     return ports
 
+def upgrade_complex_sb_num_conns(arch):
+    """
+    Upgrades <wireconn> 'num_conns_type' attribute to 'num_conns"
+    """
+
+    wireconn_tags = arch.findall(".//wireconn[@num_conns_type]")
+
+    changed = False
+
+    for wireconn_tag in wireconn_tags:
+        assert wireconn_tag.tag == "wireconn"
+        assert 'num_conns_type' in wireconn_tag.attrib
+
+        #For inputs, 'true' is upgraded to full, and 'false' to 'none'
+        num_conns_value = wireconn_tag.attrib['num_conns_type']
+
+        del wireconn_tag.attrib['num_conns_type']
+
+        if num_conns_value == 'min':
+            num_conns_value = 'min(from,to)'
+        elif num_conns_value == 'max':
+            num_conns_value = 'max(from,to)'
+
+        wireconn_tag.attrib['num_conns'] = num_conns_value
+
+        changed = True
+
+    return changed
 
 
 if __name__ == "__main__":
