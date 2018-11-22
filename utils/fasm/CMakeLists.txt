@@ -8,6 +8,8 @@ add_library(fasm
   src/fasm.h
   src/lut.cpp
   src/lut.h
+  src/parameters.cpp
+  src/parameters.h
   )
 target_include_directories(fasm PUBLIC src)
 target_link_libraries(fasm

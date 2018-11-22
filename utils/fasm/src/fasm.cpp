@@ -228,6 +228,7 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_route *pb_route, const t_pb* p
 
 void FasmWriterVisitor::visit_open_impl(const t_pb* atom) {
   check_for_lut(atom);
+  check_for_param(atom);
 }
 
 static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_route *pb_route, int atom_input_idx) {
@@ -264,7 +265,6 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
 
     VTR_ASSERT(gnode->num_input_ports == 1);
     //VTR_ASSERT(gnode->num_input_pins[0] >= num_inputs);
-    std::cerr << num_inputs << std::endl;
     std::vector<vtr::LogicValue> inputs(num_inputs, vtr::LogicValue::DONT_CARE);
     std::vector<int> permutation(num_inputs, -1);
 
@@ -424,6 +424,59 @@ static const t_pb_route *find_pb_route(const t_pb* pb) {
   return nullptr;
 }
 
+void FasmWriterVisitor::check_for_param(const t_pb *atom) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    auto atom_blk_id = atom_ctx.lookup.pb_atom(atom);
+    if (atom_blk_id == AtomBlockId::INVALID()) {
+        return;
+    }
+
+    if(atom->pb_graph_node == nullptr ||
+       atom->pb_graph_node->pb_type == nullptr ||
+       atom->pb_graph_node->pb_type->meta == nullptr) {
+        return;
+    }
+
+    const auto *meta = atom->pb_graph_node->pb_type->meta;
+    if(!meta->has("fasm_params")) {
+        return;
+    }
+
+    auto iter = parameters_.find(atom->pb_graph_node->pb_type);
+
+    if(iter == parameters_.end()) {
+        Parameters params;
+        std::string fasm_params = meta->one("fasm_params")->as_string();
+        for(const auto param : vtr::split(fasm_params, "\n")) {
+            auto param_parts = vtr::split(vtr::replace_all(param, " ", ""), "=");
+            if(param_parts.size() == 0) {
+                continue;
+            }
+            VTR_ASSERT(param_parts.size() == 2);
+
+            params.AddParameter(param_parts[1], param_parts[0]);
+        }
+
+        auto ret = parameters_.insert(std::make_pair(
+                    atom->pb_graph_node->pb_type,
+                    params));
+
+        VTR_ASSERT(ret.second);
+        iter = ret.first;
+    }
+
+    auto &params = iter->second;
+
+    for(auto param : atom_ctx.nlist.block_params(atom_blk_id)) {
+        auto feature = params.EmitFasmFeature(param.first, param.second);
+
+        if(feature.size() > 0) {
+            output_fasm_features(feature);
+        }
+    }
+}
+
 void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -446,6 +499,7 @@ void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
 
 void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
   check_for_lut(atom);
+  check_for_param(atom);
 }
 
 void FasmWriterVisitor::walk_routing() {
