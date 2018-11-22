@@ -191,7 +191,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 	int i, j, k, m;
 	const t_pb_type * pb_type, *child_pb_type;
 	t_mode * mode = nullptr;
-	int prev_edge, prev_node;
+	int prev_node;
 	int mode_of_edge, port_index, node_index;
 
 	mode_of_edge = UNDEFINED;
@@ -223,7 +223,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 								"Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
 								mode->name, pb_type->modes[mode_of_edge].name,
 								port_index,
-								prev_pin->output_edges[prev_edge]->interconnect->name);
+								edge->interconnect->name);
 						}
 						VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
 						mode = &pb_type->modes[mode_of_edge];
