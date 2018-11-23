@@ -417,8 +417,8 @@ int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbos
 
             const t_model_ports* model_port = netlist.port_model(output_port);
 
-            //Don't mark sequential ports as constants
-            if (!model_port->clock.empty()) continue;
+            //Don't mark sequential or clock generator ports as constants
+            if (!model_port->clock.empty() || model_port->is_clock) continue;
 
             //Find the upstream combinationally connected ports
             std::vector<AtomPortId> upstream_ports = find_combinationally_connected_input_ports(netlist, output_port);
@@ -508,8 +508,8 @@ int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, At
 
         const t_model_ports* model_port = netlist.port_model(output_port);
 
-        if (!model_port->clock.empty()) continue;
         //Only handle combinational ports
+        if (!model_port->clock.empty() || model_port->is_clock) continue;
 
         //Find the upstream combinationally connected ports
         std::vector<AtomPortId> upstream_ports = find_combinationally_connected_input_ports(netlist, output_port);
@@ -565,7 +565,7 @@ int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomB
 
         const t_model_ports* model_port = netlist.port_model(output_port);
 
-        if (model_port->clock.empty()) continue;
+        if (model_port->clock.empty() || model_port->is_clock) continue;
 
         //Only handle sequential ports
         sequential_outputs.push_back(output_port);
