@@ -4,8 +4,8 @@
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
+      <port name="a" combinational_sink_ports="out"/>
+      <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
       <port name="out"/>
