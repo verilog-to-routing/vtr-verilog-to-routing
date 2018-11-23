@@ -118,6 +118,7 @@ my $expect_fail = 0;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $use_odin_xml_config = 1;
+my $relax_W_factor = 1.3;
 
 
 ##########
@@ -201,6 +202,9 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	}
 	elsif ( $token eq "-iterative_bb" ){
 		$iterative_bb = 1;
+	}
+	elsif ( $token eq "-relax_W_factor" ){
+		$relax_W_factor = shift(@ARGV);
 	}
     # else forward the argument
 	else {
@@ -863,7 +867,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 
                 if ($min_W >= 0) {
-                    my $relaxed_W = calculate_relaxed_W($min_W);
+                    my $relaxed_W = calculate_relaxed_W($min_W, $relax_W_factor);
 
                     my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
                     push(@relaxed_W_extra_vpr_args, ("--route"));
@@ -1502,9 +1506,9 @@ sub parse_min_W {
 }
 
 sub calculate_relaxed_W {
-    my ($min_W) = @_;
+    my ($min_W, $relax_W_factor) = @_;
 
-    my $relaxed_W = $min_W * 1.3;
+    my $relaxed_W = $min_W * $relax_W_factor;
     $relaxed_W = floor($relaxed_W);
     $relaxed_W += $relaxed_W % 2;
 
