@@ -12,12 +12,21 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
+//Marks all primtiive output pins which have no combinationally connected inputs as constant pins
+int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbosity);
+
 //Marks primitive output pins constant if all inputs to the block are constant
 //
 //Since marking one block constant may cause a downstream block to also be constant,
 //marking is repated until there is no further change
 int infer_and_mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity);
+
+//Returns true for blocks which are candidate constant generators
 bool identify_candidate_constant_generator(AtomNetlist& netlist, AtomBlockId blk_id, e_const_gen_inference const_gen_inference_method);
+
+//Returns the set of input ports which are combinationally connected to output_port
+std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNetlist& netlist, AtomPortId output_port);
+
 
 std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
@@ -380,11 +389,68 @@ std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin) 
 }
 
 int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
-    int num_const_gen = infer_and_mark_constant_generators(netlist, const_gen_inference_method, verbosity);
+    int num_pins_marked_const = mark_undriven_primitive_outputs_as_constant(netlist, verbosity);
+    VTR_LOGV(verbosity > 0, "Marked %d pins constant due to lack of combinationally connected inputs\n", num_pins_marked_const);
 
+    int num_const_gen = infer_and_mark_constant_generators(netlist, const_gen_inference_method, verbosity);
     VTR_LOGV(verbosity > 0, "Inferred %d constant generator blocks\n", num_const_gen);
 
     return num_const_gen; 
+}
+
+int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbosity) {
+    //For each model/primtiive we know the set of internal timing edges.
+    //
+    //If there is not upstream pin/net driving *any* of an outputs timing edges
+    //we assume that pin is a constant.
+
+    size_t num_pins_marked_constant = 0;
+
+    for (AtomBlockId blk : netlist.blocks()) {
+
+        //Don't mark primary I/Os as constants
+        if (netlist.block_type(blk) != AtomBlockType::BLOCK) continue;
+
+        for (AtomPortId output_port : netlist.block_output_ports(blk)) {
+
+            const t_model_ports* model_port = netlist.port_model(output_port);
+
+            //Don't mark sequential ports as constants
+            if (!model_port->clock.empty()) continue;
+
+            //Find the upstream combinationally connected ports
+            std::vector<AtomPortId> upstream_ports = find_combinationally_connected_input_ports(netlist, output_port);
+
+            //Check if any of the 'upstream' input pins have connected nets
+            //
+            //Note that we only check to see whether they are *connected* not whether they are non-constant.
+            //Inference of pins as constant generators from upstream *constant nets* is handled elsewhere.
+            bool has_connected_inputs = false;
+            for (AtomPortId input_port : upstream_ports) {
+                for (AtomPinId input_pin : netlist.port_pins(input_port)) {
+                    AtomNetId input_net = netlist.pin_net(input_pin);
+
+                    if (input_net) {
+                        has_connected_inputs = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!has_connected_inputs) {
+                //The current output port has no inputs driving the primitive's internal
+                //timing edges. Therefore we treat all its pins as constant generators.
+                for (AtomPinId output_pin : netlist.port_pins(output_port)) {
+                    VTR_LOGV(verbosity > 1, "Marking pin '%s' as constant pin since it has no combinationally connected inputs\n",
+                                netlist.pin_name(output_pin).c_str());
+                    netlist.set_pin_is_constant(output_pin, true);
+                    ++num_pins_marked_constant;
+                }
+            }
+        }
+    }
+
+    return num_pins_marked_constant;
 }
 
 int infer_and_mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
@@ -437,6 +503,29 @@ int infer_and_mark_constant_generators(AtomNetlist& netlist, e_const_gen_inferen
     } while(num_blocks_marked != 0);
 
     return num_constant_generators_inferred;
+}
+
+std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNetlist& netlist, AtomPortId output_port) {
+    std::vector<AtomPortId> upstream_ports;
+
+    VTR_ASSERT(netlist.port_type(output_port) == PortType::OUTPUT);
+
+    std::string out_port_name = netlist.port_name(output_port);
+
+    AtomBlockId blk = netlist.port_block(output_port);
+
+    //Look through each block input port to find those which are combinationally connected to the output port
+    for (AtomPortId input_port : netlist.block_input_ports(blk)) {
+        const t_model_ports* input_model_port = netlist.port_model(input_port);
+
+        for (const std::string& sink_port_name : input_model_port->combinational_sink_ports) {
+            if (sink_port_name == out_port_name) {
+                upstream_ports.push_back(input_port);
+            }
+        }
+    }
+
+    return upstream_ports;
 }
 
 //Determines if a particular block satisfies all the criteria of a constant
