@@ -11,6 +11,7 @@
 #include "vtr_time.h"
 
 static void process_circuit(AtomNetlist& netlist,
+                            e_const_gen_inference const_gen_inference_method,
                             bool should_absorb_buffers,
                             bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
@@ -52,7 +53,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
         VTR_ASSERT(circuit_format == e_circuit_format::BLIF
                    || circuit_format == e_circuit_format::EBLIF);
 
-        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, const_gen_inference, verbosity);
+        netlist = read_blif(circuit_format, circuit_file, user_models, library_models, verbosity);
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
@@ -60,6 +61,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     }
 
     process_circuit(netlist,
+                    const_gen_inference, 
                     should_absorb_buffers,
                     should_sweep_dangling_primary_ios,
                     should_sweep_dangling_nets,
@@ -78,6 +80,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
 }
 
 static void process_circuit(AtomNetlist& netlist,
+                            e_const_gen_inference const_gen_inference_method,
                             bool should_absorb_buffers,
                             bool should_sweep_dangling_primary_ios,
                             bool should_sweep_dangling_nets,
@@ -85,6 +88,10 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_constant_primary_outputs,
                             int verbosity) {
 
+    {
+        vtr::ScopedStartFinishTimer t("Mark constant generators");
+        mark_constant_generators(netlist, const_gen_inference_method, verbosity);
+    }
 
     {
         vtr::ScopedStartFinishTimer t("Clean circuit");

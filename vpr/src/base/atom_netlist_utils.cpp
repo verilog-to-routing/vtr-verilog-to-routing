@@ -12,6 +12,13 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
+//Marks primitive output pins constant if all inputs to the block are constant
+//
+//Since marking one block constant may cause a downstream block to also be constant,
+//marking is repated until there is no further change
+int infer_and_mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity);
+bool identify_candidate_constant_generator(AtomNetlist& netlist, AtomBlockId blk_id, e_const_gen_inference const_gen_inference_method);
+
 std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason=nullptr);
@@ -371,6 +378,112 @@ std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin) 
 
     return arch_name;
 }
+
+int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
+    int num_const_gen = infer_and_mark_constant_generators(netlist, const_gen_inference_method, verbosity);
+
+    VTR_LOGV(verbosity > 0, "Inferred %d constant generator blocks\n", num_const_gen);
+
+    return num_const_gen; 
+}
+
+int infer_and_mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
+    size_t num_blocks_marked = 0;
+    size_t num_constant_generators_inferred = 0;
+
+    //It is possible that by marking one constant generator
+    //it may 'reveal' another constant generator downstream.
+    //As a result we iteratively mark constant generators until
+    //no additional ones are identified.
+    std::unordered_set<AtomBlockId> marked_blocks;
+    do {
+        num_blocks_marked = 0;
+
+        //Look through all the blocks marking those that are
+        //constant generataors
+        for(auto blk_id : netlist.blocks()) {
+            if(marked_blocks.count(blk_id)) continue; //Don't mark multiple times
+
+            if(identify_candidate_constant_generator(netlist, blk_id, const_gen_inference_method)) {
+                //This block is a constant generator
+                marked_blocks.insert(blk_id);
+
+                //We may infer constant generators which have already been identified (e.g. vcc/gnd).
+                //Check if the output pins are already all marked as constants
+                bool all_pins_constant = true;
+                for(auto pin_id : netlist.block_output_pins(blk_id)) {
+                    if (!netlist.pin_is_constant(pin_id)) {
+                        all_pins_constant = false;
+                        break;
+                    }
+                }
+
+                if (!all_pins_constant) { //New constant generator
+                    VTR_LOGV(verbosity > 1, "Inferred black-box constant generator '%s' (%s)\n",
+                                netlist.block_name(blk_id).c_str(),
+                                netlist.block_model(blk_id)->name);
+
+                    //Mark all the output pins as constants
+                    for(auto pin_id : netlist.block_output_pins(blk_id)) {
+                        netlist.set_pin_is_constant(pin_id, true);
+                    }
+
+                    ++num_constant_generators_inferred;
+                }
+
+                ++num_blocks_marked;
+            }
+        }
+    } while(num_blocks_marked != 0);
+
+    return num_constant_generators_inferred;
+}
+
+//Determines if a particular block satisfies all the criteria of a constant
+//generator.
+//
+//Returns true, if the block is a constant generator and should be marked
+bool identify_candidate_constant_generator(AtomNetlist& netlist, AtomBlockId blk_id, e_const_gen_inference const_gen_inference_method) {
+
+    //Constant generator inference disabled. Nothing is a constant generator.
+    if (const_gen_inference_method == e_const_gen_inference::NONE) return false;
+
+    //Never mark I/Os as constants
+    if (netlist.block_type(blk_id) != AtomBlockType::BLOCK) return false;
+
+    VTR_ASSERT(const_gen_inference_method == e_const_gen_inference::COMB
+               || const_gen_inference_method == e_const_gen_inference::COMB_SEQ);
+
+    if (!netlist.block_is_combinational(blk_id) 
+        && const_gen_inference_method != e_const_gen_inference::COMB_SEQ) {
+        //This is a sequential block, and sequential constant generator 
+        //inference is disabled.
+        //Therefore not a constant generator
+        return false;
+    }
+
+    //A block is a constant generator if all its input nets are either:
+    //  1) Constant nets (i.e. driven by constant pins), or
+    //  2) Disconnected
+    for (auto pin_id : netlist.block_input_pins(blk_id)) {
+        auto net_id = netlist.pin_net(pin_id);
+
+        if (net_id && !netlist.net_is_constant(net_id)) {
+            //Non-constant input.
+            //This block can not be a constant generator.
+            return false; 
+        } else {
+            VTR_ASSERT(!net_id || netlist.net_is_constant(net_id));
+        }
+    }
+
+    VTR_ASSERT_SAFE((const_gen_inference_method == e_const_gen_inference::COMB && netlist.block_is_combinational(blk_id))
+                    || (const_gen_inference_method == e_const_gen_inference::COMB_SEQ));
+
+    //This subckt is a constant generator
+    return true;
+}
+
 
 void absorb_buffer_luts(AtomNetlist& netlist, int verbosity) {
     //First we look through the netlist to find LUTs with identity logic functions
