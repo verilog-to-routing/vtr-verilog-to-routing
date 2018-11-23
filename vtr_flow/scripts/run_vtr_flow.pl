@@ -122,15 +122,9 @@ my $use_odin_xml_config = 1;
 
 ##########
 # ABC flow modifiers
-# type 1 is skipping ABC
-# type 2 is using only vaniila latches
-# type 3 is black box all
-# type 4 is itterative black boxing of latches per clock domain
-my $abc_flow_type = 2;
+my $iterative_bb = 0;
 my $use_new_latches_restoration_script = 0;
 my $odin_run_simulation = 0;
-my $disable_simulation_failure = 1;
-
 
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
@@ -202,23 +196,11 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	elsif ( $token eq "-use_odin_simulation" ){
 		$odin_run_simulation = 1;
 	}
-	elsif ( $token eq "-disable_simulation_failure" ){
-		$disable_simulation_failure = 0;
-	}
 	elsif ( $token eq "-use_new_latches_restoration_script" ){
 		$use_new_latches_restoration_script = 1;
 	}
-	elsif ( $token eq "-skip_abc" ){
-		$abc_flow_type = 1;
-	}
-	elsif ( $token eq "-vanila_latch" ){
-		$abc_flow_type = 2;
-	}
-	elsif ( $token eq "-blanket_bb" ){
-		$abc_flow_type = 3;
-	}
 	elsif ( $token eq "-iterative_bb" ){
-		$abc_flow_type = 4;
+		$iterative_bb = 1;
 	}
     # else forward the argument
 	else {
@@ -481,26 +463,14 @@ if (    $starting_stage <= $stage_idx_abc
 
 	###########
 	#	SETUP ABC optimizer, odin simulator and relevant data struct.
+	my $use_sim_verification = $odin_run_simulation;
 	my %clock_list;
+	$clock_list{"--vanilla"} = " ";
+
 	my $abc_temp_dir = "${temp_dir}abc_temp";
 	system("mkdir ${abc_temp_dir}");
-	# skip ABC
-	if( $abc_flow_type == 1 )
-	{
-		%clock_list=();
-	}
-	# do not use black box latches for ABC
-	if( $abc_flow_type == 2) 
-	{
-		$clock_list{"--vanilla"} = " ";
-	}
-	# black box all latches for ABC
-	elsif( $abc_flow_type == 3 )
-	{
-		$clock_list{"--all"} = " ";
-	}
-	# itterative black boxing of latches for ABC
-	elsif( $abc_flow_type == 4 )
+	# do not black box latches for ABC
+	if( $iterative_bb ) 
 	{
 		%clock_list=();
 		##########
@@ -539,7 +509,7 @@ if (    $starting_stage <= $stage_idx_abc
 	#	SIMULATION
 	#	this is not made mandatory since some hardblocks are not recognized by odin
 	#	we let odin figure out the best number of vector to simulate for best coverage
-	if($odin_run_simulation) {
+	if($use_sim_verification) {
 		system "mkdir simulation_init";
 
 		$q = &system_with_timeout( "$odin2_path", "sim_produce_vector.out", $timeout, $temp_dir,
@@ -552,7 +522,7 @@ if (    $starting_stage <= $stage_idx_abc
 			"-U0");	#ABC sets DC bits as 0
 			
 		if ( $q ne "success") {
-			$odin_run_simulation = 0;
+			$use_sim_verification = 0;
 			print "\tfailed to include simulation\n";
 			system("rm -Rf ${temp_dir}simulation_init/");
 		}
@@ -570,31 +540,22 @@ if (    $starting_stage <= $stage_idx_abc
 		my $pre_abc_blif = $abc_temp_dir."/".$domain_itter."_".$odin_output_file_name;
 		my $post_abc_blif = $abc_temp_dir."/".$domain_itter."_".$abc_output_file_name;
 
-		if( $abc_flow_type < 3 )
-		{
-			system( "cp ${input_blif} ${pre_abc_blif}");
-		}
-		elsif( $abc_flow_type == 3 )
+		my $q;
+		if( $iterative_bb )
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--input", $input_blif, "--output", $pre_abc_blif, "--all");
-
-			if ($q ne "success") {
-				$error_status = "failed: to black box all for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
-				$error_code = 1;
-			}
-		}
+					"--clk_list", $clock_domain, "--input", $input_blif, "--output", $pre_abc_blif);		}
 		else
-		{	
+		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--clk_list", $clock_domain, "--input", $input_blif, "--output", $pre_abc_blif);
+					"--vanilla", "--input", $input_blif, "--output", $pre_abc_blif);
+		}
 
-			if ($q ne "success") {
-				$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
-				$error_code = 1;
-			}
+		if ($q ne "success") {
+			$error_status = "failed: to black box the clock <".$clock_domain."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
+			$error_code = 1;
 		}
 
 		###########
@@ -706,23 +667,16 @@ if (    $starting_stage <= $stage_idx_abc
 	################
 	#	POST-ABC and Sim verification
 	
-	if( $abc_flow_type < 3 )
-	{
-		system ("cp ${input_blif} ${abc_output_file_name}");
-	}
-	else
-	{
-		#return all clocks to vanilla clocks
-		$q = &system_with_timeout($blackbox_latches_script, "vanilla_restore_clocks.out", $timeout, $temp_dir,
-				"--input", $input_blif, "--output", $abc_output_file_name, "--vanilla");
+	#return all clocks to vanilla clocks
+	$q = &system_with_timeout($blackbox_latches_script, "vanilla_restore_clocks.out", $timeout, $temp_dir,
+			"--input", $input_blif, "--output", $abc_output_file_name, "--vanilla");
 
-		if ($q ne "success") {
-			$error_status = "failed: to return to vanilla.\n";
-			$error_code = 1;
-		}
+	if ($q ne "success") {
+		$error_status = "failed: to return to vanilla.\n";
+		$error_code = 1;
 	}
 	
-	if($odin_run_simulation)  {
+	if($use_sim_verification)  {
 		
 		system "mkdir simulation_test";
 
@@ -736,15 +690,7 @@ if (    $starting_stage <= $stage_idx_abc
 			"-U0");
 
 		if ( $q ne "success") {
-			if ( $disable_simulation_failure )
-			{
-				print " (failed: odin Simulation) ";
-			}
-			else
-			{
-				$error_status = "failed: odin Simulation";
-				$error_code = 1;
-			}
+			print " (failed: odin Simulation) ";
 		}
 	}
 
@@ -757,7 +703,7 @@ if (    $starting_stage <= $stage_idx_abc
 		if (! $do_power) {
 			system "rm -f $odin_output_file_path";
 		}
-		if($odin_run_simulation)
+		if($use_sim_verification)
 		{
 			system "rm -Rf ${temp_dir}simulation_test";
 			system "rm -Rf ${temp_dir}simulation_init";

@@ -3,6 +3,8 @@
 trap ctrl_c INT
 SHELL=/bin/bash
 
+INPUT=$@
+
 #include more generic names here for better vector generation
 HOLD_LOW_RESET="-L reset rst"
 HOLD_HIGH_WE="-H we"
@@ -21,15 +23,42 @@ EXEC="./odin_II"
 
 fail_count=0
 new_run=regression_test/run001
-NB_OF_PROC=1
-if [[ "$2" -gt "0" ]]
-then
-	NB_OF_PROC=$2
-	echo "Trying to run benchmark on $NB_OF_PROC processes"
-fi
 
+NB_OF_PROC=1
 REGENERATE_OUTPUT=0
 REGENERATE_BENCH=0
+TEST_TYPE=""
+
+function help() {
+printf "
+Called program with $INPUT
+
+Usage: ./verify_odin 
+			--test [test name]    * test name is one of ( arch, syntax, other, micro, regression, vtr_basic, vtr_strong or pre_commit )
+			--generate_bench      * generate input and output vector for test
+			--generate_output     * generate output vector for test given its input vector
+			--clean               * clean temporary directory
+			--nb_of_process [n]   * n = nb of process requested to be used
+"
+}
+
+function get_current_time() {
+	echo $(date +%s%3N)
+}
+
+#1 start #2 end
+function print_time_since() {
+	BEGIN=$1
+	NOW=`get_current_time`
+	TIME_TO_RUN=$(( ${NOW} - ${BEGIN} ))
+
+	Mili=$(( ${TIME_TO_RUN} %1000 ))
+	Sec=$(( ( ${TIME_TO_RUN} /1000 ) %60 ))
+	Min=$(( ( ( ${TIME_TO_RUN} /1000 ) /60 ) %60 ))
+	Hour=$(( ( ( ${TIME_TO_RUN} /1000 ) /60 ) /60 ))
+
+	echo "ran test in: $Hour:$Min:$Sec.$Mili"
+}
 
 function init_temp() {
 	last_run=$(find regression_test/run* -maxdepth 0 -type d 2>/dev/null | tail -1 )
@@ -41,6 +70,13 @@ function init_temp() {
 	fi
 	echo "running benchmark @${new_run}"
 	mkdir -p ${new_run}
+}
+
+function cleanup_temp() {
+	for runs in regression_test/run*
+	do 
+		rm -Rf ${runs}
+	done
 }
 
 function exit_program() {
@@ -177,11 +213,8 @@ function sim() {
 	fi
 }
 
-
-#1				#2
-#benchmark dir	N_trhead
 function other_test() {
-	threads=$1
+	threads=$NB_OF_PROC
 	bench_type=other
 	with_input_vector=0
 	with_output_vector=0
@@ -192,9 +225,8 @@ function other_test() {
 	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
-
 function micro_test() {
-	threads=$1
+	threads=$NB_OF_PROC
 	bench_type=micro
 	with_input_vector=1
 	with_output_vector=1
@@ -205,8 +237,6 @@ function micro_test() {
 	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
-#1
-#bench
 function regression_test() {
 	threads=1
 	bench_type=full
@@ -219,11 +249,8 @@ function regression_test() {
 	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
-
-#1		
-#N_trhead
 function arch_test() {
-	threads=$1
+	threads=$NB_OF_PROC
 	bench_type=arch
 	with_input_vector=0
 	with_output_vector=0
@@ -234,10 +261,8 @@ function arch_test() {
 	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
-#1				#2
-#benchmark dir	N_trhead
 function syntax_test() {
-	threads=$1
+	threads=$NB_OF_PROC
 	bench_type=syntax
 	with_input_vector=0
 	with_output_vector=0
@@ -248,10 +273,8 @@ function syntax_test() {
 	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
-#1				#2
-#benchmark dir	N_trhead
 function functional_test() {
-	threads=$1
+	threads=$NB_OF_PROC
 	bench_type=functional
 	with_input_vector=1
 	with_output_vector=0
@@ -262,7 +285,7 @@ function functional_test() {
 }
 
 function operators_test() {
-	threads=$1
+	threads=$NB_OF_PROC
 	bench_type=operators
 	with_input_vector=1
 	with_output_vector=1
@@ -273,65 +296,123 @@ function operators_test() {
 	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
 }
 
-START=$(date +%s%3N)
+function parse_args() {
+	while [[ "$#" > 0 ]]
+	do 
+		case $1 in
+			--generate_output) 
+				if [ $REGENERATE_BENCH != "0" ] || [ $REGENERATE_OUTPUT != "0" ]
+				then
+					echo "can only specify one of --generate_output or --generate_bench"
+					help
+					ctrl_c
+				fi
+				REGENERATE_OUTPUT=1
+				echo "regenerating output vector for test given predefined input"
+				;;
 
-case $3 in 
-	"generate_output")
-		echo regenerating output vectors
-		REGENERATE_OUTPUT=1
-		;;
+			--generate_bench) 
+				if [ $REGENERATE_BENCH != "0" ] || [ $REGENERATE_OUTPUT != "0" ]
+				then
+					echo "can only specify one of --generate_output or --generate_bench"
+					help
+					ctrl_c
+				fi
+				REGENERATE_BENCH=1
+				echo "regenerating input and output vector for test"
+				;;
 
-	"generate_bench")
-		echo regenerating input and output vectors
-		REGENERATE_BENCH=1
-		;;
-esac
+			--clean)
+				cleanup_temp
+				;;
+
+			--nb_of_process)
+				if [ $NB_OF_PROC != "1" ]
+				then
+					echo "can only specify the number of processes once"
+					help
+					ctrl_c
+				fi
+
+				if [[ "$2" -gt "0" ]]
+				then
+					NB_OF_PROC=$2
+					echo "Running benchmark on $NB_OF_PROC processes"
+				fi
+				shift
+				;;
+
+			--test)
+				if [ "_$TEST_TYPE" != "_" ]
+				then
+					echo "can only specify one test for this script"
+					help
+					ctrl_c
+				fi
+
+				TEST_TYPE=$2
+				shift
+				;;
+
+			*) 
+				echo "Unknown parameter passed: $1"
+				help 
+				ctrl_c
+				;;
+		esac 
+		shift 
+	done
+}
 
 
-case $1 in
+START=`get_current_time`
+parse_args $INPUT
+echo "Benchmark is: $TEST_TYPE"
+
+case $TEST_TYPE in
 
 	"operators")
 		init_temp
-		operators_test $NB_OF_PROC
+		operators_test
 		;;
 
 	"functional")
 		init_temp
-		functional_test $NB_OF_PROC
+		functional_test
 		;;
 
 	"arch")
 		init_temp
-		arch_test $NB_OF_PROC
+		arch_test
 		;;
 
 	"syntax")
 		init_temp
-		syntax_test $NB_OF_PROC
+		syntax_test
 		;;
 
 	"micro")
 		init_temp
-		micro_test $NB_OF_PROC
+		micro_test
 		;;
 
 	"regression")
 		init_temp
-		regression_test $NB_OF_PROC
+		regression_test
 		;;
 
 	"other")
 		init_temp
-		other_test $NB_OF_PROC
+		other_test
 		;;
 
 	"full_suite")
 		init_temp
-		arch_test $NB_OF_PROC
-		syntax_test $NB_OF_PROC
-		other_test $NB_OF_PROC
-		micro_test $NB_OF_PROC
-		regression_test $NB_OF_PROC
+		arch_test
+		syntax_test
+		other_test
+		micro_test
+		regression_test
 		;;
 
 	"vtr_basic")
@@ -348,35 +429,25 @@ case $1 in
 
 	"pre_commit")
 		init_temp
-		arch_test $NB_OF_PROC
-		syntax_test $NB_OF_PROC
-		other_test $NB_OF_PROC
-		micro_test $NB_OF_PROC
-		regression_test $NB_OF_PROC
+		arch_test
+		syntax_test
+		other_test
+		micro_test
+		regression_test
 		cd ..
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_basic
 		/usr/bin/perl run_reg_test.pl -j $NB_OF_PROC vtr_reg_strong
 		cd ODIN_II
 		;;
 
-	"clean")
-		for runs in regression_test/run*; do rm -Rf ${runs}; done
-		echo cleaned temporary folders
-		exit 0
-		;;
 	*)
-		echo 'nothing to run, ./verify_odin [ clean, arch, syntax, other, micro, regression, vtr_basic, vtr_strong or pre_commit ] [ nb_of_process ]'
+		echo "Unknown test passed: $TEST_TYPE"
+		help 
+		ctrl_c
 		;;
 esac
 
-END=$(date +%s%3N)
-TIME_TO_RUN=$(( ${END} - ${START} ))
+print_time_since $START
 
-Mili=$(( ${TIME_TO_RUN} %1000 ))
-Sec=$(( ( ${TIME_TO_RUN} /1000 ) %60 ))
-Min=$(( ( ( ${TIME_TO_RUN} /1000 ) /60 ) %60 ))
-Hour=$(( ( ( ${TIME_TO_RUN} /1000 ) /60 ) /60 ))
-
-echo "ran test in: $Hour:$Min:$Sec.$Mili"
 exit_program
 ### end here
