@@ -468,7 +468,7 @@ if (    $starting_stage <= $stage_idx_abc
 	$clock_list{"--vanilla"} = " ";
 
 	my $abc_temp_dir = "${temp_dir}abc_temp";
-	system("mkdir ${abc_temp_dir}");
+	system("mkdir -p ${abc_temp_dir}");
 	# do not black box latches for ABC
 	if( $iterative_bb ) 
 	{
