@@ -840,7 +840,7 @@ ast_node_t *newRangePlusRef(char *id, ast_node_t *expression1, ast_node_t *expre
   ast_node_t *symbol_node = newSymbolNode(id, line_number);
 
   /* create a node for this array reference */
-  ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
+  ast_node_t* new_node = create_node_w_type(RANGE_PART_REF, line_number, current_parse_file);
 
   /* allocate child nodes to this node */
   allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
