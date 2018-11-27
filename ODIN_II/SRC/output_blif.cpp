@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "netlist_utils.h"
 #include "odin_util.h"
+#include "output_blif.h"
 
 #include "node_creation_library.h"
 
@@ -51,7 +52,6 @@ void define_ff(nnode_t *node, FILE *out);
 void define_decoded_mux(nnode_t *node, FILE *out);
 void output_blif_pin_connect(nnode_t *node, FILE *out);
 void add_the_blackbox_for_latches(FILE *out);
-void output_blif(char *file_name, netlist_t *netlist);
 
 /*---------------------------------------------------------------------------
  * (function: output_blif)

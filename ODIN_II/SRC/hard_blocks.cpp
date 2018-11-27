@@ -169,10 +169,13 @@ void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 	for (i = 0;  i < node->num_input_pins; i++)
 	{
 		/* Check that the input pin is driven */
-		if (node->input_pins[i]->net->driver_pin == NULL)
+		if (node->input_pins[i]->net->driver_pin == NULL
+		&& node->input_pins[i]->net != verilog_netlist->zero_net
+		&& node->input_pins[i]->net != verilog_netlist->one_net
+		&& node->input_pins[i]->net != verilog_netlist->pad_net)
 		{
-			printf("Signal %s is not driven. Odin will terminate.\n", node->input_pins[i]->name);
-			exit(1);
+			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
+			add_fanout_pin_to_net(verilog_netlist->zero_net, node->input_pins[i]);
 		}
 
 		if (node->input_port_sizes[port] == 1)

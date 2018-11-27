@@ -895,6 +895,9 @@ netlist_t* allocate_netlist()
  *-------------------------------------------------------------------------------------------*/
 void free_netlist(netlist_t *to_free)
 {
+	if(!to_free)
+		return;
+		
 	sc_free_string_cache(to_free->nets_sc);
 	sc_free_string_cache(to_free->out_pins_sc);
 	sc_free_string_cache(to_free->nodes_sc);

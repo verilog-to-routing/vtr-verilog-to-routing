@@ -149,6 +149,8 @@ typedef enum {
 /* the global arguments of the software */
 struct global_args_t_t
 {
+	std::string program_name;
+
     argparse::ArgValue<char*> config_file;
 	argparse::ArgValue<std::vector<std::string>> verilog_files;
 	argparse::ArgValue<char*> blif_file;

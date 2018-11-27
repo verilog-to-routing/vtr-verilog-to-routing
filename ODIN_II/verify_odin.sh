@@ -17,9 +17,14 @@ ADDER_DEFINITION="--adder_type default"
 #if you want to change the default number of vectors to generate
 GENERATE_VECTOR_COUNT="-g 10"
 
+#if you want to change the default number of vectors to generate
+REGEN_VECTOR_CMD="--best_coverage -g 100"
+
 DEFAULT_ARCH="-a ../libs/libarchfpga/arch/sample_arch.xml"
 
-EXEC="./odin_II"
+DEFAULT_CMD_PARAM="${ADDER_DEFINITION}"
+
+EXEC="./odin_II -U0 ${DEFAULT_CMD_PARAM}"
 
 fail_count=0
 new_run=regression_test/run001
@@ -111,7 +116,7 @@ function sim() {
 	bench_type=$2
 	with_input_vector=$3
 	with_output_vector=$4
-	with_blif=$5
+	with_blif=$5 #unused
 	with_arch=$6
 	passing_args=$7
 	
@@ -123,11 +128,13 @@ function sim() {
 
 			test_name=${dir##*/}
 			DIR="${new_run}/${bench_type}/$test_name"
+			blif_file="${DIR}/odin.blif"
+
 
 			#build commands
 			mkdir -p $DIR
 
-			echo "${EXEC} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${DIR}/odin.blif -sim_dir ${DIR}/ &>> ${DIR}/log \
+			echo "${EXEC} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/ &>> ${DIR}/log \
 				&& echo --- PASSED == ${bench_type}/$test_name \
 				|| (echo -X- FAILED == ${bench_type}/$test_name \
 					&& echo ${bench_type}/$test_name >> ${new_run}/failure.log)" > ${DIR}/log
@@ -138,60 +145,41 @@ function sim() {
 		do
 			basename=${benchmark%.v}
 			test_name=${basename##*/}
-			DIR="${new_run}/${bench_type}/$test_name"
+			TEST_FULL_REF="${bench_type}/${test_name}"
+
+			DIR="${new_run}/${TEST_FULL_REF}"
+			verilog_file="${benchmark_dir}/${test_name}.v"
+			blif_file="${DIR}/odin.blif"
 
 			#build commands
 			mkdir -p $DIR
 
-			verilog_command=""
-			blif_command=""
 
-			verilog_command="${EXEC} ${ADDER_DEFINITION} -V ${benchmark_dir}/${test_name}.v -o ${DIR}/odin.blif"
-
-			[ "_$with_blif" == "_1" ] &&
-				blif_command=" && ${EXEC} ${ADDER_DEFINITION} -b ${DIR}/odin.blif"
+			verilog_command="${EXEC} -V ${verilog_file} -o ${blif_file}"
 
 			[ "_$with_arch" == "_1" ] &&
 				verilog_command="${verilog_command} ${DEFAULT_ARCH}"
 			
-			[ "_$with_blif" == "_1" ] && [ "_$with_arch" == "_1" ] &&
-				blif_command="${blif_command} ${DEFAULT_ARCH}"
 
 			if [ "_$with_input_vector" == "_1" ] && [ "_$REGENERATE_BENCH" != "_1" ]; then
 				verilog_command="${verilog_command} -t ${benchmark_dir}/${test_name}_input"
-
-				[ "_$with_blif" == "_1" ] &&
-					blif_command="${blif_command} -t ${benchmark_dir}/${test_name}_input"
 				
 				if [ "_$with_output_vector" == "_1" ] && [ "_$REGENERATE_OUTPUT" != "_1" ]; then
 					verilog_command="${verilog_command} -T ${benchmark_dir}/${test_name}_output"
-
-					[ "_$with_blif" == "_1" ] &&
-						blif_command="${blif_command} -T ${benchmark_dir}/${test_name}_output"
 				fi
 			else
+				verilog_command="${verilog_command} ${HOLD_PARAM}"
+
 				if [ "_$REGENERATE_BENCH" != "_1" ]; then
-					verilog_command="${verilog_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
-
-					[ "_$with_blif" == "_1" ] &&
-						blif_command="${blif_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
+					verilog_command="${verilog_command} ${GENERATE_VECTOR_COUNT}"
 				else
-					verilog_command="${verilog_command} ${HOLD_PARAM} --best_coverage -g 100"
-
-					[ "_$with_blif" == "_1" ] &&
-						blif_command="${blif_command} ${HOLD_PARAM} --best_coverage -g 100"
+					verilog_command="${verilog_command} ${REGEN_VECTOR_CMD}"
 				fi
 			fi
 
-			verilog_command="${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log"
-			
-			[ "_$with_blif" == "_1" ] &&
-				blif_command="${blif_command} -sim_dir ${DIR}/ &>> ${DIR}/log"
-
-			echo "${verilog_command} ${blif_command} \
-				&& echo --- PASSED == ${bench_type}/$test_name \
-				|| (echo -X- FAILED == ${bench_type}/$test_name \
-					&& echo ${bench_type}/$test_name >> ${new_run}/failure.log)" > ${DIR}/log
+			echo "${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log \
+				&& echo --- PASSED == ${TEST_FULL_REF} \
+				|| (echo -X- FAILED == ${TEST_FULL_REF} | tee ${new_run}/failure.log)" > ${DIR}/log
 		done
 	fi
 

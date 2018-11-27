@@ -1627,7 +1627,7 @@ static void compute_flipflop_node(nnode_t *node, int cycle)
 {
 	verify_i_o_availabilty(node, 2, 1);
 
-	signed char D      	= 	get_pin_value(node->input_pins[0],cycle);
+	signed char D      	= 	get_pin_value(node->input_pins[0],cycle-1);
 	signed char Q		=	get_pin_value(node->output_pins[0],cycle-1);
 	npin_t *clock_pin 	=	node->input_pins[1];
 	npin_t *output_pin	=	node->output_pins[0];

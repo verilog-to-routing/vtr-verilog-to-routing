@@ -1467,6 +1467,13 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	for (i = 0; i < num_addr; i++)
 	{
 		npin_t *address_pin = decoder->pins[i];
+		/* Check that the input pin is driven */
+		oassert(
+			address_pin->net->driver_pin != NULL
+			|| address_pin->net == verilog_netlist->zero_net
+			|| address_pin->net == verilog_netlist->one_net
+			|| address_pin->net == verilog_netlist->pad_net
+		);
 
 		// An AND gate to enable and disable writing.
 		nnode_t *and_g = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1490,6 +1497,13 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		for (j = 0; j < num_addr; j++)
 		{
 			npin_t *address_pin = decoder->pins[j];
+			/* Check that the input pin is driven */
+			oassert(
+				address_pin->net->driver_pin != NULL
+				|| address_pin->net == verilog_netlist->zero_net
+				|| address_pin->net == verilog_netlist->one_net
+				|| address_pin->net == verilog_netlist->pad_net
+			);
 
 			// A multiplexer switches between accepting incoming data and keeping existing data.
 			nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1566,6 +1580,19 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		npin_t *addr1_pin = decoder1->pins[i];
 		npin_t *addr2_pin = decoder2->pins[i];
 
+		oassert(
+			addr1_pin->net->driver_pin != NULL
+			|| addr1_pin->net == verilog_netlist->zero_net
+			|| addr1_pin->net == verilog_netlist->one_net
+			|| addr1_pin->net == verilog_netlist->pad_net
+		);
+		oassert(
+			addr2_pin->net->driver_pin != NULL
+			|| addr2_pin->net == verilog_netlist->zero_net
+			|| addr2_pin->net == verilog_netlist->one_net
+			|| addr2_pin->net == verilog_netlist->pad_net
+		);
+
 		// Write enable and gate for address 1.
 		nnode_t *and1 = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
 		add_input_pin_to_node(and1, addr1_pin, 0);
@@ -1605,6 +1632,19 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		{
 			npin_t *addr1_pin = decoder1->pins[j];
 			npin_t *addr2_pin = decoder2->pins[j];
+
+		oassert(
+			addr1_pin->net->driver_pin != NULL
+			|| addr1_pin->net == verilog_netlist->zero_net
+			|| addr1_pin->net == verilog_netlist->one_net
+			|| addr1_pin->net == verilog_netlist->pad_net
+		);
+		oassert(
+			addr2_pin->net->driver_pin != NULL
+			|| addr2_pin->net == verilog_netlist->zero_net
+			|| addr2_pin->net == verilog_netlist->one_net
+			|| addr2_pin->net == verilog_netlist->pad_net
+		);
 
 			// The data mux selects between the two data lines for this address.
 			nnode_t *data_mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1686,6 +1726,15 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 	int i;
 	for (i = 0; i < num_inputs; i++)
 	{
+		if(input_list->pins[i]->net->driver_pin == NULL
+		&& input_list->pins[i]->net != verilog_netlist->zero_net
+		&& input_list->pins[i]->net != verilog_netlist->one_net
+		&& input_list->pins[i]->net != verilog_netlist->pad_net)
+		{
+			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]);
+			add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
+		}
+
 		nnode_t *not_g = make_not_gate(node, mark);
 		remap_pin_to_new_node(input_list->pins[i], not_g, 0);
 		npin_t *not_output = allocate_npin();
