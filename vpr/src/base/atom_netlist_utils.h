@@ -10,6 +10,12 @@
  *
  */
 
+//Walk through the netlist detecting constant generators
+//
+//Note that initial constant generators (e.g. vcc/gnd) should have already been marked on
+//the netlist.
+int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity);
+
 /*
  * Modifies the netlist by absorbing buffer LUTs
  */

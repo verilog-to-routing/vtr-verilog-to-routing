@@ -109,13 +109,14 @@ void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switche
 t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     t_wireconn_inf wc;
 
-    size_t num_attributes = count_attributes(node, loc_data);
+    size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
+    num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
-    if (num_attributes == 1) {
-        parse_wireconn_multinode(node, loc_data, wc);
-    } else {
-        VTR_ASSERT(num_attributes > 0);
+    if (num_children == 0) {
         parse_wireconn_inline(node, loc_data, wc);
+    } else {
+        VTR_ASSERT(num_children > 0);
+        parse_wireconn_multinode(node, loc_data, wc);
     }
 
 
@@ -124,6 +125,7 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc
 
 void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc) {
     //Parse an inline wireconn definition, using attributes
+    expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order"}, loc_data);
 
     /* get the connection style */
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
@@ -153,6 +155,8 @@ void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_da
 }
 
 void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc) {
+    expect_only_children(node, {"from", "to"}, loc_data);
+
     /* get the connection style */
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
     parse_num_conns(char_prop, wc);
@@ -184,6 +188,8 @@ void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc
 }
 
 t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    expect_only_attributes(node, {"type", "switchpoint"}, loc_data);
+
     size_t attribute_count = count_attributes(node, loc_data);
 
     if (attribute_count != 2) {

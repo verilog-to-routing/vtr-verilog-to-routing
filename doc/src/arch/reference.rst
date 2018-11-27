@@ -1892,7 +1892,7 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_switchpoint_order="{fixed | shuffled}" to_switchpoint_order="{fixed | shuffled}"/>
+.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}"/>
 
     :req_param num_conns:
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
@@ -1956,7 +1956,7 @@ The full format is documented below.
 
         .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
 
-    :opt_param from_switchpoint_order:
+    :opt_param from_order:
         Specifies the order in which ``from_switchpoint``s are selected when creating edges.
 
         * ``fixed`` -- Switchpoints are selected in the order specified
@@ -1987,7 +1987,7 @@ The full format is documented below.
         **Default:** ``shuffled``
 
 
-    :opt_param from_switchpoint_order:
+    :opt_param to_order:
         Specifies the order in which ``to_switchpoint``s are selected when creating edges.
 
         .. note:: See ``from_switchpoint_order`` for value descritpions.

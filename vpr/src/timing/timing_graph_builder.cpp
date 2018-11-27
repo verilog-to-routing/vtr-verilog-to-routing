@@ -197,7 +197,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                 tg_->set_allow_dangling_combinational_nodes(true);
             }
         } else {
-            VTR_ASSERT_MSG(!model_port->is_clock, "Must not be a clock generator");
+            VTR_ASSERT_MSG(!model_port->is_clock, "Primitive data output can not be a clock generator");
 
             if(model_port->clock.empty()) {
                 //No clock => combinational output
