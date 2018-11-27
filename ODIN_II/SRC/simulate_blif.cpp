@@ -1627,7 +1627,7 @@ static void compute_flipflop_node(nnode_t *node, int cycle)
 {
 	verify_i_o_availabilty(node, 2, 1);
 
-	signed char D      	= 	get_pin_value(node->input_pins[0],cycle-1);
+	signed char D      	= 	get_pin_value(node->input_pins[0],cycle);
 	signed char Q		=	get_pin_value(node->output_pins[0],cycle-1);
 	npin_t *clock_pin 	=	node->input_pins[1];
 	npin_t *output_pin	=	node->output_pins[0];
@@ -2193,7 +2193,7 @@ static void compute_single_port_memory(nnode_t *node, int cycle)
 
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 	
-	if (!node->memory_data.empty())
+	if (node->memory_data.empty())
 		instantiate_memory(node, signals->data->count, signals->addr->count);
 
 	read_write_to_memory(node, signals->addr, signals->out, signals->data, trigger, signals->we, cycle);
