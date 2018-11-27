@@ -3017,7 +3017,24 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
 		// Pad/shrink the address to the depth of the memory.
-		{
+		
+		if(address->count != right_memory->addr_width){
+			if(address->count > right_memory->addr_width)
+			{
+				std::string unused_pins_name = "";
+				for(size_t i = right_memory->addr_width; i < address->count; i++)
+				{
+					unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+				}
+				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+									"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+			}
+			else
+			{
+				warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+									"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+			}
+
 			while(address->count < right_memory->addr_width)
 				add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
 			address->count = right_memory->addr_width;
@@ -3103,7 +3120,23 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			signal_list_t* address = netlist_expand_ast_of_module(left->children[1], instance_name_prefix);
 
 			// Pad/shrink the address to the depth of the memory.
-			{
+			if(address->count != left_memory->addr_width){
+				if(address->count > left_memory->addr_width)
+				{
+					std::string unused_pins_name = "";
+					for(size_t i = left_memory->addr_width; i < address->count; i++)
+					{
+						unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+					}
+					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+										"indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+				}
+				else
+				{
+					warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, 
+										"indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+				}
+
 				while(address->count < left_memory->addr_width)
 					add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
 				address->count = left_memory->addr_width;

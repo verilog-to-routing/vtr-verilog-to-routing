@@ -15,7 +15,7 @@ HOLD_PARAM="${HOLD_LOW_RESET} ${HOLD_HIGH_WE}"
 ADDER_DEFINITION="--adder_type default"
 
 #if you want to change the default number of vectors to generate
-GENERATE_VECTOR_COUNT="-g 1000"
+GENERATE_VECTOR_COUNT="-g 10"
 
 DEFAULT_ARCH="-a ../libs/libarchfpga/arch/sample_arch.xml"
 
@@ -170,10 +170,17 @@ function sim() {
 						blif_command="${blif_command} -T ${benchmark_dir}/${test_name}_output"
 				fi
 			else
-				verilog_command="${verilog_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
+				if [ "_$REGENERATE_BENCH" != "_1" ]; then
+					verilog_command="${verilog_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
 
-				[ "_$with_blif" == "_1" ] &&
-					blif_command="${blif_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
+					[ "_$with_blif" == "_1" ] &&
+						blif_command="${blif_command} ${HOLD_PARAM} ${GENERATE_VECTOR_COUNT}"
+				else
+					verilog_command="${verilog_command} ${HOLD_PARAM} --best_coverage -g 100"
+
+					[ "_$with_blif" == "_1" ] &&
+						blif_command="${blif_command} ${HOLD_PARAM} --best_coverage -g 100"
+				fi
 			fi
 
 			verilog_command="${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log"

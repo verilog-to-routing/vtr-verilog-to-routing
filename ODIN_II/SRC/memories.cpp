@@ -58,19 +58,19 @@ int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
 
-int get_sp_ram_depth(nnode_t *node)
+long long get_sp_ram_depth(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	int depth = signals->addr->count;
+	long long depth = (1 << signals->addr->count);
 	free_sp_ram_signals(signals);
 	return depth;
 }
 
-int get_dp_ram_depth(nnode_t *node)
+long long get_dp_ram_depth(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->addr1->count == signals->addr2->count);
-	int depth = signals->addr1->count;
+	long long depth = (1 << signals->addr1->count);
 	free_dp_ram_signals(signals);
 	return depth;
 }
@@ -271,25 +271,25 @@ void check_memories_and_report_distribution()
 	printf("============================\n");
 
 
-	long total_memory_bits = 0;
+	long long total_memory_bits = 0;
 	int total_memory_block_counter = 0;
-	int memory_max_width = 0;
-	int memory_max_depth = 0;
+	long long memory_max_width = 0;
+	long long memory_max_depth = 0;
 
 	t_linked_vptr *temp = sp_memory_list;
 	while (temp != NULL)
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		int width = get_sp_ram_width(node);
-		int depth = get_sp_ram_depth(node);
+		long long width = get_sp_ram_width(node);
+		long long depth = get_sp_ram_depth(node);
 
 		if (depth > MEMORY_DEPTH_LIMIT)
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %d exceeds ODIN depth bound of %d.", node->name, depth, MEMORY_DEPTH_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
 
-		printf("SPRAM: %d width %d depth\n", width, depth);
+		printf("SPRAM: %lld width %lld depth\n", width, depth);
 
-		total_memory_bits += (long)width * ((long)1 << (long)depth);
+		total_memory_bits += width * depth;
 
 		total_memory_block_counter++;
 
@@ -308,14 +308,14 @@ void check_memories_and_report_distribution()
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		int width = get_dp_ram_width(node);
-		int depth = get_dp_ram_depth(node);
+		long long width = get_dp_ram_width(node);
+		long long depth = get_dp_ram_depth(node);
 
 		if (depth > MEMORY_DEPTH_LIMIT)
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %d exceeds ODIN depth bound of %d.", node->name, depth, MEMORY_DEPTH_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
 
-		printf("DPRAM: %d width %d depth\n", width, depth);
-		total_memory_bits += (long)width * ((long)1 << (long)depth);
+		printf("DPRAM: %lld width %lld depth\n", width, depth);
+		total_memory_bits += width * depth;
 
 		total_memory_block_counter++;
 		if (width > memory_max_width) {
@@ -329,9 +329,9 @@ void check_memories_and_report_distribution()
 	}
 
 	printf("\nTotal Logical Memory Blocks = %d \n", total_memory_block_counter);
-	printf("Total Logical Memory bits = %ld \n", total_memory_bits);
-	printf("Max Memory Width = %d \n", memory_max_width);
-	printf("Max Memory Depth = %d \n", memory_max_depth);
+	printf("Total Logical Memory bits = %lld \n", total_memory_bits);
+	printf("Max Memory Width = %lld \n", memory_max_width);
+	printf("Max Memory Depth = %lld \n", memory_max_depth);
 	printf("\n");
 
 	return;

@@ -75,7 +75,7 @@ nnode_t* allocate_nnode() {
 	new_node->associated_function = NULL;
 
 	new_node->simulate_block_cycle = NULL;
-	new_node->memory_data = NULL;
+	new_node->memory_data = std::vector<std::vector<signed char>>();
 
 	new_node->bit_map= NULL;
 	new_node->bit_map_line_count=0;

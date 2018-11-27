@@ -127,7 +127,7 @@ static long compute_memory_address(signal_list_t *addr, int cycle);
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width);
 static char *get_mif_filename(nnode_t *node);
 static FILE *preprocess_mif_file(FILE *source);
-static void assign_memory_from_mif_file(FILE *file, char *filename, int width, long depth, signed char *memory);
+static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long address_width, std::vector<std::vector<signed char>>& memory);
 static int parse_mif_radix(char *radix);
 
 static int count_test_vectors(FILE *in);
@@ -2132,6 +2132,58 @@ static void compute_memory_node(nnode_t *node, int cycle)
 				"Could not resolve memory hard block %s to a valid type.", node->name);
 }
 
+/**
+ * read memory stored data for simulation
+ */
+static void read_memory_data(nnode_t *node , signal_list_t *input_adress, signal_list_t *output_signals, int cycle)
+{
+
+	long long address = compute_memory_address(input_adress, cycle);
+
+	std::vector<signed char> mem_data;
+	if(address >= 0 && address < node->memory_data.size())
+		mem_data = node->memory_data[address];
+	else
+		mem_data = std::vector<signed char>(output_signals->count, -1);
+
+	// Read the memory bit
+	oassert(output_signals->count == mem_data.size())
+	for (size_t i = 0; i < output_signals->count; i++)
+	{
+		update_pin_value(output_signals->pins[i], mem_data[i], cycle);
+	}
+}
+
+/**
+ * read memory stored data for simulation
+ */
+static void write_memory_data(nnode_t *node , signal_list_t *input_adress, signal_list_t *mem_data, npin_t *write_enabled , int cycle)
+{
+	signed char we = get_pin_value(write_enabled, cycle - 1);
+	if(we != 1)
+		return;
+
+	long long address 	= compute_memory_address(input_adress, cycle-1);
+	if(address < 0 || address >= node->memory_data.size())
+		return;
+
+	//store memory data
+	oassert(mem_data->count == node->memory_data[address].size());
+	for (size_t i = 0; i < mem_data->count; i++)
+	{
+		node->memory_data[address][i] = get_pin_value(mem_data->pins[i], cycle-1);
+	}
+}
+
+static void read_write_to_memory(nnode_t *node , signal_list_t *address, signal_list_t *output_signals, signal_list_t *mem_data, bool trigger, npin_t *write_enabled, int cycle)
+{
+	// On the rising edge, write the memory.
+	if (trigger)
+		write_memory_data(node, address, mem_data, write_enabled, cycle);
+
+	read_memory_data(node, address, output_signals, cycle);
+}
+
 /*
  * Computes single port memory.
  */
@@ -2140,48 +2192,11 @@ static void compute_single_port_memory(nnode_t *node, int cycle)
 	sp_ram_signals *signals = get_sp_ram_signals(node);
 
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
-
-	if (!node->memory_data)
+	
+	if (!node->memory_data.empty())
 		instantiate_memory(node, signals->data->count, signals->addr->count);
 
-	// On the rising edge, write the memory.
-	if (trigger)
-	{
-		int we = get_pin_value(signals->we, cycle - 1);
-		long address = compute_memory_address(signals->addr, cycle - 1);
-		char address_ok = (address != -1)?1:0;
-
-		int i;
-		for (i = 0; i < signals->data->count; i++)
-		{
-			// Compute which bit we are addressing.
-			long bit_address = address_ok?(i + (address * signals->data->count)):-1;
-
-			// If write is enabled, copy the input to memory.
-			if (address_ok && we)
-				node->memory_data[bit_address] = get_pin_value(signals->data->pins[i],cycle-1);
-		}
-	}
-
-	// Read data from the memory.
-	{
-
-		long address = compute_memory_address(signals->addr, cycle);
-		char address_ok = (address != -1)?1:0;
-
-		int i;
-		for (i = 0; i < signals->data->count; i++)
-		{
-			// Compute which bit we are addressing.
-			long bit_address = address_ok?(i + (address * signals->data->count)):-1;
-
-			// Update the output.
-			if (address_ok)
-				update_pin_value(signals->out->pins[i], node->memory_data[bit_address], cycle);
-			else
-				update_pin_value(signals->out->pins[i], -1, cycle);
-		}
-	}
+	read_write_to_memory(node, signals->addr, signals->out, signals->data, trigger, signals->we, cycle);
 
 	free_sp_ram_signals(signals);
 }
@@ -2194,64 +2209,14 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 
-	if (!node->memory_data)
-		instantiate_memory(node, signals->data2->count, signals->addr2->count);
+	if (node->memory_data.empty())
+		instantiate_memory(node, 
+			std::max(signals->data1->count, signals->data2->count), 
+			std::max(signals->addr1->count,signals->addr2->count)
+		);
 
-	// On the rising edge, we write the memory.
-	if (trigger)
-	{
-		int we1     = get_pin_value(signals->we1, cycle - 1);
-		int we2     = get_pin_value(signals->we2, cycle - 1);
-
-		long address1 = compute_memory_address(signals->addr1, cycle - 1);
-		long address2 = compute_memory_address(signals->addr2, cycle - 1);
-
-		char address1_ok = (address1 != -1)?1:0;
-		char address2_ok = (address2 != -1)?1:0;
-
-		int i;
-		for (i = 0; i < signals->data1->count; i++)
-		{
-			// Compute which bit we are addressing.
-			long bit_address1 = address1_ok?(i + (address1 * signals->data1->count)):-1;
-			long bit_address2 = address2_ok?(i + (address2 * signals->data2->count)):-1;
-
-			// Write to the memory
-			if (address1_ok && we1)
-				node->memory_data[bit_address1] = get_pin_value(signals->data1->pins[i], cycle-1);
-
-			if (address2_ok && we2)
-				node->memory_data[bit_address2] = get_pin_value(signals->data2->pins[i], cycle-1);
-		}
-	}
-
-	// Read data from memory.
-	{
-		long address1 = compute_memory_address(signals->addr1, cycle);
-		long address2 = compute_memory_address(signals->addr2, cycle);
-
-		char address1_ok = (address1 != -1)?1:0;
-		char address2_ok = (address2 != -1)?1:0;
-
-		int i;
-		for (i = 0; i < signals->data1->count; i++)
-		{
-			// Compute which bit we are addressing.
-			long bit_address1 = address1_ok?(i + (address1 * signals->data1->count)):-1;
-			long bit_address2 = address2_ok?(i + (address2 * signals->data2->count)):-1;
-
-			// Read the memory bit
-			if (address1_ok)
-				update_pin_value(signals->out1->pins[i], node->memory_data[bit_address1], cycle);
-			else
-				update_pin_value(signals->out1->pins[i], -1, cycle);
-
-			if (address2_ok)
-				update_pin_value(signals->out2->pins[i], node->memory_data[bit_address2], cycle);
-			else
-				update_pin_value(signals->out2->pins[i], -1, cycle);
-		}
-	}
+	read_write_to_memory(node, signals->addr1, signals->out1, signals->data1, trigger, signals->we1, cycle);
+	read_write_to_memory(node, signals->addr2, signals->out2, signals->data2, trigger, signals->we2, cycle);
 
 	free_dp_ram_signals(signals);
 }
@@ -2267,14 +2232,14 @@ static long compute_memory_address(signal_list_t *addr, int cycle)
 	for (i = 0; i < addr->count; i++)
 	{
 		// If any address pins are x's, write x's we return -1.
-		if (get_pin_value(addr->pins[i],cycle) < 0)
+		signed char value = get_pin_value(addr->pins[i],cycle);
+		if (value != 1 && value != 0)
 			return -1;
 
-		address += get_pin_value(addr->pins[i],cycle) << (i);
+		address += (value << i);
 	}
 
-
-	return address % addr->count;
+	return address;
 }
 
 /*
@@ -2284,9 +2249,7 @@ static long compute_memory_address(signal_list_t *addr, int cycle)
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
-	node->memory_data = (signed char *)vtr::malloc(sizeof(signed char) * max_address * data_width);
-	memset(node->memory_data, -1, data_width * max_address);
-
+	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, -1));
 	char *filename = get_mif_filename(node);
 
 	FILE *mif = fopen(filename, "r");
@@ -2353,7 +2316,7 @@ static int parse_mif_radix(std::string radix)
 										0;
 }
 
-static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long depth, signed char *memory)
+static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long address_width, std::vector<std::vector<signed char>>& memory)
 {
 	FILE *file = preprocess_mif_file(mif);
 	rewind(file);
@@ -2408,16 +2371,12 @@ static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, lo
 						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
 						long long address = convert_string_of_radix_to_long_long(address_string, addr_radix);
 
-						if (address >= pow(2,depth))
+						if (address > address_width)
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
 
-						// Calculate the offset of this memory location in bits.
-						long long offset = address * width;
-
 						// Write the parsed value string to the memory location.
-						long long i;
-						for (i = offset; i < offset + width; i++)
-							memory[i] = binary_data[i - offset] - '0';
+						for (long long i = 0; i < width; i++)
+							memory[address][i] = binary_data[i] - '0';
 					}
 					else
 					{
@@ -2464,9 +2423,9 @@ static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, lo
 							error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
 						
 						long mif_depth = std::strtol(item_in->second.c_str(),NULL,10);
-						if (mif_depth != depth)
+						if (mif_depth != (1 << address_width))
 							error_message(SIMULATION_ERROR, -1, -1,
-									"%s: MIF depth mismatch: must be %d but %d was given", filename, depth, mif_depth);
+									"%s: MIF depth mismatch: must be %d but %d was given", filename, (1 << address_width), mif_depth);
 
 
 						// Parse the radix specifications and make sure they're OK.

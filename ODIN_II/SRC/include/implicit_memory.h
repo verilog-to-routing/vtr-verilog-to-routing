@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 typedef struct {
 	nnode_t *node;
 	int data_width;
+	int memory_depth;
 	int addr_width;
 	char clock_added;
 	char output_added;
