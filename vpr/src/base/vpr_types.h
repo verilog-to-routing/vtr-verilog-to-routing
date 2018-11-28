@@ -961,6 +961,7 @@ struct t_router_opts {
     int router_debug_sink_rr;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
+    float reconvergence_cpd_threshold;
 };
 
 struct t_analysis_opts {

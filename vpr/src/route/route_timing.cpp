@@ -253,7 +253,8 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback
                                    const WirelengthInfo& wirelength_info,
                                    std::shared_ptr<const SetupHoldTimingInfo> timing_info);
 
-static bool early_reconvergence_exit_heuristic(int itry_since_last_convergence,
+static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts, 
+                                               int itry_since_last_convergence,
                                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                                const RoutingMetrics& best_routing_metrics);
 
@@ -534,7 +535,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         //unlikely additional convergences will improve QoR?
         if (legal_convergence_count >= router_opts.max_convergence_count
             || router_iteration_stats.connections_routed == 0
-            || early_reconvergence_exit_heuristic(itry_since_last_convergence, router_opts, timing_info, best_routing_metrics)) {
+            || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
             break; //Done routing
         }
 
@@ -2539,7 +2540,10 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback
     return wirelength_info.used_wirelength() < best_routing_metrics.used_wirelength;
 }
 
-static bool early_reconvergence_exit_heuristic(int itry_since_last_convergence, std::shared_ptr<const SetupHoldTimingInfo> timing_info, const RoutingMetrics& best_routing_metrics) {
+static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
+                                               int itry_since_last_convergence,
+                                               std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                                               const RoutingMetrics& best_routing_metrics) {
     //Give-up on reconvergent routing if the CPD improvement after the 
     //first iteration since convergence is small, compared to the best 
     //CPD seen so far
@@ -2549,11 +2553,10 @@ static bool early_reconvergence_exit_heuristic(int itry_since_last_convergence, 
         //Give up if we see less than a 1% CPD improvement,
         //after reducing pres_fac. Typically larger initial 
         //improvements are needed to see an actual improvement 
-        //in legal routing quality.
-        constexpr float CPD_RATIO_THRESHOLD = 0.99;
-        if (cpd_ratio >= CPD_RATIO_THRESHOLD) {
-            VTR_LOG("Giving up routing since additional routing convergences seem unlikely to improve QoR (CPD ratio: %g)\n", cpd_ratio);
-            return true; //CPD improvement is small, don't spend run-time trying to improve it
+        //in final legal routing quality.
+        if (cpd_ratio >= router_opts.reconvergence_cpd_threshold) {
+            VTR_LOG("Giving up routing since additional routing convergences seem unlikely to improve quality (CPD ratio: %g)\n", cpd_ratio);
+            return true; //Potential CPD improvement is small, don't spend run-time trying to improve it
         }
     }
 
