@@ -253,6 +253,10 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback
                                    const WirelengthInfo& wirelength_info,
                                    std::shared_ptr<const SetupHoldTimingInfo> timing_info);
 
+static bool early_reconvergence_exit_heuristic(int itry_since_last_convergence,
+                                               std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                                               const RoutingMetrics& best_routing_metrics);
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
@@ -357,6 +361,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     float prev_iter_cumm_time = 0;
     vtr::Timer iteration_timer;
     int num_net_bounding_boxes_updated = 0;
+    int itry_since_last_convergence = -1;
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
 
         RouterStats router_iteration_stats;
@@ -379,6 +384,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
         } else {
             //Not timing driven, force criticality to zero for a routability-driven routing
             route_timing_info = make_constant_timing_info(0.);
+        }
+
+        if (itry_since_last_convergence >= 0) {
+            ++itry_since_last_convergence;
         }
 
         /*
@@ -499,20 +508,33 @@ bool try_timing_driven_route(t_router_opts router_opts,
             }
 
             //Decrease pres_fac so that criticl connections will take more direct routes
-            pres_fac = router_opts.initial_pres_fac;
+            //Note that we use first_iter_pres_fac here (typically zero), and switch to
+            //use initial_pres_fac on the next iteration.
+            pres_fac = router_opts.first_iter_pres_fac;
 
             //Reduce timing tolerances to re-route more delay-suboptimal signals
-            connections_inf.set_connection_criticality_tolerance(0.8);
+            connections_inf.set_connection_criticality_tolerance(0.7);
             connections_inf.set_connection_delay_tolerance(1.01);
 
             ++legal_convergence_count;
+            itry_since_last_convergence = 0;
 
             VTR_ASSERT(routing_is_successful);
         }
 
-        //Have we converged the maximum number of times, or did not make any changes?
+        if (itry_since_last_convergence == 1) {
+            //We used first_iter_pres_fac when we started routing again
+            //after the first routing convergence. Since that is often zero,
+            //we want to set pres_fac to a reasonable (i.e. typically non-zero)
+            //value afterwards -- so it grows when multiplied by pres_fac_mult
+            pres_fac = router_opts.initial_pres_fac;
+        }
+
+        //Have we converged the maximum number of times, did not make any changes, or does it seem
+        //unlikely additional convergences will improve QoR?
         if (legal_convergence_count >= router_opts.max_convergence_count
-            || router_iteration_stats.connections_routed == 0) {
+            || router_iteration_stats.connections_routed == 0
+            || early_reconvergence_exit_heuristic(itry_since_last_convergence, router_opts, timing_info, best_routing_metrics)) {
             break; //Done routing
         }
 
@@ -526,7 +548,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
         //Estimate at what iteration we will converge to a legal routing
         if (overuse_info.overused_nodes() > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
-            //Only abort if we have a significant number of overused resources
+            //Only consider aborting if we have a significant number of overused resources
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
@@ -2515,4 +2537,25 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId,t_traceback
 
     //Finally, wirelength tie breaker
     return wirelength_info.used_wirelength() < best_routing_metrics.used_wirelength;
+}
+
+static bool early_reconvergence_exit_heuristic(int itry_since_last_convergence, std::shared_ptr<const SetupHoldTimingInfo> timing_info, const RoutingMetrics& best_routing_metrics) {
+    //Give-up on reconvergent routing if the CPD improvement after the 
+    //first iteration since convergence is small, compared to the best 
+    //CPD seen so far
+    if (itry_since_last_convergence == 1) {
+        float cpd_ratio = timing_info->setup_worst_negative_slack() / best_routing_metrics.sWNS;
+
+        //Give up if we see less than a 1% CPD improvement,
+        //after reducing pres_fac. Typically larger initial 
+        //improvements are needed to see an actual improvement 
+        //in legal routing quality.
+        constexpr float CPD_RATIO_THRESHOLD = 0.99;
+        if (cpd_ratio >= CPD_RATIO_THRESHOLD) {
+            VTR_LOG("Giving up routing since additional routing convergences seem unlikely to improve QoR (CPD ratio: %g)\n", cpd_ratio);
+            return true; //CPD improvement is small, don't spend run-time trying to improve it
+        }
+    }
+
+    return false; //Don't give up
 }
