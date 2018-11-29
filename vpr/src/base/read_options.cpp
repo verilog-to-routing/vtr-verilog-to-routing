@@ -1179,6 +1179,14 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("1")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.router_reconvergence_cpd_threshold, "--router_reconvergence_cpd_threshold")
+            .help("Specifies the minimum potential CPD improvement for which the router will"
+                  " continue to attempt re-convergent routing."
+                  " For example, a value of 0.99 means the router will not give up on reconvergent"
+                  " routing if it thinks a > 1% CPD reduction is possible.")
+            .default_value("0.99")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool,ParseOnOff>(args.full_stats, "--full_stats")

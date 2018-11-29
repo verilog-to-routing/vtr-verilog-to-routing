@@ -119,6 +119,7 @@ my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
+my $crit_path_router_iterations = undef;
 
 
 ##########
@@ -205,6 +206,9 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	}
 	elsif ( $token eq "-relax_W_factor" ){
 		$relax_W_factor = shift(@ARGV);
+	}
+	elsif ( $token eq "-crit_path_router_iterations" ){
+		$crit_path_router_iterations = shift(@ARGV);
 	}
     # else forward the argument
 	else {
@@ -872,6 +876,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                     my @relaxed_W_extra_vpr_args = @forwarded_vpr_args;
                     push(@relaxed_W_extra_vpr_args, ("--route"));
                     push(@relaxed_W_extra_vpr_args, ("--route_chan_width", "$relaxed_W"));
+
+                    if (defined $crit_path_router_iterations) {
+                        push(@relaxed_W_extra_vpr_args, ("--max_router_iterations", "$crit_path_router_iterations"));
+                    }
 
                     my $relaxed_W_log_file = "vpr.crit_path.out";
                     $q = run_vpr({
