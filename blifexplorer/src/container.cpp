@@ -974,21 +974,6 @@ void Container::showSimulationStep(int cycle)
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: setEdge)
- *-------------------------------------------------------------------------------------------*/
-void Container::setEdge(int i)
-{
-    if(odinStarted)
-    {
-        myOdin->setEdge(i);
-    }
-    else
-    {
-        std::cout << "unable to set edge since odin has not been started";
-    }
-}
-
-/*---------------------------------------------------------------------------------------------
  * (function: getConnectionBetween)
  *-------------------------------------------------------------------------------------------*/
 Wire *Container::getConnectionBetween(QString nodeName, QString kidName)

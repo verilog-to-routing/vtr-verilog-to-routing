@@ -25,13 +25,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_ii.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+#include <QDir>
 
 
 OdinInterface::OdinInterface()
 {
     fprintf(stderr,"Creating Odin II object\n");
     wave = 0;
-    edge_output = "";
 	blifexplorer_netlist = NULL;
 	arg_list = NULL;
     arg_len = 0;
@@ -42,20 +42,22 @@ OdinInterface::OdinInterface()
  *-------------------------------------------------------------------------------------------*/
 int OdinInterface::startOdin()
 {
+    std::string simulation_directory = "OUTPUT";
+    QString dir_name(simulation_directory.c_str());
+    QDir dir(dir_name);
+    if (!dir.exists())
+        dir.mkpath(dir_name);
+
     /* pass arguments here to odin */
     std::vector<std::string> arguments = 
 	{
 		"../ODIN_II/odin_ii", 												//	pass the odin location relative to blifexplorer
 		"--interractive_simulation",										//	prevent odin from freeing valuable information
         "-r", "7",															//	set simulation seed
-        "-sim_dir", "./OUTPUT/",												//	set simulation directory
+        "-sim_dir", std::string(simulation_directory + "/"),												//	set simulation directory
         "-g", "10000",														//	set number of test vector
 		"-b", OdinInterface::myFilename.trimmed().toLocal8Bit().data()		//	pass the blif file
     };
-
-	// pass the edge type
-    if ( OdinInterface::edge_output != "" )
-        arguments.insert(arguments.end(), OdinInterface::edge_output);
 
     /* converting into format digestible by odin */
     arg_list = (char**)malloc(arguments.size()*sizeof(char*));
@@ -171,18 +173,6 @@ int OdinInterface::getOutputValue(nnode_t* node, int outPin, int actstep)
     oassert(node);
     oassert(node->num_output_pins > outPin);
     return get_pin_value(node->output_pins[outPin],actstep);
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: setEdge)
- *-------------------------------------------------------------------------------------------*/
-void OdinInterface::setEdge(int i ){
-    if(i==-1)
-        OdinInterface::edge_output = "-E";
-    else if(i==0)
-        OdinInterface::edge_output = "-R";
-    else
-        OdinInterface::edge_output = "";
 }
 
 

@@ -53,7 +53,6 @@ public:
     int simulateNextWave();
     void endSimulation();
     int getOutputValue(nnode_t* node, int pin, int actstep);
-    void setEdge(int i);
     netlist_t *blifexplorer_netlist;
 
 private:
@@ -61,7 +60,6 @@ private:
     QQueue<nnode_t *> nodequeue;
     QString myFilename;
     sim_data_t *sim_data;
-    std::string edge_output;
     char **arg_list;
     int arg_len;
     int wave;

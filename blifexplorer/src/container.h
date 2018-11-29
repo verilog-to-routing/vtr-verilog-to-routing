@@ -53,7 +53,6 @@ public:
     int getActSimStep();
     int startSimulator();
     void showSimulationStep(int cycle);
-    void setEdge(int i);
     int simulateNextWave();
     void resetAllHighlights();
     void showActivity();
