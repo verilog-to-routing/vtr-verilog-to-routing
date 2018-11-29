@@ -46,7 +46,7 @@ short haveOutputLatchBlackbox = FALSE;
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
 void output_node(nnode_t *node, short traverse_number, FILE *fp);
-void define_logical_function(nnode_t *node, short type, FILE *out);
+void define_logical_function(nnode_t *node, FILE *out);
 void define_set_input_logical_function(nnode_t *node, const char *bit_output, FILE *out);
 void define_ff(nnode_t *node, FILE *out);
 void define_decoded_mux(nnode_t *node, FILE *out);
@@ -341,7 +341,7 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 		case LOGICAL_EQUAL:
 		case NOT_EQUAL:
 		case LOGICAL_NOT:
-			define_logical_function(node, node->type, fp);
+			define_logical_function(node, fp);
 			break;
 
 		case MUX_2:
@@ -355,7 +355,7 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 		case MULTIPLY:
 			if (hard_multipliers == NULL)
 				oassert(FALSE); /* should be soft logic! */
-			define_mult_function(node, node->type, fp);
+			define_mult_function(node, fp);
 
 			break;
 
@@ -363,18 +363,18 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 		case ADD:
 			if (hard_adders == NULL)
 				oassert(FALSE); /* should be soft logic! */
-			define_add_function(node, node->type, fp);
+			define_add_function(node, fp);
 			break;
 
 		case MINUS:
 			oassert(hard_adders); /* should be soft logic! */
 			if(hard_adders)
-				define_add_function(node, node->type, fp);
+				define_add_function(node, fp);
 			break;
 
 		case MEMORY:
 		case HARD_IP:
-			define_hard_block(node, node->type, fp);
+			define_hard_block(node, fp);
 			break;
 		case INPUT_NODE:
 		case OUTPUT_NODE:
@@ -411,7 +411,7 @@ void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 /*-------------------------------------------------------------------------
  * (function: define_logical_function)
  *-----------------------------------------------------------------------*/
-void define_logical_function(nnode_t *node, short /*type*/, FILE *out)
+void define_logical_function(nnode_t *node, FILE *out)
 {
 	int i, j;
 	char *temp_string;

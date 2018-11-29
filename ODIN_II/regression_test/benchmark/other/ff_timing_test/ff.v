@@ -2,7 +2,6 @@ module dff (
     clk, rst, d,
     q 
 );
-    
     input clk, rst, d;
     output q;
 

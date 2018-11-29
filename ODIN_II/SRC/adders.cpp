@@ -328,7 +328,7 @@ void add_the_blackbox_for_adds(FILE *out)
 /*-------------------------------------------------------------------------
  * (function: define_add_function)
  *-----------------------------------------------------------------------*/
-void define_add_function(nnode_t *node, short /*type*/, FILE *out)
+void define_add_function(nnode_t *node, FILE *out)
 {
 	int i, j;
 	int count;

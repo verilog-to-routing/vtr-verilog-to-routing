@@ -24,7 +24,7 @@ DEFAULT_ARCH="-a ../libs/libarchfpga/arch/sample_arch.xml"
 
 DEFAULT_CMD_PARAM="${ADDER_DEFINITION}"
 
-EXEC="./odin_II -U0 ${DEFAULT_CMD_PARAM}"
+EXEC="./odin_II ${DEFAULT_CMD_PARAM}"
 
 fail_count=0
 new_run=regression_test/run001
@@ -33,6 +33,10 @@ NB_OF_PROC=1
 REGENERATE_OUTPUT=0
 REGENERATE_BENCH=0
 TEST_TYPE=""
+
+if [ -e regression_failure.log ]; then 
+	rm regression_failure.log
+fi
 
 function help() {
 printf "
@@ -86,16 +90,16 @@ function cleanup_temp() {
 
 function exit_program() {
 
-    if [ -e ${new_run}/failure.log ]
+    if [ -e regression_failure.log ]
     then
-	    line_count=$(wc -l < ${new_run}/failure.log)
+	    line_count=$(wc -l < regression_failure.log)
 		fail_count=$(( ${fail_count} + ${line_count} ))
 	fi
 
 	if [ $fail_count -gt "0" ]
 	then
 		echo "Failed $fail_count"
-		echo "View Failure log in ${new_run}/failure.log, "
+		echo "View Failure log in regression_failure.log, "
 	else
 		echo "no run failure!"
 	fi
@@ -134,10 +138,7 @@ function sim() {
 			#build commands
 			mkdir -p $DIR
 
-			echo "${EXEC} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/ &>> ${DIR}/log \
-				&& echo --- PASSED == ${bench_type}/$test_name \
-				|| (echo -X- FAILED == ${bench_type}/$test_name \
-					&& echo ${bench_type}/$test_name >> ${new_run}/failure.log)" > ${DIR}/log
+			echo "${EXEC} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/ &>> ${DIR}/log" > ${DIR}/log
 
 		done
 	else
@@ -177,19 +178,24 @@ function sim() {
 				fi
 			fi
 
-			echo "${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log \
-				&& echo --- PASSED == ${TEST_FULL_REF} \
-				|| (echo -X- FAILED == ${TEST_FULL_REF} | tee ${new_run}/failure.log)" > ${DIR}/log
+			echo "${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log" > ${DIR}/log
 		done
 	fi
 
 	if [ $1 -gt "1" ]
 	then
-		find ${new_run}/${bench_type}/ -maxdepth 1 -mindepth 1 | xargs -n1 -P$1 -I test_dir /bin/bash -c \
-			'eval $(cat "test_dir/log" | tr "\n" " ")'
+		find ${new_run}/${bench_type}/ -maxdepth 1 -mindepth 1 | xargs --process-slot-var=index -n1 -P$1 -I test_dir /bin/bash -c '
+			tests=test_dir
+			echo "       --- ${tests##*/}" &&
+			eval $(cat ${tests}/log) && 
+			(echo "--- PASSED ${tests##*/}" ) ||
+			(echo "-X- FAILED ${tests##*/}" && echo ${tests##*/} >> regression_failure.log)'
 	else
 		for tests in ${new_run}/${bench_type}/*; do 
-			eval $(cat "${tests}/log" | tr "\n" " ")
+			echo "       --- ${tests##*/}" &&
+			eval $(cat ${tests}/log) && 
+			(echo "--- PASSED ${tests##*/}" ) ||
+			(echo "-X- FAILED ${tests##*/}" && echo ${tests##*/} >> regression_failure.log)
 		done
 	fi
 

@@ -51,10 +51,10 @@ void instantiate_buffer(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, netlist_t *netlist);
 void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark, netlist_t *netlist);
 void instantiate_logical_logic(nnode_t *node, operation_list op, short mark, netlist_t *netlist);
-void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist);
-void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist);
-void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist);
-void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netlist_t *netlist);
+void instantiate_EQUAL(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
+void instantiate_GE(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
+void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
+void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 
@@ -677,7 +677,7 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
  *	Builds the hardware for an equal comparison by building EQ for parallel lines and then
  *	taking them all through an AND tree.
  *-------------------------------------------------------------------------------------------*/
-void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist)
+void instantiate_EQUAL(nnode_t *node, operation_list type, short mark, netlist_t *netlist)
 {
 	int width_a;
 	int width_b;
@@ -763,7 +763,7 @@ void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist
  *	Defines the HW needed for greter than equal with EQ, GT, AND and OR gates to create
  *	the appropriate logic function.
  *-------------------------------------------------------------------------------------------*/
-void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
+void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *netlist)
 {
 	int width_a;
 	int width_b;
@@ -808,7 +808,8 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 		port_B_offset = 0;
 		port_A_index = 0;
 		port_B_index = 0;
-		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Invalid node type in instantiate_GT\n");
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Invalid node type %s in instantiate_GT\n",
+			node_name_based_on_op(node));
 	}
 
 	/* xor gate identifies if any bits don't match */
@@ -913,7 +914,7 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
  *	Defines the HW needed for greter than equal with EQ, GT, AND and OR gates to create
  *	the appropriate logic function.
  *-------------------------------------------------------------------------------------------*/
-void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist)
+void instantiate_GE(nnode_t *node, operation_list type, short mark, netlist_t *netlist)
 {
 	int width_a;
 	int width_b;
@@ -994,7 +995,7 @@ void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist)
  * (function: instantiate_shift_left_or_right )
  *	Creates the hardware for a shift left or right operation by a constant size.
  *-------------------------------------------------------------------------------------------*/
-void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netlist_t *netlist)
+void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short mark, netlist_t *netlist)
 {
 	/* these variables are used in an attempt so that I don't need if cases.  Probably a bad idea, but fun */
 	int width;

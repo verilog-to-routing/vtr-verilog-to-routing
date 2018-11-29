@@ -5,11 +5,9 @@ module v_runGA (
 	clk,
   output_data,
   addr_req,
-  req,
 );
 
 	input clk;
-  input req;
   input [`ADDR_SIZE-1:0] addr_req;
 
   output [`BITS-1:0] output_data;
@@ -17,15 +15,15 @@ module v_runGA (
 	bramctrlsimple
 	#(
 		.ADDR_WIDTH(`ADDR_SIZE),
-		.DATA_WIDTH(`BITS),
+		.DATA_WIDTH(`BITS)
 	)
 	mem1(
 		.clk(clk),
     .mem_access(1'b1),
     .mem_data_out(output_data),
     .mem_addr_in(addr_req),
-    .mem_data_in(`BITS'b1),
-	  .mem_req(req)
+    .mem_data_in(addr_req),
+	  .mem_req(1'b1)
 	);
 
 endmodule

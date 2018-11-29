@@ -38,6 +38,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CLOCK_INITIAL_VALUE 1
 #define MAX_REPEAT_SIM 128
 
+static inline signed char init_value(nnode_t *node)
+{
+	return (node && node->has_initial_value)? node->initial_value: global_args.sim_initial_value;
+}
+
 typedef enum
 {
 	FALLING,
@@ -81,9 +86,45 @@ inline static bool ff_trigger(edge_type_e type, npin_t* clk, int cycle)
 	);
 }
 
-#define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
-#define is_clock_node(node)	( (node->type == CLOCK_NODE) || (std::string(node->name) == "top^clk") ) // Strictly for memories.
+inline static signed char get_D(npin_t* D, int cycle)
+{
+	return get_pin_value(D,cycle-D->delay_cycle);
+}
 
+inline static signed char get_Q(npin_t* Q, int cycle)
+{
+	return get_pin_value(Q,cycle-1);
+}
+
+inline static signed char compute_ff(bool trigger, signed char D_val, signed char Q_val, int /*cycle*/)
+{
+	return (trigger) ? D_val: Q_val;
+}
+inline static signed char compute_ff(bool trigger, npin_t* D, signed char Q_val, int cycle)
+{
+	return compute_ff(trigger, get_D(D, cycle), Q_val, cycle);
+}
+
+inline static signed char compute_ff(bool trigger, signed char D_val, npin_t* Q, int cycle)
+{
+	return compute_ff(trigger, D_val, get_Q(Q,cycle), cycle);
+}
+
+inline static signed char compute_ff(bool trigger, npin_t* D, npin_t* Q, int cycle)
+{
+	return compute_ff(trigger, get_D(D,cycle), get_Q(Q,cycle), cycle);
+}
+
+#define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
+
+static inline bool is_clock_node(nnode_t *node)
+{
+	return node && (
+		(node->type == CLOCK_NODE) 
+		|| (std::string(node->name) == "top^clk") // Strictly for memories.
+		|| (std::string(node->name) == DEFAULT_CLOCK_NAME)
+	);
+}
 
 static void simulate_cycle(int cycle, stages_t *s);
 static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *output_lines);
@@ -604,7 +645,7 @@ static void update_undriven_input_pins(nnode_t *node, int cycle)
 {
 	int i;
 	for (i = 0; i < node->num_undriven_pins; i++)
-		update_pin_value(node->undriven_pins[i], global_args.sim_initial_value, cycle);
+		update_pin_value(node->undriven_pins[i], init_value(node), cycle);
 
 	// By the third cycle everything in the netlist should have been updated.
 	if (cycle == 3)
@@ -662,19 +703,29 @@ static int is_node_ready(nnode_t* node, int cycle)
 				}
 			}
 		}
-		update_undriven_input_pins(node, cycle);
+		
 	}
+
+	update_undriven_input_pins(node, cycle);
 
 	if (node->type == FF_NODE)
 	{
 		npin_t *D_pin     = node->input_pins[0];
 		npin_t *clock_pin = node->input_pins[1];
 		// Flip-flops depend on the D input from the previous cycle and the clock from this cycle.
-		if
-		(
-			   (get_pin_cycle(D_pin    ) < cycle-1)
-			|| (get_pin_cycle(clock_pin) < cycle  )
-		)
+
+		int ff_cycle = get_pin_cycle(D_pin);
+		if (!D_pin->delay_cycle && ff_cycle < cycle)
+		{
+			D_pin->delay_cycle = true;
+			warning_message(SIMULATION_ERROR, -1, -1,
+				"%s Node %s input %s is behind by a cycle", node_name_based_on_op(node), node->name, D_pin->name);
+		}
+
+		if (ff_cycle < cycle-D_pin->delay_cycle)
+			return FALSE;
+
+		if (get_pin_cycle(clock_pin) < cycle )
 			return FALSE;
 	}
 	else if (node->type == MEMORY)
@@ -684,12 +735,17 @@ static int is_node_ready(nnode_t* node, int cycle)
 		{
 			npin_t *pin = node->input_pins[i];
 			// The data and write enable inputs rely on the values from the previous cycle.
-			if (
-					   !strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2")
-					|| !strcmp(pin->mapping, "we")   || !strcmp(pin->mapping, "we1")   || !strcmp(pin->mapping, "we2")
-			)
+			if (!strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2"))
 			{
-				if (get_pin_cycle(pin) < cycle-1)
+				int data_cycle = get_pin_cycle(pin);
+				if (!pin->delay_cycle && data_cycle < cycle)
+				{
+					pin->delay_cycle = true;
+					warning_message(SIMULATION_ERROR, -1, -1,
+						"%s Node %s input %s is behind by a cycle", node_name_based_on_op(node), node->name, pin->name);
+				}
+				
+				if (data_cycle < cycle-pin->delay_cycle)
 					return FALSE;
 			}
 			else
@@ -868,6 +924,8 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
  */
 static bool compute_and_store_value(nnode_t *node, int cycle)
 {
+	is_node_ready(node,cycle);
+
 	operation_list type = is_clock_node(node)?CLOCK_NODE:node->type;
 
 	switch(type)
@@ -1171,7 +1229,6 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 	bool covered = true;
 	bool skip_node_from_coverage = (
 		type == INPUT_NODE ||
-		type == OUTPUT_NODE ||
 		type == CLOCK_NODE ||
 		type == GND_NODE ||
 		type == VCC_NODE ||
@@ -1246,7 +1303,7 @@ static int is_node_complete(nnode_t* node, int cycle)
 void set_clock_ratio(int rat, nnode_t *node)
 {
 	//change the value only for clocks
-	if(!node || node->type != CLOCK_NODE)
+	if(!is_clock_node(node))
 	 return;
 
 	node->ratio = rat;
@@ -1259,7 +1316,7 @@ void set_clock_ratio(int rat, nnode_t *node)
 int get_clock_ratio(nnode_t *node)
 {
 	//change the value only for clocks
-	if(!node || node->type != CLOCK_NODE)
+	if(!is_clock_node(node))
 		return 0;
 
 	return node->ratio;
@@ -1561,7 +1618,7 @@ static void initialize_pin(npin_t *pin)
 	
 	memset(
 		pin->values, 
-		(pin->node && pin->node->has_initial_value)? pin->node->initial_value: global_args.sim_initial_value,
+		init_value(pin->node),
 		SIM_WAVE_LENGTH
 	);
 	*(pin->cycle) = -1;
@@ -1592,7 +1649,7 @@ signed char get_pin_value(npin_t *pin, int cycle)
 	if(!pin)
 		return -1;
 
-	signed char to_return = (pin->node && pin->node->has_initial_value)? pin->node->initial_value: global_args.sim_initial_value;
+	signed char to_return = init_value(pin->node);
 	if( pin->values )
 	{
 		init_read(pin);
@@ -1627,14 +1684,15 @@ static void compute_flipflop_node(nnode_t *node, int cycle)
 {
 	verify_i_o_availabilty(node, 2, 1);
 
-	signed char D      	= 	get_pin_value(node->input_pins[0],cycle-1);
-	signed char Q		=	get_pin_value(node->output_pins[0],cycle-1);
+	npin_t *D      	= 	node->input_pins[0];
+	npin_t *Q		=	node->output_pins[0];
 	npin_t *clock_pin 	=	node->input_pins[1];
 	npin_t *output_pin	=	node->output_pins[0];
 
 	bool trigger = ff_trigger(node->edge_type, clock_pin, cycle);
+	signed char new_value = compute_ff(trigger, D, Q, cycle);
 	
-	update_pin_value(output_pin, (trigger)?	D:	Q, cycle);
+	update_pin_value(output_pin, new_value, cycle);
 }
 
 /*
@@ -2132,56 +2190,51 @@ static void compute_memory_node(nnode_t *node, int cycle)
 				"Could not resolve memory hard block %s to a valid type.", node->name);
 }
 
-/**
- * read memory stored data for simulation
- */
-static void read_memory_data(nnode_t *node , signal_list_t *input_adress, signal_list_t *output_signals, int cycle)
+static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
 {
-
-	long long address = compute_memory_address(input_adress, cycle);
-
-	std::vector<signed char> mem_data;
-	if(address >= 0 && address < node->memory_data.size())
-		mem_data = node->memory_data[address];
-	else
-		mem_data = std::vector<signed char>(output_signals->count, -1);
-
-	// Read the memory bit
-	oassert(output_signals->count == mem_data.size())
-	for (size_t i = 0; i < output_signals->count; i++)
+	/**
+	 * compute the address 
+	 */
+	long long address = 0;
+	for (size_t i = 0; i < input_address->count && address >= 0; i++)
 	{
-		update_pin_value(output_signals->pins[i], mem_data[i], cycle);
+		// If any address pins are x's, write x's we return -1.
+		signed char value = get_pin_value(input_address->pins[i],cycle);
+		if (value != 1 && value != 0)
+			address = -1;
+		else
+			address += (value << i);
 	}
-}
 
-/**
- * read memory stored data for simulation
- */
-static void write_memory_data(nnode_t *node , signal_list_t *input_adress, signal_list_t *mem_data, npin_t *write_enabled , int cycle)
-{
-	signed char we = get_pin_value(write_enabled, cycle - 1);
-	if(we != 1)
-		return;
+	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
 
-	long long address 	= compute_memory_address(input_adress, cycle-1);
-	if(address < 0 || address >= node->memory_data.size())
-		return;
+	/**
+	 * make a single trigger out of write_enable pin and if it was a positive edge
+	 */
+	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
 
-	//store memory data
-	oassert(mem_data->count == node->memory_data[address].size());
-	for (size_t i = 0; i < mem_data->count; i++)
+	/**
+	 * assure the data in size and data out size match, and that the internal storage does too
+	 */
+	if(address_is_valid)
+			oassert(node->memory_data[address].size() == data_in->count && data_out->count == data_in->count);
+
+	for (size_t i = 0; i < data_out->count; i++)
 	{
-		node->memory_data[address][i] = get_pin_value(mem_data->pins[i], cycle-1);
+		signed char new_value = -1;
+		if(address_is_valid)
+		{
+			/**
+			 * we hook onto the ff function to both read and update since memories are flip flops
+			 */
+			new_value = compute_ff(write, data_in->pins[i], node->memory_data[address][i], cycle);
+			node->memory_data[address][i] = new_value;
+		}
+		/**
+		 * 	output is combinational so it always grabs latest value
+		 */
+		update_pin_value(data_out->pins[i], new_value, cycle);
 	}
-}
-
-static void read_write_to_memory(nnode_t *node , signal_list_t *address, signal_list_t *output_signals, signal_list_t *mem_data, bool trigger, npin_t *write_enabled, int cycle)
-{
-	// On the rising edge, write the memory.
-	if (trigger)
-		write_memory_data(node, address, mem_data, write_enabled, cycle);
-
-	read_memory_data(node, address, output_signals, cycle);
 }
 
 /*
@@ -2222,34 +2275,13 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
 }
 
 /*
- * Calculates the memory address. Returns -1 if the address is unknown. 
- * (we modulo the adress by the ram_depth to get the address to prevent out of bounds)
- */
-static long compute_memory_address(signal_list_t *addr, int cycle)
-{
-	long address = 0;
-	int i;
-	for (i = 0; i < addr->count; i++)
-	{
-		// If any address pins are x's, write x's we return -1.
-		signed char value = get_pin_value(addr->pins[i],cycle);
-		if (value != 1 && value != 0)
-			return -1;
-
-		address += (value << i);
-	}
-
-	return address;
-}
-
-/*
  * Initialises memory using a memory information file (mif). If not
  * file is found, it is initialised to x's.
  */
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
-	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, -1));
+	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
 	char *filename = get_mif_filename(node);
 
 	FILE *mif = fopen(filename, "r");
@@ -2584,7 +2616,7 @@ static lines_t *create_lines(netlist_t *netlist, int type)
 		 * TODO: implicit memories with multiclock input (one for read and one for write)
 		 * is broken, need fixing
 		 */
-		if(node->type == CLOCK_NODE)
+		if(is_clock_node(node))
 			set_clock_ratio(++num_of_clock,node);
 
 		vtr::free(port_name);

@@ -61,6 +61,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define SINGLE_PORT_MEMORY_NAME "single_port_ram"
 #define DUAL_PORT_MEMORY_NAME "dual_port_ram"
 
+#define DEFAULT_CLOCK_NAME "GLOBAL_SIM_BASE_CLK"
 
 typedef struct {
 	int number_of_pins;
