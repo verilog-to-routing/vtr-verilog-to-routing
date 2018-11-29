@@ -32,7 +32,7 @@ OdinInterface::OdinInterface()
     fprintf(stderr,"Creating Odin II object\n");
     wave = 0;
     edge_output = "";
-	verilog_netlist = NULL;
+	blifexplorer_netlist = NULL;
 	arg_list = NULL;
     arg_len = 0;
 }
@@ -68,9 +68,9 @@ int OdinInterface::startOdin()
         std::cout << arg_list[i] << " ";
     }
 
-    verilog_netlist = start_odin_ii(arg_len,arg_list);
+    blifexplorer_netlist = start_odin_ii(arg_len,arg_list);
 
-    if(!verilog_netlist)
+    if(!blifexplorer_netlist)
         return -1;
     
     return 0;
@@ -83,13 +83,13 @@ QHash<QString, nnode_t *> OdinInterface::getNodeTable()
 {
     int i, items;
     items = 0;
-    for (i = 0; i < verilog_netlist->num_top_input_nodes; i++){
-        nodequeue.enqueue(verilog_netlist->top_input_nodes[i]);
+    for (i = 0; i < blifexplorer_netlist->num_top_input_nodes; i++){
+        nodequeue.enqueue(blifexplorer_netlist->top_input_nodes[i]);
         //enqueue_node_if_ready(queue,netlist->top_input_nodes[i],cycle);
     }
 
     // Enqueue constant nodes.
-    nnode_t *constant_nodes[] = {verilog_netlist->gnd_node, verilog_netlist->vcc_node, verilog_netlist->pad_node};
+    nnode_t *constant_nodes[] = {blifexplorer_netlist->gnd_node, blifexplorer_netlist->vcc_node, blifexplorer_netlist->pad_node};
     int num_constant_nodes = 3;
     for (i = 0; i < num_constant_nodes; i++){
         nodequeue.enqueue(constant_nodes[i]);
@@ -140,7 +140,7 @@ void OdinInterface::setFilename(QString filename)
  *-------------------------------------------------------------------------------------------*/
 void OdinInterface::setUpSimulation()
 {
-    sim_data = init_simulation(verilog_netlist);
+    sim_data = init_simulation(blifexplorer_netlist);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ int OdinInterface::simulateNextWave()
  *-------------------------------------------------------------------------------------------*/
 void OdinInterface::endSimulation(){
     sim_data = terminate_simulation(sim_data);
-	terminate_odin_ii();
+	terminate_odin_ii(blifexplorer_netlist);
 	for(int i=0; i<arg_len; i++)
 		vtr::free(arg_list[i]);
 	vtr::free(arg_list);
