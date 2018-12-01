@@ -327,9 +327,9 @@ sim_data_t *init_simulation(netlist_t *netlist)
 {
 	//for multithreading
 	used_time = std::numeric_limits<double>::max();
-	number_of_workers = std::min(CONCURENCY_LIMIT, std::max(1, global_args.parralelized_simulation.value()));
-	if(global_args.parralelized_simulation.value() >1 )
-		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
+	number_of_workers = global_args.parralelized_simulation.value();
+	if(number_of_workers >1 )
+		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", number_of_workers);
 		
 
 	found_best_time = false;
@@ -2118,18 +2118,20 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 	 * make a single trigger out of write_enable pin and if it was a positive edge
 	 */
 	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
+	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
 
-	std::vector<signed char> previous_values = node->memory_data->get_word_line(address, cycle-1);
-	std::vector<signed char> new_values;
 	for (size_t i = 0; i < data_out->count; i++)
 	{
-		// we hook onto the ff function to both read and update since memories are flip flops
-		new_values.push_back(compute_ff(write, data_in->pins[i], previous_values[i], cycle));
+		signed char new_value = -1;
+		if(address_is_valid)
+		{
+			// we hook onto the ff function to both read and update since memories are flip flops
+			new_value = compute_ff(write, data_in->pins[i], node->memory_data[address][i], cycle);
+			node->memory_data[address][i] = new_value;
+		}
 		// output is combinational so it always grabs latest value
-		update_pin_value(data_out->pins[i], new_values.back(), cycle);
+		update_pin_value(data_out->pins[i], new_value, cycle);
 	}
-
-	node->memory_data->set_word_line(address, new_values, cycle);
 }
 
 /*
@@ -2141,10 +2143,9 @@ static void compute_single_port_memory(nnode_t *node, int cycle)
 
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 	
-	if (node->memory_data == nullptr || node->memory_data->empty())
+	if (node->memory_data.empty())
 		instantiate_memory(node, signals->data->count, signals->addr->count);
 
-	node->memory_data->copy_ram_foward_one_cycle(cycle);
 
 	read_write_to_memory(node, signals->addr, signals->out, signals->data, trigger, signals->we, cycle);
 
@@ -2159,13 +2160,12 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 
-	if (node->memory_data == nullptr || node->memory_data->empty())
+	if (node->memory_data.empty())
 		instantiate_memory(node, 
 			std::max(signals->data1->count, signals->data2->count), 
 			std::max(signals->addr1->count,signals->addr2->count)
 		);
 
-	node->memory_data->copy_ram_foward_one_cycle(cycle);
 
 	read_write_to_memory(node, signals->addr1, signals->out1, signals->data1, trigger, signals->we1, cycle);
 	read_write_to_memory(node, signals->addr2, signals->out2, signals->data2, trigger, signals->we2, cycle);
@@ -2179,7 +2179,8 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
  */
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
-	node->memory_data = std::make_unique<AtomicRam>(addr_width, data_width, init_value(node));
+	long max_address = 1 << addr_width;
+	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
 	char *filename = get_mif_filename(node);
 
 	FILE *mif = fopen(filename, "r");
@@ -2305,7 +2306,8 @@ static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
 
 						// Write the parsed value string to the memory location.
-						node->memory_data->init_word_line(address, binary_data, width);
+						for(int i=0; i<width; i++)
+							node->memory_data[address][i] = binary_data[i] - '0';
 					}
 					else
 					{

@@ -29,7 +29,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "AtomicBuffer.hpp"
 #include <mutex>
 #include <atomic>
-#include "AtomicRam.hpp"
 
 #include <stdlib.h>
 
@@ -494,7 +493,7 @@ struct nnode_t_t
 
 	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
-	std::unique_ptr<AtomicRam> memory_data;
+	std::vector<std::vector<signed char>> memory_data;
 
 	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
 	void (*simulate_block_cycle)(int, int, int*, int, int*);

@@ -5,24 +5,11 @@
 #include <bitset>
 #include <mutex>
 
-/**
- * DO NOT CHANGE THESE
- * we use a single 64 bit integer to store al the value and we bit mask into it
- * 2 bits per value gives us a buffer of 32
- * 
- */
-#define BUFFER_SIZE         16
-#define CONCURENCY_LIMIT    (BUFFER_SIZE-2) // access to cycle -1 with an extra pdding cell
-#define DATA_TYPE_BIT_SIZE  2
+#define BUFFER_SIZE         2
+#define CONCURENCY_LIMIT    (BUFFER_SIZE-1) // access to cycle -1 with an extra pdding cell
+#define DATA_TYPE_BIT_SIZE  2               // we only need 2 bits to store all the possible values
 #define BUFFER_BIT_SIZE     (BUFFER_SIZE*DATA_TYPE_BIT_SIZE)
 
-
-/**
- * we only need 2 bits to store the 4 possible values
- */
-#define INT_0   0x0
-#define INT_1   0x1
-#define INT_X   0x2
 
 /**
  * Odin use -1 internally, so we need to go back on forth
@@ -77,9 +64,7 @@ private:
 
     return_t to_bit(data_t value_in)
     {
-        if(value_in == 0)         return INT_0;
-        else if(value_in == 1)    return INT_1;
-        else                      return INT_X;
+        return value_in; // cast to 11 a -1
     }
 
     data_t to_value(return_t bit_in)
@@ -96,11 +81,6 @@ public:
         return_t value_to_set = to_bit(value);
         for(int i=0; i<BUFFER_SIZE; i++)
             this->set_bits(value_to_set, this->mod_cycle(i),false);
-    }
-
-    AtomicBuffer()
-    {
-        this->update_cycle(-1);
     }
 
     AtomicBuffer(data_t value_in)

@@ -549,7 +549,7 @@ void get_options(int argc, char** argv) {
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
 	global_args.parralelized_simulation.set(
-			std::min( 	std::min( CONCURENCY_LIMIT, max_thread ), 
+			std::min( 	std::min(CONCURENCY_LIMIT, max_thread) , 
 						std::max(1, thread_requested))
 		,argparse::Provenance::SPECIFIED);
 
