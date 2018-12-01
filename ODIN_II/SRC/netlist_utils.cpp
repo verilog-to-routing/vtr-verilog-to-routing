@@ -75,7 +75,6 @@ nnode_t* allocate_nnode() {
 	new_node->associated_function = NULL;
 
 	new_node->simulate_block_cycle = NULL;
-	new_node->memory_data = std::vector<std::vector<signed char>>();
 
 	new_node->bit_map= NULL;
 	new_node->bit_map_line_count=0;
@@ -204,7 +203,6 @@ npin_t* allocate_npin() {
 	new_pin->pin_node_idx = -1;
 	new_pin->mapping = NULL;
 
-	new_pin->cycle  = NULL;
 	new_pin->values = NULL;
 
 	new_pin->coverage = 0;
@@ -213,10 +211,6 @@ npin_t* allocate_npin() {
 	new_pin->is_implied = FALSE;
 
 	new_pin->ace_info = NULL;
-
-	new_pin->nb_of_reader = 0;
-	new_pin->nb_of_writer = 0;
-
 
 	return new_pin;
 }

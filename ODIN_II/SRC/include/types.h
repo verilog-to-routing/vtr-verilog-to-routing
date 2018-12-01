@@ -26,8 +26,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_arch_file.h"
 #include "simulate_blif.h"
 #include "argparse_value.hpp"
+#include "AtomicBuffer.hpp"
 #include <mutex>
 #include <atomic>
+#include "AtomicRam.hpp"
 
 #include <stdlib.h>
 
@@ -492,7 +494,8 @@ struct nnode_t_t
 
 	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
-	std::vector<std::vector<signed char>> memory_data;
+	std::unique_ptr<AtomicRam> memory_data;
+
 	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
 	void (*simulate_block_cycle)(int, int, int*, int, int*);
 
@@ -544,12 +547,7 @@ struct npin_t_t
 
 	////////////////////
 	// For simulation
-	std::mutex pin_lock;
-	std::atomic<int> nb_of_reader;
-	std::atomic<int> nb_of_writer;
-
-	signed char *values; // The values for the current wave.
-	int *cycle;          // The last cycle the pin was computed for.
+	std::shared_ptr<AtomicBuffer> values;
 
 	bool delay_cycle;
 	
@@ -557,12 +555,10 @@ struct npin_t_t
 	bool is_default; // The pin is feeding a mux from logic representing an else or default.
 	bool is_implied; // This signal is implied.
 
-
-
 	////////////////////
 
-        // For Activity Estimation
-        ace_obj_info_t *ace_info;
+	// For Activity Estimation
+	ace_obj_info_t *ace_info;
 
 };
 
@@ -582,8 +578,8 @@ struct nnet_t_t
 
 	/////////////////////
 	// For simulation
-	signed char values[SIM_WAVE_LENGTH];  // Stores the values of all connected pins.
-	int cycle;                            // Stores the cycle of all connected pins.
+	std::shared_ptr<AtomicBuffer> values;
+
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
 	//////////////////////

@@ -115,8 +115,6 @@ inline static signed char compute_ff(bool trigger, npin_t* D, npin_t* Q, int cyc
 	return compute_ff(trigger, get_D(D,cycle), get_Q(Q,cycle), cycle);
 }
 
-#define get_values_offset(cycle)	(((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH))
-
 static inline bool is_clock_node(nnode_t *node)
 {
 	return node && (
@@ -168,7 +166,7 @@ static long compute_memory_address(signal_list_t *addr, int cycle);
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width);
 static char *get_mif_filename(nnode_t *node);
 static FILE *preprocess_mif_file(FILE *source);
-static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long address_width, std::vector<std::vector<signed char>>& memory);
+static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename, int width, long address_width);
 static int parse_mif_radix(char *radix);
 
 static int count_test_vectors(FILE *in);
@@ -285,7 +283,7 @@ void simulate_netlist(netlist_t *netlist)
 			current_coverage = cycle/(double)sim_data->num_vectors;
 		}
 
-		cycle = single_step(sim_data, cycle);
+		single_step(sim_data, cycle);
 
 		// Print netlist-specific statistics.
 		if (!cycle)
@@ -298,6 +296,7 @@ void simulate_netlist(netlist_t *netlist)
 		if ((sim_data->num_vectors == 1) || cycle)
 			progress_bar_position = print_progress_bar(
 					cycle/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+		cycle++;
 	}
 
 	fflush(sim_data->out);
@@ -328,7 +327,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 {
 	//for multithreading
 	used_time = std::numeric_limits<double>::max();
-	number_of_workers = std::min(CONCURENT_SIMULATION_LIMIT, std::max(1, global_args.parralelized_simulation.value()));
+	number_of_workers = std::min(CONCURENCY_LIMIT, std::max(1, global_args.parralelized_simulation.value()));
 	if(global_args.parralelized_simulation.value() >1 )
 		warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
 		
@@ -512,73 +511,6 @@ int single_step(sim_data_t *sim_data, int cycle)
 	return cycle +1;
 }
 
-
-static bool aquire_read(npin_t *pin)
-{
-	if(!pin)
-		return false;
-		
-	bool available =false;
-
-	std::lock_guard<std::mutex> lock(pin->pin_lock);
-	if(pin->nb_of_writer<=0)
-	{
-		available = true;
-		if(pin->nb_of_reader<=0)
-			pin->nb_of_reader = 1;
-		else
-			pin->nb_of_reader++;
-		pin->nb_of_writer = 0;
-	}
-	return available;
-}
-
-static bool aquire_write(npin_t *pin)
-{
-	if(!pin)
-		return false;
-
-	bool available =false;
-
-	std::lock_guard<std::mutex> lock(pin->pin_lock);
-	if(pin->nb_of_writer<=0 && pin->nb_of_reader<=0)
-	{
-		available = true;
-		pin->nb_of_reader = 0;
-		pin->nb_of_writer = 1;
-	}
-	return available;
-}
-
-/*read write barriers for multithreaded sim */
-static void init_read(npin_t *pin)
-{
-	if(!pin)
-		return;
-	while(!aquire_read(pin));
-}
-
-static void close_reader(npin_t *pin)
-{
-	if(!pin)
-		return;
-	pin->nb_of_reader--;
-}
-
-static void init_write(npin_t *pin)
-{
-	if(!pin)
-		return;
-	while(!aquire_write(pin));
-}
-
-static void close_writer(npin_t *pin)
-{
-	if(!pin)
-		return;
-	pin->nb_of_writer--;
-}
-
 /*
  * This simulates a single cycle using the stages generated
  * during the first cycle.
@@ -622,9 +554,6 @@ static void simulate_cycle(int cycle, stages_t *s)
 
 		for (auto &worker: workers)	
 			worker.join();
-
-		// Record the ratio of parallelizable stages node.
-		s->avg_worker_count += (double)number_of_workers/(double)s->count;
 
 		total_run_time += wall_time()-time;
 	}
@@ -1592,36 +1521,26 @@ static void initialize_pin(npin_t *pin)
 		initialize_pin(pin->net->driver_pin);
 
 	// If initialising the driver initialised this pin, we're OK to return.
-	if (pin->cycle || pin->values)
+	if (pin->values)
 		return;
-
 
 	if (pin->net)
 	{
+		if(!pin->net->values)
+		{
+			pin->net->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
+		}
+
 		pin->values = pin->net->values;
-		pin->cycle  = &(pin->net->cycle);
 
 		for (int i = 0; i < pin->net->num_fanout_pins; i++)
-		{
 			if (pin->net->fanout_pins[i])
-			{
-				pin->net->fanout_pins[i]->values = pin->values;
-				pin->net->fanout_pins[i]->cycle  = pin->cycle;
-			}
-		}
+				pin->net->fanout_pins[i]->values = pin->net->values;
 	}
 	else
 	{
-		pin->values = (signed char *)vtr::malloc(SIM_WAVE_LENGTH * sizeof(signed char));
-		pin->cycle  = (int *)vtr::malloc(sizeof(int));
+		pin->values = std::make_shared<AtomicBuffer>(init_value(pin->node));
 	}
-	
-	memset(
-		pin->values, 
-		init_value(pin->node),
-		SIM_WAVE_LENGTH
-	);
-	*(pin->cycle) = -1;
 }
 
 /*
@@ -1632,13 +1551,10 @@ static void initialize_pin(npin_t *pin)
  */
 static void update_pin_value(npin_t *pin, signed char value, int cycle)
 {
-	init_write(pin);
 	if (pin->values == NULL)
 		initialize_pin(pin);
 	
-	pin->values[get_values_offset(cycle)] = value;
-	*(pin->cycle) = cycle;
-	close_writer(pin);
+	pin->values->update_value(value, cycle);
 }
 
 /*
@@ -1646,17 +1562,10 @@ static void update_pin_value(npin_t *pin, signed char value, int cycle)
  */
 signed char get_pin_value(npin_t *pin, int cycle)
 {
-	if(!pin)
-		return -1;
+	if (pin->values == NULL)
+		initialize_pin(pin);
 
-	signed char to_return = init_value(pin->node);
-	if( pin->values )
-	{
-		init_read(pin);
-		to_return = pin->values[get_values_offset(cycle)];
-		close_reader(pin);
-	}
-	return to_return;
+	return pin->values->get_value(cycle);
 }
 
 /*
@@ -1664,17 +1573,10 @@ signed char get_pin_value(npin_t *pin, int cycle)
  */
 static int get_pin_cycle(npin_t *pin)
 {
-	if(!pin)
-		return -1;
+	if (pin->values == NULL)
+		initialize_pin(pin);
 
-	int to_return = -1;
-	if( pin->cycle )
-	{
-		init_read(pin);
-		to_return = *(pin->cycle);
-		close_reader(pin);
-	}
-	return to_return;
+	return pin->values->get_cycle();
 }
 
 /*
@@ -2190,11 +2092,11 @@ static void compute_memory_node(nnode_t *node, int cycle)
 				"Could not resolve memory hard block %s to a valid type.", node->name);
 }
 
-static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
+/**
+ * compute the address 
+ */
+static long long compute_address(signal_list_t *input_address, int cycle)
 {
-	/**
-	 * compute the address 
-	 */
 	long long address = 0;
 	for (size_t i = 0; i < input_address->count && address >= 0; i++)
 	{
@@ -2205,36 +2107,29 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 		else
 			address += (value << i);
 	}
+	return address;
+}
 
-	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
+static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
+{
 
+	long long address = compute_address(input_address, cycle);
 	/**
 	 * make a single trigger out of write_enable pin and if it was a positive edge
 	 */
 	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
 
-	/**
-	 * assure the data in size and data out size match, and that the internal storage does too
-	 */
-	if(address_is_valid)
-			oassert(node->memory_data[address].size() == data_in->count && data_out->count == data_in->count);
-
+	std::vector<signed char> previous_values = node->memory_data->get_word_line(address, cycle-1);
+	std::vector<signed char> new_values;
 	for (size_t i = 0; i < data_out->count; i++)
 	{
-		signed char new_value = -1;
-		if(address_is_valid)
-		{
-			/**
-			 * we hook onto the ff function to both read and update since memories are flip flops
-			 */
-			new_value = compute_ff(write, data_in->pins[i], node->memory_data[address][i], cycle);
-			node->memory_data[address][i] = new_value;
-		}
-		/**
-		 * 	output is combinational so it always grabs latest value
-		 */
-		update_pin_value(data_out->pins[i], new_value, cycle);
+		// we hook onto the ff function to both read and update since memories are flip flops
+		new_values.push_back(compute_ff(write, data_in->pins[i], previous_values[i], cycle));
+		// output is combinational so it always grabs latest value
+		update_pin_value(data_out->pins[i], new_values.back(), cycle);
 	}
+
+	node->memory_data->set_word_line(address, new_values, cycle);
 }
 
 /*
@@ -2246,8 +2141,10 @@ static void compute_single_port_memory(nnode_t *node, int cycle)
 
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 	
-	if (node->memory_data.empty())
+	if (node->memory_data == nullptr || node->memory_data->empty())
 		instantiate_memory(node, signals->data->count, signals->addr->count);
+
+	node->memory_data->copy_ram_foward_one_cycle(cycle);
 
 	read_write_to_memory(node, signals->addr, signals->out, signals->data, trigger, signals->we, cycle);
 
@@ -2262,11 +2159,13 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 
-	if (node->memory_data.empty())
+	if (node->memory_data == nullptr || node->memory_data->empty())
 		instantiate_memory(node, 
 			std::max(signals->data1->count, signals->data2->count), 
 			std::max(signals->addr1->count,signals->addr2->count)
 		);
+
+	node->memory_data->copy_ram_foward_one_cycle(cycle);
 
 	read_write_to_memory(node, signals->addr1, signals->out1, signals->data1, trigger, signals->we1, cycle);
 	read_write_to_memory(node, signals->addr2, signals->out2, signals->data2, trigger, signals->we2, cycle);
@@ -2280,8 +2179,7 @@ static void compute_dual_port_memory(nnode_t *node, int cycle)
  */
 static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
-	long max_address = 1 << addr_width;
-	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
+	node->memory_data = std::make_unique<AtomicRam>(addr_width, data_width, init_value(node));
 	char *filename = get_mif_filename(node);
 
 	FILE *mif = fopen(filename, "r");
@@ -2291,7 +2189,7 @@ static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 	}
 	else
 	{
-		assign_memory_from_mif_file(mif, filename, data_width, addr_width, node->memory_data);
+		assign_memory_from_mif_file(node, mif, filename, data_width, addr_width);
 		fclose(mif);
 	}
 	vtr::free(filename);
@@ -2348,7 +2246,7 @@ static int parse_mif_radix(std::string radix)
 										0;
 }
 
-static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long address_width, std::vector<std::vector<signed char>>& memory)
+static void assign_memory_from_mif_file(nnode_t *node, FILE *mif, char *filename, int width, long address_width)
 {
 	FILE *file = preprocess_mif_file(mif);
 	rewind(file);
@@ -2407,8 +2305,7 @@ static void assign_memory_from_mif_file(FILE *mif, char *filename, int width, lo
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
 
 						// Write the parsed value string to the memory location.
-						for (long long i = 0; i < width; i++)
-							memory[address][i] = binary_data[i] - '0';
+						node->memory_data->init_word_line(address, binary_data, width);
 					}
 					else
 					{
@@ -3594,7 +3491,7 @@ static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 	printf("  Connections:     %d\n",    stages->num_connections);
 	printf("  Degree:          %3.2f\n", stages->num_connections/(float)stages->num_nodes);
 	printf("  Stages:          %d\n",    stages->count);
-	printf("  Nodes/thread:    %d(%4.2f%%)\n", (int)(stages->num_nodes/stages->avg_worker_count), 100.0/stages->avg_worker_count);
+	printf("  Nodes/thread:    %d(%4.2f%%)\n", (stages->num_nodes/number_of_workers), 100.0/(double)number_of_workers);
 	printf("\n");
 
 }

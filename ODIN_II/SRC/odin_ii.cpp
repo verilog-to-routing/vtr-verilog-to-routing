@@ -548,7 +548,10 @@ void get_options(int argc, char** argv) {
 	//adjust thread count
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
-	global_args.parralelized_simulation.set(std::min(max_thread, std::max(1, thread_requested)),argparse::Provenance::SPECIFIED);
+	global_args.parralelized_simulation.set(
+			std::min( 	std::min( CONCURENCY_LIMIT, max_thread ), 
+						std::max(1, thread_requested))
+		,argparse::Provenance::SPECIFIED);
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
