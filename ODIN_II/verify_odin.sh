@@ -183,13 +183,13 @@ function sim() {
 			#build commands
 			mkdir -p $DIR
 			verilog_command="./wrapper_odin.sh --log_file ${DIR}/odin.log --test_name ${TEST_FULL_REF} --failure_log ${global_odin_failure}.log --time_limit ${TIME_LIMIT} ${USING_LOW_RESSOURCE}"
-			echo "${verilog_command} ${DEFAULT_CMD_PARAM} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/" > ${DIR}/sim_param
+			echo "${verilog_command} ${DEFAULT_CMD_PARAM} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/" > ${DIR}/odin_param
 
 		done
 
 		#run the custon command
 		echo " ========= Synthesizing Circuits"
-		find ${new_run}/${bench_type}/ -name cmd_param | xargs -n1 -P$1 -I test_cmd ${SHELL} -c '$(cat test_cmd)'
+		find ${new_run}/${bench_type}/ -name odin_param | xargs -n1 -P$1 -I test_cmd ${SHELL} -c '$(cat test_cmd)'
 		mv_failed ${global_odin_failure}
 
 	else
