@@ -183,6 +183,8 @@ struct global_args_t_t
 	argparse::ArgValue<bool> sim_generate_three_valued_logic;
 	// Output both falling and rising edges in the output_vectors file. (DEFAULT)
 	argparse::ArgValue<bool> sim_output_both_edges;
+	// Request to read mif file input
+	argparse::ArgValue<bool> read_mif_input;
 	// Additional pins, nets, and nodes to output.
 	argparse::ArgValue<std::vector<std::string>> sim_additional_pins;
 	// Comma-separated list of primary input pins to hold high for all cycles but the first.

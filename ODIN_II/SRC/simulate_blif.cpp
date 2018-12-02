@@ -647,8 +647,6 @@ static int is_node_ready(nnode_t* node, int cycle)
 		if (!D_pin->delay_cycle && ff_cycle < cycle)
 		{
 			D_pin->delay_cycle = true;
-			warning_message(SIMULATION_ERROR, -1, -1,
-				"%s Node %s input %s is behind by a cycle", node_name_based_on_op(node), node->name, D_pin->name);
 		}
 
 		if (ff_cycle < cycle-D_pin->delay_cycle)
@@ -670,8 +668,6 @@ static int is_node_ready(nnode_t* node, int cycle)
 				if (!pin->delay_cycle && data_cycle < cycle)
 				{
 					pin->delay_cycle = true;
-					warning_message(SIMULATION_ERROR, -1, -1,
-						"%s Node %s input %s is behind by a cycle", node_name_based_on_op(node), node->name, pin->name);
 				}
 				
 				if (data_cycle < cycle-pin->delay_cycle)
@@ -2181,19 +2177,21 @@ static void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
 	node->memory_data = std::vector<std::vector<signed char>>(max_address, std::vector<signed char>(data_width, init_value(node)));
-	char *filename = get_mif_filename(node);
-
-	FILE *mif = fopen(filename, "r");
-	if (!mif)
+	if(global_args.read_mif_input)
 	{
-		printf("MIF %s (%dx%d) not found. \n", filename, data_width, addr_width);
+		char *filename = get_mif_filename(node);
+		FILE *mif = fopen(filename, "r");
+		if (!mif)
+		{
+			printf("MIF %s (%dx%d) not found. \n", filename, data_width, addr_width);
+		}
+		else
+		{
+			assign_memory_from_mif_file(node, mif, filename, data_width, addr_width);
+			fclose(mif);
+		}
+		vtr::free(filename);
 	}
-	else
-	{
-		assign_memory_from_mif_file(node, mif, filename, data_width, addr_width);
-		fclose(mif);
-	}
-	vtr::free(filename);
 }
 
 /*

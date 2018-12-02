@@ -78,7 +78,16 @@ t_type_descriptor* type_descriptors;
 int block_tag;
 int num_types=0;
 
-static int synthesize_verilog()
+typedef enum
+{
+	SUCCESS,
+	ERROR_PARSE_ARCH,
+	ERROR_SYNTHESIS,
+	ERROR_PARSE_BLIF,
+
+}ODIN_ERROR_CODE;
+
+static ODIN_ERROR_CODE synthesize_verilog()
 {
 	double elaboration_time = wall_time();
 
@@ -91,14 +100,7 @@ static int synthesize_verilog()
 	register_hard_blocks();
 
 	/* get odin soft_logic definition file */
-	std::string soft_distribution(global_args.adder_def);
-	if(!hard_adders && soft_distribution == "default")
-	{
-		if(soft_distribution == "optimized")
-			soft_distribution = vtr::dirname(global_args.program_name) + "odin.soft_config";
-
-		read_soft_def_file(soft_distribution);
-	}
+	read_soft_def_file(hard_adders);
 
 	global_param_table_sc = sc_new_string_cache();
 
@@ -195,7 +197,7 @@ static int synthesize_verilog()
 	//cleanup netlist
 	free_netlist(verilog_netlist);
 
-	return 0;
+	return SUCCESS;
 }
 
 struct netlist_t_t *start_odin_ii(int argc,char **argv)
@@ -212,8 +214,6 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	#else
 		mkdir(DEFAULT_OUTPUT, 0755);
 	#endif
-
-	int error_code = 0;
 
 	printf("--------------------------------------------------------------------\n");
 	printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
@@ -242,30 +242,25 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Failed to load architecture file: %s\n", vtr_error.what());
-			error_code = 1;
+			printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
+			exit(ERROR_PARSE_ARCH);
 		}
-	}
-
-	if(error_code)
-	{
-		printf("Odin Failed to start with exit status: %d\n", error_code);
-		terminate_odin_ii(verilog_netlist);
-		return NULL;
 	}
 
 	/* do High level Synthesis */
 	if (!global_args.blif_file)
 	{
-		error_code = synthesize_verilog();
+		ODIN_ERROR_CODE error_code = synthesize_verilog();
+		if(error_code)
+		{
+			printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
+			exit(error_code);
+		}
 	}
 
-	if(error_code)
-	{
-		printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
-		return NULL;
-	}
-
+	/*************************************************************
+	 * begin simulation section
+	 */
 	netlist_t *odin_netlist = NULL;
 
 	if(global_args.blif_file
@@ -279,6 +274,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		{
 			char *output_file = global_args.output_file;
 			configuration.list_of_file_names = { std::string(output_file) };
+			current_parse_file =0;
 		}
 
 		try 
@@ -287,15 +283,9 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Failed to load blif file: %s\n", vtr_error.what());
-			error_code = 1;
+			printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+			exit(ERROR_PARSE_BLIF);
 		}
-	}
-
-	if(error_code)
-	{
-		printf("Odin Failed to read Blif with exit status: %d\n", error_code);
-		return NULL;
 	}
 
 	/* Simulate netlist */
@@ -307,7 +297,7 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	}
 
 	printf("--------------------------------------------------------------------\n");
-	printf("Odin ran with exit status: %d\n", error_code);
+	printf("Odin ran with exit status: %d\n", SUCCESS);
 	return odin_netlist;
 }
 
@@ -517,6 +507,12 @@ void get_options(int argc, char** argv) {
 	other_sim_grp.add_argument(global_args.sim_output_both_edges, "-R")
 			.help("DEPRECATED Output after rising edges of the clock only (Default after both edges)")
 			.default_value("true")
+			.action(argparse::Action::STORE_TRUE)
+			;
+	
+	other_sim_grp.add_argument(global_args.read_mif_input, "--read_mif")
+			.help("look for a mif file to read")
+			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
 			;
 

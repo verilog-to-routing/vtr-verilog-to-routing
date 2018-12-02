@@ -1,7 +1,9 @@
 #!/bin/bash
 #1
-trap ctrl_c INT
+trap ctrl_c INT SIGINT SIGTERM
 SHELL=/bin/bash
+
+QUIT=0
 
 INPUT=$@
 
@@ -20,13 +22,21 @@ GENERATE_VECTOR_COUNT="-g 10"
 #if you want to change the default number of vectors to generate
 REGEN_VECTOR_CMD="--best_coverage -g 100"
 
-DEFAULT_ARCH="-a ../libs/libarchfpga/arch/sample_arch.xml"
+DEFAULT_ARCH="../libs/libarchfpga/arch/sample_arch.xml"
+
+MEM_ARCH="../vtr_flow/arch/timing/k6_N10_mem32K_40nm.xml"
+
+SMALL_ARCH_SWEEP="\
+../vtr_flow/arch/timing/k6_N10_mem32K_40nm.xml \
+../libs/libarchfpga/arch/sample_arch.xml \
+../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml"
+
+FULL_ARCH_SWEEP=$(find ../vtr_flow/arch/timing -maxdepth 1 | grep xml)
 
 DEFAULT_CMD_PARAM="${ADDER_DEFINITION}"
 
-EXEC="./odin_II ${DEFAULT_CMD_PARAM}"
+EXEC="./wrapper_odin.sh"
 
-fail_count=0
 new_run=regression_test/run001
 
 NB_OF_PROC=1
@@ -34,9 +44,9 @@ REGENERATE_OUTPUT=0
 REGENERATE_BENCH=0
 TEST_TYPE=""
 
-if [ -e regression_failure.log ]; then 
-	rm regression_failure.log
-fi
+TIME_LIMIT="1200s"
+
+USING_LOW_RESSOURCE=""
 
 function help() {
 printf "
@@ -48,6 +58,7 @@ Usage: ./verify_odin
 			--generate_output     * generate output vector for test given its input vector
 			--clean               * clean temporary directory
 			--nb_of_process [n]   * n = nb of process requested to be used
+			--limit_ressource     * force higher nice value and set hard limit for hardware memory to force swap more ***not always respected by system
 "
 }
 
@@ -88,18 +99,40 @@ function cleanup_temp() {
 	done
 }
 
-function exit_program() {
+function mv_failed() {
+	failed_dir=$1
+	log_file="${failed_dir}.log"
 
-    if [ -e regression_failure.log ]
-    then
-	    line_count=$(wc -l < regression_failure.log)
-		fail_count=$(( ${fail_count} + ${line_count} ))
+	if [ -e ${log_file} ]
+	then
+		echo "Failed benchmark have been move to ${failed_dir}"
+		for failed_benchmark in $(cat ${log_file})
+		do
+			parent_dir=$(dirname ${failed_dir}/${failed_benchmark})
+			mkdir -p ${parent_dir}
+			mv ${new_run}/${failed_benchmark} ${parent_dir}
+		done
 	fi
+}
+
+function exit_program() {
+  
+	fail_count=0
+
+	for fail_log in ${new_run}/*failures.log
+	do
+		if [ -e ${fail_log} ]
+		then
+			failed_in_test=$(wc -l < ${fail_log})
+			fail_count=$(( ${fail_count} + ${failed_in_test} ))
+		fi
+	done
 
 	if [ $fail_count -gt "0" ]
 	then
 		echo "Failed $fail_count"
-		echo "View Failure log in regression_failure.log, "
+		echo "View Failure log in ${new_run}/failure.log"
+
 	else
 		echo "no run failure!"
 	fi
@@ -108,11 +141,16 @@ function exit_program() {
 }
 
 function ctrl_c() {
-
-	echo ""
-	echo "** EXITED FORCEFULLY **"
-    fail_count=123456789
-	exit_program
+	if [ "_${QUIT}" == "_0" ]
+	then
+		QUIT=1
+		echo "** REGRESSION TEST EXITED FORCEFULLY **"
+		jobs -p | xargs kill &> /dev/null
+		pkill odin_II &> /dev/null
+		pkill ${EXEC} &> /dev/null
+		#should be dead by now
+		exit 120
+	fi
 }
 
 function sim() {
@@ -120,98 +158,141 @@ function sim() {
 	bench_type=$2
 	with_input_vector=$3
 	with_output_vector=$4
-	with_blif=$5 #unused
-	with_arch=$6
+	use_sim=$5
+	use_arch_list=$6
 	passing_args=$7
-	
+
 	benchmark_dir=regression_test/benchmark/${bench_type}
 
+	echo " BENCHMARK IS: ${bench_type}"
+
 	if [ "_${passing_args}" == "_1" ]; then
+
+		global_odin_failure="${new_run}/odin_failures"
+
 		for dir in ${benchmark_dir}/*
 		do
 
 			test_name=${dir##*/}
+			TEST_FULL_REF="${bench_type}/${test_name}"
+
 			DIR="${new_run}/${bench_type}/$test_name"
 			blif_file="${DIR}/odin.blif"
 
 
 			#build commands
 			mkdir -p $DIR
-
-			echo "${EXEC} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/ &>> ${DIR}/log" > ${DIR}/log
+			verilog_command="./wrapper_odin.sh --log_file ${DIR}/odin.log --test_name ${TEST_FULL_REF} --failure_log ${global_odin_failure}.log --time_limit ${TIME_LIMIT} ${USING_LOW_RESSOURCE}"
+			echo "${verilog_command} ${DEFAULT_CMD_PARAM} $(cat ${dir}/odin.args | tr '\n' ' ') -o ${blif_file} -sim_dir ${DIR}/" > ${DIR}/sim_param
 
 		done
+
+		#run the custon command
+		echo " ========= Synthesizing Circuits"
+		find ${new_run}/${bench_type}/ -name cmd_param | xargs -n1 -P$1 -I test_cmd ${SHELL} -c '$(cat test_cmd)'
+		mv_failed ${global_odin_failure}
+
 	else
+
+		global_synthesis_failure="${new_run}/synthesis_failures"
+		global_simulation_failure="${new_run}/simulation_failures"
+
+		#include a no arch directive 
+		MY_ARCH="no_arch"
+
+		case $use_arch_list in
+			memories)
+				MY_ARCH="${MEM_ARCH}"
+				;;
+
+			small_sweep)
+				MY_ARCH="${SMALL_ARCH_SWEEP}"
+				;;
+
+			full_sweep)
+				MY_ARCH="${FULL_ARCH_SWEEP}"
+				;;
+
+			default)
+				MY_ARCH="${DEFAULT_ARCH}"
+				;;
+
+			*);;
+			esac
+
+
+
 		for benchmark in ${benchmark_dir}/*.v
 		do
 			basename=${benchmark%.v}
 			test_name=${basename##*/}
-			TEST_FULL_REF="${bench_type}/${test_name}"
 
-			DIR="${new_run}/${TEST_FULL_REF}"
-			verilog_file="${benchmark_dir}/${test_name}.v"
-			blif_file="${DIR}/odin.blif"
+			for arches in ${MY_ARCH}
+			do
 
-			#build commands
-			mkdir -p $DIR
-
-
-			verilog_command="${EXEC} -V ${verilog_file} -o ${blif_file}"
-
-			[ "_$with_arch" == "_1" ] &&
-				verilog_command="${verilog_command} ${DEFAULT_ARCH}"
-			
-
-			if [ "_$with_input_vector" == "_1" ] && [ "_$REGENERATE_BENCH" != "_1" ]; then
-				verilog_command="${verilog_command} -t ${benchmark_dir}/${test_name}_input"
-				
-				if [ "_$with_output_vector" == "_1" ] && [ "_$REGENERATE_OUTPUT" != "_1" ]; then
-					verilog_command="${verilog_command} -T ${benchmark_dir}/${test_name}_output"
+				arch_cmd=""
+				if [ -e ${arches} ]
+				then
+					arch_cmd="-a ${arches}"
 				fi
-			else
-				verilog_command="${verilog_command} ${HOLD_PARAM}"
 
-				if [ "_$REGENERATE_BENCH" != "_1" ]; then
-					verilog_command="${verilog_command} ${GENERATE_VECTOR_COUNT}"
-				else
-					verilog_command="${verilog_command} ${REGEN_VECTOR_CMD}"
+				arch_basename=${arches%.xml}
+				arch_name=${arch_basename##*/}
+
+				TEST_FULL_REF="${bench_type}/${test_name}/${arch_name}"
+
+				DIR="${new_run}/${TEST_FULL_REF}"
+				verilog_file=${benchmark}
+				blif_file="${DIR}/odin.blif"
+
+				#build commands
+				mkdir -p $DIR
+
+				verilog_command="./wrapper_odin.sh --log_file ${DIR}/synthesis.log --test_name ${TEST_FULL_REF} --failure_log ${global_synthesis_failure}.log --time_limit ${TIME_LIMIT} ${USING_LOW_RESSOURCE}"
+				verilog_command="${verilog_command} ${DEFAULT_CMD_PARAM} ${arch_cmd} -V ${verilog_file} -o ${blif_file} -sim_dir ${DIR}/"
+				echo "${verilog_command}" > ${DIR}/cmd_param
+
+				if [ "_$use_sim" == "_1" ]
+				then
+					simulation_command="./wrapper_odin.sh --log_file ${DIR}/simulation.log --test_name ${TEST_FULL_REF} --failure_log ${global_simulation_failure}.log --time_limit ${TIME_LIMIT} ${USING_LOW_RESSOURCE}"
+					simulation_command="${simulation_command} ${DEFAULT_CMD_PARAM} ${arch_cmd} -b ${blif_file} -sim_dir ${DIR}/"
+
+					if [ "_$with_input_vector" == "_1" ] && [ "_$REGENERATE_BENCH" != "_1" ]; then
+						simulation_command="${simulation_command} -t ${benchmark_dir}/${test_name}_input"
+						
+						if [ "_$with_output_vector" == "_1" ] && [ "_$REGENERATE_OUTPUT" != "_1" ]; then
+							simulation_command="${simulation_command} -T ${benchmark_dir}/${test_name}_output"
+						fi
+					else
+						simulation_command="${simulation_command} ${HOLD_PARAM}"
+
+						if [ "_$REGENERATE_BENCH" != "_1" ]; then
+							simulation_command="${simulation_command} ${GENERATE_VECTOR_COUNT}"
+						else
+							simulation_command="${simulation_command} ${REGEN_VECTOR_CMD}"
+						fi
+					fi
+					echo "${simulation_command}" > ${DIR}/sim_param
 				fi
-			fi
-
-			echo "${verilog_command} -sim_dir ${DIR}/ &>> ${DIR}/log" > ${DIR}/log
+			done
 		done
-	fi
 
-	if [ $1 -gt "1" ]
-	then
-		find ${new_run}/${bench_type}/ -maxdepth 1 -mindepth 1 | xargs --process-slot-var=index -n1 -P$1 -I test_dir /bin/bash -c '
-			tests=test_dir
-			echo "       --- ${tests##*/}" &&
-			eval $(cat ${tests}/log) && 
-			(echo "--- PASSED ${tests##*/}" ) ||
-			(echo "-X- FAILED ${tests##*/}" && echo ${tests##*/} >> regression_failure.log)'
-	else
-		for tests in ${new_run}/${bench_type}/*; do 
-			echo "       --- ${tests##*/}" &&
-			eval $(cat ${tests}/log) && 
-			(echo "--- PASSED ${tests##*/}" ) ||
-			(echo "-X- FAILED ${tests##*/}" && echo ${tests##*/} >> regression_failure.log)
-		done
-	fi
+		#synthesize the circuits
+		echo " ========= Synthesizing Circuits"
+		find ${new_run}/${bench_type}/ -name cmd_param | xargs -n1 -P$1 -I test_cmd ${SHELL} -c '$(cat test_cmd)'
+		mv_failed ${global_synthesis_failure}
 
-	if [ "_$REGENERATE_BENCH" == "_1" ] || [ "_$REGENERATE_OUTPUT" == "_1" ]
-	then
-		#rename input and output vectors and move to vector directory
-		mkdir -p ${new_run}/VECTORS/
-		for tests in ${new_run}/${bench_type}/*; do 
-			test_name=${tests##*/}
-			if [ -e ${tests}/input_vectors ]; then
-				cp ${tests}/input_vectors ${new_run}/VECTORS/${test_name}_input
-				cp ${tests}/output_vectors ${new_run}/VECTORS/${test_name}_output
-				echo -e "$(cat ${tests}/log | grep Coverage: | cut -d '(' -f2 | cut -d ')' -f1) <= ${test_name} " >> ${new_run}/VECTORS/report.coverage
-			fi
-		done
+		if [ "_$use_sim" == "_1" ]
+		then
+			#run the simulation
+			echo " ========= Simulating Circuits"
+			find ${new_run}/${bench_type}/ -name sim_param | xargs -n1 -P$1 -I sim_cmd ${SHELL} -c '$(cat sim_cmd)'
+			mv_failed ${global_simulation_failure}
+		fi
+
 	fi
+	
+
 }
 
 function other_test() {
@@ -219,11 +300,11 @@ function other_test() {
 	bench_type=other
 	with_input_vector=0
 	with_output_vector=0
-	with_blif=0
-	with_arch=0
+	use_sim=1
+	use_arch_list="-"
 	with_input_args=1
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function micro_test() {
@@ -231,11 +312,11 @@ function micro_test() {
 	bench_type=micro
 	with_input_vector=1
 	with_output_vector=1
-	with_blif=1
-	with_arch=0
+	use_sim=1
+	use_arch_list="small_sweep"
 	with_input_args=0
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function regression_test() {
@@ -243,23 +324,23 @@ function regression_test() {
 	bench_type=full
 	with_input_vector=1
 	with_output_vector=1
-	with_blif=0
-	with_arch=1
+	use_sim=1
+	use_arch_list="memories"
 	with_input_args=0
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function arch_test() {
 	threads=$NB_OF_PROC
 	bench_type=arch
-	with_input_vector=0
-	with_output_vector=0
-	with_blif=0
-	with_arch=1
+	with_input_vector=1
+	with_output_vector=1
+	use_sim=1
+	use_arch_list="small_sweep"
 	with_input_args=0
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function syntax_test() {
@@ -267,11 +348,11 @@ function syntax_test() {
 	bench_type=syntax
 	with_input_vector=0
 	with_output_vector=0
-	with_blif=0
-	with_arch=0
+	use_sim=1
+	use_arch_list="-"
 	with_input_args=0
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function functional_test() {
@@ -279,10 +360,11 @@ function functional_test() {
 	bench_type=functional
 	with_input_vector=1
 	with_output_vector=0
-	with_blif=0
-	with_arch=0
+	use_sim=1
+	use_arch_list="small_sweep"
+	with_input_args=0
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function operators_test() {
@@ -290,11 +372,11 @@ function operators_test() {
 	bench_type=operators
 	with_input_vector=1
 	with_output_vector=1
-	with_blif=1
-	with_arch=0
+	use_sim=1
+	use_arch_list="small_sweep"
 	with_input_args=0
 
-	sim $threads $bench_type $with_input_vector $with_output_vector $with_blif $with_arch $with_input_args
+	sim $threads $bench_type $with_input_vector $with_output_vector $use_sim $use_arch_list $with_input_args
 }
 
 function parse_args() {
@@ -321,6 +403,11 @@ function parse_args() {
 				fi
 				REGENERATE_BENCH=1
 				echo "regenerating input and output vector for test"
+				;;
+
+			--limit_ressource) 
+				USING_LOW_RESSOURCE="--limit_ressource"
+				echo "limiting ressources for benchmark, this can help with small hardware"
 				;;
 
 			--clean)
@@ -365,6 +452,8 @@ function parse_args() {
 	done
 }
 
+#########################################################
+#	START HERE
 
 START=`get_current_time`
 parse_args $INPUT
@@ -444,7 +533,6 @@ case $TEST_TYPE in
 	*)
 		echo "Unknown test passed: $TEST_TYPE"
 		help 
-		ctrl_c
 		;;
 esac
 
