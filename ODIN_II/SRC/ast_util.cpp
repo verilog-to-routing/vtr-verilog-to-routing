@@ -800,7 +800,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-		width = abs(rnode[1]->types.number.value + rnode[2]->types.number.value);
+		width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
 		if (rnode[0]->type == IDENTIFIERS)
 		{
 			return_string = (char**)vtr::malloc(sizeof(char*)*width);
