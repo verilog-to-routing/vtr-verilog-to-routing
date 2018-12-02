@@ -69,7 +69,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_path.h"
 #include "vtr_memory.h"
 
-#define DEFAULT_OUTPUT "temp/"
+#define DEFAULT_OUTPUT "temp"
 
 size_t current_parse_file;
 t_arch Arch;

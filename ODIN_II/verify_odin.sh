@@ -248,14 +248,39 @@ function sim() {
 				#build commands
 				mkdir -p $DIR
 
-				verilog_command="./wrapper_odin.sh --log_file ${DIR}/synthesis.log --test_name ${TEST_FULL_REF} --failure_log ${global_synthesis_failure}.log --time_limit ${TIME_LIMIT} ${USING_LOW_RESSOURCE}"
-				verilog_command="${verilog_command} ${DEFAULT_CMD_PARAM} ${arch_cmd} -V ${verilog_file} -o ${blif_file} -sim_dir ${DIR}/"
+verilog_command="\./wrapper_odin.sh \
+--log_file ${DIR}/synthesis.log \
+--test_name ${TEST_FULL_REF} \
+--failure_log ${global_synthesis_failure}.log \
+--time_limit ${TIME_LIMIT} \
+${USING_LOW_RESSOURCE} \
+${RUN_WITH_VALGRIND}"
+
+verilog_command="${verilog_command} \
+${DEFAULT_CMD_PARAM} \
+${arch_cmd} \
+-V ${verilog_file} \
+-o ${blif_file} \
+-sim_dir ${DIR}"
+
 				echo "${verilog_command}" > ${DIR}/cmd_param
 
 				if [ "_$use_sim" == "_1" ]
 				then
-					simulation_command="./wrapper_odin.sh --log_file ${DIR}/simulation.log --test_name ${TEST_FULL_REF} --failure_log ${global_simulation_failure}.log --time_limit ${TIME_LIMIT} ${USING_LOW_RESSOURCE}"
-					simulation_command="${simulation_command} ${DEFAULT_CMD_PARAM} ${arch_cmd} -b ${blif_file} -sim_dir ${DIR}/"
+
+simulation_command="./wrapper_odin.sh \
+--log_file ${DIR}/simulation.log \
+--test_name ${TEST_FULL_REF} \
+--failure_log ${global_simulation_failure}.log \
+--time_limit ${TIME_LIMIT} \
+${USING_LOW_RESSOURCE} \
+${RUN_WITH_VALGRIND}"
+
+simulation_command="${simulation_command} \
+${DEFAULT_CMD_PARAM} \
+${arch_cmd} \
+-b ${blif_file} \
+-sim_dir ${DIR}"
 
 					if [ "_$with_input_vector" == "_1" ] && [ "_$REGENERATE_BENCH" != "_1" ]; then
 						simulation_command="${simulation_command} -t ${benchmark_dir}/${test_name}_input"
@@ -428,6 +453,9 @@ function parse_args() {
 					echo "Running benchmark on $NB_OF_PROC processes"
 				fi
 				shift
+				;;
+			--valgrind)
+				RUN_WITH_VALGRIND="--valgrind"
 				;;
 
 			--test)

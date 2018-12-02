@@ -344,28 +344,28 @@ sim_data_t *init_simulation(netlist_t *netlist)
 
 	// Open the output vector file.
 	char out_vec_file[128] = { 0 };
-	odin_sprintf(out_vec_file,"%s%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
+	odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 	sim_data->out = fopen(out_vec_file, "w");
 	if (!sim_data->out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create output vector file.");
 
 	// Open the input vector file.
 	char in_vec_file[128] = { 0 };
-	odin_sprintf(in_vec_file,"%s%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
+	odin_sprintf(in_vec_file,"%s/%s",((char *)global_args.sim_directory),INPUT_VECTOR_FILE_NAME);
 	sim_data->in_out = fopen(in_vec_file, "w+");
 	if (!sim_data->in_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create input vector file.");
 
 	// Open the activity output file.
 	char act_file[128] = { 0 };
-	odin_sprintf(act_file,"%s%s",((char *)global_args.sim_directory),OUTPUT_ACTIVITY_FILE_NAME);
+	odin_sprintf(act_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_ACTIVITY_FILE_NAME);
 	sim_data->act_out = fopen(act_file, "w");
 	if (!sim_data->act_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create activity output file.");
 
 	// Open the modelsim vector file.
 	char test_file[128] = { 0 };
-	odin_sprintf(test_file,"%s%s",((char *)global_args.sim_directory),MODEL_SIM_FILE_NAME);
+	odin_sprintf(test_file,"%s/%s",((char *)global_args.sim_directory),MODEL_SIM_FILE_NAME);
 	sim_data->modelsim_out = fopen(test_file, "w");
 	if (!sim_data->modelsim_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not create modelsim output file.");
@@ -3115,7 +3115,7 @@ static int verify_output_vectors(char* output_vector_file, int num_vectors)
 
 		// Our current output vectors. (Just produced.)
 		char out_vec_file[128] = { 0 };
-		odin_sprintf(out_vec_file,"%s%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
+		odin_sprintf(out_vec_file,"%s/%s",((char *)global_args.sim_directory),OUTPUT_VECTOR_FILE_NAME);
 		FILE *current_out  = fopen(out_vec_file, "r");
 		if (!current_out)
 			error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file.");

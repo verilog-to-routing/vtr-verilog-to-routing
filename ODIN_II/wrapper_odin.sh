@@ -156,7 +156,7 @@ do
 			;;
 
 		--valgrind)
-			VALGRIND_EXEC="valgrind"
+			VALGRIND_EXEC="valgrind --leak-check=full"
 			;;
 
 		*) 
