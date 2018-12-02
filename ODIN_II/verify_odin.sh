@@ -248,7 +248,7 @@ function sim() {
 				#build commands
 				mkdir -p $DIR
 
-verilog_command="\./wrapper_odin.sh \
+verilog_command="./wrapper_odin.sh \
 --log_file ${DIR}/synthesis.log \
 --test_name ${TEST_FULL_REF} \
 --failure_log ${global_synthesis_failure}.log \
