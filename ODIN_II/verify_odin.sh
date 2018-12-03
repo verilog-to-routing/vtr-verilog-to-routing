@@ -474,6 +474,7 @@ RUN_LIST=(
 "micro"
 "syntax"
 "full"
+"large"
 )
 
 function run_all() {
