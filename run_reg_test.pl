@@ -416,7 +416,7 @@ sub run_odin_test {
 	if ( $token eq "odin_reg_micro" ) {
 		$return_status = system("./verify_odin.sh --clean --test micro --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg" ) {
-		$return_status = system("./verify_odin.sh --clean --test regression --nb_of_process $num_cpu");
+		$return_status = system("./verify_odin.sh --clean --test full --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_arch" ) {
 		$return_status = system("./verify_odin.sh --clean --test arch --nb_of_process $num_cpu");
 	} elsif ( $token eq "odin_reg_syntax" ) {
