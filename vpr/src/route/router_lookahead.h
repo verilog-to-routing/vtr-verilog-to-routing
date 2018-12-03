@@ -20,6 +20,7 @@ class ClassicLookahead : public RouterLookahead {
     public:
         float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     private:
+        friend void compare_lookaheads();
         float classic_wire_lookahead_cost(int node, int target_node, float criticality, float R_upstream) const;
 };
 

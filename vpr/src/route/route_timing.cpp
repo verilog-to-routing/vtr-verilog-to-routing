@@ -280,6 +280,8 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const SetupTimingInfo& timing_info,
                                           const RoutingDelayCalculator& delay_calc);
 
+void compare_lookaheads();
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(
         const t_router_opts& router_opts,
@@ -296,6 +298,12 @@ bool try_timing_driven_route(
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+#if 1
+
+    compare_lookaheads();
+
+#endif
 
     //Initially, the router runs normally trying to reduce congestion while
     //balancing other metrics (timing, wirelength, run-time etc.)
@@ -2680,4 +2688,135 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+}
+
+void compare_lookaheads() {
+
+    ClassicLookahead classic_lookahead;
+    
+    auto& device_ctx = g_vpr_ctx.device();
+
+    auto mid_x = device_ctx.grid.width()/2;
+    auto mid_y = device_ctx.grid.height()/2;
+
+    for (auto start_chan : {CHANX, CHANY}) {
+        for (auto dir : {INC_DIRECTION, DEC_DIRECTION}) {
+
+            std::string filename;
+            if (start_chan == CHANX) {
+                filename += "CHANX";
+            } else {
+                filename += "CHANY";
+            }
+
+            if (dir == INC_DIRECTION) {
+                filename += "_INC";
+            } else {
+                filename += "_DEC";
+            }
+            filename += ".csv";
+
+            std::ofstream ofs(filename);
+
+            int l4_inode = OPEN;
+            int l16_inode = OPEN;
+
+            auto& indices = (start_chan == CHANX) ? device_ctx.rr_node_indices[start_chan][mid_y][mid_x][0] : device_ctx.rr_node_indices[start_chan][mid_x][mid_y][0];
+
+            for (int inode : indices) {
+                const auto& rr_node = device_ctx.rr_nodes[inode];
+                VTR_ASSERT(rr_node.type() == start_chan);
+
+                //Must match dir
+                if (rr_node.direction() != dir) continue;
+
+                //Must start at midpoint
+                if (dir == INC_DIRECTION) {
+                    if (rr_node.xlow() != mid_x) continue;
+                    if (rr_node.ylow() != mid_y) continue;
+                } else {
+                    VTR_ASSERT (dir == DEC_DIRECTION);
+                    if (rr_node.xhigh() != mid_x) continue;
+                    if (rr_node.yhigh() != mid_y) continue;
+                }
+                VTR_LOG("Node %d (%d,%d,%d,%d) Mid (%d,%d)\n", inode, rr_node.xlow(), rr_node.ylow(), rr_node.xhigh(), rr_node.yhigh(), mid_x, mid_y);
+
+                int cost_index = rr_node.cost_index();
+                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+                const auto& seg_inf = device_ctx.arch->Segments[seg_index];
+
+                if (l4_inode == OPEN && seg_inf.length == 4) {
+                    l4_inode = inode;
+                }
+                if (l16_inode == OPEN && seg_inf.length == 16) {
+                    l16_inode = inode;
+                }
+
+                if (l16_inode != OPEN && l4_inode != OPEN) break;
+            }
+
+            VTR_ASSERT(l4_inode != OPEN);
+            VTR_ASSERT(l16_inode != OPEN);
+
+            ofs << vtr::join({"dx", "dy",
+                              "l4_classic_congestion", "l4_classic_timing", "l4_map_congestion", "l4_map_timing",
+                              "l16_classic_congestion", "l16_classic_timing", "l16_map_congestion", "l16_map_timing" },
+                             ",")
+                << "\n";
+
+            //Calculate estimates
+            for (int x_to = 0; x_to < device_ctx.grid.width(); ++x_to) {
+                for (int y_to = 0; y_to < device_ctx.grid.height(); ++y_to) {
+                    int dx = mid_x - x_to;
+                    int dy = mid_y - y_to;
+
+                    //Pick a sink target node
+                    //We select the one with the largest fanin
+                    int sink_inode = OPEN;
+                    int fanin = -1;
+                    for (int inode : device_ctx.rr_node_indices[SINK][x_to][y_to][0]) {
+                        if (inode < 0) continue;
+                        const auto& rr_node = device_ctx.rr_nodes[inode];
+
+                        if (rr_node.type() != SINK) {
+                            VTR_LOG("Node %d %s\n", inode, rr_node.type_string());
+                            continue;
+                        }
+                        
+                        if (rr_node.fan_in() > fanin) {
+                            sink_inode = inode;
+                            fanin = rr_node.fan_in();
+                        }
+                    }
+                    if (sink_inode == OPEN) continue;
+
+                    VTR_ASSERT(sink_inode != OPEN);
+                    VTR_ASSERT(device_ctx.rr_nodes[sink_inode].type() == SINK);
+
+                    ofs << dx << ",";
+                    ofs << dy << ",";
+
+                    float l4_classic_congestion_cost_est = classic_lookahead.classic_wire_lookahead_cost(l4_inode, sink_inode, 0., 0.);
+                    float l4_classic_timing_cost_est = classic_lookahead.classic_wire_lookahead_cost(l4_inode, sink_inode, 1., 0.);
+                    float l4_map_congestion_cost_est = get_lookahead_map_cost(l4_inode, sink_inode, 0.);
+                    float l4_map_timing_cost_est = get_lookahead_map_cost(l4_inode, sink_inode, 1.);
+                    ofs << l4_classic_congestion_cost_est << ",";
+                    ofs << l4_classic_timing_cost_est << ",";
+                    ofs << l4_map_congestion_cost_est << ",";
+                    ofs << l4_map_timing_cost_est << ",";
+
+                    float l16_classic_congestion_cost_est = classic_lookahead.classic_wire_lookahead_cost(l16_inode, sink_inode, 0., 0.);
+                    float l16_classic_timing_cost_est = classic_lookahead.classic_wire_lookahead_cost(l16_inode, sink_inode, 1., 0.);
+                    float l16_map_congestion_cost_est = get_lookahead_map_cost(l16_inode, sink_inode, 0.);
+                    float l16_map_timing_cost_est = get_lookahead_map_cost(l16_inode, sink_inode, 1.);
+                    ofs << l16_classic_congestion_cost_est << ",";
+                    ofs << l16_classic_timing_cost_est << ",";
+                    ofs << l16_map_congestion_cost_est << ",";
+                    ofs << l16_map_timing_cost_est;
+                    ofs << "\n";
+                }
+            }
+        }
+    }
+
 }
