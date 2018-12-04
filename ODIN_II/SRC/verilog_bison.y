@@ -63,7 +63,7 @@ int yylex(void);
 %token vALWAYS vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vDEFINE vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDFUNCTION vIF vINOUT vINPUT vMODULE vFUNCTION vNAND vNEGEDGE vNOR vNOT vOR vFOR
 %token vOUTPUT vPARAMETER vPOSEDGE vREG vWIRE vXNOR vXOR vDEFPARAM voANDAND
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
+%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT vo ASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER
 %token vNOT_SUPPORT
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
@@ -76,7 +76,7 @@ int yylex(void);
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT
+%left voSLEFT voSRIGHT voASRIGHT
 %left '+' '-'
 %left '*' '/' '%'
 %right voPOWER
@@ -481,6 +481,7 @@ expression:
 	| expression '<' expression								{$$ = newBinaryOperation(LT, $1, $3, yylineno);}
 	| expression '>' expression								{$$ = newBinaryOperation(GT, $1, $3, yylineno);}
 	| expression voSRIGHT expression						{$$ = newBinaryOperation(SR, $1, $3, yylineno);}
+	| expression voASRIGHT expression						{$$ = newBinaryOperation(ASR, $1, $3, yylineno);}
 	| expression voSLEFT expression							{$$ = newBinaryOperation(SL, $1, $3, yylineno);}
 	| expression voEQUAL expression							{$$ = newBinaryOperation(LOGICAL_EQUAL, $1, $3, yylineno);}
 	| expression voNOTEQUAL expression						{$$ = newBinaryOperation(NOT_EQUAL, $1, $3, yylineno);}

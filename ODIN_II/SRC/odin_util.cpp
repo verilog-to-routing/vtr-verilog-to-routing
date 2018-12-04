@@ -76,6 +76,7 @@ const char *NOT_EQUAL_string = "NOT_EQUAL";
 const char *LTE_string = "LTE";
 const char *GTE_string = "GTE";
 const char *SR_string = "SR";
+const char *ASR_string = "ASR";
 const char *SL_string = "SL";
 const char *CASE_EQUAL_string = "CASE_EQUAL";
 const char *CASE_NOT_EQUAL_string = "CASE_NOT_EQUAL";
@@ -196,6 +197,9 @@ const char *node_name_based_on_op(nnode_t *node)
 			break;
 		case SR:
 			return_string = SR_string;
+			break;
+		case ASR:
+			return_string = ASR_string;
 			break;
 		case SL:
 			return_string = SL_string;

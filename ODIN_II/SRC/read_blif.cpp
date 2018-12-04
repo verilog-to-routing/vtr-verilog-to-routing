@@ -305,6 +305,7 @@ short assign_node_type_from_node_name(char * output_name)
 	else if (!strcmp(extracted_string,"MULTI_PORT_MUX")) return MULTI_PORT_MUX;
 	else if (!strcmp(extracted_string,"SL"))             return SL;
 	else if (!strcmp(extracted_string,"SR"))             return SR;
+	else if (!strcmp(extracted_string,"ASR"))            return ASR;
 	else if (!strcmp(extracted_string,"CASE_EQUAL"))     return CASE_EQUAL;
 	else if (!strcmp(extracted_string,"CASE_NOT_EQUAL")) return CASE_NOT_EQUAL;
 	else if (!strcmp(extracted_string,"DIVIDE"))         return DIVIDE;

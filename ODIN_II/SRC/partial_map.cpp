@@ -55,6 +55,7 @@ void instantiate_EQUAL(nnode_t *node, operation_list type, short mark, netlist_t
 void instantiate_GE(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
 void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
 void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
+void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 
@@ -245,7 +246,10 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 		case SR:
 			instantiate_shift_left_or_right(node, node->type, traverse_number, netlist);
 			break;
-		case MULTI_PORT_MUX:
+        case ASR:
+            instantiate_arithmetic_shift_right(node, node->type, netlist);
+            break;
+        case MULTI_PORT_MUX:
 			instantiate_multi_port_mux(node, traverse_number, netlist);
 			break;
 		case MULTIPLY:
@@ -1068,6 +1072,52 @@ void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short m
 		}
 	}
 
+	for(i = 0; i < width; i++)
+	{
+		remap_pin_to_new_node(node->output_pins[i], buf_node, i);
+	}
+	/* instantiate the buffer */
+	instantiate_buffer(buf_node, mark, netlist);
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: instantiate_arithmatic_shift_right )
+ *	Creates the hardware for an arithmatic shift right operation by a constant size.
+ *-------------------------------------------------------------------------------------------*/
+void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *netlist)
+{
+ 	/* these variables are used in an attempt so that I don't need if cases.  Probably a bad idea, but fun */
+	int width;
+	int i;
+	int shift_size;
+	nnode_t *buf_node;
+	width = node->input_port_sizes[0];
+	if (node->related_ast_node->children[1]->type == NUMBERS)
+    {
+		/* record the size of the shift */
+		shift_size = node->related_ast_node->children[1]->types.number.value;
+	}
+	else
+	{
+		shift_size = 0;
+		error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Odin only supports constant shifts at present\n");
+	}
+	buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
+	/* connect inputs to outputs */
+	for(i = width - 2; i >= shift_size; i--)
+	{
+		// connect higher input pin to lower output pin
+		remap_pin_to_new_node(node->input_pins[i], buf_node, i-shift_size);
+	}
+	/* connect first pin to outputs that don't have inputs connected */
+	i = width - 1;
+	remap_pin_to_new_node_range(node->input_pins[i], buf_node, i, i-shift_size);
+	for(i = 0; i < shift_size; i++)
+	{
+		/* demap the node from the net */
+		int idx_2_buffer = node->input_pins[i]->pin_net_idx;
+		node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+	}	
 	for(i = 0; i < width; i++)
 	{
 		remap_pin_to_new_node(node->output_pins[i], buf_node, i);

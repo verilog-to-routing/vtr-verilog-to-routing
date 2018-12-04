@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "types.h"
 #include "ast_util.h"
 #include "ast_elaborate.h"
+#include "ast_loop_unroll.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
 #include "netlist_create_from_ast.h"
@@ -59,7 +60,7 @@ enode *head, *p;
 int simplify_ast()
 {
 	/* for loop support */
-	optimize_for_tree();
+	unroll_loops();
 	/* reduce parameters with their values if they have been set */
 	reduce_parameter();
 	/* simplify assignment expressions */

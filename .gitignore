@@ -107,3 +107,8 @@ tags
 #
 .vscode
 .history
+
+#
+# Personal circuit scratch directory
+#
+circuits/

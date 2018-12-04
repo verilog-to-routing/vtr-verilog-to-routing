@@ -1060,7 +1060,7 @@ ast_node_t *newWhile(ast_node_t *compare_expression, ast_node_t *statement, int 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 2, compare_expression, statement);
 
-	/* This needs to be removed once elaboration support is added */
+	/* This needs to be removed once support is added */
 	printf("While statement is NOT supported: line %d\n", line_number);
 	oassert(0);
 
@@ -1969,6 +1969,9 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 						break;
 					case SR:
 						fprintf(fp, "\t%d [label=\"BINARY_OPERATION SR\"];\n", my_label);
+						break;
+					case ASR:
+						fprintf(fp, "\t%d [label=\"BINARY_OPERATION ASR\"];\n", my_label);
 						break;
 					case SL:
 						fprintf(fp, "\t%d [label=\"BINARY_OPERATION SL\"];\n", my_label);

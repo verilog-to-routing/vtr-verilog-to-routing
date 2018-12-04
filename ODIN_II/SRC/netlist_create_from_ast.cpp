@@ -3842,6 +3842,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 			}
 			break;
 		case SR: // >>
+        case ASR: // >>>
 			/* Shifts doesn't matter about port size, but second input needs to be a number */
 			output_port_width = input_lists[0]->count;
 			input_port_width = input_lists[0]->count;
@@ -3909,7 +3910,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 
 	for (i = 0; i < list_size; i++)
 	{
-		if ((operation_node->type == SR) || (operation_node->type == SL))
+		if ((operation_node->type == SR) || (operation_node->type == SL) || (operation_node->type == ASR))
 		{
 			/* Need to check that 2nd operand is constant */
 			ast_node_t *second = resolve_node(NULL, FALSE, instance_name_prefix, op->children[1]);
