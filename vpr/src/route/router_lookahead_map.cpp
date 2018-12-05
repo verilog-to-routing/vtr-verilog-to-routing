@@ -109,30 +109,30 @@ public:
 	}
 
 	Cost_Entry get_representative_cost_entry(e_representative_entry_method method){
-		if (cost_vector.empty()){
-			return Cost_Entry();
-		} else {
+        Cost_Entry entry;
+
+		if (!cost_vector.empty()){
 			switch (method){
 				case FIRST:
-					return cost_vector[0];
+					entry = cost_vector[0];
 					break;
 				case SMALLEST:
-					return this->get_smallest_entry();
+					entry = this->get_smallest_entry();
 					break;
 				case AVERAGE:
-					return this->get_average_entry();
+					entry = this->get_average_entry();
 					break;
 				case GEOMEAN:
-					return this->get_geomean_entry();
+					entry = this->get_geomean_entry();
 					break;
 				case MEDIAN:
-					return this->get_median_entry();
+					entry = this->get_median_entry();
 					break;
 				default:
-					return this->get_smallest_entry();
 					break;
 			}
 		}
+        return entry;
 	}
 };
 
