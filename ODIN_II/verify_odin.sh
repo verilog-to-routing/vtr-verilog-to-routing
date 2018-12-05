@@ -40,6 +40,8 @@ DEFAULT_CMD_PARAM="${ADDER_DEFINITION}"
 
 EXEC="./wrapper_odin.sh"
 
+FAILURE=0
+
 new_run=regression_test/run001
 
 NB_OF_PROC=1
@@ -129,33 +131,25 @@ function mv_failed() {
 			parent_dir=$(dirname ${failed_dir}/${failed_benchmark})
 			mkdir -p ${parent_dir}
 			mv ${new_run}/${failed_benchmark} ${parent_dir}
+			FAILURE=$(( ${FAILURE} + 1 ))
 		done
+		cat ${log_file} >> ${new_run}/test_failures.log
+		rm -f ${log_file}
 	fi
 }
 
 function exit_program() {
-  
-	fail_count=0
 
-	for fail_log in ${new_run}/*failures.log
-	do
-		if [ -e ${fail_log} ]
-		then
-			failed_in_test=$(wc -l < ${fail_log})
-			fail_count=$(( ${fail_count} + ${failed_in_test} ))
-		fi
-	done
-
-	if [ $fail_count -gt "0" ]
+	if [ "_${FAILURE}" != "_0" ]
 	then
-		echo "Failed $fail_count"
-		echo "View Failure log in ${new_run}/failure.log"
+		echo "Failed ${FAILURE} benchmarks"
+		echo "View Failure log in ${new_run}/test_failures.log"
 
 	else
 		echo "no run failure!"
 	fi
 
-	exit $fail_count
+	exit ${FAILURE}
 }
 
 function ctrl_c() {
