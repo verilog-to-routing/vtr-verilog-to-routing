@@ -1,6 +1,6 @@
 // DEFINES
-`define BITS 4         // Bit width of the operands
-`define DEPTH 2**4
+`define BITS 3       // Bit width of the operands
+`define DEPTH 8
 module 	bm_simple_memory(
 	clock, 
 	value_out,
