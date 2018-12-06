@@ -475,8 +475,6 @@ if (    $starting_stage <= $stage_idx_abc
 	my %clock_list;
 	$clock_list{"--vanilla"} = " ";
 
-	my $abc_temp_dir = "${temp_dir}abc_temp";
-	system("mkdir -p ${abc_temp_dir}");
 	# do not black box latches for ABC
 	if( $iterative_bb ) 
 	{
@@ -497,7 +495,7 @@ if (    $starting_stage <= $stage_idx_abc
 		else
 		{
 			my $clock_list_file;
-			open ($clock_list_file, "<", $clk_list_filename) or die "Unable to open \"".$clk_list_filename."\": $! \n";
+			open ($clock_list_file, "<", $temp_dir.$clk_list_filename) or die "Unable to open \"".$clk_list_filename."\": $! \n";
 			#read line and strip whitespace of line
 			my $line = "";
 			while(($line = <$clock_list_file>)) 
@@ -545,15 +543,16 @@ if (    $starting_stage <= $stage_idx_abc
 
 	for (my $domain_itter= 1; my ($clock_domain,$init) = each %clock_list; $domain_itter += 1) 
 	{
-		my $pre_abc_blif = $abc_temp_dir."/".$domain_itter."_".$odin_output_file_name;
-		my $post_abc_blif = $abc_temp_dir."/".$domain_itter."_".$abc_output_file_name;
+		my $pre_abc_blif = $domain_itter."_".$odin_output_file_name;
+		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
 
 		my $q;
 		if( $iterative_bb )
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--clk_list", $clock_domain, "--input", $input_blif, "--output", $pre_abc_blif);		}
+					"--clk_list", $clock_domain, "--input", $input_blif, "--output", $pre_abc_blif);		
+		}
 		else
 		{
 			# black box latches
