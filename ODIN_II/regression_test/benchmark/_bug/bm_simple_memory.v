@@ -1,4 +1,5 @@
 // DEFINES
+// TODO unable to run on buildbot altho other similar s=circuit do. investigate
 `define BITS 3       // Bit width of the operands
 `define DEPTH 8
 module 	bm_simple_memory(
