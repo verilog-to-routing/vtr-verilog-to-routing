@@ -238,6 +238,7 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
         std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
 static void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
+static void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision);
 
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
 
@@ -2197,10 +2198,10 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    VTR_LOG("---- ------ ----- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    VTR_LOG("Iter   Time  pres  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    VTR_LOG("      (sec)   fac Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    VTR_LOG("---- ------ ----- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG("Iter   Time    pres  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
+    VTR_LOG("      (sec)     fac Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
+    VTR_LOG("---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
 static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats,
@@ -2215,7 +2216,10 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     VTR_LOG(" %6.1f", elapsed_sec);
 
     //pres_fac
-    VTR_LOG(" %5.1f", pres_fac);
+    constexpr int PRES_FAC_DIGITS = 7;
+    constexpr int PRES_FAC_SCI_PRECISION = 1;
+    pretty_print_float(" ", pres_fac, PRES_FAC_DIGITS, PRES_FAC_SCI_PRECISION);
+    //VTR_LOG(" %5.1f", pres_fac);
 
     //Number of bounding boxes updated
     VTR_LOG(" %4d", num_bb_updated);
@@ -2308,6 +2312,17 @@ static void pretty_print_uint(const char* prefix, size_t value, int num_digits, 
     } else {
         //Scientific
         VTR_LOG("%s%#*.*g", prefix, num_digits, scientific_precision, float(value));
+    }
+}
+
+static void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision) {
+    //Print as float if it will fit in the width, other wise scientific
+    if (value <= std::pow(10, (num_digits - 1 - scientific_precision)) - 1) {
+        //Direct
+        VTR_LOG("%s%*.*f", prefix, num_digits, scientific_precision, value);
+    } else {
+        //Scientific
+        VTR_LOG("%s%#*.*g", prefix, num_digits, scientific_precision + 1, value);
     }
 }
 
