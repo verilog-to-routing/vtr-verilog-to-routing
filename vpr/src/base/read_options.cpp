@@ -212,6 +212,9 @@ struct ParseBaseCost {
     ConvertedValue<e_base_cost_type> from_str(std::string str) {
         ConvertedValue<e_base_cost_type> conv_value;
         if      (str == "delay_normalized") conv_value.set_value(DELAY_NORMALIZED);
+        else if (str == "delay_normalized_length") conv_value.set_value(DELAY_NORMALIZED_LENGTH);
+        else if (str == "delay_normalized_frequency") conv_value.set_value(DELAY_NORMALIZED_FREQUENCY);
+        else if (str == "delay_normalized_length_frequency") conv_value.set_value(DELAY_NORMALIZED_LENGTH_FREQUENCY);
         else if (str == "demand_only") conv_value.set_value(DEMAND_ONLY);
         else {
             std::stringstream msg;
@@ -224,6 +227,9 @@ struct ParseBaseCost {
     ConvertedValue<std::string> to_str(e_base_cost_type val) {
         ConvertedValue<std::string> conv_value;
         if (val == DELAY_NORMALIZED) conv_value.set_value("delay_normalized");
+        else if (val == DELAY_NORMALIZED_LENGTH) conv_value.set_value("delay_normalized_length");
+        else if (val == DELAY_NORMALIZED_FREQUENCY) conv_value.set_value("delay_normalized_frequency");
+        else if (val == DELAY_NORMALIZED_LENGTH_FREQUENCY) conv_value.set_value("delay_normalized_length_frequency");
         else {
             VTR_ASSERT(val == DEMAND_ONLY);
             conv_value.set_value("demand_only");
@@ -232,7 +238,7 @@ struct ParseBaseCost {
     }
 
     std::vector<std::string> default_choices() {
-        return {"delay_normalized", "demand_only"};
+        return {"demand_only", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
     }
 };
 
@@ -1031,7 +1037,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " * demand_only: based on expected demand of node type\n"
                   " * delay_normalized: like demand_only but normalized to magnitude of typical routing resource delay\n"
                   "(Default: demand_only for breadth-first router, delay_normalized for timing-driven router)")
-            .choices({"demand_only", "delay_normalized"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bend_cost, "--bend_cost")

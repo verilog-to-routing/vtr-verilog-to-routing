@@ -109,30 +109,30 @@ public:
 	}
 
 	Cost_Entry get_representative_cost_entry(e_representative_entry_method method){
-		if (cost_vector.empty()){
-			return Cost_Entry();
-		} else {
+        Cost_Entry entry;
+
+		if (!cost_vector.empty()){
 			switch (method){
 				case FIRST:
-					return cost_vector[0];
+					entry = cost_vector[0];
 					break;
 				case SMALLEST:
-					return this->get_smallest_entry();
+					entry = this->get_smallest_entry();
 					break;
 				case AVERAGE:
-					return this->get_average_entry();
+					entry = this->get_average_entry();
 					break;
 				case GEOMEAN:
-					return this->get_geomean_entry();
+					entry = this->get_geomean_entry();
 					break;
 				case MEDIAN:
-					return this->get_median_entry();
+					entry = this->get_median_entry();
 					break;
 				default:
-					return this->get_smallest_entry();
 					break;
 			}
 		}
+        return entry;
 	}
 };
 
@@ -186,12 +186,12 @@ public:
 
 /* provides delay/congestion estimates to travel specified distances
    in the x/y direction */
-typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-                                                                            //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+typedef vtr::NdMatrix<Cost_Entry,4> t_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+                                                //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
 
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
    the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 
 /******** File-Scope Variables ********/
@@ -255,7 +255,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
    The rr graph must have been built before calling this function. */
 void compute_router_lookahead(int num_segments){
-	if (f_cost_map.size()){
+	if (!f_cost_map.empty()){
 		/* if lookahead map has already been computed, do not compute it again */
 		VTR_LOG("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
 		return;
@@ -273,8 +273,7 @@ void compute_router_lookahead(int num_segments){
 	for (int iseg = 0; iseg < num_segments; iseg++){
 		for (e_rr_type chan_type : {CHANX, CHANY}){
 			/* allocate the cost map for this iseg/chan_type */
-			t_routing_cost_map routing_cost_map;
-			routing_cost_map.assign( device_ctx.grid.width(), vector<Expansion_Cost_Entry>(device_ctx.grid.height(), Expansion_Cost_Entry()) );
+			t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
 
 			for (int ref_inc=0; ref_inc<3; ref_inc++){
 				for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
@@ -358,10 +357,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 static void alloc_cost_map(int num_segments){
     auto& device_ctx = g_vpr_ctx.device();
 
-	vector<Cost_Entry> ny_entries( device_ctx.grid.height(), Cost_Entry() );
-	vector< vector<Cost_Entry> > nx_entries( device_ctx.grid.width(), ny_entries );
-	vector< vector< vector<Cost_Entry> > > segment_entries( num_segments, nx_entries );
-	f_cost_map.assign( 2, segment_entries );
+    f_cost_map = t_cost_map({2, size_t(num_segments), device_ctx.grid.width(), device_ctx.grid.height()});
 }
 
 
@@ -461,8 +457,8 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_ro
 	}
 
 	/* set the lookahead cost map entries with a representative cost entry from routing_cost_map */
-	for (unsigned ix = 0; ix < routing_cost_map.size(); ix++){
-		for (unsigned iy = 0; iy < routing_cost_map[ix].size(); iy++){
+	for (unsigned ix = 0; ix < routing_cost_map.dim_size(0); ix++){
+		for (unsigned iy = 0; iy < routing_cost_map.dim_size(1); iy++){
 
 			Expansion_Cost_Entry &expansion_cost_entry = routing_cost_map[ix][iy];
 
@@ -479,9 +475,11 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 		chan_index = 1;
 	}
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* find missing cost entries and fill them in by copying a nearby cost entry */
-	for (unsigned ix = 0; ix < f_cost_map[chan_index][segment_index].size(); ix++){
-		for (unsigned iy = 0; iy < f_cost_map[chan_index][segment_index][ix].size(); iy++){
+	for (unsigned ix = 0; ix < device_ctx.grid.width(); ix++){
+		for (unsigned iy = 0; iy < device_ctx.grid.height(); iy++){
 			Cost_Entry cost_entry = f_cost_map[chan_index][segment_index][ix][iy];
 
 			if (cost_entry.delay < 0 && cost_entry.congestion < 0){
@@ -701,8 +699,8 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int 
 static void print_cost_map() {
 	auto& device_ctx = g_vpr_ctx.device();
 
-    for (size_t chan_index = 0; chan_index < f_cost_map.size(); chan_index++){
-        for (size_t iseg = 0; iseg < f_cost_map[chan_index].size(); iseg++){
+    for (size_t chan_index = 0; chan_index < f_cost_map.dim_size(0); chan_index++){
+        for (size_t iseg = 0; iseg < f_cost_map.dim_size(1); iseg++){
             vtr::printf("Seg %d CHAN %d\n", iseg, chan_index);
             for (size_t iy = 0; iy < device_ctx.grid.height(); iy++){
                 for (size_t ix = 0; ix < device_ctx.grid.width(); ix++){
