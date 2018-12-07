@@ -244,11 +244,13 @@ if( $has_output )
 {
 	foreach my $module (keys %bb_clock_domain) 
 	{
-		print $OutFile 	".model ${module}\n".
+		print $OutFile 	"\n".
+						".model ${module}\n".
 						".inputs I C\n".
 						".outputs O\n".
 						".blackbox\n".
-						".end\n\n";
+						".end\n".
+						"\n";
 	}
 	close($OutFile);
 }
