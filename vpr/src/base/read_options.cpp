@@ -1035,8 +1035,17 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_grp.add_argument<e_base_cost_type,ParseBaseCost>(args.base_cost_type, "--base_cost_type")
             .help("Sets the basic cost of routing resource nodes:\n"
                   " * demand_only: based on expected demand of node type\n"
-                  " * delay_normalized: like demand_only but normalized to magnitude of typical routing resource delay\n"
-                  "(Default: demand_only for breadth-first router, delay_normalized for timing-driven router)")
+                  " * delay_normalized: like demand_only but normalized\n"
+                  "      to magnitude of typical routing resource delay\n"
+                  " * delay_normalized_length: like delay_normalized but\n"
+                  "      scaled by routing resource length\n"
+                  " * delay_normalized_freqeuncy: like delay_normalized\n"
+                  "      but scaled inversely by segment type frequency\n"
+                  " * delay_normalized_length_freqeuncy: like delay_normalized\n"
+                  "      but scaled by routing resource length, and inversely\n"
+                  "      by segment type frequency\n"
+                  "(Default: demand_only for breadth-first router,\n"
+                  "          delay_normalized_length for timing-driven router)")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bend_cost, "--bend_cost")
@@ -1387,7 +1396,7 @@ static void set_conditional_defaults(t_options& args) {
             args.base_cost_type.set(DEMAND_ONLY, Provenance::INFERRED);
         } else {
             VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN);
-            args.base_cost_type.set(DELAY_NORMALIZED, Provenance::INFERRED);
+            args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
     }
 
