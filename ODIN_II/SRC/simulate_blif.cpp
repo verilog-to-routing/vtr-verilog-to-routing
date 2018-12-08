@@ -1137,6 +1137,7 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 		case MULTI_PORT_MUX:
 		case SL:
 		case SR:
+        case ASR:
 		case CASE_EQUAL:
 		case CASE_NOT_EQUAL:
 		case DIVIDE:
