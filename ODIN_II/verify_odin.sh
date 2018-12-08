@@ -463,6 +463,7 @@ function parse_args() {
 }
 
 RUN_LIST=(
+"operators"
 "arch"
 "other"
 "micro"
