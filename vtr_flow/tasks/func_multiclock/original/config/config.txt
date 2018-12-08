@@ -1,7 +1,7 @@
 ##############################################
 # Configuration file for running experiments
 ##############################################
-script_params=-vanila_latch -use_odin_simulation -disable_simulation_failure
+script_params=-use_odin_simulation
 
 # Path to directory of circuits to use
 circuits_dir=benchmarks/verilog

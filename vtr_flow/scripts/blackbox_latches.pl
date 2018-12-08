@@ -16,9 +16,9 @@ print
 				--input				Bliff input file
 				--output_list			Clock list output file
 				--output			Bliff output file
-				--clk_list			List of clocks not to black box
+				--clk_list			clock not to black box
 				--vanilla			Convert the bliff file to non boxed latches
-				--all				Convert the bliff file to all boxed latches
+				--restore			Reatach given clock to all latches found
 ";
 }
 
@@ -38,6 +38,7 @@ sub print_stats{
 my %clocks_not_to_bb;
 my %bb_clock_domain;
 my %vanilla_clk_domain;
+my @clocks_to_restore;
 
 my $OutFile;
 my $InFile;
@@ -46,16 +47,17 @@ my $ClkFile;
 my $uniqID_separator = "_^_";
 
 my $vanilla = 0;
-my $all_bb = 0;
 
 my $has_output = 0;
 my $has_input = 0;
 my $has_output_clk = 0;
 my $has_clk_list = 0;
+my $has_restore_clk = 0;
 
 my $parse_input = 0;
 my $parse_output = 0;
 my $parse_clk_list = 0;
+my $parse_restore_clock = 0;
 my $parse_output_clk_file = 0;
 
 foreach my $cur_arg (@ARGV)
@@ -87,7 +89,8 @@ foreach my $cur_arg (@ARGV)
 		
 		$has_output_clk = 1;
 	}
-	elsif ($parse_clk_list) {
+	elsif ($parse_clk_list) 
+	{
 		$parse_clk_list = 0;
 
 		foreach my $input_clocks (split(/,/, $cur_arg)) {
@@ -101,7 +104,18 @@ foreach my $cur_arg (@ARGV)
 		print "\n";
 
 		$has_clk_list = 1;
-	} else {
+	} 
+	elsif ($parse_restore_clock) 
+	{
+		$parse_restore_clock = 0;
+		@clocks_to_restore = split(/\Q$uniqID_separator\E/, $cur_arg);
+
+		print "using folowing clk domain to restore latches: ";
+		print join(" ", @clocks_to_restore);
+		print "\n";
+		$has_restore_clk = 1;
+	} 
+	else {
 		if ($cur_arg =~ /\-\-input/) {
 			$parse_input = 1;
 		}elsif ($cur_arg =~ /\-\-output_list/) {
@@ -112,8 +126,8 @@ foreach my $cur_arg (@ARGV)
 			$parse_clk_list = 1;
 		}elsif ($cur_arg =~ /\-\-vanilla/) {
 			$vanilla = 1;
-		}elsif ($cur_arg =~ /\-\-all/) {
-			$all_bb = 1;
+		}elsif ($cur_arg =~ /\-\-restore/) {
+			$parse_restore_clock = 1;
 		}else {
 			print "Error wrong argument kind $cur_arg\n";
 			print_help();
@@ -123,19 +137,18 @@ foreach my $cur_arg (@ARGV)
 }
 
 #default is vanilla all latches
-if(!$vanilla && !$all_bb && !$has_clk_list)
+if(!$vanilla && !$has_clk_list && !$has_restore_clk)
 {
 	$vanilla = 1;
 }
 
-if(!$has_output && ($all_bb || $has_clk_list))
+if(!$has_output && ($has_restore_clk || $has_clk_list))
 {
 	print "Cannot specify a rewrite directive without an output file\n";
 	print_help();
 	exit(-1);
 }
-
-if( ($vanilla && $all_bb) || ($all_bb && $has_clk_list) || ($vanilla && $has_clk_list))
+if( ($vanilla && $has_restore_clk) || ($has_restore_clk && $has_clk_list) || ($vanilla && $has_clk_list))
 {
 	print "Cannot specify more than one output rewrite directive\n";
 	print_help();
@@ -174,59 +187,79 @@ while( (my $line = <$InFile>) )
 
 	if (!$skip)
 	{
-		my @latch_clk_tokens;
-
-		# BLACK BOX
-		if ($line =~ /^\.subckt[\s]+latch/)
+		if( $has_restore_clk )
 		{
-			#   blackboxed latch (creted by this script, so it will always respect this format)
-			#		[0]		[1]							[2]				[3]			[4]
-			#       .subckt	latch|<type>|<clk>|<init>	I=<driver> 	C=clk	O=<output>
-			my @tokens = split(/[\s]+/, $line);
-			my @reformat_clk = split(/\Q$uniqID_separator\E/, @tokens[1]);
-			my @reformat_driver = split(/\=/, @tokens[2]);
-			my @reformat_output = split(/\=/, @tokens[4]);
-			
-			@latch_clk_tokens = (".latch", @reformat_driver[1] ,@reformat_output[1], @reformat_clk[1], @reformat_clk[2], @reformat_clk[3]);
-		}
-		#LATCHES
-		elsif($line =~ /^\.latch/)
-		{
-			#   vanilla latches tokens
-			#		[0]		[1]			[2]			[3]			[4]		[5]
-			#       .latch	<driver>	<output>	[<type>]	[<clk>]	[<init>]
-			@latch_clk_tokens = split(/[\s]+/,$line);
-		}
-
-
-		#check if we have a match if so process it and that the match has a domain
-		if((my $size = @latch_clk_tokens) == 6)
-		{
-			#build the domain map ####################
-			my $clk_domain_name = "latch";
-			my $display_domain_name = "latch";
-			#use everything after the output to create a clk name, which translate to a clock domain
-			for (my $i=3; $i < $size; $i++)
+			if($line =~ /^\.latch/)
 			{
-				#keep full ref name for display purposes
-				$display_domain_name.=$uniqID_separator.@latch_clk_tokens[$i];
+				#   vanilla latches tokens
+				#		[0]		[1]			[2]			[3]			[4]		[5]
+				#       .latch	<driver>	<output>	[<type>]	[<clk>]	[<init>]
+				@latch_clk_tokens = split(/[\s]+/,$line);
+				$line = @latch_clk_tokens[0]." ".
+						@latch_clk_tokens[1]." ".
+						@latch_clk_tokens[2]." ".
+						@clocks_to_restore[1]." ".
+						@clocks_to_restore[2]." ".
+						@clocks_to_restore[3].
+						"\n";
+			}
+		}
+		else
+		{
+			my @latch_clk_tokens;
+
+			# BLACK BOX
+			if ($line =~ /^\.subckt[\s]+latch/)
+			{
+				#   blackboxed latch (creted by this script, so it will always respect this format)
+				#		[0]		[1]							[2]				[3]			[4]
+				#       .subckt	latch|<type>|<clk>|<init>	I=<driver> 	C=clk	O=<output>
+				my @tokens = split(/[\s]+/, $line);
+				my @reformat_clk = split(/\Q$uniqID_separator\E/, @tokens[1]);
+				my @reformat_driver = split(/\=/, @tokens[2]);
+				my @reformat_output = split(/\=/, @tokens[4]);
+				
+				@latch_clk_tokens = (".latch", @reformat_driver[1] ,@reformat_output[1], @reformat_clk[1], @reformat_clk[2], @reformat_clk[3]);
+			}
+			#LATCHES
+			elsif($line =~ /^\.latch/)
+			{
+				#   vanilla latches tokens
+				#		[0]		[1]			[2]			[3]			[4]		[5]
+				#       .latch	<driver>	<output>	[<type>]	[<clk>]	[<init>]
+				@latch_clk_tokens = split(/[\s]+/,$line);
 			}
 
-			if(!$all_bb && ($vanilla || exists($clocks_not_to_bb{$display_domain_name})))
+
+			#check if we have a match if so process it and that the match has a domain
+			if((my $size = @latch_clk_tokens) == 6)
 			{
-				#register the clock domain in the used clk map from the input list 
-				if(!$vanilla) {
-					$clocks_not_to_bb{$display_domain_name} += 1;
+				#build the domain map ####################
+				my $clk_domain_name = "latch";
+				my $display_domain_name = "latch";
+				#use everything after the output to create a clk name, which translate to a clock domain
+				for (my $i=3; $i < $size; $i++)
+				{
+					#keep full ref name for display purposes
+					$display_domain_name.=$uniqID_separator.@latch_clk_tokens[$i];
 				}
 
-				$vanilla_clk_domain{$display_domain_name} += 1;
-				$line = join(" ",@latch_clk_tokens)."\n";
-			} 
-			else
-			{
-				$bb_clock_domain{$display_domain_name} += 1;
-				$line = ".subckt ".$display_domain_name." I=".@latch_clk_tokens[1]." C=".@latch_clk_tokens[4]." O=".@latch_clk_tokens[2]."\n";
-			} 
+				if(($vanilla || exists($clocks_not_to_bb{$display_domain_name})))
+				{
+					#register the clock domain in the used clk map from the input list 
+					if(!$vanilla) {
+						$clocks_not_to_bb{$display_domain_name} += 1;
+					}
+
+					$vanilla_clk_domain{$display_domain_name} += 1;
+					$line = join(" ",@latch_clk_tokens)."\n";
+				} 
+				else
+				{
+					$bb_clock_domain{$display_domain_name} += 1;
+					$line = ".subckt ".$display_domain_name." I=".@latch_clk_tokens[1]." C=".@latch_clk_tokens[4]." O=".@latch_clk_tokens[2]."\n";
+				} 
+			}
 		}
 
 		# if we have an output file, print the line to it

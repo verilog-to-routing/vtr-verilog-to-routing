@@ -88,7 +88,7 @@ inline static bool ff_trigger(edge_type_e type, npin_t* clk, int cycle)
 
 inline static signed char get_D(npin_t* D, int cycle)
 {
-	return get_pin_value(D,cycle-D->delay_cycle);
+	return get_pin_value(D,cycle-1);
 }
 
 inline static signed char get_Q(npin_t* Q, int cycle)
@@ -643,13 +643,7 @@ static int is_node_ready(nnode_t* node, int cycle)
 		npin_t *clock_pin = node->input_pins[1];
 		// Flip-flops depend on the D input from the previous cycle and the clock from this cycle.
 
-		int ff_cycle = get_pin_cycle(D_pin);
-		if (!D_pin->delay_cycle && ff_cycle < cycle)
-		{
-			D_pin->delay_cycle = true;
-		}
-
-		if (ff_cycle < cycle-D_pin->delay_cycle)
+		if (get_pin_cycle(D_pin) < cycle-1)
 			return FALSE;
 
 		if (get_pin_cycle(clock_pin) < cycle )
@@ -664,13 +658,7 @@ static int is_node_ready(nnode_t* node, int cycle)
 			// The data and write enable inputs rely on the values from the previous cycle.
 			if (!strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2"))
 			{
-				int data_cycle = get_pin_cycle(pin);
-				if (!pin->delay_cycle && data_cycle < cycle)
-				{
-					pin->delay_cycle = true;
-				}
-				
-				if (data_cycle < cycle-pin->delay_cycle)
+				if (get_pin_cycle(pin) < cycle-1)
 					return FALSE;
 			}
 			else
