@@ -555,7 +555,7 @@ if (    $starting_stage <= $stage_idx_abc
 		my $pre_abc_blif = $domain_itter."_".$odin_output_file_name;
 		my $post_abc_raw_blif = $domain_itter."_".$abc_raw_output_file_name;
 		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
-		my $extra_command =""
+		my $extra_command = "";
 
 		if ( exists  $clock_list[$domain_itter] )
 		{

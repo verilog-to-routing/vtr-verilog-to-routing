@@ -200,7 +200,7 @@ while( (my $line = <$InFile>) )
 						@latch_clk_tokens[2]." ".
 						@clocks_to_restore[1]." ".
 						@clocks_to_restore[2]." ".
-						@clocks_to_restore[3].
+						"0".						# we set the init value to 0 as ABC will have inserted the necessary PI/PO to use a 0 init latch
 						"\n";
 			}
 		}
@@ -232,13 +232,14 @@ while( (my $line = <$InFile>) )
 
 
 			#check if we have a match if so process it and that the match has a domain
-			if((my $size = @latch_clk_tokens) == 6)
+			if((my $size = scalar @latch_clk_tokens) >= 5 )
 			{
 				#build the domain map ####################
 				my $clk_domain_name = "latch";
 				my $display_domain_name = "latch";
 				#use everything after the output to create a clk name, which translate to a clock domain
-				for (my $i=3; $i < $size; $i++)
+				# skip the init value as it will not be used
+				for (my $i=3; $i < $size and $i < 5 ; $i++)
 				{
 					#keep full ref name for display purposes
 					$display_domain_name.=$uniqID_separator.@latch_clk_tokens[$i];
