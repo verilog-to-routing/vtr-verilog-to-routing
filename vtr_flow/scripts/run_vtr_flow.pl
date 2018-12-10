@@ -556,7 +556,7 @@ if (    $starting_stage <= $stage_idx_abc
 		my $post_abc_raw_blif = $domain_itter."_".$abc_raw_output_file_name;
 		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
 		my $extra_command = "";
-		my $strash_directive = "strash;";
+		my $strash_directive = "strash";
 
 		if ( exists  $clock_list[$domain_itter] )
 		{
@@ -569,8 +569,8 @@ if (    $starting_stage <= $stage_idx_abc
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
 			}	
-			$extra_command = "dretime;";
-			$strash_directive = "fix_blif;";
+			$extra_command = "dretime";
+			$strash_directive = "fix_blif";
 		}
 		else
 		{
@@ -626,8 +626,8 @@ if (    $starting_stage <= $stage_idx_abc
 		echo '';
 		echo 'Logic Opt + Techmap';
 		echo '===================';
-		${strash_directive}
-		${extra_command}
+		${strash_directive};
+		${extra_command};
 		ifraig -v;
 		scorr -v;
 		dc2 -v;
@@ -674,7 +674,7 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			# restore latches with the clock
 			$q = &system_with_timeout($blackbox_latches_script, "restore_latch".$domain_itter.".out", $timeout, $temp_dir,
-					"--restore", $clock_list[$domain_itter], "--input", $post_abc_raw_blif, "--output", $post_abc_blif);	
+					"--padding", "abc".$domain_itter."_", "--restore", $clock_list[$domain_itter], "--input", $post_abc_raw_blif, "--output", $post_abc_blif);	
 
 			if ($q ne "success") {
 				$error_status = "failed: to restore latches to their clocks <".$clock_list[$domain_itter]."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
