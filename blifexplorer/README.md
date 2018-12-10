@@ -1,7 +1,8 @@
 # BlifExplorer
 Odin II visualization tool
 
-The tool visualizes blif files created by Odin II. It allows to explore the netlist as well as to visualize the step based simulation using random input vectors.
+The tool visualizes blif files.
+It allows to explore the netlist as well as to visualize the step based simulation using random input vectors.
 
 Installation: 
 
