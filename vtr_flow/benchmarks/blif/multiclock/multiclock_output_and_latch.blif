@@ -1,44 +1,30 @@
 .model multiclock_output_and_latch
-.inputs top^clock0 top^clock1 top^a_in~0 top^a_in~1 top^b_in~0 top^b_in~1
-.outputs top^out
+.inputs clock0 clock1 a~0 b~0 a~1 b~1
+.outputs out
 
-.names gnd
-.names unconn
-.names vcc
-1
-
-.names top^wire_selector_FF_NODE gnd top^LOGICAL_EQUAL~3^LOGICAL_XNOR~8^LOGICAL_XNOR~10
-00 1
-11 1
-
-.names top^LOGICAL_EQUAL~3^LOGICAL_XNOR~8^LOGICAL_XNOR~10 top^LOGICAL_EQUAL~3^LOGICAL_AND~9
-1 1
-
-.names top^LOGICAL_EQUAL~3^LOGICAL_AND~9 top^MULTI_PORT_MUX~2^LOGICAL_NOT~4 top.and_latch+and_latch_zero^out_FF_NODE top.and_latch+and_latch_one^out_FF_NODE top^MULTI_PORT_MUX~2^MUX_2~7
-1-1- 1
--1-1 1
-
-.names top^LOGICAL_EQUAL~3^LOGICAL_AND~9 top^MULTI_PORT_MUX~2^LOGICAL_NOT~4
+.names out_FF pad_ff
 0 1
+.latch pad_ff out_FF re clock1 0
 
-.names top^wire_selector_FF_NODE vcc top^ADD~6^LOGICAL_XOR~11
-01 1
-10 1
 
-.latch top^ADD~6^LOGICAL_XOR~11 top^wire_selector_FF_NODE re top^clock1 3
-
-.latch top.and_latch+and_latch_zero^BITWISE_AND~0^LOGICAL_AND~15 top.and_latch+and_latch_zero^out_FF_NODE re top^clock0 3
-
-.latch top.and_latch+and_latch_one^BITWISE_AND~1^LOGICAL_AND~16 top.and_latch+and_latch_one^out_FF_NODE re top^clock0 3
-
-.names top^a_in~0 top^b_in~0 top.and_latch+and_latch_zero^BITWISE_AND~0^LOGICAL_AND~15
+# input[0] and gated and updated on clock0
+.names a~0 b~0 c~0
 11 1
+.latch c~0 c_o~0 re clock0 0
 
-.names top^a_in~1 top^b_in~1 top.and_latch+and_latch_one^BITWISE_AND~1^LOGICAL_AND~16
+
+#input[1] and gated and updated on clock0
+.names a~1 b~1 c~1
 11 1
+.latch c~1 c_o~1 re clock0 0
 
-.names top^MULTI_PORT_MUX~2^MUX_2~7 top^out
-1 1
+
+# muxed output
+.names pad_ff c_o~0 c_o~1 out
+11- 1
+0-1 1
 
 .end
+
+
 

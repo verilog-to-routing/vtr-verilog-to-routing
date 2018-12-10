@@ -1,6 +1,6 @@
 .model cascading_ff
-.inputs clk 
-.outputs clk_div_1 clk_div_2 clk_div_4 clk_div_8
+.inputs clk clk_2
+.outputs clk_div_1 clk_div_2 clk_div_4 clk_div_8 multi_clk_and
 
 #passthrough
 .names clk clk_div_1
@@ -32,6 +32,10 @@
 1 1
 
 .latch div_8_not div_8_FF_IN re div_4_FF_out 0
+
+.names div_8_FF_out clk_2 multi_clk_and
+10 1
+01 1
 
 .names div_2_FF_out clk_div_2
 1 1
