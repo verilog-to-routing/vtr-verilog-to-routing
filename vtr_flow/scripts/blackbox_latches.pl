@@ -94,7 +94,9 @@ foreach my $cur_arg (@ARGV)
 		$parse_clk_list = 0;
 
 		foreach my $input_clocks (split(/,/, $cur_arg)) {
-			$clocks_not_to_bb{$input_clocks} = 1;
+			my @tmp_clocks = split(/\Q$uniqID_separator\E/, $input_clocks);
+			my $restructured_input_clk = @tmp_clocks[1]." ".@tmp_clocks[2];
+			$clocks_not_to_bb{$restructured_input_clk} = 1;
 		}
 
 		print "using folowing clk domain: ";
@@ -108,11 +110,10 @@ foreach my $cur_arg (@ARGV)
 	elsif ($parse_restore_clock) 
 	{
 		$parse_restore_clock = 0;
-		@clocks_to_restore = split(/\Q$uniqID_separator\E/, $cur_arg);
-
-		print "using folowing clk domain to restore latches: ";
-		print join(" ", @clocks_to_restore);
-		print "\n";
+		my @tmp_clocks = split(/\Q$uniqID_separator\E/, $cur_arg);
+		#default init to 0 since abc will build the PIand PO to for init 1 so that it behaves as such
+		$clocks_to_restore = @tmp_clocks[1]." ".@tmp_clocks[2]." 0";
+		print "using ".$clocks_to_restore." to restore latches\n";
 		$has_restore_clk = 1;
 	} 
 	else {
@@ -198,10 +199,7 @@ while( (my $line = <$InFile>) )
 				$line = @latch_clk_tokens[0]." ".
 						@latch_clk_tokens[1]." ".
 						@latch_clk_tokens[2]." ".
-						@clocks_to_restore[1]." ".
-						@clocks_to_restore[2]." ".
-						"0".						# we set the init value to 0 as ABC will have inserted the necessary PI/PO to use a 0 init latch
-						"\n";
+						$clocks_to_restore."\n"; # we set the init value to 0 as ABC will have inserted the necessary PI/PO to use a 0 init latch
 			}
 		}
 		else
@@ -232,24 +230,21 @@ while( (my $line = <$InFile>) )
 
 
 			#check if we have a match if so process it and that the match has a domain
-			if((my $size = scalar @latch_clk_tokens) >= 5 )
+			if((my $size = scalar @latch_clk_tokens) == 6 )
 			{
 				#build the domain map ####################
-				my $clk_domain_name = "latch";
-				my $display_domain_name = "latch";
-				#use everything after the output to create a clk name, which translate to a clock domain
-				# skip the init value as it will not be used
-				for (my $i=3; $i < $size and $i < 5 ; $i++)
-				{
-					#keep full ref name for display purposes
-					$display_domain_name.=$uniqID_separator.@latch_clk_tokens[$i];
-				}
+				#do not include the init value in the map since abc will build the necessary facilities around init 1
+				my $clk_domain_name = @latch_clk_tokens[3]." ".@latch_clk_tokens[4];
 
-				if(($vanilla || exists($clocks_not_to_bb{$display_domain_name})))
+				#keep full ref name for display purposes
+				my $display_domain_name = "latch".$uniqID_separator.@latch_clk_tokens[3].$uniqID_separator.@latch_clk_tokens[4].$uniqID_separator.@latch_clk_tokens[5];
+				#use everything after the output to create a clk name, which translate to a clock domain
+
+				if(($vanilla || exists($clocks_not_to_bb{$clk_domain_name})))
 				{
 					#register the clock domain in the used clk map from the input list 
-					if(!$vanilla) {
-						$clocks_not_to_bb{$display_domain_name} += 1;
+					if( exists $clocks_not_to_bb{$clk_domain_name} ) {
+						$clocks_not_to_bb{$clk_domain_name} += 1;
 					}
 
 					$vanilla_clk_domain{$display_domain_name} += 1;

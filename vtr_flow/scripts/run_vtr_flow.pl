@@ -556,6 +556,7 @@ if (    $starting_stage <= $stage_idx_abc
 		my $post_abc_raw_blif = $domain_itter."_".$abc_raw_output_file_name;
 		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
 		my $extra_command = "";
+		my $strash_directive = "strash;";
 
 		if ( exists  $clock_list[$domain_itter] )
 		{
@@ -568,7 +569,8 @@ if (    $starting_stage <= $stage_idx_abc
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
 			}	
-			$extra_command = "dretime;"
+			$extra_command = "dretime;";
+			$strash_directive = "fix_blif;";
 		}
 		else
 		{
@@ -624,7 +626,7 @@ if (    $starting_stage <= $stage_idx_abc
 		echo '';
 		echo 'Logic Opt + Techmap';
 		echo '===================';
-		fix_blif;
+		${strash_directive}
 		${extra_command}
 		ifraig -v;
 		scorr -v;

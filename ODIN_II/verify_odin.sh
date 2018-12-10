@@ -153,16 +153,16 @@ function exit_program() {
 }
 
 function ctrl_c() {
-	if [ "_${QUIT}" == "_0" ]
-	then
-		QUIT=1
+	QUIT=1
+	while [ "${QUIT}" != "0" ]
+	do
 		echo "** REGRESSION TEST EXITED FORCEFULLY **"
 		jobs -p | xargs kill &> /dev/null
 		pkill odin_II &> /dev/null
 		pkill ${EXEC} &> /dev/null
 		#should be dead by now
 		exit 120
-	fi
+	done
 }
 
 function sim() {

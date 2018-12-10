@@ -1055,10 +1055,12 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 		}
 		case CLOCK_NODE:
 		{
-			for (int i = 0; i < node->num_output_pins; i++)
+			if(node->num_input_pins == 0) // driven by file or internally
 			{
+				verify_i_o_availabilty(node, -1, 1);
+
 				/* if the pin is not an input.. find a clock to drive it.*/
-				int pin_cycle = get_pin_cycle(node->output_pins[i]);
+				int pin_cycle = get_pin_cycle(node->output_pins[0]);
 				if(pin_cycle != cycle)
 				{
 					if(!node->internal_clk_warn)
@@ -1069,13 +1071,32 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 					//toggle according to ratio
 					signed char prev_value = !CLOCK_INITIAL_VALUE;
 					if(cycle)
-						prev_value = get_pin_value(node->output_pins[i], cycle-1);
+						prev_value = get_pin_value(node->output_pins[0], cycle-1);
 
 					if(prev_value < 0)
 						prev_value = !CLOCK_INITIAL_VALUE;
 
 					signed char cur_value = (cycle % get_clock_ratio(node)) ? prev_value : !prev_value;
-					update_pin_value(node->output_pins[i], cur_value, cycle);
+					update_pin_value(node->output_pins[0], cur_value, cycle);
+				}
+			}
+			else // driven by another node
+			{
+				verify_i_o_availabilty(node, 1, 1);
+
+				int pin_cycle = get_pin_cycle(node->input_pins[0]);
+				if(pin_cycle == cycle)
+				{
+					update_pin_value(node->output_pins[0], get_pin_value(node->input_pins[0],cycle), cycle);
+				}
+				else
+				{
+					if(!node->internal_clk_warn)
+					{
+						node->internal_clk_warn = true;
+						warning_message(SIMULATION_ERROR,-1,-1,"node used as clock (%s) is itself driven by a clock, verify your circuit", node->name);
+					}
+					update_pin_value(node->output_pins[0], get_pin_value(node->input_pins[0],cycle-1), cycle);
 				}
 			}
 			break;
