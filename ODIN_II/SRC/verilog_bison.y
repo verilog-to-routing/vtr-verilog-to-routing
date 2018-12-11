@@ -68,6 +68,7 @@ int yylex(void);
 %token vNOT_SUPPORT 
 %token vPlusColon
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']'
+%token vSPECPARAM
 
 %right '?' ':'
 %left voOROR
@@ -114,8 +115,9 @@ int yylex(void);
 %type <node> non_blocking_assignment case_item_list case_items seq_block
 %type <node> stmt_list delay_control event_expression_list event_expression
 %type <node> expression primary probable_expression_list expression_list module_parameter
-%type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
-%type <node> initial_block parallel_connection list_of_blocking_assignment
+%type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement 
+%type <node> initial_block parallel_connection list_of_blocking_assignment  specparam_declaration 
+
 
 %%
 
@@ -176,6 +178,7 @@ module_item:
 	| always									{$$ = $1;}
 	| defparam_declaration						{$$ = $1;}
 	| specify_block                             {$$ = $1;}
+           | specparam_declaration           			{$$ = $1;}       
 	;
 
 function_declaration:
@@ -397,11 +400,25 @@ statement:
 list_of_specify_statement:
 	list_of_specify_statement specify_statement 						{$$ = newList_entry($1, $2);}
 	| specify_statement							                        {$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
-    ;
+           | specparam_declaration                                                                                       {$$ = $1;}
+  ;
 
 specify_statement:
     '(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
 	;
+specparam_declaration: 
+ vSPECPARAM variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2);}
+//           vSPECPARAM list_of_specparam_assignment ';' 
+ //          | vSPECPARAM range_of_specparam list_of_specparam_assignment ';'
+            ;
+
+//list_of_specparam_assignment: 
+//          specparam_assignment 
+//         |list_of_specparam_assignment ',' specparam_assignment ;
+
+//specparam_assignment:
+
+//           vSYMBOL_ID '=' constant_mintypmax_expression                        {$$ = NULL; newConstant($1, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
 
 blocking_assignment:
 	primary '=' expression 												{$$ = newBlocking($1, $3, yylineno);}
