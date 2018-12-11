@@ -1,6 +1,22 @@
 #/bin/bash
 
-EXCLUDES="-e build -e CMake -e libs -e abc/abc -e vpr/vpr -e vpr/libvpr.a -e ace2/ace -e abc/libabc.a -e ODIN_II/odin_II -e ODIN_II/libodin_ii.a"
+VTR_ROOT=$(git rev-parse --show-toplevel)
+
+cd ${VTR_ROOT}
+
+EXCLUDES="\
+-e build \
+-e CMake \
+-e libs \
+-e blifexplorer/blifexplorer \
+-e abc/abc \
+-e vpr/vpr \
+-e vpr/libvpr.a \
+-e ace2/ace \
+-e abc/libabc.a \
+-e ODIN_II/odin_II \
+-e ODIN_II/libodin_ii.a \
+"
 
 while [[ 1 ]]
 do
