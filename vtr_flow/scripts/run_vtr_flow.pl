@@ -555,8 +555,7 @@ if (    $starting_stage <= $stage_idx_abc
 		my $pre_abc_blif = $domain_itter."_".$odin_output_file_name;
 		my $post_abc_raw_blif = $domain_itter."_".$abc_raw_output_file_name;
 		my $post_abc_blif = $domain_itter."_".$abc_output_file_name;
-		my $extra_command = "";
-		my $strash_directive = "strash";
+
 
 		if ( exists  $clock_list[$domain_itter] )
 		{
@@ -569,8 +568,6 @@ if (    $starting_stage <= $stage_idx_abc
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
 			}	
-			$extra_command = "dretime";
-			$strash_directive = "fix_blif";
 		}
 		else
 		{
@@ -587,8 +584,6 @@ if (    $starting_stage <= $stage_idx_abc
 		#  strash : The strash command (which build's ABC's internal AIG) is needed before clean-up
 		#           related commands (e.g. ifraig) otherwise they will fail with “Only works for
 		#           structurally hashed networks”.
-		#	*** switched from strash to fix_blif since it include the zero command and the undc
-		#	*** zero include PI/PO in the circuit to initialize latches to 1 (if specified by the latch init value)
 		#
 		#  if –K #: This command techmaps the logic to LUTS. It should appear as the (near) final step
 		#           before writing the optimized netlist. In recent versions, ABC does not remember
@@ -626,8 +621,7 @@ if (    $starting_stage <= $stage_idx_abc
 		echo '';
 		echo 'Logic Opt + Techmap';
 		echo '===================';
-		${strash_directive};
-		${extra_command};
+		strash;
 		ifraig -v;
 		scorr -v;
 		dc2 -v;
@@ -674,7 +668,7 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			# restore latches with the clock
 			$q = &system_with_timeout($blackbox_latches_script, "restore_latch".$domain_itter.".out", $timeout, $temp_dir,
-					"--padding", "abc".$domain_itter."_", "--restore", $clock_list[$domain_itter], "--input", $post_abc_raw_blif, "--output", $post_abc_blif);	
+					"--restore", $clock_list[$domain_itter], "--input", $post_abc_raw_blif, "--output", $post_abc_blif);	
 
 			if ($q ne "success") {
 				$error_status = "failed: to restore latches to their clocks <".$clock_list[$domain_itter]."> for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
