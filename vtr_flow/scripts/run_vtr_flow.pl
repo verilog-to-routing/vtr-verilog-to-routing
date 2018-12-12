@@ -654,9 +654,13 @@ if (    $starting_stage <= $stage_idx_abc
 		$q = &system_with_timeout( $abc_path, "abc".$domain_itter.".out", $timeout, $temp_dir, "-c",
 			$abc_commands);
 
-		if ( not -e $post_abc_raw_blif 
-		or $q ne "success") {
+		if ( $q ne "success") {
 			$error_status = "failed: abc";
+			$error_code = 1;
+			last ABC_OPTIMIZATION;
+		}
+		elsif ( not -e "${temp_dir}/$post_abc_raw_blif" ) {
+			$error_status = "failed: abc did not produce the expected output: ${temp_dir}/${post_abc_raw_blif}";
 			$error_code = 1;
 			last ABC_OPTIMIZATION;
 		}
