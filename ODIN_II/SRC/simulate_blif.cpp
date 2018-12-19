@@ -152,6 +152,7 @@ static int *get_children_pinnumber_of(nnode_t *node, int *num_children);
 static nnode_t **get_parents_of(nnode_t *node, int *num_parents);
 static int is_node_ready(nnode_t* node, int cycle);
 static int is_node_complete(nnode_t* node, int cycle);
+static void write_back_memory_nodes(nnode_t **nodes, int num_nodes);
 
 static bool compute_and_store_value(nnode_t *node, int cycle);
 static void compute_memory_node(nnode_t *node, int cycle);
@@ -274,7 +275,7 @@ void simulate_netlist(netlist_t *netlist)
 	int start_cycle = 0;
 	int end_cycle = sim_data->num_vectors;
 
-	simulate_steps_in_parallel(sim_data,0,sim_data->num_vectors,min_coverage);
+	simulate_steps_in_parallel(sim_data,start_cycle,end_cycle,min_coverage);
 
 
 	//while(start_cycle < sim_data->num_vectors)
@@ -573,7 +574,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 	int increment_vector_by = global_args.sim_num_test_vectors;
 	double current_coverage =0.0;
 
-	int offset = BUFFER_SIZE-2; //simulation
+	int offset = BUFFER_SIZE-1; //simulation
 	threads_waves = (to_wave-from_wave)/offset;
 	threads_start = from_wave;
 	threads_end = to_wave;
@@ -621,7 +622,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				{
 					v = generate_random_test_vector(i, sim_data);
 				}
-			
+				//printf("v=%s \n",v);
 				add_test_vector_to_lines(v, sim_data->input_lines, i);
 				write_cycle_to_file(sim_data->input_lines, sim_data->in_out, i);
 				write_cycle_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, i);
@@ -662,7 +663,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				pthread_mutex_unlock(&output_mp);
 
 				//printf("Broacast %d\n",threads_done_wave);
-				if(errno =pthread_cond_broadcast(&start_threads) !=0)
+				if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
 					printf("Broadcast Error!");	
 
 				//pthread_mutex_lock(&threads_mp);
@@ -691,6 +692,9 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				//printf("cycle %d written \n",i);
 
 			}
+			//update memory directories of all memory nodes
+			write_back_memory_nodes(sim_data->thread_distribution->memory_nodes->nodes,sim_data->thread_distribution->memory_nodes->number_of_nodes);
+
 			if (wave==threads_waves) //check for coverage in the last cycle
 			{
 				//printf("Last\n");
@@ -758,8 +762,8 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 		if (done)
 		{
 			//signal to unblock threads and let them finish
-			if(errno =pthread_cond_broadcast(&start_threads) !=0)
-					printf("Broadcast Error!");
+			if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
+				printf("Broadcast Error!");
 
 		}
 
@@ -1419,6 +1423,11 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 	int all_nodes = get_num_covered_nodes(s);
 	//printf("All nodes %d \n",all_nodes);
 	std::map<int, int> nodes_inserted;  //nodeId,flag
+
+	thread_distribution->memory_nodes = (netlist_subset *)vtr::malloc(sizeof(netlist_subset));
+	int number_of_mem_nodes = 0;
+	nnode_t** nodes_mem_sub = 0; 
+
 	//traverse and calculate the graph cost
 	for(int i = 0; i < s->count; i++)
 	{
@@ -1435,12 +1444,19 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 			if (nodes[j]->type == GND_NODE || nodes[j]->type == VCC_NODE || nodes[j]->type == INPUT_NODE )
 				stagescost[i]+=lessnodeoverhead;
 
+			if ( nodes[j]->type == MEMORY )
+			{
+				nodes_mem_sub = (nnode_t **)vtr::realloc(nodes_mem_sub,sizeof(nnode_t*) * (number_of_mem_nodes+1) );
+				nodes_mem_sub[number_of_mem_nodes++] = nodes[j];
+			}
+
 			nodes_inserted[nodes[j]->unique_id] = 0;
 		}
 		graphcost += stagecost+stagescost[i];
 	}
 	
-
+	thread_distribution->memory_nodes->number_of_nodes = number_of_mem_nodes;
+	thread_distribution->memory_nodes->nodes = nodes_mem_sub;
 
 	//printf("graphcost: %lf .\n",graphcost);
 
@@ -1485,7 +1501,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 				if (node->type == GND_NODE || node->type == VCC_NODE || node->type == INPUT_NODE )
 					threadcost+=lessnodeoverhead;
 
-
+				/*
 				int num_children;
 				nnode_t **children = get_children_of(node, &num_children);	
 				nnode_t**memory_nodes = 0;
@@ -1585,6 +1601,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 					//vtr::free(memory_nodes);
 					//printf(" Node added \n");
 				}
+				*/
 			}
 			//printf("Next node %d  %d/%d \n",node->unique_id,nodes_assigned,all_nodes);
 			
@@ -2961,9 +2978,108 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 {
 
 	long long address = compute_address(input_address, cycle);
-	/**
-	 * make a single trigger out of write_enable pin and if it was a positive edge
-	 */
+	
+	 //make a single trigger out of write_enable pin and if it was a positive edge
+	 
+	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
+	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
+
+	std::vector<signed char> new_values(data_out->count);
+	node->memory_mtx.lock();
+	if(address_is_valid)
+	{
+		if (write) //write to dicionary
+		{
+			for (size_t i = 0; i < data_out->count; i++)
+			{
+				new_values[i]= get_pin_value(data_in->pins[i],cycle-1);
+			}
+			
+			//node->memory_directory[cycle]= address_update;
+			if ( node->memory_directory.find(cycle) == node->memory_directory.end() ) 
+			{
+				node->memory_directory[cycle] = {};
+			}
+			node->memory_directory[cycle][address]= new_values;
+
+			//printf("Write dfrom node %d at cycle%d \n",node->unique_id,cycle);
+		}			
+		if (!write) //read from the dictionary if does'n exist read from memory
+		{
+			//printf("read\n");
+			bool found = FALSE;
+			std::map<int,std::map<long long,std::vector<signed char>>>::iterator it;
+			for ( it = node->memory_directory.begin(); it != node->memory_directory.end(); it++ )
+			{
+				int recorded_cycle = it->first;
+				if (recorded_cycle<= cycle)
+				{
+					if ( node->memory_directory[recorded_cycle].find(address) != node->memory_directory[recorded_cycle].end() ) 
+					{
+						found = TRUE;
+						new_values = node->memory_directory[recorded_cycle][address];
+					}
+				}
+			}
+		
+			if (!found) //read from memory pins
+			{
+				new_values= node->memory_data[address];
+			}
+		}
+
+	}
+
+	if(new_values.empty())
+		for (size_t i = 0; i < data_out->count; i++)
+			new_values.push_back(-1);
+
+	for (size_t i = 0; i < data_out->count; i++)
+	{
+		update_pin_value(data_out->pins[i], new_values[i], cycle);
+	}
+	node->memory_mtx.unlock();
+}
+
+
+static void write_back_memory_nodes(nnode_t **nodes, int num_nodes)
+{
+ 	int num;
+	//printf("here\n");
+ 	for(num=0;num<num_nodes;num++)
+ 	{
+ 		nnode_t* node = nodes[num];
+ 		if (!node->memory_directory.empty())
+ 		{
+			std::map<int,std::map<long long,std::vector<signed char>>>::iterator it;
+			for ( it = node->memory_directory.begin(); it != node->memory_directory.end(); it++ )
+			{
+				int recorded_cycle = it->first;
+				std::map<long long,std::vector<signed char>>::iterator cit;
+				for ( cit = node->memory_directory[recorded_cycle].begin(); cit != node->memory_directory[recorded_cycle].end(); cit++ )
+				{
+					long long address = cit->first;
+					std::vector<signed char> new_values = cit->second;
+					node->memory_data[address] = new_values;
+				}
+				node->memory_directory[recorded_cycle] = {};
+			}
+			node->memory_directory={};
+
+		}
+	}
+
+}
+
+//before m
+/*
+static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
+{
+
+	long long address = compute_address(input_address, cycle);
+	
+	 //make a single trigger out of write_enable pin and if it was a positive edge
+	 
 	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
 	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
 
@@ -2973,40 +3089,18 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 		if(address_is_valid)
 		{
 			// we hook onto the ff function to both read and update since memories are flip flops
-			new_value = compute_ff(write, data_in->pins[i], node->memory_data[address][i], cycle);
-			node->memory_data[address][i] = new_value;
+			
+			if (write)
+			{
+				node->memory_data[address][i] = get_pin_value(data_in->pins[i],cycle-1); // //
+			}
+			new_value = node->memory_data[address][i];
 		}
 		// output is combinational so it always grabs latest value
 		update_pin_value(data_out->pins[i], new_value, cycle);
 	}
 }
-
-
-//before m
-// static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
-// {
-
-// 	long long address = compute_address(input_address, cycle);
-// 	/**
-// 	 * make a single trigger out of write_enable pin and if it was a positive edge
-// 	 */
-// 	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
-// 	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
-
-// 	for (size_t i = 0; i < data_out->count; i++)
-// 	{
-// 		signed char new_value = -1;
-// 		if(address_is_valid)
-// 		{
-// 			// we hook onto the ff function to both read and update since memories are flip flops
-// 			new_value = compute_ff(write, data_in->pins[i], node->memory_data[address][i], cycle);
-// 			node->memory_data[address][i] = new_value;
-// 		}
-// 		// output is combinational so it always grabs latest value
-// 		update_pin_value(data_out->pins[i], new_value, cycle);
-// 	}
-// }
-
+*/
 
 /*
  * Computes single port memory.

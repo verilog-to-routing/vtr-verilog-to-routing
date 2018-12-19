@@ -578,7 +578,10 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub"))
 			new_node->type = MINUS;
 	else
+	{
 		new_node->type = MEMORY;
+		new_node->memory_directory = {};
+	}
 	vtr::free(subcircuit_name_prefix);
 
 	/* Add input and output ports to the new node. */

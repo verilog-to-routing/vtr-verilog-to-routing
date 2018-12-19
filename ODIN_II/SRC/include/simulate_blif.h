@@ -102,6 +102,7 @@ typedef struct {
 typedef struct {
 	netlist_subset **thread_nodes;
 	int number_of_threads;
+	netlist_subset *memory_nodes; //pointers to memory nodes
 }thread_node_distribution;
 
 
