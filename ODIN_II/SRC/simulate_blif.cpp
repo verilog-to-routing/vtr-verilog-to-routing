@@ -272,26 +272,18 @@ void simulate_netlist(netlist_t *netlist)
 	{
 		min_coverage = 0.0001;
 	}
-	int start_cycle = 0;
-	int end_cycle = sim_data->num_vectors;
-
-	simulate_steps_in_parallel(sim_data,start_cycle,end_cycle,min_coverage);
-
-
-	//while(start_cycle < sim_data->num_vectors)
-	//{
-		//printf("Done\n");
-
-		//if extra steps need to satisfy the requested corverage to them sequentially
-		//double current_coverage =0.0;
-		//int cycle = sim_data->num_vectors;
-	
-	//	double wave_start_time = wall_time();
-		//printf("Here\n");
-		// if we target a minimum coverage keep generating
-
-
-	//}
+	if (number_of_workers>1)
+	{
+		int start_cycle = 0;
+		int end_cycle = sim_data->num_vectors;
+		single_step(sim_data,0);
+		single_step(sim_data,1);
+		simulate_steps_in_parallel(sim_data,start_cycle+2,end_cycle,min_coverage);
+	}
+	else
+	{
+		simulate_steps_sequential(sim_data,min_coverage);
+	}
 
 	fflush(sim_data->out);
 	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
@@ -563,6 +555,76 @@ sim_data_t *terminate_simulation(sim_data_t *sim_data)
 }
 
 
+void simulate_steps_sequential(sim_data_t *sim_data,int min_coverage)
+{
+	
+	printf("\n");
+
+	int       progress_bar_position = -1;
+	const int progress_bar_length   = 50;
+	
+	int increment_vector_by = global_args.sim_num_test_vectors;;
+	
+
+	double current_coverage =0.0;
+	int cycle=0;
+	while(cycle < sim_data->num_vectors)
+	{
+		double wave_start_time = wall_time();
+
+		// if we target a minimum coverage keep generating
+		if(min_coverage > 0.0)
+		{
+			if(cycle+1 == sim_data->num_vectors)
+			{
+				current_coverage = (((double) get_num_covered_nodes(sim_data->stages) / (double) sim_data->stages->num_nodes));
+				if(global_args.sim_achieve_best)
+				{
+					if(current_coverage > min_coverage)
+					{
+						increment_vector_by = global_args.sim_num_test_vectors;
+						min_coverage = current_coverage;
+						sim_data->num_vectors += increment_vector_by;
+					}
+					else if(increment_vector_by)
+					{
+						//slowly reduce the search until there is no more possible increment, this prevent building too large of a comparative vector pair
+						sim_data->num_vectors += increment_vector_by;
+						increment_vector_by /= 2;
+					}
+
+				}
+				else
+				{
+					if(current_coverage < min_coverage)
+						sim_data->num_vectors += increment_vector_by;
+				}
+			}
+		}
+		else
+		{
+			current_coverage = cycle/(double)sim_data->num_vectors;
+		}
+
+		single_step(sim_data, cycle);
+
+		// Print netlist-specific statistics.
+		if (!cycle)
+			print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+		
+		sim_data->total_time += wall_time() - wave_start_time;
+
+
+		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
+		if ((sim_data->num_vectors == 1) || cycle)
+			progress_bar_position = print_progress_bar(
+					(cycle+1)/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+		cycle++;
+	}
+
+}
+
+
 
 void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,int min_coverage)
 {
@@ -574,7 +636,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 	int increment_vector_by = global_args.sim_num_test_vectors;
 	double current_coverage =0.0;
 
-	int offset = BUFFER_SIZE-1; //simulation
+	int offset = BUFFER_SIZE-1; // BUFFER_SIZE- simulation
 	threads_waves = (to_wave-from_wave)/offset;
 	threads_start = from_wave;
 	threads_end = to_wave;
@@ -604,8 +666,6 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 			double wave_start_time = wall_time();
 			double simulation_start_time = wall_time();
 
-			//printf("from wave%d wave%d from_cycle %d to_cycle %d \n",from_wave,wave,from_cycle,to_cycle);
-
 			for (int i=from_cycle;i<to_cycle;i++)
 			{
 
@@ -631,65 +691,47 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 
 			if (wave == 0)
 			{
-
 				// lines as specified by the -p option.
 				sim_data->stages = simulate_first_cycle(sim_data->netlist, from_cycle, sim_data->output_lines);
-				//printf("stages calculated \n");
-
-				//split the nodes into threads using the stages agbove for parallel calculations
-				//maria
-				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
-				//printf("threads\n");
-
-				//create_threads_and_let them wait for the signal
-				for (int t=0; t<sim_data->thread_distribution->number_of_threads; t++)
-				{	
-					//printf("T%d\n",t);		
-					worker_threads.push_back(std::thread(compute_and_store_part_in_waves_multithreaded,t,sim_data->thread_distribution->thread_nodes[t],from_wave,to_wave,offset,TRUE));
-				}
-				//sleep(1);
 				// Make sure the output lines are still OK after adding custom lines.
+
 				if (!verify_lines(sim_data->output_lines))
 					error_message(SIMULATION_ERROR, 0, -1,
 							"Problem detected with the output lines after the first cycle.");
 
+				//split the nodes into threads using the stages agbove for parallel calculations
+				//maria
+				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
+
+				//create_threads_and_let them wait for the signal
+				for (int t=0; t<sim_data->thread_distribution->number_of_threads; t++)
+				{	
+					worker_threads.push_back(std::thread(compute_and_store_part_in_waves_multithreaded,t,sim_data->thread_distribution->thread_nodes[t],from_wave,to_wave,offset,TRUE));
+				}
+
 			}
 
-			//sleep(1);
 			if (wave !=0 || restart)
 			{
 				pthread_mutex_lock(&output_mp);
 				threads_done_wave =0;
 				pthread_mutex_unlock(&output_mp);
-
-				//printf("Broacast %d\n",threads_done_wave);
 				if( (errno =pthread_cond_broadcast(&start_threads)) !=0)
-					printf("Broadcast Error!");	
-
-				//pthread_mutex_lock(&threads_mp);
-				//pthread_mutex_unlock(&threads_mp);
-				
+					printf("Broadcast Error!");					
 
 			}
-			//printf("Here\n");
-			//sleep(1);
+
 			pthread_mutex_lock(&threads_mp);
 			while (threads_done_wave != sim_data->thread_distribution->number_of_threads)
 			{
-				//printf("wait num %d\n",threads_done_wave);		
 				pthread_cond_wait(&start_output,&threads_mp);
 			}
-			//threads_done_wave =0;	
 			pthread_mutex_unlock(&threads_mp);
 	
 
-			//printf("After\n");
-			//simulate_cycles_multithreaded(from_cycle,to_cycle, sim_data->thread_distribution);
-			//printf("cycles calculated from %d to %d out of %d\n",from_cycle,to_cycle,sim_data->num_vectors);
 			for (int i=from_cycle;i<to_cycle;i++)
 			{
 				write_cycle_to_file(sim_data->output_lines, sim_data->out, i);
-				//printf("cycle %d written \n",i);
 
 			}
 			//update memory directories of all memory nodes
@@ -697,10 +739,8 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 
 			if (wave==threads_waves) //check for coverage in the last cycle
 			{
-				//printf("Last\n");
 				if(min_coverage > 0.0)
 				{
-
 					current_coverage = (((double) get_num_covered_nodes(sim_data->stages) / (double) sim_data->stages->num_nodes));
 					if(global_args.sim_achieve_best)
 					{
@@ -780,8 +820,6 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 	pthread_cond_destroy(&start_output);
 	pthread_cond_destroy(&start_threads);
 
-	//printf("Threads %d done\n",sim_data->thread_distribution->number_of_threads);
-
 }
 
 /**
@@ -824,7 +862,7 @@ int single_step(sim_data_t *sim_data, int cycle)
 
 		//split the nodes into threads using the stages agbove for parallel calculations
 		//maria
-		sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
+		//sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
 
 		// Make sure the output lines are still OK after adding custom lines.
 		if (!verify_lines(sim_data->output_lines))
@@ -912,19 +950,14 @@ static void compute_and_store_part_multithreaded(int t_id,netlist_subset *thread
 		for (int j = 0;j < nodes_counter; j++)
 		{
 			nnode_t *node = nodes_in_progress[j];
-			//int num_parents;
-			//nnode_t **parents =get_parents_of(node,&num_parents);
 
-			//printf("Node %d by thread %d at cycle %d remaining: %d  has %d parents \n",node->unique_id,t_id,cycle,nodes_counter,num_parents);
 			if(node && is_node_ready(node,cycle) && !is_node_complete(node,cycle) )
 			{
 				compute_and_store_value(node, cycle);
 				nodes_done[j]=1;
-				//printf("Node %d done by thread %d at cycle %d \n",node->unique_id,t_id,cycle);
 			}
 			else if(!node || is_node_complete(node,cycle) )
 				nodes_done[j]=1;
-			//printf("Node %d type of %d done %d by thread %d at cycle %d \n",node->unique_id,node->type,nodes_done[j],t_id,cycle);	
 		}
 
 		nnode_t **temp = &(*nodes_in_progress);
@@ -940,9 +973,7 @@ static void compute_and_store_part_multithreaded(int t_id,netlist_subset *thread
 			nodes_done[i] = 0;
 		}
 		nodes_counter = not_done;
-		//printf("Thread %d nodes_counter %d\n",t_id,nodes_counter);
 	}
-	//printf("Thread %d from cycle %d done\n",t_id,cycle);
 	vtr::free(nodes_done);
 	vtr::free(nodes_in_progress);
 }
@@ -1004,36 +1035,16 @@ static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subse
 
 		}
 		//signal the current wave is done
-		//printf("Thred%d processed %d from_cycle %d to_cycle %d\n",t_id,wave,from_cycle,to_cycle);
 		pthread_mutex_lock(&threads_mp);
 		threads_done_wave++;
 		pthread_cond_broadcast(&start_output);
 		pthread_cond_wait(&start_threads,&threads_mp);
 		pthread_mutex_unlock(&threads_mp);
 
-		
-		
-		//pthread_mutex_lock(&output_mp);
-		//while (threads_done_wave != 0)
-		//{
-			//printf("%d Blocked\n",t_id);
-			//printf("t%d num %d\n",t_id,threads_done_wave);		
-		//	pthread_cond_wait(&start_threads,&output_mp);
-		//}
-	//	pthread_mutex_unlock(&output_mp);
-
-
-		//printf("%d I got my signal %d==%d \n",t_id,wave,waves);
-
-
 		if (wave == waves) //check if we need to start again for coverage
 		{
-			//printf("HEre after waves done\n");
 			int shared_from_wave,shared_to_wave;
 			pthread_mutex_lock(&threads_mp);
-			//threads_done_wave--;
-			//pthread_cond_broadcast(&start_threads);
-			//pthread_cond_wait(&start_threads,&threads_mp);
 			shared_from_wave = threads_start;
 			shared_to_wave = threads_end;
 			pthread_mutex_unlock(&threads_mp);
@@ -1044,7 +1055,6 @@ static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subse
 				from_wave = shared_from_wave;
 				to_wave = shared_to_wave;
 				waves = (to_wave-from_wave)/offset;
-				//wave=0;
 			}
 
 		}
@@ -3937,7 +3947,7 @@ static void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			for (j = num_pins - 1; j >= 0 ; j--)
 			{
 				signed char value = get_line_pin_value(line, j, cycle);
-
+				
 				if (value > 1){
 					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
 				}else if(value < 0){
