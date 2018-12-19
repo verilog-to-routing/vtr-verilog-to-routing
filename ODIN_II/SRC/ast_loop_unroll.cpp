@@ -1,7 +1,6 @@
 /* Standard libraries */
 #include <stdlib.h>
 #include <string.h>
-#include <iostream>
 
 /* Odin_II libraries */
 #include "globals.h"
@@ -212,8 +211,10 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
     /* Add new for loop support here. Keep current work in the TODO
      * Currently supporting:
      *     for(...; VAR {<, >, ==, !=, <=, >=} NUM; ...) ...
-     * TODO:
      *     for(...; CONDITION_A {&&, ||} CONDITION_B;...) ...
+     *     for(...; !(CONDITION);...) ...
+     * TODO:
+     *     for(...; {EXPRESSION_OF_VAR, NUM} {<, >, ==, !=, <=, >=} {EXPRESSION_OF_VAR, NUM}; ...) ...
      */
     /* IMPORTANT: if support for more complex continue conditions is added, update this inline function. */
     if(is_unsupported_condition(node, symbol))
@@ -348,11 +349,15 @@ post_condition_function resolve_binary_operation(ast_node_t* node)
 post_condition_function resolve_post_condition(ast_node_t* assignment, ast_node_t* symbol, int* error_code)
 {
     /* Add new for loop support here. Keep current work in the TODO
-     * Currently supporting:
-     *     for(...; ...; VAR = VAR {+, -, *, /} NUM) ...
-     * TODO:
-     *     given time VAR[0] is init, and VAR[t+1] is the value for VAR at after the current loop:
-     *         for(...; ...; VAR[t+1] = EXPRESSION(VAR[t])
+     * Given iteration t, and VAR[t] is the value of VAR at iteration t,
+     * VAR[0] is init, EXPRESSION_OF_VAR[t] is the value of the post 
+     * expression evaluated at iteration t, and VAR[t+1] is the 
+     * value of VAR after the current iteration:
+     *     Currently supporting:
+     *         for(...; ...; VAR = VAR {+, -, *, /} NUM) ...
+     *         for(...; ...; VAR[t+1] = EXPRESSION_OF_VAR[t])
+     *     TODO:
+     *         for(...; ...; VAR[t+1] = function_call(VAR[t]))
      */
     ast_node_t* node = nullptr;
     /* Check that the post condition assignment node is a valid assignment */
