@@ -554,7 +554,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 	int i, j;
 
 	operation_list cell_op;
-
+	if (!node) return;
 	oassert(node->num_input_pins > 0);
 	oassert(node->num_input_port_sizes >= 2);
 
@@ -778,7 +778,7 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 	int port_A_index;
 	int port_B_index;
 	int index = 0;
-	nnode_t *xor_gate;
+	nnode_t *xor_gate=NULL;
 	nnode_t *logical_or_gate;
 	nnode_t **or_cells;
 	nnode_t **gt_cells;
@@ -816,8 +816,12 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 			node_name_based_on_op(node));
 	}
 
-	/* xor gate identifies if any bits don't match */
-	xor_gate = make_2port_gate(LOGICAL_XOR, width_a-1, width_b-1, width_max-1, node, mark);
+	if (width_max>1)
+	{
+		/* xor gate identifies if any bits don't match */
+		xor_gate = make_2port_gate(LOGICAL_XOR, width_a-1, width_b-1, width_max-1, node, mark);
+	}
+
 	/* collects all the GT signals and determines if gt */
 	logical_or_gate = make_1port_logic_gate(LOGICAL_OR, width_max, node, mark);
 	/* collects a chain if any 1 happens than the GT cells output 0 */
@@ -882,9 +886,12 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 				/* deal with the first greater than test which autom gets a zero */
 				add_input_pin_to_node(or_cells[i], get_zero_pin(netlist), 1);
 			}
+			if (width_max>1)
+			{
+				/* get all the equals with the or gates */
+				connect_nodes(xor_gate, i, or_cells[i], 0);
+			}
 
-			/* get all the equals with the or gates */
-			connect_nodes(xor_gate, i, or_cells[i], 0);
 			connect_nodes(or_cells[i], 0, gt_cells[i], 2);
 
 		}
@@ -906,9 +913,12 @@ void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *n
 	/* join that gate to the output */
 	remap_pin_to_new_node(node->output_pins[0], logical_or_gate, 0);
 	oassert(logical_or_gate->num_output_pins == 1);
-
-	instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
-	vtr::free(xor_gate);
+	if (xor_gate!= NULL)
+	{
+		instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
+		vtr::free(xor_gate);
+	}
+	
 	vtr::free(gt_cells);
 	vtr::free(or_cells);
 }
