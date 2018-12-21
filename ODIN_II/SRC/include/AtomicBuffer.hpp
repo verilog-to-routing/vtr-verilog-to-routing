@@ -116,8 +116,8 @@ public:
 
     void lock_free_update_cycle( int64_t cycle_in)
     {
-        if (cycle_in > this->cycle)
-            this->cycle = cycle_in;
+        //if (cycle_in > this->cycle)
+        this->cycle = cycle_in;
     }
 
     data_t lock_free_get_value( int64_t cycle_in)
@@ -127,8 +127,11 @@ public:
 
     void lock_free_update_value( data_t value_in, int64_t cycle_in)
     {
-        set_bits( cycle_in,value_in);
-        lock_free_update_cycle( cycle_in);
+        if (cycle_in > this->cycle)
+        {
+            set_bits( cycle_in,value_in);
+            lock_free_update_cycle( cycle_in);
+        }
     }
 
     void lock_free_copy_foward_one_cycle( int64_t cycle_in)

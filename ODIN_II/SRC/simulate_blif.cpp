@@ -60,7 +60,6 @@ inline static edge_eval_e get_edge_type(npin_t *clk, int cycle)
 {
 	if(!clk)
 		return UNK;
-
 	signed char prev = !CLOCK_INITIAL_VALUE;
 	signed char cur = CLOCK_INITIAL_VALUE;
 
@@ -69,7 +68,6 @@ inline static edge_eval_e get_edge_type(npin_t *clk, int cycle)
 		prev = get_pin_value(clk, cycle-1);
 		cur = get_pin_value(clk, cycle);
 	}
-
 	return 	((prev != cur) && (prev == 0 || cur == 1))?	RISING:
 			((prev != cur) && (prev == 1 || cur == 0))?	FALLING:
 			(cur == 1)?									HIGH:
@@ -276,14 +274,15 @@ void simulate_netlist(netlist_t *netlist)
 	{
 		int start_cycle = 0;
 		int end_cycle = sim_data->num_vectors;
-		single_step(sim_data,0);
-		single_step(sim_data,1);
-		simulate_steps_in_parallel(sim_data,start_cycle+2,end_cycle,min_coverage);
+		//single_step(sim_data,0);
+		//single_step(sim_data,1);
+		simulate_steps_in_parallel(sim_data,start_cycle,end_cycle,min_coverage);
 	}
 	else
 	{
 		simulate_steps_sequential(sim_data,min_coverage);
 	}
+
 
 	fflush(sim_data->out);
 	fprintf(sim_data->modelsim_out, "run %d\n", sim_data->num_vectors*100);
@@ -645,7 +644,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 	pthread_cond_init(&start_output, NULL);
 
 	std::vector<std::thread> worker_threads;
-
+	double simulation_start_time = wall_time();
 	bool done = FALSE,restart = FALSE;
 	while (!done)	
 	{
@@ -659,46 +658,52 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				to_cycle = to_wave;
 
 			
-			test_vector *v;
+			test_vector *v=NULL;
 			// Assign vectors to lines, either by reading or generating them.
 			// Every second cycle gets a new vector.
 
 			double wave_start_time = wall_time();
-			double simulation_start_time = wall_time();
-
+			
+			char buffer[BUFFER_MAX_SIZE];
+			
 			for (int i=from_cycle;i<to_cycle;i++)
 			{
-
+				v = NULL;
 				if (sim_data->in)
 				{
-					char buffer[BUFFER_MAX_SIZE];
-
+					//buffer = NULL;
 					if (!get_next_vector(sim_data->in, buffer))
 						error_message(SIMULATION_ERROR, 0, -1, "Could not read next vector.");
-
+					
 					v = parse_test_vector(buffer);
+					//printf("Here\n");
 				}
 				else
 				{
 					v = generate_random_test_vector(i, sim_data);
 				}
-				//printf("v=%s \n",v);
+				//printf("v=%d \n",v->values[0][0]);
 				add_test_vector_to_lines(v, sim_data->input_lines, i);
 				write_cycle_to_file(sim_data->input_lines, sim_data->in_out, i);
 				write_cycle_to_modelsim_file(sim_data->netlist, sim_data->input_lines, sim_data->modelsim_out, i);
-				free_test_vector(v);
+				
 			}
+			if (v)
+				free_test_vector(v);
 
 			if (wave == 0)
 			{
 				// lines as specified by the -p option.
 				sim_data->stages = simulate_first_cycle(sim_data->netlist, from_cycle, sim_data->output_lines);
 				// Make sure the output lines are still OK after adding custom lines.
-
 				if (!verify_lines(sim_data->output_lines))
 					error_message(SIMULATION_ERROR, 0, -1,
 							"Problem detected with the output lines after the first cycle.");
-
+				//write_cycle_to_file(sim_data->output_lines, sim_data->out, from_cycle);
+				//simulate_cycle(from_cycle+1, sim_data->stages);
+				//simulate_cycle(from_cycle+2, sim_data->stages);
+				//simulate_cycle(from_cycle+3, sim_data->stages);
+				//write_cycle_to_file(sim_data->output_lines, sim_data->out, from_cycle+1);
 				//split the nodes into threads using the stages agbove for parallel calculations
 				//maria
 				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
@@ -731,6 +736,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 
 			for (int i=from_cycle;i<to_cycle;i++)
 			{
+				//if (i!=0)
 				write_cycle_to_file(sim_data->output_lines, sim_data->out, i);
 
 			}
@@ -995,7 +1001,7 @@ static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subse
 		int to_cycle = from_cycle+offset;
 		if (to_cycle > to_wave)
 			to_cycle = to_wave;
-
+		
 		for (int cycle = from_cycle; cycle<to_cycle; cycle++)
 		{
 			nodes_counter = thread_nodes->number_of_nodes;
@@ -1015,9 +1021,12 @@ static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subse
 						{
 							compute_and_store_value(node, cycle);
 							nodes_done[j]=1;
+
 						}
 						else if(!node || is_node_complete(node,cycle) )
+						{
 							nodes_done[j]=1;
+						}
 					}
 				}
 
@@ -1124,9 +1133,7 @@ static void simulate_cycle_multithreaded(int cycle, thread_node_distribution *th
 
 	for (int t=0; t<thread_distribution->number_of_threads; t++)
 	{
-		//printf("Before compute_and_store_part_multithreaded Thread Id: %d, #nodes:%d at cycle: %d \n",t,thread_distribution->thread_nodes[t]->number_of_nodes,cycle );
 		workers.push_back(std::thread(compute_and_store_part_wave_multithreaded,t,thread_distribution->thread_nodes[t],cycle,cycle+1));
-		//sleep(3);
 	}
 
 	int threadnum = 0;
@@ -1292,13 +1299,12 @@ static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *l)
 	nnode_t **ordered_nodes = 0;
 	int   num_ordered_nodes = 0;
 
-	;
+
 	while (! queue.empty())
 	{
 		nnode_t *node = queue.front();
 		queue.pop();
 		compute_and_store_value(node, cycle);
-
 		// Match node for items passed via -p and add to lines if there's a match.
 		add_additional_items_to_lines(node, l);
 
@@ -1315,6 +1321,7 @@ static stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, lines_t *l)
 				node2->in_queue = TRUE;
 				queue.push(node2);
 			}
+
 		}
 		vtr::free(children);
 
@@ -1431,7 +1438,6 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 	double *stagescost = (double *)vtr::malloc(sizeof(double)* s->count);
 	double graphcost = 0.0;
 	int all_nodes = get_num_covered_nodes(s);
-	//printf("All nodes %d \n",all_nodes);
 	std::map<int, int> nodes_inserted;  //nodeId,flag
 
 	thread_distribution->memory_nodes = (netlist_subset *)vtr::malloc(sizeof(netlist_subset));
@@ -1681,7 +1687,6 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 static bool compute_and_store_value(nnode_t *node, int cycle)
 {
 	is_node_ready(node,cycle);
-
 	operation_list type = is_clock_node(node)?CLOCK_NODE:node->type;
 
 	switch(type)
@@ -2440,8 +2445,9 @@ static void update_pin_value(npin_t *pin, signed char value, int cycle)
 signed char get_pin_value(npin_t *pin, int cycle)
 {
 	if (pin->values == NULL)
+	{
 		initialize_pin(pin);
-
+	}
 	return pin->values->get_value(cycle);
 }
 
@@ -2467,10 +2473,9 @@ static void compute_flipflop_node(nnode_t *node, int cycle)
 	npin_t *Q		=	node->output_pins[0];
 	npin_t *clock_pin 	=	node->input_pins[1];
 	npin_t *output_pin	=	node->output_pins[0];
-
 	bool trigger = ff_trigger(node->edge_type, clock_pin, cycle);
+
 	signed char new_value = compute_ff(trigger, D, Q, cycle);
-	
 	update_pin_value(output_pin, new_value, cycle);
 }
 
