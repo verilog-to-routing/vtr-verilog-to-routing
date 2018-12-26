@@ -1517,7 +1517,7 @@
             <metal_layer name="global_rib" Rmetal="50.42" Cmetal="20.7e-15"/>
         </metal_layers>
         
-        <clock_network name="spine1" num_inst="1">
+        <clock_network name="spine1" num_inst="2">
             <!-- Full Device: Center Spine -->
             <spine metal_layer="global_spine" x="W/2" starty="0" endy="H" repeatx="W" repeaty="H">
                 <switch_point type="drive" name="drive" yoffset="H/2" buffer="drive_buff"/>
@@ -1525,7 +1525,7 @@
             </spine>
         </clock_network>
 
-        <clock_network name="rib1" num_inst="1">
+        <clock_network name="rib1" num_inst="2">
         <!-- Full Device: Each Grid Row -->
             <rib metal_layer="global_rib" y="0" startx="0" endx="W" repeatx="W" repeaty="1">
                 <switch_point type="drive" name="drive" xoffset="W/2" buffer="drive_buff"/>
@@ -1537,7 +1537,7 @@
            <!-- "routing" is a special from address used to indicate that connections are comming
                  from intr-block routing at the specified switch location -->
            <tap from="routing" to="spine1.drive" locationx="W/2" locationy="H/2" switch="0" fc_val="1.0"/>
-           <tap from="spine1.tap" to="rib1.drive" switch="0" fc_val="1"/>
+           <tap from="spine1.tap" to="rib1.drive" switch="0" fc_val="0.5"/>
            <!-- "clock" is a special to addreass used to indicate that the connections are going
                 to all clock pins. TODO: switch to specify a port name. In this case the clock
                 port names are clk for the clb clock pins and clock for the io clock pins -->
