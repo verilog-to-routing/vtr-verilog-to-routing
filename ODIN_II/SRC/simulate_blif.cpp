@@ -417,7 +417,7 @@ sim_data_t *init_simulation(netlist_t *netlist)
 {
 	//for multithreading
 	used_time = std::numeric_limits<double>::max();
-	number_of_workers = std::min(CONCURENCY_LIMIT, std::max(1, global_args.parralelized_simulation.value()));
+	number_of_workers = std::max(1, global_args.parralelized_simulation.value());
 	//if(global_args.parralelized_simulation.value() >1 )
 	//	warning_message(SIMULATION_ERROR,-1,-1,"Executing simulation with maximum of %d threads", global_args.parralelized_simulation.value());
 		
@@ -699,12 +699,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				if (!verify_lines(sim_data->output_lines))
 					error_message(SIMULATION_ERROR, 0, -1,
 							"Problem detected with the output lines after the first cycle.");
-				//write_cycle_to_file(sim_data->output_lines, sim_data->out, from_cycle);
-				//simulate_cycle(from_cycle+1, sim_data->stages);
-				//simulate_cycle(from_cycle+2, sim_data->stages);
-				//simulate_cycle(from_cycle+3, sim_data->stages);
-				//write_cycle_to_file(sim_data->output_lines, sim_data->out, from_cycle+1);
-				//split the nodes into threads using the stages agbove for parallel calculations
+				
 				//maria
 				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
 
@@ -1400,10 +1395,13 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 
 		// Index the node.
 		stage_nodes.insert(node);
-
+		//printf("NodeID %d %s typeof %d at stage %d\n",node->unique_id,node->name,node->type,stage);
 		// Index its children.
 		for (int j = 0; j < num_children; j++)
+		{
+			//printf("  ChildID %d %s typeof %d \n ",children[j]->unique_id,children[j]->name,children[j]->type);
 			stage_children.insert(children[j]);
+		}
 
 		// Record the number of children for computing the degree.
 		s->num_connections += num_children;
@@ -1422,14 +1420,18 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 //returns the number of threads
 static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 {
-	double nodecost = 1;
-	double extranodeoverhead = 1.0*nodecost;
-	double lessnodeoverhead = -0.5*nodecost;
+	//double nodecost = 1;
+	//double extranodeoverhead = 1.0*nodecost;
+	//double lessnodeoverhead = -0.5*nodecost;
+	double nodeoverhead_100 = 100;
+	double nodeoverhead_200 = 200;
+	double nodeoverhead_300 = 300;
+	double nodeoverhead_400 = 400;
 
-	double stagecost = 2*nodecost;
+	double stagecost = nodeoverhead_300;
 	//double threadoverheadcost = 5*nodecost;
 
-	int max_available_threads =  get_nprocs();
+	int max_available_threads = get_nprocs();
 	
 	//store nodes for each thread
 	thread_node_distribution* thread_distribution= (thread_node_distribution *)vtr::malloc(sizeof(thread_node_distribution));
@@ -1453,18 +1455,17 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 		//for each node
 		for (int j =0; j < s->counts[i]; j++)
 		{			
-			stagescost[i]+=nodecost;
-			if (nodes[j]->type == HARD_IP || nodes[j]->type == GENERIC || nodes[j]->type == MEMORY )
-				stagescost[i]+=extranodeoverhead;
-
-			if (nodes[j]->type == GND_NODE || nodes[j]->type == VCC_NODE || nodes[j]->type == INPUT_NODE )
-				stagescost[i]+=lessnodeoverhead;
-
-			if ( nodes[j]->type == MEMORY )
-			{
-				nodes_mem_sub = (nnode_t **)vtr::realloc(nodes_mem_sub,sizeof(nnode_t*) * (number_of_mem_nodes+1) );
-				nodes_mem_sub[number_of_mem_nodes++] = nodes[j];
-			}
+			//stagescost[i]+=nodecost;
+			if (nodes[j]->type == GND_NODE || nodes[j]->type == VCC_NODE || nodes[j]->type == OUTPUT_NODE || nodes[j]->type == CLOCK_NODE || nodes[j]->type == PAD_NODE || nodes[j]->type == MUX_2 || nodes[j]->type == LOGICAL_AND)
+				stagescost[i]+=nodeoverhead_100;
+			else if (nodes[j]->type == HARD_IP || nodes[j]->type == GENERIC || nodes[j]->type == MEMORY)
+				stagescost[i]+=nodeoverhead_300;
+			else if (nodes[j]->type ==  MULTIPLY)
+				stagescost[i]+=nodeoverhead_400;
+			else if (nodes[j]->type == INPUT_NODE)
+				stagescost[i]+=1;
+			else
+				stagescost[i]+=nodeoverhead_200;
 
 			nodes_inserted[nodes[j]->unique_id] = 0;
 		}
@@ -1511,12 +1512,17 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 				nodes_sub[number_of_nodes++] = node;
 				nodes_assigned++;
 				nodes_inserted[node->unique_id] = 1;		
-				threadcost+=nodecost;
-				if (node->type == HARD_IP || node->type == GENERIC || node->type == MEMORY )
-					threadcost+=extranodeoverhead;
-				if (node->type == GND_NODE || node->type == VCC_NODE || node->type == INPUT_NODE )
-					threadcost+=lessnodeoverhead;
 
+				if (node->type == GND_NODE || node->type == VCC_NODE || node->type == OUTPUT_NODE || node->type == CLOCK_NODE || node->type == PAD_NODE || node->type == MUX_2 || node->type == LOGICAL_AND)
+					threadcost+=nodeoverhead_100;
+				else if (node->type == HARD_IP || node->type == GENERIC || node->type == MEMORY)
+					threadcost+=nodeoverhead_300;
+				else if (node->type ==  MULTIPLY)
+					threadcost+=nodeoverhead_400;
+				else if (node->type == INPUT_NODE)
+					threadcost+=1;
+				else
+					threadcost+=nodeoverhead_200;
 				/*
 				int num_children;
 				nnode_t **children = get_children_of(node, &num_children);	
@@ -1686,9 +1692,9 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
  */
 static bool compute_and_store_value(nnode_t *node, int cycle)
 {
+	//double computation_time = wall_time();
 	is_node_ready(node,cycle);
 	operation_list type = is_clock_node(node)?CLOCK_NODE:node->type;
-
 	switch(type)
 	{
 		case MUX_2:
@@ -2049,6 +2055,10 @@ static bool compute_and_store_value(nnode_t *node, int cycle)
 	}
 	if(covered || skip_node_from_coverage)
 		node->covered = true;
+
+	//computation_time = wall_time() - computation_time;
+
+	//printf("Node %s typeof %d spent %lf\n",node->name,type,computation_time);
 	return true;
 }
 
@@ -2992,6 +3002,7 @@ static long long compute_address(signal_list_t *input_address, int cycle)
 static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
 {
 
+	node->memory_mtx.lock();
 	long long address = compute_address(input_address, cycle);
 	
 	 //make a single trigger out of write_enable pin and if it was a positive edge
@@ -3000,7 +3011,9 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
 
 	std::vector<signed char> new_values(data_out->count);
-	node->memory_mtx.lock();
+	
+	for (size_t i = 0; i < data_out->count; i++)
+		new_values[i] = -1;
 	if(address_is_valid)
 	{
 		if (write) //write to dicionary
@@ -3045,9 +3058,8 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 
 	}
 
-	if(new_values.empty())
-		for (size_t i = 0; i < data_out->count; i++)
-			new_values.push_back(-1);
+	//if(new_values.empty())
+
 
 	for (size_t i = 0; i < data_out->count; i++)
 	{

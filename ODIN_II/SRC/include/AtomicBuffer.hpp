@@ -53,9 +53,9 @@ private:
 	
 	uint8_t get_bits(uint8_t index)
 	{
-		index = index%BUFFER_SIZE;
-	    uint8_t address = index/4;
-	    uint8_t bit_index = index%4;
+		uint8_t modindex = index%(BUFFER_SIZE);
+	    uint8_t address = modindex/4;
+	    uint8_t bit_index = modindex%4;
 	    switch(bit_index)
 	    {
 	    	case 0:	return (this->bits[address].i0);
@@ -68,9 +68,9 @@ private:
 	
 	void set_bits(uint8_t index, uint8_t value)
 	{
-		index = index%BUFFER_SIZE;
-	    uint8_t address = index/4;
-	    uint8_t bit_index = index%4;
+		uint8_t modindex = index%(BUFFER_SIZE);
+	    uint8_t address = modindex/4;
+	    uint8_t bit_index = modindex%4;
 	    
 	    value = value&0x3;
 	    
