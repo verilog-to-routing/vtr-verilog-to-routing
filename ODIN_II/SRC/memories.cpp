@@ -58,19 +58,19 @@ int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
 
-int get_sp_ram_depth(nnode_t *node)
+long long get_sp_ram_depth(nnode_t *node)
 {
 	sp_ram_signals *signals = get_sp_ram_signals(node);
-	int depth = signals->addr->count;
+	long long depth = (1 << signals->addr->count);
 	free_sp_ram_signals(signals);
 	return depth;
 }
 
-int get_dp_ram_depth(nnode_t *node)
+long long get_dp_ram_depth(nnode_t *node)
 {
 	dp_ram_signals *signals = get_dp_ram_signals(node);
 	oassert(signals->addr1->count == signals->addr2->count);
-	int depth = signals->addr1->count;
+	long long depth = (1 << signals->addr1->count);
 	free_dp_ram_signals(signals);
 	return depth;
 }
@@ -271,25 +271,25 @@ void check_memories_and_report_distribution()
 	printf("============================\n");
 
 
-	long total_memory_bits = 0;
+	long long total_memory_bits = 0;
 	int total_memory_block_counter = 0;
-	int memory_max_width = 0;
-	int memory_max_depth = 0;
+	long long memory_max_width = 0;
+	long long memory_max_depth = 0;
 
 	t_linked_vptr *temp = sp_memory_list;
 	while (temp != NULL)
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		int width = get_sp_ram_width(node);
-		int depth = get_sp_ram_depth(node);
+		long long width = get_sp_ram_width(node);
+		long long depth = get_sp_ram_depth(node);
 
 		if (depth > MEMORY_DEPTH_LIMIT)
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %d exceeds ODIN depth bound of %d.", node->name, depth, MEMORY_DEPTH_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
 
-		printf("SPRAM: %d width %d depth\n", width, depth);
+		printf("SPRAM: %lld width %lld depth\n", width, depth);
 
-		total_memory_bits += (long)width * ((long)1 << (long)depth);
+		total_memory_bits += width * depth;
 
 		total_memory_block_counter++;
 
@@ -308,14 +308,14 @@ void check_memories_and_report_distribution()
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
 
-		int width = get_dp_ram_width(node);
-		int depth = get_dp_ram_depth(node);
+		long long width = get_dp_ram_width(node);
+		long long depth = get_dp_ram_depth(node);
 
 		if (depth > MEMORY_DEPTH_LIMIT)
-			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %d exceeds ODIN depth bound of %d.", node->name, depth, MEMORY_DEPTH_LIMIT);
+			error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %lld exceeds ODIN depth bound of %lld.", node->name, depth, MEMORY_DEPTH_LIMIT);
 
-		printf("DPRAM: %d width %d depth\n", width, depth);
-		total_memory_bits += (long)width * ((long)1 << (long)depth);
+		printf("DPRAM: %lld width %lld depth\n", width, depth);
+		total_memory_bits += width * depth;
 
 		total_memory_block_counter++;
 		if (width > memory_max_width) {
@@ -329,9 +329,9 @@ void check_memories_and_report_distribution()
 	}
 
 	printf("\nTotal Logical Memory Blocks = %d \n", total_memory_block_counter);
-	printf("Total Logical Memory bits = %ld \n", total_memory_bits);
-	printf("Max Memory Width = %d \n", memory_max_width);
-	printf("Max Memory Depth = %d \n", memory_max_depth);
+	printf("Total Logical Memory bits = %lld \n", total_memory_bits);
+	printf("Max Memory Width = %lld \n", memory_max_width);
+	printf("Max Memory Depth = %lld \n", memory_max_depth);
 	printf("\n");
 
 	return;
@@ -1467,6 +1467,13 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	for (i = 0; i < num_addr; i++)
 	{
 		npin_t *address_pin = decoder->pins[i];
+		/* Check that the input pin is driven */
+		oassert(
+			address_pin->net->driver_pin != NULL
+			|| address_pin->net == verilog_netlist->zero_net
+			|| address_pin->net == verilog_netlist->one_net
+			|| address_pin->net == verilog_netlist->pad_net
+		);
 
 		// An AND gate to enable and disable writing.
 		nnode_t *and_g = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1490,6 +1497,13 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		for (j = 0; j < num_addr; j++)
 		{
 			npin_t *address_pin = decoder->pins[j];
+			/* Check that the input pin is driven */
+			oassert(
+				address_pin->net->driver_pin != NULL
+				|| address_pin->net == verilog_netlist->zero_net
+				|| address_pin->net == verilog_netlist->one_net
+				|| address_pin->net == verilog_netlist->pad_net
+			);
 
 			// A multiplexer switches between accepting incoming data and keeping existing data.
 			nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1514,6 +1528,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 
 			// Hook the address pin up to the output mux.
 			add_input_pin_to_node(output_mux, copy_input_npin(address_pin), j);
+			ff->edge_type = RISING_EDGE_SENSITIVITY;
 		}
 
 		npin_t *output_pin = node->output_pins[i];
@@ -1565,6 +1580,19 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		npin_t *addr1_pin = decoder1->pins[i];
 		npin_t *addr2_pin = decoder2->pins[i];
 
+		oassert(
+			addr1_pin->net->driver_pin != NULL
+			|| addr1_pin->net == verilog_netlist->zero_net
+			|| addr1_pin->net == verilog_netlist->one_net
+			|| addr1_pin->net == verilog_netlist->pad_net
+		);
+		oassert(
+			addr2_pin->net->driver_pin != NULL
+			|| addr2_pin->net == verilog_netlist->zero_net
+			|| addr2_pin->net == verilog_netlist->one_net
+			|| addr2_pin->net == verilog_netlist->pad_net
+		);
+
 		// Write enable and gate for address 1.
 		nnode_t *and1 = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
 		add_input_pin_to_node(and1, addr1_pin, 0);
@@ -1605,6 +1633,19 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 			npin_t *addr1_pin = decoder1->pins[j];
 			npin_t *addr2_pin = decoder2->pins[j];
 
+		oassert(
+			addr1_pin->net->driver_pin != NULL
+			|| addr1_pin->net == verilog_netlist->zero_net
+			|| addr1_pin->net == verilog_netlist->one_net
+			|| addr1_pin->net == verilog_netlist->pad_net
+		);
+		oassert(
+			addr2_pin->net->driver_pin != NULL
+			|| addr2_pin->net == verilog_netlist->zero_net
+			|| addr2_pin->net == verilog_netlist->one_net
+			|| addr2_pin->net == verilog_netlist->pad_net
+		);
+
 			// The data mux selects between the two data lines for this address.
 			nnode_t *data_mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
 			// Port 2 before 1 to mimic the simulator's behaviour when the addresses are the same.
@@ -1640,6 +1681,7 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 			// Connect address lines to the output muxes for this address.
 			add_input_pin_to_node(output_mux1, copy_input_npin(addr1_pin), j);
 			add_input_pin_to_node(output_mux2, copy_input_npin(addr2_pin), j);
+			ff->edge_type = RISING_EDGE_SENSITIVITY;
 		}
 
 		npin_t *out1_pin = signals->out1->pins[i];
@@ -1684,6 +1726,15 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 	int i;
 	for (i = 0; i < num_inputs; i++)
 	{
+		if(input_list->pins[i]->net->driver_pin == NULL
+		&& input_list->pins[i]->net != verilog_netlist->zero_net
+		&& input_list->pins[i]->net != verilog_netlist->one_net
+		&& input_list->pins[i]->net != verilog_netlist->pad_net)
+		{
+			warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]);
+			add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
+		}
+
 		nnode_t *not_g = make_not_gate(node, mark);
 		remap_pin_to_new_node(input_list->pins[i], not_g, 0);
 		npin_t *not_output = allocate_npin();

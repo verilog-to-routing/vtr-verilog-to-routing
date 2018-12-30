@@ -158,67 +158,67 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     auto crit_paths = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
     auto least_slack_cpd = find_least_slack_critical_path_delay(constraints, setup_analyzer);
-    vtr::printf("Final critical path: %g ns", sec_to_nanosec(least_slack_cpd.delay()));
+    VTR_LOG("Final critical path: %g ns", sec_to_nanosec(least_slack_cpd.delay()));
 
     if (crit_paths.size() == 1) {
         //Fmax is only meaningful for a single-clock circuit
-        vtr::printf(", Fmax: %g MHz", sec_to_mhz(least_slack_cpd.delay()));
+        VTR_LOG(", Fmax: %g MHz", sec_to_mhz(least_slack_cpd.delay()));
     }
-    vtr::printf("\n");
+    VTR_LOG("\n");
 
-    vtr::printf("Setup Worst Negative Slack (sWNS): %g ns\n", sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
-    vtr::printf("Setup Total Negative Slack (sTNS): %g ns\n", sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
-    vtr::printf("\n");
+    VTR_LOG("Setup Worst Negative Slack (sWNS): %g ns\n", sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
+    VTR_LOG("Setup Total Negative Slack (sTNS): %g ns\n", sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
+    VTR_LOG("\n");
 
-    vtr::printf_info("Setup slack histogram:\n");
+    VTR_LOG("Setup slack histogram:\n");
     print_histogram(create_setup_slack_histogram(setup_analyzer));
 
 
     if (crit_paths.size() > 1) {
         //Multi-clock
-        vtr::printf("\n");
+        VTR_LOG("\n");
 
         //Periods per constraint
-        vtr::printf_info("Intra-domain critical path delays (CPDs):\n");
+        VTR_LOG("Intra-domain critical path delays (CPDs):\n");
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain()) {
-                vtr::printf("  %s to %s CPD: %g ns (%g MHz)\n",
+                VTR_LOG("  %s to %s CPD: %g ns (%g MHz)\n",
                         constraints.clock_domain_name(path.launch_domain()).c_str(),
                         constraints.clock_domain_name(path.capture_domain()).c_str(),
                         sec_to_nanosec(path.delay()),
                         sec_to_mhz(path.delay()));
             }
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
 
-        vtr::printf_info("Inter-domain critical path delays (CPDs):\n");
+        VTR_LOG("Inter-domain critical path delays (CPDs):\n");
         for (const auto& path : crit_paths) {
             if (path.launch_domain() != path.capture_domain()) {
-                vtr::printf("  %s to %s CPD: %g ns (%g MHz)\n",
+                VTR_LOG("  %s to %s CPD: %g ns (%g MHz)\n",
                         constraints.clock_domain_name(path.launch_domain()).c_str(),
                         constraints.clock_domain_name(path.capture_domain()).c_str(),
                         sec_to_nanosec(path.delay()),
                         sec_to_mhz(path.delay()));
             }
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
 
         //Slack per constraint
-        vtr::printf_info("Intra-domain worst setup slacks per constraint:\n");
+        VTR_LOG("Intra-domain worst setup slacks per constraint:\n");
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain()) {
-                vtr::printf("  %s to %s worst setup slack: %g ns\n",
+                VTR_LOG("  %s to %s worst setup slack: %g ns\n",
                         constraints.clock_domain_name(path.launch_domain()).c_str(),
                         constraints.clock_domain_name(path.capture_domain()).c_str(),
                         sec_to_nanosec(path.slack()));
             }
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
 
-        vtr::printf_info("Inter-domain worst setup slacks per constraint:\n");
+        VTR_LOG("Inter-domain worst setup slacks per constraint:\n");
         for (const auto& path : crit_paths) {
             if (path.launch_domain() != path.capture_domain()) {
-                vtr::printf("  %s to %s worst setup slack: %g ns\n",
+                VTR_LOG("  %s to %s worst setup slack: %g ns\n",
                         constraints.clock_domain_name(path.launch_domain()).c_str(),
                         constraints.clock_domain_name(path.capture_domain()).c_str(),
                         sec_to_nanosec(path.slack()));
@@ -247,9 +247,9 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
         //Print multi-clock geomeans
         if (intra_domain_cpds.size() > 0) {
-            vtr::printf("\n");
+            VTR_LOG("\n");
             double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
-            vtr::printf("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n",
+            VTR_LOG("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n",
                     sec_to_nanosec(geomean_intra_domain_cpd),
                     sec_to_mhz(geomean_intra_domain_cpd));
 
@@ -259,12 +259,12 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
             }
             double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
                     fanout_weighted_intra_domain_cpds.end());
-            vtr::printf("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n",
+            VTR_LOG("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n",
                     sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd),
                     sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
         }
     }
-    vtr::printf("\n");
+    VTR_LOG("\n");
 }
 
 /*
@@ -443,35 +443,35 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
 }
 
 void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer) {
-    vtr::printf("Hold Worst Negative Slack (hWNS): %g ns\n", sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
-    vtr::printf("Hold Total Negative Slack (hTNS): %g ns\n", sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
+    VTR_LOG("Hold Worst Negative Slack (hWNS): %g ns\n", sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
+    VTR_LOG("Hold Total Negative Slack (hTNS): %g ns\n", sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
     /*For testing*/
-    //vtr::printf("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
-    vtr::printf("\n");
+    //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
+    VTR_LOG("\n");
 
-    vtr::printf_info("Hold slack histogram:\n");
+    VTR_LOG("Hold slack histogram:\n");
     print_histogram(create_hold_slack_histogram(hold_analyzer));
 
     if (constraints.clock_domains().size() > 1) {
         //Multi-clock
-        vtr::printf("\n");
+        VTR_LOG("\n");
 
         //Slack per constraint
-        vtr::printf_info("Intra-domain worst hold slacks per constraint:\n");
+        VTR_LOG("Intra-domain worst hold slacks per constraint:\n");
         for (const auto& domain : constraints.clock_domains()) {
             float worst_slack = find_hold_worst_slack(hold_analyzer, domain, domain);
 
             if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
 
 
-            vtr::printf("  %s to %s worst hold slack: %g ns\n",
+            VTR_LOG("  %s to %s worst hold slack: %g ns\n",
                     constraints.clock_domain_name(domain).c_str(),
                     constraints.clock_domain_name(domain).c_str(),
                     sec_to_nanosec(worst_slack));
         }
-        vtr::printf("\n");
+        VTR_LOG("\n");
 
-        vtr::printf_info("Inter-domain worst hold slacks per constraint:\n");
+        VTR_LOG("Inter-domain worst hold slacks per constraint:\n");
         for (const auto& launch_domain : constraints.clock_domains()) {
             for (const auto& capture_domain : constraints.clock_domains()) {
                 if (launch_domain != capture_domain) {
@@ -479,7 +479,7 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
 
                     if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
 
-                    vtr::printf("  %s to %s worst hold slack: %g ns\n",
+                    VTR_LOG("  %s to %s worst hold slack: %g ns\n",
                             constraints.clock_domain_name(launch_domain).c_str(),
                             constraints.clock_domain_name(capture_domain).c_str(),
                             sec_to_nanosec(worst_slack));
@@ -487,7 +487,7 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
             }
         }
     }
-    vtr::printf("\n");
+    VTR_LOG("\n");
 }
 
 /*
@@ -613,7 +613,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
 
 void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     for (auto path : cpds) {
-        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
+        VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }
 }
 
@@ -621,7 +621,7 @@ void compare_tatum_classic_constraints() {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     if (timing_ctx.sdc) {
-        vtr::printf("Comparing timing constraints:\n");
+        VTR_LOG("Comparing timing constraints:\n");
         for (int launch_clk = 0; launch_clk < timing_ctx.sdc->num_constrained_clocks; ++launch_clk) {
             tatum::DomainId launch_domain = timing_ctx.constraints->find_clock_domain(timing_ctx.sdc->constrained_clocks[launch_clk].name);
             VTR_ASSERT(launch_domain);
@@ -632,7 +632,7 @@ void compare_tatum_classic_constraints() {
 
                 tatum::Time constraint = timing_ctx.constraints->setup_constraint(launch_domain, capture_domain);
 
-                vtr::printf("  %s -> %s Classic: %g Tatum: %g\n",
+                VTR_LOG("  %s -> %s Classic: %g Tatum: %g\n",
                         timing_ctx.sdc->constrained_clocks[launch_clk].name, timing_ctx.sdc->constrained_clocks[capture_clk].name,
                         timing_ctx.sdc->domain_constraint[launch_clk][capture_clk],
                         constraint.value());

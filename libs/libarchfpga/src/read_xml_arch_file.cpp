@@ -87,13 +87,18 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
-		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
+		t_mode * mode, 
+        const bool timing_enabled,
+        const t_arch& arch,
+        const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
-static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
+        const bool timing_enabled,
+        const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec &spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vector<t_segment_inf>& segments, const t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
@@ -111,7 +116,9 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 static void ProcessDevice(pugi::xml_node Node, t_arch *arch, t_default_fc_spec &arch_def_fc, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const t_default_fc_spec &arch_def_fc,
+		t_arch& arch,
+        const bool timing_enabled,
+        const t_default_fc_spec &arch_def_fc,
         const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		t_arch_switch_inf **Switches, int *NumSwitches,
@@ -191,7 +198,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
 	if (vtr::check_file_name_extension(ArchFile, ".xml") == false) {
-		vtr::printf_warning(__FILE__, __LINE__,
+		VTR_LOG_WARN(
 				"Architecture file '%s' may be in incorrect format. "
 						"Expecting .xml format for architecture files.\n",
 				ArchFile);
@@ -217,7 +224,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         char* Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
         if (Prop != NULL) {
             if (atof(Prop) > atof(VPR_VERSION)) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
                         atof(Prop));
             }
@@ -260,7 +267,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         /* Process types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, Types, NumTypes, *arch, arch_def_fc, loc_data);
+        ProcessComplexBlocks(Next, Types, NumTypes, *arch, timing_enabled, arch_def_fc, loc_data);
 
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
@@ -968,7 +975,10 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_t
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
-		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data) {
+		t_mode * mode,
+        const bool timing_enabled,
+        const t_arch& arch,
+        const pugiutil::loc_data& loc_data) {
 	int num_ports, i, j, k, num_annotations;
 	const char *Prop;
 	pugi::xml_node Cur;
@@ -1196,7 +1206,9 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		}
 		VTR_ASSERT(j == num_annotations);
 
-        check_leaf_pb_model_timing_consistency(pb_type, arch);
+        if (timing_enabled) {
+            check_leaf_pb_model_timing_consistency(pb_type, arch);
+        }
 
 		/* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
 		if (pb_type->class_type == LUT_CLASS) {
@@ -1221,7 +1233,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 					sizeof(t_mode));
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
-			ProcessMode(Parent, &pb_type->modes[i], arch, loc_data);
+			ProcessMode(Parent, &pb_type->modes[i], timing_enabled, arch, loc_data);
 			i++;
 		} else {
 			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
@@ -1232,7 +1244,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 				if (0 == strcmp(Cur.name(), "mode")) {
 					pb_type->modes[i].parent_pb_type = pb_type;
 					pb_type->modes[i].index = i;
-					ProcessMode(Cur, &pb_type->modes[i], arch, loc_data);
+					ProcessMode(Cur, &pb_type->modes[i], timing_enabled, arch, loc_data);
 
 					ret_mode_names = mode_names.insert(
 							pair<string, int>(pb_type->modes[i].name, 0));
@@ -1608,7 +1620,9 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 	VTR_ASSERT(i == num_interconnect);
 }
 
-static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
+        const bool timing_enabled,
+        const t_arch& arch,
 		const pugiutil::loc_data& loc_data) {
 	int i;
 	const char *Prop;
@@ -1632,7 +1646,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 		Cur = get_first_child(Parent, "pb_type", loc_data);
 		while (Cur != nullptr) {
 			if (0 == strcmp(Cur.name(), "pb_type")) {
-				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, arch, loc_data);
+				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data);
 
 				ret_pb_types = pb_type_names.insert(
 						pair<string, int>(mode->pb_type_children[i].name, 0));
@@ -1764,7 +1778,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, std::vecto
 
                         if (default_overriden) {
                             //Warn if multiple overrides match
-                            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(Node), "Multiple matching Fc overrides found; the last will be applied\n");
+                            VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(Node), "Multiple matching Fc overrides found; the last will be applied\n");
                         }
 
                         fc_spec.fc_value_type = fc_override.fc_value_type;
@@ -2603,7 +2617,9 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		t_arch& arch, const t_default_fc_spec &arch_def_fc,
+		t_arch& arch,
+        const bool timing_enabled,
+        const t_default_fc_spec &arch_def_fc,
         const pugiutil::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
@@ -2648,7 +2664,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		/* Load pb_type info */
 		Type->pb_type = new t_pb_type;
 		Type->pb_type->name = vtr::strdup(Type->name);
-		ProcessPb_Type(CurType, Type->pb_type, nullptr, arch, loc_data);
+		ProcessPb_Type(CurType, Type->pb_type, nullptr, timing_enabled, arch, loc_data);
 		Type->num_pins = Type->capacity
 				* (Type->pb_type->num_input_pins
 						+ Type->pb_type->num_output_pins
@@ -3688,7 +3704,7 @@ void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_dat
            && port->combinational_sink_ports.empty() //Doesn't drive any combinational outputs
            && !port->is_clock //Not an input clock
           ) {
-            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(model_tag),
+            VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(model_tag),
                     "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model->name, port->name);
         }
 
@@ -3701,7 +3717,7 @@ void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_dat
            && !comb_connected_outputs.count(port->name) //Not combinationally drivven
            && !port->is_clock //Not an output clock
            ) {
-            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(model_tag),
+            VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(model_tag),
                     "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model->name, port->name);
         }
     }
@@ -3875,7 +3891,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         if (is_library_model(model)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                            VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                         } else {
                             archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
                         }
@@ -3894,7 +3910,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                             if (is_library_model(model)) {
                                 //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                                vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                                VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                             } else {
                                 archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
                             }
@@ -3914,7 +3930,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         if (is_library_model(model)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                            VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                         } else {
                             archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
                         }
@@ -3933,7 +3949,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                             if (is_library_model(model)) {
                                 //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                                vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                                VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                             } else {
                                 archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
                             }
@@ -3954,7 +3970,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         if (is_library_model(model)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                            VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                         } else {
                             archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
                         }

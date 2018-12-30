@@ -185,7 +185,7 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
     auto& route_ctx = g_vpr_ctx.routing();
 
 	root_rc = alloc_rc_node(rc_node_free_list_ptr);
-	tptr = route_ctx.trace_head[net_id];
+	tptr = route_ctx.trace[net_id].head;
 
 	if (tptr == nullptr) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__,
@@ -500,7 +500,7 @@ static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node, Clust
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-	tptr = route_ctx.trace_head[net_id];
+	tptr = route_ctx.trace[net_id].head;
 
 	while (tptr != nullptr) {
 		inode = tptr->index;

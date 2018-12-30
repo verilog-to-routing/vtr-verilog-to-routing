@@ -39,7 +39,7 @@ All tasks must contain a configuration file located here::
 :numref:`fig_vtr_tasks_file_layout` illustrates the directory layout for a VTR task.
 Every time the task is run a new ``run<#>`` directory is created to store the output files, where ``<#>`` is the smallest integer to make the run directory name unique.
 
-The symbolic link ``run_latest`` will point to the most recent ``run<#>`` directory.
+The symbolic link ``latest`` will point to the most recent ``run<#>`` directory.
 
 .. _fig_vtr_tasks_file_layout:
 
@@ -58,7 +58,7 @@ The symbolic link ``run_latest`` will point to the most recent ``run<#>`` direct
         node_run1[label="run001"];
         node_run2[label="run002"];
         node_run3[label="run003"];
-        node_runlatest[label="run_latest", fillcolor="/blues4/1:/blues4/2"];
+        node_runlatest[label="latest", fillcolor="/blues4/1:/blues4/2"];
 
         node_arch1[label="\<arch1\>"];
         node_arch2[label="\<arch2\>"];

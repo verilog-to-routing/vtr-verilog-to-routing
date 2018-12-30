@@ -29,7 +29,9 @@ inline float ClbDelayCalc::trace_delay(ClusterBlockId clb, int src_pb_route_id, 
     VTR_ASSERT(src_pb_route_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
     VTR_ASSERT(sink_pb_route_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
 
-    const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
+    const auto& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
+
+    VTR_ASSERT_SAFE(pb_routes.count(src_pb_route_id));
 
     AtomNetId atom_net = pb_routes[src_pb_route_id].atom_net_id;
 
@@ -73,17 +75,20 @@ inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(ClusterBlockId cl
 
     int type_index = cluster_ctx.clb_nlist.block_type(clb)->index;
 
-    int upstream_pb_route_idx = cluster_ctx.clb_nlist.block_pb(clb)->pb_route[pb_route_idx].driver_pb_pin_id;
+    const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb);
+    if (pb->pb_route.count(pb_route_idx)) {
+        int upstream_pb_route_idx = pb->pb_route[pb_route_idx].driver_pb_pin_id;
 
-    if(upstream_pb_route_idx >= 0) {
+        if(upstream_pb_route_idx >= 0) {
 
-        const t_pb_graph_pin* pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, pb_route_idx);
-        const t_pb_graph_pin* upstream_pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, upstream_pb_route_idx);
+            const t_pb_graph_pin* pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, pb_route_idx);
+            const t_pb_graph_pin* upstream_pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, upstream_pb_route_idx);
 
-        return find_pb_graph_edge(upstream_pb_gpin, pb_gpin); 
-    } else {
-        return nullptr;
+            return find_pb_graph_edge(upstream_pb_gpin, pb_gpin); 
+        }
     }
+
+    return nullptr;
 }
 
 inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const {

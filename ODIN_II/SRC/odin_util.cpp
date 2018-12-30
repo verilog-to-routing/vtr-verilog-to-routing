@@ -40,6 +40,199 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <regex>
 #include <stdbool.h>
 
+
+/* string conversions */
+const char *MULTI_PORT_MUX_string = "MULTI_PORT_MUX";
+const char *FF_NODE_string = "FF_NODE";
+const char *BUF_NODE_string = "BUF_NODE";
+const char *INPUT_NODE_string = "INPUT_NODE";
+const char *CLOCK_NODE_string = "CLOCK_NODE";
+const char *OUTPUT_NODE_string = "OUTPUT_NODE";
+const char *GND_NODE_string = "GND_NODE";
+const char *VCC_NODE_string = "VCC_NODE";
+const char *ADD_string = "ADD";
+const char *MINUS_string = "MINUS";
+const char *BITWISE_NOT_string = "BITWISE_NOT";
+const char *BITWISE_AND_string = "BITWISE_AND";
+const char *BITWISE_OR_string = "BITWISE_OR";
+const char *BITWISE_NAND_string = "BITWISE_NAND";
+const char *BITWISE_NOR_string = "BITWISE_NOR";
+const char *BITWISE_XNOR_string = "BITWISE_XNOR";
+const char *BITWISE_XOR_string = "BITWISE_XOR";
+const char *LOGICAL_NOT_string = "LOGICAL_NOT";
+const char *LOGICAL_OR_string = "LOGICAL_OR";
+const char *LOGICAL_AND_string = "LOGICAL_AND";
+const char *LOGICAL_NAND_string = "LOGICAL_NAND";
+const char *LOGICAL_NOR_string = "LOGICAL_NOR";
+const char *LOGICAL_XOR_string = "LOGICAL_XOR";
+const char *LOGICAL_XNOR_string = "LOGICAL_XNOR";
+const char *MULTIPLY_string = "MULTIPLY";
+const char *DIVIDE_string = "DIVIDE";
+const char *MODULO_string = "MODULO";
+const char *LT_string = "LT";
+const char *GT_string = "GT";
+const char *LOGICAL_EQUAL_string = "LOGICAL_EQUAL";
+const char *NOT_EQUAL_string = "NOT_EQUAL";
+const char *LTE_string = "LTE";
+const char *GTE_string = "GTE";
+const char *SR_string = "SR";
+const char *ASR_string = "ASR";
+const char *SL_string = "SL";
+const char *CASE_EQUAL_string = "CASE_EQUAL";
+const char *CASE_NOT_EQUAL_string = "CASE_NOT_EQUAL";
+const char *ADDER_FUNC_string = "ADDER_FUNC";
+const char *CARRY_FUNC_string = "CARRY_FUNC";
+const char *MUX_2_string = "MUX_2";
+const char *HARD_IP_string = "HARD_IP";
+const char *MEMORY_string = "MEMORY";
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name_based_on_op)
+ * 	Get the string version of a node
+ *-------------------------------------------------------------------------------------------*/
+const char *node_name_based_on_op(nnode_t *node)
+{
+	const char *return_string;
+
+	switch(node->type)
+	{
+		case MULTI_PORT_MUX:
+			return_string = MULTI_PORT_MUX_string;
+			break;
+		case FF_NODE:
+			return_string = FF_NODE_string;
+			break;
+		case BUF_NODE:
+			return_string = BUF_NODE_string;
+			break;
+		case CLOCK_NODE:
+			return_string = CLOCK_NODE_string;
+			break;
+		case INPUT_NODE:
+			return_string = INPUT_NODE_string;
+			break;
+		case OUTPUT_NODE:
+			return_string = OUTPUT_NODE_string;
+			break;
+		case GND_NODE:
+			return_string = GND_NODE_string;
+			break;
+		case VCC_NODE:
+			return_string = VCC_NODE_string;
+			break;
+		case ADD:
+			return_string = ADD_string;
+			break;
+		case MINUS:
+			return_string = MINUS_string;
+			break;
+		case BITWISE_NOT:
+			return_string = BITWISE_NOT_string;
+			break;
+		case BITWISE_AND:
+			return_string = BITWISE_AND_string;
+			break;
+		case BITWISE_OR:
+			return_string = BITWISE_OR_string;
+			break;
+		case BITWISE_NAND:
+			return_string = BITWISE_NAND_string;
+			break;
+		case BITWISE_NOR:
+			return_string = BITWISE_NOR_string;
+			break;
+		case BITWISE_XNOR:
+			return_string = BITWISE_XNOR_string;
+			break;
+		case BITWISE_XOR:
+			return_string = BITWISE_XOR_string;
+			break;
+		case LOGICAL_NOT:
+			return_string = LOGICAL_NOT_string;
+			break;
+		case LOGICAL_OR:
+			return_string = LOGICAL_OR_string;
+			break;
+		case LOGICAL_AND:
+			return_string = LOGICAL_AND_string;
+			break;
+		case LOGICAL_NOR:
+			return_string = LOGICAL_NOR_string;
+			break;
+		case LOGICAL_NAND:
+			return_string = LOGICAL_NAND_string;
+			break;
+		case LOGICAL_XOR:
+			return_string = LOGICAL_XOR_string;
+			break;
+		case LOGICAL_XNOR:
+			return_string = LOGICAL_XNOR_string;
+			break;
+		case MULTIPLY:
+			return_string = MULTIPLY_string;
+			break;
+		case DIVIDE:
+			return_string = DIVIDE_string;
+			break;
+		case MODULO:
+			return_string = MODULO_string;
+			break;
+		case LT:
+			return_string = LT_string;
+			break;
+		case GT:
+			return_string = GT_string;
+			break;
+		case LOGICAL_EQUAL:
+			return_string = LOGICAL_EQUAL_string;
+			break;
+		case NOT_EQUAL:
+			return_string = NOT_EQUAL_string;
+			break;
+		case LTE:
+			return_string = LTE_string;
+			break;
+		case GTE:
+			return_string = GTE_string;
+			break;
+		case SR:
+			return_string = SR_string;
+			break;
+		case ASR:
+			return_string = ASR_string;
+			break;
+		case SL:
+			return_string = SL_string;
+			break;
+		case CASE_EQUAL:
+			return_string = CASE_EQUAL_string;
+			break;
+		case CASE_NOT_EQUAL:
+			return_string = CASE_NOT_EQUAL_string;
+			break;
+		case ADDER_FUNC:
+			return_string = ADDER_FUNC_string;
+			break;
+		case CARRY_FUNC:
+			return_string = CARRY_FUNC_string;
+			break;
+		case MUX_2:
+			return_string = MUX_2_string;
+			break;
+		case MEMORY:
+			return_string = MEMORY_string;
+			break;
+		case HARD_IP:
+			return_string = HARD_IP_string;
+			break;
+		default:
+			return_string = NULL;
+			oassert(FALSE);
+			break;
+	}
+	return return_string;
+}
+
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
 // return signal_name-bit
@@ -49,7 +242,9 @@ char *make_signal_name(char *signal_name, int bit)
 	oassert(signal_name);
 	std::stringstream return_string;
 	return_string << signal_name;
-	if (bit != -1) return_string << "-" << std::dec << bit;
+	if (bit != -1) 
+		return_string << "-" << std::dec << bit;
+		
 	return vtr::strdup(return_string.str().c_str());
 }
 
@@ -63,11 +258,20 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 {
 
 	std::stringstream return_string;
-	if(previous)								 return_string << previous;
-	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
-	if(signal_name && (previous || module_name)) return_string << "^";
-	if(signal_name)								 return_string << signal_name;
-	if(bit != -1){
+	if(previous)								 
+		return_string << previous;
+
+	if(module_name) 							 
+		return_string	<< "." << module_name << "+" << module_instance_name;
+
+	if(signal_name && (previous || module_name)) 
+		return_string << "^";
+
+	if(signal_name)								 
+		return_string << signal_name;
+
+	if(bit != -1)
+	{
 		oassert(signal_name);
 		return_string	<< "~" << std::dec << bit ;
 	}
@@ -724,6 +928,37 @@ void warning_message(short /*error_type*/, int line_number, int file, const char
 
 	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
 }
+
+void passed_verify_i_o_availabilty(nnode_t *node, int expected_input_size, int expected_output_size, const char *current_src, int line_src) {
+	if(!node)
+		error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%s", current_src, line_src);
+
+	std::stringstream err_message;
+	int error=0;
+
+	if(expected_input_size != -1 
+	&& node->num_input_pins != expected_input_size) {
+		err_message << " input size is " << std::to_string(node->num_input_pins) << " expected 3:\n";
+		for(int i=0; i< node->num_input_pins; i++)
+			err_message << "\t" << node->input_pins[0]->name << "\n";
+
+		error=1;
+	}
+
+	if(expected_output_size != -1
+	&& node->num_output_pins != expected_output_size) {
+		err_message << " output size is " << std::to_string(node->num_output_pins) << " expected 1:\n";
+		for(int i=0; i< node->num_output_pins; i++)
+			err_message << "\t" << node->output_pins[0]->name << "\n";
+
+		error=1;
+	}
+
+	if(error)
+		error_message(SIMULATION_ERROR, -1, -1, "failed for %s:%s %s\n",node_name_based_on_op(node), node->name, err_message.str().c_str());
+}
+
+
 /*
 Search and replace a string keeping original string intact
 */

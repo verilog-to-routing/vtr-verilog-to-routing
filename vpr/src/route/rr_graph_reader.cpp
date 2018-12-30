@@ -85,7 +85,7 @@ void load_rr_file(const t_graph_type graph_type,
     pugiutil::loc_data loc_data;
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml") == false) {
-        vtr::printf_warning(__FILE__, __LINE__,
+        VTR_LOG_WARN(
                 "RR graph file '%s' may be in incorrect format. "
                 "Expecting .xml format\n",
                 read_rr_graph_name);
@@ -103,11 +103,11 @@ void load_rr_file(const t_graph_type graph_type,
         Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(nullptr);
         if (Prop != nullptr) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
-                vtr::printf("\n");
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG("\n");
+                VTR_LOG_WARN(
                         "This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
                         vtr::VERSION, Prop);
-                vtr::printf("\n");
+                VTR_LOG("\n");
             }
         }
         Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(nullptr);
@@ -115,11 +115,11 @@ void load_rr_file(const t_graph_type graph_type,
         correct_string += get_arch_file_name();
         if (Prop != nullptr) {
             if (Prop != correct_string) {
-                vtr::printf("\n");
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG("\n");
+                VTR_LOG_WARN(
                         "This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n"
                         , get_arch_file_name(), Prop);
-                vtr::printf("\n");
+                VTR_LOG("\n");
             }
         }
 
@@ -133,7 +133,7 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_single_child(rr_graph, "segments", loc_data);
         verify_segments(next_component, loc_data, segment_inf);
 
-        vtr::printf_info("Starting build routing resource graph...\n");
+        VTR_LOG("Starting build routing resource graph...\n");
 
         next_component = get_first_child(rr_graph, "channels", loc_data);
         process_channels(next_component, loc_data);
@@ -186,10 +186,6 @@ void load_rr_file(const t_graph_type graph_type,
         }
 
         check_rr_graph(graph_type, grid, device_ctx.block_types);
-
-#ifdef USE_MAP_LOOKAHEAD
-        compute_router_lookahead(segment_inf.size());
-#endif
 
     } catch (XmlError& e) {
 

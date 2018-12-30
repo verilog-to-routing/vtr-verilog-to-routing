@@ -1026,9 +1026,12 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	node_copy->types.number.number = vtr::strdup(node->types.number.number);
 	node_copy->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
 
+    //Create a new child list
+    node_copy->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*)*node_copy->num_children);
+
 	//Recursively copy its children
 	for(i = 0; i < node->num_children; i++){
-		node_copy->children[i] = ast_node_deep_copy(node_copy->children[i]);
+		node_copy->children[i] = ast_node_deep_copy(node->children[i]);
 	}
 
 	return node_copy;
@@ -1134,6 +1137,7 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 		long long operand_0 = child_0->types.number.value;
 		long long operand_1 = child_1->types.number.value;
 		long long result = 0;
+        long long mask = 0ll;
 		short success = FALSE;
 
 		int length =0;
@@ -1204,6 +1208,18 @@ ast_node_t * fold_binary(ast_node_t *child_0 ,ast_node_t *child_1, operation_lis
 				result = operand_0 >> operand_1;
 				success = TRUE;
 				break;
+
+            case ASR:
+                result = operand_0 >> operand_1;
+                if(operand_0 < 0)
+                {
+                    for(long long shift = 0; shift<operand_1; shift++){
+                        mask |= 1 << ((sizeof(long long)*8) - (shift+1));
+                    }
+                }
+                result |= mask;
+                success = TRUE;
+                break;
 
 			case LOGICAL_AND:
 				result = operand_0 && operand_1;

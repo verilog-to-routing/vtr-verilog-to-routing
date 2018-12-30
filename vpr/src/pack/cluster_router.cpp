@@ -90,7 +90,7 @@ static bool is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data *router_data);
 static void save_and_reset_lb_route(t_lb_router_data *router_data);
-static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace);
+static void load_trace_to_pb_route(t_pb_routes& pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace);
 
 static std::string describe_lb_type_rr_node(int inode,
                                             const t_lb_router_data* router_data);
@@ -307,15 +307,15 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
                         int sink_rr_node = lb_nets[inet].terminals[itarget];
 
                         if (debug_clustering) {
-                            vtr::printf("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
+                            VTR_LOG("No possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
                                         describe_lb_type_rr_node(driver_rr_node, router_data).c_str(),
                                         describe_lb_type_rr_node(sink_rr_node, router_data).c_str(),
                                         atom_nlist.net_name(net_id).c_str(),
                                         atom_nlist.pin_name(driver_pin).c_str());
                             if (sink_pin) {
-                                vtr::printf(" to net pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
+                                VTR_LOG(" to net pin '%s'", atom_nlist.pin_name(sink_pin).c_str());
                             }
-                            vtr::printf("\n");
+                            VTR_LOG("\n");
                         }
 					} else {
 						exp_node = pq.top();
@@ -358,7 +358,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 		} else {
 			--inet;
             auto& atom_ctx = g_vpr_ctx.atom();
-			vtr::printf("Net '%s' is impossible to route within proposed %s cluster\n", atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
+			VTR_LOG("Net '%s' is impossible to route within proposed %s cluster\n", atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
 			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
@@ -377,7 +377,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 				//Report the congested nodes and associated nets
 				auto congested_rr_nodes = find_congested_rr_nodes(lb_type_graph, router_data->lb_rr_node_stats);
 				if (!congested_rr_nodes.empty()) {
-					vtr::printf("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
+					VTR_LOG("%s\n", describe_congested_rr_nodes(congested_rr_nodes, router_data).c_str());
 				}
 			}
 		}
@@ -398,15 +398,10 @@ bool try_intra_lb_route(t_lb_router_data *router_data,
 
 /* Creates an array [0..num_pb_graph_pins-1] lookup for intra-logic block routing.  Given pb_graph_pin id for clb, lookup atom net that uses that pin.
    If pin is not used, stores OPEN at that pin location */
-t_pb_route *alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets, t_pb_graph_node *pb_graph_head) {
+t_pb_routes alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets, t_pb_graph_node *pb_graph_head) {
 	const vector <t_intra_lb_net> &lb_nets = *intra_lb_nets;
 	int total_pins = pb_graph_head->total_pb_pins;
-	t_pb_route * pb_route = new t_pb_route[pb_graph_head->total_pb_pins];
-
-	for(int ipin = 0; ipin < total_pins; ipin++) {
-		pb_route[ipin].atom_net_id = AtomNetId::INVALID();
-		pb_route[ipin].driver_pb_pin_id = OPEN;
-	}
+	t_pb_routes pb_route;
 
 	for(int inet = 0; inet < (int)lb_nets.size(); inet++) {
 		load_trace_to_pb_route(pb_route, total_pins, lb_nets[inet].atom_net_id, OPEN, lb_nets[inet].rt_tree);
@@ -441,14 +436,15 @@ Internal Functions
 ****************************************************************************/
 
 /* Recurse through route tree trace to populate pb pin to atom net lookup array */
-static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace) {
+static void load_trace_to_pb_route(t_pb_routes& pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace) {
 	int ipin = trace->current_node;
 	int driver_pb_pin_id = prev_pin_id;
 	int cur_pin_id = OPEN;
 	if(ipin < total_pins) {
 		/* This routing node corresponds with a pin.  This node is virtual (ie. sink or source node) */
 		cur_pin_id = ipin;
-		if(!pb_route[cur_pin_id].atom_net_id) {
+		if(!pb_route.count(ipin)) {
+            pb_route.insert(std::make_pair(cur_pin_id, t_pb_route()));
 			pb_route[cur_pin_id].atom_net_id = net_id;
 			pb_route[cur_pin_id].driver_pb_pin_id = driver_pb_pin_id;
 		} else {
@@ -825,7 +821,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                 //Remap this terminal to an explicit pin instead of the common sink
                 int pin_index = pb_graph_pin->pin_count_in_cluster;
 
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                             "Found duplicate nets connected to logically equivalent pins. "
                             "Remapping intra lb net %d (atom net %zu '%s') from common sink "
                             "pb_route %d to fixed pin pb_route %d\n",

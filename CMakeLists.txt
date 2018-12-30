@@ -20,6 +20,7 @@ set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
+option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
@@ -181,9 +182,19 @@ if(VTR_ENABLE_COVERAGE)
 endif()
 
 #
+# Debug logging
+#
+set(LOGGING_FLAGS "")
+if(VTR_ENABLE_DEBUG_LOGGING)
+    #Enable gcov
+    set(LOGGING_FLAGS "-DVTR_ENABLE_DEBUG_LOGGING")
+    message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
+endif()
+
+#
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 

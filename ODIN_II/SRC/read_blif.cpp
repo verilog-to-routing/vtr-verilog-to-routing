@@ -45,11 +45,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define READ_BLIF_BUFFER 1048576 // 1MB
 
 size_t file_line_number;
+int line_count;
 
 const char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
 const char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";
 const char *BLIF_PAD_STRING    = "ZERO_PAD_ZERO";
-const char *DEFAULT_CLOCK_NAME = "top^clock";
 
 // Stores pin names of the form port[pin]
 typedef struct {
@@ -89,8 +89,10 @@ typedef struct {
 } hard_block_models;
 
 
-//netlist_t * verilog_netlist;
+netlist_t * blif_netlist;
 short static skip_reading_bit_map=FALSE;
+bool insert_global_clock;
+
 
 void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash);
 void rb_look_for_clocks();// not sure if this is needed
@@ -133,17 +135,19 @@ int count_blif_lines(FILE *file);
 /*
  * Reads a blif file with the given filename and produces
  * a netlist which is referred to by the global variable
- * "verilog_netlist".
+ * "blif_netlist".
  */
-void read_blif(char * blif_file)
+netlist_t *read_blif()
 {
-	char local_blif[255];
-	odin_sprintf(local_blif, "%s", blif_file);
-
-	verilog_netlist = allocate_netlist();
+	insert_global_clock = true;
+	current_parse_file = 0;
+	blif_netlist = allocate_netlist();
 	/*Opening the blif file */
-	FILE *file = vtr::fopen (local_blif, "r");
-
+	FILE *file = vtr::fopen (configuration.list_of_file_names[current_parse_file].c_str(), "r");
+	if (file == NULL)
+	{
+		error_message(-1, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+	}
 	int num_lines = count_blif_lines(file);
 
 	hashtable_t *output_nets_hash = create_hashtable((num_lines) + 1);
@@ -156,7 +160,7 @@ void read_blif(char * blif_file)
 	printf("Reading blif netlist..."); fflush(stdout);
 
 	file_line_number  = 0;
-	int line_count = 0;
+	line_count = 0;
 	int position   = -1;
 	double time    = wall_time();
 	// A cache of hard block models indexed by name. As each one is read, it's stored here to be used again.
@@ -175,9 +179,10 @@ void read_blif(char * blif_file)
 	printf("-------------------------------------\n"); fflush(stdout);
 
 	// Outputs netlist graph.
-	check_netlist(verilog_netlist);
+	check_netlist(blif_netlist);
 	output_nets_hash->destroy(output_nets_hash);
 	fclose (file);
+	return blif_netlist;
 }
 
 
@@ -300,6 +305,7 @@ short assign_node_type_from_node_name(char * output_name)
 	else if (!strcmp(extracted_string,"MULTI_PORT_MUX")) return MULTI_PORT_MUX;
 	else if (!strcmp(extracted_string,"SL"))             return SL;
 	else if (!strcmp(extracted_string,"SR"))             return SR;
+	else if (!strcmp(extracted_string,"ASR"))            return ASR;
 	else if (!strcmp(extracted_string,"CASE_EQUAL"))     return CASE_EQUAL;
 	else if (!strcmp(extracted_string,"CASE_NOT_EQUAL")) return CASE_NOT_EQUAL;
 	else if (!strcmp(extracted_string,"DIVIDE"))         return DIVIDE;
@@ -351,7 +357,15 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		}
 		else
 		{
-			error_message(NETLIST_ERROR,file_line_number,-1, "This .latch Format not supported \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>");
+			std::string line = "";
+			for(int i=0; i< input_token_count; i++)
+			{
+				line +=  names[i];
+				line += " ";
+			}
+
+			error_message(NETLIST_ERROR,current_parse_file,file_line_number, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
+			line.c_str());
 		}
 	}
 
@@ -401,9 +415,11 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	/* add a name for the node, keeping the name of the node same as the output */
 	new_node->name = make_full_ref_name(names[1],NULL, NULL, NULL,-1);
 
-	/*add this node to verilog_netlist as an ff (flip-flop) node */
-	verilog_netlist->ff_nodes = (nnode_t **)vtr::realloc(verilog_netlist->ff_nodes, sizeof(nnode_t*)*(verilog_netlist->num_ff_nodes+1));
-	verilog_netlist->ff_nodes[verilog_netlist->num_ff_nodes++] = new_node;
+	/*add this node to blif_netlist as an ff (flip-flop) node */
+	blif_netlist->ff_nodes = (nnode_t **)vtr::realloc(blif_netlist->ff_nodes, sizeof(nnode_t*)*(blif_netlist->num_ff_nodes+1));
+	blif_netlist->ff_nodes[blif_netlist->num_ff_nodes++] = new_node;
+	new_node->file_number = current_parse_file;
+	new_node->line_number = line_count;
 
 	/*add name information and a net(driver) for the output */
 	nnet_t *new_net = allocate_nnet();
@@ -630,9 +646,11 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	new_node->related_ast_node->children[0] = (ast_node_t *)vtr::calloc(1, sizeof(ast_node_t));
 	new_node->related_ast_node->children[0]->types.identifier = vtr::strdup(subcircuit_name);
 
-  	/*add this node to verilog_netlist as an internal node */
-  	verilog_netlist->internal_nodes = (nnode_t **)vtr::realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*) * (verilog_netlist->num_internal_nodes + 1));
-  	verilog_netlist->internal_nodes[verilog_netlist->num_internal_nodes++] = new_node;
+  	/*add this node to blif_netlist as an internal node */
+  	blif_netlist->internal_nodes = (nnode_t **)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
+  	blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
+	new_node->file_number = current_parse_file;
+	new_node->line_number = line_count;
 
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items(mapping_index);
@@ -749,9 +767,11 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		/* add a name for the node, keeping the name of the node same as the output */
 		new_node->name = make_full_ref_name(names[input_count-1],NULL, NULL, NULL,-1);
 
-		/*add this node to verilog_netlist as an internal node */
-		verilog_netlist->internal_nodes = (nnode_t**)vtr::realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*)*(verilog_netlist->num_internal_nodes+1));
-		verilog_netlist->internal_nodes[verilog_netlist->num_internal_nodes++] = new_node;
+		/*add this node to blif_netlist as an internal node */
+		blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*)*(blif_netlist->num_internal_nodes+1));
+		blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
+		new_node->file_number = current_parse_file;
+		new_node->line_number = line_count;
 
 		/*add name information and a net(driver) for the output */
 
@@ -1018,51 +1038,71 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
    * function: add_top_input_nodes
      to add the top level inputs to the netlist
 *-------------------------------------------------------------------------------------------*/
+static void build_top_input_node(const char *name_str, hashtable_t *output_nets_hash)
+{
+	char *temp_string = make_full_ref_name(name_str, NULL, NULL,NULL, -1);
+
+	/* create a new top input node and net*/
+
+	nnode_t *new_node = allocate_nnode();
+
+	new_node->related_ast_node = NULL;
+	new_node->type = INPUT_NODE;
+
+	/* add the name of the input variable */
+	new_node->name = temp_string;
+
+	new_node->file_number = current_parse_file;
+	new_node->line_number = line_count;
+
+	/* allocate the pins needed */
+	allocate_more_output_pins(new_node, 1);
+	add_output_port_information(new_node, 1);
+
+	/* Create the pin connection for the net */
+	npin_t *new_pin = allocate_npin();
+	new_pin->name = vtr::strdup(temp_string);
+	new_pin->type = OUTPUT;
+
+	/* hookup the pin, net, and node */
+	add_output_pin_to_node(new_node, new_pin, 0);
+
+	nnet_t *new_net = allocate_nnet();
+	new_net->name = vtr::strdup(temp_string);
+
+	add_driver_pin_to_net(new_net, new_pin);
+
+	blif_netlist->top_input_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_input_nodes, sizeof(nnode_t*)*(blif_netlist->num_top_input_nodes+1));
+	blif_netlist->top_input_nodes[blif_netlist->num_top_input_nodes++] = new_node;
+
+	//long sc_spot = sc_add_string(output_nets_sc, temp_string);
+	//if (output_nets_sc->data[sc_spot])
+	//warning_message(NETLIST_ERROR,linenum,-1, "Net (%s) with the same name already created\n",temp_string);
+
+	//output_nets_sc->data[sc_spot] = new_net;
+
+	output_nets_hash->add(output_nets_hash, temp_string, strlen(temp_string)*sizeof(char), new_net);
+}
+
 void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 {
+	/**
+	 * insert a global clock for fall back. 
+	 * in case of undriven internal clocks, they will attach to the global clock
+	 * this also fix the issue of constant verilog (no input)
+	 * that cannot simulate due to empty input vector
+	 */
+	if(insert_global_clock)
+	{
+		insert_global_clock = false;
+		build_top_input_node(DEFAULT_CLOCK_NAME, output_nets_hash);
+	}
+
 	char *ptr;
 	char buffer[READ_BLIF_BUFFER];
 	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 	{
-		char *temp_string = make_full_ref_name(ptr, NULL, NULL,NULL, -1);
-
-		/* create a new top input node and net*/
-
-		nnode_t *new_node = allocate_nnode();
-
-		new_node->related_ast_node = NULL;
-		new_node->type = INPUT_NODE;
-
-		/* add the name of the input variable */
-		new_node->name = temp_string;
-
-		/* allocate the pins needed */
-		allocate_more_output_pins(new_node, 1);
-		add_output_port_information(new_node, 1);
-
-		/* Create the pin connection for the net */
-		npin_t *new_pin = allocate_npin();
-		new_pin->name = vtr::strdup(temp_string);
-		new_pin->type = OUTPUT;
-
-		/* hookup the pin, net, and node */
-		add_output_pin_to_node(new_node, new_pin, 0);
-
-		nnet_t *new_net = allocate_nnet();
-		new_net->name = vtr::strdup(temp_string);
-
-		add_driver_pin_to_net(new_net, new_pin);
-
-		verilog_netlist->top_input_nodes = (nnode_t**)vtr::realloc(verilog_netlist->top_input_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_input_nodes+1));
-		verilog_netlist->top_input_nodes[verilog_netlist->num_top_input_nodes++] = new_node;
-
-		//long sc_spot = sc_add_string(output_nets_sc, temp_string);
-		//if (output_nets_sc->data[sc_spot])
-		//warning_message(NETLIST_ERROR,linenum,-1, "Net (%s) with the same name already created\n",temp_string);
-
-		//output_nets_sc->data[sc_spot] = new_net;
-
-		output_nets_hash->add(output_nets_hash, temp_string, strlen(temp_string)*sizeof(char), new_net);
+		build_top_input_node(ptr, output_nets_hash);
 	}
 }
 
@@ -1099,10 +1139,12 @@ void rb_create_top_output_nodes(FILE *file)
 		/* hookup the pin, net, and node */
 		add_input_pin_to_node(new_node, new_pin, 0);
 
-		/*adding the node to the verilog_netlist output nodes
+		/*adding the node to the blif_netlist output nodes
 		add_node_to_netlist() function can also be used */
-		verilog_netlist->top_output_nodes = (nnode_t**)vtr::realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
-		verilog_netlist->top_output_nodes[verilog_netlist->num_top_output_nodes++] = new_node;
+		blif_netlist->top_output_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_output_nodes, sizeof(nnode_t*)*(blif_netlist->num_top_output_nodes+1));
+		blif_netlist->top_output_nodes[blif_netlist->num_top_output_nodes++] = new_node;
+		new_node->file_number = current_parse_file;
+		new_node->line_number = line_count;
 	}
 }
 
@@ -1114,11 +1156,11 @@ void rb_create_top_output_nodes(FILE *file)
 void rb_look_for_clocks()
 {
 	int i;
-	for (i = 0; i < verilog_netlist->num_ff_nodes; i++)
+	for (i = 0; i < blif_netlist->num_ff_nodes; i++)
 	{
-		if (verilog_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type != CLOCK_NODE)
+		if (blif_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type != CLOCK_NODE)
 		{
-			verilog_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type = CLOCK_NODE;
+			blif_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type = CLOCK_NODE;
 		}
 	}
 
@@ -1140,58 +1182,58 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 
 	/* ZERO net */
 	/* description given for the zero net is same for other two */
-	verilog_netlist->zero_net = allocate_nnet(); // allocate memory to net pointer
-	verilog_netlist->gnd_node = allocate_nnode(); // allocate memory to node pointer
-	verilog_netlist->gnd_node->type = GND_NODE;  // mark the type
-	allocate_more_output_pins(verilog_netlist->gnd_node, 1);// alloacate 1 output pin pointer to this node
-	add_output_port_information(verilog_netlist->gnd_node, 1);// add port info. this port has 1 pin ,till now number of port for this is one
+	blif_netlist->zero_net = allocate_nnet(); // allocate memory to net pointer
+	blif_netlist->gnd_node = allocate_nnode(); // allocate memory to node pointer
+	blif_netlist->gnd_node->type = GND_NODE;  // mark the type
+	allocate_more_output_pins(blif_netlist->gnd_node, 1);// alloacate 1 output pin pointer to this node
+	add_output_port_information(blif_netlist->gnd_node, 1);// add port info. this port has 1 pin ,till now number of port for this is one
 	new_pin = allocate_npin();
-	add_output_pin_to_node(verilog_netlist->gnd_node, new_pin, 0);// add this pin to output pin pointer array of this node
-	add_driver_pin_to_net(verilog_netlist->zero_net,new_pin);// add this pin to net as driver pin
+	add_output_pin_to_node(blif_netlist->gnd_node, new_pin, 0);// add this pin to output pin pointer array of this node
+	add_driver_pin_to_net(blif_netlist->zero_net,new_pin);// add this pin to net as driver pin
 
 	/*ONE net*/
-	verilog_netlist->one_net = allocate_nnet();
-	verilog_netlist->vcc_node = allocate_nnode();
-	verilog_netlist->vcc_node->type = VCC_NODE;
-	allocate_more_output_pins(verilog_netlist->vcc_node, 1);
-	add_output_port_information(verilog_netlist->vcc_node, 1);
+	blif_netlist->one_net = allocate_nnet();
+	blif_netlist->vcc_node = allocate_nnode();
+	blif_netlist->vcc_node->type = VCC_NODE;
+	allocate_more_output_pins(blif_netlist->vcc_node, 1);
+	add_output_port_information(blif_netlist->vcc_node, 1);
 	new_pin = allocate_npin();
-	add_output_pin_to_node(verilog_netlist->vcc_node, new_pin, 0);
-	add_driver_pin_to_net(verilog_netlist->one_net, new_pin);
+	add_output_pin_to_node(blif_netlist->vcc_node, new_pin, 0);
+	add_driver_pin_to_net(blif_netlist->one_net, new_pin);
 
 	/* Pad net */
-	verilog_netlist->pad_net = allocate_nnet();
-	verilog_netlist->pad_node = allocate_nnode();
-	verilog_netlist->pad_node->type = PAD_NODE;
-	allocate_more_output_pins(verilog_netlist->pad_node, 1);
-	add_output_port_information(verilog_netlist->pad_node, 1);
+	blif_netlist->pad_net = allocate_nnet();
+	blif_netlist->pad_node = allocate_nnode();
+	blif_netlist->pad_node->type = PAD_NODE;
+	allocate_more_output_pins(blif_netlist->pad_node, 1);
+	add_output_port_information(blif_netlist->pad_node, 1);
 	new_pin = allocate_npin();
-	add_output_pin_to_node(verilog_netlist->pad_node, new_pin, 0);
-	add_driver_pin_to_net(verilog_netlist->pad_net, new_pin);
+	add_output_pin_to_node(blif_netlist->pad_node, new_pin, 0);
+	add_driver_pin_to_net(blif_netlist->pad_net, new_pin);
 
 	/* CREATE the driver for the ZERO */
 	BLIF_ZERO_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
-	verilog_netlist->gnd_node->name = vtr::strdup(GND_NAME);
+	blif_netlist->gnd_node->name = vtr::strdup(GND_NAME);
 
-	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->gnd_node->name, strlen(verilog_netlist->gnd_node->name)*sizeof(char), verilog_netlist->zero_net);
+	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->gnd_node->name, strlen(blif_netlist->gnd_node->name)*sizeof(char), blif_netlist->zero_net);
 
-	verilog_netlist->zero_net->name = vtr::strdup(BLIF_ZERO_STRING);
+	blif_netlist->zero_net->name = vtr::strdup(BLIF_ZERO_STRING);
 
 	/* CREATE the driver for the ONE and store twice */
 	BLIF_ONE_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
-	verilog_netlist->vcc_node->name = vtr::strdup(VCC_NAME);
+	blif_netlist->vcc_node->name = vtr::strdup(VCC_NAME);
 
-	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->vcc_node->name, strlen(verilog_netlist->vcc_node->name)*sizeof(char), verilog_netlist->one_net);
+	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->vcc_node->name, strlen(blif_netlist->vcc_node->name)*sizeof(char), blif_netlist->one_net);
 
-	verilog_netlist->one_net->name = vtr::strdup(BLIF_ONE_STRING);
+	blif_netlist->one_net->name = vtr::strdup(BLIF_ONE_STRING);
 
 	/* CREATE the driver for the PAD */
 	BLIF_PAD_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
-	verilog_netlist->pad_node->name = vtr::strdup(HBPAD_NAME);
+	blif_netlist->pad_node->name = vtr::strdup(HBPAD_NAME);
 
-	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->pad_node->name, strlen(verilog_netlist->pad_node->name)*sizeof(char), verilog_netlist->pad_net);
+	output_nets_hash->add(output_nets_hash, (void *)blif_netlist->pad_node->name, strlen(blif_netlist->pad_node->name)*sizeof(char), blif_netlist->pad_net);
 
-	verilog_netlist->pad_net->name = vtr::strdup(BLIF_PAD_STRING);
+	blif_netlist->pad_net->name = vtr::strdup(BLIF_PAD_STRING);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1211,8 +1253,8 @@ static void dum_parse (char *buffer, FILE *file)
  *-------------------------------------------------------------------------------------------*/
 void hook_up_nets(hashtable_t *output_nets_hash)
 {
-	nnode_t **node_sets[] = {verilog_netlist->internal_nodes,     verilog_netlist->ff_nodes,     verilog_netlist->top_output_nodes};
-	int          counts[] = {verilog_netlist->num_internal_nodes, verilog_netlist->num_ff_nodes, verilog_netlist->num_top_output_nodes};
+	nnode_t **node_sets[] = {blif_netlist->internal_nodes,     blif_netlist->ff_nodes,     blif_netlist->top_output_nodes};
+	int          counts[] = {blif_netlist->num_internal_nodes, blif_netlist->num_ff_nodes, blif_netlist->num_top_output_nodes};
 	int        num_sets   = 3;
 
 	/* hook all the input pins in all the internal nodes to the net */

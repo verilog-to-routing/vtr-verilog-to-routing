@@ -38,4 +38,7 @@ t_point atom_pin_draw_coord(AtomPinId pin);
 //Returns the drawing coordinates of the specified tnode
 t_point tnode_draw_coord(tatum::NodeId node);
 
+void annotate_draw_rr_node_costs(ClusterNetId net, int sink_rr_node);
+void clear_draw_rr_annotations();
+
 #endif /* DRAW_H */

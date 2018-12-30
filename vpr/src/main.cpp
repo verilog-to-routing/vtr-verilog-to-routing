@@ -61,35 +61,38 @@ int main(int argc, const char **argv) {
 
         bool flow_succeeded = vpr_flow(vpr_setup, Arch);
         if (!flow_succeeded) {
-            vtr::printf("Failed to implement circuit\n");
+            VTR_LOG("Failed to implement circuit\n");
             return UNIMPLEMENTABLE_EXIT_CODE;
         }
 
         auto& timing_ctx = g_vpr_ctx.timing();
-        vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n",
+        VTR_LOG("Timing analysis took %g seconds (%g STA, %g slack) (%zu full updates: %zu setup, %zu hold, %zu combined).\n",
                 timing_ctx.stats.timing_analysis_wallclock_time(),
                 timing_ctx.stats.sta_wallclock_time,
                 timing_ctx.stats.slack_wallclock_time,
-                timing_ctx.stats.num_full_updates);
+                timing_ctx.stats.num_full_updates(),
+                timing_ctx.stats.num_full_setup_updates,
+                timing_ctx.stats.num_full_hold_updates,
+                timing_ctx.stats.num_full_setup_hold_updates);
 #ifdef ENABLE_CLASSIC_VPR_STA
-        vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n",
+        VTR_LOG("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n",
                 timing_ctx.stats.old_timing_analysis_wallclock_time(),
                 timing_ctx.stats.old_sta_wallclock_time,
                 timing_ctx.stats.old_delay_annotation_wallclock_time,
                 timing_ctx.stats.num_old_sta_full_updates);
-        vtr::printf_info("\tSTA       Speed-up: %.2fx\n",
+        VTR_LOG("\tSTA       Speed-up: %.2fx\n",
                 timing_ctx.stats.old_sta_wallclock_time / timing_ctx.stats.sta_wallclock_time);
-        vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n",
+        VTR_LOG("\tSTA+Slack Speed-up: %.2fx\n",
                 timing_ctx.stats.old_timing_analysis_wallclock_time() / timing_ctx.stats.timing_analysis_wallclock_time());
 #endif
 
         /* free data structures */
         vpr_free_all(Arch, vpr_setup);
 
-        vtr::printf("Implemented circuit successfully\n");
+        VTR_LOG("Implemented circuit successfully\n");
 
     } catch (const tatum::Error& tatum_error) {
-        vtr::printf_error(__FILE__, __LINE__, "%s\n", format_tatum_error(tatum_error).c_str());
+        VTR_LOG_ERROR( "%s\n", format_tatum_error(tatum_error).c_str());
 
         return ERROR_EXIT_CODE;
 
@@ -103,7 +106,7 @@ int main(int argc, const char **argv) {
         }
 
     } catch (const vtr::VtrError& vtr_error) {
-        vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
+        VTR_LOG_ERROR( "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
 
         return ERROR_EXIT_CODE;
     }

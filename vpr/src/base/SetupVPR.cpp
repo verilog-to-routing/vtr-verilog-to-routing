@@ -295,7 +295,7 @@ static void SetupSwitches(const t_arch& Arch,
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
-        vtr::printf_warning(__FILE__, __LINE__, "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
+        VTR_LOG_WARN( "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
                 device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name.c_str());
     }
 
@@ -360,6 +360,12 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts)
     RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;
     RouterOpts->route_bb_update = Options.route_bb_update;
     RouterOpts->clock_modeling = Options.clock_modeling;
+    RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
+    RouterOpts->router_debug_net = Options.router_debug_net;
+    RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
+    RouterOpts->lookahead_type = Options.router_lookahead_type;
+    RouterOpts->max_convergence_count = Options.router_max_convergence_count;
+    RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -415,7 +421,7 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	PackerOpts->alpha = Options.alpha_clustering;
 	PackerOpts->beta = Options.beta_clustering;
-	PackerOpts->debug_clustering = Options.debug_clustering;
+	PackerOpts->pack_verbosity = Options.pack_verbosity;
 	PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
 	PackerOpts->target_external_pin_util = Options.target_external_pin_util;
     PackerOpts->target_device_utilization = Options.target_device_utilization;
@@ -438,7 +444,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
     NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
     NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
     NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
-    NetlistOpts.verbose_sweep = Options.verbose_sweep;
+    NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,

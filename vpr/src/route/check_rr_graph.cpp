@@ -37,6 +37,8 @@ void check_rr_graph(const t_graph_type graph_type,
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
 
+        device_ctx.rr_nodes[inode].validate();
+
         /* Ignore any uninitialized rr_graph nodes */
         if ((device_ctx.rr_nodes[inode].type() == SOURCE)
                 && (device_ctx.rr_nodes[inode].xlow() == 0) && (device_ctx.rr_nodes[inode].ylow() == 0)
@@ -123,6 +125,21 @@ void check_rr_graph(const t_graph_type graph_type,
         /* Slow test could leave commented out most of the time. */
         check_unbuffered_edges(inode);
 
+        //Check that all config/non-config edges are appropriately organized
+        for (auto edge : device_ctx.rr_nodes[inode].configurable_edges()) {
+            if (!device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
+                        inode, edge);
+            }
+        }
+
+        for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
+            if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+                VPR_THROW(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
+                        inode, edge);
+            }
+        }
+
     } /* End for all rr_nodes */
 
     /* I built a list of how many edges went to everything in the code above -- *
@@ -164,16 +181,16 @@ void check_rr_graph(const t_graph_type graph_type,
 
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[node.xlow()][node.ylow()].type;
-                            vtr::printf_error(__FILE__, __LINE__,
+                            VTR_LOG_ERROR(
                                     "in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s has no fanin.\n",
                                     inode, node.type_string(), node.xlow(), node.ylow(), block_type->name, node.side_string());
                         }
                     } else {
-                        vtr::printf_error(__FILE__, __LINE__, "in check_rr_graph: node %d (%s) has no fanin.\n",
+                        VTR_LOG_ERROR( "in check_rr_graph: node %d (%s) has no fanin.\n",
                                 inode, device_ctx.rr_nodes[inode].type_string());
                     }
                 } else if (!is_chain && !is_fringe_warning_sent) {
-                    vtr::printf_warning(__FILE__, __LINE__,
+                    VTR_LOG_WARN(
                             "in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
                             "\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
                             inode, device_ctx.rr_nodes[inode].type_string(), device_ctx.rr_nodes[inode].xlow(), device_ctx.rr_nodes[inode].ylow());
@@ -182,7 +199,7 @@ void check_rr_graph(const t_graph_type graph_type,
             }
         } else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
             if (total_edges_to_node[inode] != 0) {
-                vtr::printf_error(__FILE__, __LINE__,
+                VTR_LOG_ERROR(
                         "in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n",
                         inode, total_edges_to_node[inode]);
             }
@@ -425,7 +442,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
             if (check_for_out_edges) {
                 std::string info = describe_rr_node(inode);
-                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: %s has no out-going edges.\n", info.c_str());
+                VTR_LOG_WARN( "in check_rr_node: %s has no out-going edges.\n", info.c_str());
             }
         }
     }

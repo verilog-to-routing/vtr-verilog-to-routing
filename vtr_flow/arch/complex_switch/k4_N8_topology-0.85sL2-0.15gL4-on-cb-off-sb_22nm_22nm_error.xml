@@ -121,10 +121,10 @@
 				<func type="tr" formula="t+1"/>
 				<func type="rb" formula="W-t-2"/>
 			</switchfuncs>
-			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="1" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
+			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="1" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
 		</switchblock>
 
 		<switchblock name="wilton_turn_perimeter" type="unidir">
@@ -139,9 +139,9 @@
 				<func type="tr" formula="t+1"/>
 				<func type="rb" formula="W-t-2"/>
 			</switchfuncs>
-			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0,1" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
+			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0,1" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
 		</switchblock>
 
 		<switchblock name="wilton_straight" type="unidir">
@@ -152,9 +152,9 @@
 				<func type="rl" formula="t"/>
 				<func type="tb" formula="t"/>
 			</switchfuncs>
-			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
+			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
+			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
 		</switchblock>
 	</switchblocklist>
 

@@ -59,8 +59,8 @@ void print_channel_stats() {
     //Makes more sense from high to low, so reverse
     std::reverse(histogram.begin(), histogram.end());
 
-    vtr::printf("\n");
-    vtr::printf("Routing channel utilization histogram:\n");
+    VTR_LOG("\n");
+    VTR_LOG("Routing channel utilization histogram:\n");
     print_histogram(histogram);
-    vtr::printf("Maximum routing channel utilization: %9.2g at (%zu,%zu)\n", max_util, peak_x, peak_y);
+    VTR_LOG("Maximum routing channel utilization: %9.2g at (%zu,%zu)\n", max_util, peak_x, peak_y);
 }

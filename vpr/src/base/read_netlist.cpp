@@ -35,11 +35,11 @@ using namespace std;
 
 static const char* netlist_file_name = nullptr;
 
-static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
+static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         const pugiutil::loc_data& loc_data);
 
 static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
-		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
+		t_pb* pb, t_pb_routes& pb_route, int *num_primitives,
         const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist);
 
 static void processComplexBlock(pugi::xml_node Parent,
@@ -52,15 +52,15 @@ static int add_net_to_hash(t_hash **nhash, const char *net_name,
 
 static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist);
 
-static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route);
+static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_routes& pb_route);
 
-static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
+static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist);
 
-static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
+static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_route);
 
-static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
+static t_pb_routes alloc_pb_route(t_pb_graph_node *pb_graph_node);
 
 static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist);
 static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
@@ -81,7 +81,7 @@ ClusteredNetlist read_netlist(const char *net_file,
 	int num_primitives = 0;
 
 	/* Parse the file */
-	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
+	VTR_LOG("Begin loading packed FPGA netlist file.\n");
 
     //Save an identifier for the netlist based on it's contents
     auto clb_nlist = ClusteredNetlist(net_file, vtr::secure_digest_file(net_file));
@@ -114,7 +114,7 @@ ClusteredNetlist read_netlist(const char *net_file,
                       "Root element must have a 'name' attribute.\n");
         }
 
-        vtr::printf_info("Netlist generated from file '%s'.\n", top_name.value());
+        VTR_LOG("Netlist generated from file '%s'.\n", top_name.value());
 
         //Verify top level attributes
         auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
@@ -140,7 +140,7 @@ ClusteredNetlist read_netlist(const char *net_file,
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
                 } else {
-                    vtr::printf_warning(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
+                    VTR_LOGF_WARN(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
                 }
             }
         }
@@ -160,7 +160,7 @@ ClusteredNetlist read_netlist(const char *net_file,
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
                 } else {
-                    vtr::printf_warning(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
+                    VTR_LOGF_WARN(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
                 }
             }
         }
@@ -184,7 +184,7 @@ ClusteredNetlist read_netlist(const char *net_file,
         //Count the number of blocks for allocation
         bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
         if(bcount == 0)
-            vtr::printf_warning(__FILE__, __LINE__, "Packed netlist contains no clustered blocks\n");
+            VTR_LOG_WARN( "Packed netlist contains no clustered blocks\n");
 
         /* Process netlist */
         unsigned i = 0;
@@ -234,7 +234,27 @@ ClusteredNetlist read_netlist(const char *net_file,
 
 	clock_t end = clock();
 
-	vtr::printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	VTR_LOG("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
+
+    size_t num_pb_route_used = 0;
+    size_t num_pb_route_alloc = 0;
+    size_t num_pb_pins = 0;
+    for (auto clb: clb_nlist.blocks()) {
+        t_pb* pb = clb_nlist.block_pb(clb);
+
+
+        for (int ipin = 0; ipin < pb->pb_graph_node->total_pb_pins; ++ipin) {
+            if (pb->pb_route.count(ipin)) {
+                ++num_pb_route_alloc;
+                if (pb->pb_route[ipin].atom_net_id) {
+                    ++num_pb_route_used;
+                }
+            }
+            ++num_pb_pins;
+        }
+    }
+
+    VTR_LOG("t_pb_route: total_num_pb_pins=%zu num_allocated=%zu sizeof=%zu num_used=%zu\n", num_pb_pins, num_pb_route_alloc, sizeof(t_pb_route), num_pb_route_used);
 
     return clb_nlist;
 }
@@ -313,6 +333,8 @@ static void processComplexBlock(pugi::xml_node clb_block,
 	processPb(clb_block, index, clb_nlist->block_pb(index), clb_nlist->block_pb(index)->pb_route, num_primitives, loc_data, clb_nlist);
 	load_internal_to_block_net_nums(clb_nlist->block_type(index), clb_nlist->block_pb(index)->pb_route);
 
+    //clb_nlist->block_pb(index)->pb_route.shrink_to_fit();
+
 	freeTokens(tokens, num_tokens);
 }
 
@@ -364,7 +386,7 @@ template<typename T> void processAttrsParams(pugi::xml_node Parent, const char *
  * loc_data - xml location info for error reporting
  */
 static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
-	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
+	t_pb* pb, t_pb_routes&  pb_route, int *num_primitives,
     const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist) {
 
 	int i, j, pb_index;
@@ -551,7 +573,7 @@ static int add_net_to_hash(t_hash **nhash, const char *net_name, int *ncount) {
 	return hash_value->index;
 }
 
-static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
+static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         const pugiutil::loc_data& loc_data) {
 
 	int i, j, num_tokens;
@@ -650,6 +672,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     pins[i].c_str());
                         }
                         //Mark the associated inter-block net
+                        pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                         pb_route[rr_node_index].atom_net_id = net_id;
                         pb_route[rr_node_index].pb_graph_pin = pb_gpin;
                     }
@@ -690,6 +713,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                     VTR_ASSERT(pb_gpin != nullptr);
                     int rr_node_index = pb_gpin->pin_count_in_cluster;
 
+                    pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     pb_route[rr_node_index].pb_graph_pin = pb_gpin;
 
@@ -727,6 +751,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     ".blif and .net do not match, unknown net %s found in .net file.\n",
                                     pins[i].c_str());
                         }
+                        pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                         pb_route[rr_node_index].atom_net_id = net_id;
                         pb_route[rr_node_index].pb_graph_pin = pb_gpin;
                     }
@@ -757,6 +782,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                     int rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 
                     //Why does this not use the output pin used to deterimine the rr node index?
+                    pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     pb_route[rr_node_index].pb_graph_pin = pin_node[0][0];
 
@@ -850,29 +876,34 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
 	/* Determine the external nets of complex block */
 	for (auto blk_id : clb_nlist.blocks()) {
+        const t_pb* pb = clb_nlist.block_pb(blk_id);
+
 		ipin = 0;
 		VTR_ASSERT( clb_nlist.block_type(blk_id)->pb_type->num_input_pins
 					+ clb_nlist.block_type(blk_id)->pb_type->num_output_pins
 					+ clb_nlist.block_type(blk_id)->pb_type->num_clock_pins
 					== clb_nlist.block_type(blk_id)->num_pins / clb_nlist.block_type(blk_id)->capacity);
 
-		int num_input_ports = clb_nlist.block_pb(blk_id)->pb_graph_node->num_input_ports;
-		int num_output_ports = clb_nlist.block_pb(blk_id)->pb_graph_node->num_output_ports;
-		int num_clock_ports = clb_nlist.block_pb(blk_id)->pb_graph_node->num_clock_ports;
+		int num_input_ports = pb->pb_graph_node->num_input_ports;
+		int num_output_ports = pb->pb_graph_node->num_output_ports;
+		int num_clock_ports = pb->pb_graph_node->num_clock_ports;
+
 
         //Load the external nets connected to input ports
 		for (j = 0; j < num_input_ports; j++) {
 			ClusterPortId input_port_id = clb_nlist.find_port(blk_id, clb_nlist.block_type(blk_id)->pb_type->ports[j].name);
-			for (k = 0; k < clb_nlist.block_pb(blk_id)->pb_graph_node->num_input_pins[j]; k++) {
-				pb_graph_pin = &clb_nlist.block_pb(blk_id)->pb_graph_node->input_pins[j][k];
+			for (k = 0; k < pb->pb_graph_node->num_input_pins[j]; k++) {
+				pb_graph_pin = &pb->pb_graph_node->input_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-                AtomNetId atom_net_id = clb_nlist.block_pb(blk_id)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-				if (atom_net_id) {
-					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
-					clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist.create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
-				}
+                if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
+                    AtomNetId atom_net_id = pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+                    if (atom_net_id) {
+                        add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
+                        clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+                        clb_nlist.create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
+                    }
+                }
 				ipin++;
 			}
 		}
@@ -880,22 +911,25 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         //Load the external nets connected to output ports
 		for (j = 0; j < num_output_ports; j++) {
 			ClusterPortId output_port_id = clb_nlist.find_port(blk_id, clb_nlist.block_type(blk_id)->pb_type->ports[j + num_input_ports].name);
-			for (k = 0; k < clb_nlist.block_pb(blk_id)->pb_graph_node->num_output_pins[j]; k++) {
-				pb_graph_pin = &clb_nlist.block_pb(blk_id)->pb_graph_node->output_pins[j][k];
+			for (k = 0; k < pb->pb_graph_node->num_output_pins[j]; k++) {
+				pb_graph_pin = &pb->pb_graph_node->output_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-                AtomNetId atom_net_id = clb_nlist.block_pb(blk_id)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-				if (atom_net_id) {
-					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
-					clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+                if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
 
-                    AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
-                    bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
+                    AtomNetId atom_net_id = pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+                    if (atom_net_id) {
+                        add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
+                        clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
 
-					clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
+                        AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
+                        bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
 
-                    VTR_ASSERT(clb_nlist.net_is_constant(clb_net_id) == driver_is_constant);
-				}
+                        clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
+
+                        VTR_ASSERT(clb_nlist.net_is_constant(clb_net_id) == driver_is_constant);
+                    }
+                }
 				ipin++;
 			}
 		}
@@ -903,16 +937,19 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         //Load the external nets connected to clock ports
 		for (j = 0; j < num_clock_ports; j++) {
 			ClusterPortId clock_port_id = clb_nlist.find_port(blk_id, clb_nlist.block_type(blk_id)->pb_type->ports[j + num_input_ports + num_output_ports].name);
-			for (k = 0; k < clb_nlist.block_pb(blk_id)->pb_graph_node->num_clock_pins[j]; k++) {
-				pb_graph_pin = &clb_nlist.block_pb(blk_id)->pb_graph_node->clock_pins[j][k];
+			for (k = 0; k < pb->pb_graph_node->num_clock_pins[j]; k++) {
+				pb_graph_pin = &pb->pb_graph_node->clock_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-                AtomNetId atom_net_id = clb_nlist.block_pb(blk_id)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-				if (atom_net_id) {
-					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
-					clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist.create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
-				}
+                if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
+
+                    AtomNetId atom_net_id = pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+                    if (atom_net_id) {
+                        add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
+                        clb_net_id = clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+                        clb_nlist.create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
+                    }
+                }
 				ipin++;
 			}
 		}
@@ -970,8 +1007,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 		for (auto pin_id : clb_nlist.net_sinks(net_id)) {
 			bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
 			if (clb_nlist.block_type(clb_nlist.pin_block(pin_id))->is_ignored_pin[clb_nlist.pin_physical_index(pin_id)] != is_ignored_net) {
-                vtr::printf_warning(__FILE__, __LINE__,
-					"Netlist connects net %s to both ignored and non-ignored pins.\n",
+                VTR_LOG_WARN(
+					"Netlist connects net %s to both global and non-global pins.\n",
 					clb_nlist.net_name(net_id).c_str());
 			}
 		}
@@ -986,7 +1023,7 @@ static void mark_constant_generators(const ClusteredNetlist& clb_nlist) {
 	}
 }
 
-static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route) {
+static void mark_constant_generators_rec(const t_pb *pb, const t_pb_routes& pb_route) {
 	int i, j;
 	t_pb_type *pb_type;
 	bool const_gen;
@@ -1008,6 +1045,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 		for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true; i++) {
 			for (j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {
                 int cluster_pin_idx = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
+                if (!pb_route.count(cluster_pin_idx)) continue;
 				if (pb_route[cluster_pin_idx].atom_net_id) {
 					const_gen = false;
 				}
@@ -1016,16 +1054,18 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 		for (i = 0; i < pb->pb_graph_node->num_clock_ports && const_gen == true; i++) {
 			for (j = 0; j < pb->pb_graph_node->num_clock_pins[i] && const_gen == true; j++) {
                 int cluster_pin_idx = pb->pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
+                if (!pb_route.count(cluster_pin_idx)) continue;
 				if (pb_route[cluster_pin_idx].atom_net_id) {
 					const_gen = false;
 				}
 			}
 		}
 		if (const_gen == true) {
-			vtr::printf_info("%s is a constant generator.\n", pb->name);
+			VTR_LOG("%s is a constant generator.\n", pb->name);
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
                     int cluster_pin_idx = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;
+                if (!pb_route.count(cluster_pin_idx)) continue;
 					if (pb_route[cluster_pin_idx].atom_net_id) {
                         AtomNetId net_id = pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_id;
                         AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
@@ -1037,28 +1077,31 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 	}
 }
 
-static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
-	t_pb_route *pb_route;
-	int num_pins = pb_graph_node->total_pb_pins;
+static t_pb_routes alloc_pb_route(t_pb_graph_node* /*pb_graph_node*/) {
+    t_pb_routes pb_routes;
+	//t_pb_route *pb_route;
+	//int num_pins = pb_graph_node->total_pb_pins;
 
-	VTR_ASSERT(pb_graph_node->parent_pb_graph_node == nullptr); /* This function only operates on top-level pb_graph_node */
+	//VTR_ASSERT(pb_graph_node->parent_pb_graph_node == nullptr); [> This function only operates on top-level pb_graph_node <]
 
-	pb_route = new t_pb_route[num_pins];
+	//pb_route = new t_pb_route[num_pins];
 
-	return pb_route;
+	return pb_routes;
 }
 
-static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route) {
+static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_routes& pb_route) {
 	int num_pins = type->pb_graph_head->total_pb_pins;
 
 	for (int i = 0; i < num_pins; i++) {
+        if (!pb_route.count(i)) continue;
+
 		if (pb_route[i].driver_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
 			load_atom_index_for_pb_pin(pb_route, i);
 		}
 	}
 }
 
-static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
+static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
 	int driver = pb_route[ipin].driver_pb_pin_id;
 
 	VTR_ASSERT(driver != OPEN);
@@ -1140,15 +1183,23 @@ static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBl
     ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk);
     VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
-    const t_pb_route* pb_route = &clb_nlist.block_pb(clb_index)->pb_route[gpin->pin_count_in_cluster];
+    const t_pb* clb_pb = clb_nlist.block_pb(clb_index);
+    if (!clb_pb->pb_route.count(gpin->pin_count_in_cluster)) {
+        return;
+    }
+
+    const t_pb_route* pb_route = &clb_pb->pb_route[gpin->pin_count_in_cluster];
 
     if(!pb_route->atom_net_id) {
         return;
     }
 
-    const t_pb* pb = atom_ctx.lookup.atom_pb(atom_blk);
+    const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom_blk);
 
-    BitIndex atom_pin_bit_index = pb->atom_pin_bit_index(gpin);
+    //This finds the index within the atom port to which the current gpin
+    //is mapped. Note that this accounts for any applied pin rotations 
+    //(e.g. on LUT inputs)
+    BitIndex atom_pin_bit_index = atom_pb->atom_pin_bit_index(gpin);
 
     AtomPinId atom_pin = atom_ctx.nlist.port_pin(atom_port, atom_pin_bit_index);
 

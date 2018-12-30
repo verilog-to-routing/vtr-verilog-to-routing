@@ -34,6 +34,8 @@
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector_map.h"
+#include "vtr_util.h"
+#include "vtr_flat_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -71,8 +73,6 @@ enum class ScreenUpdatePriority {
 #define EPSILON 1.e-15
 #define NEGATIVE_EPSILON -1.e-15
 
-#define HIGH_FANOUT_NET_LIM 64 /* All nets with this number of sinks or more are considered high fanout nets */
-
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
@@ -98,6 +98,10 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #define UNDEFINED -1
 #endif
 
+enum class e_router_lookahead {
+    CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
+    MAP      //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+};
 
 enum class e_route_bb_update {
     STATIC, //Router net bounding boxes are not updated
@@ -164,6 +168,8 @@ struct t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
 
+typedef vtr::flat_map2<int,t_pb_route> t_pb_routes;
+
 /* A t_pb represents an instance of a clustered block, which may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device
  *       grid location (e.g. a Logic block, RAM block, DSP block), or
@@ -189,7 +195,7 @@ struct t_pb {
 	/* Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
 	*  t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
 	*  Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
-	t_pb_route *pb_route = nullptr;
+    t_pb_routes pb_route;
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
@@ -295,6 +301,34 @@ struct t_pb {
         return child_pbs == nullptr;
     }
 
+    std::string hierarchical_type_name() const {
+        std::vector<std::string> names;
+
+        int child_mode = OPEN;
+        for (const t_pb* curr = this; curr != nullptr; curr = curr->parent_pb) {
+            std::string type_name;
+
+            //Type
+            if (curr->pb_graph_node) {
+                type_name = curr->pb_graph_node->pb_type->name;
+                type_name += "[" + std::to_string(curr->pb_graph_node->placement_index) + "]";
+
+                //Mode
+                if (child_mode != OPEN) {
+                    std::string mode_name = curr->pb_graph_node->pb_type->modes[child_mode].name;
+                    type_name += "[" + mode_name + "]";
+                }
+            }
+
+            child_mode = curr->mode; //Save the mode of curr since it will be child on next iteration
+
+            names.push_back(type_name);
+        }
+
+        //We walked up from the leaf to root, so we join in reverse order
+        return vtr::join(names.rbegin(), names.rend(), "/");
+    }
+
     //Returns the bit index into the AtomPort for the specified primitive
     //pb_graph_pin, considering any pin rotations which have been applied to logically
     //equivalent pins
@@ -328,14 +362,9 @@ private:
 /* Representation of intra-logic block routing */
 struct t_pb_route {
     AtomNetId atom_net_id; /* which net in the atom netlist uses this pin */
-	int driver_pb_pin_id; /* The pb_pin id of the pb_pin that drives this pin */
+	int driver_pb_pin_id = OPEN; /* The pb_pin id of the pb_pin that drives this pin */
     std::vector<int> sink_pb_pin_ids; /* The pb_pin id's of the pb_pins driven by this node */
     const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated with this node */
-
-	t_pb_route() {
-		atom_net_id = AtomNetId::INVALID();
-		driver_pb_pin_id = OPEN;
-	}
 };
 
 enum e_pack_pattern_molecule_type {
@@ -720,7 +749,7 @@ struct t_netlist_opts {
     bool sweep_dangling_nets = true;
     bool sweep_constant_primary_outputs = false;
 
-    bool verbose_sweep = false; //Verbose output during netlist cleaning
+    int netlist_verbosity = 1; //Verbose output during netlist cleaning
 };
 
 //Should a stage in the CAD flow be skipped, loaded from a file, or performed
@@ -752,7 +781,7 @@ struct t_packer_opts {
 	bool auto_compute_inter_cluster_net_delay;
 	e_unrelated_clustering allow_unrelated_clustering;
 	bool connection_driven;
-	bool debug_clustering;
+	int pack_verbosity;
     bool enable_pin_feasibility_filter;
     std::vector<std::string> target_external_pin_util;
 	e_stage_action doPacking;
@@ -873,7 +902,11 @@ enum e_router_algorithm {
 	BREADTH_FIRST, TIMING_DRIVEN, NO_TIMING
 };
 enum e_base_cost_type {
-	DELAY_NORMALIZED, DEMAND_ONLY
+	DELAY_NORMALIZED, 
+	DELAY_NORMALIZED_LENGTH, 
+	DELAY_NORMALIZED_FREQUENCY, 
+	DELAY_NORMALIZED_LENGTH_FREQUENCY, 
+    DEMAND_ONLY
 };
 enum e_routing_failure_predictor {
 	OFF, SAFE, AGGRESSIVE
@@ -928,6 +961,12 @@ struct t_router_opts {
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
     enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
+    int high_fanout_threshold;
+    int router_debug_net;
+    int router_debug_sink_rr;
+    e_router_lookahead lookahead_type;
+    int max_convergence_count;
+    float reconvergence_cpd_threshold;
 };
 
 struct t_analysis_opts {
@@ -958,7 +997,6 @@ struct t_analysis_opts {
  * switchblocks: A vector of custom switch block descriptions that is       *
  *           used with the CUSTOM switch block type. See comment at top of  *
  *           SRC/route/build_switchblocks.c                                 *
- * num_segment:  Number of distinct segment types in the FPGA.              *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
  * wire_to_arch_ipin_switch: keeps track of the type of architecture switch *
@@ -999,7 +1037,7 @@ enum e_direction : unsigned char {
     NUM_DIRECTIONS
 };
 
-constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
+constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = { {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"} };
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *
@@ -1026,28 +1064,81 @@ constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTIONS_STRING = { {"INC_DI
  * type_name_ptr: pointer to name of the segment type this track belongs    *
  *                to. points to the appropriate name in s_segment_inf       */
 struct t_seg_details {
-	int length;
-	int start;
-	bool longline;
-	bool *sb;
-	bool *cb;
-	short arch_wire_switch;
-	short arch_opin_switch;
-	float Rmetal;
-	float Cmetal;
-	bool twisted;
-	enum e_direction direction;
-	int group_start;
-	int group_size;
-	int seg_start;
-	int seg_end;
-	int index;
-	float Cmetal_per_m; /* Used for power */
+	int length = 0;
+	int start = 0;
+	bool longline = 0;
+    std::unique_ptr<bool[]> sb;
+	std::unique_ptr<bool[]> cb;
+	short arch_wire_switch = 0;
+	short arch_opin_switch = 0;
+	float Rmetal = 0;
+	float Cmetal = 0;
+	bool twisted = 0;
+	enum e_direction direction = NO_DIRECTION;
+	int group_start = 0;
+	int group_size = 0;
+	int seg_start = 0;
+	int seg_end = 0;
+	int index = 0;
+	float Cmetal_per_m = 0; /* Used for power */
 	std::string type_name;
 };
 
+class t_chan_seg_details {
+    public:
+        t_chan_seg_details() = default;
+        t_chan_seg_details(const t_seg_details* init_seg_details)
+            : length_(init_seg_details->length)
+            , seg_detail_(init_seg_details) {}
+
+    public:
+        int length() const { return length_; }
+        int seg_start() const { return seg_start_; }
+        int seg_end() const { return seg_end_; }
+
+        int start() const { return seg_detail_->start; }
+        bool longline() const { return seg_detail_->longline; }
+
+        int group_start() const { return seg_detail_->group_start; }
+        int group_size() const { return seg_detail_->group_size; }
+
+        bool cb(int pos) const { return seg_detail_->cb[pos]; }
+        bool sb(int pos) const { return seg_detail_->sb[pos]; }
+
+        float Rmetal() const { return seg_detail_->Rmetal; }
+        float Cmetal() const { return seg_detail_->Cmetal; }
+        float Cmetal_per_m() const { return seg_detail_->Cmetal_per_m; }
+
+        short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
+        short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
+
+        e_direction direction() const { return seg_detail_->direction; }
+
+        int index() const { return seg_detail_->index; }
+
+        std::string type_name() const { return seg_detail_->type_name; }
+
+    public: //Modifiers
+        void set_length(int new_len) { length_ = new_len; }
+        void set_seg_start(int new_start) { seg_start_ = new_start; }
+        void set_seg_end(int new_end) { seg_end_ = new_end; }
+
+    private:
+        //The only unique information about a channel segment is it's start/end
+        //and length.  All other information is shared accross segment types,
+        //so we use a flyweight to the t_seg_details which defines that info.
+        //
+        //To preserve the illusion of uniqueness we wrap all t_seg_details members
+        //so it appears transparent -- client code of this class doesn't need to
+        //know about t_seg_details.
+        int length_ = -1;
+        int seg_start_ = -1;
+        int seg_end_ = -1;
+        const t_seg_details* seg_detail_ = nullptr;
+};
+
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
-typedef vtr::Matrix<t_seg_details*> t_chan_details;
+typedef vtr::NdMatrix<t_chan_seg_details,3> t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */

@@ -95,17 +95,22 @@ char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node
 }
 
 /*
- * Creates an implicit memory block with the given address and data width, and the given name and prefix.
+ * Creates an implicit memory block with the given depth and data width, and the given name and prefix.
  */
-implicit_memory *create_implicit_memory_block(int data_width, long long words, char *name, char *instance_name_prefix)
+implicit_memory *create_implicit_memory_block(int data_width, long long memory_depth, char *name, char *instance_name_prefix)
 {
 	char implicit_string[] = "implicit_ram";
+
+	//find closest power of 2 fr memory depth.
 	long addr_width = 1;
-	while ((1 << addr_width) < words)
+	while ((1 << addr_width) < memory_depth)
 		addr_width++;
 
-	if (addr_width > MEMORY_DEPTH_LIMIT)
-		error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %d exceeds ODIN depth bound of %d.", name, addr_width, MEMORY_DEPTH_LIMIT);
+	//verify if it is a power of two (only one bit set)
+	if((memory_depth -(1 << addr_width)) != 0)
+	{
+		warning_message(NETLIST_ERROR, -1, -1, "Rounding memory <%s> of size <%d> to closest power of two: %d.", name, memory_depth, (1 << addr_width));
+	}
 
 	nnode_t *node = allocate_nnode();
 	node->type = MEMORY;
@@ -122,6 +127,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 	implicit_memory *memory = (implicit_memory *)vtr::malloc(sizeof(implicit_memory));
 	memory->node = node;
 	memory->addr_width = addr_width;
+	memory->memory_depth = memory_depth;
 	memory->data_width = data_width;
 	memory->clock_added = FALSE;
 	memory->output_added = FALSE;

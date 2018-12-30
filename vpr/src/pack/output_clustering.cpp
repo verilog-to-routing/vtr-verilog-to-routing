@@ -64,7 +64,7 @@ static void print_stats() {
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.block_type(blk_id)->num_pins; ipin++) {
-			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route == nullptr) {
+			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.empty()) {
 				ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
 				if (clb_net_id != ClusterNetId::INVALID()) {
                     auto net_id = atom_ctx.lookup.atom_net(clb_net_id);
@@ -77,21 +77,24 @@ static void print_stats() {
 						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 					}
 				}
-			}
-			else {
+			} else {
+
 				int pb_graph_pin_id = get_pb_graph_node_pin_from_block_pin(blk_id, ipin)->pin_count_in_cluster;
-				auto atom_net_id = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[pb_graph_pin_id].atom_net_id;
-				if (atom_net_id) {
-					nets_absorbed[atom_net_id] = false;
-					if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type
-						== RECEIVER) {
-						num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-					}
-					else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type
-						== DRIVER) {
-						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-					}
-				}
+
+                const t_pb* pb = cluster_ctx.clb_nlist.block_pb(blk_id);
+                if (pb->pb_route.count(pb_graph_pin_id)) {
+                    //Pin used
+                    auto atom_net_id = pb->pb_route[pb_graph_pin_id].atom_net_id;
+                    if (atom_net_id) {
+                        nets_absorbed[atom_net_id] = false;
+                        if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == RECEIVER) {
+                            num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+                        }
+                        else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == DRIVER) {
+                            num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+                        }
+                    }
+                }
 			}
 		}
 		num_clb_types[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
@@ -99,10 +102,10 @@ static void print_stats() {
 
 	for (itype = 0; itype < device_ctx.num_block_types; itype++) {
 		if (num_clb_types[itype] == 0) {
-			vtr::printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
+			VTR_LOG("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
 					device_ctx.block_types[itype].name, num_clb_types[itype], 0.0, 0.0);
 		} else {
-			vtr::printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
+			VTR_LOG("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
 					device_ctx.block_types[itype].name, num_clb_types[itype],
 					(float) num_clb_inputs_used[itype] / (float) num_clb_types[itype],
 					(float) num_clb_outputs_used[itype] / (float) num_clb_types[itype]);
@@ -115,7 +118,7 @@ static void print_stats() {
 			total_nets_absorbed++;
 		}
 	}
-	vtr::printf_info("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
+	VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
 			total_nets_absorbed, (int)atom_ctx.nlist.nets().size(), (int)atom_ctx.nlist.nets().size() - total_nets_absorbed);
 	free(num_clb_types);
 	free(num_clb_inputs_used);
@@ -136,8 +139,8 @@ static const char * clustering_xml_net_text(AtomNetId net_id) {
 	}
 }
 
-static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, t_pb_route *pb_route) {
-	if (!pb_route[inode].atom_net_id) {
+static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, const t_pb_routes& pb_route) {
+	if (!pb_route.count(inode) || !pb_route[inode].atom_net_id) {
 		return "open";
 	}
 
@@ -186,7 +189,7 @@ static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, 
  * output that reflects the routing resources used. This function handles both cases.
  */
 static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr type, t_pb_graph_node * pb_graph_node,
-		int pb_index, bool is_used, t_pb_route *pb_route) {
+		int pb_index, bool is_used, const t_pb_routes& pb_route) {
 	int i, j, k, m;
 	const t_pb_type * pb_type, *child_pb_type;
 	t_mode * mode = nullptr;
@@ -330,7 +333,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 }
 
 /* outputs a block that is used (i.e. has configuration) and all of its child blocks */
-static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_pb * pb, int pb_index, t_pb_route *pb_route) {
+static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_pb * pb, int pb_index, const t_pb_routes& pb_route) {
 	int i, j, k, m;
 	const t_pb_type *pb_type, *child_pb_type;
 	t_pb_graph_node *pb_graph_node;
@@ -381,7 +384,11 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 				node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
 
 				if (pb_type->parent_mode == nullptr) {
-					pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
+                    if (pb_route.count(node_index)) {
+                        pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
+                    } else {
+                        pins.push_back(clustering_xml_net_text(AtomNetId::INVALID()));
+                    }
 				} else {
 					pins.push_back(clustering_xml_interconnect_text(type, node_index, pb_route));
 				}
@@ -410,9 +417,12 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 
                     for (j = 0; j < pb_type->ports[i].num_pins; j++) {
                         node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
-                        AtomNetId atom_net = pb_route[node_index].atom_net_id;
 
-                        if(atom_net) {
+                        if (pb_route.count(node_index)) {
+                            AtomNetId atom_net = pb_route[node_index].atom_net_id;
+
+                            VTR_ASSERT(atom_net);
+
                             //This physical pin is in use, find the original pin in the atom netlist
                             AtomPinId orig_pin;
                             for(AtomPinId atom_pin : atom_ctx.nlist.port_pins(atom_port)) {
@@ -429,7 +439,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 
                             VTR_ASSERT(orig_pin);
                             //The physical pin j, maps to a pin in the atom netlist
-							pin_map_list.push_back(vtr::string_fmt("%d", atom_ctx.nlist.pin_port_bit(orig_pin)));
+                            pin_map_list.push_back(vtr::string_fmt("%d", atom_ctx.nlist.pin_port_bit(orig_pin)));
                         } else {
                             //The physical pin is disconnected
 							pin_map_list.push_back("open");
@@ -477,7 +487,11 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 				node_index = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == nullptr) {
-					pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
+                    if (pb_route.count(node_index)) {
+                        pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
+                    } else {
+                        pins.push_back(clustering_xml_net_text(AtomNetId::INVALID()));
+                    }
 				} else {
 					pins.push_back(clustering_xml_interconnect_text(type, node_index, pb_route));
 				}
@@ -502,7 +516,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 						if (child_pb_type->ports[k].type == OUT_PORT) {
 							for (m = 0; m < child_pb_type->ports[k].num_pins; m++) {
 								node_index = pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (pb_route[node_index].atom_net_id) {
+								if (pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
 								}
@@ -575,7 +589,7 @@ void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra
 			break;
 
 		default:
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"in output_netlist: Unexpected type %d for atom block %s.\n",
 					type, atom_ctx.nlist.block_name(blk_id).c_str());
 		}
@@ -608,8 +622,7 @@ void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra
 
 	if(!intra_lb_routing.empty()) {
 		for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-			free_pb_route(cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route);
-			cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route = nullptr;
+			cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.clear();
 		}
 	}
 

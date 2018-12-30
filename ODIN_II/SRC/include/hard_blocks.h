@@ -31,7 +31,7 @@ extern STRING_CACHE *hard_block_names;
 extern void register_hard_blocks();
 extern void deregister_hard_blocks();
 extern t_model* find_hard_block(const char *name);
-extern void define_hard_block(nnode_t *node, short type, FILE *out);
+extern void define_hard_block(nnode_t *node, FILE *out);
 extern void output_hard_blocks(FILE *out);
 extern int hard_block_port_size(t_model *hb, char *pname);
 extern enum PORTS hard_block_port_direction(t_model *hb, char *pname);

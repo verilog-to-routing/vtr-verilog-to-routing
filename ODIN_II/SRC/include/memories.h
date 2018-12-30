@@ -31,7 +31,7 @@ extern vtr::t_linked_vptr *memory_port_size_list;
 extern t_model *single_port_rams;
 extern t_model *dual_port_rams;
 
-#define MEMORY_DEPTH_LIMIT 25
+#define MEMORY_DEPTH_LIMIT (1 << 25)
 
 typedef struct s_memory
 {
@@ -90,8 +90,8 @@ void check_memories_and_report_distribution();
 
 int get_memory_port_size(const char *name);
 
-int get_sp_ram_depth(nnode_t *node);
-int get_dp_ram_depth(nnode_t *node);
+long long get_sp_ram_depth(nnode_t *node);
+long long get_dp_ram_depth(nnode_t *node);
 int get_sp_ram_width(nnode_t *node);
 int get_dp_ram_width(nnode_t *node);
 

@@ -63,9 +63,9 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
 				if (to_node < 0 || to_node >= timing_ctx.num_tnodes) {
-					vtr::printf_error(__FILE__, __LINE__,
+					VTR_LOG_ERROR(
 							"in alloc_and_load_tnode_fanin_and_check_edges:\n");
-					vtr::printf_error(__FILE__, __LINE__,
+					VTR_LOG_ERROR(
 							"\ttnode #%d edge #%d goes to illegal node #%d.\n",
 							inode, iedge, to_node);
 					error++;
@@ -80,9 +80,9 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 		}
 
 		else {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"in alloc_and_load_tnode_fanin_and_check_edges:\n");
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"\ttnode #%d has %d edges.\n",
 					inode, num_edges);
 			error++;
@@ -203,10 +203,10 @@ void check_timing_graph() {
 		num_tnodes_check += timing_ctx.tnodes_at_level[ilevel].size();
 
 	if (num_tnodes_check != timing_ctx.num_tnodes) {
-		vtr::printf_error(__FILE__, __LINE__,
+		VTR_LOG_ERROR(
 				"Error in check_timing_graph: %d tnodes appear in the tnode level structure. Expected %d.\n",
 				num_tnodes_check, timing_ctx.num_tnodes);
-		vtr::printf_info("Checking the netlist for combinational cycles:\n");
+		VTR_LOG("Checking the netlist for combinational cycles:\n");
 		if (timing_ctx.num_tnodes > num_tnodes_check) {
             std::vector< std::vector<int> > tnode_comb_loops = detect_timing_graph_combinational_loops();
 
@@ -214,9 +214,9 @@ void check_timing_graph() {
             size_t iloop;
             size_t itnode;
             for(iloop = 0; iloop < tnode_comb_loops.size(); iloop++) {
-                vtr::printf_info("  Combinational Loop %d contains the following nodes:\n", iloop);
+                VTR_LOG("  Combinational Loop %d contains the following nodes:\n", iloop);
                 for(itnode = 0; itnode < tnode_comb_loops[iloop].size(); itnode++) {
-                    vtr::printf_info("   tnode: %d\n", tnode_comb_loops[iloop][itnode]);
+                    VTR_LOG("   tnode: %d\n", tnode_comb_loops[iloop][itnode]);
                 }
             }
 		}
@@ -318,16 +318,16 @@ void detect_and_fix_timing_graph_combinational_loops() {
     int comb_cycle_iter_count = 0;
     int comb_cycle_count = 0;
 
-    vtr::printf_info("Iteratively removing timing edges to break combinational cycles in timing graph.\n");
+    VTR_LOG("Iteratively removing timing edges to break combinational cycles in timing graph.\n");
 
     std::vector< std::vector<int> > tnode_comb_loops = detect_timing_graph_combinational_loops();
 
     //Repeat until all loops broken
     while(tnode_comb_loops.size() > 0) {
         comb_cycle_iter_count++;
-        vtr::printf_info("Found %d Combinational Loops in the timing graph on iteration %d.\n",
+        VTR_LOG("Found %d Combinational Loops in the timing graph on iteration %d.\n",
                         tnode_comb_loops.size(), comb_cycle_iter_count);
-        vtr::printf_warning(__FILE__, __LINE__,
+        VTR_LOG_WARN(
                             "Combinational Loops can not be analyzed properly and will be "
                             "arbitrarily disconnected.\n");
 
@@ -337,7 +337,7 @@ void detect_and_fix_timing_graph_combinational_loops() {
 
         tnode_comb_loops = detect_timing_graph_combinational_loops();
     }
-    vtr::printf_info("Removed %d combinational cycles from timing graph after %d iteration(s)\n",
+    VTR_LOG("Removed %d combinational cycles from timing graph after %d iteration(s)\n",
                     comb_cycle_count, comb_cycle_iter_count);
 }
 
@@ -385,7 +385,7 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
         if(std::find(loop_tnodes.begin(), loop_tnodes.end(), i_to_tnode) != loop_tnodes.end()) {
             //This edge does fanout into the loop_tnodes set
             // so cut it
-            vtr::printf_warning(__FILE__, __LINE__, "Disconnecting timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
+            VTR_LOG_WARN( "Disconnecting timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
 
             //Mark the original target node as a combinational loop breakpoint
             timing_ctx.tnodes[i_to_tnode].is_comb_loop_breakpoint = true;
@@ -522,16 +522,16 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 void print_comb_loop(std::vector<int>& loop_tnodes) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    vtr::printf_info("Comb Loop:\n");
+    VTR_LOG("Comb Loop:\n");
     for(std::vector<int>::iterator it = loop_tnodes.begin(); it != loop_tnodes.end(); it++) {
         int i_tnode = *it;
         if(timing_ctx.tnodes[i_tnode].pb_graph_pin != nullptr) {
-            vtr::printf_info("\ttnode: %d %s.%s[%d]\n", i_tnode,
+            VTR_LOG("\ttnode: %d %s.%s[%d]\n", i_tnode,
                             timing_ctx.tnodes[i_tnode].pb_graph_pin->parent_node->pb_type->name,
                             timing_ctx.tnodes[i_tnode].pb_graph_pin->port->name,
                             timing_ctx.tnodes[i_tnode].pb_graph_pin->pin_number);
         } else {
-            vtr::printf_info("\ttnode: %d\n", i_tnode);
+            VTR_LOG("\ttnode: %d\n", i_tnode);
         }
     }
 }
