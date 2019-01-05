@@ -629,7 +629,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 {
 	// produce a wave of values at each iteration
 
-
+	double start_time = wall_time();
 	int progress_bar_position = -1;
 	const int progress_bar_length   = 50;
 	int increment_vector_by = global_args.sim_num_test_vectors;
@@ -644,14 +644,14 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 	pthread_cond_init(&start_output, NULL);
 
 	std::vector<std::thread> worker_threads;
-	double simulation_start_time = wall_time();
+	
 	bool done = FALSE,restart = FALSE;
 	while (!done)	
 	{
 		
 		for (int wave = 0; wave<=threads_waves; wave++)
 		{
-			//printf("wave%d\n",wave);
+			double simulation_start_time = wall_time();
 			int from_cycle = from_wave + wave*offset;
 			int to_cycle = from_cycle+offset;
 			if (to_cycle > to_wave)
@@ -662,7 +662,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 			// Assign vectors to lines, either by reading or generating them.
 			// Every second cycle gets a new vector.
 
-			double wave_start_time = wall_time();
+			
 			
 			char buffer[BUFFER_MAX_SIZE];
 			
@@ -702,7 +702,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				
 				//maria
 				sim_data->thread_distribution = calculate_thread_distribution(sim_data->stages);
-
+				
 				//create_threads_and_let them wait for the signal
 				for (int t=0; t<sim_data->thread_distribution->number_of_threads; t++)
 				{	
@@ -713,6 +713,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 
 			if (wave !=0 || restart)
 			{
+				
 				pthread_mutex_lock(&output_mp);
 				threads_done_wave =0;
 				pthread_mutex_unlock(&output_mp);
@@ -728,7 +729,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 			}
 			pthread_mutex_unlock(&threads_mp);
 	
-
+			
 			for (int i=from_cycle;i<to_cycle;i++)
 			{
 				//if (i!=0)
@@ -737,7 +738,7 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 			}
 			//update memory directories of all memory nodes
 			write_back_memory_nodes(sim_data->thread_distribution->memory_nodes->nodes,sim_data->thread_distribution->memory_nodes->number_of_nodes);
-
+			sim_data->simulation_time += wall_time() - simulation_start_time;
 			if (wave==threads_waves) //check for coverage in the last cycle
 			{
 				if(min_coverage > 0.0)
@@ -789,13 +790,13 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 				
 
 			}
-			sim_data->simulation_time += wall_time() - simulation_start_time;
+			
 
 			// Print netlist-specific statistics.
 			if (wave == 0)
 				print_netlist_stats(sim_data->stages, sim_data->num_vectors);
 			
-			sim_data->total_time += wall_time() - wave_start_time;
+			sim_data->total_time = wall_time() - start_time;
 			progress_bar_position = print_progress_bar(
 						to_cycle/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
 
@@ -820,6 +821,10 @@ void simulate_steps_in_parallel(sim_data_t *sim_data,int from_wave,int to_wave,i
 	//wait for them to be done
 	pthread_cond_destroy(&start_output);
 	pthread_cond_destroy(&start_threads);
+
+	sim_data->total_time = wall_time() - start_time;
+			progress_bar_position = print_progress_bar(
+						(double)sim_data->num_vectors/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
 
 }
 
@@ -1505,7 +1510,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 		while (threadcost< threadworkcost)
 		{
 			nnode_t* node = s->stages[current_stage][node_in_stage];
-
+			//printf("NodeID %d assigned to Thread %d\n",node->unique_id,t);
 			if (nodes_inserted[node->unique_id]==0)
 			{
 				nodes_sub = (nnode_t **)vtr::realloc(nodes_sub,sizeof(nnode_t*) * (number_of_nodes+1) );
