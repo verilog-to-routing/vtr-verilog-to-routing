@@ -611,6 +611,193 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            oassert(FALSE);
 	            }
         }
+        else if (top_type == SPECIFY) {
+
+	        if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
+	            && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
+	            && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
+	        {
+		        /* Do lookup in sc_add_string */
+		        /* Verify node->type.variables.is_parameter == TRUE */
+		        /* If type is BINARY_OPERATION, Calculate it*/
+		        /* ELSE REPORT ERROR */
+
+		        if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
+		        {
+			        if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
+			        {
+				        newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+				        if (newNode->types.variable.is_parameter == TRUE)
+				        {
+					        range_max = symbol_list->children[0]->children[1];
+					        range_temp_max = newNode->types.number.value;
+				        }
+				        else
+					        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+					                      "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+			        }
+			        else
+				        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+				                      "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+		        }
+		        else if(symbol_list->children[0]->children[1]->type == NUMBERS)
+		        {
+			        range_max = symbol_list->children[0]->children[1];
+			        range_temp_max = range_max->types.number.value;
+		        }
+		        else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
+		        {
+			        range_max = symbol_list->children[0]->children[1];
+			        range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
+		        }
+
+		        if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
+		        {
+			        if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
+			        {
+				        newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+				        if (newNode->types.variable.is_parameter == TRUE)
+				        {
+					        range_min = symbol_list->children[0]->children[2];
+					        range_temp_min = newNode->types.number.value;
+				        }
+				        else
+					        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+					                      "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+			        }
+			        else
+				        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+				                      "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+		        }
+		        else if(symbol_list->children[0]->children[2]->type == NUMBERS)
+		        {
+			        range_min = symbol_list->children[0]->children[2];
+			        range_temp_min = range_min->types.number.value;
+		        }
+		        else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
+		        {
+			        range_min = symbol_list->children[0]->children[2];
+			        range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
+		        }
+
+		        if(range_temp_min > range_temp_max)
+			        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+		        //ODIN doesn't support negative number in index now.
+		        if(range_temp_min < 0 || range_temp_max < 0)
+			        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+
+	        }
+
+	        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
+	        {
+		        symbol_list->children[i]->children[1] = range_max;
+		        symbol_list->children[i]->children[2] = range_min;
+	        }
+
+	        switch(id)
+	        {
+		        case PORT:
+		        {
+			        short found_match = FALSE;
+
+			        symbol_list->children[i]->types.variable.is_port = TRUE;
+
+			        /* find the related INPUT or OUTPUT definition and store that instead */
+			        if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+			        {
+				        symbol_list->children[i]->types.variable.is_input = TRUE;
+				        symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+				        found_match = TRUE;
+			        }
+			        if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
+			        {
+				        symbol_list->children[i]->types.variable.is_output = TRUE;
+				        symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+				        found_match = TRUE;
+			        }
+
+			        if (found_match == FALSE)
+			        {
+				        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+			        }
+			        break;
+		        }
+		        case SPECIFY_PARAMETER:
+		        {
+			        int binary_range = -1;
+			        if (i == 0)
+			        {
+				        binary_range = get_range(symbol_list->children[i]);
+			        }
+
+			        /* fifth spot in the children list holds a parameter value */
+			        if (binary_range != -1)
+			        {
+				        /* check that the parameter size matches the number included */
+				        if((symbol_list->children[i]->children[5]->types.number.size != 0)
+				           && (symbol_list->children[i]->children[5]->types.number.base == BIN)
+				           && (symbol_list->children[i]->children[5]->types.number.size != binary_range))
+				        {
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+				        }
+				        else
+				        {
+					        symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range
+				        }
+			        }
+
+			        /* create an entry in the symbol table for this parameter */
+			        if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules], symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			        {
+				        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n",
+				                      symbol_list->children[i]->children[0]->types.identifier,
+				                      ((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
+			        }
+			        symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
+			        defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
+			        /* mark the node as shared so we don't delete it */
+			        symbol_list->children[i]->children[5]->shared_node = TRUE;
+			        /* now do the mark */
+			        symbol_list->children[i]->types.variable.is_parameter = TRUE;
+			        break;
+		        }
+		        case INPUT:
+			        symbol_list->children[i]->types.variable.is_input = TRUE;
+			        /* add this input to the modules string cache */
+			        if ((sc_spot = sc_add_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			        {
+				        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+			        }
+			        /* store the data which is an idx here */
+			        modules_inputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
+			        break;
+		        case OUTPUT:
+			        symbol_list->children[i]->types.variable.is_output = TRUE;
+			        /* add this output to the modules string cache */
+			        if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			        {
+				        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+			        }
+			        /* store the data which is an idx here */
+			        modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
+			        break;
+		        case INOUT:
+			        symbol_list->children[i]->types.variable.is_inout = TRUE;
+			        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+			        break;
+		        case WIRE:
+			        symbol_list->children[i]->types.variable.is_wire = TRUE;
+			        break;
+		        case REG:
+			        symbol_list->children[i]->types.variable.is_reg = TRUE;
+			        break;
+		        case INTEGER:
+			        symbol_list->children[i]->types.variable.is_integer = TRUE;
+			        break;
+		        default:
+		        oassert(FALSE);
+	        }
+        }
         else if(top_type == FUNCTION) {
 
             if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
