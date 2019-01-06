@@ -178,7 +178,7 @@ char* standardize_number(const char* input);
 
 	/*	unsupported Operators	*/
 <INITIAL>"&&&"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>"+:"				{ MP; return vNOT_SUPPORT;}
+<INITIAL>"+:"				{ MP; return vPlusColon;}
 <INITIAL>"-:"				{ MP; return vNOT_SUPPORT;}
 
 
