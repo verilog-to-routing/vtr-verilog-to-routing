@@ -98,7 +98,7 @@ char* standardize_number(const char* input);
 <INITIAL>"edge"				{ MP; return vNOT_SUPPORT;}
 <INITIAL>"endtask"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"scalared"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"specparam"		{ MP; return vNOT_SUPPORT;}
+<INITIAL>"specparam"		{ MP; return vSPECPARAM;}
 <INITIAL>"bufif0"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"bufif1"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"cmos"				{ MP; return vNOT_SUPPORT;}

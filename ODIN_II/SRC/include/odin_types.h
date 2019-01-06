@@ -271,6 +271,7 @@ typedef enum
 	/* top level things */
 	FILE_ITEMS,
 	MODULE,
+	SPECIFY,
 	/* VARIABLES */
 	INPUT,
 	OUTPUT,
@@ -306,6 +307,9 @@ typedef enum
 	/* Function instances*/
 	FUNCTION_NAMED_INSTANCE,
 	FUNCTION_INSTANCE,
+	/* Specify Items */
+	SPECIFY_ITEMS,
+	SPECIFY_PARAMETER,
 	SPECIFY_PAL_CONNECTION_STATEMENT,
 	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */
