@@ -190,16 +190,8 @@ while( (my $cur_line = <$InFile>) )
 	#remove leading and trailing whitespace
 	$cur_line=~ s/^\s+|\s+$//g; 
 
-	if ($cur_line =~ /\\$/) 
-	{
-		$cur_line =~ s/\s*\\$//g; 
-		# continue reading
-		$line_to_parse .= $cur_line." ";
-	}
-	#if not empty line
-	elsif( not $cur_line =~ /^\s*$/ )
-	{
-		$line_to_parse .= $cur_line;
+	PARSE_LINE: {
+		$line_to_parse .= " ".$cur_line;
 
 		#dump line to parse
 		my $line = $line_to_parse;
@@ -381,16 +373,11 @@ while( (my $cur_line = <$InFile>) )
 
 			# if we have an output file, print the line to it
 			if($has_output) {
-				if($line =~ /^\.names/ )
+				if($line =~ /"^\."/)
 				{
-					print $OutFile "\n";
+					$line = "\n".$line;
 				}
 				print $OutFile $line."\n";
-				
-				if($line =~ /^\.outputs/ )
-				{
-					print $OutFile "\n";
-				}
 			}
 		}
 	}
