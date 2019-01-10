@@ -816,25 +816,31 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     );
 
     std::string new_net_name;
-    if(!driver_is_pi && !po_in_sinks) {
-        //No PIs or POs, we can choose arbitarily in this case
-        new_net_name = netlist.net_name(output_net);
+    if(po_in_sinks) {
 
-    } else if(driver_is_pi && !po_in_sinks) {
-        //Must use the input name to perserve primary-input name
-        new_net_name = netlist.net_name(input_net);
-
-    } else if(!driver_is_pi && po_in_sinks) {
-        //Must use the output name to perserve primary-output name
-        new_net_name = netlist.net_name(output_net);
+        //Avoid removing buffers which drive primary outputs
+        //
+        //While we can remove such buffers, due to limitations in
+        //BLIF, we must name the resulting net in terms of the primary
+        //otuput. This can cause issues when attempting to correlate clock
+        //names between different tools (e.g. VPR and Quartus for the Titan
+        //benchmarks).
+        //
+        //As a result, we do not absorb such buffers.
+        //
+        //This also covers the case where both the driver and sink are primary
+        //inputs/outputs respectively.
+        return;
 
     } else {
-        VTR_ASSERT(driver_is_pi && po_in_sinks);
-        //This is a buffered connection from a primary input, to primary output
-        //TODO: consider implications of removing these...
+        if(!driver_is_pi) {
+            //No PIs or POs, we can choose arbitarily in this case
+            new_net_name = netlist.net_name(input_net);
 
-        //Do not remove such buffers
-        return;
+        } else {
+            //Must use the input name to perserve primary-input name
+            new_net_name = netlist.net_name(input_net);
+        }
     }
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
