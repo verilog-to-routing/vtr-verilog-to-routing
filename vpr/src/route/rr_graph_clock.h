@@ -51,7 +51,8 @@ class ClockRRGraph {
 
     public:
         /* Returns the current ptc num where the wire should be drawn and updates the
-           channel width. */
+           channel width. Note: The ptc_num is determined by the channel width. The channel
+           width global state gets incremented everytime there is a request for a new ptc_num*/
         int get_and_increment_chanx_ptc_num();
         int get_and_increment_chany_ptc_num();
 

@@ -259,6 +259,8 @@ int ClockRRGraph::get_and_increment_chanx_ptc_num() {
     auto& grid = device_ctx.grid;
     auto* channel_width = &device_ctx.chan_width;
 
+    // ptc_num is determined by the channel width
+    // The channel width lets the drawing engine how much to space the LBs appart
     int ptc_num = channel_width->x_max++;
     if (channel_width->x_max > channel_width->max) {
         channel_width->max = channel_width->x_max;
@@ -277,6 +279,8 @@ int ClockRRGraph::get_and_increment_chany_ptc_num() {
     auto& grid = device_ctx.grid;
     auto* channel_width = &device_ctx.chan_width;
 
+    // ptc_num is determined by the channel width
+    // The channel width lets the drawing engine how much to space the LBs appart
     int ptc_num = channel_width->y_max++;
     if (channel_width->y_max > channel_width->max) {
         channel_width->max = channel_width->y_max;
