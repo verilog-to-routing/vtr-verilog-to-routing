@@ -26,11 +26,13 @@ void populate_segment_values(
     segment_inf[seg_index].Rmetal = layer.r_metal;
     segment_inf[seg_index].Cmetal = layer.c_metal;
     segment_inf[seg_index].directionality = UNI_DIRECTIONAL;
+    segment_inf[seg_index].longline = false;
+
+    // unused values tagged with -1 (only used RR graph creation)
     segment_inf[seg_index].arch_wire_switch = -1;
     segment_inf[seg_index].arch_opin_switch = -1;
     segment_inf[seg_index].frac_cb = -1;
     segment_inf[seg_index].frac_sb = -1;
-    segment_inf[seg_index].longline = false;
 }
 
 /*
