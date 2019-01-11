@@ -62,6 +62,7 @@ class ClockRRGraphBuilder {
            The map key is the the clock network name and value are all the switch points*/
         std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
 
+        /* Saves a map from switch rr_node idx -> {x, y} location */
         void add_switch_location(
             std::string clock_name,
             std::string switch_name,
@@ -69,12 +70,14 @@ class ClockRRGraphBuilder {
             int y,
             int node_index);
 
+        /* Returns the rr_node idx of the switch at location {x, y} */
         std::vector<int> get_rr_node_indices_at_switch_location(
             std::string clock_name,
             std::string switch_name,
             int x,
             int y) const;
 
+        /* Returns all the switch locations for the a certain clock network switch */
         std::set<std::pair<int, int>> get_switch_locations(
             std::string clock_name,
             std::string switch_name) const;
