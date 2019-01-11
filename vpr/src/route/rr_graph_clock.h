@@ -17,12 +17,15 @@ class ClockNetwork;
 class ClockConnection;
 
 class SwitchPoint {
-    /* a switch point object: keeps information on the location and and rr_node indices
+    /* A switch point object: keeps information on the location and and rr_node indices
        for a certain clock switch. clock connections are grouped with their own unique
-       name. this object holds information for only one such grouping*/
+       name; this object holds information for only one such grouping.
+       Examples of SwitchPoint(s) are rib-to-spine, driver-to-spine. */
     public:
-        // [grid_width][grid_height][nodes]
+        // [grid_width][grid_height][0..nodes_at_this_location-1]
         std::vector<std::vector<std::vector<int>>> rr_node_indices;
+        // Set of all the locations for this switch point. Used to quickly find
+        // if the switch point exists at a certian location.
         std::set<std::pair<int, int>> locations; // x,y
     public:
         /** Getters **/
