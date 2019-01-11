@@ -10,13 +10,6 @@
 #include <random>
 #include <math.h>
 
-/*
- * RoutingToClockConnection (getters)
- */
-
-ClockConnectionType RoutingToClockConnection::get_connection_type() const {
-    return ClockConnectionType::ROUTING_TO_CLOCK;
-}
 
 /*
  * RoutingToClockConnection (setters)
@@ -105,13 +98,6 @@ std::vector<int> RoutingToClockConnection::get_clock_indices_at_switch_location(
         switch_location.y);
 }
 
-/*
- * ClockToClockConneciton (getters)
- */
-
-ClockConnectionType ClockToClockConneciton::get_connection_type() const {
-    return ClockConnectionType::CLOCK_TO_CLOCK;
-}
 
 /*
  * ClockToClockConneciton (setters)
@@ -198,13 +184,6 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
 
 
 
-/*
- * ClockToPinsConnection (getters)
- */
-
-ClockConnectionType ClockToPinsConnection::get_connection_type() const {
-    return ClockConnectionType::CLOCK_TO_PINS;
-}
 
 /*
  * ClockToPinsConnection (setters)

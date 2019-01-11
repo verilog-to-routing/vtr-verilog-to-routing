@@ -25,11 +25,6 @@ class ClockConnection {
         virtual ~ClockConnection() {};
 
         /*
-         * Getters
-         */
-        virtual ClockConnectionType get_connection_type() const = 0;
-
-        /*
          * Member functions
          */
         virtual void create_switches(const ClockRRGraphBuilder& clock_graph) = 0;
@@ -46,11 +41,6 @@ class RoutingToClockConnection : public ClockConnection {
 
         int seed = 101;
     public:
-        /*
-         * Getters
-         */
-        ClockConnectionType get_connection_type() const;
-
         /*
          * Setters
          */
@@ -85,11 +75,6 @@ class ClockToClockConneciton : public ClockConnection {
     
     public:
         /*
-         * Getters
-         */
-        ClockConnectionType get_connection_type() const;
-        
-        /*
          * Setters
          */
         void set_from_clock_name(std::string clock_name);
@@ -116,11 +101,6 @@ class ClockToPinsConnection : public ClockConnection {
         float fc;
 
     public:
-        /*
-         * Getters
-         */
-        ClockConnectionType get_connection_type() const;
-        
         /*
          * Setters
          */
