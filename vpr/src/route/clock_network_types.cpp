@@ -501,6 +501,8 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_gra
                                     INC_DIRECTION,
                                     rr_nodes);
 
+            // Keep a record of the rr_node idx that we will use to connects switches to at
+            // the tap point
             record_tap_locations(
                 y_start + y_offset,
                 y_end,
