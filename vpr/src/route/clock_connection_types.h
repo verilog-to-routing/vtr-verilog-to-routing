@@ -96,7 +96,6 @@ class ClockToPinsConnection : public ClockConnection {
     private:
         std::string clock_to_connect_from;
         std::string switch_name;
-//        pin_type; //To
         int switch_idx;
         float fc;
 
