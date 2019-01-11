@@ -510,13 +510,21 @@ static void build_rr_graph(
     t_sblock_pattern unidir_sb_pattern;
     t_sb_connection_map *sb_conn_map = nullptr; //for custom switch blocks
 
+    //We are careful to use a single seed each time build_rr_graph is called
+    //to initialize the random number generator (RNG) which is (potentially)
+    //used when creating custom switchblocks. This ensures that build_rr_graph()
+    //is deterministic -- always producing the same RR graph.
+    constexpr int SWITCHPOINT_RNG_SEED = 1;
+    std::minstd_rand switchpoint_rng(SWITCHPOINT_RNG_SEED);
+
     if (is_global_graph) {
         switch_block_conn = alloc_and_load_switch_block_conn(1, SUBSET, 3);
     } else if (BI_DIRECTIONAL == directionality) {
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
                     grid,
-                    switchblocks, nodes_per_chan, directionality);
+                    switchblocks, nodes_per_chan, directionality,
+                    switchpoint_rng);
         } else {
             switch_block_conn = alloc_and_load_switch_block_conn(max_chan_width, sb_type, Fs);
         }
@@ -526,7 +534,8 @@ static void build_rr_graph(
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
                     grid,
-                    switchblocks, nodes_per_chan, directionality);
+                    switchblocks, nodes_per_chan, directionality,
+                    switchpoint_rng);
         } else {
             /* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
             VTR_ASSERT(Fs == 3);
