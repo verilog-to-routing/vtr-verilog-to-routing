@@ -64,7 +64,7 @@ void ClockNetwork::set_num_instance(int num_inst) {
 void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& clock_graph) {
 
     for(int inst_num = 0; inst_num < get_num_inst(); inst_num++){
-        create_rr_nodes_for_one_instance(clock_graph);
+        create_rr_nodes_and_internal_edges_for_one_instance(clock_graph);
     }
 }
 
@@ -178,7 +178,9 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf);
 }
 
-void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) {
+void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(
+        ClockRRGraphBuilder& clock_graph)
+{
  
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
@@ -429,7 +431,9 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf);
 }
 
-void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) {
+void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(
+        ClockRRGraphBuilder& clock_graph)
+{
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
@@ -589,7 +593,9 @@ void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
 }
-void ClockHTree::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) {
+void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(
+        ClockRRGraphBuilder& clock_graph)
+{
 
     //Remove unused parameter warning
     (void)clock_graph; 
