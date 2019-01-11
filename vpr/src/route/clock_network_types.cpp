@@ -485,7 +485,7 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_gra
                                     rr_nodes);
             clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
 
-            // create spine wire to the right and left of the drive point
+            // create spine wire above and below the drive point
             auto left_node_idx = create_chany_wire(
                                     y_start + y_offset,
                                     drive_y-1,
