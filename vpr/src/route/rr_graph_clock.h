@@ -17,6 +17,9 @@ class ClockNetwork;
 class ClockConnection;
 
 class SwitchPoint {
+    /* a switch point object: keeps information on the location and and rr_node indices
+       for a certain clock switch. clock connections are grouped with their own unique
+       name. this object holds information for only one such grouping*/
     public:
         // [grid_width][grid_height][nodes]
         std::vector<std::vector<std::vector<int>>> rr_node_indices;
@@ -32,6 +35,9 @@ class SwitchPoint {
 };
 
 class SwitchPoints {
+    /* This Class holds a map from a uniquely named switch to all of its locations on
+       the device and its rr_node_indices. The location and rr_node_indices are stored
+       in the SwitchPoint object*/
     public:
         std::unordered_map<std::string, SwitchPoint> switch_name_to_switch_location;
     public:
