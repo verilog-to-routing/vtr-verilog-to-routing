@@ -254,8 +254,6 @@ ClusteredNetlist read_netlist(const char *net_file,
         }
     }
 
-    VTR_LOG("t_pb_route: total_num_pb_pins=%zu num_allocated=%zu sizeof=%zu num_used=%zu\n", num_pb_pins, num_pb_route_alloc, sizeof(t_pb_route), num_pb_route_used);
-
     return clb_nlist;
 }
 
