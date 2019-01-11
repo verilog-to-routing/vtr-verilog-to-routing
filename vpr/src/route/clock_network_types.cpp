@@ -449,13 +449,13 @@ void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_gra
 
             // Adjust for boundry conditions
             unsigned y_offset = 0;
-            if((y_start == 0) || // CHANY wires bottom boundry
+            if((y_start == 0) || // CHANY wires bottom boundry, start above the LB
                (y_start + repeat.y == y_end)) // Avoid overlap
             {
                 y_offset = 1;
             }
             if (y_end > grid.height() - 2) {
-                y_end = grid.height() - 2; // CHANY wires top boundry
+                y_end = grid.height() - 2; // CHANY wires top boundry, dont go above the LB
             }
 
             // Dont create spine if drive point is not reachable
