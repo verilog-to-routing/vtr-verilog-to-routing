@@ -50,6 +50,7 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
 }
 
+// Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(
         std::vector<std::unique_ptr<ClockNetwork>>& clock_networks)
 {
@@ -63,6 +64,7 @@ void ClockRRGraphBuilder::create_clock_networks_wires(
     rr_nodes.shrink_to_fit();
 }
 
+// Clock switch information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_switches(
         std::vector<std::unique_ptr<ClockConnection>>& clock_connections)
 {
