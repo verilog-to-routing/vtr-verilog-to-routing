@@ -12,7 +12,7 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
-void ClockRRGraph::create_and_append_clock_rr_graph(
+void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
         std::vector<t_segment_inf>& segment_inf,
         const float R_minW_nmos,
         const float R_minW_pmos,
@@ -29,7 +29,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph(
 
     size_t clock_nodes_start_idx = device_ctx.rr_nodes.size();
 
-    ClockRRGraph clock_graph = ClockRRGraph();
+    ClockRRGraphBuilder clock_graph = ClockRRGraphBuilder();
     clock_graph.create_clock_networks_wires(clock_networks);
     clock_graph.create_clock_networks_switches(clock_routing);
 
@@ -50,7 +50,7 @@ void ClockRRGraph::create_and_append_clock_rr_graph(
     vtr::printf_info("Building clock network resource graph took %g seconds\n", elapsed_time);
 }
 
-void ClockRRGraph::create_clock_networks_wires(
+void ClockRRGraphBuilder::create_clock_networks_wires(
         std::vector<std::unique_ptr<ClockNetwork>>& clock_networks)
 {
     // Add rr_nodes for each clock network wire
@@ -63,7 +63,7 @@ void ClockRRGraph::create_clock_networks_wires(
     rr_nodes.shrink_to_fit();
 }
 
-void ClockRRGraph::create_clock_networks_switches(
+void ClockRRGraphBuilder::create_clock_networks_switches(
         std::vector<std::unique_ptr<ClockConnection>>& clock_connections)
 {
     for(auto& clock_connection: clock_connections) {
@@ -71,7 +71,7 @@ void ClockRRGraph::create_clock_networks_switches(
     }
 }
 
-void ClockRRGraph::add_rr_switches_and_map_to_nodes(
+void ClockRRGraphBuilder::add_rr_switches_and_map_to_nodes(
         size_t node_start_idx,
         const float R_minW_nmos,
         const float R_minW_pmos)
@@ -108,7 +108,7 @@ void ClockRRGraph::add_rr_switches_and_map_to_nodes(
     device_ctx.rr_switch_inf.shrink_to_fit();
 }
 
-int ClockRRGraph::add_rr_switch_from_arch_switch_inf(
+int ClockRRGraphBuilder::add_rr_switch_from_arch_switch_inf(
         int arch_switch_idx,
         const float R_minW_nmos,
         const float R_minW_pmos)
@@ -151,7 +151,7 @@ int ClockRRGraph::add_rr_switch_from_arch_switch_inf(
     return rr_switch_idx;
 }
 
-void ClockRRGraph::add_switch_location(
+void ClockRRGraphBuilder::add_switch_location(
         std::string clock_name,
         std::string switch_name,
         int x,
@@ -182,7 +182,7 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
     locations.insert({x,y});
 }
 
-std::vector<int> ClockRRGraph::get_rr_node_indices_at_switch_location(
+std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(
     std::string clock_name,
     std::string switch_name,
     int x,
@@ -220,7 +220,7 @@ std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) cons
     return rr_node_indices[x][y];
 }
 
-std::set<std::pair<int, int>> ClockRRGraph::get_switch_locations(
+std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(
     std::string clock_name,
     std::string switch_name) const
 {
@@ -253,7 +253,7 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 }
 
 
-int ClockRRGraph::get_and_increment_chanx_ptc_num() {
+int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
@@ -273,7 +273,7 @@ int ClockRRGraph::get_and_increment_chanx_ptc_num() {
     return ptc_num;
 }
 
-int ClockRRGraph::get_and_increment_chany_ptc_num() {
+int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;

@@ -10,7 +10,7 @@
 
 #include "rr_graph_clock.h"
 
-class ClockRRGraph;
+class ClockRRGraphBuilder;
 
 enum class ClockType {
     SPINE,
@@ -98,10 +98,10 @@ class ClockNetwork {
          * Member funtions
          */
         /* Creates the RR nodes for the clock network wires and adds them to the reverse lookup
-           in ClockRRGraph. The reverse lookup maps the nodes to their switch point locations */
-        void create_rr_nodes_for_clock_network_wires(ClockRRGraph& clock_graph);
+           in ClockRRGraphBuilder. The reverse lookup maps the nodes to their switch point locations */
+        void create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& clock_graph);
         virtual void create_segments(std::vector<t_segment_inf>& segment_inf) = 0;
-        virtual void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) = 0;
+        virtual void create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) = 0;
 };
 
 class ClockRib : public ClockNetwork {
@@ -149,7 +149,7 @@ class ClockRib : public ClockNetwork {
          * Member functions
          */
         void create_segments(std::vector<t_segment_inf>& segment_inf);
-        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph);
         int create_chanx_wire(
                 int x_start,
                 int x_end,
@@ -163,7 +163,7 @@ class ClockRib : public ClockNetwork {
                 unsigned y,
                 int left_rr_node_idx,
                 int right_rr_node_idx,
-                ClockRRGraph& clock_graph);
+                ClockRRGraphBuilder& clock_graph);
 };
 
 class ClockSpine : public ClockNetwork {
@@ -207,7 +207,7 @@ class ClockSpine : public ClockNetwork {
          * Member functions
          */
         void create_segments(std::vector<t_segment_inf>& segment_inf);
-        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph);
         int create_chany_wire(
             int y_start,
             int y_end,
@@ -221,7 +221,7 @@ class ClockSpine : public ClockNetwork {
                 unsigned x,
                 int left_node_idx,
                 int right_node_idx,
-                ClockRRGraph& clock_graph);
+                ClockRRGraphBuilder& clock_graph);
 
 };
 
@@ -241,7 +241,7 @@ class ClockHTree : private ClockNetwork {
         ClockType get_network_type() const {return ClockType::H_TREE;}
         // TODO: Unimplemented member function
         void create_segments(std::vector<t_segment_inf>& segment_inf);
-        void create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph);
+        void create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph);
 };
 
 #endif

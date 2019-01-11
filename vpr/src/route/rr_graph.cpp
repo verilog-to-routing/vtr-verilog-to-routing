@@ -309,7 +309,7 @@ void create_rr_graph(
                 Warnings);
 
         if (clock_modeling == DEDICATED_NETWORK) {
-            ClockRRGraph::create_and_append_clock_rr_graph(
+            ClockRRGraphBuilder::create_and_append_clock_rr_graph(
                 segment_inf,
                 det_routing_arch->R_minW_nmos,
                 det_routing_arch->R_minW_pmos,

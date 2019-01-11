@@ -7,7 +7,7 @@
 
 #include "rr_graph_clock.h"
 
-class ClockRRGraph;
+class ClockRRGraphBuilder;
 
 enum class ClockConnectionType {
     ROUTING_TO_CLOCK,
@@ -32,7 +32,7 @@ class ClockConnection {
         /*
          * Member functions
          */
-        virtual void create_switches(const ClockRRGraph& clock_graph) = 0;
+        virtual void create_switches(const ClockRRGraphBuilder& clock_graph) = 0;
 };
 
 
@@ -64,13 +64,13 @@ class RoutingToClockConnection : public ClockConnection {
          * Member functions
          */
         /* Connects the inter-block routing to the clock source at the specified coordinates */
-        void create_switches(const ClockRRGraph& clock_graph);
+        void create_switches(const ClockRRGraphBuilder& clock_graph);
 
     private:
 
         std::vector<int> get_chan_wire_indices_at_switch_location(t_rr_type rr_type);
 
-        std::vector<int> get_clock_indices_at_switch_location(const ClockRRGraph& clock_graph);
+        std::vector<int> get_clock_indices_at_switch_location(const ClockRRGraphBuilder& clock_graph);
 };
 
 
@@ -103,7 +103,7 @@ class ClockToClockConneciton : public ClockConnection {
          * Member functions
          */
         /* Connects a clock tap to a clock source */
-        void create_switches(const ClockRRGraph& clock_graph);
+        void create_switches(const ClockRRGraphBuilder& clock_graph);
 };
 
 
@@ -133,7 +133,7 @@ class ClockToPinsConnection : public ClockConnection {
          * Member functions
          */
         /* Connects the clock tap to block pins */
-        void create_switches(const ClockRRGraph& clock_graph);
+        void create_switches(const ClockRRGraphBuilder& clock_graph);
 
 };
 

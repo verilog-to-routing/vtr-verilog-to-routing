@@ -47,7 +47,7 @@ class SwitchPoints {
         void insert_switch_node_idx(std::string switch_name, int x, int y, int node_idx);
 };
 
-class ClockRRGraph {
+class ClockRRGraphBuilder {
 
     public:
         /* Returns the current ptc num where the wire should be drawn and updates the

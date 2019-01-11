@@ -47,7 +47,7 @@ void RoutingToClockConnection::set_fc_val(float fc_val) {
  * RoutingToClockConnection (member functions)
  */
 
-void RoutingToClockConnection::create_switches(const ClockRRGraph& clock_graph) {
+void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_graph) {
 
     // Initialize random seed
     // Must be done durring every call inorder for restored rr_graphs after a binary
@@ -95,7 +95,7 @@ std::vector<int> RoutingToClockConnection::get_chan_wire_indices_at_switch_locat
 }
 
 std::vector<int> RoutingToClockConnection::get_clock_indices_at_switch_location(
-    const ClockRRGraph& clock_graph)
+    const ClockRRGraphBuilder& clock_graph)
 {
 
     return clock_graph.get_rr_node_indices_at_switch_location(
@@ -145,7 +145,7 @@ void ClockToClockConneciton::set_fc_val(float fc_val) {
  * ClockToClockConneciton (member functions)
  */
 
-void ClockToClockConneciton::create_switches(const ClockRRGraph& clock_graph) {
+void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_graph) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
@@ -230,7 +230,7 @@ void ClockToPinsConnection::set_fc_val(float fc_val) {
  * ClockToPinsConnection (member functions)
  */
 
-void ClockToPinsConnection::create_switches(const ClockRRGraph& clock_graph) {
+void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_graph) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;

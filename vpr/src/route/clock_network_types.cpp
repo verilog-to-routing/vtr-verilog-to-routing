@@ -61,7 +61,7 @@ void ClockNetwork::set_num_instance(int num_inst) {
  * ClockNetwork (Member functions)
  */
 
-void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraph& clock_graph) {
+void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& clock_graph) {
 
     for(int inst_num = 0; inst_num < get_num_inst(); inst_num++){
         create_rr_nodes_for_one_instance(clock_graph);
@@ -178,7 +178,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf);
 }
 
-void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
+void ClockRib::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) {
  
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
@@ -308,7 +308,7 @@ void ClockRib::record_tap_locations(
         unsigned y,
         int left_rr_node_idx,
         int right_rr_node_idx,
-        ClockRRGraph& clock_graph)
+        ClockRRGraphBuilder& clock_graph)
 {
     for(unsigned x = x_start+tap.offset; x <= x_end; x+=tap.increment) {
         if(x < (x_start + drive.offset - 1)) {
@@ -429,7 +429,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf);
 }
 
-void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
+void ClockSpine::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
@@ -561,7 +561,7 @@ void ClockSpine::record_tap_locations(
         unsigned x,
         int left_node_idx,
         int right_node_idx,
-        ClockRRGraph& clock_graph)
+        ClockRRGraphBuilder& clock_graph)
 {
     for (unsigned y = y_start+tap.offset; y <= y_end; y+=tap.increment) {
         if(y < (y_start + drive.offset - 1)) {
@@ -587,7 +587,7 @@ void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "HTrees are not yet supported.\n");
 }
-void ClockHTree::create_rr_nodes_for_one_instance(ClockRRGraph& clock_graph) {
+void ClockHTree::create_rr_nodes_for_one_instance(ClockRRGraphBuilder& clock_graph) {
 
     //Remove unused parameter warning
     (void)clock_graph; 
