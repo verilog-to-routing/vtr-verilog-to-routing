@@ -680,7 +680,7 @@ FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	char searchString [4][7]= {"input","output","reg","wire"};
-	char templine[MaxLine];
+	char templine[MaxLine] = { 0 };
 	char *line = templine;
 	char ch;
 	unsigned i;
@@ -705,7 +705,8 @@ FILE *format_verilog_file(FILE *source)
 	}
 	line[i++] = ch;
 	line[i] = '\0';
-	line = find_substring(line,"module",2);
+	std::string sub_line = find_substring(line,"module",2);
+	sprintf(line,"%s",sub_line.c_str());
 	line = search_replace(line,"\n","",2);
 
 	if (! validate_string_regex(line, pattern))
