@@ -680,16 +680,14 @@ FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	char searchString [4][7]= {"input","output","reg","wire"};
-	char *line;
-	char *line_to_free;
+	char templine[MaxLine];
+	char *line = templine;
 	char ch;
 	unsigned i;
 	char temp[10];
 	int j;
 	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
 	i = 0;
-	line = (char *) calloc (MaxLine, sizeof(char));
-	line_to_free = line;
 	while( (ch = getc(source) ) != ';')
 	{
 		line[i++] = ch;
@@ -742,7 +740,6 @@ FILE *format_verilog_file(FILE *source)
 	rewind(source);
 	destination = format_verilog_variable(source,destination);
 	rewind(destination);
-	free(line_to_free);
 	return destination;
 }
 
