@@ -8,6 +8,8 @@
 #include "vpr_types.h"
 #include "device_grid.h"
 
+#include "vtr_random.h"
+
 
 /************ Classes, structs, typedefs ************/
 
@@ -89,7 +91,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations(const t_chan_detai
                 const DeviceGrid& grid,
 				std::vector<t_switchblock_inf> switchblocks,
 				t_chan_width *nodes_per_chan, enum e_directionality directionality,
-                std::minstd_rand& rng);
+                vtr::RandState& rand_state);
 
 /* deallocates switch block connections sparse array */
 void free_switchblock_permutations(t_sb_connection_map *sb_conns);
