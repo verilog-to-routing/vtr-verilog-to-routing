@@ -680,16 +680,14 @@ FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	char searchString [4][7]= {"input","output","reg","wire"};
-	char *line;
-	char *line_to_free;
+	char templine[MaxLine] = { 0 };
+	char *line = templine;
 	char ch;
 	unsigned i;
 	char temp[10];
 	int j;
 	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
 	i = 0;
-	line = (char *) calloc (MaxLine, sizeof(char));
-	line_to_free = line;
 	while( (ch = getc(source) ) != ';')
 	{
 		line[i++] = ch;
@@ -707,7 +705,8 @@ FILE *format_verilog_file(FILE *source)
 	}
 	line[i++] = ch;
 	line[i] = '\0';
-	line = find_substring(line,"module",2);
+	std::string sub_line = find_substring(line,"module",2);
+	sprintf(line,"%s",sub_line.c_str());
 	line = search_replace(line,"\n","",2);
 
 	if (! validate_string_regex(line, pattern))
@@ -742,7 +741,6 @@ FILE *format_verilog_file(FILE *source)
 	rewind(source);
 	destination = format_verilog_variable(source,destination);
 	rewind(destination);
-	free(line_to_free);
 	return destination;
 }
 

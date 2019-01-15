@@ -983,32 +983,24 @@ char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
 	}
 	return line;
 }
-char *find_substring(char *src,const char *sKey,int flag)
+std::string find_substring(char *src,const char *sKey,int flag)
 {
 	// flag == 1 first half, flag == 2 second half
 
-	std::string tmp;
-	std::string key;
-	char *line;
-	line = vtr::strdup(src);
-	tmp = line;
-	key = sKey;
+	std::string tmp(src);
+	std::string key(sKey);
 	std::size_t found = tmp.find(key);
 	switch(flag)
 	{
 		case 1:
-   			tmp = tmp.substr(0,found-1);
-			break;
+   			return tmp.substr(0,found-1);
+
 		case 2:
-   			tmp = tmp.substr(found,tmp.length());
-			break;
+   			return tmp.substr(found,tmp.length());
 
 		default:
-			return line;
+			return tmp;
 	}
-	odin_sprintf(line,"%s",tmp.c_str());
-
-	return line;
 }
 
 bool validate_string_regex(const char *str_in, const char *pattern_in)
