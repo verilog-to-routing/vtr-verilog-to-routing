@@ -13,26 +13,26 @@ archs_dir=arch/bidir
 sdc_dir=sdc
 
 # Add circuits to list to sweep
-#circuit_list_add=alu4.blif
-#circuit_list_add=apex2.blif
-#circuit_list_add=apex4.blif
-#circuit_list_add=bigkey.blif
-#circuit_list_add=clma.blif
-#circuit_list_add=des.blif
-#circuit_list_add=diffeq.blif
-#circuit_list_add=dsip.blif
-#circuit_list_add=elliptic.blif
-#circuit_list_add=ex1010.blif
-#circuit_list_add=ex5p.blif
-#circuit_list_add=frisc.blif
-#circuit_list_add=misex3.blif
-#circuit_list_add=pdc.blif
-#circuit_list_add=s298.blif
-#circuit_list_add=s38417.blif
-#circuit_list_add=s38584.1.blif
-#circuit_list_add=seq.blif
+circuit_list_add=alu4.blif
+circuit_list_add=apex2.blif
+circuit_list_add=apex4.blif
+circuit_list_add=bigkey.blif
+circuit_list_add=clma.blif
+circuit_list_add=des.blif
+circuit_list_add=diffeq.blif
+circuit_list_add=dsip.blif
+circuit_list_add=elliptic.blif
+circuit_list_add=ex1010.blif
+circuit_list_add=ex5p.blif
+circuit_list_add=frisc.blif
+circuit_list_add=misex3.blif
+circuit_list_add=pdc.blif
+circuit_list_add=s298.blif
+circuit_list_add=s38417.blif
+circuit_list_add=s38584.1.blif
+circuit_list_add=seq.blif
 circuit_list_add=spla.blif
-#circuit_list_add=tseng.blif
+circuit_list_add=tseng.blif
 
 
 # Add architectures to list to sweep
