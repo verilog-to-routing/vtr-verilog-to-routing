@@ -113,6 +113,7 @@ void vpr_print_title() {
     VTR_LOG("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
     VTR_LOG("Compiler: %s\n", vtr::COMPILER);
     VTR_LOG("University of Toronto\n");
+    VTR_LOG("verilogtorouting.org\n");
     VTR_LOG("vtr-users@googlegroups.com\n");
     VTR_LOG("This is free open source code under MIT license.\n");
     VTR_LOG("\n");
