@@ -751,21 +751,16 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
 		}
 	}
 
-	if (pb->pb_stats->num_feasible_blocks
-			>= max_queue_size - 1) {
+	if (pb->pb_stats->num_feasible_blocks >= max_queue_size - 1) {
 		/* maximum size for array, remove smallest gain element and sort */
-		if (get_molecule_gain(molecule, gain)
-				> get_molecule_gain(pb->pb_stats->feasible_blocks[0], gain)) {
+		if (get_molecule_gain(molecule, gain) > get_molecule_gain(pb->pb_stats->feasible_blocks[0], gain)) {
 			/* single loop insertion sort */
 			for (j = 0; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
-				if (get_molecule_gain(molecule, gain)
-						<= get_molecule_gain(
-								pb->pb_stats->feasible_blocks[j + 1], gain)) {
+				if (get_molecule_gain(molecule, gain) <= get_molecule_gain(pb->pb_stats->feasible_blocks[j + 1], gain)) {
 					pb->pb_stats->feasible_blocks[j] = molecule;
 					break;
 				} else {
-					pb->pb_stats->feasible_blocks[j] =
-							pb->pb_stats->feasible_blocks[j + 1];
+					pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j + 1];
 				}
 			}
 			if (j == pb->pb_stats->num_feasible_blocks - 1) {
@@ -775,10 +770,8 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
 	} else {
 		/* Expand array and single loop insertion sort */
 		for (j = pb->pb_stats->num_feasible_blocks - 1; j >= 0; j--) {
-			if (get_molecule_gain(pb->pb_stats->feasible_blocks[j], gain)
-					> get_molecule_gain(molecule, gain)) {
-				pb->pb_stats->feasible_blocks[j + 1] =
-						pb->pb_stats->feasible_blocks[j];
+			if (get_molecule_gain(pb->pb_stats->feasible_blocks[j], gain) > get_molecule_gain(molecule, gain)) {
+				pb->pb_stats->feasible_blocks[j + 1] = pb->pb_stats->feasible_blocks[j];
 			} else {
 				pb->pb_stats->feasible_blocks[j + 1] = molecule;
 				break;
