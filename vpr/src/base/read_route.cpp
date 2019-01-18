@@ -60,7 +60,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
     /* Begin parsing the file */
-    VTR_LOG("Begin loading packed FPGA routing file.\n");
+    VTR_LOG("Begin loading FPGA routing file.\n");
 
     string header_str;
 
