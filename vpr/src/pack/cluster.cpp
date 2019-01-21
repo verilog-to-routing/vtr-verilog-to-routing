@@ -2029,17 +2029,15 @@ static t_pack_molecule *get_highest_gain_molecule(
         add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb, cluster_placement_stats_ptr, atom_molecules);
     }
 
+	// 3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+	if(cur_pb->pb_stats->num_feasible_blocks == 0 &&
+	   cur_pb->pb_stats->explore_transitive_fanout == true) {
+        add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
+	}
+
 	// 2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
 	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
         add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
-	}
-
-	// 3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
-	if(cur_pb->pb_stats->num_feasible_blocks == 0 &&
-	   !cur_pb->pb_stats->tie_break_high_fanout_net &&
-	   cur_pb->pb_stats->explore_transitive_fanout == true
-	   ) {
-        add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
 	}
 
 	/* Grab highest gain molecule */
