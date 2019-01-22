@@ -151,7 +151,7 @@ define:
 module:
 	vMODULE vSYMBOL_ID '(' variable_define_list ')' ';' list_of_module_items vENDMODULE				{$$ = newModule($2, $4, $7, yylineno);}
 	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);} //TODO this is supported?? not in standards
-	| vMODULE vSYMBOL_ID '(' ')' ';' SPECIFY vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}
+	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}
 	;
 
 //TODO expand this to support INPUT OUTPUT INOUT
@@ -191,7 +191,7 @@ initial_block:
 	;
 
 specify_block:
-	vSPECIFY list_of_specify_items vENDSPECIFY						{$$ = newSpecifyBlock($2, yylineno);}
+	vSPECIFY list_of_specify_items vENDSPECIFY						{$$ = $2;}
 	;
 
 list_of_function_items:
@@ -400,7 +400,7 @@ statement:
 
 list_of_specify_items:
 	list_of_specify_items specify_item 							{$$ =  newList_entry($1, $2);}
-	| specify_item										{$$ = newList(SPECIFY_ITEMS, $1);}
+	| specify_item										{$$ = $1 /*newList(SPECIFY_ITEMS, $1)*/;}
 	;
 
 specify_item:
