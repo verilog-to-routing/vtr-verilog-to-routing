@@ -78,21 +78,6 @@ using namespace std;
 #define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 4				/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less tahn AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 
-#define SCALE_NUM_PATHS 1e-2     /*this value is used as a multiplier to assign a    *
-				  *slightly higher criticality value to nets that    *
-				  *affect a large number of critical paths versus    *
-				  *nets that do not have such a broad effect.        *
-				  *Note that this multiplier is intentionally very   *
-				  *small compared to the total criticality because   *
-				  *we want to make sure that atom net criticality is      *
-				  *primarily determined by slacks, with this acting  *
-				  *only as a tie-breaker between otherwise equal nets*/
-#define SCALE_DISTANCE_VAL 1e-4  /*this value is used as a multiplier to assign a    *
-				  *slightly higher criticality value to nets that    *
-				  *are otherwise equal but one is  farther           *
-				  *from sources (the farther one being made slightly *
-				  *more critical)                                    */
-
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
 
