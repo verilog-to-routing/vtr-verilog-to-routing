@@ -151,7 +151,7 @@ define:
 module:
 	vMODULE vSYMBOL_ID '(' variable_define_list ')' ';' list_of_module_items vENDMODULE				{$$ = newModule($2, $4, $7, yylineno);}
 	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);} //TODO this is supported?? not in standards
-	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}
+	| vMODULE vSYMBOL_ID '(' ')' ';' SPECIFY vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}
 	;
 
 //TODO expand this to support INPUT OUTPUT INOUT
@@ -180,7 +180,6 @@ module_item:
 	| always									{$$ = $1;}
 	| defparam_declaration						{$$ = $1;}
 	| specify_block								{$$ = $1;}
-	| specparam_declaration		   				{$$ = $1;}
 	;
 
 function_declaration:
@@ -192,7 +191,7 @@ initial_block:
 	;
 
 specify_block:
-	vSPECIFY list_of_specify_items vENDSPECIFY						{$$ = $2;}
+	vSPECIFY list_of_specify_items vENDSPECIFY						{$$ = newSpecifyBlock($2, yylineno);}
 	;
 
 list_of_function_items:
@@ -400,38 +399,22 @@ statement:
 	;
 
 list_of_specify_items:
-	list_of_specify_items specify_item 								{$$ =  ($1, $2);}
-	| specify_item													{$$ = newList(SPECIFY_ITEMS, $1);}
-  ;
+	list_of_specify_items specify_item 							{$$ =  newList_entry($1, $2);}
+	| specify_item										{$$ = newList(SPECIFY_ITEMS, $1);}
+	;
 
 specify_item:
-    list_of_specify_pal_connects            						{$$ = $1;}
+	specify_pal_connect_declaration            						{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
 	| specparam_declaration            						        {$$ = $1;}
 	;
 
-list_of_specify_pal_connects:
-	list_of_specify_pal_connects specify_pal_connect_declaration 		{$$ = newList_entry($1, $2);}
-	| specify_pal_connect_declaration								{$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
-	;
-
 specify_pal_connect_declaration:
-    '(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
-    ;
-
-//TODO: implement  list_of_specparam_assignment (currently, specparam behaves like module parameters)
-specparam_declaration:
-	vSPECPARAM variable_list ';'										{$$ = markAndProcessSymbolListWith(SPECIFY,SPECIFY_PARAMETER, $2);}
-//    vSPECPARAM list_of_specparam_assignment ';'						{$$ = }
-//	| vSPECPARAM range_of_specparam list_of_specparam_assignment ';'	{$$ = }
+	'(' parallel_connection ')' '=' primary ';'						{$$ = newParallelConnection($2, $5, yylineno);}
 	;
 
-//list_of_specparam_assignment:
-//	list_of_specparam_assignment ',' specparam_assignment				{$$ = newList_entry($1, $3);}
-//	| specparam_assignment												{$$ = newList(CONST_DECLARE_LIST, $1);}
-//	;
-
-//specparam_assignment:
-//	vSYMBOL_ID '=' constant_mintypmax_expression						{$$ = NULL; newConstant($1, newNumberNode($3, DEC, UNSIGNED, yylineno), yylineno);}
+specparam_declaration:
+	vSPECPARAM variable_list ';'								{$$ = markAndProcessSymbolListWith(SPECIFY,SPECIFY_PARAMETER, $2);}
+	;
 
 blocking_assignment:
 	primary '=' expression 												{$$ = newBlocking($1, $3, yylineno);}
