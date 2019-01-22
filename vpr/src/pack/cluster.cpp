@@ -73,7 +73,7 @@ using namespace std;
 #include "read_sdc.h"
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
-#define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
+#define AAPACK_MAX_NET_SINKS_IGNORE 64				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10			/* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
 #define AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE 4		/* When investigating transitive fanout connections in packing, this is the highest fanout net that will be explored */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 4				/* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less tahn AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE */
@@ -2003,8 +2003,8 @@ static void start_new_cluster(
 Get candidate molecule to pack into currently open cluster
 Molecule selection priority:
 	1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
-	2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
-	3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+	2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+	3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
 */
 static t_pack_molecule *get_highest_gain_molecule(
 		t_pb *cur_pb,
@@ -2029,13 +2029,13 @@ static t_pack_molecule *get_highest_gain_molecule(
         add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb, cluster_placement_stats_ptr, atom_molecules);
     }
 
-	// 3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+	// 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
 	if(cur_pb->pb_stats->num_feasible_blocks == 0 &&
 	   cur_pb->pb_stats->explore_transitive_fanout == true) {
         add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets, cluster_index);
 	}
 
-	// 2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+	// 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
 	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
         add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules);
 	}
