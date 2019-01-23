@@ -258,11 +258,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 void compute_router_lookahead(int num_segments){
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
-	if (!f_cost_map.empty()){
-		/* if lookahead map has already been computed, do not compute it again */
-		VTR_LOG("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
-		return;
-	}
+    f_cost_map.clear();
 
 	auto& device_ctx = g_vpr_ctx.device();
 
