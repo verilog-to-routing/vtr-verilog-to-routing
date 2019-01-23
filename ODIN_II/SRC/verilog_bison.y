@@ -117,7 +117,7 @@ int yylex(void);
 %type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters
 %type <node> specify_block list_of_specify_items specify_item specparam_declaration
-%type <node> list_of_specify_pal_connects specify_pal_connect_declaration
+%type <node> specify_pal_connect_declaration
 %type <node> initial_block parallel_connection list_of_blocking_assignment
 
 
@@ -400,7 +400,7 @@ statement:
 
 list_of_specify_items:
 	list_of_specify_items specify_item 							{$$ =  newList_entry($1, $2);}
-	| specify_item										{$$ = $1 /*newList(SPECIFY_ITEMS, $1)*/;}
+	| specify_item										{$$ = newList(SPECIFY_ITEMS, $1);}
 	;
 
 specify_item:
