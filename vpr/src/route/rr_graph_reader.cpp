@@ -71,7 +71,7 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
  * structures as well*/
 void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
-        t_chan_width *nodes_per_chan,
+        t_chan_width nodes_per_chan,
         const int num_seg_types,
         const t_segment_inf * segment_inf,
         const enum e_base_cost_type base_cost_type,
@@ -144,7 +144,7 @@ void load_rr_file(const t_graph_type graph_type,
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
 
         /* Global routing uses a single longwire track */
-        int max_chan_width = (is_global_graph ? 1 : nodes_per_chan->max);
+        int max_chan_width = (is_global_graph ? 1 : nodes_per_chan.max);
         VTR_ASSERT(max_chan_width > 0);
 
         /* Alloc rr nodes and count count nodes */
@@ -183,6 +183,8 @@ void load_rr_file(const t_graph_type graph_type,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
 
         process_seg_id(next_component, loc_data);
+
+        device_ctx.chan_width = nodes_per_chan;
 
         if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
             dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));

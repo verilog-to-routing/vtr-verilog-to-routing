@@ -42,7 +42,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 #endif
         std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
-void init_chan(int cfactor, t_chan_width_dist chan_width_dist);
+t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist);
 
 void post_place_sync();
 

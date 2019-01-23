@@ -230,7 +230,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 	}
 
 	/* Set the channel widths */
-	init_chan(width_fac, chan_width_dist);
+	t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
 
 	/* Free any old routing graph, if one exists. */
 	free_rr_graph();
@@ -240,7 +240,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
@@ -284,10 +284,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	}
 
 	/* Set the channel widths */
-	init_chan(width_fac, chan_width_dist);
-
-	/* Free any old routing graph, if one exists. */
-	free_rr_graph();
+	t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
@@ -295,7 +292,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,

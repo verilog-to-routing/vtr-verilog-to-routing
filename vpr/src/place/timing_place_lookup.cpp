@@ -45,10 +45,12 @@ constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Ind
 static vtr::Matrix<float> f_delta_delay;
 
 /*** Function Prototypes *****/
-static void setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist);
 
-static void alloc_routing_structs(t_router_opts router_opts,
+static void alloc_routing_structs(
+        t_chan_width chan_width,
+        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         const t_direct_inf *directs,
         const int num_directs);
@@ -103,9 +105,9 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
 
     reset_placement();
 
-    setup_chan_width(router_opts, chan_width_dist);
+    t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
-    alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
+    alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
             directs, num_directs);
 
     int longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
@@ -178,7 +180,7 @@ static void reset_placement() {
     init_placement_context();
 }
 
-static void setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
@@ -198,10 +200,12 @@ static void setup_chan_width(t_router_opts router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    init_chan(width_fac, chan_width_dist);
+    return init_chan(width_fac, chan_width_dist);
 }
 
-static void alloc_routing_structs(t_router_opts router_opts,
+static void alloc_routing_structs(
+        t_chan_width chan_width,
+        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         const t_direct_inf *directs,
         const int num_directs) {
@@ -210,8 +214,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
     t_graph_type graph_type;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    free_rr_graph();
 
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
@@ -223,7 +225,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
     create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-            &device_ctx.chan_width,
+            chan_width,
             device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
@@ -241,7 +243,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
 }
 
 static void free_routing_structs() {
-    free_rr_graph();
 
     free_route_structs();
     free_trace_structs();
