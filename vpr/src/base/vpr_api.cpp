@@ -322,6 +322,11 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     vpr_create_device_grid(vpr_setup, arch);
 
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
+        VTR_LOG("\n");
+    }
+
     vpr_init_graphics(vpr_setup, arch);
 
     { //Place

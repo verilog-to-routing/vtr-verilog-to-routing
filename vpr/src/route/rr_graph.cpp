@@ -649,11 +649,11 @@ static void build_rr_graph(
         for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
             if (device_ctx.rr_nodes[i].type() == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
-                device_ctx.rr_nodes[i].set_capacity(device_ctx.chan_width.x_list[ylow]);
+                device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
             }
             if (device_ctx.rr_nodes[i].type() == CHANY) {
                 int xlow = device_ctx.rr_nodes[i].xlow();
-                device_ctx.rr_nodes[i].set_capacity(device_ctx.chan_width.y_list[xlow]);
+                device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.y_list[xlow]);
             }
         }
     }

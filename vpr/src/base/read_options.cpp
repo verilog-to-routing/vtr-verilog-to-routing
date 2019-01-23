@@ -961,7 +961,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
-            .help("Sets the assumed channel width during placement")
+            .help("Sets the assumed channel width during placement. "
+                  "If --place_chan_width is unspecified, but --route_chan_width is specified the "
+                  "--route_chan_width value will be used (otherwise the default value is used).")
             .default_value("100")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1348,6 +1350,11 @@ static void set_conditional_defaults(t_options& args) {
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
+    }
+
+    //Place chan width follows Route chan width if unspecified
+    if (args.PlaceChanWidth.provenance() != Provenance::SPECIFIED && args.RouteChanWidth.provenance() == Provenance::SPECIFIED) {
+        args.PlaceChanWidth.set(args.RouteChanWidth.value(), Provenance::INFERRED);
     }
 
     //Do we calculate timing info during placement?
