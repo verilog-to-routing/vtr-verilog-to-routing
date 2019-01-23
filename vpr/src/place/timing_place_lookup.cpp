@@ -11,6 +11,7 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_math.h"
 #include "vtr_memory.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -98,10 +99,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
 
-    VTR_LOG("\nStarting placement delay look-up...\n");
-    clock_t begin = clock();
-
-    int longest_length;
+    vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
 
     reset_placement();
 
@@ -110,7 +108,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
     alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
             directs, num_directs);
 
-    longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
+    int longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
 
     /*now setup and compute the actual arrays */
     alloc_delta_arrays();
@@ -119,11 +117,6 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
 
     /*free all data structures that are no longer needed */
     free_routing_structs();
-
-    clock_t end = clock();
-
-    float time = (float) (end - begin) / CLOCKS_PER_SEC;
-    VTR_LOG("Placement delay look-up took %g seconds\n", time);
 }
 
 void free_place_lookup_structs() {
@@ -560,7 +553,7 @@ static void fix_uninitialized_coordinates() {
 }
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
-    VTR_LOG("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
+    vtr::ScopedStartFinishTimer timer("Computing delta delays");
     compute_delta_delays(router_opts, longest_length);
 
     if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
