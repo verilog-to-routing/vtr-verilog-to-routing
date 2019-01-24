@@ -320,12 +320,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    vpr_create_device_grid(vpr_setup, arch);
-
-    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
-        VTR_LOG("\n");
-    }
+    vpr_create_device(vpr_setup, arch);
 
     vpr_init_graphics(vpr_setup, arch);
 
@@ -351,10 +346,21 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
+
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    vtr::ScopedStartFinishTimer timer("Create Device");
+    vpr_create_device_grid(vpr_setup, arch);
+
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
+    }
+}
+
 /*
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    vtr::ScopedStartFinishTimer timer("Build Device Grid");
 	/* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -542,6 +548,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
     if (placer_opts.doPlacement == STAGE_SKIP) {
         //pass
@@ -585,8 +592,6 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
     print_place(filename_opts.NetFile.c_str(),
                 cluster_ctx.clb_nlist.netlist_id().c_str(),
                 filename_opts.PlaceFile.c_str());
-
-    VTR_LOG("\n");
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
@@ -596,11 +601,10 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
-
-    VTR_LOG("\n");
 }
 
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_LOG("\n");
 
     RouteStatus route_status;
 
