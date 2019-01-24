@@ -718,6 +718,7 @@ void try_place(t_placer_opts placer_opts,
                       place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,
                       success_rat, std_dev, rlim, crit_exponent,
                       tot_iter, 0.);
+    fflush(stdout);
 
 	// TODO:
 	// 1. print a message about number of aborted moves.
