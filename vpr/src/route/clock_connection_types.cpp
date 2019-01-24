@@ -62,12 +62,14 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         std::random_shuffle(y_wire_indices.begin(), y_wire_indices.end());
 
         // Connect to x-channel wires
-        for(size_t i = 0; i < x_wire_indices.size()*fc; i++) {
+        unsigned num_wires_x = x_wire_indices.size()*fc;
+        for(size_t i = 0; i < num_wires_x; i++) {
             rr_nodes[x_wire_indices[i]].add_edge(clock_index, rr_switch_idx);
         }
 
         // Connect to y-channel wires
-        for(size_t i = 0; i < y_wire_indices.size()*fc; i++) {
+        unsigned num_wires_y = y_wire_indices.size()*fc;
+        for(size_t i = 0; i < num_wires_y; i++) {
             rr_nodes[y_wire_indices[i]].add_edge(clock_index, rr_switch_idx);
         }
     }
