@@ -16,7 +16,7 @@ static MetalLayer get_metal_layer_from_name(
         std::string clock_network_name);
 static void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf);
 static void setup_clock_connections(const t_arch& Arch);
-static std::vector<std::string> split_clock_and_switch_names(std::string names);
+static std::vector<std::string> split_clock_and_switch_point_names(std::string names);
 
 void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
     setup_clock_network_wires(Arch, segment_inf);
@@ -127,9 +127,9 @@ void setup_clock_connections(const t_arch& Arch) {
 
             //TODO: Add error check to check that clock name and tap name exist and that only
             //      two names are returned by the below function
-            auto names = split_clock_and_switch_names(clock_connection_arch.to);
+            auto names = split_clock_and_switch_point_names(clock_connection_arch.to);
             routing_to_clock->set_clock_name_to_connect_to(names[0]);
-            routing_to_clock->set_clock_switch_name(names[1]);
+            routing_to_clock->set_clock_switch_point_name(names[1]);
 
             routing_to_clock->set_switch_location(
                 parse_formula(clock_connection_arch.locationx, vars),
@@ -144,9 +144,9 @@ void setup_clock_connections(const t_arch& Arch) {
 
             //TODO: Add error check to check that clock name and tap name exist and that only
             //      two names are returned by the below function
-            auto names = split_clock_and_switch_names(clock_connection_arch.from);
+            auto names = split_clock_and_switch_point_names(clock_connection_arch.from);
             clock_to_pins->set_clock_name_to_connect_from(names[0]);
-            clock_to_pins->set_clock_switch_name(names[1]);
+            clock_to_pins->set_clock_switch_point_name(names[1]);
 
             clock_to_pins->set_switch(clock_connection_arch.arch_switch_idx);
             clock_to_pins->set_fc_val(clock_connection_arch.fc);
@@ -157,12 +157,12 @@ void setup_clock_connections(const t_arch& Arch) {
 
             //TODO: Add error check to check that clock name and tap name exist and that only
             //      two names are returned by the below function
-            auto to_names = split_clock_and_switch_names(clock_connection_arch.to);
-            auto from_names = split_clock_and_switch_names(clock_connection_arch.from);
+            auto to_names = split_clock_and_switch_point_names(clock_connection_arch.to);
+            auto from_names = split_clock_and_switch_point_names(clock_connection_arch.from);
             clock_to_clock->set_to_clock_name(to_names[0]);
-            clock_to_clock->set_to_clock_switch_name(to_names[1]);
+            clock_to_clock->set_to_clock_switch_point_name(to_names[1]);
             clock_to_clock->set_from_clock_name(from_names[0]);
-            clock_to_clock->set_from_clock_switch_name(from_names[1]);
+            clock_to_clock->set_from_clock_switch_point_name(from_names[1]);
 
             clock_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
             clock_to_clock->set_fc_val(clock_connection_arch.fc);
@@ -194,7 +194,7 @@ MetalLayer get_metal_layer_from_name(
     return metal_layer;
 }
 
-std::vector<std::string> split_clock_and_switch_names(std::string names) {
+std::vector<std::string> split_clock_and_switch_point_names(std::string names) {
     std::istringstream in_names(names);
     std::vector<std::string> out_names;
     std::string temp;

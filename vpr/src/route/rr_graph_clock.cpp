@@ -155,18 +155,18 @@ int ClockRRGraphBuilder::add_rr_switch_from_arch_switch_inf(
 
 void ClockRRGraphBuilder::add_switch_location(
         std::string clock_name,
-        std::string switchpoint_name,
+        std::string switch_point_name,
         int x,
         int y,
         int node_index)
 {
     // Note use of operator[] will automatically insert clock name if it doesn't exist
-    clock_name_to_switch_points[clock_name].insert_switch_node_idx(switchpoint_name, x, y, node_index);
+    clock_name_to_switch_points[clock_name].insert_switch_node_idx(switch_point_name, x, y, node_index);
 }
 
-void SwitchPoints::insert_switch_node_idx(std::string switchpoint_name, int x, int y, int node_idx) {
+void SwitchPoints::insert_switch_node_idx(std::string switch_point_name, int x, int y, int node_idx) {
     // Note use of operator[] will automatically insert switch name if it doesn't exit
-    switch_name_to_switch_location[switchpoint_name].insert_node_idx(x, y, node_idx);
+    switch_point_name_to_switch_location[switch_point_name].insert_node_idx(x, y, node_idx);
 }
 
 void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
@@ -186,7 +186,7 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
 
 std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(
     std::string clock_name,
-    std::string switchpoint_name,
+    std::string switch_point_name,
     int x,
     int y) const
 {
@@ -196,18 +196,18 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(
     VTR_ASSERT(itter != clock_name_to_switch_points.end());
 
     auto& switch_points = itter->second;
-    return switch_points.get_rr_node_indices_at_location(switchpoint_name, x, y);
+    return switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
 }
 
 std::vector<int> SwitchPoints::get_rr_node_indices_at_location(
-    std::string switchpoint_name,
+    std::string switch_point_name,
     int x,
     int y) const
 {
-    auto itter = switch_name_to_switch_location.find(switchpoint_name);
+    auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
     // assert that switch name exists in map
-    VTR_ASSERT(itter != switch_name_to_switch_location.end());
+    VTR_ASSERT(itter != switch_point_name_to_switch_location.end());
 
     auto& switch_point = itter->second;
     std::vector<int> rr_node_indices = switch_point.get_rr_node_indices_at_location(x, y);
@@ -224,7 +224,7 @@ std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) cons
 
 std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(
     std::string clock_name,
-    std::string switchpoint_name) const
+    std::string switch_point_name) const
 {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
@@ -232,15 +232,15 @@ std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(
     VTR_ASSERT(itter != clock_name_to_switch_points.end());
 
     auto& switch_points = itter->second;
-    return switch_points.get_switch_locations(switchpoint_name);
+    return switch_points.get_switch_locations(switch_point_name);
 }
 
-std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string switchpoint_name) const {
+std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string switch_point_name) const {
 
-    auto itter = switch_name_to_switch_location.find(switchpoint_name);
+    auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
     // assert that switch name exists in map
-    VTR_ASSERT(itter != switch_name_to_switch_location.end());
+    VTR_ASSERT(itter != switch_point_name_to_switch_location.end());
 
     auto& switch_point = itter->second;
     return switch_point.get_switch_locations();

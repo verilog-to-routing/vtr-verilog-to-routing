@@ -19,8 +19,8 @@ void RoutingToClockConnection::set_clock_name_to_connect_to(std::string clock_na
     clock_to_connect_to = clock_name;
 }
 
-void RoutingToClockConnection::set_clock_switch_name(std::string clock_switch_name) {
-    switch_name = clock_switch_name;
+void RoutingToClockConnection::set_clock_switch_point_name(std::string clock_switch_point_name) {
+    switch_point_name = clock_switch_point_name;
 }
 
 void RoutingToClockConnection::set_switch_location(int x, int y) {
@@ -93,7 +93,7 @@ std::vector<int> RoutingToClockConnection::get_clock_indices_at_switch_location(
 
     return clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to,
-        switch_name,
+        switch_point_name,
         switch_location.x,
         switch_location.y);
 }
@@ -107,16 +107,16 @@ void ClockToClockConneciton::set_from_clock_name(std::string clock_name) {
     from_clock = clock_name;
 }
 
-void ClockToClockConneciton::set_from_clock_switch_name(std::string switch_name) {
-    from_switch = switch_name;
+void ClockToClockConneciton::set_from_clock_switch_point_name(std::string switch_point_name) {
+    from_switch = switch_point_name;
 }
 
 void ClockToClockConneciton::set_to_clock_name(std::string clock_name) {
     to_clock = clock_name;
 }
 
-void ClockToClockConneciton::set_to_clock_switch_name(std::string switch_name) {
-    to_switch = switch_name;
+void ClockToClockConneciton::set_to_clock_switch_point_name(std::string switch_point_name) {
+    to_switch = switch_point_name;
 }
 
 void ClockToClockConneciton::set_switch(int switch_index) {
@@ -193,8 +193,10 @@ void ClockToPinsConnection::set_clock_name_to_connect_from(std::string clock_nam
     clock_to_connect_from = clock_name;
 }
 
-void ClockToPinsConnection::set_clock_switch_name(std::string connection_switch_name) {
-    switch_name = connection_switch_name;
+void ClockToPinsConnection::set_clock_switch_point_name(
+        std::string connection_switch_point_name)
+{
+    switch_point_name = connection_switch_point_name;
 }
 
 void ClockToPinsConnection::set_switch(int switch_index) {
@@ -277,7 +279,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     
                     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
                         clock_to_connect_from,
-                        switch_name,
+                        switch_point_name,
                         x + clock_x_offset,
                         y + clock_y_offset);
 

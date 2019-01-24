@@ -34,7 +34,7 @@ class ClockConnection {
 class RoutingToClockConnection : public ClockConnection {
     private:
         std::string clock_to_connect_to;
-        std::string switch_name;
+        std::string switch_point_name;
         Coordinates switch_location;
         int switch_idx;
         float fc;
@@ -45,7 +45,7 @@ class RoutingToClockConnection : public ClockConnection {
          * Setters
          */
         void set_clock_name_to_connect_to(std::string clock_name);
-        void set_clock_switch_name(std::string clock_switch_name);
+        void set_clock_switch_point_name(std::string clock_switch_point_name);
         void set_switch_location(int x, int y);
         void set_switch(int switch_index);
         void set_fc_val(float fc_val);
@@ -78,9 +78,9 @@ class ClockToClockConneciton : public ClockConnection {
          * Setters
          */
         void set_from_clock_name(std::string clock_name);
-        void set_from_clock_switch_name(std::string switch_name);
+        void set_from_clock_switch_point_name(std::string switch_point_name);
         void set_to_clock_name(std::string clock_name);
-        void set_to_clock_switch_name(std::string switch_name);
+        void set_to_clock_switch_point_name(std::string switch_point_name);
         void set_switch(int switch_index);
         void set_fc_val(float fc_val);
 
@@ -95,7 +95,7 @@ class ClockToClockConneciton : public ClockConnection {
 class ClockToPinsConnection : public ClockConnection {
     private:
         std::string clock_to_connect_from;
-        std::string switch_name;
+        std::string switch_point_name;
         int switch_idx;
         float fc;
 
@@ -104,7 +104,7 @@ class ClockToPinsConnection : public ClockConnection {
          * Setters
          */
         void set_clock_name_to_connect_from(std::string clock_name);
-        void set_clock_switch_name(std::string connection_switch_name);
+        void set_clock_switch_point_name(std::string connection_switch_point_name);
         void set_switch(int switch_index);
         void set_fc_val(float fc_val);
 
