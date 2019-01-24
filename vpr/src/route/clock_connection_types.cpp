@@ -28,8 +28,8 @@ void RoutingToClockConnection::set_switch_location(int x, int y) {
     switch_location.y = y;
 }
 
-void RoutingToClockConnection::set_switch(int switch_index) {
-    switch_idx = switch_index;
+void RoutingToClockConnection::set_switch(int rr_switch_index) {
+    rr_switch_idx = rr_switch_index;
 }
 
 void RoutingToClockConnection::set_fc_val(float fc_val) {
@@ -63,12 +63,12 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
 
         // Connect to x-channel wires
         for(size_t i = 0; i < x_wire_indices.size()*fc; i++) {
-            rr_nodes[x_wire_indices[i]].add_edge(clock_index, switch_idx);
+            rr_nodes[x_wire_indices[i]].add_edge(clock_index, rr_switch_idx);
         }
 
         // Connect to y-channel wires
         for(size_t i = 0; i < y_wire_indices.size()*fc; i++) {
-            rr_nodes[y_wire_indices[i]].add_edge(clock_index, switch_idx);
+            rr_nodes[y_wire_indices[i]].add_edge(clock_index, rr_switch_idx);
         }
     }
 
@@ -119,8 +119,8 @@ void ClockToClockConneciton::set_to_clock_switch_point_name(std::string switch_p
     to_switch = switch_point_name;
 }
 
-void ClockToClockConneciton::set_switch(int switch_index) {
-    switch_idx = switch_index;
+void ClockToClockConneciton::set_switch(int rr_switch_index) {
+    rr_switch_idx = rr_switch_index;
 }
 
 void ClockToClockConneciton::set_fc_val(float fc_val) {
@@ -174,7 +174,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
                 if(from_itter == from_indices.end()){
                     from_itter = from_indices.begin();
                 }
-                rr_nodes[*from_itter].add_edge(to_index, switch_idx);
+                rr_nodes[*from_itter].add_edge(to_index, rr_switch_idx);
                 from_itter++;
             }
         }
@@ -199,8 +199,8 @@ void ClockToPinsConnection::set_clock_switch_point_name(
     switch_point_name = connection_switch_point_name;
 }
 
-void ClockToPinsConnection::set_switch(int switch_index) {
-    switch_idx = switch_index;
+void ClockToPinsConnection::set_switch(int rr_switch_index) {
+    rr_switch_idx = rr_switch_index;
 }
 
 void ClockToPinsConnection::set_fc_val(float fc_val) {
@@ -285,7 +285,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
                     //Create edges depending on Fc
                     for(size_t i = 0; i < clock_indices.size()*fc; i++) {
-                        rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, switch_idx);
+                        rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, rr_switch_idx);
                     }
                 }
             }
