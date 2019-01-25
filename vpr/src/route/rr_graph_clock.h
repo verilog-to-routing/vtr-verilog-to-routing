@@ -114,7 +114,10 @@ class ClockRRGraphBuilder {
             std::vector<std::unique_ptr<ClockConnection>>& clock_connections);
 
         /* Adds the architecture switches that the clock rr_nodes use to the rr switches and
-           maps the newly added rr_switches to the nodes */
+           maps the newly added rr_switches to the nodes.
+           The input nodes_start_idx ~ corresponds to the rr_node index of the first node
+           used to create the clock network. Every node from node_start_idx..rr_nodes.size-1
+           is a node in the clock network.*/
         // TODO: Change to account for swtich fanin. Note: this function is simular to
         //       remap_rr_node_switch_indices but does not take into account node fanin.
         void add_rr_switches_and_map_to_nodes(
