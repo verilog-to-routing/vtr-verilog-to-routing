@@ -49,11 +49,15 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
+    auto& rr_node_indices =  device_ctx.rr_node_indices;
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
-    auto x_wire_indices = get_chan_wire_indices_at_switch_location(CHANX);
-    auto y_wire_indices = get_chan_wire_indices_at_switch_location(CHANY);
-    auto clock_indices = get_clock_indices_at_switch_location(clock_graph);
+    auto x_wire_indices = get_rr_node_chan_wires_at_location(
+            rr_node_indices, CHANX, switch_location.x, switch_location.y);
+    auto y_wire_indices = get_rr_node_chan_wires_at_location(
+            rr_node_indices, CHANY, switch_location.x, switch_location.y);
+    auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
+            clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
     for(auto clock_index : clock_indices) {
 
@@ -74,30 +78,6 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         }
     }
 
-}
-
-std::vector<int> RoutingToClockConnection::get_chan_wire_indices_at_switch_location(
-    t_rr_type rr_type)
-{
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_node_indices =  device_ctx.rr_node_indices;
-
-    return get_rr_node_chan_wires_at_location(
-        rr_node_indices,
-        rr_type,
-        switch_location.x,
-        switch_location.y);
-}
-
-std::vector<int> RoutingToClockConnection::get_clock_indices_at_switch_location(
-    const ClockRRGraphBuilder& clock_graph)
-{
-
-    return clock_graph.get_rr_node_indices_at_switch_location(
-        clock_to_connect_to,
-        switch_point_name,
-        switch_location.x,
-        switch_location.y);
 }
 
 

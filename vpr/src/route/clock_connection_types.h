@@ -55,12 +55,6 @@ class RoutingToClockConnection : public ClockConnection {
          */
         /* Connects the inter-block routing to the clock source at the specified coordinates */
         void create_switches(const ClockRRGraphBuilder& clock_graph);
-
-    private:
-
-        std::vector<int> get_chan_wire_indices_at_switch_location(t_rr_type rr_type);
-
-        std::vector<int> get_clock_indices_at_switch_location(const ClockRRGraphBuilder& clock_graph);
 };
 
 
