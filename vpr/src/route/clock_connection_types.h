@@ -85,7 +85,8 @@ class ClockToClockConneciton : public ClockConnection {
         void create_switches(const ClockRRGraphBuilder& clock_graph);
 };
 
-
+/* This class currently only supports Clock Network to clock pin connection.
+   It cannot yet connect the clock network to any arbitrary pin. */
 class ClockToPinsConnection : public ClockConnection {
     private:
         std::string clock_to_connect_from;
