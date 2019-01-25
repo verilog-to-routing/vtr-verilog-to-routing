@@ -263,15 +263,17 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                         clock_pin_idx,
                         side);
                     
-                    auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
-                        clock_to_connect_from,
-                        switch_point_name,
-                        x + clock_x_offset,
-                        y + clock_y_offset);
+                    auto clock_network_indices =
+                        clock_graph.get_rr_node_indices_at_switch_location(
+                            clock_to_connect_from,
+                            switch_point_name,
+                            x + clock_x_offset,
+                            y + clock_y_offset);
 
                     //Create edges depending on Fc
-                    for(size_t i = 0; i < clock_indices.size()*fc; i++) {
-                        rr_nodes[clock_indices[i]].add_edge(clock_pin_node_idx, rr_switch_idx);
+                    for(size_t i = 0; i < clock_network_indices.size()*fc; i++) {
+                        rr_nodes[clock_network_indices[i]].
+                            add_edge(clock_pin_node_idx, rr_switch_idx);
                     }
                 }
             }
