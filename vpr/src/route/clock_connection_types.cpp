@@ -126,7 +126,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
         auto x = location.first;
         auto y = location.second;
 
-        auto to_indices = clock_graph.get_rr_node_indices_at_switch_location(
+        auto to_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
             to_clock,
             to_switch,
             x,
@@ -142,19 +142,19 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
             y = 1;
         }
 
-        auto from_indices = clock_graph.get_rr_node_indices_at_switch_location(
+        auto from_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
             from_clock,
             from_switch,
             x,
             y);
 
-        auto from_itter = from_indices.begin();
-        size_t num_connections = ceil(from_indices.size()*fc);
+        auto from_itter = from_rr_node_indices.begin();
+        size_t num_connections = ceil(from_rr_node_indices.size()*fc);
 
-        for(auto to_index : to_indices) {
+        for(auto to_index : to_rr_node_indices) {
             for(size_t i = 0; i < num_connections; i++) {
-                if(from_itter == from_indices.end()){
-                    from_itter = from_indices.begin();
+                if(from_itter == from_rr_node_indices.end()){
+                    from_itter = from_rr_node_indices.begin();
                 }
                 rr_nodes[*from_itter].add_edge(to_index, rr_switch_idx);
                 from_itter++;
