@@ -711,12 +711,16 @@ FILE *format_verilog_file(FILE *source)
 
 	if (! validate_string_regex(line, pattern))
 	{
+		free(line);
 	 	rewind(source);
 		return source;
 	}
 	for (i = 0; i < 4; i++)
 	{
-		line = search_replace(line,searchString[i],"",2);
+		char *line_cpy = vtr::strdup(line);
+		free(line);
+		line = search_replace(line_cpy,searchString[i],"",2);
+		vtr::free(line_cpy);
 	}
 	i = 0;
 	while (i < strnlen(line, MaxLine))
@@ -738,6 +742,7 @@ FILE *format_verilog_file(FILE *source)
 			i++;
 	}
 	fputs(line, destination);
+	vtr::free(line);
 	rewind(source);
 	destination = format_verilog_variable(source,destination);
 	rewind(destination);
