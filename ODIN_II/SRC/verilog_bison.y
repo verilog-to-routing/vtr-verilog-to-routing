@@ -504,7 +504,7 @@ primary:
 	| vUNSIGNED_OCTAL										{$$ = newNumberNode($1, OCT, UNSIGNED, yylineno);}
 	| vUNSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, HEX, UNSIGNED, yylineno);}
 	| vUNSIGNED_BINARY										{$$ = newNumberNode($1, BIN, UNSIGNED, yylineno);}
-	| vSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
+	| vSIGNED_DECIMAL									{$$ = newNumberNode($1, DEC, SIGNED, yylineno);}
 	| vSIGNED_OCTAL											{$$ = newNumberNode($1, OCT, SIGNED, yylineno);}
 	| vSIGNED_HEXADECIMAL									{$$ = newNumberNode($1, HEX, SIGNED, yylineno);}
 	| vSIGNED_BINARY										{$$ = newNumberNode($1, BIN, SIGNED, yylineno);}
