@@ -1,0 +1,5 @@
+GLOBAL_SIM_BASE_CLK A B
+0 0 0
+0 0 1
+0 1 0
+0 1 1

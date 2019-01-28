@@ -179,15 +179,15 @@ module_item:
 	;
 
 function_declaration:
-    vFUNCTION function_output_variable ';' list_of_function_items vENDFUNCTION		{$$ = newFunction($2, $4, yylineno); }
+	vFUNCTION function_output_variable ';' list_of_function_items vENDFUNCTION		{$$ = newFunction($2, $4, yylineno); }
 	;
 
 initial_block:
-    vINITIAL statement                                          		{$$ = newInitial($2, yylineno); }
+	vINITIAL statement                                          		{$$ = newInitial($2, yylineno); }
 	;
 
 specify_block:
-    vSPECIFY list_of_specify_statement vENDSPECIFY            			{$$ = $2;}
+	vSPECIFY list_of_specify_statement vENDSPECIFY            			{$$ = $2;}
 	;
 
 list_of_function_items:
@@ -243,7 +243,7 @@ function_output_variable:
 
 function_id_and_output_variable :
 	vSYMBOL_ID      									{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, yylineno);}
-    | '[' expression ':' expression ']' vSYMBOL_ID		{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
+	| '[' expression ':' expression ']' vSYMBOL_ID		{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
 	;
 
 variable_list:
@@ -282,8 +282,8 @@ continuous_assign:
 
 list_of_blocking_assignment:
 	list_of_blocking_assignment ',' blocking_assignment 			{$$ = newList_entry($1, $3);}
-    |blocking_assignment                                            {$$ = newList(ASSIGN, $1);}
-    ;
+	|blocking_assignment                                            {$$ = newList(ASSIGN, $1);}
+	;
 
 // 3 Primitive Instances	{$$ = NULL;}
 gate_declaration:
@@ -312,7 +312,7 @@ single_input_gate_instance:
 	;
 
 multiple_inputs_gate_instance:
-    vSYMBOL_ID '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance($1, $3, $5, $7, yylineno);}
+	vSYMBOL_ID '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance($1, $3, $5, $7, yylineno);}
 	| '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'			{$$ = newMultipleInputsGateInstance(NULL, $2, $4, $6, yylineno);}
 //	| vSYMBOL_ID '(' expression ',' expression ')'												{$$ = newGateInstance($1, $3, $5, NULL, yylineno);}
 //	| '(' expression ',' expression ')'															{$$ = newGateInstance(NULL, $2, $4, NULL, yylineno);}
@@ -397,10 +397,10 @@ statement:
 list_of_specify_statement:
 	list_of_specify_statement specify_statement 						{$$ = newList_entry($1, $2);}
 	| specify_statement							                        {$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
-    ;
+	;
 
 specify_statement:
-    '(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
+	'(' parallel_connection ')' '=' primary ';'							{$$ = newParallelConnection($2, $5, yylineno);}
 	;
 
 blocking_assignment:
@@ -445,7 +445,7 @@ delay_control:
 // 7 Expressions	{$$ = NULL;}
 event_expression_list:
 	event_expression_list vOR event_expression				{$$ = newList_entry($1, $3);}
-    | event_expression_list ',' event_expression	      	{$$ = newList_entry($1, $3);}
+	| event_expression_list ',' event_expression	      	{$$ = newList_entry($1, $3);}
 	| event_expression										{$$ = newList(DELAY_CONTROL, $1);}
 	;
 
