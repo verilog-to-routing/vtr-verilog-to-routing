@@ -1712,7 +1712,8 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
 				{
 					if((module_items->children[i]->children[0]->children[0]) && (module_items->children[i]->children[0]->children[0]->type == IDENTIFIERS))
-					{ temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
+					{ 
+						temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
 						/* look for that element */
 						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
 						if( sc_spot == -1 )
@@ -1736,7 +1737,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_na
 							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = FALSE;
 
 						}
-
+						vtr::free(temp_string);
 					}
 				}
 			}
