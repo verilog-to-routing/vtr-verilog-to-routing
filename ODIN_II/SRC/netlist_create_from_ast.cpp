@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/
+*/ 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2944,6 +2944,7 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		add_pin_to_signal_list(return_sig_list, new_pin);
 	}
 
+	vtr::free(pin_lists->strings);
 	vtr::free(pin_lists);
 	return return_sig_list;
 }
