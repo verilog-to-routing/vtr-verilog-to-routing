@@ -339,9 +339,10 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newNumberNode(std::string num, bases base, signedness sign, int line_number)
+ast_node_t *newNumberNode(char *num, bases base, signedness sign, int line_number)
 {
 	ast_node_t *current_node = create_tree_node_number(num, base, sign, line_number, current_parse_file);
+	vtr::free(num);
 	return current_node;
 }
 
@@ -1425,7 +1426,7 @@ ast_node_t *newGate(operation_list op_id, ast_node_t *gate_instance, int line_nu
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
-	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
+	ast_node_t *symbol_node = newSymbolNode(symbol, line_number); 
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
