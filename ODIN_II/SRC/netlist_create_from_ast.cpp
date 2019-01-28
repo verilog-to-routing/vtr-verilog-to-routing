@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -3011,7 +3011,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
-		if(right->children[2] != NULL)
+		if(right->num_children > 2 && right->children[2] != NULL)
 		{
 			convert_multi_to_single_dimentional_array(right);
 		}
@@ -3112,7 +3112,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		}
 		else
 		{
-			if(left->children[2] != NULL)
+			if(left->num_children > 2 && left->children[2] != NULL)
 			{
 				convert_multi_to_single_dimentional_array(left);
 			}
