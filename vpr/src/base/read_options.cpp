@@ -999,6 +999,17 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("8.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.place_delay_ramp_delta_threshold, "--place_delay_ramp_delta_threshold")
+            .help("The delta distance beyond which --place_delay_ramp is applied. Negative values disable delay ramp."
+                   " Negative values disable the placer delay ramp.")
+            .default_value("-1")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_delay_ramp_slope, "--place_delay_ramp_slope")
+            .help("The slope of the ramp (in seconds per grid tile) which is applied to the placer delay model for delta distance beyond --place_delay_ramp_delta_threshold")
+            .default_value("0.0e-9")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& route_grp = parser.add_argument_group("routing options");
 

@@ -94,9 +94,13 @@ static bool calculate_delay(int source_node, int sink_node,
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
+static void adjust_delta_delays(t_placer_opts placer_opts);
+
 /******* Globally Accessible Functions **********/
 
-void compute_delay_lookup_tables(t_router_opts router_opts,
+void compute_delay_lookup_tables(
+        t_placer_opts placer_opts,
+        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
@@ -116,6 +120,12 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
     alloc_delta_arrays();
 
     compute_delta_arrays(router_opts, longest_length);
+
+    adjust_delta_delays(placer_opts);
+
+    if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
+        print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
+    }
 
     /*free all data structures that are no longer needed */
     free_routing_structs();
@@ -566,10 +576,6 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length) 
     fix_empty_coordinates();
 
 
-    if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
-        print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
-    }
-
     verify_delta_delays();
 }
 
@@ -694,3 +700,26 @@ static bool calculate_delay(int source_node, int sink_node,
     return (true);
 }
 
+static void adjust_delta_delays(t_placer_opts placer_opts) {
+    if (placer_opts.delay_ramp_delta_threshold < 0) {
+        return;
+    }
+
+    //For each delta-x/delta-y value beyond delay_ramp_delta_threshold
+    //apply an extra (linear) delay penalty based on delay_ramp_slope
+    //and the distance beyond the delta threshold
+
+    for (size_t x = 0; x < f_delta_delay.dim_size(0); ++x) {
+        for (size_t y = 0; y < f_delta_delay.dim_size(1); ++y) {
+            int dx = x - placer_opts.delay_ramp_delta_threshold;
+            if (dx > 0) {
+                f_delta_delay[x][y] += dx * placer_opts.delay_ramp_slope;
+            }
+
+            int dy = y - placer_opts.delay_ramp_delta_threshold;
+            if (dy > 0) {
+                f_delta_delay[x][y] += dy * placer_opts.delay_ramp_slope;
+            }
+        }
+    }
+}

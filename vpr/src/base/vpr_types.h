@@ -846,6 +846,9 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    int delay_ramp_delta_threshold;
+    float delay_ramp_slope;
 };
 
 /* All the parameters controlling the router's operation are in this        *

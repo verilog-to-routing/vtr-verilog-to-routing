@@ -83,6 +83,8 @@ struct t_options {
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;
+    argparse::ArgValue<int> place_delay_ramp_delta_threshold;
+    argparse::ArgValue<float> place_delay_ramp_slope;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
