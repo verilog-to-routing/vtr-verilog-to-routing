@@ -399,29 +399,29 @@ int get_range(ast_node_t* first_node)
 	return -1; // indicates no range
 }
 
-
-int get_range_Plus_Colon(ast_node_t* first_node)
+/*---------------------------------------------------------------------------------------------
+ * (function: get_range_part_select)
+ * 	Check the node range is legal. Will return the range if it's legal.
+ *  Node should have three children. Second and Third children's type should be NUMBERS.
+ *  Direction parameter differentiates between ascending/descending part selector (1 for
+ *  ascending and -1 for descending selection).
+ *-------------------------------------------------------------------------------------------*/
+int get_range_part_select(ast_node_t *first_node, char direction)
 {
-  long temp_value;
+	/* look at the first item to see if it has a range */
+	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
+	{
+		/* TODO: added range checks according to standard:
+		 * Part-selects that are partially out of range shall,
+		 * when read, return x for the bits that are out of range and shall,
+		 * when written, only affect the bits that are in range.
+		 */
+		long long int *pwidth = &first_node->children[2]->types.number.value;
+		*pwidth = *pwidth * direction;
 
-  /* look at the first item to see if it has a range */
-  if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
-  {
-		if(first_node->children[1]->types.number.value > first_node->children[2]->types.number.value)
-		{
-
-			error_message(NETLIST_ERROR, first_node->line_number, first_node->file_number, "Odin doesn't support arrays declared [m+:n] where n is less than m.");
-
-			// swap them around
-			temp_value = first_node->children[1]->types.number.value;
-			first_node->children[1]->types.number.value = first_node->children[2]->types.number.value;
-			first_node->children[2]->types.number.value = temp_value;
-		}
-		warning_message(NETLIST_ERROR, -1, -1, "get_range_Plus_Colon with %d", 
-			first_node->children[2]->types.number.value);
-		return abs(first_node->children[2]->types.number.value) ;
-  }
-  return -1; // indicates no range
+		return abs(*pwidth);
+	}
+	return -1; // indicates no range
 }
 
 /*---------------------------------------------------------------------------------------------
