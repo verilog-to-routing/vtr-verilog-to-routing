@@ -519,17 +519,14 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[1]);
 			rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[2]);
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-			//oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value);
-			int width = rnode[2]->types.number.value;// abs(rnode[1]->types.number.value + rnode[2]->types.number.value);
-
-			//for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
-			// Changed to forward to fix concatenation bug.
+			int width = abs(rnode[2]->types.number.value);
+			int msb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value : rnode[1]->types.number.value + width;
 			for (j = 0; j < width; j++)
 			{
 				concat_top->types.concat.num_bit_strings ++;
 				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
 				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] =
-					get_name_of_pin_at_bit(concat_top->children[i], rnode[1]->types.number.value - j, instance_name_prefix);
+					get_name_of_pin_at_bit(concat_top->children[i], msb - j, instance_name_prefix);
 			}
 		}
 		else if (concat_top->children[i]->type == NUMBERS)
@@ -819,17 +816,18 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-		width = rnode[2]->types.number.value;//abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
+		width = abs(rnode[2]->types.number.value);
+		int lsb = rnode[2]->types.number.value < 0 ? rnode[1]->types.number.value - width + 1 : rnode[1]->types.number.value;
 		if (rnode[0]->type == IDENTIFIERS)
 		{
 			return_string = (char**)vtr::malloc(sizeof(char*)*width);
 			for (i = 0; i < width; i++)
-				return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, rnode[1]->types.number.value+i);
+				return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, lsb + i);
 		}
 		else
 		{
 			oassert(rnode[0]->type == NUMBERS);
-			return_string = get_name_of_pins_number(rnode[0], rnode[1]->types.number.value, width);
+			return_string = get_name_of_pins_number(rnode[0], lsb + width, width);
 		}
 	}
 	else if (var_node->type == IDENTIFIERS)
