@@ -2944,6 +2944,7 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		add_pin_to_signal_list(return_sig_list, new_pin);
 	}
 
+	vtr::free(pin_lists->strings);
 	vtr::free(pin_lists);
 	return return_sig_list;
 }
@@ -3010,7 +3011,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
-		if(right->children[2] != NULL)
+		if(right->num_children > 2 && right->children[2] != NULL)
 		{
 			convert_multi_to_single_dimentional_array(right);
 		}
@@ -3111,7 +3112,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		}
 		else
 		{
-			if(left->children[2] != NULL)
+			if(left->num_children > 2 && left->children[2] != NULL)
 			{
 				convert_multi_to_single_dimentional_array(left);
 			}
