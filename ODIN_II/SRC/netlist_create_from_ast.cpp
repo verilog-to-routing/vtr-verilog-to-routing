@@ -2945,8 +2945,10 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 		add_pin_to_signal_list(return_sig_list, new_pin);
 	}
 
-	vtr::free(pin_lists->strings);
-	vtr::free(pin_lists);
+    if (pin_lists != NULL) {
+        vtr::free(pin_lists->strings);
+        vtr::free(pin_lists);
+    }
 	return return_sig_list;
 }
 
