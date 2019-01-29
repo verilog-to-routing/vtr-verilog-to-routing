@@ -3236,6 +3236,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			}
 			else
 			{
+				free_signal_list(return_list);
 				return_list = in_1;
 			}
 		}
