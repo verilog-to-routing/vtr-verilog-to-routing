@@ -1528,6 +1528,7 @@ static thread_node_distribution *calculate_thread_distribution(stages_t *s)
 					threadcost+=1;
 				else
 					threadcost+=nodeoverhead_200;
+				//memory family put together if uncomment. not necessary
 				/*
 				int num_children;
 				nnode_t **children = get_children_of(node, &num_children);	
@@ -3103,36 +3104,7 @@ static void write_back_memory_nodes(nnode_t **nodes, int num_nodes)
 
 }
 
-//before m
-/*
-static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, signal_list_t *data_out, signal_list_t *data_in, bool trigger, npin_t *write_enabled, int cycle)
-{
 
-	long long address = compute_address(input_address, cycle);
-	
-	 //make a single trigger out of write_enable pin and if it was a positive edge
-	 
-	bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
-	bool address_is_valid = (address >= 0 && address < node->memory_data.size());
-
-	for (size_t i = 0; i < data_out->count; i++)
-	{
-		signed char new_value = -1;
-		if(address_is_valid)
-		{
-			// we hook onto the ff function to both read and update since memories are flip flops
-			
-			if (write)
-			{
-				node->memory_data[address][i] = get_pin_value(data_in->pins[i],cycle-1); // //
-			}
-			new_value = node->memory_data[address][i];
-		}
-		// output is combinational so it always grabs latest value
-		update_pin_value(data_out->pins[i], new_value, cycle);
-	}
-}
-*/
 
 /*
  * Computes single port memory.
