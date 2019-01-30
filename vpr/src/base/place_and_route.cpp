@@ -48,11 +48,12 @@ static float comp_width(t_chan * chan, float x, float separation);
 /************************* Subroutine Definitions ****************************/
 
 int binary_search_place_and_route(t_placer_opts placer_opts,
+        t_annealing_sched annealing_sched,
+        t_router_opts router_opts,
+        const t_analysis_opts& analysis_opts,
         t_file_name_opts filename_opts,
         const t_arch* arch,
         bool verify_binary_search, int min_chan_width_hint,
-        t_annealing_sched annealing_sched,
-        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -176,8 +177,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts, annealing_sched, arch->Chans,
-                    router_opts, det_routing_arch, segment_inf,
+            try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                    arch->Chans, det_routing_arch, segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     timing_inf,
 #endif
@@ -314,8 +315,8 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placer_opts, annealing_sched, arch->Chans,
-                        router_opts, det_routing_arch, segment_inf,
+                try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                        arch->Chans, det_routing_arch, segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
                         timing_inf,
 #endif

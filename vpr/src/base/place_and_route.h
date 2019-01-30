@@ -30,11 +30,12 @@ bool place_and_route(
 		t_timing_inf timing_inf);
 
 int binary_search_place_and_route(t_placer_opts placer_opts,
+        t_annealing_sched annealing_sched,
+        t_router_opts router_opts,
+        const t_analysis_opts& analysis_opts,
         t_file_name_opts filename_opts,
         const t_arch* arch,
         bool verify_binary_search, int min_chan_width_hint,
-        t_annealing_sched annealing_sched,
-        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         vtr::vector_map<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA

@@ -340,13 +340,16 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, t_pla
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
+                                               const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
 
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
 		t_annealing_sched annealing_sched,
-		t_chan_width_dist chan_width_dist, t_router_opts router_opts,
+        t_router_opts router_opts,
+        const t_analysis_opts& analysis_opts,
+		t_chan_width_dist chan_width_dist,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_timing_inf timing_inf,
@@ -769,6 +772,7 @@ void try_place(t_placer_opts placer_opts,
         }
 
         generate_post_place_timing_reports(placer_opts,
+                                           analysis_opts,
                                            *timing_info,
                                            *placement_delay_calc);
 
@@ -3298,15 +3302,16 @@ static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, do
 }
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
+                                               const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
-    resolver.set_detail_level(e_timing_report_detail::AGGREGATED);
+    resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
-    timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), 100);
+    timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }

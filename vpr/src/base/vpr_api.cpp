@@ -576,8 +576,9 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     try_place(vpr_setup.PlacerOpts,
               vpr_setup.AnnealSched,
-              arch.Chans,
               vpr_setup.RouterOpts,
+              vpr_setup.AnalysisOpts,
+              arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -728,12 +729,13 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
 
     auto& router_opts = vpr_setup.RouterOpts;
     int min_W = binary_search_place_and_route(vpr_setup.PlacerOpts,
+                                              vpr_setup.AnnealSched,
+                                              router_opts,
+                                              vpr_setup.AnalysisOpts,
                                               vpr_setup.FileNameOpts,
                                               &arch,
                                               router_opts.verify_binary_search,
                                               router_opts.min_channel_width_hint,
-                                              vpr_setup.AnnealSched,
-                                              router_opts,
                                               &vpr_setup.RoutingArch,
                                               vpr_setup.Segments,
                                               net_delay,
