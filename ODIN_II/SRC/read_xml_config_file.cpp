@@ -170,7 +170,7 @@ void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil
 	child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->debug_output_path = vtr::strdup(child.child_value());
+		config->debug_output_path = std::string(child.child_value());
 	}
 
 	child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);

@@ -1304,11 +1304,11 @@ class RouteStatus {
             , chan_width_(chan_width_val) {}
 
         //Was routing successful?
-        operator bool() { return success(); }
-        bool success() { return success_; }
+        operator bool() const { return success(); }
+        bool success() const { return success_; }
 
         //What was the channel width?
-        int chan_width() { return chan_width_; }
+        int chan_width() const { return chan_width_; }
 
     private:
         bool success_ = false;

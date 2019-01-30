@@ -113,6 +113,7 @@ void vpr_print_title() {
     VTR_LOG("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
     VTR_LOG("Compiler: %s\n", vtr::COMPILER);
     VTR_LOG("University of Toronto\n");
+    VTR_LOG("verilogtorouting.org\n");
     VTR_LOG("vtr-users@googlegroups.com\n");
     VTR_LOG("This is free open source code under MIT license.\n");
     VTR_LOG("\n");
@@ -337,7 +338,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     { //Analysis
-        vpr_analysis_flow(vpr_setup, arch, route_status.success());
+        vpr_analysis_flow(vpr_setup, arch, route_status);
     }
 
     vpr_close_graphics(vpr_setup);
@@ -1029,30 +1030,30 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
 
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, bool implementation_legal) {
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
     auto& analysis_opts = vpr_setup.AnalysisOpts;
 
     if (analysis_opts.doAnalysis == STAGE_SKIP) return true; //Skipped
 
-    if (analysis_opts.doAnalysis == STAGE_AUTO && !implementation_legal) return false; //Not run
+    if (analysis_opts.doAnalysis == STAGE_AUTO && !route_status.success()) return false; //Not run
 
     VTR_ASSERT_MSG(analysis_opts.doAnalysis == STAGE_DO
-                   || (analysis_opts.doAnalysis == STAGE_AUTO && implementation_legal),
+                   || (analysis_opts.doAnalysis == STAGE_AUTO && route_status.success()),
                    "Analysis should run only if forced, or implementation legal");
 
-    if (!implementation_legal) {
+    if (!route_status.success()) {
         VTR_LOG("\n");
         VTR_LOG("*****************************************************************************************\n");
         VTR_LOG_WARN( "The following analysis results are for an illegal circuit implementation\n");
         VTR_LOG("*****************************************************************************************\n");
     }
 
-    vpr_analysis(vpr_setup, Arch);
+    vpr_analysis(vpr_setup, Arch, route_status);
 
     return true;
 }
 
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1123,7 +1124,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
         //Do power analysis
         if (vpr_setup.PowerOpts.do_power) {
 
-            vpr_power_estimation(vpr_setup, Arch, *timing_info);
+            vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
         }
 
         //Clean-up the net delays
@@ -1138,7 +1139,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 /* This function performs power estimation, and must be called
  * after packing, placement AND routing. Currently, this
  * will not work when running a partial flow (ex. only routing). */
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info) {
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info, const RouteStatus& route_status) {
 	/* Ensure we are only using 1 clock */
 	if(timing_info.critical_paths().size() != 1) {
         VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
@@ -1149,6 +1150,11 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
     /* Get the critical path of this clock */
     power_ctx.solution_inf.T_crit = timing_info.least_slack_critical_path().delay();
     VTR_ASSERT(power_ctx.solution_inf.T_crit > 0.);
+
+
+    /* Get the channel width */
+    power_ctx.solution_inf.channel_width = route_status.chan_width();
+    VTR_ASSERT(power_ctx.solution_inf.channel_width > 0.);
 
     VTR_LOG("\n\nPower Estimation:\n");
     VTR_LOG("-----------------\n");

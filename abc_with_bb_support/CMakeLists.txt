@@ -116,32 +116,32 @@ list(APPEND LIB_INCLUDE_DIRS
     src/aig/deco)
 
 #Create the library
-add_library(libabc STATIC
+add_library(liboldabc STATIC
              ${LIB_SOURCES})
-target_include_directories(libabc PUBLIC ${LIB_INCLUDE_DIRS})
-target_compile_definitions(libabc PUBLIC -DSIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P})
-set_target_properties(libabc PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+target_include_directories(liboldabc PUBLIC ${LIB_INCLUDE_DIRS})
+target_compile_definitions(liboldabc PUBLIC -DSIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P})
+set_target_properties(liboldabc PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 
 
 #Specify link-time dependancies
-target_link_libraries(libabc ${CMAKE_DL_LIBS})
+target_link_libraries(liboldabc ${CMAKE_DL_LIBS})
 
 if(NOT MSVC)
     #MSVC includes all math functionality in the regular standard library,
     #all other *nix-like systems require explicit linkage to libm
-    target_link_libraries(libabc m)
+    target_link_libraries(liboldabc m)
 endif()
 
 #Create the executable
-add_executable(abc ${EXEC_SOURCES})
-target_link_libraries(abc 
-                        libabc)
+add_executable(oldabc ${EXEC_SOURCES})
+target_link_libraries(oldabc 
+                        liboldabc)
 
-install(TARGETS abc libabc DESTINATION bin)
+install(TARGETS oldabc liboldabc DESTINATION bin)
 
 
 #Disable some problematic errors/warnings in ABC
 set(ABC_SUPPRESS_FLAGS -w)
-target_compile_options(abc PRIVATE ${ABC_SUPPRESS_FLAGS})
-target_compile_options(libabc PRIVATE ${ABC_SUPPRESS_FLAGS})
+target_compile_options(oldabc PRIVATE ${ABC_SUPPRESS_FLAGS})
+target_compile_options(liboldabc PRIVATE ${ABC_SUPPRESS_FLAGS})

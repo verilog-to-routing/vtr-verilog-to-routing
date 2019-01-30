@@ -2494,9 +2494,13 @@ static void enable_router_debug(const t_router_opts& router_opts, ClusterNetId n
             //Debug all nets (no specific sink specified)
             f_router_debug = true;
         }
-    } else if (specific_net_debug && specific_sink_debug) {
-        //Debug if both net and sink match
-        f_router_debug = match_net && match_sink;
+    } else if (specific_net_debug) {
+        if (specific_sink_debug) {
+            //Debug if both net and sink match
+            f_router_debug = match_net && match_sink;
+        } else {
+            f_router_debug = match_net;
+        }
     } else if (specific_sink_debug) {
         VTR_ASSERT(!all_net_debug);
         VTR_ASSERT(!specific_net_debug);
