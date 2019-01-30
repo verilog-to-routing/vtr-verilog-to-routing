@@ -849,6 +849,8 @@ struct t_placer_opts {
 
     int delay_ramp_delta_threshold;
     float delay_ramp_slope;
+
+    std::string post_place_timing_report_file;
 };
 
 /* All the parameters controlling the router's operation are in this        *

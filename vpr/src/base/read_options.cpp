@@ -1010,6 +1010,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("0.0e-9")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.post_place_timing_report_file, "--post_place_timing_report")
+            .help("Name of the post-placement timing report file (not generated if unspecfied)")
+            .default_value("")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& route_grp = parser.add_argument_group("routing options");
 
