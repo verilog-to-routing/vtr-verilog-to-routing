@@ -3446,6 +3446,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 				ff_node->has_initial_value = net->has_initial_value;
 				ff_node->initial_value = net->initial_value;
+				vtr::free(ref_string);
 			}
 
 
