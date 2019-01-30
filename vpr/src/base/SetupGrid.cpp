@@ -689,33 +689,5 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_type_ptr,s
 }
 
 size_t count_grid_tiles(const DeviceGrid& grid) {
-    //In some cases the device size may not be strictly the produce of device width and height,
-    //for instance if there is an empty perimeter left around the device.
-    //
-    //Here we figure out what the bounding box of all non-empty grid tiles and use that
-    //to calculate the size of the device, which should handle cases like an empty-perimeter
-    //correctly.
-    size_t xmin = std::numeric_limits<size_t>::max();
-    size_t ymin = std::numeric_limits<size_t>::max();
-    size_t xmax = 0;
-    size_t ymax = 0;
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
-            const auto& grid_tile = grid[x][y];
-            if (grid_tile.type && !is_empty_type(grid_tile.type)) {
-                xmin = std::min(xmin, x);
-                xmax = std::max(xmax, x);
-                ymin = std::min(ymin, y);
-                ymax = std::max(ymax, y);
-            }
-        }
-    }
-
-    size_t effective_width = xmax - xmin + 1;
-    size_t effective_height = ymax - ymin + 1;
-    size_t grid_tile_count = effective_width * effective_height;
-
-    VTR_LOG("BB: %zu,%zu x %zu,%zu = %zu*%zu = %zu\n", xmin, ymin, xmax, ymax, effective_width, effective_height, grid_tile_count);
-
-    return grid_tile_count;
+    return grid.width() * grid.height();
 }
