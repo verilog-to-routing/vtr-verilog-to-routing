@@ -701,24 +701,29 @@ static bool calculate_delay(int source_node, int sink_node,
 }
 
 static void adjust_delta_delays(t_placer_opts placer_opts) {
-    if (placer_opts.delay_ramp_delta_threshold < 0) {
-        return;
-    }
-
-    //For each delta-x/delta-y value beyond delay_ramp_delta_threshold
-    //apply an extra (linear) delay penalty based on delay_ramp_slope
-    //and the distance beyond the delta threshold
-
+    //Apply a constant offset to the delay model
     for (size_t x = 0; x < f_delta_delay.dim_size(0); ++x) {
         for (size_t y = 0; y < f_delta_delay.dim_size(1); ++y) {
-            int dx = x - placer_opts.delay_ramp_delta_threshold;
-            if (dx > 0) {
-                f_delta_delay[x][y] += dx * placer_opts.delay_ramp_slope;
-            }
+            f_delta_delay[x][y] += placer_opts.delay_offset;
+        }
+    }
 
-            int dy = y - placer_opts.delay_ramp_delta_threshold;
-            if (dy > 0) {
-                f_delta_delay[x][y] += dy * placer_opts.delay_ramp_slope;
+    if (placer_opts.delay_ramp_delta_threshold >= 0) {
+        //For each delta-x/delta-y value beyond delay_ramp_delta_threshold
+        //apply an extra (linear) delay penalty based on delay_ramp_slope
+        //and the distance beyond the delta threshold
+
+        for (size_t x = 0; x < f_delta_delay.dim_size(0); ++x) {
+            for (size_t y = 0; y < f_delta_delay.dim_size(1); ++y) {
+                int dx = x - placer_opts.delay_ramp_delta_threshold;
+                if (dx > 0) {
+                    f_delta_delay[x][y] += dx * placer_opts.delay_ramp_slope;
+                }
+
+                int dy = y - placer_opts.delay_ramp_delta_threshold;
+                if (dy > 0) {
+                    f_delta_delay[x][y] += dy * placer_opts.delay_ramp_slope;
+                }
             }
         }
     }

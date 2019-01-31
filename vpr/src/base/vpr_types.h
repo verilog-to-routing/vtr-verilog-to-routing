@@ -847,6 +847,7 @@ struct t_placer_opts {
 	float td_place_exp_last;
 	e_stage_action doPlacement;
 
+    float delay_offset;
     int delay_ramp_delta_threshold;
     float delay_ramp_slope;
 

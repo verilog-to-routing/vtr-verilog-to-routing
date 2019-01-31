@@ -999,6 +999,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("8.0")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.place_delay_offset, "--place_delay_offset")
+            .help("A constant offset (in seconds) applied to the placer's delay model."
+                   " Negative values disable the placer delay ramp.")
+            .default_value("0.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_timing_grp.add_argument(args.place_delay_ramp_delta_threshold, "--place_delay_ramp_delta_threshold")
             .help("The delta distance beyond which --place_delay_ramp is applied. Negative values disable delay ramp."
                    " Negative values disable the placer delay ramp.")
