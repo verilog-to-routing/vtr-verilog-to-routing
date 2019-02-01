@@ -953,7 +953,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 		}
 	}
 
-	vtr::vector_map<ClusterNetId,int> count(ext_ncount);
+	vtr::vector<ClusterNetId,int> count(ext_ncount);
 
 	/* complete load of external nets so that each net points back to the blocks,
      * and blocks point back to net pins */
