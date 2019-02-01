@@ -214,7 +214,7 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
         const RouterLookahead& router_lookahead,
         const int from_node, const int to_node, const int iconn, const int target_node);
 
-static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
+static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float *> &net_delay);
 
 void reduce_budgets_if_congested(route_budgets &budgeting_inf,
         CBRR& connections_inf, float slope, int itry);
@@ -261,7 +261,7 @@ static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
-        vtr::vector_map<ClusterNetId, float *> &net_delay,
+        vtr::vector<ClusterNetId, float *> &net_delay,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -720,7 +720,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         CBRR& connections_inf,
         RouterStats& router_stats,
         float* pin_criticality,
-        t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
+        t_rt_node** rt_node_of_sink, vtr::vector<ClusterNetId, float *> &net_delay,
         const RouterLookahead& router_lookahead,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
@@ -1850,7 +1850,7 @@ void update_rr_base_costs(int fanout) {
     }
 }
 
-static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
+static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float *> &net_delay) {
     constexpr float ERROR_TOL = 0.0001;
 
     /* Checks that the net delays computed incrementally during timing driven    *
@@ -1858,7 +1858,7 @@ static bool timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     unsigned int ipin;
-	vtr::vector_map<ClusterNetId, float *> net_delay_check;
+	vtr::vector<ClusterNetId, float *> net_delay_check;
 
     vtr::t_chunk list_head_net_delay_check_ch;
 
@@ -2058,7 +2058,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
     return true;
 }
 
-void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
+void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::vector<ClusterNetId, float *> &net_delay) {
 
     /* Set the lower bound connection delays after first iteration, which only optimizes for timing delay.
        This will be used later to judge the optimality of a connection, with suboptimal ones being candidates
@@ -2082,7 +2082,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
         std::shared_ptr<const SetupTimingInfo> timing_info,
         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-        vtr::vector_map<ClusterNetId, float *> &net_delay) {
+        vtr::vector<ClusterNetId, float *> &net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 

@@ -388,7 +388,7 @@ static t_slack * alloc_slacks() {
 	return slacks;
 }
 
-void load_timing_graph_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
+void load_timing_graph_net_delays(vtr::vector<ClusterNetId, float *> &net_delay) {
 
 	/* Sets the delays of the inter-CLB nets to the values specified by          *
 	 * net_delay[0..net.size()-1][1..num_pins-1].  These net delays should have    *
@@ -703,7 +703,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 	fprintf(fp, "\n\n");
 }
 
-void print_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, const char *fname) {
+void print_net_delay(vtr::vector<ClusterNetId, float *> &net_delay, const char *fname) {
 
 	/* Prints the net delays into a file. */
 

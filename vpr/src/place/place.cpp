@@ -134,8 +134,8 @@ static vtr::vector<ClusterNetId, float *> temp_point_to_point_timing_cost;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
-static vtr::vector_map<ClusterNetId, float *> point_to_point_delay_cost;
-static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_delay_cost;
+static vtr::vector<ClusterNetId, float *> point_to_point_delay_cost;
+static vtr::vector<ClusterNetId, float *> temp_point_to_point_delay_cost;
 
 /* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..pins_per_clb-1]. Indicates which pin on the net */
 /* this block corresponds to, this is only required during timing-driven */

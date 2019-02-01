@@ -55,7 +55,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
         const t_arch* arch,
         bool verify_binary_search, int min_chan_width_hint,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-        vtr::vector_map<ClusterNetId, float *> &net_delay,
+        vtr::vector<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif

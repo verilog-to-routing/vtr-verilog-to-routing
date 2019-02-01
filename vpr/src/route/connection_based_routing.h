@@ -84,7 +84,7 @@ private:
 
 public:
 	// after timing analysis of 1st iteration, can set a lower bound on connection delay
-	void set_lower_bound_connection_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
+	void set_lower_bound_connection_delays(vtr::vector<ClusterNetId, float *> &net_delay);
 
 	// initialize routing resources at the start of routing to a new net
 	void prepare_routing_for_net(ClusterNetId inet) {
@@ -123,7 +123,7 @@ public:
 	bool forcibly_reroute_connections(float max_criticality,
             std::shared_ptr<const SetupTimingInfo> timing_info,
             const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-            vtr::vector_map<ClusterNetId, float *> &net_delay);
+            vtr::vector<ClusterNetId, float *> &net_delay);
 
 };
 

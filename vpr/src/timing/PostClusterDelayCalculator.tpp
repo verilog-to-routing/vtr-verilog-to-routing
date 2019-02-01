@@ -12,7 +12,7 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist, 
                                                           const AtomLookup& netlist_lookup, 
-                                                          vtr::vector_map<ClusterNetId, float *> &net_delay)
+                                                          vtr::vector<ClusterNetId, float *> &net_delay)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , net_delay_()
