@@ -112,7 +112,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 /************************** Subroutine definitions ***************************/
 
-void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
+void save_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
 		const t_clb_opins_used& clb_opins_used_locally,
 		t_clb_opins_used& saved_clb_opins_used_locally) {
 
@@ -160,7 +160,7 @@ void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 	 * restored -- it is set to all NULLs since it is only used in            *
 	 * update_traceback.  If you need route_ctx.trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
-void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
+void restore_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used&  clb_opins_used_locally,
 		const t_clb_opins_used&  saved_clb_opins_used_locally) {
 
@@ -842,9 +842,9 @@ void free_traceback(t_trace* tptr) {
 /* Allocates data structures into which the key routing data can be saved,   *
 * allowing the routing to be recovered later (e.g. after a another routing  *
 * is attempted).                                                            */
-vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing() {
+vtr::vector<ClusterNetId, t_trace *> alloc_saved_routing() {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
-	vtr::vector_map<ClusterNetId, t_trace *> best_routing(cluster_ctx.clb_nlist.nets().size());
+	vtr::vector<ClusterNetId, t_trace *> best_routing(cluster_ctx.clb_nlist.nets().size());
 
 	return (best_routing);
 }
@@ -975,7 +975,7 @@ void free_route_structs() {
 }
 
 /* Frees the data structures needed to save a routing.                     */
-void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing) {
+void free_saved_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing) {
 	auto &cluster_ctx = g_vpr_ctx.clustering();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (best_routing[net_id] != nullptr) {

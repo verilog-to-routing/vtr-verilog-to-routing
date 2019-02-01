@@ -32,15 +32,15 @@ t_clb_opins_used alloc_route_structs();
 
 void free_route_structs();
 
-vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing();
+vtr::vector<ClusterNetId, t_trace *> alloc_saved_routing();
 
-void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing);
+void free_saved_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing);
 
-void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
+void save_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
 		const t_clb_opins_used& clb_opins_used_locally,
 		t_clb_opins_used& saved_clb_opins_used_locally);
 
-void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
+void restore_routing(vtr::vector<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used& clb_opins_used_locally,
 		const t_clb_opins_used& saved_clb_opins_used_locally);
 

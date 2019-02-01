@@ -65,7 +65,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
      * tracks per channel required to successfully route a circuit, and returns *
      * that minimum width_fac.                                                  */
 
-	vtr::vector_map<ClusterNetId, t_trace *>best_routing; /* Saves the best routing found so far. */
+	vtr::vector<ClusterNetId, t_trace *> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
 #ifdef ENABLE_CLASSIC_VPR_STA
