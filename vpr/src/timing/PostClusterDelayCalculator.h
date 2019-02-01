@@ -66,14 +66,14 @@ private:
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;
 
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_min_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_min_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_max_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_min_delay_cache_;
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_max_delay_cache_;
-	mutable vtr::vector_map<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_min_;
-	mutable vtr::vector_map<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_max_;
+    mutable vtr::vector<tatum::EdgeId,tatum::Time> edge_min_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId,tatum::Time> driver_clb_min_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId,tatum::Time> driver_clb_max_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId,tatum::Time> sink_clb_min_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId,tatum::Time> sink_clb_max_delay_cache_;
+	mutable vtr::vector<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_min_;
+	mutable vtr::vector<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_max_;
 };
 
 #include "PostClusterDelayCalculator.tpp"
