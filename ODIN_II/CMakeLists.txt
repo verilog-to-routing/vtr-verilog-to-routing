@@ -114,6 +114,7 @@ endforeach()
 
 target_link_libraries(libodin_ii
                         libvtrutil
+                        librtlnumber
                         libarchfpga
                         libabc
                         libargparse
@@ -121,7 +122,10 @@ target_link_libraries(libodin_ii
 
 #Create the executable
 add_executable(odin_II ${EXEC_SOURCES})
+
+
 target_link_libraries(odin_II
                         libodin_ii)
+
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)
