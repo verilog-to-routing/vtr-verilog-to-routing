@@ -101,8 +101,8 @@ static t_trace_branch traceback_branch(int node, const std::vector<t_heap_prev>&
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*,t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth=0);
 
-static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
-static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
@@ -1023,8 +1023,8 @@ void reset_rr_node_route_structs() {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
 * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
 * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
-    vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals;
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     int inode, i, j, node_block_pin, iclass;
     t_type_ptr type;
@@ -1068,8 +1068,8 @@ static vtr::vector_map<ClusterNetId, std::vector<int>> load_net_rr_terminals(con
 * they are used only to reserve pins for locally used OPINs in the router. *
 * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
 * The values for blocks that are padsare NOT valid.                        */
-static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices) {
-    vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source;
+static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices) {
+    vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source;
 
 	int i, j, iclass, inode;
     int class_low, class_high;
@@ -1107,9 +1107,9 @@ static vtr::vector_map<ClusterBlockId, std::vector<int>> load_rr_clb_sources(con
 }
 
 
-vtr::vector_map<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
+vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
 
-    vtr::vector_map<ClusterNetId, t_bb> route_bb;
+    vtr::vector<ClusterNetId, t_bb> route_bb;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
