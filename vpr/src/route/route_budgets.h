@@ -99,7 +99,7 @@ private:
 	vtr::vector<ClusterNetId, float *> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
 
     /*used to keep count the number of continuous time this node was congested*/
-    vtr::vector_map<ClusterNetId, int> num_times_congested; //[0..num_nets]
+    vtr::vector<ClusterNetId, int> num_times_congested; //[0..num_nets]
 
     /*memory management for the budgets*/
     vtr::t_chunk min_budget_delay_ch;
