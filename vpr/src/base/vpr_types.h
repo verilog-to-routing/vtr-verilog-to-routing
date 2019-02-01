@@ -33,7 +33,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
-#include "vtr_vector_map.h"
+#include "vtr_vector.h"
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
 
@@ -1321,6 +1321,6 @@ class RouteStatus {
         int chan_width_ = -1;
 };
 
-typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 #endif
