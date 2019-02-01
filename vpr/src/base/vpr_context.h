@@ -192,7 +192,7 @@ struct PowerContext : public Context {
     t_power_commonly_used* commonly_used;
     t_power_tech* tech;
     t_power_arch* arch;
-    vtr::vector_map<ClusterNetId, t_net_power> clb_net_power;
+    vtr::vector<ClusterNetId, t_net_power> clb_net_power;
 
 
     /* Atom net power info */
