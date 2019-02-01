@@ -534,7 +534,7 @@ static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_
 /* This routine dumps out the output netlist in a format suitable for  *
 * input to vpr. This routine also dumps out the internal structure of *
 * the cluster, in essentially a graph based format.                   */
-void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra_lb_net>*> &intra_lb_routing, bool global_clocks,
+void output_clustering(const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> &intra_lb_routing, bool global_clocks,
 		const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char *out_fname, bool skip_clustering) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();

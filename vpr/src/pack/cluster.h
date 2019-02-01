@@ -20,7 +20,7 @@ std::map<t_type_ptr,size_t> do_clustering(const t_packer_opts& packer_opts, cons
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs,
         const t_ext_pin_util_targets& ext_pin_util_targets
 #ifdef USE_HMETIS
-		, vtr::vector_map<AtomBlockId, int>& partitions
+		, vtr::vector<AtomBlockId, int>& partitions
 #endif
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf
