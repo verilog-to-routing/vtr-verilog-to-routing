@@ -31,7 +31,11 @@ if(ODIN_DEBUG)
         "-Wtype-limits"             # Warn if a comparison is always true or always false due to the limited range of the data type
     )
 
-    set(ODIN_EXTRA_FLAGS 
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-ggdb"
+        "-O0"
+        ""
         ${ODIN_EXTRA_FLAGS}
     ##############
     # comment out the flag set you do not wish to see added below
