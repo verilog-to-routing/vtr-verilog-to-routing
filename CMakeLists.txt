@@ -24,6 +24,7 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_OLD_ABC "Enable build with old abc" OFF)
+option(ODIN_DEBUG "Enable building oding with extra debug flags" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)

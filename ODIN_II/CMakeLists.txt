@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("ODIN_II")
 
+# Allow extra Flags on Odin for debugging
+set(ODIN_EXTRA_FLAGS
+    "-Wsign-compare"
+    "-Wsign-conversion"
+    "-Wsign-promo"
+    "-Wconversion"
+    "-Wshift-count-overflow"
+    "-Wshift-count-negative"
+    "-Wstrict-overflow"
+    "-Wtype-limits"
+)
+
 #Flex and Bison are used to generate the parser
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
@@ -48,6 +60,16 @@ add_library(libodin_ii STATIC
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
+if(ODIN_DEBUG)
+    foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
+        CHECK_CXX_COMPILER_FLAG(${ODIN_FLAG} COMPILER_SUPPORTS_ODIN_EXTRA_FLAG)
+        if(COMPILER_SUPPORTS_ODIN_EXTRA_FLAG)
+            target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
+        else()
+            message("*** Unable to set ${ODIN_FLAG} extra flags ***")
+        endif()
+    endforeach()
+endif()
 
 target_link_libraries(libodin_ii
                         libvtrutil
