@@ -128,9 +128,9 @@ static inline bool is_clock_node(nnode_t *node)
 
 //maria
 static thread_node_distribution *calculate_thread_distribution(stages_t *s);
-static void compute_and_store_part_multithreaded(int t_id,netlist_subset *thread_nodes,int cycle); //to remove
-static void compute_and_store_part_wave_multithreaded(int t_id,netlist_subset *thread_nodes,int from_wave,int to_wave);
-static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subset *thread_nodes,int from_wave, int to_wave,int offset,bool notify_back);
+static void compute_and_store_part_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int cycle); //to remove
+static void compute_and_store_part_wave_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave,int to_wave);
+static void compute_and_store_part_in_waves_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave, int to_wave,int offset,bool /*notify_back*/);
 
 static void simulate_cycle_multithreaded(int cycle, thread_node_distribution *thread_distribution);
 
@@ -940,7 +940,7 @@ static void simulate_cycle(int cycle, stages_t *s)
 
 
 //maria
-static void compute_and_store_part_multithreaded(int t_id,netlist_subset *thread_nodes,int cycle)
+static void compute_and_store_part_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int cycle)
 {
 
 	int *nodes_done = (int*)vtr::calloc(thread_nodes->number_of_nodes,sizeof(int));
@@ -987,7 +987,7 @@ static void compute_and_store_part_multithreaded(int t_id,netlist_subset *thread
 
 
 //maria
-static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subset *thread_nodes,int from_wave, int to_wave,int offset,bool notify_back)
+static void compute_and_store_part_in_waves_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave, int to_wave,int offset,bool /*notify_back*/)
 {
 
 	int *nodes_done = (int*)vtr::calloc(thread_nodes->number_of_nodes,sizeof(int));
@@ -1073,7 +1073,7 @@ static void compute_and_store_part_in_waves_multithreaded(int t_id,netlist_subse
 }
 
 //maria
-static void compute_and_store_part_wave_multithreaded(int t_id,netlist_subset *thread_nodes,int from_wave, int to_wave)
+static void compute_and_store_part_wave_multithreaded(int /*t_id*/,netlist_subset *thread_nodes,int from_wave, int to_wave)
 {
 
 	int *nodes_done = (int*)vtr::calloc(thread_nodes->number_of_nodes,sizeof(int));

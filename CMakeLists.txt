@@ -194,10 +194,19 @@ if(VTR_ENABLE_DEBUG_LOGGING)
     message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
 endif()
 
+# add colored output, this is a fix for ninja
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(COLORED_COMPILE "-fdiagnostics-color=always")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(COLORED_COMPILE "-fcolor-diagnostics")
+else()
+    set(COLORED_COMPILE "")
+endif ()
+
 #
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 
