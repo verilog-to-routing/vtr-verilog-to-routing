@@ -4383,6 +4383,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_statements(case_statement, case_node, case_list_of_items->num_children, instance_name_prefix);
 
+	vtr::free(case_statement);
 	return return_list;
 }
 
