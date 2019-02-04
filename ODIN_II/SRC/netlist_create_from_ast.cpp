@@ -4345,6 +4345,8 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 			oassert(FALSE);
 		}
 	}
+
+	free_signal_list(other_expressions_pin_list);
 }
 
 /*---------------------------------------------------------------------------------------------
