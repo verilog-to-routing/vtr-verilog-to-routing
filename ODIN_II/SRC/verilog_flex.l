@@ -87,6 +87,10 @@ char* standardize_number(const char* input);
 <INITIAL>"wire"				{ MP; return vWIRE;}
 <INITIAL>"xnor"				{ MP; return vXNOR;}
 <INITIAL>"xor"				{ MP; return vXOR;}
+<INITIAL>"macromodule"		{ MP; return vMODULE;}
+<INITIAL>"specparam"		{ MP; return vSPECPARAM;}
+
+
 
 	/*	unsupported Keywords	*/
 <INITIAL>"automatic"		{ MP; return vNOT_SUPPORT;}
@@ -96,9 +100,7 @@ char* standardize_number(const char* input);
 <INITIAL>"disable"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"edge"				{ MP; return vNOT_SUPPORT;}
 <INITIAL>"endtask"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"macromodule"		{ MP; return vNOT_SUPPORT;}
 <INITIAL>"scalared"			{ MP; return vNOT_SUPPORT;}
-<INITIAL>"specparam"		{ MP; return vSPECPARAM;}
 <INITIAL>"bufif0"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"bufif1"			{ MP; return vNOT_SUPPORT;}
 <INITIAL>"cmos"				{ MP; return vNOT_SUPPORT;}
