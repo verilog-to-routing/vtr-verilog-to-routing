@@ -4125,6 +4125,7 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 
 	/* now with all the lists sorted, we do the matching and proper propogation */
 	return_list = create_mux_expressions(if_expressions, if_node, 2, instance_name_prefix);
+	vtr::free(if_expressions);
 
 	return return_list;
 }
