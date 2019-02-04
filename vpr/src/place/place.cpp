@@ -442,6 +442,8 @@ void try_place(t_placer_opts placer_opts,
          */
         auto& atom_ctx = g_vpr_ctx.atom();
         placement_delay_calc = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, point_to_point_delay_cost);
+        placement_delay_calc->set_tsu_margin_relative(placer_opts.tsu_rel_margin);
+        placement_delay_calc->set_tsu_margin_absolute(placer_opts.tsu_abs_margin);
         timing_info = make_setup_timing_info(placement_delay_calc);
 
         timing_info->update();
@@ -761,6 +763,7 @@ void try_place(t_placer_opts placer_opts,
 
         //Final timing estimate
         VTR_ASSERT(timing_info);
+
         timing_info->update(); //Tatum
 		critical_path = timing_info->least_slack_critical_path();
 

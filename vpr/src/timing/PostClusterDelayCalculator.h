@@ -26,6 +26,11 @@ public:
     tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
     tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 
+    void clear_cache();
+
+    void set_tsu_margin_relative(float val);
+    void set_tsu_margin_absolute(float val);
+
 private:
     friend VprTimingGraphResolver;
 
@@ -65,6 +70,9 @@ private:
 
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;
+
+    float tsu_margin_rel_ = 1.0;
+    float tsu_margin_abs_ = 0.0e-12;
 
     mutable vtr::vector<tatum::EdgeId,tatum::Time> edge_min_delay_cache_;
     mutable vtr::vector<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;

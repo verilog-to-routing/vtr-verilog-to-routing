@@ -1016,11 +1016,24 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("0.0e-9")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.place_tsu_rel_margin, "--place_tsu_rel_margin")
+            .help("Specifies the scaling factor for cell setup times used by the placer."
+                  " This effectively controls whether the placer should try to achieve extra margin on setup paths."
+                  " For example a value of 1.1 corresponds to requesting 10%% setup margin."  )
+            .default_value("1.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_tsu_abs_margin, "--place_tsu_abs_margin")
+            .help("Specifies an absolute offest added to cell setup times used by the placer."
+                  " This effectively controls whether the placer should try to achieve extra margin on setup paths."
+                  " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin."  )
+            .default_value("0.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_timing_grp.add_argument(args.post_place_timing_report_file, "--post_place_timing_report")
             .help("Name of the post-placement timing report file (not generated if unspecfied)")
             .default_value("")
             .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     auto& route_grp = parser.add_argument_group("routing options");
 

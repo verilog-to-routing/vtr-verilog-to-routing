@@ -850,6 +850,8 @@ struct t_placer_opts {
     float delay_offset;
     int delay_ramp_delta_threshold;
     float delay_ramp_slope;
+    float tsu_rel_margin;
+    float tsu_abs_margin;
 
     std::string post_place_timing_report_file;
 };

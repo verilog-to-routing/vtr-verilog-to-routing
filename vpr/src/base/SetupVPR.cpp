@@ -479,6 +479,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
     PlacerOpts->delay_offset = Options.place_delay_offset;
     PlacerOpts->delay_ramp_delta_threshold = Options.place_delay_ramp_delta_threshold;
     PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
+    PlacerOpts->tsu_rel_margin = Options.place_tsu_rel_margin;
+    PlacerOpts->tsu_abs_margin = Options.place_tsu_abs_margin;
 
     //TODO: document?
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
