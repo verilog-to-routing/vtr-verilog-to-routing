@@ -4339,6 +4339,8 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 
 			/* copy that output pin to be put into the default */
 			add_input_pin_to_node(case_node, default_expression->pins[0], i);
+
+			free_signal_list(default_expression);
 		}
 		else
 		{
