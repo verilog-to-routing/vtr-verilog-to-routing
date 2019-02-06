@@ -185,22 +185,12 @@ bool try_pack(t_packer_opts *packer_opts,
     while (true) {
 
         //Cluster the netlist
-        auto num_type_instances = do_clustering(arch, list_of_pack_molecules, num_models,
-                                    packer_opts->global_clocks, is_clock,
+        auto num_type_instances = do_clustering(*packer_opts, arch, list_of_pack_molecules, num_models,
+                                    is_clock,
                                     atom_molecules,
                                     expected_lowest_cost_pb_gnode,
-                                    packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
-                                    packer_opts->timing_driven, packer_opts->cluster_seed_type,
-                                    packer_opts->alpha, packer_opts->beta,
-                                    packer_opts->inter_cluster_net_delay,
-                                    packer_opts->target_device_utilization,
                                     allow_unrelated_clustering,
-                                    packer_opts->connection_driven,
-                                    packer_opts->packer_algorithm,
                                     lb_type_rr_graphs,
-                                    packer_opts->device_layout,
-                                    packer_opts->pack_verbosity,
-                                    packer_opts->enable_pin_feasibility_filter,
                                     target_external_pin_util
 #ifdef USE_HMETIS
                                     , partitions

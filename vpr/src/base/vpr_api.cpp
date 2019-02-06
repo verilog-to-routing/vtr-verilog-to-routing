@@ -320,7 +320,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    vpr_create_device_grid(vpr_setup, arch);
+    vpr_create_device(vpr_setup, arch);
 
     vpr_init_graphics(vpr_setup, arch);
 
@@ -346,10 +346,21 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
+
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    vtr::ScopedStartFinishTimer timer("Create Device");
+    vpr_create_device_grid(vpr_setup, arch);
+
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
+    }
+}
+
 /*
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    vtr::ScopedStartFinishTimer timer("Build Device Grid");
 	/* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -411,13 +422,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         VTR_LOG("\n");
     }
 
-    /*
-     * Channel setup
-     */
-    device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
-    device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
-    device_ctx.chan_width.x_list = (int *) vtr::malloc(device_ctx.grid.height() * sizeof (int));
-    device_ctx.chan_width.y_list = (int *) vtr::malloc(device_ctx.grid.width() * sizeof (int));
 }
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -544,6 +548,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
     if (placer_opts.doPlacement == STAGE_SKIP) {
         //pass
@@ -571,8 +576,9 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     try_place(vpr_setup.PlacerOpts,
               vpr_setup.AnnealSched,
-              arch.Chans,
               vpr_setup.RouterOpts,
+              vpr_setup.AnalysisOpts,
+              arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -599,6 +605,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& /*arch*/) {
 }
 
 RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    VTR_LOG("\n");
 
     RouteStatus route_status;
 
@@ -722,12 +729,13 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup, const t_arch& arch, std::sha
 
     auto& router_opts = vpr_setup.RouterOpts;
     int min_W = binary_search_place_and_route(vpr_setup.PlacerOpts,
+                                              vpr_setup.AnnealSched,
+                                              router_opts,
+                                              vpr_setup.AnalysisOpts,
                                               vpr_setup.FileNameOpts,
                                               &arch,
                                               router_opts.verify_binary_search,
                                               router_opts.min_channel_width_hint,
-                                              vpr_setup.AnnealSched,
-                                              router_opts,
                                               &vpr_setup.RoutingArch,
                                               vpr_setup.Segments,
                                               net_delay,
@@ -765,12 +773,12 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
 }
 
 
-void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width) {
+void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width_fac) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
 
-    init_chan(chan_width, arch.Chans);
+    t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans);
 
     t_graph_type graph_type;
     if (router_opts.route_type == GLOBAL) {
@@ -788,7 +796,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 	create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-			&device_ctx.chan_width,
+			chan_width,
 			device_ctx.num_arch_switches,
             det_routing_arch,
             vpr_setup.Segments,
@@ -801,7 +809,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 			&warnings);
 
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(chan_width);
+    init_draw_coords(chan_width_fac);
 
 }
 
@@ -919,10 +927,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 void free_device(const t_det_routing_arch& routing_arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    vtr::free(device_ctx.chan_width.x_list);
-    vtr::free(device_ctx.chan_width.y_list);
-
-    device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = nullptr;
+    device_ctx.chan_width.x_list.clear();
+    device_ctx.chan_width.y_list.clear();
     device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
     for (int iswitch : {routing_arch.delayless_switch, routing_arch.global_route_switch}) {

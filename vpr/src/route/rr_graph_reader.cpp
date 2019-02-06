@@ -58,7 +58,7 @@ void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int *wire_to_rr_ipin_switch, const int num_rr_switches);
-void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
@@ -71,7 +71,7 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
  * structures as well*/
 void load_rr_file(const t_graph_type graph_type,
         const DeviceGrid& grid,
-        t_chan_width *nodes_per_chan,
+        t_chan_width nodes_per_chan,
         const int num_seg_types,
         const t_segment_inf * segment_inf,
         const enum e_base_cost_type base_cost_type,
@@ -138,13 +138,13 @@ void load_rr_file(const t_graph_type graph_type,
         VTR_LOG("Starting build routing resource graph...\n");
 
         next_component = get_first_child(rr_graph, "channels", loc_data);
-        process_channels(next_component, loc_data);
+        process_channels(nodes_per_chan, next_component, loc_data);
 
         /* Decode the graph_type */
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
 
         /* Global routing uses a single longwire track */
-        int max_chan_width = (is_global_graph ? 1 : nodes_per_chan->max);
+        int max_chan_width = (is_global_graph ? 1 : nodes_per_chan.max);
         VTR_ASSERT(max_chan_width > 0);
 
         /* Alloc rr nodes and count count nodes */
@@ -183,6 +183,8 @@ void load_rr_file(const t_graph_type graph_type,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
 
         process_seg_id(next_component, loc_data);
+
+        device_ctx.chan_width = nodes_per_chan;
 
         if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
             dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
@@ -433,29 +435,28 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
 }
 
 /* All channel info is read in and loaded into device_ctx.chan_width*/
-void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     pugi::xml_node channel, channelLists;
     int index;
 
     channel = get_first_child(parent, "channel", loc_data);
 
-    device_ctx.chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_uint();
-    device_ctx.chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_uint();
-    device_ctx.chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
-    device_ctx.chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
-    device_ctx.chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
+    chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_uint();
+    chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_uint();
+    chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
+    chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
+    chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
-        device_ctx.chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
+        chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
     channelLists = get_first_child(parent, "y_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
-        device_ctx.chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
+        chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
 

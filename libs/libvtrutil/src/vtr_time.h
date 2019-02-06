@@ -38,14 +38,20 @@ namespace vtr {
     class ScopedActionTimer : public Timer {
         public:
             ScopedActionTimer(const std::string action);
+            ~ScopedActionTimer();
 
             void quiet(bool value);
             bool quiet() const;
             std::string action() const;
 
+        protected:
+            int depth() const;
+            std::string pad() const;
+
         private:
             const std::string action_;
             bool quiet_ = false;
+            int depth_;
     };
 
     //Scoped elapsed time class which prints the time elapsed for

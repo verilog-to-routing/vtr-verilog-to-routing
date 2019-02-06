@@ -476,8 +476,14 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts)
 	/* Depends on PlacerOpts->place_algorithm */
 	PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
 
+    PlacerOpts->delay_offset = Options.place_delay_offset;
+    PlacerOpts->delay_ramp_delta_threshold = Options.place_delay_ramp_delta_threshold;
+    PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
+
     //TODO: document?
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
+
+    PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

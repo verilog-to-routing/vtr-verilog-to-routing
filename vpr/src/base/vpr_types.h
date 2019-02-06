@@ -846,6 +846,12 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+
+    float delay_offset;
+    int delay_ramp_delta_threshold;
+    float delay_ramp_slope;
+
+    std::string post_place_timing_report_file;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -1252,13 +1258,13 @@ struct t_power_opts {
 
 /* Channel width data */
 struct t_chan_width {
-	int max;
-	int x_max;
-	int y_max;
-	int x_min;
-	int y_min;
-	int *x_list;
-	int *y_list;
+	int max = 0;
+	int x_max = 0;
+	int y_max = 0;
+	int x_min = 0;
+	int y_min = 0;
+    std::vector<int> x_list;
+	std::vector<int> y_list;
 };
 
 /* Type to store our list of token to enum pairings */

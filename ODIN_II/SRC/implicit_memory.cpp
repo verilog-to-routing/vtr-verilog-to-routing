@@ -58,6 +58,8 @@ implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identi
 
 	std::unordered_map<std::string,implicit_memory *>::const_iterator mem_out = implicit_memories.find(std::string(memory_string));
 
+	vtr::free(memory_string);
+
 	if ( mem_out == implicit_memories.end() )
 		return NULL;
 	else

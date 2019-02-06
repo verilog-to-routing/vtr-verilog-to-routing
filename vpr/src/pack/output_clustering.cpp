@@ -212,7 +212,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 				VTR_ASSERT(!pb_type->ports[i].is_clock);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index = pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
-					if (pb_type->num_modes > 0 && pb_route[node_index].atom_net_id) {
+					if (pb_type->num_modes > 0 && pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
 						prev_node = pb_route[node_index].driver_pb_pin_id;
 						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
@@ -311,11 +311,9 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 					is_used = false;
 					for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
 						if (child_pb_type->ports[k].type == OUT_PORT) {
-							for (m = 0; m < child_pb_type->ports[k].num_pins;
-									m++) {
-								node_index =
-										pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (pb_route[node_index].atom_net_id) {
+							for (m = 0; m < child_pb_type->ports[k].num_pins; m++) {
+								node_index = pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
+								if (pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
 								}

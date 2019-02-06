@@ -31,9 +31,11 @@ using namespace std;
 #include "place_util.h"
 
 #include "PlacementDelayCalculator.h"
+#include "VprTimingGraphResolver.h"
 #include "timing_util.h"
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
+#include "tatum/TimingReporter.hpp"
 
 /************** Types and defines local to place.c ***************************/
 
@@ -337,10 +339,17 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, t_pla
 
 static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
+static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
+                                               const t_analysis_opts& analysis_opts,
+                                               const SetupTimingInfo& timing_info,
+                                               const PlacementDelayCalculator& delay_calc);
+
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
 		t_annealing_sched annealing_sched,
-		t_chan_width_dist chan_width_dist, t_router_opts router_opts,
+        t_router_opts router_opts,
+        const t_analysis_opts& analysis_opts,
+		t_chan_width_dist chan_width_dist,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_timing_inf timing_inf,
@@ -391,7 +400,7 @@ void try_place(t_placer_opts placer_opts,
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		/*do this before the initial placement to avoid messing up the initial placement */
-		alloc_lookups_and_criticalities(chan_width_dist, router_opts, det_routing_arch, segment_inf, directs, num_directs);
+		alloc_lookups_and_criticalities(chan_width_dist, placer_opts, router_opts, det_routing_arch, segment_inf, directs, num_directs);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         slacks = alloc_and_load_timing_graph(timing_inf);
@@ -718,6 +727,7 @@ void try_place(t_placer_opts placer_opts,
                       place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,
                       success_rat, std_dev, rlim, crit_exponent,
                       tot_iter, 0.);
+    fflush(stdout);
 
 	// TODO:
 	// 1. print a message about number of aborted moves.
@@ -760,6 +770,12 @@ void try_place(t_placer_opts placer_opts,
             tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
                     *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
         }
+
+        generate_post_place_timing_reports(placer_opts,
+                                           analysis_opts,
+                                           *timing_info,
+                                           *placement_delay_calc);
+
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         //Old VPR analyzer
@@ -819,7 +835,6 @@ void try_place(t_placer_opts placer_opts,
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
-
 #ifdef ENABLE_CLASSIC_VPR_STA
         free_timing_graph(slacks);
 #endif
@@ -3284,4 +3299,19 @@ static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, do
 	}
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+}
+
+static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
+                                               const t_analysis_opts& analysis_opts,
+                                               const SetupTimingInfo& timing_info,
+                                               const PlacementDelayCalculator& delay_calc) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
+    resolver.set_detail_level(analysis_opts.timing_report_detail);
+
+    tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
+
+    timing_reporter.report_timing_setup(placer_opts.post_place_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }

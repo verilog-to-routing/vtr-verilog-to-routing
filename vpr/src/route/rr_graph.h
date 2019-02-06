@@ -29,7 +29,7 @@ void create_rr_graph(
         const t_graph_type graph_type,
         const int num_block_types, const t_type_ptr block_types,
         const DeviceGrid& grid,
-        t_chan_width *nodes_per_chan,
+        t_chan_width nodes_per_chan,
         const int num_arch_switches,
         t_det_routing_arch* det_routing_arch,
         const t_segment_inf * segment_inf,
