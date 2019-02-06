@@ -88,6 +88,20 @@ class NdMatrixProxy<T,1> {
             return const_cast<T&>(const_cast<const NdMatrixProxy<T,1>*>(this)->operator[](index));
         }
 
+        //For legacy compatibility (i.e. code expecting a pointer) we allow this base dimension 
+        //case to retrieve a raw pointer to the last dimension elements.
+        //
+        //Note that it is the caller's responsibility to use this correctly; care must be taken
+        //not to clobber elements in other dimensions
+        const T* data() const {
+            return start_;
+        }
+
+        T* data() {
+            //Call the const version and cast-away constness
+            return const_cast<T*>(const_cast<const NdMatrixProxy<T,1>*>(this)->data());
+        }
+
     private:
         const size_t* dim_sizes_;
         const size_t idim_;

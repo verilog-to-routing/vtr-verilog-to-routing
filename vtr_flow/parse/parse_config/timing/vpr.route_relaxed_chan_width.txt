@@ -2,6 +2,11 @@
 crit_path_routed_wirelength;vpr.crit_path.out;Total wirelength: (.*), average
 crit_path_route_success_iteration;vpr.crit_path.out;Successfully routed after (\d+) routing iterations
 
+crit_path_total_nets_routed;vpr.crit_path.out;total_nets_routed: (\d+)
+crit_path_total_connections_routed;vpr.crit_path.out;total_connections_routed: (\d+)
+crit_path_total_heap_pushes;vpr.crit_path.out;total_heap_pushes: (\d+)
+crit_path_total_heap_pops;vpr.crit_path.out;total_heap_pops: (\d+)
+
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
 setup_TNS;vpr.crit_path.out;Setup Total Negative Slack \(sTNS\): (.*) ns

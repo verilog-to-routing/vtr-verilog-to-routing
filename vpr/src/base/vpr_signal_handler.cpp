@@ -51,22 +51,22 @@ std::atomic<int> uncleared_sigint_count(0);
 
             if (uncleared_sigint_count == 1) {
                 //Request a pause at the next reasonable point (e.g. to resume the GUI)
-                vtr::printf("Recieved SIGINT: Attempting to pause...\n");
+                VTR_LOG("Recieved SIGINT: Attempting to pause...\n");
                 g_vpr_ctx.set_forced_pause(true);
             } else if (uncleared_sigint_count == 2) {
-                vtr::printf("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
+                VTR_LOG("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
                 checkpoint();
                 std::quick_exit(INTERRUPTED_EXIT_CODE);
             } else if (uncleared_sigint_count == 3) {
                 //Really exit (e.g. SIGINT while checkpointing)
-                vtr::printf("Recieved three uncleared SIGINTs: Exiting...\n");
+                VTR_LOG("Recieved three uncleared SIGINTs: Exiting...\n");
                 std::quick_exit(INTERRUPTED_EXIT_CODE);
             }
         } else if (signal == SIGHUP) {
-            vtr::printf("Recieved SIGHUP: Attempting to checkpoint...\n");
+            VTR_LOG("Recieved SIGHUP: Attempting to checkpoint...\n");
             checkpoint();
         } else if (signal == SIGTERM) {
-            vtr::printf("Recieved SIGTERM: Attempting to checkpoint then exit...\n");
+            VTR_LOG("Recieved SIGTERM: Attempting to checkpoint then exit...\n");
             checkpoint();
             std::quick_exit(INTERRUPTED_EXIT_CODE);
         }
@@ -90,10 +90,10 @@ void checkpoint() {
     vtr::ScopedStartFinishTimer timer("Checkpointing");
 
     std::string placer_checkpoint_file = "placer_checkpoint.place";
-    vtr::printf("Attempting to checkpoint current placement to file: %s\n", placer_checkpoint_file.c_str());
+    VTR_LOG("Attempting to checkpoint current placement to file: %s\n", placer_checkpoint_file.c_str());
     print_place(nullptr, nullptr, placer_checkpoint_file.c_str());
 
     std::string router_checkpoint_file = "router_checkpoint.route";
-    vtr::printf("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());
+    VTR_LOG("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());
     print_route(nullptr, router_checkpoint_file.c_str());
 }

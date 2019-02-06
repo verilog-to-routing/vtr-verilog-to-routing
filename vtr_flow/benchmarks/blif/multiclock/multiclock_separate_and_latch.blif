@@ -1,0 +1,27 @@
+.model multiclock_separate_and_latch
+.inputs top^clock1 top^clock2 top^a_in~0 top^a_in~1 top^b_in~0 top^b_in~1
+.outputs top^out~0 top^out~1
+
+.names gnd
+.names unconn
+.names vcc
+1
+
+.latch top.and_latch+and_latch_zero^BITWISE_AND~0^LOGICAL_AND~2 top.and_latch+and_latch_zero^out_FF_NODE re top^clock1 3
+
+.latch top.and_latch+and_latch_one^BITWISE_AND~1^LOGICAL_AND~3 top.and_latch+and_latch_one^out_FF_NODE re top^clock2 3
+
+.names top^a_in~0 top^b_in~0 top.and_latch+and_latch_zero^BITWISE_AND~0^LOGICAL_AND~2
+11 1
+
+.names top^a_in~1 top^b_in~1 top.and_latch+and_latch_one^BITWISE_AND~1^LOGICAL_AND~3
+11 1
+
+.names top.and_latch+and_latch_zero^out_FF_NODE top^out~0
+1 1
+
+.names top.and_latch+and_latch_one^out_FF_NODE top^out~1
+1 1
+
+.end
+

@@ -28,9 +28,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include <unordered_map>
 
-
-
-#define SIM_WAVE_LENGTH 16
 #define BUFFER_MAX_SIZE 1024
 
 #include <queue>
@@ -56,10 +53,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define OUTPUT_ACTIVITY_FILE_NAME "output_activity"
 #define MODEL_SIM_FILE_NAME "test.do"
 
-#define CONCURENT_SIMULATION_LIMIT 32
-
 #define SINGLE_PORT_MEMORY_NAME "single_port_ram"
 #define DUAL_PORT_MEMORY_NAME "dual_port_ram"
+
+#define DEFAULT_CLOCK_NAME "GLOBAL_SIM_BASE_CLK"
 
 typedef struct {
 	int number_of_pins;

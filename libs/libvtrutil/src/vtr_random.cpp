@@ -14,27 +14,25 @@ constexpr size_t IA = 1103515245u;
 constexpr size_t IC = 12345u;
 constexpr size_t IM = 2147483648u;
 
-static unsigned int current_random = 0;
+static RandState random_state = 0;
 
 void srandom(int seed) {
-	current_random = (unsigned int) seed;
+	random_state = (unsigned int) seed;
 }
 
-/* returns the current_random value */
-unsigned int get_current_random(){
-	unsigned int result = current_random;
-	return result;
+/* returns the random_state value */
+RandState get_random_state() {
+	return random_state;
 }
 
-int irand(int imax) {
+int irand(int imax, RandState& state) {
 
 	/* Creates a random integer between 0 and imax, inclusive.  i.e. [0..imax] */
-
 	int ival;
 
-	/* current_random = (current_random * IA + IC) % IM; */
-	current_random = current_random * IA + IC; /* Use overflow to wrap */
-	ival = current_random & (IM - 1); /* Modulus */
+	/* state = (state * IA + IC) % IM; */
+	state = state * IA + IC; /* Use overflow to wrap */
+	ival = state & (IM - 1); /* Modulus */
 	ival = (int) ((float) ival * (float) (imax + 0.999) / (float) IM);
 
 #ifdef CHECK_RAND
@@ -48,7 +46,11 @@ int irand(int imax) {
 	}
 #endif
 
-	return (ival);
+    return ival;
+}
+
+int irand(int imax) {
+    return irand(imax, random_state);
 }
 
 float frand() {
@@ -58,8 +60,8 @@ float frand() {
 	float fval;
 	int ival;
 
-	current_random = current_random * IA + IC; /* Use overflow to wrap */
-	ival = current_random & (IM - 1); /* Modulus */
+	random_state = random_state * IA + IC; /* Use overflow to wrap */
+	ival = random_state & (IM - 1); /* Modulus */
 	fval = (float) ival / (float) IM;
 
 #ifdef CHECK_RAND

@@ -75,7 +75,6 @@ nnode_t* allocate_nnode() {
 	new_node->associated_function = NULL;
 
 	new_node->simulate_block_cycle = NULL;
-	new_node->memory_data = NULL;
 
 	new_node->bit_map= NULL;
 	new_node->bit_map_line_count=0;
@@ -86,6 +85,7 @@ nnode_t* allocate_nnode() {
 	new_node->num_undriven_pins = 0;
 
 	new_node->ratio = 1;
+	new_node->edge_type = RISING_EDGE_SENSITIVITY;
 
 	new_node->has_initial_value = FALSE;
 	new_node->initial_value = 0;
@@ -203,7 +203,6 @@ npin_t* allocate_npin() {
 	new_pin->pin_node_idx = -1;
 	new_pin->mapping = NULL;
 
-	new_pin->cycle  = NULL;
 	new_pin->values = NULL;
 
 	new_pin->coverage = 0;
@@ -484,6 +483,33 @@ void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx)
 		pin->node->output_pins[pin->pin_node_idx] = NULL;
 		/* do the new addition */
 		add_output_pin_to_node(new_node, pin, pin_idx);
+	}
+}
+
+/*-------------------------------------------------------------------------
+ * (function: remap_pin_to_new_nodes)
+ *-----------------------------------------------------------------------*/
+void remap_pin_to_new_node_range(npin_t *pin, nnode_t *new_node, int pin_range_start, int pin_range_end)
+{
+	if (pin->type == INPUT)
+    {
+		/* clean out the entry in the old net */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+		/* do the new additions */
+		for(int i = pin_range_start; i>=pin_range_end; i--)
+		{
+			add_input_pin_to_node(new_node, pin, i);
+		}
+	}
+	else if (pin->type == OUTPUT)
+    {
+		/* clean out the entry in the old net */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+		/* do the new additions */
+		for(int i = pin_range_start; i>=pin_range_end; i--)
+		{
+			add_output_pin_to_node(new_node, pin, i);
+		}
 	}
 }
 
@@ -890,6 +916,9 @@ netlist_t* allocate_netlist()
  *-------------------------------------------------------------------------------------------*/
 void free_netlist(netlist_t *to_free)
 {
+	if(!to_free)
+		return;
+		
 	sc_free_string_cache(to_free->nets_sc);
 	sc_free_string_cache(to_free->out_pins_sc);
 	sc_free_string_cache(to_free->nodes_sc);

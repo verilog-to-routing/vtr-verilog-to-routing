@@ -10,6 +10,7 @@
 #include <cstring>
 #include <algorithm>
 #include <regex>
+#include <limits>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -88,7 +89,7 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
 
             if (iter == grid_layouts.end()) {
                 //No device larger than specified width/height, so choose largest possible
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "Specified device dimensions (%zux%zu) exceed those of the largest fixed-size device."
                         " Using the largest fixed-size device\n",
                         width, height);
@@ -152,7 +153,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
             height = vtr::nint(width / grid_def.aspect_ratio);
 
 #ifdef VERBOSE
-            vtr::printf("Grid size: %zu x %zu (AR: %.2f) \n", width, height, float(width) / height);
+            VTR_LOG("Grid size: %zu x %zu (AR: %.2f) \n", width, height, float(width) / height);
 #endif
 
             //Build the device
@@ -329,7 +330,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         // Start locations outside the device will never create block instances
         if (startx > grid_width - 1) {
             if (warn_out_of_range) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
                         type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
             }
@@ -338,7 +339,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
         if (starty > grid_height - 1) {
             if (warn_out_of_range) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
                         type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
             }
@@ -348,7 +349,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         //Check end against the device dimensions
         if (endx > grid_width - 1) {
             if (warn_out_of_range) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
                         type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
             }
@@ -356,7 +357,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
         if (endy > grid_height - 1) {
             if (warn_out_of_range) {
-                vtr::printf_warning(__FILE__, __LINE__,
+                VTR_LOG_WARN(
                         "Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
                         type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
             }
@@ -409,7 +410,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
                     type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
         }
 
-        //vtr::printf("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
+        //VTR_LOG("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
         //            type->name, grid_loc_def.priority,
         //            xspec.start_expr.c_str(), startx, xspec.end_expr.c_str(), endx,
         //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
@@ -445,7 +446,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         if (type == empty_type) continue; //Don't worry if empty hasn't been specified
 
         if (!seen_types.count(type)) {
-            vtr::printf_warning(__FILE__, __LINE__,
+            VTR_LOG_WARN(
                     "Block type '%s' was not specified in device grid layout\n",
                     type->name);
         }
@@ -493,7 +494,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
     if (priority < max_priority_type_loc.priority) {
         //Lower priority, do not override
 #ifdef VERBOSE
-        vtr::printf("Not creating block '%s' at (%zu,%zu) since overlaps block '%s' at (%zu,%zu) with higher priority (%d > %d)\n",
+        VTR_LOG("Not creating block '%s' at (%zu,%zu) since overlaps block '%s' at (%zu,%zu) with higher priority (%d > %d)\n",
                 type->name, x_root, y_root, max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
                 max_priority_type_loc.priority, priority);
 #endif
@@ -505,7 +506,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
         //
         //We arbitrarily decide to take the 'last applied' wins approach, and warn the user
         //about the potential ambiguity
-        vtr::printf_warning(__FILE__, __LINE__,
+        VTR_LOG_WARN(
                 "Ambiguous block type specification at grid location (%zu,%zu)."
                 " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
                 " The last specification will apply.\n",
@@ -573,7 +574,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
 
 #ifdef VERBOSE
-                    vtr::printf("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n",
+                    VTR_LOG("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n",
                             invalidated_root.type->name, invalidated_root.x, invalidated_root.y,
                             x_offset, y_offset,
                             type->name, x_root, y_root);
@@ -685,4 +686,36 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_type_ptr,s
     float utilization = instance_area / grid_area;
 
     return utilization;
+}
+
+size_t count_grid_tiles(const DeviceGrid& grid) {
+    //In some cases the device size may not be strictly the produce of device width and height,
+    //for instance if there is an empty perimeter left around the device.
+    //
+    //Here we figure out what the bounding box of all non-empty grid tiles and use that
+    //to calculate the size of the device, which should handle cases like an empty-perimeter
+    //correctly.
+    size_t xmin = std::numeric_limits<size_t>::max();
+    size_t ymin = std::numeric_limits<size_t>::max();
+    size_t xmax = 0;
+    size_t ymax = 0;
+    for (size_t x = 0; x < grid.width(); ++x) {
+        for (size_t y = 0; y < grid.height(); ++y) {
+            const auto& grid_tile = grid[x][y];
+            if (grid_tile.type && !is_empty_type(grid_tile.type)) {
+                xmin = std::min(xmin, x);
+                xmax = std::max(xmax, x);
+                ymin = std::min(ymin, y);
+                ymax = std::max(ymax, y);
+            }
+        }
+    }
+
+    size_t effective_width = xmax - xmin + 1;
+    size_t effective_height = ymax - ymin + 1;
+    size_t grid_tile_count = effective_width * effective_height;
+
+    VTR_LOG("BB: %zu,%zu x %zu,%zu = %zu*%zu = %zu\n", xmin, ymin, xmax, ymax, effective_width, effective_height, grid_tile_count);
+
+    return grid_tile_count;
 }

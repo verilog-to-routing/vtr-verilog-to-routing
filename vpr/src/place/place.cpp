@@ -44,12 +44,12 @@ using namespace std;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#define ERROR_TOL .01
+#define ERROR_TOL .015
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
-#define MAX_MOVES_BEFORE_RECOMPUTE 50000
+#define MAX_MOVES_BEFORE_RECOMPUTE 500000
 
 /* The maximum number of tries when trying to place a carry chain at a    *
  * random location before trying exhaustive placement - find the fist     *
@@ -83,9 +83,21 @@ struct t_placer_statistics {
 	int success_sum;
 };
 
+struct t_placer_costs {
+    float cost;
+    float bb_cost;
+    float timing_cost;
+    float delay_cost;
+};
+
+struct t_placer_prev_inverse_costs {
+    float bb_cost;
+    float timing_cost;
+};
+
 #define MAX_INV_TIMING_COST 1.e9
 /* Stops inverse timing cost from going to infinity with very lax timing constraints,
-which avoids multiplying by a gigantic inverse_prev_timing_cost when auto-normalizing.
+which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normalizing.
 The exact value of this cost has relatively little impact, but should not be
 large enough to be on the order of timing costs for normal constraints. */
 
@@ -225,24 +237,20 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 
 static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z_to);
 
-static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
+static e_swap_result try_swap(float t,
+        t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		float rlim,
-        enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
-		float *delay_cost);
+        enum e_place_algorithm place_algorithm, float timing_tradeoff);
 
 static ClusterBlockId pick_from_block();
 
-static void check_place(float bb_cost, float timing_cost,
-		enum e_place_algorithm place_algorithm,
-		float delay_cost);
+static void check_place(const t_placer_costs& costs, enum e_place_algorithm place_algorithm);
 
-static float starting_t(float *cost_ptr, float *bb_cost_ptr,
-		float *timing_cost_ptr,
+static float starting_t(t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
-		float *delay_cost_ptr);
+		enum e_place_algorithm place_algorithm, float timing_tradeoff);
 
 static void update_t(float *t, float rlim, float success_rat,
 		t_annealing_sched annealing_sched);
@@ -299,10 +307,11 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb *bbptr);
 static void free_try_swap_arrays();
 
 static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
-	int num_connections, float crit_exponent, float bb_cost,
-	float * place_delay_value, float * timing_cost, float * delay_cost,
-	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost,
+    t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
+	int num_connections, float crit_exponent,
+	float * place_delay_value,
+	int * outer_crit_iter_count, 
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
@@ -311,16 +320,22 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
     SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
-	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
+	int move_lim,
 	float crit_exponent, int inner_recompute_limit,
-	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
-	float * delay_cost,
+	t_placer_statistics *stats,
+    t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
+    int* moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
     SetupTimingInfo& timing_info);
+
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, t_placer_costs* costs);
+
+static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
 
 /*****************************************************************************/
 void try_place(t_placer_opts placer_opts,
@@ -339,11 +354,13 @@ void try_place(t_placer_opts placer_opts,
 
 	int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
 		outer_crit_iter_count, inner_recompute_limit;
-	unsigned int ipin;
-	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
-		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
-		oldt, crit_exponent,
-		first_rlim, final_rlim, inverse_delta_rlim;
+	float t, success_rat, rlim, place_delay_value,
+		  oldt, crit_exponent,
+		  first_rlim, final_rlim, inverse_delta_rlim;
+
+    t_placer_costs costs;
+    t_placer_prev_inverse_costs prev_inverse_costs;
+
     tatum::TimingPathInfo critical_path;
     float sTNS = NAN;
     float sWNS = NAN;
@@ -397,14 +414,14 @@ void try_place(t_placer_opts placer_opts,
 	/* Gets initial cost and loads bounding boxes. */
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE || placer_opts.enable_timing_computations) {
-		bb_cost = comp_bb_cost(NORMAL);
+		costs.bb_cost = comp_bb_cost(NORMAL);
 
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
 		num_connections = count_connections();
-		vtr::printf_info("\n");
-		vtr::printf_info("There are %d point to point connections in this circuit.\n", num_connections);
-		vtr::printf_info("\n");
+		VTR_LOG("\n");
+		VTR_LOG("There are %d point to point connections in this circuit.\n", num_connections);
+		VTR_LOG("\n");
 
 		place_delay_value = 0;
 
@@ -448,7 +465,7 @@ void try_place(t_placer_opts placer_opts,
 #endif
 
 		/*now we can properly compute costs  */
-		comp_td_costs(&timing_cost, &delay_cost); /*also updates values in point_to_point_delay_cost */
+		comp_td_costs(&costs.timing_cost, &costs.delay_cost); /*also updates values in point_to_point_delay_cost */
 
 		if (getEchoEnabled()) {
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -460,46 +477,46 @@ void try_place(t_placer_opts placer_opts,
 		}
 		outer_crit_iter_count = 1;
 
-		inverse_prev_timing_cost = 1 / timing_cost;
-		inverse_prev_bb_cost = 1 / bb_cost;
-		cost = 1; /*our new cost function uses normalized values of           */
+		prev_inverse_costs.timing_cost = 1 / costs.timing_cost;
+		prev_inverse_costs.bb_cost = 1 / costs.bb_cost;
+		costs.cost = 1; /*our new cost function uses normalized values of           */
 		/*bb_cost and timing_cost, the value of cost will be reset  */
 		/*to 1 at each temperature when *_TIMING_DRIVEN_PLACE is true */
 	} else { /*BOUNDING_BOX_PLACE */
-		cost = bb_cost = comp_bb_cost(NORMAL);
-		timing_cost = 0;
-		delay_cost = 0;
+		costs.cost = costs.bb_cost = comp_bb_cost(NORMAL);
+		costs.timing_cost = 0;
+		costs.delay_cost = 0;
 		place_delay_value = 0;
 		outer_crit_iter_count = 0;
 		num_connections = 0;
 		crit_exponent = 0;
 
-		inverse_prev_timing_cost = 0; /*inverses not used */
-		inverse_prev_bb_cost = 0;
+		prev_inverse_costs.timing_cost = 0; /*inverses not used */
+		prev_inverse_costs.bb_cost = 0;
 	}
 
     //Sanity check that initial placement is legal
-    check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
+    check_place(costs, placer_opts.place_algorithm);
 
     //Initial pacement statistics
-    vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
-            cost, bb_cost, timing_cost, delay_cost);
+    VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
+            costs.cost, costs.bb_cost, costs.timing_cost, costs.delay_cost);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-        vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
+        VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
                 1e9*critical_path.delay());
-        vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
+        VTR_LOG("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9*timing_info->setup_total_negative_slack());
-        vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
+        VTR_LOG("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
                 1e9*timing_info->setup_worst_negative_slack());
-        vtr::printf_info("\n");
+        VTR_LOG("\n");
 
-        vtr::printf_info("Initial placement estimated setup slack histogram:\n");
+        VTR_LOG("Initial placement estimated setup slack histogram:\n");
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
-    vtr::printf_info("\n");
+    VTR_LOG("\n");
 
     //Table header
-	vtr::printf_info("%7s "
+	VTR_LOG("%7s "
                      "%7s %10s %10s %10s "
                      "%10s %7s %10s %8s "
                      "%7s %7s %7s %6s "
@@ -509,7 +526,7 @@ void try_place(t_placer_opts placer_opts,
                      "----------", "-------", "----------", "--------",
                      "-------", "-------", "-------", "------",
                      "---------", "------");
-	vtr::printf_info("%7s "
+	VTR_LOG("%7s "
                      "%7s %10s %10s %10s "
                      "%10s %7s %10s %8s "
                      "%7s %7s %7s %6s "
@@ -519,7 +536,7 @@ void try_place(t_placer_opts placer_opts,
                      "P to P Del", "CPD", "sTNS", "sWNS",
                      "Ac Rate", "Std Dev", "R limit", "Exp",
                      "Tot Moves", "Alpha");
-	vtr::printf_info("%7s "
+	VTR_LOG("%7s "
                      "%7s %10s %10s %10s "
                      "%10s %7s %10s %8s "
                      "%7s %7s %7s %6s "
@@ -531,7 +548,7 @@ void try_place(t_placer_opts placer_opts,
                      "---------", "------");
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d",
-		cost, bb_cost, timing_cost, delay_cost, width_fac);
+		costs.cost, costs.bb_cost, costs.timing_cost, costs.delay_cost, width_fac);
 
     //Draw the initial placement
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -559,10 +576,9 @@ void try_place(t_placer_opts placer_opts,
 	final_rlim = 1;
 	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-	t = starting_t(&cost, &bb_cost, &timing_cost,
+	t = starting_t(&costs, &prev_inverse_costs,
 			annealing_sched, move_lim, rlim,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
+			placer_opts.place_algorithm, placer_opts.timing_tradeoff);
 
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
@@ -571,15 +587,16 @@ void try_place(t_placer_opts placer_opts,
 
 
 	/* Outer loop of the simmulated annealing begins */
-	while (exit_crit(t, cost, annealing_sched) == 0) {
+	while (exit_crit(t, costs.cost, annealing_sched) == 0) {
 
 		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-			cost = 1;
+			costs.cost = 1;
 		}
 
-		outer_loop_recompute_criticalities(placer_opts, num_connections,
-			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+		outer_loop_recompute_criticalities(placer_opts, &costs, &prev_inverse_costs,
+            num_connections,
+			crit_exponent, &place_delay_value,
+			&outer_crit_iter_count,
             netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -587,66 +604,21 @@ void try_place(t_placer_opts placer_opts,
 #endif
             *timing_info);
 
-		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
+		placement_inner_loop(t, rlim, placer_opts,
 			move_lim, crit_exponent, inner_recompute_limit, &stats,
-			&cost, &bb_cost, &timing_cost, &delay_cost,
+			&costs,
+            &prev_inverse_costs,
+            &moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
 #endif
             netlist_pin_lookup,
             *timing_info);
-
-		/* Lines below prevent too much round-off error from accumulating *
-		 * in the cost over many iterations.  This round-off can lead to  *
-		 * error checks failing because the cost is different from what   *
-		 * you get when you recompute from scratch.                       */
-
-		moves_since_cost_recompute += move_lim;
-		if (moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-			new_bb_cost = recompute_bb_cost();
-			if (fabs(new_bb_cost - bb_cost) > bb_cost * ERROR_TOL) {
-				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-						"in try_place: new_bb_cost = %g, old bb_cost = %g\n",
-						new_bb_cost, bb_cost);
-			}
-			bb_cost = new_bb_cost;
-
-			if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-				comp_td_costs(&new_timing_cost, &new_delay_cost);
-				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
-					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-							"in try_place: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
-							new_timing_cost, timing_cost, ERROR_TOL);
-				}
-				if (fabs(new_delay_cost - delay_cost) > delay_cost * ERROR_TOL) {
-					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-							"in try_place: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
-							new_delay_cost, delay_cost, ERROR_TOL);
-				}
-				timing_cost = new_timing_cost;
-			}
-
-			if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
-				cost = new_bb_cost;
-			}
-			moves_since_cost_recompute = 0;
-		}
 
 		tot_iter += move_lim;
-		success_rat = ((float) stats.success_sum) / move_lim;
-		if (stats.success_sum == 0) {
-			stats.av_cost = cost;
-			stats.av_bb_cost = bb_cost;
-			stats.av_timing_cost = timing_cost;
-			stats.av_delay_cost = delay_cost;
-		} else {
-			stats.av_cost /= stats.success_sum;
-			stats.av_bb_cost /= stats.success_sum;
-			stats.av_timing_cost /= stats.success_sum;
-			stats.av_delay_cost /= stats.success_sum;
-		}
-		std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+
+        calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
@@ -657,7 +629,7 @@ void try_place(t_placer_opts placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        vtr::printf_info("%7.3f "
+        VTR_LOG("%7.3f "
                          "%7.4f %10.4f %-10.5g %-10.5g "
                          "%-10.5g %7.3f % 10.3g % 8.3f "
                          "%7.4f %7.4f %7.4f %6.3f"
@@ -681,7 +653,7 @@ void try_place(t_placer_opts placer_opts,
 #endif
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
-				cost, bb_cost, timing_cost, t);
+				costs.cost, costs.bb_cost, costs.timing_cost, t);
 		update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
 		update_rlim(&rlim, success_rat, device_ctx.grid);
 
@@ -699,9 +671,11 @@ void try_place(t_placer_opts placer_opts,
 	/* Outer loop of the simmulated annealing ends */
 
 
-	outer_loop_recompute_criticalities(placer_opts, num_connections,
-			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+	outer_loop_recompute_criticalities(placer_opts, &costs,
+            &prev_inverse_costs,
+            num_connections,
+			crit_exponent, &place_delay_value,
+			&outer_crit_iter_count,
             netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
@@ -713,9 +687,11 @@ void try_place(t_placer_opts placer_opts,
 
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
-	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost,
+	placement_inner_loop(t, rlim, placer_opts,
 			move_lim, crit_exponent, inner_recompute_limit, &stats,
-			&cost, &bb_cost, &timing_cost, &delay_cost,
+			&costs,
+            &prev_inverse_costs,
+            &moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
@@ -724,20 +700,7 @@ void try_place(t_placer_opts placer_opts,
             *timing_info);
 
 	tot_iter += move_lim;
-	success_rat = ((float) stats.success_sum) / move_lim;
-	if (stats.success_sum == 0) {
-		stats.av_cost = cost;
-		stats.av_bb_cost = bb_cost;
-		stats.av_delay_cost = delay_cost;
-		stats.av_timing_cost = timing_cost;
-	} else {
-		stats.av_cost /= stats.success_sum;
-		stats.av_bb_cost /= stats.success_sum;
-		stats.av_delay_cost /= stats.success_sum;
-		stats.av_timing_cost /= stats.success_sum;
-	}
-
-	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+    calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         critical_path = timing_info->least_slack_critical_path();
@@ -745,7 +708,7 @@ void try_place(t_placer_opts placer_opts,
         sWNS = timing_info->setup_worst_negative_slack();
     }
 
-    vtr::printf_info("%7.3f "
+    VTR_LOG("%7.3f "
                      "%7.4f %10.4f %-10.5g %-10.5g "
                      "%-10.5g %7.3f % 10.3g % 8.3f "
                      "%7.4f %7.4f %7.4f %6.3f"
@@ -766,21 +729,21 @@ void try_place(t_placer_opts placer_opts,
 	}
 #endif
 
-	check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
+	check_place(costs, placer_opts.place_algorithm);
 
     //Some stats
-    vtr::printf_info("\n");
-    vtr::printf_info("Swaps called: %d\n", num_ts_called);
+    VTR_LOG("\n");
+    VTR_LOG("Swaps called: %d\n", num_ts_called);
 
 	if (placer_opts.enable_timing_computations
 			&& placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
 		/*need this done since the timing data has not been kept up to date*
 		 *in bounding_box mode */
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
+			for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
 				set_timing_place_crit(net_id, ipin, 0); /*dummy crit values */
 		}
-		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
+		comp_td_costs(&costs.timing_cost, &costs.delay_cost); /*computes point_to_point_delay_cost */
 	}
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -806,22 +769,22 @@ void try_place(t_placer_opts placer_opts,
 
 
 		/* Print critical path delay. */
-		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns",
+		VTR_LOG("\n");
+		VTR_LOG("Placement estimated critical path delay: %g ns",
                 1e9*critical_path.delay(), get_critical_path_delay());
 #ifdef ENABLE_CLASSIC_VPR_STA
-		vtr::printf_info(" (classic VPR STA %g ns)", get_critical_path_delay());
+		VTR_LOG(" (classic VPR STA %g ns)", get_critical_path_delay());
 #endif
-        vtr::printf("\n");
-        vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n",
+        VTR_LOG("\n");
+        VTR_LOG("Placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9*timing_info->setup_total_negative_slack());
-        vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
+        VTR_LOG("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
                 1e9*timing_info->setup_worst_negative_slack());
-        vtr::printf_info("\n");
+        VTR_LOG("\n");
 
-        vtr::printf_info("Placement estimated setup slack histogram:\n");
+        VTR_LOG("Placement estimated setup slack histogram:\n");
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
-        vtr::printf_info("\n");
+        VTR_LOG("\n");
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
@@ -835,9 +798,9 @@ void try_place(t_placer_opts placer_opts,
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
-			cost, bb_cost, timing_cost, width_fac);
-	vtr::printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n",
-			cost, bb_cost, timing_cost, delay_cost);
+			costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
+	VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n",
+			costs.cost, costs.bb_cost, costs.timing_cost, costs.delay_cost);
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
 	// Print out swap statistics
@@ -848,10 +811,10 @@ void try_place(t_placer_opts placer_opts,
 	float reject_rate = (float) num_swap_rejected / total_swap_attempts;
 	float accept_rate = (float) num_swap_accepted / total_swap_attempts;
 	float abort_rate = (float) num_swap_aborted / total_swap_attempts;
-	vtr::printf_info("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
-	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
-	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
-	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
+	VTR_LOG("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
+	VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
+	VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
+	VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
 
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -869,10 +832,11 @@ void try_place(t_placer_opts placer_opts,
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
 static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
-	int num_connections, float crit_exponent, float bb_cost,
-	float * place_delay_value, float * timing_cost, float * delay_cost,
-	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost,
+    t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
+	int num_connections, float crit_exponent, 
+	float * place_delay_value,
+	int * outer_crit_iter_count,
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
@@ -888,12 +852,12 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
 			|| placer_opts.inner_loop_recompute_divider != 0) {
 #ifdef VERBOSE
-		vtr::printf_info("Outer loop recompute criticalities\n");
+		VTR_LOG("Outer loop recompute criticalities\n");
 #endif
         num_connections = std::max(num_connections, 1); //Avoid division by zero
         VTR_ASSERT(num_connections > 0);
 
-		*place_delay_value = (*delay_cost) / num_connections;
+		*place_delay_value = costs->delay_cost / num_connections;
 
         //Per-temperature timing update
         timing_info.update();
@@ -905,24 +869,26 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 #endif
 
 		/*recompute costs from scratch, based on new criticalities */
-		comp_td_costs(timing_cost, delay_cost);
+		comp_td_costs(&costs->timing_cost, &costs->delay_cost);
 		*outer_crit_iter_count = 0;
 	}
 	(*outer_crit_iter_count)++;
 
 	/*at each temperature change we update these values to be used     */
 	/*for normalizing the tradeoff between timing and wirelength (bb)  */
-*inverse_prev_bb_cost = 1 / bb_cost;
-/*Prevent inverse timing cost from going to infinity */
-*inverse_prev_timing_cost = min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
+    prev_inverse_costs->bb_cost = 1 / costs->bb_cost;
+    /*Prevent inverse timing cost from going to infinity */
+    prev_inverse_costs->timing_cost = min(1 / costs->timing_cost, (float)MAX_INV_TIMING_COST);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
-	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
+    int move_lim,
 	float crit_exponent, int inner_recompute_limit,
-	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
-	float * delay_cost,
+	t_placer_statistics *stats,
+    t_placer_costs* costs,
+    t_placer_prev_inverse_costs* prev_inverse_costs,
+    int* moves_since_cost_recompute,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack* slacks,
 	t_timing_inf timing_inf,
@@ -943,18 +909,17 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 
 	/* Inner loop begins */
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-		e_swap_result swap_result = try_swap(t, cost, bb_cost, timing_cost, rlim,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-			inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost);
+		e_swap_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
+			placer_opts.place_algorithm, placer_opts.timing_tradeoff);
 
 		if (swap_result == ACCEPTED) {
 			/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
 			stats->success_sum++;
-			stats->av_cost += *cost;
-			stats->av_bb_cost += *bb_cost;
-			stats->av_timing_cost += *timing_cost;
-			stats->av_delay_cost += *delay_cost;
-			stats->sum_of_squares += (*cost) * (*cost);
+			stats->av_cost += costs->cost;
+			stats->av_bb_cost += costs->bb_cost;
+			stats->av_timing_cost += costs->timing_cost;
+			stats->av_delay_cost += costs->delay_cost;
+			stats->sum_of_squares += (costs->cost) * (costs->cost);
 			num_swap_accepted++;
 		}
 		else if (swap_result == ABORTED) {
@@ -975,7 +940,7 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 
 				inner_crit_iter_count = 0;
 #ifdef VERBOSE
-				vtr::printf("Inner loop recompute criticalities\n");
+				VTR_LOG("Inner loop recompute criticalities\n");
 #endif
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
@@ -989,19 +954,62 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 				do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
-				comp_td_costs(timing_cost, delay_cost);
+				comp_td_costs(&costs->timing_cost, &costs->delay_cost);
 			}
 			inner_crit_iter_count++;
 		}
 #ifdef VERBOSE
-		vtr::printf("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
-			t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
-		if (fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL)
+		VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
+			t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter, costs->delay_cost);
+		if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 				"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
+
+
+		/* Lines below prevent too much round-off error from accumulating
+		 * in the cost over many iterations (due to incremental updates).
+         * This round-off can lead to  error checks failing because the cost 
+         * is different from what you get when you recompute from scratch.                       
+         */
+        ++(*moves_since_cost_recompute);
+        if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
+            recompute_costs_from_scratch(placer_opts, costs); 
+            *moves_since_cost_recompute = 0;
+        }
 	}
 	/* Inner loop ends */
+}
+
+static void recompute_costs_from_scratch(const t_placer_opts& placer_opts, t_placer_costs* costs) {
+    float new_bb_cost = recompute_bb_cost();
+    if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
+        vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
+                new_bb_cost, costs->bb_cost);
+    }
+    costs->bb_cost = new_bb_cost;
+
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        float new_timing_cost = 0.;
+        float new_delay_cost = 0.;
+        comp_td_costs(&new_timing_cost, &new_delay_cost);
+        if (fabs(new_timing_cost - costs->timing_cost) > costs->timing_cost * ERROR_TOL) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                    "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
+                    new_timing_cost, costs->timing_cost, ERROR_TOL);
+        }
+        if (fabs(new_delay_cost - costs->delay_cost) > costs->delay_cost * ERROR_TOL) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                    "in recompute_costs_from_scratch: new_delay_cost = %g, old delay_cost = %g, ERROR_TOL = %g\n",
+                    new_delay_cost, costs->delay_cost, ERROR_TOL);
+        }
+        costs->timing_cost = new_timing_cost;
+    } else {
+        VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
+
+        costs->cost = new_bb_cost;
+    }
 }
 
 /*only count non-global connections */
@@ -1104,12 +1112,10 @@ static int exit_crit(float t, float cost,
 	}
 }
 
-static float starting_t(float *cost_ptr, float *bb_cost_ptr,
-		float *timing_cost_ptr,
+static float starting_t(t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
-		float *delay_cost_ptr) {
+		enum e_place_algorithm place_algorithm, float timing_tradeoff) {
 
 	/* Finds the starting temperature (hot condition).              */
 
@@ -1130,14 +1136,13 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	/* Try one move per block.  Set t high so essentially all accepted. */
 
 	for (i = 0; i < move_lim; i++) {
-		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
-				place_algorithm, timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr);
+		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
+				place_algorithm, timing_tradeoff);
 
 		if (swap_result == ACCEPTED) {
 			num_accepted++;
-			av += *cost_ptr;
-			sum_of_squares += *cost_ptr * (*cost_ptr);
+			av += costs->cost;
+			sum_of_squares += costs->cost * costs->cost;
 			num_swap_accepted++;
 		} else if (swap_result == ABORTED) {
 			num_swap_aborted++;
@@ -1154,12 +1159,12 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
 	if (num_accepted != move_lim) {
-		vtr::printf_warning(__FILE__, __LINE__,
+		VTR_LOG_WARN(
 				"Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
 	}
 
 #ifdef VERBOSE
-	vtr::printf_info("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
+	VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
 	/* Set the initial temperature to 20 times the standard of deviation */
@@ -1325,11 +1330,12 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
 }
 
-static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
+static e_swap_result try_swap(float t,
+        t_placer_costs* costs,
+        t_placer_prev_inverse_costs* prev_inverse_costs,
 		float rlim,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
-		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
-		float *delay_cost) {
+		enum e_place_algorithm place_algorithm,
+        float timing_tradeoff) {
 
 	/* Picks some block and moves it to another spot.  If this spot is   *
 	 * occupied, switch the blocks.  Assess the change in cost function. *
@@ -1374,7 +1380,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
 	int b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
-	vtr::printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
+	VTR_LOG( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
 		x_from, y_from, z_from, grid[x_from][y_from].type->name, (b_from != -1 ? cluster_ctx.blocks[b_from].name : ""),
 		x_to, y_to, z_to, grid[x_to][y_to].type->name, (b_to != -1 ? cluster_ctx.blocks[b_to].name : ""));
 #endif
@@ -1405,8 +1411,8 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 			 *additionally, we normalize all values, therefore delta_c is in       *
 			 *relation to 1*/
 
-			delta_c = (1 - timing_tradeoff) * bb_delta_c * inverse_prev_bb_cost
-					+ timing_tradeoff * timing_delta_c * inverse_prev_timing_cost;
+			delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
+					+ timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
 		} else {
 			delta_c = bb_delta_c;
 		}
@@ -1415,14 +1421,14 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 		e_swap_result keep_switch = assess_swap(delta_c, t);
 
 		if (keep_switch == ACCEPTED) {
-			*cost = *cost + delta_c;
-			*bb_cost = *bb_cost + bb_delta_c;
+			costs->cost += delta_c;
+			costs->bb_cost += bb_delta_c;
 
 			if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 				/*update the point_to_point_timing_cost and point_to_point_delay_cost
 				 * values from the temporary values */
-				*timing_cost = *timing_cost + timing_delta_c;
-				*delay_cost = *delay_cost + delay_delta_c;
+				costs->timing_cost += timing_delta_c;
+				costs->delay_cost += delay_delta_c;
 
 				update_td_cost();
 			}
@@ -1492,7 +1498,7 @@ static e_swap_result try_swap(float t, float *cost, float *bb_cost, float *timin
 
 #if 0
         //Check that each accepted swap yields a valid placement
-        check_place(*bb_cost, *timing_cost, place_algorithm, *delay_cost);
+        check_place(costs, place_algorithm);
 #endif
 
 		return (keep_switch);
@@ -1802,31 +1808,21 @@ static void find_to_location(t_type_ptr type, float rlim,
 static e_swap_result assess_swap(float delta_c, float t) {
 
 	/* Returns: 1 -> move accepted, 0 -> rejected. */
-
-	e_swap_result accept;
-	float prob_fac, fnum;
-
 	if (delta_c <= 0) {
-
-        /* Reduce variation in final solution due to round off */
-        fnum = vtr::frand();
-
-        accept = ACCEPTED;
-        return (accept);
+        return ACCEPTED;
 	}
 
-	if (t == 0.)
-		return (REJECTED);
+	if (t == 0.) {
+		return REJECTED;
+    }
 
-	fnum = vtr::frand();
-	prob_fac = exp(-delta_c / t);
+	float fnum = vtr::frand();
+	float prob_fac = exp(-delta_c / t);
 	if (prob_fac > fnum) {
-		accept = ACCEPTED;
+        return ACCEPTED;
 	}
-	else {
-		accept = REJECTED;
-	}
-	return (accept);
+
+	return REJECTED;
 }
 
 static float recompute_bb_cost() {
@@ -1952,18 +1948,14 @@ static bool driven_by_moved_block(const ClusterNetId net) {
 }
 
 static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
-	/* Computes the cost (from scratch) due to the delays and criticalities  *
-	 * on all point to point connections, we define the timing cost of       *
+	/* Computes the cost (from scratch) from the delays and criticalities    *
+	 * of all point to point connections, we define the timing cost of       *
 	 * each connection as criticality*delay.                                 */
-
-	unsigned ipin;
-	float loc_timing_cost, loc_connection_delay_sum, temp_delay_cost,
-			temp_timing_cost;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	loc_timing_cost = 0.;
-	loc_connection_delay_sum = 0.;
+	float new_timing_cost = 0.;
+	float new_connection_delay_sum = 0.;
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
 
@@ -1971,24 +1963,24 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
             continue;
         }
 
-        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            temp_delay_cost = comp_td_point_to_point_delay(net_id, ipin);
-            temp_timing_cost = temp_delay_cost * get_timing_place_crit(net_id, ipin);
+        for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            float conn_delay = comp_td_point_to_point_delay(net_id, ipin);
+            float conn_timing_cost = conn_delay * get_timing_place_crit(net_id, ipin);
 
-            loc_connection_delay_sum += temp_delay_cost;
-            point_to_point_delay_cost[net_id][ipin] = temp_delay_cost;
+            new_connection_delay_sum += conn_delay;
+            point_to_point_delay_cost[net_id][ipin] = conn_delay;
             temp_point_to_point_delay_cost[net_id][ipin] = -1; /* Undefined */
 
-            point_to_point_timing_cost[net_id][ipin] = temp_timing_cost;
+            point_to_point_timing_cost[net_id][ipin] = conn_timing_cost;
             temp_point_to_point_timing_cost[net_id][ipin] = -1; /* Undefined */
-            loc_timing_cost += temp_timing_cost;
+            new_timing_cost += conn_timing_cost;
         }
 	}
 
 	/* Make sure timing cost does not go above MIN_TIMING_COST. */
-	*timing_cost = loc_timing_cost;
+	*timing_cost = new_timing_cost;
 
-	*connection_delay_sum = loc_connection_delay_sum;
+	*connection_delay_sum = new_connection_delay_sum;
 }
 
 
@@ -2025,8 +2017,8 @@ static float comp_bb_cost(e_cost_methods method) {
 	}
 
 	if (method == CHECK) {
-		vtr::printf_info("\n");
-		vtr::printf_info("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
+		VTR_LOG("\n");
+		VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
 	}
 	return cost;
 }
@@ -2998,7 +2990,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	load_legal_placements();
 
 #ifdef VERBOSE
-	vtr::printf_info("At end of initial_placement.\n");
+	VTR_LOG("At end of initial_placement.\n");
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
 		print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
 	}
@@ -3106,9 +3098,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 		}
 }
 
-static void check_place(float bb_cost, float timing_cost,
-		enum e_place_algorithm place_algorithm,
-		float delay_cost) {
+static void check_place(const t_placer_costs& costs, enum e_place_algorithm place_algorithm) {
 
 	/* Checks that the placement has not confused our data structures. *
 	 * i.e. the clb and block structures agree about the locations of  *
@@ -3125,28 +3115,27 @@ static void check_place(float bb_cost, float timing_cost,
 	int imacro, imember, member_x, member_y, member_z;
 
 	bb_cost_check = comp_bb_cost(CHECK);
-	//vtr::printf_info("bb_cost recomputed from scratch: %g\n", bb_cost_check);
-	if (fabs(bb_cost_check - bb_cost) > bb_cost * ERROR_TOL) {
-		vtr::printf_error(__FILE__, __LINE__,
+	if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
+		VTR_LOG_ERROR(
 				"bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
-				bb_cost_check, bb_cost);
+				bb_cost_check, costs.bb_cost);
 		error++;
 	}
 
 	if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		comp_td_costs(&timing_cost_check, &delay_cost_check);
-		//vtr::printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
-		if (fabs(timing_cost_check - timing_cost) > timing_cost * ERROR_TOL) {
-			vtr::printf_error(__FILE__, __LINE__,
+		//VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
+		if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * ERROR_TOL) {
+			VTR_LOG_ERROR(
 					"timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
-					timing_cost_check, timing_cost);
+					timing_cost_check, costs.timing_cost);
 			error++;
 		}
-		//vtr::printf_info("delay_cost recomputed from scratch: %g\n", delay_cost_check);
-		if (fabs(delay_cost_check - delay_cost) > delay_cost * ERROR_TOL) {
-			vtr::printf_error(__FILE__, __LINE__,
+		//VTR_LOG("delay_cost recomputed from scratch: %g\n", delay_cost_check);
+		if (fabs(delay_cost_check - costs.delay_cost) > costs.delay_cost * ERROR_TOL) {
+			VTR_LOG_ERROR(
 					"delay_cost_check: %g and delay_cost: %g differ in check_place.\n",
-					delay_cost_check, delay_cost);
+					delay_cost_check, costs.delay_cost);
 			error++;
 		}
 	}
@@ -3161,7 +3150,7 @@ static void check_place(float bb_cost, float timing_cost,
 	for (size_t i = 0; i < device_ctx.grid.width(); i++)
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
-				vtr::printf_error(__FILE__, __LINE__,
+				VTR_LOG_ERROR(
 						"Block at grid location (%zu,%zu) overused. Usage is %d.\n",
 						i, j, place_ctx.grid_blocks[i][j].usage);
 				error++;
@@ -3173,13 +3162,13 @@ static void check_place(float bb_cost, float timing_cost,
 					continue;
 
 				if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
-					vtr::printf_error(__FILE__, __LINE__,
+					VTR_LOG_ERROR(
 							"Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
 							size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
 					error++;
 				}
 				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
-					vtr::printf_error(__FILE__, __LINE__,
+					VTR_LOG_ERROR(
 							"Block %zu location conflicts with grid(%zu,%zu) data.\n",
 							size_t(bnum), i, j);
 					error++;
@@ -3188,7 +3177,7 @@ static void check_place(float bb_cost, float timing_cost,
 				bdone[bnum]++;
 			}
 			if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-				vtr::printf_error(__FILE__, __LINE__,
+				VTR_LOG_ERROR(
 						"Location (%zu,%zu) usage is %d, but has actual usage %d.\n",
 						i, j, place_ctx.grid_blocks[i][j].usage, usage_check);
 				error++;
@@ -3198,7 +3187,7 @@ static void check_place(float bb_cost, float timing_cost,
 	/* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
 		if (bdone[blk_id] != 1) {
-			vtr::printf_error(__FILE__, __LINE__,
+			VTR_LOG_ERROR(
 					"Block %zu listed %d times in data structures.\n",
 					size_t(blk_id), bdone[blk_id]);
 			error++;
@@ -3223,7 +3212,7 @@ static void check_place(float bb_cost, float timing_cost,
 			if (place_ctx.block_locs[member_iblk].x != member_x
 					|| place_ctx.block_locs[member_iblk].y != member_y
 					|| place_ctx.block_locs[member_iblk].z != member_z) {
-				vtr::printf_error(__FILE__, __LINE__,
+				VTR_LOG_ERROR(
 						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
 				error++;
@@ -3231,7 +3220,7 @@ static void check_place(float bb_cost, float timing_cost,
 
 			// Then check the place_ctx.grid data structure
 			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
-				vtr::printf_error(__FILE__, __LINE__,
+				VTR_LOG_ERROR(
 						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n",
 						size_t(member_iblk), imacro);
 				error++;
@@ -3240,8 +3229,8 @@ static void check_place(float bb_cost, float timing_cost,
 	} // Finish going through all the macros
 
 	if (error == 0) {
-		vtr::printf_info("\n");
-		vtr::printf_info("Completed placement consistency check successfully.\n");
+		VTR_LOG("\n");
+		VTR_LOG("Completed placement consistency check successfully.\n");
 
 	} else {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
@@ -3280,4 +3269,19 @@ static void free_try_swap_arrays() {
 	}
 }
 
+static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim) {
+	success_rat = ((float) stats.success_sum) / move_lim;
+	if (stats.success_sum == 0) {
+		stats.av_cost = costs.cost;
+		stats.av_bb_cost = costs.bb_cost;
+		stats.av_delay_cost = costs.delay_cost;
+		stats.av_timing_cost = costs.timing_cost;
+	} else {
+		stats.av_cost /= stats.success_sum;
+		stats.av_bb_cost /= stats.success_sum;
+		stats.av_delay_cost /= stats.success_sum;
+		stats.av_timing_cost /= stats.success_sum;
+	}
 
+	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
+}

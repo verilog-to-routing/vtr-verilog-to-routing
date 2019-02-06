@@ -90,6 +90,14 @@ enum e_draw_routing_util {
     DRAW_ROUTING_UTIL_MAX,
 };
 
+enum e_draw_router_rr_cost {
+    DRAW_NO_ROUTER_RR_COST,
+    DRAW_ROUTER_RR_COST_TOTAL,
+    DRAW_ROUTER_RR_COST_KNOWN,
+    DRAW_ROUTER_RR_COST_EXPECTED,
+    DRAW_ROUTER_RR_COST_MAX, //End of options
+};
+
 enum e_draw_net_type {
 	ALL_NETS, HIGHLIGHTED
 };
@@ -146,6 +154,7 @@ struct t_draw_state {
 	e_draw_congestion show_congestion = DRAW_NO_CONGEST;
 	e_draw_routing_costs show_routing_costs;
     e_draw_block_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
+    e_draw_router_rr_cost show_router_rr_cost = DRAW_NO_ROUTER_RR_COST;
     int show_routing_bb = OPEN;
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
 	e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;

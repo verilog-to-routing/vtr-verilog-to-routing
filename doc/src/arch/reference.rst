@@ -949,9 +949,9 @@ The following tags are common to all <pb_type> tags:
 
         * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
           
-            Like ``full``, this generates a single SRC rr-node shared by each output port pin.
-            However the router must take special care to ensure it does not make use of LUT/BLE outputs which are being used to route signals strictly within the current cluster (to do so would be illegal). 
-            This is handled by special code in the router when this type of equivalence is specified.
+            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs. 
+            
+            .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
 
         **Default:** ``none``
 
@@ -1892,12 +1892,15 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn num_conns_type="{from,to,min,max}" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..."/>
+.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}"/>
 
-    :req_param num_conns_type:
+    :req_param num_conns:
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
+        The value of this parameter is an expression which is evaluated when the switch block is constructed.
 
-        * ``from`` -- Creates number of switchblock edges equal to the 'from' set size.
+        The expression can be a single number or formula using the variables:
+
+        * ``from`` -- The number of switchblock edges equal to the 'from' set size.
 
             This ensures that each element in the 'from' set is connected to an element of the 'to' set.
             However it may leave some elements of the 'to' set either multiply-connected or disconnected.
@@ -1905,7 +1908,7 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_from.*
                 :width: 100%
 
-        * ``to`` -- Creates number of switchblock edges equal to the 'to' set size size.
+        * ``to`` -- The number of switchblock edges equal to the 'to' set size size.
 
             This ensures that each element of the 'to' set is connected to precisely one element of the 'from' set.
             However it may leave some elements of the 'from' set either multiply-connected or disconnected.
@@ -1913,7 +1916,9 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_to.*
                 :width: 100%
 
-        * ``min`` --  Creates number of switchblock edges equal to the minimum of the 'from' and 'to' set sizes.
+        Examples:
+        
+        * ``min(from,to)`` --  Creates number of switchblock edges equal to the minimum of the 'from' and 'to' set sizes.
 
             This ensures *no* element of the 'from' or 'to' sets is connected to multiple elements in the opposing set.
             However it may leave some elements in the larger set disconnected.
@@ -1921,7 +1926,7 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_min.*
                 :width: 100%
 
-        * ``max`` -- Creates number of switchblock edges equal to the maximum of the 'from' and 'to' set sizes.
+        * ``max(from,to)`` -- Creates number of switchblock edges equal to the maximum of the 'from' and 'to' set sizes.
 
             This ensures *all* elements of the 'from' or 'to' sets are connected to at least one element in the opposing set.
             However some elements in the smaller set may be multiply-connected.
@@ -1929,25 +1934,63 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_max.*
                 :width: 100%
 
-    :opt_param from_type:
+        * ``3*to`` -- Creates number of switchblock edges equal to three times the 'to' set sizes.
+
+    :req_param from_type:
         A comma-separated list segment names that defines which segment types will be a source of a connection.
         The segment names specified must match the names of the segments defined under the ``<segmentlist>`` XML node.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
-    :opt_param to_type:
+    :req_param to_type:
         A comma-separated list of segment names that defines which segment types will be the destination of the connections specified.
         Each segment name must match an entry in the ``<segmentlist>`` XML node.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
-    :opt_param from_switchpoint:
+    :req_param from_switchpoint:
         A comma-separated list of integers that defines which switchpoints will be a source of a connection.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
-    :opt_param to_switchpoint:
+    :req_param to_switchpoint:
         A comma-separated list of integers that defines which switchpoints will be the destination of the connections specified.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
         .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
+
+    :opt_param from_order:
+        Specifies the order in which ``from_switchpoint``s are selected when creating edges.
+
+        * ``fixed`` -- Switchpoints are selected in the order specified
+
+            This is useful to specify a preference for connecting to specific switchpoints.
+            For example,
+
+            .. code-block:: xml
+
+                <wireconn num_conns="1*to" from_type="L16" from_switchpoint="0,12,8,4" from_order="fixed" to_type="L4" to_switchpoint="0"/>
+
+            specifies L4 wires should be connected first to L16 at switchpoint 0, then at switchpoints 12, 8, and 4.
+            This is primarily useful when we want to ensure that some switchpoints are 'used-up' first.
+
+
+        * ``shuffled`` -- Switchpoints are selected in a (randomly) shuffled order
+
+            This is useful to ensure a diverse set of switchpoints are used.
+            For example,
+
+            .. code-block:: xml
+
+                <wireconn num_conns="1*to" from_type="L4" from_switchpoint="0,1,2,3" from_order="shuffled" to_type="L4" to_switchpoint="0"/>
+
+            specifies L4 wires should be connected to other L4 wires at any of switchpoints 0, 1, 2, or 3.
+            Shuffling the switchpoints is useful if one of the sets (e.g. from L4's) is much larger than the other (e.g. to L4's), and we wish to ensure a variety of switchpoints from the larger set are used.
+
+        **Default:** ``shuffled``
+
+
+    :opt_param to_order:
+        Specifies the order in which ``to_switchpoint``s are selected when creating edges.
+
+        .. note:: See ``from_switchpoint_order`` for value descritpions.
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 

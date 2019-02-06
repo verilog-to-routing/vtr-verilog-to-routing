@@ -166,6 +166,7 @@ char* standardize_number(const char* input);
 <INITIAL>"<<"				{ MP; return voSLEFT;}
 <INITIAL>"<<<"				{ MP; return voSLEFT;}
 <INITIAL>">>"				{ MP; return voSRIGHT;}
+<INITIAL>">>>"				{ MP; return voASRIGHT;}
 <INITIAL>"=="				{ MP; return voEQUAL;}
 <INITIAL>"!="				{ MP; return voNOTEQUAL;}
 <INITIAL>"==="				{ MP; return voCASEEQUAL;}
@@ -179,7 +180,6 @@ char* standardize_number(const char* input);
 <INITIAL>"&&&"				{ MP; return vNOT_SUPPORT;}
 <INITIAL>"+:"				{ MP; return vNOT_SUPPORT;}
 <INITIAL>"-:"				{ MP; return vNOT_SUPPORT;}
-<INITIAL>">>>"				{ MP; return vNOT_SUPPORT;}
 
 
 	/*	operands	*/

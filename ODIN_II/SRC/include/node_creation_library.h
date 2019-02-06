@@ -16,7 +16,9 @@ npin_t *get_zero_pin();
 npin_t *get_one_pin();
 
 
-const char *node_name_based_on_op(nnode_t *node);
 char *node_name(nnode_t *node, char *instance_prefix_name);
 char *hard_node_name(nnode_t *node, char *instance_name_prefix, char *hb_name, char *hb_inst);
 nnode_t *make_mult_block(nnode_t *node, short mark);
+
+edge_type_e edge_type_blif_enum(std::string edge_kind_str);
+const char *edge_type_blif_str(nnode_t *node);

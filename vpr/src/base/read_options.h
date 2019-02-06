@@ -59,7 +59,7 @@ struct t_options {
     argparse::ArgValue<bool> sweep_dangling_nets;
     argparse::ArgValue<bool> sweep_dangling_blocks;
     argparse::ArgValue<bool> sweep_constant_primary_outputs;
-    argparse::ArgValue<bool> verbose_sweep;
+    argparse::ArgValue<int> netlist_verbosity;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
@@ -70,7 +70,7 @@ struct t_options {
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
     argparse::ArgValue<std::vector<std::string>> target_external_pin_util;
-    argparse::ArgValue<bool> debug_clustering;
+    argparse::ArgValue<int> pack_verbosity;
 
     /* Placement options */
     argparse::ArgValue<int> Seed;
@@ -114,6 +114,15 @@ struct t_options {
     argparse::ArgValue<e_incr_reroute_delay_ripup> incr_reroute_delay_ripup;
     argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
     argparse::ArgValue<e_routing_budgets_algorithm> routing_budgets_algorithm;
+    argparse::ArgValue<bool> save_routing_per_iteration;
+    argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
+    argparse::ArgValue<e_route_bb_update> route_bb_update;
+    argparse::ArgValue<int> router_high_fanout_threshold;
+    argparse::ArgValue<int> router_debug_net;
+    argparse::ArgValue<int> router_debug_sink_rr;
+    argparse::ArgValue<e_router_lookahead> router_lookahead_type;
+    argparse::ArgValue<int> router_max_convergence_count;
+    argparse::ArgValue<float> router_reconvergence_cpd_threshold;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

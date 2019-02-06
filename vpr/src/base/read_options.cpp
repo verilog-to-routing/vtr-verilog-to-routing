@@ -212,6 +212,9 @@ struct ParseBaseCost {
     ConvertedValue<e_base_cost_type> from_str(std::string str) {
         ConvertedValue<e_base_cost_type> conv_value;
         if      (str == "delay_normalized") conv_value.set_value(DELAY_NORMALIZED);
+        else if (str == "delay_normalized_length") conv_value.set_value(DELAY_NORMALIZED_LENGTH);
+        else if (str == "delay_normalized_frequency") conv_value.set_value(DELAY_NORMALIZED_FREQUENCY);
+        else if (str == "delay_normalized_length_frequency") conv_value.set_value(DELAY_NORMALIZED_LENGTH_FREQUENCY);
         else if (str == "demand_only") conv_value.set_value(DEMAND_ONLY);
         else {
             std::stringstream msg;
@@ -224,6 +227,9 @@ struct ParseBaseCost {
     ConvertedValue<std::string> to_str(e_base_cost_type val) {
         ConvertedValue<std::string> conv_value;
         if (val == DELAY_NORMALIZED) conv_value.set_value("delay_normalized");
+        else if (val == DELAY_NORMALIZED_LENGTH) conv_value.set_value("delay_normalized_length");
+        else if (val == DELAY_NORMALIZED_FREQUENCY) conv_value.set_value("delay_normalized_frequency");
+        else if (val == DELAY_NORMALIZED_LENGTH_FREQUENCY) conv_value.set_value("delay_normalized_length_frequency");
         else {
             VTR_ASSERT(val == DEMAND_ONLY);
             conv_value.set_value("demand_only");
@@ -232,7 +238,7 @@ struct ParseBaseCost {
     }
 
     std::vector<std::string> default_choices() {
-        return {"delay_normalized", "demand_only"};
+        return {"demand_only", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
     }
 };
 
@@ -486,6 +492,68 @@ struct ParseIncrRerouteDelayRipup {
     }
 };
 
+struct ParseRouteBBUpdate {
+    ConvertedValue<e_route_bb_update> from_str(std::string str) {
+        ConvertedValue<e_route_bb_update> conv_value;
+        if      (str == "static") conv_value.set_value(e_route_bb_update::STATIC);
+        else if (str == "dynamic") conv_value.set_value(e_route_bb_update::DYNAMIC);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_route_bb_update (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_route_bb_update val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_route_bb_update::STATIC) conv_value.set_value("static");
+        else {
+            VTR_ASSERT(val == e_route_bb_update::DYNAMIC);
+            conv_value.set_value("dynamic");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"static", "dynamic"};
+    }
+};
+
+struct ParseRouterLookahead {
+    ConvertedValue<e_router_lookahead> from_str(std::string str) {
+        ConvertedValue<e_router_lookahead> conv_value;
+        if      (str == "classic") conv_value.set_value(e_router_lookahead::CLASSIC);
+        else if (str == "map") conv_value.set_value(e_router_lookahead::MAP);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '"
+                << str
+                << "' to e_router_lookahead (expected one of: "
+                << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_router_lookahead val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_router_lookahead::CLASSIC) conv_value.set_value("classic");
+        else {
+            VTR_ASSERT(val == e_router_lookahead::MAP);
+            conv_value.set_value("map");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"classic", "map"};
+    }
+};
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Implements the specified circuit onto the target FPGA architecture"
                               " by performing packing/placement/routing, and analyzes the result.\n"
@@ -553,7 +621,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off");
 
     stage_grp.epilog("If none of the stage options are specified, all stages are run.\n"
-                     "Analysis is always run after routing.");
+                     "Analysis is always run after routing, unless the implementation\n"
+                     "is illegal.\n"
+                     "\n"
+                     "If the implementation is illegal analysis can be forced by explicitly\n"
+                     "specifying the --analysis option.");
 
 
     auto& gfx_grp = parser.add_argument_group("graphics options");
@@ -743,9 +815,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    netlist_grp.add_argument<bool,ParseOnOff>(args.verbose_sweep, "--verbose_sweep")
-            .help("Controls whether sweeping describes the netlist modifications performed")
-            .default_value("off")
+    netlist_grp.add_argument(args.netlist_verbosity, "--netlist_verbosity")
+            .help("Controls how much detail netlist processing produces about detected netlist"
+                  " characteristics (e.g. constant generator detection) and applied netlist"
+                  " modifications (e.g. swept netlist components)."
+                  " Larger values produce more detail.")
+            .default_value("1")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 
@@ -834,9 +909,9 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value({"auto"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool,ParseOnOff>(args.debug_clustering, "--debug_clustering")
-            .help("Controls verbose clustering output (useful for debugging architecture packing problems)")
-            .default_value("off")
+    pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
+            .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
+            .default_value("2")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
@@ -960,9 +1035,17 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_grp.add_argument<e_base_cost_type,ParseBaseCost>(args.base_cost_type, "--base_cost_type")
             .help("Sets the basic cost of routing resource nodes:\n"
                   " * demand_only: based on expected demand of node type\n"
-                  " * delay_normalized: like demand_only but normalized to magnitude of typical routing resource delay\n"
-                  "(Default: demand_only for breadth-first router, delay_normalized for timing-driven router)")
-            .choices({"demand_only", "delay_normalized"})
+                  " * delay_normalized: like demand_only but normalized\n"
+                  "      to magnitude of typical routing resource delay\n"
+                  " * delay_normalized_length: like delay_normalized but\n"
+                  "      scaled by routing resource length\n"
+                  " * delay_normalized_freqeuncy: like delay_normalized\n"
+                  "      but scaled inversely by segment type frequency\n"
+                  " * delay_normalized_length_freqeuncy: like delay_normalized\n"
+                  "      but scaled by routing resource length, and inversely\n"
+                  "      by segment type frequency\n"
+                  "(Default: demand_only for breadth-first router,\n"
+                  "          delay_normalized_length for timing-driven router)")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bend_cost, "--bend_cost")
@@ -1050,6 +1133,72 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
             .default_value("disable")
             .choices({"minimax", "scale_delay", "disable"})
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool,ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")
+            .help("Controls whether VPR saves the current routing to a file after each routing iteration."
+                  " May be helpful for debugging.")
+            .default_value("off")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<float>(args.congested_routing_iteration_threshold_frac, "--congested_routing_iteration_threshold")
+            .help("Controls when the router enters a high effort mode to resolve lingering routing congestion."
+                  " Value is the fraction of max_router_iterations beyond which the routing is deemed congested.")
+            .default_value("1.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_route_bb_update,ParseRouteBBUpdate>(args.route_bb_update, "--route_bb_update")
+            .help("Controls how the router's net bounding boxes are updated:\n"
+                  " * static : bounding boxes are never updated\n"
+                  " * dynamic: bounding boxes are updated dynamically as routing progresses\n")
+            .default_value("dynamic")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.router_high_fanout_threshold, "--router_high_fanout_threshold")
+            .help("Specifies the net fanout beyond which a net is considered high fanout."
+                  " Values less than zero disable special behaviour for high fanout nets")
+            .default_value("64")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
+            .help("Controls when router debugging is enabled.\n"
+                  " * For values >= 0, the value is taken as the net ID for\n"
+                  "   which to enable router debug output.\n" 
+                  " * For value == -1, router debug output is enabled for\n"
+                  "   all nets.\n" 
+                  " * For values < -1, all net-sbased router debug output is disabled.\n" 
+                  "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+            .default_value("-2")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_debug_sink_rr, "--router_debug_sink_rr")
+            .help("Controls when router debugging is enabled for the specified sink RR.\n"
+                  " * For values >= 0, the value is taken as the sink RR Node ID for\n"
+                  "   which to enable router debug output.\n" 
+                  " * For values < 0, sink-based router debug output is disabled.\n" 
+                  "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+            .default_value("-2")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_router_lookahead,ParseRouterLookahead>(args.router_lookahead_type, "--router_lookahead")
+            .help("Controls what lookahead the router uses to calculate cost of completing a connection.\n"
+                  " * classic: The classic VPR lookahead\n" 
+                  " * map: A more advanced lookahead which accounts for diverse wire type\n")
+            .default_value("classic")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
+            .help("Controls how many times the router is allowed to converge to a legal routing before halting."
+                  " If multiple legal solutions are found the best quality implementation is used.")
+            .default_value("1")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_reconvergence_cpd_threshold, "--router_reconvergence_cpd_threshold")
+            .help("Specifies the minimum potential CPD improvement for which the router will"
+                  " continue to attempt re-convergent routing."
+                  " For example, a value of 0.99 means the router will not give up on reconvergent"
+                  " routing if it thinks a > 1% CPD reduction is possible.")
+            .default_value("0.99")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
@@ -1174,7 +1323,7 @@ static void set_conditional_defaults(t_options& args) {
      */
     if (args.timing_driven_clustering && !args.timing_analysis) {
         if (args.timing_driven_clustering.provenance() == Provenance::SPECIFIED) {
-            vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '%s' has no effect since timing analysis is disabled\n",
+            VTR_LOG_WARN( "Command-line argument '%s' has no effect since timing analysis is disabled\n",
                                 args.timing_driven_clustering.argument_name().c_str());
         }
         args.timing_driven_clustering.set(args.timing_analysis, Provenance::INFERRED);
@@ -1247,7 +1396,7 @@ static void set_conditional_defaults(t_options& args) {
             args.base_cost_type.set(DEMAND_ONLY, Provenance::INFERRED);
         } else {
             VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN);
-            args.base_cost_type.set(DELAY_NORMALIZED, Provenance::INFERRED);
+            args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
     }
 

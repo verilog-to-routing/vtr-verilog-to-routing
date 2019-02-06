@@ -63,32 +63,32 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 		}
 	}
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Segment usage by type (index): type utilization\n");
-	vtr::printf_info("                               ---- -----------\n");
+	VTR_LOG("\n");
+	VTR_LOG("Segment usage by type (index): type utilization\n");
+	VTR_LOG("                               ---- -----------\n");
 
 	for (seg_type = 0; seg_type < num_segment; seg_type++) {
 		if (seg_cap_by_type[seg_type] != 0) {
 			utilization = (float) seg_occ_by_type[seg_type] / (float) seg_cap_by_type[seg_type];
-			vtr::printf_info("                               %4d %11.3g\n", seg_type, utilization);
+			VTR_LOG("                               %4d %11.3g\n", seg_type, utilization);
 		}
 	}
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Segment usage by length: length utilization\n");
-	vtr::printf_info("                         ------ -----------\n");
+	VTR_LOG("\n");
+	VTR_LOG("Segment usage by length: length utilization\n");
+	VTR_LOG("                         ------ -----------\n");
 
 	for (length = 1; length <= max_segment_length; length++) {
 		if (seg_cap_by_length[length] != 0) {
 			utilization = (float) seg_occ_by_length[length] / (float) seg_cap_by_length[length];
-			vtr::printf_info("                         %6d %11.3g\n", length, utilization);
+			VTR_LOG("                         %6d %11.3g\n", length, utilization);
 		}
 	}
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 
 	if (seg_cap_by_length[LONGLINE] != 0) {
 		utilization = (float) seg_occ_by_length[LONGLINE] / (float) seg_cap_by_length[LONGLINE];
-		vtr::printf_info("   longline                 %5.3g\n", utilization);
+		VTR_LOG("   longline                 %5.3g\n", utilization);
 	}
 
 	free(seg_occ_by_length);

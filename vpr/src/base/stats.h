@@ -9,9 +9,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		float R_minW_nmos, float R_minW_pmos,
         float grid_logic_tile_area,
 		enum e_directionality directionality, int wire_to_ipin_switch,
-		bool timing_analysis_enabled,
-		vtr::vector_map<ClusterNetId, float *> &net_delay
+		bool timing_analysis_enabled
 #ifdef ENABLE_CLASSIC_VPR_STA
+		, vtr::vector_map<ClusterNetId, float *> &net_delay
         , t_slack * slacks, const t_timing_inf &timing_inf
 #endif
         );

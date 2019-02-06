@@ -247,13 +247,12 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``off``
 
-.. option:: --verbose_sweep {on | off}
+.. option:: --netlist_verbosity <int>
 
-    Controls whether sweeping describes the netlist modifications performed (i.e. what was swept).
+    Controls the verbosity of netlist processing (constant generator detection, swept netlist components).
+    High values produce more detailed output.
 
-    .. seealso:: :option:`--sweep_dangling_primary_ios`
-
-    **Default**: ``off``
+    **Default**: ``1``
 
 .. _packing_options:
 
@@ -392,12 +391,12 @@ For people not working on CAD, you can probably leave all the options to their d
     **Default:** ``auto``
 
 
-.. option:: --debug_clustering {on | off}
+.. option:: --pack_verbosity <int>
 
-    Controls verbose clustering output. 
-    Useful for debugging architecture packing problems.
+    Controls the verbosity of clustering output. 
+    Larger values produce more detailed output, which may be useful for debugging architecture packing problems.
 
-    **Default:** ``off``
+    **Default:** ``2``
 
 .. _placer_options:
 
@@ -729,6 +728,21 @@ The following options are only valid when the router is in timing-driven mode (t
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
 
     **Default:** ``disable``
+
+.. option:: --router_debug_net <int>
+
+    .. note:: This option is likely only of interest to developers debugging the routing algorithm
+
+    Controls which net the router produces detailed debug information for.
+    
+    * For values >= 0, the value is the net ID for which detailed router debug information should be produced.
+    * For value == -1, detailed router debug information is produced for all nets.
+    * For values < -1, no router debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
 
 .. _analysis_options:
 

@@ -69,7 +69,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_path.h"
 #include "vtr_memory.h"
 
-#define DEFAULT_OUTPUT "temp/"
+#define DEFAULT_OUTPUT "temp"
 
 size_t current_parse_file;
 t_arch Arch;
@@ -77,6 +77,128 @@ global_args_t global_args;
 t_type_descriptor* type_descriptors;
 int block_tag;
 int num_types=0;
+
+typedef enum
+{
+	SUCCESS,
+	ERROR_PARSE_ARCH,
+	ERROR_SYNTHESIS,
+	ERROR_PARSE_BLIF,
+
+}ODIN_ERROR_CODE;
+
+static ODIN_ERROR_CODE synthesize_verilog()
+{
+	double elaboration_time = wall_time();
+
+	printf("--------------------------------------------------------------------\n");
+	printf("High-level synthesis Begin\n");
+	/* Perform any initialization routines here */
+	find_hard_multipliers();
+	find_hard_adders();
+	//find_hard_adders_for_sub();
+	register_hard_blocks();
+
+	/* get odin soft_logic definition file */
+	read_soft_def_file(hard_adders);
+
+	global_param_table_sc = sc_new_string_cache();
+
+	/* parse to abstract syntax tree */
+	printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+	parse_to_ast();
+	/**
+	 *  Note that the entry point for ast optimzations is done per module with the
+	 * function void next_parsed_verilog_file(ast_node_t *file_items_list) 
+	 */
+
+	/* after the ast is made potentially do tagging for downstream links to verilog */
+	if (global_args.high_level_block)
+		add_tag_data();
+
+	/**
+	 *  Now that we have a parse tree (abstract syntax tree [ast]) of
+	 *	the Verilog we want to make into a netlist. 
+		*/
+	printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
+	create_netlist();
+
+	// Can't levelize yet since the large muxes can look like combinational loops when they're not
+	check_netlist(verilog_netlist);
+
+	//START ################# NETLIST OPTIMIZATION ############################
+
+	/* point for all netlist optimizations. */
+	printf("Performing Optimizations of the Netlist\n");
+	if(hard_multipliers)
+	{
+		/* Perform a splitting of the multipliers for hard block mults */
+		reduce_operations(verilog_netlist, MULTIPLY);
+		iterate_multipliers(verilog_netlist);
+		clean_multipliers();
+	}
+
+	if (sp_memory_list || dp_memory_list)
+	{
+		/* Perform a splitting of any hard block memories */
+		iterate_memories(verilog_netlist);
+		free_memory_lists();
+	}
+
+	if(hard_adders)
+	{
+		/* Perform a splitting of the adders for hard block add */
+		reduce_operations(verilog_netlist, ADD);
+		iterate_adders(verilog_netlist);
+		clean_adders();
+
+		/* Perform a splitting of the adders for hard block sub */
+		reduce_operations(verilog_netlist, MINUS);
+		iterate_adders_for_sub(verilog_netlist);
+		clean_adders_for_sub();
+	}
+
+	//END ################# NETLIST OPTIMIZATION ############################
+
+	if (configuration.output_netlist_graphs )
+		graphVizOutputNetlist(configuration.debug_output_path, "optimized", 1, verilog_netlist); /* Path is where we are */
+
+	/* point where we convert netlist to FPGA or other hardware target compatible format */
+	printf("Performing Partial Map to target device\n");
+	partial_map_top(verilog_netlist);
+
+	/* Find any unused logic in the netlist and remove it */
+	remove_unused_logic(verilog_netlist);
+
+	sc_free_string_cache(global_param_table_sc);
+
+
+	/**
+	 *	point for outputs.  This includes soft and hard mapping all structures to the
+		*	target format.  Some of these could be considred optimizations 
+		*/
+	char *output_file = global_args.output_file;
+	printf("Outputting the netlist to the specified output format\n");
+
+	
+	output_blif(output_file, verilog_netlist);
+	elaboration_time = wall_time() - elaboration_time;
+
+	printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ",output_file);
+	print_time(elaboration_time);
+	printf("\n");
+	printf("--------------------------------------------------------------------\n");
+
+	report_mult_distribution();
+	report_add_distribution();
+	report_sub_distribution();
+	deregister_hard_blocks();
+
+	//cleanup netlist
+	free_netlist(verilog_netlist);
+
+	return SUCCESS;
+}
 
 struct netlist_t_t *start_odin_ii(int argc,char **argv)
 {
@@ -92,8 +214,6 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 	#else
 		mkdir(DEFAULT_OUTPUT, 0755);
 	#endif
-
-	int error_code = 0;
 
 	printf("--------------------------------------------------------------------\n");
 	printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
@@ -122,167 +242,74 @@ struct netlist_t_t *start_odin_ii(int argc,char **argv)
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Failed to load architecture file: %s\n", vtr_error.what());
-			//Clean-up
-			free_arch(&Arch);
-			free_type_descriptors(type_descriptors, num_types);
-			error_code = 1;
+			printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
+			exit(ERROR_PARSE_ARCH);
 		}
 	}
 
 	/* do High level Synthesis */
-	if (!error_code 
-	&& !global_args.blif_file)
+	if (!global_args.blif_file)
 	{
-
-		double elaboration_time = wall_time();
-
-		printf("--------------------------------------------------------------------\n");
-		printf("High-level synthesis Begin\n");
-		/* Perform any initialization routines here */
-		find_hard_multipliers();
-		find_hard_adders();
-		//find_hard_adders_for_sub();
-		register_hard_blocks();
-
-		/* get odin soft_logic definition file */
-		std::string soft_distribution(global_args.adder_def);
-		if(!hard_adders && soft_distribution == "default")
+		ODIN_ERROR_CODE error_code = synthesize_verilog();
+		if(error_code)
 		{
-			if(soft_distribution == "optimized")
-				soft_distribution = vtr::dirname(argv[0]) + "odin.soft_config";
-
-			read_soft_def_file(soft_distribution);
+			printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
+			exit(error_code);
 		}
-
-		global_param_table_sc = sc_new_string_cache();
-
-		/* parse to abstract syntax tree */
-		printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
-		parse_to_ast();
-		/**
-		 *  Note that the entry point for ast optimzations is done per module with the
-		 * function void next_parsed_verilog_file(ast_node_t *file_items_list) 
-		 */
-
-		/* after the ast is made potentially do tagging for downstream links to verilog */
-		if (global_args.high_level_block)
-			add_tag_data();
-
-		/**
-		 *  Now that we have a parse tree (abstract syntax tree [ast]) of
-		 *	the Verilog we want to make into a netlist. 
-		 */
-		printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
-		create_netlist();
-
-		// Can't levelize yet since the large muxes can look like combinational loops when they're not
-		check_netlist(verilog_netlist);
-
-		//START ################# NETLIST OPTIMIZATION ############################
-
-		/* point for all netlist optimizations. */
-		printf("Performing Optimizations of the Netlist\n");
-		if(hard_multipliers)
-		{
-			/* Perform a splitting of the multipliers for hard block mults */
-			reduce_operations(verilog_netlist, MULTIPLY);
-			iterate_multipliers(verilog_netlist);
-			clean_multipliers();
-		}
-
-		if (sp_memory_list || dp_memory_list)
-		{
-			/* Perform a splitting of any hard block memories */
-			iterate_memories(verilog_netlist);
-			free_memory_lists();
-		}
-
-		if(hard_adders)
-		{
-			/* Perform a splitting of the adders for hard block add */
-			reduce_operations(verilog_netlist, ADD);
-			iterate_adders(verilog_netlist);
-			clean_adders();
-
-			/* Perform a splitting of the adders for hard block sub */
-			reduce_operations(verilog_netlist, MINUS);
-			iterate_adders_for_sub(verilog_netlist);
-			clean_adders_for_sub();
-		}
-
-		//END ################# NETLIST OPTIMIZATION ############################
-
-		if (configuration.output_netlist_graphs )
-			graphVizOutputNetlist(configuration.debug_output_path, "optimized", 1, verilog_netlist); /* Path is where we are */
-
-		/* point where we convert netlist to FPGA or other hardware target compatible format */
-		printf("Performing Partial Map to target device\n");
-		partial_map_top(verilog_netlist);
-
-		/* Find any unused logic in the netlist and remove it */
-		remove_unused_logic(verilog_netlist);
-
-		/**
-		 *	point for outputs.  This includes soft and hard mapping all structures to the
-		 *	target format.  Some of these could be considred optimizations 
-		 */
-		printf("Outputting the netlist to the specified output format\n");
-		output_blif(global_args.output_file, verilog_netlist);
-
-		elaboration_time = wall_time() - elaboration_time;
-
-		printf("Successful High-level synthesis by Odin in ");
-		print_time(elaboration_time);
-		printf("\n");
-		printf("--------------------------------------------------------------------\n");
-
-		// FIXME: free contents?
-		sc_free_string_cache(global_param_table_sc);
-
 	}
-	else if(!error_code)
+
+	/*************************************************************
+	 * begin simulation section
+	 */
+	netlist_t *odin_netlist = NULL;
+
+	if(global_args.blif_file
+	|| global_args.interactive_simulation 
+	|| global_args.sim_num_test_vectors 
+	|| global_args.sim_vector_input_file)
 	{
+		// if we started with a verilog file read the output that was made since
+		// the simulator can only simulate blifs
+		if(!global_args.blif_file)
+		{
+			char *output_file = global_args.output_file;
+			configuration.list_of_file_names = { std::string(output_file) };
+			current_parse_file =0;
+		}
+
 		try 
 		{
-			read_blif(global_args.blif_file);
+			odin_netlist = read_blif();
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Failed to load blif file: %s\n", vtr_error.what());
+			printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+			exit(ERROR_PARSE_BLIF);
 		}
 	}
 
-
 	/* Simulate netlist */
-	if(!error_code
-	&& global_args.interactive_simulation == true)
-	{
-		// this is used when running as a library
-		return verilog_netlist;
-	}
-	else if(!error_code
+	if(odin_netlist && !global_args.interactive_simulation
 	&& (global_args.sim_num_test_vectors || global_args.sim_vector_input_file))
 	{
 		printf("Netlist Simulation Begin\n");
-		simulate_netlist(verilog_netlist);
+		simulate_netlist(odin_netlist);
 	}
 
-	printf("Odin ran with exit status: %d\n", error_code);
-	return NULL;
+	printf("--------------------------------------------------------------------\n");
+	printf("Odin ran with exit status: %d\n", SUCCESS);
+	return odin_netlist;
 }
 
-int terminate_odin_ii()
+int terminate_odin_ii(netlist_t *odin_netlist)
 {
-	printf("--------------------------------------------------------------------\n");
-	report_mult_distribution();
-	report_add_distribution();
-	report_sub_distribution();
-	deregister_hard_blocks();
+
+	free_netlist(odin_netlist);
 
 	//Clean-up
 	free_arch(&Arch);
 	free_type_descriptors(type_descriptors, num_types);
+
 	return 0;
 }
 
@@ -319,6 +346,8 @@ struct ParseInitRegState {
 void get_options(int argc, char** argv) {
 
 	auto parser = argparse::ArgumentParser(argv[0]);
+
+	global_args.program_name = parser.prog();
 
 	auto& input_grp = parser.add_argument_group("input files");
 
@@ -395,6 +424,17 @@ void get_options(int argc, char** argv) {
 			.metavar("NUM_VECTORS")
 			;
 
+	rand_sim_grp.add_argument(global_args.sim_min_coverage, "--coverage")
+			.help("using the g argument we will simulate in blocks until a certain coverage is attained")
+			.metavar("MIN_COVERAGE")
+			;
+
+	rand_sim_grp.add_argument(global_args.sim_achieve_best, "--best_coverage")
+			.help("using the g argument we will simulate in blocks until best coverage is attained")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
+			
 	rand_sim_grp.add_argument(global_args.sim_random_seed, "-r")
 			.help("Random seed")
 			.default_value("0")
@@ -469,6 +509,12 @@ void get_options(int argc, char** argv) {
 			.default_value("true")
 			.action(argparse::Action::STORE_TRUE)
 			;
+	
+	other_sim_grp.add_argument(global_args.read_mif_input, "--read_mif")
+			.help("look for a mif file to read")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
 
 	other_sim_grp.add_argument(global_args.sim_additional_pins, "-p")
 			.help("list of additional pins/nodes to monitor during simulation.\n"
@@ -498,13 +544,20 @@ void get_options(int argc, char** argv) {
 	//adjust thread count
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
-	global_args.parralelized_simulation.set(std::min(max_thread, std::max(1, thread_requested)),argparse::Provenance::SPECIFIED);
+	global_args.parralelized_simulation.set(
+			std::min( 	std::min(CONCURENCY_LIMIT, max_thread) , 
+						std::max(1, thread_requested))
+		,argparse::Provenance::SPECIFIED);
 
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
 	{
 		//parse comma separated list of verilog files
 		configuration.list_of_file_names = global_args.verilog_files.value();
+	}
+	else if(global_args.blif_file)
+	{
+		configuration.list_of_file_names = { std::string(global_args.blif_file) };
 	}
 
 	if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {

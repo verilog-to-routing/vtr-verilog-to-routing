@@ -8,6 +8,7 @@
 #include "vpr_types.h"
 #include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_vector.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_node.h"
@@ -16,6 +17,7 @@
 #include "power.h"
 #include "power_components.h"
 #include "device_grid.h"
+#include "route_traceback.h"
 
 
 //A Context is collection of state relating to a particular part of VPR
@@ -74,9 +76,15 @@ struct TimingContext : public Context {
             return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
         }
 
+        size_t num_full_updates() const {
+            return num_full_setup_updates + num_full_hold_updates + num_full_setup_hold_updates;
+        }
+
         double sta_wallclock_time = 0.;
         double slack_wallclock_time = 0.;
-        size_t num_full_updates = 0;
+        size_t num_full_setup_updates = 0;
+        size_t num_full_hold_updates = 0;
+        size_t num_full_setup_hold_updates = 0;
 
         double old_sta_wallclock_time = 0.;
         double old_delay_annotation_wallclock_time = 0.;
@@ -151,7 +159,7 @@ struct DeviceContext : public Context {
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    std::map<int, int> *switch_fanin_remap;
+    std::vector<std::map<int, int>> switch_fanin_remap;
 
     /*******************************************************************
      Architecture
@@ -225,7 +233,7 @@ struct PlacementContext : public Context {
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector_map<ClusterNetId, t_trace*> trace_head, trace_tail;
+    vtr::vector<ClusterNetId, t_traceback> trace;
     vtr::vector_map<ClusterNetId, std::unordered_set<int>> trace_nodes;
 
 	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */

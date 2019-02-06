@@ -61,6 +61,43 @@ public:
 		this->type = E_FML_UNDEFINED;
 	}
 
+    std::string to_string() const {
+        if (type == E_FML_NUMBER) {
+            return std::to_string(data.num);
+        } else if (type == E_FML_BRACKET) {
+            if (data.left_bracket) {
+                return "(";
+            } else {
+                return ")";
+            }
+        } else if (type == E_FML_COMMA) {
+            return ",";
+        } else if (type == E_FML_OPERATOR) {
+            if (data.op == E_OP_ADD) {
+                return "+";
+            } else if (data.op == E_OP_SUB) {
+                return "-";
+            } else if (data.op == E_OP_MULT) {
+                return "*";
+            } else if (data.op == E_OP_DIV) {
+                return "/";
+            } else if (data.op == E_OP_MIN) {
+                return "min";
+            } else if (data.op == E_OP_MAX) {
+                return "max";
+            } else if (data.op == E_OP_GCD) {
+                return "gcd";
+            } else if (data.op == E_OP_LCM) {
+                return "lcm";
+            } else {
+                return "???"; //Unkown
+            }
+        } else {
+            return "???"; //Unkown
+        }
+
+    }
+
 };
 
 /*---- Functions for Parsing the Symbolic Formulas ----*/
@@ -600,7 +637,7 @@ static int parse_rpn_vector( vector<Formula_Object> &rpn_vec ){
 
 	/* first entry should always be a number */
 	if (E_FML_NUMBER != rpn_vec[0].type){
-		archfpga_throw( __FILE__, __LINE__, "parse_rpn_vector: first entry is not a number\n");
+		archfpga_throw( __FILE__, __LINE__, "parse_rpn_vector: first entry is not a number (was %s)\n", rpn_vec[0].to_string().c_str());
 	}
 
 	if (rpn_vec.size() == 1){
@@ -650,7 +687,7 @@ static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 	/* arguments must be numbers */
 	if ( E_FML_NUMBER != arg1.type ||
 	     E_FML_NUMBER != arg2.type){
-		archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number\n");
+		archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number (was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str());
 	}
 
 	/* check that op is actually an operation */

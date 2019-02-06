@@ -26,7 +26,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_arch_file.h"
 #include "simulate_blif.h"
 #include "argparse_value.hpp"
+#include "AtomicBuffer.hpp"
 #include <mutex>
+#include <atomic>
 
 #include <stdlib.h>
 
@@ -95,7 +97,8 @@ typedef struct adder_def_t_t adder_def_t;
 // causes an interrupt in GDB
 #define verbose_assert(condition) std::cerr << "ASSERT FAILED: " << #condition << " \n\t@ " << __LINE__ << "::" << __FILE__ << std::endl;
 #define oassert(condition) { if(!(condition)){ verbose_assert(condition); std::abort();} }
-// bitvector library (PETER_LIB) defines it, so we don't
+
+#define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
 /* This is the data structure that holds config file details */
 struct config_t_t
@@ -147,6 +150,8 @@ typedef enum {
 /* the global arguments of the software */
 struct global_args_t_t
 {
+	std::string program_name;
+
     argparse::ArgValue<char*> config_file;
 	argparse::ArgValue<std::vector<std::string>> verilog_files;
 	argparse::ArgValue<char*> blif_file;
@@ -178,15 +183,20 @@ struct global_args_t_t
 	argparse::ArgValue<bool> sim_generate_three_valued_logic;
 	// Output both falling and rising edges in the output_vectors file. (DEFAULT)
 	argparse::ArgValue<bool> sim_output_both_edges;
+	// Request to read mif file input
+	argparse::ArgValue<bool> read_mif_input;
 	// Additional pins, nets, and nodes to output.
 	argparse::ArgValue<std::vector<std::string>> sim_additional_pins;
 	// Comma-separated list of primary input pins to hold high for all cycles but the first.
 	argparse::ArgValue<std::vector<std::string>> sim_hold_high;
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
 	argparse::ArgValue<std::vector<std::string>> sim_hold_low;
+	// target coverage
+	argparse::ArgValue<double> sim_min_coverage;
+	// simulate until best coverage is achieved
+	argparse::ArgValue<bool> sim_achieve_best;
 
 	argparse::ArgValue<int> parralelized_simulation;
-	//
 	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
@@ -216,6 +226,16 @@ typedef enum
 	SIGNED,
 	UNSIGNED
 } signedness;
+
+typedef enum
+{
+	FALLING_EDGE_SENSITIVITY,
+	RISING_EDGE_SENSITIVITY,
+	ACTIVE_HIGH_SENSITIVITY,
+	ACTIVE_LOW_SENSITIVITY,
+	ASYNCHRONOUS_SENSITIVITY,
+	UNDEFINED_SENSITIVITY
+} edge_type_e;
 
 typedef enum
 {
@@ -255,6 +275,7 @@ typedef enum
 	LTE, // <=
 	GTE, // >=
 	SR, // >>
+    ASR, // >>>
 	SL, // <<
 	CASE_EQUAL, // ===
 	CASE_NOT_EQUAL, // !==
@@ -416,8 +437,8 @@ struct ast_node_t_t
 	ast_node_t **children;
 	size_t num_children;
 
-	int line_number;
-	int file_number;
+	int line_number = -1;
+	int file_number = -1;
 
 	short shared_node;
 	void *hb_port;
@@ -426,6 +447,7 @@ struct ast_node_t_t
 
 };
 #endif // AST_TYPES_H
+
 
 //-----------------------------------------------------------------------------------------------------
 #ifndef NETLIST_UTILS_H
@@ -449,6 +471,9 @@ struct nnode_t_t
 
 	ast_node_t *related_ast_node; // the abstract syntax node that made this node
 
+	int line_number = -1;
+	int file_number = -1;
+	
 	short traverse_visited; // a way to mark if we've visited yet
 
 	npin_t **input_pins; // the input pins
@@ -471,7 +496,8 @@ struct nnode_t_t
 
 	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
-	signed char *memory_data;
+	std::vector<std::vector<signed char>> memory_data;
+
 	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
 	void (*simulate_block_cycle)(int, int, int*, int, int*);
 
@@ -487,6 +513,9 @@ struct nnode_t_t
 	int ratio; //clock ratio for clock nodes
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
+	bool internal_clk_warn= false;
+	edge_type_e edge_type; //
+	bool covered = false;
 
 	//Generic gate output
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
@@ -520,22 +549,18 @@ struct npin_t_t
 
 	////////////////////
 	// For simulation
-	std::mutex pin_lock;
-	bool is_being_written;
-	int nb_of_reader;
+	std::shared_ptr<AtomicBuffer> values;
 
-	signed char *values; // The values for the current wave.
-	int *cycle;          // The last cycle the pin was computed for.
+	bool delay_cycle;
+	
 	unsigned long coverage;
 	bool is_default; // The pin is feeding a mux from logic representing an else or default.
 	bool is_implied; // This signal is implied.
 
-
-
 	////////////////////
 
-        // For Activity Estimation
-        ace_obj_info_t *ace_info;
+	// For Activity Estimation
+	ace_obj_info_t *ace_info;
 
 };
 
@@ -555,8 +580,8 @@ struct nnet_t_t
 
 	/////////////////////
 	// For simulation
-	signed char values[SIM_WAVE_LENGTH];  // Stores the values of all connected pins.
-	int cycle;                            // Stores the cycle of all connected pins.
+	std::shared_ptr<AtomicBuffer> values;
+
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
 	//////////////////////
@@ -620,6 +645,7 @@ struct netlist_t_t
 	netlist_stats_t *stats;
 
 	t_type_ptr type;
+
 };
 
 struct netlist_stats_t_t

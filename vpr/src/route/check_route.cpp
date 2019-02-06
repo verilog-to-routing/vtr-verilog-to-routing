@@ -72,8 +72,8 @@ void check_route(enum e_route_type route_type, int num_switches) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Checking to ensure routing is legal...\n");
+	VTR_LOG("\n");
+	VTR_LOG("Checking to ensure routing is legal...\n");
 
 	/* Recompute the occupancy from scratch and check for overuse of routing *
 	 * resources.  This was already checked in order to determine that this  *
@@ -107,7 +107,7 @@ void check_route(enum e_route_type route_type, int num_switches) {
 			pin_done[ipin] = false;
 
 		/* Check the SOURCE of the net. */
-		tptr = route_ctx.trace_head[net_id];
+		tptr = route_ctx.trace[net_id].head;
 		if (tptr == nullptr) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 				"in check_route: net %d has no routing.\n", size_t(net_id));
@@ -184,8 +184,8 @@ void check_route(enum e_route_type route_type, int num_switches) {
 
 	free(pin_done);
 	free(connected_to_route);
-	vtr::printf_info("Completed routing consistency check successfully.\n");
-	vtr::printf_info("\n");
+	VTR_LOG("Completed routing consistency check successfully.\n");
+	VTR_LOG("\n");
 }
 
 
@@ -326,7 +326,7 @@ static void reset_flags(ClusterNetId inet, bool * connected_to_route) {
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-	tptr = route_ctx.trace_head[inet];
+	tptr = route_ctx.trace[inet].head;
 
 	while (tptr != nullptr) {
 		inode = tptr->index;
@@ -572,7 +572,7 @@ void recompute_occupancy_from_scratch() {
 		if (cluster_ctx.clb_nlist.net_is_global(net_id)) /* Skip global nets. */
 			continue;
 
-		tptr = route_ctx.trace_head[net_id];
+		tptr = route_ctx.trace[net_id].head;
 		if (tptr == nullptr)
 			continue;
 
@@ -731,7 +731,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    t_trace* head = route_ctx.trace_head[net];
+    t_trace* head = route_ctx.trace[net].head;
 
     //Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;

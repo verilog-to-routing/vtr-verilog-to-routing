@@ -22,7 +22,7 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
 bool try_intra_lb_route(t_lb_router_data *router_data, bool debug_clustering);
 
 /* Accessor Functions */
-t_pb_route *alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets, t_pb_graph_node *pb_graph_head);
+t_pb_routes alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets, t_pb_graph_node *pb_graph_head);
 void free_pb_route(t_pb_route *free_pb_route);
 
 #endif

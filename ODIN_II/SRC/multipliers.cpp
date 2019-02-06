@@ -505,7 +505,7 @@ void add_the_blackbox_for_mults(FILE *out)
 /*-------------------------------------------------------------------------
  * (function: define_mult_function)
  *-----------------------------------------------------------------------*/
-void define_mult_function(nnode_t *node, short /*type*/, FILE *out)
+void define_mult_function(nnode_t *node, FILE *out)
 {
 	int i, j;
 	int count;

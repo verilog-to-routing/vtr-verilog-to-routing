@@ -54,13 +54,13 @@ static string format_name(string name);
 /*************Global Functions****************************/
 bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests) {
 
-    /* Reads in the routing file to fill in the trace_head and t_clb_opins_used data structure.
+    /* Reads in the routing file to fill in the trace.head and t_clb_opins_used data structure.
      * Perform a series of verification tests to ensure the netlist, placement, and routing
      * files match */
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
     /* Begin parsing the file */
-    vtr::printf_info("Begin loading packed FPGA routing file.\n");
+    VTR_LOG("Begin loading FPGA routing file.\n");
 
     string header_str;
 
@@ -85,7 +85,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
         if (verify_file_digests) {
             vpr_throw(VPR_ERROR_ROUTE, route_file, lineno, msg.c_str());
         } else {
-            vtr::printf_warning(route_file, lineno, "%s\n", msg.c_str());
+            VTR_LOGF_WARN(route_file, lineno, "%s\n", msg.c_str());
         }
     }
 
@@ -120,13 +120,14 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
             router_opts.acc_fac, true);
 
     /* Finished loading in the routing, now check it*/
+	recompute_occupancy_from_scratch();
     bool is_feasible = feasible_routing();
     if (is_feasible) {
         check_route(router_opts.route_type, device_ctx.num_rr_switches);
     }
     get_serial_num();
 
-    vtr::printf_info("Finished loading route file\n");
+    VTR_LOG("Finished loading route file\n");
 
     return is_feasible;
 }
@@ -177,7 +178,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
     } else {
         /* Not a global net */
         if (cluster_ctx.clb_nlist.net_is_global(inet)) {
-            vtr::printf_warning(__FILE__, __LINE__, "Net %lu (%s) is marked as global in the netlist, but is non-global in the .route file\n", size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
+            VTR_LOG_WARN( "Net %lu (%s) is marked as global in the netlist, but is non-global in the .route file\n", size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         name = format_name(name);
@@ -195,14 +196,14 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
 }
 
 static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename, int& lineno) {
-    /* Not a global net. Goes through every node and add it into trace_head*/
+    /* Not a global net. Goes through every node and add it into trace.head*/
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace *tptr = route_ctx.trace_head[inet];
+    t_trace *tptr = route_ctx.trace[inet].head;
 
     /*remember the position of the last line in order to go back*/
     streampos oldpos = fp.tellg();
@@ -315,13 +316,13 @@ static void process_nodes(ifstream & fp, ClusterNetId inet, const char* filename
                 switch_id = atoi(tokens[7 + offset].c_str());
             }
 
-            /* Allocate and load correct values to trace_head*/
+            /* Allocate and load correct values to trace.head*/
             if (node_count == 0) {
-                route_ctx.trace_head[inet] = alloc_trace_data();
-                route_ctx.trace_head[inet]->index = inode;
-                route_ctx.trace_head[inet]->iswitch = switch_id;
-                route_ctx.trace_head[inet]->next = nullptr;
-                tptr = route_ctx.trace_head[inet];
+                route_ctx.trace[inet].head = alloc_trace_data();
+                route_ctx.trace[inet].head->index = inode;
+                route_ctx.trace[inet].head->iswitch = switch_id;
+                route_ctx.trace[inet].head->next = nullptr;
+                tptr = route_ctx.trace[inet].head;
                 node_count++;
             } else {
                 tptr->next = alloc_trace_data();

@@ -25,14 +25,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_ii.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+#include <QDir>
 
 
 OdinInterface::OdinInterface()
 {
     fprintf(stderr,"Creating Odin II object\n");
     wave = 0;
-    edge_output = "";
-	verilog_netlist = NULL;
+	blifexplorer_netlist = NULL;
 	arg_list = NULL;
     arg_len = 0;
 }
@@ -42,20 +42,22 @@ OdinInterface::OdinInterface()
  *-------------------------------------------------------------------------------------------*/
 int OdinInterface::startOdin()
 {
+    std::string simulation_directory = "OUTPUT";
+    QString dir_name(simulation_directory.c_str());
+    QDir dir(dir_name);
+    if (!dir.exists())
+        dir.mkpath(dir_name);
+
     /* pass arguments here to odin */
     std::vector<std::string> arguments = 
 	{
 		"../ODIN_II/odin_ii", 												//	pass the odin location relative to blifexplorer
 		"--interractive_simulation",										//	prevent odin from freeing valuable information
         "-r", "7",															//	set simulation seed
-        "-sim_dir", "./OUTPUT/",												//	set simulation directory
+        "-sim_dir", std::string(simulation_directory + "/"),												//	set simulation directory
         "-g", "10000",														//	set number of test vector
 		"-b", OdinInterface::myFilename.trimmed().toLocal8Bit().data()		//	pass the blif file
     };
-
-	// pass the edge type
-    if ( OdinInterface::edge_output != "" )
-        arguments.insert(arguments.end(), OdinInterface::edge_output);
 
     /* converting into format digestible by odin */
     arg_list = (char**)malloc(arguments.size()*sizeof(char*));
@@ -68,9 +70,9 @@ int OdinInterface::startOdin()
         std::cout << arg_list[i] << " ";
     }
 
-    verilog_netlist = start_odin_ii(arg_len,arg_list);
+    blifexplorer_netlist = start_odin_ii(arg_len,arg_list);
 
-    if(!verilog_netlist)
+    if(!blifexplorer_netlist)
         return -1;
     
     return 0;
@@ -83,13 +85,13 @@ QHash<QString, nnode_t *> OdinInterface::getNodeTable()
 {
     int i, items;
     items = 0;
-    for (i = 0; i < verilog_netlist->num_top_input_nodes; i++){
-        nodequeue.enqueue(verilog_netlist->top_input_nodes[i]);
+    for (i = 0; i < blifexplorer_netlist->num_top_input_nodes; i++){
+        nodequeue.enqueue(blifexplorer_netlist->top_input_nodes[i]);
         //enqueue_node_if_ready(queue,netlist->top_input_nodes[i],cycle);
     }
 
     // Enqueue constant nodes.
-    nnode_t *constant_nodes[] = {verilog_netlist->gnd_node, verilog_netlist->vcc_node, verilog_netlist->pad_node};
+    nnode_t *constant_nodes[] = {blifexplorer_netlist->gnd_node, blifexplorer_netlist->vcc_node, blifexplorer_netlist->pad_node};
     int num_constant_nodes = 3;
     for (i = 0; i < num_constant_nodes; i++){
         nodequeue.enqueue(constant_nodes[i]);
@@ -140,7 +142,7 @@ void OdinInterface::setFilename(QString filename)
  *-------------------------------------------------------------------------------------------*/
 void OdinInterface::setUpSimulation()
 {
-    sim_data = init_simulation(verilog_netlist);
+    sim_data = init_simulation(blifexplorer_netlist);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -157,7 +159,7 @@ int OdinInterface::simulateNextWave()
  *-------------------------------------------------------------------------------------------*/
 void OdinInterface::endSimulation(){
     sim_data = terminate_simulation(sim_data);
-	terminate_odin_ii();
+	terminate_odin_ii(blifexplorer_netlist);
 	for(int i=0; i<arg_len; i++)
 		vtr::free(arg_list[i]);
 	vtr::free(arg_list);
@@ -171,18 +173,6 @@ int OdinInterface::getOutputValue(nnode_t* node, int outPin, int actstep)
     oassert(node);
     oassert(node->num_output_pins > outPin);
     return get_pin_value(node->output_pins[outPin],actstep);
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: setEdge)
- *-------------------------------------------------------------------------------------------*/
-void OdinInterface::setEdge(int i ){
-    if(i==-1)
-        OdinInterface::edge_output = "-E";
-    else if(i==0)
-        OdinInterface::edge_output = "-R";
-    else
-        OdinInterface::edge_output = "";
 }
 
 

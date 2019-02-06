@@ -383,8 +383,8 @@
  * Adding data to the netlist
  * --------------------------
  * The Netlist should contain only information directly related to the netlist state (i.e. netlist connectivity).
- * Various mappings to/from  elements (e.g. what CLB contains an ), and algorithmic state (e.g. if a net is routed)
- * do NOT constitute netlist state and should NOT be stored here.
+ * Various mappings to/from elements (e.g. what CLB contains an atom block), and algorithmic state (e.g. if a net
+* is routed) do NOT constitute netlist state and should NOT be stored here.
  *
  * Such implementation state should be stored in other data structures (which may reference the Netlist's IDs).
  *
@@ -409,7 +409,6 @@
  *       validate_*_sizes()
  *       shrink_to_fit()
  *    The derived functions based off of the virtual functions have suffix *_impl()
- *
  *
  */
 #include <string>

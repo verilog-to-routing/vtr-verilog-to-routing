@@ -20,8 +20,10 @@ set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
+option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
+option(WITH_OLD_ABC "Enable build with old abc" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
@@ -154,6 +156,7 @@ if(VTR_ENABLE_SANITIZE)
     # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
     set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined -fuse-ld=gold")
     message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
+    link_libraries("-static-libasan") #Fixes 'ASan runtime does not come first in initial library list'
 endif()
 
 #
@@ -181,9 +184,19 @@ if(VTR_ENABLE_COVERAGE)
 endif()
 
 #
+# Debug logging
+#
+set(LOGGING_FLAGS "")
+if(VTR_ENABLE_DEBUG_LOGGING)
+    #Enable gcov
+    set(LOGGING_FLAGS "-DVTR_ENABLE_DEBUG_LOGGING")
+    message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
+endif()
+
+#
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 
@@ -223,6 +236,9 @@ add_subdirectory(ace2)
 if(WITH_BLIFEXPLORER)
     add_subdirectory(blifexplorer)
 endif()
+if(WITH_OLD_ABC)
+	add_subdirectory(abc_with_bb_support)
+endif()
 
 #Add extra compilation flags to suppress warnings from some libraries/tools
 # Note that target_compile_options() *appends* to the current compilation options of
@@ -234,10 +250,20 @@ if(CXX_COMPILER_SUPPORTS_-w)
     target_compile_options(libabc PRIVATE "-w")
     target_compile_options(abc PRIVATE "-w")
 endif()
+if(CXX_COMPILER_SUPPORTS_-w)
+    if(WITH_OLD_ABC)
+    target_compile_options(liboldabc PRIVATE "-w")
+    target_compile_options(oldabc PRIVATE "-w")
+    endif()
+endif()
 
 #Some ABC headers generate warnings, treat them as system headers to suppress warnings
 get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
 target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
+if(WITH_OLD_ABC)
+	get_property(OLD_ABC_INCLUDE_DIRS TARGET liboldabc PROPERTY INCLUDE_DIRECTORIES)
+	target_include_directories(liboldabc SYSTEM INTERFACE ${OLD_ABC_INCLUDE_DIRS})
+endif()
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
 #are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes). 
@@ -300,6 +326,13 @@ set_target_properties(libabc abc
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc")
+if(WITH_OLD_ABC)
+	set_target_properties(liboldabc oldabc
+		PROPERTIES
+		ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
+		LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
+		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support")
+endif()
 set_target_properties(libvpr vpr
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr"

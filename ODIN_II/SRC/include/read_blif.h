@@ -1,8 +1,8 @@
 #ifndef READ_BLIF_H
 #define READ_BLIF_H
 
-void read_blif(char* blif_file);
-
+netlist_t *read_blif();
+extern int line_count;
 
 #endif
 

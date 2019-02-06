@@ -87,7 +87,7 @@ static void fix_empty_coordinates();
 static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y);
 
 static bool calculate_delay(int source_node, int sink_node,
-        float astar_fac, float bend_cost, float *net_delay);
+        const t_router_opts& router_opts, float *net_delay);
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
@@ -98,7 +98,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
 
-    vtr::printf_info("\nStarting placement delay look-up...\n");
+    VTR_LOG("\nStarting placement delay look-up...\n");
     clock_t begin = clock();
 
     int longest_length;
@@ -123,7 +123,7 @@ void compute_delay_lookup_tables(t_router_opts router_opts,
     clock_t end = clock();
 
     float time = (float) (end - begin) / CLOCKS_PER_SEC;
-    vtr::printf_info("Placement delay look-up took %g seconds\n", time);
+    VTR_LOG("Placement delay look-up took %g seconds\n", time);
 }
 
 void free_place_lookup_structs() {
@@ -237,6 +237,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
             router_opts.base_cost_type,
             router_opts.trim_empty_channels,
             router_opts.trim_obs_channels,
+            router_opts.lookahead_type,
             directs, num_directs,
             &device_ctx.num_rr_switches,
             &warnings);
@@ -271,11 +272,11 @@ static float route_connection_delay(int source_x, int source_y,
     int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
 
     bool successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
-            router_opts.astar_fac, router_opts.bend_cost,
+            router_opts,
             &net_delay_value);
 
     if (!successfully_routed) {
-        vtr::printf_warning(__FILE__, __LINE__,
+        VTR_LOG_WARN(
                 "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to %g)\n",
                 source_x, source_y, sink_x, sink_y, net_delay_value);
     }
@@ -324,7 +325,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                     //Only set empty target if we don't already have a valid delta delay
                     matrix[delta_x][delta_y] = EMPTY_DELTA;
 #ifdef VERBOSE
-                    vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                    VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                                     "EMPTY",
                                     delta_x, delta_y,
                                     source_x, source_y,
@@ -337,7 +338,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                 float delay = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
 #ifdef VERBOSE
-                vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                         delay,
                         delta_x, delta_y,
                         source_x, source_y,
@@ -413,7 +414,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     VTR_ASSERT(src_type != nullptr);
 
 #ifdef VERBOSE
-    vtr::printf("Computing from lower left edge (%d,%d):\n", x, y);
+    VTR_LOG("Computing from lower left edge (%d,%d):\n", x, y);
 #endif
     generic_compute_matrix(f_delta_delay,
             x, y,
@@ -438,7 +439,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     }
     VTR_ASSERT(src_type != nullptr);
 #ifdef VERBOSE
-    vtr::printf("Computing from left bottom edge (%d,%d):\n",x, y);
+    VTR_LOG("Computing from left bottom edge (%d,%d):\n",x, y);
 #endif
     generic_compute_matrix(f_delta_delay,
             x, y,
@@ -450,7 +451,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within region B
 #ifdef VERBOSE
-    vtr::printf("Computing from mid:\n");
+    VTR_LOG("Computing from mid:\n");
 #endif
     generic_compute_matrix(f_delta_delay,
             low_x, low_y,
@@ -559,7 +560,7 @@ static void fix_uninitialized_coordinates() {
 }
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
-    vtr::printf_info("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
+    VTR_LOG("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
     compute_delta_delays(router_opts, longest_length);
 
     if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
@@ -634,7 +635,7 @@ static t_rt_node* setup_routing_resources_no_net(int source_node) {
 }
 
 static bool calculate_delay(int source_node, int sink_node,
-        float astar_fac, float bend_cost, float *net_delay) {
+        const t_router_opts& router_opts, float *net_delay) {
 
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -655,7 +656,10 @@ static bool calculate_delay(int source_node, int sink_node,
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
 
-    float target_criticality = 1;
+    t_conn_cost_params cost_params;
+    cost_params.criticality = 1.;
+    cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.bend_cost = router_opts.bend_cost;
 
     route_budgets budgeting_inf;
 
@@ -664,8 +668,8 @@ static bool calculate_delay(int source_node, int sink_node,
 
     std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
-    t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf, 0, 0, 0, 0, modified_rr_node_inf, router_stats);
+    auto router_lookahead = make_router_lookahead(router_opts.lookahead_type);
+    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
 
     if (cheapest == nullptr) {
         return false;
@@ -673,7 +677,7 @@ static bool calculate_delay(int source_node, int sink_node,
     VTR_ASSERT(cheapest->index == sink_node);
 
     std::set<int> used_rr_nodes;
-    t_rt_node* rt_node_of_sink = update_route_tree(cheapest);
+    t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
     free_heap_data(cheapest);
     empty_heap();
 

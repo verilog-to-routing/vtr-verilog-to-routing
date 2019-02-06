@@ -292,13 +292,13 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	ntrans_sharing += input_cblock_trans;
 	ntrans_no_sharing += input_cblock_trans;
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
-	vtr::printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n",
+	VTR_LOG("\n");
+	VTR_LOG("Routing area (in minimum width transistor areas)...\n");
+	VTR_LOG("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n",
 			ntrans_no_sharing, ntrans_no_sharing / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
-	vtr::printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n",
+	VTR_LOG("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n",
 			ntrans_sharing, ntrans_sharing / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
-	vtr::printf_info("\n");
+	VTR_LOG("\n");
 }
 
 void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
@@ -480,9 +480,9 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 
 	ntrans += input_cblock_trans;
 
-	vtr::printf_info("\n");
-	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
-	vtr::printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
+	VTR_LOG("\n");
+	VTR_LOG("Routing area (in minimum width transistor areas)...\n");
+	VTR_LOG("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (device_ctx.grid.width() * device_ctx.grid.height()));
 }
 
 static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,
@@ -682,7 +682,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
 
 	if (Rtrans <= 0.) {
         /* Assume resistances are nonsense -- use min. width */
-        vtr::printf_warning(__FILE__, __LINE__, "Sized nonsensical R=%g transistor to minimum width\n", Rtrans);
+        VTR_LOG_WARN( "Sized nonsensical R=%g transistor to minimum width\n", Rtrans);
 		return (1.);
     }
 
