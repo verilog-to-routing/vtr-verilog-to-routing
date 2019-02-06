@@ -7,7 +7,7 @@ _vpr_completions() {
     #Determine the valid VPR completions by parsing VPR's help message
     #This ensures we don't need to hard-code the possible completions here
     local vpr_opts="$(VPR_LOG_FILE='' vpr -h | grep '^  \-' | sed 's/, -/\n  -/' | awk '{print $1}' | sed 's/ //g' | paste -s -d ' ')"
-    local vpr_cur_opt_choices=$(VPR_LOG_FILE='' vpr -h | grep '^  \-' | grep -- "${prev}" | sed 's/.*{//' | sed 's/}.*//' | sed 's/,//g')
+    local vpr_cur_opt_choices=$(VPR_LOG_FILE='' vpr -h | grep '^  \-' | grep -w -- "${prev}" | grep '{' | sed 's/.*{//' | sed 's/}.*//' | sed 's/,//g')
 
     if [[ ${cur} == -* ]] ; then
         #Complete matching option
