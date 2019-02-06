@@ -142,7 +142,21 @@ void vpr_init(const int argc, const char **argv,
         t_vpr_setup *vpr_setup,
         t_arch *arch) {
 
-    vtr::set_log_file("vpr_stdout.log");
+    {
+        //Allow the default vpr log file to be overwritten
+        const char* env_value = std::getenv("VPR_LOG_FILE");
+        if (env_value != nullptr) {
+            if (std::strlen(env_value) > 0) {
+                vtr::set_log_file(env_value); //Use specified log file
+            } else {
+                //Empty log file name -> no log file
+                vtr::set_log_file(nullptr);
+            }
+        } else {
+            //Unset, use default log name
+            vtr::set_log_file("vpr_stdout.log");
+        }
+    }
 
     /* Print title message */
     vpr_print_title();
