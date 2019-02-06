@@ -945,6 +945,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 
 		if (node_is_constant(newNode)){
 			newNode->shared_node = node->shared_node;
+			vtr::free(node);
 			node = newNode;
 		}
 
