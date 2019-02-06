@@ -19,4 +19,4 @@ crit_path_routing_area_total;vpr.crit_path.out;Total routing area: (.*), per log
 crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per logic tile: (.*)
 
 #Run-time Metrics
-crit_path_route_time;vpr.crit_path.out;^\s*Routing took (.*) seconds
+crit_path_route_time;vpr.crit_path.out;^#*\s*Routing took (.*) seconds

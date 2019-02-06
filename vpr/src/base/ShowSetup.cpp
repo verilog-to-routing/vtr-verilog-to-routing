@@ -207,11 +207,20 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 		case DELAY_NORMALIZED:
 			VTR_LOG("DELAY_NORMALIZED\n");
 			break;
+		case DELAY_NORMALIZED_LENGTH:
+			VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
+			break;
+		case DELAY_NORMALIZED_FREQUENCY:
+			VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
+			break;
+		case DELAY_NORMALIZED_LENGTH_FREQUENCY:
+			VTR_LOG("DELAY_NORMALIZED_LENGTH_FREQUENCY\n");
+			break;
 		case DEMAND_ONLY:
 			VTR_LOG("DEMAND_ONLY\n");
 			break;
 		default:
-			VTR_LOG_ERROR( "Unknown base_cost_type\n");
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown base_cost_type\n");
 		}
 
 		VTR_LOG("RouterOpts.fixed_channel_width: ");

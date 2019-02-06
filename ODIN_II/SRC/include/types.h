@@ -502,7 +502,8 @@ struct nnode_t_t
 	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
 	std::vector<std::vector<signed char>> memory_data;
-
+	std::map<int,std::map<long long,std::vector<signed char>>> memory_directory;
+	std::mutex memory_mtx;
 	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
 	void (*simulate_block_cycle)(int, int, int*, int, int*);
 
@@ -521,7 +522,7 @@ struct nnode_t_t
 	bool internal_clk_warn= false;
 	edge_type_e edge_type; //
 	bool covered = false;
-
+	
 	//Generic gate output
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 };

@@ -67,8 +67,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup, const t_arch& arch, int fix
 bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform post-implementation analysis
 
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch); //Create the device (grid + rr graph)
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch); //Create the device grid
-
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width); //Create routing graph at specified channel width
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);

@@ -777,7 +777,7 @@ char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
  * 	Return a list of strings
  *-------------------------------------------------------------------------------------------*/
 char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
-{
+{ 
 	char **return_string = NULL;
 	char_list_t *return_list = (char_list_t*)vtr::malloc(sizeof(char_list_t));
 	ast_node_t *rnode[3];
@@ -942,13 +942,17 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
 {
 	int i;
 	char_list_t *return_list;
+	char *temp_str;
 
 	/* get the list */
 	return_list = get_name_of_pins(var_node, instance_name_prefix);
 
 	for (i = 0; i < return_list->num_strings; i++)
 	{
-		return_list->strings[i] = make_full_ref_name(instance_name_prefix, NULL, NULL, return_list->strings[i], -1);
+		temp_str = vtr::strdup(return_list->strings[i]);
+		vtr::free(return_list->strings[i]);
+		return_list->strings[i] = make_full_ref_name(instance_name_prefix, NULL, NULL, temp_str, -1);
+		vtr::free(temp_str);
 	}
 
 	return return_list;

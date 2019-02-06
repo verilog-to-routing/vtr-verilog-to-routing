@@ -11,6 +11,7 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_math.h"
 #include "vtr_memory.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -44,10 +45,12 @@ constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Ind
 static vtr::Matrix<float> f_delta_delay;
 
 /*** Function Prototypes *****/
-static void setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist);
 
-static void alloc_routing_structs(t_router_opts router_opts,
+static void alloc_routing_structs(
+        t_chan_width chan_width,
+        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         const t_direct_inf *directs,
         const int num_directs);
@@ -91,39 +94,41 @@ static bool calculate_delay(int source_node, int sink_node,
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
+static void adjust_delta_delays(t_placer_opts placer_opts);
+
 /******* Globally Accessible Functions **********/
 
-void compute_delay_lookup_tables(t_router_opts router_opts,
+void compute_delay_lookup_tables(
+        t_placer_opts placer_opts,
+        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
         const int num_directs) {
 
-    VTR_LOG("\nStarting placement delay look-up...\n");
-    clock_t begin = clock();
-
-    int longest_length;
+    vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
 
     reset_placement();
 
-    setup_chan_width(router_opts, chan_width_dist);
+    t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
-    alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
+    alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
             directs, num_directs);
 
-    longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
+    int longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
 
     /*now setup and compute the actual arrays */
     alloc_delta_arrays();
 
     compute_delta_arrays(router_opts, longest_length);
 
+    adjust_delta_delays(placer_opts);
+
+    if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
+        print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
+    }
+
     /*free all data structures that are no longer needed */
     free_routing_structs();
-
-    clock_t end = clock();
-
-    float time = (float) (end - begin) / CLOCKS_PER_SEC;
-    VTR_LOG("Placement delay look-up took %g seconds\n", time);
 }
 
 void free_place_lookup_structs() {
@@ -185,7 +190,7 @@ static void reset_placement() {
     init_placement_context();
 }
 
-static void setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
@@ -205,10 +210,12 @@ static void setup_chan_width(t_router_opts router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    init_chan(width_fac, chan_width_dist);
+    return init_chan(width_fac, chan_width_dist);
 }
 
-static void alloc_routing_structs(t_router_opts router_opts,
+static void alloc_routing_structs(
+        t_chan_width chan_width,
+        t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         const t_direct_inf *directs,
         const int num_directs) {
@@ -217,8 +224,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
     t_graph_type graph_type;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    free_rr_graph();
 
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
@@ -230,7 +235,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
     create_rr_graph(graph_type,
             device_ctx.num_block_types, device_ctx.block_types,
             device_ctx.grid,
-            &device_ctx.chan_width,
+            chan_width,
             device_ctx.num_arch_switches,
             det_routing_arch,
             segment_inf,
@@ -248,7 +253,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
 }
 
 static void free_routing_structs() {
-    free_rr_graph();
 
     free_route_structs();
     free_trace_structs();
@@ -560,7 +564,7 @@ static void fix_uninitialized_coordinates() {
 }
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
-    VTR_LOG("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
+    vtr::ScopedStartFinishTimer timer("Computing delta delays");
     compute_delta_delays(router_opts, longest_length);
 
     if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
@@ -571,10 +575,6 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length) 
 
     fix_empty_coordinates();
 
-
-    if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
-        print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
-    }
 
     verify_delta_delays();
 }
@@ -700,3 +700,31 @@ static bool calculate_delay(int source_node, int sink_node,
     return (true);
 }
 
+static void adjust_delta_delays(t_placer_opts placer_opts) {
+    //Apply a constant offset to the delay model
+    for (size_t x = 0; x < f_delta_delay.dim_size(0); ++x) {
+        for (size_t y = 0; y < f_delta_delay.dim_size(1); ++y) {
+            f_delta_delay[x][y] += placer_opts.delay_offset;
+        }
+    }
+
+    if (placer_opts.delay_ramp_delta_threshold >= 0) {
+        //For each delta-x/delta-y value beyond delay_ramp_delta_threshold
+        //apply an extra (linear) delay penalty based on delay_ramp_slope
+        //and the distance beyond the delta threshold
+
+        for (size_t x = 0; x < f_delta_delay.dim_size(0); ++x) {
+            for (size_t y = 0; y < f_delta_delay.dim_size(1); ++y) {
+                int dx = x - placer_opts.delay_ramp_delta_threshold;
+                if (dx > 0) {
+                    f_delta_delay[x][y] += dx * placer_opts.delay_ramp_slope;
+                }
+
+                int dy = y - placer_opts.delay_ramp_delta_threshold;
+                if (dy > 0) {
+                    f_delta_delay[x][y] += dy * placer_opts.delay_ramp_slope;
+                }
+            }
+        }
+    }
+}
