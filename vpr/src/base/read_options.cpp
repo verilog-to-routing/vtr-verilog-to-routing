@@ -1320,6 +1320,11 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("0.99")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
+            .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
+            .default_value("")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool,ParseOnOff>(args.full_stats, "--full_stats")

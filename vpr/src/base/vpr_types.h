@@ -991,6 +991,7 @@ struct t_router_opts {
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    std::string first_iteration_timing_report_file;
 };
 
 struct t_analysis_opts {

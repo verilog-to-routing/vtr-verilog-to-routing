@@ -85,7 +85,6 @@ class SetupTimingInfo : public virtual TimingInfo {
         //Return the setup criticality of the worst connection passing through pin
         virtual float setup_pin_criticality(AtomPinId pin) const  = 0;
 
-
         //Return the underlying timing analyzer
         virtual std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const = 0;
     public:
