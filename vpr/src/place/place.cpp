@@ -2137,7 +2137,14 @@ static bool find_to(t_type_ptr type, float rlim,
         VTR_ASSERT_MSG(y_lower_iter != compressed_block_grid.grid[cx_to].end(), "Must have at least one block at this x location");
 
         if (y_lower_iter->first > min_cy) {
-            continue; //No valid blocks at this x location which are within rlim_y -- try again
+            //No valid blocks at this x location which are within rlim_y
+            //
+            //Fall back to allow the whole y range
+            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
+            y_upper_iter = compressed_block_grid.grid[cx_to].end();
+
+            min_cy = y_lower_iter->first;
+            max_cy = (y_upper_iter - 1)->first;
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
