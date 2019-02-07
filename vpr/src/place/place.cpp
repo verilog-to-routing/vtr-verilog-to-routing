@@ -320,6 +320,7 @@ static e_swap_result try_swap(float t,
         t_placer_prev_inverse_costs* prev_inverse_costs,
 		float rlim,
         const PlaceDelayModel& delay_model,
+        float rlim_escape_fraction,
         enum e_place_algorithm place_algorithm, float timing_tradeoff);
 
 static ClusterBlockId pick_from_block();
@@ -339,7 +340,7 @@ static float starting_t(t_placer_costs* costs,
         t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
         const PlaceDelayModel& delay_model,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff);
+		const t_placer_opts& placer_opts);
 
 static void update_t(float *t, float rlim, float success_rat,
 		t_annealing_sched annealing_sched);
@@ -645,7 +646,7 @@ void try_place(t_placer_opts placer_opts,
 	t = starting_t(&costs, &prev_inverse_costs,
 			annealing_sched, move_lim, rlim,
             *place_delay_model,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff);
+			placer_opts);
 
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
@@ -929,7 +930,9 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 		e_swap_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
             delay_model,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff);
+			placer_opts.rlim_escape_fraction,
+            placer_opts.place_algorithm,
+            placer_opts.timing_tradeoff);
 
 		if (swap_result == ACCEPTED) {
 			/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1130,7 +1133,7 @@ static float starting_t(t_placer_costs* costs,
         t_placer_prev_inverse_costs* prev_inverse_costs,
 		t_annealing_sched annealing_sched, int max_moves, float rlim,
         const PlaceDelayModel& delay_model,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff) {
+		const t_placer_opts& placer_opts) {
 
 	/* Finds the starting temperature (hot condition).              */
 
@@ -1153,7 +1156,9 @@ static float starting_t(t_placer_costs* costs,
 	for (i = 0; i < move_lim; i++) {
 		e_swap_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                 delay_model,
-				place_algorithm, timing_tradeoff);
+				placer_opts.rlim_escape_fraction,
+                placer_opts.place_algorithm,
+                placer_opts.timing_tradeoff);
 
 		if (swap_result == ACCEPTED) {
 			num_accepted++;
@@ -1768,6 +1773,7 @@ static e_swap_result try_swap(float t,
         t_placer_prev_inverse_costs* prev_inverse_costs,
 		float rlim,
         const PlaceDelayModel& delay_model,
+        float rlim_escape_fraction,
 		enum e_place_algorithm place_algorithm,
         float timing_tradeoff) {
 
@@ -1801,10 +1807,15 @@ static e_swap_result try_swap(float t,
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
     VTR_ASSERT(cluster_from_type == grid_from_type);
 
-    t_pl_loc to;
-	if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from, to)) {
-		return ABORTED;
+    //Allow some fraction of moves to not be restricted by rlim,
+    //in the hopes of better escaping local minima
+    if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
+        rlim = std::numeric_limits<float>::infinity();
     }
+
+    t_pl_loc to;
+	if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, from,to))
+		return REJECTED;
 
 #if 0
     auto& grid = g_vpr_ctx.device().grid;

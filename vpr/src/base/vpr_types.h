@@ -756,6 +756,7 @@ struct t_placer_opts {
 	int seed;
 	float td_place_exp_last;
 	e_stage_action doPlacement;
+    float rlim_escape_fraction;
 
     PlaceDelayModelType delay_model_type;
     e_reducer delay_model_reducer;
