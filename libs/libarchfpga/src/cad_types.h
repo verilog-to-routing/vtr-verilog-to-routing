@@ -36,6 +36,7 @@ struct t_pack_patterns {
 
 	bool is_chain; /* Does this pattern chain across logic blocks */
 	t_pb_graph_pin *chain_root_pin; /* pointer to logic block input pin that drives this chain from the preceding logic block */
+	int usage; /* how many atoms have been packed into molecules using this pack pattern */
 };
 
 struct t_model_chain_pattern {
