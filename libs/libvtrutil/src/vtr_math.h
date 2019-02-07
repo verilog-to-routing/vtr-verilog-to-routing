@@ -25,6 +25,18 @@ namespace vtr {
     }
 
     template<typename InputIterator>
+    double median(InputIterator first, InputIterator last) {
+        auto len = std::distance(first, last);
+        auto iter = first + len / 2;
+
+        if (len % 2 == 0) {
+            return (*iter + *(iter + 1)) / 2;        
+        } else {
+            return *iter;        
+        }
+    }
+
+    template<typename InputIterator>
     double geomean(InputIterator first, InputIterator last, double init=1.) {
         //Compute the geometric mean of the elments in range [first, last)
         //
@@ -46,6 +58,19 @@ namespace vtr {
         VTR_ASSERT(n > 0.);
 
         return std::exp( (1. / n) * log_sum );
+    }
+
+    template<typename InputIterator>
+    double arithmean(InputIterator first, InputIterator last, double init=0.) {
+        double sum = init;
+        size_t n = 0;
+        for (auto iter = first; iter != last; ++iter) {
+            sum += *iter;
+            n += 1;
+        }
+
+        VTR_ASSERT(n > 0.);
+        return sum / n;
     }
 
     //Return the greatest common divisor of x and y
