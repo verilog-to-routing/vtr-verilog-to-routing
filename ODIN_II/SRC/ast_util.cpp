@@ -949,8 +949,6 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 			/* clean up */
 			if (node->type == BINARY_OPERATION || node->type == UNARY_OPERATION) {
 				for (i = 0; i < node->num_children; i++) {
-					//new_node->types.number.number
-					//new_node->types.number.binary_string
 					vtr::free(node->children[i]->types.number.number);
 					vtr::free(node->children[i]->types.number.binary_string);
 					vtr::free(node->children[i]);
@@ -958,6 +956,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 				vtr::free(node->children);
 				vtr::free(node);
 			}
+			
 			node = newNode;
 		}
 
