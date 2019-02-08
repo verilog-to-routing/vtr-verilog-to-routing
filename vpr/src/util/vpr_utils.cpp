@@ -1737,6 +1737,11 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 	char * find_format = nullptr;
 	int ichar, match_count;
 
+    if (vtr::split(src_string).size() > 1) {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+    }
+
 	// parse out the pb_type and port name, possibly pin_indices
 	find_format = strstr(src_string,"[");
 	if (find_format == nullptr) {
