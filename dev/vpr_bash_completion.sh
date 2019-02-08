@@ -21,4 +21,4 @@ _vpr_completions() {
     fi
 }
 
-complete -F _vpr_completions vpr
+complete -o filenames -F _vpr_completions vpr
