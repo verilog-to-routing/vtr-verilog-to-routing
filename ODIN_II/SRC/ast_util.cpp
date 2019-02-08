@@ -945,8 +945,15 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 
 		if (node_is_constant(newNode)){
 			newNode->shared_node = node->shared_node;
-			// vtr::free(node->children);
-			// vtr::free(node);
+
+			/* clean up */
+			if (node->type == BINARY_OPERATION || node->type == UNARY_OPERATION) {
+				for (i = 0; i < node->num_children; i++) {
+					vtr::free(node->children[i]);
+				}
+				vtr::free(node->children);
+				vtr::free(node);
+			}
 			node = newNode;
 		}
 
