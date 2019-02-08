@@ -2698,20 +2698,18 @@ static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
                         }
 
                         /* Add new ipin edge to list of edges */
-                        int target_width_offset = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
-                        int target_height_offset = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
-
-                        auto inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset - target_width_offset, y + directs[i].y_offset - target_height_offset,
+                        auto inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset, y + directs[i].y_offset,
                                 IPIN, ipin);
 
-                        //There may be multiple physical pins corresponding to the logical
-                        //target ipin. We only need to connect to one of them (since the physical pins
-                        //are logically equivalent).
-                        VTR_ASSERT(inodes.size() > 0);
-                        int inode = inodes[0];
+                        if (inodes.size() > 0) {
+                            //There may be multiple physical pins corresponding to the logical
+                            //target ipin. We only need to connect to one of them (since the physical pins
+                            //are logically equivalent).
+                            int inode = inodes[0];
 
-                        rr_edges_to_create.emplace_back(from_rr_node, inode, clb_to_clb_directs[i].switch_index);
-                        ++num_pins;
+                            rr_edges_to_create.emplace_back(from_rr_node, inode, clb_to_clb_directs[i].switch_index);
+                            ++num_pins;
+                        }
                     }
                 }
             }
